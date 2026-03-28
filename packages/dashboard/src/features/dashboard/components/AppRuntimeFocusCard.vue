@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DashboardRuntimeBadgeItem, DashboardRuntimeEvent } from '../types'
 import { computed } from 'vue'
-import { formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../utils/format'
+import { createRuntimeEventBadgeItem, formatRuntimeEventMeta } from '../utils/format'
 import { mutedPanelStyles } from '../utils/styles'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 
@@ -13,16 +13,9 @@ const props = defineProps<{
   durationText?: string
 }>()
 
-function createRuntimeEventBadge(event: DashboardRuntimeEvent): DashboardRuntimeBadgeItem {
-  return {
-    label: formatRuntimeEventLevel(event.level),
-    tone: getRuntimeEventBadgeTone(event.level),
-  }
-}
-
 const badge = computed<DashboardRuntimeBadgeItem | null>(() => (
   props.event
-    ? createRuntimeEventBadge(props.event)
+    ? createRuntimeEventBadgeItem(props.event)
     : null
 ))
 
