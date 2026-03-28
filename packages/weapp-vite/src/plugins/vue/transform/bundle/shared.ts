@@ -562,6 +562,32 @@ export async function resolveFallbackPageEntryFile(options: {
   })
 }
 
+export async function resolveFallbackPageEmitState(options: {
+  entryId: string
+  configService: NonNullable<CompilerContext['configService']>
+  compilationCache: Map<string, CompilationCacheEntry>
+  pathExists: (candidate: string) => Promise<string | undefined | null>
+}) {
+  const relativeBase = options.configService.relativeOutputPath(options.entryId)
+  if (!relativeBase) {
+    return undefined
+  }
+
+  const entryFilePath = await resolveFallbackPageEntryFile({
+    entryId: options.entryId,
+    compilationCache: options.compilationCache,
+    pathExists: options.pathExists,
+  })
+  if (!entryFilePath) {
+    return undefined
+  }
+
+  return {
+    relativeBase,
+    entryFilePath,
+  }
+}
+
 export async function loadFallbackPageEntryCompilation(options: {
   entryFilePath: string
   ctx: CompilerContext

@@ -4,7 +4,7 @@ import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
-import { addBundleWatchFile, emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -28,12 +28,9 @@ export async function emitFallbackPageAssets(
 
   const collectedEntries = await collectFallbackPageEntryIds(configService, scanService)
   for (const entryId of collectedEntries) {
-    const relativeBase = configService.relativeOutputPath(entryId)
-    if (!relativeBase) {
-      continue
-    }
-    const entryFilePath = await resolveFallbackPageEntryFile({
+    const emitState = await resolveFallbackPageEmitState({
       entryId,
+      configService,
       compilationCache,
       pathExists: async (candidate) => {
         return await pathExistsCached(candidate, { ttlMs: getPathExistsTtlMs(configService) })
@@ -41,12 +38,10 @@ export async function emitFallbackPageAssets(
           : undefined
       },
     })
-    if (entryFilePath === null) {
+    if (!emitState) {
       continue
     }
-    if (!entryFilePath) {
-      continue
-    }
+    const { relativeBase, entryFilePath } = emitState
 
     addBundleWatchFile(pluginCtx, entryFilePath)
 
