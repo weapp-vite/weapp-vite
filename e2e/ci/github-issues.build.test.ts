@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse fs-extra helpers to inspect generated artifacts. */
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -21,6 +22,16 @@ async function runBuild() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #369: does not inject vite client types when weapp.web is not configured', async () => {
+    await runBuild()
+
+    const managedTsconfigPath = path.join(APP_ROOT, '.weapp-vite/tsconfig.app.json')
+    const managedTsconfig = await fs.readJson(managedTsconfigPath)
+
+    expect(managedTsconfig.compilerOptions.types).toContain('weapp-vite/client')
+    expect(managedTsconfig.compilerOptions.types).not.toContain('vite/client')
+  })
+
   it('issue #289: compiles split pages with per-page controls and safe class bindings', async () => {
     await runBuild()
 
