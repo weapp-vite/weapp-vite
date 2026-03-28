@@ -11,7 +11,7 @@ import { emitNativeLayoutScriptChunkIfNeeded } from '../bundle'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
-import { isVueLikeFile } from '../shared'
+import { isVueLikeFile, registerVueTemplateToken, resolveVueOutputBase } from '../shared'
 import { buildWeappVueStyleRequest } from '../styleRequest'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
@@ -31,8 +31,6 @@ const PAGE_FEATURE_HOOK_HINTS = [
   'onSaveExitState',
 ]
 const PAGE_SCROLL_HOOK_HINT = 'onPageScroll'
-
-export { registerVueTemplateToken, resolveVueOutputBase } from '../shared'
 
 export function resolveScriptlessVueEntryStub(isPage: boolean) {
   return isPage ? 'Page({})' : 'Component({})'
@@ -392,6 +390,94 @@ export async function resolveTransformEntryFlags(options: {
     isApp: isAppEntry(filename),
     pageMatcher: currentPageMatcher,
   }
+}
+
+export async function compileTransformEntryResult(options: {
+  transformedSource: string
+  filename: string
+  compileOptions: Record<string, unknown>
+  compileVueFile: (source: string, filename: string, options: Record<string, unknown>) => Promise<VueTransformResult>
+  compileJsxFile: (source: string, filename: string, options: Record<string, unknown>) => Promise<VueTransformResult>
+}) {
+  const { transformedSource, filename, compileOptions, compileVueFile, compileJsxFile } = options
+  return filename.endsWith('.vue')
+    ? await compileVueFile(transformedSource, filename, compileOptions)
+    : await compileJsxFile(transformedSource, filename, compileOptions)
+}
+
+export async function finalizeTransformCompiledResult(options: {
+  ctx: CompilerContext
+  pluginCtx: any
+  filename: string
+  source: string
+  result: VueTransformResult
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+  configService: NonNullable<CompilerContext['configService']>
+  isPage: boolean
+  isApp: boolean
+  scopedSlotModules: Map<string, string>
+  emittedScopedSlotChunks: Set<string>
+  addWatchFile: (pluginCtx: any, file: string) => void
+  emitScopedSlotChunks: (
+    pluginCtx: any,
+    relativeBase: string,
+    result: VueTransformResult,
+    scopedSlotModules: Map<string, string>,
+    emittedScopedSlotChunks: Set<string>,
+    outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions'],
+  ) => void
+}) {
+  const {
+    ctx,
+    pluginCtx,
+    filename,
+    source,
+    result,
+    compilationCache,
+    configService,
+    isPage,
+    isApp,
+    scopedSlotModules,
+    emittedScopedSlotChunks,
+    addWatchFile,
+    emitScopedSlotChunks,
+  } = options
+
+  if (isPage && result.template) {
+    await handleTransformEntryPageLayoutFlow({
+      pluginCtx,
+      ctx,
+      filename,
+      source,
+      result,
+    })
+  }
+
+  registerVueTemplateToken(ctx, filename, result.template)
+
+  if (Array.isArray(result.meta?.sfcSrcDeps) && typeof pluginCtx.addWatchFile === 'function') {
+    for (const dep of result.meta.sfcSrcDeps) {
+      addWatchFile(pluginCtx, dep)
+    }
+  }
+
+  await finalizeTransformEntryScript({
+    result,
+    filename,
+    pluginCtx,
+    configService,
+    isPage,
+    isApp,
+  })
+
+  compilationCache.set(filename, { result, source, isPage })
+
+  const relativeBase = resolveVueOutputBase(configService, filename)
+  if (relativeBase) {
+    emitScopedSlotChunks(pluginCtx, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
+  }
+
+  return result
 }
 
 export async function registerNativeLayoutChunksForEntry(
