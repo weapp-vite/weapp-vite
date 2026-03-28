@@ -26,6 +26,8 @@ export {
   defaultResolveBabelRenderExpression,
   getJsxOxcStaticPropertyName,
   mayContainJsxAutoComponentEntry,
+  resolveOxcComponentExpression,
+  resolveOxcRenderExpression,
   unwrapOxcExpression,
 } from './operations/jsxAutoComponents'
 export { collectJsxImportedComponentsAndDefaultExportFromBabelAst } from './operations/jsxAutoComponents'

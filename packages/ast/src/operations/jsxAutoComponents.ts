@@ -319,7 +319,7 @@ export function getJsxOxcStaticPropertyName(node: any) {
   return undefined
 }
 
-function resolveOxcComponentExpression(
+export function resolveOxcComponentExpression(
   declaration: any,
   defineComponentDecls: Map<string, any>,
   defineComponentAliases: Set<string>,
@@ -351,7 +351,7 @@ function resolveOxcComponentExpression(
   return null
 }
 
-function resolveOxcRenderExpression(componentExpr: any) {
+export function resolveOxcRenderExpression(componentExpr: any) {
   if (componentExpr?.type !== 'ObjectExpression') {
     return null
   }
