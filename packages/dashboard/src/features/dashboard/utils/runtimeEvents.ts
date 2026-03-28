@@ -10,6 +10,14 @@ import { formatDuration } from './format'
 const EVENT_KINDS: DashboardRuntimeEventKind[] = ['command', 'build', 'diagnostic', 'hmr', 'system']
 const EVENT_LEVELS: DashboardRuntimeEventLevel[] = ['info', 'success', 'warning', 'error']
 
+interface RuntimeSourceSummaryAccumulator {
+  count: number
+  errorCount: number
+  latestTimestamp: string
+  durationTotal: number
+  timedCount: number
+}
+
 function isRecord(input: unknown): input is Record<string, unknown> {
   return Boolean(input) && typeof input === 'object' && !Array.isArray(input)
 }
@@ -50,11 +58,7 @@ function normalizeTags(value: unknown) {
   return tags.length > 0 ? tags : undefined
 }
 
-function normalizeRuntimeEvent(input: unknown, index: number): DashboardRuntimeEvent | null {
-  if (!isRecord(input)) {
-    return null
-  }
-
+function createRuntimeEvent(input: Record<string, unknown>, index: number): DashboardRuntimeEvent {
   return {
     id: normalizeString(input.id, `dashboard-runtime-event-${index}`),
     kind: normalizeEventKind(input.kind),
@@ -66,6 +70,59 @@ function normalizeRuntimeEvent(input: unknown, index: number): DashboardRuntimeE
     durationMs: normalizeDuration(input.durationMs),
     tags: normalizeTags(input.tags),
   }
+}
+
+function createRuntimeSourceSummaryAccumulator(event: DashboardRuntimeEvent): RuntimeSourceSummaryAccumulator {
+  return {
+    count: 1,
+    errorCount: event.level === 'error' ? 1 : 0,
+    latestTimestamp: event.timestamp,
+    durationTotal: event.durationMs ?? 0,
+    timedCount: typeof event.durationMs === 'number' ? 1 : 0,
+  }
+}
+
+function mergeRuntimeSourceSummaryAccumulator(
+  existing: RuntimeSourceSummaryAccumulator,
+  event: DashboardRuntimeEvent,
+): RuntimeSourceSummaryAccumulator {
+  return {
+    count: existing.count + 1,
+    errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
+    latestTimestamp: existing.latestTimestamp,
+    durationTotal: existing.durationTotal + (event.durationMs ?? 0),
+    timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
+  }
+}
+
+function createRuntimeSourceSummary(
+  source: string,
+  meta: RuntimeSourceSummaryAccumulator,
+): DashboardRuntimeSourceSummary {
+  return {
+    source,
+    count: meta.count,
+    errorCount: meta.errorCount,
+    latestTimestamp: meta.latestTimestamp,
+    averageDurationMs: meta.timedCount > 0
+      ? Math.round(meta.durationTotal / meta.timedCount)
+      : undefined,
+  }
+}
+
+function createRuntimeSourceCardItem(item: DashboardRuntimeSourceSummary): DashboardRuntimeSourceCardItem {
+  return {
+    ...item,
+    averageDuration: formatDuration(item.averageDurationMs),
+  }
+}
+
+function normalizeRuntimeEvent(input: unknown, index: number): DashboardRuntimeEvent | null {
+  if (!isRecord(input)) {
+    return null
+  }
+
+  return createRuntimeEvent(input, index)
 }
 
 export function normalizeRuntimeEvents(input: unknown) {
@@ -83,53 +140,24 @@ export function normalizeRuntimeEvents(input: unknown) {
 }
 
 export function summarizeRuntimeEventsBySource(events: DashboardRuntimeEvent[]): DashboardRuntimeSourceSummary[] {
-  const sourceMap = new Map<string, {
-    count: number
-    errorCount: number
-    latestTimestamp: string
-    durationTotal: number
-    timedCount: number
-  }>()
+  const sourceMap = new Map<string, RuntimeSourceSummaryAccumulator>()
 
   for (const event of events) {
     const source = event.source ?? 'dashboard'
     const existing = sourceMap.get(source)
 
     if (!existing) {
-      sourceMap.set(source, {
-        count: 1,
-        errorCount: event.level === 'error' ? 1 : 0,
-        latestTimestamp: event.timestamp,
-        durationTotal: event.durationMs ?? 0,
-        timedCount: typeof event.durationMs === 'number' ? 1 : 0,
-      })
+      sourceMap.set(source, createRuntimeSourceSummaryAccumulator(event))
       continue
     }
 
-    sourceMap.set(source, {
-      count: existing.count + 1,
-      errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
-      latestTimestamp: existing.latestTimestamp,
-      durationTotal: existing.durationTotal + (event.durationMs ?? 0),
-      timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
-    })
+    sourceMap.set(source, mergeRuntimeSourceSummaryAccumulator(existing, event))
   }
 
-  return Array.from(sourceMap, ([source, meta]) => ({
-    source,
-    count: meta.count,
-    errorCount: meta.errorCount,
-    latestTimestamp: meta.latestTimestamp,
-    averageDurationMs: meta.timedCount > 0
-      ? Math.round(meta.durationTotal / meta.timedCount)
-      : undefined,
-  }))
+  return Array.from(sourceMap, ([source, meta]) => createRuntimeSourceSummary(source, meta))
     .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source, 'zh-CN'))
 }
 
 export function formatRuntimeSourceSummary(items: DashboardRuntimeSourceSummary[]): DashboardRuntimeSourceCardItem[] {
-  return items.map(item => ({
-    ...item,
-    averageDuration: formatDuration(item.averageDurationMs),
-  }))
+  return items.map(item => createRuntimeSourceCardItem(item))
 }
