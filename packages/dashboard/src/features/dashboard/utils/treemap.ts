@@ -1,51 +1,5 @@
-import type { PackageType } from '../types'
+import type { PackageType, TreemapNodeMeta } from '../types'
 import { formatBytes, formatSourceType } from './format'
-
-export interface NodeMetaBase {
-  kind: 'package' | 'file' | 'module' | 'asset'
-  bytes?: number
-  totalBytes?: number
-  packageLabel: string
-}
-
-export interface PackageNodeMeta extends NodeMetaBase {
-  kind: 'package'
-  packageType: PackageType
-  fileCount: number
-}
-
-export interface FileNodeMeta extends NodeMetaBase {
-  kind: 'file'
-  fileName: string
-  from: string
-  childCount: number
-  type: 'chunk' | 'asset'
-}
-
-export interface ModuleNodeMeta extends NodeMetaBase {
-  kind: 'module'
-  fileName: string
-  source: string
-  sourceType: string
-  originalBytes?: number
-  packageCount: number
-}
-
-export interface AssetNodeMeta extends NodeMetaBase {
-  kind: 'asset'
-  fileName: string
-  source: string
-}
-
-export type NodeMeta = PackageNodeMeta | FileNodeMeta | ModuleNodeMeta | AssetNodeMeta
-
-export interface TreemapNode {
-  name: string
-  value: number
-  meta: NodeMeta
-  children?: TreemapNode[]
-  itemStyle?: Record<string, any>
-}
 
 export const PACKAGE_STYLES: Record<PackageType, { fill: string, border: string }> = {
   main: {
@@ -93,7 +47,7 @@ export const TREEMAP_LEVELS = [
   },
 ] as const
 
-export function formatTreemapTooltip(meta: NodeMeta | undefined) {
+export function formatTreemapTooltip(meta: TreemapNodeMeta | undefined) {
   if (!meta) {
     return ''
   }
