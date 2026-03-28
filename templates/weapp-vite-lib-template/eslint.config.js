@@ -1,27 +1,7 @@
 import { icebreaker } from '@icebreakers/eslint-config'
 
 export default icebreaker({
+  miniProgram: true,
   vue: true,
-  ignores: [
-    'CHANGELOG.md',
-    'README.md',
-    'dist/**',
-    'dist-lib/**',
-    'node_modules/**',
-    '.turbo/**',
-    '.weapp-vite/**',
-    'project.config.json',
-    'project.private.config.json',
-  ],
-  languageOptions: {
-    globals: {
-      wx: true,
-      Page: true,
-      App: true,
-      Component: true,
-      getApp: true,
-      getCurrentPages: true,
-      WechatMiniprogram: true,
-    },
-  },
+  ignores: ['CHANGELOG.md', 'README.md', 'dist-lib/**', '.turbo/**'],
 })
