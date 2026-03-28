@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppMetaLabel from './AppMetaLabel.vue'
+
 defineProps<{
   label: string
   value: string
@@ -7,9 +9,9 @@ defineProps<{
 
 <template>
   <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3">
-    <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+    <AppMetaLabel>
       {{ label }}
-    </p>
+    </AppMetaLabel>
     <p class="mt-1 text-lg font-semibold">
       {{ value }}
     </p>
