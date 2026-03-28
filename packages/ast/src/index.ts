@@ -72,6 +72,7 @@ export {
   getCallExpressionCalleeName,
   getLocationFromOffset,
   getMemberExpressionPropertyName,
+  getOnPageScrollCallbackArgument,
   getOxcCallExpressionCalleeName,
   getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,

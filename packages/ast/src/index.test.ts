@@ -44,6 +44,7 @@ import {
   getLocationFromOffset,
   getMemberExpressionPropertyName,
   getObjectPropertyByKey,
+  getOnPageScrollCallbackArgument,
   getOxcCallExpressionCalleeName,
   getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
@@ -1107,6 +1108,15 @@ export function useCounter() {
     expect(isStaticPropertyName(t.stringLiteral('render'))).toBe('render')
     expect(isStaticPropertyName(t.privateName(t.identifier('secret')))).toBeUndefined()
     expect(getCallExpressionCalleeName(t.identifier('setData'))).toBe('setData')
+    expect(getOnPageScrollCallbackArgument({
+      arguments: [t.arrowFunctionExpression([], t.identifier('view'))],
+    } as any)).toEqual(t.arrowFunctionExpression([], t.identifier('view')))
+    expect(getOnPageScrollCallbackArgument({
+      arguments: [{ type: 'SpreadElement', argument: t.identifier('handler') }],
+    } as any)).toBeUndefined()
+    expect(getOnPageScrollCallbackArgument({
+      arguments: [t.identifier('handler')],
+    } as any)).toBeUndefined()
     expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.identifier('setData')))).toBe('setData')
     expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.stringLiteral('getStorageSync'), true))).toBe('getStorageSync')
     expect(isOnPageScrollCallee(t.identifier('onScroll'), new Set(['onScroll']), new Set())).toBe(true)
