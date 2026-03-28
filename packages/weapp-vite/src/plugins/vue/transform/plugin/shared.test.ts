@@ -1,17 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, resolveSfcSrc } from './shared'
+import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId } from './shared'
 
 describe('vue transform plugin shared helpers', () => {
-  it('detects vue-like ids and resolves sfc src ids', async () => {
+  it('detects vue-like ids', () => {
     expect(isVueLikeId('/project/src/pages/home/index.vue')).toBe(true)
     expect(isVueLikeId('/project/src/pages/home/index.jsx')).toBe(true)
     expect(isVueLikeId('/project/src/pages/home/index.tsx')).toBe(true)
     expect(isVueLikeId('/project/src/pages/home/index.ts')).toBe(false)
-
-    expect(await resolveSfcSrc({}, './child.vue', '/project/src/pages/home/index.vue')).toBeUndefined()
-    expect(await resolveSfcSrc({
-      resolve: vi.fn(async () => ({ id: '/project/src/components/child.vue' })),
-    }, './child.vue', '/project/src/pages/home/index.vue')).toBe('/project/src/components/child.vue')
   })
 
   it('invalidates page layout related caches for page entries', () => {

@@ -7,6 +7,14 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn())
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn())
 const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({ mock: true })))
 const readAndParseSfcMock = vi.hoisted(() => vi.fn())
+const createReadAndParseSfcOptionsMock = vi.hoisted(() => vi.fn((_pluginCtx: any, _configService: any, options?: any) => ({
+  source: options?.source,
+  checkMtime: options?.checkMtime ?? false,
+  resolveSrc: {
+    resolveId: vi.fn(),
+    checkMtime: false,
+  },
+})))
 const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
   transformed: false,
   code,
@@ -31,7 +39,7 @@ vi.mock('./compileOptions', () => ({
 }))
 
 vi.mock('../../utils/vueSfc', () => ({
-  getSfcCheckMtime: vi.fn(() => false),
+  createReadAndParseSfcOptions: createReadAndParseSfcOptionsMock,
   readAndParseSfc: readAndParseSfcMock,
 }))
 
