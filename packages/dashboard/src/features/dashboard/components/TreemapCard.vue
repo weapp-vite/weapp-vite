@@ -5,6 +5,14 @@ import AppPanelHeader from './AppPanelHeader.vue'
 defineProps<{
   bindChartRef: (element: Element | null) => void
 }>()
+
+const chartTitle = 'Treemap'
+const chartDescription = '从包体到文件再到模块，直接定位体积热点。'
+const chartBadgeLabel = 'overview'
+
+function getChartBadgeClassName(): string {
+  return pillButtonStyles({ kind: 'badge' })
+}
 </script>
 
 <template>
@@ -12,12 +20,12 @@ defineProps<{
     <AppPanelHeader
       class="mb-2 px-2"
       icon-name="treemap"
-      title="Treemap"
-      description="从包体到文件再到模块，直接定位体积热点。"
+      :title="chartTitle"
+      :description="chartDescription"
     >
       <template #meta>
-        <span :class="pillButtonStyles({ kind: 'badge' })">
-          overview
+        <span :class="getChartBadgeClassName()">
+          {{ chartBadgeLabel }}
         </span>
       </template>
     </AppPanelHeader>
