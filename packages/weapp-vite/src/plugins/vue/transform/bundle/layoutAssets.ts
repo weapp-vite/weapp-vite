@@ -2,9 +2,9 @@ import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取布局资产
 import fs from 'fs-extra'
+import { emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { collectNativeLayoutAssets } from '../pageLayout'
-import { resolveBundleOutputExtensions } from './outputExtensions'
 import { compileVueLikeFile, getEntryBaseName, SCRIPTLESS_COMPONENT_STUB } from './shared'
 
 export function resolveVueLayoutAssetOptions(options: {
@@ -12,15 +12,7 @@ export function resolveVueLayoutAssetOptions(options: {
   layoutBasePath: string
   outputExtensions: OutputExtensions | undefined
 }) {
-  const relativeBase = options.configService.relativeOutputPath(options.layoutBasePath)
-  if (!relativeBase) {
-    return undefined
-  }
-
-  return {
-    relativeBase,
-    ...resolveBundleOutputExtensions(options.outputExtensions),
-  }
+  return resolveNativeLayoutOutputOptions(options)
 }
 
 export async function emitNativeLayoutScriptChunkIfNeeded(options: {
@@ -45,18 +37,10 @@ export async function emitNativeLayoutScriptChunkIfNeeded(options: {
   }
 
   const fileName = `${resolvedOptions.relativeBase}.${resolvedOptions.scriptExtension}`
-  const emittedLayoutScripts: Set<string> = (pluginCtx as any).__weappViteNativeLayoutScripts ?? ((pluginCtx as any).__weappViteNativeLayoutScripts = new Set<string>())
-  if (emittedLayoutScripts.has(fileName)) {
-    return
-  }
-
-  emittedLayoutScripts.add(fileName)
-  pluginCtx.emitFile({
-    type: 'chunk',
-    id: assets.script,
+  emitSharedNativeLayoutScriptChunkIfNeeded({
+    pluginCtx,
+    scriptId: assets.script,
     fileName,
-    // @ts-ignore Rolldown 的 PluginContext 类型不完整
-    preserveSignature: 'exports-only',
   })
 }
 
