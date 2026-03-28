@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { checkRuntime } from './version'
+import { checkRuntime, formatRequiredRuntimeVersion } from './version'
 
 afterEach(() => {
   delete (globalThis as any).Deno
@@ -12,6 +12,11 @@ function createWarn() {
 }
 
 describe('utils/version', () => {
+  it('formats plain and ranged runtime requirements for warnings', () => {
+    expect(formatRequiredRuntimeVersion('2.0.0')).toBe('>= 2.0.0')
+    expect(formatRequiredRuntimeVersion('^20.19.0 || >=22.12.0')).toBe('^20.19.0 || >=22.12.0')
+  })
+
   it('warns when the current runtime has no minimum requirement configured', () => {
     const warn = createWarn()
 

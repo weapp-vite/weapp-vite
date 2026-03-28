@@ -64,6 +64,10 @@ function getRuntime(): RuntimeInfo {
   throw new Error('无法识别运行时：无法确定 Node.js / Deno / Bun。')
 }
 
+export function formatRequiredRuntimeVersion(required: string) {
+  return semverValid(required) ? `>= ${required}` : required
+}
+
 export function checkRuntime(minVersions: MinVersions, options: CheckRuntimeOptions = {}): void {
   const { runtime, version } = options.runtimeInfo ?? getRuntime()
   const runtimeLogger = options.logger ?? logger
@@ -80,7 +84,7 @@ export function checkRuntime(minVersions: MinVersions, options: CheckRuntimeOpti
     : semverSatisfies(version, required)
 
   if (!isSatisfied) {
-    const expected = isPlainVersion ? `>= ${required}` : required
+    const expected = formatRequiredRuntimeVersion(required)
     runtimeLogger.warn(`当前 ${runtime} 版本为 ${version} 无法满足 \`weapp-vite\` 最低要求的版本(${expected})`)
   }
 }
