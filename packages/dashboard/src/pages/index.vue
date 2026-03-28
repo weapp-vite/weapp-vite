@@ -3,10 +3,9 @@ import { RouterLink } from 'vue-router'
 import AppChecklistItem from '../features/dashboard/components/AppChecklistItem.vue'
 import AppCommandPreviewCard from '../features/dashboard/components/AppCommandPreviewCard.vue'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
-import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
-import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
+import AppWorkspaceSignalsPanel from '../features/dashboard/components/AppWorkspaceSignalsPanel.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { releaseChecklist, workspaceHighlights, workspaceNavigation } from '../features/dashboard/constants/shell'
 
@@ -36,23 +35,7 @@ const { commandItems, signals } = useDashboardWorkspace()
         </div>
 
         <div class="grid gap-3">
-          <AppInsetPanel eyebrow="rollout signal">
-            <ul class="grid gap-2 text-sm">
-              <li
-                v-for="metric in signals"
-                :key="metric.label"
-                class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-3"
-              >
-                <span class="inline-flex items-center gap-2">
-                  <span class="h-4.5 w-4.5 text-[color:var(--dashboard-accent)]">
-                    <DashboardIcon :name="metric.iconName" />
-                  </span>
-                  {{ metric.label }}
-                </span>
-                <strong class="text-[color:var(--dashboard-text)]">{{ metric.value }}</strong>
-              </li>
-            </ul>
-          </AppInsetPanel>
+          <AppWorkspaceSignalsPanel :items="signals" />
         </div>
       </div>
     </AppSurfaceCard>

@@ -7,8 +7,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } fro
 import { RouterLink } from 'vue-router'
 import AppCommandListCard from '../features/dashboard/components/AppCommandListCard.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
+import AppRecentRuntimeEventsCard from '../features/dashboard/components/AppRecentRuntimeEventsCard.vue'
 import AppRouteActionCard from '../features/dashboard/components/AppRouteActionCard.vue'
-import AppRuntimeEventCard from '../features/dashboard/components/AppRuntimeEventCard.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
@@ -244,22 +244,7 @@ onBeforeUnmount(() => {
           </div>
         </AppSurfaceCard>
 
-        <AppSurfaceCard
-          eyebrow="Recent Feed"
-          title="最近事件样本"
-          description="这些事件是分析页最直接的上游线索。后面如果某次 analyze 或 build 结果异常，这里会比看全量时间线更快定位。"
-          icon-name="hero-commands"
-        >
-          <ul class="grid gap-2">
-            <li
-              v-for="event in recentRuntimeEvents"
-              :key="event.id"
-              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-            >
-              <AppRuntimeEventCard :event="event" />
-            </li>
-          </ul>
-        </AppSurfaceCard>
+        <AppRecentRuntimeEventsCard :events="recentRuntimeEvents" />
       </section>
 
       <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
