@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformSource, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry } from './shared'
+import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -212,6 +212,39 @@ describe('vue transform plugin shared helpers', () => {
 
     expect(readFileCached).toHaveBeenCalledTimes(1)
     expect(fsReadFileMock).toHaveBeenCalledWith('/project/src/components/card.vue', 'utf-8')
+  })
+
+  it('loads transform page entries from scan service and falls back when scan service is missing', async () => {
+    await expect(loadTransformPageEntries(undefined)).resolves.toEqual({
+      pages: [],
+      subPackages: [],
+      pluginPages: [],
+    })
+
+    await expect(loadTransformPageEntries({
+      loadAppEntry: vi.fn(async () => ({
+        json: {
+          pages: ['pages/home/index'],
+        },
+      })),
+      loadSubPackages: vi.fn(() => [
+        {
+          subPackage: {
+            root: 'pkg',
+            pages: ['detail/index'],
+          },
+        },
+      ]),
+      pluginJson: {
+        pages: {
+          settings: 'plugin/pages/settings/index',
+        },
+      },
+    } as any)).resolves.toEqual({
+      pages: ['pages/home/index'],
+      subPackages: [{ root: 'pkg', pages: ['detail/index'] }],
+      pluginPages: ['plugin/pages/settings/index'],
+    })
   })
 
   it('preloads transform sfc style blocks only for vue files with style content and ignores parse failures', async () => {
@@ -492,5 +525,87 @@ console.log(routes, promise)
 
     expect(ensureFresh).not.toHaveBeenCalled()
     expect(getReference).not.toHaveBeenCalled()
+  })
+
+  it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {
+    const setPageMatcher = vi.fn()
+    const isPageFile = vi.fn(async () => true)
+    const markDirty = vi.fn()
+    const createPageMatcher = vi.fn(() => ({
+      isPageFile,
+      markDirty,
+    }))
+
+    const resolved = await resolveTransformEntryFlags({
+      pageMatcher: null,
+      setPageMatcher,
+      createPageMatcher,
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        weappLibConfig: {
+          enabled: false,
+        },
+      } as any,
+      scanService: {
+        loadAppEntry: vi.fn(async () => ({
+          json: {
+            pages: ['pages/home/index'],
+          },
+        })),
+        loadSubPackages: vi.fn(() => []),
+        pluginJson: undefined,
+      } as any,
+      scanDirty: true,
+      filename: '/project/src/app.vue',
+    })
+
+    expect(createPageMatcher).toHaveBeenCalledTimes(1)
+    expect(setPageMatcher).toHaveBeenCalledWith(expect.objectContaining({
+      isPageFile,
+      markDirty,
+    }))
+    expect(markDirty).toHaveBeenCalledTimes(1)
+    expect(isPageFile).toHaveBeenCalledWith('/project/src/app.vue')
+    expect(resolved).toEqual({
+      isPage: true,
+      isApp: true,
+      pageMatcher: expect.objectContaining({
+        isPageFile,
+        markDirty,
+      }),
+    })
+  })
+
+  it('reuses existing page matcher and skips page matching in lib mode', async () => {
+    const setPageMatcher = vi.fn()
+    const existingPageMatcher = {
+      isPageFile: vi.fn(async () => false),
+      markDirty: vi.fn(),
+    }
+    const createPageMatcher = vi.fn()
+
+    await expect(resolveTransformEntryFlags({
+      pageMatcher: existingPageMatcher,
+      setPageMatcher,
+      createPageMatcher,
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        weappLibConfig: {
+          enabled: true,
+        },
+      } as any,
+      scanService: undefined,
+      scanDirty: false,
+      filename: '/project/src/pages/home/index.vue',
+    })).resolves.toEqual({
+      isPage: false,
+      isApp: false,
+      pageMatcher: existingPageMatcher,
+    })
+
+    expect(createPageMatcher).not.toHaveBeenCalled()
+    expect(setPageMatcher).not.toHaveBeenCalled()
+    expect(existingPageMatcher.isPageFile).not.toHaveBeenCalled()
+    expect(existingPageMatcher.markDirty).not.toHaveBeenCalled()
   })
 })

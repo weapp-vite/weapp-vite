@@ -13,7 +13,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, isAppEntry, loadTransformSource, preloadTransformSfcStyleBlocks, registerVueTemplateToken, resolveVueOutputBase } from './shared'
+import { finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, loadTransformSource, preloadTransformSfcStyleBlocks, registerVueTemplateToken, resolveTransformEntryFlags, resolveVueOutputBase } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -95,41 +95,15 @@ export async function transformVueLikeFile(options: {
       })
     })
 
-    const libModeEnabled = configService.weappLibConfig?.enabled
-    let isPage = false
-    let isApp = false
-    if (!libModeEnabled) {
-      const scanService = ctx.scanService
-      const currentPageMatcher = pageMatcher ?? createPageEntryMatcher({
-        srcRoot: configService.absoluteSrcRoot,
-        loadEntries: async () => {
-          if (!scanService) {
-            return { pages: [], subPackages: [], pluginPages: [] }
-          }
-          const appEntry = await scanService.loadAppEntry()
-          const subPackages = scanService.loadSubPackages().map(meta => ({
-            root: meta.subPackage.root,
-            pages: meta.subPackage.pages,
-          }))
-          const pluginPages = scanService.pluginJson
-            ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
-            : []
-          return {
-            pages: appEntry.json?.pages ?? [],
-            subPackages,
-            pluginPages,
-          }
-        },
-        warn: (message: string) => logger.warn(message),
-      })
-
-      setPageMatcher(currentPageMatcher)
-      if (ctx.runtimeState.scan.isDirty) {
-        currentPageMatcher.markDirty()
-      }
-      isPage = await measureStage('matchPageEntry', async () => await currentPageMatcher.isPageFile(filename))
-      isApp = isAppEntry(filename)
-    }
+    const { isPage, isApp } = await measureStage('matchPageEntry', async () => await resolveTransformEntryFlags({
+      pageMatcher,
+      setPageMatcher,
+      createPageMatcher: createPageEntryMatcher,
+      configService,
+      scanService: ctx.scanService,
+      scanDirty: ctx.runtimeState.scan.isDirty,
+      filename,
+    }))
 
     let transformedSource = source
     if (isApp) {
