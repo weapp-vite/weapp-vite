@@ -4,7 +4,7 @@ import { pillButtonStyles } from '../utils/styles'
 import AppInsetPanel from './AppInsetPanel.vue'
 import AppMetaLabel from './AppMetaLabel.vue'
 
-defineProps<{
+const props = defineProps<{
   searchQuery: string
   presetDescription: string
   filterPresets: DashboardKeyOption[]
@@ -23,6 +23,14 @@ const emit = defineEmits<{
   'update:eventSourceFilter': [value: string]
   'applyPreset': [key: string]
 }>()
+
+function getPresetClassName(): string {
+  return pillButtonStyles({ kind: 'theme', active: false })
+}
+
+function getOptionClassName(activeValue: string, optionValue: string): string {
+  return pillButtonStyles({ kind: 'theme', active: activeValue === optionValue })
+}
 </script>
 
 <template>
@@ -53,7 +61,7 @@ const emit = defineEmits<{
             <button
               v-for="preset in filterPresets"
               :key="preset.key"
-              :class="pillButtonStyles({ kind: 'theme', active: false })"
+              :class="getPresetClassName()"
               @click="emit('applyPreset', preset.key)"
             >
               {{ preset.label }}
@@ -72,7 +80,7 @@ const emit = defineEmits<{
             <button
               v-for="option in eventKindOptions"
               :key="option.value"
-              :class="pillButtonStyles({ kind: 'theme', active: eventKindFilter === option.value })"
+              :class="getOptionClassName(props.eventKindFilter, option.value)"
               @click="emit('update:eventKindFilter', option.value)"
             >
               {{ option.label }}
@@ -88,7 +96,7 @@ const emit = defineEmits<{
             <button
               v-for="option in eventLevelOptions"
               :key="option.value"
-              :class="pillButtonStyles({ kind: 'theme', active: eventLevelFilter === option.value })"
+              :class="getOptionClassName(props.eventLevelFilter, option.value)"
               @click="emit('update:eventLevelFilter', option.value)"
             >
               {{ option.label }}
@@ -104,7 +112,7 @@ const emit = defineEmits<{
             <button
               v-for="option in eventSourceOptions"
               :key="option.value"
-              :class="pillButtonStyles({ kind: 'theme', active: eventSourceFilter === option.value })"
+              :class="getOptionClassName(props.eventSourceFilter, option.value)"
               @click="emit('update:eventSourceFilter', option.value)"
             >
               {{ option.label }}
