@@ -1,5 +1,6 @@
 import type { ConfigService } from '../config/types'
 import path from 'pathe'
+import { normalizeWatchPath } from '../utils/path'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
 const VIRTUAL_MODULE_ID = 'virtual:weapp-vite-auto-routes'
@@ -79,6 +80,31 @@ export function createAutoRoutesSidecarWatcher(
 ) {
   return {
     close: () => void watcher.close(),
+  }
+}
+
+/**
+ * 向插件上下文注册 auto-routes 相关 watch 目标，忽略单个 addWatchFile 失败。
+ */
+export function addAutoRoutesWatchTargets(
+  pluginCtx: { addWatchFile?: (id: string) => void },
+  targets: {
+    files: Iterable<string>
+    directories: Iterable<string>
+  },
+) {
+  for (const file of targets.files) {
+    try {
+      pluginCtx.addWatchFile?.(normalizeWatchPath(file))
+    }
+    catch { }
+  }
+
+  for (const dir of targets.directories) {
+    try {
+      pluginCtx.addWatchFile?.(normalizeWatchPath(dir))
+    }
+    catch { }
   }
 }
 

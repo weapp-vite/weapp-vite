@@ -9,8 +9,8 @@ import {
   resolveAutoRoutesMatcherContext,
 } from '../runtime/autoRoutesPlugin/shared'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
-import { normalizeWatchPath } from '../utils/path'
 import {
+  addAutoRoutesWatchTargets,
   collectAutoRoutesWatchDirs,
   createAutoRoutesSidecarWatcher,
   isAutoRoutesWatchFile,
@@ -37,22 +37,6 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     autoRoutesAliasTargets.clear()
     for (const target of resolveAutoRoutesAliasTargets(ctx.configService?.packageInfo?.rootPath)) {
       autoRoutesAliasTargets.add(target)
-    }
-  }
-
-  const addWatchTargets = (pluginCtx: Pick<Plugin, 'name'> & { addWatchFile?: (id: string) => void }) => {
-    for (const file of service.getWatchFiles()) {
-      try {
-        pluginCtx.addWatchFile?.(normalizeWatchPath(file))
-      }
-      catch { }
-    }
-
-    for (const dir of service.getWatchDirectories()) {
-      try {
-        pluginCtx.addWatchFile?.(normalizeWatchPath(dir))
-      }
-      catch { }
     }
   }
 
@@ -163,7 +147,10 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
 
       await service.ensureFresh()
       if (isAutoRoutesWatchMode(ctx.configService)) {
-        addWatchTargets(this as any)
+        addAutoRoutesWatchTargets(this as any, {
+          files: service.getWatchFiles(),
+          directories: service.getWatchDirectories(),
+        })
       }
       startRouteFileWatcher()
 
