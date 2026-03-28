@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import AppActivityTimelineCard from '../features/dashboard/components/AppActivityTimelineCard.vue'
-import AppDiagnosticsCard from '../features/dashboard/components/AppDiagnosticsCard.vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppEventFilterPanel from '../features/dashboard/components/AppEventFilterPanel.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vue'
+import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
 import AppRuntimeEventListItem from '../features/dashboard/components/AppRuntimeEventListItem.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
+import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import AppTagList from '../features/dashboard/components/AppTagList.vue'
+import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventSource } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
@@ -203,7 +204,39 @@ watch(filteredRuntimeEvents, (events) => {
 
 <template>
   <div class="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(21rem,0.85fr)]">
-    <AppActivityTimelineCard :items="activityItems" />
+    <AppSurfaceCard tone="strong" padding="md">
+      <AppSectionHeading
+        eyebrow="Timeline"
+        title="活动流与增强节奏"
+        description="这一页先承载假数据时间线，后续最适合接入 dev server 事件、构建阶段、HMR 推送和 CLI 诊断结果。"
+      />
+      <ol class="mt-5 grid gap-3">
+        <li
+          v-for="item in activityItems"
+          :key="`${item.time}-${item.title}`"
+          class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
+        >
+          <div class="flex items-start gap-3">
+            <span class="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
+              <span class="h-5 w-5">
+                <DashboardIcon :name="item.tone === 'live' ? 'status-live' : 'metric-time'" />
+              </span>
+            </span>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <strong class="tracking-tight">{{ item.title }}</strong>
+                <span class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                  {{ item.time }}
+                </span>
+              </div>
+              <p class="mt-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                {{ item.summary }}
+              </p>
+            </div>
+          </div>
+        </li>
+      </ol>
+    </AppSurfaceCard>
 
     <div class="grid gap-3">
       <AppSurfaceCard
@@ -222,7 +255,32 @@ watch(filteredRuntimeEvents, (events) => {
         </div>
       </AppSurfaceCard>
 
-      <AppDiagnosticsCard :items="diagnostics" />
+      <AppSurfaceCard
+        eyebrow="Diagnostics"
+        title="当前诊断队列"
+        description="这里不是产品逻辑页，而是 dashboard 未来最需要的第二层能力: 把运行状态和建议动作结构化展示。"
+        icon-name="metric-health"
+      >
+        <ul class="grid gap-2">
+          <li
+            v-for="item in diagnostics"
+            :key="item.label"
+            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="font-medium">
+                  {{ item.label }}
+                </p>
+                <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                  {{ item.detail }}
+                </p>
+              </div>
+              <AppRuntimeBadge :label="item.status" tone="info" />
+            </div>
+          </li>
+        </ul>
+      </AppSurfaceCard>
 
       <AppSurfaceCard
         eyebrow="Event Feed"
