@@ -16,6 +16,21 @@ export function isSkippableResolvedId(id: string | undefined | null) {
   return id.startsWith('\0') || id.startsWith('node:')
 }
 
+export function resolveFsResolvedIdNormalizeOptions(
+  options?: NormalizeFsResolvedIdOptions & { normalize?: NormalizeViteIdOptions },
+) {
+  const normalizeOptions: NormalizeViteIdOptions = {
+    stripVueVirtualPrefix: true,
+  }
+  if (options?.normalize) {
+    Object.assign(normalizeOptions, options.normalize)
+  }
+  if (options?.stripLeadingNullByte) {
+    normalizeOptions.stripLeadingNullByte = true
+  }
+  return normalizeOptions
+}
+
 /**
  * 将 Vite/Rolldown resolve 出来的 id 归一化为可用于 fs 读取/判断的路径形式。
  *
@@ -31,14 +46,5 @@ export function normalizeFsResolvedId(
   id: string,
   options?: NormalizeFsResolvedIdOptions & { normalize?: NormalizeViteIdOptions },
 ) {
-  const normalizeOptions: NormalizeViteIdOptions = {
-    stripVueVirtualPrefix: true,
-  }
-  if (options?.normalize) {
-    Object.assign(normalizeOptions, options.normalize)
-  }
-  if (options?.stripLeadingNullByte) {
-    normalizeOptions.stripLeadingNullByte = true
-  }
-  return normalizeViteId(id, normalizeOptions)
+  return normalizeViteId(id, resolveFsResolvedIdNormalizeOptions(options))
 }
