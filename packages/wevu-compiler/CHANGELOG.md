@@ -1,5 +1,12 @@
 # @wevu/compiler
 
+## 6.12.0
+
+### Patch Changes
+
+- 📦 **Dependencies** [`c46de52`](https://github.com/weapp-vite/weapp-vite/commit/c46de52e65ed10146784ab583580600daa4320bf)
+  → `@weapp-vite/ast@6.12.0`, `rolldown-require@2.0.12`
+
 ## 6.11.9
 
 ### Patch Changes
