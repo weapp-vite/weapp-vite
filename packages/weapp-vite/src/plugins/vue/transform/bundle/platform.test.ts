@@ -136,6 +136,16 @@ describe('bundle platform helpers', () => {
     expect(resolveJsonMock).toHaveBeenCalledTimes(1)
   })
 
+  it('falls back to original vue config when normalization input is invalid', () => {
+    expect(normalizeVueConfigForPlatform('{', {
+      platform: 'alipay',
+      dependencies: {
+        dayjs: '^1.11.0',
+      },
+      alipayNpmMode: 'node_modules',
+    })).toBe('{')
+  })
+
   it('transforms vue template through shared platform wxml pipeline', () => {
     expect(transformVueTemplateForPlatform('<view />', {
       platform: 'alipay',
@@ -171,6 +181,18 @@ describe('bundle platform helpers', () => {
     })).toBe('normalized:<view />')
   })
 
+  it('falls back to original vue template when platform template transform throws', () => {
+    handleWxmlMock.mockImplementation(() => {
+      throw new Error('transform failed')
+    })
+
+    expect(normalizeVueTemplateForPlatform('<view />', {
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })).toBe('<view />')
+  })
+
   it('resolves alipay generic placeholder base from page-relative path', () => {
     expect(resolveAlipayGenericPlaceholderBase('pages/demo/index')).toBe(`pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`)
     expect(resolveAlipayGenericPlaceholderBase('generic-host')).toBe(ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2))
@@ -198,6 +220,18 @@ describe('bundle platform helpers', () => {
         },
       },
     }))).toBe(false)
+
+    expect(shouldEmitAlipayGenericPlaceholder(undefined)).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder('{')).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder(JSON.stringify([]))).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder(JSON.stringify({
+      componentGenerics: [],
+    }))).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder(JSON.stringify({
+      componentGenerics: {
+        list: 'bad-value',
+      },
+    }))).toBe(false)
   })
 
   it('resolves generic placeholder base only for platforms that need it', () => {
@@ -217,6 +251,24 @@ describe('bundle platform helpers', () => {
       'pages/demo/index',
       configSource,
       'weapp',
+    )).toBeUndefined()
+
+    expect(resolveGenericPlaceholderBaseForPlatform(
+      'pages/demo/index',
+      undefined,
+      'alipay',
+    )).toBeUndefined()
+
+    expect(resolveGenericPlaceholderBaseForPlatform(
+      'pages/demo/index',
+      JSON.stringify({
+        componentGenerics: {
+          list: {
+            default: './custom',
+          },
+        },
+      }),
+      'alipay',
     )).toBeUndefined()
   })
 
@@ -362,6 +414,28 @@ describe('bundle platform helpers', () => {
     )
   })
 
+  it('falls back to config-driven placeholder side effects when resolved base is absent', () => {
+    emitPlatformConfigSideEffects({}, {
+      pluginCtx: { emitFile: vi.fn() },
+      relativeBase: 'pages/demo/index',
+      config: '{"componentGenerics":{"list":true}}',
+      outputExtensions: {
+        wxml: 'axml',
+        json: 'json',
+        js: 'mjs',
+      } as any,
+      platform: 'alipay',
+    })
+
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      `pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+      '<view />',
+      'axml',
+    )
+  })
+
   it('prepares platform config asset through normalized config and resolved side effects', () => {
     const config = JSON.stringify({
       componentGenerics: {
@@ -413,6 +487,12 @@ describe('bundle platform helpers', () => {
       components: ['demo-card'],
     })
     expect(setWxmlComponentsMap).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', ['demo-card'])
+  })
+
+  it('skips platform template analysis when wxml service is unavailable', () => {
+    expect(() => {
+      trackPlatformTemplateAnalysis({} as any, '/project/src/pages/demo/index.vue', '<view />')
+    }).not.toThrow()
   })
 
   it('emits platform template assets even when template analysis fails', () => {
