@@ -1,7 +1,6 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import chokidar from 'chokidar'
-import path from 'pathe'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import {
@@ -12,6 +11,11 @@ import {
 } from '../runtime/autoRoutesPlugin/shared'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { normalizeWatchPath } from '../utils/path'
+import {
+  collectAutoRoutesWatchDirs,
+  isAutoRoutesWatchFile,
+  isAutoRoutesWatchMode,
+} from './autoRoutes.shared'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
 const VIRTUAL_MODULE_ID = 'virtual:weapp-vite-auto-routes'
@@ -27,11 +31,6 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   let resolvedConfig: ResolvedConfig | undefined
   const autoRoutesAliasTargets = new Set<string>()
   let routeWatcherStarted = false
-
-  const isWatchMode = () => {
-    const configService = ctx.configService
-    return Boolean(configService?.isDev || configService?.inlineConfig?.build?.watch)
-  }
 
   const refreshAutoRoutesAliasTargets = () => {
     autoRoutesAliasTargets.clear()
@@ -97,28 +96,17 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       return
     }
 
-    const srcRoot = configService.absoluteSrcRoot
     const allowedExtensions = new Set(vueExtensions.map(ext => `.${ext}`))
-    const watchDirs = new Set<string>()
+    const watchDirs = collectAutoRoutesWatchDirs(
+      service.getWatchDirectories(),
+      resolvedMatcher.getWatchRoots(configService.absoluteSrcRoot),
+    )
 
-    for (const dir of service.getWatchDirectories()) {
-      watchDirs.add(dir)
-    }
-
-    for (const dir of resolvedMatcher.getWatchRoots(srcRoot)) {
-      watchDirs.add(dir)
-    }
-
-    if (watchDirs.size === 0) {
+    if (watchDirs.length === 0) {
       return
     }
 
-    const isRouteVueFile = (filePath: string) => {
-      const ext = path.extname(filePath)
-      return allowedExtensions.has(ext) && isPagesRelatedPath(filePath)
-    }
-
-    const watcher = chokidar.watch([...watchDirs], createSidecarWatchOptions(configService, {
+    const watcher = chokidar.watch(watchDirs, createSidecarWatchOptions(configService, {
       ignoreInitial: true,
       persistent: true,
       awaitWriteFinish: {
@@ -128,7 +116,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     }))
 
     watcher.on('add', (filePath) => {
-      if (!isRouteVueFile(filePath)) {
+      if (!isAutoRoutesWatchFile(filePath, allowedExtensions, isPagesRelatedPath)) {
         return
       }
       logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
@@ -136,7 +124,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     })
 
     watcher.on('unlink', (filePath) => {
-      if (!isRouteVueFile(filePath)) {
+      if (!isAutoRoutesWatchFile(filePath, allowedExtensions, isPagesRelatedPath)) {
         return
       }
       logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
@@ -185,7 +173,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       }
 
       await service.ensureFresh()
-      if (isWatchMode()) {
+      if (isAutoRoutesWatchMode(ctx.configService)) {
         addWatchTargets(this as any)
       }
       startRouteFileWatcher()
