@@ -6,6 +6,7 @@ import {
   isScriptModuleImportAttr,
   isScriptModuleTagName,
   normalizeImportSjsAttributes,
+  normalizeScriptModuleExtension,
   resolveScriptModuleTagByPlatform,
   resolveScriptModuleTagName,
   shouldNormalizeScriptModuleAttributes,
@@ -28,6 +29,9 @@ describe('wxmlScriptModule utils', () => {
 
   it('exposes shared script module tag metadata', () => {
     expect(getScriptModuleTagNames()).toEqual(['wxs', 'sjs', 'import-sjs'])
+    expect(normalizeScriptModuleExtension()).toBeUndefined()
+    expect(normalizeScriptModuleExtension('.sjs')).toBe('sjs')
+    expect(normalizeScriptModuleExtension('wxs')).toBe('wxs')
     expect(getDefaultScriptModuleTagByExtension()).toBe('wxs')
     expect(getDefaultScriptModuleTagByExtension('.sjs')).toBe('sjs')
     expect(getDefaultScriptModuleTagByExtension('unknown')).toBe('wxs')
@@ -37,6 +41,7 @@ describe('wxmlScriptModule utils', () => {
     expect(isScriptModuleTagName('wxs')).toBe(true)
     expect(isScriptModuleTagName('import-sjs')).toBe(true)
     expect(isScriptModuleTagName('include')).toBe(false)
+    expect(getScriptModuleImportAttrs('')).toBeUndefined()
     expect(getScriptModuleImportAttrs('wxs')).toEqual(['src'])
     expect(getScriptModuleImportAttrs('import-sjs')).toEqual(['from'])
     expect(getScriptModuleImportAttrs('include')).toBeUndefined()
