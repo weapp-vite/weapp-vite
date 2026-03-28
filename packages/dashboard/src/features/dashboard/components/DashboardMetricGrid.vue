@@ -1,13 +1,23 @@
 <script setup lang="ts">
 import type { DashboardMetricCard, SummaryMetric } from '../types'
+import { computed } from 'vue'
 import { formatPackageType } from '../utils/format'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
-defineProps<{
+const props = defineProps<{
   cards: DashboardMetricCard[]
   packageTypeSummary: SummaryMetric[]
 }>()
+
+interface MetricSummaryTag {
+  label: string
+  value: string
+}
+
+interface DashboardMetricCardRow extends DashboardMetricCard {
+  packageTypeTags: MetricSummaryTag[]
+}
 
 function getMetricCardClassName(card: DashboardMetricCard): string[] {
   return [
@@ -15,12 +25,22 @@ function getMetricCardClassName(card: DashboardMetricCard): string[] {
     card.wide ? 'xl:col-span-2' : 'xl:col-span-1',
   ]
 }
+
+const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(card => ({
+  ...card,
+  packageTypeTags: card.label === '总产物体积'
+    ? props.packageTypeSummary.map(item => ({
+        label: formatPackageType(item.label),
+        value: String(item.value),
+      }))
+    : [],
+})))
 </script>
 
 <template>
   <section class="grid gap-2.5 md:grid-cols-2 xl:grid-cols-6">
     <article
-      v-for="card in cards"
+      v-for="card in metricCardRows"
       :key="card.label"
       :class="getMetricCardClassName(card)"
     >
@@ -39,13 +59,13 @@ function getMetricCardClassName(card: DashboardMetricCard): string[] {
           </span>
         </span>
       </div>
-      <div v-if="card.label === '总产物体积'" class="mt-3 flex flex-wrap gap-1.5">
+      <div v-if="card.packageTypeTags.length > 0" class="mt-3 flex flex-wrap gap-1.5">
         <span
-          v-for="item in packageTypeSummary"
+          v-for="item in card.packageTypeTags"
           :key="item.label"
           class="rounded-full border border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-accent-soft)] px-3 py-1 text-xs text-[color:var(--dashboard-text)]"
         >
-          {{ formatPackageType(item.label) }} {{ item.value }}
+          {{ item.label }} {{ item.value }}
         </span>
       </div>
     </article>
