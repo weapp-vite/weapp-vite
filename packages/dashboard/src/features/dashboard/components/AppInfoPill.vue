@@ -1,21 +1,18 @@
 <script setup lang="ts">
 import type { DashboardInfoPillItem } from '../types'
-import { computed } from 'vue'
 import DashboardIcon from './DashboardIcon.vue'
 
-const props = defineProps<{
+defineProps<{
   label: DashboardInfoPillItem['label']
   iconName?: DashboardInfoPillItem['iconName']
   uppercase?: boolean
 }>()
-
-const textClassName = computed(() => props.uppercase ? 'tracking-[0.18em] uppercase' : undefined)
 </script>
 
 <template>
   <span
     class="inline-flex items-center rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-2.5 py-1 text-xs font-medium text-[color:var(--dashboard-text-soft)]"
-    :class="textClassName"
+    :class="uppercase ? 'tracking-[0.18em] uppercase' : undefined"
   >
     <span
       v-if="iconName"
