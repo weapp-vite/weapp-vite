@@ -1,7 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
-import { registerVueTemplateToken } from './shared'
+import { registerVueTemplateToken, resolveVueOutputBase } from './shared'
 
 describe('vue transform shared helpers', () => {
+  it('resolves vue output base from file paths', () => {
+    expect(resolveVueOutputBase({
+      relativeOutputPath: (value: string) => `dist/${value}`,
+    } as any, '/project/src/pages/home/index.vue')).toBe('dist//project/src/pages/home/index')
+
+    expect(resolveVueOutputBase({
+      relativeOutputPath: (value: string) => value,
+    } as any, '/project/src/pages/home/index')).toBe('/project/src/pages/home/index')
+  })
+
   it('registers template tokens when wxml service is available', () => {
     const analyze = vi.fn(() => ({
       components: {

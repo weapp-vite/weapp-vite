@@ -2,6 +2,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import { performance } from 'node:perf_hooks'
+// eslint-disable-next-line e18e/ban-dependencies -- 当前 transform 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
 import path from 'pathe'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
@@ -20,7 +21,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotChunks } from '../scopedSlot'
 import { buildWeappVueStyleRequest } from '../styleRequest'
-import { isAppEntry, registerNativeLayoutChunksForEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub } from './shared'
+import { isAppEntry, registerNativeLayoutChunksForEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
 
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
@@ -259,11 +260,7 @@ export async function transformVueLikeFile(options: {
     }
     compilationCache.set(filename, { result, source, isPage })
 
-    const relativeBase = configService.relativeOutputPath(
-      filename.endsWith('.vue') || filename.endsWith('.jsx') || filename.endsWith('.tsx')
-        ? filename.slice(0, filename.lastIndexOf('.'))
-        : filename,
-    )
+    const relativeBase = resolveVueOutputBase(configService, filename)
     if (relativeBase) {
       await measureStage('emitScopedSlots', async () => {
         emitScopedSlotChunks(pluginCtx, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
