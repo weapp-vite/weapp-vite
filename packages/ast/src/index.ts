@@ -15,6 +15,7 @@ export {
   getStaticPropertyName,
   mapConstructorName,
   mayContainComponentPropsShape,
+  resolveTypeFromNode,
 } from './operations/componentProps'
 export type { ComponentPropMap } from './operations/componentProps'
 export { collectFeatureFlagsFromCode, mayContainFeatureFlagHints } from './operations/featureFlags'

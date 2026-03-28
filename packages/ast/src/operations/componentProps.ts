@@ -39,7 +39,7 @@ export function mapConstructorName(name: string) {
   return CONSTRUCTOR_TYPE_MAP[normalized] ?? 'any'
 }
 
-function resolveTypeFromNode(node: any): string {
+export function resolveTypeFromNode(node: any): string {
   if (!node) {
     return 'any'
   }

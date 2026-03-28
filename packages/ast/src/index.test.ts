@@ -41,6 +41,7 @@ import {
   resolveOxcRenderExpression,
   resolveRenderableExpression,
   resolveRenderExpressionFromComponentOptions,
+  resolveTypeFromNode,
   toStaticObjectKey,
   unwrapOxcExpression,
   unwrapTypeScriptExpression,
@@ -239,6 +240,23 @@ export function useCounter() {
     expect(mapConstructorName('String')).toBe('string')
     expect(mapConstructorName('BooleanConstructor')).toBe('boolean')
     expect(mapConstructorName('CustomCtor')).toBe('any')
+    expect(resolveTypeFromNode({ type: 'Identifier', name: 'String' })).toBe('string')
+    expect(resolveTypeFromNode({ type: 'StringLiteral', value: 'Number' })).toBe('number')
+    expect(resolveTypeFromNode({
+      type: 'MemberExpression',
+      property: { type: 'Identifier', name: 'Boolean' },
+    })).toBe('boolean')
+    expect(resolveTypeFromNode({
+      type: 'TSAsExpression',
+      expression: { type: 'Identifier', name: 'ArrayConstructor' },
+    })).toBe('any[]')
+    expect(resolveTypeFromNode({
+      type: 'ArrayExpression',
+      elements: [
+        { type: 'Identifier', name: 'String' },
+        { type: 'Identifier', name: 'Number' },
+      ],
+    })).toBe('string | number')
     expect(getStaticPropertyName({ type: 'Identifier', name: 'title' })).toBe('title')
     expect(getStaticPropertyName({ type: 'StringLiteral', value: 'count' })).toBe('count')
     expect(getStaticPropertyName({ type: 'NumericLiteral', value: 2 })).toBe('2')
