@@ -21,7 +21,7 @@ export function mayContainFeatureFlagHints<TFeature extends string>(
   return Object.keys(hookToFeature).some(hookName => code.includes(hookName))
 }
 
-function collectWithBabel<TFeature extends string>(
+export function collectFeatureFlagsWithBabel<TFeature extends string>(
   code: string,
   moduleId: string,
   hookToFeature: Record<string, TFeature>,
@@ -102,7 +102,7 @@ function collectWithBabel<TFeature extends string>(
   return enabled
 }
 
-function collectWithOxc<TFeature extends string>(
+export function collectFeatureFlagsWithOxc<TFeature extends string>(
   code: string,
   moduleId: string,
   hookToFeature: Record<string, TFeature>,
@@ -184,8 +184,8 @@ export function collectFeatureFlagsFromCode<TFeature extends string>(
 
   try {
     return engine === 'oxc'
-      ? collectWithOxc(code, options.moduleId, options.hookToFeature)
-      : collectWithBabel(code, options.moduleId, options.hookToFeature)
+      ? collectFeatureFlagsWithOxc(code, options.moduleId, options.hookToFeature)
+      : collectFeatureFlagsWithBabel(code, options.moduleId, options.hookToFeature)
   }
   catch {
     return new Set<TFeature>()
