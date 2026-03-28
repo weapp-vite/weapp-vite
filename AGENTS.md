@@ -150,6 +150,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - Run targeted unit + e2e verification and confirm the bug is fixed before opening review.
   - Open a PR back to the mainline branch after local verification is complete.
   - PR title, PR body, and follow-up review comments for this repository should default to Chinese unless the user explicitly requests another language.
+  - PR title, PR body, and follow-up review comments must not contain local absolute filesystem paths, usernames, home-directory paths, machine-specific environment variable values, tokens, email addresses, or any other personal/privacy-sensitive information. When referencing commands or files in PR text, rewrite them as repo-relative paths or generic commands that are reproducible in CI.
   - Ensure the PR CI/CD checks are all passing before considering the fix ready to merge.
   - After the PR is merged, delete the temporary local worktree used for that issue.
 - All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
