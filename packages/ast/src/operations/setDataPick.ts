@@ -79,7 +79,7 @@ export function extractTemplateExpressions(template: string): string[] {
   return expressions
 }
 
-function collectIdentifiersFromExpression(expression: string): Set<string> {
+export function collectIdentifiersFromExpression(expression: string): Set<string> {
   const collected = new Set<string>()
   let ast: t.File | undefined
   try {
@@ -167,7 +167,7 @@ export function collectPatternBindingNames(node: any, bindings: Set<string>) {
   }
 }
 
-function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string> {
+export function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string> {
   const collected = new Set<string>()
   let ast: any
 
