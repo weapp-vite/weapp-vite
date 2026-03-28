@@ -278,7 +278,7 @@ export function collectPageScrollInspectionWithOxc(node: any): PageScrollInspect
   return inspection
 }
 
-function collectWithOxc(
+export function collectOnPageScrollWarningsWithOxc(
   code: string,
   filename: string,
 ): string[] {
@@ -384,37 +384,11 @@ function collectWithOxc(
   return warnings
 }
 
-/**
- * 静态检测 onPageScroll 中的常见性能风险并返回告警文案。
- */
-export function collectOnPageScrollPerformanceWarnings(
+export function collectOnPageScrollWarningsWithBabel(
   code: string,
   filename: string,
-  options?: {
-    engine?: AstEngineName
-  },
 ): string[] {
-  if (!code.includes('onPageScroll')) {
-    return []
-  }
-
-  if (options?.engine === 'oxc') {
-    try {
-      return collectWithOxc(code, filename)
-    }
-    catch {
-      return []
-    }
-  }
-
-  let ast: t.File
-  try {
-    ast = parseJsLike(code)
-  }
-  catch {
-    return []
-  }
-
+  const ast = parseJsLike(code)
   const onPageScrollHookNames = new Set<string>(['onPageScroll'])
   const namespaceImports = new Set<string>()
   for (const statement of ast.program.body) {
@@ -516,4 +490,35 @@ export function collectOnPageScrollPerformanceWarnings(
   })
 
   return warnings
+}
+
+/**
+ * 静态检测 onPageScroll 中的常见性能风险并返回告警文案。
+ */
+export function collectOnPageScrollPerformanceWarnings(
+  code: string,
+  filename: string,
+  options?: {
+    engine?: AstEngineName
+  },
+): string[] {
+  if (!code.includes('onPageScroll')) {
+    return []
+  }
+
+  if (options?.engine === 'oxc') {
+    try {
+      return collectOnPageScrollWarningsWithOxc(code, filename)
+    }
+    catch {
+      return []
+    }
+  }
+
+  try {
+    return collectOnPageScrollWarningsWithBabel(code, filename)
+  }
+  catch {
+    return []
+  }
 }

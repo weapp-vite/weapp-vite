@@ -50,6 +50,8 @@ export type {
 } from './operations/jsxAutoComponents'
 export {
   collectOnPageScrollPerformanceWarnings,
+  collectOnPageScrollWarningsWithBabel,
+  collectOnPageScrollWarningsWithOxc,
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
   createLineStartOffsets,
