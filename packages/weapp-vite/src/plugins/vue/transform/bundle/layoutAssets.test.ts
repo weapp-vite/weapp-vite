@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, resolveVueLayoutAssetOptions } from './layoutAssets'
+import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view />'))
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
@@ -93,6 +93,44 @@ describe('resolveVueLayoutAssetOptions', () => {
       } as any,
       layoutBasePath: 'layouts/default/index',
       outputExtensions: undefined,
+    })).toBeUndefined()
+  })
+
+  it('resolves vue layout script fallback state from output options and bundle state', () => {
+    expect(resolveVueLayoutScriptFallbackState({
+      bundle: {},
+      layoutFilePath: '/project/layouts/vue-default/index.vue',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })).toEqual({
+      resolvedOptions: {
+        relativeBase: 'dist//project/layouts/vue-default/index',
+        templateExtension: 'wxml',
+        styleExtension: 'wxss',
+        jsonExtension: 'json',
+        scriptExtension: 'mjs',
+        scriptModuleExtension: 'wxs',
+      },
+      scriptFileName: 'dist//project/layouts/vue-default/index.mjs',
+    })
+  })
+
+  it('returns undefined for vue layout script fallback when asset already exists in bundle', () => {
+    expect(resolveVueLayoutScriptFallbackState({
+      bundle: {
+        'dist//project/layouts/vue-default/index.mjs': { type: 'chunk' },
+      },
+      layoutFilePath: '/project/layouts/vue-default/index.vue',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
     })).toBeUndefined()
   })
 

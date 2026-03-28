@@ -124,6 +124,35 @@ export function emitScriptlessComponentJsFallbackIfMissing(options: {
   ensureScriptlessComponentAsset(pluginCtx, bundle, relativeBase, scriptExtension)
 }
 
+export function resolveVueLayoutScriptFallbackState(options: {
+  bundle: Record<string, any>
+  layoutFilePath: string
+  configService: NonNullable<CompilerContext['configService']>
+  outputExtensions: OutputExtensions | undefined
+}) {
+  const resolvedOptions = resolveVueLayoutAssetOptions({
+    configService: options.configService,
+    layoutBasePath: getEntryBaseName(options.layoutFilePath),
+    outputExtensions: options.outputExtensions,
+  })
+  if (!resolvedOptions) {
+    return undefined
+  }
+
+  const scriptFileName = resolveScriptlessComponentFileName(
+    resolvedOptions.relativeBase,
+    resolvedOptions.scriptExtension,
+  )
+  if (options.bundle[scriptFileName]) {
+    return undefined
+  }
+
+  return {
+    resolvedOptions,
+    scriptFileName,
+  }
+}
+
 export async function emitVueLayoutScriptFallbackIfNeeded(options: {
   pluginCtx: any
   bundle: Record<string, any>
@@ -143,22 +172,17 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     outputExtensions,
   } = options
 
-  const resolvedOptions = resolveVueLayoutAssetOptions({
+  const fallbackState = resolveVueLayoutScriptFallbackState({
+    bundle,
+    layoutFilePath,
     configService,
-    layoutBasePath: getEntryBaseName(layoutFilePath),
     outputExtensions,
   })
-  if (!resolvedOptions) {
+  if (!fallbackState) {
     return
   }
 
-  const scriptFileName = resolveScriptlessComponentFileName(
-    resolvedOptions.relativeBase,
-    resolvedOptions.scriptExtension,
-  )
-  if (bundle[scriptFileName]) {
-    return
-  }
+  const { resolvedOptions } = fallbackState
 
   const source = await fs.readFile(layoutFilePath, 'utf-8')
   const result = await compileVueLikeFile({
