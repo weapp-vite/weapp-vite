@@ -48,6 +48,27 @@ export function consumeNamespaceFeatureFlag<TFeature extends string>(
   }
 }
 
+export function registerNamedFeatureFlagLocal<TFeature extends string>(
+  namedHookLocals: Map<string, TFeature>,
+  hookToFeature: Record<string, TFeature>,
+  importedName: string,
+  localName: string,
+) {
+  const matched = hookToFeature[importedName]
+  if (matched) {
+    namedHookLocals.set(localName, matched)
+  }
+}
+
+export function registerNamespaceFeatureFlagLocal(
+  namespaceLocals: Set<string>,
+  localName: string | undefined,
+) {
+  if (localName) {
+    namespaceLocals.add(localName)
+  }
+}
+
 export function collectFeatureFlagsWithBabel<TFeature extends string>(
   code: string,
   moduleId: string,
@@ -63,13 +84,10 @@ export function collectFeatureFlagsWithBabel<TFeature extends string>(
     }
     for (const specifier of stmt.specifiers) {
       if (t.isImportSpecifier(specifier) && t.isIdentifier(specifier.imported)) {
-        const matched = hookToFeature[specifier.imported.name]
-        if (matched) {
-          namedHookLocals.set(specifier.local.name, matched)
-        }
+        registerNamedFeatureFlagLocal(namedHookLocals, hookToFeature, specifier.imported.name, specifier.local.name)
       }
       else if (t.isImportNamespaceSpecifier(specifier)) {
-        namespaceLocals.add(specifier.local.name)
+        registerNamespaceFeatureFlagLocal(namespaceLocals, specifier.local.name)
       }
     }
   }
@@ -130,13 +148,15 @@ export function collectFeatureFlagsWithOxc<TFeature extends string>(
     }
     for (const specifier of statement.specifiers ?? []) {
       if (specifier.type === 'ImportSpecifier' && specifier.imported?.type === 'Identifier') {
-        const matched = hookToFeature[specifier.imported.name]
-        if (matched && specifier.local?.type === 'Identifier') {
-          namedHookLocals.set(specifier.local.name, matched)
+        if (specifier.local?.type === 'Identifier') {
+          registerNamedFeatureFlagLocal(namedHookLocals, hookToFeature, specifier.imported.name, specifier.local.name)
         }
       }
-      else if (specifier.type === 'ImportNamespaceSpecifier' && specifier.local?.type === 'Identifier') {
-        namespaceLocals.add(specifier.local.name)
+      else if (specifier.type === 'ImportNamespaceSpecifier') {
+        registerNamespaceFeatureFlagLocal(
+          namespaceLocals,
+          specifier.local?.type === 'Identifier' ? specifier.local.name : undefined,
+        )
       }
     }
   }
