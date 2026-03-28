@@ -12,6 +12,7 @@ import {
   collectLoopScopeAliases,
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
+  collectPatternBindingNames,
   createLineStartOffsets,
   createWarningPrefix,
   defaultIsDefineComponentSource,
@@ -981,9 +982,42 @@ export function useCounter() {
   })
 
   it('exposes setData pick template helpers', () => {
+    const bindings = new Set<string>()
+
     expect(extractTemplateExpressions('<text>{{ count }}</text><view>{{ list.length }}</view>')).toEqual(['count', 'list.length'])
     expect(extractTemplateExpressions('<view>static</view>')).toEqual([])
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}"></view>')]).toEqual(['item', 'index'])
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i"></view>')]).toEqual(['row', 'i'])
+    collectPatternBindingNames({
+      type: 'ObjectPattern',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          value: { type: 'Identifier', name: 'foo' },
+        },
+        {
+          type: 'ObjectProperty',
+          value: {
+            type: 'AssignmentPattern',
+            left: { type: 'Identifier', name: 'bar' },
+          },
+        },
+        {
+          type: 'RestElement',
+          argument: { type: 'Identifier', name: 'rest' },
+        },
+      ],
+    }, bindings)
+    collectPatternBindingNames({
+      type: 'ArrayPattern',
+      elements: [
+        { type: 'Identifier', name: 'first' },
+        {
+          type: 'RestElement',
+          argument: { type: 'Identifier', name: 'others' },
+        },
+      ],
+    }, bindings)
+    expect([...bindings]).toEqual(['foo', 'bar', 'rest', 'first', 'others'])
   })
 })

@@ -128,7 +128,7 @@ function collectIdentifiersFromExpression(expression: string): Set<string> {
   return collected
 }
 
-function collectPatternBindingNames(node: any, bindings: Set<string>) {
+export function collectPatternBindingNames(node: any, bindings: Set<string>) {
   if (!node) {
     return
   }
