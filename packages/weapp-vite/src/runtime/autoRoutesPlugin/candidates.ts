@@ -1,5 +1,6 @@
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
@@ -22,6 +23,18 @@ const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', '.idea', '.husky', '.turbo', '.cache', '.wevu-config', 'dist'])
 const SCRIPT_SIDECAR_PATTERN = /\.(?:wxs|sjs)\.[jt]s$/i
 const TEMPLATE_SIDECAR_PATTERN = /\.wxml\.[jt]s$/i
+
+function hasNestedPagesRoot(
+  root: string,
+  discoveredPagesRoots: Iterable<string>,
+) {
+  const normalizedRoot = toPosixPath(root)
+  return [...discoveredPagesRoots].some((pagesRoot) => {
+    const normalizedPagesRoot = toPosixPath(pagesRoot)
+    return normalizedPagesRoot === `${normalizedRoot}/pages`
+      || normalizedPagesRoot.startsWith(`${normalizedRoot}/pages/`)
+  })
+}
 
 async function discoverPagesRoots(root: string) {
   const queue = [root]
@@ -83,14 +96,8 @@ async function resolveDefaultSearchRoots(
     }
 
     const absoluteRoot = path.resolve(absoluteSrcRoot, root)
-    const normalizedRoot = toPosixPath(absoluteRoot)
-    const hasNestedPagesRoot = [...discoveredPagesRoots].some((pagesRoot) => {
-      const normalizedPagesRoot = toPosixPath(pagesRoot)
-      return normalizedPagesRoot === `${normalizedRoot}/pages`
-        || normalizedPagesRoot.startsWith(`${normalizedRoot}/pages/`)
-    })
 
-    if (!hasNestedPagesRoot) {
+    if (!hasNestedPagesRoot(absoluteRoot, discoveredPagesRoots)) {
       roots.push(absoluteRoot)
     }
   }
@@ -142,6 +149,69 @@ function ensureCandidate(map: Map<string, CandidateEntry>, base: string) {
   return candidate
 }
 
+function resolveCandidateSearchRoots(
+  absoluteSrcRoot: string,
+  matcher: ReturnType<typeof createAutoRoutesMatcher>,
+  searchRoots?: Iterable<string>,
+) {
+  if (searchRoots) {
+    return [...new Set(searchRoots)]
+  }
+
+  return matcher.isDefault
+    ? undefined
+    : matcher.getSearchRoots(absoluteSrcRoot)
+}
+
+function resolveCollectTargetRoot(
+  absoluteSrcRoot: string,
+  root: string,
+) {
+  const targetRoot = path.isAbsolute(root)
+    ? root
+    : path.resolve(absoluteSrcRoot, root)
+
+  return toPosixPath(targetRoot).startsWith(toPosixPath(absoluteSrcRoot))
+    ? targetRoot
+    : undefined
+}
+
+function resolveCandidateEntryPath(
+  absoluteSrcRoot: string,
+  entryPath: string,
+) {
+  const normalizedRelative = toPosixPath(path.relative(absoluteSrcRoot, entryPath))
+  if (!normalizedRelative || normalizedRelative.startsWith('..')) {
+    return undefined
+  }
+
+  return {
+    normalizedRelative,
+    relativeBase: removeExtensionDeep(normalizedRelative),
+    candidateBase: removeExtensionDeep(entryPath),
+  }
+}
+
+function applyCandidateEntryFile(
+  candidate: CandidateEntry,
+  entryPath: string,
+) {
+  candidate.files.add(entryPath)
+
+  if (isConfigFile(entryPath)) {
+    candidate.jsonPath = entryPath
+    return
+  }
+
+  if (isVueFile(entryPath) || isScriptFile(entryPath)) {
+    candidate.hasScript = true
+  }
+
+  if (isTemplateFile(entryPath)) {
+    candidate.hasTemplate = true
+  }
+}
+
 export async function collectCandidates(
   absoluteSrcRoot: string,
   include?: string | RegExp | Array<string | RegExp>,
@@ -150,11 +220,7 @@ export async function collectCandidates(
 ) {
   const candidates = new Map<string, CandidateEntry>()
   const matcher = createAutoRoutesMatcher(include, subPackageRoots)
-  const roots = searchRoots
-    ? [...new Set(searchRoots)]
-    : (() => {
-        return []
-      })()
+  const roots = resolveCandidateSearchRoots(absoluteSrcRoot, matcher, searchRoots) ?? []
 
   if (!searchRoots) {
     if (matcher.isDefault) {
@@ -176,11 +242,8 @@ export async function collectCandidates(
   }).withFullPaths()
 
   for (const root of roots) {
-    const targetRoot = path.isAbsolute(root)
-      ? root
-      : path.resolve(absoluteSrcRoot, root)
-
-    if (!toPosixPath(targetRoot).startsWith(toPosixPath(absoluteSrcRoot))) {
+    const targetRoot = resolveCollectTargetRoot(absoluteSrcRoot, root)
+    if (!targetRoot) {
       continue
     }
 
@@ -197,32 +260,17 @@ export async function collectCandidates(
     }
 
     for (const entryPath of files) {
-      const normalizedRelative = toPosixPath(path.relative(absoluteSrcRoot, entryPath))
-      if (!normalizedRelative || normalizedRelative.startsWith('..')) {
+      const resolvedEntryPath = resolveCandidateEntryPath(absoluteSrcRoot, entryPath)
+      if (!resolvedEntryPath) {
         continue
       }
 
-      const relativeBase = removeExtensionDeep(normalizedRelative)
-      if (!matcher.matches(relativeBase)) {
+      if (!matcher.matches(resolvedEntryPath.relativeBase)) {
         continue
       }
 
-      const candidateBase = removeExtensionDeep(entryPath)
-      const candidate = ensureCandidate(candidates, candidateBase)
-      candidate.files.add(entryPath)
-
-      if (isConfigFile(entryPath)) {
-        candidate.jsonPath = entryPath
-        continue
-      }
-
-      if (isVueFile(entryPath) || isScriptFile(entryPath)) {
-        candidate.hasScript = true
-      }
-
-      if (isTemplateFile(entryPath)) {
-        candidate.hasTemplate = true
-      }
+      const candidate = ensureCandidate(candidates, resolvedEntryPath.candidateBase)
+      applyCandidateEntryFile(candidate, entryPath)
     }
   }
 
@@ -249,4 +297,12 @@ export function areSetsEqual(a: Set<string>, b: Set<string>) {
     }
   }
   return true
+}
+
+export {
+  applyCandidateEntryFile,
+  hasNestedPagesRoot,
+  resolveCandidateEntryPath,
+  resolveCandidateSearchRoots,
+  resolveCollectTargetRoot,
 }
