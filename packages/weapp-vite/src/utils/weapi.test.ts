@@ -4,6 +4,7 @@ import {
   createNativeApiFallbackExpression,
   createWeapiAccessExpression,
   createWeapiHostExpression,
+  getNativeApiFallbackChecks,
   getWeapiGlobalHostCandidates,
 } from './weapi'
 
@@ -27,6 +28,14 @@ describe('weapi utils', () => {
   it('creates host and native fallback expressions from platform globals', () => {
     expect(createGlobalHostExpression()).toContain(`typeof globalThis !== 'undefined'`)
     expect(createWeapiHostExpression()).toBe(createGlobalHostExpression())
+    expect(getNativeApiFallbackChecks()).toEqual([
+      `((typeof my !== 'undefined' && my)`,
+      ` || (typeof wx !== 'undefined' && wx)`,
+      ` || (typeof tt !== 'undefined' && tt)`,
+      ` || (typeof swan !== 'undefined' && swan)`,
+      ` || (typeof jd !== 'undefined' && jd)`,
+      ` || (typeof xhs !== 'undefined' && xhs)`,
+    ])
 
     const fallback = createNativeApiFallbackExpression()
     expect(fallback).toContain(`typeof my !== 'undefined' && my`)
