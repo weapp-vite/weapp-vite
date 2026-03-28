@@ -10,6 +10,7 @@ import {
   createSharedPathResolver,
   createStringOrRegExpMatcher,
   normalizeSharedPathCandidate,
+  resolveSharedBuildChunksOptions,
   resolveSharedPathRoot,
 } from './sharedBuildConfig'
 
@@ -87,6 +88,30 @@ describe('sharedBuildConfig', () => {
 
     expect(resolveSharedPath('shared/feature.ts')).toBeUndefined()
     expect(resolveSharedPath('/project/src/pages/index.ts')).toBeUndefined()
+  })
+
+  it('resolves chunk options with defaults and overrides', () => {
+    expect(resolveSharedBuildChunksOptions(createConfigService())).toEqual({
+      sharedStrategy: 'hoist',
+      forceDuplicatePatterns: undefined,
+      sharedMode: 'common',
+      sharedOverrides: undefined,
+      sharedPathRoot: undefined,
+    })
+
+    expect(resolveSharedBuildChunksOptions(createConfigService({
+      sharedStrategy: 'duplicate',
+      forceDuplicatePatterns: ['shared/**'],
+      sharedMode: 'path',
+      sharedOverrides: [{ test: 'shared/**', mode: 'inline' }],
+      sharedPathRoot: 'src/shared',
+    }))).toEqual({
+      sharedStrategy: 'duplicate',
+      forceDuplicatePatterns: ['shared/**'],
+      sharedMode: 'path',
+      sharedOverrides: [{ test: 'shared/**', mode: 'inline' }],
+      sharedPathRoot: 'src/shared',
+    })
   })
 
   it('returns undefined for path mode when there is only one importer', () => {

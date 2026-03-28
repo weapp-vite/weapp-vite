@@ -138,18 +138,31 @@ function createSharedPathResolver(
   }
 }
 
+function resolveSharedBuildChunksOptions(configService: ConfigService) {
+  const chunksConfig = configService.weappViteConfig?.chunks
+
+  return {
+    sharedStrategy: chunksConfig?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY,
+    forceDuplicatePatterns: chunksConfig?.forceDuplicatePatterns,
+    sharedMode: chunksConfig?.sharedMode ?? 'common',
+    sharedOverrides: chunksConfig?.sharedOverrides,
+    sharedPathRoot: chunksConfig?.sharedPathRoot,
+  }
+}
+
 function createSharedBuildResolver(
   configService: ConfigService,
   getSubPackageRoots: () => Iterable<string>,
 ) {
   const nodeModulesDeps: RegExp[] = [REG_NODE_MODULES_DIR]
   const commonjsHelpersDeps: RegExp[] = [REG_COMMONJS_HELPERS]
-  const chunksConfig = configService.weappViteConfig?.chunks
-  const sharedStrategy = chunksConfig?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
-  const forceDuplicatePatterns = chunksConfig?.forceDuplicatePatterns
-  const sharedMode = chunksConfig?.sharedMode ?? 'common'
-  const sharedOverrides = chunksConfig?.sharedOverrides
-  const sharedPathRoot = chunksConfig?.sharedPathRoot
+  const {
+    sharedStrategy,
+    forceDuplicatePatterns,
+    sharedMode,
+    sharedOverrides,
+    sharedPathRoot,
+  } = resolveSharedBuildChunksOptions(configService)
   const forceDuplicateTester = createForceDuplicateTester(forceDuplicatePatterns)
   const resolveSharedMode = createSharedModeResolver(sharedMode, sharedOverrides)
   const resolveSharedPath = createSharedPathResolver(configService, sharedPathRoot)
@@ -217,5 +230,6 @@ export {
   createSharedPathResolver,
   createStringOrRegExpMatcher,
   normalizeSharedPathCandidate,
+  resolveSharedBuildChunksOptions,
   resolveSharedPathRoot,
 }
