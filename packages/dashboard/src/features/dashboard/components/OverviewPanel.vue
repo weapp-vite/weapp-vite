@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LargestFileEntry, SubPackageDescriptor } from '../types'
+import type { DashboardDetailItem, LargestFileEntry, SubPackageDescriptor } from '../types'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
@@ -12,6 +12,21 @@ defineProps<{
   visibleLargestFiles: LargestFileEntry[]
   subPackages: SubPackageDescriptor[]
 }>()
+
+function createLargestFileItem(file: LargestFileEntry): DashboardDetailItem {
+  return {
+    title: file.file,
+    meta: `${file.packageLabel} · ${formatPackageType(file.packageType)} · ${file.type}`,
+    value: formatBytes(file.size),
+  }
+}
+
+function createSubPackageItem(pkg: SubPackageDescriptor): DashboardDetailItem {
+  return {
+    title: pkg.root,
+    meta: `${pkg.name ? `别名 ${pkg.name}` : '未设置别名'} · ${pkg.independent ? '独立分包' : '普通分包'}`,
+  }
+}
 </script>
 
 <template>
@@ -33,9 +48,7 @@ defineProps<{
           <AppCompactListItem
             v-for="file in visibleLargestFiles"
             :key="`${file.packageId}:${file.file}`"
-            :title="file.file"
-            :meta="`${file.packageLabel} · ${formatPackageType(file.packageType)} · ${file.type}`"
-            :value="formatBytes(file.size)"
+            v-bind="createLargestFileItem(file)"
           />
         </ol>
       </section>
@@ -57,8 +70,7 @@ defineProps<{
           <AppCompactListItem
             v-for="pkg in subPackages"
             :key="pkg.root"
-            :title="pkg.root"
-            :meta="`${pkg.name ? `别名 ${pkg.name}` : '未设置别名'} · ${pkg.independent ? '独立分包' : '普通分包'}`"
+            v-bind="createSubPackageItem(pkg)"
           />
         </ul>
       </section>
