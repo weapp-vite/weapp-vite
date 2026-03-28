@@ -9,9 +9,11 @@ import * as wxmlHandleModule from '../../../wxml/handle'
 import { emitVueBundleAssets } from './bundle'
 import {
   emitAlipayGenericPlaceholderAssets,
+  emitAlipayGenericPlaceholderAssetsByBase,
   normalizeVueConfigForPlatform,
   normalizeVueTemplateForPlatform,
   preparePlatformConfigAsset,
+  resolveAlipayGenericPlaceholderBase,
   resolveVueBundlePlatformAssetOptions,
   resolveVueBundlePlatformOptions,
 } from './bundle/platform'
@@ -197,6 +199,34 @@ describe('emitVueBundleAssets platform output', () => {
     )
 
     expect(emitFile).not.toHaveBeenCalled()
+  })
+
+  it('resolves generic placeholder base from the current entry directory', () => {
+    expect(resolveAlipayGenericPlaceholderBase('components/direct/index'))
+      .toBe('components/direct/__weapp_vite_generic_component')
+    expect(resolveAlipayGenericPlaceholderBase('index'))
+      .toBe('__weapp_vite_generic_component')
+  })
+
+  it('emits placeholder assets from a resolved placeholder base', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    emitAlipayGenericPlaceholderAssetsByBase(
+      { emitFile },
+      bundle,
+      'components/direct/__weapp_vite_generic_component',
+      {
+        wxml: 'axml',
+        json: 'json',
+        js: 'js',
+      },
+    )
+
+    const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.axml')
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.json')
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.js')
   })
 
   it('emits placeholder assets when direct helper sees boolean componentGenerics', () => {
