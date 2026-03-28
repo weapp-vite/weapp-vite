@@ -5,6 +5,7 @@ import type {
   LargestFileEntry,
   ModuleSourceSummary,
 } from '../types'
+import { computed } from 'vue'
 import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
@@ -12,11 +13,20 @@ import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import AppSummaryValueCard from './AppSummaryValueCard.vue'
 
-defineProps<{
+const props = defineProps<{
   visibleDuplicateModules: DuplicateModuleEntry[]
   moduleSourceSummary: ModuleSourceSummary[]
   visibleLargestFiles: LargestFileEntry[]
 }>()
+
+interface DuplicateModuleItem extends DashboardDetailItem {
+  key: string
+  packages: DuplicateModuleEntry['packages']
+}
+
+interface ListItemRow extends DashboardDetailItem {
+  key: string
+}
 
 function createDuplicateModuleItem(module: DuplicateModuleEntry): DashboardDetailItem {
   return {
@@ -39,6 +49,22 @@ function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailIte
     meta: `${file.packageLabel} · ${formatBuildOrigin(file.from)} · ${file.moduleCount} 模块`,
   }
 }
+
+const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => props.visibleDuplicateModules.map(module => ({
+  key: module.id,
+  packages: module.packages,
+  ...createDuplicateModuleItem(module),
+})))
+
+const moduleSourceItems = computed<ListItemRow[]>(() => props.moduleSourceSummary.map(item => ({
+  key: item.sourceType,
+  ...createModuleSourceItem(item),
+})))
+
+const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLargestFiles.slice(0, 6).map(file => ({
+  key: `${file.packageId}:${file.file}`,
+  ...createLargestFileSampleItem(file),
+})))
 </script>
 
 <template>
@@ -49,15 +75,15 @@ function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailIte
         title="重复模块"
         description="优先看被多个包重复包含的源码与依赖。"
       />
-      <div v-if="visibleDuplicateModules.length" class="mt-4 space-y-2.5">
+      <div v-if="duplicateModuleItems.length" class="mt-4 space-y-2.5">
         <AppSummaryValueCard
-          v-for="module in visibleDuplicateModules"
-          :key="module.id"
-          v-bind="createDuplicateModuleItem(module)"
+          v-for="item in duplicateModuleItems"
+          :key="item.key"
+          v-bind="item"
           break-title
         >
           <ul class="mt-3 space-y-1.5 text-xs text-[color:var(--dashboard-text-muted)]">
-            <li v-for="pkg in module.packages" :key="`${module.id}:${pkg.packageId}`">
+            <li v-for="pkg in item.packages" :key="`${item.key}:${pkg.packageId}`">
               <span class="font-medium text-[color:var(--dashboard-text)]">{{ pkg.packageLabel }}</span>
               <span class="text-[color:var(--dashboard-text-soft)]"> · </span>
               <span>{{ pkg.files.join('、') }}</span>
@@ -75,9 +101,9 @@ function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailIte
         <AppPanelHeader icon-name="module-sources" title="模块来源" />
         <div class="mt-4 space-y-2.5">
           <AppSummaryValueCard
-            v-for="item in moduleSourceSummary"
-            :key="item.sourceType"
-            v-bind="createModuleSourceItem(item)"
+            v-for="item in moduleSourceItems"
+            :key="item.key"
+            v-bind="item"
           />
         </div>
       </section>
@@ -86,9 +112,9 @@ function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailIte
         <AppPanelHeader icon-name="file-samples" title="文件样本" />
         <ul class="mt-4 space-y-2.5 text-sm text-[color:var(--dashboard-text-muted)]">
           <AppCompactListItem
-            v-for="file in visibleLargestFiles.slice(0, 6)"
-            :key="`${file.packageId}:${file.file}`"
-            v-bind="createLargestFileSampleItem(file)"
+            v-for="item in largestFileSampleItems"
+            :key="item.key"
+            v-bind="item"
             mono-title
           />
         </ul>
