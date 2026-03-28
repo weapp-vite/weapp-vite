@@ -5,7 +5,7 @@ import type {
   DashboardRuntimeSourceCardItem,
 } from '../types'
 import { computed } from 'vue'
-import { getRuntimeSourceBadgeTone } from '../utils/format'
+import { createRuntimeSourceBadgeItem } from '../utils/format'
 import { mutedPanelStyles } from '../utils/styles'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 
@@ -18,14 +18,7 @@ const props = defineProps<{
   countLabel?: string
 }>()
 
-function createRuntimeSourceBadge(): DashboardRuntimeBadgeItem {
-  return {
-    label: props.latestTimestamp ? `${props.count} 条` : `错误 ${props.errorCount}`,
-    tone: getRuntimeSourceBadgeTone(props.errorCount),
-  }
-}
-
-const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeSourceBadge())
+const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeSourceBadgeItem(props))
 
 const subtitle = computed(() =>
   props.latestTimestamp

@@ -3,6 +3,7 @@ import type {
   DashboardRuntimeEvent,
   DashboardRuntimeEventKind,
   DashboardRuntimeEventLevel,
+  DashboardRuntimeSourceCardItem,
 } from '../types'
 
 export function formatBytes(bytes?: number) {
@@ -106,6 +107,13 @@ export function createRuntimeEventBadgeItem(event: DashboardRuntimeEvent): Dashb
 
 export function getRuntimeSourceBadgeTone(errorCount: number) {
   return errorCount > 0 ? 'error' : 'info'
+}
+
+export function createRuntimeSourceBadgeItem(options: Pick<DashboardRuntimeSourceCardItem, 'count' | 'errorCount' | 'latestTimestamp'>): DashboardRuntimeBadgeItem {
+  return {
+    label: options.latestTimestamp ? `${options.count} 条` : `错误 ${options.errorCount}`,
+    tone: getRuntimeSourceBadgeTone(options.errorCount),
+  }
 }
 
 export function formatDuration(durationMs?: number) {
