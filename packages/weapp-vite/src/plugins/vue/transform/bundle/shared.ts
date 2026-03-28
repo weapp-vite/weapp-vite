@@ -547,6 +547,35 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
   }
 }
 
+export async function resolveCompiledEntryEmitState(options: {
+  filename: string
+  cached: CompilationCacheEntry
+  ctx: CompilerContext
+  pluginCtx: any
+  configService: NonNullable<CompilerContext['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+}) {
+  const result = await refreshCompiledVueEntryCacheInDev({
+    filename: options.filename,
+    cached: options.cached,
+    ctx: options.ctx,
+    pluginCtx: options.pluginCtx,
+    configService: options.configService,
+    compileOptionsState: options.compileOptionsState,
+  })
+
+  const baseName = getEntryBaseName(options.filename)
+  const relativeBase = options.configService.relativeOutputPath(baseName)
+  if (!relativeBase) {
+    return undefined
+  }
+
+  return {
+    result,
+    relativeBase,
+  }
+}
+
 export async function resolveFallbackPageEntryFile(options: {
   entryId: string
   compilationCache: Map<string, CompilationCacheEntry>
