@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addBundleWatchFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -27,6 +27,7 @@ const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
   script: 'Page({})',
 })))
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
+const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn((result: any) => result))
 
 vi.mock('./platform', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./platform')>()
@@ -61,6 +62,7 @@ vi.mock('../pageLayout', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../pageLayout')>()
   return {
     ...actual,
+    applyPageLayoutPlan: applyPageLayoutPlanMock,
     resolvePageLayoutPlan: resolvePageLayoutPlanMock,
   }
 })
@@ -122,6 +124,8 @@ describe('emitSharedVueEntryAssets', () => {
     })
     resolvePageLayoutPlanMock.mockReset()
     resolvePageLayoutPlanMock.mockResolvedValue(undefined)
+    applyPageLayoutPlanMock.mockReset()
+    applyPageLayoutPlanMock.mockImplementation((result: any) => result)
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -717,6 +721,44 @@ describe('emitSharedVueEntryAssets', () => {
       '<view />',
       '/project/src/pages/demo/index.vue',
       expect.anything(),
+    )
+    expect(emitLayouts).toHaveBeenCalledWith([
+      { kind: 'native', file: '/layouts/default/index' },
+    ])
+  })
+
+  it('handles compiled entry page layouts through shared resolve-apply-and-emit flow', async () => {
+    const emitLayouts = vi.fn(async () => {})
+    const result = {
+      template: '<view />',
+    } as any
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [
+        { kind: 'native', file: '/layouts/default/index' },
+      ],
+    })
+
+    await handleCompiledEntryPageLayouts({
+      source: '<view />',
+      filename: '/project/src/pages/demo/index.vue',
+      result,
+      configService: {} as any,
+      emitLayouts,
+    })
+
+    expect(resolvePageLayoutPlanMock).toHaveBeenCalledWith(
+      '<view />',
+      '/project/src/pages/demo/index.vue',
+      expect.anything(),
+    )
+    expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
+      result,
+      '/project/src/pages/demo/index.vue',
+      {
+        layouts: [
+          { kind: 'native', file: '/layouts/default/index' },
+        ],
+      },
     )
     expect(emitLayouts).toHaveBeenCalledWith([
       { kind: 'native', file: '/layouts/default/index' },
