@@ -11,9 +11,7 @@ import {
   emitScriptlessComponentJsFallbackIfMissing,
   emitVueLayoutScriptFallbackIfNeeded,
 } from './layoutAssets'
-import { resolveBundleOutputExtensions } from './outputExtensions'
-import { resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile } from './shared'
+import { compileVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, resolveVueBundleAssetContext } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -32,18 +30,14 @@ export async function emitCompiledVueEntryAssets(
   }
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
-  const outputExtensions = configService.outputExtensions
   const {
+    outputExtensions,
     templateExtension,
     jsonExtension,
     scriptExtension,
     scriptModuleExtension,
-  } = resolveBundleOutputExtensions(outputExtensions)
-  const platformAssetOptions = resolveVueBundlePlatformAssetOptions({
-    configService,
-    templateExtension,
-    scriptModuleExtension,
-  })
+    platformAssetOptions,
+  } = resolveVueBundleAssetContext(configService)
 
   let result = cached.result
   if (configService.isDev) {
