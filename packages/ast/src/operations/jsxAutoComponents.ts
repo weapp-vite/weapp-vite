@@ -47,7 +47,7 @@ export function defaultIsDefineComponentSource(source: string) {
   return source === 'vue'
 }
 
-function defaultResolveBabelComponentExpression(
+export function defaultResolveBabelComponentExpression(
   declaration: t.Declaration | t.Expression | null,
   defineComponentDecls: Map<string, ObjectExpression>,
   defineComponentAliases: Set<string>,
@@ -77,7 +77,7 @@ function defaultResolveBabelComponentExpression(
   return null
 }
 
-function defaultResolveBabelRenderExpression(componentExpr: Expression) {
+export function defaultResolveBabelRenderExpression(componentExpr: Expression) {
   if (!t.isObjectExpression(componentExpr)) {
     return null
   }

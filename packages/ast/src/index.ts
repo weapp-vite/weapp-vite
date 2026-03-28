@@ -22,6 +22,8 @@ export type { FeatureFlagOptions } from './operations/featureFlags'
 export {
   collectJsxAutoComponentsFromCode,
   defaultIsDefineComponentSource,
+  defaultResolveBabelComponentExpression,
+  defaultResolveBabelRenderExpression,
   mayContainJsxAutoComponentEntry,
 } from './operations/jsxAutoComponents'
 export { collectJsxImportedComponentsAndDefaultExportFromBabelAst } from './operations/jsxAutoComponents'
