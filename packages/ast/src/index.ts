@@ -43,6 +43,7 @@ export type {
 } from './operations/jsxAutoComponents'
 export {
   collectOnPageScrollPerformanceWarnings,
+  collectPageScrollInspectionWithOxc,
   createLineStartOffsets,
   createWarningPrefix,
   getCallExpressionCalleeName,

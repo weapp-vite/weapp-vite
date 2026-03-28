@@ -7,6 +7,7 @@ import {
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
   collectLoopScopeAliases,
+  collectPageScrollInspectionWithOxc,
   createLineStartOffsets,
   createWarningPrefix,
   defaultIsDefineComponentSource,
@@ -717,6 +718,39 @@ export function useCounter() {
       computed: true,
       property: { type: 'NumericLiteral', value: 1 },
     })).toBeUndefined()
+    expect(collectPageScrollInspectionWithOxc({
+      type: 'ArrowFunctionExpression',
+      body: {
+        type: 'BlockStatement',
+        body: [
+          {
+            type: 'CallExpression',
+            callee: { type: 'Identifier', name: 'setData' },
+          },
+          {
+            type: 'CallExpression',
+            callee: {
+              type: 'MemberExpression',
+              object: { type: 'Identifier', name: 'wx' },
+              property: { type: 'Identifier', name: 'getStorageSync' },
+              computed: false,
+            },
+          },
+        ],
+      },
+    })).toEqual({
+      empty: false,
+      hasSetDataCall: true,
+      syncApis: new Set(['wx.getStorageSync']),
+    })
+    expect(collectPageScrollInspectionWithOxc({
+      type: 'ArrowFunctionExpression',
+      body: { type: 'BlockStatement', body: [] },
+    })).toEqual({
+      empty: true,
+      hasSetDataCall: false,
+      syncApis: new Set(),
+    })
     expect(createWarningPrefix('/src/pages/index.ts')).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:?:?')
     expect(createWarningPrefix('/src/pages/index.ts', 2, 3)).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:2:3')
   })
