@@ -3,11 +3,13 @@ import { computed, ref, watch } from 'vue'
 import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
+import AppFilterPresetGroup from '../features/dashboard/components/AppFilterPresetGroup.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vue'
 import AppRuntimeEventListItem from '../features/dashboard/components/AppRuntimeEventListItem.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
+import AppSearchField from '../features/dashboard/components/AppSearchField.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
@@ -15,7 +17,6 @@ import AppTimelineItem from '../features/dashboard/components/AppTimelineItem.vu
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventSource } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
-import { pillButtonStyles } from '../features/dashboard/utils/styles'
 
 const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
 
@@ -170,6 +171,11 @@ const selectedEvent = computed(() =>
   ?? null,
 )
 
+const presetDescription = computed(() => {
+  const description = filterPresets.find(preset => preset.key === 'all')?.description ?? ''
+  return `${description} 也可以直接组合下面的类型、等级和关键字筛选。`
+})
+
 const selectedEventMeta = computed(() => {
   if (!selectedEvent.value) {
     return []
@@ -260,39 +266,20 @@ watch(filteredRuntimeEvents, (events) => {
         <div class="grid gap-3">
           <AppInsetPanel>
             <div class="grid gap-3">
-              <div>
-                <label class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]" for="dashboard-event-search">
-                  搜索事件
-                </label>
-                <input
-                  id="dashboard-event-search"
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="搜索标题、详情、来源或标签"
-                  class="mt-2 w-full rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-2 text-sm text-[color:var(--dashboard-text)] outline-none transition focus:border-[color:var(--dashboard-border-strong)]"
-                >
-              </div>
+              <AppSearchField
+                v-model="searchQuery"
+                input-id="dashboard-event-search"
+                label="搜索事件"
+                placeholder="搜索标题、详情、来源或标签"
+              />
 
               <div class="grid gap-3">
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    快速预设
-                  </p>
-                  <div class="mt-2 flex flex-wrap gap-2">
-                    <button
-                      v-for="preset in filterPresets"
-                      :key="preset.key"
-                      :class="pillButtonStyles({ kind: 'theme', active: false })"
-                      @click="preset.apply()"
-                    >
-                      {{ preset.label }}
-                    </button>
-                  </div>
-                  <p class="mt-2 text-xs leading-5 text-[color:var(--dashboard-text-soft)]">
-                    {{ filterPresets.find(preset => preset.key === 'all')?.description }}
-                    也可以直接组合下面的类型、等级和关键字筛选。
-                  </p>
-                </div>
+                <AppFilterPresetGroup
+                  title="快速预设"
+                  :description="presetDescription"
+                  :presets="filterPresets"
+                  @apply="filterPresets.find(preset => preset.key === $event)?.apply()"
+                />
 
                 <AppFilterGroup
                   title="类型过滤"
