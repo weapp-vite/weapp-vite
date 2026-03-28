@@ -2,23 +2,13 @@ import type { PluginContext } from 'rolldown'
 import type { AstEngineName } from '../../../../ast'
 import type { CompilerContext } from '../../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
-// eslint-disable-next-line e18e/ban-dependencies -- 当前 loadEntry 模板扫描仍统一复用 fs-extra 的 stat 能力
-import fs from 'fs-extra'
-import path from 'pathe'
 import { resolveAstEngine } from '../../../../ast'
 import { collectScriptSetupImportsFromCode } from '../../../../ast/operations/scriptSetupImports'
 import logger from '../../../../logger'
-import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
-import { resolveEntryPath } from '../../../../utils/entryResolve'
-import { resolveReExportedName } from '../../../../utils/reExport'
-import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
-import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
+import { resolveUsingComponentReference } from '../../../vue/transform/usingComponentResolver'
 import { ensureTemplateScanned } from './watch'
-
-const JS_LIKE_FILE_RE = /\.(?:[cm]?ts|[cm]?js)$/
 
 export function collectVueTemplateComponentNames(template: string, filename: string) {
   return collectVueTemplateTags(template, {
@@ -104,48 +94,18 @@ export async function applyScriptSetupUsingComponents(options: {
           )
 
           for (const { localName, importSource, importedName, kind } of imports) {
-            const resolved = await pluginCtx.resolve(importSource, vueEntryPath)
-            let resolvedId = resolved?.id ? normalizeFsResolvedId(resolved.id) : undefined
-            if (!resolvedId || !path.isAbsolute(resolvedId)) {
-              if (importSource.startsWith('.')) {
-                resolvedId = path.resolve(path.dirname(vueEntryPath), importSource)
-              }
-            }
-
-            if (resolvedId && path.isAbsolute(resolvedId) && !path.extname(resolvedId)) {
-              const matched = await resolveEntryPath(resolvedId, {
+            let { from } = await resolveUsingComponentReference(
+              pluginCtx,
+              configService,
+              reExportResolutionCache,
+              importSource,
+              vueEntryPath,
+              {
                 kind,
-                exists: (p: string) => pathExistsCached(p, { ttlMs: getPathExistsTtlMs(configService) }),
-                stat: (p: string) => fs.stat(p) as any,
-              })
-              if (matched) {
-                resolvedId = matched
-              }
-            }
-
-            // 桶文件（barrel）支持：import { X } from '.../components' => 解析 re-export 到真实组件文件
-            if (kind === 'named' && importedName && resolvedId && path.isAbsolute(resolvedId) && JS_LIKE_FILE_RE.test(resolvedId)) {
-              const mapped = await resolveReExportedName(resolvedId, importedName, {
-                astEngine: resolveAstEngine(configService.weappViteConfig),
-                cache: reExportResolutionCache,
-                maxDepth: 4,
-                readFile: file => readFileCached(file, { checkMtime: configService.isDev }),
-                resolveId: async (source, importer) => {
-                  const hop = await pluginCtx.resolve(source, importer)
-                  const hopId = hop?.id ? normalizeFsResolvedId(hop.id) : undefined
-                  if (isSkippableResolvedId(hopId)) {
-                    return undefined
-                  }
-                  return hopId
-                },
-              })
-              if (mapped) {
-                resolvedId = mapped
-              }
-            }
-
-            let from: string | undefined
-            from = usingComponentFromResolvedFile(resolvedId, configService)
+                importedName,
+                fallbackRelativeImporterDir: true,
+              },
+            )
 
             if (!from && importSource.startsWith('/')) {
               from = removeExtensionDeep(importSource)
