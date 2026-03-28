@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { resolveReExportedName } from './reExport'
+import { getReExportCacheKey, resolveReExportedName } from './reExport'
 
 describe('resolveReExportedName', () => {
+  it('builds cache keys with engine-aware prefixes', () => {
+    expect(getReExportCacheKey('/a.ts')).toBe('babel::/a.ts')
+    expect(getReExportCacheKey('/a.ts', 'oxc')).toBe('oxc::/a.ts')
+  })
+
   it('resolves direct re-export', async () => {
     const cache = new Map<string, Map<string, string | undefined>>()
     const readFile = vi.fn(async (file: string) => {

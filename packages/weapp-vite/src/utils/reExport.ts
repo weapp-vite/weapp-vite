@@ -54,7 +54,7 @@ function getSourceValue(node: any) {
   return source.value as string
 }
 
-function getCacheKey(file: string, astEngine?: AstEngineName) {
+export function getReExportCacheKey(file: string, astEngine?: AstEngineName) {
   return `${astEngine ?? 'babel'}::${file}`
 }
 
@@ -83,7 +83,7 @@ async function resolveReExportedInternal(
   }
   visited.add(exporterFile)
 
-  const cacheKey = getCacheKey(exporterFile, options.astEngine)
+  const cacheKey = getReExportCacheKey(exporterFile, options.astEngine)
   let entry = options.cache.get(cacheKey)
   if (!entry) {
     entry = new Map()
