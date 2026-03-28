@@ -53,6 +53,7 @@ export {
 } from './operations/platformApi'
 export {
   collectRequireTokens,
+  getRequireAsyncLiteralToken,
   getStaticRequireLiteralValue,
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,

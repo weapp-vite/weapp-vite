@@ -19,6 +19,7 @@ import {
   getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
   getRenderPropertyFromComponentOptions,
+  getRequireAsyncLiteralToken,
   getStaticPropertyName,
   getStaticRequireLiteralValue,
   isPlatformApiIdentifier,
@@ -149,6 +150,34 @@ export function useCounter() {
   })
 
   it('exposes require prechecks', () => {
+    expect(getRequireAsyncLiteralToken({
+      type: 'CallExpression',
+      callee: {
+        type: 'MemberExpression',
+        object: { type: 'Identifier', name: 'require' },
+        property: { type: 'Identifier', name: 'async' },
+      },
+      arguments: [{ type: 'Literal', value: './async', start: 10, end: 19 }],
+    })).toEqual({
+      start: 10,
+      end: 19,
+      value: './async',
+      async: true,
+    })
+    expect(getRequireAsyncLiteralToken({
+      type: 'CallExpression',
+      callee: {
+        type: 'MemberExpression',
+        object: { type: 'Identifier', name: 'require' },
+        property: { type: 'Identifier', name: 'async' },
+      },
+      arguments: [{ type: 'Identifier', name: 'dep' }],
+    })).toBeNull()
+    expect(getRequireAsyncLiteralToken({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{ type: 'Literal', value: './dep', start: 0, end: 7 }],
+    })).toBeNull()
     expect(mayContainRequireCallByText(`const dep = require('./dep')`)).toBe(true)
     expect(mayContainRequireCallByText('const dep = load("./dep")')).toBe(false)
     expect(getStaticRequireLiteralValue({ type: 'StringLiteral', value: './dep' })).toBe('./dep')
