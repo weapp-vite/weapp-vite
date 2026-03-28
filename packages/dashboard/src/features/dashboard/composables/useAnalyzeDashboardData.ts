@@ -5,13 +5,9 @@ import type {
   ModuleSourceType,
   PackageFileEntry,
   PackageType,
+  SummaryMetric,
 } from '../types'
 import { computed } from 'vue'
-
-export interface SummaryMetric {
-  label: string
-  value: number
-}
 
 export interface PackageInsight {
   id: string
