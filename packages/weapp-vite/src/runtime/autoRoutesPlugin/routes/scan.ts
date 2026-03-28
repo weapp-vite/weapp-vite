@@ -2,11 +2,9 @@ import type { MutableCompilerContext } from '../../../context'
 import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
 import type { CandidateEntry } from '../candidates'
 import path from 'pathe'
-import { resolveWeappAutoRoutesConfig } from '../../../autoRoutesConfig'
 import { toPosixPath } from '../../../utils/path'
-import { createAutoRoutesMatcher } from '../matcher'
 import { createAutoRoutesArtifacts } from '../service/shared'
-import { getAutoRoutesSubPackageRoots } from '../subPackageRoots'
+import { resolveAutoRoutesMatcherContext } from '../shared'
 import { resolveRoute } from './resolve'
 
 export interface ScanResult {
@@ -39,9 +37,7 @@ export async function scanRoutes(
   }
 
   const absoluteSrcRoot = configService.absoluteSrcRoot
-  const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-  const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
+  const { matcher, subPackageRoots } = resolveAutoRoutesMatcherContext(ctx)
   const pagesSet = new Set<string>()
   const entriesSet = new Set<string>()
   const subPackages = new Map<string, Set<string>>()

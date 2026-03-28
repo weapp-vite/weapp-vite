@@ -1,8 +1,11 @@
+import type { MutableCompilerContext } from '../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
 import { normalizePath, toPosixPath } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { createAutoRoutesMatcher } from './matcher'
+import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 
 interface AutoRoutesPathOptions {
   cwd: string
@@ -17,6 +20,28 @@ interface AutoRoutesPagesPathOptions extends AutoRoutesPathOptions {
 export interface ResolvedAutoRoutesPath {
   absolutePath: string
   relativePath: string
+}
+
+export interface ResolvedAutoRoutesMatcherContext {
+  autoRoutesConfig: ReturnType<typeof resolveWeappAutoRoutesConfig>
+  subPackageRoots: string[]
+  matcher: ReturnType<typeof createAutoRoutesMatcher>
+}
+
+/**
+ * 聚合 auto-routes 配置、分包根目录和 matcher，避免多处重复组装。
+ */
+export function resolveAutoRoutesMatcherContext(
+  ctx: Pick<MutableCompilerContext, 'configService' | 'runtimeState'>,
+): ResolvedAutoRoutesMatcherContext {
+  const autoRoutesConfig = resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes)
+  const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
+
+  return {
+    autoRoutesConfig,
+    subPackageRoots,
+    matcher: createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots),
+  }
 }
 
 /**
