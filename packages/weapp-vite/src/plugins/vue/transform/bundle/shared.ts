@@ -331,6 +331,71 @@ export function emitFallbackPageBundleAssets(options: {
   })
 }
 
+export function emitCompiledEntryBundleAssets(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  ctx: CompilerContext
+  filename: string
+  relativeBase: string
+  result: VueTransformResult
+  isPage: boolean
+  configService: NonNullable<CompilerContext['configService']>
+  templateExtension: string
+  jsonExtension: string
+  scriptModuleExtension?: string
+  outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+}) {
+  const isAppVue = APP_VUE_LIKE_FILE_RE.test(options.filename)
+  const shouldEmitComponentJson = !isAppVue && !options.isPage
+  const shouldMergeJsonAsset = isAppVue
+  const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
+
+  const { jsonConfig } = emitBundleVueEntryAssets({
+    bundle: options.bundle,
+    pluginCtx: options.pluginCtx,
+    ctx: options.ctx,
+    filename: options.filename,
+    relativeBase: options.relativeBase,
+    result: options.result,
+    configService: options.configService,
+    templateExtension: options.templateExtension,
+    scriptModuleExtension: options.scriptModuleExtension,
+    outputExtensions: options.outputExtensions,
+    platformAssetOptions: options.platformAssetOptions,
+  })
+
+  if (options.result.config || shouldEmitComponentJson) {
+    emitSharedVueEntryJsonAsset({
+      bundle: options.bundle,
+      pluginCtx: options.pluginCtx,
+      relativeBase: options.relativeBase,
+      config: options.result.config,
+      outputExtensions: options.outputExtensions,
+      platformAssetOptions: options.platformAssetOptions,
+      jsonOptions: {
+        defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
+        mergeExistingAsset: shouldMergeJsonAsset,
+        mergeStrategy: jsonConfig?.mergeStrategy,
+        defaults: jsonConfig?.defaults?.[jsonKind],
+        kind: jsonKind,
+        extension: options.jsonExtension,
+      },
+    })
+  }
+
+  return {
+    isAppVue,
+    shouldEmitComponentJson,
+  }
+}
+
 export function getEntryBaseName(filename: string) {
   const extIndex = filename.lastIndexOf('.')
   if (extIndex < 0) {
