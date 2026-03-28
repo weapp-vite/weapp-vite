@@ -597,3 +597,112 @@ export async function registerNativeLayoutChunksForEntry(
     source,
   })
 }
+
+export async function preloadNativeLayoutEntries(options: {
+  pluginCtx: any
+  ctx: CompilerContext
+  configService: NonNullable<CompilerContext['configService']> | undefined
+  scanService: CompilerContext['scanService']
+  collectFallbackPageEntryIds: (
+    configService: NonNullable<CompilerContext['configService']>,
+    scanService: NonNullable<CompilerContext['scanService']>,
+  ) => Promise<string[]>
+  findFirstResolvedVueLikeEntry: (
+    entryId: string,
+    options: { resolve: (candidate: string) => Promise<string | undefined> },
+  ) => Promise<string | undefined>
+  pathExists: (candidate: string) => Promise<boolean>
+  readFile: (file: string, encoding: 'utf8') => Promise<string>
+}) {
+  const {
+    pluginCtx,
+    ctx,
+    configService,
+    scanService,
+    collectFallbackPageEntryIds,
+    findFirstResolvedVueLikeEntry,
+    pathExists,
+    readFile,
+  } = options
+
+  if (!configService || !scanService) {
+    return
+  }
+
+  const entryIds = await collectFallbackPageEntryIds(configService, scanService)
+  for (const entryId of entryIds) {
+    const entryFilePath = await findFirstResolvedVueLikeEntry(entryId, {
+      resolve: async candidate => await pathExists(candidate) ? candidate : undefined,
+    })
+    if (!entryFilePath) {
+      continue
+    }
+
+    try {
+      const source = await readFile(entryFilePath, 'utf8')
+      await registerNativeLayoutChunksForEntry(pluginCtx, ctx, entryFilePath, source)
+    }
+    catch {
+      // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
+    }
+  }
+}
+
+export async function loadTransformStyleBlock(options: {
+  id: string
+  pluginCtx: any
+  configService: CompilerContext['configService']
+  styleBlocksCache: Map<string, SFCStyleBlock[]>
+  loadScopedSlotModule: (id: string, scopedSlotModules: Map<string, string>) => string | null
+  scopedSlotModules: Map<string, string>
+  parseWeappVueStyleRequest: (id: string) => { filename: string, index: number } | null
+  readAndParseSfc: (filename: string, options: any) => Promise<{ descriptor: { styles: SFCStyleBlock[] } }>
+  createReadAndParseSfcOptions: (pluginCtx: any, configService: CompilerContext['configService']) => any
+}) {
+  const {
+    id,
+    pluginCtx,
+    configService,
+    styleBlocksCache,
+    loadScopedSlotModule,
+    scopedSlotModules,
+    parseWeappVueStyleRequest,
+    readAndParseSfc,
+    createReadAndParseSfcOptions,
+  } = options
+
+  const scopedSlot = loadScopedSlotModule(id, scopedSlotModules)
+  if (scopedSlot) {
+    return scopedSlot
+  }
+
+  const parsed = parseWeappVueStyleRequest(id)
+  if (!parsed) {
+    return null
+  }
+
+  const { filename, index } = parsed
+  let styles: SFCStyleBlock[]
+  try {
+    styles = await ensureSfcStyleBlocks(filename, styleBlocksCache, {
+      load: async target => (
+        await readAndParseSfc(target, {
+          ...createReadAndParseSfcOptions(pluginCtx, configService),
+        })
+      ).descriptor.styles,
+    })
+  }
+  catch {
+    return null
+  }
+
+  const block = styles[index]
+  if (!block) {
+    return null
+  }
+
+  return {
+    code: block.content,
+    map: null,
+  }
+}
