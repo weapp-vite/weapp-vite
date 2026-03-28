@@ -14,7 +14,6 @@ import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
-import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
 import OverviewPanel from '../features/dashboard/components/OverviewPanel.vue'
 import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
@@ -202,7 +201,19 @@ onBeforeUnmount(() => {
     </AppSurfaceCard>
 
     <section class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-      <DashboardTabs :tabs="dashboardTabs" :active-tab="activeTab" @select="activeTab = $event" />
+      <nav class="flex flex-wrap gap-2">
+        <button
+          v-for="tab in dashboardTabs"
+          :key="tab.key"
+          :class="pillButtonStyles({ kind: 'nav', active: activeTab === tab.key })"
+          @click="activeTab = tab.key"
+        >
+          <span class="h-4.5 w-4.5">
+            <DashboardIcon :name="tab.iconName" />
+          </span>
+          {{ tab.label }}
+        </button>
+      </nav>
       <div class="flex flex-wrap items-center gap-2">
         <div class="flex flex-wrap items-center gap-2">
           <button
