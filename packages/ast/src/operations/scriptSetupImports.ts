@@ -27,6 +27,14 @@ export function mayContainRelevantScriptSetupImports(
   return false
 }
 
+export function getScriptSetupImportedName(imported: any) {
+  return imported?.type === 'Identifier'
+    ? imported.name
+    : imported?.type === 'StringLiteral'
+      ? imported.value
+      : undefined
+}
+
 export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: ScriptSetupImport[] = []
   const ast = parseJsLikeWithEngine(scriptSetup, {
@@ -56,11 +64,7 @@ export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateCo
         results.push({ localName, importSource, importedName: 'default', kind: 'default' })
       }
       else if (specifier.type === 'ImportSpecifier') {
-        const importedName = specifier.imported?.type === 'Identifier'
-          ? specifier.imported.name
-          : specifier.imported?.type === 'StringLiteral'
-            ? specifier.imported.value
-            : undefined
+        const importedName = getScriptSetupImportedName(specifier.imported)
         results.push({ localName, importSource, importedName, kind: 'named' })
       }
     }
@@ -95,12 +99,7 @@ export function collectScriptSetupImportsWithBabel(scriptSetup: string, template
         results.push({ localName, importSource, importedName: 'default', kind: 'default' })
       }
       else if (specifier.type === 'ImportSpecifier') {
-        const imported = (specifier as any).imported
-        const importedName = imported?.type === 'Identifier'
-          ? imported.name
-          : imported?.type === 'StringLiteral'
-            ? imported.value
-            : undefined
+        const importedName = getScriptSetupImportedName((specifier as any).imported)
         results.push({ localName, importSource, importedName, kind: 'named' })
       }
     }

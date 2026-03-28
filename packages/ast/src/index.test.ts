@@ -43,6 +43,7 @@ import {
   getOxcStaticPropertyName,
   getRenderPropertyFromComponentOptions,
   getRequireAsyncLiteralToken,
+  getScriptSetupImportedName,
   getStaticPropertyName,
   getStaticRequireLiteralValue,
   hasBindingInScopes,
@@ -187,6 +188,10 @@ import FooCard, { BarButton as RenamedButton } from './components'
     expect(mayContainRelevantScriptSetupImports(`import BarCard from './BarCard'`, new Set(['FooCard']))).toBe(false)
     expect(mayContainRelevantScriptSetupImports('const count = 1', new Set(['FooCard']))).toBe(false)
     expect(mayContainRelevantScriptSetupImports(`import FooCard from './FooCard'`, new Set())).toBe(false)
+    expect(getScriptSetupImportedName({ type: 'Identifier', name: 'FooCard' })).toBe('FooCard')
+    expect(getScriptSetupImportedName({ type: 'StringLiteral', value: 'van-button' })).toBe('van-button')
+    expect(getScriptSetupImportedName({ type: 'Literal', value: 'FooCard' })).toBeUndefined()
+    expect(getScriptSetupImportedName(null)).toBeUndefined()
   })
 
   it('supports oxc fast prechecks', () => {
