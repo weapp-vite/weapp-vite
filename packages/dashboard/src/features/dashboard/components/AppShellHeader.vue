@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { ThemePreference } from '../composables/useThemeMode'
-import type { ThemeOption } from '../types'
+import type { ThemeOption, ThemePreference } from '../types'
 import AppInfoPill from './AppInfoPill.vue'
 import DashboardIcon from './DashboardIcon.vue'
 

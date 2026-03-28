@@ -1,5 +1,5 @@
 import type { ComputedRef, InjectionKey, Ref } from 'vue'
-import type { ResolvedTheme, ThemePreference } from './useThemeMode'
+import type { ResolvedTheme, ThemePreference } from '../types'
 import { inject, provide } from 'vue'
 import { useThemeMode } from './useThemeMode'
 
