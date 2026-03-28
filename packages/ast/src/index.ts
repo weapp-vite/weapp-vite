@@ -69,6 +69,7 @@ export {
 } from './operations/onPageScroll'
 export {
   isPlatformApiIdentifier,
+  isPlatformApiMemberExpression,
   mayContainPlatformApiAccess,
   mayContainPlatformApiIdentifierByText,
   platformApiIdentifierList,

@@ -19,6 +19,12 @@ export function mayContainPlatformApiIdentifierByText(code: string) {
   return false
 }
 
+export function isPlatformApiMemberExpression(node: any) {
+  return node?.type === 'MemberExpression'
+    && node.object?.type === 'Identifier'
+    && isPlatformApiIdentifier(node.object.name)
+}
+
 /**
  * 使用统一 AST 入口做平台 API 访问预判。
  */
@@ -53,11 +59,7 @@ export function mayContainPlatformApiAccess(
           return
         }
 
-        if (
-          node.type === 'MemberExpression'
-          && node.object.type === 'Identifier'
-          && isPlatformApiIdentifier(node.object.name)
-        ) {
+        if (isPlatformApiMemberExpression(node)) {
           found = true
         }
       },
