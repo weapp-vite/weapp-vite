@@ -1,28 +1,30 @@
 import { createWeapiAccessExpression } from '../../../utils/weapi'
 
-export function createInjectWeapiDefine(injectWeapi: unknown): Record<string, string> {
-  if (!injectWeapi) {
-    return {}
-  }
-
+export function isInjectWeapiReplaceEnabled(injectWeapi: unknown): boolean {
   const enabled = typeof injectWeapi === 'object'
     ? (injectWeapi as { enabled?: boolean }).enabled === true
     : injectWeapi === true
 
   if (!enabled || typeof injectWeapi !== 'object') {
+    return false
+  }
+
+  return (injectWeapi as { replaceWx?: boolean }).replaceWx === true
+}
+
+export function resolveInjectWeapiGlobalName(injectWeapi: unknown): string {
+  if (!injectWeapi || typeof injectWeapi !== 'object') {
+    return 'wpi'
+  }
+  return (injectWeapi as { globalName?: string }).globalName?.trim() || 'wpi'
+}
+
+export function createInjectWeapiDefine(injectWeapi: unknown): Record<string, string> {
+  if (!isInjectWeapiReplaceEnabled(injectWeapi)) {
     return {}
   }
 
-  const options = injectWeapi as {
-    replaceWx?: boolean
-    globalName?: string
-  }
-
-  if (options.replaceWx !== true) {
-    return {}
-  }
-
-  const globalName = options.globalName?.trim() || 'wpi'
+  const globalName = resolveInjectWeapiGlobalName(injectWeapi)
   const expression = createWeapiAccessExpression(globalName)
 
   return {
