@@ -139,7 +139,7 @@ export function getOxcStaticPropertyName(node: any): string | undefined {
   return undefined
 }
 
-function getOxcMemberExpressionPropertyName(node: any): string | undefined {
+export function getOxcMemberExpressionPropertyName(node: any): string | undefined {
   if (!node || node.type !== 'MemberExpression') {
     return undefined
   }
