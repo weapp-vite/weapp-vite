@@ -2,8 +2,6 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import { performance } from 'node:perf_hooks'
-// eslint-disable-next-line e18e/ban-dependencies -- 当前 transform 阶段仍统一复用 fs-extra 读取源码
-import fs from 'fs-extra'
 import path from 'pathe'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import logger from '../../../../logger'
@@ -15,7 +13,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, isAppEntry, registerVueTemplateToken, resolveVueOutputBase } from './shared'
+import { finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, isAppEntry, loadTransformSource, preloadTransformSfcStyleBlocks, registerVueTemplateToken, resolveVueOutputBase } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -74,33 +72,28 @@ export async function transformVueLikeFile(options: {
   }
 
   try {
-    const source = await measureStage('readSource', async () => (
-      typeof code === 'string'
-        ? code
-        : configService.isDev
-          ? await readFileCached(filename, { checkMtime: true, encoding: 'utf8' })
-          : await fs.readFile(filename, 'utf-8')
-    ))
+    const source = await measureStage('readSource', async () => await loadTransformSource({
+      code,
+      filename,
+      isDev: configService.isDev,
+      readFileCached,
+    }))
 
-    if (filename.endsWith('.vue') && source.includes('<style')) {
-      await measureStage('preParseSfc', async () => {
-        try {
-          await ensureSfcStyleBlocks(filename, styleBlocksCache, {
-            load: async target => (
-              await readAndParseSfc(target, {
-                ...createReadAndParseSfcOptions(pluginCtx, ctx.configService, {
-                  source,
-                  checkMtime: false,
-                }),
-              })
-            ).descriptor.styles,
+    await measureStage('preParseSfc', async () => {
+      await preloadTransformSfcStyleBlocks({
+        filename,
+        source,
+        styleBlocksCache,
+        load: async (target, loadedSource) => (
+          await readAndParseSfc(target, {
+            ...createReadAndParseSfcOptions(pluginCtx, ctx.configService, {
+              source: loadedSource,
+              checkMtime: false,
+            }),
           })
-        }
-        catch {
-          // 忽略解析失败，后续由 compileVueFile 抛出错误
-        }
+        ).descriptor.styles,
       })
-    }
+    })
 
     const libModeEnabled = configService.weappLibConfig?.enabled
     let isPage = false

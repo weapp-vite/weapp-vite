@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, registerNativeLayoutChunksForEntry } from './shared'
+import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformSource, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -19,6 +19,7 @@ const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => 
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'oxc'))
 const buildWeappVueStyleRequestMock = vi.hoisted(() => vi.fn((filename: string, _block: any, index: number) => `${filename}?style=${index}`))
+const fsReadFileMock = vi.hoisted(() => vi.fn(async () => 'loaded from fs'))
 
 vi.mock('../pageLayout', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../pageLayout')>()
@@ -65,6 +66,12 @@ vi.mock('../styleRequest', () => ({
   buildWeappVueStyleRequest: buildWeappVueStyleRequestMock,
 }))
 
+vi.mock('fs-extra', () => ({
+  default: {
+    readFile: fsReadFileMock,
+  },
+}))
+
 describe('vue transform plugin shared helpers', () => {
   beforeEach(() => {
     resolvePageLayoutPlanMock.mockReset()
@@ -95,6 +102,8 @@ describe('vue transform plugin shared helpers', () => {
     resolveAstEngineMock.mockReturnValue('oxc')
     buildWeappVueStyleRequestMock.mockReset()
     buildWeappVueStyleRequestMock.mockImplementation((filename: string, _block: any, index: number) => `${filename}?style=${index}`)
+    fsReadFileMock.mockReset()
+    fsReadFileMock.mockResolvedValue('loaded from fs')
   })
 
   it('detects vue-like ids', () => {
@@ -175,6 +184,63 @@ describe('vue transform plugin shared helpers', () => {
     expect(second).toBe(first)
     expect(styleBlocksCache.get('/project/src/components/card.vue')).toBe(first)
     expect(load).toHaveBeenCalledTimes(1)
+  })
+
+  it('loads transform source from inline code, cache, or fs based on mode', async () => {
+    const readFileCached = vi.fn(async () => 'loaded from cache')
+
+    await expect(loadTransformSource({
+      code: '<template />',
+      filename: '/project/src/components/card.vue',
+      isDev: true,
+      readFileCached,
+    })).resolves.toBe('<template />')
+
+    await expect(loadTransformSource({
+      code: undefined as any,
+      filename: '/project/src/components/card.vue',
+      isDev: true,
+      readFileCached,
+    })).resolves.toBe('loaded from cache')
+
+    await expect(loadTransformSource({
+      code: undefined as any,
+      filename: '/project/src/components/card.vue',
+      isDev: false,
+      readFileCached,
+    })).resolves.toBe('loaded from fs')
+
+    expect(readFileCached).toHaveBeenCalledTimes(1)
+    expect(fsReadFileMock).toHaveBeenCalledWith('/project/src/components/card.vue', 'utf-8')
+  })
+
+  it('preloads transform sfc style blocks only for vue files with style content and ignores parse failures', async () => {
+    const styleBlocksCache = new Map<string, any>()
+    const load = vi.fn(async () => [{ content: '.card{}' }])
+
+    await expect(preloadTransformSfcStyleBlocks({
+      filename: '/project/src/components/card.vue',
+      source: '<template /><style>.card{}</style>',
+      styleBlocksCache,
+      load,
+    })).resolves.toEqual([{ content: '.card{}' }])
+
+    await expect(preloadTransformSfcStyleBlocks({
+      filename: '/project/src/components/card.vue',
+      source: '<template />',
+      styleBlocksCache,
+      load,
+    })).resolves.toBeUndefined()
+
+    load.mockRejectedValueOnce(new Error('parse failed'))
+    await expect(preloadTransformSfcStyleBlocks({
+      filename: '/project/src/components/broken.vue',
+      source: '<template /><style>.broken{}</style>',
+      styleBlocksCache,
+      load,
+    })).resolves.toBeUndefined()
+
+    expect(load).toHaveBeenCalledTimes(2)
   })
 
   it('detects transform script post-process hints', () => {
