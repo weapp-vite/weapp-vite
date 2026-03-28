@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ensureSfcStyleBlocks, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, registerNativeLayoutChunksForEntry } from './shared'
+import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, registerNativeLayoutChunksForEntry } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -18,6 +18,7 @@ const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'oxc'))
+const buildWeappVueStyleRequestMock = vi.hoisted(() => vi.fn((filename: string, _block: any, index: number) => `${filename}?style=${index}`))
 
 vi.mock('../pageLayout', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../pageLayout')>()
@@ -60,6 +61,10 @@ vi.mock('../../../../ast', () => ({
   resolveAstEngine: resolveAstEngineMock,
 }))
 
+vi.mock('../styleRequest', () => ({
+  buildWeappVueStyleRequest: buildWeappVueStyleRequestMock,
+}))
+
 describe('vue transform plugin shared helpers', () => {
   beforeEach(() => {
     resolvePageLayoutPlanMock.mockReset()
@@ -88,6 +93,8 @@ describe('vue transform plugin shared helpers', () => {
     loggerWarnMock.mockReset()
     resolveAstEngineMock.mockReset()
     resolveAstEngineMock.mockReturnValue('oxc')
+    buildWeappVueStyleRequestMock.mockReset()
+    buildWeappVueStyleRequestMock.mockImplementation((filename: string, _block: any, index: number) => `${filename}?style=${index}`)
   })
 
   it('detects vue-like ids', () => {
@@ -328,5 +335,50 @@ describe('vue transform plugin shared helpers', () => {
     expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
     expect(result.script).toBe('App({})')
+  })
+
+  it('finalizes transform entry code with style imports, scriptless stubs, and dev hashes', () => {
+    const code = finalizeTransformEntryCode({
+      result: {
+        script: '',
+        meta: {
+          jsonMacroHash: 'json-hash',
+          defineOptionsHash: 'define-options-hash',
+        },
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      styleBlocks: [{ content: '.page{}' }, { content: '.more{}' }] as any,
+      isPage: true,
+      isApp: false,
+      isDev: true,
+    })
+
+    expect(buildWeappVueStyleRequestMock).toHaveBeenCalledTimes(2)
+    expect(code).toContain('import "/project/src/pages/home/index.vue?style=0";')
+    expect(code).toContain('import "/project/src/pages/home/index.vue?style=1";')
+    expect(code).toContain('Page({})')
+    expect(code).toContain('__weappViteJsonMacroHash')
+    expect(code).toContain('"json-hash"')
+    expect(code).toContain('__weappViteDefineOptionsHash')
+    expect(code).toContain('"define-options-hash"')
+  })
+
+  it('returns original entry code when finalize transform entry code has nothing extra to inject', () => {
+    const code = finalizeTransformEntryCode({
+      result: {
+        script: 'App({})',
+        meta: {
+          jsonMacroHash: 'json-hash',
+          defineOptionsHash: 'define-options-hash',
+        },
+      } as any,
+      filename: '/project/src/app.vue',
+      isPage: false,
+      isApp: true,
+      isDev: false,
+    })
+
+    expect(buildWeappVueStyleRequestMock).not.toHaveBeenCalled()
+    expect(code).toBe('App({})')
   })
 })

@@ -10,6 +10,7 @@ import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeature
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { isVueLikeFile } from '../shared'
+import { buildWeappVueStyleRequest } from '../styleRequest'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 const TEMPLATE_DYNAMIC_HINT_RE = /\{\{|wx:|bind[A-Za-z:_-]+=|catch[A-Za-z:_-]+=/
@@ -191,6 +192,44 @@ export async function finalizeTransformEntryScript(options: {
   }
 
   return result
+}
+
+export function finalizeTransformEntryCode(options: {
+  result: VueTransformResult
+  filename: string
+  styleBlocks?: SFCStyleBlock[]
+  isPage: boolean
+  isApp: boolean
+  isDev: boolean
+}) {
+  const { result, filename, styleBlocks, isPage, isApp, isDev } = options
+  let returnedCode = result.script ?? ''
+
+  if (styleBlocks?.length) {
+    const styleImports = styleBlocks
+      .map((styleBlock, index) => {
+        const request = buildWeappVueStyleRequest(filename, styleBlock, index)
+        return `import ${JSON.stringify(request)};\n`
+      })
+      .join('')
+    returnedCode = styleImports + returnedCode
+  }
+
+  if (!isApp && !result.script?.trim()) {
+    returnedCode += resolveScriptlessVueEntryStub(isPage)
+  }
+
+  const macroHash = result.meta?.jsonMacroHash
+  if (macroHash && isDev) {
+    returnedCode += `\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`
+  }
+
+  const defineOptionsHash = result.meta?.defineOptionsHash
+  if (defineOptionsHash && isDev) {
+    returnedCode += `\n;Object.defineProperty({}, '__weappViteDefineOptionsHash', { value: ${JSON.stringify(defineOptionsHash)} })\n`
+  }
+
+  return returnedCode
 }
 
 export async function registerNativeLayoutChunksForEntry(
