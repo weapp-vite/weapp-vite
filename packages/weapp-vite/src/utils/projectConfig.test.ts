@@ -9,6 +9,7 @@ import {
   getProjectConfigRootKeys,
   getProjectPrivateConfigFileName,
   resolveProjectConfigRoot,
+  resolveProjectConfigSyncDirs,
   syncProjectConfigToOutput,
 } from './projectConfig'
 
@@ -135,5 +136,24 @@ describe('projectConfig utils', () => {
       enabled: true,
       projectConfigPath: sourceConfig,
     })
+  })
+
+  it('resolves project config sync source and target directories', () => {
+    expect(resolveProjectConfigSyncDirs({
+      outDir: '/project/dist/miniprogram',
+      projectConfigPath: '/project/config/project.config.json',
+    })).toEqual({
+      outputRoot: '/project/dist',
+      sourceBasePath: '/project/config/project.config.json',
+      sourceDir: '/project/config',
+      resolvedOutputRoot: '/project/dist',
+      resolvedSourceDir: '/project/config',
+      shouldSync: true,
+    })
+
+    expect(resolveProjectConfigSyncDirs({
+      outDir: '/project/config/miniprogram',
+      projectConfigPath: '/project/config/project.config.json',
+    }).shouldSync).toBe(false)
   })
 })
