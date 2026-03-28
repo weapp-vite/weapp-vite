@@ -237,6 +237,13 @@ function resolveCandidateEntryPath(
   }
 }
 
+function shouldCollectCandidateEntry(
+  matcher: ReturnType<typeof createAutoRoutesMatcher>,
+  resolvedEntryPath: { relativeBase: string } | undefined,
+) {
+  return Boolean(resolvedEntryPath && matcher.matches(resolvedEntryPath.relativeBase))
+}
+
 function applyCandidateEntryFile(
   candidate: CandidateEntry,
   entryPath: string,
@@ -255,6 +262,15 @@ function applyCandidateEntryFile(
   if (isTemplateFile(entryPath)) {
     candidate.hasTemplate = true
   }
+}
+
+function applyCandidateEntryToMap(
+  candidates: Map<string, CandidateEntry>,
+  entryPath: string,
+  resolvedEntryPath: { candidateBase: string },
+) {
+  const candidate = ensureCandidate(candidates, resolvedEntryPath.candidateBase)
+  applyCandidateEntryFile(candidate, entryPath)
 }
 
 export async function collectCandidates(
@@ -300,16 +316,11 @@ export async function collectCandidates(
 
     for (const entryPath of files) {
       const resolvedEntryPath = resolveCandidateEntryPath(absoluteSrcRoot, entryPath)
-      if (!resolvedEntryPath) {
+      if (!shouldCollectCandidateEntry(matcher, resolvedEntryPath)) {
         continue
       }
 
-      if (!matcher.matches(resolvedEntryPath.relativeBase)) {
-        continue
-      }
-
-      const candidate = ensureCandidate(candidates, resolvedEntryPath.candidateBase)
-      applyCandidateEntryFile(candidate, entryPath)
+      applyCandidateEntryToMap(candidates, entryPath, resolvedEntryPath)
     }
   }
 
@@ -340,6 +351,7 @@ export function areSetsEqual(a: Set<string>, b: Set<string>) {
 
 export {
   applyCandidateEntryFile,
+  applyCandidateEntryToMap,
   buildDefaultSearchRoots,
   classifyPagesRootEntry,
   hasNestedPagesRoot,
@@ -347,5 +359,6 @@ export {
   resolveCandidateSearchRoots,
   resolveCollectTargetRoot,
   safeCrawlCandidateFiles,
+  shouldCollectCandidateEntry,
   shouldCollectTargetRoot,
 }
