@@ -129,6 +129,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runMissingStatLab')
     bridge.runPageMethod('runMissingReadDirLab')
     bridge.runPageMethod('runMissingReadFileLab')
+    bridge.runPageMethod('runMissingUnlinkLab')
+    bridge.runPageMethod('runMissingCopyFileLab')
     bridge.runPageMethod('runMissingAccessLab')
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
@@ -150,9 +152,11 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
           && pageData.fileManagerMissingAccessInfo
+          && pageData.fileManagerMissingCopyInfo
           && pageData.fileManagerMissingReadInfo
           && pageData.fileManagerMissingReadDirInfo
           && pageData.fileManagerMissingStatInfo
+          && pageData.fileManagerMissingUnlinkInfo
           && pageData.fileManagerSnapshot
           && pageData.requestSnapshot
           && pageData.savedFileInfo
@@ -176,9 +180,11 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.directorySnapshot).toBe('["daily"]')
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
     expect(pageData.fileManagerMissingAccessInfo).toContain('"missingAccessError":"access:fail no such file or directory')
+    expect(pageData.fileManagerMissingCopyInfo).toContain('"missingCopyError":"copyFile:fail no such file or directory')
     expect(pageData.fileManagerMissingReadInfo).toContain('"missingReadError":"readFile:fail no such file or directory')
     expect(pageData.fileManagerMissingReadDirInfo).toContain('"missingReadDirError":"readdir:fail no such file or directory')
     expect(pageData.fileManagerMissingStatInfo).toContain('"missingStatError":"stat:fail no such file or directory')
+    expect(pageData.fileManagerMissingUnlinkInfo).toContain('"missingUnlinkError":"unlink:fail no such file or directory')
     expect(pageData.fileManagerSnapshot).toContain('"isDirectory":true')
     expect(pageData.fileManagerSnapshot).toContain('"isFile":true')
     expect(pageData.fileManagerSnapshot).toContain('"text":"component-lab"')
