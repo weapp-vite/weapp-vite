@@ -13,6 +13,7 @@ import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocu
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
+import AppThemeOptionGroup from '../features/dashboard/components/AppThemeOptionGroup.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
@@ -24,10 +25,9 @@ import { useDashboardPage } from '../features/dashboard/composables/useDashboard
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
-import { dashboardTabs } from '../features/dashboard/constants/view'
+import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
 import { formatDuration } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
-import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
 echarts.use([
@@ -182,19 +182,11 @@ onBeforeUnmount(() => {
     <section class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
       <DashboardTabs :tabs="dashboardTabs" :active-tab="activeTab" @select="activeTab = $event" />
       <div class="flex flex-wrap items-center gap-2">
-        <button
-          v-for="option in [
-            { value: 'system', label: '跟随系统', iconClass: 'icon-[mdi--theme-light-dark]' },
-            { value: 'light', label: '亮色', iconClass: 'icon-[mdi--white-balance-sunny]' },
-            { value: 'dark', label: '暗色', iconClass: 'icon-[mdi--moon-waning-crescent]' },
-          ]"
-          :key="option.value"
-          :class="pillButtonStyles({ kind: 'theme', active: themePreference === option.value })"
-          @click="setThemePreference(option.value)"
-        >
-          <span class="h-4 w-4" :class="option.iconClass" />
-          {{ option.label }}
-        </button>
+        <AppThemeOptionGroup
+          :options="themeOptions"
+          :selected-value="themePreference"
+          @select="setThemePreference"
+        />
         <AppInfoPill :icon-name="statusTone" :label="statusText" uppercase />
         <AppInfoPill :label="lastUpdatedAt" uppercase />
       </div>
