@@ -463,3 +463,17 @@ export async function loadFallbackPageEntryCompilation(options: {
     result,
   }
 }
+
+export async function handleFallbackPageLayouts(options: {
+  source: string
+  entryFilePath: string
+  configService: NonNullable<CompilerContext['configService']>
+  emitLayouts: (layouts: Awaited<ReturnType<typeof resolvePageLayoutPlan>>['layouts'] | undefined) => Promise<void>
+}) {
+  const resolvedLayoutPlan = await resolvePageLayoutPlan(
+    options.source,
+    options.entryFilePath,
+    options.configService,
+  )
+  await options.emitLayouts(resolvedLayoutPlan?.layouts)
+}

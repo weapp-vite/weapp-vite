@@ -4,9 +4,8 @@ import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
-import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
-import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, loadFallbackPageEntryCompilation, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -63,15 +62,21 @@ export async function emitFallbackPageAssets(
         compileOptionsState,
       })
 
-      const resolvedLayoutPlan = await resolvePageLayoutPlan(source, entryFilePath, configService)
-      await emitBundlePageLayoutsIfNeeded({
-        layouts: resolvedLayoutPlan?.layouts,
-        pluginCtx,
-        bundle,
-        ctx,
+      await handleFallbackPageLayouts({
+        source,
+        entryFilePath,
         configService,
-        compileOptionsState,
-        outputExtensions,
+        emitLayouts: async (layouts) => {
+          await emitBundlePageLayoutsIfNeeded({
+            layouts,
+            pluginCtx,
+            bundle,
+            ctx,
+            configService,
+            compileOptionsState,
+            outputExtensions,
+          })
+        },
       })
 
       const { jsonConfig } = emitBundleVueEntryAssets({

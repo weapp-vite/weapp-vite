@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -26,6 +26,7 @@ const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
   template: '<view />',
   script: 'Page({})',
 })))
+const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock('./platform', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./platform')>()
@@ -55,6 +56,14 @@ vi.mock('../injectSetDataPick', () => ({
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
 }))
+
+vi.mock('../pageLayout', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../pageLayout')>()
+  return {
+    ...actual,
+    resolvePageLayoutPlan: resolvePageLayoutPlanMock,
+  }
+})
 
 vi.mock('../classStyle', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../classStyle')>()
@@ -111,6 +120,8 @@ describe('emitSharedVueEntryAssets', () => {
       template: '<view />',
       script: 'Page({})',
     })
+    resolvePageLayoutPlanMock.mockReset()
+    resolvePageLayoutPlanMock.mockResolvedValue(undefined)
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -479,6 +490,31 @@ describe('emitSharedVueEntryAssets', () => {
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(result.source).toBe('<view>{{title}}</view>')
     expect(result.result.script).toBe('Page({ loaded: true })')
+  })
+
+  it('handles fallback page layouts through shared resolve-and-emit flow', async () => {
+    const emitLayouts = vi.fn(async () => {})
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [
+        { kind: 'native', file: '/layouts/default/index' },
+      ],
+    })
+
+    await handleFallbackPageLayouts({
+      source: '<view />',
+      entryFilePath: '/project/src/pages/demo/index.vue',
+      configService: {} as any,
+      emitLayouts,
+    })
+
+    expect(resolvePageLayoutPlanMock).toHaveBeenCalledWith(
+      '<view />',
+      '/project/src/pages/demo/index.vue',
+      expect.anything(),
+    )
+    expect(emitLayouts).toHaveBeenCalledWith([
+      { kind: 'native', file: '/layouts/default/index' },
+    ])
   })
 
   it('normalizes config before emitting shared json asset', () => {
