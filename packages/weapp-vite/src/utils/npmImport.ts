@@ -86,6 +86,30 @@ export function hasNpmDependencyPrefix(
   })
 }
 
+export function shouldNormalizeNpmImportByPlatform(
+  importee: string,
+  options: {
+    platform?: MpPlatform
+    dependencies?: Record<string, string>
+  },
+) {
+  const trimmed = importee.trim()
+  if (!trimmed || PLUGIN_PROTOCOL_RE.test(trimmed)) {
+    return false
+  }
+
+  if (!options.platform || !shouldNormalizePlatformNpmImportPath(options.platform)) {
+    return false
+  }
+
+  const normalized = trimmed.replace(NPM_PROTOCOL_RE, '')
+  if (EXPLICIT_NPM_DIR_RE.test(normalized)) {
+    return true
+  }
+
+  return hasNpmDependencyPrefix(options.dependencies, normalized)
+}
+
 export function normalizeNpmImportPathByPlatform(
   importee: string,
   options: {
@@ -95,25 +119,11 @@ export function normalizeNpmImportPathByPlatform(
   },
 ) {
   const trimmed = importee.trim()
-  if (!trimmed || PLUGIN_PROTOCOL_RE.test(trimmed)) {
-    return importee
-  }
-
-  if (!options.platform || !shouldNormalizePlatformNpmImportPath(options.platform)) {
+  if (!shouldNormalizeNpmImportByPlatform(trimmed, options)) {
     return importee
   }
 
   const normalized = trimmed.replace(NPM_PROTOCOL_RE, '')
-  if (EXPLICIT_NPM_DIR_RE.test(normalized)) {
-    return normalizePlatformNpmImportPath(options.platform, normalized, {
-      alipayNpmMode: options.alipayNpmMode,
-    })
-  }
-
-  if (!hasNpmDependencyPrefix(options.dependencies, normalized)) {
-    return importee
-  }
-
   return normalizePlatformNpmImportPath(options.platform, normalized, {
     alipayNpmMode: options.alipayNpmMode,
   })
