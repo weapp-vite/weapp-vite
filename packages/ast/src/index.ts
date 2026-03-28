@@ -84,6 +84,8 @@ export {
   collectLoopScopeAliases,
   collectPatternBindingNames,
   collectSetDataPickKeysFromTemplateCode,
+  collectSetDataPickKeysWithBabel,
+  collectSetDataPickKeysWithOxc,
   extractTemplateExpressions,
   hasBindingInScopes,
 } from './operations/setDataPick'

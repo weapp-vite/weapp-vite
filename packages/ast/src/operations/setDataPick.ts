@@ -355,7 +355,7 @@ export function collectIdentifiersFromExpressionWithOxc(expression: string): Set
   return collected
 }
 
-function collectWithBabel(template: string): string[] {
+export function collectSetDataPickKeysWithBabel(template: string): string[] {
   const templateExpressions = extractTemplateExpressions(template)
   if (!templateExpressions.length) {
     return []
@@ -373,7 +373,7 @@ function collectWithBabel(template: string): string[] {
   return [...keys].sort((a, b) => a.localeCompare(b))
 }
 
-function collectWithOxc(template: string): string[] {
+export function collectSetDataPickKeysWithOxc(template: string): string[] {
   const templateExpressions = extractTemplateExpressions(template)
   if (!templateExpressions.length) {
     return []
@@ -409,7 +409,7 @@ export function collectSetDataPickKeysFromTemplateCode(
   const engine = options?.astEngine ?? 'babel'
 
   try {
-    return engine === 'oxc' ? collectWithOxc(template) : collectWithBabel(template)
+    return engine === 'oxc' ? collectSetDataPickKeysWithOxc(template) : collectSetDataPickKeysWithBabel(template)
   }
   catch {
     return []
