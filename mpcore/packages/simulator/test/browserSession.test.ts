@@ -291,6 +291,97 @@ Page({
     expect(session.getFileText('headless://temp/browser-upload-abort.txt')).toBe('browser-upload-abort')
   })
 
+  it('reports file transfer failures for missing mocks and missing upload source files in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  runFileTransferFailureLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-upload-no-mock.txt', 'browser-upload-no-mock')
+    wx.downloadFile({
+      filePath: 'headless://temp/browser-download-no-mock.txt',
+      url: 'https://mock.mpcore.dev/files/browser-unmatched-report.txt',
+      fail: (error) => {
+        this.push('download:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('download:complete')
+      }
+    })
+    wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/browser-missing-source',
+      filePath: 'headless://temp/browser-missing-upload.txt',
+      name: 'artifact',
+      fail: (error) => {
+        this.push('upload-missing-file:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('upload-missing-file:complete')
+      }
+    })
+    wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/browser-unmatched-report',
+      filePath: 'headless://temp/browser-upload-no-mock.txt',
+      name: 'artifact',
+      fail: (error) => {
+        this.push('upload-no-mock:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('upload-no-mock:complete')
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view><view>{{logs.2}}</view><view>{{logs.3}}</view><view>{{logs.4}}</view><view>{{logs.5}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFileTransferFailureLab()
+
+    expect(page.data.logs).toEqual([
+      'download:fail:No downloadFile mock matched in headless runtime: https://mock.mpcore.dev/files/browser-unmatched-report.txt',
+      'download:complete',
+      'upload-missing-file:fail:uploadFile:fail file not found: headless://temp/browser-missing-upload.txt',
+      'upload-missing-file:complete',
+      'upload-no-mock:fail:No uploadFile mock matched in headless runtime: https://mock.mpcore.dev/upload/browser-unmatched-report',
+      'upload-no-mock:complete',
+    ])
+    expect(session.renderCurrentPage().wxml).toContain('download:fail:No downloadFile mock matched in headless runtime')
+    expect(session.renderCurrentPage().wxml).toContain('uploadFile:fail file not found: headless://temp/browser-missing-upload.txt')
+    expect(session.getDownloadFileLogs()).toEqual([
+      {
+        header: {},
+        matched: false,
+        url: 'https://mock.mpcore.dev/files/browser-unmatched-report.txt',
+      },
+    ])
+    expect(session.getUploadFileLogs()).toEqual([
+      {
+        fileContent: 'browser-upload-no-mock',
+        fileName: undefined,
+        filePath: 'headless://temp/browser-upload-no-mock.txt',
+        formData: {},
+        header: {},
+        matched: false,
+        name: 'artifact',
+        url: 'https://mock.mpcore.dev/upload/browser-unmatched-report',
+      },
+    ])
+    expect(session.getFileText('headless://temp/browser-download-no-mock.txt')).toBeNull()
+  })
+
   it('supports downloadFile, saveFile and uploadFile in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

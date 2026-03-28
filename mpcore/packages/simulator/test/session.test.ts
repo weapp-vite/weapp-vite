@@ -713,6 +713,102 @@ Page({
     expect(session.getFileText('headless://temp/upload-abort.txt')).toBe('upload-abort')
   })
 
+  it('reports file transfer failures for missing mocks and missing upload source files', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-file-transfer-errors-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  runFileTransferFailureLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/upload-no-mock.txt', 'upload-no-mock')
+    wx.downloadFile({
+      filePath: 'headless://temp/download-no-mock.txt',
+      url: 'https://mock.mpcore.dev/files/unmatched-report.txt',
+      fail: (error) => {
+        this.push('download:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('download:complete')
+      }
+    })
+    wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/missing-source',
+      filePath: 'headless://temp/missing-upload.txt',
+      name: 'artifact',
+      fail: (error) => {
+        this.push('upload-missing-file:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('upload-missing-file:complete')
+      }
+    })
+    wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/unmatched-report',
+      filePath: 'headless://temp/upload-no-mock.txt',
+      name: 'artifact',
+      fail: (error) => {
+        this.push('upload-no-mock:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('upload-no-mock:complete')
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>file-transfer-errors</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFileTransferFailureLab()
+
+    expect(page.data.logs).toEqual([
+      'download:fail:No downloadFile mock matched in headless runtime: https://mock.mpcore.dev/files/unmatched-report.txt',
+      'download:complete',
+      'upload-missing-file:fail:uploadFile:fail file not found: headless://temp/missing-upload.txt',
+      'upload-missing-file:complete',
+      'upload-no-mock:fail:No uploadFile mock matched in headless runtime: https://mock.mpcore.dev/upload/unmatched-report',
+      'upload-no-mock:complete',
+    ])
+    expect(session.getDownloadFileLogs()).toEqual([
+      {
+        header: {},
+        matched: false,
+        url: 'https://mock.mpcore.dev/files/unmatched-report.txt',
+      },
+    ])
+    expect(session.getUploadFileLogs()).toEqual([
+      {
+        fileContent: 'upload-no-mock',
+        fileName: undefined,
+        filePath: 'headless://temp/upload-no-mock.txt',
+        formData: {},
+        header: {},
+        matched: false,
+        name: 'artifact',
+        url: 'https://mock.mpcore.dev/upload/unmatched-report',
+      },
+    ])
+    expect(session.getFileText('headless://temp/download-no-mock.txt')).toBeNull()
+  })
+
   it('supports downloadFile, saveFile and uploadFile through wx api state', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-file-transfer-'))
     tempDirs.push(root)
