@@ -7,10 +7,12 @@ defineProps<{
   label: DashboardLabelValueItem['label']
   value: DashboardLabelValueItem['value']
 }>()
+
+const panelClassName = mutedPanelStyles({ padding: 'sm' })
 </script>
 
 <template>
-  <div :class="mutedPanelStyles({ padding: 'sm' })">
+  <div :class="panelClassName">
     <AppMetaLabel>
       {{ label }}
     </AppMetaLabel>
