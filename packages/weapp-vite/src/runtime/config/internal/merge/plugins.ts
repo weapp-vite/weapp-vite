@@ -3,7 +3,7 @@ import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../../plugins'
 
-function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
+export function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
   const normalized: PluginOption[] = []
   if (!option) {
     return normalized
