@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardSurfaceSampleItem } from '../features/dashboard/types'
+import type { DashboardIconFeatureItem, DashboardSurfaceSampleItem } from '../features/dashboard/types'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
@@ -13,6 +13,12 @@ const surfaceSamples: DashboardSurfaceSampleItem[] = [
   { label: 'Strong surface', tone: 'strong' },
   { label: 'Muted surface', tone: 'muted' },
 ]
+
+const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option => ({
+  iconName: option.iconName,
+  title: option.label,
+  meta: option.value,
+}))
 </script>
 
 <template>
@@ -25,11 +31,9 @@ const surfaceSamples: DashboardSurfaceSampleItem[] = [
       />
       <div class="mt-5 grid gap-3 lg:grid-cols-3">
         <AppIconFeatureCard
-          v-for="option in themeOptions"
-          :key="option.value"
-          :icon-name="option.iconName"
-          :title="option.label"
-          :meta="option.value"
+          v-for="item in themeFeatureItems"
+          :key="item.meta"
+          v-bind="item"
         />
       </div>
     </AppSurfaceCard>
@@ -46,8 +50,7 @@ const surfaceSamples: DashboardSurfaceSampleItem[] = [
           <AppTokenSwatch
             v-for="token in group.tokens"
             :key="token.name"
-            :name="token.name"
-            :sample="token.sample"
+            v-bind="token"
           />
         </ul>
       </AppSurfaceCard>
