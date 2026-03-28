@@ -2,7 +2,6 @@ import type { CompilationCacheEntry, VueBundleState } from './shared'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
 import { normalizeWatchPath } from '../../../../utils/path'
-import { emitSfcJsonAsset } from '../emitAssets'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
@@ -13,8 +12,8 @@ import {
   emitVueLayoutScriptFallbackIfNeeded,
 } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
-import { preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, emitSharedVueEntryAssets, getEntryBaseName, isAppVueLikeFile } from './shared'
+import { resolveVueBundlePlatformAssetOptions } from './platform'
+import { compileVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -155,20 +154,21 @@ export async function emitCompiledVueEntryAssets(
   })
 
   if (result.config || shouldEmitComponentJson) {
-    const normalizedConfig = preparePlatformConfigAsset(bundle, {
+    emitSharedVueEntryJsonAsset({
+      bundle,
       pluginCtx,
       relativeBase,
       config: result.config,
       outputExtensions,
-      ...platformAssetOptions,
-    })
-    emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
-      defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
-      mergeExistingAsset: shouldMergeJsonAsset,
-      mergeStrategy: jsonConfig?.mergeStrategy,
-      defaults: jsonConfig?.defaults?.[jsonKind],
-      kind: jsonKind,
-      extension: jsonExtension,
+      platformAssetOptions,
+      jsonOptions: {
+        defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
+        mergeExistingAsset: shouldMergeJsonAsset,
+        mergeStrategy: jsonConfig?.mergeStrategy,
+        defaults: jsonConfig?.defaults?.[jsonKind],
+        kind: jsonKind,
+        extension: jsonExtension,
+      },
     })
   }
 

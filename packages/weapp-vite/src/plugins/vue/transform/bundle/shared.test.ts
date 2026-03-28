@@ -1,20 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitSharedVueEntryAssets } from './shared'
+import { emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
+const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
 const emitScopedSlotAssetsMock = vi.hoisted(() => vi.fn())
 const resolveClassStyleWxsLocationForBaseMock = vi.hoisted(() => vi.fn(() => ({
   fileName: 'pages/index/__class_style.sjs',
 })))
 const getClassStyleWxsSourceMock = vi.hoisted(() => vi.fn(() => 'module.exports = {}'))
+const preparePlatformConfigAssetMock = vi.hoisted(() => vi.fn(() => '{"component":true}'))
 
 vi.mock('./platform', () => ({
   emitPlatformTemplateAsset: emitPlatformTemplateAssetMock,
+  preparePlatformConfigAsset: preparePlatformConfigAssetMock,
 }))
 
 vi.mock('../emitAssets', () => ({
   emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
+  emitSfcJsonAsset: emitSfcJsonAssetMock,
 }))
 
 vi.mock('../scopedSlot', () => ({
@@ -41,9 +45,12 @@ describe('emitSharedVueEntryAssets', () => {
   beforeEach(() => {
     emitPlatformTemplateAssetMock.mockReset()
     emitClassStyleWxsAssetIfMissingMock.mockReset()
+    emitSfcJsonAssetMock.mockReset()
     emitScopedSlotAssetsMock.mockReset()
     resolveClassStyleWxsLocationForBaseMock.mockClear()
     getClassStyleWxsSourceMock.mockClear()
+    preparePlatformConfigAssetMock.mockReset()
+    preparePlatformConfigAssetMock.mockReturnValue('{"component":true}')
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -100,5 +107,44 @@ describe('emitSharedVueEntryAssets', () => {
         source: 'module.exports = {}',
       },
     })
+  })
+
+  it('normalizes config before emitting shared json asset', () => {
+    emitSharedVueEntryJsonAsset({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      relativeBase: 'pages/index/index',
+      config: '{"component":true}',
+      outputExtensions: { wxml: 'axml' },
+      platformAssetOptions: {
+        platform: 'alipay',
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+      },
+      jsonOptions: {
+        defaultConfig: { component: true },
+        mergeExistingAsset: true,
+        defaults: { styleIsolation: 'apply-shared' },
+        mergeStrategy: 'override' as any,
+        kind: 'page',
+        extension: 'json',
+      },
+    })
+
+    expect(preparePlatformConfigAssetMock).toHaveBeenCalledTimes(1)
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      { config: '{"component":true}' },
+      {
+        defaultConfig: { component: true },
+        mergeExistingAsset: true,
+        defaults: { styleIsolation: 'apply-shared' },
+        mergeStrategy: 'override',
+        kind: 'page',
+        extension: 'json',
+      },
+    )
   })
 })
