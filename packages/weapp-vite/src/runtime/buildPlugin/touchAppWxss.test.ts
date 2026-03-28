@@ -1,8 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { hasTailwindcssDependency, resolveTouchAppWxssEnabled } from './touchAppWxss'
+import {
+  hasTailwindcssDependency,
+  resolveTouchAppWxssEnabled,
+  shouldAutoTouchAppWxssForPlatform,
+} from './touchAppWxss'
 
 describe('runtime buildPlugin touchAppWxss', () => {
+  it('limits automatic touchAppWxss to weapp platform', () => {
+    expect(shouldAutoTouchAppWxssForPlatform('weapp')).toBe(true)
+    expect(shouldAutoTouchAppWxssForPlatform('alipay')).toBe(false)
+  })
+
   it('detects tailwind dependency from dependencies and devDependencies', () => {
     expect(hasTailwindcssDependency({
       dependencies: {

@@ -14,6 +14,10 @@ export function hasTailwindcssDependency(packageJson: PackageJson) {
   )
 }
 
+export function shouldAutoTouchAppWxssForPlatform(platform: MpPlatform) {
+  return platform === 'weapp'
+}
+
 export function resolveTouchAppWxssEnabled(options: {
   option?: TouchAppWxssOption
   platform: MpPlatform
@@ -28,7 +32,7 @@ export function resolveTouchAppWxssEnabled(options: {
   if (resolvedOption === false) {
     return false
   }
-  if (options.platform !== 'weapp') {
+  if (!shouldAutoTouchAppWxssForPlatform(options.platform)) {
     return false
   }
   if (hasTailwindcssDependency(options.packageJson)) {
