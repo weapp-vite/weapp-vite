@@ -142,6 +142,16 @@ export function getStaticPropertyName(node: any) {
   return undefined
 }
 
+export function mergeComponentPropTypes(
+  primaryType: string | undefined,
+  optionalTypes: Array<string | undefined>,
+) {
+  const typeCandidates = [primaryType, ...optionalTypes]
+    .filter((candidate): candidate is string => Boolean(candidate && candidate.trim().length > 0))
+  const deduped = [...new Set(typeCandidates)]
+  return deduped.length > 0 ? deduped.join(' | ') : 'any'
+}
+
 export function extractPropertiesObject(node: any): ComponentPropMap | undefined {
   if (!node || node.type !== 'ObjectExpression') {
     return undefined
@@ -186,10 +196,7 @@ export function extractPropertiesObject(node: any): ComponentPropMap | undefined
         }
       }
 
-      const typeCandidates = [primaryType, ...optionalTypes]
-        .filter((candidate): candidate is string => Boolean(candidate && candidate.trim().length > 0))
-      const deduped = [...new Set(typeCandidates)]
-      propMap.set(name, deduped.length > 0 ? deduped.join(' | ') : 'any')
+      propMap.set(name, mergeComponentPropTypes(primaryType, optionalTypes))
       continue
     }
 
