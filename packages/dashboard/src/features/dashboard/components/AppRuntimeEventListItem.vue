@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DashboardRuntimeBadgeItem, DashboardRuntimeEvent } from '../types'
 import { computed } from 'vue'
-import { formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../utils/format'
+import { createRuntimeEventBadgeItem, formatRuntimeEventMeta } from '../utils/format'
 import AppMetaLabel from './AppMetaLabel.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 import AppTagList from './AppTagList.vue'
@@ -11,14 +11,7 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-function createRuntimeEventBadge(event: DashboardRuntimeEvent): DashboardRuntimeBadgeItem {
-  return {
-    label: formatRuntimeEventLevel(event.level),
-    tone: getRuntimeEventBadgeTone(event.level),
-  }
-}
-
-const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeEventBadge(props.event))
+const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeEventBadgeItem(props.event))
 const eventMeta = computed(() => formatRuntimeEventMeta(props.event))
 const panelClassName = computed(() =>
   props.selected

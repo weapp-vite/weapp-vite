@@ -1,4 +1,9 @@
-import type { DashboardRuntimeEventKind, DashboardRuntimeEventLevel } from '../types'
+import type {
+  DashboardRuntimeBadgeItem,
+  DashboardRuntimeEvent,
+  DashboardRuntimeEventKind,
+  DashboardRuntimeEventLevel,
+} from '../types'
 
 export function formatBytes(bytes?: number) {
   if (!bytes || Number.isNaN(bytes)) {
@@ -90,6 +95,13 @@ export function formatRuntimeEventSource(source?: string) {
 
 export function getRuntimeEventBadgeTone(level: DashboardRuntimeEventLevel) {
   return level
+}
+
+export function createRuntimeEventBadgeItem(event: DashboardRuntimeEvent): DashboardRuntimeBadgeItem {
+  return {
+    label: formatRuntimeEventLevel(event.level),
+    tone: getRuntimeEventBadgeTone(event.level),
+  }
 }
 
 export function getRuntimeSourceBadgeTone(errorCount: number) {
