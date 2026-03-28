@@ -15,6 +15,7 @@ Page({
     savedOverwriteInfo: '',
     savedFilePath: '',
     savedFileInfo: '',
+    saveFileMissingTempInfo: '',
     savedMissingInfo: '',
     savedMissingRemovalInfo: '',
     savedPostRemovalReadInfo: '',
@@ -202,6 +203,20 @@ Page({
         state.uploadNoMockError = error.message
       },
       complete: flush,
+    })
+  },
+  runSaveFileMissingTempLab() {
+    wx.saveFile({
+      tempFilePath: 'headless://temp/component-lab-missing-save-source.txt',
+      fail: (error) => {
+        this.setData({
+          saveFileMissingTempInfo: JSON.stringify({
+            missingTempSaveError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runSaveFileMissingTempLab')
+        })
+      },
     })
   },
   runSavedOverwriteLab() {
