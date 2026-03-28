@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { pillButtonStyles } from '../utils/styles'
+import AppMetaLabel from './AppMetaLabel.vue'
 
 defineProps<{
   title: string
@@ -14,9 +15,9 @@ const emit = defineEmits<{
 
 <template>
   <div>
-    <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+    <AppMetaLabel>
       {{ title }}
-    </p>
+    </AppMetaLabel>
     <div class="mt-2 flex flex-wrap gap-2">
       <button
         v-for="option in options"

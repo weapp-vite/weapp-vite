@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DashboardRuntimeEvent } from '../types'
 import { formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../utils/format'
+import AppMetaLabel from './AppMetaLabel.vue'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 
 defineProps<{
@@ -17,9 +18,9 @@ defineProps<{
       <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
         {{ event.detail }}
       </p>
-      <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+      <AppMetaLabel class="mt-2">
         {{ formatRuntimeEventMeta(event) }}
-      </p>
+      </AppMetaLabel>
     </div>
     <AppRuntimeBadge :label="formatRuntimeEventLevel(event.level)" :tone="getRuntimeEventBadgeTone(event.level)" />
   </div>
