@@ -7,7 +7,7 @@ export type TouchAppWxssOption = boolean | 'auto' | undefined
 
 const tailwindPackageName = 'weapp-tailwindcss'
 
-function hasTailwindcssDependency(packageJson: PackageJson) {
+export function hasTailwindcssDependency(packageJson: PackageJson) {
   return Boolean(
     packageJson.dependencies?.[tailwindPackageName]
     || packageJson.devDependencies?.[tailwindPackageName],
