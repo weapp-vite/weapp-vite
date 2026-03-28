@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mergeWeb } from './web'
+import {
+  mergeWeb,
+  mergeWebPlugins,
+} from './web'
 
 vi.mock('@weapp-vite/web', () => ({
   weappWebPlugin: vi.fn(() => ({
@@ -8,6 +11,19 @@ vi.mock('@weapp-vite/web', () => ({
 }))
 
 describe('runtime config merge web', () => {
+  it('merges web plugins while removing duplicated runtime plugin names', () => {
+    const webPlugin = { name: 'weapp-web-plugin' }
+
+    expect(mergeWebPlugins([
+      { name: 'user-plugin' },
+      [{ name: 'weapp-web-plugin' }],
+      false as any,
+    ] as any, webPlugin as any)).toEqual([
+      { name: 'weapp-web-plugin' },
+      { name: 'user-plugin' },
+    ])
+  })
+
   it('injects weapp-vite host metadata for web runtime', () => {
     const applyRuntimePlatform = vi.fn()
     const injectBuiltinAliases = vi.fn()
