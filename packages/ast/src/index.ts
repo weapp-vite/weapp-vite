@@ -10,7 +10,11 @@ export {
 export { parseJsLikeWithEngine } from './engine'
 export { babelAstEngine } from './engines/babel'
 export { oxcAstEngine } from './engines/oxc'
-export { collectComponentPropsFromCode } from './operations/componentProps'
+export {
+  collectComponentPropsFromCode,
+  mapConstructorName,
+  mayContainComponentPropsShape,
+} from './operations/componentProps'
 export type { ComponentPropMap } from './operations/componentProps'
 export { collectFeatureFlagsFromCode, mayContainFeatureFlagHints } from './operations/featureFlags'
 export type { FeatureFlagOptions } from './operations/featureFlags'

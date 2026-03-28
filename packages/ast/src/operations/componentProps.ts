@@ -9,7 +9,7 @@ export type ComponentPropMap = Map<string, string>
 
 const COMPONENT_PROPS_TEXT_HINTS = ['properties', 'props']
 
-function mayContainComponentPropsShape(code: string) {
+export function mayContainComponentPropsShape(code: string) {
   return COMPONENT_PROPS_TEXT_HINTS.some(hint => code.includes(hint))
 }
 
@@ -29,7 +29,7 @@ const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
   NullConstructor: 'any',
 }
 
-function mapConstructorName(name: string) {
+export function mapConstructorName(name: string) {
   if (Object.hasOwn(CONSTRUCTOR_TYPE_MAP, name)) {
     return CONSTRUCTOR_TYPE_MAP[name]
   }
