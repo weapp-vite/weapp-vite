@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
+import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, resolveNativeLayoutAssetState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view />'))
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
@@ -117,6 +117,80 @@ describe('resolveVueLayoutAssetOptions', () => {
       },
       scriptFileName: 'dist//project/layouts/vue-default/index.mjs',
     })
+  })
+
+  it('resolves native layout asset state from layout assets and output options', async () => {
+    collectNativeLayoutAssetsMock.mockResolvedValue({
+      json: '/project/layouts/default/index.json',
+      template: '/project/layouts/default/index.wxml',
+    })
+
+    await expect(resolveNativeLayoutAssetState({
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        wxml: 'axml',
+        wxss: 'acss',
+        json: 'json',
+        js: 'js',
+      } as any,
+    })).resolves.toEqual({
+      resolvedOptions: {
+        relativeBase: 'dist/layouts/default/index',
+        templateExtension: 'axml',
+        styleExtension: 'acss',
+        jsonExtension: 'json',
+        scriptExtension: 'js',
+        scriptModuleExtension: 'wxs',
+      },
+      assets: {
+        json: '/project/layouts/default/index.json',
+        template: '/project/layouts/default/index.wxml',
+      },
+    })
+  })
+
+  it('emits resolved native layout static assets by asset kind', async () => {
+    readFileMock.mockImplementation(async (file: string) => {
+      if (file.endsWith('.wxml')) {
+        return '<view />'
+      }
+      return '.layout{}'
+    })
+
+    await emitResolvedNativeLayoutStaticAssets({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      assets: {
+        template: '/project/layouts/default/index.wxml',
+        style: '/project/layouts/default/index.wxss',
+      } as any,
+      resolvedOptions: {
+        relativeBase: 'dist/layouts/default/index',
+        templateExtension: 'wxml',
+        styleExtension: 'wxss',
+        jsonExtension: 'json',
+        scriptExtension: 'js',
+        scriptModuleExtension: 'wxs',
+      },
+    })
+
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'dist/layouts/default/index',
+      '<view />',
+      'wxml',
+    )
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'dist/layouts/default/index',
+      '.layout{}',
+      'wxss',
+    )
   })
 
   it('returns undefined for vue layout script fallback when asset already exists in bundle', () => {
