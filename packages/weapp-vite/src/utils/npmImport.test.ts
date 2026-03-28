@@ -3,6 +3,7 @@ import {
   hasNpmDependencyPrefix,
   normalizeNpmImportLookupPath,
   normalizeNpmImportPathByPlatform,
+  normalizeNpmPackageSpecifier,
   parseNpmPackageSpecifier,
   resolveNpmDependencyId,
   shouldNormalizeNpmImportByPlatform,
@@ -22,6 +23,9 @@ describe('utils/npmImport', () => {
   })
 
   it('parses package specifiers into package name and sub path', () => {
+    expect(normalizeNpmPackageSpecifier(' plain-lib/button ')).toBe('plain-lib/button')
+    expect(normalizeNpmPackageSpecifier('./local/button')).toBeUndefined()
+    expect(normalizeNpmPackageSpecifier('C:\\windows\\button')).toBeUndefined()
     expect(parseNpmPackageSpecifier('plain-lib/button')).toEqual({
       packageName: 'plain-lib',
       subPath: 'button',
