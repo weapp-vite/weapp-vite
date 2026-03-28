@@ -219,7 +219,7 @@ export function getLocationFromOffset(offset: number | undefined, lineStarts: nu
   }
 }
 
-function collectPageScrollInspectionWithOxc(node: any): PageScrollInspection {
+export function collectPageScrollInspectionWithOxc(node: any): PageScrollInspection {
   const inspection: PageScrollInspection = {
     empty: node.body?.type === 'BlockStatement' && node.body.body.length === 0,
     hasSetDataCall: false,
