@@ -8,10 +8,10 @@ import fs from 'node:fs/promises'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
-import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
+import { emitNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
 
@@ -134,14 +134,17 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       return
     }
 
-    const relativeBase = configService.relativeOutputPath(layoutBasePath)
-    if (!relativeBase) {
+    const resolvedOptions = resolveNativeLayoutOutputOptions({
+      configService,
+      layoutBasePath,
+      outputExtensions: configService.outputExtensions,
+    })
+    if (!resolvedOptions) {
       return
     }
 
     const assets = await collectNativeLayoutAssets(layoutBasePath)
     const emittedLayoutAssets: Set<string> = (pluginCtx as any).__weappViteNativeLayoutAssets ?? ((pluginCtx as any).__weappViteNativeLayoutAssets = new Set<string>())
-    const { templateExtension, styleExtension, scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
 
     if (assets.json) {
       registerJsonAsset({
@@ -154,13 +157,13 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const assetEntries = [
       assets.template
         ? {
-            fileName: `${relativeBase}.${templateExtension}`,
+            fileName: `${resolvedOptions.relativeBase}.${resolvedOptions.templateExtension}`,
             source: await fs.readFile(assets.template, 'utf8'),
           }
         : undefined,
       assets.style
         ? {
-            fileName: `${relativeBase}.${styleExtension}`,
+            fileName: `${resolvedOptions.relativeBase}.${resolvedOptions.styleExtension}`,
             source: await fs.readFile(assets.style, 'utf8'),
           }
         : undefined,
@@ -178,20 +181,11 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       })
     }
 
-    if (assets.script) {
-      const fileName = `${relativeBase}.${scriptExtension}`
-      const emittedLayoutScripts: Set<string> = (pluginCtx as any).__weappViteNativeLayoutScripts ?? ((pluginCtx as any).__weappViteNativeLayoutScripts = new Set<string>())
-      if (!emittedLayoutScripts.has(fileName)) {
-        emittedLayoutScripts.add(fileName)
-        pluginCtx.emitFile({
-          type: 'chunk',
-          id: assets.script,
-          fileName,
-          // @ts-ignore Rolldown 的 PluginContext 类型不完整
-          preserveSignature: 'exports-only',
-        })
-      }
-    }
+    emitNativeLayoutScriptChunkIfNeeded({
+      pluginCtx,
+      scriptId: assets.script,
+      fileName: `${resolvedOptions.relativeBase}.${resolvedOptions.scriptExtension}`,
+    })
   }
 
   const shouldSkipEntries = Boolean(options.skipEntries)
