@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createReadAndParseSfcOptions, readAndParseSfc } from './vueSfc'
+import { createReadAndParseSfcOptions, createSfcResolveSrcOptions, readAndParseSfc } from './vueSfc'
 
 describe('readAndParseSfc', () => {
   it('parses from provided source', async () => {
@@ -13,6 +13,20 @@ describe('readAndParseSfc', () => {
   })
 
   it('creates shared sfc parse options from plugin resolve context', async () => {
+    const resolveSrc = createSfcResolveSrcOptions(
+      {
+        resolve: async (source, importer) => ({
+          id: `${importer}:${source}`,
+        }),
+      },
+      {
+        isDev: true,
+      } as any,
+    )
+
+    expect(resolveSrc.checkMtime).toBe(true)
+    expect(await resolveSrc.resolveId?.('./child.vue', '/project/src/a.vue')).toBe('/project/src/a.vue:./child.vue')
+
     const options = createReadAndParseSfcOptions(
       {
         resolve: async (source, importer) => ({
