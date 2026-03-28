@@ -3,9 +3,14 @@ import type { AstEngineName, AstParserLike } from '../types'
 import { walk } from 'oxc-walker'
 import { parseJsLikeWithEngine } from '../engine'
 
-export const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+export const platformApiIdentifierList = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs'] as const
+export const platformApiIdentifiers = new Set(platformApiIdentifierList)
 
-function mayContainPlatformApiIdentifierByText(code: string) {
+export function isPlatformApiIdentifier(name: string) {
+  return platformApiIdentifiers.has(name)
+}
+
+export function mayContainPlatformApiIdentifierByText(code: string) {
   for (const identifier of platformApiIdentifiers) {
     if (code.includes(`${identifier}.`)) {
       return true
@@ -51,7 +56,7 @@ export function mayContainPlatformApiAccess(
         if (
           node.type === 'MemberExpression'
           && node.object.type === 'Identifier'
-          && platformApiIdentifiers.has(node.object.name)
+          && isPlatformApiIdentifier(node.object.name)
         ) {
           found = true
         }

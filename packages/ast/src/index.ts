@@ -24,7 +24,13 @@ export type {
   JsxImportedComponent,
 } from './operations/jsxAutoComponents'
 export { collectOnPageScrollPerformanceWarnings } from './operations/onPageScroll'
-export { mayContainPlatformApiAccess, platformApiIdentifiers } from './operations/platformApi'
+export {
+  isPlatformApiIdentifier,
+  mayContainPlatformApiAccess,
+  mayContainPlatformApiIdentifierByText,
+  platformApiIdentifierList,
+  platformApiIdentifiers,
+} from './operations/platformApi'
 export { collectRequireTokens, mayContainStaticRequireLiteral } from './operations/require'
 export type { RequireToken } from './operations/require'
 export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
