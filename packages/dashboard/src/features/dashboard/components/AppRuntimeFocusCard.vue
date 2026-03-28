@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DashboardRuntimeEvent } from '../types'
 import { formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../utils/format'
+import { mutedPanelStyles } from '../utils/styles'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 
 defineProps<{
@@ -13,7 +14,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+  <div :class="mutedPanelStyles()">
     <div class="flex items-start justify-between gap-3">
       <div>
         <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-accent)]">

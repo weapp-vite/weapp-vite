@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DashboardIconName } from '../types'
+import { mutedPanelStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
@@ -14,8 +15,7 @@ defineProps<{
 
 <template>
   <div
-    class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
-    :class="interactive ? 'transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]' : undefined"
+    :class="mutedPanelStyles({ interactive })"
   >
     <p
       v-if="eyebrow"

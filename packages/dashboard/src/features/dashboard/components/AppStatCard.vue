@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mutedPanelStyles } from '../utils/styles'
 import AppMetaLabel from './AppMetaLabel.vue'
 
 defineProps<{
@@ -8,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3">
+  <div :class="mutedPanelStyles({ padding: 'sm' })">
     <AppMetaLabel>
       {{ label }}
     </AppMetaLabel>
