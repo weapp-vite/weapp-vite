@@ -45,10 +45,13 @@ export {
   collectOnPageScrollPerformanceWarnings,
   createLineStartOffsets,
   createWarningPrefix,
+  getCallExpressionCalleeName,
   getLocationFromOffset,
   getMemberExpressionPropertyName,
+  getOxcCallExpressionCalleeName,
   getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
+  isOxcFunctionLike,
   isStaticPropertyName,
 } from './operations/onPageScroll'
 export {

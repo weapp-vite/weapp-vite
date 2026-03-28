@@ -51,7 +51,7 @@ function isOnPageScrollCallee(
   return false
 }
 
-function getCallExpressionCalleeName(
+export function getCallExpressionCalleeName(
   callee: t.Expression | t.V8IntrinsicIdentifier,
 ): string | undefined {
   if (callee.type === 'Identifier') {
@@ -149,7 +149,7 @@ export function getOxcMemberExpressionPropertyName(node: any): string | undefine
   return node.property?.type === 'Identifier' ? node.property.name : undefined
 }
 
-function isOxcFunctionLike(node: any) {
+export function isOxcFunctionLike(node: any) {
   return node?.type === 'FunctionExpression'
     || node?.type === 'ArrowFunctionExpression'
 }
@@ -174,7 +174,7 @@ function isOxcOnPageScrollCallee(
   return false
 }
 
-function getOxcCallExpressionCalleeName(callee: any): string | undefined {
+export function getOxcCallExpressionCalleeName(callee: any): string | undefined {
   if (!callee) {
     return undefined
   }

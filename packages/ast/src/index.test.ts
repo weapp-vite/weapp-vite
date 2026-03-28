@@ -14,16 +14,19 @@ import {
   defaultResolveBabelRenderExpression,
   extractPropertiesObject,
   extractTemplateExpressions,
+  getCallExpressionCalleeName,
   getJsxOxcStaticPropertyName,
   getLocationFromOffset,
   getMemberExpressionPropertyName,
   getObjectPropertyByKey,
+  getOxcCallExpressionCalleeName,
   getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
   getRenderPropertyFromComponentOptions,
   getRequireAsyncLiteralToken,
   getStaticPropertyName,
   getStaticRequireLiteralValue,
+  isOxcFunctionLike,
   isPlatformApiIdentifier,
   isStaticPropertyName,
   mapConstructorName,
@@ -689,12 +692,16 @@ export function useCounter() {
     expect(isStaticPropertyName(t.identifier('onPageScroll'))).toBe('onPageScroll')
     expect(isStaticPropertyName(t.stringLiteral('render'))).toBe('render')
     expect(isStaticPropertyName(t.privateName(t.identifier('secret')))).toBeUndefined()
+    expect(getCallExpressionCalleeName(t.identifier('setData'))).toBe('setData')
     expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.identifier('setData')))).toBe('setData')
     expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.stringLiteral('getStorageSync'), true))).toBe('getStorageSync')
+    expect(isOxcFunctionLike({ type: 'FunctionExpression' })).toBe(true)
+    expect(isOxcFunctionLike({ type: 'ObjectExpression' })).toBe(false)
     expect(getOxcStaticPropertyName({ type: 'Identifier', name: 'onPageScroll' })).toBe('onPageScroll')
     expect(getOxcStaticPropertyName({ type: 'StringLiteral', value: 'render' })).toBe('render')
     expect(getOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
+    expect(getOxcCallExpressionCalleeName({ type: 'Identifier', name: 'setData' })).toBe('setData')
     expect(getOxcMemberExpressionPropertyName({
       type: 'MemberExpression',
       computed: false,
