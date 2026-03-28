@@ -1,13 +1,11 @@
 import type { CompilationCacheEntry, VueBundleState } from './shared'
-// eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
-import fs from 'fs-extra'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
-import { compileAndFinalizeVueLikeFile, emitBundleVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -35,32 +33,14 @@ export async function emitCompiledVueEntryAssets(
     platformAssetOptions,
   } = resolveVueBundleAssetContext(configService)
 
-  let result = cached.result
-  if (configService.isDev) {
-    try {
-      const source = await fs.readFile(filename, 'utf-8')
-      if (source !== cached.source) {
-        const isApp = isAppVueLikeFile(filename)
-        const compiled = await compileAndFinalizeVueLikeFile({
-          source,
-          filename,
-          ctx,
-          pluginCtx,
-          isPage: cached.isPage,
-          isApp,
-          configService,
-          compileOptionsState,
-        })
-
-        cached.source = source
-        cached.result = compiled
-        result = compiled
-      }
-    }
-    catch {
-      // 忽略异常，回退到缓存的编译结果
-    }
-  }
+  const result = await refreshCompiledVueEntryCacheInDev({
+    filename,
+    cached,
+    ctx,
+    pluginCtx,
+    configService,
+    compileOptionsState,
+  })
 
   const baseName = getEntryBaseName(filename)
   const relativeBase = configService.relativeOutputPath(baseName)
