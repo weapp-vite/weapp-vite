@@ -5,6 +5,7 @@ import {
   normalizeNpmImportPathByPlatform,
   parseNpmPackageSpecifier,
   resolveNpmDependencyId,
+  shouldNormalizeNpmImportByPlatform,
 } from './npmImport'
 
 describe('utils/npmImport', () => {
@@ -55,6 +56,31 @@ describe('utils/npmImport', () => {
     const dependencies = {
       'tdesign-miniprogram': '^1.0.0',
     }
+
+    expect(shouldNormalizeNpmImportByPlatform('tdesign-miniprogram/button/button', {
+      platform: 'alipay',
+      dependencies,
+    })).toBe(true)
+
+    expect(shouldNormalizeNpmImportByPlatform('/node_modules/tdesign-miniprogram/button/button', {
+      platform: 'alipay',
+      dependencies,
+    })).toBe(true)
+
+    expect(shouldNormalizeNpmImportByPlatform('plugin://demo/card', {
+      platform: 'alipay',
+      dependencies,
+    })).toBe(false)
+
+    expect(shouldNormalizeNpmImportByPlatform('custom-lib/button/button', {
+      platform: 'alipay',
+      dependencies,
+    })).toBe(false)
+
+    expect(shouldNormalizeNpmImportByPlatform('tdesign-miniprogram/button/button', {
+      platform: 'weapp',
+      dependencies,
+    })).toBe(false)
 
     expect(normalizeNpmImportPathByPlatform('tdesign-miniprogram/button/button', {
       platform: 'alipay',
