@@ -25,6 +25,7 @@ Page({
     fileManagerMissingRmdirInfo: '',
     fileManagerMissingStatInfo: '',
     fileManagerMissingUnlinkInfo: '',
+    fileManagerUnsupportedReadEncodingInfo: '',
     fileManagerUnsupportedAppendEncodingInfo: '',
     fileManagerUnsupportedWriteEncodingInfo: '',
     savedOrderingInfo: '',
@@ -470,6 +471,23 @@ Page({
           }),
         }, () => {
           this.push('lab:runUnsupportedAppendEncodingLab')
+        })
+      },
+    })
+  },
+  runUnsupportedReadEncodingLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://saved/component-lab/unsupported-read.txt', 'payload')
+    fsManager.readFile({
+      filePath: 'headless://saved/component-lab/unsupported-read.txt',
+      encoding: 'latin1',
+      fail: (error) => {
+        this.setData({
+          fileManagerUnsupportedReadEncodingInfo: JSON.stringify({
+            unsupportedReadEncodingError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runUnsupportedReadEncodingLab')
         })
       },
     })
