@@ -3,6 +3,43 @@ import type { SubPackageStyleScope } from '../../../types'
 import path from 'pathe'
 import { isPathInside, toPosixPath } from '../../../utils'
 
+const LEADING_DOT_SLASH_RE = /^\.\//
+
+function isSubPackageRelativeStyleEntry(
+  normalizedEntry: string,
+  normalizedRoot: string,
+) {
+  return normalizedEntry === normalizedRoot || normalizedEntry.startsWith(`${normalizedRoot}/`)
+}
+
+function resolveStyleEntryCandidates(
+  source: string,
+  subPackageRoot: string,
+  absoluteSrcRoot: string,
+) {
+  const trimmed = source.trim()
+  if (!trimmed) {
+    return []
+  }
+
+  const absoluteSubRoot = path.resolve(absoluteSrcRoot, subPackageRoot)
+  const normalizedEntry = toPosixPath(trimmed)
+  const normalizedRoot = toPosixPath(subPackageRoot)
+
+  if (path.isAbsolute(trimmed)) {
+    return [trimmed]
+  }
+
+  if (isSubPackageRelativeStyleEntry(normalizedEntry, normalizedRoot)) {
+    return [path.resolve(absoluteSrcRoot, trimmed)]
+  }
+
+  return [
+    path.resolve(absoluteSubRoot, trimmed),
+    path.resolve(absoluteSrcRoot, trimmed),
+  ]
+}
+
 export function resolveStyleEntryAbsolutePath(
   source: string,
   subPackageRoot: string,
@@ -19,21 +56,7 @@ export function resolveStyleEntryAbsolutePath(
   }
 
   const srcRoot = service.absoluteSrcRoot
-  const absoluteSubRoot = path.resolve(srcRoot, subPackageRoot)
-  const normalizedEntry = toPosixPath(trimmed)
-  const normalizedRoot = toPosixPath(subPackageRoot)
-
-  const candidates: string[] = []
-  if (path.isAbsolute(trimmed)) {
-    candidates.push(trimmed)
-  }
-  else if (normalizedEntry === normalizedRoot || normalizedEntry.startsWith(`${normalizedRoot}/`)) {
-    candidates.push(path.resolve(srcRoot, trimmed))
-  }
-  else {
-    candidates.push(path.resolve(absoluteSubRoot, trimmed))
-    candidates.push(path.resolve(srcRoot, trimmed))
-  }
+  const candidates = resolveStyleEntryCandidates(trimmed, subPackageRoot, srcRoot)
 
   for (const candidate of candidates) {
     if (isPathInside(srcRoot, candidate)) {
@@ -59,7 +82,7 @@ export function inferScopeFromRelativePath(relativePath: string | undefined): Su
   if (!relativePath) {
     return undefined
   }
-  const cleaned = relativePath.replace(/^\.\//, '')
+  const cleaned = relativePath.replace(LEADING_DOT_SLASH_RE, '')
   if (cleaned.includes('/')) {
     return undefined
   }
@@ -74,4 +97,9 @@ export function inferScopeFromRelativePath(relativePath: string | undefined): Su
     return 'all'
   }
   return undefined
+}
+
+export {
+  isSubPackageRelativeStyleEntry,
+  resolveStyleEntryCandidates,
 }
