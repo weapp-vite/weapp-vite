@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import type { DashboardMetricItem, PackageInsight } from '../types'
+import { computed } from 'vue'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppMetricTile from './AppMetricTile.vue'
 import AppPackageFileTable from './AppPackageFileTable.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 
-defineProps<{
+interface PackageInsightCard extends PackageInsight {
+  typeLabel: string
+  summaryText: string
+  totalBytesLabel: string
+  entryCountText: string
+  metrics: DashboardMetricItem[]
+}
+
+const props = defineProps<{
   packageInsights: PackageInsight[]
 }>()
 
@@ -18,13 +27,26 @@ function createPackageMetrics(pkg: PackageInsight): DashboardMetricItem[] {
     { label: '跨包模块', value: pkg.duplicateModuleCount },
   ]
 }
+
+const packageInsightCards = computed<PackageInsightCard[]>(() => props.packageInsights.map((pkg) => {
+  const typeLabel = formatPackageType(pkg.type)
+
+  return {
+    ...pkg,
+    typeLabel,
+    summaryText: `${typeLabel} · ${pkg.fileCount} 个产物 · ${pkg.moduleCount} 个模块`,
+    totalBytesLabel: formatBytes(pkg.totalBytes),
+    entryCountText: `${pkg.entryFileCount} 个 entry`,
+    metrics: createPackageMetrics(pkg),
+  }
+}))
 </script>
 
 <template>
   <section class="grid gap-3">
     <div class="grid gap-3 xl:grid-cols-2">
       <article
-        v-for="pkg in packageInsights"
+        v-for="pkg in packageInsightCards"
         :key="pkg.id"
         :class="surfaceStyles({ padding: 'md' })"
       >
@@ -33,25 +55,25 @@ function createPackageMetrics(pkg: PackageInsight): DashboardMetricItem[] {
             <AppPanelHeader
               icon-name="tab-packages"
               :title="pkg.label"
-              :description="formatPackageType(pkg.type)"
+              :description="pkg.typeLabel"
             />
             <p class="mt-2 text-sm text-[color:var(--dashboard-text-soft)]">
-              {{ formatPackageType(pkg.type) }} · {{ pkg.fileCount }} 个产物 · {{ pkg.moduleCount }} 个模块
+              {{ pkg.summaryText }}
             </p>
           </div>
           <div class="text-right">
             <p class="text-xl font-semibold text-[color:var(--dashboard-text)]">
-              {{ formatBytes(pkg.totalBytes) }}
+              {{ pkg.totalBytesLabel }}
             </p>
             <p class="text-xs text-[color:var(--dashboard-text-soft)]">
-              {{ pkg.entryFileCount }} 个 entry
+              {{ pkg.entryCountText }}
             </p>
           </div>
         </div>
 
         <div class="mt-4 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
           <AppMetricTile
-            v-for="metric in createPackageMetrics(pkg)"
+            v-for="metric in pkg.metrics"
             :key="metric.label"
             v-bind="metric"
           />
