@@ -15,7 +15,7 @@ import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
-import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
+import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
 import { compileVueLikeFile } from './shared'
 
 export async function emitFallbackPageAssets(
@@ -36,6 +36,11 @@ export async function emitFallbackPageAssets(
     jsonExtension,
     scriptModuleExtension,
   } = resolveBundleOutputExtensions(outputExtensions)
+  const platformAssetOptions = resolveVueBundlePlatformAssetOptions({
+    configService,
+    templateExtension,
+    scriptModuleExtension,
+  })
 
   const collectedEntries = await collectFallbackPageEntryIds(configService, scanService)
   for (const entryId of collectedEntries) {
@@ -136,9 +141,7 @@ export async function emitFallbackPageAssets(
           filename: entryFilePath,
           relativeBase,
           template: result.template,
-          platform: configService.platform,
-          templateExtension,
-          scriptModuleExtension,
+          ...platformAssetOptions,
         })
       }
 
@@ -178,9 +181,7 @@ export async function emitFallbackPageAssets(
         relativeBase,
         config: result.config,
         outputExtensions,
-        platform: configService.platform,
-        dependencies: configService.packageJson?.dependencies,
-        alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
+        ...platformAssetOptions,
       })
       emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
         mergeExistingAsset: true,

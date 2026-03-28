@@ -21,6 +21,14 @@ export interface VueBundlePlatformOptions {
   scriptModuleTag?: string
 }
 
+export interface VueBundlePlatformAssetOptions {
+  platform: string
+  templateExtension: string
+  scriptModuleExtension?: string
+  dependencies?: Record<string, string>
+  alipayNpmMode?: string
+}
+
 export function resolveVueBundlePlatformOptions(options: {
   platform: string
   scriptModuleExtension?: string
@@ -31,6 +39,20 @@ export function resolveVueBundlePlatformOptions(options: {
     emitGenericPlaceholder: shouldEmitGenericPlaceholderAsset(options.platform as any),
     scriptModuleTag: resolveScriptModuleTagByPlatform(options.platform as any, options.scriptModuleExtension),
   } satisfies VueBundlePlatformOptions
+}
+
+export function resolveVueBundlePlatformAssetOptions(options: {
+  configService: Pick<CompilerContext['configService'], 'platform' | 'weappViteConfig' | 'packageJson'> | undefined
+  templateExtension: string
+  scriptModuleExtension?: string
+}) {
+  return {
+    platform: options.configService?.platform ?? 'weapp',
+    templateExtension: options.templateExtension,
+    scriptModuleExtension: options.scriptModuleExtension,
+    dependencies: options.configService?.packageJson?.dependencies,
+    alipayNpmMode: options.configService?.weappViteConfig?.npm?.alipayNpmMode,
+  } satisfies VueBundlePlatformAssetOptions
 }
 
 export function normalizeVueConfigForPlatform(

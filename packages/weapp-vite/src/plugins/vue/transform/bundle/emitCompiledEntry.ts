@@ -11,7 +11,7 @@ import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitScriptlessComponentJsFallbackIfMissing, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
-import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
+import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
 import { compileVueLikeFile, getEntryBaseName, isAppVueLikeFile } from './shared'
 
 export async function emitCompiledVueEntryAssets(
@@ -38,6 +38,11 @@ export async function emitCompiledVueEntryAssets(
     scriptExtension,
     scriptModuleExtension,
   } = resolveBundleOutputExtensions(outputExtensions)
+  const platformAssetOptions = resolveVueBundlePlatformAssetOptions({
+    configService,
+    templateExtension,
+    scriptModuleExtension,
+  })
 
   let result = cached.result
   if (configService.isDev) {
@@ -143,9 +148,7 @@ export async function emitCompiledVueEntryAssets(
       filename,
       relativeBase,
       template: result.template,
-      platform: configService.platform,
-      templateExtension,
-      scriptModuleExtension,
+      ...platformAssetOptions,
     })
   }
 
@@ -181,9 +184,7 @@ export async function emitCompiledVueEntryAssets(
       relativeBase,
       config: result.config,
       outputExtensions,
-      platform: configService.platform,
-      dependencies: configService.packageJson?.dependencies,
-      alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
+      ...platformAssetOptions,
     })
     emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
       defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
