@@ -103,6 +103,7 @@ export {
   collectScriptSetupImportsFromCode,
   collectScriptSetupImportsWithBabel,
   collectScriptSetupImportsWithOxc,
+  createScriptSetupImport,
   getScriptSetupImportedName,
   mayContainRelevantScriptSetupImports,
 } from './operations/scriptSetupImports'

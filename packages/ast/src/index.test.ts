@@ -29,6 +29,7 @@ import {
   consumeNamespaceFeatureFlag,
   createJsxImportedComponent,
   createLineStartOffsets,
+  createScriptSetupImport,
   createWarningPrefix,
   defaultIsDefineComponentSource,
   defaultResolveBabelComponentExpression,
@@ -198,6 +199,18 @@ import FooCard, { BarButton as RenamedButton } from './components'
     expect(mayContainRelevantScriptSetupImports(`import BarCard from './BarCard'`, new Set(['FooCard']))).toBe(false)
     expect(mayContainRelevantScriptSetupImports('const count = 1', new Set(['FooCard']))).toBe(false)
     expect(mayContainRelevantScriptSetupImports(`import FooCard from './FooCard'`, new Set())).toBe(false)
+    expect(createScriptSetupImport('FooCard', './FooCard', 'default')).toEqual({
+      localName: 'FooCard',
+      importSource: './FooCard',
+      importedName: 'default',
+      kind: 'default',
+    })
+    expect(createScriptSetupImport('RenamedButton', './components', 'named', { type: 'Identifier', name: 'BarButton' })).toEqual({
+      localName: 'RenamedButton',
+      importSource: './components',
+      importedName: 'BarButton',
+      kind: 'named',
+    })
     expect(getScriptSetupImportedName({ type: 'Identifier', name: 'FooCard' })).toBe('FooCard')
     expect(getScriptSetupImportedName({ type: 'StringLiteral', value: 'van-button' })).toBe('van-button')
     expect(getScriptSetupImportedName({ type: 'Literal', value: 'FooCard' })).toBeUndefined()
