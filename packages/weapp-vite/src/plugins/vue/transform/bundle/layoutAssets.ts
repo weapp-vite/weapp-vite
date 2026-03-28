@@ -40,35 +40,49 @@ export async function emitResolvedBundleLayouts(options: {
   }
 }
 
+export async function resolveNativeLayoutScriptChunkState(options: {
+  layoutBasePath: string
+  configService: NonNullable<CompilerContext['configService']>
+  outputExtensions: OutputExtensions | undefined
+}) {
+  const resolvedOptions = resolveVueLayoutAssetOptions({
+    configService: options.configService,
+    layoutBasePath: options.layoutBasePath,
+    outputExtensions: options.outputExtensions,
+  })
+  if (!resolvedOptions) {
+    return undefined
+  }
+
+  const assets = await collectNativeLayoutAssets(options.layoutBasePath)
+  if (!assets.script) {
+    return undefined
+  }
+
+  return {
+    fileName: resolveScriptlessComponentFileName(
+      resolvedOptions.relativeBase,
+      resolvedOptions.scriptExtension,
+    ),
+    scriptId: assets.script,
+  }
+}
+
 export async function emitNativeLayoutScriptChunkIfNeeded(options: {
   pluginCtx: any
   layoutBasePath: string
   configService: NonNullable<CompilerContext['configService']>
   outputExtensions: OutputExtensions | undefined
 }) {
-  const { pluginCtx, layoutBasePath, configService, outputExtensions } = options
-  const resolvedOptions = resolveVueLayoutAssetOptions({
-    configService,
-    layoutBasePath,
-    outputExtensions,
-  })
-  if (!resolvedOptions) {
+  const nativeScriptChunkState = await resolveNativeLayoutScriptChunkState(options)
+  if (!nativeScriptChunkState) {
     return
   }
 
-  const assets = await collectNativeLayoutAssets(layoutBasePath)
-  if (!assets.script) {
-    return
-  }
-
-  const fileName = resolveScriptlessComponentFileName(
-    resolvedOptions.relativeBase,
-    resolvedOptions.scriptExtension,
-  )
   emitSharedNativeLayoutScriptChunkIfNeeded({
-    pluginCtx,
-    scriptId: assets.script,
-    fileName,
+    pluginCtx: options.pluginCtx,
+    scriptId: nativeScriptChunkState.scriptId,
+    fileName: nativeScriptChunkState.fileName,
   })
 }
 
