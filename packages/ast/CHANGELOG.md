@@ -1,5 +1,11 @@
 # @weapp-vite/ast
 
+## 6.12.0
+
+### Minor Changes
+
+- ✨ **增强 `@weapp-vite/ast` 面向多小程序平台分析场景的共享 helper 导出，补充 `platformApi`、`require`、`scriptSetupImports`、`featureFlags`、`jsxAutoComponents`、`onPageScroll`、`componentProps` 等操作中的可复用纯函数，并完善对应单元测试覆盖，便于跨 Babel/Oxc 引擎复用一致的分析能力。** [`c46de52`](https://github.com/weapp-vite/weapp-vite/commit/c46de52e65ed10146784ab583580600daa4320bf) by @sonofmagic
+
 ## 6.11.9
 
 ## 6.11.8

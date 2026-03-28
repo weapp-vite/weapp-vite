@@ -1,5 +1,19 @@
 # @weapp-vite/dashboard
 
+## 6.12.0
+
+### Patch Changes
+
+- 🐛 **增强 dashboard 的运行事件链路健壮性，统一规范化无效或不完整的事件载荷，并补充事件耗时与元信息展示。同时为 `packages/dashboard` 增加独立的 Vitest 配置，使相关工具测试可以进入工作区测试链路。** [#368](https://github.com/weapp-vite/weapp-vite/pull/368) by @sonofmagic
+
+- 🐛 **增强 `@weapp-vite/dashboard` 的应用壳子，新增工作台、活动流、设计令牌等页面骨架，并将现有 analyze 面板迁移为独立路由页面。现在 dashboard 具备统一导航、全局主题切换和可持续扩展的页面结构，后续接入真实 CLI 事件与诊断数据会更稳定。** [#368](https://github.com/weapp-vite/weapp-vite/pull/368) by @sonofmagic
+
+- 🐛 **优化 dashboard 分析页的运行上下文展示，新增按事件来源聚合的摘要卡片，帮助在分析视图中快速识别不同来源的事件密度、错误数量与平均耗时。** [#368](https://github.com/weapp-vite/weapp-vite/pull/368) by @sonofmagic
+
+- 🐛 **优化 dashboard 中运行事件徽标的视觉表达，统一不同等级与来源摘要的 badge 样式映射，使活动页和分析页的运行状态展示更一致、更易读。** [#368](https://github.com/weapp-vite/weapp-vite/pull/368) by @sonofmagic
+
+- 🐛 **优化 dashboard 活动页的事件控制台，新增按来源过滤与来源聚合摘要卡片，便于在真实 CLI 运行事件流中更快识别不同来源的事件密度、错误数量与平均耗时。** [#368](https://github.com/weapp-vite/weapp-vite/pull/368) by @sonofmagic
+
 ## 6.11.9
 
 ## 6.11.8
