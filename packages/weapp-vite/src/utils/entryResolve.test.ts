@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createCachedEntryResolveOptions, resolveEntryPath } from './entryResolve'
+import {
+  createCachedEntryResolveOptions,
+  resolveEntryExtensions,
+  resolveEntryPath,
+} from './entryResolve'
 
 const pathExistsCachedMock = vi.hoisted(() => vi.fn(async () => true))
 const statMock = vi.hoisted(() => vi.fn(async () => ({ isDirectory: () => false })))
@@ -20,6 +24,12 @@ vi.mock('fs-extra', () => ({
 }))
 
 describe('resolveEntryPath', () => {
+  it('resolves entry extension priority by import kind and directory state', () => {
+    expect(resolveEntryExtensions('default', false)[0]).toBe('vue')
+    expect(resolveEntryExtensions('named', false)[0]).toBe('ts')
+    expect(resolveEntryExtensions('default', true)[0]).toBe('ts')
+  })
+
   it('creates cached entry resolve options with shared ttl exists adapter', async () => {
     const options = createCachedEntryResolveOptions({
       isDev: true,

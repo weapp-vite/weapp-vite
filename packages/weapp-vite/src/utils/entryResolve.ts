@@ -37,6 +37,16 @@ function buildCandidates(base: string, extensions: string[]) {
   return extensions.map(ext => changeFileExtension(base, ext))
 }
 
+export function resolveEntryExtensions(
+  kind: ImportSpecifierKind,
+  isDir: boolean,
+) {
+  const jsFirst = kind === 'named' || isDir
+  return jsFirst
+    ? [...jsExtensions, ...vueExtensions]
+    : [...vueExtensions, ...jsExtensions]
+}
+
 export function createCachedEntryResolveOptions(
   configService: {
     isDev?: boolean
@@ -86,10 +96,7 @@ export async function resolveEntryPath(input: string, options?: ResolveEntryPath
     base = path.join(input, indexBaseName)
   }
 
-  const jsFirst = kind === 'named' || isDir
-  const extensions = jsFirst
-    ? [...jsExtensions, ...vueExtensions]
-    : [...vueExtensions, ...jsExtensions]
+  const extensions = resolveEntryExtensions(kind, isDir)
 
   for (const candidate of buildCandidates(base, extensions)) {
     if (await exists(candidate)) {
