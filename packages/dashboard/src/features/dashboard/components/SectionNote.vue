@@ -4,10 +4,12 @@ import { sectionNoteStyles } from '../utils/styles'
 defineProps<{
   text: string
 }>()
+
+const noteClassName = sectionNoteStyles()
 </script>
 
 <template>
-  <div :class="sectionNoteStyles()">
+  <div :class="noteClassName">
     {{ text }}
   </div>
 </template>
