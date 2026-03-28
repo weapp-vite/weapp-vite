@@ -5,10 +5,8 @@ import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import AppCommandListCard from '../features/dashboard/components/AppCommandListCard.vue'
 import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppRecentRuntimeEventsCard from '../features/dashboard/components/AppRecentRuntimeEventsCard.vue'
-import AppRouteActionCard from '../features/dashboard/components/AppRouteActionCard.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
@@ -155,26 +153,48 @@ onBeforeUnmount(() => {
       padding="header"
     >
       <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.92fr)]">
-        <AppCommandListCard
-          eyebrow="recommended commands"
-          :commands="[
-            'weapp-vite analyze',
-            'weapp-vite build --ui',
-            'weapp-vite dev --ui',
-          ]"
-        />
+        <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+          <p class="text-[11px] uppercase tracking-[0.24em] text-[color:var(--dashboard-text-soft)]">
+            recommended commands
+          </p>
+          <div class="mt-4 grid gap-2">
+            <code
+              v-for="command in [
+                'weapp-vite analyze',
+                'weapp-vite build --ui',
+                'weapp-vite dev --ui',
+              ]"
+              :key="command"
+              class="rounded-xl bg-slate-950 px-3 py-3 text-xs text-slate-100 dark:bg-slate-900"
+            >
+              {{ command }}
+            </code>
+          </div>
+        </div>
 
         <div class="grid gap-2">
-          <AppRouteActionCard
+          <RouterLink
+            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
             to="/"
-            title="返回工作台"
-            description="继续查看应用壳子、命令面板和当前增强节奏。"
-          />
-          <AppRouteActionCard
+          >
+            <p class="font-medium">
+              返回工作台
+            </p>
+            <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+              继续查看应用壳子、命令面板和当前增强节奏。
+            </p>
+          </RouterLink>
+          <RouterLink
+            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
             to="/activity"
-            title="查看活动流"
-            description="后续可以在这里观察真实的构建事件和诊断状态。"
-          />
+          >
+            <p class="font-medium">
+              查看活动流
+            </p>
+            <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+              后续可以在这里观察真实的构建事件和诊断状态。
+            </p>
+          </RouterLink>
         </div>
       </div>
     </AppSurfaceCard>
