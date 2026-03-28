@@ -36,7 +36,7 @@ const JS_GLOBAL_IDENTIFIERS = new Set([
   'encodeURIComponent',
 ])
 
-function collectLoopScopeAliases(template: string): Set<string> {
+export function collectLoopScopeAliases(template: string): Set<string> {
   const aliases = new Set<string>()
   const tagMatches = template.match(WX_FOR_TAG_RE) ?? []
   for (const tag of tagMatches) {
@@ -65,7 +65,7 @@ function collectLoopScopeAliases(template: string): Set<string> {
   return aliases
 }
 
-function extractTemplateExpressions(template: string): string[] {
+export function extractTemplateExpressions(template: string): string[] {
   const expressions: string[] = []
   let match = TEMPLATE_MUSTACHE_RE.exec(template)
   while (match) {
