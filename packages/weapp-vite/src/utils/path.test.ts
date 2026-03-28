@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   fromPosixPath,
@@ -67,7 +68,7 @@ describe('utils/path', () => {
 
   describe('path boundary helpers', () => {
     it('converts posix paths to native form and checks parent-child containment', () => {
-      expect(fromPosixPath('pages/index')).toBe('pages/index')
+      expect(fromPosixPath('pages/index')).toBe(path.join('pages', 'index'))
       expect(isPathInside('/project/src', '/project/src/pages/index.ts')).toBe(true)
       expect(isPathInside('/project/src', '/project/other/index.ts')).toBe(false)
       expect(isPathInside(undefined, '/project/src/pages/index.ts')).toBe(false)
