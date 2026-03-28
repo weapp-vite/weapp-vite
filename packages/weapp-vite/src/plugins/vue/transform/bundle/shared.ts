@@ -12,6 +12,7 @@ import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeature
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
+import { findFirstResolvedVueLikeEntry } from '../shared'
 import { resolveBundleOutputExtensions } from './outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
 
@@ -421,4 +422,19 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
   catch {
     return cached.result
   }
+}
+
+export async function resolveFallbackPageEntryFile(options: {
+  entryId: string
+  compilationCache: Map<string, CompilationCacheEntry>
+  pathExists: (candidate: string) => Promise<string | undefined | null>
+}) {
+  return await findFirstResolvedVueLikeEntry(options.entryId, {
+    resolve: async (candidate) => {
+      if (options.compilationCache.has(candidate)) {
+        return null
+      }
+      return await options.pathExists(candidate)
+    },
+  })
 }

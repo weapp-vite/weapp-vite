@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -425,6 +425,27 @@ describe('emitSharedVueEntryAssets', () => {
     expect(cached.source).toBe('<view updated />')
     expect(cached.result).toBe(result)
     expect((result as any).script).toBe('Page({ refreshed: true })')
+  })
+
+  it('resolves fallback page entry file with compilation-cache short circuit', async () => {
+    const pathExists = vi.fn(async (candidate: string) => candidate)
+    const compilationCache = new Map([
+      ['/project/src/pages/demo/index.vue', { result: {}, isPage: true } as any],
+    ])
+
+    expect(await resolveFallbackPageEntryFile({
+      entryId: '/project/src/pages/demo/index',
+      compilationCache,
+      pathExists,
+    })).toBeNull()
+
+    compilationCache.clear()
+
+    expect(await resolveFallbackPageEntryFile({
+      entryId: '/project/src/pages/demo/index',
+      compilationCache,
+      pathExists,
+    })).toBe('/project/src/pages/demo/index.vue')
   })
 
   it('normalizes config before emitting shared json asset', () => {

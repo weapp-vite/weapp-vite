@@ -7,9 +7,8 @@ import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { resolvePageLayoutPlan } from '../pageLayout'
-import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
-import { compileAndFinalizeVueLikeFile, emitBundleVueEntryAssets, emitSharedFallbackPageAssets, resolveVueBundleAssetContext } from './shared'
+import { compileAndFinalizeVueLikeFile, emitBundleVueEntryAssets, emitSharedFallbackPageAssets, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -37,11 +36,10 @@ export async function emitFallbackPageAssets(
     if (!relativeBase) {
       continue
     }
-    const entryFilePath = await findFirstResolvedVueLikeEntry(entryId, {
-      resolve: async (candidate) => {
-        if (compilationCache.has(candidate)) {
-          return null
-        }
+    const entryFilePath = await resolveFallbackPageEntryFile({
+      entryId,
+      compilationCache,
+      pathExists: async (candidate) => {
         return await pathExistsCached(candidate, { ttlMs: getPathExistsTtlMs(configService) })
           ? candidate
           : undefined
