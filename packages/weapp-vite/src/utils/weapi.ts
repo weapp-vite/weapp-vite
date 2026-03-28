@@ -1,6 +1,6 @@
 import { getMiniProgramGlobalKeys } from './miniProgramGlobals'
 
-function createGlobalHostExpression() {
+export function getWeapiGlobalHostCandidates() {
   return [
     `((typeof globalThis !== 'undefined' && globalThis)`,
     ` || (typeof self !== 'undefined' && self)`,
@@ -13,7 +13,11 @@ function createGlobalHostExpression() {
     ` || (typeof jd !== 'undefined' && jd)`,
     ` || (typeof xhs !== 'undefined' && xhs)`,
     ` || {})`,
-  ].join('')
+  ]
+}
+
+export function createGlobalHostExpression() {
+  return getWeapiGlobalHostCandidates().join('')
 }
 
 export function createNativeApiFallbackExpression() {
