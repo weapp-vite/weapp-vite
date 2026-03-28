@@ -30,6 +30,20 @@ export interface NormalizeViteIdOptions {
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
 const BACKSLASH_RE = /\\/g
+const WINDOWS_VITE_AT_FS_DRIVE_RE = /^\/[A-Z]:\//i
+
+export function stripViteAtFsPrefix(id: string) {
+  if (!id.startsWith('/@fs/')) {
+    return id
+  }
+
+  let clean = id.slice('/@fs'.length)
+  // Vite on Windows uses /@fs/C:/..., strip the extra leading slash.
+  if (WINDOWS_VITE_AT_FS_DRIVE_RE.test(clean)) {
+    clean = clean.slice(1)
+  }
+  return clean
+}
 
 export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
   const stripQuery = options?.stripQuery !== false
@@ -57,12 +71,8 @@ export function normalizeViteId(id: string, options?: NormalizeViteIdOptions) {
     }
   }
 
-  if (stripAtFsPrefix && clean.startsWith('/@fs/')) {
-    clean = clean.slice('/@fs'.length)
-    // Vite on Windows uses /@fs/C:/..., strip the extra leading slash.
-    if (/^\/[A-Z]:\//i.test(clean)) {
-      clean = clean.slice(1)
-    }
+  if (stripAtFsPrefix) {
+    clean = stripViteAtFsPrefix(clean)
   }
 
   if (stripLeadingNullByte && clean.startsWith('\0')) {

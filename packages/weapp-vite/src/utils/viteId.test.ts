@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeViteId } from './viteId'
+import { normalizeViteId, stripViteAtFsPrefix } from './viteId'
 
 describe('normalizeViteId', () => {
   it('strips query by default', () => {
@@ -11,10 +11,13 @@ describe('normalizeViteId', () => {
   })
 
   it('normalizes /@fs prefix', () => {
+    expect(stripViteAtFsPrefix('/project/src/a.ts')).toBe('/project/src/a.ts')
+    expect(stripViteAtFsPrefix('/@fs/project/src/a.ts')).toBe('/project/src/a.ts')
     expect(normalizeViteId('/@fs/project/src/a.ts')).toBe('/project/src/a.ts')
   })
 
   it('normalizes /@fs prefix for Windows drive letters', () => {
+    expect(stripViteAtFsPrefix('/@fs/C:/project/src/a.ts')).toBe('C:/project/src/a.ts')
     expect(normalizeViteId('/@fs/C:/project/src/a.ts')).toBe('C:/project/src/a.ts')
   })
 
