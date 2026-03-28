@@ -1,3 +1,4 @@
+// eslint-disable-next-line e18e/ban-dependencies -- 测试临时文件与 fixture 读写沿用现有 fs-extra 用法
 import fs from 'fs-extra'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -65,7 +66,9 @@ describe('vue plugin misc coverage', () => {
   it('watch plugin triggers full reload on vue changes', async () => {
     const send = vi.fn()
     let changeCb: ((id: string) => void) | undefined
+    const addWatchFile = vi.fn()
     const watcher = {
+      addWatchFile,
       on(event: string, cb: (id: string) => void) {
         if (event === 'change') {
           changeCb = cb
@@ -83,6 +86,7 @@ describe('vue plugin misc coverage', () => {
     plugin.configureServer?.(server)
     changeCb?.('file.vue')
     expect(send).toHaveBeenCalledWith({ type: 'full-reload', path: 'file.vue' })
+    expect(addWatchFile).not.toHaveBeenCalled()
 
     const hotResult = await plugin.handleHotUpdate!({ file: 'not-vue.js' } as any)
     expect(hotResult).toBeUndefined()

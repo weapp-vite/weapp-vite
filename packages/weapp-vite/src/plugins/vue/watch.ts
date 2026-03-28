@@ -1,6 +1,5 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
-import { addNormalizedWatchFile } from '../utils/watchFiles'
 import { VUE_PLUGIN_NAME } from './index'
 import { isVueLikeFile } from './transform/shared'
 
@@ -14,7 +13,6 @@ export function createVueWatchPlugin(_ctx: CompilerContext): Plugin {
 
       watcher.on('change', (id) => {
         if (isVueLikeFile(id)) {
-          addNormalizedWatchFile(server.watcher as any, id)
           // 触发 HMR
           const module = server.moduleGraph.getModuleById(id)
           if (module) {
