@@ -46,6 +46,7 @@ import {
   isOxcFunctionLike,
   isOxcOnPageScrollCallee,
   isPlatformApiIdentifier,
+  isPlatformApiMemberExpression,
   isStaticPropertyName,
   isStaticRequireCall,
   mapConstructorName,
@@ -154,6 +155,15 @@ export function useCounter() {
     expect(platformApiIdentifierList).toEqual(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
     expect(isPlatformApiIdentifier('wx')).toBe(true)
     expect(isPlatformApiIdentifier('console')).toBe(false)
+    expect(isPlatformApiMemberExpression({
+      type: 'MemberExpression',
+      object: { type: 'Identifier', name: 'wx' },
+    })).toBe(true)
+    expect(isPlatformApiMemberExpression({
+      type: 'MemberExpression',
+      object: { type: 'Identifier', name: 'console' },
+    })).toBe(false)
+    expect(isPlatformApiMemberExpression({ type: 'Identifier', name: 'wx' })).toBe(false)
     expect(mayContainPlatformApiIdentifierByText('const value = my.request({})')).toBe(true)
     expect(mayContainPlatformApiIdentifierByText('const value = localStorage.getItem("x")')).toBe(false)
     expect(mayContainPlatformApiAccess('const value = wx.getStorageSync("x")', { engine: 'oxc' })).toBe(true)
