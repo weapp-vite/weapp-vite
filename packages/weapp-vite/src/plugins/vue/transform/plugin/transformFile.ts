@@ -1,11 +1,7 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
-import { performance } from 'node:perf_hooks'
-import path from 'pathe'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
-import logger from '../../../../logger'
-import { toAbsoluteId } from '../../../../utils/toAbsoluteId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
@@ -13,7 +9,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { compileTransformEntryResult, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -44,31 +40,22 @@ export async function transformVueLikeFile(options: {
     classStyleRuntimeWarned,
   } = options
   const vueTransformTiming = ctx.configService?.weappViteConfig?.debug?.vueTransformTiming
-  const stageTimings: Record<string, number> = {}
-  const totalStart = vueTransformTiming ? performance.now() : 0
-  const measureStage = async <T>(label: string, task: () => Promise<T>) => {
-    if (!vueTransformTiming) {
-      return await task()
-    }
-    const start = performance.now()
-    const result = await task()
-    stageTimings[label] = Number((performance.now() - start).toFixed(2))
-    return result
-  }
+  const { measureStage, reportTiming } = createTransformStageMeasurer(vueTransformTiming)
 
   const configService = ctx.configService
   if (!configService) {
     return null
   }
 
-  const sourceId = getSourceFromVirtualId(id)
-  const filename = toAbsoluteId(sourceId, configService, undefined, { base: 'cwd' })
-  if (!filename || !path.isAbsolute(filename)) {
+  const filename = resolveTransformFilename({
+    id,
+    configService,
+    pluginCtx,
+    getSourceFromVirtualId,
+    addWatchFile: addNormalizedWatchFile,
+  })
+  if (!filename) {
     return null
-  }
-
-  if (typeof pluginCtx.addWatchFile === 'function') {
-    addNormalizedWatchFile(pluginCtx, filename)
   }
 
   try {
@@ -152,14 +139,7 @@ export async function transformVueLikeFile(options: {
       isDev: configService.isDev,
     }))
 
-    if (vueTransformTiming) {
-      vueTransformTiming({
-        id: filename,
-        isPage,
-        totalMs: Number((performance.now() - totalStart).toFixed(2)),
-        stages: stageTimings,
-      })
-    }
+    reportTiming(filename, isPage)
 
     return {
       code: returnedCode,
@@ -167,8 +147,7 @@ export async function transformVueLikeFile(options: {
     }
   }
   catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logger.error(`[Vue 编译] 编译 ${filename} 失败：${message}`)
+    logTransformFileError(filename, error)
     throw error
   }
 }

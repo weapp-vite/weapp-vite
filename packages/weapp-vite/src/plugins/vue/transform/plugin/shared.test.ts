@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { compileTransformEntryResult, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -17,9 +17,11 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
+const loggerErrorMock = vi.hoisted(() => vi.fn())
 const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'oxc'))
 const buildWeappVueStyleRequestMock = vi.hoisted(() => vi.fn((filename: string, _block: any, index: number) => `${filename}?style=${index}`))
 const fsReadFileMock = vi.hoisted(() => vi.fn(async () => 'loaded from fs'))
+const toAbsoluteIdMock = vi.hoisted(() => vi.fn((id: string) => id))
 
 vi.mock('../pageLayout', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../pageLayout')>()
@@ -55,11 +57,16 @@ vi.mock('../../../performance/onPageScrollDiagnostics', () => ({
 vi.mock('../../../../logger', () => ({
   default: {
     warn: loggerWarnMock,
+    error: loggerErrorMock,
   },
 }))
 
 vi.mock('../../../../ast', () => ({
   resolveAstEngine: resolveAstEngineMock,
+}))
+
+vi.mock('../../../../utils/toAbsoluteId', () => ({
+  toAbsoluteId: toAbsoluteIdMock,
 }))
 
 vi.mock('../styleRequest', () => ({
@@ -98,12 +105,15 @@ describe('vue transform plugin shared helpers', () => {
     collectOnPageScrollPerformanceWarningsMock.mockReset()
     collectOnPageScrollPerformanceWarningsMock.mockReturnValue([])
     loggerWarnMock.mockReset()
+    loggerErrorMock.mockReset()
     resolveAstEngineMock.mockReset()
     resolveAstEngineMock.mockReturnValue('oxc')
     buildWeappVueStyleRequestMock.mockReset()
     buildWeappVueStyleRequestMock.mockImplementation((filename: string, _block: any, index: number) => `${filename}?style=${index}`)
     fsReadFileMock.mockReset()
     fsReadFileMock.mockResolvedValue('loaded from fs')
+    toAbsoluteIdMock.mockReset()
+    toAbsoluteIdMock.mockImplementation((id: string) => id)
   })
 
   it('detects vue-like ids', () => {
@@ -212,6 +222,52 @@ describe('vue transform plugin shared helpers', () => {
 
     expect(readFileCached).toHaveBeenCalledTimes(1)
     expect(fsReadFileMock).toHaveBeenCalledWith('/project/src/components/card.vue', 'utf-8')
+  })
+
+  it('creates transform stage measurer that records optional timing callbacks', async () => {
+    const vueTransformTiming = vi.fn()
+    const { measureStage, reportTiming } = createTransformStageMeasurer(vueTransformTiming)
+
+    await expect(measureStage('compile', async () => 'done')).resolves.toBe('done')
+    reportTiming('/project/src/components/demo.vue', false)
+
+    expect(vueTransformTiming).toHaveBeenCalledWith(expect.objectContaining({
+      id: '/project/src/components/demo.vue',
+      isPage: false,
+      totalMs: expect.any(Number),
+      stages: expect.objectContaining({
+        compile: expect.any(Number),
+      }),
+    }))
+  })
+
+  it('resolves transform filename only for absolute paths and registers watch files when supported', () => {
+    const pluginCtx = {
+      addWatchFile: vi.fn(),
+    }
+    const addWatchFile = vi.fn()
+
+    expect(resolveTransformFilename({
+      id: '/project/src/components/demo.vue',
+      configService: {
+        cwd: '/project',
+      } as any,
+      pluginCtx,
+      getSourceFromVirtualId: vi.fn(id => id),
+      addWatchFile,
+    })).toBe('/project/src/components/demo.vue')
+
+    expect(addWatchFile).toHaveBeenCalledWith(pluginCtx, '/project/src/components/demo.vue')
+
+    expect(resolveTransformFilename({
+      id: 'virtual:demo',
+      configService: {
+        cwd: '/project',
+      } as any,
+      pluginCtx: {},
+      getSourceFromVirtualId: vi.fn(() => 'relative/demo.vue'),
+      addWatchFile,
+    })).toBeNull()
   })
 
   it('loads transform page entries from scan service and falls back when scan service is missing', async () => {
@@ -549,6 +605,15 @@ console.log(routes, promise)
 
     expect(ensureFresh).not.toHaveBeenCalled()
     expect(getReference).not.toHaveBeenCalled()
+  })
+
+  it('logs transform file errors with normalized messages', () => {
+    logTransformFileError('/project/src/components/demo.vue', new Error('compile failed'))
+    logTransformFileError('/project/src/components/demo.vue', 'plain failure')
+
+    expect(loggerErrorMock).toHaveBeenNthCalledWith(1, '[Vue 编译] 编译 /project/src/components/demo.vue 失败：compile failed')
+    expect(loggerErrorMock).toHaveBeenNthCalledWith(2, '[Vue 编译] 编译 /project/src/components/demo.vue 失败：plain failure')
+    expect(loggerWarnMock).not.toHaveBeenCalled()
   })
 
   it('finalizes compiled transform results through layout, watch deps, script finalize, cache, and scoped slots', async () => {
