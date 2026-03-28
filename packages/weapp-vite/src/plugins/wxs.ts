@@ -8,12 +8,12 @@ import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { jsExtensions } from '../constants'
-import { changeFileExtension } from '../utils/file'
 import { resolveCompilerOutputExtensions } from '../utils/outputExtensions'
 import { normalizeWatchPath } from '../utils/path'
 import { isScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { scanWxml } from '../wxml'
 import { transformWxsCode } from '../wxs'
+import { resolveRelativeOutputFileNameWithExtension } from './utils/outputFileName'
 
 export const wxsCodeCache = new LRUCache<string, string>({
   max: 512,
@@ -74,10 +74,11 @@ async function transformWxsFile(
     return
   }
 
-  const baseOutputPath = configService.relativeOutputPath(
+  const outputFileName = resolveRelativeOutputFileNameWithExtension(
+    configService,
     isRaw ? wxsPath : removeExtension(wxsPath),
+    scriptModuleExtension,
   )
-  const outputFileName = changeFileExtension(baseOutputPath, scriptModuleExtension)
   state.wxsMap.set(wxsPath, {
     emittedFile: {
       type: 'asset',

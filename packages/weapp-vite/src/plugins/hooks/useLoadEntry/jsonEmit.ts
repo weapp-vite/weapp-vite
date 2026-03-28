@@ -1,5 +1,5 @@
 import type { CompilerContext } from '../../../context'
-import { jsonFileRemoveJsExtension } from '../../../utils'
+import { resolveRelativeJsonOutputFileName } from '../../utils/outputFileName'
 
 export interface JsonEmitFileEntry {
   jsonPath?: string
@@ -22,9 +22,7 @@ export function createJsonEmitManager(
       return
     }
 
-    const fileName = configService.relativeOutputPath(
-      jsonFileRemoveJsExtension(entry.jsonPath),
-    )
+    const fileName = resolveRelativeJsonOutputFileName(configService, entry.jsonPath)
 
     map.set(fileName, {
       fileName,

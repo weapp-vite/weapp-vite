@@ -17,6 +17,9 @@ describe('createChunkEmitter', () => {
     await Promise.all(emitEntriesChunks.call(ctx, [resolved as any]))
 
     expect(load).toHaveBeenCalled()
+    expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      fileName: '\0vue:components/HelloWorld/index.js',
+    }))
     expect(loadedEntrySet.has('/project/src/components/HelloWorld/index.vue')).toBe(true)
     expect(loadedEntrySet.has(resolved.id)).toBe(false)
   })

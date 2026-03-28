@@ -5,6 +5,7 @@ import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../utils/path'
 import { resolveScriptModuleTagName } from '../../utils/wxmlScriptModule'
 import { handleWxml } from '../../wxml/handle'
+import { resolveRelativeOutputFileNameWithExtension } from './outputFileName'
 
 export interface WxmlAssetPayload {
   type: 'asset'
@@ -40,10 +41,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
   })
   const currentPackageWxmls = Array.from(wxmlService.tokenMap.entries())
     .map(([id, token]) => {
-      const outputFileName = changeFileExtension(
-        configService.relativeOutputPath(id),
-        templateExtension,
-      )
+      const outputFileName = resolveRelativeOutputFileNameWithExtension(configService, id, templateExtension)
       return {
         id,
         token,
