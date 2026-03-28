@@ -177,6 +177,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.savedFilePath
           && pageData.savedMissingInfo
           && pageData.savedMissingRemovalInfo
+          && pageData.savedPostRemovalReadInfo
           && pageData.savedRemovalInfo
           && pageData.savedRenameOutInfo
           && pageData.storageSnapshot
@@ -218,6 +219,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
     expect(pageData.savedMissingInfo).toContain('"missingInfoError":"getSavedFileInfo:fail no such file or directory')
     expect(pageData.savedMissingRemovalInfo).toContain('"missingRemoveError":"removeSavedFile:fail no such file or directory')
+    expect(pageData.savedPostRemovalReadInfo).toContain('"postRemovalReadError":"readFile:fail no such file or directory')
     expect(pageData.savedRemovalInfo).toContain('"hasSavedRegistration":false')
     expect(pageData.savedRemovalInfo).toContain('"removeErrMsg":"removeSavedFile:ok"')
     expect(pageData.savedRemovalInfo).toContain('"missingInfoError":"getSavedFileInfo:fail no such file or directory')
