@@ -11,6 +11,7 @@ import { handleWxml } from '../../../../wxml/handle'
 import { ensureScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcTemplateIfMissing } from '../emitAssets'
 import { resolveVueTransformJsonPlatformOptions } from '../platform'
+import { registerVueTemplateToken } from '../shared'
 
 const LEADING_DOT_SLASH_RE = /^\.\//
 
@@ -151,24 +152,7 @@ export function normalizeVueTemplateForPlatform(
   }
 }
 
-export function trackPlatformTemplateAnalysis(
-  ctx: CompilerContext,
-  filename: string,
-  template: string,
-) {
-  if (!ctx.wxmlService) {
-    return
-  }
-
-  try {
-    const token = ctx.wxmlService.analyze(template)
-    ctx.wxmlService.tokenMap.set(filename, token)
-    ctx.wxmlService.setWxmlComponentsMap(filename, token.components)
-  }
-  catch {
-    // 忽略模板扫描异常，保持模板发射流程可继续
-  }
-}
+export const trackPlatformTemplateAnalysis = registerVueTemplateToken
 
 export function emitPlatformTemplateAsset(
   bundle: Record<string, any>,
