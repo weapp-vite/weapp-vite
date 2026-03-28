@@ -2,13 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const collectScriptSetupImportsFromCodeMock = vi.hoisted(() => vi.fn(() => []))
 const readAndParseSfcMock = vi.hoisted(() => vi.fn())
+const createReadAndParseSfcOptionsMock = vi.hoisted(() => vi.fn(() => ({
+  checkMtime: false,
+  resolveSrc: {
+    resolveId: vi.fn(),
+    checkMtime: false,
+  },
+})))
 
 vi.mock('../../../../ast/operations/scriptSetupImports', () => ({
   collectScriptSetupImportsFromCode: collectScriptSetupImportsFromCodeMock,
 }))
 
 vi.mock('../../../utils/vueSfc', () => ({
-  getSfcCheckMtime: vi.fn(() => false),
+  createReadAndParseSfcOptions: createReadAndParseSfcOptionsMock,
   readAndParseSfc: readAndParseSfcMock,
 }))
 

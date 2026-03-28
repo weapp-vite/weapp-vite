@@ -12,7 +12,7 @@ import { normalizeWatchPath } from '../../../../utils/path'
 import { toAbsoluteId } from '../../../../utils/toAbsoluteId'
 import { collectOnPageScrollPerformanceWarnings } from '../../../performance/onPageScrollDiagnostics'
 import { readFile as readFileCached } from '../../../utils/cache'
-import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
+import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
@@ -65,7 +65,6 @@ export async function transformVueLikeFile(options: {
   scopedSlotModules: Map<string, string>
   emittedScopedSlotChunks: Set<string>
   classStyleRuntimeWarned: { value: boolean }
-  resolveSfcSrc: (pluginCtx: any, source: string, importer?: string) => Promise<string | undefined>
 }) {
   const {
     ctx,
@@ -80,7 +79,6 @@ export async function transformVueLikeFile(options: {
     scopedSlotModules,
     emittedScopedSlotChunks,
     classStyleRuntimeWarned,
-    resolveSfcSrc,
   } = options
   const vueTransformTiming = ctx.configService?.weappViteConfig?.debug?.vueTransformTiming
   const stageTimings: Record<string, number> = {}
@@ -125,12 +123,10 @@ export async function transformVueLikeFile(options: {
           await ensureSfcStyleBlocks(filename, styleBlocksCache, {
             load: async target => (
               await readAndParseSfc(target, {
-                source,
-                checkMtime: false,
-                resolveSrc: {
-                  resolveId: (src, importer) => resolveSfcSrc(pluginCtx, src, importer),
-                  checkMtime: getSfcCheckMtime(ctx.configService),
-                },
+                ...createReadAndParseSfcOptions(pluginCtx, ctx.configService, {
+                  source,
+                  checkMtime: false,
+                }),
               })
             ).descriptor.styles,
           })

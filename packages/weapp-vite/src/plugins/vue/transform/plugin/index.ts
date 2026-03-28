@@ -6,7 +6,7 @@ import type { createPageEntryMatcher } from '../../../wevu'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 transform 插件阶段仍统一复用 fs-extra 读写与 exists 判断
 import fs from 'fs-extra'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
-import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
+import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
 import { emitVueBundleAssets } from '../bundle'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
@@ -14,7 +14,7 @@ import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { parseWeappVueStyleRequest } from '../styleRequest'
-import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry, resolveSfcSrc } from './shared'
+import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
@@ -78,11 +78,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         styles = await ensureSfcStyleBlocks(filename, styleBlocksCache, {
           load: async target => (
             await readAndParseSfc(target, {
-              checkMtime: getSfcCheckMtime(ctx.configService),
-              resolveSrc: {
-                resolveId: (src, importer) => resolveSfcSrc(this, src, importer),
-                checkMtime: getSfcCheckMtime(ctx.configService),
-              },
+              ...createReadAndParseSfcOptions(this, ctx.configService),
             })
           ).descriptor.styles,
         })
@@ -120,7 +116,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         scopedSlotModules,
         emittedScopedSlotChunks,
         classStyleRuntimeWarned,
-        resolveSfcSrc,
       })
     },
 

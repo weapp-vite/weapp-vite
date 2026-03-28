@@ -2,6 +2,7 @@ import type { PluginContext } from 'rolldown'
 import type { AstEngineName } from '../../../../ast'
 import type { CompilerContext } from '../../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
+// eslint-disable-next-line e18e/ban-dependencies -- 当前 loadEntry 模板扫描仍统一复用 fs-extra 的 stat 能力
 import fs from 'fs-extra'
 import path from 'pathe'
 import { resolveAstEngine } from '../../../../ast'
@@ -14,7 +15,7 @@ import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/
 import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
-import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
+import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { ensureTemplateScanned } from './watch'
 
 const JS_LIKE_FILE_RE = /\.(?:[cm]?ts|[cm]?js)$/
@@ -76,17 +77,7 @@ export async function applyScriptSetupUsingComponents(options: {
 
   try {
     const { descriptor, errors } = await readAndParseSfc(vueEntryPath, {
-      checkMtime: getSfcCheckMtime(configService),
-      resolveSrc: {
-        resolveId: async (source, importer) => {
-          if (typeof pluginCtx.resolve !== 'function') {
-            return undefined
-          }
-          const resolved = await pluginCtx.resolve(source, importer)
-          return resolved?.id
-        },
-        checkMtime: getSfcCheckMtime(configService),
-      },
+      ...createReadAndParseSfcOptions(pluginCtx, configService),
     })
     if (!errors?.length && descriptor?.template && !templatePath) {
       const tags = collectVueTemplateAutoImportTags(descriptor.template.content, vueEntryPath)
