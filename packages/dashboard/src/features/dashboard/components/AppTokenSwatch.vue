@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import type { DashboardTokenSwatchItem } from '../types'
+import { computed } from 'vue'
 import { mutedPanelStyles } from '../utils/styles'
 
-defineProps<{
+const props = defineProps<{
   name: DashboardTokenSwatchItem['name']
   sample: DashboardTokenSwatchItem['sample']
 }>()
+
+const sampleStyle = computed(() => ({
+  background: props.sample,
+}))
 </script>
 
 <template>
@@ -14,7 +19,7 @@ defineProps<{
       <code class="text-xs text-[color:var(--dashboard-text-soft)]">{{ name }}</code>
       <span
         class="h-8 w-14 rounded-xl border border-[color:var(--dashboard-border)]"
-        :style="{ background: sample }"
+        :style="sampleStyle"
       />
     </div>
   </li>
