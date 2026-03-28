@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { CSS_LANGS_RE, isCSSRequest, isRegexp, regExpTest } from './regexp'
+import {
+  CSS_LANGS_RE,
+  isCSSRequest,
+  isRegexp,
+  matchStringPattern,
+  regExpTest,
+} from './regexp'
 
 describe('utils/regexp', () => {
   describe('isCSSRequest', () => {
@@ -19,6 +25,12 @@ describe('utils/regexp', () => {
   })
 
   describe('regExpTest', () => {
+    it('matches string patterns with exact and partial modes', () => {
+      expect(matchStringPattern('components', 'pages/components/index')).toBe(true)
+      expect(matchStringPattern('foo', 'foo', { exact: true })).toBe(true)
+      expect(matchStringPattern('foo', 'foobar', { exact: true })).toBe(false)
+    })
+
     it('matches substrings for string patterns by default', () => {
       expect(regExpTest(['components', 'widgets'], 'pages/components/index')).toBe(true)
       expect(regExpTest(['missing'], 'pages/components/index')).toBe(false)

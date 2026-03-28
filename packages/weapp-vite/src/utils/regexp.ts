@@ -7,6 +7,12 @@ export function isRegexp(value: unknown) {
   return Object.prototype.toString.call(value) === '[object RegExp]'
 }
 
+export function matchStringPattern(pattern: string, value: string, options?: { exact?: boolean }) {
+  return options?.exact
+    ? value === pattern
+    : value.includes(pattern)
+}
+
 export function regExpTest(arr: (string | RegExp)[], str: string, options?: { exact?: boolean }) {
   if (!Array.isArray(arr)) {
     throw new TypeError('paramater \'arr\' should be an Array of Regexp | String')
@@ -14,12 +20,7 @@ export function regExpTest(arr: (string | RegExp)[], str: string, options?: { ex
 
   for (const item of arr) {
     if (typeof item === 'string') {
-      if (options?.exact) {
-        if (str === item) {
-          return true
-        }
-      }
-      else if (str.includes(item)) {
+      if (matchStringPattern(item, str, options)) {
         return true
       }
     }
