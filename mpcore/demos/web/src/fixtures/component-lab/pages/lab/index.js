@@ -16,6 +16,7 @@ Page({
     savedFileInfo: '',
     savedMissingInfo: '',
     savedMissingRemovalInfo: '',
+    savedPostRemovalReadInfo: '',
     fileManagerMissingAccessInfo: '',
     fileManagerMissingCopyInfo: '',
     fileManagerMissingMkdirInfo: '',
@@ -257,12 +258,22 @@ Page({
             wx.getSavedFileInfo({
               filePath: saveResult.savedFilePath,
               fail: (error) => {
+                let postRemovalReadError = ''
+                try {
+                  fsManager.readFileSync(saveResult.savedFilePath)
+                }
+                catch (readError) {
+                  postRemovalReadError = readError.message
+                }
                 const remainingSavedFiles = wx.getSavedFileList().fileList
                 this.setData({
                   savedRemovalInfo: JSON.stringify({
                     hasSavedRegistration: remainingSavedFiles.some(file => file.filePath === saveResult.savedFilePath),
                     missingInfoError: error.message,
                     removeErrMsg: removeResult.errMsg,
+                  }),
+                  savedPostRemovalReadInfo: JSON.stringify({
+                    postRemovalReadError,
                   }),
                 }, () => {
                   this.push('lab:runSavedRemovalLab')
