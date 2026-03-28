@@ -1,4 +1,5 @@
 import type { CandidateEntry } from './candidates'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
   applyCandidateEntryFile,
@@ -8,6 +9,8 @@ import {
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
   resolveCollectTargetRoot,
+  safeCrawlCandidateFiles,
+  shouldCollectTargetRoot,
 } from './candidates'
 import { createAutoRoutesMatcher } from './matcher'
 
@@ -83,6 +86,29 @@ describe('auto routes candidates helpers', () => {
     expect(resolveCollectTargetRoot('/project/src', 'pages')).toBe('/project/src/pages')
     expect(resolveCollectTargetRoot('/project/src', '/project/src/pkgA')).toBe('/project/src/pkgA')
     expect(resolveCollectTargetRoot('/project/src', '../outside')).toBeUndefined()
+  })
+
+  it('checks target root existence and tolerates crawler failures', async () => {
+    expect(await shouldCollectTargetRoot(path.resolve(process.cwd(), 'packages/weapp-vite/src'))).toBe(true)
+    expect(await shouldCollectTargetRoot('/project/not-found')).toBe(false)
+
+    const successCrawler = {
+      crawl: () => ({
+        withPromise: async () => ['/project/src/pages/home/index.vue'],
+      }),
+    } as any
+    const failedCrawler = {
+      crawl: () => ({
+        withPromise: async () => {
+          throw new Error('crawl failed')
+        },
+      }),
+    } as any
+
+    expect(await safeCrawlCandidateFiles(successCrawler, '/project/src')).toEqual([
+      '/project/src/pages/home/index.vue',
+    ])
+    expect(await safeCrawlCandidateFiles(failedCrawler, '/project/src')).toEqual([])
   })
 
   it('resolves relative candidate entry metadata', () => {
