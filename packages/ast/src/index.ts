@@ -80,6 +80,7 @@ export { collectScriptSetupImportsFromCode, mayContainRelevantScriptSetupImports
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
 export {
   collectLoopScopeAliases,
+  collectPatternBindingNames,
   collectSetDataPickKeysFromTemplateCode,
   extractTemplateExpressions,
 } from './operations/setDataPick'
