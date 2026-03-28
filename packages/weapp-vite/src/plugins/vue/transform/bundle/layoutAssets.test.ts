@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, resolveNativeLayoutAssetState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
+import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view />'))
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
@@ -150,6 +150,41 @@ describe('resolveVueLayoutAssetOptions', () => {
         template: '/project/layouts/default/index.wxml',
       },
     })
+  })
+
+  it('resolves native layout script chunk state from layout assets and output options', async () => {
+    collectNativeLayoutAssetsMock.mockResolvedValue({
+      script: '/project/layouts/default/index.js',
+    })
+
+    await expect(resolveNativeLayoutScriptChunkState({
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })).resolves.toEqual({
+      fileName: 'dist/layouts/default/index.mjs',
+      scriptId: '/project/layouts/default/index.js',
+    })
+  })
+
+  it('returns undefined for native layout script chunk state when script asset is missing', async () => {
+    collectNativeLayoutAssetsMock.mockResolvedValue({
+      template: '/project/layouts/default/index.wxml',
+    })
+
+    await expect(resolveNativeLayoutScriptChunkState({
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })).resolves.toBeUndefined()
   })
 
   it('emits resolved native layout static assets by asset kind', async () => {
