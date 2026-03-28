@@ -1,22 +1,23 @@
 import type { ComputedRef, Ref } from 'vue'
-import type { DashboardMetricCard, DashboardTab } from '../types'
+import type {
+  AnalyzeDashboardSummary,
+  DashboardMetricCard,
+  DashboardTab,
+  DuplicateModuleEntry,
+  ModuleSourceSummary,
+  PackageInsight,
+  SummaryMetric,
+} from '../types'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatBytes } from '../utils/format'
 
 export function useDashboardPage(options: {
-  summary: ComputedRef<{
-    packageCount: number
-    moduleCount: number
-    duplicateCount: number
-    totalBytes: number
-    subpackageCount: number
-    entryCount: number
-  }>
-  packageInsights: ComputedRef<Array<{ chunkCount: number, assetCount: number }>>
-  packageTypeSummary: ComputedRef<Array<{ label: string, value: number }>>
-  duplicateModules: ComputedRef<Array<{ bytes: number }>>
-  moduleSourceSummary: ComputedRef<Array<unknown>>
+  summary: ComputedRef<AnalyzeDashboardSummary>
+  packageInsights: ComputedRef<PackageInsight[]>
+  packageTypeSummary: ComputedRef<SummaryMetric[]>
+  duplicateModules: ComputedRef<DuplicateModuleEntry[]>
+  moduleSourceSummary: ComputedRef<ModuleSourceSummary[]>
   lastUpdatedAt: Ref<string>
 }) {
   const route = useRoute()

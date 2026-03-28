@@ -117,6 +117,15 @@ export interface SummaryMetric {
   value: number
 }
 
+export interface AnalyzeDashboardSummary {
+  packageCount: number
+  moduleCount: number
+  duplicateCount: number
+  totalBytes: number
+  subpackageCount: number
+  entryCount: number
+}
+
 export interface PackageInsight {
   id: string
   label: string

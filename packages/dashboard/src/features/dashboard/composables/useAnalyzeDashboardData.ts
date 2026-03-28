@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type {
+  AnalyzeDashboardSummary,
   AnalyzeSubpackagesResult,
   DuplicateModuleEntry,
   LargestFileEntry,
@@ -50,7 +51,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
     return map
   })
 
-  const summary = computed(() => {
+  const summary = computed<AnalyzeDashboardSummary>(() => {
     const result = resultRef.value
     if (!result) {
       return {
