@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import type { DashboardIconName, DashboardTitleBlock } from '../types'
+import { computed } from 'vue'
 import { iconFrameStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
-defineProps<{
+const props = defineProps<{
   iconName: DashboardIconName
   title: DashboardTitleBlock['title']
   description?: DashboardTitleBlock['description']
 }>()
+
+const iconClassName = iconFrameStyles()
+const hasDescription = computed(() => Boolean(props.description))
 </script>
 
 <template>
   <div class="flex items-center justify-between gap-3">
     <div class="flex items-center gap-2">
-      <span :class="iconFrameStyles()">
+      <span :class="iconClassName">
         <span class="h-5 w-5">
           <DashboardIcon :name="iconName" />
         </span>
@@ -23,7 +27,7 @@ defineProps<{
           {{ title }}
         </h2>
         <p
-          v-if="description"
+          v-if="hasDescription"
           class="text-xs text-[color:var(--dashboard-text-soft)] md:text-sm"
         >
           {{ description }}
