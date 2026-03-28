@@ -2,6 +2,7 @@
 import type { ThemePreference } from '../composables/useThemeMode'
 import type { ThemeOption } from '../types'
 import AppInfoPill from './AppInfoPill.vue'
+import AppThemeSelectPill from './AppThemeSelectPill.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
@@ -43,53 +44,22 @@ const emit = defineEmits<{
         </div>
       </div>
 
-      <label
-        class="hidden items-center gap-2 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-2 text-xs font-medium text-[color:var(--dashboard-text-soft)] md:inline-flex"
-        for="dashboard-global-theme"
-      >
-        <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
-          <DashboardIcon :name="themeOptions.find(option => option.value === themePreference)?.iconName ?? 'theme-system'" />
-        </span>
-        <select
-          id="dashboard-global-theme"
-          class="min-w-[8rem] bg-transparent text-[color:var(--dashboard-text)] outline-none"
-          :value="themePreference"
-          @change="emit('setTheme', ($event.target as HTMLSelectElement).value as ThemePreference)"
-        >
-          <option
-            v-for="option in themeOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+      <AppThemeSelectPill
+        class="hidden md:inline-flex"
+        input-id="dashboard-global-theme"
+        :theme-options="themeOptions"
+        :theme-preference="themePreference"
+        @select="emit('setTheme', $event)"
+      />
     </div>
 
     <div class="flex flex-wrap items-center gap-2 md:hidden">
-      <label
-        class="inline-flex items-center gap-2 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-2 text-xs font-medium text-[color:var(--dashboard-text-soft)]"
-        for="dashboard-mobile-theme"
-      >
-        <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
-          <DashboardIcon :name="themeOptions.find(option => option.value === themePreference)?.iconName ?? 'theme-system'" />
-        </span>
-        <select
-          id="dashboard-mobile-theme"
-          class="min-w-[8rem] bg-transparent text-[color:var(--dashboard-text)] outline-none"
-          :value="themePreference"
-          @change="emit('setTheme', ($event.target as HTMLSelectElement).value as ThemePreference)"
-        >
-          <option
-            v-for="option in themeOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+      <AppThemeSelectPill
+        input-id="dashboard-mobile-theme"
+        :theme-options="themeOptions"
+        :theme-preference="themePreference"
+        @select="emit('setTheme', $event)"
+      />
 
       <AppInfoPill icon-name="status-live" label="shell ready" uppercase />
     </div>
