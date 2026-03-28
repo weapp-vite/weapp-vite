@@ -4,6 +4,7 @@ import {
   isAliasedAutoRoutesId,
   isAutoRoutesPagesRelatedPath,
   resolveAutoRoutesAliasTargets,
+  resolveAutoRoutesMatcherContext,
   resolveAutoRoutesPath,
 } from './shared'
 
@@ -56,6 +57,41 @@ describe('auto routes shared helpers', () => {
       'C:/virtual/weapp-vite/dist/auto-routes.js',
     ]))).toBe(true)
     expect(isAliasedAutoRoutesId('/virtual/project/src/pages/index.ts', targets)).toBe(false)
+  })
+
+  it('resolves matcher context from config and runtime subpackages', () => {
+    const resolved = resolveAutoRoutesMatcherContext({
+      configService: {
+        weappViteConfig: {
+          autoRoutes: {
+            include: ['views/**'],
+          },
+          subPackages: {
+            pkgA: {},
+          },
+          npm: {
+            subPackages: {
+              npmPkg: {},
+            },
+          },
+        },
+      },
+      runtimeState: {
+        scan: {
+          appEntry: {
+            json: {
+              subPackages: [{ root: 'pkgB' }],
+              subpackages: [{ root: 'pkgC' }],
+            },
+          },
+        },
+      },
+    } as any)
+
+    expect(resolved.autoRoutesConfig.include).toEqual(['views/**'])
+    expect(resolved.subPackageRoots).toEqual(['pkgA', 'npmPkg', 'pkgB', 'pkgC'])
+    expect(resolved.matcher.matches('views/home/index')).toBe(true)
+    expect(resolved.matcher.matches('pages/home/index')).toBe(false)
   })
 
   it('matches default pages paths and subpackage roots', () => {

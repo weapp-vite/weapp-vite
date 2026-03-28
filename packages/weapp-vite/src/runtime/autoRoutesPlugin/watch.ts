@@ -3,7 +3,6 @@ import type { ChangeEvent } from '../../types'
 import type { CandidateEntry } from './candidates'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
-import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../utils/file'
 import { normalizePath, toPosixPath } from '../../utils/path'
 import {
@@ -14,10 +13,8 @@ import {
   isTemplateFile,
   isVueFile,
 } from './candidates'
-import { createAutoRoutesMatcher } from './matcher'
 import { resolveRoute } from './routes'
-import { resolveAutoRoutesPath } from './shared'
-import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
+import { resolveAutoRoutesMatcherContext, resolveAutoRoutesPath } from './shared'
 
 export type AutoRoutesFileEvent = ChangeEvent | 'rename'
 
@@ -43,9 +40,7 @@ export function matchesRouteFile(
     return false
   }
 
-  const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-  const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
+  const { matcher } = resolveAutoRoutesMatcherContext(ctx)
   if (!matcher.matches(removeExtensionDeep(resolvedPath.relativePath))) {
     return false
   }
@@ -148,15 +143,13 @@ export async function updateCandidateFromFile(
     return true
   }
 
-  const autoRoutesConfig = resolveWeappAutoRoutesConfig(ctx.configService.weappViteConfig?.autoRoutes)
-  const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
+  const { matcher, subPackageRoots } = resolveAutoRoutesMatcherContext(ctx)
   const route = resolveRoute(relativeBase, subPackageRoots)
   if (!route) {
     const removed = stateCandidates.delete(base)
     return removed
   }
 
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
   if (!matcher.matches(relativeBase)) {
     const removed = stateCandidates.delete(base)
     return removed

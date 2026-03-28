@@ -2,16 +2,14 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import chokidar from 'chokidar'
 import path from 'pathe'
-import { resolveWeappAutoRoutesConfig } from '../autoRoutesConfig'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
-import { createAutoRoutesMatcher } from '../runtime/autoRoutesPlugin/matcher'
 import {
   isAliasedAutoRoutesId,
   isAutoRoutesPagesRelatedPath,
   resolveAutoRoutesAliasTargets,
+  resolveAutoRoutesMatcherContext,
 } from '../runtime/autoRoutesPlugin/shared'
-import { getAutoRoutesSubPackageRoots } from '../runtime/autoRoutesPlugin/subPackageRoots'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { normalizeWatchPath } from '../utils/path'
 
@@ -63,12 +61,12 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     if (!configService) {
       return false
     }
-    const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
+    const { autoRoutesConfig, subPackageRoots } = resolveAutoRoutesMatcherContext(ctx)
     return isAutoRoutesPagesRelatedPath(id, {
       cwd: configService.cwd,
       absoluteSrcRoot: configService.absoluteSrcRoot,
       include: autoRoutesConfig.include,
-      subPackageRoots: getAutoRoutesSubPackageRoots(ctx),
+      subPackageRoots,
     })
   }
 
@@ -94,14 +92,12 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       return
     }
 
-    const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
+    const { autoRoutesConfig, matcher: resolvedMatcher } = resolveAutoRoutesMatcherContext(ctx)
     if (!autoRoutesConfig.enabled || !autoRoutesConfig.watch || !service.isEnabled()) {
       return
     }
 
     const srcRoot = configService.absoluteSrcRoot
-    const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
-    const resolvedMatcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
     const allowedExtensions = new Set(vueExtensions.map(ext => `.${ext}`))
     const watchDirs = new Set<string>()
 
