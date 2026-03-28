@@ -5,7 +5,7 @@ import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/com
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { createCompileVueFileOptions } from '../compileOptions'
-import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset } from '../emitAssets'
+import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
@@ -70,6 +70,58 @@ export function emitSharedVueEntryJsonAsset(options: {
     { config: normalizedConfig },
     options.jsonOptions,
   )
+}
+
+export function emitSharedFallbackPageAssets(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  relativeBase: string
+  result: Pick<VueTransformResult, 'style' | 'config'>
+  outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+  styleExtension: string
+  jsonExtension: string
+  jsonDefaults?: Record<string, any>
+  jsonMergeStrategy?: JsonMergeStrategy
+}) {
+  const {
+    bundle,
+    pluginCtx,
+    relativeBase,
+    result,
+    outputExtensions,
+    platformAssetOptions,
+    styleExtension,
+    jsonExtension,
+    jsonDefaults,
+    jsonMergeStrategy,
+  } = options
+
+  if (result.style) {
+    emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
+  }
+
+  emitSharedVueEntryJsonAsset({
+    bundle,
+    pluginCtx,
+    relativeBase,
+    config: result.config,
+    outputExtensions,
+    platformAssetOptions,
+    jsonOptions: {
+      mergeExistingAsset: true,
+      mergeStrategy: jsonMergeStrategy,
+      defaults: jsonDefaults,
+      kind: 'page',
+      extension: jsonExtension,
+    },
+  })
 }
 
 export function resolveClassStyleWxsAsset(

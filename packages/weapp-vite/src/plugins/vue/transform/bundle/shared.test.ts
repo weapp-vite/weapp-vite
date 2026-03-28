@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared'
+import { emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
+const emitSfcStyleIfMissingMock = vi.hoisted(() => vi.fn())
 const emitScopedSlotAssetsMock = vi.hoisted(() => vi.fn())
 const resolveClassStyleWxsLocationForBaseMock = vi.hoisted(() => vi.fn(() => ({
   fileName: 'pages/index/__class_style.sjs',
@@ -19,6 +20,7 @@ vi.mock('./platform', () => ({
 vi.mock('../emitAssets', () => ({
   emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
   emitSfcJsonAsset: emitSfcJsonAssetMock,
+  emitSfcStyleIfMissing: emitSfcStyleIfMissingMock,
 }))
 
 vi.mock('../scopedSlot', () => ({
@@ -46,6 +48,7 @@ describe('emitSharedVueEntryAssets', () => {
     emitPlatformTemplateAssetMock.mockReset()
     emitClassStyleWxsAssetIfMissingMock.mockReset()
     emitSfcJsonAssetMock.mockReset()
+    emitSfcStyleIfMissingMock.mockReset()
     emitScopedSlotAssetsMock.mockReset()
     resolveClassStyleWxsLocationForBaseMock.mockClear()
     getClassStyleWxsSourceMock.mockClear()
@@ -142,6 +145,49 @@ describe('emitSharedVueEntryAssets', () => {
         mergeExistingAsset: true,
         defaults: { styleIsolation: 'apply-shared' },
         mergeStrategy: 'override',
+        kind: 'page',
+        extension: 'json',
+      },
+    )
+  })
+
+  it('emits fallback page style and shared page json asset', () => {
+    emitSharedFallbackPageAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      relativeBase: 'pages/index/index',
+      result: {
+        style: '.page{}',
+        config: '{"navigationBarTitleText":"首页"}',
+      },
+      outputExtensions: {},
+      platformAssetOptions: {
+        platform: 'alipay',
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+      },
+      styleExtension: 'acss',
+      jsonExtension: 'json',
+      jsonDefaults: { navigationStyle: 'default' },
+      jsonMergeStrategy: 'override' as any,
+    })
+
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      '.page{}',
+      'acss',
+    )
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      { config: '{"component":true}' },
+      {
+        mergeExistingAsset: true,
+        mergeStrategy: 'override',
+        defaults: { navigationStyle: 'default' },
         kind: 'page',
         extension: 'json',
       },

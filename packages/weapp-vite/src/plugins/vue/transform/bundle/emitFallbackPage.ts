@@ -5,7 +5,6 @@ import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
-import { emitSfcStyleIfMissing } from '../emitAssets'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
@@ -14,7 +13,7 @@ import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
 import { resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared'
+import { compileVueLikeFile, emitSharedFallbackPageAssets, emitSharedVueEntryAssets } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -144,24 +143,17 @@ export async function emitFallbackPageAssets(
         scopedSlotMergeStrategy: jsonConfig?.mergeStrategy,
       })
 
-      if (result.style) {
-        emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
-      }
-
-      emitSharedVueEntryJsonAsset({
+      emitSharedFallbackPageAssets({
         bundle,
         pluginCtx,
         relativeBase,
-        config: result.config,
+        result,
         outputExtensions,
         platformAssetOptions,
-        jsonOptions: {
-          mergeExistingAsset: true,
-          mergeStrategy: jsonConfig?.mergeStrategy,
-          defaults: jsonConfig?.defaults?.page,
-          kind: 'page',
-          extension: jsonExtension,
-        },
+        styleExtension,
+        jsonExtension,
+        jsonDefaults: jsonConfig?.defaults?.page,
+        jsonMergeStrategy: jsonConfig?.mergeStrategy,
       })
     }
     catch (error) {
