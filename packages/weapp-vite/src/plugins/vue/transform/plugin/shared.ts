@@ -1,10 +1,13 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+import { performance } from 'node:perf_hooks'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 transform 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
+import path from 'pathe'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
+import { toAbsoluteId } from '../../../../utils/toAbsoluteId'
 import { collectOnPageScrollPerformanceWarnings } from '../../../performance/onPageScrollDiagnostics'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../bundle'
@@ -58,6 +61,64 @@ export function mayNeedTransformPageScrollDiagnostics(script: string) {
 
 export function mayNeedInlineAutoRoutes(source: string) {
   return AUTO_ROUTES_DEFAULT_IMPORT_RE.test(source) || AUTO_ROUTES_DYNAMIC_IMPORT_RE.test(source)
+}
+
+export function createTransformStageMeasurer(vueTransformTiming: ((payload: {
+  id: string
+  isPage: boolean
+  totalMs: number
+  stages: Record<string, number>
+}) => void) | undefined) {
+  const stageTimings: Record<string, number> = {}
+  const totalStart = vueTransformTiming ? performance.now() : 0
+
+  const measureStage = async <T>(label: string, task: () => Promise<T>) => {
+    if (!vueTransformTiming) {
+      return await task()
+    }
+    const start = performance.now()
+    const result = await task()
+    stageTimings[label] = Number((performance.now() - start).toFixed(2))
+    return result
+  }
+
+  const reportTiming = (id: string, isPage: boolean) => {
+    if (!vueTransformTiming) {
+      return
+    }
+    vueTransformTiming({
+      id,
+      isPage,
+      totalMs: Number((performance.now() - totalStart).toFixed(2)),
+      stages: stageTimings,
+    })
+  }
+
+  return {
+    measureStage,
+    reportTiming,
+  }
+}
+
+export function resolveTransformFilename(options: {
+  id: string
+  configService: NonNullable<CompilerContext['configService']>
+  pluginCtx: any
+  getSourceFromVirtualId: (id: string) => string
+  addWatchFile: (pluginCtx: any, file: string) => void
+}) {
+  const { id, configService, pluginCtx, getSourceFromVirtualId, addWatchFile } = options
+  const sourceId = getSourceFromVirtualId(id)
+  const filename = toAbsoluteId(sourceId, configService, undefined, { base: 'cwd' })
+  if (!filename || !path.isAbsolute(filename)) {
+    return null
+  }
+
+  if (typeof pluginCtx.addWatchFile === 'function') {
+    addWatchFile(pluginCtx, filename)
+  }
+
+  return filename
 }
 
 export async function loadTransformPageEntries(scanService: CompilerContext['scanService']) {
@@ -478,6 +539,11 @@ export async function finalizeTransformCompiledResult(options: {
   }
 
   return result
+}
+
+export function logTransformFileError(filename: string, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  logger.error(`[Vue 编译] 编译 ${filename} 失败：${message}`)
 }
 
 export async function registerNativeLayoutChunksForEntry(
