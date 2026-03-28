@@ -6,6 +6,7 @@ import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
+  collectJsxTemplateTagsFromOxc,
   collectLoopScopeAliases,
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
@@ -572,6 +573,32 @@ export default page
     })).toBe('render')
     expect(getJsxOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getJsxOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
+    expect([...collectJsxTemplateTagsFromOxc({
+      type: 'JSXElement',
+      openingElement: { name: { type: 'JSXIdentifier', name: 'TButton' } },
+      children: [
+        {
+          type: 'JSXElement',
+          openingElement: {
+            name: {
+              type: 'JSXNamespacedName',
+              namespace: { name: 'foo' },
+              name: { name: 'bar' },
+            },
+          },
+          children: [],
+        },
+        {
+          type: 'JSXElement',
+          openingElement: {
+            name: {
+              type: 'JSXMemberExpression',
+            },
+          },
+          children: [],
+        },
+      ],
+    }, tag => tag !== 'foo:bar')]).toEqual(['TButton'])
     expect(resolveOxcComponentExpression(
       { type: 'ObjectExpression', properties: [] },
       new Map(),

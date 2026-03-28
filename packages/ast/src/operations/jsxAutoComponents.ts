@@ -387,7 +387,7 @@ export function resolveOxcRenderExpression(componentExpr: any) {
   return unwrapOxcExpression(normalizedValue.body)
 }
 
-function collectJsxTemplateTagsFromOxc(renderExpression: any, isCollectableTag: (tag: string) => boolean) {
+export function collectJsxTemplateTagsFromOxc(renderExpression: any, isCollectableTag: (tag: string) => boolean) {
   const tags = new Set<string>()
 
   walkOxc(renderExpression, {
