@@ -304,6 +304,11 @@ export interface DashboardMetricItem {
   value: string | number
 }
 
+export interface DashboardTitleBlock {
+  title: string
+  description?: string
+}
+
 export interface DashboardInfoPillItem {
   label: string
   iconName?: DashboardIconName

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import type { DashboardTitleBlock } from '../types'
+
 withDefaults(defineProps<{
   eyebrow?: string
-  title: string
-  description?: string
+  title: DashboardTitleBlock['title']
+  description?: DashboardTitleBlock['description']
 }>(), {
   eyebrow: undefined,
   description: undefined,
