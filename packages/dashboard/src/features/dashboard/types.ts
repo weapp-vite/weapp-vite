@@ -110,6 +110,11 @@ export interface DashboardMetricCard {
   wide?: boolean
 }
 
+export interface SummaryMetric {
+  label: string
+  value: number
+}
+
 export interface DashboardNavItem {
   to: string
   label: string
