@@ -3,9 +3,15 @@ import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER } from '../../../../utils'
 import {
   emitAlipayGenericPlaceholderAssets,
   emitAlipayGenericPlaceholderAssetsByBase,
+  emitPlatformConfigSideEffects,
   emitPlatformTemplateAsset,
+  normalizeVueConfigForPlatform,
+  prepareNormalizedVueConfigForPlatform,
+  preparePlatformConfigAsset,
   resolveAlipayGenericPlaceholderBase,
   resolveGenericPlaceholderBaseForPlatform,
+  resolvePlatformConfigAssetState,
+  resolveVueBundlePlatformAssetOptions,
   resolveVueBundlePlatformOptions,
   shouldEmitAlipayGenericPlaceholder,
   trackPlatformTemplateAnalysis,
@@ -14,10 +20,19 @@ import {
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
 const emitSfcTemplateIfMissingMock = vi.hoisted(() => vi.fn())
 const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
+const resolveJsonMock = vi.hoisted(() => vi.fn((payload: any) => JSON.stringify(payload.json)))
 
 vi.mock('../../../utils/scriptlessComponent', () => ({
   ensureScriptlessComponentAsset: ensureScriptlessComponentAssetMock,
 }))
+
+vi.mock('../../../../utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../utils')>()
+  return {
+    ...actual,
+    resolveJson: resolveJsonMock,
+  }
+})
 
 vi.mock('../emitAssets', () => ({
   emitSfcJsonAsset: emitSfcJsonAssetMock,
@@ -29,6 +44,8 @@ describe('bundle platform helpers', () => {
     emitSfcJsonAssetMock.mockReset()
     emitSfcTemplateIfMissingMock.mockReset()
     ensureScriptlessComponentAssetMock.mockReset()
+    resolveJsonMock.mockReset()
+    resolveJsonMock.mockImplementation((payload: any) => JSON.stringify(payload.json))
   })
 
   it('resolves platform bundle options from platform-specific capabilities', () => {
@@ -51,6 +68,56 @@ describe('bundle platform helpers', () => {
       emitGenericPlaceholder: false,
       scriptModuleTag: undefined,
     })
+  })
+
+  it('resolves platform asset options from config service state', () => {
+    expect(resolveVueBundlePlatformAssetOptions({
+      configService: {
+        platform: 'alipay',
+        packageJson: {
+          dependencies: {
+            dayjs: '^1.11.0',
+          },
+        },
+        weappViteConfig: {
+          npm: {
+            alipayNpmMode: 'node_modules',
+          },
+        },
+      } as any,
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })).toEqual({
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+      dependencies: {
+        dayjs: '^1.11.0',
+      },
+      alipayNpmMode: 'node_modules',
+    })
+  })
+
+  it('normalizes vue config only for platforms that require usingComponents normalization', () => {
+    const config = JSON.stringify({
+      usingComponents: {
+        card: 'pkg/card',
+      },
+    })
+
+    expect(normalizeVueConfigForPlatform(config, {
+      platform: 'weapp',
+    })).toBe(config)
+
+    expect(normalizeVueConfigForPlatform(config, {
+      platform: 'alipay',
+      dependencies: {
+        dayjs: '^1.11.0',
+      },
+      alipayNpmMode: 'node_modules',
+    })).toBe(config)
+
+    expect(resolveJsonMock).toHaveBeenCalledTimes(1)
   })
 
   it('resolves alipay generic placeholder base from page-relative path', () => {
@@ -179,6 +246,94 @@ describe('bundle platform helpers', () => {
     expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
       pluginCtx,
       bundle,
+      `pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+      '<view />',
+      'axml',
+    )
+  })
+
+  it('prepares normalized vue config through the shared platform helper', () => {
+    const config = JSON.stringify({
+      usingComponents: {
+        card: 'pkg/card',
+      },
+    })
+
+    expect(prepareNormalizedVueConfigForPlatform({
+      config,
+      platform: 'alipay',
+      dependencies: {
+        dayjs: '^1.11.0',
+      },
+      alipayNpmMode: 'node_modules',
+    })).toBe(config)
+
+    expect(resolveJsonMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves platform config asset state with normalized config and placeholder base', () => {
+    const config = JSON.stringify({
+      componentGenerics: {
+        list: true,
+      },
+    })
+
+    expect(resolvePlatformConfigAssetState({
+      relativeBase: 'pages/demo/index',
+      config,
+      platform: 'alipay',
+    })).toEqual({
+      normalizedConfig: config,
+      genericPlaceholderBase: `pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+    })
+  })
+
+  it('emits platform config side effects from resolved placeholder base directly', () => {
+    emitPlatformConfigSideEffects({}, {
+      pluginCtx: { emitFile: vi.fn() },
+      relativeBase: 'pages/demo/index',
+      config: '{"componentGenerics":{"list":true}}',
+      outputExtensions: {
+        wxml: 'axml',
+        json: 'json',
+        js: 'mjs',
+      } as any,
+      platform: 'alipay',
+      genericPlaceholderBase: `pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+    })
+
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      `pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+      '<view />',
+      'axml',
+    )
+  })
+
+  it('prepares platform config asset through normalized config and resolved side effects', () => {
+    const config = JSON.stringify({
+      componentGenerics: {
+        list: true,
+      },
+    })
+
+    const result = preparePlatformConfigAsset({}, {
+      pluginCtx: { emitFile: vi.fn() },
+      relativeBase: 'pages/demo/index',
+      config,
+      outputExtensions: {
+        wxml: 'axml',
+        json: 'json',
+        js: 'mjs',
+      } as any,
+      platform: 'alipay',
+    })
+
+    expect(result).toBe(config)
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
       `pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
       '<view />',
       'axml',
