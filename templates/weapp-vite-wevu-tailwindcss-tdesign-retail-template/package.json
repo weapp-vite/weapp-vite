@@ -23,8 +23,8 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "weapp-vite open",
-    "stylelint": "stylelint \"src/**/*.{css,scss,vue}\" --allow-empty-input",
-    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue}\" --fix --allow-empty-input",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
     "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "dependencies": {

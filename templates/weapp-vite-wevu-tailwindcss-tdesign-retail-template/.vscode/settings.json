@@ -1,6 +1,7 @@
 {
   "files.associations": {
-    "*.wxml": "html"
+    "*.wxml": "html",
+    "*.wxss": "css"
   },
   "html.customData": [
     "./.weapp-vite/mini-program.html-data.json"
@@ -32,5 +33,10 @@
   ],
   "tailwindCSS.includeLanguages": {
     "wxml": "html"
-  }
+  },
+  "stylelint.validate": [
+    "css",
+    "scss",
+    "vue"
+  ]
 }
