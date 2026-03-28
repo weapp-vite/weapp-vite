@@ -85,5 +85,6 @@ export {
   collectPatternBindingNames,
   collectSetDataPickKeysFromTemplateCode,
   extractTemplateExpressions,
+  hasBindingInScopes,
 } from './operations/setDataPick'
 export type { AstEngineName, AstParserLike, WeappAstConfig } from './types'

@@ -167,6 +167,10 @@ export function collectPatternBindingNames(node: any, bindings: Set<string>) {
   }
 }
 
+export function hasBindingInScopes(scopes: Set<string>[], name: string) {
+  return scopes.some(scope => scope.has(name))
+}
+
 export function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string> {
   const collected = new Set<string>()
   let ast: any
@@ -182,10 +186,6 @@ export function collectIdentifiersFromExpressionWithOxc(expression: string): Set
   }
 
   const scopes: Set<string>[] = [new Set()]
-
-  function hasBinding(name: string) {
-    return scopes.some(scope => scope.has(name))
-  }
 
   function visit(node: any) {
     if (!node) {
@@ -237,7 +237,7 @@ export function collectIdentifiersFromExpressionWithOxc(expression: string): Set
       case 'Identifier':
         if (
           node.name !== '__weappViteExpr'
-          && !hasBinding(node.name)
+          && !hasBindingInScopes(scopes, node.name)
           && !JS_GLOBAL_IDENTIFIERS.has(node.name)
         ) {
           collected.add(node.name)
