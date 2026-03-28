@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { cleanOutputs, syncExternalPluginOutputs } from './outputs'
+import { cleanOutputs, isOutputRootInsideOutDir, syncExternalPluginOutputs } from './outputs'
 
 const debugMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
@@ -65,6 +65,12 @@ describe('buildPlugin outputs', () => {
     readdirMock.mockResolvedValue([])
     rmMock.mockReset()
     cpMock.mockReset()
+  })
+
+  it('detects whether plugin outputs stay inside the main outDir', () => {
+    expect(isOutputRootInsideOutDir('/project/dist', '/project/dist')).toBe(true)
+    expect(isOutputRootInsideOutDir('/project/dist', '/project/dist/plugin')).toBe(true)
+    expect(isOutputRootInsideOutDir('/project/dist', '/project/dist-plugin')).toBe(false)
   })
 
   it('cleans mp output and keeps miniprogram_npm for wechat', async () => {
