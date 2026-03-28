@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import type { DashboardIconFeatureItem } from '../types'
-import { computed } from 'vue'
 import { mutedPanelStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
-const props = defineProps<{
+defineProps<{
   iconName: DashboardIconFeatureItem['iconName']
   title: DashboardIconFeatureItem['title']
   description?: DashboardIconFeatureItem['description']
@@ -12,8 +11,6 @@ const props = defineProps<{
   interactive?: boolean
   meta?: DashboardIconFeatureItem['meta']
 }>()
-
-const contentClassName = computed(() => props.eyebrow ? 'mt-3 flex items-start gap-3' : 'flex items-start gap-3')
 </script>
 
 <template>
@@ -26,7 +23,7 @@ const contentClassName = computed(() => props.eyebrow ? 'mt-3 flex items-start g
     >
       {{ eyebrow }}
     </p>
-    <div :class="contentClassName">
+    <div :class="eyebrow ? 'mt-3 flex items-start gap-3' : 'flex items-start gap-3'">
       <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
         <span class="h-5 w-5">
           <DashboardIcon :name="iconName" />
