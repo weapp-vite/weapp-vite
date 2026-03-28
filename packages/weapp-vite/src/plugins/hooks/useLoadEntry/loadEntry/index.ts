@@ -7,17 +7,15 @@ import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
 import { performance } from 'node:perf_hooks'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
-import * as t from '@weapp-vite/ast/babelTypes'
 // eslint-disable-next-line e18e/ban-dependencies -- 本模块仍沿用 fs-extra 处理入口文件系统读写
 import fs from 'fs-extra'
-import { parse as parseSfc } from 'vue/compiler-sfc'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
+import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
@@ -45,33 +43,6 @@ interface EntryLoaderOptions {
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
-}
-
-function isDefineComponentJsonOnlyScript(content: string) {
-  const ast = babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS)
-  let hasDefineComponentJson = false
-
-  for (const statement of ast.program.body) {
-    if (t.isEmptyStatement(statement)) {
-      continue
-    }
-    if (!t.isExpressionStatement(statement) || !t.isCallExpression(statement.expression)) {
-      return false
-    }
-    const call = statement.expression
-    if (!t.isIdentifier(call.callee, { name: 'defineComponentJson' })) {
-      return false
-    }
-    hasDefineComponentJson = true
-  }
-
-  return hasDefineComponentJson
-}
-
-const WEVU_TEMPLATE_RUNTIME_BINDING_ATTR_RE = /(?:^|[\s<])(?:ref|:ref|v-bind:ref|layout-host|:layout-host|v-bind:layout-host)\s*=/
-
-function hasWevuTemplateRuntimeBindings(template: string | undefined) {
-  return typeof template === 'string' && WEVU_TEMPLATE_RUNTIME_BINDING_ATTR_RE.test(template)
 }
 
 export function createEntryLoader(options: EntryLoaderOptions) {
@@ -120,18 +91,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
     const task = (async () => {
       const layoutSource = await fs.readFile(layoutFile, 'utf-8')
-      const { descriptor } = parseSfc(layoutSource, { filename: layoutFile })
-      if (hasWevuTemplateRuntimeBindings(descriptor.template?.content)) {
-        return false
-      }
-      const blocks = [descriptor.script?.content, descriptor.scriptSetup?.content]
-        .filter((content): content is string => typeof content === 'string' && content.trim().length > 0)
-
-      if (blocks.length === 0) {
-        return true
-      }
-
-      return blocks.every(isDefineComponentJsonOnlyScript)
+      return shouldEmitScriptlessVueLayoutJsFromSource(layoutSource, layoutFile)
     })()
 
     scriptlessVueLayoutDecisionCache.set(layoutFile, task)
