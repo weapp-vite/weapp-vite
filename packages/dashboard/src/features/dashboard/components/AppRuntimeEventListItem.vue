@@ -20,14 +20,17 @@ function createRuntimeEventBadge(event: DashboardRuntimeEvent): DashboardRuntime
 
 const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeEventBadge(props.event))
 const eventMeta = computed(() => formatRuntimeEventMeta(props.event))
+const panelClassName = computed(() =>
+  props.selected
+    ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel)]'
+    : 'border-[color:var(--dashboard-border)]',
+)
 </script>
 
 <template>
   <li
     class="rounded-[18px] border bg-[color:var(--dashboard-panel-muted)] px-4 py-3 transition"
-    :class="props.selected
-      ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel)]'
-      : 'border-[color:var(--dashboard-border)]'"
+    :class="panelClassName"
   >
     <div class="flex items-start justify-between gap-3">
       <div>
