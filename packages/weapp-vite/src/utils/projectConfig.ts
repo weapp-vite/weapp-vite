@@ -65,6 +65,26 @@ export async function getProjectConfig(root: string, options?: ProjectConfigOpti
   return Object.assign({}, privateJson, baseJson) as ProjectConfig
 }
 
+export function resolveProjectConfigSyncDirs(options: {
+  outDir: string
+  projectConfigPath: string
+}) {
+  const outputRoot = path.dirname(options.outDir)
+  const sourceBasePath = path.resolve(options.projectConfigPath)
+  const sourceDir = path.dirname(sourceBasePath)
+  const resolvedOutputRoot = path.resolve(outputRoot)
+  const resolvedSourceDir = path.resolve(sourceDir)
+
+  return {
+    outputRoot,
+    sourceBasePath,
+    sourceDir,
+    resolvedOutputRoot,
+    resolvedSourceDir,
+    shouldSync: resolvedSourceDir !== resolvedOutputRoot,
+  }
+}
+
 export async function syncProjectConfigToOutput(options: {
   outDir: string
   projectConfigPath?: string
@@ -74,16 +94,15 @@ export async function syncProjectConfigToOutput(options: {
   if (!options.enabled || !options.projectConfigPath) {
     return
   }
-  const outputRoot = path.dirname(options.outDir)
-  const sourceBasePath = path.resolve(options.projectConfigPath)
-  const sourceDir = path.dirname(sourceBasePath)
-  const resolvedOutputRoot = path.resolve(outputRoot)
-  const resolvedSourceDir = path.resolve(sourceDir)
+  const syncDirs = resolveProjectConfigSyncDirs({
+    outDir: options.outDir,
+    projectConfigPath: options.projectConfigPath,
+  })
 
-  if (resolvedSourceDir === resolvedOutputRoot) {
+  if (!syncDirs.shouldSync) {
     return
   }
 
-  await fs.ensureDir(outputRoot)
-  await fs.copy(sourceDir, outputRoot)
+  await fs.ensureDir(syncDirs.outputRoot)
+  await fs.copy(syncDirs.sourceDir, syncDirs.outputRoot)
 }
