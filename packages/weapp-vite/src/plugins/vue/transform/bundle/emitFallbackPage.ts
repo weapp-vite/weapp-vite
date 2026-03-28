@@ -5,7 +5,7 @@ import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
-import { emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
+import { emitSfcStyleIfMissing } from '../emitAssets'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
@@ -13,8 +13,8 @@ import { resolvePageLayoutPlan } from '../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
-import { preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, emitSharedVueEntryAssets } from './shared'
+import { resolveVueBundlePlatformAssetOptions } from './platform'
+import { compileVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -148,19 +148,20 @@ export async function emitFallbackPageAssets(
         emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
       }
 
-      const normalizedConfig = preparePlatformConfigAsset(bundle, {
+      emitSharedVueEntryJsonAsset({
+        bundle,
         pluginCtx,
         relativeBase,
         config: result.config,
         outputExtensions,
-        ...platformAssetOptions,
-      })
-      emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
-        mergeExistingAsset: true,
-        mergeStrategy: jsonConfig?.mergeStrategy,
-        defaults: jsonConfig?.defaults?.page,
-        kind: 'page',
-        extension: jsonExtension,
+        platformAssetOptions,
+        jsonOptions: {
+          mergeExistingAsset: true,
+          mergeStrategy: jsonConfig?.mergeStrategy,
+          defaults: jsonConfig?.defaults?.page,
+          kind: 'page',
+          extension: jsonExtension,
+        },
       })
     }
     catch (error) {

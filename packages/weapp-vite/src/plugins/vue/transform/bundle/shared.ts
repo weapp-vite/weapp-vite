@@ -1,13 +1,14 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+import type { JsonMergeStrategy } from '../../../../types'
 import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { createCompileVueFileOptions } from '../compileOptions'
-import { emitClassStyleWxsAssetIfMissing } from '../emitAssets'
+import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset } from '../emitAssets'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
-import { emitPlatformTemplateAsset } from './platform'
+import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
@@ -30,6 +31,45 @@ export interface VueBundleState {
 export interface ClassStyleWxsAsset {
   fileName: string
   source: string
+}
+
+export function emitSharedVueEntryJsonAsset(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  relativeBase: string
+  config: string | undefined
+  outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+  jsonOptions: {
+    defaultConfig?: Record<string, any>
+    mergeExistingAsset?: boolean
+    defaults?: Record<string, any>
+    mergeStrategy?: JsonMergeStrategy
+    kind: 'app' | 'page' | 'component'
+    extension: string
+  }
+}) {
+  const normalizedConfig = preparePlatformConfigAsset(options.bundle, {
+    pluginCtx: options.pluginCtx,
+    relativeBase: options.relativeBase,
+    config: options.config,
+    outputExtensions: options.outputExtensions,
+    ...options.platformAssetOptions,
+  })
+
+  emitSfcJsonAsset(
+    options.pluginCtx,
+    options.bundle,
+    options.relativeBase,
+    { config: normalizedConfig },
+    options.jsonOptions,
+  )
 }
 
 export function resolveClassStyleWxsAsset(
