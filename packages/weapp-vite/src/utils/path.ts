@@ -8,7 +8,7 @@ const TRIM_SLASH_RE = /^\/+|\/+$/g
 const WINDOWS_DEVICE_RE = /^\\\\\?\\/
 const WINDOWS_UNC_PREFIX = /^\\\\\?\\UNC\\/
 
-function stripWindowsDevicePath(value: string) {
+export function stripWindowsDevicePath(value: string) {
   if (WINDOWS_UNC_PREFIX.test(value)) {
     return `\\\\${value.slice('\\\\?\\UNC\\'.length)}`
   }
