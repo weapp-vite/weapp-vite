@@ -1,7 +1,9 @@
 import type { ComputedRef, InjectionKey, Ref, ShallowRef } from 'vue'
 import type {
   AnalyzeSubpackagesResult,
+  DashboardLabelValueItem,
   DashboardRuntimeEvent,
+  DashboardRuntimeSourceSummary,
   WorkspaceActivityItem,
   WorkspaceCommandItem,
   WorkspaceDiagnosticItem,
@@ -10,7 +12,7 @@ import type {
 import { computed, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
 import { activityFeed, diagnosticsQueue, quickCommands, sampleRuntimeEvents } from '../constants/shell'
 import { formatBytes, formatDuration } from '../utils/format'
-import { normalizeRuntimeEvents } from '../utils/runtimeEvents'
+import { normalizeRuntimeEvents, summarizeRuntimeEventsBySource } from '../utils/runtimeEvents'
 
 interface DashboardWorkspaceContext {
   resultRef: ShallowRef<AnalyzeSubpackagesResult | null>
@@ -24,7 +26,8 @@ interface DashboardWorkspaceContext {
   signals: ComputedRef<WorkspaceSignalItem[]>
   runtimeEvents: Ref<DashboardRuntimeEvent[]>
   latestRuntimeEvent: ComputedRef<DashboardRuntimeEvent | null>
-  eventSummary: ComputedRef<Array<{ label: string, value: string }>>
+  eventSummary: ComputedRef<DashboardLabelValueItem[]>
+  runtimeSourceSummary: ComputedRef<DashboardRuntimeSourceSummary[]>
 }
 
 const dashboardWorkspaceKey: InjectionKey<DashboardWorkspaceContext> = Symbol('dashboard-workspace')
@@ -71,7 +74,7 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   )
   const latestRuntimeEvent = computed(() => runtimeEvents.value[0] ?? null)
 
-  const eventSummary = computed(() => {
+  const eventSummary = computed<DashboardLabelValueItem[]>(() => {
     const errorCount = runtimeEvents.value.filter(event => event.level === 'error').length
     const warningCount = runtimeEvents.value.filter(event => event.level === 'warning').length
     const commandCount = runtimeEvents.value.filter(event => event.kind === 'command').length
@@ -89,6 +92,10 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       { label: '错误事件', value: String(errorCount) },
     ]
   })
+
+  const runtimeSourceSummary = computed<DashboardRuntimeSourceSummary[]>(() =>
+    summarizeRuntimeEventsBySource(runtimeEvents.value),
+  )
 
   const signals = computed<WorkspaceSignalItem[]>(() => [
     {
@@ -266,6 +273,7 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     runtimeEvents,
     latestRuntimeEvent,
     eventSummary,
+    runtimeSourceSummary,
   }
 }
 

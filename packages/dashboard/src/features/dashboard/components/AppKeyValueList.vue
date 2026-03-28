@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { DashboardLabelValueItem } from '../types'
+
 defineProps<{
-  items: Array<{ label: string, value: string }>
+  items: DashboardLabelValueItem[]
 }>()
 </script>
 
