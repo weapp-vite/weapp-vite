@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   AUTO_ROUTES_ID,
   collectAutoRoutesWatchDirs,
+  createAutoRoutesSidecarWatcher,
   isAutoRoutesWatchFile,
   isAutoRoutesWatchMode,
   resolveAutoRoutesHotUpdateAction,
   resolveAutoRoutesVirtualId,
   resolveAutoRoutesWatchChangeEvent,
   RESOLVED_VIRTUAL_ID,
+  shouldStartAutoRoutesWatcher,
   VIRTUAL_MODULE_ID,
 } from './autoRoutes.shared'
 
@@ -47,6 +49,56 @@ describe('auto routes plugin shared helpers', () => {
     expect(isAutoRoutesWatchFile('C:\\project\\src\\pages\\home\\index.ts', allowedExtensions, isPagesRelatedPath)).toBe(true)
     expect(isAutoRoutesWatchFile('/project/src/pages/home/index.scss', allowedExtensions, isPagesRelatedPath)).toBe(false)
     expect(isAutoRoutesWatchFile('/project/src/components/card/index.vue', allowedExtensions, isPagesRelatedPath)).toBe(false)
+  })
+
+  it('checks watcher startup preconditions', () => {
+    expect(shouldStartAutoRoutesWatcher({
+      routeWatcherStarted: true,
+      isDev: true,
+      autoRoutesEnabled: true,
+      autoRoutesWatch: true,
+      serviceEnabled: true,
+      watchDirsLength: 1,
+    })).toBe(false)
+
+    expect(shouldStartAutoRoutesWatcher({
+      routeWatcherStarted: false,
+      isDev: false,
+      autoRoutesEnabled: true,
+      autoRoutesWatch: true,
+      serviceEnabled: true,
+      watchDirsLength: 1,
+    })).toBe(false)
+
+    expect(shouldStartAutoRoutesWatcher({
+      routeWatcherStarted: false,
+      isDev: true,
+      autoRoutesEnabled: true,
+      autoRoutesWatch: true,
+      serviceEnabled: true,
+      watchDirsLength: 0,
+    })).toBe(false)
+
+    expect(shouldStartAutoRoutesWatcher({
+      routeWatcherStarted: false,
+      isDev: true,
+      autoRoutesEnabled: true,
+      autoRoutesWatch: true,
+      serviceEnabled: true,
+      watchDirsLength: 2,
+    })).toBe(true)
+  })
+
+  it('wraps sidecar watcher close handle', () => {
+    let closed = false
+    const sidecarWatcher = createAutoRoutesSidecarWatcher({
+      close: () => {
+        closed = true
+      },
+    })
+
+    sidecarWatcher.close()
+    expect(closed).toBe(true)
   })
 
   it('resolves virtual auto-routes ids and alias fallbacks', () => {
