@@ -1,3 +1,11 @@
+import type {
+  DashboardRuntimeBadgeItem,
+  DashboardRuntimeEvent,
+  DashboardRuntimeEventKind,
+  DashboardRuntimeEventLevel,
+  DashboardRuntimeSourceCardItem,
+} from '../types'
+
 export function formatBytes(bytes?: number) {
   if (!bytes || Number.isNaN(bytes)) {
     return '—'
@@ -48,4 +56,93 @@ export function formatSourceType(type: string) {
     default:
       return type
   }
+}
+
+export function formatRuntimeEventKind(kind: DashboardRuntimeEventKind) {
+  switch (kind) {
+    case 'command':
+      return '命令'
+    case 'build':
+      return '构建'
+    case 'diagnostic':
+      return '诊断'
+    case 'hmr':
+      return 'HMR'
+    case 'system':
+      return '系统'
+    default:
+      return kind
+  }
+}
+
+export function formatRuntimeEventLevel(level: DashboardRuntimeEventLevel) {
+  switch (level) {
+    case 'info':
+      return '信息'
+    case 'success':
+      return '成功'
+    case 'warning':
+      return '警告'
+    case 'error':
+      return '错误'
+    default:
+      return level
+  }
+}
+
+export function formatRuntimeEventSource(source?: string) {
+  return source ?? 'dashboard'
+}
+
+export function getRuntimeEventBadgeTone(level: DashboardRuntimeEventLevel) {
+  return level
+}
+
+export function createRuntimeEventBadgeItem(event: DashboardRuntimeEvent): DashboardRuntimeBadgeItem {
+  return {
+    label: formatRuntimeEventLevel(event.level),
+    tone: getRuntimeEventBadgeTone(event.level),
+  }
+}
+
+export function getRuntimeSourceBadgeTone(errorCount: number) {
+  return errorCount > 0 ? 'error' : 'info'
+}
+
+export function createRuntimeSourceBadgeItem(options: Pick<DashboardRuntimeSourceCardItem, 'count' | 'errorCount' | 'latestTimestamp'>): DashboardRuntimeBadgeItem {
+  return {
+    label: options.latestTimestamp ? `${options.count} 条` : `错误 ${options.errorCount}`,
+    tone: getRuntimeSourceBadgeTone(options.errorCount),
+  }
+}
+
+export function formatDuration(durationMs?: number) {
+  if (typeof durationMs !== 'number' || Number.isNaN(durationMs) || durationMs < 0) {
+    return '未记录'
+  }
+
+  if (durationMs >= 1000) {
+    return `${(durationMs / 1000).toFixed(durationMs >= 10_000 ? 1 : 2)} s`
+  }
+
+  return `${durationMs} ms`
+}
+
+export function formatRuntimeEventMeta(options: {
+  kind: DashboardRuntimeEventKind
+  source?: string
+  timestamp: string
+  durationMs?: number
+}) {
+  const parts = [
+    formatRuntimeEventKind(options.kind),
+    formatRuntimeEventSource(options.source),
+    options.timestamp,
+  ]
+
+  if (typeof options.durationMs === 'number' && Number.isFinite(options.durationMs) && options.durationMs >= 0) {
+    parts.push(formatDuration(options.durationMs))
+  }
+
+  return parts.join(' · ')
 }

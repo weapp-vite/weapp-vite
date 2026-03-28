@@ -35,8 +35,22 @@ export const iconFrameStyles = tv({
   },
 })
 
-export const metricCardStyles = tv({
-  base: 'rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3',
+export const mutedPanelStyles = tv({
+  base: 'rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)]',
+  variants: {
+    padding: {
+      sm: 'px-4 py-3',
+      md: 'p-4',
+    },
+    interactive: {
+      true: 'transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]',
+      false: '',
+    },
+  },
+  defaultVariants: {
+    padding: 'md',
+    interactive: false,
+  },
 })
 
 export const pillButtonStyles = tv({
@@ -55,6 +69,22 @@ export const pillButtonStyles = tv({
   defaultVariants: {
     kind: 'nav',
     active: false,
+  },
+})
+
+export const runtimeBadgeStyles = tv({
+  base: 'rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]',
+  variants: {
+    tone: {
+      neutral: 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] text-[color:var(--dashboard-text-soft)]',
+      info: 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]',
+      success: 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-300',
+      warning: 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-300',
+      error: 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/12 dark:text-rose-300',
+    },
+  },
+  defaultVariants: {
+    tone: 'neutral',
   },
 })
 

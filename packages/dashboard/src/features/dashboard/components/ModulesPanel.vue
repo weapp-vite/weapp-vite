@@ -1,133 +1,122 @@
 <script setup lang="ts">
 import type {
+  DashboardDetailItem,
   DuplicateModuleEntry,
   LargestFileEntry,
   ModuleSourceSummary,
-} from '../composables/useAnalyzeDashboardData'
+} from '../types'
+import { computed } from 'vue'
 import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
-import { iconFrameStyles, surfaceStyles } from '../utils/styles'
-import DashboardIcon from './DashboardIcon.vue'
+import { surfaceStyles } from '../utils/styles'
+import AppCompactListItem from './AppCompactListItem.vue'
+import AppEmptyState from './AppEmptyState.vue'
+import AppPanelHeader from './AppPanelHeader.vue'
+import AppSummaryValueCard from './AppSummaryValueCard.vue'
 
-defineProps<{
+const props = defineProps<{
   visibleDuplicateModules: DuplicateModuleEntry[]
   moduleSourceSummary: ModuleSourceSummary[]
   visibleLargestFiles: LargestFileEntry[]
 }>()
+
+interface DuplicateModuleItem extends DashboardDetailItem {
+  key: string
+  packages: DuplicateModuleEntry['packages']
+}
+
+interface ListItemRow extends DashboardDetailItem {
+  key: string
+}
+
+function createDuplicateModuleItem(module: DuplicateModuleEntry): DashboardDetailItem {
+  return {
+    title: module.source,
+    meta: `${formatSourceType(module.sourceType)} · ${module.packageCount} 个包 · ${formatBytes(module.bytes)}`,
+  }
+}
+
+function createModuleSourceItem(item: ModuleSourceSummary): DashboardDetailItem {
+  return {
+    title: formatSourceType(item.sourceType),
+    meta: `${item.count} 个模块`,
+    value: formatBytes(item.bytes),
+  }
+}
+
+function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailItem {
+  return {
+    title: file.file,
+    meta: `${file.packageLabel} · ${formatBuildOrigin(file.from)} · ${file.moduleCount} 模块`,
+  }
+}
+
+const duplicateModuleItems = computed<DuplicateModuleItem[]>(() => props.visibleDuplicateModules.map(module => ({
+  key: module.id,
+  packages: module.packages,
+  ...createDuplicateModuleItem(module),
+})))
+
+const moduleSourceItems = computed<ListItemRow[]>(() => props.moduleSourceSummary.map(item => ({
+  key: item.sourceType,
+  ...createModuleSourceItem(item),
+})))
+
+const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLargestFiles.slice(0, 6).map(file => ({
+  key: `${file.packageId}:${file.file}`,
+  ...createLargestFileSampleItem(file),
+})))
 </script>
 
 <template>
   <section class="grid gap-3 xl:grid-cols-[minmax(0,1.24fr)_minmax(0,0.76fr)]">
     <div :class="surfaceStyles({ padding: 'md' })">
-      <div class="flex items-center gap-2">
-        <span :class="iconFrameStyles()">
-          <span class="h-5 w-5">
-            <DashboardIcon name="duplicate-modules" />
-          </span>
-        </span>
-        <div>
-          <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
-            重复模块
-          </h2>
-          <p class="mt-0.5 text-sm text-[color:var(--dashboard-text-soft)]">
-            优先看被多个包重复包含的源码与依赖。
-          </p>
-        </div>
-      </div>
-      <p class="mt-3 text-sm text-[color:var(--dashboard-text-soft)]">
-        优先看被多个包重复包含的源码与依赖。
-      </p>
-      <div v-if="visibleDuplicateModules.length" class="mt-4 space-y-2.5">
-        <article
-          v-for="module in visibleDuplicateModules"
-          :key="module.id"
-          class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3.5"
+      <AppPanelHeader
+        icon-name="duplicate-modules"
+        title="重复模块"
+        description="优先看被多个包重复包含的源码与依赖。"
+      />
+      <div v-if="duplicateModuleItems.length" class="mt-4 space-y-2.5">
+        <AppSummaryValueCard
+          v-for="item in duplicateModuleItems"
+          :key="item.key"
+          v-bind="item"
+          break-title
         >
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="break-all font-medium text-[color:var(--dashboard-text)]">
-                {{ module.source }}
-              </p>
-              <p class="mt-1 text-xs text-[color:var(--dashboard-text-soft)]">
-                {{ formatSourceType(module.sourceType) }} · {{ module.packageCount }} 个包 · {{ formatBytes(module.bytes) }}
-              </p>
-            </div>
-          </div>
           <ul class="mt-3 space-y-1.5 text-xs text-[color:var(--dashboard-text-muted)]">
-            <li v-for="pkg in module.packages" :key="`${module.id}:${pkg.packageId}`">
+            <li v-for="pkg in item.packages" :key="`${item.key}:${pkg.packageId}`">
               <span class="font-medium text-[color:var(--dashboard-text)]">{{ pkg.packageLabel }}</span>
               <span class="text-[color:var(--dashboard-text-soft)]"> · </span>
               <span>{{ pkg.files.join('、') }}</span>
             </li>
           </ul>
-        </article>
+        </AppSummaryValueCard>
       </div>
-      <div
-        v-else
-        class="mt-4 rounded-xl border border-dashed border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-5 text-sm text-[color:var(--dashboard-text-soft)]"
-      >
+      <AppEmptyState v-else class="mt-4">
         当前构建未检测到跨包重复模块。
-      </div>
+      </AppEmptyState>
     </div>
 
     <div class="flex flex-col gap-3">
       <section :class="surfaceStyles({ padding: 'md' })">
-        <div class="flex items-center gap-2">
-          <span :class="iconFrameStyles()">
-            <span class="h-5 w-5">
-              <DashboardIcon name="module-sources" />
-            </span>
-          </span>
-          <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
-            模块来源
-          </h2>
-        </div>
+        <AppPanelHeader icon-name="module-sources" title="模块来源" />
         <div class="mt-4 space-y-2.5">
-          <article
-            v-for="item in moduleSourceSummary"
-            :key="item.sourceType"
-            class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3.5"
-          >
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="font-medium text-[color:var(--dashboard-text)]">
-                  {{ formatSourceType(item.sourceType) }}
-                </p>
-                <p class="mt-1 text-xs text-[color:var(--dashboard-text-soft)]">
-                  {{ item.count }} 个模块
-                </p>
-              </div>
-              <p class="font-medium text-[color:var(--dashboard-accent)]">
-                {{ formatBytes(item.bytes) }}
-              </p>
-            </div>
-          </article>
+          <AppSummaryValueCard
+            v-for="item in moduleSourceItems"
+            :key="item.key"
+            v-bind="item"
+          />
         </div>
       </section>
 
       <section :class="surfaceStyles({ padding: 'md' })">
-        <div class="flex items-center gap-2">
-          <span :class="iconFrameStyles()">
-            <span class="h-5 w-5">
-              <DashboardIcon name="file-samples" />
-            </span>
-          </span>
-          <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
-            文件样本
-          </h2>
-        </div>
+        <AppPanelHeader icon-name="file-samples" title="文件样本" />
         <ul class="mt-4 space-y-2.5 text-sm text-[color:var(--dashboard-text-muted)]">
-          <li
-            v-for="file in visibleLargestFiles.slice(0, 6)"
-            :key="`${file.packageId}:${file.file}`"
-            class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3"
-          >
-            <p class="truncate font-mono text-xs text-[color:var(--dashboard-text)]">
-              {{ file.file }}
-            </p>
-            <p class="mt-1 text-xs text-[color:var(--dashboard-text-soft)]">
-              {{ file.packageLabel }} · {{ formatBuildOrigin(file.from) }} · {{ file.moduleCount }} 模块
-            </p>
-          </li>
+          <AppCompactListItem
+            v-for="item in largestFileSampleItems"
+            :key="item.key"
+            v-bind="item"
+            mono-title
+          />
         </ul>
       </section>
     </div>
