@@ -97,7 +97,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const existsCache = new Map<string, boolean>()
   const pathExistsTtlMs = getPathExistsTtlMs(configService)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
-  const entryResolver = createEntryResolver()
+  const entryResolver = createEntryResolver(configService)
   const appEntriesCache: { current?: AppEntriesCache } = {}
   const appEntryOutputCache: {
     current?: {

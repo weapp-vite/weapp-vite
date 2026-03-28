@@ -1,6 +1,9 @@
+// eslint-disable-next-line e18e/ban-dependencies -- 入口解析工具仍统一复用 fs-extra 的 pathExists/stat
 import fs from 'fs-extra'
 import path from 'pathe'
 import { jsExtensions, vueExtensions } from '../constants'
+import { pathExists as pathExistsCached } from '../plugins/utils/cache'
+import { getPathExistsTtlMs } from './cachePolicy'
 import { changeFileExtension } from './file'
 
 export type ImportSpecifierKind = 'default' | 'named'
@@ -32,6 +35,20 @@ export interface ResolveEntryPathOptions {
 
 function buildCandidates(base: string, extensions: string[]) {
   return extensions.map(ext => changeFileExtension(base, ext))
+}
+
+export function createCachedEntryResolveOptions(
+  configService: {
+    isDev?: boolean
+  },
+  options?: Pick<ResolveEntryPathOptions, 'kind' | 'indexBaseName'>,
+): ResolveEntryPathOptions {
+  return {
+    kind: options?.kind,
+    indexBaseName: options?.indexBaseName,
+    exists: (filePath: string) => pathExistsCached(filePath, { ttlMs: getPathExistsTtlMs(configService as any) }),
+    stat: (filePath: string) => fs.stat(filePath),
+  }
 }
 
 /**
