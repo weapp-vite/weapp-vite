@@ -147,6 +147,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runSavedRemovalLab')
     bridge.runPageMethod('runSavedMissingInfoLab')
     bridge.runPageMethod('runSavedMissingRemovalLab')
+    bridge.runPageMethod('runSavedRenameOverwriteLab')
     bridge.runPageMethod('runSavedRenameOutLab')
     bridge.runPageMethod('storeSnapshot')
     bridge.runPageMethod('toastSnapshot')
@@ -182,6 +183,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.savedMissingInfo
           && pageData.savedMissingRemovalInfo
           && pageData.savedPostRemovalReadInfo
+          && pageData.savedRenameOverwriteInfo
           && pageData.savedRemovalInfo
           && pageData.savedRenameOutInfo
           && pageData.storageSnapshot
@@ -228,6 +230,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.savedMissingInfo).toContain('"missingInfoError":"getSavedFileInfo:fail no such file or directory')
     expect(pageData.savedMissingRemovalInfo).toContain('"missingRemoveError":"removeSavedFile:fail no such file or directory')
     expect(pageData.savedPostRemovalReadInfo).toContain('"postRemovalReadError":"readFile:fail no such file or directory')
+    expect(pageData.savedRenameOverwriteInfo).toContain('"afterSize":10')
+    expect(pageData.savedRenameOverwriteInfo).toContain('"filePath":"headless://saved/component-lab/transfers/target.txt"')
     expect(pageData.savedRemovalInfo).toContain('"hasSavedRegistration":false')
     expect(pageData.savedRemovalInfo).toContain('"removeErrMsg":"removeSavedFile:ok"')
     expect(pageData.savedRemovalInfo).toContain('"missingInfoError":"getSavedFileInfo:fail no such file or directory')
@@ -236,6 +240,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.storageSnapshot).toContain('"status"')
     expect(pageData.toastState).toContain('showToast:ok')
     expect(pageData.uploadedSnapshot).toContain('"accepted":true')
+    const savedRenameOverwriteInfo = parseJsonString<{ afterCreateTime: number, afterSize: number, beforeCreateTime: number, filePath: string }>(pageData.savedRenameOverwriteInfo)
+    expect(savedRenameOverwriteInfo.afterCreateTime).toBe(savedRenameOverwriteInfo.beforeCreateTime)
     const savedOverwriteInfo = parseJsonString<{ afterCreateTime: number, afterSize: number, beforeCreateTime: number, filePath: string }>(pageData.savedOverwriteInfo)
     expect(savedOverwriteInfo.afterCreateTime).toBe(savedOverwriteInfo.beforeCreateTime)
     const savedOrderingInfo = parseJsonString<{ createTimesArePositive: boolean, filePaths: string[] }>(pageData.savedOrderingInfo)
@@ -287,11 +293,18 @@ describe.sequential('simulator browser e2e', () => {
       filePath: 'headless://saved/component-lab/snapshots/report.txt',
       size: 'second-version'.length,
     }))
+    expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
+      filePath: 'headless://saved/component-lab/transfers/target.txt',
+      size: 'alpha-beta'.length,
+    }))
     expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
       filePath: 'headless://temp/component-lab-missing-save-source.txt',
     }))
     expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/removals/report.txt',
+    }))
+    expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
+      filePath: 'headless://saved/component-lab/transfers/source.txt',
     }))
     expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/transfers/rename-out.txt',
