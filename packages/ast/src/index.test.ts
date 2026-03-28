@@ -19,6 +19,8 @@ import {
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
   collectPatternBindingNames,
+  collectScriptSetupImportsWithBabel,
+  collectScriptSetupImportsWithOxc,
   collectSetDataPickKeysWithBabel,
   collectSetDataPickKeysWithOxc,
   createLineStartOffsets,
@@ -145,6 +147,40 @@ export function useCounter() {
   })
 
   it('exposes script setup import prechecks', () => {
+    expect(collectScriptSetupImportsWithBabel(`
+import type { FooProps } from './types'
+import FooCard, { BarButton as RenamedButton } from './components'
+`, new Set(['FooCard', 'RenamedButton']))).toEqual([
+      {
+        localName: 'FooCard',
+        importSource: './components',
+        importedName: 'default',
+        kind: 'default',
+      },
+      {
+        localName: 'RenamedButton',
+        importSource: './components',
+        importedName: 'BarButton',
+        kind: 'named',
+      },
+    ])
+    expect(collectScriptSetupImportsWithOxc(`
+import type { FooProps } from './types'
+import FooCard, { BarButton as RenamedButton } from './components'
+`, new Set(['FooCard', 'RenamedButton']))).toEqual([
+      {
+        localName: 'FooCard',
+        importSource: './components',
+        importedName: 'default',
+        kind: 'default',
+      },
+      {
+        localName: 'RenamedButton',
+        importSource: './components',
+        importedName: 'BarButton',
+        kind: 'named',
+      },
+    ])
     expect(mayContainRelevantScriptSetupImports(`import FooCard from './FooCard'`, new Set(['FooCard']))).toBe(true)
     expect(mayContainRelevantScriptSetupImports(`import BarCard from './BarCard'`, new Set(['FooCard']))).toBe(false)
     expect(mayContainRelevantScriptSetupImports('const count = 1', new Set(['FooCard']))).toBe(false)
