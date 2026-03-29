@@ -3,7 +3,6 @@ import type { InlineConfig, PluginOption } from 'vite'
 import type { LoadConfigOptions, LoadConfigResult } from '../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
-import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
 import {
@@ -13,6 +12,7 @@ import {
   getProjectConfigFileName,
   getProjectConfigRootKeys,
   getProjectPrivateConfigFileName,
+  loadViteConfigFile,
   resolveProjectConfigRoot,
   resolveWeappConfigFile,
 } from '../../../utils'
@@ -120,12 +120,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       specified: resolvedConfigFile,
     })
 
-    let loaded: Awaited<ReturnType<typeof loadConfigFromFile>> | undefined
+    let loaded: Awaited<ReturnType<typeof loadViteConfigFile>> | undefined
     try {
-      loaded = await loadConfigFromFile({
+      loaded = await loadViteConfigFile({
         command: isDev ? 'serve' : 'build',
         mode,
-      }, resolvedConfigFile, cwd, undefined, undefined, 'runner')
+      }, resolvedConfigFile, cwd)
     }
     catch (error) {
       const cjsError = createCjsConfigLoadError({
@@ -141,17 +141,17 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     const loadedConfig = loaded?.config ?? {}
 
-    let weappLoaded: Awaited<ReturnType<typeof loadConfigFromFile>> | undefined
+    let weappLoaded: Awaited<ReturnType<typeof loadViteConfigFile>> | undefined
     if (weappConfigFilePath) {
       if (shouldReuseLoadedWeappConfig(weappConfigFilePath, loaded?.path)) {
         weappLoaded = loaded
       }
       else {
         try {
-          weappLoaded = await loadConfigFromFile({
+          weappLoaded = await loadViteConfigFile({
             command: isDev ? 'serve' : 'build',
             mode,
-          }, weappConfigFilePath, cwd, undefined, undefined, 'runner')
+          }, weappConfigFilePath, cwd)
         }
         catch (error) {
           const cjsError = createCjsConfigLoadError({

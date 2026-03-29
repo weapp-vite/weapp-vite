@@ -1,12 +1,12 @@
 import os from 'node:os'
 import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies -- 测试临时工程目录仍沿用 fs-extra 以复用现有文件辅助方法
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '../../createContext'
 
 const tempRoots: string[] = []
-const DEFINE_CONFIG_IMPORT = path.resolve(import.meta.dirname, '../../config.ts').replace(/\\/g, '/')
 const RUNTIME_ENTRY_IMPORT = path.resolve(import.meta.dirname, '../../plugins/vue/runtime.ts').replace(/\\/g, '/')
 
 async function createTempRoot() {
@@ -38,7 +38,7 @@ async function writeNativeDynamicLayoutProjectFiles(root: string) {
   }, { spaces: 2 })
 
   await fs.writeFile(path.join(root, 'vite.config.ts'), [
-    `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`,
+    'import { defineConfig } from \'weapp-vite/config\'',
     '',
     'export default defineConfig({',
     '  resolve: {',
