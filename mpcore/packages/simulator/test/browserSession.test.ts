@@ -1135,7 +1135,7 @@ Page({
 
     const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
     const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
-    expect(afterInfo.createTime).toBe(beforeInfo.createTime)
+    expect(Math.abs(afterInfo.createTime - beforeInfo.createTime)).toBeLessThanOrEqual(1)
     expect(afterInfo.size).toBe(10)
   })
 

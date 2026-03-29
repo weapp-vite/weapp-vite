@@ -71,11 +71,19 @@ export default defineProject({
     'process.env.__TEST__': JSON.stringify(true),
   },
   test: {
-    root: __dirname,
+    dir: __dirname,
     alias: [
       {
         find: '@/',
         replacement: `${path.resolve(__dirname, './src')}/`,
+      },
+      {
+        find: /^weapp-vite$/,
+        replacement: path.resolve(__dirname, './src/index.ts'),
+      },
+      {
+        find: /^weapp-vite\/config$/,
+        replacement: path.resolve(__dirname, './src/config.ts'),
       },
       {
         find: '@wevu/compiler',

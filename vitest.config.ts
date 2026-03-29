@@ -113,12 +113,7 @@ export default defineConfig(() => {
       globalSetup: ['./vitest.globalSetup.ts'],
       projects,
       coverage: {
-        enabled: true,
-        clean: false,
-        skipFull: true,
-        exclude: [
-          '**/dist/**',
-        ],
+        enabled: false,
       },
       forceRerunTriggers: [
         '**/{vitest,vite}.config.*/**',
