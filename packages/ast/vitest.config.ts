@@ -1,16 +1,17 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { createProjectCoverage } from '../../vitest.coverage'
 
 export default defineConfig({
   cacheDir: path.resolve(__dirname, './.vite'),
   test: {
     globals: true,
     testTimeout: 60_000,
-    coverage: {
+    coverage: createProjectCoverage('packages/ast', {
       clean: false,
       exclude: [
         '**/dist/**',
       ],
-    },
+    }),
   },
 })

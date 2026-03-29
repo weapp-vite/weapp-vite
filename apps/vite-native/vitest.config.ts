@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
+import { createProjectCoverage } from '../../vitest.coverage'
 
 const __dirname = import.meta.dirname
 
@@ -25,5 +26,6 @@ export default defineProject({
       '**\/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*',
       'test/index.test.ts',
     ],
+    coverage: createProjectCoverage('apps/vite-native'),
   },
 })

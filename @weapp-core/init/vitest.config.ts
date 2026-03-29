@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { createProjectCoverage } from '../../vitest.coverage'
 
 export default defineConfig({
   test: {
@@ -15,7 +16,8 @@ export default defineConfig({
     include: ['test/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     // https://vitest.dev/config/#forcereruntriggers
     forceRerunTriggers: ['**/vitest.config.*/**', '**/vite.config.*/**'],
-    coverage: {
+    coverage: createProjectCoverage('@weapp-core/init', {
+      clean: false,
       provider: 'v8',
       all: true,
       include: ['src/**/*.ts'],
@@ -26,6 +28,6 @@ export default defineConfig({
         branches: 100,
         functions: 100,
       },
-    },
+    }),
   },
 })

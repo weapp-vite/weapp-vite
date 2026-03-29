@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
+import { createProjectCoverage } from '../../vitest.coverage'
 
 export default defineProject({
   name: '@weapp-vite/web',
@@ -16,5 +17,6 @@ export default defineProject({
         replacement: path.resolve(__dirname, './src'),
       },
     ],
+    coverage: createProjectCoverage('packages/web'),
   },
 })
