@@ -36,5 +36,16 @@
     "stylelint": "^17.6.0",
     "typescript": "catalog:",
     "weapp-vite": "workspace:*"
+  },
+  "pnpm": {
+    "overrides": {
+      "@eslint-react/eslint-plugin": "2.13.0"
+    }
+  },
+  "overrides": {
+    "@eslint-react/eslint-plugin": "2.13.0"
+  },
+  "resolutions": {
+    "@eslint-react/eslint-plugin": "2.13.0"
   }
 }
