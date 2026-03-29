@@ -4,22 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { loadConfig } from './loadConfig'
 
-const loadConfigFromFileMock = vi.hoisted(() => vi.fn())
+const loadViteConfigFileMock = vi.hoisted(() => vi.fn())
 const resolveWeappConfigFileMock = vi.hoisted(() => vi.fn())
 const createCjsConfigLoadErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('vite', () => ({
-  loadConfigFromFile: loadConfigFromFileMock,
-}))
-
 vi.mock('../utils', () => ({
   createCjsConfigLoadError: createCjsConfigLoadErrorMock,
+  loadViteConfigFile: loadViteConfigFileMock,
   resolveWeappConfigFile: resolveWeappConfigFileMock,
 }))
 
 describe('loadConfig', () => {
   beforeEach(() => {
-    loadConfigFromFileMock.mockReset()
+    loadViteConfigFileMock.mockReset()
     resolveWeappConfigFileMock.mockReset()
     createCjsConfigLoadErrorMock.mockReset()
     createCjsConfigLoadErrorMock.mockReturnValue(undefined)
@@ -28,7 +25,7 @@ describe('loadConfig', () => {
   it('prints ESM guidance when the main config uses CJS globals', async () => {
     const originalError = new Error('ReferenceError: __dirname is not defined')
     const wrappedError = new Error('cjs wrapped')
-    loadConfigFromFileMock.mockRejectedValueOnce(originalError)
+    loadViteConfigFileMock.mockRejectedValueOnce(originalError)
     createCjsConfigLoadErrorMock.mockReturnValueOnce(wrappedError)
 
     await expect(loadConfig('vite.config.ts')).rejects.toThrow('cjs wrapped')
@@ -39,7 +36,7 @@ describe('loadConfig', () => {
   })
 
   it('returns the loaded vite config when no weapp config file is found', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         define: {
           A: '1',
@@ -60,18 +57,15 @@ describe('loadConfig', () => {
       path: '/project/vite.config.ts',
       dependencies: ['/project/vite.config.ts'],
     })
-    expect(loadConfigFromFileMock).toHaveBeenCalledWith(
+    expect(loadViteConfigFileMock).toHaveBeenCalledWith(
       { command: 'serve', mode: 'development' },
       path.resolve(process.cwd(), 'vite.config.ts'),
       process.cwd(),
-      undefined,
-      undefined,
-      'runner',
     )
   })
 
   it('reuses the first load result when vite and weapp config paths are identical', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           a: 1,
@@ -83,7 +77,7 @@ describe('loadConfig', () => {
     resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
 
     const result = await loadConfig('/project/weapp-vite.config.ts')
-    expect(loadConfigFromFileMock).toHaveBeenCalledTimes(1)
+    expect(loadViteConfigFileMock).toHaveBeenCalledTimes(1)
     expect(result?.path).toBe('/project/weapp-vite.config.ts')
     expect(result?.config.weapp).toEqual({
       a: 1,
@@ -91,7 +85,7 @@ describe('loadConfig', () => {
   })
 
   it('merges weapp config and dedupes dependencies when both configs are loaded', async () => {
-    loadConfigFromFileMock
+    loadViteConfigFileMock
       .mockResolvedValueOnce({
         config: {
           define: {
@@ -132,14 +126,14 @@ describe('loadConfig', () => {
   })
 
   it('returns undefined when neither config can be loaded', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce(undefined)
+    loadViteConfigFileMock.mockResolvedValueOnce(undefined)
     resolveWeappConfigFileMock.mockResolvedValueOnce(undefined)
 
     await expect(loadConfig('/project/vite.config.ts')).resolves.toBeUndefined()
   })
 
   it('wraps CJS errors from loading weapp config file', async () => {
-    loadConfigFromFileMock
+    loadViteConfigFileMock
       .mockResolvedValueOnce({
         config: {
           define: {

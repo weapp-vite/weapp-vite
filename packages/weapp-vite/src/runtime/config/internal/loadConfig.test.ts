@@ -5,7 +5,13 @@ import {
   shouldReuseLoadedWeappConfig,
 } from './loadConfig'
 
-const loadConfigFromFileMock = vi.hoisted(() => vi.fn())
+const loadConfigMocks = vi.hoisted(() => {
+  const shared = vi.fn()
+  return {
+    loadViteConfigFileMock: shared,
+  }
+})
+const loadViteConfigFileMock = loadConfigMocks.loadViteConfigFileMock
 const tsconfigPathsMock = vi.hoisted(() => vi.fn((options?: Record<string, unknown>) => ({ name: 'tsconfig-paths', options })))
 const getOutputExtensionsMock = vi.hoisted(() => vi.fn(() => ({ json: 'json' })))
 const getWeappViteConfigMock = vi.hoisted(() => vi.fn(() => ({})))
@@ -37,7 +43,7 @@ const inspectTsconfigPathsUsageMock = vi.hoisted(() => vi.fn(async () => ({
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
-  loadConfigFromFile: loadConfigFromFileMock,
+  loadConfigFromFile: loadConfigMocks.loadConfigFromFileMock,
 }))
 
 vi.mock('vite-tsconfig-paths', () => ({
@@ -67,6 +73,7 @@ vi.mock('../../../utils', () => ({
   getProjectConfigFileName: getProjectConfigFileNameMock,
   getProjectConfigRootKeys: getProjectConfigRootKeysMock,
   getProjectPrivateConfigFileName: getProjectPrivateConfigFileNameMock,
+  loadViteConfigFile: loadConfigMocks.loadViteConfigFileMock,
   resolveProjectConfigRoot: resolveProjectConfigRootMock,
   resolveWeappConfigFile: resolveWeappConfigFileMock,
 }))
@@ -116,7 +123,7 @@ beforeEach(() => {
     references: false,
     referenceAliases: [],
   })
-  loadConfigFromFileMock.mockResolvedValue({
+  loadViteConfigFileMock.mockResolvedValue({
     config: {},
     path: '/project/vite.config.ts',
   })
@@ -136,7 +143,7 @@ describe('runtime config internal loadConfig', () => {
 
   it('wraps cjs config load errors', async () => {
     const wrapped = new Error('cjs wrapped')
-    loadConfigFromFileMock.mockRejectedValueOnce(new Error('boom'))
+    loadViteConfigFileMock.mockRejectedValueOnce(new Error('boom'))
     createCjsConfigLoadErrorMock.mockReturnValueOnce(wrapped)
 
     const loadConfig = createFactory()
@@ -152,7 +159,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('rethrows original error when cjs wrapper is unavailable', async () => {
-    loadConfigFromFileMock.mockRejectedValueOnce(new Error('raw boom'))
+    loadViteConfigFileMock.mockRejectedValueOnce(new Error('raw boom'))
     createCjsConfigLoadErrorMock.mockReturnValueOnce(null)
 
     const loadConfig = createFactory()
@@ -168,7 +175,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('throws when weapp.lib is configured without a valid entry', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           lib: {},
@@ -191,7 +198,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('throws when multiPlatform is enabled but cli platform is not provided', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           multiPlatform: true,
@@ -214,7 +221,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('resolves project config paths and injects rolldown/vite plugins on success path', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         build: {
           rolldownOptions: {},
@@ -273,7 +280,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('enables native resolve.tsconfigPaths by default without advanced options', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -306,7 +313,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('does not override user-defined @ alias', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         resolve: {
           alias: {
@@ -347,7 +354,7 @@ describe('runtime config internal loadConfig', () => {
       references: false,
       referenceAliases: [],
     })
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -372,7 +379,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('enables native resolve.tsconfigPaths when weapp.tsconfigPaths is true', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -410,7 +417,7 @@ describe('runtime config internal loadConfig', () => {
         },
       ],
     })
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -441,7 +448,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('throws when es5 is enabled but jsFormat is not cjs', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           jsFormat: 'esm',
@@ -465,7 +472,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('throws when project config root is missing in non-lib runtime', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -490,7 +497,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('throws when multiPlatform is enabled and --project-config is passed', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -519,7 +526,7 @@ describe('runtime config internal loadConfig', () => {
 
   it('reuses loaded config when resolved weapp config path equals loaded path', async () => {
     resolveWeappConfigFileMock.mockResolvedValueOnce('/project/vite.config.ts')
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -540,13 +547,13 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(loadConfigFromFileMock).toHaveBeenCalledTimes(1)
+    expect(loadViteConfigFileMock).toHaveBeenCalledTimes(1)
     expect(result.configFilePath).toBe('/project/vite.config.ts')
   })
 
   it('wraps cjs errors from weapp-specific config loading', async () => {
     resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
-    loadConfigFromFileMock
+    loadViteConfigFileMock
       .mockResolvedValueOnce({
         config: {
           weapp: {
@@ -571,7 +578,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('uses explicit project config path when multiPlatform is disabled', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -603,7 +610,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('keeps default rolldown entryFileNames pattern on success path', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
           platform: 'weapp',
@@ -630,7 +637,7 @@ describe('runtime config internal loadConfig', () => {
 
   it('skips project config loading in lib mode and keeps existing swc plugin', async () => {
     const existingSwcPlugin = { name: 'weapp-runtime:swc-es5-transform' }
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         build: {
           rolldownOptions: {
@@ -682,7 +689,7 @@ describe('runtime config internal loadConfig', () => {
 
   it('applies lib entry file name resolver on object output and falls back to dist outDir', async () => {
     const entryFileNames = vi.fn((chunk: { name: string }) => `lib/${chunk.name}.js`)
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         build: {
           rolldownOptions: {},
@@ -726,7 +733,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('preserves plugin entry exports in pluginOnly mode', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         build: {
           rolldownOptions: {},
@@ -762,7 +769,7 @@ describe('runtime config internal loadConfig', () => {
 
   it('removes rollupOptions and applies lib entryFileNames on array outputs', async () => {
     const entryFileNames = vi.fn((chunk: { name: string }) => `lib/${chunk.name}.js`)
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         build: {
           rollupOptions: {
@@ -813,7 +820,7 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('uses default target for non-concrete build target', async () => {
-    loadConfigFromFileMock.mockResolvedValueOnce({
+    loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
         build: {
           target: 'esnext',
@@ -848,7 +855,7 @@ describe('runtime config internal loadConfig', () => {
 
   it('loads weapp-specific config file and keeps target from sanitize result', async () => {
     resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
-    loadConfigFromFileMock
+    loadViteConfigFileMock
       .mockResolvedValueOnce({
         config: {
           build: {
@@ -889,7 +896,7 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(loadConfigFromFileMock).toHaveBeenCalledTimes(2)
+    expect(loadViteConfigFileMock).toHaveBeenCalledTimes(2)
     expect(result.configFilePath).toBe('/project/weapp-vite.config.ts')
     expect(result.chunksConfigured).toBe(true)
     expect(result.config.build?.target).toBe('es2020')
