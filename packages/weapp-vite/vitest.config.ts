@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineProject } from 'vitest/config'
+import { createProjectCoverage } from '../../vitest.coverage'
 
 export default defineProject({
   define: {
@@ -20,17 +21,18 @@ export default defineProject({
         replacement: path.resolve(__dirname, './src/auto-routes.ts'),
       },
     ],
+    fileParallelism: false,
     globals: true,
     hookTimeout: 60_000,
     testTimeout: 120_000,
     // @ts-ignore
-    coverage: {
+    coverage: createProjectCoverage('packages/weapp-vite', {
       enabled: true,
       all: false,
       clean: false,
       exclude: [
         '**/dist/**',
       ],
-    },
+    }),
   },
 })
