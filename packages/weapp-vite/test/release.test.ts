@@ -45,6 +45,13 @@ describe('weapp-vite release pack', () => {
 
       expect(packedFiles.has('dist/docs/index.md')).toBe(true)
       expect(packedFiles.has('dist/docs/README.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/getting-started.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/ai-workflows.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/project-structure.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/weapp-config.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/wevu-authoring.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/vue-sfc.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/troubleshooting.md')).toBe(true)
       expect(packedFiles.has('dist/docs/mcp.md')).toBe(true)
       expect(packedFiles.has('dist/docs/volar.md')).toBe(true)
       expect(packedFiles.has('dist/docs/define-config-overloads.md')).toBe(true)
