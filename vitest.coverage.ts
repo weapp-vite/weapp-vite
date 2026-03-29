@@ -8,6 +8,12 @@ export function createProjectCoverage(
   overrides: Record<string, unknown> = {},
 ) {
   return {
+    enabled: true,
+    clean: false,
+    skipFull: true,
+    exclude: [
+      '**/dist/**',
+    ],
     reportsDirectory: path.resolve(ROOT_DIR, 'coverage', projectKey),
     ...overrides,
   }
