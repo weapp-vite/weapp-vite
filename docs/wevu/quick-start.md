@@ -3,7 +3,7 @@
 前提条件
 
 - 熟悉命令行
-- Node.js（推荐 20+）
+- Node.js（推荐 22+）
 - 已安装 weapp-vite 工具链（见仓库根 README）
 
 新建或接入

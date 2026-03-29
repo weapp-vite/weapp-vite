@@ -25,12 +25,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node-version: 20
-          - os: windows-latest
-            node-version: 20
-          - os: macos-latest
-            node-version: 20
-          - os: ubuntu-latest
             node-version: 22
           - os: windows-latest
             node-version: 22
