@@ -78,10 +78,26 @@ describe('createProject', () => {
     expect(agents).toContain('weapp-vite screenshot')
     expect(agents).toContain('wv screenshot')
     expect(agents).toContain('node_modules/weapp-vite/dist/docs/')
+    expect(agents).toContain('npx skills add sonofmagic/skills')
+    expect(agents).toContain('$weapp-vite-best-practices')
 
     const files = await scanFiles(root)
     expect(files).toContain('package.json')
     expect(files).toContain('AGENTS.md')
+  })
+
+  it('writes richer wevu-specific AGENTS guidance for wevu templates', async () => {
+    const root = await createTmpRoot('wevu-agents')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.wevu)
+
+    const agents = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')
+    expect(agents).toContain('$wevu-best-practices')
+    expect(agents).toContain('Import runtime APIs from `wevu`')
+    expect(agents).toContain('storeToRefs')
+    expect(agents).not.toContain('## Native Mini-program Authoring')
   })
 
   it('preserves existing .gitignore when templates ship gitignore', async () => {
