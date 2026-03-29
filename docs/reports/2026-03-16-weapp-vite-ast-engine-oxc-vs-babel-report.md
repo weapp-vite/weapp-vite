@@ -324,7 +324,7 @@ Babel 目前仍更稳。
 
 ### 7.1 仓库内已有结论
 
-仓库已有文档 [`packages/weapp-vite/docs/oxc-parser-vs-babel-parser.md`](../../packages/weapp-vite/docs/oxc-parser-vs-babel-parser.md)。
+仓库已有文档 [`docs/architecture/weapp-vite-oxc-parser-vs-babel-parser.md`](../../docs/architecture/weapp-vite-oxc-parser-vs-babel-parser.md)。
 
 基于 2026-03-15 的本地 benchmark：
 
@@ -339,7 +339,7 @@ Babel 目前仍更稳。
 
 ### 7.2 为什么当前选择 `parseSync`
 
-仓库另有文档 [`packages/weapp-vite/docs/oxc-parser-sync-vs-async.md`](../../packages/weapp-vite/docs/oxc-parser-sync-vs-async.md)，结论是当前继续使用 `parseSync` 是合理的。
+仓库另有文档 [`docs/architecture/weapp-vite-oxc-parser-sync-vs-async.md`](../../docs/architecture/weapp-vite-oxc-parser-sync-vs-async.md)，结论是当前继续使用 `parseSync` 是合理的。
 
 当前实现也确实如此：
 
