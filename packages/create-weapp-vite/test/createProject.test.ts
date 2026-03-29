@@ -73,9 +73,15 @@ describe('createProject', () => {
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
     expect(gitignore).toContain('node_modules')
     expect(gitignore).toContain('.weapp-vite/')
+    expect(await fs.pathExists(path.join(root, 'AGENTS.md'))).toBe(true)
+    const agents = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')
+    expect(agents).toContain('weapp-vite screenshot')
+    expect(agents).toContain('wv screenshot')
+    expect(agents).toContain('node_modules/weapp-vite/dist/docs/')
 
     const files = await scanFiles(root)
     expect(files).toContain('package.json')
+    expect(files).toContain('AGENTS.md')
   })
 
   it('preserves existing .gitignore when templates ship gitignore', async () => {

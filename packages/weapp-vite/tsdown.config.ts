@@ -60,4 +60,10 @@ export default defineConfig({
   },
   target: 'node20',
   failOnWarn: false,
+  hooks: {
+    'build:done': async () => {
+      const { syncPackageDocs } = await import('./scripts/sync-package-docs.mjs')
+      await syncPackageDocs()
+    },
+  },
 })

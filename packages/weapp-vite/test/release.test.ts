@@ -4,7 +4,6 @@ import path from 'node:path'
 import { execa } from 'execa'
 // eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
-import { TemplateName } from '@/enums'
 
 function parsePackJson(stdout: string) {
   const jsonText = stdout.match(/\[\s*\{[\s\S]*\}\s*\]\s*$/)?.[0]
@@ -16,12 +15,20 @@ function parsePackJson(stdout: string) {
   }>
 }
 
-describe('create-weapp-vite release pack', () => {
-  it('includes dist assets and packaged templates in npm pack output', async () => {
+describe('weapp-vite release pack', () => {
+  it('includes packaged dist docs in npm pack output', async () => {
     const packageRoot = path.resolve(import.meta.dirname, '..')
-    const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-pack-cache-'))
+    const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-pack-cache-'))
 
     try {
+      await execa('pnpm', ['build'], {
+        cwd: packageRoot,
+        env: {
+          ...process.env,
+          npm_config_loglevel: 'silent',
+        },
+      })
+
       const { stdout } = await execa(
         'npm',
         ['pack', '--json', '--dry-run', '.', '--cache', cacheDir],
@@ -36,16 +43,11 @@ describe('create-weapp-vite release pack', () => {
       const [packResult] = parsePackJson(stdout)
       const packedFiles = new Set((packResult?.files ?? []).map(file => file.path))
 
-      expect(packedFiles.has('bin/create-weapp-vite.js')).toBe(true)
-      expect(packedFiles.has('dist/cli.js')).toBe(true)
-      expect(packedFiles.has('dist/index.js')).toBe(true)
-
-      for (const templateName of Object.values(TemplateName)) {
-        expect(packedFiles.has(`templates/${templateName}/package.json`)).toBe(true)
-        expect(packedFiles.has(`templates/${templateName}/AGENTS.md`)).toBe(true)
-      }
-
-      expect(packedFiles.has('templates/default/project.config.json')).toBe(true)
+      expect(packedFiles.has('dist/docs/index.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/README.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/mcp.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/volar.md')).toBe(true)
+      expect(packedFiles.has('dist/docs/define-config-overloads.md')).toBe(true)
     }
     finally {
       await fs.remove(cacheDir)

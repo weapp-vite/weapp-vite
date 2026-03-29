@@ -87,6 +87,35 @@ function handleClick() {
 - Vite 插件识别 weapp-vite 宿主：https://vite.icebreaker.top/guide/vite-plugin-host
 - MCP 集成使用指南：[docs/mcp.md](./docs/mcp.md)
 
+## AI 项目指引
+
+通过 `create-weapp-vite` 创建的新项目，现在会默认携带一个根目录 `AGENTS.md`。同时，`weapp-vite` npm 包会随版本发布一份本地文档目录：`node_modules/weapp-vite/dist/docs/`。
+
+这个文件会告诉常见 AI 编程代理：
+
+- 安装依赖后，优先阅读 `node_modules/weapp-vite/dist/docs/README.md`、`node_modules/weapp-vite/dist/docs/mcp.md` 等本地版本文档
+- CLI 同时支持 `weapp-vite` 与 `wv`
+- 需要做小程序截图验收时，优先使用 `weapp-vite screenshot` 或 `wv screenshot`
+- 不要把小程序运行时截图退化成通用浏览器截图
+- 需要看 DevTools 终端日志时，优先使用 `weapp-vite ide logs --open` 或 `wv ide logs --open`
+
+`dist/docs` 当前会内置这些文件：
+
+- `README.md`
+- `mcp.md`
+- `volar.md`
+- `define-config-overloads.md`
+- `index.md`
+
+推荐的截图命令示例：
+
+```sh
+weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+
+# 等价写法
+wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+```
+
 ## DevTools 日志桥接
 
 `weapp-vite` 现在支持把微信开发者工具里的小程序 `console` 输出桥接到当前终端。
