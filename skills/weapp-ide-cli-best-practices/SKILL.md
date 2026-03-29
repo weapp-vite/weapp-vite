@@ -1,6 +1,6 @@
 ---
 name: weapp-ide-cli-best-practices
-description: 面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、`preview/upload/open/login`、automator 增强命令、`config doctor/export/import`、i18n 持久化、命令目录导出，以及与 weapp-vite CLI 原生命令优先 + catalog 透传的集成契约。
+description: 面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、`preview/upload/open/login/screenshot`、automator 增强命令、`config doctor/export/import`、i18n 持久化、命令目录导出，以及与 weapp-vite CLI 原生命令优先 + catalog 透传的集成契约。适用于“weapp-vite screenshot 怎么走”“IDE 命令该留在谁那边”“automator 和 screenshot 如何给 AI 用”“透传规则要怎么定”等场景。
 ---
 
 # weapp-ide-cli-best-practices
@@ -32,7 +32,7 @@ Do not use this as the primary skill when:
 1. Classify change type: command addition, validation, i18n/config, or dispatch contract.
 2. Update command source-of-truth first, then update parser/dispatcher.
 3. Add/adjust tests around routing and error behavior.
-4. Sync docs in package README and website package page.
+4. Sync docs in package README, website package page, packaged docs, and AI-facing guidance when relevant.
 
 ## 执行流程
 
@@ -43,6 +43,7 @@ Do not use this as the primary skill when:
   - automator enhanced commands
   - config commands
   - minidev namespace passthrough
+- Keep screenshot behavior explicit because AI workflows frequently depend on deterministic file output.
 - Export top-level command catalog from `weapp-ide-cli` for external reuse.
 - Provide a direct predicate function to check command support.
 
@@ -66,6 +67,7 @@ Do not use this as the primary skill when:
   - execute its native command table first
   - delegate only when `isWeappIdeTopLevelCommand(command)` is true
   - avoid blind passthrough for unknown commands
+- Keep `wv` and `weapp-vite` examples aligned in upstream docs and generated project guidance.
 - Keep this rule documented and tested on both sides.
 
 5. Verify narrowly
@@ -98,6 +100,7 @@ When applying this skill, return:
 - New/changed user-facing messages support Chinese default and English switch.
 - Config persistence and command behavior are documented.
 - If integration changed, `weapp-vite` uses exported catalog instead of duplicated lists.
+- Screenshot and log-related commands stay documented for AI-driven acceptance workflows.
 
 ## 参考资料
 

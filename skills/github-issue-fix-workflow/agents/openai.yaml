@@ -1,13 +1,12 @@
 interface:
   display_name: GitHub Issue Fix Workflow
-  short_description: GitHub issue 修复流程：worktree、最小复现、root cause、unit/e2e、PR
+  short_description: GitHub issue 修复流程：worktree、复现、根因、回归与 PR
   default_prompt: >-
     当任务是在采用 weapp-vite monorepo 布局的仓库中修复 GitHub issue、
     在 e2e-apps/github-issues 里复现 bug，或把修复推进到 worktree 隔离、
     根因分析、回归覆盖和 PR 交付时，使用 $github-issue-fix-workflow。
-    始终先在仓库可写目录内创建隔离 worktree，先复现再改源码，然后补 unit/e2e
-    和必需的 changeset；PR 标题/正文默认使用中文，并继续跟进 CI 状态。若任务主轴是
-    文档或站点同步，切换到 $docs-and-website-sync。
+    始终先在仓库可写目录内创建隔离 worktree，先复现再改源码，然后补 unit/e2e、
+    必需的 changeset，以及必要的 docs/skills 入口同步。
 
 policy:
   allow_implicit_invocation: true

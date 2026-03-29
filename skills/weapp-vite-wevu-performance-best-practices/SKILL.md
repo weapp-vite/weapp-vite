@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-wevu-performance-best-practices
-description: 面向使用 `weapp-vite + wevu` 的小程序项目的性能实践手册，对齐微信运行时建议（`setData`、render、navigation、resource、memory），并覆盖 `weapp.wevu.preset`、`autoSetDataPick`、页面切换窗口期、图片与分包加载治理。适用于用户反馈卡顿/掉帧/白屏/页面切换慢/内存告警，或希望系统性做性能治理、压测与回归的场景。
+description: 面向使用 `weapp-vite + wevu` 的小程序项目的性能实践手册，对齐微信运行时建议（`setData`、render、navigation、resource、memory），并覆盖 `weapp.wevu.preset`、`autoSetDataPick`、页面切换窗口期、图片与分包加载治理。适用于用户反馈卡顿/掉帧/白屏/页面切换慢/内存告警，或希望系统性做性能治理、压测与回归的场景，也适用于 AI 需要在截图/日志验收前先把性能链路稳定下来的场景。
 ---
 
 # weapp-vite-wevu-performance-best-practices

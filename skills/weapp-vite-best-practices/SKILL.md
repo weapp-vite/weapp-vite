@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-best-practices
-description: 面向采用 weapp-vite 项目布局仓库的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、`app.json` routes/subPackages、`routeRules/layout`、自动路由、自动导入组件、托管 TypeScript 支持文件、`prepare`、chunk 策略、MCP、Web runtime、lib mode 以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置 `autoRoutes/autoImportComponents/routeRules`、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”“layout 不生效”“.weapp-vite 文件怎么接入”）。
+description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、`app.json` routes/subPackages、`routeRules/layout`、自动路由、自动导入组件、托管 TypeScript 支持文件、`prepare`、`wv`/`weapp-vite` CLI 用法、`dist/docs` 随包文档、脚手架生成项目里的 `AGENTS.md`、MCP、Web runtime、lib mode 以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置 `autoRoutes/autoImportComponents/routeRules`、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”“layout 不生效”“`.weapp-vite` 文件怎么接入”“其他仓库里的 AI 怎么正确使用 weapp-vite”）。
 ---
 
 # weapp-vite-best-practices
@@ -32,15 +32,17 @@ Do not use this as the primary skill when:
 
 1. Confirm baseline runtime and source roots.
 2. Classify goal: new setup, refactor, debug, or performance optimization.
-3. Apply minimum viable config changes in `vite.config.ts` and app/page JSON sources.
-4. Verify with targeted build/type checks before suggesting broader cleanup.
-5. If validation touches apps/templates/e2e after editing `packages/*/src/**`, rebuild the touched package first to avoid stale `dist`.
+3. Read local package docs first when available: `node_modules/weapp-vite/dist/docs/index.md`.
+4. Apply minimum viable config changes in `vite.config.ts` and app/page JSON sources.
+5. Verify with targeted build/type checks before suggesting broader cleanup.
+6. If validation touches apps/templates/e2e after editing `packages/*/src/**`, rebuild the touched package first to avoid stale `dist`.
 
 ## 执行流程
 
 1. Gather context first
 
 - Inspect `vite.config.ts`, `app.json` source strategy, pages/subpackages layout, and scripts.
+- If the project installs `weapp-vite`, prefer local package docs under `node_modules/weapp-vite/dist/docs/` before relying on stale web examples.
 - Confirm `weapp.srcRoot` and expected output root.
 - Ask for missing constraints only when blocked (target platform, package limits, CI environment).
 
@@ -58,6 +60,8 @@ Do not use this as the primary skill when:
   - Define and export full top-level command names in `weapp-ide-cli`.
   - Let `weapp-vite` consume that export for passthrough decision.
   - Resolve commands in this order: `weapp-vite` native commands first, then `weapp-ide-cli` passthrough only if command is cataloged.
+- Treat `wv` as an alias of `weapp-vite` in all command guidance.
+- When the project comes from `create-weapp-vite`, treat root `AGENTS.md` as a project-level workflow contract, not disposable boilerplate.
 
 3. Diagnose by symptom category
 
@@ -65,6 +69,7 @@ Do not use this as the primary skill when:
 - Slow build: inspect plugin timing and high-cost transforms.
 - Route/component generation mismatch: verify generated artifacts and resolver behavior.
 - If downstream app/template/e2e behavior does not match recent source edits, suspect stale `dist` first and rebuild the touched package before deeper diagnosis.
+- If an AI workflow involves screenshot acceptance or DevTools log collection, prefer `weapp-vite screenshot` / `wv screenshot` and `weapp-vite ide logs --open` / `wv ide logs --open`.
 
 4. Propose actionable edits
 
@@ -97,6 +102,7 @@ pnpm vitest run <related-test-file>
 - Do not trust downstream app/template/e2e validation against stale package `dist`.
 - Do not implement IDE command passthrough with hardcoded duplicate lists in multiple packages.
 - Do not passthrough unknown commands blindly; require catalog hit before delegation.
+- Do not ignore packaged docs and generated `AGENTS.md` when they exist; they are part of the current product contract.
 
 ## 输出要求
 
@@ -117,6 +123,7 @@ When applying this skill, return:
 - Downstream validation is performed against rebuilt package output, not stale `dist`.
 - CLI dispatch ownership is deterministic: native-first, catalog-based passthrough second.
 - Command catalog changes are made in `weapp-ide-cli` and consumed by `weapp-vite`, not duplicated.
+- AI-facing entry points (`dist/docs`, root `AGENTS.md`, screenshot/logs commands) stay aligned with current CLI behavior.
 
 ## 参考资料
 

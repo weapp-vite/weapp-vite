@@ -1,17 +1,13 @@
 interface:
   display_name: Wevu Best Practices
-  short_description: wevu 运行时模式（生命周期、layout、router、事件契约、store）
+  short_description: wevu 生命周期、router、事件契约、store 与模板编写约束
   default_prompt: >-
-    当任务主轴是 wevu pages/components/stores 的运行时行为时，使用
-    $wevu-best-practices：包括生命周期时序、响应式状态更新、事件契约、
-    `bindModel`、`setPageLayout/usePageLayout`、根入口的
-    `useNativeRouter/useNativePageRouter`、`wevu/router` 的
-    `createRouter/useRouter/useRoute`，以及 `storeToRefs` / setup store 等
-    store 模式。优先采用明确的小程序语义，而不是 Vue Web 的默认假设。若问题主轴是
-    SFC 宏或模板编译，使用 $weapp-vite-vue-sfc-best-practices；若主轴是项目级
-    config/chunk/CI，使用 $weapp-vite-best-practices；若主轴是原生迁移规划，使用
-    $native-to-weapp-vite-wevu-migration。输出应包含：运行时风险摘要、
-    文件级改动、兼容性说明和最小验证命令。
+    当任务主轴是 wevu pages/components/stores 的运行时行为、生命周期注册、
+    router、layout、事件契约、`bindModel`、`storeToRefs`、或 AI 在 wevu 模板里
+    应如何继续编写业务代码时，使用 $wevu-best-practices。优先保持小程序语义，
+    不套用 Vue Web-only 假设。若主轴是 `.vue` 宏或模板编译，使用
+    $weapp-vite-vue-sfc-best-practices；若主轴是项目级 weapp-vite 配置与构建，
+    使用 $weapp-vite-best-practices。
 
 policy:
   allow_implicit_invocation: true

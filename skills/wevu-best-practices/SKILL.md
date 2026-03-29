@@ -1,6 +1,6 @@
 ---
 name: wevu-best-practices
-description: 面向小程序中 wevu 运行时的实践手册：覆盖生命周期注册、响应式更新、事件契约、`bindModel/useBindModel`、`setPageLayout/usePageLayout`、根入口的 `useNativeRouter/useNativePageRouter`，以及 `wevu/router` 的 `createRouter/useRouter/useRoute` 和带有小程序兼容约束的 store 使用模式。适用于实现或重构 wevu pages/components/stores、排查 hook 时序、router 使用方式或 setData diff 行为，或解释它与 Vue 3 Web runtime 差异的场景。
+description: 面向小程序中 wevu 运行时的实践手册：覆盖生命周期注册、响应式更新、事件契约、`bindModel/useBindModel`、`setPageLayout/usePageLayout`、根入口的 `useNativeRouter/useNativePageRouter`，以及 `wevu/router` 的 `createRouter/useRouter/useRoute` 和带有小程序兼容约束的 store 使用模式。适用于实现或重构 wevu pages/components/stores、排查 hook 时序、router 使用方式或 setData diff 行为、指导 AI 在 `wevu` 模板里按约定编写业务代码，或解释它与 Vue 3 Web runtime 差异的场景。
 ---
 
 # wevu-best-practices
@@ -32,7 +32,8 @@ Do not use this as the primary skill when:
 1. Verify runtime API imports and component registration model.
 2. Confirm hook registration timing and component/page boundaries.
 3. Normalize state/event binding patterns (`ref/reactive`, `emit`, `bindModel`).
-4. Validate with targeted runtime or unit tests.
+4. Check whether project root `AGENTS.md` already constrains `wevu` authoring and keep changes consistent with it.
+5. Validate with targeted runtime or unit tests.
 
 ## 执行流程
 
@@ -53,6 +54,7 @@ Do not use this as the primary skill when:
 - Prefer `ref/reactive/computed` for state derivation.
 - Avoid large opaque state writes; prefer fine-grained reactive updates.
 - Use explicit bindings when form/event semantics are non-trivial.
+- Keep mini-program serializability in mind when exposing data to templates and page state snapshots.
 
 4. Define event and two-way binding contracts
 
@@ -65,6 +67,7 @@ Do not use this as the primary skill when:
 - Prefer Setup Store for simple domains and strong TS inference.
 - Use `storeToRefs` when destructuring state/getters.
 - Introduce `createStore()` only when global plugin/persistence behavior is required.
+- Prefer small store boundaries over giant cross-page stores.
 
 6. Verify compatibility explicitly
 
@@ -95,6 +98,7 @@ When applying this skill, return:
 - Hook registration timing is synchronous and predictable.
 - Store usage follows singleton + `storeToRefs` conventions.
 - Template/event bindings match mini-program-supported semantics.
+- Guidance stays aligned with generated project `AGENTS.md` for wevu templates.
 
 ## 参考资料
 

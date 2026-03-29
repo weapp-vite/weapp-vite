@@ -1,12 +1,12 @@
 interface:
   display_name: Weapp IDE CLI Best Practices
-  short_description: weapp-ide-cli 命令治理、automator、config/i18n 与跨 CLI 分发实践
+  short_description: weapp-ide-cli 命令治理、screenshot、automator 与跨 CLI 分发
   default_prompt: >-
-    当任务涉及 weapp-ide-cli 的命令设计、`preview/upload/open/login`、
-    automator/config doctor/export/import、命令目录导出、语言切换，
-    或采用 weapp-vite 的仓库中的跨 CLI 分发契约时，使用
+    当任务涉及 weapp-ide-cli 的命令设计、`preview/upload/open/login/screenshot`、
+    automator、config doctor/export/import、命令目录导出、语言切换，或
+    weapp-vite 与 weapp-ide-cli 之间的透传契约时，使用
     $weapp-ide-cli-best-practices。保持命令归属可判定：先命中原生命令表，再做
-    基于 catalog 的透传。输出具体文件级改动、测试和文档同步项。
+    基于 catalog 的透传，并同步 screenshot / AI 验收相关文档。
 
 policy:
   allow_implicit_invocation: true
