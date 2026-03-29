@@ -1,4 +1,5 @@
 import os from 'node:os'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, vi } from 'vitest'
@@ -94,6 +95,7 @@ async function collectExpectedTemplateFiles(templateName: TemplateName) {
   }
 
   await walk(preferredTemplateDir)
+  files.push('AGENTS.md')
 
   return files.sort((a, b) => a.localeCompare(b))
 }

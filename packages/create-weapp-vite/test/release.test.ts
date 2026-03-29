@@ -42,7 +42,6 @@ describe('create-weapp-vite release pack', () => {
 
       for (const templateName of Object.values(TemplateName)) {
         expect(packedFiles.has(`templates/${templateName}/package.json`)).toBe(true)
-        expect(packedFiles.has(`templates/${templateName}/AGENTS.md`)).toBe(true)
       }
 
       expect(packedFiles.has('templates/default/project.config.json')).toBe(true)

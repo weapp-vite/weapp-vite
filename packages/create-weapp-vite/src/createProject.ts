@@ -6,6 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { version } from '../../weapp-vite/package.json'
 import { version as wevuVersion } from '../../wevu/package.json'
+import { createAgentsGuidelines } from './agents'
 import { TemplateName } from './enums'
 import { TEMPLATE_CATALOG, TEMPLATE_NAMED_CATALOG } from './generated/catalog'
 import { latestVersion } from './npm'
@@ -286,12 +287,14 @@ export async function createProject(targetDir: string = '', templateName: Templa
   await upsertTailwindcssVersion(pkgJson)
 
   await writeJsonFile(packageJsonPath, pkgJson)
+  await fs.writeFile(path.resolve(targetDir, 'AGENTS.md'), createAgentsGuidelines(templateName))
   await updateGitIgnore({ root: targetDir, write: true })
 
   logger.log('✨ 创建模板成功!')
 }
 
 export const __internal = {
+  createAgentsGuidelines,
   copyTemplateDir,
   ensureDotGitignore,
   resolveTemplateDirs,

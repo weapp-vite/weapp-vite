@@ -142,6 +142,7 @@ async function collectExpectedTemplateFiles(templateName) {
   }
 
   await walk(templateDir)
+  files.push('AGENTS.md')
 
   return files.sort((a, b) => a.localeCompare(b))
 }
