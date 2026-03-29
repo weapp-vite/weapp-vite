@@ -28,6 +28,15 @@ Use this file together with root `AGENTS.md`.
 
 Use full e2e matrix only if parity test or shared runtime/compiler tests indicate wider impact.
 
+## 3.1 CLI Alias And AI Workflow
+
+- This template supports both `weapp-vite` and `wv` CLI commands.
+- When the dependency is installed, prefer reading local package docs under `node_modules/weapp-vite/dist/docs/` before relying on stale external memory.
+- When an AI agent needs a mini-program screenshot, prefer `weapp-vite screenshot` or `wv screenshot`.
+- Do not default to generic browser screenshot tools when the target is the mini-program runtime in WeChat DevTools.
+- Before screenshot commands that require DevTools, ensure WeChat DevTools is logged in and the service port is enabled.
+- When terminal log inspection is needed, prefer `weapp-vite ide logs --open` or `wv ide logs --open`.
+
 ## 4. WXML/WXS Notes
 
 - Keep generated WXML valid for WeChat DevTools parser.
