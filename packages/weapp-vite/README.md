@@ -31,6 +31,8 @@
 
 ## 快速开始
 
+> 说明：CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者等价。下面的示例默认使用 `weapp-vite`，你也可以按个人习惯替换成 `wv`。
+
 ### Vue 项目
 
 ```typescript
@@ -116,6 +118,9 @@ export default defineConfig({
 ```sh
 weapp-vite ide logs
 weapp-vite ide logs --open
+# 等价写法
+wv ide logs
+wv ide logs --open
 ```
 
 ## CLI 中调用 weapp-ide-cli
@@ -127,6 +132,8 @@ weapp-vite preview --project ./dist/build/mp-weixin
 weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 weapp-vite config lang zh
 weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
+# 等价写法
+wv preview --project ./dist/build/mp-weixin
 ```
 
 也支持命名空间写法：
@@ -135,6 +142,8 @@ weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
 weapp-vite ide preview --project ./dist/build/mp-weixin
 weapp-vite ide config show
 weapp-vite ide logs --open
+# 等价写法
+wv ide preview --project ./dist/build/mp-weixin
 ```
 
 ## CLI 启动 MCP
@@ -146,12 +155,16 @@ weapp-vite ide logs --open
 
 ```sh
 weapp-vite mcp
+# 等价写法
+wv mcp
 ```
 
 指定工作区根路径：
 
 ```sh
 weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+# 等价写法
+wv mcp --workspace-root /absolute/path/to/weapp-vite
 ```
 
 在 `vite.config.ts` 中开启自动启动：
