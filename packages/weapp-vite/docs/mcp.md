@@ -4,6 +4,14 @@
 
 `weapp-vite` 现在内置了对 `weapp-vite/mcp` 的集成，支持直接通过 `weapp-vite mcp` 启动 MCP Server（`stdio` 传输）。
 
+如果你是在其他仓库里通过 npm 依赖使用 `weapp-vite`，建议先让 AI 读取本地随包文档目录：
+
+- `node_modules/weapp-vite/dist/docs/index.md`
+- `node_modules/weapp-vite/dist/docs/README.md`
+- `node_modules/weapp-vite/dist/docs/mcp.md`
+
+这样可以优先命中与当前安装版本一致的本地说明，而不是依赖可能过期的外部网页或模型记忆。
+
 这个 MCP Server 主要面向 AI 编程助手，暴露了 `weapp-vite / wevu / wevu-compiler` 的关键研发能力：
 
 1. 工作区能力目录（版本、脚本、文档）
@@ -202,16 +210,17 @@ MCP 服务端做了以下约束：
 
 ```text
 你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图验收：
-1. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
-2. 执行 weapp-vite screenshot，参数如下：
+1. 先阅读 node_modules/weapp-vite/dist/docs/index.md 和 node_modules/weapp-vite/dist/docs/mcp.md，确认当前版本的本地说明。
+2. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
+3. 执行 weapp-vite screenshot，参数如下：
    - project: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
    - page: pages/home/index
    - output: .tmp/mcp-screenshot.png
    - 使用 --json 返回结果
-3. 检查 .tmp/mcp-screenshot.png 是否存在：
+4. 检查 .tmp/mcp-screenshot.png 是否存在：
    - 存在输出 screenshot-ok
    - 不存在输出 screenshot-missing
-4. 最后汇总：执行命令、关键输出、最终结论。
+5. 最后汇总：执行命令、关键输出、最终结论。
 ```
 
 ### 9.2 期望结果

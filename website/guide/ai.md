@@ -82,6 +82,14 @@ $playwright-cli
 
 `MCP` 负责把仓库真实能力暴露给 AI（读代码、搜代码、执行受限命令、调用 weapp-vite CLI）。
 
+如果你是在其他仓库里使用 `weapp-vite`，而不是在这个 monorepo 里直接开发，推荐先让 AI 读取依赖包里随版本发布的本地文档：
+
+- `node_modules/weapp-vite/dist/docs/index.md`
+- `node_modules/weapp-vite/dist/docs/README.md`
+- `node_modules/weapp-vite/dist/docs/mcp.md`
+
+这样 AI 会先基于你当前安装版本的本地说明工作，再去执行 `weapp-vite screenshot`、`weapp-vite ide logs --open` 或其他 CLI 命令。
+
 默认行为：
 
 1. `weapp-vite` 默认启用 MCP 能力。
@@ -112,16 +120,17 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 
 ```text
 你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图验收：
-1. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
-2. 执行 weapp-vite screenshot，参数如下：
+1. 先阅读 node_modules/weapp-vite/dist/docs/index.md 和 node_modules/weapp-vite/dist/docs/mcp.md，确认当前版本的本地说明。
+2. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
+3. 执行 weapp-vite screenshot，参数如下：
    - project: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
    - page: pages/home/index
    - output: .tmp/mcp-screenshot.png
    - 使用 --json 返回结果
-3. 检查 .tmp/mcp-screenshot.png 是否存在：
+4. 检查 .tmp/mcp-screenshot.png 是否存在：
    - 存在输出 screenshot-ok
    - 不存在输出 screenshot-missing
-4. 最后汇总：执行命令、关键输出、最终结论。
+5. 最后汇总：执行命令、关键输出、最终结论。
 ```
 
 期望结果：
