@@ -16,16 +16,16 @@
   },
   "keywords": [],
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "open": "weapp-vite open",
+    "open": "wv open",
     "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
     "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
-    "g": "weapp-vite generate",
-    "postinstall": "weapp-vite prepare"
+    "g": "wv generate",
+    "postinstall": "wv prepare"
   },
   "devDependencies": {
     "@icebreakers/eslint-config": "^2.1.0",
