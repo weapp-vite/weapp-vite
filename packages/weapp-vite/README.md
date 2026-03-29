@@ -102,6 +102,13 @@ function handleClick() {
 `dist/docs` 当前会内置这些文件：
 
 - `README.md`
+- `getting-started.md`
+- `ai-workflows.md`
+- `project-structure.md`
+- `weapp-config.md`
+- `wevu-authoring.md`
+- `vue-sfc.md`
+- `troubleshooting.md`
 - `mcp.md`
 - `volar.md`
 - `define-config-overloads.md`
