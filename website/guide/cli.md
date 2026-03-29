@@ -15,16 +15,21 @@ keywords:
 
 > 需要调用微信开发者工具能力（`preview/upload/automator/config` 等）时，`weapp-vite` 会在未命中自身命令后自动透传到 `weapp-ide-cli`。
 
+> `weapp-vite` CLI 也提供简写命令 `wv`。`weapp-vite dev` 与 `wv dev`、`weapp-vite build` 与 `wv build` 都是等价写法。下文统一使用 `weapp-vite` 作为主示例。
+
 ## 命令格式
 
 ```bash
 weapp-vite [全局参数] <command> [command options]
+# 或
+wv [全局参数] <command> [command options]
 ```
 
 默认命令是 `dev`，也就是：
 
 ```bash
 weapp-vite
+wv
 ```
 
 等价于：
@@ -55,6 +60,10 @@ weapp-vite dev
 weapp-vite dev [root]
 weapp-vite serve [root]
 weapp-vite [root]
+# 等价写法
+wv dev [root]
+wv serve [root]
+wv [root]
 ```
 
 参数：
@@ -79,6 +88,8 @@ weapp-vite [root]
 
 ```bash
 weapp-vite build [root]
+# 等价写法
+wv build [root]
 ```
 
 参数：
@@ -103,6 +114,8 @@ weapp-vite build [root]
 
 ```bash
 weapp-vite analyze [root]
+# 等价写法
+wv analyze [root]
 ```
 
 参数：
@@ -120,6 +133,8 @@ weapp-vite analyze [root]
 
 ```bash
 weapp-vite open [root]
+# 等价写法
+wv open [root]
 ```
 
 参数：
@@ -134,6 +149,8 @@ weapp-vite open [root]
 
 ```bash
 weapp-vite ide logs [root]
+# 等价写法
+wv ide logs [root]
 ```
 
 参数：
@@ -166,6 +183,10 @@ weapp-vite ide logs ./dist/dev -p weapp
 weapp-vite npm
 weapp-vite build:npm
 weapp-vite build-npm
+# 等价写法
+wv npm
+wv build:npm
+wv build-npm
 ```
 
 ### 7) `generate` / `g`
@@ -175,6 +196,9 @@ weapp-vite build-npm
 ```bash
 weapp-vite generate [filepath]
 weapp-vite g [filepath]
+# 等价写法
+wv generate [filepath]
+wv g [filepath]
 ```
 
 参数：
@@ -191,6 +215,8 @@ weapp-vite g [filepath]
 
 ```bash
 weapp-vite init
+# 等价写法
+wv init
 ```
 
 ### 9) `prepare`
@@ -199,6 +225,8 @@ weapp-vite init
 
 ```bash
 weapp-vite prepare [root]
+# 等价写法
+wv prepare [root]
 ```
 
 适用场景：
@@ -213,6 +241,8 @@ weapp-vite prepare [root]
 
 ```bash
 weapp-vite mcp
+# 等价写法
+wv mcp
 ```
 
 参数：
@@ -261,6 +291,8 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 ```bash
 weapp-vite ide preview --project ./dist -q terminal
 weapp-vite ide upload --project ./dist -v 1.0.0 -d "ci upload"
+wv ide preview --project ./dist -q terminal
+wv ide upload --project ./dist -v 1.0.0 -d "ci upload"
 ```
 
 但 `weapp-vite` 自己保留了 `weapp-vite ide logs` 这个原生命令，不会透传到 `weapp-ide-cli`。
@@ -274,22 +306,29 @@ weapp-vite ide upload --project ./dist -v 1.0.0 -d "ci upload"
 ```bash
 # 小程序开发
 weapp-vite dev -p weapp
+wv dev -p weapp
 
 # Web 开发（指定 host）
 weapp-vite dev -p h5 --host 0.0.0.0
+wv dev -p h5 --host 0.0.0.0
 
 # 小程序生产构建（不压缩 + 产出 sourcemap）
 weapp-vite build -p weapp --minify false --sourcemap
+wv build -p weapp --minify false --sourcemap
 
 # 输出分析 JSON 到文件
 weapp-vite analyze -p weapp --output ./reports/analyze.json
+wv analyze -p weapp --output ./reports/analyze.json
 
 # 预生成 .weapp-vite 支持文件
 weapp-vite prepare
+wv prepare
 
 # 持续监听 DevTools console
 weapp-vite ide logs --open
+wv ide logs --open
 
 # 透传微信预览命令
 weapp-vite preview --project ./dist -q terminal
+wv preview --project ./dist -q terminal
 ```

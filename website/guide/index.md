@@ -25,6 +25,9 @@ keywords:
 
 如果你只是第一次接触，按本页流程走完即可。想深入某个功能时，再跳到后续专题页。
 
+> [!TIP]
+> `weapp-vite` CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者完全等价。模板脚本通常会封装成 `pnpm dev` / `pnpm build` / `pnpm open`，如果你直接调用 CLI，可以任选其一。
+
 > [!IMPORTANT]
 > 使用前请确保安装 **Node.js `^20.19.0 || >=22.12.0`**。文档与脚手架场景当前更推荐直接使用 **Node.js 22+** 的 LTS，并全局安装 `pnpm`（`npm i -g pnpm`）。
 
@@ -152,6 +155,8 @@ bun dev --open # 已开启服务端口时自动打开微信开发者工具
 >
 > ```sh
 > weapp-vite ide logs --open
+> # 或
+> wv ide logs --open
 > ```
 
 ### 4. 打开开发者工具
@@ -240,6 +245,7 @@ pnpm dev
 pnpm dev --open # 已开启服务端口时自动打开微信开发者工具
 pnpm dev -o # 已开启服务端口时自动打开微信开发者工具
 weapp-vite ide logs --open # 持续监听 DevTools console，并桥接回终端
+wv ide logs --open # 与 weapp-vite ide logs --open 等价
 ```
 
 命令会启动监听构建。保存后会自动重新编译并同步到开发目录；如果已开启服务端口，也可以配合 `--open` 直接拉起微信开发者工具。
@@ -270,10 +276,12 @@ weapp-vite preview --project ./dist/build/mp-weixin
 weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 weapp-vite config lang en
 weapp-vite screenshot --project ./dist/build/mp-weixin --json
+wv preview --project ./dist/build/mp-weixin
 
 # 或使用命名空间透传
 weapp-vite ide preview --project ./dist/build/mp-weixin
 weapp-vite ide config show
+wv ide preview --project ./dist/build/mp-weixin
 ```
 
 > [!WARNING]
