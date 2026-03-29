@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.12.1
+
+### Patch Changes
+
+- 🐛 **增强 `weapp-vite` 随包发布的 `dist/docs` 文档包，新增面向 AI 与离线开发的本地文档入口，覆盖 CLI 快速开始、AI 工作流、项目结构、`weapp` 配置、wevu 编写约束、Vue SFC 约束与常见排障说明。** [`3a54e73`](https://github.com/weapp-vite/weapp-vite/commit/3a54e733aac632d96a00d75fb334c52f75572bb3) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.12.1`, `wevu@6.12.1`
+
 ## 6.12.0
 
 ### Patch Changes

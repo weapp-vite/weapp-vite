@@ -1,5 +1,7 @@
 # @weapp-vite/ast
 
+## 6.12.1
+
 ## 6.12.0
 
 ### Minor Changes
