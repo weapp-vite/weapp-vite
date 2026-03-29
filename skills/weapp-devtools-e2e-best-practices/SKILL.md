@@ -1,6 +1,6 @@
 ---
 name: weapp-devtools-e2e-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML/页面数据断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` 的 DevTools 项目配置与条件页。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML/页面数据断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` 的 DevTools 项目配置与条件页。也适用于和 AI screenshot / logs 工作流配合验证真实运行时。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
 ---
 
 # weapp-devtools-e2e-best-practices
@@ -61,6 +61,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 - 优先做稳定的页面级/结构级断言，避免脆弱的瞬时状态依赖。
 - 需要 runtime 错误收集时，接入统一的 runtime error 收集器。
 - 更新行为变更时，同步更新 snapshot/assertion。
+- 若问题最终要给 AI 做截图验收，先保证 e2e 路径和页面路由足够稳定，再考虑 `weapp-vite screenshot` 补充验收。
 
 5. e2e app 维护规则
 

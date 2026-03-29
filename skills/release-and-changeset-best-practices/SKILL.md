@@ -1,6 +1,6 @@
 ---
 name: release-and-changeset-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 changeset 工作流。适用于补 changeset、判断某次改动是否需要 release note、保持 `create-weapp-vite` 与 `weapp-vite`/`wevu`/`templates/*` 联动、检查 Conventional Commits，或准备包发布。也适用于源码 bug fix、模板行为变更、website/skills 用户可见改动后的发布判定。触发语句包括“要不要加 changeset”“帮我补发版记录”“这个改动要不要 bump create-weapp-vite”“准备发布”“校验 changeset”“按仓库规范提交/发布”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 changeset 工作流。适用于补 changeset、判断某次改动是否需要 release note、保持 `create-weapp-vite` 与 `weapp-vite`/`wevu`/`templates/*` 联动、检查 Conventional Commits，或准备包发布。也适用于源码 bug fix、模板行为变更、website/skills 用户可见改动、`dist/docs` 随包文档、脚手架生成 `AGENTS.md` 行为变更后的发布判定。触发语句包括“要不要加 changeset”“帮我补发版记录”“这个改动要不要 bump create-weapp-vite”“准备发布”“校验 changeset”“按仓库规范提交/发布”等。
 ---
 
 # release-and-changeset-best-practices
@@ -50,6 +50,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 change
   - `wevu`
   - `templates/*`
 - 则同时补 `create-weapp-vite` bump changeset，保持模板与依赖版本同步。
+- 若改动影响脚手架生成文件（如 `AGENTS.md`）或随包文档（如 `dist/docs`），按用户可见行为处理，不要按“纯内部重构”跳过 release 判定。
 
 3. 保持 changeset 内容规范
 

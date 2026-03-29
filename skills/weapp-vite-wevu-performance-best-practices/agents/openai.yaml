@@ -1,16 +1,13 @@
 interface:
   display_name: Weapp-vite Wevu Performance
-  short_description: weapp-vite + wevu 性能诊断与优化（setData/渲染/切换/资源/内存）
+  short_description: 'weapp-vite + wevu 性能诊断与优化（setData/渲染/切换/内存）'
   default_prompt: >-
     当用户反馈小程序性能问题（卡顿/掉帧/页面切换慢/白屏/内存告警），或希望在
-    weapp-vite + wevu 项目中制定系统化性能方案时，使用
+    weapp-vite + wevu 项目中制定系统化性能方案，或者需要在 screenshot / logs
+    验收前先稳定性能链路时，使用
     $weapp-vite-wevu-performance-best-practices。先按 setData、render、
     navigation、resource、memory 分类，再结合 `weapp.wevu.preset`、
-    `autoSetDataPick` 和页面切换窗口期提出带可测验证信号与回滚点的最小文件级改动。
-    若问题主轴是 build architecture/chunk/subpackage，切换到
-    $weapp-vite-best-practices；若主轴是 SFC 宏或模板兼容，切换到
-    $weapp-vite-vue-sfc-best-practices；若主轴是 runtime 语义/lifecycle/store
-    设计，切换到 $wevu-best-practices。
+    `autoSetDataPick` 和页面切换窗口期提出可测量、可回滚的最小改动。
 
 policy:
   allow_implicit_invocation: true

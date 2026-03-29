@@ -56,13 +56,13 @@ pnpm skills:score:json
 
 ### A. weapp-vite-best-practices
 
-1. 提问：帮我重构 `vite.config.ts` 的 `weapp` 配置，顺便把分包和 chunk 策略梳理一下。
+1. 提问：我在别的仓库里装了 `weapp-vite`，AI 应该先看 `node_modules/weapp-vite/dist/docs` 还是网站文档？顺便把 `vite.config.ts` 的 `weapp` 配置和分包策略梳理一下。
    预期 skill：`weapp-vite-best-practices`
 
 2. 提问：`app.json` 和自动路由怎么配合，才能保证 pages/subPackages 输出稳定？
    预期 skill：`weapp-vite-best-practices`
 
-3. 提问：我们 CI 想拆成编译和 devtools preview 两步，`weapp-ide-cli` 怎么接入更稳？
+3. 提问：我们 CI 想拆成编译和 devtools preview 两步，而且希望 AI 默认会用 `wv` / `weapp-vite` 的命令，`weapp-ide-cli` 该怎么接入更稳？
    预期 skill：`weapp-vite-best-practices`
 
 4. 提问：构建后 `typed-router.d.ts` 没更新，怎么排查是路由生成还是配置问题？
@@ -124,10 +124,10 @@ pnpm skills:score:json
 
 ### E. weapp-ide-cli-best-practices
 
-1. 提问：请把 `weapp-ide-cli` 的命令整理成统一目录导出，让上游 CLI 可以判断是否透传。
+1. 提问：请把 `weapp-ide-cli` 的命令整理成统一目录导出，让上游 CLI 可以判断是否透传，尤其是 `screenshot` 这种 AI 会直接用到的命令。
    预期 skill：`weapp-ide-cli-best-practices`
 
-2. 提问：`weapp-vite` 和 `weapp-ide-cli` 的命令分发优先级该怎么设计，避免冲突？
+2. 提问：`weapp-vite` / `wv` 和 `weapp-ide-cli` 的命令分发优先级该怎么设计，避免 `screenshot`、`open` 这些命令冲突？
    预期 skill：`weapp-ide-cli-best-practices`
 
 3. 提问：`weapp-ide-cli` 的报错文案默认中文，但要支持切换英文，配置应该怎么落地？
@@ -158,16 +158,16 @@ pnpm skills:score:json
 
 ### G. docs-and-website-sync
 
-1. 提问：根据现在仓库里的代码和脚本，把 `website` 的 AI 页面和 Skills 文档同步一下。
+1. 提问：根据现在仓库里的代码和脚本，把 `website` 的 AI 页面、Skills 文档和 `wv` 简写命令说明同步一下。
    预期 skill：`docs-and-website-sync`
 
-2. 提问：我们刚给 CLI 加了新能力，帮我把站点、README 和相关 Skills 入口一起更新。
+2. 提问：我们刚给 CLI 加了 `screenshot`、`dist/docs` 和模板 `AGENTS.md` 这些 AI 入口，帮我把站点、README 和相关 Skills 入口一起更新。
    预期 skill：`docs-and-website-sync`
 
 3. 提问：现在文档入口有点过期，请按真实实现刷新 `guide/ai`、组件页和生成产物。
    预期 skill：`docs-and-website-sync`
 
-4. 提问：新增了一个 skill，帮我把文档入口、回归清单和评分脚本一起补齐。
+4. 提问：新增了一个 skill，顺便也补上安装方式，比如 `npx skills add sonofmagic/skills`，再把文档入口、回归清单和评分脚本一起补齐。
    预期 skill：`docs-and-website-sync`
 
 5. 边界提问：我不是要同步文档，我是要改 `vite.config.ts` 的分包策略。
@@ -192,7 +192,7 @@ pnpm skills:score:json
 
 ### I. weapp-devtools-e2e-best-practices
 
-1. 提问：帮我给 `e2e/ide` 新增一个 runtime 用例，要求同一个 app 只启动一次 automator。
+1. 提问：帮我给 `e2e/ide` 新增一个 runtime 用例，要求同一个 app 只启动一次 automator，后面还能稳定给 AI 做 screenshot 验收。
    预期 skill：`weapp-devtools-e2e-best-practices`
 
 2. 提问：这个 IDE e2e 里多个页面场景应该怎么通过 `miniProgram.reLaunch(...)` 串起来？
@@ -212,7 +212,7 @@ pnpm skills:score:json
 1. 提问：这个改动要不要加 changeset？如果要，顺便看看 commit 类型该怎么写。
    预期 skill：`release-and-changeset-best-practices`
 
-2. 提问：我改了 `weapp-vite` 和模板，帮我判断是不是还要补 `create-weapp-vite` 的 changeset。
+2. 提问：我改了 `weapp-vite`、模板生成的 `AGENTS.md` 和随包 `dist/docs`，帮我判断是不是还要补 `create-weapp-vite` 的 changeset。
    预期 skill：`release-and-changeset-best-practices`
 
 3. 提问：请按仓库规则检查这次发布前还缺哪些 changeset 和 release 校验。
@@ -226,7 +226,7 @@ pnpm skills:score:json
 
 ## 冲突场景回归
 
-1. 提问：我这个页面 `v-model` 报错，同时首包也超了，先看哪个？
+1. 提问：我这个页面 `v-model` 报错，同时首包也超了，而且 AI 还需要按当前模板约定继续改这个页面，先看哪个？
    预期主 skill：`weapp-vite-vue-sfc-best-practices`
    预期次 skill：`weapp-vite-best-practices`
 

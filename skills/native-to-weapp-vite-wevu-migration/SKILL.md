@@ -1,6 +1,6 @@
 ---
 name: native-to-weapp-vite-wevu-migration
-description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SFC` 的结构化迁移工作流，覆盖分波次推进、行为等价转换、`Page/Component` 到 `.vue`、类型化 props/events、`definePageMeta`/layout、平台守卫、`.weapp-vite` 类型支持文件接入，以及面向迁移的 e2e 验证与回滚检查点。适用于“原生迁移到 weapp-vite”“setData 改造”“迁移 route/layout”“迁移回滚策略”“迁移 e2e 怎么测”等场景。
+description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SFC` 的结构化迁移工作流，覆盖分波次推进、行为等价转换、`Page/Component` 到 `.vue`、类型化 props/events、`definePageMeta`/layout、平台守卫、`.weapp-vite` 类型支持文件接入，以及面向迁移的 e2e 验证与回滚检查点。适用于“原生迁移到 weapp-vite”“setData 改造”“迁移 route/layout”“迁移回滚策略”“迁移 e2e 怎么测”“迁移后 AI 应该如何按 weapp-vite / wevu 约束继续维护”等场景。
 ---
 
 # native-to-weapp-vite-wevu-migration
@@ -75,6 +75,7 @@ description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SF
 - 验证顺序：单页冒烟 -> 定向 e2e -> 关键链路回归。
 - e2e 必须收集运行时错误日志，防止“页面可见但持续报错”。
 - 每个页面族独立提交，具备单独回滚能力。
+- 若迁移项目后续将交由 AI 继续维护，补充或校验项目级 `AGENTS.md` 是否已经把 `weapp-vite` / `wevu` 工作流写清楚。
 
 ## 约束
 
