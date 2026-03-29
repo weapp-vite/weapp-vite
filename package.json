@@ -129,6 +129,7 @@
     "seo:prepare": "pnpm seo-generate-llms-index && pnpm seo-quality-report",
     "community:showcase:sync": "node --import tsx scripts/sync-community-showcase.ts",
     "builtin": "tsx scripts/builtin.ts",
+    "docs:wechat:mirror": "node --import tsx ./scripts/wechat-docs-mirror/index.ts",
     "auto-import:components": "tsx scripts/update-auto-import-components.ts",
     "vite:patch": "tsx scripts/vite-patch.ts",
     "commitlint": "commitlint --edit"

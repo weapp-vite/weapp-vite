@@ -1,3 +1,10 @@
+function filterGeneratedWechatMirrorDocs(files) {
+  return files.filter((file) => {
+    return !file.includes('/docs/wechat-miniprogram/framework/')
+      && !file.startsWith('docs/wechat-miniprogram/framework/')
+  })
+}
+
 export default {
   'skills/**/*.{yaml,yml}': [
     'node skills/scripts/validate-skills-yaml.mjs',
@@ -6,10 +13,18 @@ export default {
     'eslint --fix --max-warnings=0 --no-warn-ignored',
   ],
   '!(apps)/**/*.{css,scss,vue}': ['stylelint --fix --allow-empty-input'],
-  '!(apps)/**/*.{json,md,mdx,html,yml,yaml}': [
-    // 'prettier --with-node-modules --ignore-path .prettierignore --write',
-    'eslint --fix --max-warnings=0 --no-warn-ignored',
-  ],
+  '!(apps)/**/*.{json,md,mdx,html,yml,yaml}': (files) => {
+    const lintableFiles = filterGeneratedWechatMirrorDocs(files)
+
+    if (lintableFiles.length === 0) {
+      return []
+    }
+
+    return [
+      // 'prettier --with-node-modules --ignore-path .prettierignore --write',
+      `eslint --fix --max-warnings=0 --no-warn-ignored ${lintableFiles.join(' ')}`,
+    ]
+  },
   // Rust 相关
   // '*.rs': ['cargo fmt --'],
 }
