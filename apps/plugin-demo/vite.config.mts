@@ -1,4 +1,4 @@
-const { defineConfig } = await import(/* @vite-ignore */ new URL('../../packages/weapp-vite/dist/config.mjs', import.meta.url).href)
+import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
   weapp: {
