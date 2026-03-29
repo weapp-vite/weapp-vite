@@ -32,7 +32,8 @@ pnpm ci               # CI build (excludes apps, templates, website)
 
 ### Testing
 ```bash
-pnpm test             # Run tests with coverage
+pnpm test             # Run tests
+pnpm test:coverage    # Run tests with coverage
 pnpm test:dev         # Watch mode for tests
 pnpm e2e              # Run E2E tests
 pnpm e2e:dev          # Watch mode for E2E tests

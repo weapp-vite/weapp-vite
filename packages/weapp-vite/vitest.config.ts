@@ -27,7 +27,6 @@ export default defineProject({
     testTimeout: 120_000,
     // @ts-ignore
     coverage: createProjectCoverage('packages/weapp-vite', {
-      enabled: true,
       all: false,
       clean: false,
       exclude: [
