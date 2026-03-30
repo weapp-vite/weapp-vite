@@ -306,6 +306,102 @@ describe('runtime npm service', () => {
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
   })
 
+  it('serializes local subpackage copies from the shared npm source cache', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'dayjs': '^1.11.13',
+        'tdesign-miniprogram': '^1.12.3',
+        'class-variance-authority': '^0.7.1',
+        'clsx': '^2.1.1',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+
+    const cachedSourceOutDir = path.resolve(cwd, 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'dayjs/index.js'), 'module.exports = "dayjs"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "drawer"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'class-variance-authority/index.js'), 'module.exports = "cva"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'clsx/index.js'), 'module.exports = "clsx"')
+
+    checkDependenciesCacheOutdateMock.mockImplementation(async (key?: string) => key !== '__all__')
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['dayjs', 'tdesign-miniprogram', 'clsx'],
+              },
+              packageB: {
+                dependencies: ['dayjs', 'tdesign-miniprogram', 'class-variance-authority'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['dayjs', 'tdesign-miniprogram', 'clsx'],
+            },
+          }],
+          ['packageB', {
+            subPackage: {
+              root: 'packageB',
+              dependencies: ['dayjs', 'tdesign-miniprogram', 'class-variance-authority'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const originalCopy = fs.copy.bind(fs)
+    let activeSharedCopy = 0
+    const copySpy = vi.spyOn(fs, 'copy').mockImplementation(async (src, dest, options) => {
+      const normalizedSrc = path.resolve(String(src))
+      if (normalizedSrc === cachedSourceOutDir) {
+        activeSharedCopy += 1
+        expect(activeSharedCopy).toBe(1)
+        await new Promise(resolve => setTimeout(resolve, 5))
+        try {
+          return await originalCopy(src, dest, options as any)
+        }
+        finally {
+          activeSharedCopy -= 1
+        }
+      }
+      return originalCopy(src, dest, options as any)
+    })
+
+    try {
+      const service = createNpmService(ctx)
+      await expect(service.build()).resolves.toBeUndefined()
+    }
+    finally {
+      copySpy.mockRestore()
+    }
+
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
+  })
+
   it('uses pluginPackage dependency scope in pluginOnly mode', async () => {
     const cwd = await createTempDir()
     const packageJson = {
