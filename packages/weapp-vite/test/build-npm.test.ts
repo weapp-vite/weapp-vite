@@ -53,6 +53,12 @@ describe('build-npm', () => {
 
     expect(
       await pathExists(
+        path.resolve(targetDir, 'dist/miniprogram_npm/es-toolkit/index.js'),
+      ),
+    ).toBe(true)
+
+    expect(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/tdesign-miniprogram'),
       ),
     ).toBe(true)
