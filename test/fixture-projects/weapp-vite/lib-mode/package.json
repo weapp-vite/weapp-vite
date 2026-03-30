@@ -1,14 +1,9 @@
 {
   "name": "weapp-vite-lib-mode-fixture",
   "type": "module",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "devDependencies": {
     "weapp-vite": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }

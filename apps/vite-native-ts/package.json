@@ -33,10 +33,5 @@
     "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "weapp-vite": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }

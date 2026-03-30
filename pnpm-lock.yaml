@@ -598,9 +598,6 @@ importers:
       antd-mini:
         specifier: 'catalog:'
         version: 3.4.3
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@mini-types/alipay':
         specifier: 'catalog:'
@@ -613,7 +610,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -632,9 +629,6 @@ importers:
         version: 6.0.2
 
   apps/mcp-demo:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -650,12 +644,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/multi-platform-demo:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -671,7 +662,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/multi-platform-wevu-tdesign-demo:
     dependencies:
@@ -681,9 +672,6 @@ importers:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
@@ -720,7 +708,7 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -739,9 +727,6 @@ importers:
       lodash:
         specifier: 'catalog:'
         version: 4.17.23
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -760,7 +745,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -778,9 +763,6 @@ importers:
   apps/rollup-watcher: {}
 
   apps/subpackage-shared-chunks:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -805,7 +787,7 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/tdesign-miniprogram-starter-retail:
     dependencies:
@@ -818,9 +800,6 @@ importers:
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -833,7 +812,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/vite-native:
     dependencies:
@@ -861,9 +840,6 @@ importers:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@vue/language-plugin-pug':
         specifier: ^3.2.6
@@ -927,12 +903,9 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/vite-native-skyline:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@vant/weapp':
         specifier: 'catalog:'
@@ -954,16 +927,13 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/vite-native-ts:
     dependencies:
       gm-crypto:
         specifier: 'catalog:'
         version: 0.1.12
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -973,16 +943,13 @@ importers:
         version: 5.1.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/vite-native-ts-skyline:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1004,12 +971,9 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/weapp-vite-web-demo:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1025,16 +989,13 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/weapp-wechat-zhihu:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1059,12 +1020,9 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/wevu-bug:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1080,7 +1038,7 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -1096,9 +1054,6 @@ importers:
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-core/schematics':
         specifier: workspace:*
@@ -1117,12 +1072,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
 
   apps/wevu-jsx-tsx-demo:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1138,15 +1090,12 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
 
   apps/wevu-runtime-demo:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1159,15 +1108,12 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
 
   apps/wevu-vue-demo:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@weapp-core/schematics':
         specifier: workspace:*
@@ -1186,15 +1132,12 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
 
   apps/wevu-vue-sfc-recording-demo:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       '@tailwindcss/vite':
         specifier: 'catalog:'
@@ -1219,7 +1162,7 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -2334,9 +2277,6 @@ importers:
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2349,12 +2289,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/auto-import:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2367,12 +2304,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/auto.import:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2385,12 +2319,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/basic:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2403,7 +2334,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/build-npm:
     dependencies:
@@ -2419,9 +2350,6 @@ importers:
       tdesign-miniprogram:
         specifier: ^1.6.1
         version: 1.13.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       autoprefixer:
         specifier: 'catalog:'
@@ -2437,12 +2365,9 @@ importers:
         version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/import-umd:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2455,78 +2380,57 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/independent-subpackage:
     dependencies:
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/lib-mode:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/loadDefaultConfig:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/mixjs:
     dependencies:
       tdesign-miniprogram:
         specifier: latest
         version: 1.13.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/multi-platform-config:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/project-config-filenames:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/resolve-deps:
     dependencies:
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2539,33 +2443,24 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/shared-chunk-modes:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/shared-chunks:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/style:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2578,16 +2473,13 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/subPackages:
     dependencies:
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2600,7 +2492,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/subPackages-dependencies:
     dependencies:
@@ -2616,9 +2508,6 @@ importers:
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2631,28 +2520,22 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/subPackages-shared-styles:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/subpackage-dayjs:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/subpackage-npm-no-main:
     dependencies:
@@ -2665,16 +2548,13 @@ importers:
       dayjs:
         specifier: ^1.11.13
         version: 1.11.20
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/subpackage-npm-normal:
     dependencies:
@@ -2690,33 +2570,24 @@ importers:
       tdesign-miniprogram:
         specifier: ^1.12.3
         version: 1.13.1
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/subpackage-root-util:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/tabbar-appbar:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2729,25 +2600,19 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/tsconfig-paths:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/watch:
     dependencies:
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2760,12 +2625,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/watch-no-npm:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2778,12 +2640,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/watch-no-subpackage:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2796,21 +2655,15 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/weapp-config:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/worker-shared:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2823,12 +2676,9 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   test/fixture-projects/weapp-vite/wxs-project:
-    dependenciesMeta:
-      weapp-vite:
-        injected: true
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
@@ -2841,7 +2691,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: link:../../../../packages/weapp-vite
 
   website:
     dependencies:
@@ -15326,11 +15176,6 @@ packages:
     engines: {node: ^18.17.0 || >=20.5.0}
     hasBin: true
 
-  weapp-vite@file:packages/weapp-vite:
-    resolution: {directory: packages/weapp-vite, type: directory}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    hasBin: true
-
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
@@ -20660,8 +20505,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.2(typescript@6.0.2)
+      '@typescript-eslint/types': 8.57.2
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:
@@ -30115,66 +29960,6 @@ snapshots:
       - magicast
       - supports-color
       - tailwindcss
-
-  weapp-vite@file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3):
-    dependencies:
-      '@vercel/detect-agent': 1.2.1
-      '@volar/typescript': 2.4.28
-      '@vue/language-core': 3.2.6
-      '@weapp-core/init': link:@weapp-core/init
-      '@weapp-core/logger': link:@weapp-core/logger
-      '@weapp-core/schematics': link:@weapp-core/schematics
-      '@weapp-core/shared': link:@weapp-core/shared
-      '@weapp-vite/ast': link:packages/ast
-      '@weapp-vite/mcp': link:packages/mcp
-      '@weapp-vite/volar': link:packages/volar
-      '@weapp-vite/web': link:packages/web
-      '@wevu/api': link:packages/weapi
-      cac: 7.0.0
-      chokidar: 5.0.0
-      comment-json: 4.6.2
-      debug: 4.4.3
-      fdir: 6.5.0(picomatch@4.0.4)
-      fs-extra: 11.3.4
-      htmlparser2: 12.0.0
-      local-pkg: 1.1.2
-      lru-cache: 11.2.7
-      magic-string: 0.30.21
-      merge: 2.1.1
-      p-queue: 9.1.0
-      package-manager-detector: 1.6.0
-      pathe: 2.0.3
-      picomatch: 4.0.4
-      postcss: 8.5.8
-      rolldown: 1.0.0-rc.11
-      rolldown-plugin-dts: 0.22.5(oxc-resolver@11.6.1)(rolldown@1.0.0-rc.11)(typescript@6.0.2)(vue-tsc@3.2.6(typescript@6.0.2))
-      rolldown-require: link:packages/rolldown-require
-      semver: 7.7.4
-      typescript: 6.0.2
-      vite: 8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
-      vite-plugin-performance: link:packages/vite-plugin-performance
-      vite-tsconfig-paths: 6.1.1(typescript@6.0.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3))
-      vue: 3.5.31(typescript@6.0.2)
-      vue-tsc: 3.2.6(typescript@6.0.2)
-      weapp-ide-cli: link:packages/weapp-ide-cli
-      wevu: link:packages/wevu
-    transitivePeerDependencies:
-      - '@ts-macro/tsc'
-      - '@types/node'
-      - '@typescript/native-preview'
-      - '@vitejs/devtools'
-      - esbuild
-      - jiti
-      - less
-      - oxc-resolver
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - yaml
 
   webidl-conversions@3.0.1: {}
 

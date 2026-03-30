@@ -1,16 +1,11 @@
 {
   "name": "independent-subpackage-fixture",
-  "private": true,
   "type": "module",
+  "private": true,
   "dependencies": {
     "class-variance-authority": "^0.7.1"
   },
   "devDependencies": {
     "weapp-vite": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }

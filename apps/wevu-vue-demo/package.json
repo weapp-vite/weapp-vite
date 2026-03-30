@@ -22,10 +22,5 @@
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }

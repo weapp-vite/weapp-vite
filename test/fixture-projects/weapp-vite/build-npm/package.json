@@ -37,10 +37,5 @@
     "tailwindcss": "catalog:tailwind3",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }
