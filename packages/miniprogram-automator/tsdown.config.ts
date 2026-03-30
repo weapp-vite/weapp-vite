@@ -5,6 +5,9 @@ export default defineConfig({
   format: ['esm', 'cjs'],
   dts: true,
   clean: true,
+  deps: {
+    onlyBundle: false,
+  },
   target: 'node20',
   failOnWarn: false,
   sourcemap: true,
