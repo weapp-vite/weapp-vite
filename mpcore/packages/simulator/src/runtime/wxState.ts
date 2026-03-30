@@ -570,16 +570,16 @@ export function createHeadlessWxState() {
     }
     ensureDirectoryTree(normalizedNewPath)
     files.set(normalizedNewPath, fileContent)
-    if (savedFile && isSavedFilePath(normalizedNewPath)) {
+    if (targetSavedFile) {
       savedFiles.set(normalizedNewPath, {
-        ...savedFile,
-        filePath: normalizedNewPath,
+        ...targetSavedFile,
         size: fileContent.length,
       })
     }
-    else if (targetSavedFile) {
+    else if (savedFile && isSavedFilePath(normalizedNewPath)) {
       savedFiles.set(normalizedNewPath, {
-        ...targetSavedFile,
+        ...savedFile,
+        filePath: normalizedNewPath,
         size: fileContent.length,
       })
     }

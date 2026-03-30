@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import { cleanupTempDirs, createBaseFixture, createComponentFixture, createComponentLifecycleFixture, createNavigationFixture, createSelectorQueryFixture } from './helpers'
 
@@ -15,6 +15,7 @@ describe('HeadlessSession', () => {
 
   afterEach(() => {
     cleanupTempDirs(tempDirs)
+    vi.restoreAllMocks()
   })
 
   it('bootstraps a built app and reLaunches a page', () => {
@@ -1732,12 +1733,18 @@ Page({
 `)
     writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-rename-createtime</view>')
 
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(101)
+      .mockReturnValueOnce(202)
+      .mockReturnValue(303)
+
     const session = createHeadlessSession({ projectPath: root })
     const page = session.reLaunch('/pages/index/index')
     page.runSavedRenameOverwriteCreateTimeLab()
 
     const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
     const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(beforeInfo.createTime).toBe(202)
     expect(afterInfo.createTime).toBe(beforeInfo.createTime)
     expect(afterInfo.size).toBe(10)
   })
@@ -1787,12 +1794,18 @@ Page({
 `)
     writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-savefile-createtime</view>')
 
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(111)
+      .mockReturnValueOnce(222)
+      .mockReturnValue(333)
+
     const session = createHeadlessSession({ projectPath: root })
     const page = session.reLaunch('/pages/index/index')
     page.runSavedSaveFileOverwriteCreateTimeLab()
 
     const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
     const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(beforeInfo.createTime).toBe(111)
     expect(afterInfo.createTime).toBe(beforeInfo.createTime)
     expect(afterInfo.size).toBe(10)
   })

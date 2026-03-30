@@ -27,6 +27,7 @@ async function createTempProject() {
   const resolverEntry = pathToFileURL(path.resolve(__dirname, '../../src/auto-import-components/resolvers/index.ts')).href
   const configContent = await fs.readFile(configPath, 'utf8')
   const nextContent = configContent
+    .replace(/from ['"]weapp-vite['"]/g, `from '${configEntry}'`)
     .replace(/from ['"]weapp-vite\/config['"]/g, `from '${configEntry}'`)
     .replace(/from ['"]weapp-vite\/auto-import-components\/resolvers['"]/g, `from '${resolverEntry}'`)
     .replace(/from ['"]pathe['"]/g, `from 'node:path'`)
