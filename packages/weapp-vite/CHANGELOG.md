@@ -1,5 +1,23 @@
 # weapp-vite
 
+## 6.12.1
+
+### Patch Changes
+
+- 🐛 **增强 `weapp-vite` 随包发布的 `dist/docs` 文档包，新增面向 AI 与离线开发的本地文档入口，覆盖 CLI 快速开始、AI 工作流、项目结构、`weapp` 配置、wevu 编写约束、Vue SFC 约束与常见排障说明。** [`3a54e73`](https://github.com/weapp-vite/weapp-vite/commit/3a54e733aac632d96a00d75fb334c52f75572bb3) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 配置加载与测试夹具清理行为。现在 `loadViteConfigFile` 与 CLI 默认使用 Vite 的 `bundle` 配置加载器，以提升 `vite.config.*` / `weapp-vite.config.*` 在不同 ESM/CJS 场景下的兼容性；同时调整仓库级 Vitest 全局清理逻辑，只清理真实临时输出，避免在执行 `pnpm test` 时误删已跟踪的 fixture `dist-*` 快照产物，并为夹具目录补充局部 `.gitignore` 来消除未跟踪测试生成物噪音。** [`4a683ed`](https://github.com/weapp-vite/weapp-vite/commit/4a683edd0b218b8c7061414129ca63fc32ae7c2d) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 在复杂测试并发场景下读取 `vite.config.*` / `weapp-vite.config.*` 时，对 `weapp-vite/config` 与 `weapp-vite/auto-import-components/resolvers` 的解析不稳定问题。现在会在加载配置时生成进程级临时 shim，避免依赖易被并发测试清理的 `dist` 产物，并统一覆盖显式配置路径与自动发现配置路径，确保 `pnpm test` 与真实 CLI / 运行时配置加载都能稳定工作。** [`26895f0`](https://github.com/weapp-vite/weapp-vite/commit/26895f09c5f15c8039c4bcf4574627b3ed11602f) by @sonofmagic
+
+- 🐛 **修复 monorepo 并行构建时 npm 依赖共享缓存目录的竞争问题。此前部分 workspace fixture 会把 `node_modules/weapp-vite/.cache/npm-source` 解析到同一个 `packages/weapp-vite` 实体目录，导致不同项目同时构建时互相覆盖缓存。现在共享 npm source cache 改为写入各项目自己的 `.weapp-vite/npm-source` 目录，避免跨项目串扰，并补充对应单测覆盖新的缓存路径解析。** [#372](https://github.com/weapp-vite/weapp-vite/pull/372) by @Sun79
+
+- 🐛 **移除 `loadViteConfigFile` 中把 `weapp-vite/*` 子路径导入重写到当前仓库 `packages/weapp-vite/dist/*` 的内部耦合逻辑，避免源码实现绑定 monorepo 目录结构。现在配置加载不再依赖仓库内绝对路径，行为更接近已发布包的真实解析方式。** [`ef0bb34`](https://github.com/weapp-vite/weapp-vite/commit/ef0bb3483bd2ec8ea36317938ea9ac25afa83d51) by @sonofmagic
+
+- 🐛 **修复配置加载与仓库构建稳定性问题。`weapp-vite` 现在默认使用原生 ESM 方式加载 `vite.config.ts` / `weapp-vite.config.ts`，避免在配置阶段错误走到 `require` 链路；同时仓库内示例、模板与测试夹具统一改为从 `weapp-vite` 根入口导入 `defineConfig` 等导出。另一个修复是为测试夹具补齐唯一的 workspace 名称，避免 `turbo` 在 monorepo 构建时因重复包名直接中断。** [`270e7e4`](https://github.com/weapp-vite/weapp-vite/commit/270e7e4a2dd929182b6fc3392fd98b7a7e35591e) by @sonofmagic
+- 📦 **Dependencies** [`d497011`](https://github.com/weapp-vite/weapp-vite/commit/d497011547136850c80f6d34492e75ede165bf9e)
+  → `wevu@6.12.1`, `weapp-ide-cli@5.1.3`, `@weapp-vite/ast@6.12.1`
+
 ## 6.12.0
 
 ### Patch Changes
