@@ -19,7 +19,14 @@ async function createTempProject() {
       if (!relative) {
         return true
       }
-      return !(relative === 'dist' || relative.startsWith('dist/'))
+      return !(
+        relative === 'dist'
+        || relative.startsWith('dist/')
+        || relative === 'node_modules'
+        || relative.startsWith('node_modules/')
+        || relative === '.weapp-vite'
+        || relative.startsWith('.weapp-vite/')
+      )
     },
   })
   const configPath = path.resolve(cwd, 'vite.config.ts')

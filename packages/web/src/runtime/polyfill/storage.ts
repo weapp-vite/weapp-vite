@@ -2,8 +2,17 @@ const WEB_STORAGE_PREFIX = '__weapp_vite_web_storage__:'
 const WEB_STORAGE_LIMIT_SIZE_KB = 10240
 const memoryStorage = new Map<string, any>()
 
+function isRuntimeStorageLike(value: unknown): value is Storage {
+  return !!value
+    && typeof value === 'object'
+    && typeof (value as Storage).getItem === 'function'
+    && typeof (value as Storage).setItem === 'function'
+    && typeof (value as Storage).removeItem === 'function'
+    && typeof (value as Storage).key === 'function'
+}
+
 function getRuntimeStorage() {
-  if (typeof localStorage === 'undefined') {
+  if (typeof localStorage === 'undefined' || !isRuntimeStorageLike(localStorage)) {
     return undefined
   }
   return localStorage
