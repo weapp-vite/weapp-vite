@@ -45,6 +45,9 @@ jobs:
       - name: Build package artifacts for CLI e2e
         run: pnpm build:pkgs
 
+      - name: Refresh injected workspace dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Increase file descriptor limit
         if: runner.os != 'Windows'
         run: ulimit -n 65536 || true
@@ -79,6 +82,9 @@ jobs:
 
       - name: Build package artifacts for CLI e2e
         run: pnpm build:pkgs
+
+      - name: Refresh injected workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Chromium
         run: pnpm exec playwright install chromium

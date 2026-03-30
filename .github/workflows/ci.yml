@@ -47,6 +47,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build weapp-vite artifacts for injected workspace dependencies
+        run: pnpm --filter weapp-vite... build
+
+      - name: Refresh injected workspace dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Lint
         run: pnpm lint
 
