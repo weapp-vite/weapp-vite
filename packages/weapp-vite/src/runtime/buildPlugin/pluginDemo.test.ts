@@ -2,6 +2,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '../../createContext'
+import { ensureWorkspacePackageLink } from '../../../test/utils'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../../../../apps/plugin-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
@@ -18,6 +19,8 @@ describe('plugin-demo build regression', () => {
   })
 
   it('emits isolated app/plugin outputs with plugin exports preserved', async () => {
+    await ensureWorkspacePackageLink(APP_ROOT)
+
     const ctx = await createCompilerContext({
       cwd: APP_ROOT,
       isDev: false,

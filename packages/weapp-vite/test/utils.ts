@@ -1,4 +1,5 @@
 import type { LoadConfigOptions } from '../src/context'
+import { lstat, mkdir, readlink, rm, symlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { fdir } from 'fdir'
 import path from 'pathe'
@@ -7,6 +8,8 @@ import { createCompilerContext } from '../src/createContext'
 
 export const appsDir = path.resolve(__dirname, '../../../apps')
 export const templatesDir = path.resolve(__dirname, '../../../templates')
+export const projectFixturesDir = path.resolve(__dirname, '../../../test/fixture-projects/weapp-vite')
+const workspaceWeappViteDir = path.resolve(__dirname, '..')
 
 export function getApp(app: string) {
   const appRoot = path.resolve(appsDir, app)
@@ -26,10 +29,8 @@ export function getApp(app: string) {
   return templateRoot
 }
 
-const fixturesDir = path.resolve(__dirname, './fixtures')
-
 export function getFixture(dir: string) {
-  return path.resolve(fixturesDir, dir)
+  return path.resolve(projectFixturesDir, dir)
 }
 
 export const dirs = [
@@ -87,10 +88,35 @@ export function createTask() {
 
 let contextCounter = 0
 
+export async function ensureWorkspacePackageLink(projectRoot: string, packageName = 'weapp-vite') {
+  const projectNodeModulesDir = path.join(projectRoot, 'node_modules')
+  if (packageName !== 'weapp-vite') {
+    return
+  }
+
+  const packageRoot = path.join(projectNodeModulesDir, packageName)
+  const existingStat = await lstat(packageRoot).catch(() => null)
+  if (existingStat?.isSymbolicLink()) {
+    const currentTarget = await readlink(packageRoot).catch(() => '')
+    if (path.resolve(projectNodeModulesDir, currentTarget) === workspaceWeappViteDir) {
+      return
+    }
+  }
+  if (existingStat) {
+    await rm(packageRoot, { recursive: true, force: true })
+  }
+
+  await mkdir(projectNodeModulesDir, { recursive: true })
+  await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
+}
+
 export async function createTestCompilerContext(
   options: Partial<LoadConfigOptions> & { key?: string } = {},
 ) {
   const key = options.key ?? `vitest-context-${++contextCounter}`
+  if (options.cwd) {
+    await ensureWorkspacePackageLink(options.cwd)
+  }
   resetCompilerContext(key)
   const ctx = await createCompilerContext({ ...options, key })
 

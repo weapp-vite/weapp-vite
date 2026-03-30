@@ -22,7 +22,14 @@ describe.skipIf(CI.isCI)('auto-import', () => {
         if (!relative) {
           return true
         }
-        return !(relative === 'dist' || relative.startsWith('dist/'))
+        return !(
+          relative === 'node_modules'
+          || relative.startsWith('node_modules/')
+          || relative === 'dist'
+          || relative.startsWith('dist/')
+          || relative === '.weapp-vite'
+          || relative.startsWith('.weapp-vite/')
+        )
       },
     })
     distDir = path.resolve(tempDir, 'dist')

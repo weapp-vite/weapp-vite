@@ -2,7 +2,24 @@ import path from 'node:path'
 import { defineProject } from 'vitest/config'
 import { createProjectCoverage } from '../../vitest.coverage'
 
+const projectTestIncludes = [
+  'test/**/*.test.ts',
+  'test/**/*.spec.ts',
+  'src/**/*.test.ts',
+  'src/**/*.spec.ts',
+]
+
+const projectTestExcludes = [
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/dist-*/**',
+  '**/.weapp-vite/**',
+  '**/coverage/**',
+]
+
 const serialTestFiles = [
+  'test/**/*.test.ts',
+  'test/**/*.spec.ts',
   'test/asset.test.ts',
   'test/auto-import.test.ts',
   'test/auto.import.test.ts',
@@ -48,6 +65,7 @@ const serialTestFiles = [
   'src/runtime/buildPlugin/pluginDemo.test.ts',
   'src/runtime/lib.test.ts',
   'src/runtime/libDts.test.ts',
+  'src/runtime/config/internal/loadConfig.test.ts',
   'src/runtime/npmPlugin/builder.alipay.test.ts',
   'src/runtime/npmPlugin/builder.alipayTemplate.test.ts',
   'src/runtime/npmPlugin/builder.concurrent.test.ts',
@@ -56,6 +74,14 @@ const serialTestFiles = [
   'src/runtime/scanPlugin/styleEntries/entries.test.ts',
   'src/runtime/scanPlugin/styleEntries/index.test.ts',
   'src/runtime/webPlugin.test.ts',
+  'src/runtime/__tests__/buildService.test.ts',
+  'src/cli/analyze/dashboard.test.ts',
+  'src/cli/loadConfig.test.ts',
+  'src/plugins/css/shared/preprocessor.test.ts',
+  'src/runtime/buildPlugin/independent.test.ts',
+  'src/runtime/buildPlugin/service.test.ts',
+  'src/runtime/buildPlugin/workers.test.ts',
+  'src/runtime/npmPlugin/builder.define.test.ts',
 ]
 
 const sharedCoverageOptions = {
@@ -71,7 +97,12 @@ export default defineProject({
     'process.env.__TEST__': JSON.stringify(true),
   },
   test: {
+    sequence: {
+      groupOrder: 100,
+    },
     dir: __dirname,
+    include: projectTestIncludes,
+    exclude: projectTestExcludes,
     alias: [
       {
         find: '@/',
@@ -102,7 +133,14 @@ export default defineProject({
         extends: true,
         test: {
           name: 'weapp-vite-fast',
-          exclude: serialTestFiles,
+          sequence: {
+            groupOrder: 100,
+          },
+          include: projectTestIncludes,
+          exclude: [
+            ...projectTestExcludes,
+            ...serialTestFiles,
+          ],
           // @ts-ignore
           coverage: createProjectCoverage('packages/weapp-vite/fast', sharedCoverageOptions),
         },
@@ -111,6 +149,10 @@ export default defineProject({
         extends: true,
         test: {
           name: 'weapp-vite-serial',
+          sequence: {
+            groupOrder: 101,
+          },
+          exclude: projectTestExcludes,
           include: serialTestFiles,
           fileParallelism: false,
           // @ts-ignore

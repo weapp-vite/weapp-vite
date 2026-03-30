@@ -1,0 +1,13 @@
+{
+  "name": "fixture-tsconfig-paths",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
+  }
+}

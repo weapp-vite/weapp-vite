@@ -27,5 +27,10 @@
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
   }
 }

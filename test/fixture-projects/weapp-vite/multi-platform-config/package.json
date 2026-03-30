@@ -1,0 +1,13 @@
+{
+  "name": "fixture-multi-platform-config",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
+  }
+}

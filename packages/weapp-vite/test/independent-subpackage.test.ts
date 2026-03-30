@@ -9,7 +9,23 @@ describe.skip('independent subpackage diagnostics', () => {
     const tempRoot = path.resolve(fixtureSource, '..', '__temp__')
     await fs.ensureDir(tempRoot)
     const tempDir = await fs.mkdtemp(path.join(tempRoot, 'independent-subpackage-'))
-    await fs.copy(fixtureSource, tempDir, { dereference: true })
+    await fs.copy(fixtureSource, tempDir, {
+      dereference: true,
+      filter: (src) => {
+        const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
+        if (!relative) {
+          return true
+        }
+        return !(
+          relative === 'node_modules'
+          || relative.startsWith('node_modules/')
+          || relative === 'dist'
+          || relative.startsWith('dist/')
+          || relative === '.weapp-vite'
+          || relative.startsWith('.weapp-vite/')
+        )
+      },
+    })
     expect(await fs.pathExists(path.join(tempDir, 'src/app.json'))).toBe(true)
 
     const { ctx, dispose } = await createTestCompilerContext({

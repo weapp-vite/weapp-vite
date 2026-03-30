@@ -26,5 +26,10 @@
     "miniprogram-api-typings": "catalog:",
     "typescript": "catalog:",
     "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
   }
 }

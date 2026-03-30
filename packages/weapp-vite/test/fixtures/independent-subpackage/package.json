@@ -1,8 +1,0 @@
-{
-  "name": "independent-subpackage-fixture",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "class-variance-authority": "^0.7.1"
-  }
-}
