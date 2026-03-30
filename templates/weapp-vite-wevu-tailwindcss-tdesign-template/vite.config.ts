@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
-import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 import { defineConfig } from 'weapp-vite'
+import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 
 export default defineConfig({
   resolve: {
