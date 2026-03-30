@@ -55,7 +55,14 @@ describe('autoImportService', () => {
         if (!relative) {
           return true
         }
-        return !(relative === 'dist' || relative.startsWith('dist/'))
+        return !(
+          relative === 'node_modules'
+          || relative.startsWith('node_modules/')
+          || relative === 'dist'
+          || relative.startsWith('dist/')
+          || relative === '.weapp-vite'
+          || relative.startsWith('.weapp-vite/')
+        )
       },
     })
     cwd = tempDir

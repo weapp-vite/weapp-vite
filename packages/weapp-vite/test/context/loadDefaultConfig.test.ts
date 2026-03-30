@@ -1,17 +1,14 @@
 import { omit } from 'lodash'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
+import { projectFixturesDir } from '../utils'
 
-const fixturesDir = path.resolve(__dirname, '../fixtures/loadDefaultConfig')
-
-function getFixture(dir: string) {
-  return path.resolve(fixturesDir, dir)
-}
+const fixturesDir = path.resolve(projectFixturesDir, 'loadDefaultConfig')
 
 describe.skip('loadDefaultConfig', () => {
   it('compilerContext', async () => {
     const ctx = await createCompilerContext({
-      cwd: getFixture('case0'),
+      cwd: path.resolve(fixturesDir, 'case0'),
     })
     delete (ctx.configService.options as any).cwd
     delete (ctx.configService.options as any).packageJsonPath

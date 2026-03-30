@@ -601,6 +601,9 @@ importers:
       antd-mini:
         specifier: 'catalog:'
         version: 3.4.3
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@mini-types/alipay':
         specifier: 'catalog:'
@@ -613,7 +616,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -632,6 +635,9 @@ importers:
         version: 6.0.2
 
   apps/mcp-demo:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -647,9 +653,12 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/multi-platform-demo:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -665,7 +674,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/multi-platform-wevu-tdesign-demo:
     dependencies:
@@ -675,6 +684,9 @@ importers:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
@@ -711,7 +723,7 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -730,6 +742,9 @@ importers:
       lodash:
         specifier: 'catalog:'
         version: 4.17.23
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -748,7 +763,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -766,6 +781,9 @@ importers:
   apps/rollup-watcher: {}
 
   apps/subpackage-shared-chunks:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -790,7 +808,7 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/tdesign-miniprogram-starter-retail:
     dependencies:
@@ -803,6 +821,9 @@ importers:
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -815,7 +836,7 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/vite-native:
     dependencies:
@@ -843,6 +864,9 @@ importers:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@vue/language-plugin-pug':
         specifier: ^3.2.6
@@ -906,9 +930,12 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/vite-native-skyline:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@vant/weapp':
         specifier: 'catalog:'
@@ -930,13 +957,16 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/vite-native-ts:
     dependencies:
       gm-crypto:
         specifier: 'catalog:'
         version: 0.1.12
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -946,13 +976,16 @@ importers:
         version: 5.1.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/vite-native-ts-skyline:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -974,9 +1007,12 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/weapp-vite-web-demo:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -992,13 +1028,16 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/weapp-wechat-zhihu:
     dependencies:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1023,9 +1062,12 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/wevu-bug:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1041,7 +1083,7 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -1057,6 +1099,9 @@ importers:
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-core/schematics':
         specifier: workspace:*
@@ -1075,9 +1120,12 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/wevu-jsx-tsx-demo:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1093,12 +1141,15 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
 
   apps/wevu-runtime-demo:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-vite/dashboard':
         specifier: workspace:*
@@ -1111,12 +1162,15 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
 
   apps/wevu-vue-demo:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@weapp-core/schematics':
         specifier: workspace:*
@@ -1135,12 +1189,15 @@ importers:
         version: 6.0.2
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
 
   apps/wevu-vue-sfc-recording-demo:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
     devDependencies:
       '@tailwindcss/vite':
         specifier: 'catalog:'
@@ -1165,7 +1222,7 @@ importers:
         version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
-        version: link:../../packages/weapp-vite
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
@@ -2256,6 +2313,520 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
+  test/fixture-projects/weapp-vite/asset:
+    dependencies:
+      gm-crypto:
+        specifier: ^0.1.12
+        version: 0.1.12
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/auto-import:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/auto.import:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/basic:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/build-npm:
+    dependencies:
+      '@vant/weapp':
+        specifier: ^1.11.6
+        version: 1.11.7
+      gm-crypto:
+        specifier: ^0.1.12
+        version: 0.1.12
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.23
+      tdesign-miniprogram:
+        specifier: ^1.6.1
+        version: 1.13.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.4.27(postcss@8.5.8)
+      postcss:
+        specifier: ^8.4.47
+        version: 8.5.8
+      tailwindcss:
+        specifier: ^3.4.13
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+      weapp-tailwindcss:
+        specifier: ^3.5.2
+        version: 3.7.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/import-umd:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/independent-subpackage:
+    dependencies:
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/lib-mode:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/loadDefaultConfig:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/mixjs:
+    dependencies:
+      tdesign-miniprogram:
+        specifier: latest
+        version: 1.13.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/multi-platform-config:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/project-config-filenames:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/resolve-deps:
+    dependencies:
+      gm-crypto:
+        specifier: ^0.1.12
+        version: 0.1.12
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/shared-chunk-modes:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/shared-chunks:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/style:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/subPackages:
+    dependencies:
+      gm-crypto:
+        specifier: ^0.1.12
+        version: 0.1.12
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/subPackages-dependencies:
+    dependencies:
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      dayjs:
+        specifier: ^1.11.13
+        version: 1.11.20
+      gm-crypto:
+        specifier: ^0.1.12
+        version: 0.1.12
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/subPackages-shared-styles:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/subpackage-dayjs:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/subpackage-npm-no-main:
+    dependencies:
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      dayjs:
+        specifier: ^1.11.13
+        version: 1.11.20
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/subpackage-npm-normal:
+    dependencies:
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      dayjs:
+        specifier: ^1.11.13
+        version: 1.11.20
+      tdesign-miniprogram:
+        specifier: ^1.12.3
+        version: 1.13.1
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/subpackage-root-util:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/tabbar-appbar:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/tsconfig-paths:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/watch:
+    dependencies:
+      gm-crypto:
+        specifier: ^0.1.12
+        version: 0.1.12
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/watch-no-npm:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/watch-no-subpackage:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/weapp-config:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/worker-shared:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  test/fixture-projects/weapp-vite/wxs-project:
+    dependenciesMeta:
+      weapp-vite:
+        injected: true
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: ^4.0.5
+        version: 4.0.8
+      sass:
+        specifier: ^1.84.0
+        version: 1.98.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.8.2
+      weapp-vite:
+        specifier: workspace:*
+        version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+
   website:
     dependencies:
       '@iconify/vue':
@@ -2430,6 +3001,10 @@ packages:
     resolution: {integrity: sha512-CGOfOJqWjg2qW/Mb6zNsDm+u5vFQ8DxXfbM09z69p5Z6+mE1ikP2jUXw+j42Pf1XTYED2Rni5f95npYeuwMDQA==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/generator@7.26.10':
+    resolution: {integrity: sha512-rRHT8siFIXQrAYOYqZQVsAr8vJ+cBNqcVAY6m5V8/4QqzaPl+zDBe6cLEPRDuNOUf3ww8RfJVlOyQMoSI+5Ang==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/generator@7.29.1':
     resolution: {integrity: sha512-qsaF+9Qcm2Qv8SRIMMscAvG4O3lJ0F1GuMo5HR/Bp02LopNgnZBC/EkbevHFeGs4ls/oPz9v+Bsmzbkbe+0dUw==}
     engines: {node: '>=6.9.0'}
@@ -2562,6 +3137,11 @@ packages:
   '@babel/helpers@7.28.6':
     resolution: {integrity: sha512-xOBvwq86HHdB7WUDTfKfT/Vuxh7gElQ+Sfti2Cy6yIWNW05P8iUslOVcZ4/sKbE+/jQaukQAdz/gf3724kYdqw==}
     engines: {node: '>=6.9.0'}
+
+  '@babel/parser@7.26.10':
+    resolution: {integrity: sha512-6aQR2zGE/QFi8JpDLjUZEPYOs7+mhKXm86VaKFiLP35JQwQb6bwUE+XbvkH0EptsYhbNBSUGaUBLKqxH1xSgsA==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
 
   '@babel/parser@7.29.2':
     resolution: {integrity: sha512-4GgRzy/+fsBa72/RZVJmGKPmZu9Byn8o4MoLpmNe1m8ZfYnz5emHLQz3U4gLud6Zwl0RZIcgiLD7Uq7ySFuDLA==}
@@ -2987,8 +3567,16 @@ packages:
     resolution: {integrity: sha512-YA6Ma2KsCdGb+WC6UpBVFJGXL58MDA6oyONbjyF/+5sBgxY/dwkhLogbMT2GXXyU84/IhRw/2D1Os1B/giz+BQ==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/traverse@7.25.9':
+    resolution: {integrity: sha512-ZCuvfwOwlz/bawvAuvcj8rrithP2/N55Tzz342AkTvq4qaWbGfmCk/tKhNaV2cthijKrPAA8SRJV5WWe7IBMJw==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/traverse@7.29.0':
     resolution: {integrity: sha512-4HPiQr0X7+waHfyXPZpWPfWL/J7dcN1mx9gL6WdQVMbPnF3+ZhSMs8tCxN7oHddJE9fhNE7+lxdnlyemKfJRuA==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/types@7.26.10':
+    resolution: {integrity: sha512-emqcG3vHrpxUKTrxcblR36dcrcoRDvKmnL/dCL6ZsHaShW80qxCAcNhzQZrpeM765VzEos+xOi4s+r4IXzTwdQ==}
     engines: {node: '>=6.9.0'}
 
   '@babel/types@7.29.0':
@@ -4837,6 +5425,10 @@ packages:
     resolution: {integrity: sha512-xhfYPXoV5Dy4UkY0D+v2KkwvnDfiA/8Mt3sWCGI/hM03NsYIH8ZaG6QzS9x7pje5vHZBZJ2v6VRFVTWACnqcmQ==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
+  '@npmcli/redact@3.2.2':
+    resolution: {integrity: sha512-7VmYAmk4csGv08QzrDKScdzn11jHPFGyqJW39FyPgPuAp3zIaUmuCo1yxw9aGs+NEJuTGQ9Gwqpt93vtJubucg==}
+    engines: {node: ^18.17.0 || >=20.5.0}
+
   '@ota-meshi/ast-token-store@0.3.0':
     resolution: {integrity: sha512-XRO0zi2NIUKq2lUk3T1ecFSld1fMWRKE6naRFGkgkdeosx7IslyUKNv5Dcb5PJTja9tHJoFu0v/7yEpAkrkrTg==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
@@ -6490,11 +7082,17 @@ packages:
   '@sxzz/popperjs-es@2.11.8':
     resolution: {integrity: sha512-wOwESXvvED3S8xBmcPWHs2dUuzrE4XiZeFu7e1hROIJkm02a49N120pmOXxY33sBb6hArItm5W5tcg1cBtV+HQ==}
 
+  '@tailwindcss-mangle/config@4.0.1':
+    resolution: {integrity: sha512-THTt0vKjcXt7ETLRlq5afIgTkdtsyr/S25bD6zi7kuteZQcDTDV3N48ImLqOA5uC9kAIkQDDIJpC5dP+66vgew==}
+
   '@tailwindcss-mangle/config@6.1.3':
     resolution: {integrity: sha512-e0wj/R582uyrqMLYDDyfl0BfysybOA1PiP0ChxQVch1JWxkLxM0SB7Nb6Cq0jiSYugX5hGfSV1UEqLhM0Q9PTQ==}
 
   '@tailwindcss-mangle/config@7.0.0':
     resolution: {integrity: sha512-84hj89cUXzmnAlWLe7gEfYDwptbMDVjjj1s1NWoGIZfucADayh/DI1pcxdcoLKRF8caKj21NglnGxrvo1wZTfw==}
+
+  '@tailwindcss-mangle/shared@4.0.2':
+    resolution: {integrity: sha512-gteSOKjrr2b6ifFix4fdSAhgw8knq0R1o4NVRJt+mAEMgTSpIkar9gRb9n9DD3xH55MWgyBJ5hw08vtutkq59w==}
 
   '@tailwindcss-mangle/shared@4.1.4':
     resolution: {integrity: sha512-3M5qs1w69srAPCs0uUE2+mubg1tu1UmXN/O+0oa9XQoTlCMnLnc3oWJpRJPp1x/wZkzf9FMhmM8QQoD7k3OZyA==}
@@ -7329,6 +7927,9 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
+  '@weapp-core/escape@2.1.0':
+    resolution: {integrity: sha512-nloTsMWy6nIT5X8HYTaqIlU1ILLmQbM+n5XwGPzLEtkGCTtpCUsjobRSjkuWiozOaFyoM7SZkwQETF9syCD55g==}
+
   '@weapp-core/escape@7.0.0':
     resolution: {integrity: sha512-xMiRT/54YCuyXGXC6ozxmoF+wmnnPJNbouRaAhGLl1jBKsLqtkeILYU5/tGDtfJPxwKcQEFeDuaSmnMHaU3myg==}
 
@@ -7861,6 +8462,14 @@ packages:
   bytesish@0.4.4:
     resolution: {integrity: sha512-i4uu6M4zuMUiyfZN4RU2+i9+peJh//pXhd9x1oSe1LBkZ3LEbCoygu8W0bXTukU1Jme2txKuotpCZRaC3FLxcQ==}
 
+  c12@2.0.4:
+    resolution: {integrity: sha512-3DbbhnFt0fKJHxU4tEUPmD1ahWE4PWPMomqfYsTJdrhpmEnRKJi3qSC4rO5U6E6zN1+pjBY7+z8fUmNRMaVKLw==}
+    peerDependencies:
+      magicast: ^0.3.5
+    peerDependenciesMeta:
+      magicast:
+        optional: true
+
   c12@3.3.3:
     resolution: {integrity: sha512-750hTRvgBy5kcMNPdh95Qo+XUBeGo8C7nsKSmedDmaQI+E0r82DwHeM6vBewDe4rGFbnxoa4V9pw+sPh5+Iz8Q==}
     peerDependencies:
@@ -7978,6 +8587,9 @@ packages:
 
   chardet@2.1.1:
     resolution: {integrity: sha512-PsezH1rqdV9VvyNhxxOW32/d75r01NY7TQCmOqomRo15ZSOKbpTFVsfjghxo6JloQUCGnH4k1LGu0R4yCLlWQQ==}
+
+  charenc@0.0.2:
+    resolution: {integrity: sha512-yrLQ/yVUFXkzg7EDQsPieE/53+0RlaWTs+wBrvW36cyilJ2SaDWfl4Yj7MtLTXleV9uEKefbAGUPv2/iWSooRA==}
 
   cheerio-select@2.1.0:
     resolution: {integrity: sha512-9v9kG0LvzrlcungtnJtpGNxY+fzECQKhK4EGJX2vByejiMX84MFNQw4UxPJl3bFbTMw+Dfs37XaIkCwTZfLh4g==}
@@ -8332,6 +8944,9 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
+  crypt@0.0.2:
+    resolution: {integrity: sha512-mCxBlsHFYh9C+HVpiEacem8FEBnMXgU9gy4zmNC+SXAZNB/1idgp/aulFJ4FgCi7GPEVbfyng092GqL2k2rmow==}
+
   crypto-es@3.1.3:
     resolution: {integrity: sha512-NtOYHzTz98pZFeC2Tytv15mijxrdo+7cgUD3LmYPkJQ8DWauCo1ObOOBJFHzE3DnzPTn27UzcfPy/7qUTrFH7g==}
     engines: {node: '>=18.0.0'}
@@ -8635,6 +9250,15 @@ packages:
       supports-color:
         optional: true
 
+  debug@4.3.7:
+    resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
@@ -8828,6 +9452,10 @@ packages:
   dot-prop@5.3.0:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
+
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
 
   dotenv@17.3.1:
     resolution: {integrity: sha512-IO8C/dzEb6O3F9/twg6ZLXz164a2fhTnEWb95H23Dm4OuN+92NmEAlTrupP9VW6Jm3sO26tQlqyvyi4CsnY9GA==}
@@ -9840,6 +10468,10 @@ packages:
   getpass@0.1.7:
     resolution: {integrity: sha512-0fzj9JxOLfJ+XGLhR8ze3unN0KZCgZwiSSDz168VERjK8Wl8kVSdcu2kspd4s4wtAa1y/qrVRiAA0WclVsu0ng==}
 
+  giget@1.2.5:
+    resolution: {integrity: sha512-r1ekGw/Bgpi3HLV3h1MRBIlSAdHoIMklpaQ3OQLFcRw9PwAj2rqigvIbg+dBUI51OxVI2jsEtDywDBjSiuf7Ug==}
+    hasBin: true
+
   giget@2.0.0:
     resolution: {integrity: sha512-L5bGsVkxJbJgdnwyuheIunkGatUF/zssUoxxjACCseZYAVbaqdh9Tsmmlkl8vYan09H7sbvKt4pS8GqKLBrEzA==}
     hasBin: true
@@ -9903,6 +10535,10 @@ packages:
 
   global@4.4.0:
     resolution: {integrity: sha512-wv/LAoHdRE3BeTGz53FAamhGlPLhlssK45usmGFThIi4XqnBmjKQ16u+RNbP7WvigRZDxUsM0J3gcQ5yicaL0w==}
+
+  globals@11.12.0:
+    resolution: {integrity: sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==}
+    engines: {node: '>=4'}
 
   globals@15.15.0:
     resolution: {integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==}
@@ -10084,6 +10720,9 @@ packages:
 
   htmlparser2@8.0.2:
     resolution: {integrity: sha512-GYdjWKDkbRLkZ5geuHs5NY1puJ+PXwP7+fHPRz06Eirsb9ugf6d8kkXav6ADhcODhFFPMIXyxkxSuMf3D6NCFA==}
+
+  htmlparser2@9.1.0:
+    resolution: {integrity: sha512-5zfg6mHUoaer/97TxnGpxmbR7zJtPwIYFMZ/H5ucTlPZhKvtum05yiPK3Mgai3a0DyVxv7qYqoweaEd2nrYQzQ==}
 
   http-cache-semantics@3.8.1:
     resolution: {integrity: sha512-5ai2iksyV8ZXmnZhHH4rWPoxxistEexSi5936zIQ1bnNTW5VnA85B6P/VpXiRM017IgRvb2kKo1a//y+0wSp3w==}
@@ -10311,6 +10950,9 @@ packages:
   is-boolean-object@1.2.2:
     resolution: {integrity: sha512-wa56o2/ElJMYqjCjGkXri7it5FbebW5usLw/nPmCMs5DeZ7eziSYZhSmPRn0txqeW4LnAmQQU7FgqLpsEFKM4A==}
     engines: {node: '>= 0.4'}
+
+  is-buffer@1.1.6:
+    resolution: {integrity: sha512-NcdALwpXkTm5Zvvbk7owOUSvVvBKDgKP5/ewfXEznmQFfs4ZRmanOeKBTjRVjka3QFoN6XJ+9F3USqfHqTaU5w==}
 
   is-builtin-module@5.0.0:
     resolution: {integrity: sha512-f4RqJKBUe5rQkJ2eJEJBXSticB3hGbN9j0yxxMQFqIW89Jp9WYFtzfTcRlstDKVUTRzSOTLKRfO9vIztenwtxA==}
@@ -10715,6 +11357,10 @@ packages:
   jsonfile@6.2.0:
     resolution: {integrity: sha512-FGuPw30AdOIUTRMC2OMRtQV+jkVj2cfPqSeWXv1NEAJ1qZ5zb1X6z1mFhbfOB/iy3ssJCD+3KuZ8r8C3uVFlAg==}
 
+  jsonparse@1.3.1:
+    resolution: {integrity: sha512-POQXvpdL69+CluYsillJ7SUhKvytYjW9vG/GKpnf+xP8UWgYEM/RaMzHHofbALDiKbbP1W8UEYmgGl39WkPZsg==}
+    engines: {'0': node >= 0.2.0}
+
   jsprim@1.4.2:
     resolution: {integrity: sha512-P2bSOMAc/ciLz6DzgjVlGJP9+BrJWu5UDGK70C2iweC5QBIeFf0ZXRvGjEj2uYgrY2MkAAhsSWHDWlFtEroZWw==}
     engines: {node: '>=0.6.0'}
@@ -11070,6 +11716,9 @@ packages:
     resolution: {integrity: sha512-CvkkH1i81zl7mmb94DsRiFeG9V2fR2JeuK8yDgS8oiZSFa++wWLEgZ5ufEOyLHbvSbD1gTRKv9NdX69Rnvr9JA==}
     engines: {node: '>=20.19.0'}
 
+  magic-string@0.30.12:
+    resolution: {integrity: sha512-Ea8I3sQMVXr8JhN4z+H/d8zwo+tYDgHE9+5G4Wnrwhs0gaK9fXTKx0Tw5Xwsd/bCPTTZNRAdpyzvoeORe9LYpw==}
+
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -11133,6 +11782,9 @@ packages:
 
   mathml-tag-names@4.0.0:
     resolution: {integrity: sha512-aa6AU2Pcx0VP/XWnh8IGL0SYSgQHDT6Ucror2j2mXeFAlN3ahaNs8EZtG1YiticMkSLj3Gt6VPFfZogt7G5iFQ==}
+
+  md5@2.3.0:
+    resolution: {integrity: sha512-T1GITYmFaKuO91vxyoQMFETst+O71VUPEU3ze5GNzDm0OWdP8v1ziTaAEPUr/3kLsY3Sftgz242A1SetQiDL7g==}
 
   mdast-util-find-and-replace@3.0.2:
     resolution: {integrity: sha512-Tmd1Vg/m3Xz43afeNxDIhWRtFZgM2VLyaf4vSTYwudTyeuTneoL3qtWMA5jeLyz/O1vDJmmV4QuScFCA2tBPwg==}
@@ -11759,6 +12411,10 @@ packages:
     resolution: {integrity: sha512-sHGJy8sOC1YraBywpzQlIKBE4pBbGbiF95U6Auspzyem956E0+FtDtsx1ZxlOJkQCZ1AFXAY/yuvtFYrOxF+Bw==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
+  npm-package-arg@12.0.2:
+    resolution: {integrity: sha512-f1NpFjNI9O4VbKMOlA5QoBq/vSQPORHcTZ2feJpFkTHJ9eQkdlmZEKSjcAhxTGInC7RlEyScT9ui67NaOsjFWA==}
+    engines: {node: ^18.17.0 || >=20.5.0}
+
   npm-packlist@5.1.3:
     resolution: {integrity: sha512-263/0NGrn32YFYi4J533qzrQ/krmmrWwhKkzwTuM4f/07ug51odoaNjUexxO4vxlzURHcmYMH1QjvHjsNDKLVg==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
@@ -11767,6 +12423,10 @@ packages:
   npm-pick-manifest@9.1.0:
     resolution: {integrity: sha512-nkc+3pIIhqHVQr085X9d2JzPzLyjzQS96zbruppqC9aZRm/x8xx6xhI98gHtsfELP2bE+loHq8ZaHFHhe+NauA==}
     engines: {node: ^16.14.0 || >=18.0.0}
+
+  npm-registry-fetch@18.0.2:
+    resolution: {integrity: sha512-LeVMZBBVy+oQb5R6FDV9OlJCcWDU+al10oKpe+nsvcHnG24Z3uM3SvJYKfGJlfGjVU8v9liejCrUR/M5HO5NEQ==}
+    engines: {node: ^18.17.0 || >=20.5.0}
 
   npm-run-path@4.0.1:
     resolution: {integrity: sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==}
@@ -11778,6 +12438,11 @@ packages:
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
+
+  nypm@0.5.4:
+    resolution: {integrity: sha512-X0SNNrZiGU8/e/zAB7sCTtdxWTMSIO73q+xuKgglm2Yvzwlo8UoC5FNySQFCvl84uPaeADkqHUZUkWy4aH4xOA==}
+    engines: {node: ^14.16.0 || >=16.10.0}
+    hasBin: true
 
   nypm@0.6.5:
     resolution: {integrity: sha512-K6AJy1GMVyfyMXRVB88700BJqNUkByijGJM8kEHpLdcAt+vSQAVfkWWHYzuRXHSY6xA2sNc5RjTj0p9rE2izVQ==}
@@ -12137,11 +12802,17 @@ packages:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
 
+  pathe@1.1.2:
+    resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
+
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
   pend@1.2.0:
     resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
+
+  perfect-debounce@1.0.0:
+    resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
 
   perfect-debounce@2.1.0:
     resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
@@ -12611,6 +13282,10 @@ packages:
     peerDependencies:
       postcss: ^8.4.32
 
+  postcss-rem-to-responsive-pixel@6.0.2:
+    resolution: {integrity: sha512-Qseol4vPNC+WJIzwU7AWXGc7pjcw+7c2YRh6bwpwz/4akmtL9Zu/mZ87yeaiGuqQaBgQy45266uxIBQY+BMUfQ==}
+    engines: {node: '>=16.6.0'}
+
   postcss-rem-to-responsive-pixel@7.0.1:
     resolution: {integrity: sha512-enzOmpYK8RHTOL7Y9o3AsSRnYqigGu4OZbDmpP7dUsRRIpyqS1h3hKZHHH5B+WJRyw58DRSAFuicM0uc/2GRJQ==}
     engines: {node: '>=16.6.0'}
@@ -12653,6 +13328,10 @@ packages:
     resolution: {integrity: sha512-Q8qQfPiZ+THO/3ZrOrO0cJJKfpYCagtMUkXbnEfmgUjwXg6z/WBeOyS9APBBPCTSiDV+s4SwQGu8yFsiMRIudg==}
     engines: {node: '>=4'}
 
+  postcss-selector-parser@7.0.0:
+    resolution: {integrity: sha512-9RbEr1Y7FFfptd/1eEdntyjMwLeghW1bHX9GWjXo19vx4ytPQhANltvVxDggzJl7mnWM+dX28kb6cyS/4iQjlQ==}
+    engines: {node: '>=4'}
+
   postcss-selector-parser@7.1.1:
     resolution: {integrity: sha512-orRsuYpJVw8LdAwqqLykBj9ecS5/cRHlI5+nvTo8LcCKmzDmqVORXtOIYEEQuL9D4BxtA1lm5isAqzQZCoQ6Eg==}
     engines: {node: '>=4'}
@@ -12688,6 +13367,10 @@ packages:
   postcss@7.0.39:
     resolution: {integrity: sha512-yioayjNbHn6z1/Bywyb2Y4s3yvDAeXGOyxqD+LnVOinq6Mdmd++SW2wUNVzavyyHxd6+DxzWGIuosg6P1Rj8uA==}
     engines: {node: '>=6.0.0'}
+
+  postcss@8.4.49:
+    resolution: {integrity: sha512-OCVPnIObs4N29kxTjzLfUryOkvZEq+pf8jTF0lg8E7uETuWHA+v7j3c/xJmiqpX450191LlmZfUKkXxkTry7nA==}
+    engines: {node: ^10 || ^12 || >=14}
 
   postcss@8.5.8:
     resolution: {integrity: sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg==}
@@ -13401,6 +14084,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.6.3:
+    resolution: {integrity: sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   semver@7.7.3:
     resolution: {integrity: sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==}
     engines: {node: '>=10'}
@@ -14003,6 +14691,15 @@ packages:
     resolution: {integrity: sha512-qkqLZB/1Kg0EVrp7QX7KtaiMvx80oj9NzkvVwg1REBr4Z/WGwjEkRkQzD4f6Xg1LqCtcsa/xj9zbqB3aNG+zGA==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
+  tailwindcss-patch@5.0.2:
+    resolution: {integrity: sha512-cPeA9S+xDEKPjl0y+X9l5F+cCaoVkkzsjVrdFDcAitnrmj3wRYS3U7XHpsEV+boIMw8+07XTcW/J9hxdaKdMQw==}
+    hasBin: true
+    peerDependencies:
+      tailwindcss: '>=2.0.0'
+    peerDependenciesMeta:
+      tailwindcss:
+        optional: true
+
   tailwindcss-patch@9.0.0:
     resolution: {integrity: sha512-iU0ekFlO8J6C5IeZUb6VzybeTv6RDSg5aIYXl+C6zOQua837In0vAlii45CDzDLi9upA88b2Ek3RuQuoDSMxhA==}
     engines: {node: '>=18.0.0'}
@@ -14100,6 +14797,9 @@ packages:
 
   tinycolor2@1.6.0:
     resolution: {integrity: sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==}
+
+  tinyexec@0.3.2:
+    resolution: {integrity: sha512-KQQR9yN7R5+OSwaK0XQoj22pwHoTlgYqmUscPYoknOoWCWfj/5/ABTMRi69FrKU5ffPVh5QcFikpWJI/P1ocHA==}
 
   tinyexec@1.0.1:
     resolution: {integrity: sha512-5uC6DDlmeqiOwCPmK9jMSdOuZTh8bU39Ys6yidB+UTt5hfZUPGAypSgFRiEp+jbi9qH40BLDvy85jIU88wKSqw==}
@@ -14654,6 +15354,10 @@ packages:
     resolution: {integrity: sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
+  validate-npm-package-name@6.0.2:
+    resolution: {integrity: sha512-IUoow1YUtvoBBC06dXs8bR8B9vuA3aJfmQNKMoaPG/OFsPmoQvw8xh+6Ye25Gx9DQhoEom3Pcu9MKHerm/NpUQ==}
+    engines: {node: ^18.17.0 || >=20.5.0}
+
   varint@6.0.0:
     resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
 
@@ -14963,13 +15667,27 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
+  weapp-tailwindcss@3.7.0:
+    resolution: {integrity: sha512-JM1wyRbGQHnXmnmetGzP0ygQR5Yy2gGDNdRrM1lXgC+5pNBw5f6W8i8RvxVGOe4MNuWljey0X34qtOSnw2+9Lw==}
+    engines: {node: ^18.17.0 || >=20.5.0}
+    hasBin: true
+
   weapp-tailwindcss@4.11.0:
     resolution: {integrity: sha512-zEWqK3YR7WtLwi9Ki+aWgyyUh3sru6yadC2HYWHVDiMPLf+hPksTZX26JDDyJqTu61biK/Npfnr0oa9oF6AGIQ==}
     engines: {node: ^18.17.0 || >=20.5.0}
     hasBin: true
 
+  weapp-vite@file:packages/weapp-vite:
+    resolution: {directory: packages/weapp-vite, type: directory}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
+
+  webpack-sources@3.2.3:
+    resolution: {integrity: sha512-/DyMEOrDgLKKIG0fmvtz+4dUX/3Ghozwgm6iPp8KRhvn+eQf9+Q7GWxVNMk3+uCPWfdXYC4ExGBckIXdFEfH1w==}
+    engines: {node: '>=10.13.0'}
 
   webpack-sources@3.3.4:
     resolution: {integrity: sha512-7tP1PdV4vF+lYPnkMR0jMY5/la2ub5Fc/8VQrrU+lXkiM6C4TjVfGw7iKfyhnTQOsD+6Q/iKw0eFciziRgD58Q==}
@@ -15348,6 +16066,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@babel/generator@7.26.10':
+    dependencies:
+      '@babel/parser': 7.29.2
+      '@babel/types': 7.29.0
+      '@jridgewell/gen-mapping': 0.3.13
+      '@jridgewell/trace-mapping': 0.3.31
+      jsesc: 3.1.0
+
   '@babel/generator@7.29.1':
     dependencies:
       '@babel/parser': 7.29.2
@@ -15527,6 +16253,10 @@ snapshots:
   '@babel/helpers@7.28.6':
     dependencies:
       '@babel/template': 7.28.6
+      '@babel/types': 7.29.0
+
+  '@babel/parser@7.26.10':
+    dependencies:
       '@babel/types': 7.29.0
 
   '@babel/parser@7.29.2':
@@ -16060,6 +16790,18 @@ snapshots:
       '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
 
+  '@babel/traverse@7.25.9':
+    dependencies:
+      '@babel/code-frame': 7.29.0
+      '@babel/generator': 7.29.1
+      '@babel/parser': 7.29.2
+      '@babel/template': 7.28.6
+      '@babel/types': 7.29.0
+      debug: 4.4.3
+      globals: 11.12.0
+    transitivePeerDependencies:
+      - supports-color
+
   '@babel/traverse@7.29.0':
     dependencies:
       '@babel/code-frame': 7.29.0
@@ -16071,6 +16813,11 @@ snapshots:
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
+
+  '@babel/types@7.26.10':
+    dependencies:
+      '@babel/helper-string-parser': 7.27.1
+      '@babel/helper-validator-identifier': 7.28.5
 
   '@babel/types@7.29.0':
     dependencies:
@@ -16584,6 +17331,12 @@ snapshots:
   '@csstools/postcss-initial@2.0.1(postcss@8.5.8)':
     dependencies:
       postcss: 8.5.8
+
+  '@csstools/postcss-is-pseudo-class@5.0.3(postcss@8.4.49)':
+    dependencies:
+      '@csstools/selector-specificity': 5.0.0(postcss-selector-parser@7.1.1)
+      postcss: 8.4.49
+      postcss-selector-parser: 7.1.1
 
   '@csstools/postcss-is-pseudo-class@5.0.3(postcss@8.5.8)':
     dependencies:
@@ -18226,6 +18979,8 @@ snapshots:
     dependencies:
       which: 4.0.0
     optional: true
+
+  '@npmcli/redact@3.2.2': {}
 
   '@ota-meshi/ast-token-store@0.3.0': {}
 
@@ -20010,6 +20765,16 @@ snapshots:
 
   '@sxzz/popperjs-es@2.11.8': {}
 
+  '@tailwindcss-mangle/config@4.0.1(magicast@0.5.2)':
+    dependencies:
+      '@tailwindcss-mangle/shared': 4.1.4
+      c12: 2.0.4(magicast@0.5.2)
+      fs-extra: 11.3.4
+      is-css-request: 1.0.1
+      pathe: 1.1.2
+    transitivePeerDependencies:
+      - magicast
+
   '@tailwindcss-mangle/config@6.1.3(magicast@0.5.2)':
     dependencies:
       '@tailwindcss-mangle/shared': 4.1.4
@@ -20029,6 +20794,8 @@ snapshots:
       pathe: 2.0.3
     transitivePeerDependencies:
       - magicast
+
+  '@tailwindcss-mangle/shared@4.0.2': {}
 
   '@tailwindcss-mangle/shared@4.1.4': {}
 
@@ -20543,8 +21310,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.2(typescript@6.0.2)
+      '@typescript-eslint/types': 8.57.2
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:
@@ -21026,6 +21793,8 @@ snapshots:
   '@vueuse/shared@14.1.0(vue@3.5.31(typescript@6.0.2))':
     dependencies:
       vue: 3.5.31(typescript@6.0.2)
+
+  '@weapp-core/escape@2.1.0': {}
 
   '@weapp-core/escape@7.0.0': {}
 
@@ -21639,6 +22408,23 @@ snapshots:
 
   bytesish@0.4.4: {}
 
+  c12@2.0.4(magicast@0.5.2):
+    dependencies:
+      chokidar: 4.0.3
+      confbox: 0.1.8
+      defu: 6.1.4
+      dotenv: 16.6.1
+      giget: 1.2.5
+      jiti: 2.6.1
+      mlly: 1.8.2
+      ohash: 2.0.11
+      pathe: 2.0.3
+      perfect-debounce: 1.0.0
+      pkg-types: 1.3.1
+      rc9: 2.1.2
+    optionalDependencies:
+      magicast: 0.5.2
+
   c12@3.3.3(magicast@0.5.2):
     dependencies:
       chokidar: 5.0.0
@@ -21779,6 +22565,8 @@ snapshots:
     optional: true
 
   chardet@2.1.1: {}
+
+  charenc@0.0.2: {}
 
   cheerio-select@2.1.0:
     dependencies:
@@ -22129,6 +22917,8 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
+
+  crypt@0.0.2: {}
 
   crypto-es@3.1.3: {}
 
@@ -22483,6 +23273,10 @@ snapshots:
     dependencies:
       ms: 2.0.0
 
+  debug@4.3.7:
+    dependencies:
+      ms: 2.1.3
+
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
@@ -22685,6 +23479,8 @@ snapshots:
   dot-prop@5.3.0:
     dependencies:
       is-obj: 2.0.0
+
+  dotenv@16.6.1: {}
 
   dotenv@17.3.1: {}
 
@@ -24082,6 +24878,16 @@ snapshots:
     dependencies:
       assert-plus: 1.0.0
 
+  giget@1.2.5:
+    dependencies:
+      citty: 0.1.6
+      consola: 3.4.2
+      defu: 6.1.4
+      node-fetch-native: 1.6.7
+      nypm: 0.5.4
+      pathe: 2.0.3
+      tar: 6.2.1
+
   giget@2.0.0:
     dependencies:
       citty: 0.1.6
@@ -24168,6 +24974,8 @@ snapshots:
     dependencies:
       min-document: 2.19.0
       process: 0.11.10
+
+  globals@11.12.0: {}
 
   globals@15.15.0: {}
 
@@ -24367,6 +25175,13 @@ snapshots:
       entities: 8.0.0
 
   htmlparser2@8.0.2:
+    dependencies:
+      domelementtype: 2.3.0
+      domhandler: 5.0.3
+      domutils: 3.2.2
+      entities: 4.5.0
+
+  htmlparser2@9.1.0:
     dependencies:
       domelementtype: 2.3.0
       domhandler: 5.0.3
@@ -24590,6 +25405,8 @@ snapshots:
     dependencies:
       call-bound: 1.0.4
       has-tostringtag: 1.0.2
+
+  is-buffer@1.1.6: {}
 
   is-builtin-module@5.0.0:
     dependencies:
@@ -24936,6 +25753,8 @@ snapshots:
       universalify: 2.0.1
     optionalDependencies:
       graceful-fs: 4.2.11
+
+  jsonparse@1.3.1: {}
 
   jsprim@1.4.2:
     dependencies:
@@ -25302,6 +26121,10 @@ snapshots:
     dependencies:
       magic-string: 0.30.21
 
+  magic-string@0.30.12:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
+
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -25373,6 +26196,12 @@ snapshots:
   math-intrinsics@1.1.0: {}
 
   mathml-tag-names@4.0.0: {}
+
+  md5@2.3.0:
+    dependencies:
+      charenc: 0.0.2
+      crypt: 0.0.2
+      is-buffer: 1.1.6
 
   mdast-util-find-and-replace@3.0.2:
     dependencies:
@@ -26318,6 +27147,13 @@ snapshots:
       validate-npm-package-name: 5.0.1
     optional: true
 
+  npm-package-arg@12.0.2:
+    dependencies:
+      hosted-git-info: 8.1.0
+      proc-log: 5.0.0
+      semver: 7.7.4
+      validate-npm-package-name: 6.0.2
+
   npm-packlist@5.1.3:
     dependencies:
       glob: 8.1.0
@@ -26333,6 +27169,19 @@ snapshots:
       semver: 7.7.4
     optional: true
 
+  npm-registry-fetch@18.0.2:
+    dependencies:
+      '@npmcli/redact': 3.2.2
+      jsonparse: 1.3.1
+      make-fetch-happen: 14.0.3
+      minipass: 7.1.3
+      minipass-fetch: 4.0.1
+      minizlib: 3.1.0
+      npm-package-arg: 12.0.2
+      proc-log: 5.0.0
+    transitivePeerDependencies:
+      - supports-color
+
   npm-run-path@4.0.1:
     dependencies:
       path-key: 3.1.1
@@ -26345,6 +27194,15 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
+
+  nypm@0.5.4:
+    dependencies:
+      citty: 0.1.6
+      consola: 3.4.2
+      pathe: 2.0.3
+      pkg-types: 1.3.1
+      tinyexec: 0.3.2
+      ufo: 1.6.3
 
   nypm@0.6.5:
     dependencies:
@@ -26771,9 +27629,13 @@ snapshots:
 
   path-type@4.0.0: {}
 
+  pathe@1.1.2: {}
+
   pathe@2.0.3: {}
 
   pend@1.2.0: {}
+
+  perfect-debounce@1.0.0: {}
 
   perfect-debounce@2.1.0: {}
 
@@ -27274,6 +28136,8 @@ snapshots:
       postcss: 8.5.8
       postcss-value-parser: 4.2.0
 
+  postcss-rem-to-responsive-pixel@6.0.2: {}
+
   postcss-rem-to-responsive-pixel@7.0.1(postcss@8.5.8):
     dependencies:
       postcss: 8.5.8
@@ -27303,6 +28167,11 @@ snapshots:
       postcss-selector-parser: 7.1.1
 
   postcss-selector-parser@6.1.2:
+    dependencies:
+      cssesc: 3.0.0
+      util-deprecate: 1.0.2
+
+  postcss-selector-parser@7.0.0:
     dependencies:
       cssesc: 3.0.0
       util-deprecate: 1.0.2
@@ -27346,6 +28215,12 @@ snapshots:
     dependencies:
       picocolors: 0.2.1
       source-map: 0.6.1
+
+  postcss@8.4.49:
+    dependencies:
+      nanoid: 3.3.11
+      picocolors: 1.1.1
+      source-map-js: 1.2.1
 
   postcss@8.5.8:
     dependencies:
@@ -28130,6 +29005,8 @@ snapshots:
     dependencies:
       lru-cache: 6.0.0
 
+  semver@7.6.3: {}
+
   semver@7.7.3: {}
 
   semver@7.7.4: {}
@@ -28897,6 +29774,28 @@ snapshots:
       jiti: 2.6.1
       lilconfig: 3.1.3
 
+  tailwindcss-patch@5.0.2(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3)):
+    dependencies:
+      '@babel/generator': 7.29.1
+      '@babel/parser': 7.29.2
+      '@babel/traverse': 7.29.0
+      '@babel/types': 7.29.0
+      '@tailwindcss-mangle/config': 4.0.1(magicast@0.5.2)
+      cac: 6.7.14
+      consola: 3.4.2
+      fs-extra: 11.3.4
+      jiti: 2.6.1
+      lilconfig: 3.1.3
+      pathe: 1.1.2
+      postcss: 8.5.8
+      resolve: 1.22.11
+      semver: 7.7.4
+    optionalDependencies:
+      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+    transitivePeerDependencies:
+      - magicast
+      - supports-color
+
   tailwindcss-patch@9.0.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       '@babel/generator': 7.29.1
@@ -29057,6 +29956,8 @@ snapshots:
   tinybench@2.9.0: {}
 
   tinycolor2@1.6.0: {}
+
+  tinyexec@0.3.2: {}
 
   tinyexec@1.0.1: {}
 
@@ -29675,6 +30576,8 @@ snapshots:
   validate-npm-package-name@5.0.1:
     optional: true
 
+  validate-npm-package-name@6.0.2: {}
+
   varint@6.0.0: {}
 
   vary@1.1.2: {}
@@ -30021,6 +30924,36 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
+  weapp-tailwindcss@3.7.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3)):
+    dependencies:
+      '@ast-core/escape': 1.0.1
+      '@babel/generator': 7.26.10
+      '@babel/parser': 7.26.10
+      '@babel/traverse': 7.25.9
+      '@babel/types': 7.26.10
+      '@csstools/postcss-is-pseudo-class': 5.0.3(postcss@8.4.49)
+      '@tailwindcss-mangle/shared': 4.0.2
+      '@weapp-core/escape': 2.1.0
+      '@weapp-core/regex': 1.0.1
+      consola: 3.4.2
+      debug: 4.3.7
+      htmlparser2: 9.1.0
+      loader-utils: 2.0.4
+      lru-cache: 10.4.3
+      magic-string: 0.30.12
+      md5: 2.3.0
+      npm-registry-fetch: 18.0.2
+      postcss: 8.4.49
+      postcss-rem-to-responsive-pixel: 6.0.2
+      postcss-selector-parser: 7.0.0
+      semver: 7.6.3
+      tailwindcss-patch: 5.0.2(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+      webpack-sources: 3.2.3
+    transitivePeerDependencies:
+      - magicast
+      - supports-color
+      - tailwindcss
+
   weapp-tailwindcss@4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       '@ast-core/escape': 1.0.1
@@ -30085,7 +31018,69 @@ snapshots:
       - supports-color
       - tailwindcss
 
+  weapp-vite@file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3):
+    dependencies:
+      '@vercel/detect-agent': 1.2.1
+      '@volar/typescript': 2.4.28
+      '@vue/language-core': 3.2.6
+      '@weapp-core/init': link:@weapp-core/init
+      '@weapp-core/logger': link:@weapp-core/logger
+      '@weapp-core/schematics': link:@weapp-core/schematics
+      '@weapp-core/shared': link:@weapp-core/shared
+      '@weapp-vite/ast': link:packages/ast
+      '@weapp-vite/mcp': link:packages/mcp
+      '@weapp-vite/volar': link:packages/volar
+      '@weapp-vite/web': link:packages/web
+      '@wevu/api': link:packages/weapi
+      cac: 7.0.0
+      chokidar: 5.0.0
+      comment-json: 4.6.2
+      debug: 4.4.3
+      fdir: 6.5.0(picomatch@4.0.4)
+      fs-extra: 11.3.4
+      htmlparser2: 12.0.0
+      local-pkg: 1.1.2
+      lru-cache: 11.2.7
+      magic-string: 0.30.21
+      merge: 2.1.1
+      p-queue: 9.1.0
+      package-manager-detector: 1.6.0
+      pathe: 2.0.3
+      picomatch: 4.0.4
+      postcss: 8.5.8
+      rolldown: 1.0.0-rc.11
+      rolldown-plugin-dts: 0.22.5(oxc-resolver@11.6.1)(rolldown@1.0.0-rc.11)(typescript@6.0.2)(vue-tsc@3.2.6(typescript@6.0.2))
+      rolldown-require: link:packages/rolldown-require
+      semver: 7.7.4
+      typescript: 6.0.2
+      vite: 8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+      vite-plugin-performance: link:packages/vite-plugin-performance
+      vite-tsconfig-paths: 6.1.1(typescript@6.0.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3))
+      vue: 3.5.31(typescript@6.0.2)
+      vue-tsc: 3.2.6(typescript@6.0.2)
+      weapp-ide-cli: link:packages/weapp-ide-cli
+      wevu: link:packages/wevu
+    transitivePeerDependencies:
+      - '@ts-macro/tsc'
+      - '@types/node'
+      - '@typescript/native-preview'
+      - '@vitejs/devtools'
+      - esbuild
+      - jiti
+      - less
+      - oxc-resolver
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - tsx
+      - yaml
+
   webidl-conversions@3.0.1: {}
+
+  webpack-sources@3.2.3: {}
 
   webpack-sources@3.3.4: {}
 

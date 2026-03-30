@@ -1,9 +1,10 @@
 import fs from 'fs-extra'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
+import { projectFixturesDir } from './utils'
 
 describe('build-npm', () => {
-  const targetDir = path.resolve(__dirname, './fixtures/build-npm')
+  const targetDir = path.resolve(projectFixturesDir, 'build-npm')
 
   beforeAll(async () => {
     // await execa('pnpm', ['install'], {

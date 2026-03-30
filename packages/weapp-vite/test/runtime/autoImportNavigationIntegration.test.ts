@@ -15,7 +15,23 @@ describe('autoImportComponents navigation integration', () => {
   beforeAll(async () => {
     await fs.ensureDir(tempRoot)
     tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-nav-'))
-    await fs.copy(fixtureSource, tempDir, { dereference: true })
+    await fs.copy(fixtureSource, tempDir, {
+      dereference: true,
+      filter: (src) => {
+        const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
+        if (!relative) {
+          return true
+        }
+        return !(
+          relative === 'node_modules'
+          || relative.startsWith('node_modules/')
+          || relative === 'dist'
+          || relative.startsWith('dist/')
+          || relative === '.weapp-vite'
+          || relative.startsWith('.weapp-vite/')
+        )
+      },
+    })
 
     const configPath = path.resolve(tempDir, 'vite.config.ts')
     const original = await fs.readFile(configPath, 'utf8')

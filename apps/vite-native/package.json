@@ -75,5 +75,10 @@
     "vite-plugin-inspect": "catalog:",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
   }
 }

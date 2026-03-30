@@ -111,6 +111,7 @@ export default defineConfig(() => {
   return {
     test: {
       globalSetup: ['./vitest.globalSetup.ts'],
+      maxWorkers: 1,
       projects,
       coverage: {
         enabled: false,

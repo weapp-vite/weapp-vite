@@ -38,5 +38,10 @@
     "weapp-ide-cli": "workspace:*",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
   }
 }

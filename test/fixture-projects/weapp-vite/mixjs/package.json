@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "dependencies": {
+    "tdesign-miniprogram": "latest"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/weapp-vite/test/fixtures/mixjs"
+  },
+  "author": "ice breaker <1324318532@qq.com>",
+  "type": "module",
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
+  }
+}

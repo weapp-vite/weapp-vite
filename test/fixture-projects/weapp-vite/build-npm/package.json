@@ -1,0 +1,46 @@
+{
+  "name": "vite-native",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/weapp-vite/test/fixtures/build-npm"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "main": "index.js",
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:0": "weapp-vite dev -m x",
+    "dev:1": "weapp-vite dev --mode xx",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "postinstall": "weapp-tw patch",
+    "npm": "weapp-vite npm"
+  },
+  "dependencies": {
+    "@vant/weapp": "^1.11.6",
+    "gm-crypto": "^0.1.12",
+    "lodash": "^4.17.21",
+    "tdesign-miniprogram": "^1.6.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "weapp-tailwindcss": "^3.5.2",
+    "weapp-vite": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "weapp-vite": {
+      "injected": true
+    }
+  }
+}

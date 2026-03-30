@@ -1,7 +1,8 @@
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
+import { projectFixturesDir } from './utils'
 
-const fixtureDir = path.resolve(__dirname, 'fixtures/weapp-config')
+const fixtureDir = path.resolve(projectFixturesDir, 'weapp-config')
 
 describe('weapp-vite config file', () => {
   it('merges weapp-vite.config.ts with vite.config.ts weapp options', async () => {

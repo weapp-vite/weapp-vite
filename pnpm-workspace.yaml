@@ -2,13 +2,16 @@ packages:
   - apps/*
   - e2e-apps/*
   - templates/*
+  - test/fixture-projects/weapp-vite/*
   - packages/*
   - mpcore/packages/*
   - mpcore/demos/*
   - '@weapp-core/*'
   - extensions/*
   - website
-  - '!**/test/**'
+  - '!packages/**/test/**'
+  - '!@weapp-core/**/test/**'
+  - '!mpcore/**/test/**'
 
 catalog:
   '@babel/core': ^7.29.0

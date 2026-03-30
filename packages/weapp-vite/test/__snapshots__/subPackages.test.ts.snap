@@ -72,7 +72,7 @@ Map {
 
 exports[`subPackages > scanFiles 3`] = `
 "const require_util = require("../util.js");
-//#region packages/weapp-vite/test/fixtures/subPackages/src/packageB/pages/banana.ts
+//#region test/fixture-projects/weapp-vite/subPackages/src/packageB/pages/banana.ts
 console.log("banana");
 Component({ data: {
 	now: /* @__PURE__ */ require_util.formatTime(/* @__PURE__ */ new Date()),
