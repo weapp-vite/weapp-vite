@@ -1,23 +1,31 @@
-import fs from 'fs-extra'
+import { access, readFile, rm } from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '@/createContext'
-import { getFixture } from './utils'
+import { createTempFixtureProject, getFixture } from './utils'
 
-const read = (file: string) => fs.readFile(file, 'utf8')
+const read = (file: string) => readFile(file, 'utf8')
+async function exists(file: string) {
+  await access(file)
+  return true
+}
 const normalizeEol = (value: string) => value.replace(/\r\n/g, '\n')
 
 describe('subPackages shared styles', () => {
-  const cwd = getFixture('subPackages-shared-styles')
-  const distDir = path.resolve(cwd, 'dist')
-  const artifactDir = path.resolve(cwd, 'dist-generated')
+  const fixtureSource = getFixture('subPackages-shared-styles')
+  let cwd = fixtureSource
+  let distDir = path.resolve(cwd, 'dist')
+  let cleanupTempProject: (() => Promise<void>) | undefined
   let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
 
   beforeAll(async () => {
-    await Promise.all([
-      fs.remove(distDir),
-      fs.remove(artifactDir),
+    const tempProject = await createTempFixtureProject(fixtureSource, 'subpackages-shared-styles', [
+      'dist-generated',
     ])
+    cwd = tempProject.tempDir
+    distDir = path.resolve(cwd, 'dist')
+    cleanupTempProject = tempProject.cleanup
+    await rm(distDir, { recursive: true, force: true })
     ctx = await createCompilerContext({
       cwd,
       inlineConfig: {
@@ -27,13 +35,13 @@ describe('subPackages shared styles', () => {
       },
     })
     await ctx.buildService.build()
-    await fs.copy(distDir, artifactDir)
   }, 60000)
 
   afterAll(async () => {
     await ctx?.watcherService?.closeAll()
     ctx = undefined
-    await fs.remove(distDir)
+    await rm(distDir, { recursive: true, force: true })
+    await cleanupTempProject?.()
   })
 
   it('injects scoped shared imports into subpackage outputs', async () => {
@@ -65,13 +73,13 @@ describe('subPackages shared styles', () => {
     const rootPagesPath = path.resolve(distDir, 'packageA/pages.wxss')
     const rootComponentsPath = path.resolve(distDir, 'packageA/components.wxss')
 
-    expect(await fs.exists(commonPath)).toBe(true)
-    expect(await fs.exists(pagesPath)).toBe(true)
-    expect(await fs.exists(formsPath)).toBe(true)
-    expect(await fs.exists(componentsPath)).toBe(true)
-    expect(await fs.exists(rootIndexPath)).toBe(true)
-    expect(await fs.exists(rootPagesPath)).toBe(true)
-    expect(await fs.exists(rootComponentsPath)).toBe(true)
+    expect(await exists(commonPath)).toBe(true)
+    expect(await exists(pagesPath)).toBe(true)
+    expect(await exists(formsPath)).toBe(true)
+    expect(await exists(componentsPath)).toBe(true)
+    expect(await exists(rootIndexPath)).toBe(true)
+    expect(await exists(rootPagesPath)).toBe(true)
+    expect(await exists(rootComponentsPath)).toBe(true)
 
     const [commonContent, pagesContent, formsContent, componentsContent, rootIndexContent, rootPagesContent, rootComponentsContent] = await Promise.all([
       read(commonPath),

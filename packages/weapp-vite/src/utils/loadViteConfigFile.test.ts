@@ -53,7 +53,7 @@ export default {
       tempDir,
       undefined,
       undefined,
-      undefined,
+      'bundle',
       undefined,
     )
   })
@@ -83,7 +83,40 @@ export default {
       tempDir,
       undefined,
       undefined,
+      'bundle',
       undefined,
+    )
+  })
+
+  it('preserves an explicitly provided config loader', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-'))
+    tempDirs.push(tempDir)
+
+    const configFile = path.join(tempDir, 'vite.config.ts')
+    await fs.writeFile(configFile, 'export default {}')
+
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {},
+      path: configFile,
+      dependencies: [configFile],
+    })
+
+    await loadViteConfigFile(
+      { command: 'serve', mode: 'development' },
+      configFile,
+      tempDir,
+      undefined,
+      undefined,
+      'runner',
+    )
+
+    expect(loadConfigFromFileMock).toHaveBeenCalledWith(
+      { command: 'serve', mode: 'development' },
+      configFile,
+      tempDir,
+      undefined,
+      undefined,
+      'runner',
       undefined,
     )
   })

@@ -1,0 +1,5 @@
+**/.weapp-vite/
+**/dist/
+**/dist-*/
+__temp__/
+.tmp-*/
