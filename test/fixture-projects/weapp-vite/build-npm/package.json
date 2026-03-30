@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@vant/weapp": "^1.11.6",
+    "es-toolkit": "^1.45.1",
     "gm-crypto": "^0.1.12",
     "tdesign-miniprogram": "^1.6.1"
   },

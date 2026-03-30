@@ -2394,12 +2394,12 @@ importers:
       '@vant/weapp':
         specifier: ^1.11.6
         version: 1.11.7
+      es-toolkit:
+        specifier: ^1.45.1
+        version: 1.45.1
       gm-crypto:
         specifier: ^0.1.12
         version: 0.1.12
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.23
       tdesign-miniprogram:
         specifier: ^1.6.1
         version: 1.13.1
