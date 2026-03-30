@@ -1,6 +1,7 @@
 import type { RolldownPluginOption } from 'rolldown'
-import type { InlineConfig, PluginOption } from 'vite'
+import type { ConfigLoader, InlineConfig, PluginOption } from 'vite'
 import type { LoadConfigOptions, LoadConfigResult } from '../types'
+import process from 'node:process'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -114,6 +115,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const { packageJson, packageJsonPath } = await loadPackageJson(cwd)
 
     const resolvedConfigFile = resolveConfigFilePath(cwd, configFile)
+    const configLoader: ConfigLoader | undefined = process.env.__TEST__ === 'true' ? 'runner' : undefined
 
     const weappConfigFilePath = await resolveWeappConfigFile({
       root: cwd,
@@ -125,7 +127,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       loaded = await loadViteConfigFile({
         command: isDev ? 'serve' : 'build',
         mode,
-      }, resolvedConfigFile, cwd)
+      }, resolvedConfigFile, cwd, undefined, undefined, configLoader)
     }
     catch (error) {
       const cjsError = createCjsConfigLoadError({
@@ -151,7 +153,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
           weappLoaded = await loadViteConfigFile({
             command: isDev ? 'serve' : 'build',
             mode,
-          }, weappConfigFilePath, cwd)
+          }, weappConfigFilePath, cwd, undefined, undefined, configLoader)
         }
         catch (error) {
           const cjsError = createCjsConfigLoadError({

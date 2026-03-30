@@ -42,7 +42,7 @@ export async function loadViteConfigFile(
     configRoot,
     configFileDependencies,
     configFileExport,
-    configLoader ?? 'native',
+    configLoader,
     runner,
   )
 }

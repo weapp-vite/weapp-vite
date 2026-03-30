@@ -21,6 +21,7 @@ function shouldSkipTemplateFile(filePath: string) {
     filePath.includes('node_modules')
     || filePath.includes(`${path.sep}.weapp-vite${path.sep}`)
     || filePath.includes('vite.config.ts.timestamp')
+    || /vite\.config\.ts\.timestamp-[^/\\]+\.mjs$/.test(filePath)
     || filePath.includes(`${path.sep}dist${path.sep}`)
     || filePath.endsWith(`${path.sep}CHANGELOG.md`)
     || filePath.includes(`${path.sep}.turbo${path.sep}`)
@@ -44,6 +45,7 @@ function shouldSkipCreatedProjectFile(relativePath: string) {
     || relativePath.startsWith('.turbo/')
     || relativePath === '.DS_Store'
     || relativePath === 'vite.config.ts.timestamp'
+    || /^vite\.config\.ts\.timestamp-[^/]+\.mjs$/.test(relativePath)
   )
 }
 
