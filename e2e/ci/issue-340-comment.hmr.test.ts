@@ -1,10 +1,10 @@
-import fs from 'fs-extra'
+import { access, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { waitForFile } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -32,6 +32,16 @@ const COMMENT_CHUNK_CONFIG = `    chunks: {
       dynamicImports: 'preserve',
     },`
 
+async function pathExists(filePath: string) {
+  try {
+    await access(filePath)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -41,11 +51,11 @@ afterEach(async () => {
 })
 
 describe.sequential('issue #340 comment regression (dev watch)', () => {
-  it('keeps app and cross-subpackage shared outputs stable after a direct shared-source edit', async () => {
-    await fs.remove(DIST_ROOT)
+  it('keeps app and cross-subpackage shared outputs stable after a shared-source edit', async () => {
+    await rm(DIST_ROOT, { recursive: true, force: true })
 
-    const originalConfig = await fs.readFile(CONFIG_PATH, 'utf8')
-    const originalSharedSource = await fs.readFile(SHARED_SOURCE_PATH, 'utf8')
+    const originalConfig = await readFile(CONFIG_PATH, 'utf8')
+    const originalSharedSource = await readFile(SHARED_SOURCE_PATH, 'utf8')
     const marker = createHmrMarker('ISSUE-340-COMMENT', 'weapp')
 
     if (!originalConfig.includes(ORIGINAL_CHUNK_CONFIG)) {
@@ -76,7 +86,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       throw new Error('Failed to inject HMR marker into issue-340 shared source.')
     }
 
-    await fs.writeFile(CONFIG_PATH, updatedConfig, 'utf8')
+    await writeFile(CONFIG_PATH, updatedConfig, 'utf8')
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       env: {
@@ -93,7 +103,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), 'initial item page script generated')
       await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), 'initial user page script generated')
 
-      await fs.writeFile(SHARED_SOURCE_PATH, updatedSharedSource, 'utf8')
+      await replaceFileByRename(SHARED_SOURCE_PATH, updatedSharedSource)
 
       const sharedChunkContent = await dev.waitFor(
         waitForFileContains(SHARED_CHUNK_PATH, marker),
@@ -102,10 +112,10 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       expect(sharedChunkContent).toContain(marker)
 
       const [appJsonExists, appJs, itemPageJs, userPageJs] = await Promise.all([
-        fs.pathExists(APP_JSON_PATH),
-        fs.readFile(APP_JS_PATH, 'utf8'),
-        fs.readFile(ITEM_PAGE_JS_PATH, 'utf8'),
-        fs.readFile(USER_PAGE_JS_PATH, 'utf8'),
+        pathExists(APP_JSON_PATH),
+        readFile(APP_JS_PATH, 'utf8'),
+        readFile(ITEM_PAGE_JS_PATH, 'utf8'),
+        readFile(USER_PAGE_JS_PATH, 'utf8'),
       ])
 
       expect(appJsonExists).toBe(true)
@@ -117,16 +127,16 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       expect(sharedChunkContent).toContain('require("./rolldown-runtime.js")')
       expect(sharedChunkContent).toContain('__commonJSMin')
 
-      const runtimeChunkExists = await fs.pathExists(RUNTIME_CHUNK_PATH)
+      const runtimeChunkExists = await pathExists(RUNTIME_CHUNK_PATH)
       expect(runtimeChunkExists).toBe(true)
-      const runtimeChunk = await fs.readFile(RUNTIME_CHUNK_PATH, 'utf8')
+      const runtimeChunk = await readFile(RUNTIME_CHUNK_PATH, 'utf8')
       expect(runtimeChunk).toContain('__commonJSMin')
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(CONFIG_PATH, originalConfig, 'utf8')
-      await fs.writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8')
-      await fs.remove(DIST_ROOT)
+      await writeFile(CONFIG_PATH, originalConfig, 'utf8')
+      await writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8')
+      await rm(DIST_ROOT, { recursive: true, force: true })
     }
   })
 })
