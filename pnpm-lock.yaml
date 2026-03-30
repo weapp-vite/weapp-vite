@@ -172,8 +172,8 @@ catalogs:
       specifier: ^3.2.6
       version: 3.2.6
     weapp-tailwindcss:
-      specifier: ^4.11.0
-      version: 4.11.0
+      specifier: ^4.11.1
+      version: 4.11.1
     zod:
       specifier: ^4.3.6
       version: 4.3.6
@@ -198,8 +198,8 @@ catalogs:
       version: 1.13.1
   weapp-tailwindcss-fixed:
     weapp-tailwindcss:
-      specifier: 4.11.0
-      version: 4.11.0
+      specifier: 4.11.1
+      version: 4.11.1
 
 overrides:
   rolldown: 1.0.0-rc.11
@@ -717,7 +717,7 @@ importers:
         version: 3.2.6(typescript@6.0.2)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -802,7 +802,7 @@ importers:
         version: 6.0.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -924,7 +924,7 @@ importers:
         version: 11.3.3(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -951,7 +951,7 @@ importers:
         version: 4.2.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -1001,7 +1001,7 @@ importers:
         version: 4.2.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -1056,7 +1056,7 @@ importers:
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -1077,7 +1077,7 @@ importers:
         version: 6.0.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -1216,7 +1216,7 @@ importers:
         version: 3.2.6(typescript@6.0.2)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -1343,7 +1343,7 @@ importers:
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1364,7 +1364,7 @@ importers:
         version: 4.2.2
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1385,7 +1385,7 @@ importers:
         version: 4.2.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2030,7 +2030,7 @@ importers:
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       '@icebreakers/eslint-config':
         specifier: ^2.1.1
-        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2(@types/node@25.5.0)(@vitest/browser-playwright@4.1.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2)
       '@icebreakers/stylelint-config':
         specifier: ^2.2.1
         version: 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
@@ -2063,7 +2063,7 @@ importers:
         version: 6.0.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2075,7 +2075,7 @@ importers:
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       '@icebreakers/eslint-config':
         specifier: ^2.1.1
-        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2(@types/node@25.5.0)(@vitest/browser-playwright@4.1.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2)
       '@icebreakers/stylelint-config':
         specifier: ^2.2.1
         version: 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
@@ -2108,7 +2108,7 @@ importers:
         version: 6.0.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2124,7 +2124,7 @@ importers:
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       '@icebreakers/eslint-config':
         specifier: ^2.1.1
-        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2(@types/node@25.5.0)(@vitest/browser-playwright@4.1.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2)
       '@icebreakers/stylelint-config':
         specifier: ^2.2.1
         version: 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
@@ -2157,7 +2157,7 @@ importers:
         version: 6.0.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2206,7 +2206,7 @@ importers:
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: ^2.1.1
-        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2(@types/node@25.5.0)(@vitest/browser-playwright@4.1.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2)
       '@icebreakers/stylelint-config':
         specifier: ^2.2.1
         version: 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
@@ -2236,7 +2236,7 @@ importers:
         version: 3.2.6(typescript@6.0.2)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2252,7 +2252,7 @@ importers:
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       '@icebreakers/eslint-config':
         specifier: ^2.1.1
-        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2(@types/node@25.5.0)(@vitest/browser-playwright@4.1.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2)
       '@icebreakers/stylelint-config':
         specifier: ^2.2.1
         version: 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
@@ -2288,7 +2288,7 @@ importers:
         version: 3.2.6(typescript@6.0.2)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -2431,7 +2431,7 @@ importers:
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       weapp-vite:
         specifier: workspace:*
         version: file:packages/weapp-vite(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -6933,9 +6933,6 @@ packages:
   '@sxzz/popperjs-es@2.11.8':
     resolution: {integrity: sha512-wOwESXvvED3S8xBmcPWHs2dUuzrE4XiZeFu7e1hROIJkm02a49N120pmOXxY33sBb6hArItm5W5tcg1cBtV+HQ==}
 
-  '@tailwindcss-mangle/config@6.1.3':
-    resolution: {integrity: sha512-e0wj/R582uyrqMLYDDyfl0BfysybOA1PiP0ChxQVch1JWxkLxM0SB7Nb6Cq0jiSYugX5hGfSV1UEqLhM0Q9PTQ==}
-
   '@tailwindcss-mangle/config@7.0.0':
     resolution: {integrity: sha512-84hj89cUXzmnAlWLe7gEfYDwptbMDVjjj1s1NWoGIZfucADayh/DI1pcxdcoLKRF8caKj21NglnGxrvo1wZTfw==}
 
@@ -7794,8 +7791,8 @@ packages:
     peerDependencies:
       postcss: ^8.4.38
 
-  '@weapp-tailwindcss/postcss@2.1.6':
-    resolution: {integrity: sha512-sKrayrLlpOMhim91xsNTzpJeEwIinZvvc3E7Lxy8LhNDjS+mST534A1hy0MtxtOFY+8/jGFKsiCD1DnGyhqkEQ==}
+  '@weapp-tailwindcss/postcss@2.1.7':
+    resolution: {integrity: sha512-r8ryufKDxIaovYyq/gE2VOsjlBDPfcNCuwNuAl8+8R+JSTXZdPv+BGs8a5caUEciE8Lg/cil7VUTSSxgJA5ofQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@weapp-tailwindcss/runtime@0.1.5':
@@ -15301,8 +15298,8 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  weapp-tailwindcss@4.11.0:
-    resolution: {integrity: sha512-zEWqK3YR7WtLwi9Ki+aWgyyUh3sru6yadC2HYWHVDiMPLf+hPksTZX26JDDyJqTu61biK/Npfnr0oa9oF6AGIQ==}
+  weapp-tailwindcss@4.11.1:
+    resolution: {integrity: sha512-PYKZZS7OpYzxj1V9u0gLtTuVdDAj8tL+GwO8oLwP3KTyub3EfpHjwNBKdUXHLs/irP+DIlccWfwRg+377qExHg==}
     engines: {node: ^18.17.0 || >=20.5.0}
     hasBin: true
 
@@ -17488,7 +17485,7 @@ snapshots:
       '@commitlint/types': 20.5.0
       conventional-changelog-conventionalcommits: 9.3.0
 
-  '@icebreakers/eslint-config@2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2(@types/node@25.5.0)(@vitest/browser-playwright@4.1.2)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)))':
+  '@icebreakers/eslint-config@2.1.1(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-pnpm@1.6.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0)(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@6.0.2)(vitest@4.1.2)':
     dependencies:
       '@antfu/eslint-config': 7.7.3(@eslint-react/eslint-plugin@3.0.0(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@next/eslint-plugin-next@16.2.1)(@typescript-eslint/rule-tester@8.56.1(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@typescript-eslint/typescript-estree@8.57.2(typescript@6.0.2))(@typescript-eslint/utils@8.57.2(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@unocss/eslint-plugin@66.6.7(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2))(@vue/compiler-sfc@3.5.31)(eslint-plugin-format@2.0.1(eslint@10.1.0(jiti@2.6.1)))(eslint-plugin-jsx-a11y@6.10.2(eslint@10.1.0(jiti@2.6.1)))(eslint-plugin-react-hooks@7.0.1(eslint@10.1.0(jiti@2.6.1)))(eslint-plugin-react-refresh@0.5.2(eslint@10.1.0(jiti@2.6.1)))(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.1.0(jiti@2.6.1))(globals@17.4.0))(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.2)(vitest@4.1.2)
       '@icebreakers/stylelint-config': 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
@@ -20107,16 +20104,6 @@ snapshots:
 
   '@sxzz/popperjs-es@2.11.8': {}
 
-  '@tailwindcss-mangle/config@6.1.3(magicast@0.5.2)':
-    dependencies:
-      '@tailwindcss-mangle/shared': 4.1.4
-      c12: 3.3.3(magicast@0.5.2)
-      fs-extra: 11.3.4
-      is-css-request: 1.0.1
-      pathe: 2.0.3
-    transitivePeerDependencies:
-      - magicast
-
   '@tailwindcss-mangle/config@7.0.0(magicast@0.5.2)':
     dependencies:
       '@tailwindcss-mangle/shared': 4.1.4
@@ -20645,8 +20632,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.57.2(typescript@6.0.2)
-      '@typescript-eslint/types': 8.57.2
+      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
+      '@typescript-eslint/types': 8.56.1
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:
@@ -21150,7 +21137,7 @@ snapshots:
       postcss-selector-parser: 7.1.1
       postcss-value-parser: 4.2.0
 
-  '@weapp-tailwindcss/postcss@2.1.6':
+  '@weapp-tailwindcss/postcss@2.1.7':
     dependencies:
       '@weapp-core/escape': 7.0.0
       '@weapp-tailwindcss/postcss-calc': 1.0.0(postcss@8.5.8)
@@ -30089,19 +30076,19 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  weapp-tailwindcss@4.11.0(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3)):
+  weapp-tailwindcss@4.11.1(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.29.2
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
-      '@tailwindcss-mangle/config': 6.1.3(magicast@0.5.2)
+      '@tailwindcss-mangle/config': 7.0.0(magicast@0.5.2)
       '@vue/compiler-dom': 3.5.31
       '@vue/compiler-sfc': 3.5.31
       '@weapp-core/escape': 7.0.0
       '@weapp-core/regex': 1.0.1
       '@weapp-tailwindcss/logger': 1.1.0
-      '@weapp-tailwindcss/postcss': 2.1.6
+      '@weapp-tailwindcss/postcss': 2.1.7
       '@weapp-tailwindcss/shared': 1.1.3
       cac: 6.7.14
       comment-json: 4.6.2
@@ -30121,19 +30108,19 @@ snapshots:
       - supports-color
       - tailwindcss
 
-  weapp-tailwindcss@4.11.0(magicast@0.5.2)(tailwindcss@4.2.2):
+  weapp-tailwindcss@4.11.1(magicast@0.5.2)(tailwindcss@4.2.2):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.29.2
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
-      '@tailwindcss-mangle/config': 6.1.3(magicast@0.5.2)
+      '@tailwindcss-mangle/config': 7.0.0(magicast@0.5.2)
       '@vue/compiler-dom': 3.5.31
       '@vue/compiler-sfc': 3.5.31
       '@weapp-core/escape': 7.0.0
       '@weapp-core/regex': 1.0.1
       '@weapp-tailwindcss/logger': 1.1.0
-      '@weapp-tailwindcss/postcss': 2.1.6
+      '@weapp-tailwindcss/postcss': 2.1.7
       '@weapp-tailwindcss/shared': 1.1.3
       cac: 6.7.14
       comment-json: 4.6.2
