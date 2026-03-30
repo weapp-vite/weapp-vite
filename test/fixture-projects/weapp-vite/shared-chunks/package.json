@@ -1,14 +1,14 @@
 {
   "name": "shared-chunks-fixture",
-  "private": true,
   "type": "module",
   "version": "0.0.0",
+  "private": true,
   "scripts": {
     "build": "weapp-vite build"
   },
   "devDependencies": {
-    "weapp-vite": "workspace:*",
-    "typescript": "^5.7.3"
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*"
   },
   "dependenciesMeta": {
     "weapp-vite": {
