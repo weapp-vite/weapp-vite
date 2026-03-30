@@ -22,7 +22,7 @@ function createLanguageService(options: {
     noEmit: true,
     baseUrl: options.root,
     paths: {
-      'weapp-vite/config': ['src/config.ts'],
+      'weapp-vite': ['src/config.ts'],
       '@/*': ['src/*'],
     },
   }
@@ -63,7 +63,7 @@ describe('defineConfig editor intellisense', () => {
   const root = path.resolve(__dirname, '..')
   const fileName = path.join(root, 'test/__virtual__/vite.config.ts')
   const source = [
-    'import { defineConfig } from \'weapp-vite/config\'',
+    'import { defineConfig } from \'weapp-vite\'',
     'export default defineConfig(() => ({',
     '  weapp: {',
     '    srcRoot: \'src\',',
@@ -105,7 +105,7 @@ describe('defineConfig editor intellisense', () => {
   it('should contextually type destructured config env params', () => {
     const destructuredFileName = path.join(root, 'test/__virtual__/vite.destructured.config.ts')
     const destructuredSource = [
-      'import { defineConfig } from \'weapp-vite/config\'',
+      'import { defineConfig } from \'weapp-vite\'',
       'export default defineConfig(({ mode }) => ({',
       '  weapp: {',
       '    srcRoot: mode,',

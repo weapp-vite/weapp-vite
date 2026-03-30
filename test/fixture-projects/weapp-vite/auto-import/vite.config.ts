@@ -1,4 +1,4 @@
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'
 import path from 'pathe'
 

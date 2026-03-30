@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 
 const sharedStrategy = (process.env.WEAPP_CHUNK_STRATEGY as 'duplicate' | 'hoist' | undefined) ?? 'duplicate'
 const sharedMode = (process.env.WEAPP_CHUNK_MODE as 'common' | 'path' | 'inline' | undefined) ?? 'common'

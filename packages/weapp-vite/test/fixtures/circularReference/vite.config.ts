@@ -1,4 +1,4 @@
-import type { UserConfig } from 'weapp-vite/config'
+import type { UserConfig } from 'weapp-vite'
 
 export default <UserConfig>{
   weapp: {

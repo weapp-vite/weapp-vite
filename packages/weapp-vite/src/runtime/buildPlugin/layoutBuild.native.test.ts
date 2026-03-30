@@ -38,7 +38,7 @@ async function writeNativeDynamicLayoutProjectFiles(root: string) {
   }, { spaces: 2 })
 
   await fs.writeFile(path.join(root, 'vite.config.ts'), [
-    'import { defineConfig } from \'weapp-vite/config\'',
+    'import { defineConfig } from \'weapp-vite\'',
     '',
     'export default defineConfig({',
     '  resolve: {',

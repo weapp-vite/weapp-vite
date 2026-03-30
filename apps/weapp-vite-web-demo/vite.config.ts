@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 
 const webHost = process.env.WEAPP_WEB_HOST
 const portValue = process.env.WEAPP_WEB_PORT

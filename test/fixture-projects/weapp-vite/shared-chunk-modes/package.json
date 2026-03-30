@@ -1,5 +1,5 @@
 {
-  "name": "shared-chunk-modes-fixture",
+  "name": "fixture-weapp-vite-shared-chunk-modes",
   "private": true,
   "type": "module",
   "devDependencies": {

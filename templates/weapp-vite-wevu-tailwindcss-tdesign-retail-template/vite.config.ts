@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
   resolve: {

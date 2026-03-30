@@ -1,4 +1,4 @@
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 
 export default defineConfig(()=>{
   return {

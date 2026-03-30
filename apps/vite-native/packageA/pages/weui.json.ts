@@ -1,4 +1,4 @@
-import { definePageJson } from 'weapp-vite/config'
+import { definePageJson } from 'weapp-vite'
 
 export default definePageJson({
   usingComponents: {

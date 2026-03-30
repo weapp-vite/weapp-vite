@@ -114,7 +114,7 @@
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
   weapp: {
