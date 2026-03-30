@@ -1,10 +1,14 @@
-import type { AutomatorSessionOptions, MiniProgramLike, MiniProgramPage } from './automator-session'
+import type {
+  AutomatorSessionOptions,
+  MiniProgramElement,
+  MiniProgramLike,
+  MiniProgramPage,
+} from './automator-session'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import { i18nText } from '../i18n'
 import logger, { colors } from '../logger'
 import {
-
   withMiniProgram,
 } from './automator-session'
 
@@ -59,6 +63,48 @@ interface PageSnapshot {
   query: Record<string, unknown> | undefined
 }
 
+async function runRouteCommand(
+  options: AutomatorCommandOptions,
+  startMessage: string,
+  successMessage: string,
+  action: (miniProgram: MiniProgramLike) => Promise<unknown>,
+) {
+  await withMiniProgram(options, async (miniProgram) => {
+    logger.info(startMessage)
+    await action(miniProgram)
+    logger.success(successMessage)
+  })
+}
+
+function toPageSnapshot(page: MiniProgramPage): PageSnapshot {
+  return {
+    path: page.path ?? '',
+    query: page.query as Record<string, unknown> | undefined,
+  }
+}
+
+function printStructuredResult(result: unknown, json: boolean | undefined, title: string) {
+  if (json) {
+    console.log(JSON.stringify(result, null, 2))
+    return
+  }
+
+  logger.info(title)
+  console.log(JSON.stringify(result, null, 2))
+}
+
+async function requireElement(page: MiniProgramPage, selector: string): Promise<MiniProgramElement> {
+  const element = await page.$(selector)
+  if (!element) {
+    throw new Error(i18nText(`未找到元素: ${selector}`, `Element not found: ${selector}`))
+  }
+
+  return element as MiniProgramElement
+}
+
+/**
+ * @description 执行保留栈页面跳转。
+ */
 export async function navigateTo(options: NavigateOptions) {
   await runRouteCommand(
     options,
@@ -68,6 +114,9 @@ export async function navigateTo(options: NavigateOptions) {
   )
 }
 
+/**
+ * @description 执行关闭当前页的重定向。
+ */
 export async function redirectTo(options: NavigateOptions) {
   await runRouteCommand(
     options,
@@ -77,6 +126,9 @@ export async function redirectTo(options: NavigateOptions) {
   )
 }
 
+/**
+ * @description 返回上一页。
+ */
 export async function navigateBack(options: AutomatorCommandOptions) {
   await runRouteCommand(
     options,
@@ -86,6 +138,9 @@ export async function navigateBack(options: AutomatorCommandOptions) {
   )
 }
 
+/**
+ * @description 重启到指定页面。
+ */
 export async function reLaunch(options: NavigateOptions) {
   await runRouteCommand(
     options,
@@ -95,6 +150,9 @@ export async function reLaunch(options: NavigateOptions) {
   )
 }
 
+/**
+ * @description 切换到 tabBar 页面。
+ */
 export async function switchTab(options: NavigateOptions) {
   await runRouteCommand(
     options,
@@ -104,17 +162,22 @@ export async function switchTab(options: NavigateOptions) {
   )
 }
 
+/**
+ * @description 获取页面栈。
+ */
 export async function pageStack(options: PageInfoOptions) {
-  return withMiniProgram(options, async (miniProgram) => {
-    const stack = await miniProgram.pageStack()
-    const result = stack.map(toPageSnapshot)
+  return await withMiniProgram(options, async (miniProgram) => {
+    const result = (await miniProgram.pageStack()).map(toPageSnapshot)
     printStructuredResult(result, options.json, i18nText('页面栈：', 'Page stack:'))
     return result
   })
 }
 
+/**
+ * @description 获取当前页面信息。
+ */
 export async function currentPage(options: PageInfoOptions) {
-  return withMiniProgram(options, async (miniProgram) => {
+  return await withMiniProgram(options, async (miniProgram) => {
     const result = toPageSnapshot(await miniProgram.currentPage())
     if (options.json) {
       console.log(JSON.stringify(result, null, 2))
@@ -129,23 +192,32 @@ export async function currentPage(options: PageInfoOptions) {
   })
 }
 
+/**
+ * @description 获取系统信息。
+ */
 export async function systemInfo(options: PageInfoOptions) {
-  return withMiniProgram(options, async (miniProgram) => {
-    const info = await miniProgram.systemInfo()
-    printStructuredResult(info, options.json, i18nText('系统信息：', 'System info:'))
-    return info
+  return await withMiniProgram(options, async (miniProgram) => {
+    const result = await miniProgram.systemInfo()
+    printStructuredResult(result, options.json, i18nText('系统信息：', 'System info:'))
+    return result
   })
 }
 
+/**
+ * @description 获取当前页面数据。
+ */
 export async function pageData(options: PageDataOptions) {
-  return withMiniProgram(options, async (miniProgram) => {
+  return await withMiniProgram(options, async (miniProgram) => {
     const page = await miniProgram.currentPage()
-    const data = await page.data(options.path)
-    printStructuredResult(data, options.json, i18nText('页面数据：', 'Page data:'))
-    return data
+    const result = await page.data(options.path)
+    printStructuredResult(result, options.json, i18nText('页面数据：', 'Page data:'))
+    return result
   })
 }
 
+/**
+ * @description 点击页面元素。
+ */
 export async function tap(options: TapOptions) {
   await withMiniProgram(options, async (miniProgram) => {
     logger.info(i18nText(
@@ -162,6 +234,9 @@ export async function tap(options: TapOptions) {
   })
 }
 
+/**
+ * @description 向页面元素输入文本。
+ */
 export async function input(options: InputOptions) {
   await withMiniProgram(options, async (miniProgram) => {
     logger.info(i18nText(
@@ -186,6 +261,9 @@ export async function input(options: InputOptions) {
   })
 }
 
+/**
+ * @description 滚动页面到指定位置。
+ */
 export async function scrollTo(options: ScrollOptions) {
   await withMiniProgram(options, async (miniProgram) => {
     logger.info(i18nText(
@@ -200,8 +278,11 @@ export async function scrollTo(options: ScrollOptions) {
   })
 }
 
+/**
+ * @description 执行体验评分审计。
+ */
 export async function audit(options: AuditOptions) {
-  return withMiniProgram(options, async (miniProgram) => {
+  return await withMiniProgram(options, async (miniProgram) => {
     logger.info(i18nText('正在执行体验审计...', 'Running experience audit...'))
     const result = await miniProgram.stopAudits()
 
@@ -219,8 +300,11 @@ export async function audit(options: AuditOptions) {
   })
 }
 
+/**
+ * @description 获取当前小程序截图。
+ */
 export async function takeScreenshot(options: ScreenshotOptions): Promise<ScreenshotResult> {
-  return withMiniProgram(options, async (miniProgram) => {
+  return await withMiniProgram(options, async (miniProgram) => {
     logger.info(i18nText(
       `正在连接 DevTools：${colors.cyan(options.projectPath)}...`,
       `Connecting to DevTools at ${colors.cyan(options.projectPath)}...`,
@@ -255,9 +339,11 @@ export async function takeScreenshot(options: ScreenshotOptions): Promise<Screen
   })
 }
 
+/**
+ * @description 开关远程调试。
+ */
 export async function remote(options: RemoteOptions) {
   const enable = options.enable ?? true
-
   await withMiniProgram(options, async (miniProgram) => {
     logger.info(enable
       ? i18nText('正在开启远程调试...', 'Enabling remote debugging...')
@@ -267,42 +353,4 @@ export async function remote(options: RemoteOptions) {
       ? i18nText('远程调试已开启', 'Remote debugging enabled')
       : i18nText('远程调试已关闭', 'Remote debugging disabled'))
   })
-}
-
-async function runRouteCommand(
-  options: AutomatorCommandOptions,
-  startMessage: string,
-  successMessage: string,
-  run: (miniProgram: MiniProgramLike) => Promise<unknown>,
-) {
-  await withMiniProgram(options, async (miniProgram) => {
-    logger.info(startMessage)
-    await run(miniProgram)
-    logger.success(successMessage)
-  })
-}
-
-function toPageSnapshot(page: MiniProgramPage): PageSnapshot {
-  return {
-    path: page.path ?? '',
-    query: page.query,
-  }
-}
-
-function printStructuredResult(result: unknown, json: boolean | undefined, title: string) {
-  if (json) {
-    console.log(JSON.stringify(result, null, 2))
-    return
-  }
-
-  logger.info(title)
-  console.log(JSON.stringify(result, null, 2))
-}
-
-async function requireElement(page: MiniProgramPage, selector: string) {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(i18nText(`未找到元素: ${selector}`, `Element not found: ${selector}`))
-  }
-  return element
 }

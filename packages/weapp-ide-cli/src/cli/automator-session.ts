@@ -1,4 +1,4 @@
-import type { Buffer } from 'node:buffer'
+import type { Element, MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
 import { i18nText } from '../i18n'
 import logger from '../logger'
 import {
@@ -18,69 +18,10 @@ export interface MiniProgramEventMap {
   exception: (payload: unknown) => void
 }
 
-export interface MiniProgramElement {
-  tap: () => Promise<void>
+export type MiniProgramLike = InstanceType<typeof MiniProgram>
+export type MiniProgramPage = InstanceType<typeof Page>
+export type MiniProgramElement = InstanceType<typeof Element> & {
   input?: (value: string) => Promise<void>
-}
-
-export interface MiniProgramPage {
-  path?: string
-  query?: Record<string, unknown>
-  data: (path?: string) => Promise<unknown>
-  $: (selector: string) => Promise<MiniProgramElement | null>
-}
-
-export interface MiniProgramLike {
-  navigateTo: (url: string) => Promise<unknown>
-  redirectTo: (url: string) => Promise<unknown>
-  navigateBack: () => Promise<unknown>
-  reLaunch: (url: string) => Promise<unknown>
-  switchTab: (url: string) => Promise<unknown>
-  pageStack: () => Promise<MiniProgramPage[]>
-  currentPage: () => Promise<MiniProgramPage>
-  systemInfo: () => Promise<unknown>
-  pageScrollTo: (scrollTop: number) => Promise<unknown>
-  stopAudits: () => Promise<unknown>
-  screenshot: () => Promise<string | Buffer>
-  remote: (enable?: boolean) => Promise<unknown>
-  close: () => Promise<void>
-  on: <TEvent extends keyof MiniProgramEventMap>(event: TEvent, listener: MiniProgramEventMap[TEvent]) => MiniProgramLike
-  off?: <TEvent extends keyof MiniProgramEventMap>(event: TEvent, listener: MiniProgramEventMap[TEvent]) => MiniProgramLike
-}
-
-/**
- * @description 建立 automator 会话，并统一处理常见连接错误提示。
- */
-export async function connectMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
-  try {
-    return await launchAutomator(options) as MiniProgramLike
-  }
-  catch (error) {
-    throw normalizeMiniProgramConnectionError(error)
-  }
-}
-
-/**
- * @description 统一管理 automator 会话生命周期与常见连接错误提示。
- */
-export async function withMiniProgram<T>(
-  options: AutomatorSessionOptions,
-  runner: (miniProgram: MiniProgramLike) => Promise<T>,
-): Promise<T> {
-  let miniProgram: MiniProgramLike | null = null
-
-  try {
-    miniProgram = await connectMiniProgram(options)
-    return await runner(miniProgram)
-  }
-  catch (error) {
-    throw normalizeMiniProgramConnectionError(error)
-  }
-  finally {
-    if (miniProgram) {
-      await miniProgram.close()
-    }
-  }
 }
 
 function normalizeMiniProgramConnectionError(error: unknown) {
@@ -106,4 +47,39 @@ function normalizeMiniProgramConnectionError(error: unknown) {
   }
 
   return error instanceof Error ? error : new Error(String(error))
+}
+
+/**
+ * @description 建立 automator 会话，并统一处理常见连接错误提示。
+ */
+export async function connectMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
+  try {
+    return await launchAutomator(options) as MiniProgramLike
+  }
+  catch (error) {
+    throw normalizeMiniProgramConnectionError(error)
+  }
+}
+
+/**
+ * @description 统一管理 automator 会话生命周期。
+ */
+export async function withMiniProgram<T>(
+  options: AutomatorSessionOptions,
+  runner: (miniProgram: MiniProgramLike) => Promise<T>,
+): Promise<T> {
+  let miniProgram: MiniProgramLike | null = null
+
+  try {
+    miniProgram = await connectMiniProgram(options)
+    return await runner(miniProgram)
+  }
+  catch (error) {
+    throw normalizeMiniProgramConnectionError(error)
+  }
+  finally {
+    if (miniProgram) {
+      await miniProgram.close()
+    }
+  }
 }

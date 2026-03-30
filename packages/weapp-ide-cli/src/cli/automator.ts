@@ -1,9 +1,10 @@
-import net from 'node:net'
-import automator from '@weapp-vite/miniprogram-automator'
+import { Launcher } from '@weapp-vite/miniprogram-automator'
+import { resolveCliPath } from './resolver'
 
 export interface AutomatorOptions {
   projectPath: string
   timeout?: number
+  cliPath?: string
 }
 
 const ERROR_STACK_PREFIX_RE = /^at /
@@ -21,7 +22,6 @@ const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /ECONNREFUSED/i,
   /connect ECONNREFUSED/i,
 ]
-
 const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
   /需要重新登录/,
@@ -29,44 +29,14 @@ const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /re-?login/i,
 ]
 
-let localhostListenPatched = false
-
-function patchNetListenToLoopback() {
-  if (localhostListenPatched) {
-    return
-  }
-  localhostListenPatched = true
-
-  const rawListen = net.Server.prototype.listen
-  net.Server.prototype.listen = function patchedListen(this: net.Server, ...args: any[]) {
-    const firstArg = args[0]
-    if (firstArg && typeof firstArg === 'object' && !Array.isArray(firstArg)) {
-      if (!('host' in firstArg) || !firstArg.host) {
-        args[0] = {
-          ...firstArg,
-          host: '127.0.0.1',
-        }
-      }
-      return rawListen.apply(this, args as any)
-    }
-
-    if ((typeof firstArg === 'number' || typeof firstArg === 'string') && typeof args[1] !== 'string') {
-      args.splice(1, 0, '127.0.0.1')
-    }
-
-    return rawListen.apply(this, args as any)
-  } as typeof net.Server.prototype.listen
-}
-
 /**
- * @description Extract error text from various error types
+ * @description 从错误对象中提取可读文本。
  */
 function extractErrorText(error: unknown): string {
   if (!error || typeof error !== 'object') {
     return ''
   }
 
-  const parts: string[] = []
   const candidate = error as {
     message?: unknown
     shortMessage?: unknown
@@ -74,19 +44,24 @@ function extractErrorText(error: unknown): string {
     stdout?: unknown
   }
 
-  for (const field of [candidate.message, candidate.shortMessage, candidate.stderr, candidate.stdout]) {
-    if (typeof field === 'string' && field.trim()) {
-      parts.push(field)
-    }
-  }
-
-  return parts.join('\n')
+  return [
+    candidate.message,
+    candidate.shortMessage,
+    candidate.stderr,
+    candidate.stdout,
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join('\n')
 }
 
+/**
+ * @description 提取登录失效时最适合展示给用户的一行信息。
+ */
 function extractLoginRequiredMessage(text: string): string {
   if (!text) {
     return ''
   }
+
   if (LOGIN_REQUIRED_CN_RE.test(text)) {
     return '需要重新登录'
   }
@@ -112,7 +87,7 @@ function extractLoginRequiredMessage(text: string): string {
 }
 
 /**
- * @description Check if error is a DevTools HTTP port error
+ * @description 判断错误是否属于开发者工具服务端口不可用。
  */
 export function isDevtoolsHttpPortError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
@@ -121,18 +96,19 @@ export function isDevtoolsHttpPortError(error: unknown): boolean {
 }
 
 /**
- * @description Check if error is a login required error
+ * @description 判断错误是否属于开发者工具登录失效。
  */
 export function isAutomatorLoginError(error: unknown): boolean {
   const text = extractErrorText(error)
   if (!text) {
     return false
   }
+
   return DEVTOOLS_LOGIN_REQUIRED_PATTERNS.some(pattern => pattern.test(text))
 }
 
 /**
- * @description Format login error for display
+ * @description 格式化开发者工具登录失效错误，便于终端展示。
  */
 export function formatAutomatorLoginError(error: unknown): string {
   const text = extractErrorText(error)
@@ -154,13 +130,15 @@ export function formatAutomatorLoginError(error: unknown): string {
 }
 
 /**
- * @description Launch automator with default options
+ * @description 基于当前配置解析 CLI 路径，并通过现代化 automator 入口启动会话。
  */
 export async function launchAutomator(options: AutomatorOptions) {
-  patchNetListenToLoopback()
-  const { projectPath, timeout = 30_000 } = options
+  const { cliPath, projectPath, timeout = 30_000 } = options
+  const resolvedCliPath = cliPath ?? (await resolveCliPath()).cliPath ?? undefined
+  const launcher = new Launcher()
 
-  return automator.launch({
+  return await launcher.launch({
+    cliPath: resolvedCliPath,
     projectPath,
     timeout,
   })
