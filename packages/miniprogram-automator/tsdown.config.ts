@@ -10,5 +10,5 @@ export default defineConfig({
   },
   target: 'node20',
   failOnWarn: false,
-  sourcemap: true,
+  sourcemap: false,
 })
