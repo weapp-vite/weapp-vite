@@ -3,8 +3,8 @@
  */
 import process from 'node:process'
 import { startWith } from './internal/compat'
-import { renderTerminalQrCode } from './internal/qrcodeTerminal'
-import { decodeQrCodeFromBase64 } from './internal/sharpQrCode'
+import { decodeQrCodeFromBase64 } from './internal/qr/decode'
+import { renderTerminalQrCode } from './internal/qr/render'
 
 const regPluginId = /^plugin-private:\/\/([0-9a-zA-Z]+)\//
 /** decodeQrCode 的方法封装。 */

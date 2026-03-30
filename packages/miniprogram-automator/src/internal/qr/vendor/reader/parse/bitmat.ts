@@ -2,7 +2,7 @@
 /**
  * @file 二维码解析内部模块：bitmat。
  */
-import { URShift } from './qrcode'
+import { URShift } from '../core/qrcode'
 
 export default function BitMatrix(width, height) {
   if (!height) { height = width }

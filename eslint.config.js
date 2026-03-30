@@ -18,8 +18,8 @@ export default icebreaker(
       'packages/vite-plugin-performance/*.md',
       'website/guide/module.md',
       'packages/weapp-vite/modules/**',
-      'packages/miniprogram-automator/src/internal/qrcode-reader/**',
-      'packages/miniprogram-automator/src/internal/qrcode-terminal/**',
+      'packages/miniprogram-automator/src/internal/qr/vendor/reader/**',
+      'packages/miniprogram-automator/src/internal/qr/vendor/terminal/**',
       'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-sidebar/README.md',
       'website/blog/release6.md',
       'docs/core-architecture.md',
@@ -180,6 +180,12 @@ export default icebreaker(
   },
   {
     files: ['packages/miniprogram-automator/src/internal/compat.ts'],
+    rules: {
+      'e18e/prefer-static-regex': 'off',
+    },
+  },
+  {
+    files: ['packages/miniprogram-automator/src/internal/compat/strings.ts'],
     rules: {
       'e18e/prefer-static-regex': 'off',
     },

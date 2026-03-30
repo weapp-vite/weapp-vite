@@ -1,9 +1,9 @@
 // @ts-nocheck
-import Decoder from './decoder'
+import Decoder from '../parse/decoder'
 /**
  * @file 二维码解析内部模块：qrcode。
  */
-import Detector from './detector'
+import Detector from '../detect/detector'
 
 export var qrcode = {}
 qrcode.sizeOfDataLengthInfo = [[10, 9, 8, 8], [12, 11, 16, 10], [14, 13, 16, 12]]

@@ -5,3 +5,6 @@
 export interface QRCodeRenderOptions {
   small?: boolean
 }
+
+/** QRCodeMatrix 的类型定义。 */
+export type QRCodeMatrix = boolean[][]

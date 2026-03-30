@@ -4,29 +4,21 @@
 import { Buffer } from 'node:buffer'
 import sharp from 'sharp'
 import { describe, expect, it, vi } from 'vitest'
-import QRCode from './internal/qrcode-terminal/QRCode/index'
-import QRErrorCorrectLevel from './internal/qrcode-terminal/QRCode/QRErrorCorrectLevel'
+import { createQrCodeMatrix } from './internal/qr/encode'
 import { decodeQrCode, extractPluginId, isPluginPath, printQrCode } from './util'
 
 async function createQrCodeBase64(content: string) {
-  const qrcode = new (QRCode as unknown as new (typeNumber: number, errorCorrectLevel: number) => {
-    addData: (input: string) => void
-    getModuleCount: () => number
-    make: () => void
-    modules: boolean[][]
-  })(-1, (QRErrorCorrectLevel as Record<string, number>).L)
-  qrcode.addData(content)
-  qrcode.make()
+  const qrcode = createQrCodeMatrix(content)
 
   const scale = 8
   const border = 4
-  const moduleCount = qrcode.getModuleCount()
+  const moduleCount = qrcode.length
   const imageSize = (moduleCount + border * 2) * scale
   const pixels = Buffer.alloc(imageSize * imageSize, 255)
 
   for (let row = 0; row < moduleCount; row += 1) {
     for (let col = 0; col < moduleCount; col += 1) {
-      if (!qrcode.modules[row][col]) {
+      if (!qrcode[row][col]) {
         continue
       }
       const startY = (row + border) * scale

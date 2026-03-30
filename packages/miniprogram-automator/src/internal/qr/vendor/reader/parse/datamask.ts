@@ -2,7 +2,7 @@
 /**
  * @file 二维码解析内部模块：datamask。
  */
-import { URShift } from './qrcode'
+import { URShift } from '../core/qrcode'
 
 const DataMask = {}
 DataMask.forReference = function (reference) {
