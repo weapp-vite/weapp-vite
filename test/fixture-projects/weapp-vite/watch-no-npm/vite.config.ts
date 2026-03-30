@@ -13,6 +13,9 @@ export default defineConfig({
         page: 'src/pages',
       },
     },
+    worker: {
+      entry: ['hello', 'index', 'utils'],
+    },
   },
   css: {
     preprocessorOptions: {
@@ -27,6 +30,6 @@ export default defineConfig({
       watchChange(id, change) {
         console.log('watchChange', id, change)
       },
-    }
+    },
   ],
 })
