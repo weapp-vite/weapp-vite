@@ -1759,6 +1759,9 @@ importers:
       '@weapp-vite/miniprogram-automator':
         specifier: workspace:*
         version: link:../miniprogram-automator
+      cac:
+        specifier: ^7.0.0
+        version: 7.0.0
       execa:
         specifier: 9.6.1
         version: 9.6.1
@@ -20632,8 +20635,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.2(typescript@6.0.2)
+      '@typescript-eslint/types': 8.57.2
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:
