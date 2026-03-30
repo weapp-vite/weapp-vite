@@ -1,5 +1,15 @@
 # weapp-vite-tailwindcss-vant-template
 
+## 1.0.7
+
+### Patch Changes
+
+- 🐛 **将脚手架生成项目中的 `AGENTS.md` 改为由 `create-weapp-vite` 统一动态生成，不再在各模板目录中重复维护近似副本。新的 AGENTS 指引会集中补充 `weapp-vite` 的 CLI / prepare / screenshot / ide logs 用法、`wevu` 模板的运行时编写约束，以及推荐安装的 AI skills 列表，降低后续模板间文案漂移和维护成本。** [`14f3885`](https://github.com/weapp-vite/weapp-vite/commit/14f38856796ae70ccf9015b51554b6f6f0c820aa) by @sonofmagic
+
+- 🐛 **修复脚手架模板中部分 `vite.config.ts` 的 import 排序，避免生成项目或模板仓库在执行 ESLint / CI Policy 检查时触发 `perfectionist/sort-imports` 错误，确保模板与 `create-weapp-vite` 产物保持一致。** [#372](https://github.com/weapp-vite/weapp-vite/pull/372) by @Sun79
+
+- 🐛 **将仓库内模板默认的 `dev`、`build`、`open`、`generate`、`prepare` 等 CLI 脚本调用从 `weapp-vite` 统一切换为 `wv`，让模板项目与当前推荐的命令别名保持一致。同时为脚手架生成的新项目默认注入根目录 `AGENTS.md`，明确告知 AI 代理安装依赖后优先阅读 `node_modules/weapp-vite/dist/docs/` 下的随包文档，并在做小程序截图验收时优先使用 `weapp-vite screenshot` / `wv screenshot`，在需要查看终端日志时优先使用 `weapp-vite ide logs --open` / `wv ide logs --open`。此外，`weapp-vite` npm 包会同步发布 `dist/docs` 本地文档目录，减少 AI 在其他仓库里依赖过时外部资料的概率。同步补充 `create-weapp-vite` 的版本变更，确保脚手架生成的新项目默认携带同一套命令与 AI 指引。** [`acf8c14`](https://github.com/weapp-vite/weapp-vite/commit/acf8c14a4657859ca305c128bc86145228f3e524) by @sonofmagic
+
 ## 1.0.6
 
 ### Patch Changes

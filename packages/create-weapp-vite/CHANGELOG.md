@@ -1,5 +1,33 @@
 # create-weapp-vite
 
+## 2.0.69
+
+### Patch Changes
+
+- 🐛 **增强 `weapp-vite` 随包发布的 `dist/docs` 文档包，新增面向 AI 与离线开发的本地文档入口，覆盖 CLI 快速开始、AI 工作流、项目结构、`weapp` 配置、wevu 编写约束、Vue SFC 约束与常见排障说明。** [`3a54e73`](https://github.com/weapp-vite/weapp-vite/commit/3a54e733aac632d96a00d75fb334c52f75572bb3) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 配置加载与测试夹具清理行为。现在 `loadViteConfigFile` 与 CLI 默认使用 Vite 的 `bundle` 配置加载器，以提升 `vite.config.*` / `weapp-vite.config.*` 在不同 ESM/CJS 场景下的兼容性；同时调整仓库级 Vitest 全局清理逻辑，只清理真实临时输出，避免在执行 `pnpm test` 时误删已跟踪的 fixture `dist-*` 快照产物，并为夹具目录补充局部 `.gitignore` 来消除未跟踪测试生成物噪音。** [`4a683ed`](https://github.com/weapp-vite/weapp-vite/commit/4a683edd0b218b8c7061414129ca63fc32ae7c2d) by @sonofmagic
+
+- 🐛 **将脚手架生成项目中的 `AGENTS.md` 改为由 `create-weapp-vite` 统一动态生成，不再在各模板目录中重复维护近似副本。新的 AGENTS 指引会集中补充 `weapp-vite` 的 CLI / prepare / screenshot / ide logs 用法、`wevu` 模板的运行时编写约束，以及推荐安装的 AI skills 列表，降低后续模板间文案漂移和维护成本。** [`14f3885`](https://github.com/weapp-vite/weapp-vite/commit/14f38856796ae70ccf9015b51554b6f6f0c820aa) by @sonofmagic
+
+- 🐛 **修复 `wevu` 中 setup store 首次在页面 `setup()` 作用域内创建后，会在 `reLaunch` 卸载旧页面时连同 store 内部的响应式 effect / computed 一起被停止的问题。现在 store 创建过程会使用独立的 detached effect scope，不再附着到页面实例生命周期，从而保证跨页面共享 store 在 `reLaunch` 后更新状态时，`computed` 结果仍能继续正确响应。同时补充 `github-issues` 中 issue #373 的复现页面，以及对应的单测与 e2e 回归覆盖。** [#374](https://github.com/weapp-vite/weapp-vite/pull/374) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 在复杂测试并发场景下读取 `vite.config.*` / `weapp-vite.config.*` 时，对 `weapp-vite/config` 与 `weapp-vite/auto-import-components/resolvers` 的解析不稳定问题。现在会在加载配置时生成进程级临时 shim，避免依赖易被并发测试清理的 `dist` 产物，并统一覆盖显式配置路径与自动发现配置路径，确保 `pnpm test` 与真实 CLI / 运行时配置加载都能稳定工作。** [`26895f0`](https://github.com/weapp-vite/weapp-vite/commit/26895f09c5f15c8039c4bcf4574627b3ed11602f) by @sonofmagic
+
+- 🐛 **修复脚手架模板中部分 `vite.config.ts` 的 import 排序，避免生成项目或模板仓库在执行 ESLint / CI Policy 检查时触发 `perfectionist/sort-imports` 错误，确保模板与 `create-weapp-vite` 产物保持一致。** [#372](https://github.com/weapp-vite/weapp-vite/pull/372) by @Sun79
+
+- 🐛 **修复 monorepo 并行构建时 npm 依赖共享缓存目录的竞争问题。此前部分 workspace fixture 会把 `node_modules/weapp-vite/.cache/npm-source` 解析到同一个 `packages/weapp-vite` 实体目录，导致不同项目同时构建时互相覆盖缓存。现在共享 npm source cache 改为写入各项目自己的 `.weapp-vite/npm-source` 目录，避免跨项目串扰，并补充对应单测覆盖新的缓存路径解析。** [#372](https://github.com/weapp-vite/weapp-vite/pull/372) by @Sun79
+
+- 🐛 **同步模板中的开发依赖版本，更新 `@icebreakers/eslint-config` 等基础工具链配置，确保脚手架生成项目与仓库当前依赖基线保持一致。** [`c659d58`](https://github.com/weapp-vite/weapp-vite/commit/c659d587a1965080910ea1f1f9a1c6c5ed7bd2dd) by @sonofmagic
+
+- 🐛 **移除模板 catalog 中遗留的 `miniprogram-automator` 旧包名，避免脚手架生成项目继续暴露过时依赖标识，统一收敛到 `@weapp-vite/miniprogram-automator` 的现有使用路径。** [`a6e1c77`](https://github.com/weapp-vite/weapp-vite/commit/a6e1c77d34208306b671895677f7667be89b38b1) by @sonofmagic
+
+- 🐛 **移除 `loadViteConfigFile` 中把 `weapp-vite/*` 子路径导入重写到当前仓库 `packages/weapp-vite/dist/*` 的内部耦合逻辑，避免源码实现绑定 monorepo 目录结构。现在配置加载不再依赖仓库内绝对路径，行为更接近已发布包的真实解析方式。** [`ef0bb34`](https://github.com/weapp-vite/weapp-vite/commit/ef0bb3483bd2ec8ea36317938ea9ac25afa83d51) by @sonofmagic
+
+- 🐛 **将仓库内模板默认的 `dev`、`build`、`open`、`generate`、`prepare` 等 CLI 脚本调用从 `weapp-vite` 统一切换为 `wv`，让模板项目与当前推荐的命令别名保持一致。同时为脚手架生成的新项目默认注入根目录 `AGENTS.md`，明确告知 AI 代理安装依赖后优先阅读 `node_modules/weapp-vite/dist/docs/` 下的随包文档，并在做小程序截图验收时优先使用 `weapp-vite screenshot` / `wv screenshot`，在需要查看终端日志时优先使用 `weapp-vite ide logs --open` / `wv ide logs --open`。此外，`weapp-vite` npm 包会同步发布 `dist/docs` 本地文档目录，减少 AI 在其他仓库里依赖过时外部资料的概率。同步补充 `create-weapp-vite` 的版本变更，确保脚手架生成的新项目默认携带同一套命令与 AI 指引。** [`acf8c14`](https://github.com/weapp-vite/weapp-vite/commit/acf8c14a4657859ca305c128bc86145228f3e524) by @sonofmagic
+
+- 🐛 **修复配置加载与仓库构建稳定性问题。`weapp-vite` 现在默认使用原生 ESM 方式加载 `vite.config.ts` / `weapp-vite.config.ts`，避免在配置阶段错误走到 `require` 链路；同时仓库内示例、模板与测试夹具统一改为从 `weapp-vite` 根入口导入 `defineConfig` 等导出。另一个修复是为测试夹具补齐唯一的 workspace 名称，避免 `turbo` 在 monorepo 构建时因重复包名直接中断。** [`270e7e4`](https://github.com/weapp-vite/weapp-vite/commit/270e7e4a2dd929182b6fc3392fd98b7a7e35591e) by @sonofmagic
+
 ## 2.0.68
 
 ### Patch Changes
