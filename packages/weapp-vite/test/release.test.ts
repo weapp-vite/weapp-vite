@@ -15,14 +15,46 @@ function parsePackJson(stdout: string) {
   }>
 }
 
+async function createIsolatedPackageWorkspace(packageRoot: string) {
+  const repoRoot = path.resolve(packageRoot, '../..')
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-pack-workspace-'))
+  const tempRepoRoot = path.join(tempRoot, 'repo')
+  const tempPackageRoot = path.join(tempRepoRoot, 'packages', 'weapp-vite')
+
+  await fs.ensureDir(path.dirname(tempPackageRoot))
+  await fs.copy(packageRoot, tempPackageRoot, {
+    dereference: true,
+    filter: (src) => {
+      const relative = path.relative(packageRoot, src).replaceAll('\\', '/')
+      if (!relative) {
+        return true
+      }
+      return !(
+        relative === 'dist'
+        || relative.startsWith('dist/')
+        || relative === 'node_modules'
+        || relative.startsWith('node_modules/')
+      )
+    },
+  })
+  await fs.copy(path.join(repoRoot, 'tsconfig.json'), path.join(tempRepoRoot, 'tsconfig.json'))
+  await fs.symlink(path.join(repoRoot, 'node_modules'), path.join(tempRepoRoot, 'node_modules'), 'junction')
+
+  return {
+    tempRoot,
+    tempPackageRoot,
+  }
+}
+
 describe('weapp-vite release pack', () => {
   it('includes packaged dist docs in npm pack output', async () => {
     const packageRoot = path.resolve(import.meta.dirname, '..')
     const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-pack-cache-'))
+    const { tempRoot, tempPackageRoot } = await createIsolatedPackageWorkspace(packageRoot)
 
     try {
       await execa('pnpm', ['build'], {
-        cwd: packageRoot,
+        cwd: tempPackageRoot,
         env: {
           ...process.env,
           npm_config_loglevel: 'silent',
@@ -33,7 +65,7 @@ describe('weapp-vite release pack', () => {
         'npm',
         ['pack', '--json', '--dry-run', '.', '--cache', cacheDir],
         {
-          cwd: packageRoot,
+          cwd: tempPackageRoot,
           env: {
             ...process.env,
             npm_config_loglevel: 'silent',
@@ -58,6 +90,7 @@ describe('weapp-vite release pack', () => {
     }
     finally {
       await fs.remove(cacheDir)
+      await fs.remove(tempRoot)
     }
   })
 })
