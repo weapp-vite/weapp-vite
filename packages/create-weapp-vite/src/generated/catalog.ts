@@ -28,7 +28,6 @@ export const TEMPLATE_CATALOG = {
   'lru-cache': '^11.2.7',
   'magic-string': '^0.30.21',
   'miniprogram-api-typings': '^5.1.2',
-  'miniprogram-automator': '^0.12.1',
   'object-hash': '^3.0.0',
   'oxc-parser': '^0.121.0',
   'oxc-walker': '^0.7.0',

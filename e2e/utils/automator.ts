@@ -2,11 +2,9 @@ import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-import automator from '@weapp-vite/miniprogram-automator'
-import * as MiniProgramModule from '@weapp-vite/miniprogram-automator/out/MiniProgram.js'
+import { Automator, MiniProgram } from '@weapp-vite/miniprogram-automator'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
-import cmpVersion from 'licia/cmpVersion'
 import { launchHeadlessAutomator } from './automator.headless'
 import {
   appendIdeReportEvent,
@@ -100,6 +98,25 @@ function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
   return parsed
 }
 
+function compareVersion(versionA: string, versionB: string) {
+  const left = versionA.split('.')
+  const right = versionB.split('.')
+  const length = Math.max(left.length, right.length)
+
+  for (let index = 0; index < length; index += 1) {
+    const currentLeft = Number.parseInt(left[index] || '0', 10)
+    const currentRight = Number.parseInt(right[index] || '0', 10)
+    if (currentLeft > currentRight) {
+      return 1
+    }
+    if (currentLeft < currentRight) {
+      return -1
+    }
+  }
+
+  return 0
+}
+
 const RELAUNCH_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT,
   DEFAULT_RELUNCH_READY_TIMEOUT,
@@ -143,9 +160,7 @@ let versionPatched = false
 let miniProgramOnPatched = false
 let loginPreflightPassed = false
 let localhostListenPatched = false
-const MiniProgram = ((MiniProgramModule as any)?.default?.default
-  ?? (MiniProgramModule as any)?.default
-  ?? MiniProgramModule) as any
+const automator = new Automator()
 
 interface RuntimeLogStats {
   warn: number
@@ -840,7 +855,7 @@ function patchAutomatorVersionCheck() {
     if (!sdkVersion || sdkVersion === 'dev') {
       return
     }
-    if (cmpVersion(sdkVersion, MIN_SDK_VERSION) < 0) {
+    if (compareVersion(sdkVersion, MIN_SDK_VERSION) < 0) {
       throw new Error(
         `SDKVersion is currently ${sdkVersion}, while automator requires at least version ${MIN_SDK_VERSION}`,
       )
