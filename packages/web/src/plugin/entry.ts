@@ -1,7 +1,7 @@
 import type { WxssTransformOptions } from '../css/wxss'
 
 import type { ScanResult, WeappWebPluginOptions } from './types'
-import { relativeModuleId } from './path'
+import { relativeModuleId, resolveRuntimePolyfillPath, toViteFsImport } from './path'
 
 export function generateEntryModule(
   result: ScanResult,
@@ -9,7 +9,8 @@ export function generateEntryModule(
   wxssOptions?: WxssTransformOptions,
   pluginOptions?: WeappWebPluginOptions,
 ) {
-  const importLines: string[] = [`import { initializePageRoutes } from '@weapp-vite/web/runtime/polyfill'`]
+  const runtimePolyfillId = toViteFsImport(resolveRuntimePolyfillPath())
+  const importLines: string[] = [`import { initializePageRoutes } from '${runtimePolyfillId}'`]
   const bodyLines: string[] = []
 
   for (const page of result.pages) {
