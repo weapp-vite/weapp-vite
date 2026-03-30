@@ -1,13 +1,13 @@
 {
   "name": "subpackage-root-util-fixture",
-  "private": true,
   "type": "module",
   "version": "0.0.0",
+  "private": true,
   "scripts": {
     "build": "weapp-vite build"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
+    "typescript": "catalog:",
     "weapp-vite": "workspace:*"
   },
   "dependenciesMeta": {

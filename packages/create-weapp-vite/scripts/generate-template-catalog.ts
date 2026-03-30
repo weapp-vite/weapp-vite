@@ -1,7 +1,7 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { inspect } from 'node:util'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { parse } from 'yaml'
 
@@ -72,12 +72,18 @@ export const TEMPLATE_NAMED_CATALOG = ${namedCatalogLiteral} as const
 export async function main() {
   const workspacePath = path.resolve(import.meta.dirname, '../../../pnpm-workspace.yaml')
   const targetPath = path.resolve(import.meta.dirname, '../src/generated/catalog.ts')
-  const content = await fs.readFile(workspacePath, 'utf8')
+  const content = await readFile(workspacePath, 'utf8')
   const workspace = parse(content) as WorkspaceCatalog
   const catalog = normalizeCatalog(workspace.catalog)
   const namedCatalogs = normalizeNamedCatalogs(workspace.catalogs)
   const generated = renderGeneratedFile(catalog, namedCatalogs)
-  await fs.outputFile(targetPath, generated)
+  const current = await readFile(targetPath, 'utf8').catch(() => '')
+  if (current === generated) {
+    return false
+  }
+  await mkdir(path.dirname(targetPath), { recursive: true })
+  await writeFile(targetPath, generated, 'utf8')
+  return true
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
