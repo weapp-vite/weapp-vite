@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { normalize } from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { loadViteConfigFile } from './loadViteConfigFile'
@@ -49,7 +50,7 @@ export default {
     expect(loadConfigFromFileMock).toHaveBeenCalledTimes(1)
     expect(loadConfigFromFileMock).toHaveBeenCalledWith(
       { command: 'serve', mode: 'development' },
-      configFile,
+      normalize(configFile),
       tempDir,
       undefined,
       undefined,
@@ -79,7 +80,7 @@ export default {
 
     expect(loadConfigFromFileMock).toHaveBeenCalledWith(
       { command: 'build', mode: 'production' },
-      configFile,
+      normalize(configFile),
       tempDir,
       undefined,
       undefined,
@@ -112,7 +113,7 @@ export default {
 
     expect(loadConfigFromFileMock).toHaveBeenCalledWith(
       { command: 'serve', mode: 'development' },
-      configFile,
+      normalize(configFile),
       tempDir,
       undefined,
       undefined,
