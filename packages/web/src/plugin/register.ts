@@ -8,7 +8,7 @@ import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
 
 import MagicString from 'magic-string'
-import { appendInlineQuery, toRelativeImport } from './path'
+import { appendInlineQuery, resolveRuntimePolyfillPath, toRelativeImport, toViteFsImport } from './path'
 
 type TraverseFunction = typeof _babelTraverse extends (...args: any[]) => any
   ? typeof _babelTraverse
@@ -124,6 +124,7 @@ export function transformScriptModule({
   let transformed = false
 
   const imports: string[] = []
+  const runtimePolyfillId = toViteFsImport(resolveRuntimePolyfillPath())
   const templateIdent = meta.templatePath ? '__weapp_template__' : undefined
   const styleIdent = meta.stylePath ? '__weapp_style__' : undefined
 
@@ -156,7 +157,7 @@ export function transformScriptModule({
   }
 
   if (registerImports.size > 0) {
-    imports.unshift(`import { ${Array.from(registerImports).join(', ')} } from '@weapp-vite/web/runtime/polyfill'`)
+    imports.unshift(`import { ${Array.from(registerImports).join(', ')} } from '${runtimePolyfillId}'`)
   }
 
   const prefix = `${imports.join('\n')}\n`
