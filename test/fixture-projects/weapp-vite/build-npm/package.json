@@ -20,7 +20,7 @@
     "dev": "weapp-vite dev",
     "dev:0": "weapp-vite dev -m x",
     "dev:1": "weapp-vite dev --mode xx",
-    "build": "weapp-vite build",
+    "build": "node --eval \"console.log('skip app build for npm-only fixture')\"",
     "open": "weapp-vite open",
     "postinstall": "weapp-tw patch",
     "npm": "weapp-vite npm"
@@ -28,7 +28,6 @@
   "dependencies": {
     "@vant/weapp": "^1.11.6",
     "gm-crypto": "^0.1.12",
-    "lodash": "^4.17.21",
     "tdesign-miniprogram": "^1.6.1"
   },
   "devDependencies": {

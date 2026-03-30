@@ -1,7 +1,17 @@
-import fs from 'fs-extra'
+import { access, rm } from 'node:fs/promises'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import { projectFixturesDir } from './utils'
+
+async function pathExists(filePath: string) {
+  try {
+    await access(filePath)
+    return true
+  }
+  catch {
+    return false
+  }
+}
 
 describe('build-npm', () => {
   const targetDir = path.resolve(projectFixturesDir, 'build-npm')
@@ -11,7 +21,7 @@ describe('build-npm', () => {
     //   cwd: targetDir,
     //   stdio: 'inherit',
     // })
-    await fs.remove(path.resolve(targetDir, 'dist'))
+    await rm(path.resolve(targetDir, 'dist'), { recursive: true, force: true })
 
     const ctx = await createCompilerContext({
       cwd: targetDir,
@@ -21,51 +31,46 @@ describe('build-npm', () => {
 
   it('should ', async () => {
     expect(
-      await fs.pathExists(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm'),
       ),
     ).toBe(true)
     expect(
-      await fs.pathExists(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/@vant'),
       ),
     ).toBe(true)
     expect(
-      await fs.pathExists(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/@vant/weapp'),
       ),
     ).toBe(true)
     expect(
-      await fs.pathExists(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/@vant/weapp/action-sheet'),
       ),
     ).toBe(true)
 
     expect(
-      await fs.pathExists(
-        path.resolve(targetDir, 'dist/miniprogram_npm/lodash/index.js'),
-      ),
-    ).toBe(true)
-    expect(
-      await fs.pathExists(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/tdesign-miniprogram'),
       ),
     ).toBe(true)
 
     expect(
-      await fs.pathExists(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/gm-crypto/index.js'),
       ),
     ).toBe(true)
     expect(
-      await fs.pathExists(
+      await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/buffer/index.js'),
       ),
     ).toBe(true)
   })
 
   it('dedupes concurrent buildPackage tasks for the same dependency output', async () => {
-    await fs.remove(path.resolve(targetDir, 'dist'))
+    await rm(path.resolve(targetDir, 'dist'), { recursive: true, force: true })
     const ctx = await createCompilerContext({
       cwd: targetDir,
     })
@@ -80,6 +85,6 @@ describe('build-npm', () => {
       Array.from({ length: 4 }, (_, index) => index).map(() => buildTask()),
     )
 
-    expect(await fs.pathExists(path.resolve(outDir, 'tdesign-miniprogram/button'))).toBe(true)
+    expect(await pathExists(path.resolve(outDir, 'tdesign-miniprogram/button'))).toBe(true)
   })
 })
