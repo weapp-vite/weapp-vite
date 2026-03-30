@@ -1,4 +1,5 @@
-import fs from 'fs-extra'
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { dirname, extname, normalize, posix, relative, resolve } from 'pathe'
 
 import { TEMPLATE_EXTS, WXS_RESOLVE_EXTS } from './constants'
@@ -55,6 +56,29 @@ export function relativeModuleId(root: string, absPath: string) {
   return `/${normalizePath(rel)}`
 }
 
+export function toViteFsImport(absPath: string) {
+  const normalized = normalizePath(absPath)
+  return normalized.startsWith('/')
+    ? `/@fs${normalized}`
+    : `/@fs/${normalized}`
+}
+
+export function resolveRuntimePolyfillPath() {
+  const currentDir = dirname(fileURLToPath(import.meta.url))
+  const candidates = [
+    resolve(currentDir, './runtime/index.mjs'),
+    resolve(currentDir, '../runtime/polyfill.ts'),
+  ]
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  throw new Error('[@weapp-vite/web] Failed to resolve runtime polyfill path.')
+}
+
 export function resolveImportBase(raw: string, importer: string, srcRoot: string) {
   if (!raw) {
     return undefined
@@ -69,12 +93,12 @@ export function resolveImportBase(raw: string, importer: string, srcRoot: string
 }
 
 export function resolveFileWithExtensionsSync(basePath: string, extensions: string[]) {
-  if (extname(basePath) && fs.pathExistsSync(basePath)) {
+  if (extname(basePath) && existsSync(basePath)) {
     return basePath
   }
   for (const ext of extensions) {
     const candidate = `${basePath}${ext}`
-    if (fs.pathExistsSync(candidate)) {
+    if (existsSync(candidate)) {
       return candidate
     }
   }
