@@ -1,13 +1,8 @@
 {
   "name": "fixture-weapp-vite-shared-chunk-modes",
-  "private": true,
   "type": "module",
+  "private": true,
   "devDependencies": {
     "weapp-vite": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }

@@ -34,10 +34,5 @@
     "typescript": "catalog:",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }

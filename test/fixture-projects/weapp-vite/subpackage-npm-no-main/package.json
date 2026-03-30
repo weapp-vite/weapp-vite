@@ -14,10 +14,5 @@
   "devDependencies": {
     "typescript": "catalog:",
     "weapp-vite": "workspace:*"
-  },
-  "dependenciesMeta": {
-    "weapp-vite": {
-      "injected": true
-    }
   }
 }
