@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
@@ -10,6 +10,28 @@ import {
   releaseSharedMiniProgram,
   waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
+
+async function waitForIssue373Runtime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await page.callMethod('_runE2E')
+      if (runtime?.count >= 1 && runtime?.doubled >= 2) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
 
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
@@ -188,11 +210,11 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const launchPage = await relaunchPage(miniProgram, '/pages/issue-373/launch/index', 'launch doubled: 2')
+      const launchPage = await relaunchPage(miniProgram, '/pages/issue-373/launch/index')
       if (!launchPage) {
         throw new Error('Failed to launch issue-373 launch page')
       }
-      const launchRuntime = await launchPage.callMethod('_runE2E')
+      const launchRuntime = await waitForIssue373Runtime(launchPage)
       expect(launchRuntime?.ok).toBe(true)
       expect(launchRuntime?.count).toBe(1)
       expect(launchRuntime?.doubled).toBe(2)
@@ -203,8 +225,8 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to navigate to issue-373 result page via reLaunch')
       }
       const initialResultWxml = await readPageWxml(resultPage)
-      expect(initialResultWxml).toContain('result count: 1')
-      expect(initialResultWxml).toContain('result doubled: 2')
+      expect(initialResultWxml).toContain('data-count="1"')
+      expect(initialResultWxml).toContain('data-doubled="2"')
 
       await resultPage.callMethod('increment')
       await resultPage.waitFor(260)
@@ -214,8 +236,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.ok).toBe(true)
 
       const updatedWxml = await readPageWxml(resultPage)
-      expect(updatedWxml).toContain('result count: 2')
-      expect(updatedWxml).toContain('result doubled: 4')
+      expect(updatedWxml).toContain('data-count="2"')
       expect(updatedWxml).toContain('data-doubled="4"')
     }
     finally {

@@ -2,10 +2,11 @@ import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-import cmpVersion from 'licia/cmpVersion'
+// eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
+import cmpVersion from 'licia/cmpVersion'
 import automator from 'miniprogram-automator'
-import MiniProgram from 'miniprogram-automator/out/MiniProgram.js'
+import * as MiniProgramModule from 'miniprogram-automator/out/MiniProgram.js'
 import { launchHeadlessAutomator } from './automator.headless'
 import {
   appendIdeReportEvent,
@@ -58,6 +59,47 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
   /subPackages[\s\S]{0,80}undefined/i,
 ]
+const TRAILING_PATH_SEPARATOR_PATTERN = /[\\/]+$/
+const ENV_LIST_SPLIT_PATTERN = /[,;\n]/
+const ERROR_CONSOLE_TEXT_PATTERN = /\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/
+const WARN_CONSOLE_TEXT_PATTERN = /\b(?:warn(?:ing)?|deprecated|deprecation)\b/i
+const COMPONENT_WARN_PATTERN = /\[Component\]/
+const RELAUNCH_RETRYABLE_PATTERNS = [
+  /Wait timed out after/i,
+  /timed out waiting page root/i,
+  /Failed to find page root/i,
+  /Execution context was destroyed/i,
+  /Target closed/i,
+  /ECONNRESET/i,
+  /not connected/i,
+]
+const LEADING_SLASH_PATTERN = /^\/+/
+const TRIM_ROUTE_SLASH_PATTERN = /^\/+|\/+$/g
+const DUPLICATE_SLASH_PATTERN = /\/{2,}/g
+const LOGIN_REQUIRED_TEXT_PATTERN = /需要重新登录/
+const LOGIN_REQUIRED_ENGLISH_PATTERN = /need\s+re-?login|re-?login/i
+const LINE_SPLIT_PATTERN = /\r?\n/
+const ERROR_LOG_PREFIX_PATTERN = /^\[error\]\s*/i
+const ERROR_PREFIX_PATTERN = /^error\s*:\s*/i
+const LOGIN_REQUIRED_CODE_PATTERN = /code\s*[:=]\s*(\d+)/i
+const BRIDGE_CONNECT_TIMEOUT_PATTERN = /Timeout in connect automator bridge/i
+const BRIDGE_CONNECT_FAILURE_PATTERN = /Failed connecting to /
+const COMPACT_WHITESPACE_PATTERN = /\s+/g
+const LAUNCH_TIMEOUT_PATTERN = /Timeout in launch automator#/i
+
+function normalizePathForMatch(value: string) {
+  const normalized = path.normalize(path.resolve(value))
+  return normalized.replace(TRAILING_PATH_SEPARATOR_PATTERN, '')
+}
+
+function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
+  const parsed = Number.parseInt(raw ?? '', 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback
+  }
+  return parsed
+}
+
 const RELAUNCH_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT,
   DEFAULT_RELUNCH_READY_TIMEOUT,
@@ -92,7 +134,7 @@ const APP_CONFIG_READY_TIMEOUT = resolvePositiveIntEnv(
 )
 const TRUST_ALL_PROJECTS = process.env.WEAPP_VITE_E2E_TRUST_PROJECT === '1'
 const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
-  .split(/[,;\n]/)
+  .split(ENV_LIST_SPLIT_PATTERN)
   .map(item => item.trim())
   .filter(Boolean)
   .map(item => normalizePathForMatch(item))
@@ -101,6 +143,9 @@ let versionPatched = false
 let miniProgramOnPatched = false
 let loginPreflightPassed = false
 let localhostListenPatched = false
+const MiniProgram = ((MiniProgramModule as any)?.default?.default
+  ?? (MiniProgramModule as any)?.default
+  ?? MiniProgramModule) as any
 
 interface RuntimeLogStats {
   warn: number
@@ -147,11 +192,6 @@ interface AutomatorCliBridgeResult {
   wsEndpoint: string
 }
 
-function normalizePathForMatch(value: string) {
-  const normalized = path.normalize(path.resolve(value))
-  return normalized.replace(/[\\/]+$/, '')
-}
-
 function patchNetListenToLoopback() {
   if (localhostListenPatched) {
     return
@@ -177,14 +217,6 @@ function patchNetListenToLoopback() {
 
     return rawListen.apply(this, args as any)
   } as typeof net.Server.prototype.listen
-}
-
-function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
-  const parsed = Number.parseInt(raw ?? '', 10)
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return fallback
-  }
-  return parsed
 }
 
 function isProjectPathTrustedByEnv(projectPath: string | undefined) {
@@ -263,7 +295,7 @@ function isErrorConsoleEntry(entry: any) {
     return true
   }
   const text = normalizeConsoleText(entry)
-  return /\b(?:TypeError|ReferenceError|SyntaxError|Error|RangeError)\b/.test(text)
+  return ERROR_CONSOLE_TEXT_PATTERN.test(text)
 }
 
 function isWarnConsoleEntry(entry: any) {
@@ -273,8 +305,8 @@ function isWarnConsoleEntry(entry: any) {
     return true
   }
   const text = normalizeConsoleText(entry)
-  return /\b(?:warn(?:ing)?|deprecated|deprecation)\b/i.test(text)
-    || /\[Component\]/.test(text)
+  return WARN_CONSOLE_TEXT_PATTERN.test(text)
+    || COMPONENT_WARN_PATTERN.test(text)
 }
 
 function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta {
@@ -394,13 +426,7 @@ async function runWithTimeout<T>(
 
 function isLikelyRelaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
-  return /Wait timed out after/i.test(message)
-    || /timed out waiting page root/i.test(message)
-    || /Failed to find page root/i.test(message)
-    || /Execution context was destroyed/i.test(message)
-    || /Target closed/i.test(message)
-    || /ECONNRESET/i.test(message)
-    || /not connected/i.test(message)
+  return RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
 }
 
 function isLikelySimulatorBootErrorMessage(message: string) {
@@ -436,7 +462,7 @@ function resolveRouteFromAppConfig(config: Record<string, any>) {
   const pages = Array.isArray(config.pages) ? config.pages : []
   const firstPage = pages.find(item => typeof item === 'string' && item.trim())
   if (typeof firstPage === 'string') {
-    return `/${firstPage.replace(/^\/+/, '')}`
+    return `/${firstPage.replace(LEADING_SLASH_PATTERN, '')}`
   }
 
   const subPackages = [
@@ -447,7 +473,7 @@ function resolveRouteFromAppConfig(config: Record<string, any>) {
     if (!subPackage || typeof subPackage !== 'object') {
       continue
     }
-    const root = typeof subPackage.root === 'string' ? subPackage.root.replace(/^\/+|\/+$/g, '') : ''
+    const root = typeof subPackage.root === 'string' ? subPackage.root.replace(TRIM_ROUTE_SLASH_PATTERN, '') : ''
     const packagePages = Array.isArray(subPackage.pages) ? subPackage.pages : []
     const packagePage = packagePages.find(item => typeof item === 'string' && item.trim())
     if (typeof packagePage !== 'string') {
@@ -455,7 +481,7 @@ function resolveRouteFromAppConfig(config: Record<string, any>) {
     }
     const segments = [root, packagePage].filter(Boolean)
     if (segments.length > 0) {
-      return `/${segments.join('/').replace(/\/{2,}/g, '/')}`
+      return `/${segments.join('/').replace(DUPLICATE_SLASH_PATTERN, '/')}`
     }
   }
 
@@ -491,6 +517,95 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
     text: `app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${resolveReportProjectPath(appConfigPath)}`,
   })
   return { appConfigPath }
+}
+
+function extractExecutionErrorText(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+
+  const parts: string[] = []
+  const candidate = error as {
+    message?: unknown
+    shortMessage?: unknown
+    stderr?: unknown
+    stdout?: unknown
+  }
+
+  for (const field of [candidate.message, candidate.shortMessage, candidate.stderr, candidate.stdout]) {
+    if (typeof field === 'string' && field.trim()) {
+      parts.push(field)
+    }
+  }
+
+  return parts.join('\n')
+}
+
+function extractLoginRequiredMessage(text: string) {
+  if (!text) {
+    return ''
+  }
+  if (LOGIN_REQUIRED_TEXT_PATTERN.test(text)) {
+    return '需要重新登录'
+  }
+
+  const englishMatch = text.match(LOGIN_REQUIRED_ENGLISH_PATTERN)
+  if (englishMatch?.[0]) {
+    return englishMatch[0].toLowerCase()
+  }
+
+  const firstLine = text
+    .split(LINE_SPLIT_PATTERN)
+    .map(line => line.trim())
+    .find(line => Boolean(line) && !line.startsWith('at '))
+
+  if (!firstLine) {
+    return ''
+  }
+
+  return firstLine
+    .replace(ERROR_LOG_PREFIX_PATTERN, '')
+    .replace(ERROR_PREFIX_PATTERN, '')
+    .slice(0, 120)
+}
+
+export function isDevtoolsLoginRequiredError(error: unknown) {
+  const text = extractExecutionErrorText(error)
+  if (!text) {
+    return false
+  }
+  return DEVTOOLS_LOGIN_REQUIRED_PATTERNS.some(pattern => pattern.test(text))
+}
+
+export function formatDevtoolsLoginRequiredError(error: unknown) {
+  const text = extractExecutionErrorText(error)
+  const code = text.match(LOGIN_REQUIRED_CODE_PATTERN)?.[1]
+  const message = extractLoginRequiredMessage(text)
+
+  const lines = ['微信开发者工具返回登录错误：']
+  if (code) {
+    lines.push(`- code: ${code}`)
+  }
+  if (message) {
+    lines.push(`- message: ${message}`)
+  }
+  if (!code && !message) {
+    lines.push('- message: 需要重新登录')
+  }
+
+  return lines.join('\n')
+}
+
+function createDevtoolsLoginRequiredError(error: unknown) {
+  const details = formatDevtoolsLoginRequiredError(error)
+  const next = new Error(
+    `检测到微信开发者工具登录状态失效，请先登录后再执行 e2e。\n${details}`,
+    { cause: error as Error },
+  ) as Error & { code: number, exitCode: number }
+  next.name = 'WechatIdeLoginRequiredError'
+  next.code = 10
+  next.exitCode = 10
+  return next
 }
 
 function isLikelyLaunchRetryableError(error: unknown) {
@@ -583,95 +698,6 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
     }
   }
   return null
-}
-
-function extractExecutionErrorText(error: unknown) {
-  if (!error || typeof error !== 'object') {
-    return ''
-  }
-
-  const parts: string[] = []
-  const candidate = error as {
-    message?: unknown
-    shortMessage?: unknown
-    stderr?: unknown
-    stdout?: unknown
-  }
-
-  for (const field of [candidate.message, candidate.shortMessage, candidate.stderr, candidate.stdout]) {
-    if (typeof field === 'string' && field.trim()) {
-      parts.push(field)
-    }
-  }
-
-  return parts.join('\n')
-}
-
-function extractLoginRequiredMessage(text: string) {
-  if (!text) {
-    return ''
-  }
-  if (/需要重新登录/.test(text)) {
-    return '需要重新登录'
-  }
-
-  const englishMatch = text.match(/need\s+re-?login|re-?login/i)
-  if (englishMatch?.[0]) {
-    return englishMatch[0].toLowerCase()
-  }
-
-  const firstLine = text
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .find(line => Boolean(line) && !line.startsWith('at '))
-
-  if (!firstLine) {
-    return ''
-  }
-
-  return firstLine
-    .replace(/^\[error\]\s*/i, '')
-    .replace(/^error\s*:\s*/i, '')
-    .slice(0, 120)
-}
-
-export function isDevtoolsLoginRequiredError(error: unknown) {
-  const text = extractExecutionErrorText(error)
-  if (!text) {
-    return false
-  }
-  return DEVTOOLS_LOGIN_REQUIRED_PATTERNS.some(pattern => pattern.test(text))
-}
-
-export function formatDevtoolsLoginRequiredError(error: unknown) {
-  const text = extractExecutionErrorText(error)
-  const code = text.match(/code\s*[:=]\s*(\d+)/i)?.[1]
-  const message = extractLoginRequiredMessage(text)
-
-  const lines = ['微信开发者工具返回登录错误：']
-  if (code) {
-    lines.push(`- code: ${code}`)
-  }
-  if (message) {
-    lines.push(`- message: ${message}`)
-  }
-  if (!code && !message) {
-    lines.push('- message: 需要重新登录')
-  }
-
-  return lines.join('\n')
-}
-
-function createDevtoolsLoginRequiredError(error: unknown) {
-  const details = formatDevtoolsLoginRequiredError(error)
-  const next = new Error(
-    `检测到微信开发者工具登录状态失效，请先登录后再执行 e2e。\n${details}`,
-    { cause: error as Error },
-  ) as Error & { code: number, exitCode: number }
-  next.name = 'WechatIdeLoginRequiredError'
-  next.code = 10
-  next.exitCode = 10
-  return next
 }
 
 function logRuntimeStats(meta: RuntimeLogMeta) {
@@ -902,8 +928,8 @@ async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, p
       lastConnectError = error
       const message = error instanceof Error ? error.message : String(error)
       if (!DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
-        && !/Timeout in connect automator bridge/i.test(message)
-        && !/Failed connecting to /i.test(message)) {
+        && !BRIDGE_CONNECT_TIMEOUT_PATTERN.test(message)
+        && !BRIDGE_CONNECT_FAILURE_PATTERN.test(message)) {
         throw error
       }
       await sleep(400)
@@ -937,14 +963,16 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
-  patchAutomatorVersionCheck()
-  patchMiniProgramOn()
   const { projectConfig, timeout, trustProject, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
   const launchMode = resolveAutomatorLaunchMode()
+  if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
+    patchAutomatorVersionCheck()
+    patchMiniProgramOn()
+  }
   return (async () => {
     for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
       let miniProgram: any = null
@@ -964,6 +992,9 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? await launchAutomatorViaCliBridge(launchOptions, project)
               : await automator.launch(launchOptions)
+            if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
+              patchMiniProgramOn()
+            }
 
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
@@ -994,7 +1025,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
 
         if (attempt < LAUNCH_RETRIES && isLikelyLaunchRetryableError(error)) {
           const rawMessage = error instanceof Error ? error.message : String(error)
-          const compactMessage = rawMessage.replace(/\s+/g, ' ').trim()
+          const compactMessage = rawMessage.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
           const retryLine = `[warn] [runtime:launch-retry] attempt=${attempt}/${LAUNCH_RETRIES} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`
           process.stdout.write(`${retryLine}\n`)
           appendIdeReportEvent({
@@ -1023,6 +1054,7 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
   }
 
   let miniProgram: any = null
+  let closeError: unknown = null
   try {
     if (resolveAutomatorLaunchMode() === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
       const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({
@@ -1067,10 +1099,13 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
       }
       catch (error) {
         if (!DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(error instanceof Error ? error.message : String(error)))) {
-          throw error
+          closeError = error
         }
       }
     }
+  }
+  if (closeError) {
+    throw closeError
   }
 }
 
@@ -1078,5 +1113,5 @@ export function isDevtoolsHttpPortError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
-    || /Timeout in launch automator#/i.test(message)
+    || LAUNCH_TIMEOUT_PATTERN.test(message)
 }
