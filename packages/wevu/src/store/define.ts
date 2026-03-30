@@ -6,6 +6,7 @@ import type {
   StoreSubscribeOptions,
   SubscriptionCallback,
 } from './types'
+import { effectScope } from '../reactivity'
 import { createOptionsStyleStore } from './define/optionsStyle'
 import { createSetupStyleStore } from './define/setupStyle'
 import { createStore } from './manager'
@@ -47,9 +48,12 @@ export function defineStore(id: string, setupOrOptions: any) {
     }
     created = true
 
-    instance = typeof setupOrOptions === 'function'
-      ? createSetupStyleStore(id, setupOrOptions, manager)
-      : createOptionsStyleStore(id, setupOrOptions as DefineStoreOptions<any, any, any>, manager)
+    const storeScope = effectScope(true)
+    instance = storeScope.run(() => {
+      return typeof setupOrOptions === 'function'
+        ? createSetupStyleStore(id, setupOrOptions, manager)
+        : createOptionsStyleStore(id, setupOrOptions as DefineStoreOptions<any, any, any>, manager)
+    })
 
     return instance
   }
