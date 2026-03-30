@@ -25,12 +25,9 @@ interface LocalizedText {
   en: string
 }
 
-interface CommandDefinition {
+interface CommandOptionDefinition {
+  flag: string
   description: LocalizedText
-  usage: string
-  options: Array<{ flag: string, description: LocalizedText }>
-  allowedOptions: Set<string>
-  handler: (ctx: CommandHandlerContext) => Promise<void>
 }
 
 interface CommandHandlerContext {
@@ -38,9 +35,65 @@ interface CommandHandlerContext {
   args: ParsedAutomatorArgs
 }
 
-type CommandHandler = (ctx: CommandHandlerContext) => Promise<void>
+interface CommandDefinition {
+  description: LocalizedText
+  usage: string
+  options: CommandOptionDefinition[]
+  allowedOptions: Set<string>
+  handler: (context: CommandHandlerContext) => Promise<void>
+}
+
+const COMMON_OPTION_DEFINITIONS: CommandOptionDefinition[] = [
+  { flag: '-p, --project <path>', description: { zh: '项目路径（默认：当前目录）', en: 'Project path (default: current directory)' } },
+  { flag: '-t, --timeout <ms>', description: { zh: '连接超时时间（默认：30000）', en: 'Connection timeout (default: 30000)' } },
+  { flag: '--json', description: { zh: '支持时以 JSON 输出', en: 'Output as JSON when supported' } },
+  { flag: '--lang <lang>', description: { zh: '语言切换：zh | en（默认：zh）', en: 'Language: zh | en (default: zh)' } },
+  { flag: '-h, --help', description: { zh: '显示命令帮助', en: 'Show command help' } },
+]
 
 const COMMON_ALLOWED_OPTIONS = new Set(['-p', '--project', '-t', '--timeout', '--json', '--lang', '-h', '--help'])
+
+function createDefinition(input: {
+  description: LocalizedText
+  usage: string
+  options?: CommandOptionDefinition[]
+  allowedOptions?: string[]
+  handler: (context: CommandHandlerContext) => Promise<void>
+}): CommandDefinition {
+  return {
+    description: input.description,
+    usage: input.usage,
+    options: input.options ?? [],
+    allowedOptions: new Set([...COMMON_ALLOWED_OPTIONS, ...(input.allowedOptions ?? [])]),
+    handler: input.handler,
+  }
+}
+
+function requiredPositional(value: string | undefined, errorMessage: string) {
+  if (!value) {
+    throw new Error(errorMessage)
+  }
+
+  return value
+}
+
+function validateUnsupportedOptions(command: string, argv: readonly string[], allowedOptions: ReadonlySet<string>) {
+  for (const token of argv) {
+    if (!token.startsWith('-')) {
+      continue
+    }
+
+    const optionName = token.includes('=') ? token.slice(0, token.indexOf('=')) : token
+    if (allowedOptions.has(optionName)) {
+      continue
+    }
+
+    throw new Error(i18nText(
+      `'${command}' 命令不支持参数 '${optionName}'`,
+      `Command '${command}' does not support option '${optionName}'`,
+    ))
+  }
+}
 
 const COMMAND_DEFINITIONS: Record<string, CommandDefinition> = {
   'navigate': createDefinition({
@@ -186,17 +239,47 @@ const COMMAND_DEFINITIONS: Record<string, CommandDefinition> = {
 }
 
 export const AUTOMATOR_COMMAND_NAMES = ['screenshot', ...Object.keys(COMMAND_DEFINITIONS)]
-const AUTOMATOR_COMMANDS = new Set(AUTOMATOR_COMMAND_NAMES)
+const AUTOMATOR_COMMAND_SET = new Set(AUTOMATOR_COMMAND_NAMES)
 
 /**
  * @description 判断是否属于 automator 子命令。
  */
 export function isAutomatorCommand(command: string | undefined) {
-  return Boolean(command && AUTOMATOR_COMMANDS.has(command))
+  return Boolean(command && AUTOMATOR_COMMAND_SET.has(command))
 }
 
 /**
- * @description 分发 automator 子命令。
+ * @description 获取 automator 子命令帮助文本。
+ */
+export function getAutomatorCommandHelp(command: string) {
+  const definition = COMMAND_DEFINITIONS[command]
+  if (!definition) {
+    return undefined
+  }
+
+  return [
+    i18nText(definition.description.zh, definition.description.en),
+    '',
+    `Usage: ${definition.usage}`,
+    '',
+    i18nText('参数：', 'Options:'),
+    ...[...definition.options, ...COMMON_OPTION_DEFINITIONS]
+      .map(option => `  ${option.flag.padEnd(24)} ${i18nText(option.description.zh, option.description.en)}`),
+  ].join('\n')
+}
+
+function printCommandHelp(command: string) {
+  const help = getAutomatorCommandHelp(command)
+  if (help) {
+    console.log(help)
+    return
+  }
+
+  logger.warn(i18nText(`命令 ${command} 暂无帮助信息`, `No help available for command: ${command}`))
+}
+
+/**
+ * @description 执行 automator 子命令。
  */
 export async function runAutomatorCommand(command: string, argv: string[]) {
   if (command === 'screenshot') {
@@ -218,86 +301,4 @@ export async function runAutomatorCommand(command: string, argv: string[]) {
 
   const args = parseAutomatorArgs(argv)
   await definition.handler({ argv, args })
-}
-
-/**
- * @description 获取 automator 命令帮助文本。
- */
-export function getAutomatorCommandHelp(command: string) {
-  const definition = COMMAND_DEFINITIONS[command]
-  if (!definition) {
-    return undefined
-  }
-
-  const optionLines = [
-    ...definition.options,
-    { flag: '-p, --project <path>', description: { zh: '项目路径（默认：当前目录）', en: 'Project path (default: current directory)' } },
-    { flag: '-t, --timeout <ms>', description: { zh: '连接超时时间（默认：30000）', en: 'Connection timeout (default: 30000)' } },
-    { flag: '--json', description: { zh: '支持时以 JSON 输出', en: 'Output as JSON when supported' } },
-    { flag: '--lang <lang>', description: { zh: '语言切换：zh | en（默认：zh）', en: 'Language: zh | en (default: zh)' } },
-    { flag: '-h, --help', description: { zh: '显示命令帮助', en: 'Show command help' } },
-  ]
-
-  return [
-    i18nText(definition.description.zh, definition.description.en),
-    '',
-    `Usage: ${definition.usage}`,
-    '',
-    i18nText('参数：', 'Options:'),
-    ...optionLines.map(option => `  ${option.flag.padEnd(24)} ${i18nText(option.description.zh, option.description.en)}`),
-  ].join('\n')
-}
-
-function printCommandHelp(command: string) {
-  const help = getAutomatorCommandHelp(command)
-  if (help) {
-    console.log(help)
-    return
-  }
-
-  logger.warn(i18nText(`命令 ${command} 暂无帮助信息`, `No help available for command: ${command}`))
-}
-
-function createDefinition(input: {
-  description: LocalizedText
-  usage: string
-  handler: CommandHandler
-  options?: Array<{ flag: string, description: LocalizedText }>
-  allowedOptions?: string[]
-}): CommandDefinition {
-  const options = input.options ?? []
-  const allowedOptions = new Set<string>([...COMMON_ALLOWED_OPTIONS, ...(input.allowedOptions ?? [])])
-
-  return {
-    description: input.description,
-    usage: input.usage,
-    options,
-    allowedOptions,
-    handler: input.handler,
-  }
-}
-
-function validateUnsupportedOptions(command: string, argv: readonly string[], allowedOptions: Set<string>) {
-  for (const token of argv) {
-    if (!token.startsWith('-')) {
-      continue
-    }
-
-    const optionName = token.includes('=') ? token.slice(0, token.indexOf('=')) : token
-    if (allowedOptions.has(optionName)) {
-      continue
-    }
-
-    throw new Error(i18nText(
-      `'${command}' 命令不支持参数 '${optionName}'`,
-      `Unknown option '${optionName}' for '${command}' command`,
-    ))
-  }
-}
-
-function requiredPositional(value: string | undefined, message: string) {
-  if (!value) {
-    throw new Error(message)
-  }
-  return value
 }

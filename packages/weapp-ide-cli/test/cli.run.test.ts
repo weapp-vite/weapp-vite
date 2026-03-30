@@ -234,6 +234,18 @@ describe('cli parsing', () => {
     logSpy.mockRestore()
   })
 
+  it('prints automator command help via "<command> --help"', async () => {
+    const { parse } = await loadRunModule()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await parse(['navigate', '--help'])
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Usage: weapp navigate <url> -p <project-path>'))
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
+    logSpy.mockRestore()
+  })
+
   it('prints english help when --lang en is provided', async () => {
     const { parse } = await loadRunModule()
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})

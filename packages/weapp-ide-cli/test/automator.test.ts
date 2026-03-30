@@ -1,11 +1,33 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
   formatAutomatorLoginError,
   isAutomatorLoginError,
   isDevtoolsHttpPortError,
+  launchAutomator,
 } from '../src/cli/automator'
 
+const launchMock = vi.hoisted(() => vi.fn())
+const resolveCliPathMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@weapp-vite/miniprogram-automator', () => ({
+  Launcher: class {
+    launch = launchMock
+  },
+}))
+
+vi.mock('../src/cli/resolver', () => ({
+  resolveCliPath: resolveCliPathMock,
+}))
+
 describe('automator helpers', () => {
+  beforeEach(() => {
+    launchMock.mockReset()
+    resolveCliPathMock.mockReset()
+    resolveCliPathMock.mockResolvedValue({ cliPath: '/Applications/wechat-cli', source: 'custom' })
+    launchMock.mockResolvedValue({ connected: true })
+  })
+
   describe('isDevtoolsHttpPortError', () => {
     it('recognises HTTP port error message', () => {
       const error = new Error('Failed to launch wechat web devTools, please make sure http port is open')
@@ -98,6 +120,36 @@ describe('automator helpers', () => {
 
       expect(formatted).toContain('微信开发者工具返回登录错误：')
       expect(formatted).toContain('- message: Unknown error')
+    })
+  })
+
+  describe('launchAutomator', () => {
+    it('uses resolved cliPath when caller does not provide one', async () => {
+      await launchAutomator({
+        projectPath: '/workspace/project',
+        timeout: 12_345,
+      })
+
+      expect(resolveCliPathMock).toHaveBeenCalledTimes(1)
+      expect(launchMock).toHaveBeenCalledWith({
+        cliPath: '/Applications/wechat-cli',
+        projectPath: '/workspace/project',
+        timeout: 12_345,
+      })
+    })
+
+    it('prefers explicit cliPath over resolved config', async () => {
+      await launchAutomator({
+        cliPath: '/custom/cli',
+        projectPath: '/workspace/project',
+      })
+
+      expect(resolveCliPathMock).not.toHaveBeenCalled()
+      expect(launchMock).toHaveBeenCalledWith({
+        cliPath: '/custom/cli',
+        projectPath: '/workspace/project',
+        timeout: 30_000,
+      })
     })
   })
 })
