@@ -122,6 +122,18 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 - Co-locate tests with source and use `*.test.ts` or `*.spec.ts`.
 - Update snapshots/assertions together with behavior changes.
+- When fixing tests, do not hardcode repository-bound or machine-bound values into source files, fixtures, or assertions.
+- Forbidden examples include:
+  - absolute filesystem paths
+  - project-root-specific directories or local temp/report output directories
+  - usernames, home-directory paths, local workspace names, PID values, machine-specific ports, or one-off debug artifact paths
+  - CI/local generated report paths such as `docs/reports/**` unless the feature is explicitly about those outputs
+- Prefer repo-relative paths, temporary directories created inside the test at runtime, stable helper abstractions, and assertions that do not depend on local machine layout.
+- Scope clarification:
+  - This restriction primarily targets production/source code, shared fixtures, snapshots, and general-purpose assertions introduced while fixing tests.
+  - Ordinary test-only temporary paths created at runtime in `*.test.ts` / `*.spec.ts` are allowed when they are isolated, machine-agnostic, and not asserted as machine-specific values.
+  - E2E reporting/diagnostic infrastructure under `e2e/**` may reference stable repo-owned report directories such as `docs/reports/**` when that path is part of the feature being implemented or validated.
+  - Platform-behavior fixtures in tests may use representative absolute paths when the test is explicitly verifying path normalization, symlink resolution, temp-directory behavior, or cross-platform filesystem semantics.
 - For `mpcore/packages/simulator` specifically:
   - Treat test coverage as three layers that must stay in sync for behavior changes:
     - unit/integration tests in `mpcore/packages/simulator/test/**`
