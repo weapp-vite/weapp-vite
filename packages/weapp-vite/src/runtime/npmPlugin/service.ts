@@ -220,7 +220,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
           }))
         }
 
-        await Promise.all(Array.from(localSubPackageMetas, async (meta) => {
+        for (const meta of localSubPackageMetas) {
           const targetDir = path.resolve(localSubPackageOutRoot, meta.subPackage.root, npmDistDirName)
           const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
           if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {
@@ -240,7 +240,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
             })
           }
           await cache.writeDependenciesCache(meta.subPackage.root)
-        }))
+        }
       }
     }
 
