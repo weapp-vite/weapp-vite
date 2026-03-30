@@ -174,4 +174,52 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
+
+  it('issue #373: keeps shared store computed reactive after reLaunch tears down the first page', async (ctx) => {
+    const launchPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.wxml')
+    const resultPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.wxml')
+    const launchPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.js')
+    const resultPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.js')
+
+    expect(await fs.readFile(launchPageWxmlPath, 'utf-8')).toContain('issue-373 store computed survives reLaunch')
+    expect(await fs.readFile(resultPageWxmlPath, 'utf-8')).toContain('issue-373 reLaunch store computed result')
+    expect(await fs.readFile(launchPageJsPath, 'utf-8')).toContain('runRelaunch')
+    expect(await fs.readFile(resultPageJsPath, 'utf-8')).toContain('increment')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const launchPage = await relaunchPage(miniProgram, '/pages/issue-373/launch/index', 'launch doubled: 2')
+      if (!launchPage) {
+        throw new Error('Failed to launch issue-373 launch page')
+      }
+      const launchRuntime = await launchPage.callMethod('_runE2E')
+      expect(launchRuntime?.ok).toBe(true)
+      expect(launchRuntime?.count).toBe(1)
+      expect(launchRuntime?.doubled).toBe(2)
+
+      await launchPage.callMethod('runRelaunch')
+      const resultPage = await waitForCurrentPagePath(miniProgram, '/pages/issue-373/result/index', 20_000)
+      if (!resultPage) {
+        throw new Error('Failed to navigate to issue-373 result page via reLaunch')
+      }
+      const initialResultWxml = await readPageWxml(resultPage)
+      expect(initialResultWxml).toContain('result count: 1')
+      expect(initialResultWxml).toContain('result doubled: 2')
+
+      await resultPage.callMethod('increment')
+      await resultPage.waitFor(260)
+      const runtimeResult = await resultPage.callMethod('_runE2E')
+      expect(runtimeResult?.count).toBe(2)
+      expect(runtimeResult?.doubled).toBe(4)
+      expect(runtimeResult?.ok).toBe(true)
+
+      const updatedWxml = await readPageWxml(resultPage)
+      expect(updatedWxml).toContain('result count: 2')
+      expect(updatedWxml).toContain('result doubled: 4')
+      expect(updatedWxml).toContain('data-doubled="4"')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 })
