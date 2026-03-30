@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { computed, reactive, ref } from '@/reactivity'
+import { computed, effectScope, reactive, ref } from '@/reactivity'
 import { createStore, defineStore, storeToRefs } from '@/store'
 
 describe('store (setup)', () => {
@@ -89,6 +89,30 @@ describe('store (setup)', () => {
     await expect(s.fail()).rejects.toThrow()
     expect(onErrorCb).toHaveBeenCalledTimes(1)
     stop()
+  })
+
+  it('keeps setup store computed reactive after the creating scope is stopped', () => {
+    const useCounter = defineStore('counter-scope-detached', () => {
+      const count = ref(1)
+      const double = computed(() => count.value * 2)
+      function inc() {
+        count.value += 1
+      }
+      return { count, double, inc }
+    })
+
+    const pageScope = effectScope(true)
+    const store = pageScope.run(() => useCounter())
+    expect(store).toBeTruthy()
+
+    // 先读一次 computed，确保它已经建立缓存并订阅到创建时的作用域。
+    expect(store!.double.value).toBe(2)
+
+    pageScope.stop()
+    store!.inc()
+
+    expect(store!.count.value).toBe(2)
+    expect(store!.double.value).toBe(4)
   })
 })
 
