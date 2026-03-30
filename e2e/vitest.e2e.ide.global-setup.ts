@@ -12,6 +12,8 @@ import { resolveRuntimeProviderName } from './utils/runtimeProvider'
 const DEFAULT_LOGIN_CHECK_PROJECT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const DEVTOOLS_SKIP_REASON_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_REASON'
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const WHITESPACE_RE = /\s+/g
 
 function readJsonObject(filePath: string): Record<string, any> | undefined {
@@ -87,6 +89,9 @@ export default async function setupIdeE2E() {
       writeIdeWarningReport(reportPaths)
     }
   }
+
+  process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'bridge'
+  process.env[AUTOMATOR_SKIP_WARMUP_ENV] = '1'
 
   const {
     assertDevtoolsLoggedIn,
