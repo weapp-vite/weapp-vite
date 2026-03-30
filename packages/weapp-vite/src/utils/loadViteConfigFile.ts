@@ -3,21 +3,11 @@ import { spawn } from 'node:child_process'
 import fsSync from 'node:fs'
 import fs from 'node:fs/promises'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 
-const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const TEMP_CONFIG_ARTIFACTS = new Set<string>()
 let cleanupRegistered = false
-
-const WORKSPACE_CONFIG_IMPORTS = new Map<string, string>([
-  ['weapp-vite/json', path.resolve(PACKAGE_ROOT, 'dist/json.mjs')],
-  ['weapp-vite/runtime', path.resolve(PACKAGE_ROOT, 'dist/runtime.mjs')],
-  ['weapp-vite/mcp', path.resolve(PACKAGE_ROOT, 'dist/mcp.mjs')],
-  ['weapp-vite/types', path.resolve(PACKAGE_ROOT, 'dist/types.mjs')],
-  ['weapp-vite/auto-routes', path.resolve(PACKAGE_ROOT, 'dist/auto-routes.mjs')],
-])
 
 const CONFIG_SHIM_SOURCE = `export function defineConfig(config) {
   return config
@@ -251,13 +241,6 @@ async function createWorkspaceImportReplacements(
     await fs.writeFile(resolversShimPath, RESOLVERS_SHIM_SOURCE)
     createdFiles.push(resolversShimPath)
     replacements.set('weapp-vite/auto-import-components/resolvers', `./${path.basename(resolversShimPath)}`)
-  }
-
-  for (const [specifier, replacement] of WORKSPACE_CONFIG_IMPORTS) {
-    if (!source.includes(specifier)) {
-      continue
-    }
-    replacements.set(specifier, replacement)
   }
 
   return {

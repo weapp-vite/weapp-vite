@@ -87,11 +87,13 @@ catalogs:
   weapp-tailwindcss-fixed:
     weapp-tailwindcss: 4.11.0
 
+ignoredBuiltDependencies:
+  - weapp-tailwindcss
+
 onlyBuiltDependencies:
   - '@swc/core'
   - '@weapp-tailwindcss/merge'
   - oxc-resolver
   - rolldown
-  - weapp-tailwindcss
 
 shamefullyHoist: true
