@@ -26,6 +26,7 @@
     "build:docs": "turbo run build --filter=./website",
     "build:templates": "turbo run build --filter=./templates/*",
     "test": "vitest run",
+    "test:serial": "cross-env WEAPP_VITE_TEST_MAX_WORKERS=1 vitest run",
     "test:coverage": "vitest run --coverage.enabled",
     "test:dev": "vitest",
     "test:types": "turbo run test:types",

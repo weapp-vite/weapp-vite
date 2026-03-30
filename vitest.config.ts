@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import YAML from 'yaml'
@@ -14,6 +15,10 @@ const CONFIG_FILENAMES = [
   'vitest.config.cjs',
   'vitest.config.mjs',
 ] as const
+const WINDOWS_PATH_SEPARATOR_RE = /\\/g
+const LEADING_DOT_SLASH_RE = /^\.\//
+const GLOB_META_RE = /[*?[{]/
+const TRAILING_SLASH_RE = /\/+$/
 
 function extractBaseDirFromGlob(pattern: string): string | null {
   if (!pattern) {
@@ -21,14 +26,14 @@ function extractBaseDirFromGlob(pattern: string): string | null {
   }
 
   const normalized = pattern
-    .replace(/\\/g, '/')
-    .replace(/^\.\//, '')
-  const globIndex = normalized.search(/[*?[{]/)
+    .replace(WINDOWS_PATH_SEPARATOR_RE, '/')
+    .replace(LEADING_DOT_SLASH_RE, '')
+  const globIndex = normalized.search(GLOB_META_RE)
   const base = globIndex === -1
     ? normalized
     : normalized.slice(0, globIndex)
 
-  const cleaned = base.replace(/\/+$/, '')
+  const cleaned = base.replace(TRAILING_SLASH_RE, '')
   return cleaned || null
 }
 
@@ -57,6 +62,8 @@ function loadProjectRootsFromWorkspace(): string[] {
 
 const PROJECT_ROOTS = loadProjectRootsFromWorkspace()
 const COVERAGE_TEMP_DIR = path.resolve(ROOT_DIR, 'coverage/.tmp')
+const DEFAULT_WORKSPACE_MAX_WORKERS = '50%'
+const workspaceMaxWorkers = process.env.WEAPP_VITE_TEST_MAX_WORKERS?.trim() || DEFAULT_WORKSPACE_MAX_WORKERS
 
 if (!PROJECT_ROOTS.length) {
   console.warn('[vitest] No project roots detected. Check pnpm-workspace.yaml to define workspace packages.')
@@ -111,7 +118,7 @@ export default defineConfig(() => {
   return {
     test: {
       globalSetup: ['./vitest.globalSetup.ts'],
-      maxWorkers: 1,
+      maxWorkers: workspaceMaxWorkers,
       projects,
       coverage: {
         enabled: false,
