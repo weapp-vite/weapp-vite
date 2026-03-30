@@ -106,6 +106,10 @@ export function resolveNpmDistDirName(configService?: MutableCompilerContext['co
   return getPlatformNpmDistDirName('weapp')
 }
 
+export function resolveNpmSourceCacheOutDir(cwd: string, npmDistDirName: string) {
+  return path.resolve(cwd, '.weapp-vite/npm-source', npmDistDirName)
+}
+
 export interface NpmService {
   getDependenciesCacheFilePath: (key?: string) => string
   readonly dependenciesCacheHash: string
@@ -148,7 +152,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
       const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
       const npmDistDirName = resolveNpmDistDirName(ctx.configService)
       const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
-      const cachedSourceOutDir = path.resolve(ctx.configService.cwd, 'node_modules/weapp-vite/.cache/npm-source', npmDistDirName)
+      const cachedSourceOutDir = resolveNpmSourceCacheOutDir(ctx.configService.cwd, npmDistDirName)
       const localSubPackageOutRoot = ctx.configService.outDir || path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir)
       if (pkgJson.dependencies) {
         const allDependencies = Object.keys(pkgJson.dependencies)

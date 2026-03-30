@@ -7,6 +7,7 @@ import {
   createNpmService,
   hasLocalSubPackageNpmConfig,
   resolveNpmDistDirName,
+  resolveNpmSourceCacheOutDir,
   resolveTargetDependencies,
 } from './service'
 
@@ -117,6 +118,10 @@ describe('runtime npm service', () => {
     } as any)).toBe('node_modules')
   })
 
+  it('stores npm source cache inside the project-local .weapp-vite directory', () => {
+    expect(resolveNpmSourceCacheOutDir('/project', 'miniprogram_npm')).toBe('/project/.weapp-vite/npm-source/miniprogram_npm')
+  })
+
   it('builds cached npm source and removes main output when main output is disabled', async () => {
     const cwd = await createTempDir()
     const packageJson = {
@@ -130,7 +135,7 @@ describe('runtime npm service', () => {
 
     await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
     await fs.outputFile(path.resolve(cwd, 'dist/miniprogram_npm/stale/index.js'), 'module.exports = "stale"')
-    const cachedSourceOutDir = path.resolve(cwd, 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm')
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'dayjs/index.js'), 'module.exports = "dayjs"')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/index.js'), 'module.exports = "tdesign"')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'clsx/index.js'), 'module.exports = "clsx"')
@@ -276,7 +281,7 @@ describe('runtime npm service', () => {
     const service = createNpmService(ctx)
     await expect(service.build()).resolves.toBeUndefined()
 
-    const cachedSourceOutDir = path.resolve(cwd, 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm')
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
     expect(await fs.pathExists(path.resolve(cachedSourceOutDir, 'dayjs/index.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(cachedSourceOutDir, 'lodash/index.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm'))).toBe(false)
@@ -293,11 +298,11 @@ describe('runtime npm service', () => {
     expect(buildCalls).toEqual([
       {
         dep: 'dayjs',
-        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+        outDir: '.weapp-vite/npm-source/miniprogram_npm',
       },
       {
         dep: 'lodash',
-        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+        outDir: '.weapp-vite/npm-source/miniprogram_npm',
       },
     ])
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__all__')
@@ -319,7 +324,7 @@ describe('runtime npm service', () => {
 
     await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
 
-    const cachedSourceOutDir = path.resolve(cwd, 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm')
+    const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'dayjs/index.js'), 'module.exports = "dayjs"')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "drawer"')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'class-variance-authority/index.js'), 'module.exports = "cva"')
@@ -458,11 +463,11 @@ describe('runtime npm service', () => {
     expect(buildCalls).toEqual([
       {
         dep: 'dayjs',
-        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+        outDir: '.weapp-vite/npm-source/miniprogram_npm',
       },
       {
         dep: 'lodash',
-        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+        outDir: '.weapp-vite/npm-source/miniprogram_npm',
       },
       {
         dep: 'dayjs',
