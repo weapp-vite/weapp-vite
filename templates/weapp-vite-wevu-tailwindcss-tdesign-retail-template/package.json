@@ -34,7 +34,7 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "@icebreakers/eslint-config": "^2.1.1",
+    "@icebreakers/eslint-config": "^2.1.2",
     "@icebreakers/stylelint-config": "^2.2.1",
     "autoprefixer": "catalog:",
     "eslint": "^10.1.0",
