@@ -1,11 +1,18 @@
 import net from 'node:net'
-import automator from 'miniprogram-automator'
+import automator from '@weapp-vite/miniprogram-automator'
 
 export interface AutomatorOptions {
   projectPath: string
   timeout?: number
 }
 
+const ERROR_STACK_PREFIX_RE = /^at /
+const ERROR_PREFIX_RE = /^\[error\]\s*/i
+const ERROR_LABEL_PREFIX_RE = /^error\s*:\s*/i
+const ERROR_LINE_SPLIT_RE = /\r?\n/
+const LOGIN_REQUIRED_CN_RE = /需要重新登录/
+const LOGIN_REQUIRED_EN_RE = /need\s+re-?login|re-?login/i
+const LOGIN_REQUIRED_CODE_RE = /code\s*[:=]\s*(\d+)/i
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /listen EPERM/i,
@@ -80,27 +87,27 @@ function extractLoginRequiredMessage(text: string): string {
   if (!text) {
     return ''
   }
-  if (/需要重新登录/.test(text)) {
+  if (LOGIN_REQUIRED_CN_RE.test(text)) {
     return '需要重新登录'
   }
 
-  const englishMatch = text.match(/need\s+re-?login|re-?login/i)
+  const englishMatch = text.match(LOGIN_REQUIRED_EN_RE)
   if (englishMatch?.[0]) {
     return englishMatch[0].toLowerCase()
   }
 
   const firstLine = text
-    .split(/\r?\n/)
+    .split(ERROR_LINE_SPLIT_RE)
     .map(line => line.trim())
-    .find(line => Boolean(line) && !line.startsWith('at '))
+    .find(line => Boolean(line) && !ERROR_STACK_PREFIX_RE.test(line))
 
   if (!firstLine) {
     return ''
   }
 
   return firstLine
-    .replace(/^\[error\]\s*/i, '')
-    .replace(/^error\s*:\s*/i, '')
+    .replace(ERROR_PREFIX_RE, '')
+    .replace(ERROR_LABEL_PREFIX_RE, '')
     .slice(0, 120)
 }
 
@@ -129,7 +136,7 @@ export function isAutomatorLoginError(error: unknown): boolean {
  */
 export function formatAutomatorLoginError(error: unknown): string {
   const text = extractErrorText(error)
-  const code = text.match(/code\s*[:=]\s*(\d+)/i)?.[1]
+  const code = text.match(LOGIN_REQUIRED_CODE_RE)?.[1]
   const message = extractLoginRequiredMessage(text)
 
   const lines = ['微信开发者工具返回登录错误：']

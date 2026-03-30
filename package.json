@@ -214,7 +214,7 @@
     "micromatch": "^4.0.8",
     "minidev": "^2.2.5",
     "miniprogram-api-typings": "catalog:",
-    "miniprogram-automator": "catalog:",
+    "@weapp-vite/miniprogram-automator": "workspace:*",
     "mock-fs": "^5.5.0",
     "object-hash": "catalog:",
     "only-allow": "^1.2.2",

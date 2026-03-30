@@ -2,11 +2,11 @@ import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
+import automator from '@weapp-vite/miniprogram-automator'
+import * as MiniProgramModule from '@weapp-vite/miniprogram-automator/out/MiniProgram.js'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import cmpVersion from 'licia/cmpVersion'
-import automator from 'miniprogram-automator'
-import * as MiniProgramModule from 'miniprogram-automator/out/MiniProgram.js'
 import { launchHeadlessAutomator } from './automator.headless'
 import {
   appendIdeReportEvent,
