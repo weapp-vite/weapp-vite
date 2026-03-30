@@ -1,6 +1,6 @@
 import type { LoadConfigOptions } from '../src/context'
-import { lstat, mkdir, readlink, rm, symlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { cp, lstat, mkdir, mkdtemp, readdir, readlink, rm, symlink } from 'node:fs/promises'
 import { fdir } from 'fdir'
 import path from 'pathe'
 import { resetCompilerContext } from '../src/context/getInstance'
@@ -31,6 +31,48 @@ export function getApp(app: string) {
 
 export function getFixture(dir: string) {
   return path.resolve(projectFixturesDir, dir)
+}
+
+export async function createTempFixtureProject(
+  fixtureSource: string,
+  prefix: string,
+  extraIgnored: string[] = [],
+) {
+  const tempRoot = path.resolve(fixtureSource, '..', '__temp__')
+  await mkdir(tempRoot, { recursive: true })
+  const tempDir = await mkdtemp(path.join(tempRoot, `${prefix}-`))
+  const ignored = new Set([
+    '.weapp-vite',
+    'dist',
+    'node_modules',
+    ...extraIgnored,
+  ])
+
+  await cp(fixtureSource, tempDir, {
+    dereference: true,
+    force: true,
+    recursive: true,
+    filter: (src) => {
+      const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
+      if (!relative) {
+        return true
+      }
+      return !Array.from(ignored).some((entry) => {
+        return relative === entry || relative.startsWith(`${entry}/`)
+      })
+    },
+  })
+
+  return {
+    tempDir,
+    cleanup: async () => {
+      await rm(tempDir, { recursive: true, force: true })
+      const remaining = await readdir(tempRoot).catch(() => null)
+      if (remaining && remaining.length === 0) {
+        await rm(tempRoot, { recursive: true, force: true })
+      }
+    },
+  }
 }
 
 export const dirs = [
