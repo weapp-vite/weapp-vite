@@ -3,11 +3,13 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { launchMock, MockMiniProgram } = vi.hoisted(() => {
+const { connectMock, execaMock, launchMock, MockMiniProgram } = vi.hoisted(() => {
   class MockMiniProgramClass {
     send = vi.fn(async () => ({ SDKVersion: '3.13.2' }))
   }
   return {
+    connectMock: vi.fn(),
+    execaMock: vi.fn(),
     launchMock: vi.fn(),
     MockMiniProgram: MockMiniProgramClass,
   }
@@ -16,8 +18,15 @@ const { launchMock, MockMiniProgram } = vi.hoisted(() => {
 vi.mock('miniprogram-automator', () => {
   return {
     default: {
+      connect: connectMock,
       launch: launchMock,
     },
+  }
+})
+
+vi.mock('execa', () => {
+  return {
+    execa: execaMock,
   }
 })
 
@@ -84,6 +93,7 @@ function createProjectFixture(projectRoot: string, appJson?: Record<string, any>
 }
 
 function clearLaunchEnv() {
+  delete process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE
   delete process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES
   delete process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY
   delete process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT
@@ -94,6 +104,8 @@ describe.sequential('automator launch resilience', () => {
 
   beforeEach(() => {
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
+    connectMock.mockReset()
+    execaMock.mockReset()
     launchMock.mockReset()
     clearLaunchEnv()
   })
@@ -219,5 +231,32 @@ describe.sequential('automator launch resilience', () => {
     expect(launchMock).toHaveBeenCalledTimes(1)
     expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(firstMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('uses cli bridge mode for ide launches and connects via websocket endpoint', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram()
+    execaMock.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }),
+      stderr: '',
+    })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    expect(launchMock).not.toHaveBeenCalled()
+    expect(execaMock).toHaveBeenCalledTimes(1)
+    expect(connectMock).toHaveBeenCalledWith({
+      wsEndpoint: 'ws://127.0.0.1:9420',
+    })
+    expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
   })
 })

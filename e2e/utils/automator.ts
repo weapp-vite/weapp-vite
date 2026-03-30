@@ -3,6 +3,7 @@ import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
 import cmpVersion from 'licia/cmpVersion'
+import { execa } from 'execa'
 import automator from 'miniprogram-automator'
 import MiniProgram from 'miniprogram-automator/out/MiniProgram.js'
 import { launchHeadlessAutomator } from './automator.headless'
@@ -47,6 +48,10 @@ const DEFAULT_LAUNCH_RETRIES = 3
 const DEFAULT_LAUNCH_RETRY_DELAY = 1_200
 const DEFAULT_LAUNCH_ATTEMPT_TIMEOUT = 24_000
 const DEFAULT_APP_CONFIG_READY_TIMEOUT = 12_000
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
+const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /模拟器启动失败/,
   /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
@@ -128,6 +133,20 @@ interface LaunchProjectMeta {
   warmupRoute?: string
 }
 
+interface AutomatorCliBridgePayload {
+  projectPath?: string
+  cliPath?: string
+  cwd?: string
+  timeout?: number
+  trustProject?: boolean
+  args?: string[]
+  projectConfig?: Record<string, any>
+}
+
+interface AutomatorCliBridgeResult {
+  wsEndpoint: string
+}
+
 function normalizePathForMatch(value: string) {
   const normalized = path.normalize(path.resolve(value))
   return normalized.replace(/[\\/]+$/, '')
@@ -181,6 +200,14 @@ function isProjectPathTrustedByEnv(projectPath: string | undefined) {
   return TRUST_PROJECT_PREFIXES.some((prefix) => {
     return normalizedProjectPath === prefix || normalizedProjectPath.startsWith(`${prefix}${path.sep}`)
   })
+}
+
+function resolveAutomatorLaunchMode() {
+  return process.env[AUTOMATOR_LAUNCH_MODE_ENV]?.trim().toLowerCase() || ''
+}
+
+function shouldSkipAutomatorWarmup() {
+  return process.env[AUTOMATOR_SKIP_WARMUP_ENV] === '1'
 }
 
 function resolveConsolePayload(entry: any) {
@@ -811,6 +838,96 @@ function patchMiniProgramOn() {
   } as typeof MiniProgram.prototype.on
 }
 
+async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, project: string) {
+  const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify(options)], {
+    cwd: options.cwd,
+    reject: false,
+    timeout: options.timeout,
+    env: {
+      ...process.env,
+      [AUTOMATOR_LAUNCH_MODE_ENV]: '',
+    },
+  })
+
+  if ((result.exitCode ?? 1) !== 0) {
+    const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+    const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
+    const details = stderr || stdout || `bridge exit code ${(result.exitCode ?? 1)}`
+    throw new Error(`Failed to bootstrap automator cli bridge: ${details}`)
+  }
+
+  const rawStdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
+  if (!rawStdout) {
+    throw new Error('Failed to bootstrap automator cli bridge: empty stdout')
+  }
+
+  let bridgeResult: AutomatorCliBridgeResult
+  try {
+    bridgeResult = JSON.parse(rawStdout) as AutomatorCliBridgeResult
+  }
+  catch (error) {
+    throw new Error(`Failed to parse automator cli bridge output: ${rawStdout}`, {
+      cause: error as Error,
+    })
+  }
+
+  if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
+    throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
+  }
+
+  const connectStartedAt = Date.now()
+  let lastConnectError: unknown
+  let miniProgram: any = null
+  while (Date.now() - connectStartedAt <= Math.max(12_000, options.timeout ?? 30_000)) {
+    try {
+      miniProgram = await runWithTimeout(
+        () => (automator as typeof automator & {
+          connect: (options: { wsEndpoint: string }) => Promise<any>
+        }).connect({
+          wsEndpoint: bridgeResult.wsEndpoint,
+        }),
+        4_000,
+        `connect automator bridge ${bridgeResult.wsEndpoint}`,
+        async (lateMiniProgram) => {
+          try {
+            await lateMiniProgram?.close?.()
+          }
+          catch {
+          }
+        },
+      )
+      break
+    }
+    catch (error) {
+      lastConnectError = error
+      const message = error instanceof Error ? error.message : String(error)
+      if (!DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
+        && !/Timeout in connect automator bridge/i.test(message)
+        && !/Failed connecting to /i.test(message)) {
+        throw error
+      }
+      await sleep(400)
+    }
+  }
+
+  if (!miniProgram) {
+    throw new Error(`Failed to connect automator cli bridge: ${bridgeResult.wsEndpoint}`, {
+      cause: lastConnectError as Error,
+    })
+  }
+
+  process.stdout.write(`[info] [runtime:launch-bridge] connected=${bridgeResult.wsEndpoint} project=${project}\n`)
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'message',
+    project,
+    level: 'info',
+    channel: 'launch-bridge',
+    text: `connected=${bridgeResult.wsEndpoint}`,
+  })
+  return miniProgram
+}
+
 export function launchAutomator(options: Parameters<typeof automator.launch>[0]) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
@@ -827,6 +944,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
+  const launchMode = resolveAutomatorLaunchMode()
   return (async () => {
     for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
       let miniProgram: any = null
@@ -834,7 +952,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
         return await runWithTimeout(
           async () => {
             const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
-            miniProgram = await automator.launch({
+            const launchOptions = {
               ...rest,
               timeout: launchTimeout,
               trustProject: resolvedTrustProject,
@@ -842,11 +960,14 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
                 libVersion: DEFAULT_LIB_VERSION,
                 ...projectConfig,
               },
-            })
+            }
+            miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
+              ? await launchAutomatorViaCliBridge(launchOptions, project)
+              : await automator.launch(launchOptions)
 
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
-            if (projectMeta?.warmupRoute) {
+            if (projectMeta?.warmupRoute && !shouldSkipAutomatorWarmup()) {
               await withRelaunch.reLaunch(projectMeta.warmupRoute)
             }
             return withRelaunch
@@ -903,10 +1024,34 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
 
   let miniProgram: any = null
   try {
-    miniProgram = await launchAutomator({
-      projectPath,
-      timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
-    })
+    if (resolveAutomatorLaunchMode() === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
+      const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({
+        projectPath,
+        timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
+        trustProject: isProjectPathTrustedByEnv(projectPath),
+        projectConfig: {
+          libVersion: DEFAULT_LIB_VERSION,
+        },
+      } satisfies AutomatorCliBridgePayload)], {
+        reject: false,
+        timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
+        env: {
+          ...process.env,
+          [AUTOMATOR_LAUNCH_MODE_ENV]: '',
+        },
+      })
+      if ((result.exitCode ?? 1) !== 0) {
+        const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+        const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
+        throw new Error(stderr || stdout || `Failed to verify automator cli bridge login: exit ${(result.exitCode ?? 1)}`)
+      }
+    }
+    else {
+      miniProgram = await launchAutomator({
+        projectPath,
+        timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
+      })
+    }
     loginPreflightPassed = true
   }
   catch (error) {
@@ -917,7 +1062,14 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
   }
   finally {
     if (miniProgram) {
-      await miniProgram.close()
+      try {
+        await miniProgram.close()
+      }
+      catch (error) {
+        if (!DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(error instanceof Error ? error.message : String(error)))) {
+          throw error
+        }
+      }
     }
   }
 }
