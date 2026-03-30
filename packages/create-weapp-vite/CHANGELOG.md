@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.0.69
+
+### Patch Changes
+
+- 🐛 **增强 `weapp-vite` 随包发布的 `dist/docs` 文档包，新增面向 AI 与离线开发的本地文档入口，覆盖 CLI 快速开始、AI 工作流、项目结构、`weapp` 配置、wevu 编写约束、Vue SFC 约束与常见排障说明。** [`3a54e73`](https://github.com/weapp-vite/weapp-vite/commit/3a54e733aac632d96a00d75fb334c52f75572bb3) by @sonofmagic
+
+- 🐛 **将脚手架生成项目中的 `AGENTS.md` 改为由 `create-weapp-vite` 统一动态生成，不再在各模板目录中重复维护近似副本。新的 AGENTS 指引会集中补充 `weapp-vite` 的 CLI / prepare / screenshot / ide logs 用法、`wevu` 模板的运行时编写约束，以及推荐安装的 AI skills 列表，降低后续模板间文案漂移和维护成本。** [`14f3885`](https://github.com/weapp-vite/weapp-vite/commit/14f38856796ae70ccf9015b51554b6f6f0c820aa) by @sonofmagic
+
+- 🐛 **将仓库内模板默认的 `dev`、`build`、`open`、`generate`、`prepare` 等 CLI 脚本调用从 `weapp-vite` 统一切换为 `wv`，让模板项目与当前推荐的命令别名保持一致。同时为脚手架生成的新项目默认注入根目录 `AGENTS.md`，明确告知 AI 代理安装依赖后优先阅读 `node_modules/weapp-vite/dist/docs/` 下的随包文档，并在做小程序截图验收时优先使用 `weapp-vite screenshot` / `wv screenshot`，在需要查看终端日志时优先使用 `weapp-vite ide logs --open` / `wv ide logs --open`。此外，`weapp-vite` npm 包会同步发布 `dist/docs` 本地文档目录，减少 AI 在其他仓库里依赖过时外部资料的概率。同步补充 `create-weapp-vite` 的版本变更，确保脚手架生成的新项目默认携带同一套命令与 AI 指引。** [`acf8c14`](https://github.com/weapp-vite/weapp-vite/commit/acf8c14a4657859ca305c128bc86145228f3e524) by @sonofmagic
+
 ## 2.0.68
 
 ### Patch Changes
