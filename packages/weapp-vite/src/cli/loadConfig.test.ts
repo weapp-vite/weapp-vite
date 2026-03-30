@@ -61,6 +61,9 @@ describe('loadConfig', () => {
       { command: 'serve', mode: 'development' },
       path.resolve(process.cwd(), 'vite.config.ts'),
       process.cwd(),
+      undefined,
+      undefined,
+      'runner',
     )
   })
 
