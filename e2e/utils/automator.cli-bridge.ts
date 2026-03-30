@@ -1,9 +1,8 @@
+import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-import { spawn } from 'node:child_process'
-import automator from 'miniprogram-automator'
 
 interface AutomatorCliBridgePayload {
   projectPath?: string
@@ -81,15 +80,22 @@ async function reserveLoopbackPort() {
   })
 }
 
-async function connectWithRetry(wsEndpoint: string, timeoutMs: number) {
+async function waitForSocketReady(port: number, timeoutMs: number) {
   const startedAt = Date.now()
   let lastError: unknown
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const miniProgram = await (automator as typeof automator & {
-        connect: (options: { wsEndpoint: string }) => Promise<any>
-      }).connect({ wsEndpoint })
-      await miniProgram.close()
+      await new Promise<void>((resolve, reject) => {
+        const socket = net.createConnection({
+          host: '127.0.0.1',
+          port,
+        })
+        socket.once('connect', () => {
+          socket.end()
+          resolve()
+        })
+        socket.once('error', reject)
+      })
       return
     }
     catch (error) {
@@ -97,7 +103,7 @@ async function connectWithRetry(wsEndpoint: string, timeoutMs: number) {
       await sleep(400)
     }
   }
-  throw new Error(`Timed out waiting for automator websocket ${wsEndpoint}`, {
+  throw new Error(`Timed out waiting for automator socket 127.0.0.1:${port}`, {
     cause: lastError as Error,
   })
 }
@@ -128,14 +134,15 @@ async function main() {
   if (!projectPath) {
     throw new Error('Missing projectPath for automator cli bridge')
   }
+  const resolvedProjectPath = path.resolve(projectPath)
 
-  await extendProjectConfig(projectPath, payload.projectConfig)
+  await extendProjectConfig(resolvedProjectPath, payload.projectConfig)
   const autoPort = await reserveLoopbackPort()
   const cliPath = resolveCliPath(payload.cliPath)
   const args = [
     'auto',
     '--project',
-    projectPath,
+    resolvedProjectPath,
     '--auto-port',
     String(autoPort),
     ...(payload.args || []),
@@ -152,7 +159,7 @@ async function main() {
   child.unref()
 
   const wsEndpoint = `ws://127.0.0.1:${autoPort}`
-  await connectWithRetry(wsEndpoint, payload.timeout ?? 30_000)
+  await waitForSocketReady(autoPort, payload.timeout ?? 30_000)
 
   const result: AutomatorCliBridgeResult = { wsEndpoint }
   process.stdout.write(JSON.stringify(result))
