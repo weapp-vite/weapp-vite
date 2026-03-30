@@ -36,13 +36,14 @@ export async function loadViteConfigFile(
   runner?: ConfigRunner,
 ) {
   const resolvedConfigFile = configFile ?? await resolveImplicitConfigFile(configRoot)
+  const resolvedConfigLoader = configLoader ?? 'bundle'
   return loadConfigFromFile(
     configEnv,
     resolvedConfigFile,
     configRoot,
     configFileDependencies,
     configFileExport,
-    configLoader,
+    resolvedConfigLoader,
     runner,
   )
 }
