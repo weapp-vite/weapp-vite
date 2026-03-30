@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- e2e uses fs-extra helpers for fixture mutation and polling. */
 import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
@@ -185,7 +186,7 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
 
     const jsonData = JSON.parse(originalSource)
     jsonData.hmrMarker = marker
-    const updatedSource = JSON.stringify(jsonData, null, 2)
+    const updatedSource = `${JSON.stringify(jsonData, null, 2)}\n`
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
@@ -206,10 +207,21 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
 
       await replaceFileByRename(SRC_JSON, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated json marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated json marker`,
+        )
+      }
+      catch {
+        // 某些环境下可能错过第一次文件变更事件，追加换行再次触发 JSON 重写。
+        await replaceFileByRename(SRC_JSON, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated json marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {

@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- e2e launches the CLI with execa and uses fs-extra test helpers. */
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -5,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const RACE_GUARD_PATH = path.resolve(import.meta.dirname, '../helpers/fs-copy-race-guard.cjs')
-const APP_ROOT = path.resolve(import.meta.dirname, '../../packages/weapp-vite/test/fixtures/subPackages-dependencies')
+const APP_ROOT = path.resolve(import.meta.dirname, '../../test/fixture-projects/weapp-vite/subPackages-dependencies')
 
 describe.sequential('npm build race guard e2e', () => {
   it('builds npm dependencies without same-destination concurrent copy races', async () => {
