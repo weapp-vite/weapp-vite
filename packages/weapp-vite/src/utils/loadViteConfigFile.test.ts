@@ -57,4 +57,34 @@ export default {
       undefined,
     )
   })
+
+  it('resolves the default vite config file from configRoot', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-'))
+    tempDirs.push(tempDir)
+
+    const configFile = path.join(tempDir, 'vite.config.mts')
+    await fs.writeFile(configFile, 'export default {}')
+
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {},
+      path: configFile,
+      dependencies: [configFile],
+    })
+
+    await loadViteConfigFile(
+      { command: 'build', mode: 'production' },
+      undefined,
+      tempDir,
+    )
+
+    expect(loadConfigFromFileMock).toHaveBeenCalledWith(
+      { command: 'build', mode: 'production' },
+      configFile,
+      tempDir,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    )
+  })
 })
