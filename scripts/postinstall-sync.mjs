@@ -8,6 +8,34 @@ import { syncRolldownCatalogReferences } from './print-rolldown-versions.mjs'
 const ROOT_DIR = path.dirname(fileURLToPath(new URL('../package.json', import.meta.url)))
 const WORKSPACE_PATH = path.resolve(ROOT_DIR, 'pnpm-workspace.yaml')
 const GENERATED_CATALOG_PATH = path.resolve(ROOT_DIR, 'packages/create-weapp-vite/src/generated/catalog.ts')
+const CHUNK_MODE_FAKE_PKG_FILES = [
+  {
+    filePath: path.resolve(ROOT_DIR, 'e2e-apps/chunk-modes/node_modules/fake-pkg/package.json'),
+    content: `${JSON.stringify({
+      name: 'fake-pkg',
+      version: '0.0.0',
+      type: 'module',
+      main: 'index.js',
+    }, null, 2)}\n`,
+  },
+  {
+    filePath: path.resolve(ROOT_DIR, 'e2e-apps/chunk-modes/node_modules/fake-pkg/index.js'),
+    content: `export const vendorMarker = '__VENDOR_MARKER__'\n`,
+  },
+  {
+    filePath: path.resolve(ROOT_DIR, 'test/fixture-projects/weapp-vite/shared-chunk-modes/node_modules/fake-pkg/package.json'),
+    content: `${JSON.stringify({
+      name: 'fake-pkg',
+      version: '0.0.0',
+      type: 'module',
+      main: 'index.js',
+    }, null, 2)}\n`,
+  },
+  {
+    filePath: path.resolve(ROOT_DIR, 'test/fixture-projects/weapp-vite/shared-chunk-modes/node_modules/fake-pkg/index.js'),
+    content: `export const vendorMarker = '__VENDOR_MARKER__'\n`,
+  },
+]
 
 function normalizeCatalog(catalog = {}) {
   const normalized = {}
@@ -78,6 +106,23 @@ async function fileChanged(filePath, runner) {
   return before !== after
 }
 
+async function ensureChunkModeFakePkg() {
+  const changedFiles = []
+
+  for (const entry of CHUNK_MODE_FAKE_PKG_FILES) {
+    const current = await fs.readFile(entry.filePath, 'utf8').catch(() => '')
+    if (current === entry.content) {
+      continue
+    }
+
+    await fs.mkdir(path.dirname(entry.filePath), { recursive: true })
+    await fs.writeFile(entry.filePath, entry.content, 'utf8')
+    changedFiles.push(entry.filePath)
+  }
+
+  return changedFiles
+}
+
 async function main() {
   const changedFiles = []
 
@@ -89,6 +134,7 @@ async function main() {
   }
 
   changedFiles.push(...syncRolldownCatalogReferences(ROOT_DIR))
+  changedFiles.push(...await ensureChunkModeFakePkg())
 
   if (changedFiles.length === 0) {
     return
