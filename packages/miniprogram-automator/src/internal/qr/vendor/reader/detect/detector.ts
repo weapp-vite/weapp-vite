@@ -5,7 +5,7 @@ import GridSampler from './grid'
 /**
  * @file 二维码解析内部模块：detector。
  */
-import Version from './version'
+import Version from '../parse/version'
 
 function PerspectiveTransform(a11, a21, a31, a12, a22, a32, a13, a23, a33) {
   this.a11 = a11

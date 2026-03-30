@@ -2,7 +2,7 @@
 /**
  * @file 二维码解析内部模块：grid。
  */
-import BitMatrix from './bitmat'
+import BitMatrix from '../parse/bitmat'
 
 const GridSampler = {}
 GridSampler.checkAndNudgePoints = function (image, points) {

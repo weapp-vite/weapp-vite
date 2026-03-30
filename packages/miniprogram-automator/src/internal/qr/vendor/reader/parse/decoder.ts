@@ -2,11 +2,11 @@
 import BitMatrixParser from './bmparser'
 import DataBlock from './datablock'
 import QRCodeDataBlockReader from './databr'
-import GF256 from './gf256'
+import GF256 from '../error-correction/gf256'
 /**
  * @file 二维码解析内部模块：decoder。
  */
-import ReedSolomonDecoder from './rsdecoder'
+import ReedSolomonDecoder from '../error-correction/rsdecoder'
 
 const Decoder = {}
 Decoder.rsDecoder = new ReedSolomonDecoder(GF256.QR_CODE_FIELD)

@@ -3,7 +3,7 @@ import ErrorCorrectionLevel from './errorlevel'
 /**
  * @file 二维码解析内部模块：formatinf。
  */
-import { URShift } from './qrcode'
+import { URShift } from '../core/qrcode'
 
 const FORMAT_INFO_MASK_QR = 0x5412
 const FORMAT_INFO_DECODE_LOOKUP = [

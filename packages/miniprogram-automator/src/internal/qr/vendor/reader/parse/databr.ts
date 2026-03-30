@@ -2,7 +2,7 @@
 /**
  * @file 二维码解析内部模块：databr。
  */
-import { qrcode } from './qrcode'
+import { qrcode } from '../core/qrcode'
 
 export default function QRCodeDataBlockReader(blocks, version, numErrorCorrectionCode) {
   this.blockPointer = 0
