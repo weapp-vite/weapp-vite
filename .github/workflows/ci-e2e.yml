@@ -21,6 +21,10 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
+      - name: Enable Git long paths on Windows
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
+
       - name: Check out code
         uses: actions/checkout@v6
         with:
