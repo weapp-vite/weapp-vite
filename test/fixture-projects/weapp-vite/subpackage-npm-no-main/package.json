@@ -1,8 +1,8 @@
 {
   "name": "subpackage-npm-no-main-fixture",
-  "private": true,
   "type": "module",
   "version": "0.0.0",
+  "private": true,
   "scripts": {
     "build": "weapp-vite build"
   },
@@ -12,7 +12,7 @@
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
+    "typescript": "catalog:",
     "weapp-vite": "workspace:*"
   },
   "dependenciesMeta": {

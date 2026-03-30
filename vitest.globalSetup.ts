@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT_DIR = path.dirname(fileURLToPath(new URL(import.meta.url)))
 const FIXTURE_PROJECTS_DIR = path.resolve(ROOT_DIR, 'test/fixture-projects/weapp-vite')
@@ -37,7 +36,7 @@ async function cleanupFixtureProjects() {
 
       await Promise.all(children
         .filter(child => child.isDirectory())
-        .filter(child => FIXTURE_BUILD_DIR_NAMES.has(child.name) || child.name.startsWith('dist-'))
+        .filter(child => FIXTURE_BUILD_DIR_NAMES.has(child.name))
         .map(child => fs.rm(path.join(fixtureRoot, child.name), { recursive: true, force: true })))
 
       // 清理历史测试遗留的嵌套 node_modules，避免旧的 stub 包污染 workspace 解析。
