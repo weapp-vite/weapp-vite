@@ -18,6 +18,8 @@ export default icebreaker(
       'packages/vite-plugin-performance/*.md',
       'website/guide/module.md',
       'packages/weapp-vite/modules/**',
+      'packages/miniprogram-automator/src/internal/qrcode-reader/**',
+      'packages/miniprogram-automator/src/internal/qrcode-terminal/**',
       'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-sidebar/README.md',
       'website/blog/release6.md',
       'docs/core-architecture.md',
@@ -117,6 +119,18 @@ export default icebreaker(
     },
   },
   {
+    files: ['packages/weapp-ide-cli/package.json'],
+    rules: {
+      'e18e/ban-dependencies': 'off',
+    },
+  },
+  {
+    files: ['packages/miniprogram-automator/src/Element.ts'],
+    rules: {
+      'ts/no-use-before-define': 'off',
+    },
+  },
+  {
     files: ['apps/wevu-vue-demo/src/**/*.vue'],
     rules: {
       'no-console': 'off',
@@ -160,6 +174,12 @@ export default icebreaker(
   },
   {
     files: ['**/*.test.{ts,js,mjs,cjs}', '**/*.spec.{ts,js,mjs,cjs}'],
+    rules: {
+      'e18e/prefer-static-regex': 'off',
+    },
+  },
+  {
+    files: ['packages/miniprogram-automator/src/internal/compat.ts'],
     rules: {
       'e18e/prefer-static-regex': 'off',
     },

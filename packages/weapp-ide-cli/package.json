@@ -88,9 +88,9 @@
   },
   "dependencies": {
     "@weapp-core/logger": "workspace:^",
+    "@weapp-vite/miniprogram-automator": "workspace:*",
     "execa": "9.6.1",
     "fs-extra": "catalog:",
-    "miniprogram-automator": "catalog:",
     "pathe": "catalog:"
   }
 }

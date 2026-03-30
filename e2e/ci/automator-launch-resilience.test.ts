@@ -15,7 +15,7 @@ const { connectMock, execaMock, launchMock, MockMiniProgram } = vi.hoisted(() =>
   }
 })
 
-vi.mock('miniprogram-automator', () => {
+vi.mock('@weapp-vite/miniprogram-automator', () => {
   return {
     default: {
       connect: connectMock,
@@ -30,7 +30,7 @@ vi.mock('execa', () => {
   }
 })
 
-vi.mock('miniprogram-automator/out/MiniProgram.js', () => {
+vi.mock('@weapp-vite/miniprogram-automator/out/MiniProgram.js', () => {
   return {
     default: MockMiniProgram,
   }
