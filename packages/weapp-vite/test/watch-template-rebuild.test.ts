@@ -52,7 +52,7 @@ describe.skip.sequential('watch rebuilds template', () => {
     const configEntry = pathToFileURL(path.resolve(packageRoot, 'src/config.ts')).href
     const configUpdated = configContent.replace(/from ['"]weapp-vite\/config['"]/g, `from '${configEntry}'`)
     if (configUpdated === configContent) {
-      throw new Error('Expected weapp-vite/config import not found in template config')
+      throw new Error('Expected weapp-vite import not found in template config')
     }
     await fs.writeFile(configPath, configUpdated, 'utf8')
 

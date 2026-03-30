@@ -8,6 +8,6 @@
     "skipLibCheck": true
   },
   "include": [
-    "vite.config.mts"
+    "vite.config.ts"
   ]
 }

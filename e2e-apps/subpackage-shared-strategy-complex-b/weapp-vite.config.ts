@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 
 type SharedStrategy = 'duplicate' | 'hoist'
 

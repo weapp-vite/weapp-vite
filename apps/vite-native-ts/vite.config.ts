@@ -1,6 +1,6 @@
 import path from 'pathe'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite'
 
 let idx = 0
 export default defineConfig({

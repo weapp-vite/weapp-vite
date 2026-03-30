@@ -1,4 +1,4 @@
-import type { UserConfig } from 'weapp-vite/config'
+import type { UserConfig } from 'weapp-vite'
 import process from 'node:process'
 // import consola from 'consola'
 // import fs from 'fs-extra'
