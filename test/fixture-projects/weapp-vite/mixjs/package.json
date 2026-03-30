@@ -1,18 +1,19 @@
 {
+  "name": "fixture-weapp-vite-mixjs",
+  "type": "module",
   "private": true,
-  "dependencies": {
-    "tdesign-miniprogram": "latest"
-  },
-  "bugs": {
-    "url": "https://github.com/weapp-vite/weapp-vite/issues"
-  },
+  "author": "ice breaker <1324318532@qq.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "packages/weapp-vite/test/fixtures/mixjs"
   },
-  "author": "ice breaker <1324318532@qq.com>",
-  "type": "module",
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "latest"
+  },
   "devDependencies": {
     "weapp-vite": "workspace:*"
   },
