@@ -63,7 +63,7 @@ describe('loadConfig', () => {
       process.cwd(),
       undefined,
       undefined,
-      'bundle',
+      'runner',
     )
   })
 
