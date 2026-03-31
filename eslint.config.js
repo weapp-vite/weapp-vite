@@ -20,6 +20,8 @@ export default icebreaker(
       'packages/weapp-vite/modules/**',
       'packages/miniprogram-automator/src/internal/qr/vendor/reader/**',
       'packages/miniprogram-automator/src/internal/qr/vendor/terminal/**',
+      'packages/qr/src/vendor/reader/**',
+      'packages/qr/src/vendor/terminal/**',
       'templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/components/goods-category/components/c-sidebar/README.md',
       'website/blog/release6.md',
       'docs/core-architecture.md',

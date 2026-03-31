@@ -1635,12 +1635,12 @@ importers:
 
   packages/miniprogram-automator:
     dependencies:
+      '@weapp-vite/qr':
+        specifier: workspace:*
+        version: link:../qr
       debug:
         specifier: 'catalog:'
         version: 4.4.3
-      sharp:
-        specifier: ^0.34.5
-        version: 0.34.5
       ws:
         specifier: ^8.18.3
         version: 8.20.0(bufferutil@4.0.9)
@@ -1648,6 +1648,15 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
+
+  packages/qr:
+    dependencies:
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
 
   packages/rolldown-require:
     dependencies:

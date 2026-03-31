@@ -2,9 +2,8 @@
  * @file 二维码与插件路径工具。
  */
 import process from 'node:process'
+import { decodeQrCodeFromBase64, renderTerminalQrCode } from '@weapp-vite/qr'
 import { startWith } from './internal/compat'
-import { decodeQrCodeFromBase64 } from './internal/qr/decode'
-import { renderTerminalQrCode } from './internal/qr/render'
 
 const regPluginId = /^plugin-private:\/\/([0-9a-zA-Z]+)\//
 /** decodeQrCode 的方法封装。 */
