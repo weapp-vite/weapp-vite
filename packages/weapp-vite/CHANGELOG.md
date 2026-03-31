@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.12.2
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite` CLI 在读取 `vite.config.ts` / `weapp-vite.config.ts` 时因 Vite `bundle` 配置加载器误走 `require` 而无法解析纯 ESM `weapp-vite` 入口的问题，避免 `apps/plugin-demo` 这类示例项目在执行 `pnpm dev` 时出现配置加载失败。同时为 `plugin-demo` 示例补充 `"type": "module"` 声明，减少 Vite 8 下的模块类型歧义。** [`2b8bc78`](https://github.com/weapp-vite/weapp-vite/commit/2b8bc78215979c125916794f18c195d60ec0b909) by @sonofmagic
+- 📦 **Dependencies**
+  → `weapp-ide-cli@5.1.4`, `@weapp-vite/ast@6.12.2`, `wevu@6.12.2`
+
 ## 6.12.1
 
 ### Patch Changes

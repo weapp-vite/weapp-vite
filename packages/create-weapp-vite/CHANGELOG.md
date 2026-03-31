@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.0.70
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite` CLI 在读取 `vite.config.ts` / `weapp-vite.config.ts` 时因 Vite `bundle` 配置加载器误走 `require` 而无法解析纯 ESM `weapp-vite` 入口的问题，避免 `apps/plugin-demo` 这类示例项目在执行 `pnpm dev` 时出现配置加载失败。同时为 `plugin-demo` 示例补充 `"type": "module"` 声明，减少 Vite 8 下的模块类型歧义。** [`2b8bc78`](https://github.com/weapp-vite/weapp-vite/commit/2b8bc78215979c125916794f18c195d60ec0b909) by @sonofmagic
+
+- 🐛 **更新 `weapp-vite-lib-template` 模板：为组件库项目同时补充 `@wevu/api` 的 `peerDependencies` 与 `devDependencies`，并在 lib 构建配置中将 `@wevu/api` 标记为 external，避免被打进组件库产物。** [`40b2ffe`](https://github.com/weapp-vite/weapp-vite/commit/40b2ffe10e14c39066a68f4723feed2070f91a94) by @sonofmagic
+
 ## 2.0.69
 
 ### Patch Changes

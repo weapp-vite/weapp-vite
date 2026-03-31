@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/miniprogram-automator",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "完全兼容微信 miniprogram-automator 的现代化替代实现",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
