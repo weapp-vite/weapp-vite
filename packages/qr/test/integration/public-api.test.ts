@@ -13,6 +13,7 @@ import {
   decodeQrCodeFromBuffer,
   decodeQrCodeFromFile,
   decodeWithQrReader,
+  detectMiniProgramCodeFromBase64,
   renderTerminalQrCode,
   renderTerminalQrCodeFromMatrix,
 } from '../../src/index'
@@ -94,5 +95,14 @@ describe('@weapp-vite/qr public api', () => {
       height: info.height,
       data,
     })).rejects.toThrow(fixture.expectedError)
+  })
+
+  it('detects mini program code structure through the public entry', async () => {
+    const fixture = (await loadFixtureManifest('mini-program-codes/manifest.json'))[0]
+    const base64 = await loadQrFixtureBase64(fixture.file)
+
+    await expect(detectMiniProgramCodeFromBase64(base64)).resolves.toMatchObject({
+      kind: 'wechat-mini-program-code',
+    })
   })
 })

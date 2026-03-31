@@ -3,6 +3,12 @@
  */
 export { decodeQrCodeFromBase64, decodeQrCodeFromBuffer, decodeQrCodeFromFile } from './decode'
 export { createQrCodeMatrix } from './encode'
+export {
+  detectMiniProgramCodeFromBase64,
+  detectMiniProgramCodeFromBuffer,
+  detectMiniProgramCodeFromFile,
+} from './miniProgramCode'
+export type { MiniProgramCodeDetectionResult } from './miniProgramCode'
 export { decodeWithQrReader } from './reader/decode'
 export type {
   QRCodeReaderCallback,
