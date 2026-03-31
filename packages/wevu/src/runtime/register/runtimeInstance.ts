@@ -12,7 +12,7 @@ import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
-import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
+import { allocateOwnerId, attachOwnerSnapshot, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import {
@@ -147,10 +147,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     if (!runtimeRef) {
       return
     }
-    if (typeof runtimeRef.snapshot !== 'function') {
-      return
-    }
-    const snapshot = runtimeRef.snapshot()
+    const snapshot = resolveOwnerSnapshot(runtimeRef)
     const propsSource = (target as any).__wevuProps ?? (target as any).properties
     if (propsSource && typeof propsSource === 'object') {
       for (const [key, value] of Object.entries(propsSource)) {

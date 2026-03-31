@@ -8,6 +8,10 @@ interface OwnerRecord {
   subscribers: Set<OwnerSubscriber>
 }
 
+type RuntimeInstanceWithOwnerSnapshot = RuntimeInstance<any, any, any> & {
+  __wevu_cloneLatestSnapshot?: () => Record<string, any>
+}
+
 const ownerStore = new Map<string, OwnerRecord>()
 let ownerSeed = 0
 
@@ -62,6 +66,14 @@ export function getOwnerSnapshot(ownerId: string) {
   return ownerStore.get(ownerId)?.snapshot
 }
 
+export function resolveOwnerSnapshot(runtime: RuntimeInstance<any, any, any>) {
+  const fastSnapshot = (runtime as RuntimeInstanceWithOwnerSnapshot).__wevu_cloneLatestSnapshot
+  if (typeof fastSnapshot === 'function') {
+    return fastSnapshot()
+  }
+  return typeof runtime.snapshot === 'function' ? runtime.snapshot() : {}
+}
+
 export function attachOwnerSnapshot(
   target: InternalRuntimeState,
   runtime: RuntimeInstance<any, any, any>,
@@ -79,7 +91,7 @@ export function attachOwnerSnapshot(
   catch {
     // 忽略写入异常
   }
-  const snapshot = typeof runtime.snapshot === 'function' ? runtime.snapshot() : {}
+  const snapshot = resolveOwnerSnapshot(runtime)
   const propsSource = (target as any).__wevuProps ?? (target as any).properties
   if (propsSource && typeof propsSource === 'object') {
     for (const [key, value] of Object.entries(propsSource)) {
