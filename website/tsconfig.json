@@ -28,6 +28,8 @@
     "skipLibCheck": true
   },
   "include": [
+    "*.d.ts",
+    ".vitepress/**/*.d.ts",
     ".vitepress/**/*.ts",
     ".vitepress/**/*.tsx",
     ".vitepress/**/*.vue"
