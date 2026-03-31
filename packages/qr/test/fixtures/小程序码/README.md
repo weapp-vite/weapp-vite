@@ -24,3 +24,7 @@
 - 以上图片当前可以正常下载，作为“公开且仍在线”的真实小程序码素材保留。
 - 使用仓库当前 `@weapp-vite/qr` 解码器验证时，这三张图均未识别成功，错误为 `Couldn't find enough finder patterns:0 patterns found`。
 - 这说明当前问题不再是“码已注销”，而是现有 reader 对这类小程序码样式尚不兼容。
+
+## imported
+
+`imported/` 目录下的文件来自额外导入的小程序码素材，统一使用英文 slug 文件名，便于仓库内引用和后续测试扩展。
