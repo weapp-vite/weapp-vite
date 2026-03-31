@@ -4,6 +4,7 @@ import logger from '@weapp-core/logger'
 // eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
+import { version as wevuApiVersion } from '../../weapi/package.json'
 import { version } from '../../weapp-vite/package.json'
 import { version as wevuVersion } from '../../wevu/package.json'
 import { createAgentsGuidelines } from './agents'
@@ -283,6 +284,7 @@ export async function createProject(targetDir: string = '', templateName: Templa
 
   upsertExistingDependencyVersion(pkgJson, 'weapp-vite', toCaretVersion(version))
   upsertExistingDependencyVersion(pkgJson, 'wevu', toCaretVersion(wevuVersion))
+  upsertExistingDependencyVersion(pkgJson, '@wevu/api', toCaretVersion(wevuApiVersion))
 
   await upsertTailwindcssVersion(pkgJson)
 

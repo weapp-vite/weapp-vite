@@ -194,7 +194,10 @@ export function createSetDataScheduler(options: {
       for (const key of Object.keys(latestComputedTokens)) {
         delete latestComputedTokens[key]
       }
-      return nextSnapshot
+      return {
+        snapshot: nextSnapshot,
+        replacedTopLevelKeys,
+      }
     }
 
     for (const key of Object.keys(computedRefs)) {

@@ -191,11 +191,15 @@ async function buildExpectedPackageJson(templateName: TemplateName) {
   const { version: wevuVersion } = await fs.readJSON(
     path.resolve(import.meta.dirname, '../../..', 'packages/wevu/package.json'),
   )
+  const { version: wevuApiVersion } = await fs.readJSON(
+    path.resolve(import.meta.dirname, '../../..', 'packages/weapi/package.json'),
+  )
 
   normalizeDependencySpecs(expectedPackageJson)
   expectedPackageJson.devDependencies ??= {}
   upsertDependencyVersion(expectedPackageJson, 'weapp-vite', `^${weappViteVersion}`)
   upsertDependencyVersion(expectedPackageJson, 'wevu', `^${wevuVersion}`)
+  upsertDependencyVersion(expectedPackageJson, '@wevu/api', `^${wevuApiVersion}`)
 
   if (!expectedPackageJson.devDependencies['weapp-tailwindcss']) {
     expectedPackageJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
