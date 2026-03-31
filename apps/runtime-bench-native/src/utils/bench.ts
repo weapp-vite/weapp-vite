@@ -12,8 +12,12 @@ export interface BenchMetrics {
   loadToReadyMs: number
   firstCommitMs: number
   singleCommitMs: number
+  singleCommitComputeMs: number
+  singleCommitCommitMs: number
   singleCommitSetDataCalls: number
   microCommitMs: number
+  microCommitComputeMs: number
+  microCommitCommitMs: number
   microCommitSetDataCalls: number
 }
 
@@ -80,8 +84,12 @@ export function createEmptyMetrics(): BenchMetrics {
     loadToReadyMs: 0,
     firstCommitMs: 0,
     singleCommitMs: 0,
+    singleCommitComputeMs: 0,
+    singleCommitCommitMs: 0,
     singleCommitSetDataCalls: 0,
     microCommitMs: 0,
+    microCommitComputeMs: 0,
+    microCommitCommitMs: 0,
     microCommitSetDataCalls: 0,
   }
 }

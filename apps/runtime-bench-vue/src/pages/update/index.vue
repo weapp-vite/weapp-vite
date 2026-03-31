@@ -1,15 +1,16 @@
 <script lang="ts">
+import type { BenchMetrics, SetDataCounter } from '../../utils/bench'
 import { defineComponent, nextTick, onLoad, onReady } from 'wevu'
 import {
+
   createBenchCards,
   createEmptyMetrics,
   mutateBenchCards,
   now,
   patchSetData,
+
   summarizeBenchCards,
   UPDATE_CARD_COUNT,
-  type BenchMetrics,
-  type SetDataCounter,
 } from '../../utils/bench'
 
 const setDataCounter: SetDataCounter = {
@@ -35,14 +36,6 @@ function buildSnapshot(data: {
 }
 
 export default defineComponent({
-  data: () => ({
-    title: 'Vue Update Benchmark',
-    readyMarker: '',
-    summary: '',
-    cards: [] as any[],
-    metrics: createEmptyMetrics(),
-    totalSetDataCalls: 0,
-  }),
   setup(_props, ctx) {
     const state = ctx.state as any
     const instance = ctx.instance as any
@@ -80,18 +73,24 @@ export default defineComponent({
       const startCalls = setDataCounter.total
       const startAt = now()
       let cards = state.cards
+      const computeStartedAt = now()
 
       for (let index = 0; index < rounds; index += 1) {
         cards = mutateBenchCards(cards, index + 1)
       }
+      const computeMs = now() - computeStartedAt
 
+      const commitStartedAt = now()
       state.cards = cards
       state.summary = summarizeBenchCards(cards)
       await nextTick()
+      const commitMs = now() - commitStartedAt
 
       state.metrics = {
         ...state.metrics,
         singleCommitMs: now() - startAt,
+        singleCommitComputeMs: computeMs,
+        singleCommitCommitMs: commitMs,
         singleCommitSetDataCalls: setDataCounter.total - startCalls,
       }
       state.totalSetDataCalls = setDataCounter.total
@@ -103,17 +102,26 @@ export default defineComponent({
       const startCalls = setDataCounter.total
       const startAt = now()
       let cards = state.cards
+      let computeMs = 0
+      let commitMs = 0
 
       for (let index = 0; index < rounds; index += 1) {
+        const computeStartedAt = now()
         cards = mutateBenchCards(cards, index + 1)
+        computeMs += now() - computeStartedAt
+
+        const commitStartedAt = now()
         state.cards = cards
         state.summary = summarizeBenchCards(cards)
         await nextTick()
+        commitMs += now() - commitStartedAt
       }
 
       state.metrics = {
         ...state.metrics,
         microCommitMs: now() - startAt,
+        microCommitComputeMs: computeMs,
+        microCommitCommitMs: commitMs,
         microCommitSetDataCalls: setDataCounter.total - startCalls,
       }
       state.totalSetDataCalls = setDataCounter.total
@@ -127,22 +135,44 @@ export default defineComponent({
       runMicroCommitBench,
     }
   },
+  data: () => ({
+    title: 'Vue Update Benchmark',
+    readyMarker: '',
+    summary: '',
+    cards: [] as any[],
+    metrics: createEmptyMetrics(),
+    totalSetDataCalls: 0,
+  }),
 })
 </script>
 
 <template>
   <view class="page">
     <view id="bench-ready-marker" class="hero">
-      <view class="hero__title">{{ title }}</view>
-      <view class="hero__summary">{{ summary }}</view>
-      <view class="hero__metric">single commit: {{ metrics.singleCommitMs }}ms / {{ metrics.singleCommitSetDataCalls }} calls</view>
-      <view class="hero__metric">micro commit: {{ metrics.microCommitMs }}ms / {{ metrics.microCommitSetDataCalls }} calls</view>
-      <view class="hero__metric">setData calls: {{ totalSetDataCalls }}</view>
+      <view class="hero__title">
+        {{ title }}
+      </view>
+      <view class="hero__summary">
+        {{ summary }}
+      </view>
+      <view class="hero__metric">
+        single commit: {{ metrics.singleCommitMs }}ms / {{ metrics.singleCommitSetDataCalls }} calls
+      </view>
+      <view class="hero__metric">
+        micro commit: {{ metrics.microCommitMs }}ms / {{ metrics.microCommitSetDataCalls }} calls
+      </view>
+      <view class="hero__metric">
+        setData calls: {{ totalSetDataCalls }}
+      </view>
     </view>
 
     <view class="toolbar">
-      <button class="toolbar__btn" size="mini" type="primary" @tap="runSingleCommitBench">单次提交</button>
-      <button class="toolbar__btn" size="mini" @tap="runMicroCommitBench">多次提交</button>
+      <button class="toolbar__btn" size="mini" type="primary" @tap="runSingleCommitBench">
+        单次提交
+      </button>
+      <button class="toolbar__btn" size="mini" @tap="runMicroCommitBench">
+        多次提交
+      </button>
     </view>
 
     <view v-for="card in cards" :key="card.id" class="card">
@@ -156,7 +186,9 @@ export default defineComponent({
         <text>score {{ card.score }}</text>
         <text>delta {{ card.delta }}</text>
       </view>
-      <view class="card__summary">{{ card.summary }}</view>
+      <view class="card__summary">
+        {{ card.summary }}
+      </view>
     </view>
   </view>
 </template>
@@ -169,9 +201,9 @@ export default defineComponent({
 
 .hero,
 .card {
-  background: #ffffff;
+  background: #fff;
   border-radius: 24rpx;
-  box-shadow: 0 12rpx 30rpx rgba(15, 23, 42, 0.06);
+  box-shadow: 0 12rpx 30rpx rgb(15 23 42 / 6%);
 }
 
 .hero {
@@ -202,15 +234,15 @@ export default defineComponent({
 }
 
 .card {
-  margin-top: 12rpx;
   padding: 22rpx;
+  margin-top: 12rpx;
 }
 
 .card__row {
   display: flex;
+  gap: 12rpx;
   align-items: center;
   justify-content: space-between;
-  gap: 12rpx;
 }
 
 .card__title {
@@ -220,14 +252,14 @@ export default defineComponent({
 
 .card__badge {
   padding: 4rpx 14rpx;
-  border-radius: 999rpx;
   font-size: 22rpx;
-  background: #ccfbf1;
   color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 999rpx;
 }
 
 .card__badge--active {
-  background: #dcfce7;
   color: #15803d;
+  background: #dcfce7;
 }
 </style>

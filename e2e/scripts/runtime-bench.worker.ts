@@ -27,10 +27,14 @@ interface BenchScenarioSummary {
 interface BenchUpdateSummary {
   wallMsMedian: number
   metricMsMedian: number
+  computeMsMedian: number
+  commitMsMedian: number
   setDataCallsMedian: number
   samples: Array<{
     wallMs: number
     metricMs: number
+    computeMs: number
+    commitMs: number
     setDataCalls: number
   }>
 }
@@ -126,6 +130,8 @@ async function measureUpdate(miniProgram: any, projectRoot: string, method: 'run
     samples.push({
       wallMs: Date.now() - startedAt,
       metricMs: Number(state?.metrics?.[metricKey] ?? 0),
+      computeMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitComputeMs' : 'microCommitComputeMs'] ?? 0),
+      commitMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitCommitMs' : 'microCommitCommitMs'] ?? 0),
       setDataCalls: Number(state?.metrics?.[callKey] ?? 0),
     })
   }
@@ -133,6 +139,8 @@ async function measureUpdate(miniProgram: any, projectRoot: string, method: 'run
   return {
     wallMsMedian: median(samples.map(sample => sample.wallMs)),
     metricMsMedian: median(samples.map(sample => sample.metricMs)),
+    computeMsMedian: median(samples.map(sample => sample.computeMs)),
+    commitMsMedian: median(samples.map(sample => sample.commitMs)),
     setDataCallsMedian: median(samples.map(sample => sample.setDataCalls)),
     samples,
   }

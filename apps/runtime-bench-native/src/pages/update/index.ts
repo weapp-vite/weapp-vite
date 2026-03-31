@@ -74,21 +74,27 @@ Page({
     const startCalls = setDataCounter.total
     const startAt = now()
     let cards = this.data.cards
+    const computeStartedAt = now()
 
     for (let index = 0; index < rounds; index += 1) {
       cards = mutateBenchCards(cards, index + 1)
     }
+    const computeMs = now() - computeStartedAt
 
+    const commitStartedAt = now()
     this.setData({
       cards,
       summary: summarizeBenchCards(cards),
     })
     await waitForNativeFlush()
+    const commitMs = now() - commitStartedAt
 
     const durationMs = now() - startAt
     const metrics = {
       ...this.data.metrics,
       singleCommitMs: durationMs,
+      singleCommitComputeMs: computeMs,
+      singleCommitCommitMs: commitMs,
       singleCommitSetDataCalls: setDataCounter.total - startCalls,
     }
 
@@ -108,20 +114,29 @@ Page({
     const startCalls = setDataCounter.total
     const startAt = now()
     let cards = this.data.cards
+    let computeMs = 0
+    let commitMs = 0
 
     for (let index = 0; index < rounds; index += 1) {
+      const computeStartedAt = now()
       cards = mutateBenchCards(cards, index + 1)
+      computeMs += now() - computeStartedAt
+
+      const commitStartedAt = now()
       this.setData({
         cards,
         summary: summarizeBenchCards(cards),
       })
       await waitForNativeFlush()
+      commitMs += now() - commitStartedAt
     }
 
     const durationMs = now() - startAt
     const metrics = {
       ...this.data.metrics,
       microCommitMs: durationMs,
+      microCommitComputeMs: computeMs,
+      microCommitCommitMs: commitMs,
       microCommitSetDataCalls: setDataCounter.total - startCalls,
     }
 
