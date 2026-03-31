@@ -1,0 +1,59 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+}
+
+.hero,
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 30rpx rgba(15, 23, 42, 0.06);
+}
+
+.hero {
+  padding: 28rpx;
+  margin-bottom: 16rpx;
+}
+
+.hero__title {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.hero__summary,
+.hero__metric,
+.card__meta,
+.card__summary {
+  margin-top: 10rpx;
+  color: #475569;
+}
+
+.card {
+  margin-top: 12rpx;
+  padding: 22rpx;
+}
+
+.card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.card__title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.card__badge {
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.card__badge--active {
+  background: #dcfce7;
+  color: #15803d;
+}

@@ -1,0 +1,99 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+}
+
+.hero,
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 30rpx rgba(15, 23, 42, 0.06);
+}
+
+.hero {
+  padding: 28rpx;
+}
+
+.hero__title {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.hero__subtitle,
+.hero__summary,
+.hero__metric {
+  margin-top: 10rpx;
+  color: #475569;
+}
+
+.toolbar {
+  display: flex;
+  gap: 16rpx;
+  margin: 20rpx 0;
+}
+
+.toolbar__btn {
+  flex: 1;
+}
+
+.section-title {
+  margin: 12rpx 0;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.card {
+  margin-top: 12rpx;
+  padding: 22rpx;
+}
+
+.card__row,
+.card__meta,
+.card__tags {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.card__title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.card__badge {
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.card__badge--active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.card__meta,
+.card__summary {
+  margin-top: 10rpx;
+  color: #475569;
+}
+
+.card__summary {
+  display: block;
+}
+
+.card__tags {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+
+.card__tag {
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: #e2e8f0;
+  font-size: 22rpx;
+  color: #334155;
+}

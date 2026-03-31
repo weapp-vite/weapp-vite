@@ -880,6 +880,7 @@ function patchMiniProgramOn() {
 }
 
 async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, project: string) {
+  process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
   const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify(options)], {
     cwd: options.cwd,
     reject: false,
@@ -889,6 +890,7 @@ async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, p
       [AUTOMATOR_LAUNCH_MODE_ENV]: '',
     },
   })
+  process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
 
   if ((result.exitCode ?? 1) !== 0) {
     const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
@@ -915,12 +917,14 @@ async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, p
   if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
     throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
   }
+  process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-ready endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
 
   const connectStartedAt = Date.now()
   let lastConnectError: unknown
   let miniProgram: any = null
   while (Date.now() - connectStartedAt <= Math.max(12_000, options.timeout ?? 30_000)) {
     try {
+      process.stdout.write(`[info] [runtime:launch-bridge-step] connect-attempt endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       miniProgram = await runWithTimeout(
         () => (automator as typeof automator & {
           connect: (options: { wsEndpoint: string }) => Promise<any>
@@ -937,6 +941,7 @@ async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, p
           }
         },
       )
+      process.stdout.write(`[info] [runtime:launch-bridge-step] connect-ok endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       break
     }
     catch (error) {
@@ -978,6 +983,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
+  patchAutomatorVersionCheck()
   const { projectConfig, timeout, trustProject, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
@@ -985,7 +991,6 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
   const launchMode = resolveAutomatorLaunchMode()
   if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
-    patchAutomatorVersionCheck()
     patchMiniProgramOn()
   }
   return (async () => {
@@ -994,7 +999,9 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
       try {
         return await runWithTimeout(
           async () => {
+            process.stdout.write(`[info] [runtime:launch-step] preflight project=${project}\n`)
             const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
+            process.stdout.write(`[info] [runtime:launch-step] preflight-ready project=${project} warmup=${projectMeta?.warmupRoute ?? '<none>'}\n`)
             const launchOptions = {
               ...rest,
               timeout: launchTimeout,
@@ -1004,9 +1011,11 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
                 ...projectConfig,
               },
             }
+            process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? await launchAutomatorViaCliBridge(launchOptions, project)
               : await automator.launch(launchOptions)
+            process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
             if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
               patchMiniProgramOn()
             }
@@ -1014,7 +1023,9 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
             if (projectMeta?.warmupRoute && !shouldSkipAutomatorWarmup()) {
+              process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${projectMeta.warmupRoute} project=${project}\n`)
               await withRelaunch.reLaunch(projectMeta.warmupRoute)
+              process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${projectMeta.warmupRoute} project=${project}\n`)
             }
             return withRelaunch
           },

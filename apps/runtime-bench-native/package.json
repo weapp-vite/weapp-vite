@@ -1,0 +1,39 @@
+{
+  "name": "runtime-bench-native",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "原生小程序运行时 benchmark 基准工程",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/runtime-bench-native"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "benchmark",
+    "native",
+    "weapp-vite",
+    "runtime"
+  ],
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
+  },
+  "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
+    "miniprogram-api-typings": "catalog:",
+    "sass": "catalog:",
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

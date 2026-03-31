@@ -762,6 +762,45 @@ importers:
 
   apps/rollup-watcher: {}
 
+  apps/runtime-bench-native:
+    devDependencies:
+      '@weapp-vite/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.1.2
+      sass:
+        specifier: 'catalog:'
+        version: 1.98.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.2
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
+  apps/runtime-bench-vue:
+    devDependencies:
+      '@weapp-vite/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.1.2
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.2
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.2.6(typescript@6.0.2)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
+
   apps/subpackage-shared-chunks:
     devDependencies:
       '@types/node':
