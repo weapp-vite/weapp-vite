@@ -1,9 +1,9 @@
 import type { MutationRecord } from '../../../reactivity'
 import type { SetDataDebugInfo } from '../../types'
-import { isRef, toRaw } from '../../../reactivity'
-import { diffSnapshots } from '../../diff'
+import { getReactiveVersion, isReactive, isRef, toRaw } from '../../../reactivity'
+import { diffSnapshots, toPlain } from '../../diff'
 import { runPatchUpdate } from './patchScheduler'
-import { cloneSnapshotValue, collectSnapshot } from './snapshot'
+import { collectSnapshot } from './snapshot'
 
 export function createSetDataScheduler(options: {
   state: Record<string, any>
@@ -61,9 +61,40 @@ export function createSetDataScheduler(options: {
   const plainCache = new WeakMap<object, { version: number, value: any }>()
   let latestSnapshot: Record<string, any> = {}
   let latestComputedSnapshot: Record<string, any> = Object.create(null)
+  const latestStateTokens = Object.create(null) as Record<string, unknown>
+  const latestComputedTokens = Object.create(null) as Record<string, unknown>
   const needsFullSnapshot = { value: setDataStrategy === 'patch' }
   const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
   const fallbackTopKeys = new Set<string>()
+
+  const createValueToken = (value: unknown) => {
+    const candidate = isRef(value) ? value.value : value
+    if (candidate == null || typeof candidate !== 'object') {
+      return candidate
+    }
+    const raw = isReactive(candidate) ? toRaw(candidate as any) : candidate
+    return {
+      raw,
+      version: getReactiveVersion(raw as any),
+    }
+  }
+
+  const isSameToken = (left: unknown, right: unknown) => {
+    if (Object.is(left, right)) {
+      return true
+    }
+    if (
+      !left
+      || !right
+      || typeof left !== 'object'
+      || typeof right !== 'object'
+      || !Object.hasOwn(left as object, 'raw')
+      || !Object.hasOwn(right as object, 'raw')
+    ) {
+      return false
+    }
+    return (left as any).raw === (right as any).raw && (left as any).version === (right as any).version
+  }
 
   const resolveTopKeysByRoot = (root: object) => {
     const matches: string[] = []
@@ -112,10 +143,107 @@ export function createSetDataScheduler(options: {
     toPlainMaxKeys,
   })
 
+  const collectDiffSnapshot = () => {
+    const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>
+    const nextSnapshot: Record<string, any> = { ...latestSnapshot }
+    const seen = new WeakMap<object, any>()
+    const includedStateKeys = new Set<string>()
+    const includedComputedKeys = new Set<string>()
+    const replacedTopLevelKeys = new Set<string>()
+
+    for (const key of Object.keys(rawState)) {
+      if (!shouldIncludeKey(key)) {
+        continue
+      }
+      includedStateKeys.add(key)
+      const token = createValueToken(rawState[key])
+      const previousToken = latestStateTokens[key]
+      if (
+        previousToken
+        && token
+        && typeof previousToken === 'object'
+        && typeof token === 'object'
+        && Object.hasOwn(previousToken as object, 'raw')
+        && Object.hasOwn(token as object, 'raw')
+        && (previousToken as any).raw !== (token as any).raw
+      ) {
+        replacedTopLevelKeys.add(key)
+      }
+      if (!isSameToken(previousToken, token) || !Object.hasOwn(latestSnapshot, key)) {
+        nextSnapshot[key] = toPlain(rawState[key], seen, {
+          cache: plainCache,
+          maxDepth: toPlainMaxDepth,
+          maxKeys: toPlainMaxKeys,
+        })
+      }
+      latestStateTokens[key] = token
+    }
+
+    for (const key of Object.keys(latestStateTokens)) {
+      if (!includedStateKeys.has(key)) {
+        delete latestStateTokens[key]
+        if (!includeComputed || !Object.hasOwn(computedRefs, key)) {
+          delete nextSnapshot[key]
+        }
+      }
+    }
+
+    if (!includeComputed) {
+      for (const key of Object.keys(latestComputedTokens)) {
+        delete latestComputedTokens[key]
+      }
+      return nextSnapshot
+    }
+
+    for (const key of Object.keys(computedRefs)) {
+      if (!shouldIncludeKey(key)) {
+        continue
+      }
+      includedComputedKeys.add(key)
+      const value = computedRefs[key].value
+      const token = createValueToken(value)
+      if (!isSameToken(latestComputedTokens[key], token) || !Object.hasOwn(latestSnapshot, key)) {
+        nextSnapshot[key] = toPlain(value, seen, {
+          cache: plainCache,
+          maxDepth: toPlainMaxDepth,
+          maxKeys: toPlainMaxKeys,
+        })
+      }
+      latestComputedTokens[key] = token
+    }
+
+    for (const key of Object.keys(latestComputedTokens)) {
+      if (!includedComputedKeys.has(key)) {
+        delete latestComputedTokens[key]
+        if (!Object.hasOwn(rawState, key) || !shouldIncludeKey(key)) {
+          delete nextSnapshot[key]
+        }
+      }
+    }
+
+    return {
+      snapshot: nextSnapshot,
+      replacedTopLevelKeys,
+    }
+  }
+
   const runDiffUpdate = (reason: SetDataDebugInfo['reason'] = 'diff') => {
-    const snapshot = collect()
-    const diff = diffSnapshots(latestSnapshot, snapshot)
-    latestSnapshot = cloneSnapshotValue(snapshot)
+    const diffCollection = setDataStrategy === 'diff' ? collectDiffSnapshot() : undefined
+    const snapshot = diffCollection?.snapshot ?? collect()
+    const diff = diffCollection
+      ? (() => {
+          const fastDiff: Record<string, any> = {}
+          for (const key of diffCollection.replacedTopLevelKeys) {
+            fastDiff[key] = snapshot[key]
+          }
+          const baseDiff = diffSnapshots(latestSnapshot, snapshot)
+          return {
+            ...baseDiff,
+            ...fastDiff,
+          }
+        })()
+      : diffSnapshots(latestSnapshot, snapshot)
+    latestSnapshot = snapshot
     needsFullSnapshot.value = false
     pendingPatches.clear()
     if (setDataStrategy === 'patch' && includeComputed) {
@@ -132,7 +260,7 @@ export function createSetDataScheduler(options: {
       return
     }
     if (typeof currentAdapter.setData === 'function') {
-      const result = currentAdapter.setData(cloneSnapshotValue(diff))
+      const result = currentAdapter.setData(diff)
       if (result && typeof (result as Promise<any>).then === 'function') {
         ;(result as Promise<any>).catch(() => {})
       }
