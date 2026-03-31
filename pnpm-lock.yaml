@@ -1952,6 +1952,9 @@ importers:
       '@icebreakers/stylelint-config':
         specifier: ^2.2.1
         version: 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@4.2.2)
+      '@wevu/api':
+        specifier: workspace:*
+        version: link:../../packages/weapi
       eslint:
         specifier: ^10.1.0
         version: 10.1.0(jiti@2.6.1)
@@ -20502,8 +20505,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.2(typescript@6.0.2)
+      '@typescript-eslint/types': 8.57.2
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:
