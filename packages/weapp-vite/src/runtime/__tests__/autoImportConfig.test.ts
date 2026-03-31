@@ -187,7 +187,9 @@ describe('autoImport config helpers', () => {
           'packages/order/components/**/*.vue',
         ]),
       )
+      expect(config?.output).toBe(true)
       expect(config?.typedComponents).toBe(true)
+      expect(config?.htmlCustomData).toBe(true)
       expect(config?.vueComponents).toBe(true)
       expect(config?.vueComponentsModule).toBe('wevu')
     })
@@ -207,6 +209,9 @@ describe('autoImport config helpers', () => {
           'packages/order/components/**/*.wxml',
         ]),
       )
+      expect(config?.output).toBe(true)
+      expect(config?.typedComponents).toBe(true)
+      expect(config?.htmlCustomData).toBe(true)
       expect(config?.globs).not.toContain('components/**/*.vue')
       expect(config?.globs).not.toContain('packages/order/components/**/*.vue')
       expect(config?.vueComponents).toBe(true)
