@@ -19,6 +19,7 @@ export default defineConfig({
     minify: false,
     rolldownOptions: {
       external: [
+        /^@wevu\/api(?:\/.*)?$/,
         /^wevu(?:\/.*)?$/,
       ],
     },
