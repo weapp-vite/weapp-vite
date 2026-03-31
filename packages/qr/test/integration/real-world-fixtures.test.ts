@@ -18,7 +18,7 @@ describe('@weapp-vite/qr real-world fixtures', () => {
   })
 
   it('rejects current mini program code fixtures through the public api with stable errors', async () => {
-    const fixtures = await loadFixtureManifest('小程序码/manifest.json')
+    const fixtures = await loadFixtureManifest('mini-program-codes/manifest.json')
 
     for (const fixture of fixtures) {
       expect(fixture.expectedError).toBeTruthy()
