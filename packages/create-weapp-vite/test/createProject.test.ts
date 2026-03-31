@@ -342,6 +342,41 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('catalog:')
   })
 
+  it('resolves workspace specs in peerDependencies and optionalDependencies from template package', async () => {
+    const root = await createTmpRoot('workspace-peer-optional-specs')
+    const templatePackagePath = await getTemplatePackagePath(TemplateName.lib)
+    const originalReadJSON = fs.readJSON.bind(fs)
+
+    vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {
+      if (value === templatePackagePath) {
+        return {
+          name: 'workspace-peer-optional-specs',
+          peerDependencies: {
+            wevu: 'workspace:*',
+            vue: 'workspace:^3.5.13',
+          },
+          optionalDependencies: {
+            sass: 'workspace:*',
+          },
+          devDependencies: {
+            'weapp-vite': 'workspace:*',
+          },
+        }
+      }
+      return originalReadJSON(value as any)
+    })
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.lib)
+    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+
+    expect(pkgJson.peerDependencies.wevu).not.toContain('workspace:')
+    expect(pkgJson.peerDependencies.wevu).not.toContain('catalog:')
+    expect(pkgJson.peerDependencies.vue).toBe('^3.5.13')
+    expect(pkgJson.optionalDependencies.sass).toBe('^1.98.0')
+    expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
+  })
+
   it('keeps tailwind templates pinned to the named tailwind3 catalog when creating projects', async () => {
     const root = await createTmpRoot('tailwind3-template')
     const templatePackagePath = await getTemplatePackagePath(TemplateName.tailwindcss)
