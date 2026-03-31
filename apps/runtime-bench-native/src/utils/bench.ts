@@ -14,10 +14,14 @@ export interface BenchMetrics {
   singleCommitMs: number
   singleCommitComputeMs: number
   singleCommitCommitMs: number
+  singleCommitDispatchMs: number
+  singleCommitFlushMs: number
   singleCommitSetDataCalls: number
   microCommitMs: number
   microCommitComputeMs: number
   microCommitCommitMs: number
+  microCommitDispatchMs: number
+  microCommitFlushMs: number
   microCommitSetDataCalls: number
 }
 
@@ -86,10 +90,14 @@ export function createEmptyMetrics(): BenchMetrics {
     singleCommitMs: 0,
     singleCommitComputeMs: 0,
     singleCommitCommitMs: 0,
+    singleCommitDispatchMs: 0,
+    singleCommitFlushMs: 0,
     singleCommitSetDataCalls: 0,
     microCommitMs: 0,
     microCommitComputeMs: 0,
     microCommitCommitMs: 0,
+    microCommitDispatchMs: 0,
+    microCommitFlushMs: 0,
     microCommitSetDataCalls: 0,
   }
 }

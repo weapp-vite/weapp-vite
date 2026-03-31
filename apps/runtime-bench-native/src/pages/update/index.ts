@@ -81,13 +81,17 @@ Page({
     }
     const computeMs = now() - computeStartedAt
 
-    const commitStartedAt = now()
+    const dispatchStartedAt = now()
     this.setData({
       cards,
       summary: summarizeBenchCards(cards),
     })
+    const dispatchMs = now() - dispatchStartedAt
+
+    const flushStartedAt = now()
     await waitForNativeFlush()
-    const commitMs = now() - commitStartedAt
+    const flushMs = now() - flushStartedAt
+    const commitMs = dispatchMs + flushMs
 
     const durationMs = now() - startAt
     const metrics = {
@@ -95,6 +99,8 @@ Page({
       singleCommitMs: durationMs,
       singleCommitComputeMs: computeMs,
       singleCommitCommitMs: commitMs,
+      singleCommitDispatchMs: dispatchMs,
+      singleCommitFlushMs: flushMs,
       singleCommitSetDataCalls: setDataCounter.total - startCalls,
     }
 
@@ -116,20 +122,26 @@ Page({
     let cards = this.data.cards
     let computeMs = 0
     let commitMs = 0
+    let dispatchMs = 0
+    let flushMs = 0
 
     for (let index = 0; index < rounds; index += 1) {
       const computeStartedAt = now()
       cards = mutateBenchCards(cards, index + 1)
       computeMs += now() - computeStartedAt
 
-      const commitStartedAt = now()
+      const dispatchStartedAt = now()
       this.setData({
         cards,
         summary: summarizeBenchCards(cards),
       })
+      dispatchMs += now() - dispatchStartedAt
+
+      const flushStartedAt = now()
       await waitForNativeFlush()
-      commitMs += now() - commitStartedAt
+      flushMs += now() - flushStartedAt
     }
+    commitMs = dispatchMs + flushMs
 
     const durationMs = now() - startAt
     const metrics = {
@@ -137,6 +149,8 @@ Page({
       microCommitMs: durationMs,
       microCommitComputeMs: computeMs,
       microCommitCommitMs: commitMs,
+      microCommitDispatchMs: dispatchMs,
+      microCommitFlushMs: flushMs,
       microCommitSetDataCalls: setDataCounter.total - startCalls,
     }
 

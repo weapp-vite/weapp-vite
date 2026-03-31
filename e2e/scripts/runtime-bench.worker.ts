@@ -29,12 +29,16 @@ interface BenchUpdateSummary {
   metricMsMedian: number
   computeMsMedian: number
   commitMsMedian: number
+  dispatchMsMedian: number
+  flushMsMedian: number
   setDataCallsMedian: number
   samples: Array<{
     wallMs: number
     metricMs: number
     computeMs: number
     commitMs: number
+    dispatchMs: number
+    flushMs: number
     setDataCalls: number
   }>
 }
@@ -132,6 +136,8 @@ async function measureUpdate(miniProgram: any, projectRoot: string, method: 'run
       metricMs: Number(state?.metrics?.[metricKey] ?? 0),
       computeMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitComputeMs' : 'microCommitComputeMs'] ?? 0),
       commitMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitCommitMs' : 'microCommitCommitMs'] ?? 0),
+      dispatchMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitDispatchMs' : 'microCommitDispatchMs'] ?? 0),
+      flushMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitFlushMs' : 'microCommitFlushMs'] ?? 0),
       setDataCalls: Number(state?.metrics?.[callKey] ?? 0),
     })
   }
@@ -141,6 +147,8 @@ async function measureUpdate(miniProgram: any, projectRoot: string, method: 'run
     metricMsMedian: median(samples.map(sample => sample.metricMs)),
     computeMsMedian: median(samples.map(sample => sample.computeMs)),
     commitMsMedian: median(samples.map(sample => sample.commitMs)),
+    dispatchMsMedian: median(samples.map(sample => sample.dispatchMs)),
+    flushMsMedian: median(samples.map(sample => sample.flushMs)),
     setDataCallsMedian: median(samples.map(sample => sample.setDataCalls)),
     samples,
   }

@@ -80,17 +80,23 @@ export default defineComponent({
       }
       const computeMs = now() - computeStartedAt
 
-      const commitStartedAt = now()
+      const dispatchStartedAt = now()
       state.cards = cards
       state.summary = summarizeBenchCards(cards)
+      const dispatchMs = now() - dispatchStartedAt
+
+      const flushStartedAt = now()
       await nextTick()
-      const commitMs = now() - commitStartedAt
+      const flushMs = now() - flushStartedAt
+      const commitMs = dispatchMs + flushMs
 
       state.metrics = {
         ...state.metrics,
         singleCommitMs: now() - startAt,
         singleCommitComputeMs: computeMs,
         singleCommitCommitMs: commitMs,
+        singleCommitDispatchMs: dispatchMs,
+        singleCommitFlushMs: flushMs,
         singleCommitSetDataCalls: setDataCounter.total - startCalls,
       }
       state.totalSetDataCalls = setDataCounter.total
@@ -104,24 +110,32 @@ export default defineComponent({
       let cards = state.cards
       let computeMs = 0
       let commitMs = 0
+      let dispatchMs = 0
+      let flushMs = 0
 
       for (let index = 0; index < rounds; index += 1) {
         const computeStartedAt = now()
         cards = mutateBenchCards(cards, index + 1)
         computeMs += now() - computeStartedAt
 
-        const commitStartedAt = now()
+        const dispatchStartedAt = now()
         state.cards = cards
         state.summary = summarizeBenchCards(cards)
+        dispatchMs += now() - dispatchStartedAt
+
+        const flushStartedAt = now()
         await nextTick()
-        commitMs += now() - commitStartedAt
+        flushMs += now() - flushStartedAt
       }
+      commitMs = dispatchMs + flushMs
 
       state.metrics = {
         ...state.metrics,
         microCommitMs: now() - startAt,
         microCommitComputeMs: computeMs,
         microCommitCommitMs: commitMs,
+        microCommitDispatchMs: dispatchMs,
+        microCommitFlushMs: flushMs,
         microCommitSetDataCalls: setDataCounter.total - startCalls,
       }
       state.totalSetDataCalls = setDataCounter.total
