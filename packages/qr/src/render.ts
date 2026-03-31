@@ -70,8 +70,13 @@ function renderFullQrCode(matrix: QRCodeMatrix) {
   return output
 }
 
+/** renderTerminalQrCodeFromMatrix 的方法封装。 */
+export function renderTerminalQrCodeFromMatrix(matrix: QRCodeMatrix, options: QRCodeRenderOptions = {}) {
+  return options.small ? renderCompactQrCode(matrix) : renderFullQrCode(matrix)
+}
+
 /** renderTerminalQrCode 的方法封装。 */
 export function renderTerminalQrCode(input: string, options: QRCodeRenderOptions = {}) {
   const matrix = createQrCodeMatrix(input)
-  return options.small ? renderCompactQrCode(matrix) : renderFullQrCode(matrix)
+  return renderTerminalQrCodeFromMatrix(matrix, options)
 }

@@ -2,6 +2,7 @@
  * @file 基于 sharp 的二维码解码封装。
  */
 import { Buffer } from 'node:buffer'
+import { readFile } from 'node:fs/promises'
 import sharp from 'sharp'
 import { decodeWithQrReader } from './reader/decode'
 
@@ -16,7 +17,18 @@ async function decodeQrCodeBuffer(buffer: Buffer) {
   return result.result
 }
 
+/** decodeQrCodeFromBuffer 的方法封装。 */
+export async function decodeQrCodeFromBuffer(buffer: Buffer) {
+  return await decodeQrCodeBuffer(buffer)
+}
+
 /** decodeQrCodeFromBase64 的方法封装。 */
 export async function decodeQrCodeFromBase64(content: string) {
-  return await decodeQrCodeBuffer(Buffer.from(content, 'base64'))
+  return await decodeQrCodeFromBuffer(Buffer.from(content, 'base64'))
+}
+
+/** decodeQrCodeFromFile 的方法封装。 */
+export async function decodeQrCodeFromFile(filePath: string) {
+  const buffer = await readFile(filePath)
+  return await decodeQrCodeFromBuffer(buffer)
 }

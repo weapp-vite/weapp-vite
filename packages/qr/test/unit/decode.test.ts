@@ -1,10 +1,14 @@
 /**
  * @file 二维码解码单元测试。
  */
+import { Buffer } from 'node:buffer'
+import { writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { decodeQrCodeFromBase64 } from '../../src/decode'
+import { decodeQrCodeFromBase64, decodeQrCodeFromBuffer, decodeQrCodeFromFile } from '../../src/decode'
 import { createQrCodeMatrix } from '../../src/encode'
-import { encodeQrCodeMatrixToBase64 } from '../helpers/createQrCodePng'
+import { encodeQrCodeMatrixToBase64, encodeQrCodeMatrixToPngBuffer } from '../helpers/createQrCodePng'
 import { loadFixtureManifest, loadQrFixtureBase64, loadQrFixtures } from '../helpers/loadFixture'
 
 describe('decodeQrCodeFromBase64', () => {
@@ -21,6 +25,25 @@ describe('decodeQrCodeFromBase64', () => {
     const base64 = await encodeQrCodeMatrixToBase64(matrix)
 
     await expect(decodeQrCodeFromBase64(base64)).resolves.toBe(content)
+  })
+
+  it('decodes a generated qr code from a png buffer', async () => {
+    const content = 'buffer decode'
+    const matrix = createQrCodeMatrix(content)
+    const buffer = await encodeQrCodeMatrixToPngBuffer(matrix)
+
+    await expect(decodeQrCodeFromBuffer(buffer)).resolves.toBe(content)
+  })
+
+  it('decodes a generated qr code from a file path', async () => {
+    const content = 'file decode'
+    const matrix = createQrCodeMatrix(content)
+    const buffer = await encodeQrCodeMatrixToPngBuffer(matrix)
+    const filePath = path.join(os.tmpdir(), `weapp-vite-qr-${Date.now()}.png`)
+
+    await writeFile(filePath, buffer)
+
+    await expect(decodeQrCodeFromFile(filePath)).resolves.toBe(content)
   })
 
   it('decodes every supported real-world fixture from disk', async () => {
@@ -43,5 +66,14 @@ describe('decodeQrCodeFromBase64', () => {
       const base64 = await loadQrFixtureBase64(fixture.file)
       await expect(decodeQrCodeFromBase64(base64)).rejects.toThrow(fixture.expectedError)
     }
+  })
+
+  it('keeps the exported buffer decoder aligned with the base64 decoder', async () => {
+    const fixture = (await loadQrFixtures())[0]
+    const base64 = await loadQrFixtureBase64(fixture.file)
+    const buffer = Buffer.from(base64, 'base64')
+
+    await expect(decodeQrCodeFromBase64(base64)).resolves.toBe(fixture.content)
+    await expect(decodeQrCodeFromBuffer(buffer)).resolves.toBe(fixture.content)
   })
 })
