@@ -7,7 +7,7 @@ import type {
   MethodDefinitions,
   RuntimeInstance,
 } from '../../types'
-import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
+import { effectScope, isReactive, isRef, shallowReactive, toRaw } from '../../../reactivity'
 import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { runSetupFunction } from '../setup'
 import {
@@ -175,6 +175,9 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
           methodsChanged = true
         }
         else {
+          if (isRef(val) || isReactive(val)) {
+            ;(runtime as any).__wevu_trackSetupReactiveKey?.(key)
+          }
           if (declaredPropKeys.has(key)) {
             let fallbackValue = val
             try {

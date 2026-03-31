@@ -40,6 +40,7 @@ type RuntimeInstanceWithSetupMethodsVersion<
   __wevu_touchSetupMethodsVersion?: () => void
   __wevu_flushSetupSnapshotSync?: () => void
   __wevu_cloneLatestSnapshot?: () => Record<string, any>
+  __wevu_trackSetupReactiveKey?: (key: string) => void
 }
 
 function resolveDataOption<D extends object>(data: CreateAppOptions<D, any, any>['data']): D {
@@ -87,6 +88,13 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
 
     let mounted = true
     const stopHandles: WatchStopHandle[] = []
+    const trackedSetupReactiveKeys = new Set<string>()
+    Object.keys(state as any).forEach((key) => {
+      const value = (state as any)[key]
+      if (isRef(value) || isReactive(value)) {
+        trackedSetupReactiveKeys.add(key)
+      }
+    })
 
     const {
       includeComputed,
@@ -188,8 +196,8 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
           touchReactive(runtimeAttrs as any)
         }
         // 在 setup 返回的 ref/computedRef 变更不会提升 reactive 根版本：
-        // 这里额外读取其 `.value` 以建立依赖，从而触发 diff + setData 更新。
-        Object.keys(state as any).forEach((key) => {
+        // 仅跟踪这些明确注册过的键，避免每轮 flush 扫描整份 state。
+        trackedSetupReactiveKeys.forEach((key) => {
           const v = (state as any)[key]
           if (isRef(v)) {
             const inner = v.value
@@ -317,6 +325,22 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     }
     catch {
       ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_cloneLatestSnapshot = scheduler.cloneLatestSnapshot
+    }
+
+    try {
+      Object.defineProperty(runtimeInstance, '__wevu_trackSetupReactiveKey', {
+        value: (key: string) => {
+          trackedSetupReactiveKeys.add(key)
+        },
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      })
+    }
+    catch {
+      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_trackSetupReactiveKey = (key: string) => {
+        trackedSetupReactiveKeys.add(key)
+      }
     }
 
     return runtimeInstance
