@@ -1,5 +1,5 @@
 /**
- * @file 终端二维码编码内部模块：QRMaskPattern。
+ * @file 终端二维码编码内部模块：maskPattern。
  */
 const QRMaskPattern = {
   PATTERN000: 0,

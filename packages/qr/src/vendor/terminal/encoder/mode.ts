@@ -1,5 +1,5 @@
 /**
- * @file 终端二维码编码内部模块：QRMode。
+ * @file 终端二维码编码内部模块：mode。
  */
 const QRMode = {
   MODE_NUMBER: 1 << 0,

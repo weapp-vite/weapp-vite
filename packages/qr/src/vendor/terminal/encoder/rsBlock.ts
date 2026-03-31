@@ -1,7 +1,7 @@
 /**
- * @file 终端二维码编码内部模块：QRRSBlock。
+ * @file 终端二维码编码内部模块：rsBlock。
  */
-import QRErrorCorrectLevel from './QRErrorCorrectLevel'
+import QRErrorCorrectLevel from './errorCorrectLevel'
 
 class QRRSBlock {
   totalCount: number

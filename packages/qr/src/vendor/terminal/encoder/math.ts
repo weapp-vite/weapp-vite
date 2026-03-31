@@ -1,5 +1,5 @@
 /**
- * @file 终端二维码编码内部模块：QRMath。
+ * @file 终端二维码编码内部模块：math。
  */
 const EXP_TABLE = Array.from({ length: 256 }, () => 0)
 const LOG_TABLE = Array.from({ length: 256 }, () => 0)

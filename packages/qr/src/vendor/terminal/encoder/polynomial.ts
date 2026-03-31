@@ -1,7 +1,7 @@
 /**
- * @file 终端二维码编码内部模块：QRPolynomial。
+ * @file 终端二维码编码内部模块：polynomial。
  */
-import QRMath from './QRMath'
+import QRMath from './math'
 
 class QRPolynomial {
   num: number[]

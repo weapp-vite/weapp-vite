@@ -1,7 +1,7 @@
 /**
- * @file 终端二维码编码内部模块：QR8bitByte。
+ * @file 终端二维码编码内部模块：byte。
  */
-import QRMode from './QRMode'
+import QRMode from './mode'
 
 class QR8bitByte {
   mode: number
