@@ -1,5 +1,5 @@
 /**
- * @file 终端二维码编码内部模块：QRErrorCorrectLevel。
+ * @file 终端二维码编码内部模块：errorCorrectLevel。
  */
 const QRErrorCorrectLevel = {
   L: 1,

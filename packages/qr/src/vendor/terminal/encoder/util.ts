@@ -1,10 +1,10 @@
-import QRMaskPattern from './QRMaskPattern'
-import QRMath from './QRMath'
+import QRMaskPattern from './maskPattern'
+import QRMath from './math'
 /**
- * @file 终端二维码编码内部模块：QRUtil。
+ * @file 终端二维码编码内部模块：util。
  */
-import QRMode from './QRMode'
-import QRPolynomial from './QRPolynomial'
+import QRMode from './mode'
+import QRPolynomial from './polynomial'
 
 interface LostPointQrCodeLike {
   getModuleCount: () => number

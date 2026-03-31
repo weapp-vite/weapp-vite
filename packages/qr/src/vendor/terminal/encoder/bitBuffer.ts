@@ -1,5 +1,5 @@
 /**
- * @file 终端二维码编码内部模块：QRBitBuffer。
+ * @file 终端二维码编码内部模块：bitBuffer。
  */
 class QRBitBuffer {
   buffer: number[]

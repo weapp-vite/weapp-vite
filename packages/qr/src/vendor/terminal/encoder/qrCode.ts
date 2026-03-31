@@ -1,11 +1,11 @@
 /**
- * @file 终端二维码编码内部模块：index。
+ * @file 终端二维码编码内部模块：qrCode。
  */
-import QR8bitByte from './QR8bitByte'
-import QRBitBuffer from './QRBitBuffer'
-import QRPolynomial from './QRPolynomial'
-import QRRSBlock from './QRRSBlock'
-import QRUtil from './QRUtil'
+import QR8bitByte from './byte'
+import QRBitBuffer from './bitBuffer'
+import QRPolynomial from './polynomial'
+import QRRSBlock from './rsBlock'
+import QRUtil from './util'
 
 type QRCodeModuleCell = boolean | null
 type QRCodeModules = QRCodeModuleCell[][]
