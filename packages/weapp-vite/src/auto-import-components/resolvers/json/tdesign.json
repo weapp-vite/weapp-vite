@@ -16,6 +16,7 @@
   "collapse",
   "collapse-panel",
   "color-picker",
+  "config-provider",
   "count-down",
   "date-time-picker",
   "dialog",
