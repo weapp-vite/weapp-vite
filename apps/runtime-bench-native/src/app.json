@@ -1,0 +1,16 @@
+{
+  "$schema": "https://vite.icebreaker.top/app.json",
+  "pages": [
+    "pages/index/index",
+    "pages/detail/index",
+    "pages/update/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Native Runtime Bench",
+    "navigationBarBackgroundColor": "#1d4ed8",
+    "navigationBarTextStyle": "white"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json"
+}

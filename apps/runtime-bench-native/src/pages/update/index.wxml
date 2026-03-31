@@ -1,0 +1,29 @@
+<view class="page">
+  <view id="bench-ready-marker" class="hero">
+    <view class="hero__title">{{title}}</view>
+    <view class="hero__summary">{{summary}}</view>
+    <view class="hero__metric">single commit: {{metrics.singleCommitMs}}ms / {{metrics.singleCommitSetDataCalls}} calls</view>
+    <view class="hero__metric">micro commit: {{metrics.microCommitMs}}ms / {{metrics.microCommitSetDataCalls}} calls</view>
+  </view>
+
+  <view class="toolbar">
+    <button class="toolbar__btn" size="mini" type="primary" bindtap="runSingleCommitBench">单次提交</button>
+    <button class="toolbar__btn" size="mini" bindtap="runMicroCommitBench">多次提交</button>
+  </view>
+
+  <block wx:for="{{cards}}" wx:key="id">
+    <view class="card">
+      <view class="card__row">
+        <text class="card__title">{{item.title}}</text>
+        <text class="card__badge {{item.active ? 'card__badge--active' : ''}}">
+          {{item.active ? 'active' : 'idle'}}
+        </text>
+      </view>
+      <view class="card__meta">
+        <text>score {{item.score}}</text>
+        <text>delta {{item.delta}}</text>
+      </view>
+      <view class="card__summary">{{item.summary}}</view>
+    </view>
+  </block>
+</view>
