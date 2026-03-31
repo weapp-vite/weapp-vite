@@ -164,3 +164,91 @@ Vue 微提交路径：
 - `e2e/scripts/run-runtime-bench.ts`
 - `e2e/scripts/runtime-bench.worker.ts`
 - `e2e/utils/automator.ts`
+
+## 二级拆分：compute vs commit
+
+为进一步定位“Vue 为什么在多次小更新里明显更慢”，本次对 update 场景增加了二级埋点：
+
+- `computeMs`
+  - 仅统计 `mutateBenchCards(...)` 的纯 JS 变换时间
+- `commitMs`
+  - native：`setData(...) + waitForNativeFlush()`
+  - vue：响应式 state 写入 + `nextTick()` + wevu 提交收敛
+
+### 单次大更新二级数据
+
+| 指标      | native | vue | 差值（vue - native） |
+| --------- | -----: | --: | -------------------: |
+| metricMs  |    104 |  98 |                   -6 |
+| computeMs |     93 |  92 |                   -1 |
+| commitMs  |      9 |   6 |                   -3 |
+
+结论：
+
+- 单次大更新里，两边差异基本可以忽略
+- 纯计算时间几乎一致
+- 提交阶段也没有明显额外成本
+
+这和上一节的判断一致：当更新被收敛成“一次大提交”时，Vue/wevu 的额外调度成本不会被放大。
+
+### 多次小更新二级数据
+
+| 指标      | native | vue | 差值（vue - native） |
+| --------- | -----: | --: | -------------------: |
+| metricMs  |    179 | 310 |                 +131 |
+| computeMs |     43 |  24 |                  -19 |
+| commitMs  |    135 | 286 |                 +151 |
+
+结论：
+
+- Vue 慢并不是因为卡片数据变换更慢
+- 相反，`computeMs` 上 Vue 还更低
+- 真正放大差距的是 `commitMs`
+
+也就是说，额外的成本几乎全部落在“每轮更新后的提交收敛”上，而不是业务计算上。
+
+### 进一步解释
+
+native 的每轮微提交主要是：
+
+1. 计算下一轮 cards
+2. 直接 `setData`
+3. `wx.nextTick` 等待提交完成
+
+Vue 的每轮微提交主要是：
+
+1. 计算下一轮 cards
+2. 写入响应式 state
+3. 更新派生字段 `summary`
+4. `nextTick()` 等待调度收敛
+5. wevu 汇总依赖、生成更新 payload、再提交到底层
+
+因此在 40 轮微提交下，Vue 比原生多出来的时间几乎全部堆积在：
+
+- 响应式脏标记
+- 调度队列与 `nextTick`
+- 模板依赖重新收敛
+- 更新 payload 生成与桥接提交
+
+### 最终判断
+
+对当前这组 benchmark 来说，Vue/wevu 的性能画像可以概括为：
+
+- 大提交：和原生接近
+- 小提交高频循环：主要输在每轮提交收敛成本
+
+换句话说，Vue/wevu 更适合“批处理后一次提交”，不适合把很多细碎状态变更拆成很多轮 `nextTick`/提交。
+
+### 对优化方向的修正
+
+相比上一版报告，现在可以更明确地说：
+
+- 优先优化“提交轮次”，比优化 `mutateBenchCards` 这类业务计算更重要
+- 如果业务必须高频更新，优先把多轮响应式写入合并成更少的 flush
+- 如果页面确实需要每轮都渲染，应该尽量缩小参与响应式 diff 的状态面
+
+对于 wevu/runtime 层后续可以重点关注：
+
+- 高频 `nextTick` 场景下的调度开销
+- 多轮相邻更新的批处理策略
+- 大数组 + 派生字段一起更新时的 payload 生成成本

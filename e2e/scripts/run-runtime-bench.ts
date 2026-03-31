@@ -30,11 +30,15 @@ interface WorkerResult {
   updateSingleCommit: {
     wallMsMedian: number
     metricMsMedian: number
+    computeMsMedian: number
+    commitMsMedian: number
     setDataCallsMedian: number
   }
   updateMicroCommit: {
     wallMsMedian: number
     metricMsMedian: number
+    computeMsMedian: number
+    commitMsMedian: number
     setDataCallsMedian: number
   }
 }
@@ -101,6 +105,8 @@ async function main() {
       vue,
       deltaWallMs: vue.updateSingleCommit.wallMsMedian - native.updateSingleCommit.wallMsMedian,
       deltaMetricMs: vue.updateSingleCommit.metricMsMedian - native.updateSingleCommit.metricMsMedian,
+      deltaComputeMs: vue.updateSingleCommit.computeMsMedian - native.updateSingleCommit.computeMsMedian,
+      deltaCommitMs: vue.updateSingleCommit.commitMsMedian - native.updateSingleCommit.commitMsMedian,
       deltaSetDataCalls: vue.updateSingleCommit.setDataCallsMedian - native.updateSingleCommit.setDataCallsMedian,
     },
     updateMicroCommit: {
@@ -108,6 +114,8 @@ async function main() {
       vue,
       deltaWallMs: vue.updateMicroCommit.wallMsMedian - native.updateMicroCommit.wallMsMedian,
       deltaMetricMs: vue.updateMicroCommit.metricMsMedian - native.updateMicroCommit.metricMsMedian,
+      deltaComputeMs: vue.updateMicroCommit.computeMsMedian - native.updateMicroCommit.computeMsMedian,
+      deltaCommitMs: vue.updateMicroCommit.commitMsMedian - native.updateMicroCommit.commitMsMedian,
       deltaSetDataCalls: vue.updateMicroCommit.setDataCallsMedian - native.updateMicroCommit.setDataCallsMedian,
     },
   }
