@@ -4,6 +4,7 @@ import type {
   QRCodeReaderInput,
   QRCodeReaderResult,
   QRCodeRenderOptions,
+  QRCodeType,
 } from '@weapp-vite/qr'
 import type * as qr from '@weapp-vite/qr'
 import { Buffer } from 'node:buffer'
@@ -13,6 +14,9 @@ import {
   decodeQrCodeFromBuffer,
   decodeQrCodeFromFile,
   decodeWithQrReader,
+  detectCodeTypeFromBase64,
+  detectCodeTypeFromBuffer,
+  detectCodeTypeFromFile,
   detectMiniProgramCodeFromBase64,
   detectMiniProgramCodeFromBuffer,
   detectMiniProgramCodeFromFile,
@@ -27,6 +31,9 @@ type PublicApiName
     | 'decodeQrCodeFromBuffer'
     | 'decodeQrCodeFromFile'
     | 'decodeWithQrReader'
+    | 'detectCodeTypeFromBase64'
+    | 'detectCodeTypeFromBuffer'
+    | 'detectCodeTypeFromFile'
     | 'detectMiniProgramCodeFromBase64'
     | 'detectMiniProgramCodeFromBuffer'
     | 'detectMiniProgramCodeFromFile'
@@ -40,6 +47,9 @@ expectType<never>({} as MissingPublicApi)
 expectType<Promise<string>>(decodeQrCodeFromBase64('Zm9v'))
 expectType<Promise<string>>(decodeQrCodeFromBuffer(Buffer.from('Zm9v')))
 expectType<Promise<string>>(decodeQrCodeFromFile('/tmp/example.png'))
+expectType<Promise<QRCodeType>>(detectCodeTypeFromBase64('Zm9v'))
+expectType<Promise<QRCodeType>>(detectCodeTypeFromBuffer(Buffer.from('Zm9v')))
+expectType<Promise<QRCodeType>>(detectCodeTypeFromFile('/tmp/example.png'))
 expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBase64('Zm9v'))
 expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBuffer(Buffer.from('Zm9v')))
 expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromFile('/tmp/example.png'))
@@ -71,6 +81,9 @@ expectError(decodeQrCodeFromBase64(123))
 expectError(decodeQrCodeFromBuffer('Zm9v'))
 expectError(decodeQrCodeFromFile(Buffer.from('foo')))
 expectError(decodeWithQrReader({ width: 1, height: 1, data: new Uint8Array([0]) }))
+expectError(detectCodeTypeFromBase64(123))
+expectError(detectCodeTypeFromBuffer('Zm9v'))
+expectError(detectCodeTypeFromFile(Buffer.from('foo')))
 expectError(detectMiniProgramCodeFromBase64(123))
 expectError(detectMiniProgramCodeFromBuffer('Zm9v'))
 expectError(detectMiniProgramCodeFromFile(Buffer.from('foo')))
