@@ -1,6 +1,14 @@
 import { isReactive, toRaw } from '../../../reactivity'
 import { toPlain } from '../../diff'
 
+export function isPlainObjectLike(value: any) {
+  if (value == null || typeof value !== 'object') {
+    return false
+  }
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
+
 export function normalizeSetDataValue<T>(value: T): T | null {
   return value === undefined ? null : value
 }
@@ -19,14 +27,6 @@ export function cloneSnapshotValue<T>(value: T): T {
     out[key] = cloneSnapshotValue((value as Record<string, any>)[key])
   }
   return out as T
-}
-
-export function isPlainObjectLike(value: any) {
-  if (value == null || typeof value !== 'object') {
-    return false
-  }
-  const proto = Object.getPrototypeOf(value)
-  return proto === Object.prototype || proto === null
 }
 
 export function isShallowEqualValue(a: any, b: any): boolean {
@@ -114,7 +114,9 @@ export function applySnapshotUpdate(
   path: string,
   value: any,
   op: 'set' | 'delete',
+  options?: { cloneValue?: boolean },
 ) {
+  const cloneValue = options?.cloneValue ?? true
   const segments = path.split('.').filter(Boolean)
   if (!segments.length) {
     return
@@ -138,7 +140,7 @@ export function applySnapshotUpdate(
     }
   }
   else {
-    current[leaf] = cloneSnapshotValue(value)
+    current[leaf] = cloneValue ? cloneSnapshotValue(value) : value
   }
 }
 

@@ -247,6 +247,41 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
+  it('avoids full diff snapshot collection for unchanged top-level keys', async () => {
+    let getterCalls = 0
+    const big = {}
+    Object.defineProperty(big, 'hidden', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        getterCalls += 1
+        return 1
+      },
+    })
+    const app = createApp({
+      data: () => ({
+        nested: { count: 1 },
+        big,
+      }),
+    })
+    const target: any = {
+      route: 'pages/diff-snapshot/index',
+      setData: vi.fn(),
+    }
+
+    mountRuntimeInstance(target, app as any, undefined, undefined)
+    getterCalls = 0
+    target.setData.mockClear()
+
+    target.$wevu.state.nested.count = 2
+    await nextTick()
+
+    expect(getterCalls).toBe(0)
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ 'nested.count': 2 }))
+
+    teardownRuntimeInstance(target)
+  })
+
   it('creates a setup effect scope and disposes scoped effects on teardown', async () => {
     const app = createApp({})
     const target: any = {

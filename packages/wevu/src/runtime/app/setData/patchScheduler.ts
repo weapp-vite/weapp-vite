@@ -220,16 +220,16 @@ export function runPatchUpdate(options: {
   for (const [path, value] of Object.entries(collapsedPayload)) {
     const entry = entryMap.get(path)
     if (entry) {
-      applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op)
+      applySnapshotUpdate(latestSnapshot, path, value, entry.kind === 'array' ? 'set' : entry.op, { cloneValue: false })
     }
     else {
       // 计算属性或 diffSnapshots 生成的顶层键。
-      applySnapshotUpdate(latestSnapshot, path, value, 'set')
+      applySnapshotUpdate(latestSnapshot, path, value, 'set', { cloneValue: false })
     }
   }
 
   if (typeof currentAdapter.setData === 'function') {
-    const result = currentAdapter.setData(cloneSnapshotValue(collapsedPayload))
+    const result = currentAdapter.setData(collapsedPayload)
     if (result && typeof (result as Promise<any>).then === 'function') {
       ;(result as Promise<any>).catch(() => {})
     }
