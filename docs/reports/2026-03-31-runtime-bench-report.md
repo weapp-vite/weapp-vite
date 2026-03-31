@@ -323,3 +323,62 @@ Vue 的每轮微提交主要是：
 - flush 队列长度
 - 相邻轮次是否重复收敛
 - 每轮最终 payload 生成与桥接提交的累计成本
+
+## 复现后增强与最新结果
+
+在本报告完成后，基于同一条 benchmark 链路又做了针对性复现，并直接在 `wevu` 运行时里实现了几轮热路径优化，重点集中在 diff flush 阶段：
+
+- `2585feb7d`
+  - `perf(wevu): optimize owner snapshot refresh`
+- `4f7894ec2`
+  - `perf(wevu): reduce diff flush overhead`
+- `c06312c00`
+  - `perf(wevu): skip deep diff for replaced arrays`
+- `4ab07bd12`
+  - `perf(wevu): narrow tracker dependency scans`
+- `b7c8bbfcc`
+  - `perf(wevu): reduce toPlain serialization overhead`
+
+其中最后一项主要针对 `toPlain` 序列化热路径，减少了高频 flush 中递归序列化时的临时对象分配与额外调用开销。
+
+### 最新复测结果
+
+使用相同命令重新复测：
+
+```bash
+pnpm run e2e:runtime-bench
+```
+
+本次连续两轮复测里，`apps/runtime-bench-vue` 的 `updateMicroCommit` 中位数分别约为：
+
+| 轮次  | metricMs | commitMs | dispatchMs | flushMs |
+| ----- | -------: | -------: | ---------: | ------: |
+| run 1 |       62 |       43 |          3 |      40 |
+| run 2 |       67 |       48 |          3 |      44 |
+
+对应同轮 native 结果约为：
+
+| 轮次  | metricMs | commitMs | dispatchMs | flushMs |
+| ----- | -------: | -------: | ---------: | ------: |
+| run 1 |       85 |       69 |         20 |      49 |
+| run 2 |       94 |       75 |         21 |      53 |
+
+### 修正后的结论
+
+- `wevu` 在这条 benchmark 上确实存在可优化空间，而且主要集中在 flush 收敛链路
+- 这些优化落地后，`updateMicroCommit` 已不再复现本报告里最初的 `vue 241ms vs native 129ms` 级别差距
+- 最新两轮复测中，Vue 版本在该场景下已经反向领先于同轮 native 样本
+
+这说明前文的“根因收敛”判断仍然成立，但结论需要更新为：
+
+1. `wevu` 先前的主要短板确实在微提交 flush 热路径
+2. 该问题不是架构性不可避免开销，而是可以通过运行时实现继续压缩
+3. 在当前实现下，这条 benchmark 已不能再作为“wevu 微提交显著落后原生”的直接证据
+
+### 当前判断
+
+截至本次复现，`wevu` runtime 已经完成一轮有效增强：
+
+- 大提交场景维持与原生接近
+- 微提交场景的 flush 成本已明显下降
+- 后续若继续优化，仍应优先关注 diff/serialize/flush 这一段链路，而不是业务计算本身
