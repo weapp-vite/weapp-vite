@@ -1,6 +1,7 @@
 /**
  * @file 二维码公共 API 集成测试。
  */
+import { Buffer } from 'node:buffer'
 import { writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -16,7 +17,7 @@ import {
   renderTerminalQrCodeFromMatrix,
 } from '../../src/index'
 import { encodeQrCodeMatrixToBase64, encodeQrCodeMatrixToPngBuffer } from '../helpers/createQrCodePng'
-import { loadQrFixtureBase64, loadQrFixtures } from '../helpers/loadFixture'
+import { loadFixtureManifest, loadQrFixtureBase64, loadQrFixtures } from '../helpers/loadFixture'
 
 describe('@weapp-vite/qr public api', () => {
   it('supports an encode -> png -> decode roundtrip through the public entry', async () => {
@@ -78,5 +79,20 @@ describe('@weapp-vite/qr public api', () => {
       height: info.height,
       data,
     })).resolves.toMatchObject({ result: content })
+  })
+
+  it('rejects unsupported mini program code raw input through the public entry', async () => {
+    const fixture = (await loadFixtureManifest('mini-program-codes/manifest.json'))[0]
+    const base64 = await loadQrFixtureBase64(fixture.file)
+    const { data, info } = await sharp(Buffer.from(base64, 'base64'))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+
+    await expect(decodeWithQrReader({
+      width: info.width,
+      height: info.height,
+      data,
+    })).rejects.toThrow(fixture.expectedError)
   })
 })

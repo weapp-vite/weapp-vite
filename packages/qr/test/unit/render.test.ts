@@ -35,4 +35,21 @@ describe('renderTerminalQrCode', () => {
 
     expect(fromMatrix).toBe(fromInput)
   })
+
+  it('renders compact output from a precomputed matrix', () => {
+    const matrix = createQrCodeMatrix('compact matrix render')
+    const output = renderTerminalQrCodeFromMatrix(matrix, { small: true })
+
+    expect(output).toContain('▀')
+    expect(output).not.toContain('\u001B[')
+    expect(output.split('\n').length).toBeGreaterThan(1)
+  })
+
+  it('renders full output from a precomputed matrix', () => {
+    const matrix = createQrCodeMatrix('full matrix render')
+    const output = renderTerminalQrCodeFromMatrix(matrix)
+
+    expect(output).toContain('\u001B[40m')
+    expect(output).toContain('\u001B[47m')
+  })
 })
