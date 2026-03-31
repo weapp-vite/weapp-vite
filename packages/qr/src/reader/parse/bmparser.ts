@@ -1,3 +1,4 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 二维码解析内部模块：bmparser。
  */
@@ -105,7 +106,7 @@ export default class BitMatrixParser {
     dataMask.unmaskBitMatrix(this.bitMatrix, dimension)
     const functionPattern = version.buildFunctionPattern()
     let readingUp = true
-    const result = new Array<number>(version.totalCodewords).fill(0)
+    const result = Array.from({ length: version.totalCodewords }, (): number => 0)
     let resultOffset = 0
     let currentByte = 0
     let bitsRead = 0

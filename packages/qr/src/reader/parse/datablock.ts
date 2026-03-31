@@ -1,3 +1,4 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 二维码解析内部模块：datablock。
  */
@@ -17,14 +18,14 @@ export default class DataBlock {
       totalBlocks += ecBlockArray[i].count
     }
 
-    const result = new Array<DataBlock>(totalBlocks)
+    const result = Array.from({ length: totalBlocks }, () => null as unknown as DataBlock)
     let numResultBlocks = 0
     for (let j = 0; j < ecBlockArray.length; j++) {
       const ecBlock = ecBlockArray[j]
       for (let i = 0; i < ecBlock.count; i++) {
         const numDataCodewords = ecBlock.dataCodewords
         const numBlockCodewords = ecBlocks.ecCodewordsPerBlock + numDataCodewords
-        result[numResultBlocks++] = new DataBlock(numDataCodewords, new Array<number>(numBlockCodewords).fill(0))
+        result[numResultBlocks++] = new DataBlock(numDataCodewords, Array.from({ length: numBlockCodewords }, (): number => 0))
       }
     }
 

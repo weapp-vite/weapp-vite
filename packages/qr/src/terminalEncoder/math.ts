@@ -1,8 +1,9 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 终端二维码编码内部模块：math。
  */
-const EXP_TABLE = Array.from({ length: 256 }, () => 0)
-const LOG_TABLE = Array.from({ length: 256 }, () => 0)
+const EXP_TABLE = Array.from({ length: 256 }, (): number => 0)
+const LOG_TABLE = Array.from({ length: 256 }, (): number => 0)
 
 const QRMath = {
   glog(n: number) {

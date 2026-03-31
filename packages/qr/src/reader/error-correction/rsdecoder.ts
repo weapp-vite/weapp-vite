@@ -1,7 +1,8 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 二维码解析内部模块：rsdecoder。
  */
-import GF256 from './gf256'
+import type GF256 from './gf256'
 import GF256Poly from './gf256poly'
 
 export default class ReedSolomonDecoder {
@@ -13,7 +14,7 @@ export default class ReedSolomonDecoder {
 
   decode(received: number[], twoS: number) {
     const poly = new GF256Poly(this.field, received)
-    const syndromeCoefficients = new Array<number>(twoS).fill(0)
+    const syndromeCoefficients = Array.from({ length: twoS }, (): number => 0)
     const dataMatrix = false
     let noError = true
     for (let i = 0; i < twoS; i++) {
@@ -91,7 +92,7 @@ export default class ReedSolomonDecoder {
     if (numErrors === 1) {
       return [errorLocator.getCoefficient(1)]
     }
-    const result = new Array<number>(numErrors).fill(0)
+    const result = Array.from({ length: numErrors }, (): number => 0)
     let errorIndex = 0
     for (let i = 1; i < 256 && errorIndex < numErrors; i++) {
       if (errorLocator.evaluateAt(i) === 0) {
@@ -107,7 +108,7 @@ export default class ReedSolomonDecoder {
 
   findErrorMagnitudes(errorEvaluator: GF256Poly, errorLocations: number[], dataMatrix: boolean) {
     const size = errorLocations.length
-    const result = new Array<number>(size).fill(0)
+    const result = Array.from({ length: size }, (): number => 0)
     for (let i = 0; i < size; i++) {
       const xiInverse = this.field.inverse(errorLocations[i])
       let denominator = 1

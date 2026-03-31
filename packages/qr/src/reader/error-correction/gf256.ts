@@ -1,3 +1,4 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 二维码解析内部模块：gf256。
  */
@@ -13,8 +14,8 @@ export default class GF256 {
   one: GF256Poly
 
   constructor(primitive: number) {
-    this.expTable = Array.from({ length: 256 }, () => 0)
-    this.logTable = Array.from({ length: 256 }, () => 0)
+    this.expTable = Array.from({ length: 256 }, (): number => 0)
+    this.logTable = Array.from({ length: 256 }, (): number => 0)
     let x = 1
     for (let i = 0; i < 256; i++) {
       this.expTable[i] = x
@@ -45,7 +46,7 @@ export default class GF256 {
     if (coefficient === 0) {
       return this.zero
     }
-    const coefficients = new Array<number>(degree + 1).fill(0)
+    const coefficients = Array.from({ length: degree + 1 }, (): number => 0)
     coefficients[0] = coefficient
     return new GF256Poly(this, coefficients)
   }

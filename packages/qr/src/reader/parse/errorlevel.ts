@@ -1,6 +1,8 @@
 /**
  * @file 二维码解析内部模块：errorlevel。
  */
+const FOR_BITS: ErrorCorrectionLevel[] = []
+
 export default class ErrorCorrectionLevel {
   static forBits(bits: number) {
     if (bits < 0 || bits >= FOR_BITS.length) {
@@ -24,9 +26,9 @@ export default class ErrorCorrectionLevel {
   }
 }
 
-const FOR_BITS = [
+FOR_BITS.push(
   new ErrorCorrectionLevel(1, 0x00, 'M'),
   new ErrorCorrectionLevel(0, 0x01, 'L'),
   new ErrorCorrectionLevel(3, 0x02, 'H'),
   new ErrorCorrectionLevel(2, 0x03, 'Q'),
-]
+)
