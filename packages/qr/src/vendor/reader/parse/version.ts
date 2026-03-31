@@ -1,154 +1,180 @@
-// @ts-nocheck
-import BitMatrix from './bitmat'
 /**
  * @file 二维码解析内部模块：version。
  */
+import BitMatrix from './bitmat'
 import FormatInformation from './formatinf'
+import type ErrorCorrectionLevel from './errorlevel'
 
-function ECB(count, dataCodewords) {
-  this.count = count
-  this.dataCodewords = dataCodewords
+class ECB {
+  count: number
+  dataCodewords: number
+
+  constructor(count: number, dataCodewords: number) {
+    this.count = count
+    this.dataCodewords = dataCodewords
+  }
 }
-function ECBlocks(ecCodewordsPerBlock, ecBlocks1, ecBlocks2) {
-  this.ecCodewordsPerBlock = ecCodewordsPerBlock
-  if (ecBlocks2) { this.ecBlocks = [ecBlocks1, ecBlocks2] }
-  else { this.ecBlocks = [ecBlocks1] }
-}
-Object.defineProperty(ECBlocks.prototype, 'TotalECCodewords', {
-  get() {
+
+class ECBlocks {
+  ecCodewordsPerBlock: number
+  ecBlocks: ECB[]
+
+  constructor(ecCodewordsPerBlock: number, ecBlocks1: ECB, ecBlocks2?: ECB) {
+    this.ecCodewordsPerBlock = ecCodewordsPerBlock
+    this.ecBlocks = ecBlocks2 ? [ecBlocks1, ecBlocks2] : [ecBlocks1]
+  }
+
+  get TotalECCodewords() {
     return this.ecCodewordsPerBlock * this.NumBlocks
-  },
-})
-Object.defineProperty(ECBlocks.prototype, 'NumBlocks', {
-  get() {
+  }
+
+  get NumBlocks() {
     let total = 0
     for (let i = 0; i < this.ecBlocks.length; i++) {
-      total += this.ecBlocks[i].length
+      total += this.ecBlocks[i].count
     }
     return total
-  },
-})
-ECBlocks.prototype.getECBlocks = function () {
-  return this.ecBlocks
-}
-export default function Version(versionNumber, alignmentPatternCenters, ecBlocks1, ecBlocks2, ecBlocks3, ecBlocks4) {
-  this.versionNumber = versionNumber
-  this.alignmentPatternCenters = alignmentPatternCenters
-  this.ecBlocks = [ecBlocks1, ecBlocks2, ecBlocks3, ecBlocks4]
-  let total = 0
-  const ecCodewords = ecBlocks1.ecCodewordsPerBlock
-  const ecbArray = ecBlocks1.getECBlocks()
-  for (let i = 0; i < ecbArray.length; i++) {
-    const ecBlock = ecbArray[i]
-    total += ecBlock.count * (ecBlock.dataCodewords + ecCodewords)
   }
-  this.totalCodewords = total
+
+  getECBlocks() {
+    return this.ecBlocks
+  }
 }
-Object.defineProperty(Version.prototype, 'DimensionForVersion', {
-  get() {
-    return 17 + 4 * this.versionNumber
-  },
-})
-Version.prototype.buildFunctionPattern = function () {
-  const dimension = this.DimensionForVersion
-  const bitMatrix = new BitMatrix(dimension)
-  bitMatrix.setRegion(0, 0, 9, 9)
-  bitMatrix.setRegion(dimension - 8, 0, 8, 9)
-  bitMatrix.setRegion(0, dimension - 8, 9, 8)
-  const max = this.alignmentPatternCenters.length
-  for (let x = 0; x < max; x++) {
-    const i = this.alignmentPatternCenters[x] - 2
-    for (let y = 0; y < max; y++) {
-      if ((x == 0 && (y == 0 || y == max - 1)) || (x == max - 1 && y == 0)) {
-        continue
+
+export default class Version {
+  static VERSION_DECODE_INFO = [
+    0x07C94,
+    0x085BC,
+    0x09A99,
+    0x0A4D3,
+    0x0BBF6,
+    0x0C762,
+    0x0D847,
+    0x0E60D,
+    0x0F928,
+    0x10B78,
+    0x1145D,
+    0x12A17,
+    0x13532,
+    0x149A6,
+    0x15683,
+    0x168C9,
+    0x177EC,
+    0x18EC4,
+    0x191E1,
+    0x1AFAB,
+    0x1B08E,
+    0x1CC1A,
+    0x1D33F,
+    0x1ED75,
+    0x1F250,
+    0x209D5,
+    0x216F0,
+    0x228BA,
+    0x2379F,
+    0x24B0B,
+    0x2542E,
+    0x26A64,
+    0x27541,
+    0x28C69,
+  ]
+
+  static VERSIONS: Version[]
+
+  static getVersionForNumber(versionNumber: number) {
+    if (versionNumber < 1 || versionNumber > 40) {
+      throw new Error('ArgumentException')
+    }
+    return Version.VERSIONS[versionNumber - 1]
+  }
+
+  static getProvisionalVersionForDimension(dimension: number) {
+    if (dimension % 4 !== 1) {
+      throw new Error('Error getProvisionalVersionForDimension')
+    }
+
+    try {
+      return Version.getVersionForNumber((dimension - 17) >> 2)
+    }
+    catch {
+      throw new Error('Error getVersionForNumber')
+    }
+  }
+
+  static decodeVersionInformation(versionBits: number) {
+    let bestDifference = 0xFFFFFFFF
+    let bestVersion = 0
+    for (let i = 0; i < Version.VERSION_DECODE_INFO.length; i++) {
+      const targetVersion = Version.VERSION_DECODE_INFO[i]
+      if (targetVersion === versionBits) {
+        return Version.getVersionForNumber(i + 7)
       }
-      bitMatrix.setRegion(this.alignmentPatternCenters[y] - 2, i, 5, 5)
+      const bitsDifference = FormatInformation.numBitsDiffering(versionBits, targetVersion)
+      if (bitsDifference < bestDifference) {
+        bestVersion = i + 7
+        bestDifference = bitsDifference
+      }
     }
-  }
-  bitMatrix.setRegion(6, 9, 1, dimension - 17)
-  bitMatrix.setRegion(9, 6, dimension - 17, 1)
-  if (this.versionNumber > 6) {
-    bitMatrix.setRegion(dimension - 11, 0, 3, 6)
-    bitMatrix.setRegion(0, dimension - 11, 6, 3)
-  }
-  return bitMatrix
-}
-Version.prototype.getECBlocksForLevel = function (ecLevel) {
-  return this.ecBlocks[ecLevel.ordinal()]
-}
-Version.VERSION_DECODE_INFO = [
-  0x07C94,
-  0x085BC,
-  0x09A99,
-  0x0A4D3,
-  0x0BBF6,
-  0x0C762,
-  0x0D847,
-  0x0E60D,
-  0x0F928,
-  0x10B78,
-  0x1145D,
-  0x12A17,
-  0x13532,
-  0x149A6,
-  0x15683,
-  0x168C9,
-  0x177EC,
-  0x18EC4,
-  0x191E1,
-  0x1AFAB,
-  0x1B08E,
-  0x1CC1A,
-  0x1D33F,
-  0x1ED75,
-  0x1F250,
-  0x209D5,
-  0x216F0,
-  0x228BA,
-  0x2379F,
-  0x24B0B,
-  0x2542E,
-  0x26A64,
-  0x27541,
-  0x28C69,
-]
-Version.VERSIONS = buildVersions()
-Version.getVersionForNumber = function (versionNumber) {
-  if (versionNumber < 1 || versionNumber > 40) {
-    throw 'ArgumentException'
-  }
-  return Version.VERSIONS[versionNumber - 1]
-}
-Version.getProvisionalVersionForDimension = function (dimension) {
-  if (dimension % 4 != 1) {
-    throw 'Error getProvisionalVersionForDimension'
-  }
-  try {
-    return Version.getVersionForNumber((dimension - 17) >> 2)
-  }
-  catch (iae) {
-    throw 'Error getVersionForNumber'
-  }
-}
-Version.decodeVersionInformation = function (versionBits) {
-  let bestDifference = 0xFFFFFFFF
-  let bestVersion = 0
-  for (let i = 0; i < Version.VERSION_DECODE_INFO.length; i++) {
-    const targetVersion = Version.VERSION_DECODE_INFO[i]
-    if (targetVersion == versionBits) {
-      return this.getVersionForNumber(i + 7)
+    if (bestDifference <= 3) {
+      return Version.getVersionForNumber(bestVersion)
     }
-    const bitsDifference = FormatInformation.numBitsDiffering(versionBits, targetVersion)
-    if (bitsDifference < bestDifference) {
-      bestVersion = i + 7
-      bestDifference = bitsDifference
+    return null
+  }
+
+  versionNumber: number
+  alignmentPatternCenters: number[]
+  ecBlocks: ECBlocks[]
+  totalCodewords: number
+
+  constructor(versionNumber: number, alignmentPatternCenters: number[], ecBlocks1: ECBlocks, ecBlocks2: ECBlocks, ecBlocks3: ECBlocks, ecBlocks4: ECBlocks) {
+    this.versionNumber = versionNumber
+    this.alignmentPatternCenters = alignmentPatternCenters
+    this.ecBlocks = [ecBlocks1, ecBlocks2, ecBlocks3, ecBlocks4]
+
+    let total = 0
+    const ecCodewords = ecBlocks1.ecCodewordsPerBlock
+    const ecbArray = ecBlocks1.getECBlocks()
+    for (let i = 0; i < ecbArray.length; i++) {
+      const ecBlock = ecbArray[i]
+      total += ecBlock.count * (ecBlock.dataCodewords + ecCodewords)
     }
+    this.totalCodewords = total
   }
-  if (bestDifference <= 3) {
-    return this.getVersionForNumber(bestVersion)
+
+  get DimensionForVersion() {
+    return 17 + 4 * this.versionNumber
   }
-  return null
+
+  buildFunctionPattern() {
+    const dimension = this.DimensionForVersion
+    const bitMatrix = new BitMatrix(dimension)
+    bitMatrix.setRegion(0, 0, 9, 9)
+    bitMatrix.setRegion(dimension - 8, 0, 8, 9)
+    bitMatrix.setRegion(0, dimension - 8, 9, 8)
+    const max = this.alignmentPatternCenters.length
+    for (let x = 0; x < max; x++) {
+      const i = this.alignmentPatternCenters[x] - 2
+      for (let y = 0; y < max; y++) {
+        if ((x === 0 && (y === 0 || y === max - 1)) || (x === max - 1 && y === 0)) {
+          continue
+        }
+        bitMatrix.setRegion(this.alignmentPatternCenters[y] - 2, i, 5, 5)
+      }
+    }
+    bitMatrix.setRegion(6, 9, 1, dimension - 17)
+    bitMatrix.setRegion(9, 6, dimension - 17, 1)
+    if (this.versionNumber > 6) {
+      bitMatrix.setRegion(dimension - 11, 0, 3, 6)
+      bitMatrix.setRegion(0, dimension - 11, 6, 3)
+    }
+    return bitMatrix
+  }
+
+  getECBlocksForLevel(ecLevel: ErrorCorrectionLevel) {
+    return this.ecBlocks[ecLevel.ordinal()]
+  }
 }
+
 function buildVersions() {
   return [
     new Version(1, [], new ECBlocks(7, new ECB(1, 19)), new ECBlocks(10, new ECB(1, 16)), new ECBlocks(13, new ECB(1, 13)), new ECBlocks(17, new ECB(1, 9))),
@@ -193,3 +219,5 @@ function buildVersions() {
     new Version(40, [6, 30, 58, 86, 114, 142, 170], new ECBlocks(30, new ECB(19, 118), new ECB(6, 119)), new ECBlocks(28, new ECB(18, 47), new ECB(31, 48)), new ECBlocks(30, new ECB(34, 24), new ECB(34, 25)), new ECBlocks(30, new ECB(20, 15), new ECB(61, 16))),
   ]
 }
+
+Version.VERSIONS = buildVersions()

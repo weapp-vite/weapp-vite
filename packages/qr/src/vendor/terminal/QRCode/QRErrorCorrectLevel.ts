@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file 终端二维码编码内部模块：QRErrorCorrectLevel。
  */
@@ -7,5 +6,6 @@ const QRErrorCorrectLevel = {
   M: 0,
   Q: 3,
   H: 2,
-}
+} as const
+
 export default QRErrorCorrectLevel

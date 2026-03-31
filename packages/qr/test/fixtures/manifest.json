@@ -1,0 +1,22 @@
+[
+  {
+    "file": "basic.png",
+    "content": "weapp-vite qr fixture basic",
+    "kind": "basic"
+  },
+  {
+    "file": "url.png",
+    "content": "https://vite.icebreaker.top/?from=fixture",
+    "kind": "basic"
+  },
+  {
+    "file": "rotated-soft.png",
+    "content": "weapp-vite qr fixture rotated",
+    "kind": "rotated"
+  },
+  {
+    "file": "low-contrast.png",
+    "content": "weapp-vite qr fixture contrast",
+    "kind": "contrast"
+  }
+]

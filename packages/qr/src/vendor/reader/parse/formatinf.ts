@@ -1,9 +1,8 @@
-// @ts-nocheck
-import ErrorCorrectionLevel from './errorlevel'
 /**
  * @file 二维码解析内部模块：formatinf。
  */
 import { URShift } from '../core/qrcode'
+import ErrorCorrectionLevel from './errorlevel'
 
 const FORMAT_INFO_MASK_QR = 0x5412
 const FORMAT_INFO_DECODE_LOOKUP = [
@@ -39,47 +38,64 @@ const FORMAT_INFO_DECODE_LOOKUP = [
   [0x2183, 0x1D],
   [0x2EDA, 0x1E],
   [0x2BED, 0x1F],
-]
+] as const
 const BITS_SET_IN_HALF_BYTE = [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4]
-export default function FormatInformation(formatInfo) {
-  this.errorCorrectionLevel = ErrorCorrectionLevel.forBits((formatInfo >> 3) & 0x03)
-  this.dataMask = (formatInfo & 0x07)
-}
-FormatInformation.prototype.GetHashCode = function () {
-  return (this.errorCorrectionLevel.ordinal() << 3) | this.dataMask
-}
-FormatInformation.prototype.Equals = function (o) {
-  const other = o
-  return this.errorCorrectionLevel == other.errorCorrectionLevel && this.dataMask == other.dataMask
-}
-FormatInformation.numBitsDiffering = function (a, b) {
-  a ^= b
-  return BITS_SET_IN_HALF_BYTE[a & 0x0F] + BITS_SET_IN_HALF_BYTE[(URShift(a, 4) & 0x0F)] + BITS_SET_IN_HALF_BYTE[(URShift(a, 8) & 0x0F)] + BITS_SET_IN_HALF_BYTE[(URShift(a, 12) & 0x0F)] + BITS_SET_IN_HALF_BYTE[(URShift(a, 16) & 0x0F)] + BITS_SET_IN_HALF_BYTE[(URShift(a, 20) & 0x0F)] + BITS_SET_IN_HALF_BYTE[(URShift(a, 24) & 0x0F)] + BITS_SET_IN_HALF_BYTE[(URShift(a, 28) & 0x0F)]
-}
-FormatInformation.decodeFormatInformation = function (maskedFormatInfo) {
-  const formatInfo = FormatInformation.doDecodeFormatInformation(maskedFormatInfo)
-  if (formatInfo != null) {
-    return formatInfo
+
+export default class FormatInformation {
+  static numBitsDiffering(a: number, b: number) {
+    a ^= b
+    return BITS_SET_IN_HALF_BYTE[a & 0x0F]
+      + BITS_SET_IN_HALF_BYTE[(URShift(a, 4) & 0x0F)]
+      + BITS_SET_IN_HALF_BYTE[(URShift(a, 8) & 0x0F)]
+      + BITS_SET_IN_HALF_BYTE[(URShift(a, 12) & 0x0F)]
+      + BITS_SET_IN_HALF_BYTE[(URShift(a, 16) & 0x0F)]
+      + BITS_SET_IN_HALF_BYTE[(URShift(a, 20) & 0x0F)]
+      + BITS_SET_IN_HALF_BYTE[(URShift(a, 24) & 0x0F)]
+      + BITS_SET_IN_HALF_BYTE[(URShift(a, 28) & 0x0F)]
   }
-  return FormatInformation.doDecodeFormatInformation(maskedFormatInfo ^ FORMAT_INFO_MASK_QR)
-}
-FormatInformation.doDecodeFormatInformation = function (maskedFormatInfo) {
-  let bestDifference = 0xFFFFFFFF
-  let bestFormatInfo = 0
-  for (let i = 0; i < FORMAT_INFO_DECODE_LOOKUP.length; i++) {
-    const decodeInfo = FORMAT_INFO_DECODE_LOOKUP[i]
-    const targetInfo = decodeInfo[0]
-    if (targetInfo == maskedFormatInfo) {
-      return new FormatInformation(decodeInfo[1])
+
+  static decodeFormatInformation(maskedFormatInfo: number) {
+    const formatInfo = FormatInformation.doDecodeFormatInformation(maskedFormatInfo)
+    if (formatInfo != null) {
+      return formatInfo
     }
-    const bitsDifference = this.numBitsDiffering(maskedFormatInfo, targetInfo)
-    if (bitsDifference < bestDifference) {
-      bestFormatInfo = decodeInfo[1]
-      bestDifference = bitsDifference
+    return FormatInformation.doDecodeFormatInformation(maskedFormatInfo ^ FORMAT_INFO_MASK_QR)
+  }
+
+  static doDecodeFormatInformation(maskedFormatInfo: number) {
+    let bestDifference = 0xFFFFFFFF
+    let bestFormatInfo = 0
+    for (let i = 0; i < FORMAT_INFO_DECODE_LOOKUP.length; i++) {
+      const decodeInfo = FORMAT_INFO_DECODE_LOOKUP[i]
+      const targetInfo = decodeInfo[0]
+      if (targetInfo === maskedFormatInfo) {
+        return new FormatInformation(decodeInfo[1])
+      }
+      const bitsDifference = this.numBitsDiffering(maskedFormatInfo, targetInfo)
+      if (bitsDifference < bestDifference) {
+        bestFormatInfo = decodeInfo[1]
+        bestDifference = bitsDifference
+      }
     }
+    if (bestDifference <= 3) {
+      return new FormatInformation(bestFormatInfo)
+    }
+    return null
   }
-  if (bestDifference <= 3) {
-    return new FormatInformation(bestFormatInfo)
+
+  errorCorrectionLevel: ErrorCorrectionLevel
+  dataMask: number
+
+  constructor(formatInfo: number) {
+    this.errorCorrectionLevel = ErrorCorrectionLevel.forBits((formatInfo >> 3) & 0x03)
+    this.dataMask = (formatInfo & 0x07)
   }
-  return null
+
+  GetHashCode() {
+    return (this.errorCorrectionLevel.ordinal() << 3) | this.dataMask
+  }
+
+  Equals(o: FormatInformation) {
+    return this.errorCorrectionLevel === o.errorCorrectionLevel && this.dataMask === o.dataMask
+  }
 }

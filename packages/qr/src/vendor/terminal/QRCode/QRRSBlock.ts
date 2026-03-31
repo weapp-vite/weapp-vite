@@ -1,14 +1,13 @@
-// @ts-nocheck
 /**
  * @file 终端二维码编码内部模块：QRRSBlock。
  */
 import QRErrorCorrectLevel from './QRErrorCorrectLevel'
 
-function QRRSBlock(totalCount, dataCount) {
-  this.totalCount = totalCount
-  this.dataCount = dataCount
-}
-QRRSBlock.RS_BLOCK_TABLE = [
+class QRRSBlock {
+  totalCount: number
+  dataCount: number
+
+  static RS_BLOCK_TABLE = [
   [1, 26, 19],
   [1, 26, 16],
   [1, 26, 13],
@@ -169,36 +168,45 @@ QRRSBlock.RS_BLOCK_TABLE = [
   [18, 75, 47, 31, 76, 48],
   [34, 54, 24, 34, 55, 25],
   [20, 45, 15, 61, 46, 16],
-]
-QRRSBlock.getRSBlocks = function (typeNumber, errorCorrectLevel) {
-  const rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel)
-  if (rsBlock === undefined) {
-    throw new Error(`bad rs block @ typeNumber:${typeNumber}/errorCorrectLevel:${errorCorrectLevel}`)
+  ]
+
+  constructor(totalCount: number, dataCount: number) {
+    this.totalCount = totalCount
+    this.dataCount = dataCount
   }
-  const length = rsBlock.length / 3
-  const list = []
-  for (let i = 0; i < length; i++) {
-    const count = rsBlock[i * 3 + 0]
-    const totalCount = rsBlock[i * 3 + 1]
-    const dataCount = rsBlock[i * 3 + 2]
-    for (let j = 0; j < count; j++) {
-      list.push(new QRRSBlock(totalCount, dataCount))
+
+  static getRSBlocks(typeNumber: number, errorCorrectLevel: number) {
+    const rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel)
+    if (rsBlock === undefined) {
+      throw new Error(`bad rs block @ typeNumber:${typeNumber}/errorCorrectLevel:${errorCorrectLevel}`)
+    }
+    const length = rsBlock.length / 3
+    const list = []
+    for (let i = 0; i < length; i++) {
+      const count = rsBlock[i * 3 + 0]
+      const totalCount = rsBlock[i * 3 + 1]
+      const dataCount = rsBlock[i * 3 + 2]
+      for (let j = 0; j < count; j++) {
+        list.push(new QRRSBlock(totalCount, dataCount))
+      }
+    }
+    return list
+  }
+
+  static getRsBlockTable(typeNumber: number, errorCorrectLevel: number) {
+    switch (errorCorrectLevel) {
+      case QRErrorCorrectLevel.L:
+        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0]
+      case QRErrorCorrectLevel.M:
+        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1]
+      case QRErrorCorrectLevel.Q:
+        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2]
+      case QRErrorCorrectLevel.H:
+        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3]
+      default:
+        return undefined
     }
   }
-  return list
 }
-QRRSBlock.getRsBlockTable = function (typeNumber, errorCorrectLevel) {
-  switch (errorCorrectLevel) {
-    case QRErrorCorrectLevel.L:
-      return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0]
-    case QRErrorCorrectLevel.M:
-      return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1]
-    case QRErrorCorrectLevel.Q:
-      return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2]
-    case QRErrorCorrectLevel.H:
-      return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3]
-    default:
-      return undefined
-  }
-}
+
 export default QRRSBlock
