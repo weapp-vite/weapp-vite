@@ -45,6 +45,7 @@
     "build": "tsdown",
     "test": "vitest run --config ./vitest.config.ts",
     "test:dev": "vitest --config ./vitest.config.ts",
+    "test:types": "tsd",
     "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
