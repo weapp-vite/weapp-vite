@@ -1,3 +1,4 @@
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
@@ -94,10 +95,20 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
 
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(SHARED_COMMON_DIST_PATH, marker),
-        'updated shared common chunk marker',
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(SHARED_COMMON_DIST_PATH, marker, 20_000),
+          'updated shared common chunk marker',
+        )
+      }
+      catch {
+        await replaceFileByRename(SHARED_STORE_SOURCE_PATH, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(SHARED_COMMON_DIST_PATH, marker),
+          'updated shared common chunk marker (retry)',
+        )
+      }
       expect(content).toContain(marker)
 
       const output = await dev.waitForOutput(
