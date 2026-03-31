@@ -13,6 +13,9 @@ import {
   decodeQrCodeFromBuffer,
   decodeQrCodeFromFile,
   decodeWithQrReader,
+  detectCodeTypeFromBase64,
+  detectCodeTypeFromBuffer,
+  detectCodeTypeFromFile,
   detectMiniProgramCodeFromBase64,
   renderTerminalQrCode,
   renderTerminalQrCodeFromMatrix,
@@ -39,6 +42,8 @@ describe('@weapp-vite/qr public api', () => {
 
     await expect(decodeQrCodeFromBuffer(buffer)).resolves.toBe(content)
     await expect(decodeQrCodeFromFile(filePath)).resolves.toBe(content)
+    await expect(detectCodeTypeFromBuffer(buffer)).resolves.toBe('qr')
+    await expect(detectCodeTypeFromFile(filePath)).resolves.toBe('qr')
   })
 
   it('decodes real fixture files from disk through the public entry', async () => {
@@ -106,6 +111,7 @@ describe('@weapp-vite/qr public api', () => {
       await expect(detectMiniProgramCodeFromBase64(base64)).resolves.toMatchObject({
         kind: fixture.expectedDetectionKind,
       })
+      await expect(detectCodeTypeFromBase64(base64)).resolves.toBe('mini-program-code')
     }
   })
 
@@ -119,6 +125,7 @@ describe('@weapp-vite/qr public api', () => {
       await expect(detectMiniProgramCodeFromBase64(base64)).resolves.toMatchObject({
         kind: fixture.expectedDetectionKind,
       })
+      await expect(detectCodeTypeFromBase64(base64)).resolves.toBe('mini-program-code')
     }
   })
 })

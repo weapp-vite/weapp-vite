@@ -71,6 +71,24 @@ if (detected) {
 这里的结构识别目标是判断图片是否符合微信小程序码几何特征，并返回定位点、中心 logo 区和右下角徽标区域。
 它不是把小程序码直接解码成链接或页面路径。
 
+### 高层类型检测
+
+```ts
+import { detectCodeTypeFromFile } from '@weapp-vite/qr'
+
+const codeType = await detectCodeTypeFromFile('./fixtures/code.png')
+
+if (codeType === 'qr') {
+  console.log('standard qr')
+}
+else if (codeType === 'mini-program-code') {
+  console.log('wechat mini program code')
+}
+else {
+  console.log('unknown')
+}
+```
+
 ### 终端渲染
 
 ```ts
@@ -95,5 +113,6 @@ import type {
   QRCodeReaderInput,
   QRCodeReaderResult,
   QRCodeRenderOptions,
+  QRCodeType,
 } from '@weapp-vite/qr'
 ```
