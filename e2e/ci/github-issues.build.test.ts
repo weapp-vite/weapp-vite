@@ -693,6 +693,6 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(commonJs).toContain('issue-373-store')
     expect(commonJs).toContain('count:e,doubled:t,increment:n,reset:r')
-    expect(commonJs).toContain('Ge(`issue-373-store`')
+    expect(commonJs).toMatch(/[A-Za-z_$][\w$]*\(`issue-373-store`,\(\)=>\{/)
   })
 })

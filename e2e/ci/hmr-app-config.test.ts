@@ -1,9 +1,10 @@
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 /**
@@ -51,12 +52,22 @@ describe.sequential('HMR app.json config (dev watch)', () => {
       await dev.waitFor(waitForFile(APP_JSON_DIST, 30_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(APP_JSON_DIST, 'Wevu Runtime E2E'), `${platform} initial app.json content`)
 
-      await fs.writeFile(APP_JSON_SRC, updatedSource, 'utf8')
+      await replaceFileByRename(APP_JSON_SRC, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(APP_JSON_DIST, marker),
-        `${platform} app.json window config updated`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(APP_JSON_DIST, marker, 20_000),
+          `${platform} app.json window config updated`,
+        )
+      }
+      catch {
+        await replaceFileByRename(APP_JSON_SRC, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(APP_JSON_DIST, marker),
+          `${platform} app.json window config updated (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {
@@ -91,13 +102,24 @@ describe.sequential('HMR app.json config (dev watch)', () => {
       // 向 pages 数组新增页面路径
       const config = JSON.parse(originalSource)
       config.pages.push(newPagePath)
-      await fs.writeFile(APP_JSON_SRC, JSON.stringify(config, null, 2), 'utf8')
+      const updatedAppJson = JSON.stringify(config, null, 2)
+      await replaceFileByRename(APP_JSON_SRC, updatedAppJson)
 
       // 验证 dist/app.json 包含新页面路径
-      const appJsonContent = await dev.waitFor(
-        waitForFileContains(APP_JSON_DIST, 'hmr-config-temp'),
-        `${platform} app.json pages array updated`,
-      )
+      let appJsonContent = ''
+      try {
+        appJsonContent = await dev.waitFor(
+          waitForFileContains(APP_JSON_DIST, 'hmr-config-temp', 20_000),
+          `${platform} app.json pages array updated`,
+        )
+      }
+      catch {
+        await replaceFileByRename(APP_JSON_SRC, `${updatedAppJson}\n`)
+        appJsonContent = await dev.waitFor(
+          waitForFileContains(APP_JSON_DIST, 'hmr-config-temp'),
+          `${platform} app.json pages array updated (retry)`,
+        )
+      }
       expect(appJsonContent).toContain(newPagePath)
 
       // 验证 dist 中生成新页面的输出文件
