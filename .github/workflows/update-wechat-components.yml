@@ -1,0 +1,94 @@
+name: Update WeChat Components
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: update-wechat-components
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  HUSKY: 0
+
+jobs:
+  update:
+    name: Update builtin and auto-import components
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update WeChat builtins
+        run: pnpm builtin
+
+      - name: Update auto-import components
+        run: pnpm auto-import:components
+
+      - name: Detect generated changes
+        id: changes
+        shell: bash
+        run: |
+          files=(
+            packages/wevu-compiler/src/auto-import-components/builtin.auto.ts
+            packages/weapp-vite/src/auto-import-components/resolvers/json/tdesign.json
+            packages/weapp-vite/src/auto-import-components/resolvers/json/vant.json
+            packages/weapp-vite/src/auto-import-components/resolvers/json/weui.json
+          )
+
+          if git diff --quiet -- "${files[@]}"; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No generated changes detected." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "Generated changes detected:"
+            git diff --name-only -- "${files[@]}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create pull request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: main
+          branch: chore/update-wechat-components
+          delete-branch: true
+          commit-message: 'chore: update wechat builtin and auto-import components'
+          title: 'chore: 更新微信内置组件与自动导入组件清单'
+          body: |
+            ## 概要
+            - 执行 `pnpm builtin`
+            - 执行 `pnpm auto-import:components`
+            - 更新微信内置组件和自动导入组件生成产物
+
+            ## 说明
+            - 该 PR 由 GitHub Actions 每日任务自动创建或更新
+            - 仅在生成文件发生变化时才会提交
+          add-paths: |
+            packages/wevu-compiler/src/auto-import-components/builtin.auto.ts
+            packages/weapp-vite/src/auto-import-components/resolvers/json/tdesign.json
+            packages/weapp-vite/src/auto-import-components/resolvers/json/vant.json
+            packages/weapp-vite/src/auto-import-components/resolvers/json/weui.json
