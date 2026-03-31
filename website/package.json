@@ -47,7 +47,7 @@
     "tailwindcss": "catalog:tailwind3",
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.0.0",
-    "vitepress": "^2.0.0-alpha.16",
+    "vitepress": "^2.0.0-alpha.17",
     "vitepress-plugin-group-icons": "^1.7.3",
     "vitepress-plugin-llms": "1.12.0",
     "vitepress-plugin-mermaid": "^2.0.17",
