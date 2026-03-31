@@ -3,6 +3,7 @@ packages:
   - e2e-apps/*
   - templates/*
   - test/fixture-projects/weapp-vite/*
+  - '!test/fixture-projects/weapp-vite/.tmp-*'
   - packages/*
   - mpcore/packages/*
   - mpcore/demos/*
