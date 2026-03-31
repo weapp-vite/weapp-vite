@@ -19,6 +19,7 @@ exports[`tdesign > tdesign default 1`] = `
   "collapse",
   "collapse-panel",
   "color-picker",
+  "config-provider",
   "count-down",
   "date-time-picker",
   "dialog",
