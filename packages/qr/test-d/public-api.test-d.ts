@@ -1,4 +1,5 @@
 import type {
+  MiniProgramCodeDetectionResult,
   QRCodeMatrix,
   QRCodeReaderInput,
   QRCodeReaderResult,
@@ -12,6 +13,9 @@ import {
   decodeQrCodeFromBuffer,
   decodeQrCodeFromFile,
   decodeWithQrReader,
+  detectMiniProgramCodeFromBase64,
+  detectMiniProgramCodeFromBuffer,
+  detectMiniProgramCodeFromFile,
   renderTerminalQrCode,
   renderTerminalQrCodeFromMatrix,
 } from '@weapp-vite/qr'
@@ -23,6 +27,9 @@ type PublicApiName
     | 'decodeQrCodeFromBuffer'
     | 'decodeQrCodeFromFile'
     | 'decodeWithQrReader'
+    | 'detectMiniProgramCodeFromBase64'
+    | 'detectMiniProgramCodeFromBuffer'
+    | 'detectMiniProgramCodeFromFile'
     | 'renderTerminalQrCode'
     | 'renderTerminalQrCodeFromMatrix'
 
@@ -33,6 +40,9 @@ expectType<never>({} as MissingPublicApi)
 expectType<Promise<string>>(decodeQrCodeFromBase64('Zm9v'))
 expectType<Promise<string>>(decodeQrCodeFromBuffer(Buffer.from('Zm9v')))
 expectType<Promise<string>>(decodeQrCodeFromFile('/tmp/example.png'))
+expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBase64('Zm9v'))
+expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromBuffer(Buffer.from('Zm9v')))
+expectType<Promise<MiniProgramCodeDetectionResult | null>>(detectMiniProgramCodeFromFile('/tmp/example.png'))
 
 const matrix = createQrCodeMatrix('hello qr')
 expectType<QRCodeMatrix>(matrix)
@@ -61,4 +71,7 @@ expectError(decodeQrCodeFromBase64(123))
 expectError(decodeQrCodeFromBuffer('Zm9v'))
 expectError(decodeQrCodeFromFile(Buffer.from('foo')))
 expectError(decodeWithQrReader({ width: 1, height: 1, data: new Uint8Array([0]) }))
+expectError(detectMiniProgramCodeFromBase64(123))
+expectError(detectMiniProgramCodeFromBuffer('Zm9v'))
+expectError(detectMiniProgramCodeFromFile(Buffer.from('foo')))
 expectError(renderTerminalQrCode('hello qr', { small: 'yes' }))
