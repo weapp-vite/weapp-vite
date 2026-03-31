@@ -227,11 +227,13 @@ export function createSetDataScheduler(options: {
   }
 
   const snapshot = () => (setDataStrategy === 'patch' ? collect() : ({ ...latestSnapshot }))
+  const cloneLatestSnapshot = () => ({ ...latestSnapshot })
 
   return {
     job,
     mutationRecorder,
     snapshot,
+    cloneLatestSnapshot,
     getLatestSnapshot: () => latestSnapshot,
   }
 }

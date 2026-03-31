@@ -10,6 +10,7 @@ import {
   runSetupFunction,
   teardownRuntimeInstance,
 } from '@/runtime/register'
+import { getOwnerSnapshot } from '@/runtime/scopedSlots'
 
 const componentCalls: Record<string, any>[] = []
 const appCalls: Record<string, any>[] = []
@@ -206,6 +207,42 @@ describe('mountRuntimeInstance and teardown', () => {
 
     expect(target.setData).toHaveBeenCalledTimes(1)
     expect(target.$wevu.state.value1.value).toBe('111')
+
+    teardownRuntimeInstance(target)
+  })
+
+  it('avoids full owner snapshot collection after patch updates', async () => {
+    let getterCalls = 0
+    const big = {}
+    Object.defineProperty(big, 'hidden', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        getterCalls += 1
+        return 1
+      },
+    })
+    const shared = { x: 1 }
+    const app = createApp({
+      data: () => ({ a: shared, b: shared, big }),
+      setData: { strategy: 'patch', includeComputed: false },
+    })
+    const target: any = {
+      route: 'pages/owner-snapshot/index',
+      setData: vi.fn(),
+    }
+
+    mountRuntimeInstance(target, app as any, undefined, undefined)
+    getterCalls = 0
+
+    target.$wevu.state.a.x = 2
+    await nextTick()
+
+    expect(getterCalls).toBe(0)
+    expect(getOwnerSnapshot(target.__wvOwnerId)).toMatchObject({
+      a: { x: 2 },
+      b: { x: 2 },
+    })
 
     teardownRuntimeInstance(target)
   })
