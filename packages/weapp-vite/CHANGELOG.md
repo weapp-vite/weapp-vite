@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.12.3
+
+### Patch Changes
+
+- 🐛 **修复 `weapp.autoImportComponents: true` 的默认展开行为。现在该布尔开关除了启用组件目录扫描外，还会默认开启 `auto-import-components.json`、`typed-components.d.ts`、`mini-program.html-data.json` 和 `vueComponents` 等辅助产物输出，避免模板项目只写 `true` 时缺少 IDE 补全与清单文件。** [#378](https://github.com/weapp-vite/weapp-vite/pull/378) by @sonofmagic
+- 📦 **Dependencies** [`b7c8bbf`](https://github.com/weapp-vite/weapp-vite/commit/b7c8bbfcc1784ed17d7623c5dfb44b3928d5ae9a)
+  → `wevu@6.12.3`, `@weapp-vite/ast@6.12.3`
+
 ## 6.12.2
 
 ### Patch Changes
