@@ -67,7 +67,6 @@ export default class QrCode {
   height: number
   qrCodeSymbol: unknown
   debug: boolean
-  callback: ((error: Error | null, value: { result: string, points: unknown[] }) => void) | null
   error: Error | undefined
   result: { result: string, points: unknown[] } | undefined
 
@@ -77,30 +76,20 @@ export default class QrCode {
     this.height = 0
     this.qrCodeSymbol = null
     this.debug = false
-    this.callback = null
     this.error = undefined
     this.result = undefined
   }
 
-  decode(src: DecodeSource, data?: ArrayLike<number>) {
-    const decode = () => {
-      try {
-        this.error = undefined
-        if (this.imagedata == null) {
-          throw new Error('Image data is not initialized')
-        }
-        this.result = this.process(this.imagedata)
-      }
-      catch (error) {
-        this.error = error instanceof Error ? error : new Error(String(error))
-        this.result = undefined
-      }
-      if (this.callback != null) {
-        this.callback(this.error ?? null, this.result as { result: string, points: unknown[] })
-      }
-      return this.result
+  runDecode() {
+    this.error = undefined
+    if (this.imagedata == null) {
+      throw new Error('Image data is not initialized')
     }
+    this.result = this.process(this.imagedata)
+    return this.result
+  }
 
+  async decode(src: DecodeSource, data?: ArrayLike<number>) {
     if (typeof src !== 'string' && src.width !== undefined) {
       this.width = src.width
       this.height = src.height
@@ -109,8 +98,7 @@ export default class QrCode {
         width: src.width,
         height: src.height,
       }
-      decode()
-      return
+      return this.runDecode()
     }
 
     const imageSrc = src as string
@@ -121,41 +109,51 @@ export default class QrCode {
 
     const image = new ImageCtor()
     image.crossOrigin = 'Anonymous'
-    image.onload = () => {
-      const documentRef = (globalThis as { document?: BrowserDocument }).document
-      if (documentRef == null) {
-        throw new Error('Document API is not available in this environment')
-      }
-      const canvasQr = documentRef.createElement('canvas')
-      const context = canvasQr.getContext('2d')
-      if (context == null) {
-        throw new Error('Canvas 2D context is not available')
-      }
-      const canvasOut = documentRef.getElementById('out-canvas')
-      if (canvasOut != null) {
-        const outctx = canvasOut.getContext('2d')
-        outctx?.clearRect(0, 0, 320, 240)
-        outctx?.drawImage(image, 0, 0, 320, 240)
-      }
-      canvasQr.width = image.width
-      canvasQr.height = image.height
-      context.drawImage(image, 0, 0)
-      this.width = image.width
-      this.height = image.height
-      try {
-        this.imagedata = context.getImageData(0, 0, image.width, image.height)
-      }
-      catch {
-        const crossDomainResult = 'Cross domain image reading not supported in your browser! Save it to your computer then drag and drop the file!'
-        this.result = { result: crossDomainResult, points: [] }
-        if (this.callback != null) {
-          this.callback(null, this.result)
+    return await new Promise<{ result: string, points: unknown[] }>((resolve, reject) => {
+      image.onload = () => {
+        const documentRef = (globalThis as { document?: BrowserDocument }).document
+        if (documentRef == null) {
+          reject(new Error('Document API is not available in this environment'))
           return
         }
+        const canvasQr = documentRef.createElement('canvas')
+        const context = canvasQr.getContext('2d')
+        if (context == null) {
+          reject(new Error('Canvas 2D context is not available'))
+          return
+        }
+        const canvasOut = documentRef.getElementById('out-canvas')
+        if (canvasOut != null) {
+          const outctx = canvasOut.getContext('2d')
+          outctx?.clearRect(0, 0, 320, 240)
+          outctx?.drawImage(image, 0, 0, 320, 240)
+        }
+        canvasQr.width = image.width
+        canvasQr.height = image.height
+        context.drawImage(image, 0, 0)
+        this.width = image.width
+        this.height = image.height
+        try {
+          this.imagedata = context.getImageData(0, 0, image.width, image.height)
+        }
+        catch {
+          resolve({
+            result: 'Cross domain image reading not supported in your browser! Save it to your computer then drag and drop the file!',
+            points: [],
+          })
+          return
+        }
+
+        try {
+          resolve(this.runDecode())
+        }
+        catch (error) {
+          reject(error instanceof Error ? error : new Error(String(error)))
+        }
       }
-      decode()
-    }
-    image.src = imageSrc
+
+      image.src = imageSrc
+    })
   }
 
   decode_utf8(s: string) {
