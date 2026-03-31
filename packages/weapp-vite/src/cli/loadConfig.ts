@@ -17,7 +17,7 @@ export async function loadConfig(configFile?: string) {
 
   let loaded: Awaited<ReturnType<typeof loadViteConfigFile>> | undefined
   try {
-    loaded = await loadViteConfigFile(configEnv, resolvedConfigFile, cwd, undefined, undefined, 'bundle')
+    loaded = await loadViteConfigFile(configEnv, resolvedConfigFile, cwd, undefined, undefined, 'runner')
   }
   catch (error) {
     const cjsError = createCjsConfigLoadError({
@@ -44,7 +44,7 @@ export async function loadConfig(configFile?: string) {
     }
     else {
       try {
-        weappLoaded = await loadViteConfigFile(configEnv, weappConfigFilePath, cwd, undefined, undefined, 'bundle')
+        weappLoaded = await loadViteConfigFile(configEnv, weappConfigFilePath, cwd, undefined, undefined, 'runner')
       }
       catch (error) {
         const cjsError = createCjsConfigLoadError({
