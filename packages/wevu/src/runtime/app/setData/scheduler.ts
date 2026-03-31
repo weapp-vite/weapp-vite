@@ -165,6 +165,8 @@ export function createSetDataScheduler(options: {
         && typeof token === 'object'
         && Object.hasOwn(previousToken as object, 'raw')
         && Object.hasOwn(token as object, 'raw')
+        && Array.isArray((previousToken as any).raw)
+        && Array.isArray((token as any).raw)
         && (previousToken as any).raw !== (token as any).raw
       ) {
         replacedTopLevelKeys.add(key)
@@ -236,7 +238,9 @@ export function createSetDataScheduler(options: {
           for (const key of diffCollection.replacedTopLevelKeys) {
             fastDiff[key] = snapshot[key]
           }
-          const baseDiff = diffSnapshots(latestSnapshot, snapshot)
+          const baseDiff = diffSnapshots(latestSnapshot, snapshot, {
+            skipKeys: diffCollection.replacedTopLevelKeys,
+          })
           return {
             ...baseDiff,
             ...fastDiff,
