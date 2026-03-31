@@ -225,12 +225,20 @@ function assignNestedDiff(
 export function diffSnapshots(
   prev: Record<string, any>,
   next: Record<string, any>,
+  options?: { skipKeys?: Set<string> },
 ): Record<string, any> {
   const diff: Record<string, any> = {}
+  const skipKeys = options?.skipKeys
   for (const key of Object.keys(next)) {
+    if (skipKeys?.has(key)) {
+      continue
+    }
     assignNestedDiff(prev[key], next[key], key, diff)
   }
   for (const key of Object.keys(prev)) {
+    if (skipKeys?.has(key)) {
+      continue
+    }
     if (!Object.hasOwn(next, key)) {
       diff[key] = null
     }
