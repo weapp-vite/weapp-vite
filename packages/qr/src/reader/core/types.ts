@@ -15,13 +15,9 @@ export interface QRCodeReaderInput {
   data: Buffer
 }
 
-/** QRCodeReaderCallback 的类型定义。 */
-export type QRCodeReaderCallback = (error: Error | null, value: QRCodeReaderResult) => void
-
 /** QRCodeReaderInstance 的类型定义。 */
 export interface QRCodeReaderInstance {
-  callback: QRCodeReaderCallback
-  decode: (input: QRCodeReaderInput) => void
+  decode: (input: QRCodeReaderInput) => Promise<QRCodeReaderResult>
 }
 
 /** QRCodeReaderConstructor 的类型定义。 */

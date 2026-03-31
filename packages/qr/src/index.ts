@@ -13,7 +13,6 @@ export {
 export type { MiniProgramCodeDetectionResult } from './miniProgramCode'
 export { decodeWithQrReader } from './reader/decode'
 export type {
-  QRCodeReaderCallback,
   QRCodeReaderConstructor,
   QRCodeReaderInput,
   QRCodeReaderInstance,
