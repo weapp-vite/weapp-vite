@@ -1,6 +1,8 @@
 import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies
 import axios from 'axios'
 import * as cheerio from 'cheerio'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 
@@ -34,12 +36,14 @@ const jsonDir = path.resolve(
   '../packages/weapp-vite/src/auto-import-components/resolvers/json',
 )
 
+const COMPONENT_NAME_RE = /^[a-z][a-z0-9-]*$/
+
 function sanitizeName(input?: string | null) {
   if (!input) {
     return null
   }
   const name = input.trim().toLowerCase()
-  return /^[a-z][a-z0-9-]*$/.test(name) ? name : null
+  return COMPONENT_NAME_RE.test(name) ? name : null
 }
 
 function getPayloadSize(payload: ExtractResult) {
@@ -107,7 +111,7 @@ const extractors: ExtractorConfig[] = [
         repo: 'tdesign-miniprogram',
         path: 'packages/components',
         ref: 'develop',
-        ignore: new Set(['common', 'layout', 'mixins']),
+        ignore: new Set(['common', 'layout', 'locale', 'mixins']),
       })
       return finalizeNames(names, ctx.entryUrl)
     },
