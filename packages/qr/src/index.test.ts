@@ -1,11 +1,10 @@
 /**
- * @file 工具函数测试。
+ * @file 二维码工具包测试。
  */
 import { Buffer } from 'node:buffer'
-import { createQrCodeMatrix } from '@weapp-vite/qr'
 import sharp from 'sharp'
-import { describe, expect, it, vi } from 'vitest'
-import { decodeQrCode, extractPluginId, isPluginPath, printQrCode } from './util'
+import { describe, expect, it } from 'vitest'
+import { createQrCodeMatrix, decodeQrCodeFromBase64, renderTerminalQrCode } from './index'
 
 async function createQrCodeBase64(content: string) {
   const qrcode = createQrCodeMatrix(content)
@@ -42,23 +41,17 @@ async function createQrCodeBase64(content: string) {
   }).png().toBuffer()
 }
 
-describe('util helpers', () => {
-  it('keeps plugin path helpers compatible', () => {
-    expect(isPluginPath('plugin-private://abc/pages/index')).toBe(true)
-    expect(extractPluginId('plugin-private://abc/pages/index')).toBe('abc')
-    expect(extractPluginId('/pages/index/index')).toBe('')
+describe('@weapp-vite/qr', () => {
+  it('creates qr code matrices for rendering and tests', () => {
+    expect(createQrCodeMatrix('Test').length).toBeGreaterThan(0)
   })
 
   it('decodes qr code content from base64 png with sharp', async () => {
     const fixture = await createQrCodeBase64('Test')
-    await expect(decodeQrCode(fixture.toString('base64'))).resolves.toBe('Test')
+    await expect(decodeQrCodeFromBase64(fixture.toString('base64'))).resolves.toBe('Test')
   })
 
-  it('renders small terminal qr codes without the external dependency', async () => {
-    const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-    await printQrCode('Test')
-    expect(write).toHaveBeenCalledTimes(1)
-    expect(String(write.mock.calls[0]?.[0] ?? '')).toContain('▀')
-    write.mockRestore()
+  it('renders small terminal qr codes without the external dependency', () => {
+    expect(renderTerminalQrCode('Test', { small: true })).toContain('▀')
   })
 })

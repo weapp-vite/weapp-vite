@@ -1,26 +1,26 @@
 {
-  "name": "@weapp-vite/miniprogram-automator",
+  "name": "@weapp-vite/qr",
   "type": "module",
   "version": "1.0.0",
-  "description": "完全兼容微信 miniprogram-automator 的现代化替代实现",
+  "description": "weapp-vite 生态二维码编码、解码与终端渲染工具包",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "packages/miniprogram-automator"
+    "directory": "packages/qr"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
-    "weapp",
-    "wechat",
-    "miniprogram",
-    "automator",
-    "devtools",
-    "headless"
+    "weapp-vite",
+    "qr",
+    "qrcode",
+    "terminal",
+    "decode",
+    "encode"
   ],
   "sideEffects": false,
   "exports": {
@@ -50,16 +50,10 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@weapp-vite/qr": "workspace:*",
-    "debug": "catalog:",
-    "ws": "^8.18.3"
+    "sharp": "^0.34.5"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
-  },
-  "devDependencies": {
-    "@types/ws": "^8.18.1",
-    "sharp": "^0.34.5"
   }
 }
