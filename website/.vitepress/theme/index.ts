@@ -3,16 +3,7 @@ import type { EnhanceAppContext, Theme } from 'vitepress'
 import TwoslashFloatingVue from '@shikijs/vitepress-twoslash/client'
 import CopyOrDownloadAsMarkdownButtons from 'vitepress-plugin-llms/vitepress-components/CopyOrDownloadAsMarkdownButtons.vue'
 import DefaultTheme from 'vitepress/theme'
-import { h } from 'vue'
-import DirectoryStructureCatalog from '../../components/DirectoryStructureCatalog.vue'
-import AiLearningPage from '../components/AiLearningPage.vue'
-import CommunityShowcase from '../components/CommunityShowcase.vue'
-import HomePage from '../components/HomePage.vue'
-import TechBackground from '../components/TechBackground.vue'
-import WeapiCatalog from '../components/WeapiCatalog.vue'
-import WeapiCompatibilityCatalog from '../components/WeapiCompatibilityCatalog.vue'
-import WeapiReference from '../components/WeapiReference.vue'
-import WevuApiReference from '../components/WevuApiReference.vue'
+import { defineAsyncComponent, h } from 'vue'
 import Layout from './Layout.vue'
 import '@shikijs/vitepress-twoslash/style.css'
 import './index.scss'
@@ -21,6 +12,33 @@ import 'virtual:group-icons.css'
 
 const CSS_ESCAPE_FALLBACK_RE = /['"\\]/g
 const MERMAID_LABEL_PREFIX_RE = /^\s*mermaid\s*/i
+const DirectoryStructureCatalog = defineAsyncComponent(
+  () => import('../../components/DirectoryStructureCatalog.vue'),
+)
+const AiLearningPage = defineAsyncComponent(
+  () => import('../components/AiLearningPage.vue'),
+)
+const CommunityShowcase = defineAsyncComponent(
+  () => import('../components/CommunityShowcase.vue'),
+)
+const HomePage = defineAsyncComponent(
+  () => import('../components/HomePage.vue'),
+)
+const TechBackground = defineAsyncComponent(
+  () => import('../components/TechBackground.vue'),
+)
+const WeapiCatalog = defineAsyncComponent(
+  () => import('../components/WeapiCatalog.vue'),
+)
+const WeapiCompatibilityCatalog = defineAsyncComponent(
+  () => import('../components/WeapiCompatibilityCatalog.vue'),
+)
+const WeapiReference = defineAsyncComponent(
+  () => import('../components/WeapiReference.vue'),
+)
+const WevuApiReference = defineAsyncComponent(
+  () => import('../components/WevuApiReference.vue'),
+)
 
 export default {
   extends: DefaultTheme,

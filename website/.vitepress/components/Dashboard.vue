@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { GridStack } from 'gridstack'
+import type { GridStack as GridStackType } from 'gridstack'
 import { onMounted, ref } from 'vue'
 import Echart from './Echart.vue'
 import IceTable from './IceTable.vue'
 import { barOption, lineOption, pieOption } from './mock'
-import 'gridstack/dist/gridstack.min.css'
 
 // https://github.com/gridstack/gridstack.js/issues/2115
 // https://github.com/gridstack/gridstack.js/blob/67d08c665910919a036a9b4ac9099aa51b773348/src/gridstack-engine.ts#L546
@@ -19,8 +18,12 @@ const items = ref([
   { w: 4, h: 2, content: 'chart', option: lineOption },
   { x: 4, y: 4, w: 6, h: 2, content: 'table' },
 ])
-const gridRef = ref<GridStack>()
-onMounted(() => {
+const gridRef = ref<GridStackType>()
+onMounted(async () => {
+  const [{ GridStack }] = await Promise.all([
+    import('gridstack'),
+    import('gridstack/dist/gridstack.min.css'),
+  ])
   gridRef.value = GridStack.init()
 })
 
