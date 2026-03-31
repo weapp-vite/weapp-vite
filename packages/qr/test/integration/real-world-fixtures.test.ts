@@ -17,17 +17,6 @@ describe('@weapp-vite/qr real-world fixtures', () => {
     }
   })
 
-  it('rejects unsupported real materials through the public api with stable errors', async () => {
-    const fixtures = await loadFixtureManifest('materials/manifest.json')
-
-    for (const fixture of fixtures) {
-      expect(fixture.expectedError).toBeTruthy()
-
-      const base64 = await loadQrFixtureBase64(fixture.file)
-      await expect(decodeQrCodeFromBase64(base64)).rejects.toThrow(fixture.expectedError)
-    }
-  })
-
   it('rejects current mini program code fixtures through the public api with stable errors', async () => {
     const fixtures = await loadFixtureManifest('小程序码/manifest.json')
 

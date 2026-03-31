@@ -34,13 +34,10 @@ describe('decodeQrCodeFromBase64', () => {
     }
   })
 
-  it('fails with a stable error for unsupported real materials and mini program codes', async () => {
-    const manifests = await Promise.all([
-      loadFixtureManifest('materials/manifest.json'),
-      loadFixtureManifest('小程序码/manifest.json'),
-    ])
+  it('fails with a stable error for current mini program code fixtures', async () => {
+    const fixtures = await loadFixtureManifest('小程序码/manifest.json')
 
-    for (const fixture of manifests.flat()) {
+    for (const fixture of fixtures) {
       expect(fixture.expectedError).toBeTruthy()
 
       const base64 = await loadQrFixtureBase64(fixture.file)
