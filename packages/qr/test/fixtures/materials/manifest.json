@@ -1,0 +1,27 @@
+[
+  {
+    "file": "materials/dls6-generic-qr.png",
+    "kind": "non-qr-material",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "materials/dls6-mini-program-code.jpg",
+    "kind": "mini-program-code-material",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "materials/music4x-mini-program-code.jpg",
+    "kind": "non-qr-material",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "materials/music4x-mini-program-code-2.jpg",
+    "kind": "non-qr-material",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "materials/music4x-mini-program-dashboard.jpg",
+    "kind": "non-qr-material",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  }
+]

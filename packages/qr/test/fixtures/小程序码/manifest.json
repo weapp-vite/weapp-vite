@@ -1,0 +1,52 @@
+[
+  {
+    "file": "小程序码/imported/developer-business-card.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/imported/equity-financing-calculator.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/imported/equity-health-check.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/imported/equity-incentive-design-assistant.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/imported/gujiajia-admin.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/imported/gujiajia-employee.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/imported/icebreaker.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/official/tdesign-miniprogram.jpeg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/official/vant-weapp.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  },
+  {
+    "file": "小程序码/official/wechat-miniprogram-demo.jpg",
+    "kind": "mini-program-code",
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+  }
+]
