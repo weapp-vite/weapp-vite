@@ -98,11 +98,27 @@ describe('@weapp-vite/qr public api', () => {
   })
 
   it('detects mini program code structure through the public entry', async () => {
-    const fixture = (await loadFixtureManifest('mini-program-codes/manifest.json'))[0]
-    const base64 = await loadQrFixtureBase64(fixture.file)
+    const fixtures = await loadFixtureManifest('mini-program-codes/manifest.json')
 
-    await expect(detectMiniProgramCodeFromBase64(base64)).resolves.toMatchObject({
-      kind: 'wechat-mini-program-code',
-    })
+    for (const fixture of fixtures) {
+      const base64 = await loadQrFixtureBase64(fixture.file)
+
+      await expect(detectMiniProgramCodeFromBase64(base64)).resolves.toMatchObject({
+        kind: fixture.expectedDetectionKind,
+      })
+    }
+  })
+
+  it('keeps mini program fixtures on the expected capability boundary', async () => {
+    const fixtures = await loadFixtureManifest('mini-program-codes/manifest.json')
+
+    for (const fixture of fixtures) {
+      const base64 = await loadQrFixtureBase64(fixture.file)
+
+      await expect(decodeQrCodeFromBase64(base64)).rejects.toThrow(fixture.expectedError)
+      await expect(detectMiniProgramCodeFromBase64(base64)).resolves.toMatchObject({
+        kind: fixture.expectedDetectionKind,
+      })
+    }
   })
 })

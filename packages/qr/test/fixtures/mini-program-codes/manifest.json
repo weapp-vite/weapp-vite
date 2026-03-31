@@ -2,51 +2,71 @@
   {
     "file": "mini-program-codes/imported/developer-business-card.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/imported/equity-financing-calculator.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/imported/equity-health-check.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/imported/equity-incentive-design-assistant.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/imported/gujiajia-admin.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/imported/gujiajia-employee.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/imported/icebreaker.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/official/tdesign-miniprogram.jpeg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/official/vant-weapp.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   },
   {
     "file": "mini-program-codes/official/wechat-miniprogram-demo.jpg",
     "kind": "mini-program-code",
-    "expectedError": "Couldn't find enough finder patterns:0 patterns found"
+    "expectedError": "Couldn't find enough finder patterns:0 patterns found",
+    "expectedDetectionKind": "wechat-mini-program-code",
+    "expectedMinConfidence": 0.55
   }
 ]

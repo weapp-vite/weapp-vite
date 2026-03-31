@@ -19,10 +19,10 @@ describe('mini program code detection', () => {
     for (const fixture of imported) {
       const result = await detectMiniProgramCodeFromFile(path.resolve(import.meta.dirname, '../fixtures', fixture.file))
 
-      expect(result?.kind).toBe('wechat-mini-program-code')
+      expect(result?.kind).toBe(fixture.expectedDetectionKind)
       expect(result?.locatorPoints).toHaveLength(3)
       expect(result?.badgeBounds).toBeTruthy()
-      expect(result?.confidence ?? 0).toBeGreaterThan(0.55)
+      expect(result?.confidence ?? 0).toBeGreaterThanOrEqual(fixture.expectedMinConfidence ?? 0)
     }
   })
 
@@ -34,10 +34,10 @@ describe('mini program code detection', () => {
       const base64 = await loadQrFixtureBase64(fixture.file)
       const result = await detectMiniProgramCodeFromBuffer(Buffer.from(base64, 'base64'))
 
-      expect(result?.kind).toBe('wechat-mini-program-code')
+      expect(result?.kind).toBe(fixture.expectedDetectionKind)
       expect(result?.locatorPoints).toHaveLength(3)
       expect(result?.badgeBounds).toBeTruthy()
-      expect(result?.confidence ?? 0).toBeGreaterThan(0.55)
+      expect(result?.confidence ?? 0).toBeGreaterThanOrEqual(fixture.expectedMinConfidence ?? 0)
     }
   })
 
@@ -46,9 +46,10 @@ describe('mini program code detection', () => {
     const base64 = await loadQrFixtureBase64(fixture.file)
     const result = await detectMiniProgramCodeFromBase64(base64)
 
-    expect(result?.kind).toBe('wechat-mini-program-code')
+    expect(result?.kind).toBe(fixture.expectedDetectionKind)
     expect(result?.locatorPoints).toHaveLength(3)
     expect(result?.badgeBounds).toBeTruthy()
+    expect(result?.confidence ?? 0).toBeGreaterThanOrEqual(fixture.expectedMinConfidence ?? 0)
   })
 
   it('does not misclassify a normal qr fixture as a mini program code', async () => {
