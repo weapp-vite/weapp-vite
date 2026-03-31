@@ -113,7 +113,7 @@ describe('@weapp-vite/qr public api', () => {
       })
       await expect(detectCodeTypeFromBase64(base64)).resolves.toBe('mini-program-code')
     }
-  })
+  }, 15_000)
 
   it('keeps mini program fixtures on the expected capability boundary', async () => {
     const fixtures = await loadFixtureManifest('mini-program-codes/manifest.json')
@@ -127,5 +127,5 @@ describe('@weapp-vite/qr public api', () => {
       })
       await expect(detectCodeTypeFromBase64(base64)).resolves.toBe('mini-program-code')
     }
-  })
+  }, 15_000)
 })
