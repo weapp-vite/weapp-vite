@@ -888,49 +888,7 @@ export default withMermaid(
         },
       },
       build: {
-        // Relax warning threshold and split heavy vendors to multiple chunks
         chunkSizeWarningLimit: 2048,
-        rollupOptions: {
-          output: {
-            manualChunks(id) {
-              if (!id.includes('node_modules')) {
-                return undefined
-              }
-
-              if (id.includes('element-plus')) {
-                return 'vendor-element-plus'
-              }
-              if (id.includes('echarts')) {
-                return 'vendor-echarts'
-              }
-              if (id.includes('gridstack')) {
-                return 'vendor-gridstack'
-              }
-              if (id.includes('vue-echarts')) {
-                return 'vendor-vue-echarts'
-              }
-              if (id.includes('@iconify-json/mdi')) {
-                return 'vendor-icons'
-              }
-              // Mermaid runtime is loaded by VitePress docs pipeline. Keep both in one chunk
-              // to avoid circular manual chunk graph.
-              if (id.includes('mermaid')) {
-                return 'vendor-vitepress'
-              }
-              if (id.includes('@shikijs') || id.includes('shiki')) {
-                return 'vendor-shiki'
-              }
-              if (id.includes('vitepress')) {
-                return 'vendor-vitepress'
-              }
-              if (id.includes('vue')) {
-                return 'vendor-vue'
-              }
-              // fallback vendor bucket
-              return 'vendor'
-            },
-          },
-        },
       },
       // https://github.com/vuejs/vitepress/issues/3145
       // ssr: {
