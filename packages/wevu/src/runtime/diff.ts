@@ -17,7 +17,13 @@ export interface ToPlainOptions {
   _budget?: { keys: number }
 }
 
-export function toPlain(value: any, seen = new WeakMap<object, any>(), options?: ToPlainOptions): any {
+function toPlainInternal(
+  value: any,
+  seen: WeakMap<object, any>,
+  cache: WeakMap<object, { version: number, value: any }> | undefined,
+  depth: number,
+  budget: { keys: number },
+): any {
   const unwrapped = unref(value)
   if (typeof unwrapped === 'bigint') {
     const asNumber = Number(unwrapped)
@@ -37,13 +43,10 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
   }
   const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped
 
-  const depth = options?._depth ?? (typeof options?.maxDepth === 'number' ? Math.max(0, Math.floor(options!.maxDepth!)) : Number.POSITIVE_INFINITY)
-  const budget = options?._budget ?? (typeof options?.maxKeys === 'number' ? { keys: Math.max(0, Math.floor(options!.maxKeys!)) } : { keys: Number.POSITIVE_INFINITY })
   if (depth <= 0 || budget.keys <= 0) {
     return raw
   }
 
-  const cache = options?.cache
   if (cache) {
     const version = getReactiveVersion(raw as any)
     const cached = cache.get(raw)
@@ -65,7 +68,10 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
     const entries: any[] = []
     seen.set(raw, entries)
     raw.forEach((mapValue, mapKey) => {
-      entries.push([toPlain(mapKey, seen), toPlain(mapValue, seen)])
+      entries.push([
+        toPlainInternal(mapKey, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }),
+        toPlainInternal(mapValue, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }),
+      ])
     })
     return entries
   }
@@ -73,7 +79,7 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
     const values: any[] = []
     seen.set(raw, values)
     raw.forEach((setValue) => {
-      values.push(toPlain(setValue, seen))
+      values.push(toPlainInternal(setValue, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }))
     })
     return values
   }
@@ -87,7 +93,7 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
       if (typeof iter === 'function') {
         const values = [...view]
         seen.set(raw, values)
-        return values.map(item => toPlain(item, seen))
+        return values.map(item => toPlainInternal(item, seen, undefined, Number.POSITIVE_INFINITY, { keys: Number.POSITIVE_INFINITY }))
       }
       const bytes = [...new Uint8Array(view.buffer, view.byteOffset, view.byteLength)]
       seen.set(raw, bytes)
@@ -103,14 +109,11 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
   if (Array.isArray(raw)) {
     const arr: any[] = []
     seen.set(raw, arr)
-    raw.forEach((item, index) => {
-      const next = toPlain(item, seen, {
-        ...options,
-        _depth: depth - 1,
-        _budget: budget,
-      })
+    const nextDepth = depth - 1
+    for (let index = 0; index < raw.length; index += 1) {
+      const next = toPlainInternal(raw[index], seen, cache, nextDepth, budget)
       arr[index] = next === undefined ? null : next
-    })
+    }
     if (cache) {
       cache.set(raw, { version: getReactiveVersion(raw as any), value: arr })
     }
@@ -118,24 +121,27 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
   }
   const output: Record<string, any> = {}
   seen.set(raw, output)
-  Object.keys(raw).forEach((key) => {
+  const nextDepth = depth - 1
+  for (const key of Object.keys(raw)) {
     budget.keys -= 1
     if (budget.keys <= 0) {
-      return
+      break
     }
-    const next = toPlain((raw as any)[key], seen, {
-      ...options,
-      _depth: depth - 1,
-      _budget: budget,
-    })
+    const next = toPlainInternal((raw as any)[key], seen, cache, nextDepth, budget)
     if (next !== undefined) {
       output[key] = next
     }
-  })
+  }
   if (cache) {
     cache.set(raw, { version: getReactiveVersion(raw as any), value: output })
   }
   return output
+}
+
+export function toPlain(value: any, seen = new WeakMap<object, any>(), options?: ToPlainOptions): any {
+  const depth = options?._depth ?? (typeof options?.maxDepth === 'number' ? Math.max(0, Math.floor(options.maxDepth)) : Number.POSITIVE_INFINITY)
+  const budget = options?._budget ?? (typeof options?.maxKeys === 'number' ? { keys: Math.max(0, Math.floor(options.maxKeys)) } : { keys: Number.POSITIVE_INFINITY })
+  return toPlainInternal(value, seen, options?.cache, depth, budget)
 }
 
 type DeepEqualCompare = (a: any, b: any) => boolean
