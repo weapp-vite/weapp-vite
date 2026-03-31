@@ -282,6 +282,41 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
+  it('avoids scanning unrelated state keys when setup refs update', async () => {
+    let getterCalls = 0
+    const big = {}
+    Object.defineProperty(big, 'hidden', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        getterCalls += 1
+        return 1
+      },
+    })
+    const app = createApp({
+      data: () => ({ big }),
+    })
+    const target: any = {
+      route: 'pages/setup-ref-tracking/index',
+      setData: vi.fn(),
+    }
+
+    mountRuntimeInstance(target, app as any, undefined, () => {
+      const active = ref(true)
+      return { active }
+    })
+    getterCalls = 0
+    target.setData.mockClear()
+
+    target.$wevu.state.active.value = false
+    await nextTick()
+
+    expect(getterCalls).toBe(0)
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }))
+
+    teardownRuntimeInstance(target)
+  })
+
   it('creates a setup effect scope and disposes scoped effects on teardown', async () => {
     const app = createApp({})
     const target: any = {
