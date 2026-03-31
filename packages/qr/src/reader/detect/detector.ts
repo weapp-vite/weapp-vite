@@ -1,11 +1,13 @@
+import type BitMatrix from '../parse/bitmat'
 /**
  * @file 二维码解析内部模块：detector。
  */
-import AlignmentPattern, { AlignmentPatternFinder } from './alignpat'
-import { FinderPattern, FinderPatternFinder, FinderPatternInfo } from './findpat'
-import GridSampler from './grid'
+import type AlignmentPattern from './alignpat'
+import type { FinderPattern, FinderPatternInfo } from './findpat'
 import Version from '../parse/version'
-import type BitMatrix from '../parse/bitmat'
+import { AlignmentPatternFinder } from './alignpat'
+import { FinderPatternFinder } from './findpat'
+import GridSampler from './grid'
 
 interface BinaryImage {
   width: number
@@ -319,10 +321,7 @@ export default class Detector {
       const correctionToTopLeft = 1 - 3 / modulesBetweenFPCenters
       const estAlignmentX = Math.floor(topLeft.X + correctionToTopLeft * (bottomRightX - topLeft.X))
       const estAlignmentY = Math.floor(topLeft.Y + correctionToTopLeft * (bottomRightY - topLeft.Y))
-      for (let i = 4; i <= 16; i <<= 1) {
-        alignmentPattern = this.findAlignmentInRegion(moduleSize, estAlignmentX, estAlignmentY, i)
-        break
-      }
+      alignmentPattern = this.findAlignmentInRegion(moduleSize, estAlignmentX, estAlignmentY, 4)
     }
     const transform = this.createTransform(topLeft, topRight, bottomLeft, alignmentPattern, dimension)
     const bits = this.sampleGrid(this.image, transform, dimension)

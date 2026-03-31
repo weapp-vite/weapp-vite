@@ -1,5 +1,5 @@
 /**
- * @file 二维码 reader vendor 适配类型。
+ * @file 二维码 reader 适配类型。
  */
 export type {
   QRCodeReaderCallback,

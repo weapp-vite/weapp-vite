@@ -1,9 +1,10 @@
+/* eslint-disable e18e/prefer-array-fill */
+import type BitMatrix from './bitmat'
 /**
  * @file 二维码解析内部模块：decoder。
  */
 import GF256 from '../error-correction/gf256'
 import ReedSolomonDecoder from '../error-correction/rsdecoder'
-import type BitMatrix from './bitmat'
 import BitMatrixParser from './bmparser'
 import DataBlock from './datablock'
 import QRCodeDataBlockReader from './databr'
@@ -14,7 +15,7 @@ const Decoder = {
   rsDecoder,
   correctErrors(codewordBytes: number[], numDataCodewords: number) {
     const numCodewords = codewordBytes.length
-    const codewordsInts = new Array<number>(numCodewords)
+    const codewordsInts = Array.from({ length: numCodewords }, (): number => 0)
     for (let i = 0; i < numCodewords; i++) {
       codewordsInts[i] = codewordBytes[i] & 0xFF
     }
@@ -37,7 +38,7 @@ const Decoder = {
     for (let i = 0; i < dataBlocks.length; i++) {
       totalBytes += dataBlocks[i].numDataCodewords
     }
-    const resultBytes = new Array<number>(totalBytes).fill(0)
+    const resultBytes = Array.from({ length: totalBytes }, (): number => 0)
     let resultOffset = 0
     for (let j = 0; j < dataBlocks.length; j++) {
       const dataBlock = dataBlocks[j]

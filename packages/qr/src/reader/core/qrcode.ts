@@ -1,8 +1,10 @@
+import Detector from '../detect/detector'
+/* eslint-disable e18e/prefer-array-fill */
+/* eslint-disable no-console */
 /**
  * @file 二维码解析内部模块：qrcode。
  */
 import Decoder from '../parse/decoder'
-import Detector from '../detect/detector'
 
 interface RgbaImageData {
   width: number
@@ -180,7 +182,7 @@ export default class QrCode {
     }
     const time = Date.now() - start
     if (this.debug) {
-      console.log(`QR Code processing time (ms): ${time}`)
+      console.warn(`QR Code processing time (ms): ${time}`)
     }
     return { result: this.decode_utf8(str), points: qrCodeMatrix.points }
   }
@@ -197,7 +199,7 @@ export default class QrCode {
     if (this.imagedata == null) {
       throw new Error('Image data is not initialized')
     }
-    const ret = new Array<boolean>(this.width * this.height)
+    const ret = Array.from({ length: this.width * this.height }, (): boolean => false)
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const gray = this.getPixel(this.imagedata, x, y)
@@ -212,8 +214,7 @@ export default class QrCode {
     const areaWidth = Math.floor(imageData.width / numSqrtArea)
     const areaHeight = Math.floor(imageData.height / numSqrtArea)
     const minmax = Array.from({ length: numSqrtArea }, () =>
-      Array.from({ length: numSqrtArea }, () => [0, 0] as [number, number]),
-    )
+      Array.from({ length: numSqrtArea }, () => [0, 0] as [number, number]))
 
     for (let ay = 0; ay < numSqrtArea; ay++) {
       for (let ax = 0; ax < numSqrtArea; ax++) {
@@ -232,7 +233,8 @@ export default class QrCode {
       }
     }
 
-    const middle = Array.from({ length: numSqrtArea }, () => Array.from({ length: numSqrtArea }, () => 0))
+    const middle = Array.from({ length: numSqrtArea }, () =>
+      Array.from({ length: numSqrtArea }, (): number => 0))
     for (let ay = 0; ay < numSqrtArea; ay++) {
       for (let ax = 0; ax < numSqrtArea; ax++) {
         middle[ax][ay] = Math.floor((minmax[ax][ay][0] + minmax[ax][ay][1]) / 2)
@@ -265,7 +267,7 @@ export default class QrCode {
   }
 
   grayscale(imageData: RgbaImageData): GrayScaleImageData {
-    const ret = new Array<number>(imageData.width * imageData.height)
+    const ret = Array.from({ length: imageData.width * imageData.height }, (): number => 0)
     for (let y = 0; y < imageData.height; y++) {
       for (let x = 0; x < imageData.width; x++) {
         const gray = this.getPixel(imageData, x, y)

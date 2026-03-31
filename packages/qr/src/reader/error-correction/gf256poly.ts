@@ -1,3 +1,4 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 二维码解析内部模块：gf256poly。
  */
@@ -22,7 +23,7 @@ export default class GF256Poly {
         this.coefficients = field.Zero.coefficients
       }
       else {
-        this.coefficients = new Array<number>(coefficientsLength - firstNonZero).fill(0)
+        this.coefficients = Array.from({ length: coefficientsLength - firstNonZero }, (): number => 0)
         for (let ci = 0; ci < this.coefficients.length; ci++) {
           this.coefficients[ci] = coefficients[firstNonZero + ci]
         }
@@ -81,7 +82,7 @@ export default class GF256Poly {
       smallerCoefficients = largerCoefficients
       largerCoefficients = temp
     }
-    const sumDiff = Array.from({ length: largerCoefficients.length }, () => 0)
+    const sumDiff = Array.from({ length: largerCoefficients.length }, (): number => 0)
     const lengthDiff = largerCoefficients.length - smallerCoefficients.length
     for (let ci = 0; ci < lengthDiff; ci++) {
       sumDiff[ci] = largerCoefficients[ci]
@@ -103,7 +104,7 @@ export default class GF256Poly {
     const aLength = aCoefficients.length
     const bCoefficients = other.coefficients
     const bLength = bCoefficients.length
-    const product = Array.from({ length: aLength + bLength - 1 }, () => 0)
+    const product = Array.from({ length: aLength + bLength - 1 }, (): number => 0)
     for (let i = 0; i < aLength; i++) {
       const aCoeff = aCoefficients[i]
       for (let j = 0; j < bLength; j++) {
@@ -121,7 +122,7 @@ export default class GF256Poly {
       return this
     }
     const size = this.coefficients.length
-    const product = new Array<number>(size)
+    const product = Array.from({ length: size }, (): number => 0)
     for (let i = 0; i < size; i++) {
       product[i] = this.field.multiply(this.coefficients[i], scalar)
     }
@@ -136,7 +137,7 @@ export default class GF256Poly {
       return this.field.Zero
     }
     const size = this.coefficients.length
-    const product = new Array<number>(size + degree).fill(0)
+    const product = Array.from({ length: size + degree }, (): number => 0)
     for (let i = 0; i < size; i++) {
       product[i] = this.field.multiply(this.coefficients[i], coefficient)
     }
@@ -151,7 +152,7 @@ export default class GF256Poly {
       throw new Error('Divide by 0')
     }
     let quotient = this.field.Zero
-    let remainder: GF256Poly = this
+    let remainder = new GF256Poly(this.field, this.coefficients)
     const denominatorLeadingTerm = other.getCoefficient(other.Degree)
     const inverseDenominatorLeadingTerm = this.field.inverse(denominatorLeadingTerm)
     while (remainder.Degree >= other.Degree && !remainder.Zero) {

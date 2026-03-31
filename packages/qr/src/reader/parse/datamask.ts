@@ -1,8 +1,8 @@
+import type BitMatrix from './bitmat'
 /**
  * @file 二维码解析内部模块：datamask。
  */
 import { URShift } from '../core/qrcode'
-import type BitMatrix from './bitmat'
 
 interface DataMaskStrategy {
   unmaskBitMatrix: (bits: BitMatrix, dimension: number) => void

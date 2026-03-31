@@ -2,8 +2,8 @@
  * @file 二维码矩阵编码封装。
  */
 import type { QRCodeMatrix } from './types'
-import QRErrorCorrectLevel from './vendor/terminal/encoder/errorCorrectLevel'
-import QRCode from './vendor/terminal/encoder/qrCode'
+import QRErrorCorrectLevel from './terminalEncoder/errorCorrectLevel'
+import QRCode from './terminalEncoder/qrCode'
 
 interface QRCodeEncoderInstance {
   modules: QRCodeMatrix

@@ -171,10 +171,18 @@ const QRUtil = {
     for (row = 0; row < moduleCount - 1; row++) {
       for (col = 0; col < moduleCount - 1; col++) {
         let count = 0
-        if (qrCode.isDark(row, col)) { count++ }
-        if (qrCode.isDark(row + 1, col)) { count++ }
-        if (qrCode.isDark(row, col + 1)) { count++ }
-        if (qrCode.isDark(row + 1, col + 1)) { count++ }
+        if (qrCode.isDark(row, col)) {
+          count++
+        }
+        if (qrCode.isDark(row + 1, col)) {
+          count++
+        }
+        if (qrCode.isDark(row, col + 1)) {
+          count++
+        }
+        if (qrCode.isDark(row + 1, col + 1)) {
+          count++
+        }
         if (count === 0 || count === 4) {
           lostPoint += 3
         }

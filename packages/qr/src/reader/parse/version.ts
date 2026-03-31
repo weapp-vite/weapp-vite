@@ -1,9 +1,9 @@
+import type ErrorCorrectionLevel from './errorlevel'
 /**
  * @file 二维码解析内部模块：version。
  */
 import BitMatrix from './bitmat'
 import FormatInformation from './formatinf'
-import type ErrorCorrectionLevel from './errorlevel'
 
 class ECB {
   count: number

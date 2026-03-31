@@ -3,11 +3,11 @@
  */
 import { Buffer } from 'node:buffer'
 import sharp from 'sharp'
-import { decodeWithVendorQrReader } from './vendor/reader/decode'
+import { decodeWithQrReader } from './reader/decode'
 
 async function decodeQrCodeBuffer(buffer: Buffer) {
   const { data, info } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-  const result = await decodeWithVendorQrReader({
+  const result = await decodeWithQrReader({
     width: info.width,
     height: info.height,
     data,

@@ -1,3 +1,4 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 二维码解析内部模块：bitmat。
  */
@@ -21,7 +22,7 @@ export default class BitMatrix {
       rowSize++
     }
     this.rowSize = rowSize
-    this.bits = new Array<number>(rowSize * resolvedHeight).fill(0)
+    this.bits = Array.from({ length: rowSize * resolvedHeight }, (): number => 0)
   }
 
   get Dimension() {

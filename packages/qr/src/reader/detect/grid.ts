@@ -1,3 +1,4 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 二维码解析内部模块：grid。
  */
@@ -71,7 +72,7 @@ const GridSampler = {
 
   sampleGrid3(image: BinaryImage, dimension: number, transform: PerspectiveTransformLike) {
     const bits = new BitMatrix(dimension)
-    const points = Array.from({ length: dimension << 1 }, () => 0)
+    const points = Array.from({ length: dimension << 1 }, (): number => 0)
     for (let y = 0; y < dimension; y++) {
       const max = points.length
       const iValue = y + 0.5

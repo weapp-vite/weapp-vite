@@ -1,7 +1,7 @@
 /**
  * @file 二维码核心 reader 纯函数解码入口。
  */
-import type { QRCodeReaderConstructor, QRCodeReaderInput, QRCodeReaderResult } from './types'
+import type { QRCodeReaderInput, QRCodeReaderResult } from './types'
 import { normalizeQrCodeReaderResult } from './result'
 import { createLegacyQrCodeReader } from './runtime'
 

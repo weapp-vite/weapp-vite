@@ -1,3 +1,4 @@
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 终端二维码编码内部模块：polynomial。
  */
@@ -14,7 +15,7 @@ class QRPolynomial {
     while (offset < num.length && num[offset] === 0) {
       offset++
     }
-    this.num = new Array(num.length - offset + shift)
+    this.num = Array.from({ length: num.length - offset + shift }, (): number => 0)
     for (let i = 0; i < num.length - offset; i++) {
       this.num[i] = num[i + offset]
     }
@@ -29,7 +30,7 @@ class QRPolynomial {
   }
 
   multiply(e: QRPolynomial) {
-    const num = Array.from({ length: this.getLength() + e.getLength() - 1 }, () => 0)
+    const num = Array.from({ length: this.getLength() + e.getLength() - 1 }, (): number => 0)
     for (let i = 0; i < this.getLength(); i++) {
       for (let j = 0; j < e.getLength(); j++) {
         num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i)) + QRMath.glog(e.get(j)))
@@ -43,7 +44,7 @@ class QRPolynomial {
       return this
     }
     const ratio = QRMath.glog(this.get(0)) - QRMath.glog(e.get(0))
-    const num = new Array<number>(this.getLength())
+    const num = Array.from({ length: this.getLength() }, (): number => 0)
     for (let i = 0; i < this.getLength(); i++) {
       num[i] = this.get(i)
     }

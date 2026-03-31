@@ -1,8 +1,9 @@
+import QRBitBuffer from './bitBuffer'
+/* eslint-disable e18e/prefer-array-fill */
 /**
  * @file 终端二维码编码内部模块：qrCode。
  */
 import QR8bitByte from './byte'
-import QRBitBuffer from './bitBuffer'
 import QRPolynomial from './polynomial'
 import QRRSBlock from './rsBlock'
 import QRUtil from './util'
@@ -74,7 +75,9 @@ class QRCode {
           buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber))
           data.write(buffer)
         }
-        if (buffer.getLengthInBits() <= totalDataCount * 8) { break }
+        if (buffer.getLengthInBits() <= totalDataCount * 8) {
+          break
+        }
       }
       this.typeNumber = typeNumber
     }
@@ -83,9 +86,9 @@ class QRCode {
 
   makeImpl(test: boolean, maskPattern: number) {
     this.moduleCount = this.typeNumber * 4 + 17
-    this.modules = new Array(this.moduleCount)
+    this.modules = Array.from({ length: this.moduleCount }, (): QRCodeModuleCell[] => [])
     for (let row = 0; row < this.moduleCount; row++) {
-      this.modules[row] = new Array(this.moduleCount)
+      this.modules[row] = Array.from({ length: this.moduleCount }, (): QRCodeModuleCell => null)
       for (let col = 0; col < this.moduleCount; col++) {
         this.modules[row][col] = null
       }
@@ -107,9 +110,13 @@ class QRCode {
 
   setupPositionProbePattern(row: number, col: number) {
     for (let r = -1; r <= 7; r++) {
-      if (row + r <= -1 || this.moduleCount <= row + r) { continue }
+      if (row + r <= -1 || this.moduleCount <= row + r) {
+        continue
+      }
       for (let c = -1; c <= 7; c++) {
-        if (col + c <= -1 || this.moduleCount <= col + c) { continue }
+        if (col + c <= -1 || this.moduleCount <= col + c) {
+          continue
+        }
         if ((r >= 0 && r <= 6 && (c === 0 || c === 6))
           || (c >= 0 && c <= 6 && (r === 0 || r === 6))
           || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
@@ -248,7 +255,9 @@ class QRCode {
     let bitIndex = 7
     let byteIndex = 0
     for (let col = this.moduleCount - 1; col > 0; col -= 2) {
-      if (col === 6) { col-- }
+      if (col === 6) {
+        col--
+      }
       while (true) {
         for (let c = 0; c < 2; c++) {
           if (this.modules[row][col - c] === null) {
@@ -328,7 +337,7 @@ class QRCode {
       const ecCount = rsBlocks[r].totalCount - dcCount
       maxDcCount = Math.max(maxDcCount, dcCount)
       maxEcCount = Math.max(maxEcCount, ecCount)
-      dcdata[r] = new Array<number>(dcCount)
+      dcdata[r] = Array.from({ length: dcCount }, (): number => 0)
       for (let i = 0; i < dcdata[r].length; i++) {
         dcdata[r][i] = 0xFF & buffer.buffer[i + offset]
       }
@@ -336,7 +345,7 @@ class QRCode {
       const rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount)
       const rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1)
       const modPoly = rawPoly.mod(rsPoly)
-      ecdata[r] = Array.from({ length: rsPoly.getLength() - 1 }, () => 0)
+      ecdata[r] = Array.from({ length: rsPoly.getLength() - 1 }, (): number => 0)
       for (let x = 0; x < ecdata[r].length; x++) {
         const modIndex = x + modPoly.getLength() - ecdata[r].length
         ecdata[r][x] = (modIndex >= 0) ? modPoly.get(modIndex) : 0
@@ -346,7 +355,7 @@ class QRCode {
     for (let y = 0; y < rsBlocks.length; y++) {
       totalCodeCount += rsBlocks[y].totalCount
     }
-    const data = new Array<number>(totalCodeCount)
+    const data = Array.from({ length: totalCodeCount }, (): number => 0)
     let index = 0
     for (let z = 0; z < maxDcCount; z++) {
       for (let s = 0; s < rsBlocks.length; s++) {
