@@ -252,3 +252,74 @@ Vue 的每轮微提交主要是：
 - 高频 `nextTick` 场景下的调度开销
 - 多轮相邻更新的批处理策略
 - 大数组 + 派生字段一起更新时的 payload 生成成本
+
+## 三级拆分：dispatch vs flush
+
+为继续确认“commitMs 为什么在 Vue 下明显放大”，本次再把 commit 阶段拆成两部分：
+
+- `dispatchMs`
+  - native：执行 `setData(...)` 本身的耗时
+  - vue：写入响应式 state 与派生字段本身的耗时
+- `flushMs`
+  - native：`waitForNativeFlush()` 的等待时间
+  - vue：`await nextTick()` 到 flush 完成的等待时间
+
+### 单次大更新三级数据
+
+| 指标       | native | vue | 差值（vue - native） |
+| ---------- | -----: | --: | -------------------: |
+| commitMs   |      3 |   5 |                   +2 |
+| dispatchMs |      1 |   1 |                    0 |
+| flushMs    |      3 |   4 |                   +1 |
+
+结论：
+
+- 单次大更新下，dispatch 和 flush 都几乎没有本质差异
+- 这再次说明 Vue/wevu 在“大提交”场景下不会明显掉队
+
+### 多次小更新三级数据
+
+| 指标       | native | vue | 差值（vue - native） |
+| ---------- | -----: | --: | -------------------: |
+| commitMs   |    108 | 180 |                  +72 |
+| dispatchMs |     39 |   4 |                  -35 |
+| flushMs    |     69 | 171 |                 +102 |
+
+结论：
+
+- Vue 的问题不在 `dispatchMs`
+- 相反，Vue 在“写入 state 本身”这一步更快
+- 真正拉开差距的是 `flushMs`
+
+也就是说，Vue 在微提交场景下的主要成本，几乎全部集中在：
+
+- 调度排队
+- `nextTick()` 等待
+- 响应式依赖收敛后的提交完成阶段
+
+### 最终归因收敛
+
+把三层数据放在一起看，可以得到一个更明确的链路：
+
+1. 业务计算 `mutateBenchCards` 不是瓶颈
+2. 写入 state / 发起提交也不是瓶颈
+3. 真正的热点在“发起之后，到 flush 完成之前”的运行时收敛阶段
+
+对当前 benchmark 而言，Vue/wevu 在多次小更新里更慢，根因不是 JS 算得慢，也不是赋值慢，而是：
+
+- 高频轮次下 `nextTick` flush 等待累计更高
+- 每轮提交后的收敛成本无法像原生那样保持更低水平
+
+### 对 runtime 优化的进一步建议
+
+如果后续要继续往 wevu/runtime 层优化，优先级可以更明确：
+
+1. 优先看高频 `nextTick` / flush 收敛链路
+2. 再看多轮连续更新是否能做更激进的批处理
+3. 最后才考虑业务计算本身
+
+换句话说，下一阶段最值得做的不是继续压 `mutateBenchCards`，而是直接分析：
+
+- flush 队列长度
+- 相邻轮次是否重复收敛
+- 每轮最终 payload 生成与桥接提交的累计成本

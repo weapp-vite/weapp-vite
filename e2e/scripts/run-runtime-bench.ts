@@ -32,6 +32,8 @@ interface WorkerResult {
     metricMsMedian: number
     computeMsMedian: number
     commitMsMedian: number
+    dispatchMsMedian: number
+    flushMsMedian: number
     setDataCallsMedian: number
   }
   updateMicroCommit: {
@@ -39,6 +41,8 @@ interface WorkerResult {
     metricMsMedian: number
     computeMsMedian: number
     commitMsMedian: number
+    dispatchMsMedian: number
+    flushMsMedian: number
     setDataCallsMedian: number
   }
 }
@@ -107,6 +111,8 @@ async function main() {
       deltaMetricMs: vue.updateSingleCommit.metricMsMedian - native.updateSingleCommit.metricMsMedian,
       deltaComputeMs: vue.updateSingleCommit.computeMsMedian - native.updateSingleCommit.computeMsMedian,
       deltaCommitMs: vue.updateSingleCommit.commitMsMedian - native.updateSingleCommit.commitMsMedian,
+      deltaDispatchMs: vue.updateSingleCommit.dispatchMsMedian - native.updateSingleCommit.dispatchMsMedian,
+      deltaFlushMs: vue.updateSingleCommit.flushMsMedian - native.updateSingleCommit.flushMsMedian,
       deltaSetDataCalls: vue.updateSingleCommit.setDataCallsMedian - native.updateSingleCommit.setDataCallsMedian,
     },
     updateMicroCommit: {
@@ -116,6 +122,8 @@ async function main() {
       deltaMetricMs: vue.updateMicroCommit.metricMsMedian - native.updateMicroCommit.metricMsMedian,
       deltaComputeMs: vue.updateMicroCommit.computeMsMedian - native.updateMicroCommit.computeMsMedian,
       deltaCommitMs: vue.updateMicroCommit.commitMsMedian - native.updateMicroCommit.commitMsMedian,
+      deltaDispatchMs: vue.updateMicroCommit.dispatchMsMedian - native.updateMicroCommit.dispatchMsMedian,
+      deltaFlushMs: vue.updateMicroCommit.flushMsMedian - native.updateMicroCommit.flushMsMedian,
       deltaSetDataCalls: vue.updateMicroCommit.setDataCallsMedian - native.updateMicroCommit.setDataCallsMedian,
     },
   }
