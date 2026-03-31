@@ -1,6 +1,6 @@
 # @weapp-vite/qr
 
-`@weapp-vite/qr` 提供二维码矩阵编码、图片解码、reader 适配与终端文本渲染能力。
+`@weapp-vite/qr` 提供二维码矩阵编码、图片解码、reader 适配、微信小程序码结构识别与终端文本渲染能力。
 
 ```ts
 import { decodeQrCodeFromBase64, renderTerminalQrCode } from '@weapp-vite/qr'
@@ -53,6 +53,24 @@ const result = await decodeWithQrReader({
 console.log(result.result)
 ```
 
+### 小程序码结构识别
+
+```ts
+import { detectMiniProgramCodeFromFile } from '@weapp-vite/qr'
+
+const detected = await detectMiniProgramCodeFromFile('./fixtures/mini-program-code.jpg')
+
+if (detected) {
+  console.log(detected.kind)
+  console.log(detected.locatorPoints)
+  console.log(detected.badgeBounds)
+  console.log(detected.logoBounds)
+}
+```
+
+这里的结构识别目标是判断图片是否符合微信小程序码几何特征，并返回定位点、中心 logo 区和右下角徽标区域。
+它不是把小程序码直接解码成链接或页面路径。
+
 ### 终端渲染
 
 ```ts
@@ -72,6 +90,7 @@ const rendered = renderTerminalQrCodeFromMatrix(matrix)
 
 ```ts
 import type {
+  MiniProgramCodeDetectionResult,
   QRCodeMatrix,
   QRCodeReaderInput,
   QRCodeReaderResult,

@@ -9,6 +9,8 @@ export interface QrFixtureDescriptor {
   kind: string
   content?: string
   expectedError?: string
+  expectedDetectionKind?: 'wechat-mini-program-code'
+  expectedMinConfidence?: number
 }
 
 const FIXTURE_ROOT = path.resolve(import.meta.dirname, '../fixtures')
