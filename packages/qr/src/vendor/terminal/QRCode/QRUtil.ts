@@ -1,4 +1,3 @@
-// @ts-nocheck
 import QRMaskPattern from './QRMaskPattern'
 import QRMath from './QRMath'
 /**
@@ -7,7 +6,12 @@ import QRMath from './QRMath'
 import QRMode from './QRMode'
 import QRPolynomial from './QRPolynomial'
 
-var QRUtil = {
+interface LostPointQrCodeLike {
+  getModuleCount: () => number
+  isDark: (row: number, col: number) => boolean
+}
+
+const QRUtil = {
   PATTERN_POSITION_TABLE: [
     [],
     [6, 18],
@@ -53,21 +57,21 @@ var QRUtil = {
   G15: (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
   G18: (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
   G15_MASK: (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1),
-  getBCHTypeInfo(data) {
+  getBCHTypeInfo(data: number) {
     let d = data << 10
     while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
       d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15)))
     }
     return ((data << 10) | d) ^ QRUtil.G15_MASK
   },
-  getBCHTypeNumber(data) {
+  getBCHTypeNumber(data: number) {
     let d = data << 12
     while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
       d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18)))
     }
     return (data << 12) | d
   },
-  getBCHDigit(data) {
+  getBCHDigit(data: number) {
     let digit = 0
     while (data !== 0) {
       digit++
@@ -75,10 +79,10 @@ var QRUtil = {
     }
     return digit
   },
-  getPatternPosition(typeNumber) {
+  getPatternPosition(typeNumber: number) {
     return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1]
   },
-  getMask(maskPattern, i, j) {
+  getMask(maskPattern: number, i: number, j: number) {
     switch (maskPattern) {
       case QRMaskPattern.PATTERN000: return (i + j) % 2 === 0
       case QRMaskPattern.PATTERN001: return i % 2 === 0
@@ -92,14 +96,14 @@ var QRUtil = {
         throw new Error(`bad maskPattern:${maskPattern}`)
     }
   },
-  getErrorCorrectPolynomial(errorCorrectLength) {
+  getErrorCorrectPolynomial(errorCorrectLength: number) {
     let a = new QRPolynomial([1], 0)
     for (let i = 0; i < errorCorrectLength; i++) {
       a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0))
     }
     return a
   },
-  getLengthInBits(mode, type) {
+  getLengthInBits(mode: number, type: number) {
     if (type >= 1 && type < 10) {
       switch (mode) {
         case QRMode.MODE_NUMBER: return 10
@@ -134,7 +138,7 @@ var QRUtil = {
       throw new Error(`type:${type}`)
     }
   },
-  getLostPoint(qrCode) {
+  getLostPoint(qrCode: LostPointQrCodeLike) {
     const moduleCount = qrCode.getModuleCount()
     let lostPoint = 0
     let row = 0
@@ -215,4 +219,5 @@ var QRUtil = {
     return lostPoint
   },
 }
+
 export default QRUtil
