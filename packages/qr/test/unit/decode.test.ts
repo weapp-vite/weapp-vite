@@ -35,7 +35,7 @@ describe('decodeQrCodeFromBase64', () => {
   })
 
   it('fails with a stable error for current mini program code fixtures', async () => {
-    const fixtures = await loadFixtureManifest('小程序码/manifest.json')
+    const fixtures = await loadFixtureManifest('mini-program-codes/manifest.json')
 
     for (const fixture of fixtures) {
       expect(fixture.expectedError).toBeTruthy()
