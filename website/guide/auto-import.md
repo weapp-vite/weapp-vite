@@ -31,6 +31,8 @@ keywords:
 > - 引入第三方 UI Resolver / 生成自定义输出
 >
 > 时才需要手动配置 `autoImportComponents`。
+>
+> 当你显式写成 `autoImportComponents: true` 时，除了扫描组件目录，还会默认开启 `.weapp-vite/auto-import-components.json`、`.weapp-vite/typed-components.d.ts`、`.weapp-vite/mini-program.html-data.json` 与 `vueComponents` 输出。
 
 ## 适用场景
 

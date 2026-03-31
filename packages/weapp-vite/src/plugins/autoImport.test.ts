@@ -1,3 +1,4 @@
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,11 +13,6 @@ vi.mock('chokidar', () => ({
 }))
 
 describe('autoImport plugin', () => {
-  beforeEach(() => {
-    chokidarWatchMock.mockReset()
-    chokidarWatchMock.mockReturnValue(createMockSidecarWatcher())
-  })
-
   function createMockSidecarWatcher() {
     const listeners = new Map<string, (filePath: string) => void>()
     const watcher = {
@@ -32,6 +28,11 @@ describe('autoImport plugin', () => {
 
     return watcher
   }
+
+  beforeEach(() => {
+    chokidarWatchMock.mockReset()
+    chokidarWatchMock.mockReturnValue(createMockSidecarWatcher())
+  })
 
   it('bootstraps outputs without globs', async () => {
     const reset = vi.fn()
@@ -50,6 +51,42 @@ describe('autoImport plugin', () => {
             vueComponents: true,
           },
         },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites,
+        filter: () => false,
+        registerPotentialComponent: vi.fn(),
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    const plugin = autoImport(ctx)[0]
+    plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+    await plugin.buildStart?.()
+    expect(reset).toHaveBeenCalledTimes(1)
+
+    await plugin.closeBundle?.()
+    expect(awaitManifestWrites).toHaveBeenCalledTimes(1)
+  })
+
+  it('bootstraps generated outputs when auto import is enabled with boolean true', async () => {
+    const reset = vi.fn()
+    const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+
+    const ctx = {
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        weappViteConfig: {
+          autoImportComponents: true,
+        },
+        packageJson: {},
       },
       autoImportService: {
         reset,

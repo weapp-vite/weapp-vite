@@ -62,7 +62,9 @@ function createEnabledAutoImportComponents(
   return {
     ...defaults,
     globs: [...globs],
+    output: true,
     typedComponents: true,
+    htmlCustomData: true,
     vueComponents: true,
     vueComponentsModule: hasWevuDependency(configService) ? 'wevu' : undefined,
   }
