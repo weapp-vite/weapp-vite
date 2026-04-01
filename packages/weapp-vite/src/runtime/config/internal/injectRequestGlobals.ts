@@ -3,6 +3,12 @@ import type { WeappInjectRequestGlobalsConfig, WeappInjectRequestGlobalsTarget }
 
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request']
 
+export interface ResolvedInjectRequestGlobalsOptions {
+  mode: 'auto' | 'explicit'
+  targets: WeappInjectRequestGlobalsTarget[]
+  dependencyPatterns: (string | RegExp)[]
+}
+
 function hasMatchedDependency(
   packageJson: PackageJson | undefined,
   patterns: readonly (string | RegExp)[],
@@ -54,7 +60,7 @@ function resolveDependencyPatterns(config?: boolean | WeappInjectRequestGlobalsC
 export function resolveInjectRequestGlobalsOptions(
   config: boolean | WeappInjectRequestGlobalsConfig | undefined,
   packageJson: PackageJson | undefined,
-): { targets: WeappInjectRequestGlobalsTarget[] } | null {
+): ResolvedInjectRequestGlobalsOptions | null {
   if (config === false) {
     return null
   }
@@ -69,7 +75,9 @@ export function resolveInjectRequestGlobalsOptions(
 
   if (enabled === true) {
     return {
+      mode: 'explicit',
       targets: resolveTargets(config),
+      dependencyPatterns: resolveDependencyPatterns(config),
     }
   }
 
@@ -79,7 +87,9 @@ export function resolveInjectRequestGlobalsOptions(
   }
 
   return {
+    mode: 'auto',
     targets: resolveTargets(config),
+    dependencyPatterns,
   }
 }
 

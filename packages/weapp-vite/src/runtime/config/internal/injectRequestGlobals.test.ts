@@ -11,6 +11,8 @@ describe('injectRequestGlobals helpers', () => {
         axios: '^1.0.0',
       },
     })).toEqual({
+      mode: 'auto',
+      dependencyPatterns: ['axios', 'graphql-request'],
       targets: [
         'fetch',
         'Headers',
@@ -40,6 +42,8 @@ describe('injectRequestGlobals helpers', () => {
         dayjs: '^1.0.0',
       },
     })).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request'],
       targets: ['fetch', 'AbortController'],
     })
   })
