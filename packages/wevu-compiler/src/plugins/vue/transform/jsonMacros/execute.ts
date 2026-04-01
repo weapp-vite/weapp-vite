@@ -1,4 +1,5 @@
 import * as t from '@weapp-vite/ast/babelTypes'
+// eslint-disable-next-line e18e/ban-dependencies -- 编译期临时求值仍复用 fs-extra 处理临时目录与文件清理。
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import { recursive as mergeRecursive } from 'merge'
@@ -40,6 +41,7 @@ function resolveMacroAlias(macroName: string) {
 }
 
 export async function evaluateScriptSetupJsonMacro(params: {
+  preambleContent?: string
   originalContent: string
   filename: string
   lang?: string
@@ -52,6 +54,7 @@ export async function evaluateScriptSetupJsonMacro(params: {
   }
 }): Promise<{ config?: Record<string, any>, dependencies: string[] }> {
   const {
+    preambleContent,
     originalContent,
     filename,
     lang,
@@ -62,7 +65,10 @@ export async function evaluateScriptSetupJsonMacro(params: {
     options,
   } = params
 
-  const ms = new MagicString(originalContent)
+  const combinedContent = preambleContent
+    ? `${preambleContent}\n${originalContent}`
+    : originalContent
+  const ms = new MagicString(combinedContent)
 
   const dir = path.dirname(filename)
   const tempRoot = resolveWevuConfigTempDir(dir)

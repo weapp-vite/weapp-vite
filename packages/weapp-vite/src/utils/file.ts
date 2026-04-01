@@ -396,11 +396,17 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
       try {
         const autoRoutesInline = await resolveAutoRoutesInlineSnapshot()
+        const macroEvalPreamble = descriptor.script?.content
+          ? inlineAutoRoutesImports(descriptor.script.content, autoRoutesInline)
+          : undefined
         const macroEvalContent = inlineAutoRoutesImports(setupContent!, autoRoutesInline)
         const extracted = await extractJsonMacroFromScriptSetup(
           macroEvalContent,
           vueFilePath,
           descriptor.scriptSetup?.lang,
+          {
+            preambleContent: macroEvalPreamble,
+          },
         )
         if (extracted.dependencies?.length) {
           macroDependencies.push(...extracted.dependencies)
