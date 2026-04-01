@@ -1,0 +1,29 @@
+{
+  "name": "@weapp-vite/sfc-playground",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Private playground for inspecting wevu SFC compile output with @vue/repl",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@babel/generator": "catalog:",
+    "@babel/parser": "catalog:",
+    "@babel/traverse": "catalog:",
+    "@babel/types": "catalog:",
+    "@vue/repl": "^4.7.1",
+    "comment-json": "catalog:",
+    "pathe": "catalog:",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

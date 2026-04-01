@@ -1,5 +1,6 @@
 packages:
   - apps/*
+  - packages-private/*
   - e2e-apps/*
   - templates/*
   - test/fixture-projects/weapp-vite/*
