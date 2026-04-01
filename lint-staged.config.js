@@ -1,7 +1,15 @@
+const WECHAT_DEVTOOLS_PROJECT_CONFIG_RE = /^(?:apps|e2e-apps|templates)\/.+\/project(?:\.private)?\.config\.json$/
+
 function filterGeneratedWechatMirrorDocs(files) {
   return files.filter((file) => {
     return !file.includes('/docs/wechat-miniprogram/framework/')
       && !file.startsWith('docs/wechat-miniprogram/framework/')
+  })
+}
+
+function filterWechatDevtoolsProjectConfigs(files) {
+  return files.filter((file) => {
+    return !WECHAT_DEVTOOLS_PROJECT_CONFIG_RE.test(file)
   })
 }
 
@@ -14,7 +22,7 @@ export default {
   ],
   '!(apps)/**/*.{css,scss,vue}': ['stylelint --fix --allow-empty-input'],
   '!(apps)/**/*.{json,md,mdx,html,yml,yaml}': (files) => {
-    const lintableFiles = filterGeneratedWechatMirrorDocs(files)
+    const lintableFiles = filterWechatDevtoolsProjectConfigs(filterGeneratedWechatMirrorDocs(files))
 
     if (lintableFiles.length === 0) {
       return []
