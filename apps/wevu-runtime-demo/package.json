@@ -13,13 +13,11 @@
     "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
+    "@tanstack/vue-query": "^5.96.0",
     "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
-  },
-  "dependencies": {
-    "@tanstack/vue-query": "^5.96.0"
   }
 }
