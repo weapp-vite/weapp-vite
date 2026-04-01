@@ -10,6 +10,7 @@ import {
   shouldRewriteBundleNpmImports,
 } from '../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
+import { createInjectRequestGlobalsCode, resolveInjectRequestGlobalsOptions } from '../../../runtime/config/internal/injectRequestGlobals'
 import { toPosixPath } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import {
@@ -19,6 +20,7 @@ import {
   resolveNpmDependencyId,
 } from '../../../utils/npmImport'
 import { normalizeWatchPath } from '../../../utils/path'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
 import { emitWxmlAssetsWithCache } from '../../utils/wxmlEmit'
 import {
@@ -244,6 +246,97 @@ function rewriteBundlePlatformApi(
     }
     chunk.code = nextCode
   }
+}
+
+function prependChunkCode(chunk: OutputChunk, code: string) {
+  if (!code) {
+    return
+  }
+  chunk.code = `${code}${chunk.code}`
+}
+
+function resolveModuleDependencyName(moduleId: string) {
+  const normalized = moduleId.replaceAll('\\', '/')
+  const prettyNodeModulesMatch = normalized.match(PRETTY_NODE_MODULES_RE)
+  if (prettyNodeModulesMatch?.[1]) {
+    return resolveNpmDependencyId(prettyNodeModulesMatch[1])
+  }
+
+  if (normalized.startsWith('npm:') || (!normalized.startsWith('.') && !normalized.startsWith('/'))) {
+    return resolveNpmDependencyId(normalized)
+  }
+
+  return undefined
+}
+
+function matchesRequestGlobalDependency(patterns: (string | RegExp)[], moduleId: string) {
+  const dependencyName = resolveModuleDependencyName(moduleId)
+  if (!dependencyName) {
+    return false
+  }
+
+  return patterns.some((pattern) => {
+    if (typeof pattern === 'string') {
+      return pattern === dependencyName
+    }
+    pattern.lastIndex = 0
+    return pattern.test(dependencyName)
+  })
+}
+
+function chunkReferencesRequestGlobalDependency(chunk: OutputChunk, patterns: (string | RegExp)[]) {
+  const moduleIds = [
+    ...(Array.isArray(chunk.moduleIds) ? chunk.moduleIds : []),
+    ...(chunk.facadeModuleId ? [chunk.facadeModuleId] : []),
+  ]
+
+  return moduleIds.some(moduleId => typeof moduleId === 'string' && matchesRequestGlobalDependency(patterns, moduleId))
+}
+
+function isBundleEntryChunk(chunk: OutputChunk, state: CorePluginState) {
+  if (chunk.isEntry) {
+    return true
+  }
+  if (!chunk.facadeModuleId) {
+    return false
+  }
+  const normalizedFacadeId = normalizeFsResolvedId(chunk.facadeModuleId)
+  return state.resolvedEntryMap.has(normalizedFacadeId)
+}
+
+function entryChunkRequiresRequestGlobals(
+  bundle: OutputBundle,
+  entryChunk: OutputChunk,
+  patterns: (string | RegExp)[],
+) {
+  const visited = new Set<string>()
+  const queue: string[] = [entryChunk.fileName]
+
+  while (queue.length > 0) {
+    const currentFileName = queue.shift()!
+    if (visited.has(currentFileName)) {
+      continue
+    }
+    visited.add(currentFileName)
+
+    const current = bundle[currentFileName]
+    if (!current || current.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = current as OutputChunk
+    if (chunkReferencesRequestGlobalDependency(chunk, patterns)) {
+      return true
+    }
+
+    for (const imported of [...chunk.imports ?? [], ...chunk.dynamicImports ?? []]) {
+      if (!visited.has(imported)) {
+        queue.push(imported)
+      }
+    }
+  }
+
+  return false
 }
 
 function matchesSubPackageDependency(dependencies: (string | RegExp)[] | undefined, importee: string, fallbackDependencies?: Record<string, string>) {
@@ -697,6 +790,33 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       rewriteBundlePlatformApi(rolldownBundle, injectWeapiGlobalName, {
         astEngine,
       })
+    }
+
+    const injectRequestGlobalsOptions = resolveInjectRequestGlobalsOptions(
+      configService.weappViteConfig?.injectRequestGlobals,
+      configService.packageJson,
+    )
+    if (injectRequestGlobalsOptions) {
+      const requestGlobalsCode = createInjectRequestGlobalsCode(injectRequestGlobalsOptions.targets)
+      for (const output of Object.values(rolldownBundle)) {
+        if (output?.type !== 'chunk') {
+          continue
+        }
+
+        const chunk = output as OutputChunk
+        if (!isBundleEntryChunk(chunk, state)) {
+          continue
+        }
+
+        const shouldInject = injectRequestGlobalsOptions.mode === 'explicit'
+          || entryChunkRequiresRequestGlobals(rolldownBundle, chunk, injectRequestGlobalsOptions.dependencyPatterns)
+
+        if (!shouldInject) {
+          continue
+        }
+
+        prependChunkCode(chunk, requestGlobalsCode)
+      }
     }
 
     refreshModuleGraph(this, state)
