@@ -1,5 +1,6 @@
 <script lang="ts">
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import routes from 'weapp-vite/auto-routes'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,9 +16,6 @@ queryClient.mount()
 </script>
 
 <script setup lang="ts">
-// eslint-disable-next-line import/first
-import routes from 'weapp-vite/auto-routes'
-
 defineAppSetup((app) => {
   app.use(VueQueryPlugin, {
     queryClient,

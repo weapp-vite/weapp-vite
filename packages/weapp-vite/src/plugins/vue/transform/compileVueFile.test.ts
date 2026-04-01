@@ -112,6 +112,37 @@ defineOptions({
     expect(result.script).toContain('createWevuComponent')
   })
 
+  it('supports defineAppJson using imports declared in normal script', async () => {
+    const projectDir = await createTempProject()
+    const routesFile = path.join(projectDir, 'routes.ts')
+    const filename = path.join(projectDir, 'app.vue')
+    const source = `
+<script lang="ts">
+import routes from './routes'
+</script>
+<script setup lang="ts">
+defineAppJson({
+  pages: routes.pages,
+  subPackages: routes.subPackages,
+})
+</script>
+      `.trim()
+
+    await fs.writeFile(
+      routesFile,
+      `export default { pages: ['pages/index/index'], subPackages: [{ root: 'pkg', pages: ['foo/index'] }] }\n`,
+      'utf8',
+    )
+
+    const result = await compileVueFile(source, filename)
+
+    expect(result.config).toBeTruthy()
+    expect(JSON.parse(result.config!)).toEqual({
+      pages: ['pages/index/index'],
+      subPackages: [{ root: 'pkg', pages: ['foo/index'] }],
+    })
+  })
+
   it('injects defineAppSetup runtime import for app.vue bare macro usage', async () => {
     const result = await compileVueFile(
       `

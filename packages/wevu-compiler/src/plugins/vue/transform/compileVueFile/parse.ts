@@ -144,6 +144,7 @@ export async function parseVueFile(
       scriptSetup.lang,
       {
         merge: (target, source) => mergeJson(target, source, 'macro'),
+        preambleContent: resolvedDescriptor.script?.content,
       },
     )
     if (extracted.stripped !== scriptSetup.content) {

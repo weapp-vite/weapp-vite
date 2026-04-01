@@ -381,6 +381,37 @@ defineAppJson({
       }
     })
 
+    it('supports auto-routes imported from normal script during macro extraction', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'app.vue')
+      try {
+        await fs.writeFile(
+          file,
+          `
+<script lang="ts">
+import routes from 'weapp-vite/auto-routes'
+</script>
+<script setup lang="ts">
+defineAppJson({
+  pages: routes.pages,
+  subPackages: routes.subPackages,
+})
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        const config = await extractConfigFromVue(file)
+        expect(config).toHaveProperty('pages')
+        expect(config).toHaveProperty('subPackages')
+        expect(Array.isArray(config?.pages)).toBe(true)
+        expect(Array.isArray(config?.subPackages)).toBe(true)
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
     it('does not recursively ensure auto-routes while loading app config from app.vue', async () => {
       const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
       const file = path.join(root, 'app.vue')
