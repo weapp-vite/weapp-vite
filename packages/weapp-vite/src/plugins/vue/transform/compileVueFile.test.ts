@@ -1,5 +1,5 @@
+import fs from 'node:fs/promises'
 import os from 'node:os'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
@@ -110,6 +110,23 @@ defineOptions({
     expect(result.script).toContain('import FooBehavior from')
     expect(result.script).toContain('behaviors: [FooBehavior]')
     expect(result.script).toContain('createWevuComponent')
+  })
+
+  it('injects defineAppSetup runtime import for app.vue bare macro usage', async () => {
+    const result = await compileVueFile(
+      `
+<script setup lang="ts">
+defineAppSetup((app) => {
+  app.provide('token', 1)
+})
+</script>
+      `.trim(),
+      '/project/src/app.vue',
+    )
+
+    expect(result.script).toContain('defineAppSetup')
+    expect(result.script).toContain('from "wevu";')
+    expect(result.script).toContain(`app.provide('token', 1)`)
   })
 
   it('keeps kebab-case component events on colon-prefixed bindings', async () => {

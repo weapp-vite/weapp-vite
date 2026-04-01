@@ -78,6 +78,7 @@ type RuntimeApiName
     | 'createStore'
     | 'createWevuComponent'
     | 'createWevuScopedSlotComponent'
+    | 'defineAppSetup'
     | 'defineComponent'
     | 'defineStore'
     | 'effect'
