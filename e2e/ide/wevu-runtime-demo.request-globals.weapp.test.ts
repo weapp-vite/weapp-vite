@@ -3,7 +3,27 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 
 const APP_ROOT = fileURLToPath(new URL('../../apps/wevu-runtime-demo/', import.meta.url))
-const ROUTE = '/pages/request-globals/index'
+
+const CASES = [
+  {
+    expectedPayload: '"transport":"fetch"',
+    expectedRequestPath: '/fetch',
+    route: '/pages/request-globals/fetch',
+    title: 'fetch',
+  },
+  {
+    expectedPayload: '"client":"graphql-request"',
+    expectedRequestPath: '/graphql',
+    route: '/pages/request-globals/graphql-request',
+    title: 'graphql-request',
+  },
+  {
+    expectedPayload: '"transport":"axios"',
+    expectedRequestPath: '/axios',
+    route: '/pages/request-globals/axios',
+    title: 'axios',
+  },
+] as const
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -20,10 +40,11 @@ async function waitForTransportState(
   while (Date.now() - startedAt <= timeoutMs) {
     try {
       const snapshot = {
-        pageStatus: await page.data('pageStatus'),
-        runCount: await page.data('runCount'),
-        transportStates: await page.data('transportStates'),
-        requestLog: await page.data('requestLog'),
+        pageStatus: await page.data('state.pageStatus'),
+        payload: await page.data('state.payload'),
+        requestLog: await page.data('state.requestLog'),
+        runCount: await page.data('state.runCount'),
+        status: await page.data('state.status'),
       }
       lastSnapshot = snapshot
       if (predicate(snapshot)) {
@@ -99,39 +120,36 @@ describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
 
   it('supports fetch, graphql-request and axios in simulator runtime', async (ctx) => {
     const miniProgram = await getMiniProgram(ctx)
-    const page = await miniProgram.reLaunch(ROUTE)
-    if (!page) {
-      throw new Error(`Failed to launch route ${ROUTE}`)
+
+    for (const testCase of CASES) {
+      const page = await miniProgram.reLaunch(testCase.route)
+      if (!page) {
+        throw new Error(`Failed to launch route ${testCase.route}`)
+      }
+
+      const initialState = await waitForTransportState(page, snapshot => (
+        snapshot.pageStatus === '全部通过'
+        && snapshot.runCount === 1
+        && snapshot.status === 'success'
+        && Array.isArray(snapshot.requestLog)
+        && snapshot.requestLog.length === 1
+      ))
+
+      expect(initialState.payload).toContain(testCase.expectedPayload)
+      expect(initialState.requestLog[0]).toContain(testCase.expectedRequestPath)
+
+      await invokeOrTap(page, 'runChecks', 0)
+
+      const rerunState = await waitForTransportState(page, snapshot => (
+        snapshot.pageStatus === '全部通过'
+        && snapshot.runCount === 2
+        && snapshot.status === 'success'
+        && Array.isArray(snapshot.requestLog)
+        && snapshot.requestLog.length === 1
+      ))
+
+      expect(rerunState.payload).toContain(testCase.expectedPayload)
+      expect(rerunState.requestLog[0]).toContain(testCase.expectedRequestPath)
     }
-
-    const initialState = await waitForTransportState(page, snapshot => (
-      snapshot.pageStatus === '全部通过'
-      && snapshot.runCount === 1
-      && snapshot.transportStates?.fetch?.status === 'success'
-      && snapshot.transportStates?.graphqlRequest?.status === 'success'
-      && snapshot.transportStates?.axios?.status === 'success'
-      && Array.isArray(snapshot.requestLog)
-      && snapshot.requestLog.length === 3
-    ))
-
-    expect(initialState.transportStates.fetch.payload).toContain('"transport":"fetch"')
-    expect(initialState.transportStates.graphqlRequest.payload).toContain('"client":"graphql-request"')
-    expect(initialState.transportStates.axios.payload).toContain('"transport":"axios"')
-
-    await invokeOrTap(page, 'runChecks', 0)
-
-    const rerunState = await waitForTransportState(page, snapshot => (
-      snapshot.pageStatus === '全部通过'
-      && snapshot.runCount === 2
-      && snapshot.transportStates?.fetch?.status === 'success'
-      && snapshot.transportStates?.graphqlRequest?.status === 'success'
-      && snapshot.transportStates?.axios?.status === 'success'
-      && Array.isArray(snapshot.requestLog)
-      && snapshot.requestLog.length === 3
-    ))
-
-    expect(rerunState.requestLog[0]).toContain('/fetch')
-    expect(rerunState.requestLog[1]).toContain('/graphql')
-    expect(rerunState.requestLog[2]).toContain('/axios')
   })
 })
