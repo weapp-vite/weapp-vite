@@ -27,7 +27,7 @@ describe('request globals runtime', () => {
     const existingFetch = vi.fn()
     ;(globalThis as Record<string, any>).fetch = existingFetch
 
-    const { installRequestGlobals } = await import('./requestGlobals')
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals()
 
     expect(globalThis.fetch).toBe(existingFetch)
@@ -50,7 +50,7 @@ describe('request globals runtime', () => {
       }
     })
 
-    const { installRequestGlobals } = await import('./requestGlobals')
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals()
 
     const response = await globalThis.fetch('https://example.com/data', {
@@ -80,7 +80,7 @@ describe('request globals runtime', () => {
       }
     })
 
-    const { installRequestGlobals } = await import('./requestGlobals')
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals()
 
     const xhr = new globalThis.XMLHttpRequest()
@@ -99,7 +99,7 @@ describe('request globals runtime', () => {
   })
 
   it('supports installing only abort globals', async () => {
-    const { installRequestGlobals } = await import('./requestGlobals')
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals({
       targets: ['AbortController', 'AbortSignal'],
     })
@@ -113,7 +113,7 @@ describe('request globals runtime', () => {
   it('installs request globals onto both runtime global and mini-program host objects', async () => {
     ;(globalThis as Record<string, any>).wx = {}
 
-    const { installRequestGlobals } = await import('./requestGlobals')
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals({
       targets: ['fetch'],
     })
@@ -127,7 +127,7 @@ describe('request globals runtime', () => {
   })
 
   it('promotes installed request globals to free global bindings when possible', async () => {
-    const { installRequestGlobals } = await import('./requestGlobals')
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals({
       targets: ['fetch', 'AbortController', 'AbortSignal'],
     })
@@ -141,7 +141,7 @@ describe('request globals runtime', () => {
   })
 
   it('provides URL and URLSearchParams support required by graphql-request style callers', async () => {
-    const { URLPolyfill, URLSearchParamsPolyfill } = await import('./requestGlobals/url')
+    const { URLPolyfill, URLSearchParamsPolyfill } = await import('../src/url')
     const url = new URLPolyfill('https://example.com/graphql?existing=1')
     url.searchParams.append('query', 'hello world')
 

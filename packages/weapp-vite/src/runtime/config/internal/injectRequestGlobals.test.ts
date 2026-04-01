@@ -65,6 +65,7 @@ describe('injectRequestGlobals helpers', () => {
 
   it('creates stable injection code', () => {
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('installRequestGlobals')
+    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('weapp-vite/requestGlobals')
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('"XMLHttpRequest"')
   })
 

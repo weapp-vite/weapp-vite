@@ -1,1 +1,1 @@
-export * from './runtime/requestGlobals'
+export * from '../../web-apis/src'

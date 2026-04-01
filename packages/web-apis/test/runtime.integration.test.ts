@@ -1,8 +1,7 @@
-/* eslint-disable e18e/ban-dependencies */
 import axios from 'axios'
 import { request as gqlRequest } from 'graphql-request'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { installRequestGlobals } from './requestGlobals'
+import { installRequestGlobals } from '../src'
 
 const wpiRequestMock = vi.hoisted(() => vi.fn())
 
