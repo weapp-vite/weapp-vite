@@ -1,5 +1,3 @@
-// eslint-disable-next-line e18e/ban-dependencies -- 测试临时文件与 fixture 读写沿用现有 fs-extra 用法
-import fs from 'fs-extra'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { vuePlugin } from '../../src/plugins/vue'
@@ -7,14 +5,36 @@ import { createVueResolverPlugin, getSourceFromVirtualId, getVirtualModuleId } f
 import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { createVueWatchPlugin } from '../../src/plugins/vue/watch'
 
+const {
+  compilerPathExistsMock,
+  compilerReadFileMock,
+} = vi.hoisted(() => {
+  return {
+    compilerPathExistsMock: vi.fn(),
+    compilerReadFileMock: vi.fn(),
+  }
+})
+
+vi.mock('wevu/compiler', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('wevu/compiler')>()
+  return {
+    __esModule: true,
+    ...actual,
+    pathExists: compilerPathExistsMock,
+    readFile: compilerReadFileMock,
+  }
+})
+
 describe('vue plugin misc coverage', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    compilerPathExistsMock.mockReset()
+    compilerReadFileMock.mockReset()
   })
 
   it('resolver resolves virtual ids and reads files', async () => {
-    const readFile = vi.spyOn(fs, 'readFile').mockResolvedValue('code from file')
-    const pathExists = vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    compilerReadFileMock.mockResolvedValue('code from file')
+    compilerPathExistsMock.mockResolvedValue(true)
     const ctx: any = {
       configService: {
         cwd: '/root',
@@ -39,12 +59,15 @@ describe('vue plugin misc coverage', () => {
     // 仍兼容读取虚拟模块（用于历史兼容与工具函数覆盖）
     const virtualId = `\0vue:/root/src/foo.vue`
     const loaded = await plugin.load!(virtualId)
-    expect(readFile).toHaveBeenCalledWith('/root/src/foo.vue', 'utf-8')
+    expect(compilerReadFileMock).toHaveBeenCalledWith('/root/src/foo.vue', {
+      checkMtime: false,
+      encoding: 'utf-8',
+    })
     expect(loaded?.moduleSideEffects).toBe(false)
 
     const noExt = await plugin.resolveId!('./pages/home/index', '/root/src/app.vue')
     expect(noExt).toBe(path.resolve('/root/src/pages/home/index.vue'))
-    expect(pathExists).toHaveBeenCalled()
+    expect(compilerPathExistsMock).toHaveBeenCalled()
 
     expect(getVirtualModuleId('abc')).toBe('\0vue:abc')
     expect(getSourceFromVirtualId('\0vue:xyz')).toBe('xyz')

@@ -15,6 +15,8 @@ const {
   magicStringPrependMock,
   magicStringToStringMock,
   MagicStringMock,
+  compilerClearFileCachesMock,
+  compilerInvalidateFileCacheMock,
   existsMock,
   readFileMock,
   statMock,
@@ -36,6 +38,8 @@ const {
     this.toString = innerMagicStringToString
   })
 
+  const innerCompilerClearFileCachesMock = vi.fn()
+  const innerCompilerInvalidateFileCacheMock = vi.fn()
   const innerExistsMock = vi.fn()
   const innerReadFileMock = vi.fn()
   const innerStatMock = vi.fn()
@@ -74,6 +78,8 @@ const {
     magicStringPrependMock: innerMagicStringPrepend,
     magicStringToStringMock: innerMagicStringToString,
     MagicStringMock: innerMagicString,
+    compilerClearFileCachesMock: innerCompilerClearFileCachesMock,
+    compilerInvalidateFileCacheMock: innerCompilerInvalidateFileCacheMock,
     existsMock: innerExistsMock,
     readFileMock: innerReadFileMock,
     statMock: innerStatMock,
@@ -173,10 +179,24 @@ vi.mock('../../vue/transform/pageLayout', () => {
 
 vi.mock('wevu/compiler', async (importOriginal) => {
   const actual = await importOriginal<typeof import('wevu/compiler')>()
+  const { parse } = await import('vue/compiler-sfc')
   return {
     __esModule: true,
     ...actual,
+    clearFileCaches: compilerClearFileCachesMock,
     compileVueFile: mockCompileVueFile,
+    getSfcCheckMtime: vi.fn(() => false),
+    invalidateFileCache: compilerInvalidateFileCacheMock,
+    pathExists: existsMock,
+    readAndParseSfc: vi.fn(async (filename: string) => {
+      const source = await readFileMock(filename, 'utf-8')
+      const parsed = parse(source, { filename })
+      return {
+        descriptor: parsed.descriptor,
+        errors: parsed.errors,
+      }
+    }),
+    readFile: readFileMock,
   }
 })
 
@@ -331,7 +351,7 @@ describe('createEntryLoader', () => {
 
     expect(result.code).toBe('console.log("noop")')
     expect(MagicStringMock).not.toHaveBeenCalled()
-    expect(readFileMock).toHaveBeenCalledWith('/project/src/app.js', 'utf8')
+    expect(readFileMock).toHaveBeenCalledWith('/project/src/app.js', { checkMtime: undefined })
   })
 
   it('prepends style imports once when sidecar styles exist', async () => {
