@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createInjectRequestGlobalsCode,
+  createInjectRequestGlobalsSfcCode,
   resolveInjectRequestGlobalsOptions,
 } from './injectRequestGlobals'
 
@@ -64,5 +65,26 @@ describe('injectRequestGlobals helpers', () => {
   it('creates stable injection code', () => {
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('installRequestGlobals')
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('"XMLHttpRequest"')
+  })
+
+  it('can create local binding injection code for script modules', () => {
+    const code = createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'], {
+      localBindings: true,
+    })
+
+    expect(code).toContain('__weappViteRequestGlobalsHost__')
+    expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
+    expect(code).toContain('var URL = __weappViteRequestGlobalsHost__.URL')
+  })
+
+  it('can create a valid sfc injection block', () => {
+    const code = createInjectRequestGlobalsSfcCode(['fetch'], {
+      localBindings: true,
+    })
+
+    expect(code).toContain('<script lang="ts">')
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
+    expect(code).toContain('</script>')
   })
 })

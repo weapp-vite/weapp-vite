@@ -5,13 +5,11 @@ import {
   createRequestCaseState,
   createRunningState,
   createSuccessState,
-  ensureRequestGlobalsHost,
   resolveBaseUrl,
 } from '../../shared/runtime'
 
 const baseUrl = ref('')
 const state = ref(createRequestCaseState())
-const requestHost = ensureRequestGlobalsHost()
 
 async function runCase() {
   if (!baseUrl.value) {
@@ -22,7 +20,7 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
-    const response = await requestHost.fetch(`${baseUrl.value}/fetch`, {
+    const response = await fetch(`${baseUrl.value}/fetch`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

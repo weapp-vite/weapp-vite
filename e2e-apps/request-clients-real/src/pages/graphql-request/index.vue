@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { GraphQLClient } from 'graphql-request'
+import { request } from 'graphql-request'
 import { onLoad, ref } from 'wevu'
 import {
   createErrorState,
   createRequestCaseState,
   createRunningState,
   createSuccessState,
-  ensureRequestGlobalsHost,
   resolveBaseUrl,
 } from '../../shared/runtime'
 
 const baseUrl = ref('')
 const state = ref(createRequestCaseState())
-const requestHost = ensureRequestGlobalsHost()
 
 async function runCase() {
   if (!baseUrl.value) {
@@ -23,10 +21,7 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
-    const client = new GraphQLClient(`${baseUrl.value}/graphql`, {
-      fetch: requestHost.fetch.bind(requestHost),
-    })
-    const payload = await client.request<{
+    const payload = await request<{
       transport: {
         client: string
         path: string
@@ -34,6 +29,7 @@ async function runCase() {
         operationName: string
       }
     }>(
+      `${baseUrl.value}/graphql`,
       /* GraphQL */ `
         query TransportProbe($run: Int!) {
           transport(run: $run) {

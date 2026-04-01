@@ -7,14 +7,11 @@ import {
   createRequestCaseState,
   createRunningState,
   createSuccessState,
-  ensureRequestGlobalsHost,
   resolveBaseUrl,
 } from '../../shared/runtime'
 
 const baseUrl = ref('')
 const state = ref(createRequestCaseState())
-
-ensureRequestGlobalsHost()
 
 async function runCase() {
   if (!baseUrl.value) {

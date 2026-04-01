@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
 import { computed, onLoad, ref } from 'wevu'
-import { ensureRequestGlobalsHost, resolveBaseUrl, wait } from '../../shared/runtime'
+import { resolveBaseUrl, wait } from '../../shared/runtime'
 
 interface QueryPayload {
   generatedAt: string
@@ -14,7 +14,6 @@ interface QueryPayload {
 const baseUrl = ref('')
 const selectedTab = ref<'overview' | 'detail'>('overview')
 const refreshSeed = ref(0)
-const requestHost = ensureRequestGlobalsHost()
 
 const queryKey = computed(() => ['request-clients-real', selectedTab.value, refreshSeed.value] as const)
 
@@ -22,7 +21,7 @@ const query = useQuery({
   enabled: computed(() => Boolean(baseUrl.value)),
   queryKey,
   queryFn: async (): Promise<QueryPayload> => {
-    const response = await requestHost.fetch(
+    const response = await fetch(
       `${baseUrl.value}/vue-query?tab=${selectedTab.value}&seed=${refreshSeed.value}`,
     )
     if (!response.ok) {

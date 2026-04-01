@@ -563,6 +563,9 @@ function injectRequestGlobalsLocalBindings(
     if (chunk.code.includes('__weappViteRequestGlobalsLocalBindings__')) {
       continue
     }
+    if (chunk.code.includes('__weappViteRequestGlobalsHost__') || chunk.code.includes('__weappViteInstallRequestGlobals')) {
+      continue
+    }
 
     const requireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_RE)
     const requireAlias = requireMatch?.[2]

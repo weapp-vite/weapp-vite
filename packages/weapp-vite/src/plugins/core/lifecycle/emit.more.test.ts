@@ -931,4 +931,53 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __weappViteRequestGlobalsHost__.URL')
   })
+
+  it('skips emitted local binding injection when chunk already contains request globals host bindings', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return t}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: [
+          'const e=require("../../common.js");',
+          'const __weappViteRequestGlobalsHost__ = e["At"]({ targets: ["fetch"] }) || globalThis;',
+          'var fetch = __weappViteRequestGlobalsHost__.fetch;',
+          'Page({})',
+        ].join(''),
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/request-globals/fetch.js'].code).not.toContain('__weappViteRequestGlobalsLocalBindings__')
+    expect(bundle['pages/request-globals/fetch.js'].code.match(/__weappViteRequestGlobalsHost__/g)?.length).toBe(2)
+  })
 })

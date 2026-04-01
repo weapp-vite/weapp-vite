@@ -21,6 +21,13 @@ const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
 
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
+const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set([
+  ...FULL_REQUEST_GLOBAL_TARGETS,
+  'URL',
+  'URLSearchParams',
+  'Blob',
+  'FormData',
+])
 
 export interface InjectRequestGlobalsAutoRule {
   dependencyPatterns: (string | RegExp)[]
@@ -165,14 +172,59 @@ function resolveRequestGlobalsRuntimeModuleId() {
   throw new Error('无法定位 request globals runtime 模块，请先构建 weapp-vite 包。')
 }
 
+function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
+  const bindingTargets = [...targets]
+  const needsUrlGlobals = targets.some(target => (
+    target === 'fetch'
+    || target === 'Request'
+    || target === 'Response'
+    || target === 'XMLHttpRequest'
+  ))
+
+  if (needsUrlGlobals) {
+    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
+  }
+
+  return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
+}
+
 /**
  * @description 生成入口文件用的请求全局对象注入代码。
  */
-export function createInjectRequestGlobalsCode(targets: WeappInjectRequestGlobalsTarget[]) {
+export function createInjectRequestGlobalsCode(
+  targets: WeappInjectRequestGlobalsTarget[],
+  options?: {
+    localBindings?: boolean
+  },
+) {
   const runtimeModuleId = resolveRequestGlobalsRuntimeModuleId()
-  return [
+  const lines = [
     `import { installRequestGlobals as __weappViteInstallRequestGlobals } from ${JSON.stringify(runtimeModuleId)}`,
-    `__weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} })`,
-    '',
-  ].join('\n')
+  ]
+
+  if (options?.localBindings) {
+    const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+    lines.push(
+      `const __weappViteRequestGlobalsHost__ = __weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      ...bindingTargets.map(target => `var ${target} = __weappViteRequestGlobalsHost__.${target}`),
+    )
+  }
+  else {
+    lines.push(`__weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} })`)
+  }
+
+  lines.push('')
+  return lines.join('\n')
+}
+
+/**
+ * @description 为 Vue SFC 入口生成合法的请求全局注入脚本块。
+ */
+export function createInjectRequestGlobalsSfcCode(
+  targets: WeappInjectRequestGlobalsTarget[],
+  options?: {
+    localBindings?: boolean
+  },
+) {
+  return `<script lang="ts">\n${createInjectRequestGlobalsCode(targets, options)}</script>\n`
 }
