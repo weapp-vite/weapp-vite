@@ -31,6 +31,23 @@ const compileState = ref<CompileOutputState>({
   },
 })
 
+const paneMeta = computed(() => {
+  return outputPanes.find(pane => pane.key === activePane.value) ?? outputPanes[0]
+})
+
+const warningCount = computed(() => {
+  const warningText = compileState.value.outputs.warnings
+  if (!warningText || warningText.startsWith('// 当前没有编译警告')) {
+    return 0
+  }
+
+  return warningText.split('\n').filter(Boolean).length
+})
+
+const compileStatusLabel = computed(() => {
+  return compileState.value.success ? 'ready' : 'error'
+})
+
 const { importMap, vueVersion } = useVueImportMap()
 const store = useStore({
   builtinImportMap: importMap,
@@ -77,52 +94,69 @@ const activeOutput = computed(() => compileState.value.outputs[activePane.value]
 
 <template>
   <main class="app-shell">
-    <section class="hero-panel">
-      <p class="eyebrow">
-        @weapp-vite/sfc-playground
-      </p>
-      <div class="hero-copy">
-        <h1>wevu SFC 编译对照台</h1>
-        <p>
-          左侧用 <code>@vue/repl</code> 编辑和预览 Vue SFC，右侧实时展示
-          <code>@wevu/compiler</code> 产出的 script、template、style、config 与 meta。
-        </p>
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">
+          WV
+        </div>
+        <div class="brand-copy">
+          <p class="brand-overline">
+            @weapp-vite/sfc-playground
+          </p>
+          <h1>Wevu SFC Playground</h1>
+        </div>
       </div>
-      <div class="hero-metrics">
-        <span class="metric-chip">{{ compileState.activeFilename }}</span>
-        <span class="metric-chip">{{ compileState.durationMs }} ms</span>
+
+      <div class="topbar-summary">
+        <span class="topbar-chip">file · {{ compileState.activeFilename }}</span>
+        <span class="topbar-chip">compile · {{ compileState.durationMs }} ms</span>
+        <span class="topbar-chip">warnings · {{ warningCount }}</span>
         <span
-          class="metric-chip"
-          :data-status="compileState.success ? 'ok' : 'error'"
+          class="topbar-chip"
+          :data-status="compileStatusLabel"
         >
-          {{ compileState.success ? 'compile ok' : 'compile error' }}
+          {{ compileState.success ? 'wevu compile ready' : 'wevu compile failed' }}
         </span>
       </div>
-    </section>
+    </header>
 
-    <section class="workspace-grid">
-      <div class="editor-panel">
-        <Repl
-          :store="store"
-          :editor="CodeMirror"
-          layout="vertical"
-          :showCompileOutput="false"
-          :showImportMap="false"
-          :showOpenSourceMap="false"
-          :showSsrOutput="false"
-          :showTsConfig="false"
-          theme="light"
-        />
+    <section class="workspace-shell">
+      <div class="workspace-frame">
+        <div class="surface-toolbar">
+          <div class="surface-title">
+            <span class="surface-dot" />
+            <span>Vue REPL</span>
+          </div>
+          <div class="surface-actions">
+            <span class="surface-pill">official-style layout</span>
+            <span class="surface-pill">wevu compile target</span>
+          </div>
+        </div>
+
+        <div class="repl-stage">
+          <Repl
+            :store="store"
+            :editor="CodeMirror"
+            layout="horizontal"
+            :showCompileOutput="false"
+            :showImportMap="false"
+            :showOpenSourceMap="false"
+            :showSsrOutput="false"
+            :showTsConfig="false"
+            theme="light"
+          />
+        </div>
       </div>
 
-      <aside class="output-panel">
-        <header class="output-header">
+      <section class="inspector-panel">
+        <header class="inspector-header">
           <div>
-            <p class="panel-title">
-              wevu 编译产物
+            <p class="inspector-overline">
+              wevu compile inspector
             </p>
-            <p class="panel-subtitle">
-              当前查看 {{ compileState.activeFilename }} 的 wevu 页面编译结果
+            <h2>{{ paneMeta.label }}</h2>
+            <p class="inspector-copy">
+              这里专门展示 wevu 的页面编译结果，把 Vue 官方 playground 的编辑体验和小程序产物观察窗口拼在一起。
             </p>
           </div>
           <span
@@ -133,7 +167,7 @@ const activeOutput = computed(() => compileState.value.outputs[activePane.value]
           </span>
         </header>
 
-        <div class="tab-row">
+        <div class="inspector-tabs">
           <button
             v-for="pane in outputPanes"
             :key="pane.key"
@@ -146,10 +180,18 @@ const activeOutput = computed(() => compileState.value.outputs[activePane.value]
           </button>
         </div>
 
+        <div class="inspector-meta">
+          <span class="meta-chip">source · {{ compileState.activeFilename }}</span>
+          <span class="meta-chip">render · {{ compileState.durationMs }} ms</span>
+          <span class="meta-chip">status · {{ compileStatusLabel }}</span>
+        </div>
+
         <pre
           v-if="compileState.success"
           class="code-frame"
-        ><code>{{ activeOutput }}</code></pre>
+        >
+<code>{{ activeOutput }}</code>
+</pre>
 
         <div
           v-else
@@ -162,7 +204,22 @@ const activeOutput = computed(() => compileState.value.outputs[activePane.value]
 <code>{{ compileState.error }}</code>
 </pre>
         </div>
-      </aside>
+      </section>
     </section>
+
+    <footer class="statusbar">
+      <div class="statusbar-group">
+        <span class="status-label">mode</span>
+        <span class="status-value">SFC -> wevu</span>
+      </div>
+      <div class="statusbar-group">
+        <span class="status-label">pane</span>
+        <span class="status-value">{{ paneMeta.label }}</span>
+      </div>
+      <div class="statusbar-group">
+        <span class="status-label">runtime</span>
+        <span class="status-value">{{ compileState.success ? 'healthy' : 'blocked' }}</span>
+      </div>
+    </footer>
   </main>
 </template>
