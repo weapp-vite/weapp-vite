@@ -16,6 +16,7 @@ const app = createApp({
 })
 
 expectType<RuntimeApp<{ count: number }, { double: () => number }, { inc: () => void }>>(app)
+expectType<RuntimeApp<{ count: number }, { double: () => number }, { inc: () => void }>>(app.provide('token', 1))
 
 const instance = app.mount()
 expectType<RuntimeInstance<{ count: number }, { double: () => number }, { inc: () => void }>>(instance)

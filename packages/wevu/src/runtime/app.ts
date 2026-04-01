@@ -9,6 +9,7 @@ import type {
 import { createRuntimeMount } from './app/mount'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { getMiniProgramGlobalObject } from './platform'
+import { provideGlobal } from './provide'
 import { registerApp } from './register'
 
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -57,6 +58,10 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       else {
         throw new TypeError('插件必须是函数，或包含 install 方法的对象')
       }
+      return runtimeApp
+    },
+    provide(key: any, value: any) {
+      provideGlobal(key, value)
       return runtimeApp
     },
     config: appConfig,

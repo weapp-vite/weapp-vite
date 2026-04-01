@@ -4,8 +4,10 @@ import {
   computed,
   effect,
   getDeepWatchStrategy,
+  isProxy,
   isRaw,
   isReactive,
+  isReadonly,
   isRef,
   isShallowReactive,
   isShallowRef,
@@ -27,6 +29,8 @@ import {
   unref,
   watch,
   watchEffect,
+  watchPostEffect,
+  watchSyncEffect,
 } from '@/index'
 
 const n = ref(1)
@@ -58,6 +62,8 @@ expectType<() => void>(stopEffect)
 expectType<() => void>(stopEffect.stop)
 expectType<() => void>(stopEffect.pause)
 expectType<() => void>(stopEffect.resume)
+expectType<() => void>(watchPostEffect(() => {}))
+expectType<() => void>(watchSyncEffect(() => {}))
 setDeepWatchStrategy('version')
 expectType<'version' | 'traverse'>(getDeepWatchStrategy())
 
@@ -66,6 +72,9 @@ expectType<number>(ro.value)
 expectError(ro.value = 2)
 expectType<number>(unref(ro))
 expectType<number>(toValue(ro))
+expectType<boolean>(isReadonly(ro))
+expectType<boolean>(isProxy(ro))
+expectType<boolean>(isProxy(reactive({ count: 1 })))
 expectType<number>(toValue(1))
 expectType<string>(toValue(() => 'label'))
 

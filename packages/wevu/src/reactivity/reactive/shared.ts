@@ -1,5 +1,6 @@
 export enum ReactiveFlags {
   IS_REACTIVE = '__r_isReactive',
+  IS_READONLY = '__r_isReadonly',
   RAW = '__r_raw',
   SKIP = '__r_skip', // 标记此对象无需转换为响应式（用于 markRaw）
 }

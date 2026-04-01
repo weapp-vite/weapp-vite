@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
-import { getDeepWatchStrategy, reactive, ref, setDeepWatchStrategy, watch, watchEffect } from '@/reactivity'
+import {
+  getDeepWatchStrategy,
+  reactive,
+  ref,
+  setDeepWatchStrategy,
+  watch,
+  watchEffect,
+  watchPostEffect,
+  watchSyncEffect,
+} from '@/reactivity'
 import * as scheduler from '@/scheduler'
 
 describe('watch branches', () => {
@@ -229,5 +238,31 @@ describe('watch branches', () => {
     await scheduler.nextTick()
     await scheduler.nextTick()
     expect(postLogs).toEqual([1])
+  })
+
+  it('watchPostEffect and watchSyncEffect forward flush modes', async () => {
+    const syncRef = ref(0)
+    const syncLogs: number[] = []
+    watchSyncEffect(() => {
+      syncLogs.push(syncRef.value)
+    })
+    expect(syncLogs).toEqual([0])
+    syncRef.value = 1
+    expect(syncLogs).toEqual([0, 1])
+
+    const postRef = ref(0)
+    const postLogs: number[] = []
+    watchPostEffect(() => {
+      postLogs.push(postRef.value)
+    })
+    expect(postLogs).toEqual([])
+    await scheduler.nextTick()
+    await scheduler.nextTick()
+    expect(postLogs).toEqual([0])
+    postRef.value = 1
+    expect(postLogs).toEqual([0])
+    await scheduler.nextTick()
+    await scheduler.nextTick()
+    expect(postLogs).toEqual([0, 1])
   })
 })

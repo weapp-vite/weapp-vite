@@ -233,3 +233,29 @@ export function watchEffect(
   onScopeDispose(stopHandle)
   return stopHandle
 }
+
+/**
+ * 以后置刷新的方式运行副作用，与 Vue 的 `watchPostEffect()` 兼容。
+ */
+export function watchPostEffect(
+  effectFn: WatchEffect,
+  options: Omit<WatchEffectOptions, 'flush'> = {},
+): WatchStopHandle {
+  return watchEffect(effectFn, {
+    ...options,
+    flush: 'post',
+  })
+}
+
+/**
+ * 以同步刷新的方式运行副作用，与 Vue 的 `watchSyncEffect()` 兼容。
+ */
+export function watchSyncEffect(
+  effectFn: WatchEffect,
+  options: Omit<WatchEffectOptions, 'flush'> = {},
+): WatchStopHandle {
+  return watchEffect(effectFn, {
+    ...options,
+    flush: 'sync',
+  })
+}

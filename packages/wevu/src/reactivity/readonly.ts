@@ -1,11 +1,12 @@
 import type { Ref } from './ref'
-import { isObject } from './reactive'
+import { isObject, isReactive } from './reactive'
+import { ReactiveFlags } from './reactive/shared'
 import { isRef, markAsRef } from './ref'
 
 function createReadonlyWrapper(target: any): any {
   if (isRef(target)) {
     const source = target
-    return markAsRef({
+    const readonlyRef = markAsRef({
       get value() {
         return source.value
       },
@@ -13,6 +14,17 @@ function createReadonlyWrapper(target: any): any {
         throw new Error('无法给只读 ref 赋值')
       },
     })
+    Object.defineProperties(readonlyRef, {
+      [ReactiveFlags.IS_READONLY]: {
+        value: true,
+        configurable: true,
+      },
+      [ReactiveFlags.RAW]: {
+        value: source,
+        configurable: true,
+      },
+    })
+    return readonlyRef
   }
   if (!isObject(target)) {
     return target
@@ -28,6 +40,12 @@ function createReadonlyWrapper(target: any): any {
       throw new Error('无法在只读对象上定义属性')
     },
     get(target, key, receiver) {
+      if (key === ReactiveFlags.IS_READONLY) {
+        return true
+      }
+      if (key === ReactiveFlags.RAW) {
+        return target
+      }
       const res = Reflect.get(target, key, receiver)
       // 仅处理顶层属性，嵌套对象维持原引用以避免深拷贝和额外代理
       return res
@@ -56,4 +74,18 @@ export function shallowReadonly<T extends object>(target: T): Readonly<T>
 export function shallowReadonly<T>(target: Ref<T>): Readonly<Ref<T>>
 export function shallowReadonly(target: any): any {
   return createReadonlyWrapper(target)
+}
+
+/**
+ * 判断值是否为只读代理或只读 ref 包装。
+ */
+export function isReadonly(value: unknown): boolean {
+  return Boolean(value && (value as any)[ReactiveFlags.IS_READONLY])
+}
+
+/**
+ * 判断值是否为响应式代理或只读代理。
+ */
+export function isProxy(value: unknown): boolean {
+  return isReactive(value) || isReadonly(value)
 }
