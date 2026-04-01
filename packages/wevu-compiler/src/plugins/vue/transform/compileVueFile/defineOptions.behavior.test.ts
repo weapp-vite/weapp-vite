@@ -1,7 +1,7 @@
 import os from 'node:os'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import * as fs from '../../../../utils/fs'
 import { compileVueFile } from './index'
 
 async function createTempProject() {
