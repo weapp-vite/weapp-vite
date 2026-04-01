@@ -1,4 +1,5 @@
 import type { RuntimeInstance, WatchOptions } from 'wevu'
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { createApp, onError, onErrorCaptured, onHide, onShow } from 'wevu'
 
 import { pushLifecycleLog } from './stores/lifecycle'
@@ -28,6 +29,16 @@ type AppInstance = WechatMiniprogram.App.Instance<AppGlobalData> & {
   globalData: AppGlobalData
   $wevu?: GlobalRuntime
 }
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 5 * 60 * 1000,
+      retry: false,
+      staleTime: 15 * 1000,
+    },
+  },
+})
 
 export const appRuntime = createApp({
   data: () => ({
@@ -103,4 +114,8 @@ export const appRuntime = createApp({
     this.$wevu?.methods.appendLog('应用切换到后台')
     pushLifecycleLog('onHide', 'app', '原生生命周期 onHide')
   },
+})
+
+appRuntime.use(VueQueryPlugin, {
+  queryClient,
 })

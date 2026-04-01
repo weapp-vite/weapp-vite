@@ -11,6 +11,7 @@
     "pages/vue-script-setup/index",
     "pages/vue-render/index",
     "pages/vue-style/index",
+    "pages/vue-query/index",
     "pages/lifecycle/index",
     "pages/wevu-hooks/index",
     "pages/store/index",
