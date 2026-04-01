@@ -7,6 +7,7 @@ import type {
   MultiPlatformConfig,
   WeappAutoRoutesConfig,
   WeappHmrConfig,
+  WeappInjectRequestGlobalsConfig,
   WeappInjectWeapiConfig,
   WeappMcpConfig,
   WeappNpmConfig,
@@ -149,6 +150,7 @@ export interface WeappViteConfig {
   wevu?: WeappWevuConfig
   routeRules?: WeappRouteRules
   injectWeapi?: boolean | WeappInjectWeapiConfig
+  injectRequestGlobals?: boolean | WeappInjectRequestGlobalsConfig
   mcp?: boolean | WeappMcpConfig
   forwardConsole?: boolean | WeappForwardConsoleConfig
   chunks?: ChunksConfig
