@@ -245,11 +245,23 @@ pre {
 }
 
 .wevu-output-code {
+  padding: 0;
+  background: linear-gradient(180deg, rgb(17 24 39 / 98%), rgb(30 41 59 / 98%));
+}
+
+.wevu-output-code .wevu-shiki {
+  min-height: 100%;
   padding: 18px;
+  margin: 0;
   font-size: 12px;
   line-height: 1.72;
-  color: #dbe6f2;
-  background: linear-gradient(180deg, rgb(17 24 39 / 98%), rgb(30 41 59 / 98%));
+  background: transparent !important;
+}
+
+.wevu-output-code .wevu-shiki code {
+  display: block;
+  font-family: Menlo, Monaco, 'Courier New', monospace;
+  white-space: pre;
 }
 
 .wevu-output-error {

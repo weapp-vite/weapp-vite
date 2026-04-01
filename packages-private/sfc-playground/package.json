@@ -19,6 +19,7 @@
     "@vue/repl": "^4.7.1",
     "comment-json": "catalog:",
     "pathe": "catalog:",
+    "shiki": "^4.0.2",
     "vue": "catalog:"
   },
   "devDependencies": {

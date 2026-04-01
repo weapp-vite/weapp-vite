@@ -14,6 +14,7 @@ import {
 } from 'vue'
 import { compileWevuSfc } from './compiler'
 import { defaultSfc } from './examples/defaultSfc'
+import { getPaneLanguage, highlightPaneOutput } from './highlight'
 
 type OutputMode = 'preview' | OutputPaneKey
 
@@ -31,6 +32,14 @@ const customTabMountRef = shallowRef<HTMLElement | null>(null)
 const customOutputMountRef = shallowRef<HTMLElement | null>(null)
 const activeOutputMode = ref<OutputMode>('preview')
 const isCompiling = ref(false)
+const highlightedOutputs = ref<Record<OutputPaneKey, string>>({
+  script: '',
+  template: '',
+  style: '',
+  config: '',
+  meta: '',
+  warnings: '',
+})
 const compileState = ref<CompileOutputState>({
   success: true,
   activeFilename: 'App.vue',
@@ -78,12 +87,20 @@ const activeCompilePane = computed(() => {
   return compilePanes.find(pane => pane.key === activeOutputMode.value) ?? null
 })
 
-const activeOutput = computed(() => {
+const activeHighlightedOutput = computed(() => {
   if (activeOutputMode.value === 'preview') {
     return ''
   }
 
-  return compileState.value.outputs[activeOutputMode.value]
+  return highlightedOutputs.value[activeOutputMode.value]
+})
+
+const activePaneLanguage = computed(() => {
+  if (activeOutputMode.value === 'preview') {
+    return null
+  }
+
+  return getPaneLanguage(activeOutputMode.value)
 })
 
 function syncReplMounts() {
@@ -122,6 +139,7 @@ function handleReplClick(event: MouseEvent) {
 
 let observer: MutationObserver | null = null
 let compileRunId = 0
+let highlightRunId = 0
 
 watch(
   [
@@ -140,6 +158,28 @@ watch(
 
     compileState.value = nextState
     isCompiling.value = false
+  },
+  {
+    immediate: true,
+  },
+)
+
+watch(
+  compileState,
+  async (nextState) => {
+    const currentRunId = ++highlightRunId
+    const entries = await Promise.all(
+      compilePanes.map(async (pane) => {
+        const html = await highlightPaneOutput(pane.key, nextState.outputs[pane.key])
+        return [pane.key, html] as const
+      }),
+    )
+
+    if (currentRunId !== highlightRunId) {
+      return
+    }
+
+    highlightedOutputs.value = Object.fromEntries(entries) as Record<OutputPaneKey, string>
   },
   {
     immediate: true,
@@ -243,6 +283,12 @@ onBeforeUnmount(() => {
               <h2>{{ activeCompilePane?.label ?? 'preview' }}</h2>
             </div>
             <div class="wevu-output-meta">
+              <span
+                v-if="activePaneLanguage"
+                class="wevu-output-chip"
+              >
+                {{ activePaneLanguage }}
+              </span>
               <span class="wevu-output-chip">{{ compileState.activeFilename }}</span>
               <span class="wevu-output-chip">{{ compileState.durationMs }} ms</span>
               <span
@@ -254,10 +300,11 @@ onBeforeUnmount(() => {
             </div>
           </header>
 
-          <pre
+          <div
             v-if="compileState.success"
             class="wevu-output-code"
-          ><code>{{ activeOutput }}</code></pre>
+            v-html="activeHighlightedOutput"
+          />
 
           <div
             v-else
