@@ -1,8 +1,0 @@
-export { collectComponentPropsFromCode } from './componentProps'
-export { collectOnPageScrollPerformanceWarnings } from './onPageScroll'
-export { mayContainPlatformApiAccess, platformApiIdentifiers } from './platformApi'
-export { collectRequireTokens, mayContainStaticRequireLiteral } from './require'
-export type { RequireToken } from './require'
-export { collectScriptSetupImportsFromCode } from './scriptSetupImports'
-export type { ScriptSetupImport } from './scriptSetupImports'
-export { collectSetDataPickKeysFromTemplateCode } from './setDataPick'
