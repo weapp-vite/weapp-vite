@@ -881,4 +881,54 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['main.js'].code).toContain('wx.showToast')
     expect(bundle['main.js'].code).not.toContain('__weappViteInjectedApi__')
   })
+
+  it('appends request globals installation to bundled runtime chunks', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return t}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: 'const e=require("../../common.js");Page({})',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain('__weappViteRequestGlobalsBundleInstalled__')
+    expect(bundle['common.js'].code).toContain('var Headers = typeof globalThis.Headers !== "undefined" ? globalThis.Headers : function Headers(){}')
+    expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(bundle['common.js'].code).toContain('URL = __weappViteRequestGlobalsBundleHost__.URL')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__weappViteRequestGlobalsLocalBindings__')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteRequestGlobalsHost__ = e["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __weappViteRequestGlobalsHost__.URL')
+  })
 })

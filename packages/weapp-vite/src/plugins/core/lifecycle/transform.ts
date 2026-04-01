@@ -1,11 +1,15 @@
 import type { Plugin } from 'vite'
 import type { AstParserLike } from '../../../ast'
 import type { CorePluginState } from '../helpers'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import { resolveAstEngine } from '../../../ast'
 import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../ast/operations/platformApi'
+import { createInjectRequestGlobalsCode, resolveInjectRequestGlobalsOptions } from '../../../runtime/config/internal/injectRequestGlobals'
+import { isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
+import { parseRequest } from '../../utils/parse'
 
 const injectedApiIdentifier = '__weappViteInjectedApi__'
 
@@ -29,6 +33,15 @@ function resolveInjectWeapiOptions(configService: CorePluginState['ctx']['config
 }
 
 function shouldTransformId(id: string, absoluteSrcRoot: string) {
+  if (isCSSRequest(id)) {
+    return false
+  }
+
+  const parsed = parseRequest(id)
+  if (parsed.query.type === 'style') {
+    return false
+  }
+
   const sourceId = normalizeFsResolvedId(id)
   if (!sourceId || sourceId.includes('/node_modules/')) {
     return false
@@ -95,18 +108,56 @@ function replacePlatformApiAccess(
 export function createTransformHook(state: CorePluginState) {
   const { configService } = state.ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
+  const injectRequestGlobalsOptions = resolveInjectRequestGlobalsOptions(
+    configService.weappViteConfig?.injectRequestGlobals,
+    configService.packageJson,
+  )
+
+  function resolveRequestGlobalsTransformCode(id: string, code: string) {
+    if (!injectRequestGlobalsOptions?.targets?.length) {
+      return ''
+    }
+    if (code.includes('__weappViteInstallRequestGlobals')) {
+      return ''
+    }
+
+    const sourceId = normalizeFsResolvedId(id)
+    if (!sourceId) {
+      return ''
+    }
+
+    const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
+    const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
+    if (declaredEntryType !== 'page' && declaredEntryType !== 'component') {
+      return ''
+    }
+
+    return createInjectRequestGlobalsCode(injectRequestGlobalsOptions.targets as any)
+  }
 
   const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
     const injectOptions = resolveInjectWeapiOptions(configService)
-    if (!injectOptions) {
-      return null
-    }
-
     if (!shouldTransformId(id, configService.absoluteSrcRoot)) {
       return null
     }
 
-    const replaced = replacePlatformApiAccess(code, injectOptions.globalName, {
+    const requestGlobalsCode = resolveRequestGlobalsTransformCode(id, code)
+    let nextCode = code
+
+    if (requestGlobalsCode) {
+      nextCode = `${requestGlobalsCode}${nextCode}`
+    }
+
+    if (!injectOptions) {
+      return nextCode === code
+        ? null
+        : {
+            code: nextCode,
+            map: null,
+          }
+    }
+
+    const replaced = replacePlatformApiAccess(nextCode, injectOptions.globalName, {
       engine: astEngine,
       parserLike: this as unknown as AstParserLike,
     })

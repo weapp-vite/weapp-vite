@@ -1,8 +1,9 @@
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
-import { resolveRequestGlobalsHosts } from './shared'
+import { installRequestGlobalBinding, resolveRequestGlobalsHost, resolveRequestGlobalsHosts } from './shared'
 import { URLPolyfill, URLSearchParamsPolyfill } from './url'
+import { BlobPolyfill, FormDataPolyfill } from './web'
 import { XMLHttpRequestPolyfill } from './xhr'
 
 export type WeappInjectRequestGlobalsTarget
@@ -73,6 +74,21 @@ function installUrlGlobals(host: Record<string, any>) {
   if (typeof host.URLSearchParams !== 'function') {
     host.URLSearchParams = URLSearchParamsPolyfill
   }
+  if (typeof host.Blob !== 'function') {
+    host.Blob = BlobPolyfill
+  }
+  if (typeof host.FormData !== 'function') {
+    host.FormData = FormDataPolyfill
+  }
+}
+
+function installGlobalBindingIfNeeded(host: Record<string, any>, target: string) {
+  const value = host[target]
+  if (value == null) {
+    return
+  }
+
+  installRequestGlobalBinding(target, value)
 }
 
 /**
@@ -89,6 +105,7 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
     'XMLHttpRequest',
   ]
   const hosts = resolveRequestGlobalsHosts()
+  const primaryHost = resolveRequestGlobalsHost()
   const needsUrlGlobals = targets.some(target => (
     target === 'fetch'
     || target === 'Request'
@@ -105,12 +122,24 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
     }
   }
 
+  if (needsUrlGlobals) {
+    installGlobalBindingIfNeeded(primaryHost, 'URL')
+    installGlobalBindingIfNeeded(primaryHost, 'URLSearchParams')
+    installGlobalBindingIfNeeded(primaryHost, 'Blob')
+    installGlobalBindingIfNeeded(primaryHost, 'FormData')
+  }
+  for (const target of targets) {
+    installGlobalBindingIfNeeded(primaryHost, target)
+  }
+
   return hosts[0]
 }
 
 export {
   AbortControllerPolyfill,
   AbortSignalPolyfill,
+  BlobPolyfill,
+  FormDataPolyfill,
   HeadersPolyfill,
   RequestPolyfill,
   ResponsePolyfill,

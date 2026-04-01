@@ -394,8 +394,10 @@ export function createLoadHook(state: CorePluginState) {
       return result
     }
 
-    if (loadedEntrySet.has(sourceId) || subPackageMeta?.entries.includes(relativeBasename)) {
-      const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
+    const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
+    const isDeclaredEntry = Boolean(declaredEntryType)
+
+    if (loadedEntrySet.has(sourceId) || isDeclaredEntry || subPackageMeta?.entries.includes(relativeBasename)) {
       const loadType = declaredEntryType === 'page' ? 'page' : 'component'
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, loadType)

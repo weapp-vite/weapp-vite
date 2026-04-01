@@ -18,6 +18,8 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).AbortController
     delete (globalThis as Record<string, any>).AbortSignal
     delete (globalThis as Record<string, any>).XMLHttpRequest
+    delete (globalThis as Record<string, any>).Blob
+    delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
   })
 
@@ -120,6 +122,22 @@ describe('request globals runtime', () => {
     expect(typeof (globalThis as any).wx.fetch).toBe('function')
     expect(typeof (globalThis as any).wx.URL).toBe('function')
     expect(typeof (globalThis as any).wx.URLSearchParams).toBe('function')
+    expect(typeof globalThis.Blob).toBe('function')
+    expect(typeof globalThis.FormData).toBe('function')
+  })
+
+  it('promotes installed request globals to free global bindings when possible', async () => {
+    const { installRequestGlobals } = await import('./requestGlobals')
+    installRequestGlobals({
+      targets: ['fetch', 'AbortController', 'AbortSignal'],
+    })
+
+    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
+    expect(Function('return typeof fetch')()).toBe('function')
+    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
+    expect(Function('return typeof AbortController')()).toBe('function')
+    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
+    expect(Function('return typeof AbortSignal')()).toBe('function')
   })
 
   it('provides URL and URLSearchParams support required by graphql-request style callers', async () => {

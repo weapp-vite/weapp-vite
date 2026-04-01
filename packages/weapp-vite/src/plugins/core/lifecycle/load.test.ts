@@ -125,6 +125,39 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('Page({})')
   })
 
+  it('injects request globals into declared page entries even when loadedEntrySet is empty', async () => {
+    const sourceId = '/project/src/pages/request-globals/fetch.vue'
+    const loadEntry = vi.fn(async () => ({ code: 'Page({})' }))
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'pages/request-globals/fetch',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+    } as any)
+
+    const result = await load.call({}, sourceId)
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(loadEntry).toHaveBeenCalledWith(sourceId, 'page')
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('Page({})')
+  })
+
   it('injects wpi and replaces wx/my/platform global when replaceWx is enabled', async () => {
     const loadEntry = vi.fn(async () => ({
       code: 'App({})',
