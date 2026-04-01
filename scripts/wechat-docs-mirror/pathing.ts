@@ -4,6 +4,9 @@ export const DEFAULT_ENTRY_URL = 'https://developers.weixin.qq.com/miniprogram/d
 export const DEFAULT_OUTPUT_DIR = path.resolve(import.meta.dirname, '../../docs/wechat-miniprogram/framework')
 export const FRAMEWORK_HOST = 'developers.weixin.qq.com'
 export const FRAMEWORK_PATH_PREFIX = '/miniprogram/dev/framework/'
+export const EXCLUDED_FRAMEWORK_PATH_SEGMENTS = [
+  '/user-privacy/',
+]
 const HTML_SUFFIX_RE = /\.html$/
 
 function stripSearchAndHash(url: URL) {
@@ -32,6 +35,10 @@ export function normalizeFrameworkPageUrl(input: string, baseUrl = DEFAULT_ENTRY
   }
 
   if (hasInvalidPlaceholderSegment(url.pathname)) {
+    return null
+  }
+
+  if (EXCLUDED_FRAMEWORK_PATH_SEGMENTS.some(segment => url.pathname.includes(segment))) {
     return null
   }
 
