@@ -11,6 +11,14 @@ const PROVIDE_SCOPE_KEY = Symbol('wevu.provideScope')
 // 全局提供/注入存储，用于兼容非组件环境或历史调用
 const __wevuGlobalProvideStore = new Map<any, any>()
 
+function isAppInstance(instance: unknown): boolean {
+  return Boolean(
+    instance
+    && typeof instance === 'object'
+    && (instance as { __wevuIsAppInstance?: boolean }).__wevuIsAppInstance === true,
+  )
+}
+
 /**
  * 写入全局 provide 存储，供运行时内部与兼容层复用。
  */
@@ -54,6 +62,9 @@ export function provide<T>(key: any, value: T): void {
       ;(instance as any)[PROVIDE_SCOPE_KEY] = scope
     }
     scope.set(key, value)
+    if (isAppInstance(instance)) {
+      setGlobalProvidedValue(key, value)
+    }
   }
   else {
     // 全局模式：无组件实例时，兼容旧代码和纯函数场景

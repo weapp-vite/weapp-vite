@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { QueryClient, VUE_QUERY_CLIENT } from '@tanstack/vue-query'
 import routes from 'weapp-vite/auto-routes'
-import { provideGlobal } from 'wevu'
+import { provide } from 'wevu'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,7 +14,7 @@ const queryClient = new QueryClient({
 })
 
 queryClient.mount()
-provideGlobal(VUE_QUERY_CLIENT, queryClient)
+provide(VUE_QUERY_CLIENT, queryClient)
 
 defineAppJson({
   pages: routes.pages,
