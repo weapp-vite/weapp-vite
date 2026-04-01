@@ -33,7 +33,7 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "@icebreakers/eslint-config": "^2.1.2",
+    "@icebreakers/eslint-config": "^3.0.0",
     "@icebreakers/stylelint-config": "^2.2.1",
     "@wevu/api": "workspace:*",
     "eslint": "^10.1.0",
