@@ -10,6 +10,7 @@ import { expectAssignable, expectType } from 'tsd'
 import {
   createApp,
   createWevuComponent,
+  defineAppSetup,
   defineComponent,
   hasInjectionContext,
   inject,
@@ -46,7 +47,6 @@ import {
   resetWevuDefaults,
   setWevuDefaults,
   shallowReadonly,
-  use,
   useDisposables,
   useIntersectionObserver,
   useNativeInstance,
@@ -60,7 +60,7 @@ import {
 const TOKEN = Symbol('token')
 type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (...args: any[]) => any>>
 const runtimeApp = {} as RT
-expectType<RuntimeApp<any, any, any>>(use((_app) => {}))
+expectType<RuntimeApp<any, any, any>>(defineAppSetup(app => app))
 type _WevuDefineComponent = DefineComponent
 type _WevuComponentOptionsMixin = ComponentOptionsMixin
 type _WevuPublicProps = PublicProps

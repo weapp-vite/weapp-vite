@@ -18,6 +18,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'createWevuComponent',
   'createWevuScopedSlotComponent',
   'customRef',
+  'defineAppSetup',
   'defineComponent',
   'defineStore',
   'effect',

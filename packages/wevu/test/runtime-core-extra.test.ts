@@ -17,7 +17,7 @@ import {
 import { parseModelEventValue } from '@/runtime/internal'
 import { markNoSetData } from '@/runtime/noSetData'
 import { hasInjectionContext, inject, injectGlobal, provide, provideGlobal } from '@/runtime/provide'
-import { use } from '@/runtime/use'
+import { defineAppSetup, use } from '@/runtime/use'
 import { mergeModels, useAttrs, useModel, useSlots } from '@/runtime/vueCompat'
 
 afterEach(() => {
@@ -129,13 +129,37 @@ describe('provide/inject', () => {
     expect(runtimeApp.use).toHaveBeenCalledWith(plugin)
   })
 
+  it('supports defineAppSetup helper in app setup context', () => {
+    const runtimeApp = {
+      use: vi.fn(),
+      provide: vi.fn(),
+    }
+    const plugin = vi.fn()
+
+    setCurrentInstance({
+      __wevuIsAppInstance: true,
+      __wevuRuntimeApp: runtimeApp,
+    } as any)
+
+    const result = defineAppSetup((app) => {
+      app.use(plugin)
+      app.provide('token', 1)
+      return 'ok'
+    })
+
+    expect(result).toBe('ok')
+    expect(runtimeApp.use).toHaveBeenCalledWith(plugin)
+    expect(runtimeApp.provide).toHaveBeenCalledWith('token', 1)
+  })
+
   it('throws when use helper is called outside app setup context', () => {
-    expect(() => use(vi.fn())).toThrow('use() 只能在 app setup 上下文中调用')
+    expect(() => use(vi.fn())).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
 
     setCurrentInstance({
       route: 'pages/index/index',
     } as any)
-    expect(() => use(vi.fn())).toThrow('use() 只能在 app setup 上下文中调用')
+    expect(() => use(vi.fn())).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
+    expect(() => defineAppSetup(app => app)).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
   })
 })
 
