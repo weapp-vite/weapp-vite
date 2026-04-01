@@ -22,6 +22,8 @@ export interface RuntimeApp<D extends object, C extends ComputedDefinitions, M e
   mount: (adapter?: MiniProgramAdapter) => RuntimeInstance<D, C, M>
   use: (plugin: WevuPlugin, ...options: any[]) => RuntimeApp<D, C, M>
   provide: <T>(key: any, value: T) => RuntimeApp<D, C, M>
+  onUnmount: (cleanup: () => void) => RuntimeApp<D, C, M>
+  unmount: () => void
   config: AppConfig
 }
 

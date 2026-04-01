@@ -33,6 +33,8 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   const resolvedComputed = computedOptions ?? ({} as C)
 
   const installedPlugins = new Set<WevuPlugin>()
+  const appUnmountCleanups = new Set<() => void>()
+  let appUnmounted = false
   const appConfig: AppConfig = { globalProperties: {} }
   const mount = createRuntimeMount<D, C, M>({
     data,
@@ -63,6 +65,27 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     provide(key: any, value: any) {
       setGlobalProvidedValue(key, value)
       return runtimeApp
+    },
+    onUnmount(cleanup: () => void) {
+      if (typeof cleanup !== 'function') {
+        throw new TypeError('onUnmount 只接受函数')
+      }
+      if (appUnmounted) {
+        cleanup()
+        return runtimeApp
+      }
+      appUnmountCleanups.add(cleanup)
+      return runtimeApp
+    },
+    unmount() {
+      if (appUnmounted) {
+        return
+      }
+      appUnmounted = true
+      for (const cleanup of appUnmountCleanups) {
+        cleanup()
+      }
+      appUnmountCleanups.clear()
     },
     config: appConfig,
   }
