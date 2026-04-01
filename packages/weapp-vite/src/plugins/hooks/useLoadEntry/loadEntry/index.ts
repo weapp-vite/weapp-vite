@@ -6,7 +6,7 @@ import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
 import { performance } from 'node:perf_hooks'
-import { isObject, removeExtensionDeep } from '@weapp-core/shared'
+import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 // eslint-disable-next-line e18e/ban-dependencies -- 本模块仍沿用 fs-extra 处理入口文件系统读写
 import fs from 'fs-extra'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
@@ -187,6 +187,12 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         cache: appEntriesCache,
       })
       entries.push(...appResult.entries)
+      if (get(json, 'tabBar.custom')) {
+        explicitEntryTypes.set(normalizeEntry('custom-tab-bar/index', jsonPath), 'component')
+      }
+      if (get(json, 'appBar')) {
+        explicitEntryTypes.set(normalizeEntry('app-bar/index', jsonPath), 'component')
+      }
       pluginResolvedRecords = appResult.pluginResolvedRecords
       if (appResult.pluginEntryTypes?.length) {
         for (const entryType of appResult.pluginEntryTypes) {
