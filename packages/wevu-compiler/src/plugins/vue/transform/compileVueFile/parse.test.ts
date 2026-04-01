@@ -81,6 +81,59 @@ export default {
     expect(result.isAppFile).toBe(false)
   })
 
+  it('accepts dual script blocks when their lang matches', async () => {
+    const source = `
+<template><view /></template>
+<script lang="ts">
+export default {
+  setup() {
+    return {}
+  },
+}
+</script>
+<script setup lang="ts">
+const title = 'home'
+</script>
+    `.trim()
+
+    const result = await parseVueFile(source, '/project/src/pages/lang-match.vue')
+
+    expect(result.meta.hasScriptSetup).toBe(true)
+    expect(result.meta.hasSetupOption).toBe(true)
+  })
+
+  it('throws when script and script setup use different lang values', async () => {
+    const source = `
+<template><view /></template>
+<script lang="js">
+export default {}
+</script>
+<script setup lang="ts">
+const title = 'home'
+</script>
+    `.trim()
+
+    await expect(
+      parseVueFile(source, '/project/src/pages/lang-mismatch.vue'),
+    ).rejects.toThrow('同一个 SFC 中 <script> 与 <script setup> 的 lang 必须一致')
+  })
+
+  it('throws when only one of script and script setup declares lang', async () => {
+    const source = `
+<template><view /></template>
+<script>
+export default {}
+</script>
+<script setup lang="ts">
+const title = 'home'
+</script>
+    `.trim()
+
+    await expect(
+      parseVueFile(source, '/project/src/pages/lang-missing.vue'),
+    ).rejects.toThrow('当前分别为 (default) 与 ts')
+  })
+
   it('handles script setup macro stripping + defineOptions inline with sfcSrc deps merge', async () => {
     const source = `
 <template><view /></template>
