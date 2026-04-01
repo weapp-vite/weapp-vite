@@ -18,15 +18,53 @@ const configMtimeInFlight = new Map<string, Promise<number | undefined>>()
 const NODE_MODULES_RE = /[\\/]node_modules[\\/]/
 const JS_OR_TS_RE = /\.[jt]s$/
 const nodeRequire = createRequire(import.meta.url)
+const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
+const AUTO_ROUTES_VIRTUAL_ID = 'virtual:weapp-vite-auto-routes'
 const AUTO_ROUTES_SPECIFIER_RE = /(['"])(?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)\1/g
-const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
+const AUTO_ROUTES_NAMED_IMPORT_ALIAS_RE = /\bas\b/g
+const AUTO_ROUTES_DEFAULT_AND_NAMED_IMPORT_RE = /^([A-Z_$][\w$]*)\s*,\s*(\{[^}]+\})$/i
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 
 interface AutoRoutesInlineSnapshot {
   pages: string[]
   entries: string[]
   subPackages: Array<{ root: string, pages: string[] }>
+}
+
+function toObjectDestructureClause(namedImportClause: string) {
+  return namedImportClause.replace(AUTO_ROUTES_NAMED_IMPORT_ALIAS_RE, ':')
+}
+
+function resolveInlineAutoRoutesImport(line: string, inlineRoutes: AutoRoutesInlineSnapshot, replacementIndex: number) {
+  const trimmedLine = line.trim()
+  if (
+    !trimmedLine.startsWith('import ')
+    || !trimmedLine.includes(' from ')
+    || (!trimmedLine.includes(`'${AUTO_ROUTES_ID}'`) && !trimmedLine.includes(`"${AUTO_ROUTES_ID}"`) && !trimmedLine.includes(`'${AUTO_ROUTES_VIRTUAL_ID}'`) && !trimmedLine.includes(`"${AUTO_ROUTES_VIRTUAL_ID}"`))
+  ) {
+    return undefined
+  }
+
+  const clause = trimmedLine.slice('import '.length, trimmedLine.lastIndexOf(' from ')).trim()
+  const inlineLiteral = JSON.stringify(inlineRoutes)
+
+  if (clause.startsWith('{')) {
+    return `const ${toObjectDestructureClause(clause)} = ${inlineLiteral};`
+  }
+
+  if (clause.startsWith('* as ')) {
+    return `const ${clause.slice(5).trim()} = ${inlineLiteral};`
+  }
+
+  const defaultAndNamedMatch = clause.match(AUTO_ROUTES_DEFAULT_AND_NAMED_IMPORT_RE)
+  if (defaultAndNamedMatch) {
+    const [, defaultName, namedClause] = defaultAndNamedMatch
+    const localRef = `__weappViteAutoRoutesInline${replacementIndex}`
+    return `const ${localRef} = ${inlineLiteral};\nconst ${defaultName} = ${localRef};\nconst ${toObjectDestructureClause(namedClause)} = ${localRef};`
+  }
+
+  return `const ${clause} = ${inlineLiteral};`
 }
 
 function resolveAutoRoutesMacroImportPath() {
@@ -88,10 +126,20 @@ export function inlineAutoRoutesImports(
   source: string,
   inlineRoutes: AutoRoutesInlineSnapshot,
 ) {
-  return source
-    .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => {
-      return `const ${localName} = ${JSON.stringify(inlineRoutes)};`
+  let importReplacementIndex = 0
+  const sourceWithStaticImportsInlined = source
+    .split('\n')
+    .map((line) => {
+      const replaced = resolveInlineAutoRoutesImport(line, inlineRoutes, importReplacementIndex)
+      if (replaced) {
+        importReplacementIndex += 1
+        return replaced
+      }
+      return line
     })
+    .join('\n')
+
+  return sourceWithStaticImportsInlined
     .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(inlineRoutes)})`)
     .replace(AUTO_ROUTES_SPECIFIER_RE, JSON.stringify(resolveAutoRoutesMacroImportPath()))
 }

@@ -119,4 +119,57 @@ describe('auto-routes', () => {
       await fs.remove(tempRoot)
     }
   })
+
+  it('hydrates app.json.ts named auto-routes imports with scanned routes', async () => {
+    const fixtureRoot = getFixture('watch')
+    const tempRoot = await fs.mkdtemp(path.join(path.dirname(fixtureRoot), '.tmp-auto-routes-app-json-'))
+    await fs.copy(fixtureRoot, tempRoot, {
+      filter: (src) => {
+        const relative = path.relative(fixtureRoot, src).replaceAll('\\', '/')
+        if (!relative) {
+          return true
+        }
+        return !(
+          relative === 'node_modules'
+          || relative.startsWith('node_modules/')
+          || relative === 'dist'
+          || relative.startsWith('dist/')
+          || relative === '.weapp-vite'
+          || relative.startsWith('.weapp-vite/')
+        )
+      },
+    })
+    const appJsonPath = path.join(tempRoot, 'src/app.json.ts')
+
+    await fs.writeFile(
+      appJsonPath,
+      [
+        'import { pages, subPackages } from \'weapp-vite/auto-routes\'',
+        '',
+        'export default {',
+        '  pages,',
+        '  subPackages,',
+        '}',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
+
+    const { ctx, dispose } = await createTestCompilerContext({
+      cwd: tempRoot,
+      isDev: true,
+    })
+
+    try {
+      const entry = await ctx.scanService.loadAppEntry()
+      const routes = ctx.autoRoutesService.getReference()
+      expect(routes.pages).toContain('pages/index/index')
+      expect(entry.json.pages).toEqual(routes.pages)
+      expect(entry.json.subPackages).toEqual(routes.subPackages)
+    }
+    finally {
+      await dispose()
+      await fs.remove(tempRoot)
+    }
+  })
 })
