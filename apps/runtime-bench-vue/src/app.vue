@@ -6,6 +6,7 @@ defineAppJson({
     'pages/index/index',
     'pages/detail/index',
     'pages/update/index',
+    'pages/update-patch/index',
   ],
   window: {
     navigationBarTitleText: 'Vue Runtime Bench',

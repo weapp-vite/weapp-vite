@@ -15,6 +15,29 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const LINE_SPLIT_RE = /\r?\n/
 const runtimeProvider = resolveRuntimeProviderName()
 
+interface BenchUpdateSummary {
+  wallMsMedian: number
+  metricMsMedian: number
+  computeMsMedian: number
+  commitMsMedian: number
+  dispatchMsMedian: number
+  flushMsMedian: number
+  setDataCallsMedian: number
+  setDataDiagnosticsMedian: {
+    flushes: number
+    patchFlushes: number
+    diffFlushes: number
+    fallbackFlushes: number
+    avgPayloadKeys: number
+    maxPayloadKeys: number
+    avgPendingPatchKeys: number
+    maxPendingPatchKeys: number
+    avgBytes: number
+    maxBytes: number
+  }
+  fallbackReasons: Record<string, number>
+}
+
 interface WorkerResult {
   project: string
   firstScreen: {
@@ -28,48 +51,42 @@ interface WorkerResult {
     firstCommitMsMedian: number
   }
   updateSingleCommit: {
-    wallMsMedian: number
-    metricMsMedian: number
-    computeMsMedian: number
-    commitMsMedian: number
-    dispatchMsMedian: number
-    flushMsMedian: number
-    setDataCallsMedian: number
-    setDataDiagnosticsMedian: {
-      flushes: number
-      patchFlushes: number
-      diffFlushes: number
-      fallbackFlushes: number
-      avgPayloadKeys: number
-      maxPayloadKeys: number
-      avgPendingPatchKeys: number
-      maxPendingPatchKeys: number
-      avgBytes: number
-      maxBytes: number
-    }
-    fallbackReasons: Record<string, number>
+    diff: BenchUpdateSummary
+    patch?: BenchUpdateSummary
   }
   updateMicroCommit: {
-    wallMsMedian: number
-    metricMsMedian: number
-    computeMsMedian: number
-    commitMsMedian: number
-    dispatchMsMedian: number
-    flushMsMedian: number
-    setDataCallsMedian: number
-    setDataDiagnosticsMedian: {
-      flushes: number
-      patchFlushes: number
-      diffFlushes: number
-      fallbackFlushes: number
-      avgPayloadKeys: number
-      maxPayloadKeys: number
-      avgPendingPatchKeys: number
-      maxPendingPatchKeys: number
-      avgBytes: number
-      maxBytes: number
-    }
-    fallbackReasons: Record<string, number>
+    diff: BenchUpdateSummary
+    patch?: BenchUpdateSummary
+  }
+}
+
+function compareUpdateSummary(native: BenchUpdateSummary, vue: BenchUpdateSummary) {
+  return {
+    native,
+    vue,
+    deltaWallMs: vue.wallMsMedian - native.wallMsMedian,
+    deltaMetricMs: vue.metricMsMedian - native.metricMsMedian,
+    deltaComputeMs: vue.computeMsMedian - native.computeMsMedian,
+    deltaCommitMs: vue.commitMsMedian - native.commitMsMedian,
+    deltaDispatchMs: vue.dispatchMsMedian - native.dispatchMsMedian,
+    deltaFlushMs: vue.flushMsMedian - native.flushMsMedian,
+    deltaSetDataCalls: vue.setDataCallsMedian - native.setDataCallsMedian,
+    vueSetDataDiagnostics: vue.setDataDiagnosticsMedian,
+    vueFallbackReasons: vue.fallbackReasons,
+  }
+}
+
+function compareVuePatchVsDiff(diff: BenchUpdateSummary, patch: BenchUpdateSummary) {
+  return {
+    diff,
+    patch,
+    deltaWallMs: patch.wallMsMedian - diff.wallMsMedian,
+    deltaMetricMs: patch.metricMsMedian - diff.metricMsMedian,
+    deltaComputeMs: patch.computeMsMedian - diff.computeMsMedian,
+    deltaCommitMs: patch.commitMsMedian - diff.commitMsMedian,
+    deltaDispatchMs: patch.dispatchMsMedian - diff.dispatchMsMedian,
+    deltaFlushMs: patch.flushMsMedian - diff.flushMsMedian,
+    deltaSetDataCalls: patch.setDataCallsMedian - diff.setDataCallsMedian,
   }
 }
 
@@ -131,30 +148,22 @@ async function main() {
       deltaFirstCommitMs: vue.detailNavigation.firstCommitMsMedian - native.detailNavigation.firstCommitMsMedian,
     },
     updateSingleCommit: {
-      native,
-      vue,
-      deltaWallMs: vue.updateSingleCommit.wallMsMedian - native.updateSingleCommit.wallMsMedian,
-      deltaMetricMs: vue.updateSingleCommit.metricMsMedian - native.updateSingleCommit.metricMsMedian,
-      deltaComputeMs: vue.updateSingleCommit.computeMsMedian - native.updateSingleCommit.computeMsMedian,
-      deltaCommitMs: vue.updateSingleCommit.commitMsMedian - native.updateSingleCommit.commitMsMedian,
-      deltaDispatchMs: vue.updateSingleCommit.dispatchMsMedian - native.updateSingleCommit.dispatchMsMedian,
-      deltaFlushMs: vue.updateSingleCommit.flushMsMedian - native.updateSingleCommit.flushMsMedian,
-      deltaSetDataCalls: vue.updateSingleCommit.setDataCallsMedian - native.updateSingleCommit.setDataCallsMedian,
-      vueSetDataDiagnostics: vue.updateSingleCommit.setDataDiagnosticsMedian,
-      vueFallbackReasons: vue.updateSingleCommit.fallbackReasons,
+      diff: compareUpdateSummary(native.updateSingleCommit.diff, vue.updateSingleCommit.diff),
+      patch: vue.updateSingleCommit.patch
+        ? compareUpdateSummary(native.updateSingleCommit.diff, vue.updateSingleCommit.patch)
+        : undefined,
+      patchVsDiff: vue.updateSingleCommit.patch
+        ? compareVuePatchVsDiff(vue.updateSingleCommit.diff, vue.updateSingleCommit.patch)
+        : undefined,
     },
     updateMicroCommit: {
-      native,
-      vue,
-      deltaWallMs: vue.updateMicroCommit.wallMsMedian - native.updateMicroCommit.wallMsMedian,
-      deltaMetricMs: vue.updateMicroCommit.metricMsMedian - native.updateMicroCommit.metricMsMedian,
-      deltaComputeMs: vue.updateMicroCommit.computeMsMedian - native.updateMicroCommit.computeMsMedian,
-      deltaCommitMs: vue.updateMicroCommit.commitMsMedian - native.updateMicroCommit.commitMsMedian,
-      deltaDispatchMs: vue.updateMicroCommit.dispatchMsMedian - native.updateMicroCommit.dispatchMsMedian,
-      deltaFlushMs: vue.updateMicroCommit.flushMsMedian - native.updateMicroCommit.flushMsMedian,
-      deltaSetDataCalls: vue.updateMicroCommit.setDataCallsMedian - native.updateMicroCommit.setDataCallsMedian,
-      vueSetDataDiagnostics: vue.updateMicroCommit.setDataDiagnosticsMedian,
-      vueFallbackReasons: vue.updateMicroCommit.fallbackReasons,
+      diff: compareUpdateSummary(native.updateMicroCommit.diff, vue.updateMicroCommit.diff),
+      patch: vue.updateMicroCommit.patch
+        ? compareUpdateSummary(native.updateMicroCommit.diff, vue.updateMicroCommit.patch)
+        : undefined,
+      patchVsDiff: vue.updateMicroCommit.patch
+        ? compareVuePatchVsDiff(vue.updateMicroCommit.diff, vue.updateMicroCommit.patch)
+        : undefined,
     },
   }
 

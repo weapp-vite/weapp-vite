@@ -504,3 +504,86 @@ pnpm run e2e:runtime-bench
 
 - 如果目标是继续压当前基准下的 `flushMs`，优先看 `diffSnapshots`、`toPlain`、flush 调度与桥接提交
 - 如果目标是验证 patch 优化是否有效，应该在 `apps/runtime-bench-vue` 里新增显式 `setData: { strategy: 'patch' }` 的对照场景，而不是继续从当前默认 diff benchmark 推断 patch 表现
+
+## 2026-04-01 双场景对照：Vue diff vs Vue patch
+
+为了直接回答“`diff` 和 `patch` 哪个更快”，本次把 `apps/runtime-bench-vue` 扩成了同一 app 内的两个 update 对照页：
+
+- `pages/update/index`
+  - 显式 `setData.strategy = 'diff'`
+- `pages/update-patch/index`
+  - 显式 `setData.strategy = 'patch'`
+
+两页复用同一套 benchmark 逻辑、相同数据规模、相同更新脚本，只切换 `setData` 策略。聚合结果来自：
+
+```bash
+node --import tsx ./e2e/scripts/run-runtime-bench.ts
+```
+
+### 单次大更新
+
+| 场景      | metricMs | commitMs | dispatchMs | flushMs |
+| --------- | -------: | -------: | ---------: | ------: |
+| native    |      103 |        5 |          1 |       5 |
+| vue diff  |       82 |        4 |          2 |       3 |
+| vue patch |       79 |        3 |          2 |       1 |
+
+Vue 内部 `patch - diff` 差值：
+
+- `metricMs -3`
+- `commitMs -1`
+- `flushMs -2`
+
+结论：
+
+- 在这条“大提交”链路上，`patch` 确实略好于 `diff`
+- 且 `patch` 也略好于同轮 `native`
+- 这说明当一轮更新能够被很稳定地表达成少量增量路径时，`patch` 有真实收益
+
+### 多次小更新
+
+| 场景      | metricMs | commitMs | dispatchMs | flushMs |
+| --------- | -------: | -------: | ---------: | ------: |
+| native    |      126 |       95 |         29 |      71 |
+| vue diff  |      100 |       72 |          3 |      71 |
+| vue patch |      106 |       86 |          4 |      82 |
+
+Vue 内部 `patch - diff` 差值：
+
+- `metricMs +6`
+- `commitMs +14`
+- `flushMs +11`
+
+结论：
+
+- 在这轮“40 次小提交”基准里，`patch` 没有赢过 `diff`
+- `patch` 虽然确实命中了 patch 路径，但中位数上反而比 `diff` 更慢
+- 当前这组 payload 很小，只有 `3` 个顶层 key，因此 `patch` 的额外路径管理成本没有换回更低的 flush 成本
+
+### 诊断信息验证
+
+双场景诊断结果和策略命中是一致的：
+
+- `vue diff`
+  - `diffFlushes = 40`
+  - `patchFlushes = 0`
+- `vue patch`
+  - `patchFlushes = 40`
+  - `diffFlushes = 0`
+  - `fallbackFlushes = 0`
+
+同时两边的 `avgPayloadKeys` 都稳定在 `3`，`patch` 场景的 `avgPendingPatchKeys` 约为 `2`。
+
+这说明本次对照是“真 patch vs 真 diff”的对照，不是 patch 回退到 diff 后得到的伪结果。
+
+### 当前结论修正
+
+到这一轮为止，不能再笼统说“`patch` 比 `diff` 快”。
+
+更准确的说法应改为：
+
+1. `patch` 在单次大提交场景下更有优势
+2. `patch` 不保证在高频小提交场景下更快
+3. 对当前这组 benchmark 而言，默认 `diff` 已经是一个很强的基线
+
+也就是说，`patch` 更像是“对合适场景更优的专用策略”，而不是当前实现下无条件优于 `diff` 的全局默认值。

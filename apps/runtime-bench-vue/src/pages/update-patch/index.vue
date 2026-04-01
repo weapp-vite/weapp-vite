@@ -5,24 +5,24 @@ import {
   createUpdateBenchDebug,
   createUpdateBenchSetup,
   createUpdateBenchTracker,
-} from './shared'
+} from '../update/shared'
 
 const tracker = createUpdateBenchTracker()
 
 export default defineComponent({
   setData: {
-    strategy: 'diff',
+    strategy: 'patch',
     debugWhen: 'always',
     debug: createUpdateBenchDebug({ tracker }),
   },
   setup: createUpdateBenchSetup({
-    strategyLabel: 'diff',
+    strategyLabel: 'patch',
     tracker,
   }),
   data() {
     return createUpdateBenchData({
-      strategyLabel: 'diff',
-      title: 'Vue Update Benchmark (diff)',
+      strategyLabel: 'patch',
+      title: 'Vue Update Benchmark (patch)',
     })()
   },
 })
