@@ -13,6 +13,10 @@ defineAppJson({
         pagePath: 'pages/issue-380/index',
         text: 'issue-380',
       },
+      {
+        pagePath: 'pages/issue-289/index',
+        text: 'issue-289',
+      },
     ],
   },
 })
