@@ -29,7 +29,7 @@ export const TEMPLATE_CATALOG = {
   'magic-string': '^0.30.21',
   'miniprogram-api-typings': '^5.1.2',
   'object-hash': '^3.0.0',
-  'oxc-parser': '^0.121.0',
+  'oxc-parser': '^0.123.0',
   'oxc-walker': '^0.7.0',
   'pkg-types': '^2.3.0',
   'sass-embedded': '^1.98.0',
@@ -39,7 +39,7 @@ export const TEMPLATE_CATALOG = {
   'ts-morph': '^27.0.2',
   'vite-plugin-inspect': '^11.3.3',
   'vue-tsc': '^3.2.6',
-  'weapp-tailwindcss': '^4.11.1',
+  'weapp-tailwindcss': '^4.11.2',
   autoprefixer: '^10.4.27',
   clsx: '^2.1.1',
   dayjs: '^1.11.20',
@@ -67,7 +67,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.13.1'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '4.11.1'
+    'weapp-tailwindcss': '4.11.2'
   },
   latest: {
     'miniprogram-api-typings': '^5.1.2',
