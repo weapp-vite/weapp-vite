@@ -1,5 +1,5 @@
-import { fetch as wevuFetch } from 'wevu/fetch'
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
+import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
 import { resolveRequestGlobalsHost } from './shared'
 import { XMLHttpRequestPolyfill } from './xhr'
@@ -20,7 +20,7 @@ export interface InstallRequestGlobalsOptions {
 function installSingleTarget(host: Record<string, any>, target: WeappInjectRequestGlobalsTarget) {
   if (target === 'fetch') {
     if (typeof host.fetch !== 'function') {
-      host.fetch = wevuFetch
+      host.fetch = requestGlobalsFetch
     }
     return
   }

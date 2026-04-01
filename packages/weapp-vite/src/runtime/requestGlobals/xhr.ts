@@ -1,5 +1,5 @@
-import { fetch as wevuFetch } from 'wevu/fetch'
 import { AbortControllerPolyfill } from './abort'
+import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, headersToObject } from './http'
 import { RequestGlobalsEventTarget, resolveRequestGlobalsHost } from './shared'
 
@@ -21,7 +21,7 @@ function createError(type: 'error' | 'timeout' | 'abort') {
 
 function resolveFetch() {
   const host = resolveRequestGlobalsHost()
-  return typeof host.fetch === 'function' ? host.fetch.bind(host) : wevuFetch
+  return typeof host.fetch === 'function' ? host.fetch.bind(host) : requestGlobalsFetch
 }
 
 export class XMLHttpRequestUploadPolyfill extends RequestGlobalsEventTarget {}
