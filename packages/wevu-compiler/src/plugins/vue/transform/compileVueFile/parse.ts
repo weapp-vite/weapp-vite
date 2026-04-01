@@ -32,6 +32,26 @@ export interface ParsedVueFile {
   isAppFile: boolean
 }
 
+function resolveSfcScriptLangLabel(lang?: string | null) {
+  return typeof lang === 'string' && lang.length > 0 ? lang : '(default)'
+}
+
+function assertMatchingSfcScriptLang(
+  descriptor: ReturnType<typeof parse>['descriptor'],
+  filename: string,
+) {
+  const scriptLang = descriptor.script?.lang
+  const scriptSetupLang = descriptor.scriptSetup?.lang
+
+  if (!descriptor.script || !descriptor.scriptSetup || scriptLang === scriptSetupLang) {
+    return
+  }
+
+  throw new Error(
+    `解析 ${filename} 失败：同一个 SFC 中 <script> 与 <script setup> 的 lang 必须一致，当前分别为 ${resolveSfcScriptLangLabel(scriptLang)} 与 ${resolveSfcScriptLangLabel(scriptSetupLang)}`,
+  )
+}
+
 function extractDefineOptionsHash(content: string) {
   let ast: BabelFile
   try {
@@ -88,6 +108,7 @@ export async function parseVueFile(
     const error = errors[0]
     throw new Error(`解析 ${filename} 失败：${error.message}`)
   }
+  assertMatchingSfcScriptLang(descriptor, filename)
 
   let resolvedDescriptor = descriptor
   let sfcSrcDeps: string[] | undefined
@@ -151,6 +172,7 @@ export async function parseVueFile(
           const error = nextErrors[0]
           throw new Error(`解析 ${filename} 失败：${error.message}`)
         }
+        assertMatchingSfcScriptLang(nextDescriptor, filename)
 
         if (options?.sfcSrc) {
           const resolvedNext = await resolveSfcBlockSrc(nextDescriptor, filename, options.sfcSrc)
@@ -205,6 +227,7 @@ export async function parseVueFile(
           const error = nextErrors[0]
           throw new Error(`解析 ${filename} 失败：${error.message}`)
         }
+        assertMatchingSfcScriptLang(nextDescriptor, filename)
 
         if (options?.sfcSrc) {
           const resolvedNext = await resolveSfcBlockSrc(nextDescriptor, filename, options.sfcSrc)
