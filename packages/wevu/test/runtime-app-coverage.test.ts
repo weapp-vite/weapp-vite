@@ -251,9 +251,11 @@ describe('runtime app - plugins and watch helpers', () => {
     const app = createApp({ data: () => ({ count: 1 }) })
 
     const plugin = vi.fn()
+    const cleanup = vi.fn()
     const pluginObj = {
       install: vi.fn((runtimeApp: ReturnType<typeof createApp>) => {
         runtimeApp.provide('queryClient', 'client')
+        runtimeApp.onUnmount(cleanup)
       }),
     }
 
@@ -279,5 +281,9 @@ describe('runtime app - plugins and watch helpers', () => {
 
     inst.unmount()
     inst.unmount()
+    expect(cleanup).not.toHaveBeenCalled()
+    app.unmount()
+    app.unmount()
+    expect(cleanup).toHaveBeenCalledTimes(1)
   })
 })
