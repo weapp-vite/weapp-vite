@@ -100,6 +100,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'setCurrentInstance',
   'setCurrentSetupContext',
   'setDeepWatchStrategy',
+  'setGlobalProvidedValue',
   'setPageLayout',
   'setRuntimeSetDataVisibility',
   'setWevuDefaults',

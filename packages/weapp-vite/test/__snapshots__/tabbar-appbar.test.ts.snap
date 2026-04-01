@@ -178,6 +178,7 @@ exports[`tabbar-appbar > dist 1`] = `
   "pages/index/vue.wxss",
   "rolldown-runtime.js",
   "sitemap.json",
+  "src-[hash].js",
   "theme.json",
 ]
 `;

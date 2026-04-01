@@ -1,5 +1,5 @@
+import { readFile, rm, stat } from 'node:fs/promises'
 import CI from 'ci-info'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'
@@ -41,19 +41,25 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/common\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/common\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/src-[^/"']+\.js["']\)\.\w+\(\{/,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/common\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/common\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/src-[^/"']+\.js["']\)\.\w+\(\{/,
+  ],
+  'src-[hash].js': [
+    /require\(["']\.\/common\.js["']\)/,
+    /\bcreateWevuComponent\b/,
   ],
   'rolldown-runtime.js': [/Object\.defineProperty/],
 }
 
+function normalizeDistFile(file: string) {
+  return file.replace(/^src-[^/]+\.js$/, 'src-[hash].js')
+}
+
 function assertJsContent(file: string, content: string) {
-  const patterns = jsExpectations[file]
+  const patterns = jsExpectations[normalizeDistFile(file)]
   expect(patterns, `Missing JS expectations for ${file}`).toBeDefined()
   if (!patterns) {
     return
@@ -83,7 +89,7 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
   const cwd = getFixture('tabbar-appbar')
   const distDir = path.resolve(cwd, 'dist')
   beforeEach(async () => {
-    await fs.remove(distDir)
+    await rm(distDir, { recursive: true, force: true })
     const ctx = await createCompilerContext({
       cwd,
       inlineConfig: {
@@ -96,12 +102,12 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
   })
 
   it('dist', async () => {
-    expect(await fs.exists(path.resolve(distDir))).toBe(true)
+    expect(await stat(path.resolve(distDir)).then(() => true, () => false)).toBe(true)
 
     const files = await scanFiles(distDir)
-    expect(files).toMatchSnapshot()
+    expect(files.map(normalizeDistFile)).toMatchSnapshot()
     for (const file of files) {
-      const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
+      const content = await readFile(path.resolve(distDir, file), 'utf-8')
       if (path.extname(file) === '.js') {
         assertJsContent(file, content)
         continue
