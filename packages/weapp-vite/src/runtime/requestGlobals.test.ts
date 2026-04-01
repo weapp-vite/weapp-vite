@@ -1,14 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const wevuFetchMock = vi.hoisted(() => vi.fn())
-
-vi.mock('wevu/fetch', () => ({
-  fetch: wevuFetchMock,
-}))
-
 describe('request globals runtime', () => {
   beforeEach(() => {
-    wevuFetchMock.mockReset()
     delete (globalThis as Record<string, any>).fetch
     delete (globalThis as Record<string, any>).Headers
     delete (globalThis as Record<string, any>).Request
@@ -16,6 +9,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).AbortController
     delete (globalThis as Record<string, any>).AbortSignal
     delete (globalThis as Record<string, any>).XMLHttpRequest
+    delete (globalThis as Record<string, any>).wx
   })
 
   it('installs missing globals without overwriting existing ones', async () => {
@@ -31,15 +25,55 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.Headers).toBe('function')
   })
 
-  it('supports axios-style xhr requests through the injected fetch bridge', async () => {
-    wevuFetchMock.mockResolvedValue({
-      status: 200,
-      statusText: 'OK',
-      url: 'https://example.com/data',
-      headers: new Map([['content-type', 'application/json']]),
-      text: vi.fn(async () => '{"ok":true}'),
-      arrayBuffer: vi.fn(async () => new ArrayBuffer(0)),
+  it('supports fetch through native mini program request without requiring wevu/fetch', async () => {
+    const requestMock = vi.fn((options: Record<string, any>) => {
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
     })
+    ;(globalThis as Record<string, any>).wx = {
+      request: requestMock,
+    }
+
+    const { installRequestGlobals } = await import('./requestGlobals')
+    installRequestGlobals()
+
+    const response = await globalThis.fetch('https://example.com/data', {
+      method: 'POST',
+      body: JSON.stringify({ ok: true }),
+    })
+
+    expect(requestMock).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://example.com/data',
+      method: 'POST',
+      responseType: 'arraybuffer',
+    }))
+    expect(await response.json()).toEqual({ ok: true })
+  })
+
+  it('supports axios-style xhr requests through the injected fetch bridge', async () => {
+    const requestMock = vi.fn((options: Record<string, any>) => {
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+    ;(globalThis as Record<string, any>).wx = {
+      request: requestMock,
+    }
 
     const { installRequestGlobals } = await import('./requestGlobals')
     installRequestGlobals()
@@ -49,7 +83,8 @@ describe('request globals runtime', () => {
     xhr.responseType = 'json'
     await xhr.send()
 
-    expect(wevuFetchMock).toHaveBeenCalledWith('https://example.com/data', expect.objectContaining({
+    expect(requestMock).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://example.com/data',
       method: 'GET',
     }))
     expect(xhr.status).toBe(200)
