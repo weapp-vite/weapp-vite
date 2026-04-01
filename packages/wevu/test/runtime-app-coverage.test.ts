@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/runtime/app'
+import { inject } from '@/runtime/provide'
 import { nextTick } from '@/scheduler'
 
 function createAdapter() {
@@ -250,7 +251,11 @@ describe('runtime app - plugins and watch helpers', () => {
     const app = createApp({ data: () => ({ count: 1 }) })
 
     const plugin = vi.fn()
-    const pluginObj = { install: vi.fn() }
+    const pluginObj = {
+      install: vi.fn((runtimeApp: ReturnType<typeof createApp>) => {
+        runtimeApp.provide('queryClient', 'client')
+      }),
+    }
 
     app.use(plugin)
     app.use(plugin)
@@ -258,6 +263,7 @@ describe('runtime app - plugins and watch helpers', () => {
 
     expect(plugin).toHaveBeenCalledTimes(1)
     expect(pluginObj.install).toHaveBeenCalledTimes(1)
+    expect(inject('queryClient')).toBe('client')
 
     expect(() => app.use({} as any)).toThrow('插件必须是函数，或包含 install 方法的对象')
 

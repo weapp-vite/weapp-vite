@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { reactive } from '@/reactivity/reactive'
-import { readonly } from '@/reactivity/readonly'
+import { isProxy, isReadonly, readonly } from '@/reactivity/readonly'
 import { ref } from '@/reactivity/ref'
 
 describe('readonly - edge cases and boundary values', () => {
@@ -230,6 +230,19 @@ describe('readonly - edge cases and boundary values', () => {
       expect(() => {
         ro[0] = 200
       }).toThrow('无法在只读对象上设置属性')
+    })
+
+    it('should expose readonly/proxy detection helpers', () => {
+      const state = reactive({ count: 0 })
+      const ro = readonly(state)
+      const roRef = readonly(ref(1))
+
+      expect(isReadonly(ro)).toBe(true)
+      expect(isReadonly(roRef)).toBe(true)
+      expect(isReadonly(state)).toBe(false)
+      expect(isProxy(ro)).toBe(true)
+      expect(isProxy(state)).toBe(true)
+      expect(isProxy({ count: 0 })).toBe(false)
     })
   })
 

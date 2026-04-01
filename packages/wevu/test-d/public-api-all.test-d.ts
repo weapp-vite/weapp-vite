@@ -92,8 +92,10 @@ type RuntimeApiName
     | 'inject'
     | 'injectGlobal'
     | 'isNoSetData'
+    | 'isProxy'
     | 'isRaw'
     | 'isReactive'
+    | 'isReadonly'
     | 'isRef'
     | 'isShallowReactive'
     | 'isShallowRef'
@@ -184,6 +186,8 @@ type RuntimeApiName
     | 'useUpdatePerformanceListener'
     | 'watch'
     | 'watchEffect'
+    | 'watchPostEffect'
+    | 'watchSyncEffect'
 
 type ScriptSetupMacroApiName
   = | 'defineEmits'

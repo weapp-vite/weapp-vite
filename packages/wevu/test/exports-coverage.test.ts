@@ -32,8 +32,10 @@ const ROOT_RUNTIME_EXPORTS = [
   'inject',
   'injectGlobal',
   'isNoSetData',
+  'isProxy',
   'isRaw',
   'isReactive',
+  'isReadonly',
   'isRef',
   'isShallowReactive',
   'isShallowRef',
@@ -138,6 +140,8 @@ const ROOT_RUNTIME_EXPORTS = [
   'waitForLayoutHost',
   'watch',
   'watchEffect',
+  'watchPostEffect',
+  'watchSyncEffect',
 ] as const
 
 describe('export barrels', () => {

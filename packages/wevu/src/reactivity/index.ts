@@ -35,7 +35,7 @@ export {
   toRaw,
   touchReactive,
 } from './reactive'
-export { readonly, shallowReadonly } from './readonly'
+export { isProxy, isReadonly, readonly, shallowReadonly } from './readonly'
 export {
   customRef,
   type CustomRefFactory,
@@ -67,9 +67,11 @@ export {
   type WatchEffectOptions,
   type WatchMultiSources,
   type WatchOptions,
+  watchPostEffect,
   type WatchScheduler,
   type WatchSource,
   type WatchSources,
   type WatchSourceValue,
   type WatchStopHandle,
+  watchSyncEffect,
 } from './watch'
