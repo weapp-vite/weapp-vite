@@ -12,6 +12,13 @@ const PROVIDE_SCOPE_KEY = Symbol('wevu.provideScope')
 const __wevuGlobalProvideStore = new Map<any, any>()
 
 /**
+ * 写入全局 provide 存储，供运行时内部与兼容层复用。
+ */
+export function setGlobalProvidedValue<T>(key: any, value: T): void {
+  __wevuGlobalProvideStore.set(key, value)
+}
+
+/**
  * 判断当前是否存在可用的注入上下文。
  *
  * wevu 目前的依赖注入上下文来自同步 `setup()` 阶段的当前实例；
@@ -50,7 +57,7 @@ export function provide<T>(key: any, value: T): void {
   }
   else {
     // 全局模式：无组件实例时，兼容旧代码和纯函数场景
-    __wevuGlobalProvideStore.set(key, value)
+    setGlobalProvidedValue(key, value)
   }
 }
 
@@ -113,7 +120,7 @@ export function inject<T>(key: any, defaultValue?: T): T {
  * 在无实例上下文时 `provide()` 会自动回落到全局存储。
  */
 export function provideGlobal<T>(key: any, value: T): void {
-  __wevuGlobalProvideStore.set(key, value)
+  setGlobalProvidedValue(key, value)
 }
 
 /**

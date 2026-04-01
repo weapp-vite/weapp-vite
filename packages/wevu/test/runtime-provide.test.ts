@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { inject, provide } from '@/runtime/provide'
+import { inject, provide, provideGlobal, setGlobalProvidedValue } from '@/runtime/provide'
 
 describe('provide/inject', () => {
   // 注意：provide 和 inject 使用全局 Map，需要在每个测试后清理
@@ -237,6 +237,16 @@ describe('provide/inject', () => {
       for (let i = 0; i < 100; i++) {
         expect(inject(`key${i}`)).toBe(i)
       }
+    })
+  })
+
+  describe('internal global store helper', () => {
+    it('shares the same global store with provideGlobal and inject', () => {
+      setGlobalProvidedValue('internal-key', 'internal-value')
+      expect(inject('internal-key')).toBe('internal-value')
+
+      provideGlobal('deprecated-key', 'deprecated-value')
+      expect(inject('deprecated-key')).toBe('deprecated-value')
     })
   })
 })
