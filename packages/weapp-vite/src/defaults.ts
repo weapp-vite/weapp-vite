@@ -77,9 +77,7 @@ export function getWeappViteConfig(): WeappViteConfig {
       logLevels: ['log', 'info', 'warn', 'error'],
       unhandledErrors: true,
     },
-    injectRequestGlobals: {
-      dependencies: ['axios', 'graphql-request'],
-    },
+    injectRequestGlobals: {},
     chunks: {
       sharedStrategy: 'duplicate',
       sharedMode: 'common',

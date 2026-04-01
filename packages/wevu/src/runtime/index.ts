@@ -1,5 +1,3 @@
-import './requestGlobals'
-
 export * from './app'
 export { resetWevuDefaults, setWevuDefaults } from './defaults'
 export type { WevuDefaults } from './defaults'

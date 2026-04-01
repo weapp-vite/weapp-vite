@@ -23,6 +23,78 @@ vi.mock('../../../utils', async () => {
 })
 
 describe('core lifecycle load hook injectWeapi', () => {
+  it('injects abort globals for tanstack query projects during app load', async () => {
+    const loadEntry = vi.fn(async () => ({
+      code: 'App({})',
+    }))
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              '@tanstack/vue-query': '^5.0.0',
+            },
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'app',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+    } as any)
+
+    const result = await load.call({}, '/project/src/app.ts')
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('"AbortController","AbortSignal"')
+    expect(code).not.toContain('"XMLHttpRequest"')
+    expect(code).not.toContain('"fetch"')
+  })
+
+  it('injects request globals into lib entry components when enabled explicitly', async () => {
+    const sourceId = '/project/src/components/lib-card.ts'
+    const loadEntry = vi.fn(async () => ({ code: 'Component({})' }))
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {
+            injectRequestGlobals: {
+              enabled: true,
+              targets: ['AbortController', 'AbortSignal'],
+            },
+          },
+          weappLibConfig: {
+            enabled: true,
+          },
+          relativeAbsoluteSrcRoot: () => 'components/lib-card',
+        },
+        runtimeState: {
+          lib: {
+            entries: new Map([[sourceId, { input: sourceId }]]),
+          },
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+    } as any)
+
+    const result = await load.call({}, sourceId)
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('Component({})')
+  })
+
   it('injects wpi and replaces wx/my/platform global when replaceWx is enabled', async () => {
     const loadEntry = vi.fn(async () => ({
       code: 'App({})',

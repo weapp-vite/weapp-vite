@@ -4,6 +4,7 @@ import path from 'pathe'
 import { resolveAstEngine } from '../../../ast'
 import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../ast/operations/platformApi'
 import logger from '../../../logger'
+import { createInjectRequestGlobalsCode, resolveInjectRequestGlobalsOptions } from '../../../runtime/config/internal/injectRequestGlobals'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
 import { findJsEntry, findVueEntry, isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
@@ -135,6 +136,10 @@ export function createLoadHook(state: CorePluginState) {
   const { configService } = ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
   const weapiResolution = { checked: false, available: false }
+  const injectRequestGlobalsOptions = resolveInjectRequestGlobalsOptions(
+    configService.weappViteConfig?.injectRequestGlobals,
+    configService.packageJson,
+  )
 
   function resolveInjectWeapiOptions() {
     const injectWeapi = configService.weappViteConfig?.injectWeapi
@@ -280,6 +285,24 @@ export function createLoadHook(state: CorePluginState) {
     }
   }
 
+  function prependCodeToLoadResult(result: any, code: string) {
+    if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string') {
+      return result
+    }
+
+    return {
+      ...result,
+      code: `${code}${result.code}`,
+    }
+  }
+
+  function resolveRequestGlobalsTargets() {
+    if (!injectRequestGlobalsOptions) {
+      return []
+    }
+    return injectRequestGlobalsOptions.targets
+  }
+
   async function ensureWeapiAvailable(pluginCtx: any, importer: string) {
     if (weapiResolution.checked) {
       return weapiResolution.available
@@ -333,19 +356,28 @@ export function createLoadHook(state: CorePluginState) {
       : undefined
     if (libEntry) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
-      return await loadEntry.call(this, sourceId, 'component')
+      const result = await loadEntry.call(this, sourceId, 'component')
+      const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      if (requestGlobalsTargets.length === 0) {
+        return result
+      }
+      return prependCodeToLoadResult(result, createInjectRequestGlobalsCode(requestGlobalsTargets as any))
     }
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
     if (relativeBasename === resolveRootEntryBasename()) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
+      const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      const requestGlobalsCode = requestGlobalsTargets.length > 0
+        ? createInjectRequestGlobalsCode(requestGlobalsTargets as any)
+        : ''
       if (!injectOptions || configService.weappLibConfig?.enabled) {
-        return result
+        return prependCodeToLoadResult(result, requestGlobalsCode)
       }
       const available = await ensureWeapiAvailable(this, sourceId)
       if (!available) {
-        return result
+        return prependCodeToLoadResult(result, requestGlobalsCode)
       }
       if (result && typeof result === 'object' && 'code' in result) {
         const platform = getMiniProgramPlatformGlobalKey(configService.platform) ?? ''
@@ -356,7 +388,7 @@ export function createLoadHook(state: CorePluginState) {
         })
         return replacePlatformApiInLoadResult({
           ...result,
-          code: `${injectedCode}${result.code}`,
+          code: `${requestGlobalsCode}${injectedCode}${result.code}`,
         }, injectOptions, this)
       }
       return result

@@ -1,12 +1,36 @@
 import type { PackageJson } from 'pkg-types'
 import type { WeappInjectRequestGlobalsConfig, WeappInjectRequestGlobalsTarget } from '../../../types'
+import fs from 'node:fs'
+import path from 'pathe'
+import { PACKAGE_ROOT } from '../../../packagePaths'
+
+const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+  'fetch',
+  'Headers',
+  'Request',
+  'Response',
+  'AbortController',
+  'AbortSignal',
+  'XMLHttpRequest',
+]
+
+const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+  'AbortController',
+  'AbortSignal',
+]
 
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request']
+const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
+
+export interface InjectRequestGlobalsAutoRule {
+  dependencyPatterns: (string | RegExp)[]
+  targets: WeappInjectRequestGlobalsTarget[]
+}
 
 export interface ResolvedInjectRequestGlobalsOptions {
   mode: 'auto' | 'explicit'
   targets: WeappInjectRequestGlobalsTarget[]
-  dependencyPatterns: (string | RegExp)[]
+  dependencyPatterns?: (string | RegExp)[]
 }
 
 function hasMatchedDependency(
@@ -35,15 +59,7 @@ function resolveTargets(config?: boolean | WeappInjectRequestGlobalsConfig): Wea
     return [...new Set(config.targets)]
   }
 
-  return [
-    'fetch',
-    'Headers',
-    'Request',
-    'Response',
-    'AbortController',
-    'AbortSignal',
-    'XMLHttpRequest',
-  ]
+  return [...FULL_REQUEST_GLOBAL_TARGETS]
 }
 
 function resolveDependencyPatterns(config?: boolean | WeappInjectRequestGlobalsConfig) {
@@ -52,6 +68,37 @@ function resolveDependencyPatterns(config?: boolean | WeappInjectRequestGlobalsC
   }
 
   return DEFAULT_REQUEST_GLOBAL_DEPENDENCIES
+}
+
+function hasCustomAutoRuleConfig(config?: boolean | WeappInjectRequestGlobalsConfig) {
+  if (!config || typeof config !== 'object') {
+    return false
+  }
+
+  return Boolean(
+    (Array.isArray(config.dependencies) && config.dependencies.length > 0)
+    || (Array.isArray(config.targets) && config.targets.length > 0),
+  )
+}
+
+function resolveAutoRules(config?: boolean | WeappInjectRequestGlobalsConfig): InjectRequestGlobalsAutoRule[] {
+  if (hasCustomAutoRuleConfig(config)) {
+    return [{
+      dependencyPatterns: resolveDependencyPatterns(config),
+      targets: resolveTargets(config),
+    }]
+  }
+
+  return [
+    {
+      dependencyPatterns: DEFAULT_REQUEST_GLOBAL_DEPENDENCIES,
+      targets: [...FULL_REQUEST_GLOBAL_TARGETS],
+    },
+    {
+      dependencyPatterns: DEFAULT_ABORT_GLOBAL_DEPENDENCIES,
+      targets: [...ABORT_REQUEST_GLOBAL_TARGETS],
+    },
+  ]
 }
 
 /**
@@ -81,24 +128,50 @@ export function resolveInjectRequestGlobalsOptions(
     }
   }
 
-  const dependencyPatterns = resolveDependencyPatterns(config)
-  if (!hasMatchedDependency(packageJson, dependencyPatterns)) {
+  const autoRules = resolveAutoRules(config)
+  const matchedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  for (const rule of autoRules) {
+    if (!hasMatchedDependency(packageJson, rule.dependencyPatterns)) {
+      continue
+    }
+    for (const target of rule.targets) {
+      matchedTargets.add(target)
+    }
+  }
+
+  if (matchedTargets.size === 0) {
     return null
   }
 
   return {
     mode: 'auto',
-    targets: resolveTargets(config),
-    dependencyPatterns,
+    targets: [...matchedTargets],
   }
+}
+
+function resolveRequestGlobalsRuntimeModuleId() {
+  const candidates = [
+    path.resolve(PACKAGE_ROOT, 'dist/requestGlobals.mjs'),
+    path.resolve(PACKAGE_ROOT, 'src/requestGlobals.ts'),
+    path.resolve(PACKAGE_ROOT, 'src/runtime/requestGlobals/index.ts'),
+  ]
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  throw new Error('无法定位 request globals runtime 模块，请先构建 weapp-vite 包。')
 }
 
 /**
  * @description 生成入口文件用的请求全局对象注入代码。
  */
 export function createInjectRequestGlobalsCode(targets: WeappInjectRequestGlobalsTarget[]) {
+  const runtimeModuleId = resolveRequestGlobalsRuntimeModuleId()
   return [
-    'import { installRequestGlobals as __weappViteInstallRequestGlobals } from \'weapp-vite/runtime/requestGlobals\'',
+    `import { installRequestGlobals as __weappViteInstallRequestGlobals } from ${JSON.stringify(runtimeModuleId)}`,
     `__weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} })`,
     '',
   ].join('\n')
