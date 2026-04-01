@@ -399,14 +399,18 @@ export function createLoadHook(state: CorePluginState) {
       const loadType = declaredEntryType === 'page' ? 'page' : 'component'
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, loadType)
+      const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      const requestGlobalsCode = requestGlobalsTargets.length > 0
+        ? createInjectRequestGlobalsCode(requestGlobalsTargets as any)
+        : ''
       if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
-        return result
+        return prependCodeToLoadResult(result, requestGlobalsCode)
       }
       const available = await ensureWeapiAvailable(this, sourceId)
       if (!available) {
-        return result
+        return prependCodeToLoadResult(result, requestGlobalsCode)
       }
-      return replacePlatformApiInLoadResult(result, injectOptions, this)
+      return prependCodeToLoadResult(replacePlatformApiInLoadResult(result, injectOptions, this), requestGlobalsCode)
     }
   }
 }

@@ -95,6 +95,36 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('Component({})')
   })
 
+  it('injects request globals into page entries when auto mode is matched', async () => {
+    const sourceId = '/project/src/pages/request/index.ts'
+    const loadEntry = vi.fn(async () => ({ code: 'Page({})' }))
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'pages/request/index',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>([sourceId]),
+    } as any)
+
+    const result = await load.call({}, sourceId)
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('Page({})')
+  })
+
   it('injects wpi and replaces wx/my/platform global when replaceWx is enabled', async () => {
     const loadEntry = vi.fn(async () => ({
       code: 'App({})',

@@ -1,0 +1,137 @@
+import { fileURLToPath } from 'node:url'
+import { afterAll, describe, expect, it } from 'vitest'
+import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+
+const APP_ROOT = fileURLToPath(new URL('../../apps/wevu-runtime-demo/', import.meta.url))
+const ROUTE = '/pages/request-globals/index'
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function waitForTransportState(
+  page: any,
+  predicate: (snapshot: Record<string, any>) => boolean,
+  timeoutMs = 15_000,
+) {
+  const startedAt = Date.now()
+  let lastSnapshot: Record<string, any> = {}
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const snapshot = {
+        pageStatus: await page.data('pageStatus'),
+        runCount: await page.data('runCount'),
+        transportStates: await page.data('transportStates'),
+        requestLog: await page.data('requestLog'),
+      }
+      lastSnapshot = snapshot
+      if (predicate(snapshot)) {
+        return snapshot
+      }
+    }
+    catch {
+    }
+
+    if (typeof page?.waitFor === 'function') {
+      try {
+        await page.waitFor(180)
+        continue
+      }
+      catch {
+      }
+    }
+
+    await sleep(180)
+  }
+
+  throw new Error(
+    `Timed out after ${timeoutMs}ms waiting for request globals state.\n`
+    + `Last data snapshot:\n${JSON.stringify(lastSnapshot, null, 2)}`,
+  )
+}
+
+async function tapButtonAt(page: any, index: number) {
+  const buttons = await page.$$('button')
+  if (!Array.isArray(buttons) || !buttons[index]) {
+    throw new Error(`Failed to find button at index ${index}`)
+  }
+  await buttons[index].tap()
+}
+
+async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...args: any[]) {
+  try {
+    return await page.callMethod(methodName, ...args)
+  }
+  catch {
+    await tapButtonAt(page, tapIndex)
+    return null
+  }
+}
+
+describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
+  let miniProgram: any
+
+  async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
+    if (miniProgram) {
+      return miniProgram
+    }
+    try {
+      miniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+      return miniProgram
+    }
+    catch (error) {
+      if (isDevtoolsHttpPortError(error)) {
+        ctx.skip('WeChat DevTools 服务端口未开启，跳过 request globals IDE 自动化用例。')
+      }
+      throw error
+    }
+  }
+
+  afterAll(async () => {
+    if (!miniProgram) {
+      return
+    }
+    await miniProgram.close()
+  })
+
+  it('supports fetch, graphql-request and axios in simulator runtime', async (ctx) => {
+    const miniProgram = await getMiniProgram(ctx)
+    const page = await miniProgram.reLaunch(ROUTE)
+    if (!page) {
+      throw new Error(`Failed to launch route ${ROUTE}`)
+    }
+
+    const initialState = await waitForTransportState(page, snapshot => (
+      snapshot.pageStatus === '全部通过'
+      && snapshot.runCount === 1
+      && snapshot.transportStates?.fetch?.status === 'success'
+      && snapshot.transportStates?.graphqlRequest?.status === 'success'
+      && snapshot.transportStates?.axios?.status === 'success'
+      && Array.isArray(snapshot.requestLog)
+      && snapshot.requestLog.length === 3
+    ))
+
+    expect(initialState.transportStates.fetch.payload).toContain('"transport":"fetch"')
+    expect(initialState.transportStates.graphqlRequest.payload).toContain('"client":"graphql-request"')
+    expect(initialState.transportStates.axios.payload).toContain('"transport":"axios"')
+
+    await invokeOrTap(page, 'runChecks', 0)
+
+    const rerunState = await waitForTransportState(page, snapshot => (
+      snapshot.pageStatus === '全部通过'
+      && snapshot.runCount === 2
+      && snapshot.transportStates?.fetch?.status === 'success'
+      && snapshot.transportStates?.graphqlRequest?.status === 'success'
+      && snapshot.transportStates?.axios?.status === 'success'
+      && Array.isArray(snapshot.requestLog)
+      && snapshot.requestLog.length === 3
+    ))
+
+    expect(rerunState.requestLog[0]).toContain('/fetch')
+    expect(rerunState.requestLog[1]).toContain('/graphql')
+    expect(rerunState.requestLog[2]).toContain('/axios')
+  })
+})

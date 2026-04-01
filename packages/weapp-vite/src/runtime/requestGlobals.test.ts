@@ -107,4 +107,30 @@ describe('request globals runtime', () => {
     expect(globalThis.fetch).toBeUndefined()
     expect(globalThis.XMLHttpRequest).toBeUndefined()
   })
+
+  it('installs request globals onto both runtime global and mini-program host objects', async () => {
+    ;(globalThis as Record<string, any>).wx = {}
+
+    const { installRequestGlobals } = await import('./requestGlobals')
+    installRequestGlobals({
+      targets: ['fetch'],
+    })
+
+    expect(typeof globalThis.fetch).toBe('function')
+    expect(typeof (globalThis as any).wx.fetch).toBe('function')
+    expect(typeof (globalThis as any).wx.URL).toBe('function')
+    expect(typeof (globalThis as any).wx.URLSearchParams).toBe('function')
+  })
+
+  it('provides URL and URLSearchParams support required by graphql-request style callers', async () => {
+    const { URLPolyfill, URLSearchParamsPolyfill } = await import('./requestGlobals/url')
+    const url = new URLPolyfill('https://example.com/graphql?existing=1')
+    url.searchParams.append('query', 'hello world')
+
+    expect(url.toString()).toBe('https://example.com/graphql?existing=1&query=hello+world')
+
+    const searchParams = new URLSearchParamsPolyfill()
+    searchParams.append('variables', '{"ok":true}')
+    expect(searchParams.toString()).toBe('variables=%7B%22ok%22%3Atrue%7D')
+  })
 })

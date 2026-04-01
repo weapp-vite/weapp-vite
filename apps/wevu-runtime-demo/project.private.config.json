@@ -22,8 +22,16 @@
       "list": []
     },
     "miniProgram": {
-      "current": -1,
-      "list": []
+      "current": 0,
+      "list": [
+        {
+          "name": "request-globals",
+          "pathName": "pages/request-globals/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
     }
   },
   "libVersion": "3.15.0"

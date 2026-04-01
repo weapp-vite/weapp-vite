@@ -48,6 +48,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function isNativeUrlInstance(value: unknown): value is URL {
+  return typeof URL !== 'undefined' && value instanceof URL
+}
+
 function createAbortError() {
   if (typeof DOMException === 'function') {
     return new DOMException('The operation was aborted.', 'AbortError')
@@ -185,7 +189,7 @@ async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: Request
   const requestInput = isRequestLikeInput(input) ? input : undefined
   const url = typeof input === 'string'
     ? input
-    : input instanceof URL
+    : isNativeUrlInstance(input)
       ? input.toString()
       : requestInput?.url
 
@@ -198,9 +202,13 @@ async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: Request
   mergeHeaderSource(headers, init.headers)
 
   const hasBodyInInit = hasOwn.call(init, 'body')
-  const rawBody = hasBodyInInit
+  let rawBody = hasBodyInInit
     ? init.body
     : await extractRequestBodyFromInput(requestInput)
+
+  if (!hasBodyInInit && requestInput && (method === 'GET' || method === 'HEAD')) {
+    rawBody = undefined
+  }
 
   if ((method === 'GET' || method === 'HEAD') && rawBody != null) {
     throw new TypeError('Failed to execute fetch: GET/HEAD request cannot have body')

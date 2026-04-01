@@ -53,6 +53,21 @@ export function resolveRequestGlobalsHost() {
   return {} as Record<string, any>
 }
 
+export function resolveRequestGlobalsHosts() {
+  const hosts: Array<Record<string, any>> = []
+  const primaryHost = resolveRequestGlobalsHost()
+  hosts.push(primaryHost)
+
+  for (const key of ['wx', 'my', 'tt']) {
+    const candidate = primaryHost[key]
+    if (candidate && typeof candidate === 'object' && !hosts.includes(candidate)) {
+      hosts.push(candidate as Record<string, any>)
+    }
+  }
+
+  return hosts
+}
+
 export function cloneArrayBuffer(buffer: ArrayBuffer) {
   return buffer.slice(0)
 }
