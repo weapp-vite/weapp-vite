@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { collectScriptSetupImportsFromCode } from '../../src/ast/operations/scriptSetupImports'
+import { collectScriptSetupImportsFromCode } from '../../src/ast/operations'
 
 describe('collectScriptSetupImportsFromCode', () => {
   it('keeps babel and oxc results aligned', () => {

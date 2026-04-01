@@ -10,7 +10,7 @@ const createReadAndParseSfcOptionsMock = vi.hoisted(() => vi.fn(() => ({
   },
 })))
 
-vi.mock('../../../../ast/operations/scriptSetupImports', () => ({
+vi.mock('../../../../ast/operations', () => ({
   collectScriptSetupImportsFromCode: collectScriptSetupImportsFromCodeMock,
 }))
 
