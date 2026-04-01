@@ -9,10 +9,11 @@ import type {
   RuntimeInstance,
   SetDataDebugInfo,
 } from '../types'
-import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../../reactivity'
+import { addMutationRecorder, effect, isReactive, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../../reactivity'
 import { clearPatchIndices } from '../../reactivity/reactive'
 import { queueJob } from '../../scheduler'
 import { createBindModel } from '../bindModel'
+import { hasTrackableSetupBinding, touchSetupBinding } from '../setupTracking'
 import { createRuntimeContext } from './context'
 import { createDiagnosticsLogger } from './diagnostics'
 import { createSetDataScheduler } from './setData/scheduler'
@@ -91,7 +92,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const trackedSetupReactiveKeys = new Set<string>()
     Object.keys(state as any).forEach((key) => {
       const value = (state as any)[key]
-      if (isRef(value) || isReactive(value)) {
+      if (hasTrackableSetupBinding(value)) {
         trackedSetupReactiveKeys.add(key)
       }
     })
@@ -199,19 +200,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
         // 仅跟踪这些明确注册过的键，避免每轮 flush 扫描整份 state。
         trackedSetupReactiveKeys.forEach((key) => {
           const v = (state as any)[key]
-          if (isRef(v)) {
-            const inner = v.value
-            if (isReactive(inner)) {
-              // setup 返回的 ref 若持有对象/数组，需要额外订阅其版本号；
-              // 否则仅修改 inner 字段（如 items.value[0].quantity）不会触发调度。
-              touchReactive(inner as any)
-            }
-          }
-          else if (isReactive(v)) {
-            // 让 effect 订阅 setup 返回的浅/深响应式对象的“版本号”，
-            // 以捕获从外部直接修改其字段（例如 props 同步）导致的变更。
-            touchReactive(v as any)
-          }
+          // setup 返回的组合式对象常常是“普通对象 + 内含 refs/reactive”，
+          // 这里递归触达内部响应式源，确保异步更新也能继续驱动 setData。
+          touchSetupBinding(v)
         })
       },
       {

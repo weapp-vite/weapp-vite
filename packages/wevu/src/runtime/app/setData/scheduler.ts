@@ -2,6 +2,7 @@ import type { MutationRecord } from '../../../reactivity'
 import type { SetDataDebugInfo } from '../../types'
 import { getReactiveVersion, isReactive, isRef, toRaw } from '../../../reactivity'
 import { diffSnapshots, toPlain } from '../../diff'
+import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runPatchUpdate } from './patchScheduler'
 import { collectSnapshot } from './snapshot'
 
@@ -67,10 +68,47 @@ export function createSetDataScheduler(options: {
   const pendingPatches = new Map<string, { kind: 'property' | 'array', op: 'set' | 'delete' }>()
   const fallbackTopKeys = new Set<string>()
 
+  const isPlainObject = (value: unknown): value is Record<string, any> => {
+    if (Object.prototype.toString.call(value) !== '[object Object]') {
+      return false
+    }
+    const proto = Object.getPrototypeOf(value)
+    return proto === null || proto === Object.prototype
+  }
+
+  const isDeepEqual = (left: any, right: any): boolean => {
+    if (Object.is(left, right)) {
+      return true
+    }
+    if (Array.isArray(left) && Array.isArray(right)) {
+      if (left.length !== right.length) {
+        return false
+      }
+      return left.every((item, index) => isDeepEqual(item, right[index]))
+    }
+    if (isPlainObject(left) && isPlainObject(right)) {
+      const leftKeys = Object.keys(left)
+      const rightKeys = Object.keys(right)
+      if (leftKeys.length !== rightKeys.length) {
+        return false
+      }
+      return leftKeys.every(key => Object.hasOwn(right, key) && isDeepEqual(left[key], right[key]))
+    }
+    return false
+  }
+
   const createValueToken = (value: unknown) => {
     const candidate = isRef(value) ? value.value : value
     if (candidate == null || typeof candidate !== 'object') {
       return candidate
+    }
+    if (!isReactive(candidate) && hasTrackableSetupBinding(candidate)) {
+      return {
+        snapshot: toPlain(candidate, new WeakMap(), {
+          maxDepth: toPlainMaxDepth,
+          maxKeys: toPlainMaxKeys,
+        }),
+      }
     }
     const raw = isReactive(candidate) ? toRaw(candidate as any) : candidate
     return {
@@ -91,6 +129,14 @@ export function createSetDataScheduler(options: {
       || !Object.hasOwn(left as object, 'raw')
       || !Object.hasOwn(right as object, 'raw')
     ) {
+      if (
+        typeof left === 'object'
+        && typeof right === 'object'
+        && Object.hasOwn(left as object, 'snapshot')
+        && Object.hasOwn(right as object, 'snapshot')
+      ) {
+        return isDeepEqual((left as any).snapshot, (right as any).snapshot)
+      }
       return false
     }
     return (left as any).raw === (right as any).raw && (left as any).version === (right as any).version

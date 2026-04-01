@@ -46,6 +46,8 @@ type RuntimeInstanceWithSyncFlush<
   M extends MethodDefinitions,
 > = RuntimeInstance<D, C, M> & {
   __wevu_flushSetupSnapshotSync?: () => void
+  __wevu_touchSetupMethodsVersion?: () => void
+  __wevu_trackSetupReactiveKey?: (key: string) => void
 }
 
 function attachPageLayoutSetter(target: InternalRuntimeState) {
@@ -219,6 +221,9 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     bindModel: runtimeBindModel,
     snapshot: (runtime as any)?.snapshot ?? (() => Object.create(null)),
     unmount: (runtime as any)?.unmount ?? (() => {}),
+    __wevu_flushSetupSnapshotSync: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync,
+    __wevu_touchSetupMethodsVersion: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_touchSetupMethodsVersion,
+    __wevu_trackSetupReactiveKey: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_trackSetupReactiveKey,
   }
 
   Object.defineProperty(target, '$wevu', {

@@ -96,4 +96,43 @@ describe('runtime: setup returned ref triggers setData', () => {
     )
     expect(secondBackfill).toBe(true)
   })
+
+  it('tracks refs nested inside plain setup objects returned by composables', async () => {
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        const loading = ref(true)
+        const status = computed(() => loading.value ? 'loading' : 'ready')
+        const query = {
+          loading,
+          status,
+        }
+        function finish() {
+          loading.value = false
+        }
+        return {
+          query,
+          finish,
+        }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+    setData.mockClear()
+
+    inst.finish()
+    await Promise.resolve()
+
+    expect(setData).toHaveBeenCalled()
+    const payloads = setData.mock.calls.map(call => call?.[0] ?? {})
+    expect(payloads.some(payload => (
+      (payload.query?.loading === false && payload.query?.status === 'ready')
+      || (payload['query.loading'] === false && payload['query.status'] === 'ready')
+    ))).toBe(true)
+  })
 })
