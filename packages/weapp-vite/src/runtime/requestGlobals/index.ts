@@ -1,7 +1,8 @@
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
-import { resolveRequestGlobalsHost } from './shared'
+import { resolveRequestGlobalsHosts } from './shared'
+import { URLPolyfill, URLSearchParamsPolyfill } from './url'
 import { XMLHttpRequestPolyfill } from './xhr'
 
 export type WeappInjectRequestGlobalsTarget
@@ -65,11 +66,19 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectReque
   }
 }
 
+function installUrlGlobals(host: Record<string, any>) {
+  if (typeof host.URL !== 'function') {
+    host.URL = URLPolyfill
+  }
+  if (typeof host.URLSearchParams !== 'function') {
+    host.URLSearchParams = URLSearchParamsPolyfill
+  }
+}
+
 /**
  * @description 按需向小程序全局环境注入缺失的请求相关对象。
  */
 export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}) {
-  const host = resolveRequestGlobalsHost()
   const targets = options.targets ?? [
     'fetch',
     'Headers',
@@ -79,12 +88,24 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
     'AbortSignal',
     'XMLHttpRequest',
   ]
+  const hosts = resolveRequestGlobalsHosts()
+  const needsUrlGlobals = targets.some(target => (
+    target === 'fetch'
+    || target === 'Request'
+    || target === 'Response'
+    || target === 'XMLHttpRequest'
+  ))
 
-  for (const target of targets) {
-    installSingleTarget(host, target)
+  for (const host of hosts) {
+    if (needsUrlGlobals) {
+      installUrlGlobals(host)
+    }
+    for (const target of targets) {
+      installSingleTarget(host, target)
+    }
   }
 
-  return host
+  return hosts[0]
 }
 
 export {

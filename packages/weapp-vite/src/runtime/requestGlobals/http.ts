@@ -17,6 +17,10 @@ function isHeaderObject(input: unknown): input is Record<string, unknown> {
   return typeof input === 'object' && input !== null
 }
 
+function isNativeUrlInstance(value: unknown): value is URL {
+  return typeof URL !== 'undefined' && value instanceof URL
+}
+
 export class HeadersPolyfill {
   private readonly store = new Map<string, { key: string, value: string }>()
 
@@ -149,7 +153,7 @@ export class RequestPolyfill {
     const request = input instanceof RequestPolyfill ? input : undefined
     this.url = typeof input === 'string'
       ? input
-      : input instanceof URL
+      : isNativeUrlInstance(input)
         ? input.toString()
         : request?.url ?? ''
     this.method = String(init.method ?? request?.method ?? 'GET').toUpperCase()
