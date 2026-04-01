@@ -43,7 +43,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
   traverse(ast, vueSfcTransformPlugin().visitor as any)
 
   const visitor = {
-    ...createMacroVisitors(state),
+    ...createMacroVisitors(ast.program, state),
     ...createImportVisitors(ast.program, state),
     ...createCollectVisitors(state),
   }

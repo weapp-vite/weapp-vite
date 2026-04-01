@@ -33,6 +33,7 @@ export const WE_VU_RUNTIME_APIS = {
   createApp: 'createApp',
   createWevuComponent: 'createWevuComponent',
   createWevuScopedSlotComponent: 'createWevuScopedSlotComponent',
+  defineAppSetup: 'defineAppSetup',
   defineComponent: 'defineComponent',
   setWevuDefaults: 'setWevuDefaults',
 } as const

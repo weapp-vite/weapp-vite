@@ -88,4 +88,20 @@ export default {}
     expect(result.code).not.toContain('definePageMeta')
     expect(result.code).not.toContain('ref<number>')
   })
+
+  it('injects defineAppSetup runtime import for bare macro usage', () => {
+    const result = transformScript(`
+const install = () => {}
+
+defineAppSetup((app) => {
+  app.use(install)
+})
+
+export default {}
+`)
+
+    expect(result.code).toContain('defineAppSetup')
+    expect(result.code).toContain('from "wevu";')
+    expect(result.code).toContain('defineAppSetup((app) => {')
+  })
 })

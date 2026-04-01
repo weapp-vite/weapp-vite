@@ -17,8 +17,6 @@ queryClient.mount()
 <script setup lang="ts">
 // eslint-disable-next-line import/first
 import routes from 'weapp-vite/auto-routes'
-// eslint-disable-next-line import/first
-import { defineAppSetup } from 'wevu'
 
 defineAppSetup((app) => {
   app.use(VueQueryPlugin, {
