@@ -1,0 +1,40 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "rootDir": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@weapp-vite/ast": [
+        "./src/browserAst/index.ts"
+      ],
+      "@weapp-vite/ast/babel": [
+        "./src/browserAst/babel.ts"
+      ],
+      "@weapp-vite/ast/babelTraverse": [
+        "./src/browserAst/babelTraverse.ts"
+      ],
+      "@weapp-vite/ast/babelTypes": [
+        "./src/browserAst/babelTypes.ts"
+      ]
+    },
+    "resolveJsonModule": true,
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
+}
