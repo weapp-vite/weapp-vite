@@ -9,7 +9,7 @@ import type {
 import { createRuntimeMount } from './app/mount'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { getMiniProgramGlobalObject } from './platform'
-import { provideGlobal } from './provide'
+import { setGlobalProvidedValue } from './provide'
 import { registerApp } from './register'
 
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -61,7 +61,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       return runtimeApp
     },
     provide(key: any, value: any) {
-      provideGlobal(key, value)
+      setGlobalProvidedValue(key, value)
       return runtimeApp
     },
     config: appConfig,
