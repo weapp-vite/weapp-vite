@@ -33,6 +33,37 @@ async function waitForIssue373Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function callPageMethodWithTimeout(page: any, method: string, timeoutMs = 1_500) {
+  return await Promise.race([
+    page.callMethod(method),
+    new Promise<null>((resolve) => {
+      setTimeout(resolve, timeoutMs, null)
+    }),
+  ])
+}
+
+async function waitForIssue380Runtime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (runtime?.hasTabBar && runtime?.tabBarRuntime?.ready) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -191,6 +222,23 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(navigationResult?.ok).toBe(true)
       const redirectedPage = await waitForCurrentPagePath(miniProgram, '/pages/issue-309/index')
       expect(redirectedPage).toBeTruthy()
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #380: keeps custom tab bar out of default layout at runtime', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-380/index', 'issue-380 page')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-380 page')
+      }
+      const runtimeResult = await waitForIssue380Runtime(issuePage)
+      expect(runtimeResult?.hasTabBar).toBe(true)
+      expect(runtimeResult?.tabBarRuntime?.ready).toBe(true)
+      expect(runtimeResult?.tabBarRuntime?.layoutWrapperDetected).toBe(false)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
