@@ -1,8 +1,6 @@
-import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
-
-const APP_ROOT = fileURLToPath(new URL('../../apps/wevu-runtime-demo/', import.meta.url))
+import { APP_ROOT, ensureWevuRuntimeDemoBuilt } from './wevu-runtime-demo.shared'
 
 const CASES = [
   {
@@ -98,6 +96,7 @@ describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
       return miniProgram
     }
     try {
+      await ensureWevuRuntimeDemoBuilt()
       miniProgram = await launchAutomator({
         projectPath: APP_ROOT,
       })
