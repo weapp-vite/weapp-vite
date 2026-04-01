@@ -17,6 +17,7 @@ export const TEMPLATE_CATALOG = {
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.5',
   '@vue/compiler-core': '^3.5.31',
+  '@vue/compiler-dom': '^3.5.31',
   '@vue/language-core': '^3.2.6',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
