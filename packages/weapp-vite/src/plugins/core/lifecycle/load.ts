@@ -5,7 +5,7 @@ import { mayContainPlatformApiAccess, platformApiIdentifiers, resolveAstEngine }
 import logger from '../../../logger'
 import {
   createInjectRequestGlobalsCode,
-  createInjectRequestGlobalsSfcCode,
+  injectRequestGlobalsIntoSfc,
   resolveInjectRequestGlobalsOptions,
 } from '../../../runtime/config/internal/injectRequestGlobals'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
@@ -306,20 +306,26 @@ export function createLoadHook(state: CorePluginState) {
     return injectRequestGlobalsOptions.targets
   }
 
-  function createRequestGlobalsEntryCode(
+  function injectRequestGlobalsIntoLoadResult(
+    result: any,
     sourceId: string,
     targets: string[],
     options?: {
       localBindings?: boolean
     },
   ) {
-    if (targets.length === 0) {
-      return ''
+    if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string' || targets.length === 0) {
+      return result
     }
+
     if (sourceId.endsWith('.vue')) {
-      return createInjectRequestGlobalsSfcCode(targets as any, options)
+      return {
+        ...result,
+        code: injectRequestGlobalsIntoSfc(result.code, targets as any, options),
+      }
     }
-    return createInjectRequestGlobalsCode(targets as any, options)
+
+    return prependCodeToLoadResult(result, createInjectRequestGlobalsCode(targets as any, options))
   }
 
   async function ensureWeapiAvailable(pluginCtx: any, importer: string) {
@@ -380,9 +386,9 @@ export function createLoadHook(state: CorePluginState) {
       if (requestGlobalsTargets.length === 0) {
         return result
       }
-      return prependCodeToLoadResult(result, createRequestGlobalsEntryCode(sourceId, requestGlobalsTargets, {
+      return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
         localBindings: true,
-      }))
+      })
     }
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
@@ -390,17 +396,15 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
       const requestGlobalsTargets = resolveRequestGlobalsTargets()
-      const requestGlobalsCode = requestGlobalsTargets.length > 0
-        ? createRequestGlobalsEntryCode(sourceId, requestGlobalsTargets)
-        : ''
       if (!injectOptions || configService.weappLibConfig?.enabled) {
-        return prependCodeToLoadResult(result, requestGlobalsCode)
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets)
       }
       const available = await ensureWeapiAvailable(this, sourceId)
       if (!available) {
-        return prependCodeToLoadResult(result, requestGlobalsCode)
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets)
       }
       if (result && typeof result === 'object' && 'code' in result) {
+        const requestGlobalsInjectedResult = injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets)
         const platform = getMiniProgramPlatformGlobalKey(configService.platform) ?? ''
         const injectedCode = createWeapiInjectionCode({
           globalName: injectOptions.globalName,
@@ -408,8 +412,8 @@ export function createLoadHook(state: CorePluginState) {
           platform,
         })
         return replacePlatformApiInLoadResult({
-          ...result,
-          code: `${requestGlobalsCode}${injectedCode}${result.code}`,
+          ...(requestGlobalsInjectedResult as any),
+          code: `${injectedCode}${(requestGlobalsInjectedResult as any).code}`,
         }, injectOptions, this)
       }
       return result
@@ -423,19 +427,25 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, loadType)
       const requestGlobalsTargets = resolveRequestGlobalsTargets()
-      const requestGlobalsCode = requestGlobalsTargets.length > 0
-        ? createRequestGlobalsEntryCode(sourceId, requestGlobalsTargets, {
-            localBindings: true,
-          })
-        : ''
       if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
-        return prependCodeToLoadResult(result, requestGlobalsCode)
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
+          localBindings: true,
+        })
       }
       const available = await ensureWeapiAvailable(this, sourceId)
       if (!available) {
-        return prependCodeToLoadResult(result, requestGlobalsCode)
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
+          localBindings: true,
+        })
       }
-      return prependCodeToLoadResult(replacePlatformApiInLoadResult(result, injectOptions, this), requestGlobalsCode)
+      return injectRequestGlobalsIntoLoadResult(
+        replacePlatformApiInLoadResult(result, injectOptions, this),
+        sourceId,
+        requestGlobalsTargets,
+        {
+          localBindings: true,
+        },
+      )
     }
   }
 }

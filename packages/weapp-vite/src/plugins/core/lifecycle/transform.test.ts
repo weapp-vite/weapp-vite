@@ -60,6 +60,44 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).toContain('export const value = 1')
   })
 
+  it('injects request globals into existing vue script blocks when transform fallback receives raw sfc code', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+      loadedEntrySet: new Set(['/project/src/pages/request-globals/fetch.vue']),
+      entriesMap: new Map(),
+    } as any)
+
+    const result = await transform(
+      [
+        '<script setup lang="ts">',
+        'const value = 1',
+        '</script>',
+        '<script lang="ts">',
+        'export default {}',
+        '</script>',
+      ].join('\n'),
+      '/project/src/pages/request-globals/fetch.vue',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code.match(/<script\b/g)?.length).toBe(2)
+    expect(code).toContain('<script lang="ts">import { installRequestGlobals')
+    expect(code).toContain('export default {}')
+  })
+
   it('rewrites wx/my member access to configured global api', async () => {
     const transform = createTransformHook({
       ctx: {

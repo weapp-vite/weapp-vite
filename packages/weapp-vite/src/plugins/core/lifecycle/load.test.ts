@@ -56,6 +56,46 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).not.toContain('"fetch"')
   })
 
+  it('injects request globals into existing app vue script without creating a duplicate script block', async () => {
+    const sourceId = '/project/src/app.vue'
+    const loadEntry = vi.fn(async () => ({
+      code: [
+        '<script setup lang="ts">',
+        'defineAppJson({ pages: [] })',
+        '</script>',
+        '<script lang="ts">',
+        'export default {}',
+        '</script>',
+      ].join('\n'),
+    }))
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'app',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+    } as any)
+
+    const result = await load.call({}, sourceId)
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code.match(/<script\b/g)?.length).toBe(2)
+    expect(code).toContain('<script lang="ts">import { installRequestGlobals')
+    expect(code).toContain('export default {}')
+  })
+
   it('injects request globals into lib entry components when enabled explicitly', async () => {
     const sourceId = '/project/src/components/lib-card.ts'
     const loadEntry = vi.fn(async () => ({ code: 'Component({})' }))

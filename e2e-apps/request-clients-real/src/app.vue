@@ -1,6 +1,5 @@
-<script setup lang="ts">
+<script lang="ts">
 import { QueryClient, VUE_QUERY_CLIENT } from '@tanstack/vue-query'
-import routes from 'weapp-vite/auto-routes'
 import { provide } from 'wevu'
 
 const queryClient = new QueryClient({
@@ -14,6 +13,14 @@ const queryClient = new QueryClient({
 })
 
 queryClient.mount()
+
+export default {}
+</script>
+
+<script setup lang="ts">
+// eslint-disable-next-line import/first
+import routes from 'weapp-vite/auto-routes'
+
 provide(VUE_QUERY_CLIENT, queryClient)
 
 defineAppJson({
