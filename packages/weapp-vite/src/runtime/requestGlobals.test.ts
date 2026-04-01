@@ -1,7 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const wpiRequestMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@wevu/api', () => ({
+  wpi: {
+    request: wpiRequestMock,
+  },
+}))
+
 describe('request globals runtime', () => {
   beforeEach(() => {
+    wpiRequestMock.mockReset()
     delete (globalThis as Record<string, any>).fetch
     delete (globalThis as Record<string, any>).Headers
     delete (globalThis as Record<string, any>).Request
@@ -25,8 +34,8 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.Headers).toBe('function')
   })
 
-  it('supports fetch through native mini program request without requiring wevu/fetch', async () => {
-    const requestMock = vi.fn((options: Record<string, any>) => {
+  it('supports fetch through @wevu/api request bridge without requiring wevu/fetch', async () => {
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
       options.success?.({
         data: '{"ok":true}',
         statusCode: 200,
@@ -38,9 +47,6 @@ describe('request globals runtime', () => {
         abort: vi.fn(),
       }
     })
-    ;(globalThis as Record<string, any>).wx = {
-      request: requestMock,
-    }
 
     const { installRequestGlobals } = await import('./requestGlobals')
     installRequestGlobals()
@@ -50,7 +56,7 @@ describe('request globals runtime', () => {
       body: JSON.stringify({ ok: true }),
     })
 
-    expect(requestMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(wpiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
       url: 'https://example.com/data',
       method: 'POST',
       responseType: 'arraybuffer',
@@ -59,7 +65,7 @@ describe('request globals runtime', () => {
   })
 
   it('supports axios-style xhr requests through the injected fetch bridge', async () => {
-    const requestMock = vi.fn((options: Record<string, any>) => {
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
       options.success?.({
         data: '{"ok":true}',
         statusCode: 200,
@@ -71,9 +77,6 @@ describe('request globals runtime', () => {
         abort: vi.fn(),
       }
     })
-    ;(globalThis as Record<string, any>).wx = {
-      request: requestMock,
-    }
 
     const { installRequestGlobals } = await import('./requestGlobals')
     installRequestGlobals()
@@ -83,7 +86,7 @@ describe('request globals runtime', () => {
     xhr.responseType = 'json'
     await xhr.send()
 
-    expect(requestMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(wpiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
       url: 'https://example.com/data',
       method: 'GET',
     }))
