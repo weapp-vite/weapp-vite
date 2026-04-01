@@ -72,6 +72,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
 
   const userOnLaunch = appOptions.onLaunch
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
+    this.__wevuIsAppInstance = true
     mountRuntimeInstance(this, runtimeApp, watch, setup)
     bindMemoryWarningListener(this)
     callHookList(this, 'onLaunch', args)

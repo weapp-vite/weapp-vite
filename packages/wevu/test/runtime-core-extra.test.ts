@@ -79,6 +79,32 @@ describe('provide/inject', () => {
     expect(() => inject('absent')).toThrow('wevu.inject：未找到对应 key 的值')
   })
 
+  it('elevates provide() to global store when called in app setup context', () => {
+    const key = Symbol('app-provide')
+
+    setCurrentInstance({
+      __wevuIsAppInstance: true,
+    } as any)
+    provide(key, 'from-app')
+    expect(inject(key)).toBe('from-app')
+
+    setCurrentInstance(undefined)
+    expect(inject(key)).toBe('from-app')
+  })
+
+  it('keeps non-app setup provide() scoped to the current instance', () => {
+    const key = Symbol('scoped-provide')
+
+    setCurrentInstance({
+      route: 'pages/index/index',
+    } as any)
+    provide(key, 'from-page')
+    expect(inject(key)).toBe('from-page')
+
+    setCurrentInstance(undefined)
+    expect(inject(key, 'fallback')).toBe('fallback')
+  })
+
   it('supports explicit global API', () => {
     provideGlobal('key', 'ok')
     expect(injectGlobal('key')).toBe('ok')
