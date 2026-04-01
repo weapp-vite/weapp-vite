@@ -42,3 +42,23 @@ Run full monorepo `pnpm test` only when cross-package impact is likely or explic
   - unit tests
   - related e2e (if runtime-visible)
 - Keep changes local to `packages/weapp-vite` unless there is a clear interface contract change.
+
+## 5. Mini-Program Runtime Debug Heuristics
+
+- When a third-party request library fails in WeChat DevTools with messages like `fetch is not a function`, `URL is not a constructor`, adapter detection failure, or `instanceof` right-hand-side errors, do not stop at `globalThis` injection. Check the final emitted `common.js` and page chunks under `apps/*/dist/**` first.
+- Treat mini-program runtime compatibility as a final-bundle problem, not only a source-transform problem. `load` / `transform` can succeed while the final page wrapper still loses the injected code.
+- If request globals are bundled into `common.js`, verify two separate requirements:
+  - the runtime installer is actually executed in the final shared chunk
+  - page/component chunks get local bindings for free variables such as `fetch`, `AbortController`, `XMLHttpRequest`, `URL`, `URLSearchParams`, `Blob`, and `FormData`
+- Third-party libraries may probe environment support during module initialization, before later installer code runs. For shared chunks, prefer a two-phase strategy:
+  - prepend safe placeholder bindings to avoid early `instanceof` / adapter-detection crashes
+  - run the real installer and then replace those bindings with actual polyfills
+- For request-globals work, inspect built output with targeted searches before changing more source:
+  - `rg "__weappViteRequestGlobals" apps/<app>/dist`
+  - `rg "var fetch =|var URL =|var XMLHttpRequest =" apps/<app>/dist/pages`
+  - `rg "fetch is not a function|URL is not a constructor|instanceof" apps/<app>/dist/common.js`
+- In DevTools e2e, distinguish infra failure from product failure:
+  - websocket/bootstrap/login problems are infra
+  - page snapshot errors like `fetch is not a function` mean the test already reached app code
+- If DevTools e2e fails but unit tests pass, assume bundle-scope mismatch first. Inspect generated chunks before rewriting runtime code again.
+- After touching `packages/weapp-vite/src/**`, always rebuild `weapp-vite` before validating apps or e2e. If downstream output looks stale or inconsistent, stale `dist` is the first suspect.
