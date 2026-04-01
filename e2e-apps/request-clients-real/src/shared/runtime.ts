@@ -1,5 +1,3 @@
-import { installRequestGlobals } from '../../../../packages/weapp-vite/src/requestGlobals.ts'
-
 const TRAILING_SLASH_RE = /\/+$/
 
 export interface RequestCaseState {
@@ -85,8 +83,4 @@ export function createErrorState(previous: RequestCaseState, error: unknown): Re
 
 export function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-export function ensureRequestGlobalsHost() {
-  return installRequestGlobals() ?? globalThis
 }

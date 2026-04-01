@@ -3,7 +3,10 @@ import type { AstParserLike } from '../../../ast'
 import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { mayContainPlatformApiAccess, platformApiIdentifiers, resolveAstEngine } from '../../../ast'
-import { createInjectRequestGlobalsCode, resolveInjectRequestGlobalsOptions } from '../../../runtime/config/internal/injectRequestGlobals'
+import {
+  createInjectRequestGlobalsCode,
+  resolveInjectRequestGlobalsOptions,
+} from '../../../runtime/config/internal/injectRequestGlobals'
 import { isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -127,11 +130,18 @@ export function createTransformHook(state: CorePluginState) {
 
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
     const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
-    if (declaredEntryType !== 'page' && declaredEntryType !== 'component') {
+    const isLoadedEntry = state.loadedEntrySet?.has(sourceId) === true
+    const isRootEntry = relativeBasename === 'app'
+    if (!isLoadedEntry && declaredEntryType !== 'page' && declaredEntryType !== 'component') {
+      return ''
+    }
+    if (isLoadedEntry && isRootEntry) {
       return ''
     }
 
-    return createInjectRequestGlobalsCode(injectRequestGlobalsOptions.targets as any)
+    return createInjectRequestGlobalsCode(injectRequestGlobalsOptions.targets as any, {
+      localBindings: true,
+    })
   }
 
   const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {

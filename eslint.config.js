@@ -130,6 +130,12 @@ export default icebreaker(
     },
   },
   {
+    files: ['e2e-apps/request-clients-real/package.json'],
+    rules: {
+      'e18e/ban-dependencies': 'off',
+    },
+  },
+  {
     files: ['packages/miniprogram-automator/src/Element.ts'],
     rules: {
       'ts/no-use-before-define': 'off',

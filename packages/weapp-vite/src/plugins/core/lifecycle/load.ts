@@ -3,7 +3,11 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { mayContainPlatformApiAccess, platformApiIdentifiers, resolveAstEngine } from '../../../ast'
 import logger from '../../../logger'
-import { createInjectRequestGlobalsCode, resolveInjectRequestGlobalsOptions } from '../../../runtime/config/internal/injectRequestGlobals'
+import {
+  createInjectRequestGlobalsCode,
+  createInjectRequestGlobalsSfcCode,
+  resolveInjectRequestGlobalsOptions,
+} from '../../../runtime/config/internal/injectRequestGlobals'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
 import { findJsEntry, findVueEntry, isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
@@ -302,6 +306,22 @@ export function createLoadHook(state: CorePluginState) {
     return injectRequestGlobalsOptions.targets
   }
 
+  function createRequestGlobalsEntryCode(
+    sourceId: string,
+    targets: string[],
+    options?: {
+      localBindings?: boolean
+    },
+  ) {
+    if (targets.length === 0) {
+      return ''
+    }
+    if (sourceId.endsWith('.vue')) {
+      return createInjectRequestGlobalsSfcCode(targets as any, options)
+    }
+    return createInjectRequestGlobalsCode(targets as any, options)
+  }
+
   async function ensureWeapiAvailable(pluginCtx: any, importer: string) {
     if (weapiResolution.checked) {
       return weapiResolution.available
@@ -360,7 +380,9 @@ export function createLoadHook(state: CorePluginState) {
       if (requestGlobalsTargets.length === 0) {
         return result
       }
-      return prependCodeToLoadResult(result, createInjectRequestGlobalsCode(requestGlobalsTargets as any))
+      return prependCodeToLoadResult(result, createRequestGlobalsEntryCode(sourceId, requestGlobalsTargets, {
+        localBindings: true,
+      }))
     }
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
@@ -369,7 +391,7 @@ export function createLoadHook(state: CorePluginState) {
       const result = await loadEntry.call(this, sourceId, 'app')
       const requestGlobalsTargets = resolveRequestGlobalsTargets()
       const requestGlobalsCode = requestGlobalsTargets.length > 0
-        ? createInjectRequestGlobalsCode(requestGlobalsTargets as any)
+        ? createRequestGlobalsEntryCode(sourceId, requestGlobalsTargets)
         : ''
       if (!injectOptions || configService.weappLibConfig?.enabled) {
         return prependCodeToLoadResult(result, requestGlobalsCode)
@@ -402,7 +424,9 @@ export function createLoadHook(state: CorePluginState) {
       const result = await loadEntry.call(this, sourceId, loadType)
       const requestGlobalsTargets = resolveRequestGlobalsTargets()
       const requestGlobalsCode = requestGlobalsTargets.length > 0
-        ? createInjectRequestGlobalsCode(requestGlobalsTargets as any)
+        ? createRequestGlobalsEntryCode(sourceId, requestGlobalsTargets, {
+            localBindings: true,
+          })
         : ''
       if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
         return prependCodeToLoadResult(result, requestGlobalsCode)
