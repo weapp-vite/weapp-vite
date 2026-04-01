@@ -10,9 +10,13 @@ const createReadAndParseSfcOptionsMock = vi.hoisted(() => vi.fn(() => ({
   },
 })))
 
-vi.mock('../../../../ast/operations', () => ({
-  collectScriptSetupImportsFromCode: collectScriptSetupImportsFromCodeMock,
-}))
+vi.mock('../../../../ast', async () => {
+  const actual = await vi.importActual<typeof import('../../../../ast')>('../../../../ast')
+  return {
+    ...actual,
+    collectScriptSetupImportsFromCode: collectScriptSetupImportsFromCodeMock,
+  }
+})
 
 vi.mock('../../../utils/vueSfc', () => ({
   createReadAndParseSfcOptions: createReadAndParseSfcOptionsMock,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { collectSetDataPickKeysFromTemplateCode } from '../../src/ast/operations'
+import { collectSetDataPickKeysFromTemplateCode } from '../../src/ast'
 
 describe('collectSetDataPickKeysFromTemplateCode', () => {
   it('keeps current key collection behavior across engine options', () => {

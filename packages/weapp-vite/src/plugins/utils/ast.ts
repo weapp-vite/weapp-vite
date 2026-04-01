@@ -1,2 +1,2 @@
-export type { RequireToken } from '../../ast/operations'
-export { collectRequireTokens } from '../../ast/operations'
+export type { RequireToken } from '../../ast'
+export { collectRequireTokens } from '../../ast'

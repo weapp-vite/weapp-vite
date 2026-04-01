@@ -2,7 +2,7 @@ import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type * as t from '@weapp-vite/ast/babelTypes'
 import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
-import { collectSetDataPickKeysFromTemplateCode } from '../../../ast/operations'
+import { collectSetDataPickKeysFromTemplateCode } from '../../../ast'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { isAutoSetDataPickEnabledWithPreset } from './wevuPreset'
 
