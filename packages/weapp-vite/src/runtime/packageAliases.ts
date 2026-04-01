@@ -12,10 +12,22 @@ interface SpecialPackageAlias {
   distEntry: string
 }
 
+interface SpecifierAlias {
+  find: string
+  replacement: string
+}
+
 const SPECIAL_PACKAGE_ALIASES: SpecialPackageAlias[] = [
   {
     packageName: 'class-variance-authority',
     distEntry: 'dist/index.js',
+  },
+]
+
+const SPECIFIER_ALIASES: SpecifierAlias[] = [
+  {
+    find: 'vue-demi',
+    replacement: 'wevu/vue-demi',
   },
 ]
 
@@ -36,6 +48,8 @@ export function resolveBuiltinPackageAliases(): BuiltinPackageAliasEntry[] {
       replacement: resolvedEntry,
     })
   }
+
+  aliases.push(...SPECIFIER_ALIASES)
 
   return aliases
 }
