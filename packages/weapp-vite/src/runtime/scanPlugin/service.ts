@@ -7,6 +7,7 @@ import type {
 } from '../../types'
 import { isObject } from '@weapp-core/shared'
 import path from 'pathe'
+import logger from '../../logger'
 import { findJsEntry, findJsonEntry, findVueEntry } from '../../utils'
 import { requireConfigService } from '../utils/requireConfigService'
 import { normalizeSubPackageStyleEntries } from './styleEntries'
@@ -180,14 +181,12 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     const appDirname = ctx.configService.absoluteSrcRoot
     const appBasename = resolveScanAppBasename(appDirname)
     let { path: appConfigFile } = await findJsonEntry(appBasename)
+    const discoveredAppConfigFile = appConfigFile
     const { path: appEntryPath } = await findJsEntry(appBasename)
+    const vueAppPath = await findVueEntry(appBasename)
 
     // 如果找不到 app.json，尝试从 app.vue 提取配置；并在缺少 app.ts/js 时使用 app.vue 作为入口。
     let configFromVue: Record<string, any> | undefined
-    let vueAppPath: string | undefined
-    if (!appEntryPath) {
-      vueAppPath = await findVueEntry(appBasename)
-    }
     if (!appConfigFile && vueAppPath) {
       const { extractConfigFromVue } = await import('../../utils/file')
       configFromVue = await extractConfigFromVue(vueAppPath)
@@ -195,6 +194,13 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
         // 创建一个虚拟的 appConfigFile 路径（指向 .vue 文件）
         appConfigFile = vueAppPath
       }
+    }
+
+    if (appEntryPath && vueAppPath) {
+      logger.warn(`[app] 检测到 ${path.basename(appEntryPath)} 与 ${path.basename(vueAppPath)} 同时存在，当前将优先使用 ${path.basename(appEntryPath)} 作为应用入口，${path.basename(vueAppPath)} 将被忽略。`)
+    }
+    if (discoveredAppConfigFile && vueAppPath) {
+      logger.warn(`[app] 检测到 ${path.basename(discoveredAppConfigFile)} 与 ${path.basename(vueAppPath)} 同时存在，当前将优先使用 ${path.basename(discoveredAppConfigFile)} 作为应用配置来源，${path.basename(vueAppPath)} 中的 app 配置不会生效。`)
     }
 
     if (ctx.configService.absolutePluginRoot) {
