@@ -9,6 +9,7 @@ const sections = [
   { title: 'Script Setup', desc: 'defineProps/defineEmits/useAttrs 等', url: '/pages/vue-script-setup/index' },
   { title: 'Render 函数', desc: 'render() + h() 写法', url: '/pages/vue-render/index' },
   { title: '样式写法', desc: 'scoped + CSS modules', url: '/pages/vue-style/index' },
+  { title: 'Vue Query', desc: '@tanstack/vue-query 实际接入示例', url: '/pages/vue-query/index' },
 ]
 
 function open(url: string) {
@@ -64,7 +65,7 @@ function open(url: string) {
   padding: 18rpx;
   border-radius: 16rpx;
   background: #111827;
-  color: #ffffff;
+  color: #fff;
 }
 
 .hero-title {
@@ -81,10 +82,10 @@ function open(url: string) {
 }
 
 .card {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .entry {
