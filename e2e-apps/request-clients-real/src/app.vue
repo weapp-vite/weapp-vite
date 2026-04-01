@@ -1,5 +1,20 @@
 <script setup lang="ts">
+import { QueryClient, VUE_QUERY_CLIENT } from '@tanstack/vue-query'
 import routes from 'weapp-vite/auto-routes'
+import { provideGlobal } from 'wevu'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 5 * 60 * 1000,
+      retry: false,
+      staleTime: 0,
+    },
+  },
+})
+
+queryClient.mount()
+provideGlobal(VUE_QUERY_CLIENT, queryClient)
 
 defineAppJson({
   pages: routes.pages,
@@ -15,7 +30,8 @@ defineAppJson({
 </script>
 
 <style>
-.app-root {
-  color: inherit;
+page {
+  color: #0f172a;
+  background: #e2e8f0;
 }
 </style>
