@@ -32,6 +32,19 @@ interface BenchUpdateSummary {
   dispatchMsMedian: number
   flushMsMedian: number
   setDataCallsMedian: number
+  setDataDiagnosticsMedian: {
+    flushes: number
+    patchFlushes: number
+    diffFlushes: number
+    fallbackFlushes: number
+    avgPayloadKeys: number
+    maxPayloadKeys: number
+    avgPendingPatchKeys: number
+    maxPendingPatchKeys: number
+    avgBytes: number
+    maxBytes: number
+  }
+  fallbackReasons: Record<string, number>
   samples: Array<{
     wallMs: number
     metricMs: number
@@ -40,6 +53,19 @@ interface BenchUpdateSummary {
     dispatchMs: number
     flushMs: number
     setDataCalls: number
+    setDataDiagnostics: {
+      flushes: number
+      patchFlushes: number
+      diffFlushes: number
+      fallbackFlushes: number
+      avgPayloadKeys: number
+      maxPayloadKeys: number
+      avgPendingPatchKeys: number
+      maxPendingPatchKeys: number
+      avgBytes: number
+      maxBytes: number
+      fallbackReasons?: Record<string, number>
+    }
   }>
 }
 
@@ -131,6 +157,7 @@ async function measureUpdate(miniProgram: any, projectRoot: string, method: 'run
     await page.waitFor(100)
     const startedAt = Date.now()
     const state = await page.callMethod(method, rounds)
+    const diagnostics = state?.setDataDiagnostics?.[metricKey === 'singleCommitMs' ? 'singleCommit' : 'microCommit'] ?? {}
     samples.push({
       wallMs: Date.now() - startedAt,
       metricMs: Number(state?.metrics?.[metricKey] ?? 0),
@@ -139,8 +166,28 @@ async function measureUpdate(miniProgram: any, projectRoot: string, method: 'run
       dispatchMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitDispatchMs' : 'microCommitDispatchMs'] ?? 0),
       flushMs: Number(state?.metrics?.[metricKey === 'singleCommitMs' ? 'singleCommitFlushMs' : 'microCommitFlushMs'] ?? 0),
       setDataCalls: Number(state?.metrics?.[callKey] ?? 0),
+      setDataDiagnostics: {
+        flushes: Number(diagnostics.flushes ?? 0),
+        patchFlushes: Number(diagnostics.patchFlushes ?? 0),
+        diffFlushes: Number(diagnostics.diffFlushes ?? 0),
+        fallbackFlushes: Number(diagnostics.fallbackFlushes ?? 0),
+        avgPayloadKeys: Number(diagnostics.avgPayloadKeys ?? 0),
+        maxPayloadKeys: Number(diagnostics.maxPayloadKeys ?? 0),
+        avgPendingPatchKeys: Number(diagnostics.avgPendingPatchKeys ?? 0),
+        maxPendingPatchKeys: Number(diagnostics.maxPendingPatchKeys ?? 0),
+        avgBytes: Number(diagnostics.avgBytes ?? 0),
+        maxBytes: Number(diagnostics.maxBytes ?? 0),
+        fallbackReasons: diagnostics.fallbackReasons ?? {},
+      },
     })
   }
+
+  const fallbackReasons = samples.reduce<Record<string, number>>((result, sample) => {
+    for (const [reason, count] of Object.entries(sample.setDataDiagnostics.fallbackReasons ?? {})) {
+      result[reason] = Math.max(result[reason] ?? 0, Number(count ?? 0))
+    }
+    return result
+  }, {})
 
   return {
     wallMsMedian: median(samples.map(sample => sample.wallMs)),
@@ -150,6 +197,19 @@ async function measureUpdate(miniProgram: any, projectRoot: string, method: 'run
     dispatchMsMedian: median(samples.map(sample => sample.dispatchMs)),
     flushMsMedian: median(samples.map(sample => sample.flushMs)),
     setDataCallsMedian: median(samples.map(sample => sample.setDataCalls)),
+    setDataDiagnosticsMedian: {
+      flushes: median(samples.map(sample => sample.setDataDiagnostics.flushes)),
+      patchFlushes: median(samples.map(sample => sample.setDataDiagnostics.patchFlushes)),
+      diffFlushes: median(samples.map(sample => sample.setDataDiagnostics.diffFlushes)),
+      fallbackFlushes: median(samples.map(sample => sample.setDataDiagnostics.fallbackFlushes)),
+      avgPayloadKeys: median(samples.map(sample => sample.setDataDiagnostics.avgPayloadKeys)),
+      maxPayloadKeys: median(samples.map(sample => sample.setDataDiagnostics.maxPayloadKeys)),
+      avgPendingPatchKeys: median(samples.map(sample => sample.setDataDiagnostics.avgPendingPatchKeys)),
+      maxPendingPatchKeys: median(samples.map(sample => sample.setDataDiagnostics.maxPendingPatchKeys)),
+      avgBytes: median(samples.map(sample => sample.setDataDiagnostics.avgBytes)),
+      maxBytes: median(samples.map(sample => sample.setDataDiagnostics.maxBytes)),
+    },
+    fallbackReasons,
     samples,
   }
 }

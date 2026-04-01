@@ -449,3 +449,58 @@ pnpm run e2e:runtime-bench
 - 大提交场景维持与原生接近
 - 微提交场景的 flush 成本已明显下降
 - 后续若继续优化，仍应优先关注 diff/serialize/flush 这一段链路，而不是业务计算本身
+
+## 2026-04-01 诊断补充：当前 benchmark 并未命中 patch
+
+为确认剩余的 `flushMs` 到底来自 `patch -> diff fallback`，还是来自默认 `diff` 热路径，本次对 `apps/runtime-bench-vue` 的 update 页补充了 `setData.debug` 聚合统计，并在 benchmark worker 中把诊断数据一起输出。
+
+同时核对 runtime 默认值：
+
+- `packages/wevu/src/runtime/app/setDataOptions.ts`
+- `setDataOptions?.strategy ?? 'diff'`
+
+也就是说，如果 benchmark app 没有显式配置 `setData.strategy`，当前运行的就是 `diff` 模式。
+
+### Vue update 场景诊断结果
+
+直接运行 `runtime-bench.worker.ts` 后，`apps/runtime-bench-vue` 的中位数结果为：
+
+| 场景       | flushes | patchFlushes | diffFlushes | fallbackFlushes | avgPayloadKeys |
+| ---------- | ------: | -----------: | ----------: | --------------: | -------------: |
+| 单次大更新 |       1 |            0 |           1 |               0 |              3 |
+| 多次小更新 |      40 |            0 |          40 |               0 |              3 |
+
+关键点有两条：
+
+1. `patchFlushes = 0`
+2. `fallbackFlushes = 0`
+
+这说明当前 benchmark 里的 Vue 更新场景根本没有进入 patch 路径，因此也不存在“因为 patch 回退到 diff 才变慢”的问题。
+
+### 这对结论意味着什么
+
+现在可以把前面的判断再收窄一层：
+
+- 当前 benchmark 里剩余的 flush 成本，主要是 `diff` 模式自身的调度、快照、序列化和桥接提交成本
+- 不是 patch fallback
+- 也不是 payload 过大，因为本轮 `avgPayloadKeys` 稳定只有 `3`
+
+换句话说，当前这组基准页测到的其实是：
+
+- `cards`
+- `summary`
+- `totalSetDataCalls`
+
+这三个顶层 key 的持续 diff flush 成本，而不是大规模 patch path 的退化成本。
+
+### 后续优化和 benchmark 演进建议
+
+基于这次诊断，下一步应拆成两条线：
+
+1. runtime 优化继续盯 `diff` 热路径
+2. benchmark 增加显式 `patch` 场景做 A/B
+
+更具体地说：
+
+- 如果目标是继续压当前基准下的 `flushMs`，优先看 `diffSnapshots`、`toPlain`、flush 调度与桥接提交
+- 如果目标是验证 patch 优化是否有效，应该在 `apps/runtime-bench-vue` 里新增显式 `setData: { strategy: 'patch' }` 的对照场景，而不是继续从当前默认 diff benchmark 推断 patch 表现
