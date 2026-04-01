@@ -35,6 +35,19 @@ interface WorkerResult {
     dispatchMsMedian: number
     flushMsMedian: number
     setDataCallsMedian: number
+    setDataDiagnosticsMedian: {
+      flushes: number
+      patchFlushes: number
+      diffFlushes: number
+      fallbackFlushes: number
+      avgPayloadKeys: number
+      maxPayloadKeys: number
+      avgPendingPatchKeys: number
+      maxPendingPatchKeys: number
+      avgBytes: number
+      maxBytes: number
+    }
+    fallbackReasons: Record<string, number>
   }
   updateMicroCommit: {
     wallMsMedian: number
@@ -44,6 +57,19 @@ interface WorkerResult {
     dispatchMsMedian: number
     flushMsMedian: number
     setDataCallsMedian: number
+    setDataDiagnosticsMedian: {
+      flushes: number
+      patchFlushes: number
+      diffFlushes: number
+      fallbackFlushes: number
+      avgPayloadKeys: number
+      maxPayloadKeys: number
+      avgPendingPatchKeys: number
+      maxPendingPatchKeys: number
+      avgBytes: number
+      maxBytes: number
+    }
+    fallbackReasons: Record<string, number>
   }
 }
 
@@ -114,6 +140,8 @@ async function main() {
       deltaDispatchMs: vue.updateSingleCommit.dispatchMsMedian - native.updateSingleCommit.dispatchMsMedian,
       deltaFlushMs: vue.updateSingleCommit.flushMsMedian - native.updateSingleCommit.flushMsMedian,
       deltaSetDataCalls: vue.updateSingleCommit.setDataCallsMedian - native.updateSingleCommit.setDataCallsMedian,
+      vueSetDataDiagnostics: vue.updateSingleCommit.setDataDiagnosticsMedian,
+      vueFallbackReasons: vue.updateSingleCommit.fallbackReasons,
     },
     updateMicroCommit: {
       native,
@@ -125,6 +153,8 @@ async function main() {
       deltaDispatchMs: vue.updateMicroCommit.dispatchMsMedian - native.updateMicroCommit.dispatchMsMedian,
       deltaFlushMs: vue.updateMicroCommit.flushMsMedian - native.updateMicroCommit.flushMsMedian,
       deltaSetDataCalls: vue.updateMicroCommit.setDataCallsMedian - native.updateMicroCommit.setDataCallsMedian,
+      vueSetDataDiagnostics: vue.updateMicroCommit.setDataDiagnosticsMedian,
+      vueFallbackReasons: vue.updateMicroCommit.fallbackReasons,
     },
   }
 

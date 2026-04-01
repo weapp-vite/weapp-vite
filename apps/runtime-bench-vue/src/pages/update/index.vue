@@ -1,15 +1,19 @@
 <script lang="ts">
-import type { BenchMetrics, SetDataCounter } from '../../utils/bench'
+import type { SetDataDebugInfo } from 'wevu'
+import type { BenchMetrics, BenchSetDataDiagnosticsSummary, SetDataCounter } from '../../utils/bench'
 import { defineComponent, nextTick, onLoad, onReady } from 'wevu'
 import {
-
   createBenchCards,
   createEmptyMetrics,
+  createSetDataDiagnosticsTracker,
   mutateBenchCards,
   now,
   patchSetData,
-
+  recordSetDataDebugEvent,
+  recordSetDataFlushEvent,
+  resetSetDataDiagnosticsTracker,
   summarizeBenchCards,
+  summarizeSetDataDiagnostics,
   UPDATE_CARD_COUNT,
 } from '../../utils/bench'
 
@@ -17,8 +21,37 @@ const setDataCounter: SetDataCounter = {
   total: 0,
   firstCommitAt: null,
 }
+const setDataDiagnosticsTracker = createSetDataDiagnosticsTracker()
 
 let loadStartedAt = 0
+
+function createEmptyDiagnosticsSummary(): BenchSetDataDiagnosticsSummary {
+  return {
+    flushes: 0,
+    patchFlushes: 0,
+    diffFlushes: 0,
+    fallbackFlushes: 0,
+    fallbackReasons: {},
+    avgPayloadKeys: 0,
+    maxPayloadKeys: 0,
+    avgPendingPatchKeys: 0,
+    maxPendingPatchKeys: 0,
+    avgBytes: 0,
+    maxBytes: 0,
+    avgComputedDirtyKeys: 0,
+    maxComputedDirtyKeys: 0,
+    avgMergedSiblingParents: 0,
+    maxMergedSiblingParents: 0,
+  }
+}
+
+function recordSetDataDebug(info: SetDataDebugInfo) {
+  recordSetDataDebugEvent(setDataDiagnosticsTracker, info)
+}
+
+function resetSetDataDiagnostics() {
+  resetSetDataDiagnosticsTracker(setDataDiagnosticsTracker)
+}
 
 function buildSnapshot(data: {
   cards: unknown[]
@@ -35,17 +68,46 @@ function buildSnapshot(data: {
   }
 }
 
+function buildUpdateSnapshot(data: {
+  cards: unknown[]
+  metrics: BenchMetrics
+  readyMarker: string
+  summary: string
+  setDataDiagnostics: {
+    singleCommit: BenchSetDataDiagnosticsSummary
+    microCommit: BenchSetDataDiagnosticsSummary
+  }
+}) {
+  return {
+    readyMarker: data.readyMarker,
+    cardCount: data.cards.length,
+    summary: data.summary,
+    metrics: data.metrics,
+    totalSetDataCalls: setDataCounter.total,
+    setDataDiagnostics: data.setDataDiagnostics,
+  }
+}
+
 export default defineComponent({
+  setData: {
+    debugWhen: 'always',
+    debug: recordSetDataDebug,
+  },
   setup(_props, ctx) {
     const state = ctx.state as any
     const instance = ctx.instance as any
-    patchSetData(instance, setDataCounter)
+    patchSetData(instance, setDataCounter, () => {
+      recordSetDataFlushEvent(setDataDiagnosticsTracker)
+    })
 
     onLoad(() => {
       loadStartedAt = now()
       setDataCounter.total = 0
       setDataCounter.firstCommitAt = null
-      patchSetData(instance, setDataCounter)
+      resetSetDataDiagnostics()
+      patchSetData(instance, setDataCounter, () => {
+        recordSetDataFlushEvent(setDataDiagnosticsTracker)
+      })
 
       const cards = createBenchCards(11, UPDATE_CARD_COUNT)
       state.readyMarker = 'vue-update-ready'
@@ -53,6 +115,10 @@ export default defineComponent({
       state.cards = cards
       state.metrics = createEmptyMetrics()
       state.totalSetDataCalls = 0
+      state.setDataDiagnostics = {
+        singleCommit: createEmptyDiagnosticsSummary(),
+        microCommit: createEmptyDiagnosticsSummary(),
+      }
     })
 
     onReady(() => {
@@ -70,6 +136,7 @@ export default defineComponent({
     }
 
     async function runSingleCommitBench(rounds = 180) {
+      resetSetDataDiagnostics()
       const startCalls = setDataCounter.total
       const startAt = now()
       let cards = state.cards
@@ -100,11 +167,16 @@ export default defineComponent({
         singleCommitSetDataCalls: setDataCounter.total - startCalls,
       }
       state.totalSetDataCalls = setDataCounter.total
+      state.setDataDiagnostics = {
+        ...state.setDataDiagnostics,
+        singleCommit: summarizeSetDataDiagnostics(setDataDiagnosticsTracker),
+      }
 
-      return buildSnapshot(state)
+      return buildUpdateSnapshot(state)
     }
 
     async function runMicroCommitBench(rounds = 40) {
+      resetSetDataDiagnostics()
       const startCalls = setDataCounter.total
       const startAt = now()
       let cards = state.cards
@@ -139,8 +211,12 @@ export default defineComponent({
         microCommitSetDataCalls: setDataCounter.total - startCalls,
       }
       state.totalSetDataCalls = setDataCounter.total
+      state.setDataDiagnostics = {
+        ...state.setDataDiagnostics,
+        microCommit: summarizeSetDataDiagnostics(setDataDiagnosticsTracker),
+      }
 
-      return buildSnapshot(state)
+      return buildUpdateSnapshot(state)
     }
 
     return {
@@ -156,6 +232,10 @@ export default defineComponent({
     cards: [] as any[],
     metrics: createEmptyMetrics(),
     totalSetDataCalls: 0,
+    setDataDiagnostics: {
+      singleCommit: createEmptyDiagnosticsSummary(),
+      microCommit: createEmptyDiagnosticsSummary(),
+    },
   }),
 })
 </script>
