@@ -1,4 +1,5 @@
 import { resolve } from 'node:path'
+import process from 'node:process'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
@@ -6,6 +7,10 @@ export default defineConfig({
   root: __dirname,
   base: './',
   appType: 'spa',
+  define: {
+    'process.env.BABEL_TYPES_8_BREAKING': 'false',
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'development'),
+  },
   plugins: [vue()],
   optimizeDeps: {
     exclude: ['@vue/repl'],
