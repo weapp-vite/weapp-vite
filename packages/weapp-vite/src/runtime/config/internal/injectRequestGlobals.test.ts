@@ -12,7 +12,6 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'auto',
-      dependencyPatterns: ['axios', 'graphql-request'],
       targets: [
         'fetch',
         'Headers',
@@ -21,6 +20,20 @@ describe('injectRequestGlobals helpers', () => {
         'AbortController',
         'AbortSignal',
         'XMLHttpRequest',
+      ],
+    })
+  })
+
+  it('resolves abort-only auto injection for tanstack query dependencies', () => {
+    expect(resolveInjectRequestGlobalsOptions(undefined, {
+      dependencies: {
+        '@tanstack/vue-query': '^5.0.0',
+      },
+    })).toEqual({
+      mode: 'auto',
+      targets: [
+        'AbortController',
+        'AbortSignal',
       ],
     })
   })

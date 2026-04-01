@@ -57,4 +57,16 @@ describe('request globals runtime', () => {
     expect(xhr.readyState).toBe(xhr.DONE)
     expect(xhr.getResponseHeader('content-type')).toBe('application/json')
   })
+
+  it('supports installing only abort globals', async () => {
+    const { installRequestGlobals } = await import('./requestGlobals')
+    installRequestGlobals({
+      targets: ['AbortController', 'AbortSignal'],
+    })
+
+    expect(typeof globalThis.AbortController).toBe('function')
+    expect(typeof globalThis.AbortSignal).toBe('function')
+    expect(globalThis.fetch).toBeUndefined()
+    expect(globalThis.XMLHttpRequest).toBeUndefined()
+  })
 })
