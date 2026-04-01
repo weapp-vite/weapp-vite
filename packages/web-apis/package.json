@@ -1,0 +1,82 @@
+{
+  "name": "@weapp-vite/web-apis",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Web API polyfills and global installers for mini-program runtimes",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/web-apis"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp",
+    "web",
+    "runtime",
+    "fetch",
+    "polyfill",
+    "miniprogram"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./abort": {
+      "types": "./dist/abort.d.mts",
+      "import": "./dist/abort.mjs"
+    },
+    "./fetch": {
+      "types": "./dist/fetch.d.mts",
+      "import": "./dist/fetch.mjs"
+    },
+    "./http": {
+      "types": "./dist/http.d.mts",
+      "import": "./dist/http.mjs"
+    },
+    "./shared": {
+      "types": "./dist/shared.d.mts",
+      "import": "./dist/shared.mjs"
+    },
+    "./url": {
+      "types": "./dist/url.d.mts",
+      "import": "./dist/url.mjs"
+    },
+    "./web": {
+      "types": "./dist/web.d.mts",
+      "import": "./dist/web.mjs"
+    },
+    "./xhr": {
+      "types": "./dist/xhr.d.mts",
+      "import": "./dist/xhr.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsdown -w --sourcemap",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:dev": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@wevu/api": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

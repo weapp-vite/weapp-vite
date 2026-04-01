@@ -1,9 +1,6 @@
 import type { PackageJson } from 'pkg-types'
 import type { WeappInjectRequestGlobalsConfig, WeappInjectRequestGlobalsTarget } from '../../../types'
-import fs from 'node:fs'
-import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
-import { PACKAGE_ROOT } from '../../../packagePaths'
 
 const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'fetch',
@@ -158,19 +155,7 @@ export function resolveInjectRequestGlobalsOptions(
 }
 
 function resolveRequestGlobalsRuntimeModuleId() {
-  const candidates = [
-    path.resolve(PACKAGE_ROOT, 'dist/requestGlobals.mjs'),
-    path.resolve(PACKAGE_ROOT, 'src/requestGlobals.ts'),
-    path.resolve(PACKAGE_ROOT, 'src/runtime/requestGlobals/index.ts'),
-  ]
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return candidate
-    }
-  }
-
-  throw new Error('无法定位 request globals runtime 模块，请先构建 weapp-vite 包。')
+  return 'weapp-vite/requestGlobals'
 }
 
 function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
