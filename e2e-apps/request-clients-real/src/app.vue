@@ -13,8 +13,6 @@ const queryClient = new QueryClient({
 })
 
 queryClient.mount()
-
-export default {}
 </script>
 
 <script setup lang="ts">
