@@ -647,6 +647,30 @@ console.log(routes, promise)
     expect(code).toContain('Promise.resolve({"pages":["pages/home/index"],"entries":[{"path":"/project/src/pages/home/index.vue"}],"subPackages":[{"root":"pkg","pages":["detail/index"]}]})')
   })
 
+  it('inlines named auto routes imports through shared helper', async () => {
+    const ensureFresh = vi.fn(async () => {})
+    const getReference = vi.fn(() => ({
+      pages: ['pages/home/index'],
+      entries: [{ path: '/project/src/pages/home/index.vue' }],
+      subPackages: [{ root: 'pkg', pages: ['detail/index'] }],
+    }))
+
+    const code = await inlineTransformAutoRoutes({
+      source: `
+import { pages, subPackages as routeSubPackages } from "weapp-vite/auto-routes"
+console.log(pages, routeSubPackages)
+      `.trim(),
+      autoRoutesService: {
+        ensureFresh,
+        getReference,
+      },
+    })
+
+    expect(ensureFresh).toHaveBeenCalledTimes(1)
+    expect(getReference).toHaveBeenCalledTimes(1)
+    expect(code).toContain('const { pages, subPackages: routeSubPackages } = {"pages":["pages/home/index"],"entries":[{"path":"/project/src/pages/home/index.vue"}],"subPackages":[{"root":"pkg","pages":["detail/index"]}]};')
+  })
+
   it('skips auto routes inline work when source does not reference auto routes', async () => {
     const ensureFresh = vi.fn(async () => {})
     const getReference = vi.fn()

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import routes from 'weapp-vite/auto-routes'
+import { pages, subPackages } from 'weapp-vite/auto-routes'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,8 +23,8 @@ defineAppSetup((app) => {
 })
 
 defineAppJson({
-  pages: routes.pages,
-  subPackages: routes.subPackages,
+  pages,
+  subPackages,
   window: {
     navigationBarTitleText: 'request-clients-real',
     navigationBarBackgroundColor: '#0f172a',
