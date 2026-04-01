@@ -1,8 +1,8 @@
 import os from 'node:os'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
+import * as fs from '../../../../utils/fs'
 import { inlineScriptSetupDefineOptionsArgs } from './inline'
 
 async function createTempProject() {

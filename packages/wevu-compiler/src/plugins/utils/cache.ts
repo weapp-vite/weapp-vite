@@ -1,5 +1,5 @@
-import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
+import * as fs from '../../utils/fs'
 import { normalizeLineEndings } from '../../utils/text'
 
 export const mtimeCache = new Map<string, { mtimeMs: number, size: number }>()

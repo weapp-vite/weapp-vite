@@ -1,10 +1,9 @@
 import * as t from '@weapp-vite/ast/babelTypes'
-// eslint-disable-next-line e18e/ban-dependencies -- 编译期临时求值仍复用 fs-extra 处理临时目录与文件清理。
-import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
+import * as fs from '../../../../utils/fs'
 import { withTempDirLock } from '../tempDirLock'
 import { rewriteRelativeImportSource } from '../tempImportRewrite'
 import { resolveWevuConfigTempDir } from '../wevuTempDir'

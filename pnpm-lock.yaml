@@ -51,6 +51,9 @@ catalogs:
     '@vue/compiler-core':
       specifier: ^3.5.31
       version: 3.5.31
+    '@vue/compiler-dom':
+      specifier: ^3.5.31
+      version: 3.5.31
     '@vue/language-core':
       specifier: ^3.2.6
       version: 3.2.6
@@ -1631,6 +1634,9 @@ importers:
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
+      shiki:
+        specifier: ^4.0.2
+        version: 4.0.2
       vue:
         specifier: 'catalog:'
         version: 3.5.31(typescript@6.0.2)
@@ -2019,6 +2025,9 @@ importers:
       '@vue/compiler-core':
         specifier: 'catalog:'
         version: 3.5.31
+      '@vue/compiler-dom':
+        specifier: 'catalog:'
+        version: 3.5.31
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
@@ -2028,9 +2037,6 @@ importers:
       comment-json:
         specifier: 'catalog:'
         version: 4.6.2
-      fs-extra:
-        specifier: 'catalog:'
-        version: 11.3.4
       lru-cache:
         specifier: 'catalog:'
         version: 11.2.7

@@ -1,7 +1,7 @@
 import os from 'node:os'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as fs from '../../utils/fs'
 import {
   clearFileCaches,
   invalidateFileCache,
