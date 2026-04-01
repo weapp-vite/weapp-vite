@@ -68,6 +68,21 @@ export function resolveRequestGlobalsHosts() {
   return hosts
 }
 
+export function installRequestGlobalBinding(name: string, value: unknown) {
+  if (!name) {
+    return
+  }
+
+  try {
+    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
+    Function('__weappRequestGlobalValue__', `${name} = __weappRequestGlobalValue__`)(
+      value,
+    )
+  }
+  catch {
+  }
+}
+
 export function cloneArrayBuffer(buffer: ArrayBuffer) {
   return buffer.slice(0)
 }

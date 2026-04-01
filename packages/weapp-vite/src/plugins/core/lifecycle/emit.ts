@@ -10,6 +10,7 @@ import {
   shouldRewriteBundleNpmImports,
 } from '../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
+import { resolveInjectRequestGlobalsOptions } from '../../../runtime/config/internal/injectRequestGlobals'
 import { toPosixPath } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import {
@@ -36,6 +37,26 @@ const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
 const NPM_PROTOCOL_RE = /^npm:/
 const ABSOLUTE_NPM_PREFIX_RE = /^\/(?:miniprogram_npm|node_modules)\//
 const PRETTY_NODE_MODULES_RE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/
+const REQUEST_GLOBAL_EXPORT_RE = /Object\.defineProperty\(exports,\s*(?:`([^`]+)`|'([^']+)'|"([^"]+)"),\s*\{[\s\S]*?get:function\(\)\{return ([A-Za-z_$][\w$]*)\}\}\)/g
+const REQUEST_GLOBAL_INSTALLER_RE = /function\s+([A-Za-z_$][\w$]*)\([^)]*=\{\}\)\{[\s\S]{0,200}?targets\?\?\[[\s\S]{0,80}?fetch[\s\S]{0,80}?Headers[\s\S]{0,80}?Request[\s\S]{0,80}?Response[\s\S]{0,80}?AbortController[\s\S]{0,80}?AbortSignal[\s\S]{0,80}?XMLHttpRequest[\s\S]{0,240}?return [^}]+\}/
+const REQUEST_GLOBAL_ENTRY_NAME_RE = /\.[^/.]+$/
+const REQUEST_GLOBAL_REQUIRE_RE = /^(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`([^`]+)`|'([^']+)'|"([^"]+)")\);?/
+const REQUEST_GLOBAL_TARGET_SIGNATURES = [
+  'fetch',
+  'Headers',
+  'Request',
+  'Response',
+  'AbortController',
+  'AbortSignal',
+  'XMLHttpRequest',
+] as const
+const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set([
+  ...REQUEST_GLOBAL_TARGET_SIGNATURES,
+  'URL',
+  'URLSearchParams',
+  'Blob',
+  'FormData',
+])
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -293,6 +314,10 @@ function getRequireImportLiteral(node: any) {
   return null
 }
 
+function getStaticStringLiteral(node: any) {
+  return getRequireImportLiteral(node)
+}
+
 function setRequireImportLiteral(node: any, nextValue: string) {
   if (!node) {
     return
@@ -306,6 +331,261 @@ function setRequireImportLiteral(node: any, nextValue: string) {
   if (node.type === 'TemplateLiteral' && node.expressions?.length === 0 && node.quasis?.length === 1) {
     node.quasis[0].value.raw = nextValue
     node.quasis[0].value.cooked = nextValue
+  }
+}
+
+function resolveRequestGlobalsInstallerName(code: string) {
+  const installerMatch = code.match(REQUEST_GLOBAL_INSTALLER_RE)
+  if (installerMatch?.[1]) {
+    return installerMatch[1]
+  }
+
+  try {
+    const ast = parseJsLike(code)
+    let installerName: string | null = null
+
+    const isInstallerFunctionNode = (node: any) => {
+      if (!node) {
+        return false
+      }
+      const functionCode = generate(node).code
+      return REQUEST_GLOBAL_TARGET_SIGNATURES.every(target => functionCode.includes(target))
+    }
+
+    traverse(ast as any, {
+      FunctionDeclaration(path: any) {
+        if (installerName || !path.node?.id?.name) {
+          return
+        }
+        if (isInstallerFunctionNode(path.node.body)) {
+          installerName = path.node.id.name
+        }
+      },
+      VariableDeclarator(path: any) {
+        if (installerName || path.node?.id?.type !== 'Identifier') {
+          return
+        }
+        const init = path.node.init
+        if (!init || (init.type !== 'FunctionExpression' && init.type !== 'ArrowFunctionExpression')) {
+          return
+        }
+        if (isInstallerFunctionNode(init.body)) {
+          installerName = path.node.id.name
+        }
+      },
+    })
+
+    return installerName
+  }
+  catch {
+    return null
+  }
+}
+
+function resolveRequestGlobalsExportName(code: string) {
+  const installerName = resolveRequestGlobalsInstallerName(code)
+  if (!installerName) {
+    return null
+  }
+
+  for (const match of code.matchAll(REQUEST_GLOBAL_EXPORT_RE)) {
+    const candidateExportName = match[1] ?? match[2] ?? match[3]
+    const returnedIdentifier = match[4]
+    if (candidateExportName && returnedIdentifier === installerName) {
+      return candidateExportName
+    }
+  }
+
+  try {
+    const ast = parseJsLike(code)
+    let exportName: string | null = null
+
+    traverse(ast as any, {
+      CallExpression(path: any) {
+        if (exportName) {
+          return
+        }
+
+        const callee = path.node?.callee
+        if (
+          !callee
+          || callee.type !== 'MemberExpression'
+          || callee.object?.type !== 'Identifier'
+          || callee.object.name !== 'Object'
+          || callee.property?.type !== 'Identifier'
+          || callee.property.name !== 'defineProperty'
+        ) {
+          return
+        }
+
+        const args = path.node.arguments
+        if (!Array.isArray(args) || args.length < 3) {
+          return
+        }
+
+        if (args[0]?.type !== 'Identifier' || args[0].name !== 'exports') {
+          return
+        }
+
+        const candidateExportName = getStaticStringLiteral(args[1])
+        if (!candidateExportName || args[2]?.type !== 'ObjectExpression') {
+          return
+        }
+
+        const getterProperty = args[2].properties.find((property: any) => {
+          return (
+            (
+              property?.type === 'ObjectProperty'
+              && property.key?.type === 'Identifier'
+              && property.key.name === 'get'
+            )
+            || (
+              property?.type === 'ObjectMethod'
+              && property.key?.type === 'Identifier'
+              && property.key.name === 'get'
+            )
+          )
+        })
+
+        const getterValue = getterProperty?.type === 'ObjectMethod' ? getterProperty : getterProperty?.value
+        if (!getterValue) {
+          return
+        }
+
+        const getterBody = getterValue.body
+        const returnIdentifier = getterBody?.type === 'BlockStatement'
+          ? getterBody.body.find((statement: any) => statement?.type === 'ReturnStatement')?.argument
+          : getterBody
+
+        if (returnIdentifier?.type === 'Identifier' && returnIdentifier.name === installerName) {
+          exportName = candidateExportName
+        }
+      },
+    })
+
+    return exportName
+  }
+  catch {
+    return null
+  }
+}
+
+function normalizeRelativeChunkImport(fileName: string, importee: string) {
+  return toPosixPath(path.normalize(path.join(path.dirname(fileName), importee)))
+}
+
+function resolveRequestGlobalsBindingTargets(targets: string[]) {
+  const bindingTargets = [...targets]
+  const needsUrlGlobals = targets.some(target => (
+    target === 'fetch'
+    || target === 'Request'
+    || target === 'Response'
+    || target === 'XMLHttpRequest'
+  ))
+
+  if (needsUrlGlobals) {
+    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
+  }
+
+  return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
+}
+
+function injectRequestGlobalsBundleRuntime(
+  bundle: OutputBundle,
+  targets: string[],
+) {
+  const installerChunks = new Map<string, string>()
+  if (targets.length === 0) {
+    return installerChunks
+  }
+
+  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    if (chunk.code.includes('__weappViteRequestGlobalsBundleInstalled__')) {
+      continue
+    }
+
+    const installerName = resolveRequestGlobalsInstallerName(chunk.code)
+    const exportName = resolveRequestGlobalsExportName(chunk.code)
+    if (!installerName || !exportName) {
+      continue
+    }
+
+    installerChunks.set(toPosixPath(chunk.fileName), exportName)
+    const placeholderCode = bindingTargets.map((target) => {
+      const placeholderValue = target === 'fetch'
+        ? 'function __weappViteFetchPlaceholder__(){throw new Error("fetch is not initialized")}'
+        : `function ${target}(){}`
+      return `var ${target} = typeof globalThis.${target} !== "undefined" ? globalThis.${target} : ${placeholderValue}`
+    }).join(';')
+    const runtimeBindingCode = [
+      `const __weappViteRequestGlobalsBundleHost__ = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      ...bindingTargets.map(target => `${target} = __weappViteRequestGlobalsBundleHost__.${target}`),
+    ].join(';')
+    chunk.code = `/* __weappViteRequestGlobalsBundleInstalled__ */ ${placeholderCode};\n${chunk.code}\n;${runtimeBindingCode};\n`
+  }
+
+  return installerChunks
+}
+
+function injectRequestGlobalsLocalBindings(
+  bundle: OutputBundle,
+  installerChunks: Map<string, string>,
+  targets: string[],
+  entriesMap: Map<string, { type?: string } | undefined> | undefined,
+) {
+  if (installerChunks.size === 0 || targets.length === 0) {
+    return
+  }
+
+  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  if (bindingTargets.length === 0) {
+    return
+  }
+
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const entryName = chunk.fileName.replace(REQUEST_GLOBAL_ENTRY_NAME_RE, '')
+    const entryType = entriesMap?.get(entryName)?.type
+    if (entryType !== 'page' && entryType !== 'component') {
+      continue
+    }
+
+    if (chunk.code.includes('__weappViteRequestGlobalsLocalBindings__')) {
+      continue
+    }
+
+    const requireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_RE)
+    const requireAlias = requireMatch?.[2]
+    const importee = requireMatch?.[4] ?? requireMatch?.[5] ?? requireMatch?.[6]
+    if (!requireAlias || !importee) {
+      continue
+    }
+
+    const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, importee)
+    const exportName = installerChunks.get(installerChunkFileName)
+    if (!exportName) {
+      continue
+    }
+
+    const injectionCode = [
+      `const __weappViteRequestGlobalsHost__ = ${requireAlias}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      ...bindingTargets.map(target => `var ${target} = __weappViteRequestGlobalsHost__.${target}`),
+    ].join(';')
+
+    chunk.code = chunk.code.replace(
+      REQUEST_GLOBAL_REQUIRE_RE,
+      match => `${match};/* __weappViteRequestGlobalsLocalBindings__ */ ${injectionCode};`,
+    )
   }
 }
 
@@ -444,6 +724,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
   const { ctx, subPackageMeta } = state
   const { scanService, configService } = ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
+  const injectRequestGlobalsOptions = resolveInjectRequestGlobalsOptions(
+    configService.weappViteConfig?.injectRequestGlobals,
+    configService.packageJson,
+  )
 
   return async function generateBundle(this: any, _options: any, bundle: any) {
     const rolldownBundle = bundle as unknown as OutputBundle
@@ -697,6 +981,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       rewriteBundlePlatformApi(rolldownBundle, injectWeapiGlobalName, {
         astEngine,
       })
+    }
+
+    if (injectRequestGlobalsOptions?.targets?.length) {
+      const installerChunks = injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets)
+      injectRequestGlobalsLocalBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
     }
 
     refreshModuleGraph(this, state)

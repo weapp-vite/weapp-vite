@@ -3,6 +3,35 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTransformHook } from './transform'
 
 describe('core lifecycle transform hook injectWeapi', () => {
+  it('injects request globals for declared page entries as transform fallback', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+    } as any)
+
+    const result = await transform('export const value = 1', '/project/src/pages/request-globals/fetch.vue')
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('export const value = 1')
+  })
+
   it('rewrites wx/my member access to configured global api', async () => {
     const transform = createTransformHook({
       ctx: {
@@ -62,6 +91,31 @@ describe('core lifecycle transform hook injectWeapi', () => {
     } as any)
 
     const result = await transform('export const a = wx.showToast({ title: "ok" })', '/project/node_modules/pkg/index.js')
+    expect(result).toBeNull()
+  })
+
+  it('skips style requests under src root', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          packageJson: {
+            dependencies: {
+              axios: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+    } as any)
+
+    const result = await transform('.page {}', '/project/src/pages/request-globals/fetch.vue?weapp-vite-vue&type=style&index=0')
     expect(result).toBeNull()
   })
 
