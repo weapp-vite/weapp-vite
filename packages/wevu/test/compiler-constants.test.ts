@@ -11,6 +11,7 @@ describe('compiler constants', () => {
       createApp: 'createApp',
       createWevuComponent: 'createWevuComponent',
       createWevuScopedSlotComponent: 'createWevuScopedSlotComponent',
+      defineAppSetup: 'defineAppSetup',
       defineComponent: 'defineComponent',
       setWevuDefaults: 'setWevuDefaults',
     })
