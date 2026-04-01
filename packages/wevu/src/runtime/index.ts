@@ -14,6 +14,7 @@ export * from './register'
 export * from './template'
 export * from './types'
 export * from './updatePerformance'
+export * from './use'
 export {
   mergeModels,
   useAttrs,

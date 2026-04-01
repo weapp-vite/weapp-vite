@@ -123,6 +123,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'unref',
   'unregisterPageLayoutBridge',
   'unregisterRuntimeLayoutHosts',
+  'use',
   'useAttrs',
   'useBindModel',
   'useDisposables',

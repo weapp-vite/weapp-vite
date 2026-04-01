@@ -82,6 +82,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
+  target.__wevuRuntimeApp = runtimeApp as RuntimeApp<any, any, any>
   safeMarkNoSetData(target)
   const ownerId = allocateOwnerId()
   const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
