@@ -1,0 +1,19 @@
+{
+  "name": "e2e-app-request-clients-real",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
+  },
+  "devDependencies": {
+    "@tanstack/vue-query": "^5.96.1",
+    "@weapp-vite/dashboard": "workspace:*",
+    "graphql-request": "^7.3.1",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
