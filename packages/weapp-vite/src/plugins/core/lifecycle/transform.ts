@@ -5,6 +5,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { mayContainPlatformApiAccess, platformApiIdentifiers, resolveAstEngine } from '../../../ast'
 import {
   createInjectRequestGlobalsCode,
+  injectRequestGlobalsIntoSfc,
   resolveInjectRequestGlobalsOptions,
 } from '../../../runtime/config/internal/injectRequestGlobals'
 import { isCSSRequest } from '../../../utils'
@@ -117,15 +118,15 @@ export function createTransformHook(state: CorePluginState) {
 
   function resolveRequestGlobalsTransformCode(id: string, code: string) {
     if (!injectRequestGlobalsOptions?.targets?.length) {
-      return ''
+      return null
     }
     if (code.includes('__weappViteInstallRequestGlobals')) {
-      return ''
+      return null
     }
 
     const sourceId = normalizeFsResolvedId(id)
     if (!sourceId) {
-      return ''
+      return null
     }
 
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
@@ -133,15 +134,21 @@ export function createTransformHook(state: CorePluginState) {
     const isLoadedEntry = state.loadedEntrySet?.has(sourceId) === true
     const isRootEntry = relativeBasename === 'app'
     if (!isLoadedEntry && declaredEntryType !== 'page' && declaredEntryType !== 'component') {
-      return ''
+      return null
     }
     if (isLoadedEntry && isRootEntry) {
-      return ''
+      return null
     }
 
-    return createInjectRequestGlobalsCode(injectRequestGlobalsOptions.targets as any, {
+    if (sourceId.endsWith('.vue') && code.includes('<')) {
+      return injectRequestGlobalsIntoSfc(code, injectRequestGlobalsOptions.targets as any, {
+        localBindings: true,
+      })
+    }
+
+    return `${createInjectRequestGlobalsCode(injectRequestGlobalsOptions.targets as any, {
       localBindings: true,
-    })
+    })}${code}`
   }
 
   const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
@@ -150,12 +157,7 @@ export function createTransformHook(state: CorePluginState) {
       return null
     }
 
-    const requestGlobalsCode = resolveRequestGlobalsTransformCode(id, code)
-    let nextCode = code
-
-    if (requestGlobalsCode) {
-      nextCode = `${requestGlobalsCode}${nextCode}`
-    }
+    const nextCode = resolveRequestGlobalsTransformCode(id, code) ?? code
 
     if (!injectOptions) {
       return nextCode === code

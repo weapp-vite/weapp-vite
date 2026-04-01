@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createInjectRequestGlobalsCode,
   createInjectRequestGlobalsSfcCode,
+  injectRequestGlobalsIntoSfc,
   resolveInjectRequestGlobalsOptions,
 } from './injectRequestGlobals'
 
@@ -86,5 +87,41 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain('installRequestGlobals')
     expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
     expect(code).toContain('</script>')
+  })
+
+  it('injects into existing normal script before falling back to a new block', () => {
+    const code = injectRequestGlobalsIntoSfc(
+      [
+        '<script setup lang="ts">',
+        'defineAppJson({ pages: [] })',
+        '</script>',
+        '<script lang="ts">',
+        'export default {}',
+        '</script>',
+      ].join('\n'),
+      ['fetch'],
+    )
+
+    expect(code.match(/<script\b/g)?.length).toBe(2)
+    expect(code).toContain('<script lang="ts">import { installRequestGlobals')
+    expect(code).toContain('export default {}')
+  })
+
+  it('injects into existing script setup when no normal script exists', () => {
+    const code = injectRequestGlobalsIntoSfc(
+      [
+        '<script setup lang="ts">',
+        'const value = 1',
+        '</script>',
+      ].join('\n'),
+      ['fetch'],
+      {
+        localBindings: true,
+      },
+    )
+
+    expect(code.match(/<script\b/g)?.length).toBe(1)
+    expect(code).toContain('<script setup lang="ts">import { installRequestGlobals')
+    expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
   })
 })

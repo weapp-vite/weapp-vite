@@ -2,6 +2,7 @@ import type { PackageJson } from 'pkg-types'
 import type { WeappInjectRequestGlobalsConfig, WeappInjectRequestGlobalsTarget } from '../../../types'
 import fs from 'node:fs'
 import path from 'pathe'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 import { PACKAGE_ROOT } from '../../../packagePaths'
 
 const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
@@ -224,7 +225,65 @@ export function createInjectRequestGlobalsSfcCode(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    setup?: boolean
   },
 ) {
-  return `<script lang="ts">\n${createInjectRequestGlobalsCode(targets, options)}</script>\n`
+  const scriptAttrs = options?.setup ? ' setup lang="ts"' : ' lang="ts"'
+  return `<script${scriptAttrs}>\n${createInjectRequestGlobalsCode(targets, options)}</script>\n`
+}
+
+function injectCodeIntoSfcBlock(source: string, startOffset: number, injection: string) {
+  return `${source.slice(0, startOffset)}${injection}${source.slice(startOffset)}`
+}
+
+/**
+ * @description 将请求全局对象注入到现有 SFC 脚本块，避免生成额外的重复 `<script>`。
+ */
+export function injectRequestGlobalsIntoSfc(
+  source: string,
+  targets: WeappInjectRequestGlobalsTarget[],
+  options?: {
+    localBindings?: boolean
+  },
+) {
+  if (targets.length === 0) {
+    return source
+  }
+
+  const injection = createInjectRequestGlobalsCode(targets, options)
+  const { descriptor, errors } = parseSfc(source, {
+    filename: 'request-globals.vue',
+    ignoreEmpty: false,
+  })
+
+  if (errors.length > 0) {
+    return `${createInjectRequestGlobalsSfcCode(targets, options)}${source}`
+  }
+
+  const inlineScript = descriptor.script && !descriptor.script.src
+    ? descriptor.script
+    : undefined
+  if (inlineScript) {
+    return injectCodeIntoSfcBlock(source, inlineScript.loc.start.offset, injection)
+  }
+
+  const inlineScriptSetup = descriptor.scriptSetup && !descriptor.scriptSetup.src
+    ? descriptor.scriptSetup
+    : undefined
+  if (inlineScriptSetup) {
+    return injectCodeIntoSfcBlock(source, inlineScriptSetup.loc.start.offset, injection)
+  }
+
+  if (!descriptor.script) {
+    return `${createInjectRequestGlobalsSfcCode(targets, options)}${source}`
+  }
+
+  if (!descriptor.scriptSetup) {
+    return `${createInjectRequestGlobalsSfcCode(targets, {
+      ...options,
+      setup: true,
+    })}${source}`
+  }
+
+  return source
 }

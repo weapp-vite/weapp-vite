@@ -66,4 +66,37 @@ const title = 'hello'
     expect(crlfResult.style).toBe(lfResult.style)
     expect(crlfResult.config).toEqual(lfResult.config)
   })
+
+  it('supports SFCs with both script setup and normal script', async () => {
+    const source = `
+<script setup lang="ts">
+defineAppJson({
+  pages: [],
+})
+</script>
+<script lang="ts">
+export default {
+  setup() {
+    const ready = true
+    return {
+      ready,
+    }
+  },
+}
+</script>
+<template>
+  <view>{{ ready ? 'ok' : 'nope' }}</view>
+</template>
+    `.trim()
+
+    const result = await compileVueFile(source, '/project/src/app.vue')
+
+    expect(result.script).toContain('ready')
+    expect(result.script).toContain('const __default__ = {')
+    expect(result.script).toContain('createApp(')
+    expect(result.config).toBeTruthy()
+    expect(JSON.parse(result.config!)).toEqual({
+      pages: [],
+    })
+  })
 })
