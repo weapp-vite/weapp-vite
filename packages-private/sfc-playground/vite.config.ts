@@ -16,15 +16,40 @@ export default defineConfig({
     exclude: ['@vue/repl'],
   },
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-      '@weapp-vite/ast/babelTraverse': resolve(__dirname, 'src/browserAst/babelTraverse.ts'),
-      '@weapp-vite/ast/babelTypes': resolve(__dirname, 'src/browserAst/babelTypes.ts'),
-      '@weapp-vite/ast/babel': resolve(__dirname, 'src/browserAst/babel.ts'),
-      '@weapp-vite/ast': resolve(__dirname, 'src/browserAst/index.ts'),
-      'node:path': 'pathe',
-      'path': 'pathe',
-    },
+    alias: [
+      {
+        find: /^@weapp-vite\/ast\/babelTraverse$/,
+        replacement: resolve(__dirname, 'src/browserAst/babelTraverse.ts'),
+      },
+      {
+        find: /^@weapp-vite\/ast\/babelTypes$/,
+        replacement: resolve(__dirname, 'src/browserAst/babelTypes.ts'),
+      },
+      {
+        find: /^@weapp-vite\/ast\/babel$/,
+        replacement: resolve(__dirname, 'src/browserAst/babel.ts'),
+      },
+      {
+        find: /^@weapp-vite\/ast$/,
+        replacement: resolve(__dirname, 'src/browserAst/index.ts'),
+      },
+      {
+        find: /^node:path$/,
+        replacement: 'pathe',
+      },
+      {
+        find: /^path$/,
+        replacement: 'pathe',
+      },
+      {
+        find: /^@$/,
+        replacement: resolve(__dirname, 'src'),
+      },
+      {
+        find: '@',
+        replacement: resolve(__dirname, 'src'),
+      },
+    ],
   },
   build: {
     outDir: resolve(__dirname, 'dist'),

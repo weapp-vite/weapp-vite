@@ -1,7 +1,7 @@
 import type { ParserOptions, ParserPlugin } from '@babel/parser'
 import type * as t from '@babel/types'
-import babelGenerate from '@babel/generator'
-import { parse as babelParse } from '@babel/parser'
+import babelGenerateModule from '@babel/generator'
+import * as babelParser from '@babel/parser'
 import traverseModule from '@babel/traverse'
 import { VISITOR_KEYS } from '@babel/types'
 
@@ -20,10 +20,11 @@ export const BABEL_TS_MODULE_PARSER_OPTIONS: ParserOptions = {
 }
 
 const traverse = (traverseModule as unknown as { default?: typeof traverseModule }).default ?? traverseModule
+const generate = (babelGenerateModule as unknown as { default?: typeof babelGenerateModule }).default ?? babelGenerateModule
+const parse = babelParser.parse
 
 export { traverse }
-export const generate = babelGenerate
-export const parse = babelParse
+export { generate, parse }
 
 export function getVisitorKeys() {
   return VISITOR_KEYS
