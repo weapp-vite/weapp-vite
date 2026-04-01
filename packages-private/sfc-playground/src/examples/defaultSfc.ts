@@ -2,112 +2,76 @@ export const defaultSfc = `<template>
   <view class="page">
     <view class="hero">
       <text class="eyebrow">
-        wevu SFC playground
+        wevu sfc
       </text>
       <text class="title">
-        {{ heroTitle }}
+        {{ headline }}
       </text>
       <text class="subtitle">
-        用一个可预览的 Vue SFC，覆盖 wevu 编译链最常见的页面写法。
+        单屏示例，展示推荐的 script setup + page macro + Vue 指令写法。
       </text>
     </view>
 
     <view class="panel">
-      <text class="section-title">
-        交互输入
-      </text>
       <input
         v-model="query"
         class="input"
-        placeholder="筛选 capability，例如 model / layout"
+        placeholder="搜索 directive / macro"
       >
 
-      <view class="toggle-row">
-        <button class="chip" @tap="toggleOnlyActive">
-          {{ onlyActive ? '只看 active' : '显示全部' }}
+      <view class="toolbar">
+        <button class="chip" @tap="toggleOnlyEnabled">
+          {{ onlyEnabled ? '只看 enabled' : '显示全部' }}
         </button>
         <button class="chip chip-ghost" @tap="cycleTone">
           tone: {{ tone }}
         </button>
-        <button class="chip chip-ghost" @tap="addCapability">
-          add item
-        </button>
       </view>
     </view>
 
-    <view class="summary-card" :class="[\`tone-\${tone}\`, { compact: onlyActive }]">
+    <view class="summary" :class="[\`tone-\${tone}\`, { compact: onlyEnabled }]">
       <text class="summary-title">
-        {{ summaryTitle }}
+        {{ visibleCards.length }} capabilities
       </text>
       <text class="summary-copy">
         {{ summaryText }}
       </text>
-      <text class="summary-meta">
-        visible {{ filteredCapabilities.length }} / total {{ capabilities.length }}
-      </text>
     </view>
 
-    <view v-if="filteredCapabilities.length" class="capability-list">
+    <view v-if="visibleCards.length" class="card-list">
       <view
-        v-for="capability in filteredCapabilities"
-        :key="capability.id"
-        class="capability-card"
-        :class="[
-          \`tone-\${capability.tone}\`,
-          {
-            'is-active': capability.active,
-            'is-featured': capability.featured,
-          },
-        ]"
-        :style="{ animationDelay: \`\${capability.id * 40}ms\` }"
-        @tap="toggleCapability(capability.id)"
+        v-for="card in visibleCards"
+        :key="card.key"
+        class="card"
+        :class="[{ active: card.enabled }, \`tone-\${card.tone}\`]"
+        @tap="toggleCard(card.key)"
       >
         <view class="card-head">
           <text class="card-title">
-            {{ capability.name }}
+            {{ card.title }}
           </text>
           <text class="card-state">
-            {{ capability.active ? 'active' : 'idle' }}
+            {{ card.enabled ? 'enabled' : 'idle' }}
           </text>
         </view>
-
         <text class="card-desc">
-          {{ capability.description }}
+          {{ card.desc }}
         </text>
-
         <view class="tag-row">
-          <text v-for="tag in capability.tags" :key="tag" class="tag">
+          <text v-for="tag in card.tags" :key="tag" class="tag">
             {{ tag }}
           </text>
         </view>
-
-        <text v-if="capability.featured" class="card-footnote">
-          这个条目额外展示了 :class、:style 与条件渲染的组合。
-        </text>
-        <text v-else class="card-footnote muted">
-          点击卡片可切换 active 状态，观察 script / template 产物变化。
-        </text>
       </view>
     </view>
 
-    <view v-else class="empty-state">
+    <view v-else class="empty">
       <text class="empty-title">
-        没有匹配结果
+        没有匹配项
       </text>
       <text class="empty-copy">
-        试试输入 model、template、style 等关键字。
+        试试输入 model、macro、class。
       </text>
-    </view>
-
-    <view v-show="recentActions.length" class="panel">
-      <text class="section-title">
-        最近操作
-      </text>
-      <template v-for="(action, index) in recentActions" :key="action">
-        <text class="log-line">
-          {{ index + 1 }}. {{ action }}
-        </text>
-      </template>
     </view>
   </view>
 </template>
@@ -115,136 +79,94 @@ export const defaultSfc = `<template>
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-interface CapabilityItem {
-  id: number
-  name: string
-  description: string
-  active: boolean
-  featured?: boolean
-  tone: 'mint' | 'amber' | 'sky'
+const definePageJson = globalThis.definePageJson ?? ((_config: Record<string, unknown>) => {})
+
+definePageJson({
+  navigationBarTitleText: 'wevu sfc playground',
+  backgroundColor: '#eef4fb',
+})
+
+interface DemoCard {
+  key: string
+  title: string
+  desc: string
+  enabled: boolean
+  tone: 'mint' | 'sky' | 'amber'
   tags: string[]
 }
 
-const heroTitle = 'Vue directives in, wevu outputs out'
+const headline = 'Vue syntax in, wevu compile out'
 const query = ref('')
-const onlyActive = ref(false)
-const tone = ref<'mint' | 'amber' | 'sky'>('mint')
-const nextId = ref(5)
-const recentActions = ref<string[]>([
-  '初始化 playground 示例',
-])
-const capabilities = ref<CapabilityItem[]>([
+const onlyEnabled = ref(false)
+const tone = ref<'mint' | 'sky' | 'amber'>('mint')
+const cards = ref<DemoCard[]>([
   {
-    id: 1,
-    name: 'template directives',
-    description: '使用 v-if / v-else / v-for / v-show 等 Vue 模板语法，不出现 wx:* 指令。',
-    active: true,
-    featured: true,
+    key: 'macro',
+    title: 'page macro',
+    desc: '使用 definePageJson 管理页面配置，而不是 <json> 块。',
+    enabled: true,
     tone: 'mint',
-    tags: ['v-if', 'v-for', 'v-show'],
+    tags: ['definePageJson', 'script setup'],
   },
   {
-    id: 2,
-    name: 'reactive script',
-    description: 'script setup + TypeScript + computed / ref，便于观察 wevu script transform。',
-    active: true,
+    key: 'template',
+    title: 'template directives',
+    desc: '模板只使用 v-model、v-if、v-for、:class、@tap。',
+    enabled: true,
     tone: 'sky',
-    tags: ['script setup', 'computed', 'ref'],
+    tags: ['v-model', 'v-if', 'v-for'],
   },
   {
-    id: 3,
-    name: 'class and style binding',
-    description: '卡片组合展示 :class 与 :style 的编译结果。',
-    active: false,
+    key: 'binding',
+    title: 'reactive bindings',
+    desc: '通过 computed + ref 组织状态，便于观察 script 与 template 产物。',
+    enabled: false,
     tone: 'amber',
-    tags: [':class', ':style'],
-  },
-  {
-    id: 4,
-    name: 'config output',
-    description: '保留 <json> 配置块，让 config tab 有真实页面配置可看。',
-    active: true,
-    tone: 'mint',
-    tags: ['config', 'page'],
+    tags: ['computed', ':class'],
   },
 ])
 
-const filteredCapabilities = computed(() => {
+const visibleCards = computed(() => {
   const keyword = query.value.trim().toLowerCase()
 
-  return capabilities.value.filter((item) => {
-    const matchesKeyword = !keyword || [
-      item.name,
-      item.description,
-      ...item.tags,
+  return cards.value.filter((card) => {
+    const matched = !keyword || [
+      card.title,
+      card.desc,
+      ...card.tags,
     ].join(' ').toLowerCase().includes(keyword)
 
-    if (!matchesKeyword) {
-      return false
-    }
-
-    return onlyActive.value ? item.active : true
+    return matched && (!onlyEnabled.value || card.enabled)
   })
 })
 
-const summaryTitle = computed(() => {
-  return onlyActive.value
-    ? '当前聚焦 active capability'
-    : '当前展示完整 capability list'
-})
-
 const summaryText = computed(() => {
-  return filteredCapabilities.value.map(item => item.name).join(' / ')
+  return visibleCards.value.map(card => card.title).join(' / ')
 })
 
-function pushAction(message: string) {
-  recentActions.value = [message, ...recentActions.value].slice(0, 4)
-}
-
-function toggleOnlyActive() {
-  onlyActive.value = !onlyActive.value
-  pushAction(onlyActive.value ? '切换为只看 active' : '切换为显示全部')
+function toggleOnlyEnabled() {
+  onlyEnabled.value = !onlyEnabled.value
 }
 
 function cycleTone() {
   tone.value = tone.value === 'mint'
-    ? 'amber'
-    : tone.value === 'amber'
-      ? 'sky'
+    ? 'sky'
+    : tone.value === 'sky'
+      ? 'amber'
       : 'mint'
-  pushAction(\`summary tone -> \${tone.value}\`)
 }
 
-function toggleCapability(id: number) {
-  capabilities.value = capabilities.value.map((item) => {
-    if (item.id !== id) {
-      return item
+function toggleCard(key: string) {
+  cards.value = cards.value.map((card) => {
+    if (card.key !== key) {
+      return card
     }
 
     return {
-      ...item,
-      active: !item.active,
+      ...card,
+      enabled: !card.enabled,
     }
   })
-
-  pushAction(\`toggle capability #\${id}\`)
-}
-
-function addCapability() {
-  const id = nextId.value
-  nextId.value += 1
-  capabilities.value = [
-    ...capabilities.value,
-    {
-      id,
-      name: \`dynamic capability \${id}\`,
-      description: '动态追加的条目，用来观察列表 diff 与编译输出。',
-      active: id % 2 === 0,
-      tone: id % 3 === 0 ? 'amber' : id % 2 === 0 ? 'sky' : 'mint',
-      tags: ['dynamic', 'list diff'],
-    },
-  ]
-  pushAction(\`add capability #\${id}\`)
 }
 </script>
 
@@ -252,19 +174,20 @@ function addCapability() {
 .page {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 18rpx;
+  min-height: 100vh;
   padding: 28rpx;
   background:
-    radial-gradient(circle at top left, #f0fff6 0%, transparent 36%),
+    radial-gradient(circle at top left, #effcf5 0%, transparent 34%),
     linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
 }
 
 .hero,
 .panel,
-.summary-card,
-.capability-card,
-.empty-state {
-  padding: 24rpx;
+.summary,
+.card,
+.empty {
+  padding: 22rpx;
   border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 18rpx 42rpx rgba(37, 78, 120, 0.08);
@@ -273,42 +196,36 @@ function addCapability() {
 .eyebrow {
   font-size: 20rpx;
   font-weight: 700;
-  color: #179971;
+  color: #16926e;
   letter-spacing: 4rpx;
   text-transform: uppercase;
 }
 
+.title,
+.summary-title,
+.card-title,
+.empty-title {
+  color: #102a43;
+}
+
 .title {
   margin-top: 10rpx;
-  font-size: 44rpx;
+  font-size: 42rpx;
   font-weight: 700;
-  color: #102a43;
 }
 
 .subtitle,
 .summary-copy,
 .card-desc,
-.card-footnote,
-.empty-copy,
-.log-line {
+.empty-copy {
   margin-top: 10rpx;
   font-size: 24rpx;
   line-height: 1.6;
   color: #52667a;
 }
 
-.section-title,
-.summary-title,
-.empty-title,
-.card-title {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #102a43;
-}
-
 .input {
   height: 76rpx;
-  margin-top: 16rpx;
   padding: 0 22rpx;
   font-size: 24rpx;
   color: #102a43;
@@ -316,26 +233,31 @@ function addCapability() {
   border-radius: 18rpx;
 }
 
-.toggle-row,
-.tag-row,
-.card-head {
+.toolbar,
+.card-head,
+.tag-row {
   display: flex;
   gap: 12rpx;
   align-items: center;
-  justify-content: space-between;
 }
 
-.toggle-row,
-.tag-row {
+.toolbar,
+.tag-row,
+.card-list {
   flex-wrap: wrap;
 }
 
-.toggle-row {
+.toolbar {
   margin-top: 16rpx;
 }
 
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
 .chip {
-  min-width: 0;
   padding: 0 22rpx;
   font-size: 22rpx;
   line-height: 64rpx;
@@ -349,33 +271,34 @@ function addCapability() {
   background: #e9f8f0;
 }
 
-.summary-card.compact {
+.summary.compact {
   outline: 2rpx solid rgba(22, 163, 74, 0.22);
 }
 
-.summary-meta,
-.card-state {
-  margin-top: 12rpx;
-  font-size: 22rpx;
-  color: #6b7c8f;
+.summary-title {
+  font-size: 28rpx;
+  font-weight: 700;
 }
 
-.capability-list {
+.card {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 10rpx;
 }
 
-.capability-card {
-  animation: card-in 320ms ease both;
-}
-
-.capability-card.is-active {
+.card.active {
   transform: translateY(-2rpx);
 }
 
-.capability-card.is-featured {
-  border: 2rpx solid rgba(16, 185, 129, 0.2);
+.card-title {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.card-state {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: #6b7c8f;
 }
 
 .tag {
@@ -386,40 +309,16 @@ function addCapability() {
   border-radius: 999rpx;
 }
 
-.muted {
-  color: #7b8794;
-}
-
 .tone-mint {
   background: linear-gradient(135deg, rgba(236, 253, 245, 0.98), rgba(245, 255, 251, 0.98));
-}
-
-.tone-amber {
-  background: linear-gradient(135deg, rgba(255, 247, 237, 0.98), rgba(255, 252, 245, 0.98));
 }
 
 .tone-sky {
   background: linear-gradient(135deg, rgba(239, 246, 255, 0.98), rgba(247, 250, 255, 0.98));
 }
 
-@keyframes card-in {
-  from {
-    opacity: 0;
-    transform: translateY(10rpx);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.tone-amber {
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.98), rgba(255, 252, 245, 0.98));
 }
 </style>
-
-<json lang="json">
-{
-  "navigationBarTitleText": "wevu sfc playground",
-  "navigationStyle": "default",
-  "backgroundColor": "#eef4fb"
-}
-</json>
 `
