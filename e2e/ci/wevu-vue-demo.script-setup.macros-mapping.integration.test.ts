@@ -1,4 +1,6 @@
+// eslint-disable-next-line e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建
 import { execa } from 'execa'
+// eslint-disable-next-line e18e/ban-dependencies -- e2e 测试使用 fs-extra 简化构建产物断言
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -74,7 +76,7 @@ describe.sequential('e2e app: wevu-vue-demo (script setup macros mapping)', () =
     expect(altPanelJs).toContain('emit run payload')
     expect(altPanelJs).toContain('emit runevent payload')
 
-    expect(modelInputJs).toMatch(/props:e\.\w+\(\{label:\{type:String,required:!1,default:`Model Input`\}/)
+    expect(modelInputJs).toMatch(/props:\w+\.\w+\(\{label:\{type:String,required:!1,default:`Model Input`\}/)
     expect(modelInputJs).toContain('emits:[`update:modelValue`]')
   })
 })

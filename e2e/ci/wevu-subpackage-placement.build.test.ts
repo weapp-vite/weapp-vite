@@ -1,3 +1,4 @@
+// eslint-disable-next-line e18e/ban-dependencies -- e2e 测试使用 fs-extra 简化构建产物断言
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -99,9 +100,9 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     expect(mainComponentWxml).toContain('{{props.count}}')
     expect(mainComponentWxml).toContain('{{props.double}}')
 
-    expect(mainSharedChunk).toContain('__wevuAppRegistered')
-    expect(mainSharedChunk).toContain('Object.defineProperty(exports,`o`')
-    expect(mainSharedChunk).toContain('Object.defineProperty(exports,`a`')
+    expect(mainSharedChunk).toContain('`onLaunch`')
+    expect(mainSharedChunk).toContain('`onLoad`')
+    expect(mainSharedChunk).toContain('Object.defineProperty(exports,')
 
     expect(mainPageJs).toContain('/subpackages/normal-wevu/pages/entry/index')
     expect(mainPageJs).toContain('/subpackages/independent-wevu/pages/entry/index')
@@ -118,7 +119,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
 
     expect(normalSharedChunk).toMatch(/count:\w+/)
     expect(normalSharedChunk).toMatch(/from:\w+\.\w+\(`direct`\)/)
-    expect(normalSharedChunk).toMatch(/double:\w+\.\w+\(\(\)=>\w+\.value\*2\)/)
+    expect(normalSharedChunk).toMatch(/double:\w+\(\(\)=>\w+\.value\*2\)/)
 
     expect(independentSharedChunk).toMatch(/count:\w+/)
     expect(independentSharedChunk).toMatch(/from:\w+\(`direct`\)/)

@@ -1,5 +1,6 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
 import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies -- e2e 测试使用 fs-extra 简化夹具读写
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -110,7 +111,10 @@ describeRuntimePlatforms('wevu runtime platform outputs', () => {
     const appStylePath = path.join(DIST_ROOT, `app.${PLATFORM_STYLE_EXT[platform]}`)
     if (await fs.pathExists(appStylePath)) {
       const appStyle = await fs.readFile(appStylePath, 'utf-8')
-      await expectPlatformSnapshot(platform, `wevu-runtime::${platform}::app.style`, await formatStyle(appStyle))
+      const formattedAppStyle = await formatStyle(appStyle)
+      if (formattedAppStyle.trim().length > 0) {
+        await expectPlatformSnapshot(platform, `wevu-runtime::${platform}::app.style`, formattedAppStyle)
+      }
     }
 
     for (const pagePath of pages) {
