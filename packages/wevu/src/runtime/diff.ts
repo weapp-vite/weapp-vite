@@ -1,5 +1,6 @@
 import { getReactiveVersion, isReactive, toRaw, unref } from '../reactivity'
 import { isNoSetData } from './noSetData'
+import { hasTrackableSetupBinding } from './setupTracking'
 
 function isPlainObject(value: unknown): value is Record<string, any> {
   if (Object.prototype.toString.call(value) !== '[object Object]') {
@@ -42,12 +43,13 @@ function toPlainInternal(
     return undefined
   }
   const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped
+  const canUseCache = Boolean(cache) && (isReactive(unwrapped) || !hasTrackableSetupBinding(raw))
 
   if (depth <= 0 || budget.keys <= 0) {
     return raw
   }
 
-  if (cache) {
+  if (canUseCache) {
     const version = getReactiveVersion(raw as any)
     const cached = cache.get(raw)
     if (cached && cached.version === version) {
@@ -114,7 +116,7 @@ function toPlainInternal(
       const next = toPlainInternal(raw[index], seen, cache, nextDepth, budget)
       arr[index] = next === undefined ? null : next
     }
-    if (cache) {
+    if (canUseCache) {
       cache.set(raw, { version: getReactiveVersion(raw as any), value: arr })
     }
     return arr
@@ -132,7 +134,7 @@ function toPlainInternal(
       output[key] = next
     }
   }
-  if (cache) {
+  if (canUseCache) {
     cache.set(raw, { version: getReactiveVersion(raw as any), value: output })
   }
   return output

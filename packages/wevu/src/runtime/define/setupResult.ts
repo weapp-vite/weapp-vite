@@ -1,4 +1,5 @@
 import { isReactive, isRef, toRaw } from '../../reactivity'
+import { hasTrackableSetupBinding } from '../setupTracking'
 
 function isPlainObject(value: unknown): value is Record<string, any> {
   if (Object.prototype.toString.call(value) !== '[object Object]') {
@@ -55,6 +56,9 @@ export function applySetupResult(runtime: any, target: any, result: any) {
       methodsChanged = true
     }
     else {
+      if (hasTrackableSetupBinding(val)) {
+        runtime?.__wevu_trackSetupReactiveKey?.(key)
+      }
       if (declaredPropKeys.has(key)) {
         let fallbackValue = val
         try {
