@@ -11,7 +11,14 @@ function resolveCurrentRuntimeApp(): RuntimeApp<any, any, any> {
     return instance.__wevuRuntimeApp
   }
 
-  throw new Error('use() 只能在 app setup 上下文中调用')
+  throw new Error('defineAppSetup() / use() 只能在 app setup 上下文中调用')
+}
+
+/**
+ * 在 `app` 级 `setup()` 中显式获取运行时 app，提供与 `app.use()` / `app.provide()` 对齐的 SFC 写法。
+ */
+export function defineAppSetup<T>(setup: (app: RuntimeApp<any, any, any>) => T): T {
+  return setup(resolveCurrentRuntimeApp())
 }
 
 /**

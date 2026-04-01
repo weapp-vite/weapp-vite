@@ -18,10 +18,12 @@ queryClient.mount()
 // eslint-disable-next-line import/first
 import routes from 'weapp-vite/auto-routes'
 // eslint-disable-next-line import/first
-import { use } from 'wevu'
+import { defineAppSetup } from 'wevu'
 
-use(VueQueryPlugin, {
-  queryClient,
+defineAppSetup((app) => {
+  app.use(VueQueryPlugin, {
+    queryClient,
+  })
 })
 
 defineAppJson({
