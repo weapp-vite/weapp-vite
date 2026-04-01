@@ -1,1 +1,1 @@
-export { collectOnPageScrollPerformanceWarnings } from '../../ast/operations/onPageScroll'
+export { collectOnPageScrollPerformanceWarnings } from '../../ast/operations'

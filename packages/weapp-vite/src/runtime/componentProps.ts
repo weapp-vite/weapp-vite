@@ -1,5 +1,5 @@
 import type { AstEngineName } from '../ast'
-import { collectComponentPropsFromCode } from '../ast/operations/componentProps'
+import { collectComponentPropsFromCode } from '../ast'
 
 export type ComponentPropMap = Map<string, string>
 
