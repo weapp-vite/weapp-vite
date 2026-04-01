@@ -1,7 +1,7 @@
 import type { TemplateCompileOptions, TemplateCompileResult, TransformContext } from './template/types'
 import {
-  baseParse as parse,
-} from '@vue/compiler-core'
+  parse,
+} from '@vue/compiler-dom'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { transformNode } from './template/nodes'
 import { wechatPlatform } from './template/platforms'
@@ -51,7 +51,7 @@ export function compileVueTemplateToWxml(
     ?? (options?.scopedSlotsCompiler !== 'augmented')
 
   try {
-    // 使用 Vue compiler-core 解析模板
+    // 使用 compiler-dom 解析模板，确保浏览器环境自带 decodeEntities 解析能力。
     const ast = parse(template, {
       isVoidTag: tag => HTML_VOID_TAGS.has(tag),
       onError: (error) => {
