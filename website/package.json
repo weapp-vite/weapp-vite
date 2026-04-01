@@ -42,7 +42,7 @@
     "@shikijs/vitepress-twoslash": "^4.0.2",
     "autoprefixer": "catalog:",
     "create-weapp-vite": "workspace:*",
-    "mermaid": "^11.13.0",
+    "mermaid": "^11.14.0",
     "postcss": "catalog:",
     "tailwindcss": "catalog:tailwind3",
     "unplugin-auto-import": "^21.0.0",
