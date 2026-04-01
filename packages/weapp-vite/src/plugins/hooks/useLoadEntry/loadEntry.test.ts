@@ -453,6 +453,39 @@ describe('createEntryLoader', () => {
     expect(watched).toContain('/project/src/components/hello/index.vue')
   })
 
+  it('marks custom tab bar and app bar app entries as components', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/app.json',
+      predictions: [],
+    })
+
+    const { loader, entriesMap, jsonService } = createLoader()
+    jsonService.read.mockResolvedValue({
+      tabBar: {
+        custom: true,
+        list: [
+          {
+            pagePath: 'pages/home/index',
+            text: 'home',
+          },
+        ],
+      },
+      appBar: {
+        iconPath: 'assets/appbar.png',
+      },
+      pages: [
+        'pages/home/index',
+      ],
+    })
+
+    const pluginCtx = createPluginContext()
+    await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(entriesMap.get('custom-tab-bar/index')?.type).toBe('component')
+    expect(entriesMap.get('app-bar/index')?.type).toBe('component')
+    expect(entriesMap.get('pages/home/index')?.type).toBe('page')
+  })
+
   it('marks usingComponents entries as components so native component loaders skip page layout injection', async () => {
     const pageScript = '/project/src/pages/home.js'
     const componentScript = '/project/src/components/HelloWorld/HelloWorld.js'
