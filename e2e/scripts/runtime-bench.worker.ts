@@ -119,6 +119,20 @@ async function measureFirstScreen(miniProgram: any, projectRoot: string): Promis
   }
 }
 
+interface WorkerResult {
+  project: string
+  firstScreen: BenchScenarioSummary
+  detailNavigation: BenchScenarioSummary
+  updateSingleCommit: {
+    diff: BenchUpdateSummary
+    patch?: BenchUpdateSummary
+  }
+  updateMicroCommit: {
+    diff: BenchUpdateSummary
+    patch?: BenchUpdateSummary
+  }
+}
+
 async function measureDetailNavigation(miniProgram: any, projectRoot: string): Promise<BenchScenarioSummary> {
   const samples: BenchScenarioSummary['samples'] = []
 
@@ -147,12 +161,12 @@ async function measureDetailNavigation(miniProgram: any, projectRoot: string): P
   }
 }
 
-async function measureUpdate(miniProgram: any, projectRoot: string, method: 'runSingleCommitBench' | 'runMicroCommitBench', metricKey: 'singleCommitMs' | 'microCommitMs', callKey: 'singleCommitSetDataCalls' | 'microCommitSetDataCalls', rounds: number): Promise<BenchUpdateSummary> {
+async function measureUpdate(miniProgram: any, projectRoot: string, route: string, method: 'runSingleCommitBench' | 'runMicroCommitBench', metricKey: 'singleCommitMs' | 'microCommitMs', callKey: 'singleCommitSetDataCalls' | 'microCommitSetDataCalls', rounds: number): Promise<BenchUpdateSummary> {
   const samples: BenchUpdateSummary['samples'] = []
 
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
-    logStep(projectRoot, `${method} sample ${index + 1}/${SAMPLE_COUNT}`)
-    const page = await miniProgram.reLaunch('/pages/update/index')
+    logStep(projectRoot, `${method} route=${route} sample ${index + 1}/${SAMPLE_COUNT}`)
+    const page = await miniProgram.reLaunch(route)
     await page.waitFor('#bench-ready-marker')
     await page.waitFor(100)
     const startedAt = Date.now()
@@ -231,12 +245,21 @@ async function main() {
 
   try {
     logStep(projectRoot, 'measure first screen')
-    const result = {
+    const result: WorkerResult = {
       project: path.basename(projectRoot),
       firstScreen: await measureFirstScreen(miniProgram, projectRoot),
       detailNavigation: (logStep(projectRoot, 'measure detail navigation'), await measureDetailNavigation(miniProgram, projectRoot)),
-      updateSingleCommit: (logStep(projectRoot, 'measure single commit update'), await measureUpdate(miniProgram, projectRoot, 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
-      updateMicroCommit: (logStep(projectRoot, 'measure micro commit update'), await measureUpdate(miniProgram, projectRoot, 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),
+      updateSingleCommit: {
+        diff: (logStep(projectRoot, 'measure single commit update diff'), await measureUpdate(miniProgram, projectRoot, '/pages/update/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180)),
+      },
+      updateMicroCommit: {
+        diff: (logStep(projectRoot, 'measure micro commit update diff'), await measureUpdate(miniProgram, projectRoot, '/pages/update/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40)),
+      },
+    }
+
+    if (path.basename(projectRoot) === 'runtime-bench-vue') {
+      result.updateSingleCommit.patch = (logStep(projectRoot, 'measure single commit update patch'), await measureUpdate(miniProgram, projectRoot, '/pages/update-patch/index', 'runSingleCommitBench', 'singleCommitMs', 'singleCommitSetDataCalls', 180))
+      result.updateMicroCommit.patch = (logStep(projectRoot, 'measure micro commit update patch'), await measureUpdate(miniProgram, projectRoot, '/pages/update-patch/index', 'runMicroCommitBench', 'microCommitMs', 'microCommitSetDataCalls', 40))
     }
 
     process.stdout.write(`RUNTIME_BENCH_RESULT ${JSON.stringify(result)}\n`)

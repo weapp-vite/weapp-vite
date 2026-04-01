@@ -1,14 +1,15 @@
 <script lang="ts">
+import type { BenchMetrics, SetDataCounter } from '../../utils/bench'
 import { defineComponent, onLoad, onReady } from 'wevu'
 import {
+
   createBenchCards,
   createEmptyMetrics,
   INDEX_CARD_COUNT,
   now,
   patchSetData,
+
   summarizeBenchCards,
-  type BenchMetrics,
-  type SetDataCounter,
 } from '../../utils/bench'
 
 const setDataCounter: SetDataCounter = {
@@ -34,15 +35,6 @@ function buildSnapshot(data: {
 }
 
 export default defineComponent({
-  data: () => ({
-    title: 'Vue Runtime Baseline',
-    subtitle: '首屏、切页、响应式提交与高频更新的 Vue 基准页',
-    readyMarker: '',
-    summary: '',
-    cards: [] as any[],
-    metrics: createEmptyMetrics(),
-    totalSetDataCalls: 0,
-  }),
   setup(_props, ctx) {
     const state = ctx.state as any
     const instance = ctx.instance as any
@@ -98,32 +90,76 @@ export default defineComponent({
       return true
     }
 
+    async function navigateToUpdatePatch() {
+      await new Promise<void>((resolve, reject) => {
+        wx.navigateTo({
+          url: '/pages/update-patch/index',
+          success: () => resolve(),
+          fail: reject,
+        })
+      })
+      return true
+    }
+
     return {
       readBenchState,
       navigateToDetail,
       navigateToUpdate,
+      navigateToUpdatePatch,
     }
   },
+  data: () => ({
+    title: 'Vue Runtime Baseline',
+    subtitle: '首屏、切页、响应式提交与高频更新的 Vue 基准页',
+    readyMarker: '',
+    summary: '',
+    cards: [] as any[],
+    metrics: createEmptyMetrics(),
+    totalSetDataCalls: 0,
+  }),
 })
 </script>
 
 <template>
   <view class="page">
     <view id="bench-ready-marker" class="hero">
-      <view class="hero__title">{{ title }}</view>
-      <view class="hero__subtitle">{{ subtitle }}</view>
-      <view class="hero__summary">{{ summary }}</view>
-      <view class="hero__metric">load→ready: {{ metrics.loadToReadyMs }}ms</view>
-      <view class="hero__metric">first commit: {{ metrics.firstCommitMs }}ms</view>
-      <view class="hero__metric">setData calls: {{ totalSetDataCalls }}</view>
+      <view class="hero__title">
+        {{ title }}
+      </view>
+      <view class="hero__subtitle">
+        {{ subtitle }}
+      </view>
+      <view class="hero__summary">
+        {{ summary }}
+      </view>
+      <view class="hero__metric">
+        load→ready: {{ metrics.loadToReadyMs }}ms
+      </view>
+      <view class="hero__metric">
+        first commit: {{ metrics.firstCommitMs }}ms
+      </view>
+      <view class="hero__metric">
+        setData calls: {{ totalSetDataCalls }}
+      </view>
     </view>
 
     <view class="toolbar">
-      <button class="toolbar__btn" size="mini" type="primary" @tap="navigateToDetail">切到详情页</button>
-      <button class="toolbar__btn" size="mini" @tap="navigateToUpdate">切到更新页</button>
+      <button class="toolbar__btn" size="mini" type="primary" @tap="navigateToDetail">
+        切到详情页
+      </button>
+      <button class="toolbar__btn" size="mini" @tap="navigateToUpdate">
+        切到更新页
+      </button>
+    </view>
+    <view class="toolbar">
+      <button class="toolbar__btn" size="mini" @tap="navigateToUpdatePatch">
+        切到 Patch 对照页
+      </button>
     </view>
 
-    <view class="section-title">首屏卡片（{{ cards.length }}）</view>
+    <view class="section-title">
+      首屏卡片（{{ cards.length }}）
+    </view>
     <view v-for="card in cards" :key="card.id" class="card">
       <view class="card__row">
         <text class="card__title">{{ card.title }}</text>
@@ -135,7 +171,9 @@ export default defineComponent({
         <text>score {{ card.score }}</text>
         <text>delta {{ card.delta }}</text>
       </view>
-      <view class="card__summary">{{ card.summary }}</view>
+      <view class="card__summary">
+        {{ card.summary }}
+      </view>
       <view class="card__tags">
         <text v-for="tag in card.tags" :key="tag" class="card__tag">{{ tag }}</text>
       </view>
