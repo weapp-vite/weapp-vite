@@ -1,13 +1,9 @@
+import { wpi } from '@wevu/api'
 import { HeadersPolyfill, ResponsePolyfill } from './http'
-import { cloneArrayBuffer, cloneArrayBufferView, normalizeHeaderName, resolveRequestGlobalsHost } from './shared'
+import { cloneArrayBuffer, cloneArrayBufferView, normalizeHeaderName } from './shared'
 
 type HeaderPair = readonly [string, string]
 type HeaderMap = Record<string, string>
-type MiniProgramRequestApi = (options: Record<string, any>) => unknown
-type MiniProgramRequestHost = Record<string, any> & {
-  request?: MiniProgramRequestApi
-}
-
 interface HeaderLike {
   forEach: (callback: (value: string, key: string) => void) => void
 }
@@ -46,7 +42,6 @@ const REQUEST_METHODS: ReadonlyArray<MiniProgramRequestMethod> = [
   'CONNECT',
 ]
 
-const MINI_PROGRAM_GLOBAL_KEYS = ['wx', 'my', 'tt', 'qq', 'swan', 'ks', 'jd', 'xhs', 'dd', 'qa', 'qapp', 'uni']
 const hasOwn = Object.prototype.hasOwnProperty
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -232,35 +227,13 @@ function isRequestTask(value: unknown): value is WechatMiniprogram.RequestTask {
   return isObject(value) && typeof value.abort === 'function'
 }
 
-function resolveMiniProgramRequestApi() {
-  const host = resolveRequestGlobalsHost()
-
-  if (typeof (host as MiniProgramRequestHost).request === 'function') {
-    return (host as MiniProgramRequestHost).request.bind(host)
-  }
-
-  for (const key of MINI_PROGRAM_GLOBAL_KEYS) {
-    const candidate = (host as Record<string, unknown>)[key]
-    if (candidate && typeof (candidate as MiniProgramRequestHost).request === 'function') {
-      return (candidate as MiniProgramRequestHost).request.bind(candidate)
-    }
-  }
-
-  return null
-}
-
 /**
- * @description 使用小程序原生 request 能力实现 fetch 语义对齐。
+ * @description 使用 @wevu/api 的 request 能力实现 fetch 语义对齐。
  */
 export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetchInit): Promise<Response> {
   return resolveRequestMeta(input, init).then((meta) => {
     if (meta.signal?.aborted) {
       return Promise.reject(createAbortError())
-    }
-
-    const request = resolveMiniProgramRequestApi()
-    if (!request) {
-      throw new TypeError('Failed to execute fetch: native mini program request api is unavailable')
     }
 
     return new Promise<Response>((resolve, reject) => {
@@ -291,7 +264,7 @@ export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetc
         meta.signal.addEventListener('abort', onAbort, { once: true })
       }
 
-      const requestResult = request({
+      const requestResult = wpi.request({
         url: meta.url,
         method: meta.method,
         header: meta.headers,
