@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const findJsonEntryMock = vi.hoisted(() => vi.fn<(id: string) => Promise<{ path?: string }>>())
 const findJsEntryMock = vi.hoisted(() => vi.fn<(id: string) => Promise<{ path?: string }>>())
 const findVueEntryMock = vi.hoisted(() => vi.fn<(id: string) => Promise<string | undefined>>())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
 const extractConfigFromVueMock = vi.hoisted(() => vi.fn<(id: string) => Promise<Record<string, any> | undefined>>())
 const requireConfigServiceMock = vi.hoisted(() => vi.fn((ctx: any) => ctx.configService))
 const normalizeSubPackageStyleEntriesMock = vi.hoisted(() => vi.fn(() => []))
@@ -16,6 +17,12 @@ vi.mock('../../utils', () => ({
 
 vi.mock('../../utils/file', () => ({
   extractConfigFromVue: extractConfigFromVueMock,
+}))
+
+vi.mock('../../logger', () => ({
+  default: {
+    warn: loggerWarnMock,
+  },
 }))
 
 vi.mock('../utils/requireConfigService', () => ({
@@ -179,6 +186,38 @@ describe('scanPlugin service', () => {
     expect(findJsEntryMock).toHaveBeenCalledTimes(1)
   })
 
+  it('warns when app.ts and app.vue both exist but app.ts wins', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    findVueEntryMock.mockResolvedValue('/project/src/app.vue')
+
+    const ctx = createCtx({
+      jsonService: {
+        read: vi.fn(async () => ({
+          pages: ['pages/index/index'],
+        })),
+      },
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {},
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const entry = await service.loadAppEntry()
+
+    expect(entry.path).toBe('/project/src/app.ts')
+    expect(entry.jsonPath).toBe('/project/src/app.json')
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[app] 检测到 app.ts 与 app.vue 同时存在，当前将优先使用 app.ts 作为应用入口，app.vue 将被忽略。',
+    )
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[app] 检测到 app.json 与 app.vue 同时存在，当前将优先使用 app.json 作为应用配置来源，app.vue 中的 app 配置不会生效。',
+    )
+  })
+
   it('uses app.vue fallback when app.json/app.ts are missing', async () => {
     findJsonEntryMock.mockResolvedValue({ path: undefined })
     findJsEntryMock.mockResolvedValue({ path: undefined })
@@ -204,6 +243,7 @@ describe('scanPlugin service', () => {
 
     expect(entry.path).toBe('/project/src/app.vue')
     expect(entry.jsonPath).toBe('/project/src/app.vue')
+    expect(loggerWarnMock).not.toHaveBeenCalled()
   })
 
   it('hydrates app.vue config with auto-routes pages when static extraction is incomplete', async () => {
