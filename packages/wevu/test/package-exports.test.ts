@@ -58,4 +58,16 @@ describe('package exports', () => {
       },
     })
   })
+
+  it('declares vue-demi subpath export', () => {
+    const exportsField = readExports()
+
+    expect(exportsField['./vue-demi']).toEqual({
+      types: './dist/vue-demi.d.mts',
+      import: {
+        types: './dist/vue-demi.d.mts',
+        default: './dist/vue-demi.mjs',
+      },
+    })
+  })
 })

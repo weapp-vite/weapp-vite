@@ -75,6 +75,13 @@
         "types": "./dist/router.d.mts",
         "default": "./dist/router.mjs"
       }
+    },
+    "./vue-demi": {
+      "types": "./dist/vue-demi.d.mts",
+      "import": {
+        "types": "./dist/vue-demi.d.mts",
+        "default": "./dist/vue-demi.mjs"
+      }
     }
   },
   "main": "./dist/index.mjs",
