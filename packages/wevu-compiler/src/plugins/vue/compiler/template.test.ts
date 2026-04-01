@@ -109,6 +109,24 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('{{ text }}')
   })
 
+  it('decodes html entities without falling back template source', () => {
+    const template = `
+<view v-if="ok" title="a &amp; b">{{ label }} &amp; more</view>
+    `.trim()
+
+    const { code, warnings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { mustacheInterpolation: 'spaced' },
+    )
+
+    expect(code).toContain('wx:if="{{ ok }}"')
+    expect(code).toContain('title="a & b"')
+    expect(code).toContain('{{ label }}')
+    expect(code).not.toContain('v-if="ok"')
+    expect(warnings).not.toContainEqual(expect.stringContaining('decodeEntities'))
+  })
+
   it('falls back interpolation call expression to runtime binding', () => {
     const template = `
 <text>{{ sayHello() }}</text>
