@@ -512,10 +512,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemPageJs).toContain('item-login-required:issue-340:shared')
     expect(userPageJs).toContain('user-register-form:issue-340:shared')
-    expect(itemPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
-    expect(userPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
     expect(itemPageJs).toMatch(/require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)/)
     expect(userPageJs).toMatch(/require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)/)
+    expect(itemPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
+    expect(userPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
     expect(itemPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)/)
     expect(userPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)/)
     expect(itemPageJs).not.toMatch(/vendors(?:\.\d+)?\.js/)
