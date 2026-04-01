@@ -46,6 +46,7 @@ import {
   resetWevuDefaults,
   setWevuDefaults,
   shallowReadonly,
+  use,
   useDisposables,
   useIntersectionObserver,
   useNativeInstance,
@@ -59,6 +60,7 @@ import {
 const TOKEN = Symbol('token')
 type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (...args: any[]) => any>>
 const runtimeApp = {} as RT
+expectType<RuntimeApp<any, any, any>>(use((_app) => {}))
 type _WevuDefineComponent = DefineComponent
 type _WevuComponentOptionsMixin = ComponentOptionsMixin
 type _WevuPublicProps = PublicProps

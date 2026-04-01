@@ -17,6 +17,7 @@ import {
 import { parseModelEventValue } from '@/runtime/internal'
 import { markNoSetData } from '@/runtime/noSetData'
 import { hasInjectionContext, inject, injectGlobal, provide, provideGlobal } from '@/runtime/provide'
+import { use } from '@/runtime/use'
 import { mergeModels, useAttrs, useModel, useSlots } from '@/runtime/vueCompat'
 
 afterEach(() => {
@@ -110,6 +111,31 @@ describe('provide/inject', () => {
     expect(injectGlobal('key')).toBe('ok')
     expect(injectGlobal('unknown', 'fallback')).toBe('fallback')
     expect(() => injectGlobal('missing')).toThrow('injectGlobal()：未找到对应 key 的 provider')
+  })
+
+  it('supports app-scoped use helper in app setup context', () => {
+    const runtimeApp = {
+      use: vi.fn(),
+    }
+    runtimeApp.use.mockReturnValue(runtimeApp)
+    const plugin = vi.fn()
+
+    setCurrentInstance({
+      __wevuIsAppInstance: true,
+      __wevuRuntimeApp: runtimeApp,
+    } as any)
+
+    expect(use(plugin)).toBe(runtimeApp)
+    expect(runtimeApp.use).toHaveBeenCalledWith(plugin)
+  })
+
+  it('throws when use helper is called outside app setup context', () => {
+    expect(() => use(vi.fn())).toThrow('use() 只能在 app setup 上下文中调用')
+
+    setCurrentInstance({
+      route: 'pages/index/index',
+    } as any)
+    expect(() => use(vi.fn())).toThrow('use() 只能在 app setup 上下文中调用')
   })
 })
 
