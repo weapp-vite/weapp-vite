@@ -134,6 +134,24 @@ export interface WeappInjectWeapiConfig {
   globalName?: string
 }
 
+export type WeappInjectRequestGlobalsTarget
+  = | 'fetch'
+    | 'Headers'
+    | 'Request'
+    | 'Response'
+    | 'AbortController'
+    | 'AbortSignal'
+    | 'XMLHttpRequest'
+
+/**
+ * @description 请求相关全局对象注入配置
+ */
+export interface WeappInjectRequestGlobalsConfig {
+  enabled?: boolean
+  targets?: WeappInjectRequestGlobalsTarget[]
+  dependencies?: (string | RegExp)[]
+}
+
 /**
  * @description 本地 npm 构建配置
  */
