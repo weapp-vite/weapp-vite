@@ -29,7 +29,7 @@ keywords:
 > `weapp-vite` CLI 同时支持完整命令 `weapp-vite` 与简写命令 `wv`，两者完全等价。模板脚本通常会封装成 `pnpm dev` / `pnpm build` / `pnpm open`，如果你直接调用 CLI，可以任选其一。
 
 > [!IMPORTANT]
-> 使用前请确保安装 **Node.js 22 LTS 或更高版本**，并且该版本需要原生稳定支持 **ESM**。文档与脚手架场景统一以 **Node.js 22 LTS** 作为最低版本基线，同时建议全局安装 `pnpm`（`npm i -g pnpm`）。
+> 使用前请确保安装 **Node.js `>=22.12.0`**。文档与脚手架场景统一以 **Node.js 22 LTS（至少 `22.12.0`）** 作为最低版本基线，并要求使用原生稳定支持 **ESM** 的版本，同时建议全局安装 `pnpm`（`npm i -g pnpm`）。
 
 ## 0. 准备工作
 
