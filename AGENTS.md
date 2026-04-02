@@ -151,10 +151,30 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
     - `pnpm test:e2e`
     - `pnpm test:types`
     - `pnpm test:all`
+- For WeChat DevTools runtime e2e environment selection:
+  - Treat `pnpm e2e:ide*`, `pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts ...`, and any validation that depends on WeChat DevTools, automator bridge, or local port listeners as sandbox-sensitive by default.
+  - Prefer running these validations outside the sandbox first when possible.
+  - If sandbox execution fails with signals such as `listen EPERM`, `operation not permitted`, local HTTP server bind failures on `127.0.0.1`, or DevTools bridge connection failures, classify that as an environment limitation first rather than a product regression first.
 - For WeChat DevTools runtime e2e in `e2e/ide/**`:
   - For the same `e2e-app`, launch automator only once per test suite (`describe`) and reuse that session.
   - Validate multiple cases by `miniProgram.reLaunch(...)` across different pages/routes instead of re-launching DevTools for each case.
   - If a case must use an isolated launch, document the reason in test comments.
+  - When a real-runtime suite proves that:
+    - the local verification server starts successfully
+    - native `fetch` cases pass
+    - but third-party request clients such as `axios` or `graphql-request` fail with the same `URL is not a constructor` or similar `URL` / `URLSearchParams` constructor error
+    then treat it as a WeChat DevTools runtime compatibility defect first, not an app/business regression first.
+  - For the above platform defect pattern:
+    - minimize the reproduction first
+    - record the limitation in a GitHub issue
+    - explicitly `skip` the affected DevTools runtime cases
+    - keep unaffected native-request coverage such as `fetch` enabled so IDE e2e still provides meaningful regression signal
+    - do not block the whole IDE suite on that known DevTools runtime defect
+  - After running DevTools e2e, inspect the worktree for generated noise before commit:
+    - pure newline-only rewrites in `project.config.json`
+    - generated `docs/reports/**`
+    - other DevTools-touched files unrelated to the task
+    Clean these before staging so the commit contains only intentional source/test changes.
 - For GitHub issue fixes (especially cases mapped to `e2e-apps/github-issues`), follow this order strictly:
   - Before starting the fix, create a local `git worktree` from the mainline branch and do the issue work inside that isolated worktree.
   - Create the worktree inside this repository's writable area (for example `.codex-tmp/<issue>`); do not place issue worktrees in directories outside the repository root, because external directories may not be writable in the agent environment.
