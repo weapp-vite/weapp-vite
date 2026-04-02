@@ -1,6 +1,6 @@
 # wevu 用户入口类型导出总览
 
-本文档基于 `packages/wevu/package.json#exports` 与 `dist/*.d.mts` 自动提取。
+本文档基于 `packages-runtime/wevu/package.json#exports` 与 `dist/*.d.mts` 自动提取。
 
 ## 入口统计
 

@@ -456,7 +456,7 @@ pnpm run e2e:runtime-bench
 
 同时核对 runtime 默认值：
 
-- `packages/wevu/src/runtime/app/setDataOptions.ts`
+- `packages-runtime/wevu/src/runtime/app/setDataOptions.ts`
 - `setDataOptions?.strategy ?? 'diff'`
 
 也就是说，如果 benchmark app 没有显式配置 `setData.strategy`，当前运行的就是 `diff` 模式。

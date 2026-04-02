@@ -189,10 +189,10 @@ async function buildExpectedPackageJson(templateName: TemplateName) {
     path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
   )
   const { version: wevuVersion } = await fs.readJSON(
-    path.resolve(import.meta.dirname, '../../..', 'packages/wevu/package.json'),
+    path.resolve(import.meta.dirname, '../../..', 'packages-runtime/wevu/package.json'),
   )
   const { version: wevuApiVersion } = await fs.readJSON(
-    path.resolve(import.meta.dirname, '../../..', 'packages/weapi/package.json'),
+    path.resolve(import.meta.dirname, '../../..', 'packages-runtime/weapi/package.json'),
   )
 
   normalizeDependencySpecs(expectedPackageJson)

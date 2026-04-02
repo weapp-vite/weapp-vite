@@ -119,4 +119,4 @@ const router = useRouter()
 
 ## 6. 进展追踪
 
-- 对齐进展与剩余风险请参考：`packages/wevu/docs/router-alignment-progress.md`
+- 对齐进展与剩余风险请参考：`packages-runtime/wevu/docs/router-alignment-progress.md`

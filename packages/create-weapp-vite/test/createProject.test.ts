@@ -267,7 +267,7 @@ describe('createProject', () => {
       path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
     )
     const { version: wevuVersion } = await fs.readJSON(
-      path.resolve(import.meta.dirname, '../../..', 'packages/wevu/package.json'),
+      path.resolve(import.meta.dirname, '../../..', 'packages-runtime/wevu/package.json'),
     )
 
     vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {

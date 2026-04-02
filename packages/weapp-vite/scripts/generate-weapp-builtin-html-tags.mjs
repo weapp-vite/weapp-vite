@@ -4,7 +4,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const componentsPath = path.resolve(__dirname, '../../wevu/components.json')
+const componentsPath = path.resolve(__dirname, '../../../packages-runtime/wevu/components.json')
 const outputPath = path.resolve(__dirname, '../src/runtime/autoImport/weappBuiltinHtmlTagsData.ts')
 
 const components = await fs.readJson(componentsPath)

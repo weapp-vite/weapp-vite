@@ -17,6 +17,6 @@ export default defineProject({
         replacement: path.resolve(__dirname, './src'),
       },
     ],
-    coverage: createProjectCoverage('packages/web'),
+    coverage: createProjectCoverage('packages-runtime/web'),
   },
 })

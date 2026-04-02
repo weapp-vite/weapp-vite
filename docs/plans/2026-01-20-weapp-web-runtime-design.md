@@ -9,7 +9,7 @@
 
 ## 范围
 
-- 在 `packages/web` 内补齐编译期的自定义组件标签映射。
+- 在 `packages-runtime/web` 内补齐编译期的自定义组件标签映射。
 - 必要时（且说明原因）才对 `apps/weapp-vite-web-demo` 做最小化修补。
 
 ## 非目标
@@ -54,7 +54,7 @@
 
 ## 测试计划
 
-新增/补充 `packages/web/test`：
+新增/补充 `packages-runtime/web/test`：
 
 - `compileWxml` 传入 `componentTags` 时，断言标签被正确改写。
 - 验证页面级 usingComponents 覆盖 app 级映射。

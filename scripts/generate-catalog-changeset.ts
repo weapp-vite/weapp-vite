@@ -147,7 +147,7 @@ async function collectAffectedPackages(
   namedCatalogChangedKeys: Record<string, Set<string>>,
 ) {
   const packageJsonFiles = await fg(
-    ['packages/**/package.json', '@weapp-core/**/package.json'],
+    ['packages/**/package.json', 'packages-runtime/**/package.json', 'benchmarks/**/package.json', '@weapp-core/**/package.json'],
     {
       dot: false,
       onlyFiles: true,

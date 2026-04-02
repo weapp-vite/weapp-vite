@@ -27,7 +27,7 @@
   └─ 是 -> 看 wevu-compiler/src/* + weapp-vite/src/plugins/wevu*
 
 需求是 Web 端(h5/web)运行？
-  └─ 是 -> 看 runtime/webPlugin.ts + packages/web/src/*
+  └─ 是 -> 看 runtime/webPlugin.ts + packages-runtime/web/src/*
 
 需求是新项目模板/初始化？
   └─ 是 -> 看 create-weapp-vite + templates/* + @weapp-core/init
@@ -48,10 +48,10 @@
 | auto-import 组件相关   | `packages/weapp-vite/src/runtime/autoImport/*`           | `packages/weapp-vite/src/plugins/autoImport/*`                     | 扫描规则、产物输出              |
 | npm 构建/依赖缓存      | `packages/weapp-vite/src/runtime/npmPlugin/*`            | `packages/weapp-vite/src/runtime/buildPlugin/service.ts`           | build 前后时机、cache 失效      |
 | worker 构建/watch      | `packages/weapp-vite/src/runtime/buildPlugin/workers.ts` | `packages/weapp-vite/src/runtime/buildPlugin/service.ts`           | workerDir 检测与 watch          |
-| Web 构建或 dev server  | `packages/weapp-vite/src/runtime/webPlugin.ts`           | `packages/web/src/*`                                               | weapp.web 配置与 web plugin     |
+| Web 构建或 dev server  | `packages/weapp-vite/src/runtime/webPlugin.ts`           | `packages-runtime/web/src/*`                                               | weapp.web 配置与 web plugin     |
 | WXML/WXS 转换          | `packages/weapp-vite/src/wxml/*`                         | `packages/weapp-vite/src/wxs/*`                                    | AST/扫描/输出逻辑               |
-| Wevu 运行时能力        | `packages/wevu/src/index.ts`                             | `packages/wevu/src/runtime/*`                                      | runtime API / store / scheduler |
-| Wevu 编译结果不对      | `packages/wevu-compiler/src/index.ts`                    | `packages/wevu-compiler/src/plugins/vue/*`                         | template/script/style transform |
+| Wevu 运行时能力        | `packages-runtime/wevu/src/index.ts`                             | `packages-runtime/wevu/src/runtime/*`                                      | runtime API / store / scheduler |
+| Wevu 编译结果不对      | `packages-runtime/wevu-compiler/src/index.ts`                    | `packages-runtime/wevu-compiler/src/plugins/vue/*`                         | template/script/style transform |
 | Volar 提示/Schema 问题 | `packages/volar/src/index.ts`                            | `@weapp-core/schematics/src/*`                                     | custom block 嵌入与 schema 注入 |
 | 脚手架交互流程调整     | `packages/create-weapp-vite/src/cli.ts`                  | `packages/create-weapp-vite/src/createProject.ts`                  | 问答流程、模板选择              |
 | 新建项目依赖版本不对   | `packages/create-weapp-vite/src/createProject.ts`        | `templates/*/package.json`                                         | 写入 `weapp-vite` / `wevu` 版本 |
@@ -82,7 +82,7 @@
 
 ## 4.4 “Wevu 编译输出有偏差（模板/脚本）”
 
-1. 入口确认：`packages/wevu-compiler/src/index.ts` 导出的 API 是否是调用路径。
+1. 入口确认：`packages-runtime/wevu-compiler/src/index.ts` 导出的 API 是否是调用路径。
 2. 模板问题：`plugins/vue/compiler/template/*`。
 3. script/setup 宏问题：`plugins/vue/transform/*`。
 4. 如涉及 weapp-vite 集成，再看 `packages/weapp-vite/src/plugins/wevu*`。
@@ -100,7 +100,7 @@
 - `packages/weapp-vite/src/cli/`：命令注册与参数解析
 - `packages/weapp-vite/src/runtime/`：构建与运行时服务核心
 - `packages/weapp-vite/src/plugins/`：Vite 插件拼装层
-- `packages/wevu-compiler/src/plugins/vue/`：Vue -> 小程序编译内核
+- `packages-runtime/wevu-compiler/src/plugins/vue/`：Vue -> 小程序编译内核
 - `packages/create-weapp-vite/src/`：脚手架入口与模板拷贝逻辑
 - `packages/weapp-ide-cli/src/cli/`：微信 IDE CLI 兼容层
 - `@weapp-core/init/src/`：初始化配置基建

@@ -769,7 +769,7 @@ wevu 提供与 Pinia 完全一致的 API：
 查看完整示例：
 
 - **综合示例**: `apps/wevu-comprehensive-demo/src/pages/store/`
-- **单元测试**: `packages/wevu/test/store.test.ts`
+- **单元测试**: `packages-runtime/wevu/test/store.test.ts`
 
 ## License
 

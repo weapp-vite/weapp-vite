@@ -1,10 +1,10 @@
 import type { SFCBlock } from 'vue/compiler-sfc'
 import { parse as parseJson } from 'comment-json'
 import { compileScript, parse } from 'vue/compiler-sfc'
-import { compileVueStyleToWxss } from '../../../packages/wevu-compiler/src/plugins/vue/compiler/style'
-import { compileVueTemplateToWxml } from '../../../packages/wevu-compiler/src/plugins/vue/compiler/template'
-import { generateScopedId } from '../../../packages/wevu-compiler/src/plugins/vue/transform/scopedId'
-import { transformScript } from '../../../packages/wevu-compiler/src/plugins/vue/transform/transformScript'
+import { compileVueStyleToWxss } from '../../../packages-runtime/wevu-compiler/src/plugins/vue/compiler/style'
+import { compileVueTemplateToWxml } from '../../../packages-runtime/wevu-compiler/src/plugins/vue/compiler/template'
+import { generateScopedId } from '../../../packages-runtime/wevu-compiler/src/plugins/vue/transform/scopedId'
+import { transformScript } from '../../../packages-runtime/wevu-compiler/src/plugins/vue/transform/transformScript'
 
 export type OutputPaneKey = 'script' | 'template' | 'style' | 'config' | 'meta' | 'warnings'
 

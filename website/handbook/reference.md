@@ -86,7 +86,7 @@ keywords:
 
 优先关注：
 
-- `packages/wevu/src/`
+- `packages-runtime/wevu/src/`
 
 ### 2.3 想看文档和网站导航组织
 

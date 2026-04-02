@@ -164,7 +164,7 @@
 
 ## 测试策略
 
-- 单元测试：继续放在 `packages/web/test` 与 `packages/weapp-vite/test`，新增能力必须有“正常路径 + 降级路径 + 警告路径”。
+- 单元测试：继续放在 `packages-runtime/web/test` 与 `packages/weapp-vite/test`，新增能力必须有“正常路径 + 降级路径 + 警告路径”。
 - 集成测试：保持现有 build 产物校验，补充对 Web 输出与入口注入的断言。
 - 浏览器 E2E：以 `weapp-vite-web-demo` 作为金丝雀项目，覆盖用户真实交互链路。
 - 回归门禁：`pnpm --filter @weapp-vite/web test` 与 Web 相关 vitest/e2e 套件纳入 CI 必跑集合。

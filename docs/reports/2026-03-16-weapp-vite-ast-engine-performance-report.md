@@ -268,6 +268,6 @@ Babel 插件集合与 `weapp-vite` 当前使用方式保持一致：
 
 如果后续要继续扩大样本，建议下一步增加：
 
-- `packages/wevu-compiler` 里的 JSX/TSX 文件
+- `packages-runtime/wevu-compiler` 里的 JSX/TSX 文件
 - `script setup` 密集 SFC 脚本段
 - `componentProps` / `featureFlags` / `scriptSetupImports` 这些真实 operation 级 benchmark

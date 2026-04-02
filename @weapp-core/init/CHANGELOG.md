@@ -17,7 +17,7 @@
 
 ### Patch Changes
 
-- 🐛 **修复 `packages/web` 与仓库级构建中的声明打包 warning，减少 `pnpm build` 时的噪音日志，并为包含 Vue SFC 的 e2e 工程补齐 `wevu` 依赖声明，避免构建阶段出现误报警告。** [`2a6d379`](https://github.com/weapp-vite/weapp-vite/commit/2a6d3790d88224f17a26bfe1e0bc28532d0c6380) by @sonofmagic
+- 🐛 **修复 `packages-runtime/web` 与仓库级构建中的声明打包 warning，减少 `pnpm build` 时的噪音日志，并为包含 Vue SFC 的 e2e 工程补齐 `wevu` 依赖声明，避免构建阶段出现误报警告。** [`2a6d379`](https://github.com/weapp-vite/weapp-vite/commit/2a6d3790d88224f17a26bfe1e0bc28532d0c6380) by @sonofmagic
 
 ## 6.0.2
 

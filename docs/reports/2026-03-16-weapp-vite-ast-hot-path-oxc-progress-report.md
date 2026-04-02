@@ -45,7 +45,7 @@
 
 文件：
 
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- [packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
 
 现状：
 
@@ -59,7 +59,7 @@
 
 文件：
 
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
+- [packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
 
 现状：
 
@@ -71,7 +71,7 @@
 
 文件：
 
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
+- [packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
 
 现状：
 
@@ -208,7 +208,7 @@ pnpm -C packages/weapp-vite bench
 
 - [packages/ast/src/operations/setDataPick.ts](../../packages/ast/src/operations/setDataPick.ts)
 - [packages/ast/src/operations/onPageScroll.ts](../../packages/ast/src/operations/onPageScroll.ts)
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
+- [packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- [packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
+- [packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
 - [packages/weapp-vite/bench/ast-hot-paths.bench.ts](../../packages/weapp-vite/bench/ast-hot-paths.bench.ts)

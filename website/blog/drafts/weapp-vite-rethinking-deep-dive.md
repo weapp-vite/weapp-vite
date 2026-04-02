@@ -135,8 +135,8 @@ date: 2026-03-04
 
 对应文件：
 
-- `packages/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse.ts`
 
 模板转换关键点：
 
@@ -148,15 +148,15 @@ date: 2026-03-04
 
 `<script setup>` 里的 `definePageJson / defineComponentJson / defineAppJson` 会在编译时提取并剥离运行时代码：
 
-- `packages/wevu-compiler/src/plugins/vue/transform/jsonMacros/index.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/jsonMacros/parse.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/jsonMacros/rewrite.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/index.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/parse.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/rewrite.ts`
 
 这让页面/组件配置可以写在同一份 SFC 上下文里，同时保持运行时零成本。
 
 ### 5.3 运行时：坚持 `diff + setData` 路线
 
-运行时核心在 `packages/wevu/src/runtime/diff.ts`。
+运行时核心在 `packages-runtime/wevu/src/runtime/diff.ts`。
 它处理的是“小程序真实约束”：
 
 - 快照 plain 化（可序列化）。

@@ -58,7 +58,7 @@ describe('tsconfig support', () => {
           app: {
             compilerOptions: {
               paths: {
-                '@weapp-vite/web': ['../../packages/web/src/index.ts'],
+                '@weapp-vite/web': ['../../packages-runtime/web/src/index.ts'],
               },
             },
             include: ['../playground/**/*.ts'],
@@ -73,7 +73,7 @@ describe('tsconfig support', () => {
 
     expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'vite/client']))
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])
-    expect(app.compilerOptions.paths['@weapp-vite/web']).toEqual(['../../../packages/web/src/index.ts'])
+    expect(app.compilerOptions.paths['@weapp-vite/web']).toEqual(['../../../packages-runtime/web/src/index.ts'])
     expect(app.vueCompilerOptions.lib).toBe('wevu')
     expect(app.vueCompilerOptions.target).toBe(3.5)
     expect(app.include).toContain('../playground/**/*.ts')

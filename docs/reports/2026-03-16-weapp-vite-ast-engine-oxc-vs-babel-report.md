@@ -8,7 +8,7 @@
 
 - `packages/ast` 的统一 AST 抽象层与操作实现
 - `packages/weapp-vite` 对 `ast.engine` 的配置传递、运行时兼容层与测试
-- `packages/wevu-compiler` 中已经接入或预留 `astEngine` 的分析路径
+- `packages-runtime/wevu-compiler` 中已经接入或预留 `astEngine` 的分析路径
 - 仓库内现有 benchmark 与说明文档
 
 ## 2. 结论先行
@@ -84,8 +84,8 @@
 - 默认解析是 Babel：[`packages/ast/src/engine.ts`](../../packages/ast/src/engine.ts)
 - `setDataPick` 仍明确保留 Babel 语义：[`packages/ast/src/operations/setDataPick.ts`](../../packages/ast/src/operations/setDataPick.ts)
 - `onPageScroll` 性能诊断仍完全基于 Babel AST：[`packages/ast/src/operations/onPageScroll.ts`](../../packages/ast/src/operations/onPageScroll.ts)
-- `wevu` page feature 的模块分析仍返回 Babel AST 驱动结果：[`packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
-- JSX 深层编译链仍以 Babel 表达式工具为中心：[`packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](../../packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
+- `wevu` page feature 的模块分析仍返回 Babel AST 驱动结果：[`packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- JSX 深层编译链仍以 Babel 表达式工具为中心：[`packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](../../packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
 - WXS 转换仍直接依赖 Babel transform：[`packages/weapp-vite/src/wxs/index.ts`](../../packages/weapp-vite/src/wxs/index.ts)
 
 ### 4.2 Oxc 的当前定位
@@ -220,7 +220,7 @@
 
 #### 5.2.3 `wevu` pageFeatures 外部模块分析
 
-- 文件：[`packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- 文件：[`packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
 
 该文件注释已经写明：
 
@@ -231,7 +231,7 @@
 
 #### 5.2.4 JSX 编译更深层分析
 
-- 文件：[`packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](../../packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
+- 文件：[`packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](../../packages-runtime/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
 
 状态判断：
 
