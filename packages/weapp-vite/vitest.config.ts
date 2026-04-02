@@ -117,7 +117,39 @@ export default defineProject({
         replacement: path.resolve(__dirname, './src/config.ts'),
       },
       {
-        find: '@wevu/compiler',
+        find: /^wevu$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/index.ts'),
+      },
+      {
+        find: /^wevu\/compiler$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu-compiler/src/index.ts'),
+      },
+      {
+        find: /^wevu\/jsx-runtime$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/jsx-runtime.ts'),
+      },
+      {
+        find: /^wevu\/store$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/store/index.ts'),
+      },
+      {
+        find: /^wevu\/api$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/api.ts'),
+      },
+      {
+        find: /^wevu\/fetch$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/fetch.ts'),
+      },
+      {
+        find: /^wevu\/router$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/router.ts'),
+      },
+      {
+        find: /^wevu\/vue-demi$/,
+        replacement: path.resolve(__dirname, '../..', 'packages-runtime/wevu/src/vue-demi.ts'),
+      },
+      {
+        find: /^@wevu\/compiler$/,
         replacement: path.resolve(__dirname, '../wevu-compiler/src/index.ts'),
       },
       {
