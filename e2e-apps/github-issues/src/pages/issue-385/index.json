@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "attach-probe": "/components/issue-385/AttachProbe/index"
+  }
+}

@@ -1,6 +1,7 @@
 import fsNative from 'node:fs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
+// eslint-disable-next-line e18e/ban-dependencies
 import fsExtra from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -728,6 +729,41 @@ Page({
     expect(result).toContain('__wv_page_layout_name')
     expect(result).toContain('this.setData')
     expect(result).not.toContain('definePageMeta')
+  })
+
+  it('injects initial native page layout state and skips duplicate runtime updates for the same layout', () => {
+    const result = injectNativePageLayoutRuntime(
+      `
+definePageMeta({
+  layout: 'default',
+})
+
+Page({
+  data: {
+    count: 1,
+  },
+})
+      `.trim(),
+      '/project/src/pages/native/index.ts',
+      {
+        dynamicSwitch: true,
+        currentLayout: {
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          kind: 'vue',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+        layouts: [],
+        dynamicPropKeys: [],
+      },
+    )
+
+    expect(result).toMatch(/__wv_page_layout_name:\s*["']default["']/)
+    expect(result).toMatch(/__wv_page_layout_props:\s*\{\}/)
+    expect(result).toContain('Object.keys(__wv_current_layout_props).every')
+    expect(result).toContain('Object.keys(__wv_next_layout_props).length')
+    expect(result).toContain('return;')
   })
 
   it('strips definePageMeta from native runtime code even when dynamic switching is disabled', () => {
