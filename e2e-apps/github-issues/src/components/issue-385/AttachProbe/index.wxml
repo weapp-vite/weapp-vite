@@ -1,0 +1,3 @@
+<view class="issue385-attach-probe">
+  <text>attach-count: {{attachCount}}</text>
+</view>
