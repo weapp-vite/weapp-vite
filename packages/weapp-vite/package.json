@@ -46,9 +46,9 @@
       "types": "./dist/runtime.d.mts",
       "import": "./dist/runtime.mjs"
     },
-    "./requestGlobals": {
-      "types": "./dist/requestGlobals.d.mts",
-      "import": "./dist/requestGlobals.mjs"
+    "./web-apis": {
+      "types": "./dist/web-apis.d.mts",
+      "import": "./dist/web-apis.mjs"
     },
     "./mcp": {
       "types": "./dist/mcp.d.mts",
@@ -115,6 +115,7 @@
     "@weapp-vite/volar": "workspace:*",
     "@weapp-vite/web": "workspace:*",
     "@wevu/api": "workspace:*",
+    "@wevu/web-apis": "workspace:*",
     "cac": "^7.0.0",
     "chokidar": "^5.0.0",
     "comment-json": "catalog:",

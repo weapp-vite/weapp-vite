@@ -3,7 +3,7 @@ import { defineConfig } from 'tsdown'
 export default defineConfig({
   entry: {
     'index': './src/index.ts',
-    'requestGlobals': './src/requestGlobals.ts',
+    'web-apis': './src/webApis.ts',
     'cli': './src/cli.ts',
     'config': './src/config.ts',
     'json': './src/json.ts',
