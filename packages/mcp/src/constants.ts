@@ -12,12 +12,12 @@ export const EXPOSED_PACKAGES = {
   'wevu': {
     id: 'wevu',
     label: 'wevu',
-    relativePath: path.join('packages', 'wevu'),
+    relativePath: path.join('packages-runtime', 'wevu'),
   },
   'wevu-compiler': {
     id: 'wevu-compiler',
     label: 'wevu-compiler',
-    relativePath: path.join('packages', 'wevu-compiler'),
+    relativePath: path.join('packages-runtime', 'wevu-compiler'),
   },
 } as const
 
