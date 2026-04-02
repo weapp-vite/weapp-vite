@@ -1,0 +1,4 @@
+<view class="issue385-page">
+  <text>{{title}}</text>
+  <attach-probe />
+</view>
