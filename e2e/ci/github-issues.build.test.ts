@@ -50,6 +50,23 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(customTabBarJson).not.toContain('weapp-layout-default')
   })
 
+  it('issue #385: initializes native default layout state and short-circuits duplicate setPageLayout updates', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-385/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-385/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('<attach-probe />')
+    expect(pageWxml).toContain(`!__wv_page_layout_name || __wv_page_layout_name === 'default'`)
+    expect(pageJs).toMatch(/__wv_page_layout_name:\s*[`'"]default[`'"]/)
+    expect(pageJs).toContain('__wv_page_layout_props:{}')
+    expect(pageJs).toContain('Object.keys(a).every(')
+    expect(pageJs).toContain('Object.keys(a).length===Object.keys(r).length')
+    expect(pageJs).toContain('||this.setData({__wv_page_layout_name:n,__wv_page_layout_props:r})')
+  })
+
   it('issue #289: compiles split pages with per-page controls and safe class bindings', async () => {
     await runBuild()
 
