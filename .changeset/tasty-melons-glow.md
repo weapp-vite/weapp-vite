@@ -3,4 +3,4 @@
 'create-weapp-vite': patch
 ---
 
-修复了 `weapp-vite/requestGlobals` 子路径导出缺失的问题，避免依赖 request globals 注入的项目在构建时出现模块解析失败。
+调整 `weapp-vite` 的 Web API 注入子路径导出，统一使用 `weapp-vite/web-apis` 入口，避免运行时注入模块解析与命名长期分叉。

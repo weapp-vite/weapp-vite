@@ -155,7 +155,7 @@ export function resolveInjectRequestGlobalsOptions(
 }
 
 function resolveRequestGlobalsRuntimeModuleId() {
-  return 'weapp-vite/requestGlobals'
+  return 'weapp-vite/web-apis'
 }
 
 function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
