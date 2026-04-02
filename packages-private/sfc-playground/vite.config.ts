@@ -34,6 +34,10 @@ export default defineConfig({
         replacement: resolve(__dirname, 'src/browserAst/index.ts'),
       },
       {
+        find: /^@weapp-core\/shared$/,
+        replacement: resolve(__dirname, '../../@weapp-core/shared/src/index.ts'),
+      },
+      {
         find: /^node:path$/,
         replacement: 'pathe',
       },
