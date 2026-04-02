@@ -7,16 +7,19 @@ export const EXPOSED_PACKAGES = {
   'weapp-vite': {
     id: 'weapp-vite',
     label: 'weapp-vite',
+    packageName: 'weapp-vite',
     relativePath: path.join('packages', 'weapp-vite'),
   },
   'wevu': {
     id: 'wevu',
     label: 'wevu',
+    packageName: 'wevu',
     relativePath: path.join('packages-runtime', 'wevu'),
   },
   'wevu-compiler': {
     id: 'wevu-compiler',
     label: 'wevu-compiler',
+    packageName: '@wevu/compiler',
     relativePath: path.join('packages-runtime', 'wevu-compiler'),
   },
 } as const

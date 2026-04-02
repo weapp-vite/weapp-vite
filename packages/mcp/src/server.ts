@@ -1,6 +1,5 @@
 import type { ExposedPackageId } from './constants'
 import fs from 'node:fs/promises'
-import path from 'node:path'
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { loadExposedCatalog } from './catalog'
@@ -13,6 +12,7 @@ import {
   MCP_SERVER_NAME,
   MCP_SERVER_VERSION,
 } from './constants'
+import { resolveExposedPackage, resolveExposedPackages } from './exposedPackages'
 import { listFilesInDirectory, readFileContent, searchTextInDirectory } from './fileOps'
 import { normalizeErrorMessage, toToolError, toToolResult } from './utils'
 import { assertInsideRoot, resolveSubPath, resolveWorkspaceRoot } from './workspace'
@@ -24,8 +24,12 @@ export interface CreateServerOptions {
   workspaceRoot?: string
 }
 
-function resolvePackageRoot(workspaceRoot: string, packageId: ExposedPackageId) {
-  return assertInsideRoot(workspaceRoot, path.join(workspaceRoot, EXPOSED_PACKAGES[packageId].relativePath))
+async function resolvePackageRoot(workspaceRoot: string, packageId: ExposedPackageId) {
+  const resolved = await resolveExposedPackage(workspaceRoot, packageId)
+  if (!resolved.sourceRoot) {
+    throw new Error(`当前工作区中的 ${packageId} 不包含源码目录，请改为优先读取本地随包文档。`)
+  }
+  return assertInsideRoot(workspaceRoot, resolved.sourceRoot)
 }
 
 function toDocsUri(packageId: ExposedPackageId, fileName: string) {
@@ -69,7 +73,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     },
   }, async ({ packageId, directory, maxResults }) => {
     try {
-      const packageRoot = resolvePackageRoot(workspaceRoot, packageId)
+      const packageRoot = await resolvePackageRoot(workspaceRoot, packageId)
       const files = await listFilesInDirectory(packageRoot, directory ?? 'src', maxResults ?? DEFAULT_MAX_RESULTS)
       return toToolResult({
         packageId,
@@ -95,7 +99,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     },
   }, async ({ packageId, filePath, startLine, endLine, maxChars }) => {
     try {
-      const packageRoot = resolvePackageRoot(workspaceRoot, packageId)
+      const packageRoot = await resolvePackageRoot(workspaceRoot, packageId)
       const { filePath: absolutePath, content } = await readFileContent(packageRoot, filePath, {
         startLine,
         endLine,
@@ -141,7 +145,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
         if (allMatches.length >= safeMax) {
           break
         }
-        const packageRoot = resolvePackageRoot(workspaceRoot, id)
+        const packageRoot = await resolvePackageRoot(workspaceRoot, id)
         const matches = await searchTextInDirectory(packageRoot, query, {
           relativeDirectory: directory ?? 'src',
           maxResults: safeMax - allMatches.length,
@@ -174,9 +178,9 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     },
   }, async ({ packageId, script, args, timeoutMs }) => {
     try {
-      const cwdRelative = EXPOSED_PACKAGES[packageId].relativePath
+      const resolvedPackage = await resolveExposedPackage(workspaceRoot, packageId)
       const result = await runCommand(workspaceRoot, 'pnpm', ['run', script, ...(args ?? [])], {
-        cwdRelative,
+        cwdRelative: resolvedPackage.relativePath,
         timeoutMs: timeoutMs ?? DEFAULT_TIMEOUT_MS,
       })
       return toToolResult(result)
@@ -198,7 +202,10 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     },
   }, async ({ subCommand, projectPath, platform, args, timeoutMs }) => {
     try {
-      const cliPath = path.join('packages', 'weapp-vite', 'bin', 'weapp-vite.js')
+      const cliPath = (await resolveExposedPackage(workspaceRoot, 'weapp-vite')).cliPath
+      if (!cliPath) {
+        throw new Error('当前工作区中的 weapp-vite 未暴露 CLI 入口')
+      }
       const finalArgs = [cliPath, subCommand]
       if (projectPath) {
         finalArgs.push(resolveSubPath(workspaceRoot, projectPath))
@@ -312,7 +319,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     }
   })
 
-  const catalog = await loadExposedCatalog(workspaceRoot)
+  const catalog = await resolveExposedPackages(workspaceRoot)
   for (const summary of catalog) {
     if (summary.docs.readme) {
       const uri = toDocsUri(summary.id, 'README.md')
@@ -359,7 +366,7 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
         throw new Error(`未知 package：${packageId}`)
       }
       const relativePath = decodeURIComponent(String(variables.path ?? ''))
-      const packageRoot = resolvePackageRoot(workspaceRoot, packageId as ExposedPackageId)
+      const packageRoot = await resolvePackageRoot(workspaceRoot, packageId as ExposedPackageId)
       const { content } = await readFileContent(packageRoot, relativePath, {
         maxChars: DEFAULT_MAX_FILE_CHARS,
       })
