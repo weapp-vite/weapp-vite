@@ -12,7 +12,7 @@ keywords:
 
 # Lifecycle API（生命周期）
 
-以下条目严格对应 `packages/wevu/src/runtime/hooks.ts` 的导出函数。所有 Hook 都要求在 `setup()` 同步阶段调用。
+以下条目严格对应 `packages-runtime/wevu/src/runtime/hooks.ts` 的导出函数。所有 Hook 都要求在 `setup()` 同步阶段调用。
 
 ## App 生命周期 Hook
 

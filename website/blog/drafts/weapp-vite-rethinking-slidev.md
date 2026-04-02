@@ -410,8 +410,8 @@ flowchart LR
 
 核心文件：
 
-- `packages/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/parse.ts`
 
 <!--
 时间建议：1 分钟
@@ -444,7 +444,7 @@ flowchart LR
 
 运行时关键文件：
 
-- `packages/wevu/src/runtime/diff.ts`
+- `packages-runtime/wevu/src/runtime/diff.ts`
 
 关注点：
 

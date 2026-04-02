@@ -2,7 +2,7 @@
 
 ## 背景与目标
 
-`packages/weapi` 需要提供微信小程序全量 API 的跨平台封装，并兼容其它主流/长尾平台（支付宝/百度/字节/QQ/快应用/京东/小红书/快手/淘宝等）。对外推荐 Promise 风格，但必须兼容传统回调风格。默认导出短名称 `wpi`，同时提供 `createWeapi` 以便显式注入平台适配器。
+`packages-runtime/weapi` 需要提供微信小程序全量 API 的跨平台封装，并兼容其它主流/长尾平台（支付宝/百度/字节/QQ/快应用/京东/小红书/快手/淘宝等）。对外推荐 Promise 风格，但必须兼容传统回调风格。默认导出短名称 `wpi`，同时提供 `createWeapi` 以便显式注入平台适配器。
 
 ## 方案选择
 
@@ -43,7 +43,7 @@
 ## 文件结构建议
 
 ```
-packages/weapi/src/
+packages-runtime/weapi/src/
   index.ts              # 导出 wpi / createWeapi
   core/
     createWeapi.ts       # 工厂与代理逻辑

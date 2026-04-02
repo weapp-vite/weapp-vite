@@ -6,13 +6,13 @@ export default defineProject({
   test: {
     alias: [
       {
-        find: '@/',
-        replacement: `${path.resolve(__dirname, './src')}/`,
+        find: '@',
+        replacement: path.resolve(__dirname, './src'),
       },
     ],
     globals: true,
     testTimeout: 60_000,
-    coverage: createProjectCoverage('packages/wevu-compiler', {
+    coverage: createProjectCoverage('packages-runtime/weapi', {
       clean: false,
       exclude: [
         '**/dist/**',

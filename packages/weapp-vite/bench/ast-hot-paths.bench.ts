@@ -1,10 +1,10 @@
 import { collectComponentPropsFromCode, collectFeatureFlagsFromCode, collectOnPageScrollPerformanceWarnings, collectSetDataPickKeysFromTemplateCode } from '@weapp-vite/ast'
 import { parseSync } from 'oxc-parser'
 import { bench, describe } from 'vitest'
-import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../wevu-compiler/src/constants'
-import { createModuleAnalysis, createModuleAnalysisFromCode } from '../../wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis'
-import { collectTargetOptionsObjectsFromCode } from '../../wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects'
-import { parseJsLike } from '../../wevu-compiler/src/utils/babel'
+import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../packages-runtime/wevu-compiler/src/constants'
+import { createModuleAnalysis, createModuleAnalysisFromCode } from '../../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis'
+import { collectTargetOptionsObjectsFromCode } from '../../../packages-runtime/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects'
+import { parseJsLike } from '../../../packages-runtime/wevu-compiler/src/utils/babel'
 import { defaultBenchOptions } from './utils'
 
 function createSetDataPickTemplate(options?: {

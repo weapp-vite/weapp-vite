@@ -51,7 +51,7 @@ jobs:
         shell: bash
         run: |
           files=(
-            packages/wevu-compiler/src/auto-import-components/builtin.auto.ts
+            packages-runtime/wevu-compiler/src/auto-import-components/builtin.auto.ts
             packages/weapp-vite/src/auto-import-components/resolvers/json/tdesign.json
             packages/weapp-vite/src/auto-import-components/resolvers/json/vant.json
             packages/weapp-vite/src/auto-import-components/resolvers/json/weui.json
@@ -88,7 +88,7 @@ jobs:
             - 该 PR 由 GitHub Actions 每日任务自动创建或更新
             - 仅在生成文件发生变化时才会提交
           add-paths: |
-            packages/wevu-compiler/src/auto-import-components/builtin.auto.ts
+            packages-runtime/wevu-compiler/src/auto-import-components/builtin.auto.ts
             packages/weapp-vite/src/auto-import-components/resolvers/json/tdesign.json
             packages/weapp-vite/src/auto-import-components/resolvers/json/vant.json
             packages/weapp-vite/src/auto-import-components/resolvers/json/weui.json

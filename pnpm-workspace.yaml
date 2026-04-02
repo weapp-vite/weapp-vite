@@ -6,12 +6,16 @@ packages:
   - test/fixture-projects/weapp-vite/*
   - '!test/fixture-projects/weapp-vite/.tmp-*'
   - packages/*
+  - packages-runtime/*
+  - benchmarks/*
   - mpcore/packages/*
   - mpcore/demos/*
   - '@weapp-core/*'
   - extensions/*
   - website
   - '!packages/**/test/**'
+  - '!packages-runtime/**/test/**'
+  - '!benchmarks/**/test/**'
   - '!@weapp-core/**/test/**'
   - '!mpcore/**/test/**'
 

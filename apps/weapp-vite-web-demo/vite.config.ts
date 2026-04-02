@@ -23,7 +23,7 @@ export default defineConfig({
         compilerOptions: {
           paths: {
             '@weapp-vite/web': [
-              '../../packages/web/src/index.ts',
+              '../../packages-runtime/web/src/index.ts',
             ],
           },
         },

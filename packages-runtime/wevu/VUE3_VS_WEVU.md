@@ -170,7 +170,7 @@ function patch(n1, n2) {
 **wevu 的渲染流程：**
 
 ```typescript
-// 文件：packages/wevu/src/runtime/app.ts
+// 文件：packages-runtime/wevu/src/runtime/app.ts
 
 function job() {
   // 1. 收集快照（纯 JS 对象）
@@ -285,7 +285,7 @@ this.setData({
 **核心代码：**
 
 ```typescript
-// 文件：packages/wevu/src/runtime/register.ts
+// 文件：packages-runtime/wevu/src/runtime/register.ts
 
 // 🎯 关键：桥接到小程序 Component()（在微信中可用于页面/组件）
 export function registerComponent<T extends object, C, M>(
@@ -347,7 +347,7 @@ app.mount('#root') // 直接挂载到 DOM
 **核心代码：**
 
 ```typescript
-// 文件：packages/wevu/src/runtime/register.ts
+// 文件：packages-runtime/wevu/src/runtime/register.ts
 
 export function mountRuntimeInstance<T extends object, C, M>(
   target: InternalRuntimeState,
@@ -373,7 +373,7 @@ export function mountRuntimeInstance<T extends object, C, M>(
 **在 job 中使用：**
 
 ```typescript
-// 文件：packages/wevu/src/runtime/app.ts
+// 文件：packages-runtime/wevu/src/runtime/app.ts
 
 function job() {
   const snapshot = collectSnapshot()
@@ -411,7 +411,7 @@ function patch(n1, n2) {
 **核心需求：生成小程序 setData 兼容的路径**
 
 ```typescript
-// 文件：packages/wevu/src/runtime/diff.ts
+// 文件：packages-runtime/wevu/src/runtime/diff.ts
 
 export function diffSnapshots(
   prev: Record<string, any>,
@@ -572,7 +572,7 @@ Page({
 **wevu 的适配方案：**
 
 ```typescript
-// 文件：packages/wevu/src/runtime/bindModel.ts
+// 文件：packages-runtime/wevu/src/runtime/bindModel.ts
 
 // 🎯 解析小程序事件
 export function defaultParser(event: any) {
@@ -668,7 +668,7 @@ export default {
 ### Vue 3 vs 小程序生命周期
 
 ```typescript
-// 文件：packages/wevu/src/runtime/hooks.ts
+// 文件：packages-runtime/wevu/src/runtime/hooks.ts
 
 // Vue 3 生命周期 → 小程序生命周期映射
 
@@ -810,7 +810,7 @@ Page({
 ### wevu 的 bindModel
 
 ```typescript
-// 文件：packages/wevu/src/runtime/bindModel.ts
+// 文件：packages-runtime/wevu/src/runtime/bindModel.ts
 
 // 创建 model 绑定
 const model = bindModel(publicInstance, 'form.username')
@@ -985,12 +985,12 @@ Total: ~8,600 行
 
 ## 参考源码
 
-- **wevu 响应式**: `packages/wevu/src/reactivity/`
-- **wevu 调度器**: `packages/wevu/src/scheduler.ts`
-- **wevu 运行时**: `packages/wevu/src/runtime/app.ts`
-- **小程序注册**: `packages/wevu/src/runtime/register.ts`
-- **Diff 算法**: `packages/wevu/src/runtime/diff.ts`
-- **双向绑定**: `packages/wevu/src/runtime/bindModel.ts`
+- **wevu 响应式**: `packages-runtime/wevu/src/reactivity/`
+- **wevu 调度器**: `packages-runtime/wevu/src/scheduler.ts`
+- **wevu 运行时**: `packages-runtime/wevu/src/runtime/app.ts`
+- **小程序注册**: `packages-runtime/wevu/src/runtime/register.ts`
+- **Diff 算法**: `packages-runtime/wevu/src/runtime/diff.ts`
+- **双向绑定**: `packages-runtime/wevu/src/runtime/bindModel.ts`
 
 ## 相关阅读
 

@@ -92,10 +92,10 @@ graph TD
 
 ## 3.4 其他关键包入口
 
-- Wevu 运行时：`packages/wevu/src/index.ts`
-- Wevu 编译器：`packages/wevu-compiler/src/index.ts`
-- Web 运行时插件：`packages/web/src/index.ts`
-- WeAPI 入口：`packages/weapi/src/index.ts`
+- Wevu 运行时：`packages-runtime/wevu/src/index.ts`
+- Wevu 编译器：`packages-runtime/wevu-compiler/src/index.ts`
+- Web 运行时插件：`packages-runtime/web/src/index.ts`
+- WeAPI 入口：`packages-runtime/weapi/src/index.ts`
 - Volar 插件：`packages/volar/src/index.ts`
 - 脚手架入口：`packages/create-weapp-vite/dev/bin.ts`、`packages/create-weapp-vite/src/cli.ts`
 - IDE CLI 入口：`packages/weapp-ide-cli/bin/weapp.js`、`packages/weapp-ide-cli/src/cli.ts`
@@ -162,7 +162,7 @@ sequenceDiagram
 - 插件执行顺序/注入异常：`packages/weapp-vite/src/plugins/index.ts`
 - 配置合并结果异常：`packages/weapp-vite/src/runtime/config/*`
 - 分包/共享 chunk 行为异常：`packages/weapp-vite/src/runtime/sharedBuildConfig.ts`
-- Wevu 编译产物异常：`packages/wevu-compiler/src/*`
+- Wevu 编译产物异常：`packages-runtime/wevu-compiler/src/*`
 - 创建项目模板内容不符合预期：`packages/create-weapp-vite/src/createProject.ts` + `templates/*`
 
 ---

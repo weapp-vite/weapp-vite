@@ -7,7 +7,11 @@ If a deeper directory contains its own `AGENTS.md`, apply that local file first,
 
 - Core bundler/compiler/runtime work:
   - `packages/weapp-vite`
-  - `packages/wevu`
+  - `packages-runtime/wevu`
+  - `packages-runtime/wevu-compiler`
+  - `packages-runtime/weapi`
+  - `packages-runtime/web`
+  - `packages-runtime/web-apis`
   - related integration checks in `e2e/` and `e2e-apps/github-issues`
 - Template/app parity work:
   - source app in `apps/*`
@@ -36,7 +40,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 ### 2.1 Dist Sync Guard (Prevent Stale CLI/Runtime)
 
-- When editing `packages/*/src/**`, assume downstream apps/templates/e2e consume built artifacts from `dist` (not live `src`).
+- When editing `packages/*/src/**` or `packages-runtime/*/src/**`, assume downstream apps/templates/e2e consume built artifacts from `dist` (not live `src`).
 - Before validating through `apps/*`, `templates/*`, or `e2e-apps/*`, rebuild each touched package first:
   - `pnpm --filter <package-name> build`
 - For `weapp-vite` CLI changes specifically (`packages/weapp-vite/src/cli/**`, `packages/weapp-vite/src/mcp.ts`, or other CLI entry dependencies), always run:

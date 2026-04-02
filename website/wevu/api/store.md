@@ -11,7 +11,7 @@ keywords:
 
 # Store API（状态管理）
 
-以下条目来源于 `packages/wevu/src/store/index.ts` 的公开导出。
+以下条目来源于 `packages-runtime/wevu/src/store/index.ts` 的公开导出。
 
 ## 核心函数
 

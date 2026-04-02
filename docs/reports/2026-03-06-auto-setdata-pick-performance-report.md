@@ -80,8 +80,8 @@
 `pick` 生效点在 wevu runtime 的快照采集阶段（`shouldIncludeKey` 过滤顶层 key）。
 
 - 参考实现：
-  - `packages/wevu/src/runtime/app/setDataOptions.ts`
-  - `packages/wevu/src/runtime/app/setData/snapshot.ts`
+  - `packages-runtime/wevu/src/runtime/app/setDataOptions.ts`
+  - `packages-runtime/wevu/src/runtime/app/setData/snapshot.ts`
 - 影响路径：
   - `collectSnapshot` 对 state/computed 顶层键做过滤
   - 未被 pick 的大对象不会进入 `toPlain` 深转换

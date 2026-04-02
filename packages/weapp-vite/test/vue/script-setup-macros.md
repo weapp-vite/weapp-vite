@@ -122,7 +122,7 @@ function onModelUpdate(event: any) {
 
 ## 相关实现位置（便于追踪）
 
-- `<script setup>` 编译入口：`packages/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts`
-- 编译产物后处理（含 expose 对齐）：`packages/wevu-compiler/src/plugins/vue/transform/script.ts`
-- wevu `setup` context（`emit/expose/attrs/slots`）：`packages/wevu/src/runtime/register.ts`
-- wevu 兼容 helper（`useAttrs/useSlots/useModel`）：`packages/wevu/src/runtime/vueCompat.ts`
+- `<script setup>` 编译入口：`packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/index.ts`
+- 编译产物后处理（含 expose 对齐）：`packages-runtime/wevu-compiler/src/plugins/vue/transform/script.ts`
+- wevu `setup` context（`emit/expose/attrs/slots`）：`packages-runtime/wevu/src/runtime/register.ts`
+- wevu 兼容 helper（`useAttrs/useSlots/useModel`）：`packages-runtime/wevu/src/runtime/vueCompat.ts`

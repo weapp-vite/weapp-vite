@@ -616,7 +616,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/api-extractor-vue-types-demo:
     dependencies:
@@ -714,7 +714,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/playground:
     devDependencies:
@@ -751,7 +751,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/raw-ts:
     dependencies:
@@ -802,7 +802,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/subpackage-shared-chunks:
     devDependencies:
@@ -1083,7 +1083,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/wevu-comprehensive-demo:
     dependencies:
@@ -1095,7 +1095,7 @@ importers:
         version: 1.13.1
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
     devDependencies:
       '@weapp-core/schematics':
         specifier: workspace:*
@@ -1135,7 +1135,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/wevu-runtime-demo:
     devDependencies:
@@ -1162,7 +1162,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/wevu-vue-demo:
     devDependencies:
@@ -1186,7 +1186,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   apps/wevu-vue-sfc-recording-demo:
     devDependencies:
@@ -1216,7 +1216,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/app-lifecycle-native:
     devDependencies:
@@ -1246,7 +1246,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/auto-import-vue-sfc:
     devDependencies:
@@ -1258,7 +1258,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/auto-routes-define-app-json:
     devDependencies:
@@ -1270,7 +1270,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/base:
     devDependencies:
@@ -1313,7 +1313,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/issue-340-hoist:
     devDependencies:
@@ -1325,7 +1325,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/issue-814-tailwind3:
     devDependencies:
@@ -1343,7 +1343,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/issue-814-tailwind4:
     devDependencies:
@@ -1364,7 +1364,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/issue-814-tailwind4-broken:
     devDependencies:
@@ -1385,7 +1385,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/lib-mode:
     devDependencies:
@@ -1397,7 +1397,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/lifecycle-compare:
     devDependencies:
@@ -1409,7 +1409,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/object-literal-bind-prop:
     devDependencies:
@@ -1421,7 +1421,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/request-clients-real:
     devDependencies:
@@ -1442,7 +1442,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/script-setup-macros-js-with-defaults-invalid:
     devDependencies:
@@ -1454,7 +1454,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/script-setup-macros-mapping:
     devDependencies:
@@ -1466,7 +1466,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/style-import-vue:
     devDependencies:
@@ -1478,7 +1478,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/subpackage-shared-strategy-complex-a:
     devDependencies:
@@ -1493,7 +1493,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/subpackage-shared-strategy-complex-b:
     devDependencies:
@@ -1508,7 +1508,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/wevu-features:
     devDependencies:
@@ -1520,7 +1520,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/wevu-runtime-e2e:
     devDependencies:
@@ -1532,7 +1532,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   e2e-apps/wevu-subpackage-placement:
     devDependencies:
@@ -1544,7 +1544,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   extensions/vscode: {}
 
@@ -1786,7 +1786,7 @@ importers:
         specifier: ^0.0.5
         version: 0.0.5
 
-  packages/rolldown-require-bench:
+  benchmarks/rolldown-require-bench:
     dependencies:
       rolldown-require:
         specifier: workspace:*
@@ -1803,7 +1803,7 @@ importers:
         specifier: workspace:*
         version: link:../../@weapp-core/schematics
 
-  packages/weapi:
+  packages-runtime/weapi:
     dependencies:
       '@douyin-microapp/typings':
         specifier: ^1.3.1
@@ -1972,7 +1972,7 @@ importers:
         specifier: 'catalog:'
         version: 27.0.2
 
-  packages/web:
+  packages-runtime/web:
     dependencies:
       '@babel/parser':
         specifier: 'catalog:'
@@ -2005,13 +2005,13 @@ importers:
         specifier: workspace:*
         version: link:../rolldown-require
 
-  packages/web-apis:
+  packages-runtime/web-apis:
     dependencies:
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi
 
-  packages/wevu:
+  packages-runtime/wevu:
     dependencies:
       '@wevu/api':
         specifier: workspace:*
@@ -2026,7 +2026,7 @@ importers:
         specifier: 'catalog:'
         version: 3.5.31(typescript@6.0.2)
 
-  packages/wevu-compiler:
+  packages-runtime/wevu-compiler:
     dependencies:
       '@vue/compiler-core':
         specifier: 'catalog:'
@@ -2072,7 +2072,7 @@ importers:
         version: 2.2.1(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.6.0(typescript@6.0.2)))(stylelint@17.6.0(typescript@6.0.2))(tailwindcss@4.2.2)
       '@wevu/api':
         specifier: workspace:*
-        version: link:../../packages/weapi
+        version: link:../../packages-runtime/weapi
       eslint:
         specifier: ^10.1.0
         version: 10.1.0(jiti@2.6.1)
@@ -2093,7 +2093,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
@@ -2278,7 +2278,7 @@ importers:
         version: 2.8.1
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
     devDependencies:
       '@icebreakers/eslint-config':
         specifier: ^3.0.1
@@ -2370,7 +2370,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   templates/weapp-vite-wevu-template:
     devDependencies:
@@ -2400,7 +2400,7 @@ importers:
         version: link:../../packages/weapp-vite
       wevu:
         specifier: workspace:*
-        version: link:../../packages/wevu
+        version: link:../../packages-runtime/wevu
 
   test/fixture-projects/weapp-vite/asset:
     dependencies:

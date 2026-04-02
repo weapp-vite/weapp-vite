@@ -163,4 +163,4 @@
 6. `pnpm --filter @wevu/api lint`
 7. `pnpm --filter @wevu/api build`
 8. 新增 changeset（中文摘要）
-9. 仅提交 `packages/weapi` + `.changeset/*.md`
+9. 仅提交 `packages-runtime/weapi` + `.changeset/*.md`

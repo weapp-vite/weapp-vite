@@ -138,14 +138,14 @@ unrun             | avg 64.54ms | median 50.02ms | deps 201 | rssΔ 中位 1.33 
 
 说明：
 
-- 用例是 `packages/rolldown-require-bench/benchmark/index.mjs` 生成的合成 TS 模块图（静态与包含动态 import）。
+- 用例是 `benchmarks/rolldown-require-bench/benchmark/index.mjs` 生成的合成 TS 模块图（静态与包含动态 import）。
 - 每轮都会清理 unrun 的 `.unrun` 缓存以保证冷启动，可用 `BENCH_ITERATIONS` 调整迭代次数。
 
 ### 结论
 
 - 在 10 次冷启动平均值下，rolldown-require 在三组场景总体更快（avg/median），unrun 的 RSS 增量略低。
 - 依赖数量一致或接近，表明覆盖的模块图相当。
-- 数据来自 `packages/rolldown-require-bench/benchmark/index.mjs` 的合成样本（M3/Node 22.21.1）；正式选型请按真实工作负载复验。
+- 数据来自 `benchmarks/rolldown-require-bench/benchmark/index.mjs` 的合成样本（M3/Node 22.21.1）；正式选型请按真实工作负载复验。
 
 ### 缓存
 

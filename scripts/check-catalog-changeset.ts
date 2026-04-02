@@ -200,7 +200,7 @@ async function collectAffectedPackages(
   defaultCatalogKeys: string[],
   namedCatalogChangedKeys: Record<string, Set<string>>,
 ) {
-  const packageJsonFiles = await fg(['packages/**/package.json'], {
+  const packageJsonFiles = await fg(['packages/**/package.json', 'packages-runtime/**/package.json', 'benchmarks/**/package.json'], {
     dot: false,
     onlyFiles: true,
     ignore: ['**/node_modules/**', '**/test/**'],

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Move the pure Vue SFC compilation pipeline and wevu page-features analysis from `packages/weapp-vite` into `packages/wevu-compiler`. Keep Vite plugins and IO glue in `weapp-vite`. Expose compiler APIs via `wevu/compiler`, backed by `@wevu/compiler`, so `weapp-vite` depends only on `wevu` and no longer aligns versions with `weapp-vite`.
+Move the pure Vue SFC compilation pipeline and wevu page-features analysis from `packages/weapp-vite` into `packages-runtime/wevu-compiler`. Keep Vite plugins and IO glue in `weapp-vite`. Expose compiler APIs via `wevu/compiler`, backed by `@wevu/compiler`, so `weapp-vite` depends only on `wevu` and no longer aligns versions with `weapp-vite`.
 
 ## Goals
 
@@ -18,14 +18,14 @@ Move the pure Vue SFC compilation pipeline and wevu page-features analysis from 
 
 ## Architecture
 
-- `packages/wevu-compiler`
+- `packages-runtime/wevu-compiler`
   - `src/sfc/*`: SFC parsing, compile pipeline (template/script/style/config), JSON macro eval, JSON merge.
   - `src/script/*`: AST transforms for SFC output and runtime injection.
   - `src/template/*`: WXML compiler and platform helpers.
   - `src/page-features/*`: hooks analysis and feature injection.
   - `src/utils/*`: babel, path, sfc-src resolving, builtin component list.
   - `src/index.ts`: public compiler exports.
-- `packages/wevu`
+- `packages-runtime/wevu`
   - `src/compiler/index.ts`: re-export from `@wevu/compiler`.
 - `packages/weapp-vite`
   - Vite plugin layer calls `wevu/compiler` instead of internal modules.
@@ -51,7 +51,7 @@ Move the pure Vue SFC compilation pipeline and wevu page-features analysis from 
 
 ## Testing Strategy
 
-- Move unit tests for SFC compile and page features to `packages/wevu-compiler/test`.
+- Move unit tests for SFC compile and page features to `packages-runtime/wevu-compiler/test`.
 - Keep `weapp-vite` Vite-plugin integration tests to validate wiring.
 
 ## Migration Steps

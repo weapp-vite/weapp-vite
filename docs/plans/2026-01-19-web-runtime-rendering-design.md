@@ -4,7 +4,7 @@ Date: 2026-01-19
 
 ## Goals
 
-- Bring `packages/web` to near-device template/rendering compatibility for mini-program apps on web.
+- Bring `packages-runtime/web` to near-device template/rendering compatibility for mini-program apps on web.
 - Keep existing Web Components + Shadow DOM approach; upgrade renderer to DOM-diffing.
 - Compile WXML at build time to efficient render functions.
 - Support template features in priority order: slot (including scoped), template/is/data, import/include, wxs, wx:for semantics, WXSS details.
@@ -18,14 +18,14 @@ Date: 2026-01-19
 
 ## Architecture
 
-- Keep `packages/web` as the web runtime package.
+- Keep `packages-runtime/web` as the web runtime package.
 - Introduce Lit as the render core for DOM diffing, aligned with Web Components and Shadow DOM.
 - Move WXML parsing/compilation into build time in the Vite plugin.
 - Runtime focuses on component registration, lifecycle wiring, and routing glue.
 
 ## Build-time compilation
 
-- `packages/web/src/plugin.ts` gets a WXML compiler stage.
+- `packages-runtime/web/src/plugin.ts` gets a WXML compiler stage.
 - Each template file exports a `render(scope, ctx)` function that returns a Lit `TemplateResult`.
 - `wx:if/elif/else` -> `when` or nested ternaries.
 - `wx:for` -> `repeat`, with key strategy:
@@ -90,7 +90,7 @@ Date: 2026-01-19
 
 ## Testing
 
-- Unit tests in `packages/web/test`:
+- Unit tests in `packages-runtime/web/test`:
   - WXML compilation cases (slot, template/is, import/include, wx:for, wxs).
   - WXSS rpx conversion and @import.
 - Integration tests using an example app (existing demo or new web demo):
@@ -98,6 +98,6 @@ Date: 2026-01-19
 
 ## Rollout
 
-- Add Lit as a dependency in `packages/web` only.
+- Add Lit as a dependency in `packages-runtime/web` only.
 - Ship behind existing `weapp.web` config flag.
 - Iterate on template coverage and compatibility with component libraries.

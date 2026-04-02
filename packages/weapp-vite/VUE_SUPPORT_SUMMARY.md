@@ -29,7 +29,7 @@
 ## 新增文件
 
 ```
-packages/wevu-compiler/
+packages-runtime/wevu-compiler/
 ├── src/plugins/vue/compiler/
 │   ├── style.ts          # ✅ 样式编译器
 │   └── template.ts       # ✅ 模板编译器（增强）

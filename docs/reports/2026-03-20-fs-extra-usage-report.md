@@ -25,24 +25,24 @@
 | `packages/rolldown-require`  |                         否 |          2 |
 | `packages/weapp-ide-cli`     |                         是 |          6 |
 | `packages/weapp-vite`        |                         是 |        129 |
-| `packages/web`               |                         是 |          2 |
-| `packages/wevu`              |                         否 |          2 |
-| `packages/wevu-compiler`     |                         是 |          7 |
+| `packages-runtime/web`               |                         是 |          2 |
+| `packages-runtime/wevu`              |                         否 |          2 |
+| `packages-runtime/wevu-compiler`     |                         是 |          7 |
 
 声明了 `fs-extra` 依赖的项目共 5 个：
 
 - `packages/create-weapp-vite`
 - `packages/weapp-ide-cli`
 - `packages/weapp-vite`
-- `packages/web`
-- `packages/wevu-compiler`
+- `packages-runtime/web`
+- `packages-runtime/wevu-compiler`
 
 未声明但源码实际使用了 `fs-extra` 的项目/项目域：
 
 - `apps/vite-native`
 - `e2e`
 - `packages/rolldown-require`
-- `packages/wevu`
+- `packages-runtime/wevu`
 
 ## 明细
 
@@ -268,22 +268,22 @@
 - `packages/weapp-vite/test/analyze-command-web.test.ts`
 - `packages/weapp-vite/test/ast/index.test.ts`
 
-### `packages/web`
+### `packages-runtime/web`
 
-- `packages/web/src/plugin/files.ts`
-- `packages/web/src/plugin/path.ts`
+- `packages-runtime/web/src/plugin/files.ts`
+- `packages-runtime/web/src/plugin/path.ts`
 
-### `packages/wevu`
+### `packages-runtime/wevu`
 
-- `packages/wevu/scripts/sync-components-from-docs.mjs`
-- `packages/wevu/scripts/generate-weapp-intrinsic-elements.mjs`
+- `packages-runtime/wevu/scripts/sync-components-from-docs.mjs`
+- `packages-runtime/wevu/scripts/generate-weapp-intrinsic-elements.mjs`
 
-### `packages/wevu-compiler`
+### `packages-runtime/wevu-compiler`
 
-- `packages/wevu-compiler/src/plugins/utils/cache.ts`
-- `packages/wevu-compiler/src/plugins/utils/cache.test.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/config.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/defineOptions/inline.test.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/defineOptions/inline.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/jsonMacros/execute.ts`
-- `packages/wevu-compiler/src/plugins/vue/transform/compileVueFile/defineOptions.behavior.test.ts`
+- `packages-runtime/wevu-compiler/src/plugins/utils/cache.ts`
+- `packages-runtime/wevu-compiler/src/plugins/utils/cache.test.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/config.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/inline.test.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/defineOptions/inline.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/jsonMacros/execute.ts`
+- `packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile/defineOptions.behavior.test.ts`

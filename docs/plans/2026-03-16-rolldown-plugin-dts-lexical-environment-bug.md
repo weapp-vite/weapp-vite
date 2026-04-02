@@ -2,7 +2,7 @@
 
 ## Summary
 
-在当前仓库里，`packages/web` 使用 `tsdown` 直接生成 declaration files 时，`rolldown-plugin-dts` 会在 TypeScript 内部崩溃，报错：
+在当前仓库里，`packages-runtime/web` 使用 `tsdown` 直接生成 declaration files 时，`rolldown-plugin-dts` 会在 TypeScript 内部崩溃，报错：
 
 ```text
 Error: Debug Failure. False expression: Lexical environment is suspended.
@@ -13,7 +13,7 @@ Error: Debug Failure. False expression: Lexical environment is suspended.
 ## Environment
 
 - Repo: `weapp-vite`
-- Package: `packages/web`
+- Package: `packages-runtime/web`
 - Node: `v22.22.0`
 - TypeScript: `5.9.3`
 - tsdown: `0.21.3`
@@ -102,11 +102,11 @@ Error: Debug Failure. False expression: Lexical environment is suspended.
 
 这说明问题很可能与 getter/accessor 相关的 `.d.ts` AST 遍历有关。
 
-仓库中 `packages/web/src` 内确实存在这类代码，例如：
+仓库中 `packages-runtime/web/src` 内确实存在这类代码，例如：
 
-- `packages/web/src/runtime/component/element.ts`
-- `packages/web/src/runtime/navigationBar/index.ts`
-- `packages/web/src/runtime/button/index.ts`
+- `packages-runtime/web/src/runtime/component/element.ts`
+- `packages-runtime/web/src/runtime/navigationBar/index.ts`
+- `packages-runtime/web/src/runtime/button/index.ts`
 
 我已经尝试过把最明显的 `static get observedAttributes()` 改成静态属性形式，并给若干顶层函数补显式返回类型，但仍然可以复现该崩溃。
 
@@ -156,7 +156,7 @@ One of the following:
 
 ## Why This Matters
 
-当前这会阻止 `packages/web` 迁移到“完全由 `tsdown` 负责 JS + dts”的单一构建链路。
+当前这会阻止 `packages-runtime/web` 迁移到“完全由 `tsdown` 负责 JS + dts”的单一构建链路。
 
 目前只能退回到：
 

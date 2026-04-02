@@ -13,4 +13,4 @@ keywords:
 
 本页展示相对微信命名体系而言，支付宝和抖音 typings 中额外存在的独有 API。
 
-<!--@include: ../../../packages/weapi/reports/api-compat/06-platform-only-methods.md-->
+<!--@include: ../../../packages-runtime/weapi/reports/api-compat/06-platform-only-methods.md-->

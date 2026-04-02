@@ -115,9 +115,9 @@ jobs:
       - name: Ensure generated artifacts are committed
         run: |
           git diff --exit-code -- \
-            packages/weapi/README.md \
-            packages/weapi/src/core/apiCatalog.ts \
-            packages/weapi/src/core/types.ts \
-            packages/weapi/src/index.ts \
-            packages/weapi/types/index.d.ts \
-            packages/weapi/reports/api-compat
+            packages-runtime/weapi/README.md \
+            packages-runtime/weapi/src/core/apiCatalog.ts \
+            packages-runtime/weapi/src/core/types.ts \
+            packages-runtime/weapi/src/index.ts \
+            packages-runtime/weapi/types/index.d.ts \
+            packages-runtime/weapi/reports/api-compat

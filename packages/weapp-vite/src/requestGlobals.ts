@@ -1,1 +1,1 @@
-export * from '../../web-apis/src'
+export * from '../../../packages-runtime/web-apis/src'

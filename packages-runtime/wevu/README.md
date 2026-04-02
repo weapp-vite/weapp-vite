@@ -157,6 +157,6 @@ pnpm build --filter wevu
 
 ## 更多资料
 
-- 架构细节：`packages/wevu/ARCHITECTURE.md`
-- 与 Vue 3 对比：`packages/wevu/VUE3_VS_WEVU.md`
-- 兼容性说明：`packages/wevu/VUE3_COMPAT.md`
+- 架构细节：`packages-runtime/wevu/ARCHITECTURE.md`
+- 与 Vue 3 对比：`packages-runtime/wevu/VUE3_VS_WEVU.md`
+- 兼容性说明：`packages-runtime/wevu/VUE3_COMPAT.md`

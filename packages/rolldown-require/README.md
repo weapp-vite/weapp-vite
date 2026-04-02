@@ -139,14 +139,14 @@ unrun             | avg 64.54ms | median 50.02ms | deps 201 | rssΔ median 1.33 
 
 Notes:
 
-- Fixtures are synthetic TS module graphs (static and mixed dynamic imports) generated in `packages/rolldown-require-bench/benchmark/index.mjs`.
+- Fixtures are synthetic TS module graphs (static and mixed dynamic imports) generated in `benchmarks/rolldown-require-bench/benchmark/index.mjs`.
 - Each unrun iteration clears `.unrun` caches to force cold runs. Use `BENCH_ITERATIONS` to change repetitions.
 
 ### Takeaways
 
 - With 10 cold iterations on synthetic graphs, rolldown-require remains generally faster (avg/median) across scenarios; unrun shows lower RSS deltas.
 - Dependency counts align (same or near-same), indicating comparable graph coverage.
-- Numbers come from `packages/rolldown-require-bench/benchmark/index.mjs` on M3/Node 22.21.1; rerun on your workloads for final decisions.
+- Numbers come from `benchmarks/rolldown-require-bench/benchmark/index.mjs` on M3/Node 22.21.1; rerun on your workloads for final decisions.
 
 ### Cache
 
