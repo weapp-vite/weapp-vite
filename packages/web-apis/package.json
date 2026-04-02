@@ -1,5 +1,5 @@
 {
-  "name": "@weapp-vite/web-apis",
+  "name": "@wevu/web-apis",
   "type": "module",
   "version": "1.0.0",
   "description": "Web API polyfills and global installers for mini-program runtimes",
