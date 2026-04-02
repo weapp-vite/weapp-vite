@@ -10,8 +10,10 @@ Page({
     setPageLayout('default')
   },
   _runE2E() {
+    const attachProbe = this.selectComponent?.('#attach-probe')
     return {
       attachCount: getIssue385AttachCount(),
+      componentAttachCount: attachProbe?.data?.attachCount ?? null,
       layoutName: this.data.__wv_page_layout_name ?? null,
     }
   },
