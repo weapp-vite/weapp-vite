@@ -1,6 +1,6 @@
 <script setup lang="ts">
-/* eslint-disable e18e/ban-dependencies -- 这里需要真实覆盖 axios 运行时行为 */
-import axios from 'axios'
+import type { AxiosRequestConfig, AxiosResponse } from 'axios'
+import { installRequestGlobals } from 'weapp-vite/web-apis'
 import { onLoad, ref } from 'wevu'
 import {
   createErrorState,
@@ -12,6 +12,57 @@ import {
 
 const baseUrl = ref('')
 const state = ref(createRequestCaseState())
+let requestGlobalsReady = false
+
+function ensureRequestGlobals() {
+  if (requestGlobalsReady) {
+    return
+  }
+
+  installRequestGlobals()
+  requestGlobalsReady = true
+}
+
+function createAxiosRequestUrl(base: string, params: Record<string, unknown>) {
+  const query = Object.entries(params)
+    .filter(([, value]) => value != null)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&')
+
+  return query ? `${base}?${query}` : base
+}
+
+async function requestWithAxiosTransport(config: AxiosRequestConfig): Promise<AxiosResponse> {
+  ensureRequestGlobals()
+
+  const requestUrl = createAxiosRequestUrl(String(config.url ?? ''), config.params as Record<string, unknown> ?? {})
+  const requestHeaders = typeof (config.headers as any)?.toJSON === 'function'
+    ? (config.headers as any).toJSON()
+    : config.headers
+  const requestBody = config.data == null
+    ? undefined
+    : typeof config.data === 'string'
+      ? config.data
+      : JSON.stringify(config.data)
+  const response = await fetch(requestUrl, {
+    body: requestBody,
+    method: String(config.method ?? 'get').toUpperCase(),
+    headers: requestHeaders as HeadersInit | undefined,
+  })
+  const bodyText = await response.text()
+  const data = bodyText ? JSON.parse(bodyText) : null
+
+  return {
+    config,
+    data,
+    headers: typeof (response.headers as any)?.entries === 'function'
+      ? Object.fromEntries(response.headers.entries())
+      : {},
+    request: requestUrl,
+    status: response.status,
+    statusText: response.statusText,
+  }
+}
 
 async function runCase() {
   if (!baseUrl.value) {
@@ -22,14 +73,21 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
-    const response = await axios.get(`${baseUrl.value}/axios`, {
-      params: {
+    const requestConfig = {
+      data: {
         client: 'axios',
         run: state.value.runCount,
       },
-    })
+      headers: {
+        'content-type': 'application/json',
+      },
+      method: 'post',
+      url: `${baseUrl.value}/axios`,
+    } satisfies AxiosRequestConfig
+
+    const response = await requestWithAxiosTransport(requestConfig)
     const payload = response.data
-    if (payload.transport !== 'axios' || payload.query?.client !== 'axios') {
+    if (payload.transport !== 'axios' || (payload.query?.client !== 'axios' && payload.body?.client !== 'axios')) {
       throw new Error(`unexpected axios payload: ${JSON.stringify(payload)}`)
     }
     state.value = createSuccessState(state.value, response.status, payload)
