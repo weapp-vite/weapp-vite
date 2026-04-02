@@ -46,6 +46,10 @@
       "types": "./dist/runtime.d.mts",
       "import": "./dist/runtime.mjs"
     },
+    "./requestGlobals": {
+      "types": "./dist/requestGlobals.d.mts",
+      "import": "./dist/requestGlobals.mjs"
+    },
     "./mcp": {
       "types": "./dist/mcp.d.mts",
       "import": "./dist/mcp.mjs"
