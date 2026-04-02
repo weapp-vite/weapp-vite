@@ -79,6 +79,25 @@ const summaryRows = computed(() => [
   { label: '风险级别', value: riskLevel.value },
 ])
 
+function resolveSwitchValue(event: unknown, fallback: boolean) {
+  if (typeof event === 'boolean') {
+    return event
+  }
+  if (event && typeof event === 'object') {
+    const payload = event as Record<string, any>
+    if (typeof payload.detail === 'boolean') {
+      return payload.detail
+    }
+    if (payload.detail && typeof payload.detail === 'object' && typeof payload.detail.value === 'boolean') {
+      return payload.detail.value
+    }
+    if (typeof payload.value === 'boolean') {
+      return payload.value
+    }
+  }
+  return fallback
+}
+
 watch(
   () => formState.urgent,
   (value) => {
@@ -91,7 +110,6 @@ watch(
 const nameModel = changeModel<string>('formState.name')
 const ownerModel = changeModel<string>('formState.owner')
 const categoryModel = changeModel<string>('formState.category')
-const urgentModel = changeModel<boolean>('formState.urgent')
 const budgetModel = changeModel<number>('formState.budget')
 const paceModel = changeModel<string>('formState.pace')
 const descriptionModel = changeModel<string>('formState.description')
@@ -99,6 +117,21 @@ const attachmentsModel = changeModel<UploadFile[], 'files'>('formState.attachmen
   valueProp: 'files',
   parser: event => event?.detail?.files ?? [],
 })
+
+function setUrgent(value: boolean) {
+  formState.urgent = value
+}
+
+function toggleUrgent() {
+  setUrgent(!formState.urgent)
+}
+
+function handleUrgentChange(event: unknown) {
+  setUrgent(resolveSwitchValue(event, !formState.urgent))
+}
+
+function stopUrgentTap() {
+}
 
 function goNext() {
   if (!canGoNext.value) {
@@ -161,9 +194,20 @@ function submit() {
               <t-radio v-for="item in categories" :key="item.value" :value="item.value" :label="item.label" />
             </t-radio-group>
           </FormRow>
-          <FormRow label="加急">
-            <t-switch :value="urgentModel.value" @change="urgentModel.onChange" />
-          </FormRow>
+          <view
+            class="urgent-row-toggle flex items-center justify-between rounded-[18rpx] bg-[#f8fafc] px-[18rpx] py-[16rpx]"
+            @tap="toggleUrgent"
+          >
+            <view>
+              <text class="text-[22rpx] font-semibold text-[#1f1a3f]">
+                加急
+              </text>
+              <text class="mt-[4rpx] block text-[20rpx] text-[#8a8aa5]">
+                整行可点击切换，开启后默认切到快速推进
+              </text>
+            </view>
+            <t-switch :value="formState.urgent" @tap.stop="stopUrgentTap" @change="handleUrgentChange" />
+          </view>
         </view>
       </FormStep>
 
