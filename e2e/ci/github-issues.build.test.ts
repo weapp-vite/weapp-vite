@@ -58,7 +58,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
 
-    expect(pageWxml).toContain('<attach-probe />')
+    expect(pageWxml).toContain('<attach-probe id="attach-probe" />')
     expect(pageWxml).toContain(`!__wv_page_layout_name || __wv_page_layout_name === 'default'`)
     expect(pageJs).toMatch(/__wv_page_layout_name:\s*[`'"]default[`'"]/)
     expect(pageJs).toContain('__wv_page_layout_props:{}')

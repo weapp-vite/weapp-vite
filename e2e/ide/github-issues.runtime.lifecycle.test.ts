@@ -64,6 +64,28 @@ async function waitForIssue380Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function waitForIssue385Runtime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (runtime?.layoutName === 'default' && runtime?.componentAttachCount !== null) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -239,6 +261,28 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.hasTabBar).toBe(true)
       expect(runtimeResult?.tabBarRuntime?.ready).toBe(true)
       expect(runtimeResult?.tabBarRuntime?.layoutWrapperDetected).toBe(false)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #385: does not attach the page component twice after setPageLayout("default")', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-385/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-385/index.js')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<attach-probe id="attach-probe" />')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('componentAttachCount')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-385/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-385 page')
+      }
+
+      const runtimeResult = await waitForIssue385Runtime(issuePage)
+      expect(runtimeResult?.layoutName).toBe('default')
+      expect(runtimeResult?.componentAttachCount).toBe(1)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
