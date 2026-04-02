@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.13.0
+
+### Patch Changes
+
+- 🐛 **修复 `app.vue` 中 `defineAppSetup()` 需要手动从 `wevu` 导入的问题。现在 `defineAppSetup` 会像其他 SFC 宏一样自动注入运行时导入，并同步补齐全局类型声明与编译测试，允许在 `<script setup lang="ts">` 中直接编写 `defineAppSetup((app) => app.use(...))`。** [`0bfdded`](https://github.com/weapp-vite/weapp-vite/commit/0bfdded627071e594f6b37d84d2e2f84103c5642) by @sonofmagic
+
+- 🐛 **为 Vue SFC 的双脚本场景补充 `lang` 一致性校验：当同一个文件同时声明 `<script>` 与 `<script setup>` 时，`@wevu/compiler` 现在要求两者的 `lang` 完全一致，否则会在解析阶段直接抛出明确错误，避免后续编译链路在混合脚本语言下出现不一致行为。** [`91fb364`](https://github.com/weapp-vite/weapp-vite/commit/91fb36463eaf924ec556b77c86046c4baa4de979) by @sonofmagic
+
+- 🐛 **修复 `app.vue` 中 `defineAppJson()` 在双 `<script>` 场景下对普通 `<script>` 绑定的读取缺陷。现在当普通 `<script>` 与 `<script setup>` 同时存在时，JSON 宏求值与 `auto-routes` 内联会一并覆盖普通 `<script>` 的顶层导入/声明，允许把 `import routes from 'weapp-vite/auto-routes'`、`import { pages, subPackages } from 'weapp-vite/auto-routes'` 这类写法放在普通 `<script lang="ts">` 中，再由 `<script setup lang="ts">` 里的 `defineAppJson()` 直接使用。** [`a9896b4`](https://github.com/weapp-vite/weapp-vite/commit/a9896b47e365ea94e9379936c50111d8b962ab78) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.13.0`
+
 ## 6.12.4
 
 ### Patch Changes

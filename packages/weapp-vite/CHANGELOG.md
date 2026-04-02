@@ -1,5 +1,47 @@
 # weapp-vite
 
+## 6.13.0
+
+### Minor Changes
+
+- ✨ **新增 `@wevu/web-apis` 包，用于承载小程序运行时中的 Web API 垫片与全局注入能力。`weapp-vite` 现在直接复用该包提供 `weapp-vite/web-apis` 入口，后续可以在独立包中持续扩展 `fetch`、`URL`、`Blob`、`FormData` 以及更多 Web 对象的维护与注入逻辑。** [`1b5a4f8`](https://github.com/weapp-vite/weapp-vite/commit/1b5a4f81e4035d00ce430214b9365ea0a7c2de32) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复 `injectRequestGlobals` 在 `.vue` 入口上的脚本注入方式：当 SFC 同时存在 `<script setup>` 与普通 `<script>` 时，`weapp-vite` 现在会把请求全局安装代码注入到现有脚本块内部，而不是额外拼接新的 `<script>`，从而避免触发 Vue 的 `Single file component can contain only one <script> element` 解析错误。与此同时补充回归测试，并让 `request-clients-real` 的 `app.vue` 以双脚本形态稳定通过构建与 IDE runtime e2e。** [`7a42c5e`](https://github.com/weapp-vite/weapp-vite/commit/7a42c5edb01d6d305f4b97f7f840a6df73d50005) by @sonofmagic
+
+- 🐛 **修复小程序产物对 `fetch`、`graphql-request`、`axios` 等请求库的编译期 request globals 注入，在公共 chunk 与页面 chunk 中同时补齐 `fetch`、`AbortController`、`XMLHttpRequest` 及相关 Web 构造器绑定，避免微信开发者工具中因缺失全局对象导致请求永久 pending 或运行时报错。** [`e54adcf`](https://github.com/weapp-vite/weapp-vite/commit/e54adcf44e7dd9cc5d1412eb1d27a2ecc6d0e68e) by @sonofmagic
+
+- 🐛 **修复 `app.vue` 中 `defineAppSetup()` 需要手动从 `wevu` 导入的问题。现在 `defineAppSetup` 会像其他 SFC 宏一样自动注入运行时导入，并同步补齐全局类型声明与编译测试，允许在 `<script setup lang="ts">` 中直接编写 `defineAppSetup((app) => app.use(...))`。** [`0bfdded`](https://github.com/weapp-vite/weapp-vite/commit/0bfdded627071e594f6b37d84d2e2f84103c5642) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` request globals 在小程序多作用域运行时下的第三方请求兼容：请求相关全局对象现在会同时注入到 `App` 与页面入口，并补齐 `graphql-request` 所需的 `URL` / `URLSearchParams` 能力，同时增强 `fetch` 兼容以支持 `axios` 的 fetch adapter 在 GET/HEAD 场景下正常工作。** [`d5d7323`](https://github.com/weapp-vite/weapp-vite/commit/d5d732388e7c163fd6e448458c960396e84ebfcc) by @sonofmagic
+
+- 🐛 **修复原生小程序页面在默认 layout 已经生效的情况下再次调用 `setPageLayout('default')` 仍会触发额外 layout 状态更新的问题，避免页面内容区域被重复挂载并导致子组件 `attached` 生命周期执行两次。** [#387](https://github.com/weapp-vite/weapp-vite/pull/387) by @sonofmagic
+
+- 🐛 **将 `weapp-vite` 内置的 web API 注入入口正式调整为 `weapp-vite/web-apis`，并移除旧的 `weapp-vite/requestGlobals` 子路径导出。** [`7d67f0a`](https://github.com/weapp-vite/weapp-vite/commit/7d67f0a1af4fc2899869e86ec574c7b9a03ca8c8) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 增加请求相关全局对象自动注入能力：当项目检测到 `axios`、`graphql-request` 等依赖时，会在小程序入口按需补齐 `fetch`、`Headers`、`Request`、`Response`、`AbortController`、`AbortSignal` 与 `XMLHttpRequest`，同时支持通过 `weapp.injectRequestGlobals` 显式开启、关闭或裁剪注入目标。** [`98fa0dd`](https://github.com/weapp-vite/weapp-vite/commit/98fa0dddca9897337dcd9689fe6e2aa18d0e62cf) by @sonofmagic
+
+- 🐛 **新增 `wevu/vue-demi` 兼容入口，并让 `weapp-vite` 默认将 `vue-demi` 解析到该入口，降低 `@tanstack/vue-query` 等 Vue 生态库在小程序项目中的接入成本。** [`7e5680e`](https://github.com/weapp-vite/weapp-vite/commit/7e5680e146ab3cd3df6262f87a23ace97415d8ad) by @sonofmagic
+
+- 🐛 **修复小程序请求兼容主路径：优先通过 `weapp-vite` 编译期按需向入口产物注入 `AbortController` / `AbortSignal`，并把 `wevu` 中原本默认执行的 runtime 中止控制器安装降级为显式 fallback。同时让 `weapp-vite` 的 request globals runtime 直接桥接小程序原生 `request`，使 `fetch` / `XMLHttpRequest` 兼容不再依赖 `wevu/fetch` 才能工作。** [`d2f406f`](https://github.com/weapp-vite/weapp-vite/commit/d2f406f25e88b9e7f787452978ece1f5d99a597f) by @sonofmagic
+
+- 🐛 **修复 `injectRequestGlobals` 在 Vue 页面入口上的缺口：当页面在 `entriesMap` 建立前先进入编译链路时，`weapp-vite` 现在会基于已加载入口补齐请求全局对象注入，并为 Vue SFC 入口生成可编译的本地绑定代码。同时避免在产物后处理阶段对已带本地绑定的 chunk 重复注入，保证 `axios`、`graphql-request`、`fetch` 与 `@tanstack/vue-query` 在小程序运行时的请求兼容链路稳定生效。** [`e27f11a`](https://github.com/weapp-vite/weapp-vite/commit/e27f11ac273431224581d55b2d8493ad5ce9cf50) by @sonofmagic
+
+- 🐛 **调整 `weapp-vite` 的 Web API 注入子路径导出，统一使用 `weapp-vite/web-apis` 入口，避免运行时注入模块解析与命名长期分叉。** [`9209aa2`](https://github.com/weapp-vite/weapp-vite/commit/9209aa2701113bac4ef526d856b2b15426ba053f) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite mcp` 在普通安装项目中的路径解析问题。现在 MCP 服务会优先识别 monorepo 布局，在用户项目里则回退到 `node_modules` 下已安装的 `weapp-vite` / `wevu` / `@wevu/compiler` 包路径，不再错误假设存在 `packages/weapp-vite/package.json`。同时补充安装态 CLI 入口与本地随包文档的回归覆盖，避免 `npx weapp-vite mcp` 启动时因 `ENOENT` 直接失败。** [#386](https://github.com/weapp-vite/weapp-vite/pull/386) by @sonofmagic
+
+- 🐛 **修复 `app.json.ts` 中从 `weapp-vite/auto-routes` 使用具名导入时 `pages` 与 `subPackages` 未正确内联的问题。** [`05b584a`](https://github.com/weapp-vite/weapp-vite/commit/05b584a62233da5c1b5c3ec0c19e729d6a621b0c) by @sonofmagic
+
+- 🐛 **修复 `app.vue` 中 `defineAppJson()` 在双 `<script>` 场景下对普通 `<script>` 绑定的读取缺陷。现在当普通 `<script>` 与 `<script setup>` 同时存在时，JSON 宏求值与 `auto-routes` 内联会一并覆盖普通 `<script>` 的顶层导入/声明，允许把 `import routes from 'weapp-vite/auto-routes'`、`import { pages, subPackages } from 'weapp-vite/auto-routes'` 这类写法放在普通 `<script lang="ts">` 中，再由 `<script setup lang="ts">` 里的 `defineAppJson()` 直接使用。** [`a9896b4`](https://github.com/weapp-vite/weapp-vite/commit/a9896b47e365ea94e9379936c50111d8b962ab78) by @sonofmagic
+- 📦 Updated 4 dependencies [`140efee`](https://github.com/weapp-vite/weapp-vite/commit/140efeea1fa7b274bbe697962774d55c2b92bdec)
+  <details><summary>Details</summary>
+
+  `wevu@6.13.0`, `@wevu/web-apis@1.1.0`, `@weapp-vite/mcp@1.1.2`, `@weapp-vite/ast@6.13.0`
+
+  </details>
+
 ## 6.12.4
 
 ### Patch Changes

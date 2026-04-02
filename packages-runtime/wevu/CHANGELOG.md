@@ -1,5 +1,29 @@
 # wevu
 
+## 6.13.0
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` runtime 在小程序环境缺失 `AbortController` / `AbortSignal` 时，`@tanstack/vue-query` 查询会一直停留在 `pending` 的问题，并补齐 setup 返回普通对象内嵌响应式值时的更新跟踪。** [`140efee`](https://github.com/weapp-vite/weapp-vite/commit/140efeea1fa7b274bbe697962774d55c2b92bdec) by @sonofmagic
+
+- 🐛 **补全 wevu 的 Vue 兼容 API，新增 `watchPostEffect()`、`watchSyncEffect()`、`isProxy()`、`isReadonly()` 与 `app.provide()`，便于 `app.use()` 安装依赖这些能力的生态插件。** [`1e53f10`](https://github.com/weapp-vite/weapp-vite/commit/1e53f10a65d1f2fa349bcf2b355008413e20d3c3) by @sonofmagic
+
+- 🐛 **为 `app.vue` 的 `<script setup>` 新增 `use(plugin, ...options)` 运行时辅助 API，用于在 app 级 setup 上下文中表达 `app.use(...)` 风格的插件安装。这样像 `@tanstack/vue-query` 这类依赖 `install(app)` 的插件可以直接在 `wevu` 的 app SFC 入口中完成注册，同时保留现有 `provide()` 作为 `app.provide(...)` 的等价写法。** [`db7c01e`](https://github.com/weapp-vite/weapp-vite/commit/db7c01e92f108850639a7bb36a3c3f2578d90feb) by @sonofmagic
+
+- 🐛 **修复 `app.vue` 中 `defineAppSetup()` 需要手动从 `wevu` 导入的问题。现在 `defineAppSetup` 会像其他 SFC 宏一样自动注入运行时导入，并同步补齐全局类型声明与编译测试，允许在 `<script setup lang="ts">` 中直接编写 `defineAppSetup((app) => app.use(...))`。** [`0bfdded`](https://github.com/weapp-vite/weapp-vite/commit/0bfdded627071e594f6b37d84d2e2f84103c5642) by @sonofmagic
+
+- 🐛 **为 `app.vue` 的 `<script setup>` 补充 `defineAppSetup((app) => { ... })` API，让应用入口可以显式拿到 `app` 并执行 `app.use(...)`、`app.provide(...)` 这类 app 级注册逻辑，更贴近 Vue 的 `createApp(...).use(...)` 心智，同时保持小程序运行时的受控边界。** [`87206fd`](https://github.com/weapp-vite/weapp-vite/commit/87206fd08cb0848d10fc9eafd7c688a99a6ca346) by @sonofmagic
+
+- 🐛 **新增 `wevu/vue-demi` 兼容入口，并让 `weapp-vite` 默认将 `vue-demi` 解析到该入口，降低 `@tanstack/vue-query` 等 Vue 生态库在小程序项目中的接入成本。** [`7e5680e`](https://github.com/weapp-vite/weapp-vite/commit/7e5680e146ab3cd3df6262f87a23ace97415d8ad) by @sonofmagic
+
+- 🐛 **修复小程序请求兼容主路径：优先通过 `weapp-vite` 编译期按需向入口产物注入 `AbortController` / `AbortSignal`，并把 `wevu` 中原本默认执行的 runtime 中止控制器安装降级为显式 fallback。同时让 `weapp-vite` 的 request globals runtime 直接桥接小程序原生 `request`，使 `fetch` / `XMLHttpRequest` 兼容不再依赖 `wevu/fetch` 才能工作。** [`d2f406f`](https://github.com/weapp-vite/weapp-vite/commit/d2f406f25e88b9e7f787452978ece1f5d99a597f) by @sonofmagic
+
+- 🐛 **为 `wevu.createApp()` 增加 `app.onUnmount()` 与 `app.unmount()`，增强对 `@tanstack/vue-query` 等依赖应用级卸载钩子的 Vue 插件兼容性。** [`c7234ec`](https://github.com/weapp-vite/weapp-vite/commit/c7234ecd4ef830e5cedb6a61894857323537ebd2) by @sonofmagic
+
+- 🐛 **优化 `wevu` 的依赖注入语义：当 `provide()` 在 app `setup()` 中调用时，现会自动同步为应用级全局注入，使 `app.vue` 可以直接使用普通 `provide()` 为页面和组件提供 app 级依赖，不再必须手动改用 `provideGlobal()`。** [`0be6e59`](https://github.com/weapp-vite/weapp-vite/commit/0be6e59892bb00aafeddf8a65936c1844c766192) by @sonofmagic
+- 📦 **Dependencies** [`0bfdded`](https://github.com/weapp-vite/weapp-vite/commit/0bfdded627071e594f6b37d84d2e2f84103c5642)
+  → `@wevu/compiler@6.13.0`
+
 ## 6.12.4
 
 ### Patch Changes
