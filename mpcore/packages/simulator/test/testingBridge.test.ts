@@ -409,6 +409,19 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('returns null for missing compound component selectors through the testing bridge session handle', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+
+    await expect(miniProgram.selectComponent('status-card.primary-card[data-role="missing"]')).resolves.toBeNull()
+    await expect(miniProgram.selectAllComponents('status-card.primary-card[data-role="missing"]')).resolves.toEqual([])
+  })
+
   it('dispatches component input, change and blur events through the testing bridge', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
@@ -476,6 +489,19 @@ describe('headless testing bridge', () => {
       },
       type: 'component',
     })
+  })
+
+  it('returns null for missing descendant component selectors through the testing bridge session handle', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+
+    await expect(miniProgram.selectComponent('status-card ghost-badge')).resolves.toBeNull()
+    await expect(miniProgram.selectAllComponents('status-card ghost-badge')).resolves.toEqual([])
   })
 
   it('supports owner component lookup from a nested testing scope handle', async () => {
@@ -569,6 +595,29 @@ describe('headless testing bridge', () => {
         label: 'stable',
       },
     })
+  })
+
+  it('reports timeout messages for missing compound and descendant selectors through the testing bridge', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const card = await miniProgram.waitForComponent('status-card', {
+      timeout: 200,
+    })
+
+    await expect(miniProgram.waitForComponent('status-card.primary-card[data-role="missing"]', {
+      timeout: 30,
+    })).rejects.toThrow('Timed out waiting for component "status-card.primary-card[data-role="missing"]" in headless testing runtime.')
+    await expect(card.waitForComponent('ghost-badge', {
+      timeout: 30,
+    })).rejects.toThrow('Timed out waiting for component "ghost-badge" in headless testing runtime.')
+    await expect(card.waitForComponents('ghost-badge', 1, {
+      timeout: 30,
+    })).rejects.toThrow('Timed out waiting for 1 component(s) matching "ghost-badge" in headless testing runtime.')
   })
 
   it('waits for components to appear through the testing bridge session handle', async () => {
