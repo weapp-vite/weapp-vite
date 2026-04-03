@@ -1,4 +1,7 @@
+import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
+
+const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
 
 export default defineConfig({
   weapp: {
@@ -30,5 +33,29 @@ export default defineConfig({
         },
       },
     },
+    ...(issue393ChunkModeEnabled
+      ? {
+          chunks: {
+            sharedStrategy: 'duplicate',
+            sharedMode: 'common',
+            sharedPathRoot: 'src',
+            dynamicImports: 'preserve',
+            sharedOverrides: [
+              {
+                test: /(?:^|\/)debounce(?:\/|$)/,
+                mode: 'path',
+              },
+            ],
+          },
+        }
+      : {}),
   },
+  ...(issue393ChunkModeEnabled
+    ? {
+        build: {
+          outDir: 'dist-issue-393',
+          minify: false,
+        },
+      }
+    : {}),
 })

@@ -5,6 +5,7 @@ import type { ScanService } from './scanPlugin'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { logger } from '../context/shared'
+import { normalizeNpmImportLookupPath } from '../utils/npmImport'
 import { isPathInside, normalizeRelativePath } from '../utils/path'
 import { isRegexp } from '../utils/regexp'
 import { normalizeViteId } from '../utils/viteId'
@@ -39,6 +40,18 @@ function normalizeSharedPathCandidate(absoluteId: string) {
     stripAtFsPrefix: true,
     stripLeadingNullByte: true,
   })
+}
+
+function resolveNodeModulesSharedPath(cleanedAbsoluteId: string) {
+  const normalized = cleanedAbsoluteId.replaceAll('\\', '/')
+  const marker = '/node_modules/'
+  const markerIndex = normalized.lastIndexOf(marker)
+  if (markerIndex < 0) {
+    return undefined
+  }
+
+  const packageRelativePath = normalizeNpmImportLookupPath(normalized.slice(markerIndex))
+  return packageRelativePath ? normalizeRelativePath(packageRelativePath) : undefined
 }
 
 function createStringOrRegExpMatcher(pattern: string | RegExp) {
@@ -132,7 +145,7 @@ function createSharedPathResolver(
       return undefined
     }
     if (!isPathInside(resolvedRoot, cleaned)) {
-      return undefined
+      return resolveNodeModulesSharedPath(cleaned)
     }
     return normalizeRelativePath(path.relative(resolvedRoot, cleaned))
   }
@@ -230,6 +243,7 @@ export {
   createSharedPathResolver,
   createStringOrRegExpMatcher,
   normalizeSharedPathCandidate,
+  resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,
   resolveSharedPathRoot,
 }
