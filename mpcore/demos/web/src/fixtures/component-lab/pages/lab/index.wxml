@@ -14,6 +14,7 @@
   <view class="panel-row" bindtap="toggleMeta">切换 meta 区块</view>
   <view class="panel-row" bindtap="inspectCard">检查组件实例</view>
   <view class="panel-row" bindtap="inspectCompoundCard">检查复合组件选择器</view>
+  <view class="panel-row" bindtap="runVideoContextLab">检查 VideoContext</view>
   <view class="panel-row" bindtap="loadMockQueue">调用 request mock</view>
   <view class="panel-row" bindtap="storeSnapshot">写入 storage</view>
   <view class="panel-row" bindtap="toastSnapshot">触发 toast</view>
@@ -37,6 +38,13 @@
   <view class="panel-row">事件形态：{{eventShape}}</view>
   <view class="panel-row">组件快照：{{componentSnapshot}}</view>
   <view class="panel-row">复合组件快照：{{compoundComponentSnapshot}}</view>
+  <video
+    id="lab-video"
+    bindplay="handleVideoPlay"
+    bindpause="handleVideoPause"
+    bindfullscreenchange="handleVideoFullscreen"
+  />
+  <view class="panel-row">Video 快照：{{videoContextSnapshot}}</view>
   <view class="panel-row">请求快照：{{requestSnapshot}}</view>
   <view class="panel-row">存储快照：{{storageSnapshot}}</view>
   <view class="panel-row">Toast 状态：{{toastState}}</view>

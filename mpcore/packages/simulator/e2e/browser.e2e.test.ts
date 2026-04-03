@@ -127,6 +127,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('inspectCard')
     bridge.runPageMethod('inspectCompoundCard')
     bridge.runPageMethod('inspectCompoundSelector')
+    bridge.runPageMethod('runVideoContextLab')
     bridge.runPageMethod('runFileManagerLab')
     bridge.runPageMethod('runMissingStatLab')
     bridge.runPageMethod('runMissingReadDirLab')
@@ -163,6 +164,7 @@ describe.sequential('simulator browser e2e', () => {
           pageData.componentSnapshot
           && pageData.compoundComponentSnapshot
           && pageData.compoundSelectorSnapshot
+          && pageData.videoContextSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
           && pageData.fileTransferFailureInfo
@@ -207,6 +209,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.compoundComponentSnapshot).toContain('"size":1')
     expect(pageData.compoundSelectorSnapshot).toContain('"id":"status-card-pulse"')
     expect(pageData.compoundSelectorSnapshot).toContain('"phase":"pulse"')
+    expect(pageData.videoContextSnapshot).toContain('"phase":"fullscreen"')
+    expect(pageData.videoContextSnapshot).toContain('"currentTime":6')
+    expect(pageData.videoContextSnapshot).toContain('"fullScreen":false')
     expect(pageData.directorySnapshot).toBe('["daily"]')
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
     expect(pageData.fileTransferFailureInfo).toContain('"downloadNoMockError":"No downloadFile mock matched in headless runtime: https://mock.mpcore.dev/files/component-lab-unmatched-report.txt"')

@@ -4279,6 +4279,77 @@ Page({
     })
   })
 
+  it('supports createVideoContext within component scope in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'video-card': '../../components/video-card/index',
+        },
+      })],
+      ['pages/lab/index.js', 'Page({})'],
+      ['pages/lab/index.wxml', '<video-card id="video-card" />'],
+      ['components/video-card/index.json', '{}'],
+      ['components/video-card/index.js', `
+Component({
+  data: {
+    logs: [],
+  },
+  methods: {
+    playVideo() {
+      this.videoContext = wx.createVideoContext('hero-video', this)
+      this.videoContext.seek(8)
+      this.videoContext.play()
+      this.videoContext.pause()
+      this.videoContext.requestFullScreen()
+      this.videoContext.exitFullScreen()
+    },
+    handlePlay(event) {
+      this.setData({
+        logs: [...this.data.logs, 'play:' + JSON.stringify(event?.detail ?? null)],
+      })
+    },
+    handlePause(event) {
+      this.setData({
+        logs: [...this.data.logs, 'pause:' + JSON.stringify(event?.detail ?? null)],
+      })
+    },
+    handleFullscreen(event) {
+      this.setData({
+        logs: [...this.data.logs, 'fullscreen:' + JSON.stringify(event?.detail ?? null)],
+      })
+    },
+  },
+})
+`],
+      ['components/video-card/index.wxml', `
+<video
+  id="hero-video"
+  bindplay="handlePlay"
+  bindpause="handlePause"
+  bindfullscreenchange="handleFullscreen"
+/>
+`],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+
+    const card = session.selectComponent('#video-card')
+    expect(card).toBeTruthy()
+
+    card?.playVideo()
+
+    expect(card?.data.logs).toEqual([
+      'play:{"currentTime":8}',
+      'pause:{"currentTime":8}',
+      'fullscreen:{"currentTime":8,"fullScreen":true}',
+      'fullscreen:{"currentTime":8,"fullScreen":false}',
+    ])
+  })
+
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

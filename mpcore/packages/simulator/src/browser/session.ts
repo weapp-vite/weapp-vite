@@ -27,6 +27,7 @@ import {
 import { createHeadlessWxState } from '../runtime/wxState'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
+import { createHeadlessVideoContext } from '../view/videoContext'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
@@ -239,6 +240,7 @@ export class BrowserHeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        createVideoContext: (videoId, scope) => this.createVideoContext(videoId, scope),
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
         getSavedFileInfo: option => this.wxState.getSavedFileInfo(option),
@@ -1260,6 +1262,35 @@ export class BrowserHeadlessSession {
       }
     }
     return null
+  }
+
+  private createVideoContext(videoId: string, scope?: Record<string, any>) {
+    return createHeadlessVideoContext(
+      {
+        callScopeMethod: (scopeId, methodName, event) => this.callScopeMethod(scopeId, methodName, event),
+        renderCurrentPage: () => this.renderCurrentPage(),
+        resolveScope: (value) => {
+          const current = this.currentPageInstance
+          if (!value || value === current) {
+            return {
+              kind: 'page' as const,
+            }
+          }
+          const scopeId = this.getScopeIdForComponent(value as import('../runtime').HeadlessComponentInstance)
+          if (!scopeId) {
+            return {
+              kind: 'missing' as const,
+            }
+          }
+          return {
+            kind: 'component' as const,
+            scopeId,
+          }
+        },
+      },
+      videoId,
+      scope,
+    )
   }
 }
 

@@ -478,6 +478,58 @@ Page({
   return root
 }
 
+export function createVideoContextFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-video-context-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/video/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeScript(path.join(root, 'dist/pages/video/index.js'), `
+Page({
+  data: {
+    logs: [],
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message],
+    })
+  },
+  playVideo() {
+    this.videoContext = wx.createVideoContext('hero-video', this)
+    this.videoContext.seek(12.5)
+    this.videoContext.play()
+    this.videoContext.pause()
+    this.videoContext.requestFullScreen()
+    this.videoContext.exitFullScreen()
+  },
+  bindPlay(event) {
+    this.push('play:' + JSON.stringify(event?.detail ?? null))
+  },
+  bindPause(event) {
+    this.push('pause:' + JSON.stringify(event?.detail ?? null))
+  },
+  bindFullscreenChange(event) {
+    this.push('fullscreen:' + JSON.stringify(event?.detail ?? null))
+  },
+})
+`)
+  writeText(path.join(root, 'dist/pages/video/index.wxml'), `
+<video
+  id="hero-video"
+  bindplay="bindPlay"
+  bindpause="bindPause"
+  bindfullscreenchange="bindFullscreenChange"
+/>
+`)
+
+  return root
+}
+
 export function createAppLifecycleFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-app-lifecycle-'))
 

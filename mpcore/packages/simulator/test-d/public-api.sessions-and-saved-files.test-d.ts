@@ -46,6 +46,14 @@ expectType<{ visible: boolean }>(browserSession.getTabBar())
 expectType<Record<string, string>>(browserSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(browserSession.getSavedFileListSnapshot())
 expectType<string | null>(browserSession.getFileText('headless://wxfile/temp/0001'))
+expectType<{
+  exitFullScreen: () => void
+  pause: () => void
+  play: () => void
+  requestFullScreen: () => void
+  seek: (position: number) => void
+  stop: () => void
+}>(browserPage?.wx.createVideoContext('hero-video', browserPage))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserPage?.wx.getSavedFileList())
 expectType<{ abort: () => void }>(browserPage?.wx.downloadFile({
@@ -150,6 +158,14 @@ expectType<{ visible: boolean }>(headlessSession.getTabBar())
 expectType<Record<string, string>>(headlessSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(headlessSession.getSavedFileListSnapshot())
 expectType<string | null>(headlessSession.getFileText('headless://wxfile/temp/0001'))
+expectType<{
+  exitFullScreen: () => void
+  pause: () => void
+  play: () => void
+  requestFullScreen: () => void
+  seek: (position: number) => void
+  stop: () => void
+}>(headlessPage?.wx.createVideoContext('hero-video', headlessPage))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessPage?.wx.getSavedFileList())
 expectType<{ abort: () => void }>(headlessPage?.wx.downloadFile({
