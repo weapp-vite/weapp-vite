@@ -108,6 +108,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 ## 3. Coding Rules
 
 - TypeScript + ESM + 2-space indentation.
+- 所有场景都不要使用 Prettier 做格式化；代码与文档格式修正统一走 ESLint（包含 `eslint --fix` 与仓库现有 lint-staged / husky 流程）。
 - Package names: kebab-case.
 - Variables/files: camelCase.
 - Classes/types: PascalCase.
@@ -197,6 +198,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Use Conventional Commits, e.g.:
   - `feat(weapp-vite): add css preprocess support`
 - Before every commit, run the smallest lint checks that match the staged changes, not just build/test checks.
+- Never use Prettier in this repository, including ad-hoc formatting, editor save hooks, scripts, or pre-commit steps; use the smallest applicable ESLint-based fix command instead.
 - `lint-staged` and `.husky/pre-commit` are mandatory enforcement layers, not optional convenience tooling; when adjusting lint scope, keep both aligned so staged files fail locally before CI, including in `git worktree` directories.
 - Run needed local checks before review (`build`, `test`, `lint` scope depends on touched area).
 - Before pushing or opening a PR, run the smallest package- or path-scoped `lint` / `test` / `build` checks that cover the changed area; do not rely on `pre-commit` as a substitute for review-time verification.
