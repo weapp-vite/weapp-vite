@@ -46,7 +46,7 @@ catalog:
   dayjs: ^1.11.20
   debug: ^4.4.3
   echarts: ^6.0.0
-  esbuild: ^0.27.5
+  esbuild: ^0.28.0
   estree-walker: ^3.0.3
   fdir: ^6.5.0
   fs-extra: ^11.3.4
@@ -64,8 +64,8 @@ catalog:
   pkg-types: ^2.3.0
   postcss: ^8.5.8
   rolldown: 1.0.0-rc.11
-  sass: ^1.98.0
-  sass-embedded: ^1.98.0
+  sass: ^1.99.0
+  sass-embedded: ^1.99.0
   tailwind-merge: ^3.5.0
   tailwind-variants: ^3.2.2
   tailwindcss: ^4.2.2
