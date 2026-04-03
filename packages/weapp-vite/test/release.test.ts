@@ -1,6 +1,6 @@
+import { access } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { access } from 'node:fs/promises'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 // eslint-disable-next-line e18e/ban-dependencies
