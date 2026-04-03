@@ -137,6 +137,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       autoImportState.matcher = undefined
       autoImportState.matcherKey = ''
       resolvedResolverComponents.clear()
+      resolverHelpers.clearResolveCache()
       outputsHelpers.scheduleManifestWrite(true)
       componentMetadataMap.clear()
       resolverComponentNames.clear()
@@ -194,6 +195,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       const resolvedValue = resolverHelpers.resolveWithResolvers(componentName, importerBaseName)
       if (resolvedValue) {
         const previousFrom = resolvedResolverComponents.get(resolvedValue.name)
+        const resolverChanged = previousFrom !== resolvedValue.from
         resolvedResolverComponents.set(resolvedValue.name, resolvedValue.from)
         const resolved: ResolverAutoImportMatch = {
           kind: 'resolver',
@@ -203,23 +205,24 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         const htmlSettings = getHtmlCustomDataSettings(ctx)
         const vueSettings = getVueComponentsSettings(ctx)
         if (typedSettings.enabled || htmlSettings.enabled) {
-          if (!componentMetadataMap.has(resolved.value.name)) {
+          const metadataMissing = !componentMetadataMap.has(resolved.value.name)
+          if (metadataMissing) {
             componentMetadataMap.set(resolved.value.name, { types: new Map(), docs: new Map() })
           }
-          if (typedSettings.enabled) {
+          if (typedSettings.enabled && (resolverChanged || metadataMissing)) {
             outputsHelpers.scheduleTypedComponentsWrite(true)
           }
-          if (htmlSettings.enabled) {
+          if (htmlSettings.enabled && (resolverChanged || metadataMissing)) {
             outputsHelpers.scheduleHtmlCustomDataWrite(true)
           }
         }
         else {
           componentMetadataMap.delete(resolved.value.name)
         }
-        if (vueSettings.enabled) {
+        if (vueSettings.enabled && resolverChanged) {
           outputsHelpers.scheduleVueComponentsWrite(true)
         }
-        if (previousFrom !== resolvedValue.from) {
+        if (resolverChanged) {
           outputsHelpers.scheduleManifestWrite(true)
         }
         return resolved

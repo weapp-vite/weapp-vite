@@ -145,3 +145,44 @@ BENCH_ITERATIONS=3 pnpm --filter weapp-vite run benchmark:auto-import:build
 1. 在一个真实业务仓库上跑同样的 `disabled/current` 完整 build 对比。
 2. 分离冷启动 build 与二次 build。
 3. 如果还关心开发体验，再补 `dev` 首次启动和 HMR 场景。
+
+## 追补：2026-04-04 重复 resolve 去重优化
+
+本轮又做了一次更小的性能优化，目标是两件事：
+
+1. 为 resolver 命中结果增加缓存，避免同一组件在同一 importer 下重复走 resolver 链。
+2. 当 resolver 组件的 `name -> from` 没有变化时，不再重复触发 typed/html/vue/manifest 输出调度。
+
+### support-files 串行复测
+
+同样使用 `BENCH_ITERATIONS=3`，串行执行 benchmark 后，`current` 模式均值变成：
+
+| 场景 | 2026-04-03 current avg | 2026-04-04 current avg | 变化 |
+| --- | ---: | ---: | ---: |
+| 使用 1 个 Vant 组件 | 66.05 ms | 35.33 ms | -30.72 ms（-46.51%） |
+| 使用 5 个 Vant 组件 | 142.79 ms | 46.03 ms | -96.76 ms（-67.76%） |
+| 使用 20 个 Vant 组件 | 120.01 ms | 108.14 ms | -11.87 ms（-9.89%） |
+
+对应的 `resolveTemplateTagsMs` 均值也有下降：
+
+- 使用 1 个组件：`24.88ms -> 12.70ms`
+- 使用 5 个组件：`72.37ms -> 22.03ms`
+- 使用 20 个组件：`65.43ms -> 54.94ms`
+
+这说明重复 resolver 解析和重复调度，确实是 support-files 热点里值得消掉的一层成本。
+
+### full build 串行复测
+
+同样使用 `BENCH_ITERATIONS=3` 串行执行后，`current` 模式均值为：
+
+| 场景 | disabled avg | current avg | 开启自动导入额外成本 |
+| --- | ---: | ---: | ---: |
+| 使用 1 个 Vant 组件 | 1124.74 ms | 1136.68 ms | 11.93 ms（1.06%） |
+| 使用 5 个 Vant 组件 | 1026.49 ms | 1338.93 ms | 312.44 ms（30.44%） |
+| 使用 20 个 Vant 组件 | 1051.57 ms | 2441.14 ms | 1389.57 ms（132.14%） |
+
+这里没有观察到稳定的端到端正向收益，尤其是 `20` 组件场景波动仍然明显。更合理的解释是：
+
+- 这次优化主要命中了 support-files 阶段的 resolver 热点。
+- 完整 build 的主要成本已经不只在重复 `resolve()`，而更可能在支持文件输出同步与整体构建链路的叠加成本上。
+- 如果继续以“用户感知编译时间”为目标推进，下一阶段应该优先检查 `flushOutputs` 的批量化/去重复策略，而不是继续深挖 resolver 命中缓存。

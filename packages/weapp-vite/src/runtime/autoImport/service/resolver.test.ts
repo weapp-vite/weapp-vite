@@ -23,6 +23,7 @@ function createState(options: CreateStateOptions = {}) {
       },
     },
     registry: new Map<string, any>(),
+    resolvedResolverComponents: new Map<string, string>(),
     componentMetadataMap: new Map<string, any>(),
     resolverComponentNames: new Set<string>(),
     resolverComponentsMapRef: { value: {} as Record<string, string> },
@@ -81,6 +82,49 @@ describe('autoImport resolver helpers', () => {
     })
     expect((resolver as any).resolve).toHaveBeenCalledWith('TButton', '/project/src/pages/index/index')
     expect((resolver as any).resolve).toHaveBeenCalledWith('t-button', '/project/src/pages/index/index')
+  })
+
+  it('caches resolver hits and misses until reset', () => {
+    const resolver = {
+      resolve: vi.fn((componentName: string) => {
+        if (componentName === 't-button') {
+          return {
+            name: 't-button',
+            from: 'tdesign-miniprogram/button/button',
+          }
+        }
+        return undefined
+      }),
+    } satisfies Resolver
+
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [resolver],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+
+    expect(helpers.resolveWithResolvers('TButton', '/project/src/pages/index/index')).toEqual({
+      name: 'TButton',
+      from: 'tdesign-miniprogram/button/button',
+    })
+    expect(helpers.resolveWithResolvers('TButton', '/project/src/pages/index/index')).toEqual({
+      name: 'TButton',
+      from: 'tdesign-miniprogram/button/button',
+    })
+    expect(helpers.resolveWithResolvers('NotMatched', '/project/src/pages/index/index')).toBeUndefined()
+    expect(helpers.resolveWithResolvers('NotMatched', '/project/src/pages/index/index')).toBeUndefined()
+
+    expect(resolver.resolve).toHaveBeenCalledTimes(4)
+
+    helpers.clearResolveCache()
+
+    expect(helpers.resolveWithResolvers('TButton', '/project/src/pages/index/index')).toEqual({
+      name: 'TButton',
+      from: 'tdesign-miniprogram/button/button',
+    })
+    expect(resolver.resolve).toHaveBeenCalledTimes(6)
   })
 
   it('resolves with components map and function resolver fallback', () => {
@@ -148,6 +192,9 @@ describe('autoImport resolver helpers', () => {
         ],
       },
     })
+
+    state.resolvedResolverComponents.set('Keep', 'pkg/keep-override')
+    state.resolvedResolverComponents.set('NewOne', 'pkg/new-one')
 
     state.registry.set('LocalOnly', {
       kind: 'local',

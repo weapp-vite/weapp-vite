@@ -19,6 +19,7 @@ const SCRIPT_OR_DTS_EXTENSION_RE = /\.(?:[cm]?js|tsx?|jsx|d\.ts)$/
 
 export interface ResolverHelpers {
   collectResolverComponents: () => Record<string, string>
+  clearResolveCache: () => void
   syncResolverComponentProps: () => void
   resolveWithResolvers: (componentName: string, importerBaseName?: string) => ResolvedValue | undefined
   resolveNavigationImport: (from: string) => string | undefined
@@ -35,6 +36,11 @@ interface ResolverState {
 
 export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   const miniprogramDirCache = new Map<string, string | undefined>()
+  const resolveCache = new Map<string, ResolvedValue | null>()
+
+  function getResolveCacheKey(componentName: string, importerBaseName?: string) {
+    return `${importerBaseName ?? ''}\0${componentName}`
+  }
 
   function resolveWithResolver(resolver: Resolver, componentName: string, baseName: string) {
     if (!resolver) {
@@ -163,6 +169,10 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     return Object.fromEntries(state.resolvedResolverComponents)
   }
 
+  function clearResolveCache() {
+    resolveCache.clear()
+  }
+
   function syncResolverComponentProps() {
     const resolverEntries = collectResolverComponents()
     state.resolverComponentsMapRef.value = resolverEntries
@@ -185,23 +195,33 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   }
 
   function resolveWithResolvers(componentName: string, importerBaseName?: string): ResolvedValue | undefined {
+    const cacheKey = getResolveCacheKey(componentName, importerBaseName)
+    if (resolveCache.has(cacheKey)) {
+      const cached = resolveCache.get(cacheKey)
+      return cached ?? undefined
+    }
+
     const resolvers = getAutoImportConfig(state.ctx.configService)?.resolvers
     if (!Array.isArray(resolvers)) {
+      resolveCache.set(cacheKey, null)
       return undefined
     }
 
     for (const resolver of resolvers) {
       const value = resolveWithResolver(resolver, componentName, importerBaseName ?? '')
       if (value) {
+        resolveCache.set(cacheKey, value)
         return value
       }
     }
 
+    resolveCache.set(cacheKey, null)
     return undefined
   }
 
   return {
     collectResolverComponents,
+    clearResolveCache,
     syncResolverComponentProps,
     resolveWithResolvers,
     resolveNavigationImport,
