@@ -3589,6 +3589,54 @@ Component({
     expect(rendered.wxml).toContain('"size":1')
   })
 
+  it('supports descendant component selectors in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    summary: ''
+  },
+  inspectNestedSelector() {
+    const badge = this.selectComponent('status-card mini-badge')
+    const badges = this.selectAllComponents('status-card mini-badge')
+    this.setData({
+      summary: JSON.stringify({
+        label: badge?.properties?.label ?? '',
+        size: badges.length
+      })
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card id="status-card" status="stable" /><view>{{summary}}</view>'],
+      ['components/status-card/index.json', JSON.stringify({
+        usingComponents: {
+          'mini-badge': '../mini-badge/index',
+        },
+      })],
+      ['components/status-card/index.js', 'Component({ properties: { status: String } })'],
+      ['components/status-card/index.wxml', '<mini-badge id="mini-badge" label="{{status}}" />'],
+      ['components/mini-badge/index.json', '{}'],
+      ['components/mini-badge/index.js', 'Component({ properties: { label: String } })'],
+      ['components/mini-badge/index.wxml', '<view>{{label}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    page.inspectNestedSelector()
+
+    expect(page.data.summary).toContain('"label":"stable"')
+    expect(page.data.summary).toContain('"size":1')
+  })
+
   it('passes triggerEvent options and event target shape back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

@@ -61,6 +61,7 @@ interface HeadlessPullDownRefreshState {
 
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
+const WHITESPACE_RE = /\s+/
 const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
 const COMPOUND_SELECTOR_PART_RE = /#[\w-]+|\.[\w-]+|\[data-[^=\]]+="[^"]*"\]|[A-Za-z][\w-]*/g
 const DATASET_KEY_RE = /-([a-z])/g
@@ -123,6 +124,10 @@ function matchesComponentSelector(
 
     return scope.alias === part
   })
+}
+
+function normalizeSelectorParts(selector: string) {
+  return selector.trim().split(WHITESPACE_RE).filter(Boolean)
 }
 
 function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessWxLaunchOptions {
@@ -704,8 +709,8 @@ export class BrowserHeadlessSession {
   }
 
   private selectComponentsWithin(rootScopeId: string | null, selector: string) {
-    const normalizedSelector = selector.trim()
-    if (!normalizedSelector) {
+    const selectorParts = normalizeSelectorParts(selector)
+    if (selectorParts.length === 0) {
       return []
     }
 
@@ -720,7 +725,30 @@ export class BrowserHeadlessSession {
         if (rootScopeId && !candidateScopeId.startsWith(`${rootScopeId}/`)) {
           return false
         }
-        return matchesComponentSelector(scope, normalizedSelector)
+
+        let partIndex = selectorParts.length - 1
+        let currentScope = scope
+        while (partIndex >= 0) {
+          if (!currentScope || !matchesComponentSelector(currentScope, selectorParts[partIndex]!)) {
+            currentScope = currentScope?.ownerScopeId
+              ? this.componentScopes.get(currentScope.ownerScopeId)
+              : undefined
+            if (!currentScope) {
+              return false
+            }
+            continue
+          }
+
+          partIndex -= 1
+          if (partIndex < 0) {
+            return true
+          }
+          currentScope = currentScope.ownerScopeId
+            ? this.componentScopes.get(currentScope.ownerScopeId)
+            : undefined
+        }
+
+        return true
       })
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
       .filter(Boolean)
