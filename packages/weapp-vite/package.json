@@ -96,6 +96,7 @@
     "release": "tsx scripts/release.ts",
     "bench": "vitest bench -c vitest.bench.config.ts",
     "benchmark:auto-import": "node --import tsx scripts/benchmark-auto-import-resolver.ts",
+    "benchmark:auto-import:build": "node --import tsx scripts/benchmark-auto-import-build.ts",
     "test:dev": "vitest",
     "test": "vitest run",
     "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd",
