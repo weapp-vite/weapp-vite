@@ -1,3 +1,5 @@
+import type { ComponentMetadata } from '../../metadata'
+
 export interface OutputsState {
   pendingWrite?: Promise<void>
   writeRequested: boolean
@@ -33,4 +35,5 @@ export interface OutputsHelpers {
 
 export interface PreparedSyncState {
   componentNames: string[]
+  componentMetadataMap: Map<string, ComponentMetadata>
 }
