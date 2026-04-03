@@ -10,7 +10,7 @@
     "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
-    "@tanstack/vue-query": "^5.96.1",
+    "@tanstack/vue-query": "^5.96.2",
     "@weapp-vite/dashboard": "workspace:*",
     "axios": "^1.14.0",
     "graphql-request": "^7.3.1",

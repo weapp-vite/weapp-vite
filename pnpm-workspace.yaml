@@ -4,39 +4,39 @@ packages:
   - e2e-apps/*
   - templates/*
   - test/fixture-projects/weapp-vite/*
-  - '!test/fixture-projects/weapp-vite/.tmp-*'
+  - "!test/fixture-projects/weapp-vite/.tmp-*"
   - packages/*
   - packages-runtime/*
   - benchmarks/*
   - mpcore/packages/*
   - mpcore/demos/*
-  - '@weapp-core/*'
+  - "@weapp-core/*"
   - extensions/*
   - website
-  - '!packages/**/test/**'
-  - '!packages-runtime/**/test/**'
-  - '!benchmarks/**/test/**'
-  - '!@weapp-core/**/test/**'
-  - '!mpcore/**/test/**'
+  - "!packages/**/test/**"
+  - "!packages-runtime/**/test/**"
+  - "!benchmarks/**/test/**"
+  - "!@weapp-core/**/test/**"
+  - "!mpcore/**/test/**"
 
 catalog:
-  '@babel/core': ^7.29.0
-  '@babel/generator': ^7.29.1
-  '@babel/parser': ^7.29.2
-  '@babel/traverse': ^7.29.0
-  '@babel/types': ^7.29.0
-  '@egoist/tailwindcss-icons': ^1.9.2
-  '@iconify-json/mdi': ^1.2.3
-  '@mini-types/alipay': ^3.0.14
-  '@tailwindcss/postcss': ^4.2.2
-  '@tailwindcss/vite': ^4.2.2
-  '@types/node': ^25.5.0
-  '@types/semver': ^7.7.1
-  '@vant/weapp': ^1.11.7
-  '@vitejs/plugin-vue': ^6.0.5
-  '@vue/compiler-core': ^3.5.31
-  '@vue/compiler-dom': ^3.5.31
-  '@vue/language-core': ^3.2.6
+  "@babel/core": ^7.29.0
+  "@babel/generator": ^7.29.1
+  "@babel/parser": ^7.29.2
+  "@babel/traverse": ^7.29.0
+  "@babel/types": ^7.29.0
+  "@egoist/tailwindcss-icons": ^1.9.2
+  "@iconify-json/mdi": ^1.2.3
+  "@mini-types/alipay": ^3.0.14
+  "@tailwindcss/postcss": ^4.2.2
+  "@tailwindcss/vite": ^4.2.2
+  "@types/node": ^25.5.1
+  "@types/semver": ^7.7.1
+  "@vant/weapp": ^1.11.7
+  "@vitejs/plugin-vue": ^6.0.5
+  "@vue/compiler-core": ^3.5.32
+  "@vue/compiler-dom": ^3.5.32
+  "@vue/language-core": ^3.2.6
   antd-mini: ^3.4.3
   autoprefixer: ^10.4.27
   bundle-require: ^5.1.0
@@ -75,7 +75,7 @@ catalog:
   typescript: ^6.0.2
   vite: 8.0.2
   vite-plugin-inspect: ^11.3.3
-  vue: ^3.5.31
+  vue: ^3.5.32
   vue-tsc: ^3.2.6
   weapp-tailwindcss: ^4.11.2
   zod: ^4.3.6
@@ -97,8 +97,8 @@ ignoredBuiltDependencies:
   - weapp-tailwindcss
 
 onlyBuiltDependencies:
-  - '@swc/core'
-  - '@weapp-tailwindcss/merge'
+  - "@swc/core"
+  - "@weapp-tailwindcss/merge"
   - oxc-resolver
   - rolldown
 
