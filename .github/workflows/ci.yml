@@ -20,7 +20,6 @@ jobs:
   build-pr:
     if: github.event_name != 'schedule'
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
-    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -33,177 +32,101 @@ jobs:
             node-version: 20
           - os: macos-latest
             node-version: 20
-    runs-on: ${{ matrix.os }}
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - uses: ./.github/actions/refresh-workspace-deps
-        with:
-          build-command: pnpm --filter weapp-vite... build
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Build
-        run: pnpm build
-
-      - name: Test
-        run: pnpm test:coverage
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v6
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      max-parallel: 2
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 25
+      build_command: pnpm --filter weapp-vite... build
+      main_command: |
+        pnpm lint
+        pnpm build
+        pnpm test:coverage
+      upload_codecov: true
+    secrets: inherit
 
   build-full:
     if: github.event_name == 'schedule'
     name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
-    timeout-minutes: 25
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [20, 22, 24]
-    runs-on: ${{ matrix.os }}
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - uses: ./.github/actions/refresh-workspace-deps
-        with:
-          build-command: pnpm --filter weapp-vite... build
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Build
-        run: pnpm build
-
-      - name: Test
-        run: pnpm test:coverage
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v6
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 25
+      build_command: pnpm --filter weapp-vite... build
+      main_command: |
+        pnpm lint
+        pnpm build
+        pnpm test:coverage
+      upload_codecov: true
+    secrets: inherit
 
   weapi-compat-pr:
     if: github.event_name != 'schedule'
     name: Weapi Compatibility Guard (Node 20)
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: 20
-
-      - name: Validate weapi generated catalog and docs
-        run: |
-          pnpm --filter @wevu/api catalog:check
-          pnpm --filter @wevu/api docs:check
-
-      - name: Validate weapi static guards
-        run: |
-          pnpm --filter @wevu/api lint
-          pnpm --filter @wevu/api typecheck
-          pnpm --filter @wevu/api typecheck:test
-          pnpm --filter @wevu/api structure:check
-          pnpm --filter @wevu/api strict-alias:check
-          pnpm --filter @wevu/api coverage:check
-
-      - name: Validate weapi tests
-        run: |
-          pnpm --filter @wevu/api test
-          pnpm --filter @wevu/api test:types
-
-      - name: Validate weapi report generation
-        run: pnpm --filter @wevu/api report:api
-
-      - name: Ensure generated artifacts are committed
-        run: |
-          git diff --exit-code -- \
-            packages-runtime/weapi/README.md \
-            packages-runtime/weapi/src/core/apiCatalog.ts \
-            packages-runtime/weapi/src/core/types.ts \
-            packages-runtime/weapi/src/index.ts \
-            packages-runtime/weapi/types/index.d.ts \
-            packages-runtime/weapi/reports/api-compat
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '20'
+      timeout_minutes: 15
+      main_command: |
+        pnpm --filter @wevu/api catalog:check
+        pnpm --filter @wevu/api docs:check
+        pnpm --filter @wevu/api lint
+        pnpm --filter @wevu/api typecheck
+        pnpm --filter @wevu/api typecheck:test
+        pnpm --filter @wevu/api structure:check
+        pnpm --filter @wevu/api strict-alias:check
+        pnpm --filter @wevu/api coverage:check
+        pnpm --filter @wevu/api test
+        pnpm --filter @wevu/api test:types
+        pnpm --filter @wevu/api report:api
+        git diff --exit-code -- \
+          packages-runtime/weapi/README.md \
+          packages-runtime/weapi/src/core/apiCatalog.ts \
+          packages-runtime/weapi/src/core/types.ts \
+          packages-runtime/weapi/src/index.ts \
+          packages-runtime/weapi/types/index.d.ts \
+          packages-runtime/weapi/reports/api-compat
+    secrets: inherit
 
   weapi-compat-full:
     if: github.event_name == 'schedule'
     name: Weapi Compatibility Guard (Node ${{ matrix.node-version }})
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         node-version: [20, 22, 24]
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Validate weapi generated catalog and docs
-        run: |
-          pnpm --filter @wevu/api catalog:check
-          pnpm --filter @wevu/api docs:check
-
-      - name: Validate weapi static guards
-        run: |
-          pnpm --filter @wevu/api lint
-          pnpm --filter @wevu/api typecheck
-          pnpm --filter @wevu/api typecheck:test
-          pnpm --filter @wevu/api structure:check
-          pnpm --filter @wevu/api strict-alias:check
-          pnpm --filter @wevu/api coverage:check
-
-      - name: Validate weapi tests
-        run: |
-          pnpm --filter @wevu/api test
-          pnpm --filter @wevu/api test:types
-
-      - name: Validate weapi report generation
-        run: pnpm --filter @wevu/api report:api
-
-      - name: Ensure generated artifacts are committed
-        run: |
-          git diff --exit-code -- \
-            packages-runtime/weapi/README.md \
-            packages-runtime/weapi/src/core/apiCatalog.ts \
-            packages-runtime/weapi/src/core/types.ts \
-            packages-runtime/weapi/src/index.ts \
-            packages-runtime/weapi/types/index.d.ts \
-            packages-runtime/weapi/reports/api-compat
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 15
+      main_command: |
+        pnpm --filter @wevu/api catalog:check
+        pnpm --filter @wevu/api docs:check
+        pnpm --filter @wevu/api lint
+        pnpm --filter @wevu/api typecheck
+        pnpm --filter @wevu/api typecheck:test
+        pnpm --filter @wevu/api structure:check
+        pnpm --filter @wevu/api strict-alias:check
+        pnpm --filter @wevu/api coverage:check
+        pnpm --filter @wevu/api test
+        pnpm --filter @wevu/api test:types
+        pnpm --filter @wevu/api report:api
+        git diff --exit-code -- \
+          packages-runtime/weapi/README.md \
+          packages-runtime/weapi/src/core/apiCatalog.ts \
+          packages-runtime/weapi/src/core/types.ts \
+          packages-runtime/weapi/src/index.ts \
+          packages-runtime/weapi/types/index.d.ts \
+          packages-runtime/weapi/reports/api-compat
+    secrets: inherit
