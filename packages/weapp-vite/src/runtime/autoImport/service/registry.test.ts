@@ -354,6 +354,7 @@ describe('autoImport registry helpers', () => {
     expect(extractComponentPropsMock).toHaveBeenCalledWith('export default {}', {
       astEngine: 'oxc',
     })
+    expect(readJsonMock).not.toHaveBeenCalled()
     expect(state.scheduleManifestWrite).toHaveBeenCalledWith(true)
     expect(state.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
     expect(state.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
@@ -415,6 +416,7 @@ describe('autoImport registry helpers', () => {
         from: '/components/vue-card/index',
       },
     })
+    expect(findVueEntryMock).not.toHaveBeenCalled()
   })
 
   it('extracts props from vue component script and handles missing compiled script', async () => {
@@ -505,5 +507,28 @@ describe('autoImport registry helpers', () => {
     expect(state.scheduleTypedComponentsWrite).toHaveBeenCalledWith(false)
     expect(state.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(false)
     expect(state.scheduleVueComponentsWrite).toHaveBeenCalledWith(false)
+  })
+
+  it('skips vue fallback lookup when local component trio is already complete', async () => {
+    const state = createState()
+    const helpers = createRegistryHelpers(state)
+
+    await helpers.registerLocalComponent('/project/src/components/fancy-button/index.wxml')
+
+    expect(findVueEntryMock).not.toHaveBeenCalled()
+    expect(extractConfigFromVueMock).not.toHaveBeenCalled()
+  })
+
+  it('looks up vue fallback only when local component trio is incomplete', async () => {
+    const state = createState()
+    findJsEntryMock.mockResolvedValue({ path: undefined })
+    findVueEntryMock.mockResolvedValue('/project/src/components/fancy-button/index.vue')
+    extractConfigFromVueMock.mockResolvedValue({ component: true })
+
+    const helpers = createRegistryHelpers(state)
+    await helpers.registerLocalComponent('/project/src/components/fancy-button/index.wxml')
+
+    expect(findVueEntryMock).toHaveBeenCalledWith('/project/src/components/fancy-button/index')
+    expect(extractConfigFromVueMock).toHaveBeenCalledWith('/project/src/components/fancy-button/index.vue')
   })
 })

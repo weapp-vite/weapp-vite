@@ -40,6 +40,13 @@ interface RegistryState {
 }
 
 export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
+  function scheduleOutputs(shouldWrite: boolean, vueEnabled?: boolean) {
+    state.scheduleManifestWrite(shouldWrite)
+    state.scheduleTypedComponentsWrite(shouldWrite)
+    state.scheduleHtmlCustomDataWrite(shouldWrite)
+    state.scheduleVueComponentsWrite(vueEnabled || shouldWrite)
+  }
+
   async function extractComponentPropsFromVue(vuePath: string): Promise<ComponentPropMap> {
     const source = await fs.readFile(vuePath, 'utf8')
     const astEngine = resolveAstEngine(state.ctx.configService?.weappViteConfig)
@@ -98,12 +105,16 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     }
 
     const baseName = removeExtensionDeep(filePath)
-    const [{ path: jsEntry }, { path: jsonPath }, { path: templatePath }, vueEntry] = await Promise.all([
+    const [{ path: jsEntry }, { path: jsonPath }, { path: templatePath }] = await Promise.all([
       findJsEntry(baseName),
       findJsonEntry(baseName),
       findTemplateEntry(baseName),
-      filePath.endsWith('.vue') ? Promise.resolve(filePath) : findVueEntry(baseName),
     ])
+
+    let vueEntry = filePath.endsWith('.vue') ? filePath : undefined
+    if ((!jsEntry || !jsonPath || !templatePath) && !vueEntry) {
+      vueEntry = await findVueEntry(baseName)
+    }
 
     const { removed, removedNames } = removeRegisteredComponent({
       baseName,
@@ -125,6 +136,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     let resolvedJsonPath = jsonPath
     let resolvedTemplatePath = templatePath
     let json = jsonPath ? await state.ctx.jsonService.read(jsonPath) : undefined
+    const vueSettings = getVueComponentsSettings(state.ctx)
 
     if ((!resolvedJsEntry || !resolvedJsonPath || !resolvedTemplatePath) && vueEntry) {
       const vueConfig = await extractConfigFromVue(vueEntry)
@@ -141,27 +153,18 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     }
 
     if (!resolvedJsEntry || !resolvedJsonPath || !resolvedTemplatePath) {
-      state.scheduleManifestWrite(removed)
-      state.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
-      state.scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
-      state.scheduleVueComponentsWrite(getVueComponentsSettings(state.ctx).enabled || removed || removedNames.length > 0)
+      scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
 
     if (!json?.component) {
-      state.scheduleManifestWrite(removed)
-      state.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
-      state.scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
-      state.scheduleVueComponentsWrite(getVueComponentsSettings(state.ctx).enabled || removed || removedNames.length > 0)
+      scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
 
     const { componentName, base } = resolvedComponentName(baseName)
     if (!componentName) {
-      state.scheduleManifestWrite(removed)
-      state.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
-      state.scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
-      state.scheduleVueComponentsWrite(getVueComponentsSettings(state.ctx).enabled || removed || removedNames.length > 0)
+      scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
 
@@ -169,10 +172,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     if (hasComponent && base !== 'index') {
       const message = `发现 \`${componentName}\` 组件重名! 跳过组件 \`${state.ctx.configService.relativeCwd(baseName)}\` 的自动引入`
       state.logWarnOnce(message)
-      state.scheduleManifestWrite(removed)
-      state.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
-      state.scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
-      state.scheduleVueComponentsWrite(getVueComponentsSettings(state.ctx).enabled || removed || removedNames.length > 0)
+      scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
 
@@ -200,14 +200,13 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
 
     const typedSettings = getTypedComponentsSettings(state.ctx)
     const htmlSettings = getHtmlCustomDataSettings(state.ctx)
-    const vueSettings = getVueComponentsSettings(state.ctx)
     const shouldCollectProps = typedSettings.enabled || htmlSettings.enabled
 
     if (shouldCollectProps) {
       const astEngine = resolveAstEngine(state.ctx.configService.weappViteConfig)
       let metadataSource: Record<string, any> | undefined = json
       try {
-        if (JSON_LIKE_FILE_RE.test(resolvedJsonPath)) {
+        if (!metadataSource && JSON_LIKE_FILE_RE.test(resolvedJsonPath)) {
           metadataSource = await fs.readJson(resolvedJsonPath)
         }
       }
