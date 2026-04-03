@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createPageEventsFixture } from './helpers'
+import { cleanupTempDirs, createPageEventsFixture, createVideoContextFixture } from './helpers'
 
 describe('page event alignment', () => {
   const tempDirs: string[] = []
@@ -161,5 +161,21 @@ describe('page event alignment', () => {
       },
       platform: 'devtools',
     })
+  })
+
+  it('supports createVideoContext event dispatch in headless runtime', () => {
+    const projectPath = createVideoContextFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/video/index')
+    page.playVideo()
+
+    expect(page.data.logs).toEqual([
+      'play:{"currentTime":12.5}',
+      'pause:{"currentTime":12.5}',
+      'fullscreen:{"currentTime":12.5,"fullScreen":true}',
+      'fullscreen:{"currentTime":12.5,"fullScreen":false}',
+    ])
   })
 })

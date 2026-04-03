@@ -14,6 +14,7 @@ Page({
     fileTransferFailureInfo: '',
     fileManagerSnapshot: '',
     requestSnapshot: '',
+    videoContextSnapshot: '',
     savedOverwriteInfo: '',
     savedFilePath: '',
     savedFileInfo: '',
@@ -115,6 +116,38 @@ Page({
       complete: () => {
         this.push('lab:loadMockQueue')
       }
+    })
+  },
+  runVideoContextLab() {
+    this.videoContext = wx.createVideoContext('lab-video', this)
+    this.videoContext.seek(6)
+    this.videoContext.play()
+    this.videoContext.pause()
+    this.videoContext.requestFullScreen()
+    this.videoContext.exitFullScreen()
+  },
+  handleVideoPlay(event) {
+    this.setData({
+      videoContextSnapshot: JSON.stringify({
+        phase: 'play',
+        ...event?.detail,
+      }),
+    })
+  },
+  handleVideoPause(event) {
+    this.setData({
+      videoContextSnapshot: JSON.stringify({
+        phase: 'pause',
+        ...event?.detail,
+      }),
+    })
+  },
+  handleVideoFullscreen(event) {
+    this.setData({
+      videoContextSnapshot: JSON.stringify({
+        phase: 'fullscreen',
+        ...event?.detail,
+      }),
     })
   },
   runFileTransferLab() {

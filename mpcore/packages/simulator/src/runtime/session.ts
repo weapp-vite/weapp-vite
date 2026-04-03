@@ -17,6 +17,7 @@ import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
+import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
@@ -228,6 +229,7 @@ export class HeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        createVideoContext: (videoId, scope) => this.createVideoContext(videoId, scope),
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
         getSavedFileInfo: option => this.wxState.getSavedFileInfo(option),
@@ -1160,6 +1162,35 @@ export class HeadlessSession {
       }
     }
     return null
+  }
+
+  private createVideoContext(videoId: string, scope?: Record<string, any>) {
+    return createHeadlessVideoContext(
+      {
+        callScopeMethod: (scopeId, methodName, event) => this.callScopeMethod(scopeId, methodName, event),
+        renderCurrentPage: () => this.renderCurrentPage(),
+        resolveScope: (value) => {
+          const current = this.currentPageInstance
+          if (!value || value === current) {
+            return {
+              kind: 'page' as const,
+            }
+          }
+          const scopeId = this.getScopeIdForComponent(value as HeadlessComponentInstance)
+          if (!scopeId) {
+            return {
+              kind: 'missing' as const,
+            }
+          }
+          return {
+            kind: 'component' as const,
+            scopeId,
+          }
+        },
+      },
+      videoId,
+      scope,
+    )
   }
 }
 

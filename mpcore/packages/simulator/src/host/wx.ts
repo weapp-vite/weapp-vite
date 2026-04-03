@@ -18,6 +18,15 @@ export interface HeadlessWxPageScrollToOption extends HeadlessWxCallbackOption {
   selector?: string
 }
 
+export interface HeadlessWxVideoContext {
+  exitFullScreen: () => void
+  pause: () => void
+  play: () => void
+  requestFullScreen: () => void
+  seek: (position: number) => void
+  stop: () => void
+}
+
 export interface HeadlessWxSelectorQueryBoundingClientRectResult {
   bottom: number
   height: number
@@ -445,6 +454,7 @@ export interface HeadlessWxFileSystemManager {
 }
 
 export interface HeadlessWxDriver {
+  createVideoContext: (videoId: string, scope?: Record<string, any>) => HeadlessWxVideoContext
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getFileSystemManager: () => HeadlessWxFileSystemManager
@@ -503,6 +513,7 @@ export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  createVideoContext: (videoId: string, component?: Record<string, any>) => HeadlessWxVideoContext
   createSelectorQuery: () => HeadlessWxSelectorQuery
   getFileSystemManager: () => HeadlessWxFileSystemManager
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult | undefined
@@ -601,6 +612,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     canIUse: true,
     clearStorage: true,
     clearStorageSync: true,
+    createVideoContext: true,
     createSelectorQuery: true,
     getFileSystemManager: true,
     getSavedFileInfo: true,
@@ -784,6 +796,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    createVideoContext: (videoId, component) => driver.createVideoContext(videoId, component),
     createSelectorQuery: () => {
       const requests: HeadlessWxSelectorQueryRequest[] = []
       let scope: Record<string, any> | undefined
