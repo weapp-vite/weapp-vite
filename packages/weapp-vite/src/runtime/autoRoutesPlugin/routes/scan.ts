@@ -42,14 +42,29 @@ function ensureSubPackage(map: Map<string, Set<string>>, root: string) {
 }
 
 function shouldIncludeScanCandidate(
-  candidate: Pick<CandidateEntry, 'hasScript' | 'hasTemplate' | 'jsonPath'>,
+  candidate: Pick<CandidateEntry, 'files' | 'hasScript' | 'hasTemplate' | 'jsonPath'>,
   json: Record<string, any> | undefined,
+  route?: { pagePath: string, root?: string },
 ) {
   if (candidate.jsonPath && json === undefined) {
     return false
   }
   if (json && typeof json === 'object' && json.component === true) {
     return false
+  }
+
+  if (
+    route?.root
+    && !route.pagePath.startsWith('pages/')
+    && candidate.hasScript
+    && !candidate.hasTemplate
+    && !candidate.jsonPath
+  ) {
+    const hasVueEntry = [...candidate.files].some(file => file.endsWith('.vue'))
+    const isIndexEntry = path.basename(route.pagePath) === 'index'
+    if (!hasVueEntry && !isIndexEntry) {
+      return false
+    }
   }
 
   return candidate.hasScript || candidate.hasTemplate || Boolean(candidate.jsonPath)
@@ -107,7 +122,7 @@ export async function scanRoutes(
     watchDirs.add(path.dirname(candidate.base))
 
     const json = jsonMap.get(candidate)
-    if (!shouldIncludeScanCandidate(candidate, json)) {
+    if (!shouldIncludeScanCandidate(candidate, json, route)) {
       continue
     }
 
