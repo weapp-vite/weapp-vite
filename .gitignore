@@ -6,10 +6,10 @@ node_modules
 !packages/rolldown-require/test/fixture/externalize-paths/node_modules/**
 !packages/rolldown-require/test/fixture/externalize-paths/sub/node_modules/
 !packages/rolldown-require/test/fixture/externalize-paths/sub/node_modules/**
-!packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/
-packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/*
-!packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/fake-pkg/
-!packages/weapp-vite/test/fixtures/shared-chunk-modes/node_modules/fake-pkg/**
+!test/fixture-projects/weapp-vite/shared-chunk-modes/node_modules/
+test/fixture-projects/weapp-vite/shared-chunk-modes/node_modules/*
+!test/fixture-projects/weapp-vite/shared-chunk-modes/node_modules/fake-pkg/
+!test/fixture-projects/weapp-vite/shared-chunk-modes/node_modules/fake-pkg/**
 !e2e-apps/chunk-modes/node_modules/
 e2e-apps/chunk-modes/node_modules/*
 !e2e-apps/chunk-modes/node_modules/fake-pkg/
