@@ -3,6 +3,8 @@ name: CI E2E
 on:
   pull_request:
     types: [opened, synchronize]
+  schedule:
+    - cron: '50 1 * * *'
   workflow_dispatch:
 
 concurrency:

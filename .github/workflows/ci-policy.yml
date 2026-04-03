@@ -3,6 +3,8 @@ name: CI Policy
 on:
   pull_request:
     types: [opened, synchronize]
+  schedule:
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 concurrency:
