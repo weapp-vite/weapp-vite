@@ -8,6 +8,14 @@ vi.mock('@wevu/api', () => ({
   },
 }))
 
+function setGlobalValue(key: string, value: unknown) {
+  Object.defineProperty(globalThis, key, {
+    configurable: true,
+    writable: true,
+    value,
+  })
+}
+
 describe('request globals runtime', () => {
   beforeEach(() => {
     wpiRequestMock.mockReset()
@@ -138,6 +146,28 @@ describe('request globals runtime', () => {
     expect(Function('return typeof AbortController')()).toBe('function')
     // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
     expect(Function('return typeof AbortSignal')()).toBe('function')
+  })
+
+  it('replaces broken URL constructors exposed by the runtime host', async () => {
+    const originalUrl = globalThis.URL
+    const originalUrlSearchParams = globalThis.URLSearchParams
+
+    try {
+      setGlobalValue('URL', () => undefined)
+      setGlobalValue('URLSearchParams', () => undefined)
+
+      const { installRequestGlobals } = await import('../src')
+      installRequestGlobals({
+        targets: ['fetch'],
+      })
+
+      expect(() => new globalThis.URL('https://request-globals.test/graphql')).not.toThrow()
+      expect(new globalThis.URLSearchParams({ client: 'graphql-request' }).toString()).toBe('client=graphql-request')
+    }
+    finally {
+      setGlobalValue('URL', originalUrl)
+      setGlobalValue('URLSearchParams', originalUrlSearchParams)
+    }
   })
 
   it('provides URL and URLSearchParams support required by graphql-request style callers', async () => {

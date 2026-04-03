@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { request } from 'graphql-request'
 import { onLoad, ref } from 'wevu'
 import {
   createErrorState,
@@ -21,6 +20,7 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
+    const { request } = await import('graphql-request')
     const payload = await request<{
       transport: {
         client: string

@@ -923,16 +923,18 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     expect(bundle['common.js'].code).toContain('__weappViteRequestGlobalsBundleInstalled__')
-    expect(bundle['common.js'].code).toContain('var Headers = typeof globalThis.Headers !== "undefined" ? globalThis.Headers : function Headers(){}')
+    expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))')
+    expect(bundle['common.js'].code).toContain('var XMLHttpRequest = __weappViteHasUsableRequestGlobalsConstructor__(__weappViteRequestGlobalsActuals__["XMLHttpRequest"],[])?__weappViteRequestGlobalsActuals__["XMLHttpRequest"]:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:__weappViteCreateLazyRequestGlobalsConstructor__("XMLHttpRequest")')
     expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
     expect(bundle['common.js'].code).toContain('URL = __weappViteRequestGlobalsBundleHost__.URL')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('__weappViteRequestGlobalsLocalBindings__')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteRequestGlobalsHost__ = e["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __weappViteRequestGlobalsHost__.URL')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsModule__ = require("../../common.js")')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __weappViteChunkRequestGlobalsHost__.URL')
   })
 
-  it('skips emitted local binding injection when chunk already contains request globals host bindings', async () => {
+  it('still injects top-level local bindings when chunk already contains setup-scoped request globals host bindings', async () => {
     const state = createState({
       subPackageMeta: null,
       entriesMap: new Map([
@@ -954,6 +956,13 @@ describe('core lifecycle emit hook extra branches', () => {
       'common.js': {
         type: 'chunk',
         fileName: 'common.js',
+        code: 'Object.defineProperty(exports,`noop`,{enumerable:!0,get:function(){return function(){}}})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'dist.js': {
+        type: 'chunk',
+        fileName: 'dist.js',
         code: [
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
@@ -965,10 +974,96 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'pages/request-globals/fetch.js',
         code: [
-          'const e=require("../../common.js");',
-          'const __weappViteRequestGlobalsHost__ = e["At"]({ targets: ["fetch"] }) || globalThis;',
+          'const e=require("../../common.js"),t=require("../../dist.js");',
+          'Page({ setup(){',
+          'const __weappViteRequestGlobalsHost__ = t["At"]({ targets: ["fetch"] }) || globalThis;',
           'var fetch = __weappViteRequestGlobalsHost__.fetch;',
-          'Page({})',
+          '} })',
+        ].join(''),
+        imports: ['common.js', 'dist.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__weappViteRequestGlobalsLocalBindings__')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsModule__ = require("../../dist.js")')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteRequestGlobalsHost__ = t["At"]({ targets: ["fetch"] }) || globalThis;')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
+  })
+
+  it('prepends installer require before earlier shared chunk requires in page chunks', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'dist.js': {
+        type: 'chunk',
+        fileName: 'dist.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return t}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: 'const e=require("../../common.js"),t=require("../../dist.js");Page({})',
+        imports: ['common.js', 'dist.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const code = bundle['pages/request-globals/fetch.js'].code
+    expect(code.indexOf('const __weappViteChunkRequestGlobalsModule__ = require("../../dist.js")')).toBeLessThan(code.indexOf('const e=require("../../common.js")'))
+  })
+
+  it('injects bundled runtime installation right after the first require when installer chunk has imports', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'dist.js': {
+        type: 'chunk',
+        fileName: 'dist.js',
+        code: [
+          'const e=require("./common.js");',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: ['common.js'],
         dynamicImports: [],
@@ -977,7 +1072,9 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['pages/request-globals/fetch.js'].code).not.toContain('__weappViteRequestGlobalsLocalBindings__')
-    expect(bundle['pages/request-globals/fetch.js'].code.match(/__weappViteRequestGlobalsHost__/g)?.length).toBe(2)
+    const code = bundle['dist.js'].code
+    expect(code).toContain('__weappViteRequestGlobalsBundleInstalled__')
+    expect(code).toContain('const e=require("./common.js");const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(code.indexOf('const __weappViteRequestGlobalsBundleHost__ = vn')).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
 })

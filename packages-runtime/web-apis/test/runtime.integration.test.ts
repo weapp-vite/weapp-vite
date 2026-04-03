@@ -129,4 +129,29 @@ describe('request globals third-party integration', () => {
     expect(axiosPayload.data.transport).toBe('axios')
     expect(wpiRequestMock).toHaveBeenCalledTimes(3)
   })
+
+  it('replaces broken host URL constructors before graphql-request and axios use them', async () => {
+    setGlobalValue('URL', () => undefined)
+    setGlobalValue('URLSearchParams', () => undefined)
+
+    installRequestGlobals()
+
+    const graphqlPayload = await gqlRequest<{ transport: { client: string } }>(
+      'https://request-globals.test/graphql',
+      /* GraphQL */ `
+        query RequestGlobalsTransport {
+          transport {
+            client
+          }
+        }
+      `,
+    )
+    expect(graphqlPayload.transport.client).toBe('graphql-request')
+
+    const axiosPayload = await axios.get('https://request-globals.test/axios', {
+      adapter: 'fetch',
+    })
+    expect(axiosPayload.data.transport).toBe('axios')
+    expect(wpiRequestMock).toHaveBeenCalledTimes(2)
+  })
 })

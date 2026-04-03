@@ -24,6 +24,20 @@ export interface InstallRequestGlobalsOptions {
   targets?: WeappInjectRequestGlobalsTarget[]
 }
 
+function hasUsableConstructor(value: unknown, args: unknown[] = []) {
+  if (typeof value !== 'function') {
+    return false
+  }
+
+  try {
+    Reflect.construct(value, args)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 function installSingleTarget(host: Record<string, any>, target: WeappInjectRequestGlobalsTarget) {
   if (target === 'fetch') {
     if (typeof host.fetch !== 'function') {
@@ -73,16 +87,16 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectReque
 }
 
 function installUrlGlobals(host: Record<string, any>) {
-  if (typeof host.URL !== 'function') {
+  if (!hasUsableConstructor(host.URL, ['https://request-globals.test'])) {
     host.URL = URLPolyfill
   }
-  if (typeof host.URLSearchParams !== 'function') {
+  if (!hasUsableConstructor(host.URLSearchParams, ['client=graphql-request'])) {
     host.URLSearchParams = URLSearchParamsPolyfill
   }
-  if (typeof host.Blob !== 'function') {
+  if (!hasUsableConstructor(host.Blob)) {
     host.Blob = BlobPolyfill
   }
-  if (typeof host.FormData !== 'function') {
+  if (!hasUsableConstructor(host.FormData)) {
     host.FormData = FormDataPolyfill
   }
 }
