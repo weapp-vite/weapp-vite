@@ -106,6 +106,12 @@ describe('core helpers graph', () => {
     state.resolvedEntryMap.set('/project/src/virtual-entry.ts', {
       value: true,
     })
+    state.resolvedEntryMap.set('/project/src/layouts/default.vue', {
+      value: true,
+    })
+    state.resolvedEntryMap.set('/project/src/components/base-navbar/index.vue', {
+      value: true,
+    })
 
     const bundle: OutputBundle = {
       'asset.txt': {
@@ -122,6 +128,18 @@ describe('core helpers graph', () => {
       'entries/virtual.js': createChunk('entries/virtual.js', {
         isEntry: false,
         facadeModuleId: '/project/src/virtual-entry.ts',
+        imports: ['chunks/shared.js'],
+      }),
+      'layouts/default.js': createChunk('layouts/default.js', {
+        isEntry: false,
+        facadeModuleId: null,
+        moduleIds: ['/project/src/layouts/default.vue'],
+        imports: ['chunks/shared.js'],
+      }),
+      'components/base-navbar/index.js': createChunk('components/base-navbar/index.js', {
+        isEntry: false,
+        facadeModuleId: null,
+        moduleIds: ['/project/src/components/base-navbar/index.vue'],
         imports: ['chunks/shared.js'],
       }),
       'chunks/shared.js': createChunk('chunks/shared.js', {
@@ -144,7 +162,12 @@ describe('core helpers graph', () => {
 
     expect(state.hmrSharedChunkImporters.has('stale')).toBe(false)
     expect(state.hmrSharedChunkImporters.get('chunks/shared.js')).toEqual(
-      new Set(['/project/src/pages/a.ts', '/project/src/virtual-entry.ts']),
+      new Set([
+        '/project/src/pages/a.ts',
+        '/project/src/virtual-entry.ts',
+        '/project/src/layouts/default.vue',
+        '/project/src/components/base-navbar/index.vue',
+      ]),
     )
     expect(state.hmrSharedChunkImporters.get('chunks/lazy.js')).toEqual(
       new Set(['/project/src/pages/a.ts']),
