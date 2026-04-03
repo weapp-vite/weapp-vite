@@ -24,7 +24,7 @@ jobs:
       matrix:
         include: ${{ fromJson(github.event_name == 'pull_request'
           && '[{"platform":"weapp","os":"ubuntu-latest","node-version":20},{"platform":"weapp","os":"ubuntu-latest","node-version":22},{"platform":"weapp","os":"windows-latest","node-version":20},{"platform":"weapp","os":"macos-latest","node-version":20}]'
-          || '[{"platform":"weapp","os":"ubuntu-latest","node-version":20},{"platform":"weapp","os":"windows-latest","node-version":20},{"platform":"weapp","os":"macos-latest","node-version":20},{"platform":"weapp","os":"ubuntu-latest","node-version":22},{"platform":"weapp","os":"windows-latest","node-version":22},{"platform":"weapp","os":"macos-latest","node-version":22}]') }}
+          || '[{"platform":"weapp","os":"ubuntu-latest","node-version":20},{"platform":"weapp","os":"windows-latest","node-version":20},{"platform":"weapp","os":"macos-latest","node-version":20},{"platform":"weapp","os":"ubuntu-latest","node-version":22},{"platform":"weapp","os":"windows-latest","node-version":22},{"platform":"weapp","os":"macos-latest","node-version":22},{"platform":"weapp","os":"ubuntu-latest","node-version":24},{"platform":"weapp","os":"windows-latest","node-version":24},{"platform":"weapp","os":"macos-latest","node-version":24}]') }}
 
     steps:
       - name: Enable Git long paths on Windows
@@ -70,7 +70,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ${{ fromJson(github.event_name == 'pull_request' && '[20]' || '[20,22]') }}
+        node-version: ${{ fromJson(github.event_name == 'pull_request' && '[20]' || '[20,22,24]') }}
 
     steps:
       - name: Check out code
