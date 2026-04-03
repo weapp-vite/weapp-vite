@@ -202,6 +202,66 @@ describe('autoImport plugin', () => {
     }
   })
 
+  it('dedupes initial scan candidates by component basename and ignores style files', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-dedupe-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const componentDir = path.join(srcRoot, 'components/DemoCard')
+    const expectedFile = path.join(componentDir, 'index.wxml')
+    await fs.ensureDir(componentDir)
+    await fs.writeFile(path.join(componentDir, 'index.ts'), 'export default {}', 'utf8')
+    await fs.writeFile(path.join(componentDir, 'index.json'), '{"component":true}', 'utf8')
+    await fs.writeFile(expectedFile, '<view />', 'utf8')
+    await fs.writeFile(path.join(componentDir, 'index.scss'), '.demo {}', 'utf8')
+
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+
+    const ctx = {
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*'],
+          },
+        },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites,
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+      await plugin.buildStart?.()
+
+      expect(registerPotentialComponent).toHaveBeenCalledTimes(1)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(expectedFile)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
   it('registers watch targets for auto import globs during build start', async () => {
     const addWatchFile = vi.fn()
     const reset = vi.fn()
@@ -531,6 +591,55 @@ describe('autoImport plugin', () => {
         }
       }
     }
+  })
+
+  it('ignores style-file watcher events even if globs are broad', async () => {
+    const sidecarWatcher = createMockSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const removePotentialComponent = vi.fn()
+
+    const ctx = {
+      runtimeState: {
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*'],
+          },
+        },
+      },
+      autoImportService: {
+        reset: vi.fn(),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent,
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    const plugin = autoImport(ctx)[0]
+    plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+    await plugin.buildStart?.()
+
+    registerPotentialComponent.mockClear()
+    removePotentialComponent.mockClear()
+
+    sidecarWatcher.emit('add', '/project/src/components/DemoCard/index.scss')
+    sidecarWatcher.emit('unlink', '/project/src/components/DemoCard/index.scss')
+
+    expect(registerPotentialComponent).not.toHaveBeenCalled()
+    expect(removePotentialComponent).not.toHaveBeenCalled()
   })
 
   it('handles directory rename through unlink and add watcher events', async () => {

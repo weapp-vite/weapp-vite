@@ -232,3 +232,48 @@ phase 变化更直接：
 1. `registerPotentialComponents()` / 本地组件扫描注册
 2. Vue 输出本身的字符串生成与写文件成本
 3. 更接近真实项目的 full build / dev 冷启动链路
+
+## 追补：2026-04-04 候选扫描去重
+
+在前几轮之后，热点已经进一步收敛到本地组件扫描注册。因此又做了一轮更靠前的优化：
+
+1. 初始候选扫描只保留真正会影响 auto-import 注册的文件类型：
+   - `.vue`
+   - 模板文件（如 `.wxml`）
+   - 脚本文件（如 `.ts` / `.js`）
+   - 配置文件（如 `.json` / `.json.ts`）
+2. 对同一组件 basename 的多个候选文件做去重，优先保留更能代表组件入口的文件：
+   - `vue > template > script > config`
+3. watch `add` / `unlink` 也忽略样式文件等无关扩展，避免 broad globs 把同一组件反复注册。
+
+### support-files 串行复测
+
+同样使用 `BENCH_ITERATIONS=3` 串行执行后，`current` 模式均值进一步变为：
+
+| 场景 | 上一轮 current avg | 本轮 current avg | 变化 |
+| --- | ---: | ---: | ---: |
+| 使用 1 个 Vant 组件 | 40.20 ms | 29.70 ms | -10.50 ms（-26.12%） |
+| 使用 5 个 Vant 组件 | 66.73 ms | 33.95 ms | -32.78 ms（-49.12%） |
+| 使用 20 个 Vant 组件 | 73.80 ms | 67.13 ms | -6.67 ms（-9.04%） |
+
+最明显的是 `registerLocalComponentsMs`：
+
+- `1` 个组件：`14.00ms -> 7.15ms`
+- `5` 个组件：`17.88ms -> 4.97ms`
+- `20` 个组件：`13.41ms -> 3.92ms`
+
+这说明 broad globs 下的重复候选确实会把同一组件多次送进注册链路，而不是单纯的扫描文件数量问题。
+
+### 当前判断
+
+到这里，support-files 这条链路上的三层明显重复工作已经基本清理完：
+
+1. 重复 resolver 命中
+2. flush 内重复准备和重复 metadata 获取
+3. broad globs 下的重复候选注册
+
+如果继续追求编译速度，接下来更值得投入的方向会变成：
+
+1. 完整 `build` 与 `dev` 首次启动链路中的整体成本
+2. Vue 输出字符串生成与最终写文件
+3. 更贴近真实业务项目的端到端对比，而不只是合成 benchmark
