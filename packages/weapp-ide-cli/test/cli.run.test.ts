@@ -72,7 +72,8 @@ vi.mock('../src/cli/retry', () => ({
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
   formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
   waitForRetryKeypress: waitForRetryKeypressMock,
-  createWechatIdeLoginRequiredExitError: createWechatIdeLoginRequiredExitErrorMock,
+  createWechatIdeLoginRequiredExitError:
+    createWechatIdeLoginRequiredExitErrorMock,
 }))
 
 vi.mock('../src/logger', () => ({
@@ -102,7 +103,10 @@ describe('cli parsing', () => {
     vi.stubEnv('CI', '')
     vi.stubEnv('WEAPP_IDE_CLI_LANG', 'zh')
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
-    originalStdinIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    originalStdinIsTTY = Object.getOwnPropertyDescriptor(
+      process.stdin,
+      'isTTY',
+    )
     Object.defineProperty(process.stdin, 'isTTY', {
       configurable: true,
       enumerable: true,
@@ -136,18 +140,31 @@ describe('cli parsing', () => {
     isOperatingSystemSupportedMock.mockReturnValue(true)
     executeMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
-    formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
-    formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
+    formatWechatIdeLoginRequiredErrorMock.mockReturnValue(
+      '微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录',
+    )
+    formatRetryHotkeyPromptMock.mockReturnValue(
+      '按 r 重试，按 q / Esc / Ctrl+C 退出。',
+    )
     waitForRetryKeypressMock.mockResolvedValue('cancel')
-    createWechatIdeLoginRequiredExitErrorMock.mockImplementation((errorLike: unknown) => {
-      const next = new Error('登录失效') as Error & { code: number, exitCode: number }
-      next.code = 10
-      next.exitCode = 10
-      if (errorLike && typeof errorLike === 'object' && typeof (errorLike as any).message === 'string') {
-        next.message = (errorLike as any).message
-      }
-      return next
-    })
+    createWechatIdeLoginRequiredExitErrorMock.mockImplementation(
+      (errorLike: unknown) => {
+        const next = new Error('登录失效') as Error & {
+          code: number
+          exitCode: number
+        }
+        next.code = 10
+        next.exitCode = 10
+        if (
+          errorLike
+          && typeof errorLike === 'object'
+          && typeof (errorLike as any).message === 'string'
+        ) {
+          next.message = (errorLike as any).message
+        }
+        return next
+      },
+    )
     resolveCliPathMock.mockResolvedValue({
       cliPath: '/Applications/wechat-cli',
       source: 'default',
@@ -215,11 +232,7 @@ describe('cli parsing', () => {
 
     await parse(['open', '--platform=ali', '-p'])
 
-    expect(runMinidevMock).toHaveBeenCalledWith([
-      'ide',
-      '--project',
-      mockCwd,
-    ])
+    expect(runMinidevMock).toHaveBeenCalledWith(['ide', '--project', mockCwd])
   })
 
   it('prints automator command help via "help <command>"', async () => {
@@ -228,7 +241,9 @@ describe('cli parsing', () => {
 
     await parse(['help', 'navigate'])
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Usage: weapp navigate <url> -p <project-path>'))
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Usage: weapp navigate <url> -p <project-path>'),
+    )
     expect(resolveCliPathMock).not.toHaveBeenCalled()
     expect(executeMock).not.toHaveBeenCalled()
     logSpy.mockRestore()
@@ -240,7 +255,9 @@ describe('cli parsing', () => {
 
     await parse(['navigate', '--help'])
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Usage: weapp navigate <url> -p <project-path>'))
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Usage: weapp navigate <url> -p <project-path>'),
+    )
     expect(resolveCliPathMock).not.toHaveBeenCalled()
     expect(executeMock).not.toHaveBeenCalled()
     logSpy.mockRestore()
@@ -252,7 +269,9 @@ describe('cli parsing', () => {
 
     await parse(['help', 'navigate', '--lang', 'en'])
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Navigate to a page'))
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Navigate to a page'),
+    )
     logSpy.mockRestore()
   })
 
@@ -263,7 +282,9 @@ describe('cli parsing', () => {
 
     await parse(['help', 'navigate'])
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Navigate to a page'))
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Navigate to a page'),
+    )
     logSpy.mockRestore()
   })
 
@@ -288,10 +309,16 @@ describe('cli parsing', () => {
     await parse(['config', 'show'])
 
     expect(readCustomConfigMock).toHaveBeenCalledTimes(1)
-    expect(logSpy).toHaveBeenCalledWith(JSON.stringify({
-      cliPath: '/custom/cli',
-      locale: 'en',
-    }, null, 2))
+    expect(logSpy).toHaveBeenCalledWith(
+      JSON.stringify(
+        {
+          cliPath: '/custom/cli',
+          locale: 'en',
+        },
+        null,
+        2,
+      ),
+    )
     logSpy.mockRestore()
   })
 
@@ -313,7 +340,9 @@ describe('cli parsing', () => {
 
     await parse(['config', 'set', 'cliPath', './tools/cli'])
 
-    expect(createCustomConfigMock).toHaveBeenCalledWith({ cliPath: './tools/cli' })
+    expect(createCustomConfigMock).toHaveBeenCalledWith({
+      cliPath: './tools/cli',
+    })
     expect(executeMock).not.toHaveBeenCalled()
   })
 
@@ -340,8 +369,12 @@ describe('cli parsing', () => {
 
     await parse(['config', 'doctor'])
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"cliPathValid": true'))
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"locale": "zh"'))
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"cliPathValid": true'),
+    )
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"locale": "zh"'),
+    )
     logSpy.mockRestore()
   })
 
@@ -400,8 +433,30 @@ describe('cli parsing', () => {
   it('fails fast when preview qr-format is invalid', async () => {
     const { parse } = await loadRunModule()
 
-    await expect(parse(['preview', '-p', './mini-app', '--qr-format', 'svg'])).rejects.toThrow(
+    await expect(
+      parse(['preview', '-p', './mini-app', '--qr-format', 'svg']),
+    ).rejects.toThrow(
       'preview 命令的二维码格式无效: svg（仅支持 terminal/image/base64）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when cache misses required clean argument', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['cache'])).rejects.toThrow(
+      'cache 命令缺少必填参数：--clean/-c',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when cache clean type is invalid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['cache', '--clean', 'foo'])).rejects.toThrow(
+      'cache 命令的清理类型无效: foo（仅支持 storage/file/compile/auth/network/session/all）',
     )
 
     expect(executeMock).not.toHaveBeenCalled()
@@ -469,14 +524,22 @@ describe('cli parsing', () => {
 
     await parse(['open', '-p', './mini-app'])
 
-    expect(executeMock).toHaveBeenCalledWith('/Applications/wechat-cli', ['open', '--project', `${mockCwd}/mini-app`], {
-      pipeStdout: false,
-      pipeStderr: false,
-    })
+    expect(executeMock).toHaveBeenCalledWith(
+      '/Applications/wechat-cli',
+      ['open', '--project', `${mockCwd}/mini-app`],
+      {
+        pipeStdout: false,
+        pipeStderr: false,
+      },
+    )
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
-    expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      '检测到微信开发者工具登录状态失效，请先登录后重试。',
+    )
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      '正在重试连接微信开发者工具...',
+    )
   })
 
   it('retries when execution output indicates login required', async () => {
@@ -494,7 +557,9 @@ describe('cli parsing', () => {
 
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      '正在重试连接微信开发者工具...',
+    )
   })
 
   it('stops retry loop when login is required and user cancels', async () => {
@@ -507,15 +572,24 @@ describe('cli parsing', () => {
       Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
     )
     waitForRetryKeypressMock.mockResolvedValue('cancel')
-    createWechatIdeLoginRequiredExitErrorMock.mockImplementation((errorLike: unknown) => {
-      const next = new Error('登录失效') as Error & { code: number, exitCode: number }
-      next.code = 10
-      next.exitCode = 10
-      if (errorLike && typeof errorLike === 'object' && typeof (errorLike as any).message === 'string') {
-        next.message = (errorLike as any).message
-      }
-      return next
-    })
+    createWechatIdeLoginRequiredExitErrorMock.mockImplementation(
+      (errorLike: unknown) => {
+        const next = new Error('登录失效') as Error & {
+          code: number
+          exitCode: number
+        }
+        next.code = 10
+        next.exitCode = 10
+        if (
+          errorLike
+          && typeof errorLike === 'object'
+          && typeof (errorLike as any).message === 'string'
+        ) {
+          next.message = (errorLike as any).message
+        }
+        return next
+      },
+    )
 
     await expect(parse(['open'])).rejects.toMatchObject({
       code: 10,
@@ -524,7 +598,9 @@ describe('cli parsing', () => {
 
     expect(executeMock).toHaveBeenCalledTimes(1)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      '已取消重试。完成登录后请重新执行当前命令。',
+    )
   })
 
   it('fails fast in non-interactive mode when login is required', async () => {
@@ -543,9 +619,11 @@ describe('cli parsing', () => {
     })
 
     expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
-    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringMatching(
-      /当前为非交互模式，检测到登录失效后直接失败。|Non-interactive mode enabled, failing immediately on login expiration\./,
-    ))
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /当前为非交互模式，检测到登录失效后直接失败。|Non-interactive mode enabled, failing immediately on login expiration\./,
+      ),
+    )
   })
 
   it('auto enables non-interactive mode in CI environment', async () => {
@@ -612,7 +690,9 @@ describe('cli parsing', () => {
   it('respects --login-retry=never and skips keypress prompt', async () => {
     const { parse } = await loadRunModule()
 
-    executeMock.mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+    executeMock.mockResolvedValueOnce({
+      stderr: '[error] code: 10\n需要重新登录',
+    })
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
     createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
       Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
@@ -649,22 +729,28 @@ describe('cli parsing', () => {
   it('passes custom login retry timeout to keypress prompt', async () => {
     const { parse } = await loadRunModule()
 
-    executeMock.mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+    executeMock.mockResolvedValueOnce({
+      stderr: '[error] code: 10\n需要重新登录',
+    })
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
     waitForRetryKeypressMock.mockResolvedValue('timeout')
     createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
       Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
     )
 
-    await expect(parse(['open', '--login-retry-timeout=1234'])).rejects.toMatchObject({
+    await expect(
+      parse(['open', '--login-retry-timeout=1234']),
+    ).rejects.toMatchObject({
       code: 10,
       exitCode: 10,
     })
 
     expect(formatRetryHotkeyPromptMock).toHaveBeenCalledWith(1234)
     expect(waitForRetryKeypressMock).toHaveBeenCalledWith({ timeoutMs: 1234 })
-    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringMatching(
-      /等待登录重试输入超时（1234ms），已自动取消。|Retry prompt timed out \(1234ms\), canceled automatically\./,
-    ))
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /等待登录重试输入超时（1234ms），已自动取消。|Retry prompt timed out \(1234ms\), canceled automatically\./,
+      ),
+    )
   })
 })

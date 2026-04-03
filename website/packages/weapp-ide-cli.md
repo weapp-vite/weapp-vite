@@ -63,6 +63,14 @@ pnpm add -g weapp-ide-cli
 
 - <https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html>
 
+缓存清理示例：
+
+```bash
+weapp cache --clean compile
+weapp cache --clean network
+weapp cache --clean all
+```
+
 ### 2) automator 增强命令
 
 | 命令                             | 说明                      |

@@ -301,6 +301,16 @@ wv ide upload --project ./dist -v 1.0.0 -d "ci upload"
 
 - [/packages/weapp-ide-cli](/packages/weapp-ide-cli)
 
+常见透传示例：
+
+```bash
+weapp-vite preview --project ./dist -q terminal
+weapp-vite upload --project ./dist -v 1.0.0 -d "ci upload"
+weapp-vite cache --clean compile
+weapp-vite cache --clean all
+wv cache --clean all
+```
+
 ## 常用示例
 
 ```bash
@@ -331,4 +341,8 @@ wv ide logs --open
 # 透传微信预览命令
 weapp-vite preview --project ./dist -q terminal
 wv preview --project ./dist -q terminal
+
+# 清理微信开发者工具缓存
+weapp-vite cache --clean compile
+wv cache --clean all
 ```

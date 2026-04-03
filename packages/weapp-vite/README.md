@@ -166,10 +166,13 @@ wv ide logs --open
 ```sh
 weapp-vite preview --project ./dist/build/mp-weixin
 weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+weapp-vite cache --clean compile
+weapp-vite cache --clean all
 weapp-vite config lang zh
 weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
 # 等价写法
 wv preview --project ./dist/build/mp-weixin
+wv cache --clean all
 ```
 
 也支持命名空间写法：

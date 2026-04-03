@@ -37,6 +37,8 @@ weapp open --project ./dist/dev/mp-weixin
 # 执行预览、上传等官方支持的命令
 weapp preview
 weapp upload --project ./dist/build/mp-weixin
+weapp cache --clean compile
+weapp cache --clean all
 ```
 
 `weapp` 与 `weapp-ide-cli` 等价，选择任一前缀即可。
@@ -91,6 +93,14 @@ weapp open --platform alipay -p ./dist/dev/mp-alipay
 官方文档：
 
 - <https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html>
+
+缓存清理示例：
+
+```bash
+weapp cache --clean compile
+weapp cache --clean network
+weapp cache --clean all
+```
 
 ### 2. automator 增强命令
 

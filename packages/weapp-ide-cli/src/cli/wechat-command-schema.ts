@@ -1,49 +1,18 @@
 import { i18nText } from '../i18n'
 import { readOptionValue } from './automator-argv'
 
-/**
- * @description 在调用官方微信 CLI 前做轻量参数校验。
- */
-export function validateWechatCliCommandArgs(argv: readonly string[]) {
-  const command = argv[0]
-  if (!command) {
-    return
-  }
+const CACHE_CLEAN_TYPES = [
+  'storage',
+  'file',
+  'compile',
+  'auth',
+  'network',
+  'session',
+  'all',
+] as const
 
-  validatePortOption(argv)
-  validateExtAppidDependency(argv)
-
-  if (command === 'upload') {
-    const version = readOptionValue(argv, '--version') || readOptionValue(argv, '-v')
-    const desc = readOptionValue(argv, '--desc') || readOptionValue(argv, '-d')
-
-    if (!isNonEmptyText(version) || !isNonEmptyText(desc)) {
-      throw new Error(i18nText(
-        'upload 命令缺少必填参数：--version/-v 和 --desc/-d',
-        'upload command requires both --version/-v and --desc/-d',
-      ))
-    }
-  }
-
-  if (command === 'preview') {
-    validateProjectLocator(command, argv)
-
-    const qrFormat = readOptionValue(argv, '--qr-format') || readOptionValue(argv, '-f')
-    if (!qrFormat) {
-      return
-    }
-
-    if (!['terminal', 'image', 'base64'].includes(qrFormat.toLowerCase())) {
-      throw new Error(i18nText(
-        `preview 命令的二维码格式无效: ${qrFormat}（仅支持 terminal/image/base64）`,
-        `Invalid preview qr format: ${qrFormat} (supported: terminal/image/base64)`,
-      ))
-    }
-  }
-
-  if (command === 'upload' || command === 'auto' || command === 'auto-preview') {
-    validateProjectLocator(command, argv)
-  }
+function isNonEmptyText(value: string | undefined) {
+  return typeof value === 'string' && value.trim().length > 0
 }
 
 function validatePortOption(argv: readonly string[]) {
@@ -54,10 +23,12 @@ function validatePortOption(argv: readonly string[]) {
 
   const parsed = Number.parseInt(port, 10)
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(i18nText(
-      `无效的 --port 值: ${port}（必须为正整数）`,
-      `Invalid --port value: ${port} (must be a positive integer)`,
-    ))
+    throw new Error(
+      i18nText(
+        `无效的 --port 值: ${port}（必须为正整数）`,
+        `Invalid --port value: ${port} (must be a positive integer)`,
+      ),
+    )
   }
 }
 
@@ -69,10 +40,12 @@ function validateProjectLocator(command: string, argv: readonly string[]) {
     return
   }
 
-  throw new Error(i18nText(
-    `${command} 命令需要提供 --project 或 --appid`,
-    `${command} command requires --project or --appid`,
-  ))
+  throw new Error(
+    i18nText(
+      `${command} 命令需要提供 --project 或 --appid`,
+      `${command} command requires --project or --appid`,
+    ),
+  )
 }
 
 function validateExtAppidDependency(argv: readonly string[]) {
@@ -91,12 +64,92 @@ function validateExtAppidDependency(argv: readonly string[]) {
     return
   }
 
-  throw new Error(i18nText(
-    '--ext-appid 需要和 --appid 一起使用（当未提供 --project 时）',
-    '--ext-appid requires --appid when --project is not provided',
-  ))
+  throw new Error(
+    i18nText(
+      '--ext-appid 需要和 --appid 一起使用（当未提供 --project 时）',
+      '--ext-appid requires --appid when --project is not provided',
+    ),
+  )
 }
 
-function isNonEmptyText(value: string | undefined) {
-  return typeof value === 'string' && value.trim().length > 0
+/**
+ * @description 在调用官方微信 CLI 前做轻量参数校验。
+ */
+export function validateWechatCliCommandArgs(argv: readonly string[]) {
+  const command = argv[0]
+  if (!command) {
+    return
+  }
+
+  validatePortOption(argv)
+  validateExtAppidDependency(argv)
+
+  if (command === 'upload') {
+    const version
+      = readOptionValue(argv, '--version') || readOptionValue(argv, '-v')
+    const desc = readOptionValue(argv, '--desc') || readOptionValue(argv, '-d')
+
+    if (!isNonEmptyText(version) || !isNonEmptyText(desc)) {
+      throw new Error(
+        i18nText(
+          'upload 命令缺少必填参数：--version/-v 和 --desc/-d',
+          'upload command requires both --version/-v and --desc/-d',
+        ),
+      )
+    }
+  }
+
+  if (command === 'preview') {
+    validateProjectLocator(command, argv)
+
+    const qrFormat
+      = readOptionValue(argv, '--qr-format') || readOptionValue(argv, '-f')
+    if (!qrFormat) {
+      return
+    }
+
+    if (!['terminal', 'image', 'base64'].includes(qrFormat.toLowerCase())) {
+      throw new Error(
+        i18nText(
+          `preview 命令的二维码格式无效: ${qrFormat}（仅支持 terminal/image/base64）`,
+          `Invalid preview qr format: ${qrFormat} (supported: terminal/image/base64)`,
+        ),
+      )
+    }
+  }
+
+  if (command === 'cache') {
+    const cleanType
+      = readOptionValue(argv, '--clean') || readOptionValue(argv, '-c')
+
+    if (!isNonEmptyText(cleanType)) {
+      throw new Error(
+        i18nText(
+          'cache 命令缺少必填参数：--clean/-c',
+          'cache command requires --clean/-c',
+        ),
+      )
+    }
+
+    if (
+      !CACHE_CLEAN_TYPES.includes(
+        cleanType as (typeof CACHE_CLEAN_TYPES)[number],
+      )
+    ) {
+      throw new Error(
+        i18nText(
+          `cache 命令的清理类型无效: ${cleanType}（仅支持 ${CACHE_CLEAN_TYPES.join('/')}）`,
+          `Invalid cache clean type: ${cleanType} (supported: ${CACHE_CLEAN_TYPES.join('/')})`,
+        ),
+      )
+    }
+  }
+
+  if (
+    command === 'upload'
+    || command === 'auto'
+    || command === 'auto-preview'
+  ) {
+    validateProjectLocator(command, argv)
+  }
 }

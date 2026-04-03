@@ -14,22 +14,40 @@ describe('tryRunIdeCommand', () => {
     isWeappIdeTopLevelCommandMock.mockReset()
     parseWeappIdeCliMock.mockResolvedValue(undefined)
     isWeappIdeTopLevelCommandMock.mockImplementation((command: string) =>
-      [
-        'preview',
-        'navigate',
-        'config',
-        'screenshot',
-      ].includes(command),
+      ['cache', 'preview', 'navigate', 'config', 'screenshot'].includes(
+        command,
+      ),
     )
   })
 
   it('forwards ide-only command to weapp-ide-cli', async () => {
     const { tryRunIdeCommand } = await import('./ide')
 
-    const forwarded = await tryRunIdeCommand(['preview', '--project', '/tmp/demo'])
+    const forwarded = await tryRunIdeCommand([
+      'preview',
+      '--project',
+      '/tmp/demo',
+    ])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['preview', '--project', '/tmp/demo'])
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith([
+      'preview',
+      '--project',
+      '/tmp/demo',
+    ])
+  })
+
+  it('forwards cache command to weapp-ide-cli', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['cache', '--clean', 'all'])
+
+    expect(forwarded).toBe(true)
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith([
+      'cache',
+      '--clean',
+      'all',
+    ])
   })
 
   it('forwards automator command to weapp-ide-cli', async () => {
@@ -38,7 +56,10 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['navigate', 'pages/index/index'])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['navigate', 'pages/index/index'])
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith([
+      'navigate',
+      'pages/index/index',
+    ])
   })
 
   it('forwards help target for ide command', async () => {
