@@ -127,16 +127,12 @@ describe('analyze dashboard', () => {
       return `{
         // dashboard dev/runtime manifest
         "weappViteDashboard": {
-          "devRoot": ".",
-          "devConfigFile": "vite.config.ts",
           "distDir": "dist"
         }
       }`
     })
     existsSyncMock.mockImplementation((value: string) => {
       return value === '/mock/dashboard/dist'
-        || value === '/mock/dashboard/src'
-        || value === '/mock/dashboard/vite.config.ts'
         || value === '/mock/dashboard/package.json'
         ? true
         : undefined
@@ -163,7 +159,7 @@ describe('analyze dashboard', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('pnpm add @weapp-vite/dashboard'))
   })
 
-  it('starts in watch mode and supports update/close/waitForExit', async () => {
+  it('starts in watch mode from dist assets and supports update/close/waitForExit', async () => {
     const server = createMockServer()
 
     createServerMock.mockImplementation(async (options: any) => {
@@ -220,8 +216,8 @@ describe('analyze dashboard', () => {
     })
 
     const createServerArg = createServerMock.mock.calls[0]?.[0] as any
-    expect(createServerArg.root).toBe('/mock/dashboard')
-    expect(createServerArg.configFile).toBe('/mock/dashboard/vite.config.ts')
+    expect(createServerArg.root).toBe('/mock/dashboard/dist')
+    expect(createServerArg.configFile).toBe(false)
     const plugin = createServerArg.plugins[0]
     const transformed = plugin.transformIndexHtml('<!doctype html>')
     const script = transformed.tags[0]?.children as string
