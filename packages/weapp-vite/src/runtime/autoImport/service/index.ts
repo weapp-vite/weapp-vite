@@ -82,6 +82,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     lastTypedComponentsOutput: undefined,
     lastVueComponentsEnabled: false,
     lastVueComponentsOutput: undefined,
+    preparedSyncStatePromise: undefined,
   }
 
   const resolverHelpers = createResolverHelpers({

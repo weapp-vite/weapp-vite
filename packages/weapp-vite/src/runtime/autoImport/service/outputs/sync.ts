@@ -2,7 +2,7 @@ import type { MutableCompilerContext } from '../../../../context'
 import type { ComponentPropMap } from '../../../componentProps'
 import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from '../../config'
 import type { ComponentMetadata } from '../../metadata'
-import type { OutputsState } from './state'
+import type { OutputsState, PreparedSyncState } from './state'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { resolveAstEngine } from '../../../../ast'
@@ -37,6 +37,20 @@ const TS_LIKE_EXT_RE = /\.[mc]?[jt]sx?$/
 const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
 const CAMEL_TO_KEBAB_RE = /([a-z0-9])([A-Z])/g
 const TRAILING_INDEX_SEGMENT_RE = /\/index$/
+
+async function getPreparedSyncState(options: CommonSyncOptions): Promise<PreparedSyncState> {
+  const { outputsState } = options
+  if (!outputsState.preparedSyncStatePromise) {
+    outputsState.preparedSyncStatePromise = Promise.resolve().then(() => {
+      options.syncResolverComponentProps()
+      options.preloadResolverComponentMetadata()
+      return {
+        componentNames: collectAllComponentNames(options),
+      }
+    })
+  }
+  return await outputsState.preparedSyncStatePromise
+}
 
 function toRelativeImportSpecifier(outputPath: string, sourcePath: string) {
   const relative = path.relative(path.dirname(outputPath), sourcePath).replaceAll('\\', '/')
@@ -216,10 +230,7 @@ export async function syncTypedComponentsDefinition(
     return
   }
 
-  options.syncResolverComponentProps()
-  options.preloadResolverComponentMetadata()
-
-  const componentNames = collectAllComponentNames(options)
+  const { componentNames } = await getPreparedSyncState(options)
   const nextDefinition = createTypedComponentsDefinition(componentNames, options.getComponentMetadata)
   if (nextDefinition === outputsState.lastWrittenTypedDefinition && settings.outputPath === outputsState.lastTypedDefinitionOutputPath) {
     return
@@ -271,11 +282,9 @@ export async function syncVueComponentsDefinition(
     return
   }
 
-  options.syncResolverComponentProps()
-  options.preloadResolverComponentMetadata()
+  const { componentNames } = await getPreparedSyncState(options)
   const outputPath = settings.outputPath
 
-  const componentNames = collectAllComponentNames(options)
   const layoutNames = await collectLayoutNames(configService.absoluteSrcRoot)
   const layoutPropsMap = await collectLayoutPropsMap(ctx)
   const layoutTypesOutputPath = resolveLayoutTypesDefaultPath(configService)
@@ -351,10 +360,7 @@ export async function syncHtmlCustomData(
     return
   }
 
-  options.syncResolverComponentProps()
-  options.preloadResolverComponentMetadata()
-
-  const componentNames = collectAllComponentNames(options)
+  const { componentNames } = await getPreparedSyncState(options)
   const builtinTags = loadWeappBuiltinHtmlTags()
   const nextDefinition = createHtmlCustomDataDefinition(componentNames, options.getComponentMetadata, builtinTags)
   if (nextDefinition === outputsState.lastWrittenHtmlCustomData && settings.outputPath === outputsState.lastHtmlCustomDataOutputPath) {

@@ -97,6 +97,7 @@ function createOutputsState() {
     lastTypedComponentsOutput: undefined,
     lastVueComponentsEnabled: false,
     lastVueComponentsOutput: undefined,
+    preparedSyncStatePromise: undefined,
   }
 }
 
@@ -481,5 +482,39 @@ describe('autoImport outputs sync helpers', () => {
     }, options as any)
 
     expect(fsOutputFileMock).not.toHaveBeenCalled()
+  })
+
+  it('reuses prepared sync state across typed, html and vue outputs in one flush', async () => {
+    const outputsState = createOutputsState()
+    const options = createCommonOptions({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          cwd: '/project',
+        },
+      },
+      outputsState,
+      resolverComponentsMapRef: { value: {} },
+      resolveNavigationImport: vi.fn(),
+    })
+
+    await syncTypedComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/components.d.ts',
+    }, options as any)
+
+    await syncHtmlCustomData({
+      enabled: true,
+      outputPath: '/project/types/mini-program.html-data.json',
+    }, options as any)
+
+    await syncVueComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/components-vue.d.ts',
+    }, options as any)
+
+    expect(options.syncResolverComponentProps).toHaveBeenCalledTimes(1)
+    expect(options.preloadResolverComponentMetadata).toHaveBeenCalledTimes(1)
+    expect(collectAllComponentNamesMock).toHaveBeenCalledTimes(1)
   })
 })
