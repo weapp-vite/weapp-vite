@@ -17,17 +17,23 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build and Test
+  build-pr:
+    if: github.event_name == 'pull_request'
+    name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(github.event_name == 'pull_request'
-          && '[{"os":"ubuntu-latest","node-version":20},{"os":"ubuntu-latest","node-version":22},{"os":"windows-latest","node-version":20},{"os":"macos-latest","node-version":20}]'
-          || '[{"os":"ubuntu-latest","node-version":20},{"os":"windows-latest","node-version":20},{"os":"macos-latest","node-version":20},{"os":"ubuntu-latest","node-version":22},{"os":"windows-latest","node-version":22},{"os":"macos-latest","node-version":22},{"os":"ubuntu-latest","node-version":24},{"os":"windows-latest","node-version":24},{"os":"macos-latest","node-version":24}]') }}
+        include:
+          - os: ubuntu-latest
+            node-version: 20
+          - os: ubuntu-latest
+            node-version: 22
+          - os: windows-latest
+            node-version: 20
+          - os: macos-latest
+            node-version: 20
     runs-on: ${{ matrix.os }}
-    # Remote Caching enabled - configure TURBO_TOKEN and TURBO_TEAM in repository settings
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
@@ -74,14 +80,127 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  weapi-compat:
+  build-full:
+    if: github.event_name != 'pull_request'
+    name: Build and Test (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20, 22, 24]
+    runs-on: ${{ matrix.os }}
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+    steps:
+      - name: Enable Git long paths on Windows
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
+
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build weapp-vite artifacts for injected workspace dependencies
+        run: pnpm --filter weapp-vite... build
+
+      - name: Refresh injected workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test:coverage
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v6
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  weapi-compat-pr:
+    if: github.event_name == 'pull_request'
+    name: Weapi Compatibility Guard (Node 20)
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate weapi generated catalog and docs
+        run: |
+          pnpm --filter @wevu/api catalog:check
+          pnpm --filter @wevu/api docs:check
+
+      - name: Validate weapi static guards
+        run: |
+          pnpm --filter @wevu/api lint
+          pnpm --filter @wevu/api typecheck
+          pnpm --filter @wevu/api typecheck:test
+          pnpm --filter @wevu/api structure:check
+          pnpm --filter @wevu/api strict-alias:check
+          pnpm --filter @wevu/api coverage:check
+
+      - name: Validate weapi tests
+        run: |
+          pnpm --filter @wevu/api test
+          pnpm --filter @wevu/api test:types
+
+      - name: Validate weapi report generation
+        run: pnpm --filter @wevu/api report:api
+
+      - name: Ensure generated artifacts are committed
+        run: |
+          git diff --exit-code -- \
+            packages-runtime/weapi/README.md \
+            packages-runtime/weapi/src/core/apiCatalog.ts \
+            packages-runtime/weapi/src/core/types.ts \
+            packages-runtime/weapi/src/index.ts \
+            packages-runtime/weapi/types/index.d.ts \
+            packages-runtime/weapi/reports/api-compat
+
+  weapi-compat-full:
+    if: github.event_name != 'pull_request'
     name: Weapi Compatibility Guard (Node ${{ matrix.node-version }})
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node-version: ${{ fromJson(github.event_name == 'pull_request' && '[20]' || '[20,22]') }}
+        node-version: [20, 22]
 
     steps:
       - name: Check out code

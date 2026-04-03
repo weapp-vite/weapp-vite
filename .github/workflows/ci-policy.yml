@@ -15,14 +15,56 @@ permissions:
   contents: read
 
 jobs:
-  policy:
+  policy-pr:
+    if: github.event_name == 'pull_request'
+    name: Policy Checks (Node 20)
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check create-weapp-vite changeset rule
+        run: pnpm check:create-weapp-vite-changeset
+
+      - name: SEO quality strict gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
+            pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+          else
+            pnpm seo:quality:strict
+          fi
+
+      - name: Security Audit
+        run: pnpm audit --audit-level=moderate
+        continue-on-error: true
+
+  policy-full:
+    if: github.event_name != 'pull_request'
     name: Policy Checks (Node ${{ matrix.node-version }})
     timeout-minutes: 10
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node-version: ${{ fromJson(github.event_name == 'pull_request' && '[20]' || '[20,22]') }}
+        node-version: [20, 22]
 
     steps:
       - name: Check out code
