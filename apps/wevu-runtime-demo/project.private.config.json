@@ -25,22 +25,204 @@
       "current": 0,
       "list": [
         {
-          "name": "request-globals-fetch",
+          "name": "pages/runtime/index",
+          "pathName": "pages/runtime/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-index/index",
+          "pathName": "pages/vue-index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-template/index",
+          "pathName": "pages/vue-template/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-bindings/index",
+          "pathName": "pages/vue-bindings/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-events/index",
+          "pathName": "pages/vue-events/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-v-model/index",
+          "pathName": "pages/vue-v-model/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-slots-advanced/index",
+          "pathName": "pages/vue-slots-advanced/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-dynamic/index",
+          "pathName": "pages/vue-dynamic/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-script-setup/index",
+          "pathName": "pages/vue-script-setup/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-render/index",
+          "pathName": "pages/vue-render/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-style/index",
+          "pathName": "pages/vue-style/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/vue-query/index",
+          "pathName": "pages/vue-query/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/request-globals/index",
+          "pathName": "pages/request-globals/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/request-globals/fetch",
           "pathName": "pages/request-globals/fetch",
           "query": "",
           "scene": null,
           "launchMode": "default"
         },
         {
-          "name": "request-globals-graphql-request",
+          "name": "pages/request-globals/graphql-request",
           "pathName": "pages/request-globals/graphql-request",
           "query": "",
           "scene": null,
           "launchMode": "default"
         },
         {
-          "name": "request-globals-axios",
+          "name": "pages/request-globals/axios",
           "pathName": "pages/request-globals/axios",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/lifecycle/index",
+          "pathName": "pages/lifecycle/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/wevu-hooks/index",
+          "pathName": "pages/wevu-hooks/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/store/index",
+          "pathName": "pages/store/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/zustand-store/index",
+          "pathName": "pages/zustand-store/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/provider/index",
+          "pathName": "pages/provider/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/effects/index",
+          "pathName": "pages/effects/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/communicate/index",
+          "pathName": "pages/communicate/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/slot/index",
+          "pathName": "pages/slot/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/share/index",
+          "pathName": "pages/share/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/inject-symbol/index",
+          "pathName": "pages/inject-symbol/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/page-comp-lifecycle/index",
+          "pathName": "pages/page-comp-lifecycle/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/bench/index",
+          "pathName": "pages/bench/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/perf/pages/chunk/index",
+          "pathName": "subpackages/perf/pages/chunk/index",
           "query": "",
           "scene": null,
           "launchMode": "default"
