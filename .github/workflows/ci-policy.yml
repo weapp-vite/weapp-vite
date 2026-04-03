@@ -16,28 +16,15 @@ permissions:
 
 jobs:
   policy-pr:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'schedule'
     name: Policy Checks (Node 20)
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: pnpm/action-setup@v5
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Check create-weapp-vite changeset rule
         run: pnpm check:create-weapp-vite-changeset
@@ -57,32 +44,19 @@ jobs:
         continue-on-error: true
 
   policy-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'schedule'
     name: Policy Checks (Node ${{ matrix.node-version }})
     timeout-minutes: 10
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [20, 22, 24]
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: pnpm/action-setup@v5
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Check create-weapp-vite changeset rule
         run: pnpm check:create-weapp-vite-changeset
