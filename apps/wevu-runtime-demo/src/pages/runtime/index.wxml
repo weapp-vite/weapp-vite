@@ -73,6 +73,7 @@
       <button size="mini" bindtap="openLifecycle">生命周期与滚动</button>
       <button size="mini" bindtap="openLifecycleHooks">onXXX 全覆盖</button>
       <button size="mini" bindtap="openStore">Store</button>
+      <button size="mini" bindtap="openZustandStore">Zustand</button>
       <button size="mini" bindtap="openProvider">页面组件注入</button>
       <button size="mini" bindtap="openEffects">watchEffect</button>
     </view>

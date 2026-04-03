@@ -19,6 +19,7 @@
     "pages/lifecycle/index",
     "pages/wevu-hooks/index",
     "pages/store/index",
+    "pages/zustand-store/index",
     "pages/provider/index",
     "pages/effects/index",
     "pages/communicate/index",

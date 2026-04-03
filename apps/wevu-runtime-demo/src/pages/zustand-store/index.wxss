@@ -1,0 +1,70 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  min-height: 100%;
+  padding: 24rpx;
+  background: linear-gradient(180deg, #eff6ff 0%, #fff 100%);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 28rpx 32rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 32rpx rgb(15 23 42 / 8%);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.card-meta {
+  font-size: 26rpx;
+  color: #4b5563;
+}
+
+.card-desc {
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.counter-value {
+  font-size: 64rpx;
+  font-weight: 700;
+  color: #2563eb;
+  text-align: center;
+}
+
+.counter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  justify-content: center;
+}
+
+.history-summary {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.log-item {
+  padding: 16rpx 20rpx;
+  font-size: 24rpx;
+  color: #1e3a8a;
+  background: #eff6ff;
+  border-radius: 12rpx;
+}
