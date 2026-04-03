@@ -1,5 +1,6 @@
 import os from 'node:os'
 import path from 'node:path'
+import { access } from 'node:fs/promises'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 // eslint-disable-next-line e18e/ban-dependencies
@@ -15,11 +16,31 @@ function parsePackJson(stdout: string) {
   }>
 }
 
+async function findWorkspaceNodeModules(startDir: string) {
+  let currentDir = startDir
+
+  while (true) {
+    const candidate = path.join(currentDir, 'node_modules', '.bin', 'tsdown')
+    try {
+      await access(candidate)
+      return path.join(currentDir, 'node_modules')
+    }
+    catch {
+      const parentDir = path.dirname(currentDir)
+      if (parentDir === currentDir) {
+        throw new Error('未找到可用的 node_modules/.bin/tsdown')
+      }
+      currentDir = parentDir
+    }
+  }
+}
+
 async function createIsolatedPackageWorkspace(packageRoot: string) {
   const repoRoot = path.resolve(packageRoot, '../..')
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-pack-workspace-'))
   const tempRepoRoot = path.join(tempRoot, 'repo')
   const tempPackageRoot = path.join(tempRepoRoot, 'packages', 'weapp-vite')
+  const workspaceNodeModules = await findWorkspaceNodeModules(packageRoot)
 
   await fs.ensureDir(path.dirname(tempPackageRoot))
   await fs.copy(packageRoot, tempPackageRoot, {
@@ -38,7 +59,7 @@ async function createIsolatedPackageWorkspace(packageRoot: string) {
     },
   })
   await fs.copy(path.join(repoRoot, 'tsconfig.json'), path.join(tempRepoRoot, 'tsconfig.json'))
-  await fs.symlink(path.join(repoRoot, 'node_modules'), path.join(tempRepoRoot, 'node_modules'), 'junction')
+  await fs.symlink(workspaceNodeModules, path.join(tempRepoRoot, 'node_modules'), 'junction')
 
   return {
     tempRoot,
