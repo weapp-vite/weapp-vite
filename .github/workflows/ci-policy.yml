@@ -18,69 +18,42 @@ jobs:
   policy-pr:
     if: github.event_name != 'schedule'
     name: Policy Checks (Node 20)
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: 20
-
-      - name: Check create-weapp-vite changeset rule
-        run: pnpm check:create-weapp-vite-changeset
-
-      - name: SEO quality strict gate
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
-            pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
-          else
-            pnpm seo:quality:strict
-          fi
-
-      - name: Security Audit
-        run: pnpm audit --audit-level=moderate
-        continue-on-error: true
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '20'
+      timeout_minutes: 10
+      main_command: |
+        pnpm check:create-weapp-vite-changeset
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
+          pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+        else
+          pnpm seo:quality:strict
+        fi
+        pnpm audit --audit-level=moderate || true
+    secrets: inherit
 
   policy-full:
     if: github.event_name == 'schedule'
     name: Policy Checks (Node ${{ matrix.node-version }})
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         node-version: [20, 22, 24]
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Check create-weapp-vite changeset rule
-        run: pnpm check:create-weapp-vite-changeset
-
-      - name: SEO quality strict gate
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
-            pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
-          else
-            pnpm seo:quality:strict
-          fi
-
-      - name: Security Audit
-        run: pnpm audit --audit-level=moderate
-        continue-on-error: true
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 10
+      main_command: |
+        pnpm check:create-weapp-vite-changeset
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
+          pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+        else
+          pnpm seo:quality:strict
+        fi
+        pnpm audit --audit-level=moderate || true
+    secrets: inherit

@@ -1,0 +1,86 @@
+name: Reusable Node Command
+
+on:
+  workflow_call:
+    inputs:
+      runs_on:
+        required: true
+        type: string
+      node_version:
+        required: true
+        type: string
+      timeout_minutes:
+        required: true
+        type: number
+      fetch_depth:
+        required: false
+        type: number
+        default: 2
+      build_command:
+        required: false
+        type: string
+        default: ''
+      main_command:
+        required: true
+        type: string
+      e2e_platform:
+        required: false
+        type: string
+        default: ''
+      install_playwright:
+        required: false
+        type: boolean
+        default: false
+      increase_ulimit:
+        required: false
+        type: boolean
+        default: false
+      upload_codecov:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ inputs.fetch_depth }}
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - if: inputs.build_command != ''
+        uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: ${{ inputs.build_command }}
+
+      - name: Increase file descriptor limit
+        if: inputs.increase_ulimit && runner.os != 'Windows'
+        run: ulimit -n 65536 || true
+
+      - name: Install Playwright Chromium
+        if: inputs.install_playwright
+        run: pnpm exec playwright install chromium
+
+      - name: Run command
+        env:
+          E2E_PLATFORM: ${{ inputs.e2e_platform }}
+        run: ${{ inputs.main_command }}
+
+      - name: Upload coverage reports to Codecov
+        if: inputs.upload_codecov
+        uses: codecov/codecov-action@v6
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
