@@ -21,6 +21,7 @@ export interface OutputsState {
   lastTypedComponentsOutput?: string
   lastVueComponentsEnabled: boolean
   lastVueComponentsOutput?: string
+  preparedSyncStatePromise?: Promise<PreparedSyncState>
 }
 
 export interface OutputsHelpers {
@@ -28,4 +29,8 @@ export interface OutputsHelpers {
   scheduleTypedComponentsWrite: (shouldWrite: boolean) => void
   scheduleHtmlCustomDataWrite: (shouldWrite: boolean) => void
   scheduleVueComponentsWrite: (shouldWrite: boolean) => void
+}
+
+export interface PreparedSyncState {
+  componentNames: string[]
 }

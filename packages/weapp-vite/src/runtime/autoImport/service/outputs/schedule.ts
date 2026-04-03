@@ -40,6 +40,7 @@ export function createScheduleHelpers(options: ScheduleOptions) {
     }
 
     outputsState.htmlCustomDataWriteRequested = true
+    outputsState.preparedSyncStatePromise = undefined
     if (outputsState.pendingHtmlCustomDataWrite) {
       return
     }
@@ -70,6 +71,7 @@ export function createScheduleHelpers(options: ScheduleOptions) {
     }
 
     outputsState.writeRequested = true
+    outputsState.preparedSyncStatePromise = undefined
     if (outputsState.pendingWrite) {
       return
     }
@@ -106,6 +108,7 @@ export function createScheduleHelpers(options: ScheduleOptions) {
     }
 
     outputsState.typedWriteRequested = true
+    outputsState.preparedSyncStatePromise = undefined
     if (outputsState.pendingTypedWrite) {
       return
     }
@@ -135,6 +138,7 @@ export function createScheduleHelpers(options: ScheduleOptions) {
     }
 
     outputsState.vueComponentsWriteRequested = true
+    outputsState.preparedSyncStatePromise = undefined
     if (outputsState.pendingVueComponentsWrite) {
       return
     }
