@@ -8,6 +8,7 @@ import path from 'pathe'
 import { renderMarkdown } from './markdown'
 import {
   DEFAULT_ENTRY_URL,
+  DEFAULT_MIRROR_REPO_URL,
   DEFAULT_OUTPUT_DIR,
   normalizeFrameworkPageUrl,
   toAbsoluteSourceUrl,
@@ -88,7 +89,10 @@ function parseCliArgs(argv: string[]): MirrorCliOptions {
     }
   }
 
-  const normalizedEntryUrl = normalizeFrameworkPageUrl(options.entryUrl, options.entryUrl)
+  const normalizedEntryUrl = normalizeFrameworkPageUrl(
+    options.entryUrl,
+    options.entryUrl,
+  )
   if (!normalizedEntryUrl) {
     throw new Error(`Unsupported entry URL: ${options.entryUrl}`)
   }
@@ -193,10 +197,17 @@ function resolveAssetExtension(url: string, contentType?: string) {
 
 function createAssetRelativePath(url: string, contentType?: string) {
   const urlObject = new URL(url)
-  const basename = path.basename(urlObject.pathname, path.extname(urlObject.pathname)) || 'asset'
-  const sanitizedBasename = basename.replace(ASSET_SAFE_NAME_RE, '-').replace(TRIM_DASH_RE, '') || 'asset'
+  const basename
+    = path.basename(urlObject.pathname, path.extname(urlObject.pathname))
+      || 'asset'
+  const sanitizedBasename
+    = basename.replace(ASSET_SAFE_NAME_RE, '-').replace(TRIM_DASH_RE, '')
+      || 'asset'
   const hash = createHash('sha1').update(url).digest('hex').slice(0, 12)
-  return path.join('_assets', `${sanitizedBasename}-${hash}${resolveAssetExtension(url, contentType)}`)
+  return path.join(
+    '_assets',
+    `${sanitizedBasename}-${hash}${resolveAssetExtension(url, contentType)}`,
+  )
 }
 
 async function mirrorAssets(params: {
@@ -269,7 +280,9 @@ async function extractPageRecord(params: {
   const { pageUrl, outputDir, downloadAssets } = params
   const html = await fetchHtml(pageUrl)
   const $ = cheerio.load(html)
-  const title = $('h1').first().text().replace(LEADING_HEADING_MARK_RE, '').trim() || $('title').text().trim()
+  const title
+    = $('h1').first().text().replace(LEADING_HEADING_MARK_RE, '').trim()
+      || $('title').text().trim()
   const internalLinks = collectCandidateLinks($, pageUrl)
   const imageUrls = collectImageUrls($, pageUrl)
   const assetPathMap = downloadAssets
@@ -287,7 +300,9 @@ async function extractPageRecord(params: {
     relativePath: toMirrorRelativePath(pageUrl),
     internalLinks,
     markdown,
-    assetRelativePaths: Array.from(assetPathMap.values()).sort((left, right) => left.localeCompare(right)),
+    assetRelativePaths: Array.from(assetPathMap.values()).sort((left, right) =>
+      left.localeCompare(right),
+    ),
   } satisfies PageRecord
 }
 
@@ -347,9 +362,12 @@ async function writeManifest(params: {
   const manifest: MirrorManifest = {
     fetchedAt,
     entryUrl,
-    outputDir,
+    outputDir: '.',
     pageCount: pages.length,
-    assetCount: pages.reduce((count, page) => count + page.assetRelativePaths.length, 0),
+    assetCount: pages.reduce(
+      (count, page) => count + page.assetRelativePaths.length,
+      0,
+    ),
     skippedUrls,
     pages: pages.map(page => ({
       title: page.title,
@@ -360,7 +378,10 @@ async function writeManifest(params: {
     })),
   }
 
-  await fs.writeFile(path.join(outputDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+  await fs.writeFile(
+    path.join(outputDir, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  )
   await fs.writeFile(
     path.join(outputDir, 'CATALOG.md'),
     createCatalogMarkdown({
@@ -410,7 +431,9 @@ export async function mirrorWechatFrameworkDocs(options: MirrorCliOptions) {
     }
   }
 
-  pages.sort((left, right) => left.relativePath.localeCompare(right.relativePath))
+  pages.sort((left, right) =>
+    left.relativePath.localeCompare(right.relativePath),
+  )
   await writePageFiles({
     outputDir: options.outputDir,
     pages,
@@ -419,7 +442,9 @@ export async function mirrorWechatFrameworkDocs(options: MirrorCliOptions) {
     outputDir: options.outputDir,
     entryUrl: options.entryUrl,
     pages,
-    skippedUrls: Array.from(skippedUrls).sort((left, right) => left.localeCompare(right)),
+    skippedUrls: Array.from(skippedUrls).sort((left, right) =>
+      left.localeCompare(right),
+    ),
   })
 
   return pages
@@ -428,10 +453,16 @@ export async function mirrorWechatFrameworkDocs(options: MirrorCliOptions) {
 async function main() {
   const options = parseCliArgs(process.argv.slice(2))
   const pages = await mirrorWechatFrameworkDocs(options)
-  console.log(`[wechat-docs-mirror] mirrored ${pages.length} pages into ${options.outputDir}`)
+  console.log(
+    `[wechat-docs-mirror] mirrored ${pages.length} pages into ${options.outputDir}`,
+  )
+  console.log(
+    `[wechat-docs-mirror] public mirror repository: ${DEFAULT_MIRROR_REPO_URL}`,
+  )
 }
 
-const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+const isMainModule
+  = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
 
 if (isMainModule) {
   main().catch((error) => {
