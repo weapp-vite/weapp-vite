@@ -126,6 +126,16 @@ function resolveRect(node: DomNodeLike): HeadlessWxSelectorQueryBoundingClientRe
   }
 }
 
+export function resolveSelectorScrollTop(root: DomNodeLike, selector?: string | null) {
+  const normalizedSelector = selector?.trim()
+  if (!normalizedSelector) {
+    return null
+  }
+
+  const match = querySelectorAll(root, normalizedSelector)[0]
+  return match ? resolveRect(match).top : null
+}
+
 function resolveScrollOffset(node: DomNodeLike): HeadlessWxSelectorQueryScrollOffsetResult {
   return {
     scrollLeft: parseNumericLikeValue(node.attribs?.['data-sim-scroll-left']),

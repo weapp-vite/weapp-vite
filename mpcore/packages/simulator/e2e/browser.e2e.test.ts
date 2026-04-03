@@ -125,6 +125,8 @@ describe.sequential('simulator browser e2e', () => {
     )
 
     bridge.runPageMethod('inspectCard')
+    bridge.runPageMethod('inspectCompoundCard')
+    bridge.runPageMethod('inspectCompoundSelector')
     bridge.runPageMethod('runFileManagerLab')
     bridge.runPageMethod('runMissingStatLab')
     bridge.runPageMethod('runMissingReadDirLab')
@@ -159,6 +161,8 @@ describe.sequential('simulator browser e2e', () => {
         const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
         return Boolean(
           pageData.componentSnapshot
+          && pageData.compoundComponentSnapshot
+          && pageData.compoundSelectorSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
           && pageData.fileTransferFailureInfo
@@ -198,6 +202,11 @@ describe.sequential('simulator browser e2e', () => {
 
     const pageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(pageData.componentSnapshot).toContain('"size":1')
+    expect(pageData.compoundComponentSnapshot).toContain('"count":3')
+    expect(pageData.compoundComponentSnapshot).toContain('"status":"stable"')
+    expect(pageData.compoundComponentSnapshot).toContain('"size":1')
+    expect(pageData.compoundSelectorSnapshot).toContain('"id":"status-card-pulse"')
+    expect(pageData.compoundSelectorSnapshot).toContain('"phase":"pulse"')
     expect(pageData.directorySnapshot).toBe('["daily"]')
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
     expect(pageData.fileTransferFailureInfo).toContain('"downloadNoMockError":"No downloadFile mock matched in headless runtime: https://mock.mpcore.dev/files/component-lab-unmatched-report.txt"')
@@ -330,6 +339,34 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.fileSnapshot['headless://saved/component-lab/removals/report.txt']).toBeUndefined()
     expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-download-no-mock.txt']).toBeUndefined()
     expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-renamed.txt']).toBe('rename-out')
+  })
+
+  it('supports selector-based pageScrollTo through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('commerce-shell')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'commerce-shell' && state.currentRoute === 'pages/home/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('pingSelectorScroll')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      (nextState) => {
+        const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
+        return pageData.scrollTop === 228 && Array.isArray(pageData.logs) && pageData.logs.includes('home:pageScrollTo:selector:complete')
+      },
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(pageData.scrollTop).toBe(228)
+    expect(pageData.logs).toContain('home:onPageScroll:{"scrollTop":228}')
+    expect(pageData.logs).toContain('home:pageScrollTo:selector:success')
+    expect(pageData.logs).toContain('home:pageScrollTo:selector:complete')
   })
 
   it('drives browser session host features through the demo workbench api', async () => {

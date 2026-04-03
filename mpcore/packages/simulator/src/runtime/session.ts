@@ -16,6 +16,7 @@ import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
+import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
@@ -57,7 +58,9 @@ interface HeadlessPullDownRefreshState {
 
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
+const WHITESPACE_RE = /\s+/
 const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
+const COMPOUND_SELECTOR_PART_RE = /#[\w-]+|\.[\w-]+|\[data-[^=\]]+="[^"]*"\]|[A-Za-z][\w-]*/g
 const DATASET_KEY_RE = /-([a-z])/g
 
 function stripLeadingSlash(route: string) {
@@ -85,6 +88,43 @@ function parseNavigationUrl(url: string) {
     pathname: pathname || '',
     query: normalizeQuery(queryString),
   }
+}
+
+function parseCompoundSelector(selector: string) {
+  const parts = selector.match(COMPOUND_SELECTOR_PART_RE) ?? []
+  return parts.join('') === selector ? parts : []
+}
+
+function matchesComponentSelector(
+  scope: { alias: string, classList?: string[], dataset?: Record<string, string>, id?: string },
+  selector: string,
+) {
+  const parts = parseCompoundSelector(selector)
+  if (parts.length === 0) {
+    return false
+  }
+
+  return parts.every((part) => {
+    if (part.startsWith('#')) {
+      return scope.id === part.slice(1)
+    }
+    if (part.startsWith('.')) {
+      return scope.classList?.includes(part.slice(1)) ?? false
+    }
+
+    const dataAttrMatch = part.match(DATA_ATTR_SELECTOR_RE)
+    if (dataAttrMatch) {
+      const [, key, value] = dataAttrMatch
+      const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
+      return scope.dataset?.[datasetKey] === value
+    }
+
+    return scope.alias === part
+  })
+}
+
+function normalizeSelectorParts(selector: string) {
+  return selector.trim().split(WHITESPACE_RE).filter(Boolean)
 }
 
 function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessWxLaunchOptions {
@@ -877,7 +917,9 @@ export class HeadlessSession {
     complete?: () => void
   }) {
     const current = this.requireCurrentPage('wx.pageScrollTo()')
-    current.__scrollTop__ = Number(option.scrollTop ?? 0)
+    const rendered = this.renderCurrentPage()
+    const selectorScrollTop = resolveSelectorScrollTop(rendered.root, option.selector)
+    current.__scrollTop__ = Number(selectorScrollTop ?? option.scrollTop ?? 0)
     current.onPageScroll?.({
       scrollTop: current.__scrollTop__,
     })
@@ -1040,8 +1082,8 @@ export class HeadlessSession {
   }
 
   private selectComponentsWithin(rootScopeId: string | null, selector: string) {
-    const normalizedSelector = selector.trim()
-    if (!normalizedSelector) {
+    const selectorParts = normalizeSelectorParts(selector)
+    if (selectorParts.length === 0) {
       return []
     }
 
@@ -1056,19 +1098,30 @@ export class HeadlessSession {
         if (rootScopeId && !candidateScopeId.startsWith(`${rootScopeId}/`)) {
           return false
         }
-        if (normalizedSelector.startsWith('#')) {
-          return scope.id === normalizedSelector.slice(1)
+
+        let partIndex = selectorParts.length - 1
+        let currentScope = scope
+        while (partIndex >= 0) {
+          if (!currentScope || !matchesComponentSelector(currentScope, selectorParts[partIndex]!)) {
+            currentScope = currentScope?.ownerScopeId
+              ? this.componentScopes.get(currentScope.ownerScopeId)
+              : undefined
+            if (!currentScope) {
+              return false
+            }
+            continue
+          }
+
+          partIndex -= 1
+          if (partIndex < 0) {
+            return true
+          }
+          currentScope = currentScope.ownerScopeId
+            ? this.componentScopes.get(currentScope.ownerScopeId)
+            : undefined
         }
-        if (normalizedSelector.startsWith('.')) {
-          return scope.classList?.includes(normalizedSelector.slice(1)) ?? false
-        }
-        const dataAttrMatch = normalizedSelector.match(DATA_ATTR_SELECTOR_RE)
-        if (dataAttrMatch) {
-          const [, key, value] = dataAttrMatch
-          const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
-          return scope.dataset?.[datasetKey] === value
-        }
-        return scope.alias === normalizedSelector
+
+        return true
       })
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
       .filter(Boolean)

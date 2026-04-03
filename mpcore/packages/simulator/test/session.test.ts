@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
-import { cleanupTempDirs, createBaseFixture, createComponentFixture, createComponentLifecycleFixture, createNavigationFixture, createSelectorQueryFixture } from './helpers'
+import { cleanupTempDirs, createBaseFixture, createComponentFixture, createComponentLifecycleFixture, createNavigationFixture, createNestedComponentFixture, createSelectorQueryFixture } from './helpers'
 
 function writeFixtureFile(target: string, content: string) {
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -2907,6 +2907,17 @@ Page({
       width: 120,
     })
 
+    page.runCompoundSelectorQuery()
+
+    expect(page.data.compoundSelectorResult).toEqual({
+      class: 'panel primary',
+      dataset: {
+        phase: 'ready',
+        role: 'hero',
+      },
+      id: 'card',
+    })
+
     page.runViewportQuery()
 
     expect(page.data.viewportResult).toEqual({
@@ -2928,6 +2939,11 @@ Page({
     expect(page.data.snapshot).toContain('"count":2')
     expect(page.data.snapshot).toContain('"hasPulse":true')
     expect(page.data.snapshot).toContain('"size":1')
+
+    const compoundCard = page.selectComponent?.('status-card.primary-card[data-role="main"]')
+    const compoundCards = page.selectAllComponents?.('status-card.primary-card[data-role="main"]')
+    expect(compoundCard?.properties?.count).toBe(2)
+    expect(compoundCards).toHaveLength(1)
 
     const card = page.selectComponent?.('#status-card')
     card?.pulse()
@@ -2991,5 +3007,20 @@ Page({
 
     pageA.openB()
     expect(rendered.wxml).toContain('resize:375')
+  })
+
+  it('supports descendant component selectors in headless runtime', () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+
+    const badge = page.selectComponent?.('status-card mini-badge')
+    const badges = page.selectAllComponents?.('status-card mini-badge')
+
+    expect(badge?.properties?.label).toBe('stable')
+    expect(badges).toHaveLength(1)
   })
 })

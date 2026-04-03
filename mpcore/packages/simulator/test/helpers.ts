@@ -374,6 +374,7 @@ Page({
     logs: [],
     menuButtonRect: '',
     callbacks: [],
+    selectorCallbacks: [],
     windowInfoAsync: '',
     windowInfoSync: '',
     systemInfoAsync: '',
@@ -396,6 +397,21 @@ Page({
       complete: () => {
         this.setData({
           callbacks: [...this.data.callbacks, 'complete'],
+        })
+      },
+    })
+  },
+  runScrollBySelector() {
+    wx.pageScrollTo({
+      selector: '#anchor-card',
+      success: () => {
+        this.setData({
+          selectorCallbacks: [...this.data.selectorCallbacks, 'success'],
+        })
+      },
+      complete: () => {
+        this.setData({
+          selectorCallbacks: [...this.data.selectorCallbacks, 'complete'],
         })
       },
     })
@@ -453,6 +469,10 @@ Page({
     })
   },
 })
+`)
+  writeText(path.join(root, 'dist/pages/events/index.wxml'), `
+<view>scroll: {{scrollTop}}</view>
+<view id="anchor-card" style="top: 236px; height: 40px;">anchor</view>
 `)
 
   return root
@@ -521,8 +541,23 @@ export function createSelectorQueryFixture() {
   writeScript(path.join(root, 'dist/pages/index/index.js'), `
 Page({
   data: {
+    compoundSelectorResult: null,
     selectorQueryResult: null,
     viewportResult: null,
+  },
+  runCompoundSelectorQuery() {
+    wx.createSelectorQuery()
+      .select('view.panel[data-role="hero"]')
+      .fields({
+        dataset: true,
+        id: true,
+        properties: ['class']
+      }, (result) => {
+        this.setData({
+          compoundSelectorResult: result
+        })
+      })
+      .exec()
   },
   runSelectorQuery() {
     wx.createSelectorQuery()
@@ -671,7 +706,7 @@ Page({
 })
 `)
   writeText(path.join(root, 'dist/pages/lab/index.wxml'), `
-<status-card id="status-card" count="{{count}}" bind:pulse="onPulse" />
+<status-card id="status-card" class="primary-card" data-role="main" count="{{count}}" bind:pulse="onPulse" />
 <view>{{snapshot}}</view>
 <view>{{eventSnapshot}}</view>
 <view>{{log.0}}</view>

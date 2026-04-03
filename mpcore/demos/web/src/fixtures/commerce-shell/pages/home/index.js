@@ -9,6 +9,7 @@ Page({
       { id: 'sku-3', name: 'Signal Clock', price: 89 },
     ],
     logs: [],
+    scrollTop: 0,
   },
   push(message) {
     this.setData({
@@ -44,7 +45,17 @@ Page({
       complete: () => this.push('home:pageScrollTo:complete'),
     })
   },
+  pingSelectorScroll() {
+    wx.pageScrollTo({
+      selector: '#catalog-anchor',
+      success: () => this.push('home:pageScrollTo:selector:success'),
+      complete: () => this.push('home:pageScrollTo:selector:complete'),
+    })
+  },
   onPageScroll(options) {
+    this.setData({
+      scrollTop: options?.scrollTop ?? 0,
+    })
     this.push('home:onPageScroll:' + JSON.stringify(options))
   },
   focusLaunchTone() {

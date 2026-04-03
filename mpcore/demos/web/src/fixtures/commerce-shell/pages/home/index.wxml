@@ -5,9 +5,11 @@
   <view class="panel-row" bindtap="openProfile">切到个人页 Tab</view>
   <view class="panel-row" bindtap="focusLaunchTone">切换首页氛围与价格</view>
   <view class="panel-row" bindtap="pingScroll">触发页面滚动</view>
+  <view class="panel-row" bindtap="pingSelectorScroll">按节点锚点滚动</view>
   <view class="panel-row" bindtap="relaunchProfile">reLaunch 到个人页</view>
   <view class="panel-row">Tone: {{activeTone}}</view>
   <view class="panel-row">Routes: home tab + profile tab + shop subpackage</view>
+  <view id="catalog-anchor" class="panel-row" style="top: 228px;">Catalog Anchor</view>
   <view class="panel-row">First SKU: {{feed.0.name}}</view>
   <view class="panel-row">Second Price: {{feed.1.price}}</view>
   <view class="panel-row">Last log: {{logs.0}}</view>

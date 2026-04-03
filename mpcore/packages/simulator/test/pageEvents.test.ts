@@ -25,6 +25,21 @@ describe('page event alignment', () => {
     expect(page.data.callbacks).toEqual(['success', 'complete'])
   })
 
+  it('supports wx.pageScrollTo selector targets in headless runtime', () => {
+    const projectPath = createPageEventsFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/events/index')
+    page.runScrollBySelector()
+
+    expect(page.data.scrollTop).toBe(236)
+    expect(page.data.logs).toEqual([
+      'onPageScroll:{"scrollTop":236}',
+    ])
+    expect(page.data.selectorCallbacks).toEqual(['success', 'complete'])
+  })
+
   it('can trigger pull-down, reach-bottom, resize and route-done hooks from the testing bridge', async () => {
     const projectPath = createPageEventsFixture()
     tempDirs.push(projectPath)

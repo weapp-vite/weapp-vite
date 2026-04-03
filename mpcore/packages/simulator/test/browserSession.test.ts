@@ -3455,6 +3455,53 @@ Component({
     expect(page.data.summary).toContain('"size":1')
   })
 
+  it('supports selecting component instances by compound selector', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    title: 'main',
+    summary: ''
+  },
+  inspect() {
+    const card = this.selectComponent('status-card.primary-card[data-role="primary"]')
+    const cards = this.selectAllComponents('status-card.primary-card[data-role="primary"]')
+    this.setData({
+      summary: JSON.stringify({
+        title: card?.properties?.title ?? '',
+        size: cards.length
+      })
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card class="primary-card" data-role="primary" title="{{title}}" /><view bindtap="inspect">inspect</view><view>{{summary}}</view>'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  properties: {
+    title: String
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{title}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    page.inspect()
+    expect(page.data.summary).toContain('"title":"main"')
+    expect(page.data.summary).toContain('"size":1')
+  })
+
   it('supports nested component selection and component created ready lifetimes', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
@@ -3540,6 +3587,54 @@ Component({
     rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('"label":"stable"')
     expect(rendered.wxml).toContain('"size":1')
+  })
+
+  it('supports descendant component selectors in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    summary: ''
+  },
+  inspectNestedSelector() {
+    const badge = this.selectComponent('status-card mini-badge')
+    const badges = this.selectAllComponents('status-card mini-badge')
+    this.setData({
+      summary: JSON.stringify({
+        label: badge?.properties?.label ?? '',
+        size: badges.length
+      })
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card id="status-card" status="stable" /><view>{{summary}}</view>'],
+      ['components/status-card/index.json', JSON.stringify({
+        usingComponents: {
+          'mini-badge': '../mini-badge/index',
+        },
+      })],
+      ['components/status-card/index.js', 'Component({ properties: { status: String } })'],
+      ['components/status-card/index.wxml', '<mini-badge id="mini-badge" label="{{status}}" />'],
+      ['components/mini-badge/index.json', '{}'],
+      ['components/mini-badge/index.js', 'Component({ properties: { label: String } })'],
+      ['components/mini-badge/index.wxml', '<view>{{label}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    page.inspectNestedSelector()
+
+    expect(page.data.summary).toContain('"label":"stable"')
+    expect(page.data.summary).toContain('"size":1')
   })
 
   it('passes triggerEvent options and event target shape back to the page', () => {
@@ -4006,8 +4101,23 @@ Component({
       ['pages/index/index.js', `
 Page({
   data: {
+    compoundSelectorResult: null,
     selectorQueryResult: null,
     viewportResult: null
+  },
+  runCompoundSelectorQuery() {
+    wx.createSelectorQuery()
+      .select('view#card.item[data-kind="browser"]')
+      .fields({
+        dataset: true,
+        id: true,
+        properties: ['class']
+      }, (result) => {
+        this.setData({
+          compoundSelectorResult: result
+        })
+      })
+      .exec()
   },
   runSelectorQuery() {
     wx.createSelectorQuery()
@@ -4039,7 +4149,7 @@ Page({
   }
 })
 `],
-      ['pages/index/index.wxml', '<view id="card" data-kind="browser" style="left: 8px; top: 10px; width: 200px; height: 40px;">Browser Card</view>'],
+      ['pages/index/index.wxml', '<view id="card" class="item hero" data-kind="browser" style="left: 8px; top: 10px; width: 200px; height: 40px;">Browser Card</view>'],
     ])
 
     const session = createBrowserHeadlessSession({ files })
@@ -4059,11 +4169,64 @@ Page({
       width: 200,
     })
 
+    page.runCompoundSelectorQuery()
+    expect(page.data.compoundSelectorResult).toEqual({
+      class: 'item hero',
+      dataset: {
+        kind: 'browser',
+      },
+      id: 'card',
+    })
+
     page.runViewportQuery()
     expect(page.data.viewportResult).toEqual({
       scrollLeft: 0,
       scrollTop: 88,
     })
+  })
+
+  it('supports wx.pageScrollTo selector targets in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    callbacks: [],
+    scrollTop: 0
+  },
+  runSelectorScroll() {
+    wx.pageScrollTo({
+      selector: '#anchor-card',
+      success: () => {
+        this.setData({
+          callbacks: [...this.data.callbacks, 'success']
+        })
+      },
+      complete: () => {
+        this.setData({
+          callbacks: [...this.data.callbacks, 'complete']
+        })
+      }
+    })
+  },
+  onPageScroll(options) {
+    this.setData({
+      scrollTop: options?.scrollTop ?? 0
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view id="anchor-card" style="top: 176px; height: 20px;">Anchor</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runSelectorScroll()
+
+    expect(page.data.scrollTop).toBe(176)
+    expect(page.data.callbacks).toEqual(['success', 'complete'])
   })
 
   it('supports createSelectorQuery.in(component) in browser runtime', () => {
