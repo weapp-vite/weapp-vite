@@ -1,5 +1,5 @@
 export * from './index'
-export { version } from 'vue'
+export { version } from './version'
 
 /**
  * 标记当前兼容层运行在 Vue 3 风格分支。

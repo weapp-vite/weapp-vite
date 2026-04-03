@@ -10,6 +10,7 @@ import {
   onReachBottom,
   onShareAppMessage,
   onShareTimeline,
+  version,
 } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
@@ -399,6 +400,12 @@ describe('runtime: app plugins and globalProperties', () => {
     app.use(objPlugin)
     expect(called).toBe(2)
     expect(() => app.use({} as any)).toThrow()
+  })
+
+  it('exposes app.version aligned with root version export', () => {
+    const app = createApp({ data: () => ({}) })
+
+    expect(app.version).toBe(version)
   })
 
   it('globalProperties fallback in proxy', () => {

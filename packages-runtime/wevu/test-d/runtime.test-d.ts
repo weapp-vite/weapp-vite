@@ -54,12 +54,13 @@ import {
   useNativeRouter,
   usePageScrollThrottle,
   useUpdatePerformanceListener,
-
+  version,
 } from '@/index'
 
 const TOKEN = Symbol('token')
 type RT = RuntimeApp<Record<string, any>, Record<string, any>, Record<string, (...args: any[]) => any>>
 const runtimeApp = {} as RT
+expectType<string>(version)
 expectType<RuntimeApp<any, any, any>>(defineAppSetup(app => app))
 type _WevuDefineComponent = DefineComponent
 type _WevuComponentOptionsMixin = ComponentOptionsMixin

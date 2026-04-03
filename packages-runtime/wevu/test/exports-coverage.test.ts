@@ -140,6 +140,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'useSlots',
   'useTemplateRef',
   'useUpdatePerformanceListener',
+  'version',
   'waitForLayoutHost',
   'watch',
   'watchEffect',
