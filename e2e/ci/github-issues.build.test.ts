@@ -608,8 +608,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
   it('issue #340: keeps cross-subpackage source imports runnable for item/login-required and user/register/form', async () => {
     await runBuild()
 
+    const appJsonPath = path.join(DIST_ROOT, 'app.json')
     const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
     const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
+    const invalidSharedPageWxmlPath = path.join(DIST_ROOT, 'subpackages/item/issue-340-shared.wxml')
     const rootCommonPath = path.join(DIST_ROOT, 'common.js')
     const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
     const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
@@ -621,10 +623,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
     const userRuntimePath = path.join(DIST_ROOT, 'subpackages/user/rolldown-runtime.js')
 
+    const appJson = JSON.parse(await fs.readFile(appJsonPath, 'utf-8'))
     const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
     const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
     const itemShared = await fs.readFile(itemSharedPath, 'utf-8')
     const userShared = await fs.readFile(userSharedPath, 'utf-8')
+    const itemSubPackage = (appJson.subPackages ?? appJson.subpackages ?? []).find((entry: any) => entry?.root === 'subpackages/item')
 
     expect(itemPageJs).toContain('item-login-required:issue-340:shared')
     expect(userPageJs).toContain('user-register-form:issue-340:shared')
@@ -646,6 +650,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(itemShared).not.toMatch(/vendors(?:\.\d+)?\.js/)
     expect(userShared).not.toMatch(/vendors(?:\.\d+)?\.js/)
 
+    expect(itemSubPackage?.pages).toEqual([
+      'index',
+      'login-required/index',
+    ])
+    expect(await fs.pathExists(invalidSharedPageWxmlPath)).toBe(false)
     expect(await fs.pathExists(rootCommonPath)).toBe(true)
     expect(await fs.pathExists(itemInvalidCommonPath)).toBe(false)
     expect(await fs.pathExists(userInvalidCommonPath)).toBe(false)

@@ -41,27 +41,61 @@ describe('auto routes scan helpers', () => {
 
   it('decides whether scan candidates should be included', () => {
     expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/pages/home/index.ts']),
       hasScript: false,
       hasTemplate: false,
       jsonPath: '/project/src/pages/home/index.json',
     }, undefined)).toBe(false)
 
     expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/pages/home/index.ts']),
       hasScript: true,
       hasTemplate: false,
       jsonPath: '/project/src/pages/home/index.json',
     }, { component: true })).toBe(false)
 
     expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/pages/home/index.ts']),
       hasScript: true,
       hasTemplate: false,
       jsonPath: '/project/src/pages/home/index.json',
     }, {})).toBe(true)
 
     expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/pages/home/index.ts']),
       hasScript: false,
       hasTemplate: false,
       jsonPath: undefined,
     }, undefined)).toBe(false)
+
+    expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/subpackages/item/issue-340-shared.ts']),
+      hasScript: true,
+      hasTemplate: false,
+      jsonPath: undefined,
+    }, undefined, {
+      root: 'subpackages/item',
+      pagePath: 'issue-340-shared',
+    })).toBe(false)
+
+    expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/subpackages/item/index.ts']),
+      hasScript: true,
+      hasTemplate: false,
+      jsonPath: undefined,
+    }, undefined, {
+      root: 'subpackages/item',
+      pagePath: 'index',
+    })).toBe(true)
+
+    expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/subpackages/user/register/form.vue']),
+      hasScript: true,
+      hasTemplate: false,
+      jsonPath: undefined,
+    }, undefined, {
+      root: 'subpackages/user',
+      pagePath: 'register/form',
+    })).toBe(true)
   })
 })
