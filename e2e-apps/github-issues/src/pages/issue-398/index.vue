@@ -12,8 +12,20 @@ const issue398Title = 'issue-398 hmr shared chunk'
 const issue398TapLabel = 'remove-me'
 const issue398Body = 'editing this page should not break layout component chunks'
 const issue398PageMarker = 'issue-398-page-initial'
+const issue398NavbarLabel = 'issue-398 navbar'
+const issue398FooterLabel = 'issue-398 footer'
 
 function noopTap() {}
+
+function _runE2E() {
+  return {
+    ok: true,
+    pageMarker: issue398PageMarker,
+    title: issue398Title,
+    navbarLabel: issue398NavbarLabel,
+    footerLabel: issue398FooterLabel,
+  }
+}
 </script>
 
 <template>

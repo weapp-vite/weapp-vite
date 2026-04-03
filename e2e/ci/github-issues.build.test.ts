@@ -127,6 +127,45 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(commonJs).not.toContain('syncRuntimePageLayoutStateFromRuntime')
   })
 
+  it('issue #398: emits layout and component importers that share the same wevu runtime chunk', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-398/index.js')
+    const layoutJsPath = path.join(DIST_ROOT, 'layouts/issue-398-shell.js')
+    const navbarJsPath = path.join(DIST_ROOT, 'components/issue-398/BaseNavbar/index.js')
+    const footerJsPath = path.join(DIST_ROOT, 'components/issue-398/BaseFooter/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-398/index.wxml')
+
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const layoutJs = await fs.readFile(layoutJsPath, 'utf-8')
+    const navbarJs = await fs.readFile(navbarJsPath, 'utf-8')
+    const footerJs = await fs.readFile(footerJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('<weapp-layout-issue-398-shell>')
+    expect(pageWxml).toContain('{{issue398Title}}')
+    expect(pageWxml).toContain('{{issue398PageMarker}}')
+    expect(pageWxml).toContain('{{issue398TapLabel}}')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('issue398NavbarLabel')
+    expect(pageJs).toContain('issue398FooterLabel')
+    expect(layoutJs).toContain('__weappViteUsingComponent')
+    expect(layoutJs).toContain('BaseNavbar')
+    expect(layoutJs).toContain('BaseFooter')
+    expect(navbarJs).toContain('issue-398 navbar')
+    expect(navbarJs).toContain('e.a(()=>{})')
+    expect(footerJs).toContain('issue-398 footer')
+    expect(footerJs).toContain('e.a(()=>{})')
+
+    const sharedImportPattern = /require\((['"`])(\.\.\/\.\.\/\.\.\/src-[^'"`]+\.js)\1\)/
+    const navbarSharedImport = navbarJs.match(sharedImportPattern)
+    const footerSharedImport = footerJs.match(sharedImportPattern)
+
+    expect(navbarSharedImport?.[2]).toBeTruthy()
+    expect(footerSharedImport?.[2]).toBeTruthy()
+    expect(navbarSharedImport?.[2]).toBe(footerSharedImport?.[2])
+  })
+
   it('issue #289: compiles split pages with per-page controls and safe class bindings', async () => {
     await runBuild()
 

@@ -86,6 +86,32 @@ async function waitForIssue385Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const wxml = await readPageWxml(page)
+      if (
+        wxml.includes('issue-398 navbar')
+        && wxml.includes('issue-398 footer')
+        && wxml.includes('issue-398-page-initial')
+      ) {
+        return wxml
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -283,6 +309,43 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       const runtimeResult = await waitForIssue385Runtime(issuePage)
       expect(runtimeResult?.layoutName).toBe('default')
       expect(runtimeResult?.componentAttachCount).toBe(1)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #398: keeps layout child components mounted through the shared wevu runtime path', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-398/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-398/index.js')
+    const navbarJsPath = path.join(DIST_ROOT, 'components/issue-398/BaseNavbar/index.js')
+    const footerJsPath = path.join(DIST_ROOT, 'components/issue-398/BaseFooter/index.js')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('{{issue398PageMarker}}')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
+    expect(await fs.readFile(navbarJsPath, 'utf-8')).toContain('issue-398 navbar')
+    expect(await fs.readFile(footerJsPath, 'utf-8')).toContain('issue-398 footer')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-398/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-398 page')
+      }
+
+      const renderedWxml = await waitForIssue398LayoutContent(issuePage)
+      expect(renderedWxml).toBeTruthy()
+      expect(renderedWxml).toContain('issue-398 hmr shared chunk')
+      expect(renderedWxml).toContain('issue-398 navbar')
+      expect(renderedWxml).toContain('issue-398 footer')
+      expect(renderedWxml).toContain('issue-398-page-initial')
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.pageMarker).toBe('issue-398-page-initial')
+      expect(runtimeResult?.title).toBe('issue-398 hmr shared chunk')
+      expect(runtimeResult?.navbarLabel).toBe('issue-398 navbar')
+      expect(runtimeResult?.footerLabel).toBe('issue-398 footer')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
