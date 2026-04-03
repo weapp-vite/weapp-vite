@@ -1,7 +1,6 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry } from '../../../types'
-import { posix as path } from 'pathe'
 import { createDebugger } from '../../../debugger'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
@@ -15,9 +14,6 @@ export { type JsonEmitFileEntry } from './jsonEmit'
 
 type HmrSharedChunksMode = 'full' | 'auto' | 'off'
 type DirtyEntryReason = 'direct' | 'dependency'
-
-const LEADING_RELATIVE_SEGMENTS_RE = /^[./]+/
-const TRAILING_SLASHES_RE = /\/+$/
 
 interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
@@ -181,19 +177,7 @@ function resolvePendingEntryIds(options: {
     return pending
   }
 
-  let hasDependencyDrivenEntry = false
-  for (const entryId of options.dirtyEntrySet) {
-    if (options.dirtyEntryReasons.get(entryId) === 'dependency') {
-      hasDependencyDrivenEntry = true
-      break
-    }
-  }
-
   if (!options.sharedChunkImporters?.size) {
-    return pending
-  }
-
-  if (!hasDependencyDrivenEntry && !hasCrossPackageDirectDirtyImporter(options)) {
     return pending
   }
 
@@ -202,16 +186,18 @@ function resolvePendingEntryIds(options: {
       continue
     }
     let hasDependencyDrivenImporter = false
+    let hasDirectDirtyImporter = false
     for (const importer of importers) {
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'dependency') {
         hasDependencyDrivenImporter = true
         break
       }
-    }
-    if (!hasDependencyDrivenImporter) {
-      if (!shouldExpandDirectUpdateAcrossPackageScopes(importers, options)) {
-        continue
+      if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
+        hasDirectDirtyImporter = true
       }
+    }
+    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
+      continue
     }
     for (const importer of importers) {
       pending.add(importer)
@@ -219,69 +205,4 @@ function resolvePendingEntryIds(options: {
   }
 
   return pending
-}
-
-function shouldExpandDirectUpdateAcrossPackageScopes(
-  importers: Set<string>,
-  options: {
-    dirtyEntrySet: Set<string>
-    dirtyEntryReasons: Map<string, DirtyEntryReason>
-    subPackageRoots?: Set<string>
-    relativeAbsoluteSrcRoot?: (id: string) => string
-  },
-) {
-  let hasDirectDirtyImporter = false
-  const scopes = new Set<string>()
-
-  for (const importer of importers) {
-    if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
-      hasDirectDirtyImporter = true
-    }
-    const scope = resolveEntryPackageScope(importer, options.subPackageRoots, options.relativeAbsoluteSrcRoot)
-    scopes.add(scope)
-    if (scopes.size > 1 && hasDirectDirtyImporter) {
-      return true
-    }
-  }
-
-  return false
-}
-
-function hasCrossPackageDirectDirtyImporter(options: {
-  dirtyEntrySet: Set<string>
-  dirtyEntryReasons: Map<string, DirtyEntryReason>
-  sharedChunkImporters?: Map<string, Set<string>>
-  subPackageRoots?: Set<string>
-  relativeAbsoluteSrcRoot?: (id: string) => string
-}) {
-  for (const importers of options.sharedChunkImporters?.values() ?? []) {
-    if (importers.size <= 1) {
-      continue
-    }
-    if (shouldExpandDirectUpdateAcrossPackageScopes(importers, options)) {
-      return true
-    }
-  }
-  return false
-}
-
-function resolveEntryPackageScope(
-  entryId: string,
-  subPackageRoots?: Set<string>,
-  relativeAbsoluteSrcRoot?: (id: string) => string,
-) {
-  const relativeId = relativeAbsoluteSrcRoot?.(entryId) ?? entryId
-  const normalized = relativeId.replace(LEADING_RELATIVE_SEGMENTS_RE, '')
-  for (const root of subPackageRoots ?? []) {
-    const normalizedRoot = path.normalize(root)
-      .replace(LEADING_RELATIVE_SEGMENTS_RE, '')
-      .replace(TRAILING_SLASHES_RE, '')
-    if (!normalizedRoot) {
-      continue
-    }
-    if (normalized === normalizedRoot || normalized.startsWith(`${normalizedRoot}/`)) {
-      return normalizedRoot
-    }
-  }
-  return ''
 }

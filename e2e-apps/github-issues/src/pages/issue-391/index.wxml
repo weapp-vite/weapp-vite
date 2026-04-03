@@ -1,0 +1,6 @@
+<view class="issue-391-page">
+  <text>{{title}}</text>
+  <text>{{marker}}</text>
+  <text>{{message}}</text>
+  <text>{{sentinel}}</text>
+</view>

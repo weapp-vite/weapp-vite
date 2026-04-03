@@ -183,6 +183,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-391/index",
+          "pathName": "pages/issue-391/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-391-peer/index",
+          "pathName": "pages/issue-391-peer/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/item/index",
           "pathName": "subpackages/item/index",
           "query": "",
