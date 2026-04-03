@@ -7,8 +7,14 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { replaceFileByRename } from '../utils/hmr-helpers'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'
 
-const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
-const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-import-vue-sfc')
+const CLI_PATH = path.resolve(
+  import.meta.dirname,
+  '../../packages/weapp-vite/src/cli.ts',
+)
+const APP_ROOT = path.resolve(
+  import.meta.dirname,
+  '../../e2e-apps/auto-import-vue-sfc',
+)
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const TYPED_COMPONENTS_DTS = path.join(DIST_ROOT, 'typed-components.d.ts')
 const VUE_COMPONENTS_DTS = path.join(DIST_ROOT, 'components.d.ts')
@@ -26,7 +32,7 @@ const PLATFORM_TEMPLATE_EXT: Record<RuntimePlatform, string> = {
   tt: 'ttml',
 }
 
-type RuntimePlatform = typeof SUPPORTED_PLATFORMS[number]
+type RuntimePlatform = (typeof SUPPORTED_PLATFORMS)[number]
 
 const SELECTED_PLATFORM = process.env.E2E_PLATFORM
 const SHOULD_SKIP_UNSUPPORTED_PLATFORM = Boolean(
@@ -44,7 +50,9 @@ function resolvePlatforms() {
 }
 
 const PLATFORM_LIST = resolvePlatforms()
-const describeAutoImportSuite = SHOULD_SKIP_UNSUPPORTED_PLATFORM ? describe.skip : describe.sequential
+const describeAutoImportSuite = SHOULD_SKIP_UNSUPPORTED_PLATFORM
+  ? describe.skip
+  : describe.sequential
 
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
@@ -58,18 +66,33 @@ function resolveComponentKey(platform: RuntimePlatform, name: string) {
   if (platform !== 'alipay') {
     return name
   }
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .toLowerCase()
+  return name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 }
 
 async function runBuild(root: string, platform: RuntimePlatform) {
-  await execa('node', ['--import', 'tsx', CLI_PATH, 'build', root, '--platform', platform, '--skipNpm'], {
-    stdio: 'inherit',
-  })
+  await execa(
+    'node',
+    [
+      '--import',
+      'tsx',
+      CLI_PATH,
+      'build',
+      root,
+      '--platform',
+      platform,
+      '--skipNpm',
+    ],
+    {
+      stdio: 'inherit',
+    },
+  )
 }
 
-async function waitForFileContains(filePath: string, markers: string[], timeoutMs = 90_000) {
+async function waitForFileContains(
+  filePath: string,
+  markers: string[],
+  timeoutMs = 90_000,
+) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(filePath)) {
@@ -80,10 +103,17 @@ async function waitForFileContains(filePath: string, markers: string[], timeoutM
     }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  throw new Error(`Timed out waiting for ${filePath} to contain expected markers.`)
+  throw new Error(
+    `Timed out waiting for ${filePath} to contain expected markers.`,
+  )
 }
 
-async function waitForUsingComponent(pageJsonPath: string, name: string, value: string, timeoutMs = 90_000) {
+async function waitForUsingComponent(
+  pageJsonPath: string,
+  name: string,
+  value: string,
+  timeoutMs = 90_000,
+) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(pageJsonPath)) {
@@ -94,10 +124,16 @@ async function waitForUsingComponent(pageJsonPath: string, name: string, value: 
     }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  throw new Error(`Timed out waiting for usingComponents.${name} in ${pageJsonPath}`)
+  throw new Error(
+    `Timed out waiting for usingComponents.${name} in ${pageJsonPath}`,
+  )
 }
 
-async function waitForMissingUsingComponent(pageJsonPath: string, name: string, timeoutMs = 90_000) {
+async function waitForMissingUsingComponent(
+  pageJsonPath: string,
+  name: string,
+  timeoutMs = 90_000,
+) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(pageJsonPath)) {
@@ -108,7 +144,9 @@ async function waitForMissingUsingComponent(pageJsonPath: string, name: string, 
     }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  throw new Error(`Timed out waiting for usingComponents.${name} to be removed in ${pageJsonPath}`)
+  throw new Error(
+    `Timed out waiting for usingComponents.${name} to be removed in ${pageJsonPath}`,
+  )
 }
 
 async function waitForTaskWithSourceHeartbeat<T>(
@@ -137,10 +175,21 @@ async function waitForTaskWithSourceHeartbeat<T>(
   return await task()
 }
 
-async function rewritePageSourceForWatch(pageSourcePath: string, targetSource: string) {
+function detectEol(source: string) {
+  return source.includes('\r\n') ? '\r\n' : '\n'
+}
+
+async function rewritePageSourceForWatch(
+  pageSourcePath: string,
+  targetSource: string,
+) {
   const eol = detectEol(targetSource)
   const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
-  await fs.writeFile(pageSourcePath, `${targetSource}${eol}${marker}${eol}`, 'utf8')
+  await fs.writeFile(
+    pageSourcePath,
+    `${targetSource}${eol}${marker}${eol}`,
+    'utf8',
+  )
   await new Promise(resolve => setTimeout(resolve, 120))
   await fs.writeFile(pageSourcePath, targetSource, 'utf8')
 }
@@ -154,10 +203,6 @@ function createHotCardSfc() {
 `
 }
 
-function detectEol(source: string) {
-  return source.includes('\r\n') ? '\r\n' : '\n'
-}
-
 function toCrlf(source: string) {
   return source.replace(/\r?\n/g, '\r\n')
 }
@@ -167,73 +212,113 @@ function removeStandaloneTagLine(source: string, tagName: string) {
   return source.replace(tagPattern, '')
 }
 
-function insertStandaloneTagAfter(source: string, anchorTagName: string, tagName: string) {
+function insertStandaloneTagAfter(
+  source: string,
+  anchorTagName: string,
+  tagName: string,
+) {
   const eol = detectEol(source)
-  const anchorPattern = new RegExp(`^([ \\t]*)<${anchorTagName}\\s*\\/>\\r?$`, 'm')
-  return source.replace(anchorPattern, (_line, indent: string) => `${indent}<${anchorTagName} />${eol}${indent}<${tagName} />`)
+  const anchorPattern = new RegExp(
+    `^([ \\t]*)<${anchorTagName}\\s*\\/>\\r?$`,
+    'm',
+  )
+  return source.replace(
+    anchorPattern,
+    (_line, indent: string) =>
+      `${indent}<${anchorTagName} />${eol}${indent}<${tagName} />`,
+  )
+}
+
+function expectTargetedHmrEmit(output: string) {
+  const match = output.match(
+    /hmr emit dirty=(\d+) resolved=(\d+) emitAll=false pending=(\d+)/,
+  )
+  expect(match).not.toBeNull()
+  const [, dirtyCount, resolvedCount, pendingCount] = match!
+  expect(Number(dirtyCount)).toBeGreaterThan(0)
+  expect(Number(pendingCount)).toBeGreaterThan(0)
+  expect(Number(pendingCount)).toBeLessThan(Number(resolvedCount))
 }
 
 describeAutoImportSuite('auto import local components (e2e)', () => {
-  it.each(PLATFORM_LIST)('covers local/resolver auto-import for %s build output', async (platform) => {
-    await fs.remove(DIST_ROOT)
-    await fs.remove(TYPED_COMPONENTS_DTS)
-    await fs.remove(VUE_COMPONENTS_DTS)
+  it.each(PLATFORM_LIST)(
+    'covers local/resolver auto-import for %s build output',
+    async (platform) => {
+      await fs.remove(DIST_ROOT)
+      await fs.remove(TYPED_COMPONENTS_DTS)
+      await fs.remove(VUE_COMPONENTS_DTS)
 
-    await runBuild(APP_ROOT, platform)
+      await runBuild(APP_ROOT, platform)
 
-    const vuePageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-    const nativePageJsonPath = path.join(DIST_ROOT, 'pages/native/index.json')
+      const vuePageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
+      const nativePageJsonPath = path.join(
+        DIST_ROOT,
+        'pages/native/index.json',
+      )
 
-    const sfcComponentJsonPath = path.join(DIST_ROOT, 'components/AutoCard/index.json')
-    const sfcComponentTemplatePath = path.join(DIST_ROOT, `components/AutoCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
-    const nativeComponentJsonPath = path.join(DIST_ROOT, 'components/NativeCard/index.json')
-    const nativeComponentTemplatePath = path.join(DIST_ROOT, `components/NativeCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
+      const sfcComponentJsonPath = path.join(
+        DIST_ROOT,
+        'components/AutoCard/index.json',
+      )
+      const sfcComponentTemplatePath = path.join(
+        DIST_ROOT,
+        `components/AutoCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`,
+      )
+      const nativeComponentJsonPath = path.join(
+        DIST_ROOT,
+        'components/NativeCard/index.json',
+      )
+      const nativeComponentTemplatePath = path.join(
+        DIST_ROOT,
+        `components/NativeCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`,
+      )
 
-    expect(await fs.pathExists(vuePageJsonPath)).toBe(true)
-    expect(await fs.pathExists(nativePageJsonPath)).toBe(true)
-    expect(await fs.pathExists(sfcComponentJsonPath)).toBe(true)
-    expect(await fs.pathExists(sfcComponentTemplatePath)).toBe(true)
-    expect(await fs.pathExists(nativeComponentJsonPath)).toBe(true)
-    expect(await fs.pathExists(nativeComponentTemplatePath)).toBe(true)
+      expect(await fs.pathExists(vuePageJsonPath)).toBe(true)
+      expect(await fs.pathExists(nativePageJsonPath)).toBe(true)
+      expect(await fs.pathExists(sfcComponentJsonPath)).toBe(true)
+      expect(await fs.pathExists(sfcComponentTemplatePath)).toBe(true)
+      expect(await fs.pathExists(nativeComponentJsonPath)).toBe(true)
+      expect(await fs.pathExists(nativeComponentTemplatePath)).toBe(true)
 
-    const autoCardKey = resolveComponentKey(platform, 'AutoCard')
-    const nativeCardKey = resolveComponentKey(platform, 'NativeCard')
-    const resolverCardKey = resolveComponentKey(platform, 'ResolverCard')
+      const autoCardKey = resolveComponentKey(platform, 'AutoCard')
+      const nativeCardKey = resolveComponentKey(platform, 'NativeCard')
+      const resolverCardKey = resolveComponentKey(platform, 'ResolverCard')
 
-    const vuePageJson = await fs.readJson(vuePageJsonPath)
-    expect(vuePageJson.usingComponents).toMatchObject({
-      [autoCardKey]: '/components/AutoCard/index',
-      [nativeCardKey]: '/components/NativeCard/index',
-      [resolverCardKey]: '/components/NativeCard/index',
-    })
-
-    const nativePageJson = await fs.readJson(nativePageJsonPath)
-    if (platform !== 'alipay') {
-      expect(nativePageJson.usingComponents).toMatchObject({
+      const vuePageJson = await fs.readJson(vuePageJsonPath)
+      expect(vuePageJson.usingComponents).toMatchObject({
+        [autoCardKey]: '/components/AutoCard/index',
         [nativeCardKey]: '/components/NativeCard/index',
         [resolverCardKey]: '/components/NativeCard/index',
       })
-    }
-    else {
-      expect(nativePageJson.usingComponents ?? {}).toEqual({})
-    }
 
-    const sfcComponentJson = await fs.readJson(sfcComponentJsonPath)
-    expect(sfcComponentJson).toMatchObject({
-      component: true,
-    })
-    expect(sfcComponentJson.options).toMatchObject({
-      virtualHost: true,
-      multipleSlots: true,
-    })
-    expect(sfcComponentJson.styleIsolation).toBe('apply-shared')
+      const nativePageJson = await fs.readJson(nativePageJsonPath)
+      if (platform !== 'alipay') {
+        expect(nativePageJson.usingComponents).toMatchObject({
+          [nativeCardKey]: '/components/NativeCard/index',
+          [resolverCardKey]: '/components/NativeCard/index',
+        })
+      }
+      else {
+        expect(nativePageJson.usingComponents ?? {}).toEqual({})
+      }
 
-    const nativeComponentJson = await fs.readJson(nativeComponentJsonPath)
-    expect(nativeComponentJson).toMatchObject({
-      component: true,
-      styleIsolation: 'apply-shared',
-    })
-  })
+      const sfcComponentJson = await fs.readJson(sfcComponentJsonPath)
+      expect(sfcComponentJson).toMatchObject({
+        component: true,
+      })
+      expect(sfcComponentJson.options).toMatchObject({
+        virtualHost: true,
+        multipleSlots: true,
+      })
+      expect(sfcComponentJson.styleIsolation).toBe('apply-shared')
+
+      const nativeComponentJson = await fs.readJson(nativeComponentJsonPath)
+      expect(nativeComponentJson).toMatchObject({
+        component: true,
+        styleIsolation: 'apply-shared',
+      })
+    },
+  )
 
   it('emits dts for editor intellisense', async () => {
     await fs.remove(DIST_ROOT)
@@ -270,8 +355,12 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
     const vueDts = await fs.readFile(VUE_COMPONENTS_DTS, 'utf8')
     expect(vueDts).toContain('declare module \'vue\'')
     expect(vueDts).toContain('GlobalComponents')
-    expect(vueDts).toMatch(/AutoCard: typeof import\("\.\.?\/src\/components\/AutoCard\/index\.vue"\)\['default'\];/)
-    expect(vueDts).toMatch(/NativeCard: __WeappComponentImport<typeof import\("\.\.?\/src\/components\/NativeCard\/index"\), WeappComponent<ComponentProp<"NativeCard">>>;/)
+    expect(vueDts).toMatch(
+      /AutoCard: typeof import\("\.\.?\/src\/components\/AutoCard\/index\.vue"\)\['default'\];/,
+    )
+    expect(vueDts).toMatch(
+      /NativeCard: __WeappComponentImport<typeof import\("\.\.?\/src\/components\/NativeCard\/index"\), WeappComponent<ComponentProp<"NativeCard">>>;/,
+    )
     expect(vueDts).toContain('AutoCard:')
     expect(vueDts).toContain('NativeCard:')
     expect(vueDts).toContain('ResolverCard:')
@@ -280,214 +369,378 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
     expect(vueDts).toContain('ComponentProp<"ResolverCard">')
   })
 
-  it.each(PLATFORM_LIST)('updates usingComponents when SFC usage changes in dev (%s)', async (platform) => {
-    await fs.remove(DIST_ROOT)
-    await fs.remove(TYPED_COMPONENTS_DTS)
-    await fs.remove(VUE_COMPONENTS_DTS)
+  it.each(PLATFORM_LIST)(
+    'updates usingComponents when SFC usage changes in dev (%s)',
+    async (platform) => {
+      await fs.remove(DIST_ROOT)
+      await fs.remove(TYPED_COMPONENTS_DTS)
+      await fs.remove(VUE_COMPONENTS_DTS)
 
-    const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
-    const pageSourceWithoutAutoCard = removeStandaloneTagLine(originalPageSource, 'AutoCard')
-    const pageSourceWithAutoCard = /<AutoCard\s*\/>/.test(pageSourceWithoutAutoCard)
-      ? pageSourceWithoutAutoCard
-      : insertStandaloneTagAfter(pageSourceWithoutAutoCard, 'ResolverCard', 'AutoCard')
+      const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
+      const pageSourceWithoutAutoCard = removeStandaloneTagLine(
+        originalPageSource,
+        'AutoCard',
+      )
+      const pageSourceWithAutoCard = /<AutoCard\s*\/>/.test(
+        pageSourceWithoutAutoCard,
+      )
+        ? pageSourceWithoutAutoCard
+        : insertStandaloneTagAfter(
+            pageSourceWithoutAutoCard,
+            'ResolverCard',
+            'AutoCard',
+          )
 
-    if (pageSourceWithoutAutoCard === originalPageSource || pageSourceWithAutoCard === pageSourceWithoutAutoCard) {
-      throw new Error('Failed to create page source variants for AutoCard toggling.')
-    }
+      if (
+        pageSourceWithoutAutoCard === originalPageSource
+        || pageSourceWithAutoCard === pageSourceWithoutAutoCard
+      ) {
+        throw new Error(
+          'Failed to create page source variants for AutoCard toggling.',
+        )
+      }
 
-    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: {
-        ...createDevProcessEnv(),
-        DEBUG: 'weapp-vite:load-entry',
-      },
-      all: true,
-    })
-
-    try {
-      const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-      const autoCardKey = resolveComponentKey(platform, 'AutoCard')
-      await devProcess.waitFor(waitForFileContains(pageJsonPath, ['"usingComponents"']), `${platform} initial usingComponents`)
-      await devProcess.waitFor(
-        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
-        `${platform} autoCard initial registration`,
+      const devProcess = startDevProcess(
+        'node',
+        [
+          '--import',
+          'tsx',
+          CLI_PATH,
+          'dev',
+          APP_ROOT,
+          '--platform',
+          platform,
+          '--skipNpm',
+        ],
+        {
+          env: {
+            ...createDevProcessEnv(),
+            DEBUG: 'weapp-vite:load-entry',
+          },
+          all: true,
+        },
       )
 
-      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
       try {
+        const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
+        const autoCardKey = resolveComponentKey(platform, 'AutoCard')
         await devProcess.waitFor(
-          waitForMissingUsingComponent(pageJsonPath, autoCardKey),
-          `${platform} autoCard removal`,
+          waitForFileContains(pageJsonPath, ['"usingComponents"']),
+          `${platform} initial usingComponents`,
+        )
+        await devProcess.waitFor(
+          waitForUsingComponent(
+            pageJsonPath,
+            autoCardKey,
+            '/components/AutoCard/index',
+          ),
+          `${platform} autoCard initial registration`,
+        )
+
+        await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
+        try {
+          await devProcess.waitFor(
+            waitForMissingUsingComponent(pageJsonPath, autoCardKey),
+            `${platform} autoCard removal`,
+          )
+        }
+        catch {
+          await rewritePageSourceForWatch(
+            PAGE_SOURCE_PATH,
+            pageSourceWithoutAutoCard,
+          )
+          await devProcess.waitFor(
+            waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
+            `${platform} autoCard removal retry`,
+          )
+        }
+        const removalOutput = await devProcess.waitForOutput(
+          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
+          `${platform} autoCard removal targeted hmr log`,
+        )
+        expectTargetedHmrEmit(removalOutput)
+
+        await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
+        try {
+          await devProcess.waitFor(
+            waitForUsingComponent(
+              pageJsonPath,
+              autoCardKey,
+              '/components/AutoCard/index',
+            ),
+            `${platform} autoCard re-registration`,
+          )
+        }
+        catch {
+          await rewritePageSourceForWatch(
+            PAGE_SOURCE_PATH,
+            pageSourceWithAutoCard,
+          )
+          await devProcess.waitFor(
+            waitForUsingComponent(
+              pageJsonPath,
+              autoCardKey,
+              '/components/AutoCard/index',
+              30_000,
+            ),
+            `${platform} autoCard re-registration retry`,
+          )
+        }
+
+        const autoCardTemplatePath = path.join(
+          DIST_ROOT,
+          `components/AutoCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`,
+        )
+        expect(await fs.pathExists(autoCardTemplatePath)).toBe(true)
+        const restoreOutput = await devProcess.waitForOutput(
+          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
+          `${platform} autoCard restore targeted hmr log`,
+        )
+        expectTargetedHmrEmit(restoreOutput)
+      }
+      finally {
+        await devProcess.stop(3_000)
+
+        await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
+      }
+    },
+  )
+
+  it.each(PLATFORM_LIST)(
+    'updates usingComponents when page source is CRLF in dev (%s)',
+    async (platform) => {
+      await fs.remove(DIST_ROOT)
+      await fs.remove(TYPED_COMPONENTS_DTS)
+      await fs.remove(VUE_COMPONENTS_DTS)
+
+      const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
+      const pageSourceCrlf = toCrlf(originalPageSource)
+      const pageSourceWithoutAutoCard = removeStandaloneTagLine(
+        pageSourceCrlf,
+        'AutoCard',
+      )
+      const pageSourceWithAutoCard = /<AutoCard\s*\/>/.test(
+        pageSourceWithoutAutoCard,
+      )
+        ? pageSourceWithoutAutoCard
+        : insertStandaloneTagAfter(
+            pageSourceWithoutAutoCard,
+            'ResolverCard',
+            'AutoCard',
+          )
+
+      if (
+        pageSourceWithoutAutoCard === pageSourceCrlf
+        || pageSourceWithAutoCard === pageSourceWithoutAutoCard
+      ) {
+        throw new Error(
+          'Failed to create CRLF page source variants for AutoCard toggling.',
         )
       }
-      catch {
-        await rewritePageSourceForWatch(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard)
-        await devProcess.waitFor(
-          waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
-          `${platform} autoCard removal retry`,
-        )
-      }
-      const removalOutput = await devProcess.waitForOutput(
-        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
-        `${platform} autoCard removal incremental hmr log`,
-      )
-      expect(removalOutput).toMatch(/emitAll=false pending=1/)
 
-      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
-      await devProcess.waitFor(
-        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
-        `${platform} autoCard re-registration`,
-      )
+      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceCrlf, 'utf8')
 
-      const autoCardTemplatePath = path.join(DIST_ROOT, `components/AutoCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
-      expect(await fs.pathExists(autoCardTemplatePath)).toBe(true)
-      const restoreOutput = await devProcess.waitForOutput(
-        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
-        `${platform} autoCard restore incremental hmr log`,
-      )
-      expect(restoreOutput).toMatch(/emitAll=false pending=1/)
-    }
-    finally {
-      await devProcess.stop(3_000)
-
-      await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
-    }
-  })
-
-  it.each(PLATFORM_LIST)('updates usingComponents when page source is CRLF in dev (%s)', async (platform) => {
-    await fs.remove(DIST_ROOT)
-    await fs.remove(TYPED_COMPONENTS_DTS)
-    await fs.remove(VUE_COMPONENTS_DTS)
-
-    const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
-    const pageSourceCrlf = toCrlf(originalPageSource)
-    const pageSourceWithoutAutoCard = removeStandaloneTagLine(pageSourceCrlf, 'AutoCard')
-    const pageSourceWithAutoCard = /<AutoCard\s*\/>/.test(pageSourceWithoutAutoCard)
-      ? pageSourceWithoutAutoCard
-      : insertStandaloneTagAfter(pageSourceWithoutAutoCard, 'ResolverCard', 'AutoCard')
-
-    if (pageSourceWithoutAutoCard === pageSourceCrlf || pageSourceWithAutoCard === pageSourceWithoutAutoCard) {
-      throw new Error('Failed to create CRLF page source variants for AutoCard toggling.')
-    }
-
-    await fs.writeFile(PAGE_SOURCE_PATH, pageSourceCrlf, 'utf8')
-
-    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: {
-        ...createDevProcessEnv(),
-        DEBUG: 'weapp-vite:load-entry',
-      },
-      all: true,
-    })
-
-    try {
-      const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-      const autoCardKey = resolveComponentKey(platform, 'AutoCard')
-      await devProcess.waitFor(waitForFileContains(pageJsonPath, ['"usingComponents"']), `${platform} crlf initial usingComponents`)
-      await devProcess.waitFor(
-        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
-        `${platform} crlf autoCard initial registration`,
+      const devProcess = startDevProcess(
+        'node',
+        [
+          '--import',
+          'tsx',
+          CLI_PATH,
+          'dev',
+          APP_ROOT,
+          '--platform',
+          platform,
+          '--skipNpm',
+        ],
+        {
+          env: {
+            ...createDevProcessEnv(),
+            DEBUG: 'weapp-vite:load-entry',
+          },
+          all: true,
+        },
       )
 
-      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
       try {
+        const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
+        const autoCardKey = resolveComponentKey(platform, 'AutoCard')
         await devProcess.waitFor(
-          waitForMissingUsingComponent(pageJsonPath, autoCardKey),
-          `${platform} crlf autoCard removal`,
+          waitForFileContains(pageJsonPath, ['"usingComponents"']),
+          `${platform} crlf initial usingComponents`,
         )
-      }
-      catch {
-        await rewritePageSourceForWatch(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard)
         await devProcess.waitFor(
-          waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
-          `${platform} crlf autoCard removal retry`,
+          waitForUsingComponent(
+            pageJsonPath,
+            autoCardKey,
+            '/components/AutoCard/index',
+          ),
+          `${platform} crlf autoCard initial registration`,
         )
+
+        await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
+        try {
+          await devProcess.waitFor(
+            waitForMissingUsingComponent(pageJsonPath, autoCardKey),
+            `${platform} crlf autoCard removal`,
+          )
+        }
+        catch {
+          await rewritePageSourceForWatch(
+            PAGE_SOURCE_PATH,
+            pageSourceWithoutAutoCard,
+          )
+          await devProcess.waitFor(
+            waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
+            `${platform} crlf autoCard removal retry`,
+          )
+        }
+        const removalOutput = await devProcess.waitForOutput(
+          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
+          `${platform} crlf autoCard removal targeted hmr log`,
+        )
+        expectTargetedHmrEmit(removalOutput)
+
+        await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
+        try {
+          await devProcess.waitFor(
+            waitForUsingComponent(
+              pageJsonPath,
+              autoCardKey,
+              '/components/AutoCard/index',
+            ),
+            `${platform} crlf autoCard re-registration`,
+          )
+        }
+        catch {
+          await rewritePageSourceForWatch(
+            PAGE_SOURCE_PATH,
+            pageSourceWithAutoCard,
+          )
+          await devProcess.waitFor(
+            waitForUsingComponent(
+              pageJsonPath,
+              autoCardKey,
+              '/components/AutoCard/index',
+              30_000,
+            ),
+            `${platform} crlf autoCard re-registration retry`,
+          )
+        }
+        const restoreOutput = await devProcess.waitForOutput(
+          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
+          `${platform} crlf autoCard restore targeted hmr log`,
+        )
+        expectTargetedHmrEmit(restoreOutput)
       }
-      const removalOutput = await devProcess.waitForOutput(
-        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
-        `${platform} crlf autoCard removal incremental hmr log`,
-      )
-      expect(removalOutput).toMatch(/emitAll=false pending=1/)
+      finally {
+        await devProcess.stop(3_000)
+        await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
+      }
+    },
+  )
 
-      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
-      await devProcess.waitFor(
-        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
-        `${platform} crlf autoCard re-registration`,
-      )
-      const restoreOutput = await devProcess.waitForOutput(
-        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
-        `${platform} crlf autoCard restore incremental hmr log`,
-      )
-      expect(restoreOutput).toMatch(/emitAll=false pending=1/)
-    }
-    finally {
-      await devProcess.stop(3_000)
-      await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
-    }
-  })
-
-  it.each(PLATFORM_LIST)('auto imports newly created SFC in dev (%s)', async (platform) => {
-    await fs.remove(DIST_ROOT)
-    await fs.remove(TYPED_COMPONENTS_DTS)
-    await fs.remove(VUE_COMPONENTS_DTS)
-    await fs.remove(HOT_COMPONENT_DIR)
-
-    const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
-    const pageSourceWithHotCard = /<HotCard\s*\/>/.test(originalPageSource)
-      ? originalPageSource
-      : insertStandaloneTagAfter(originalPageSource, 'ResolverCard', 'HotCard')
-
-    if (pageSourceWithHotCard === originalPageSource) {
-      throw new Error('Failed to inject <HotCard /> into page source.')
-    }
-
-    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: createDevProcessEnv(),
-      stdio: 'inherit',
-    })
-
-    try {
-      const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-      const hotCardKey = resolveComponentKey(platform, 'HotCard')
-      await devProcess.waitFor(waitForFileContains(pageJsonPath, ['"usingComponents"']), `${platform} initial usingComponents`)
-      await devProcess.waitFor(waitForMissingUsingComponent(pageJsonPath, hotCardKey), `${platform} hotCard absence`)
-
-      const hotCardSource = createHotCardSfc()
-      await fs.ensureDir(HOT_COMPONENT_DIR)
-      await replaceFileByRename(HOT_COMPONENT_SOURCE_PATH, hotCardSource)
-      await replaceFileByRename(PAGE_SOURCE_PATH, pageSourceWithHotCard)
-
-      await devProcess.waitFor(
-        waitForTaskWithSourceHeartbeat(
-          () => waitForUsingComponent(pageJsonPath, hotCardKey, '/components/HotCard/index', 1_000),
-          PAGE_SOURCE_PATH,
-          pageSourceWithHotCard,
-        ),
-        `${platform} hotCard registration`,
-      )
-
-      const hotCardJsonPath = path.join(DIST_ROOT, 'components/HotCard/index.json')
-      const hotCardTemplatePath = path.join(DIST_ROOT, `components/HotCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
-
-      await devProcess.waitFor(
-        waitForTaskWithSourceHeartbeat(
-          () => waitForFileContains(hotCardTemplatePath, ['hot-card-e2e'], 1_000),
-          HOT_COMPONENT_SOURCE_PATH,
-          hotCardSource,
-        ),
-        `${platform} hotCard template output`,
-      )
-      const hotCardTemplate = await devProcess.waitFor(
-        waitForFileContains(hotCardTemplatePath, ['hot-card-e2e']),
-        `${platform} hotCard template output verification`,
-      )
-      expect(await fs.pathExists(hotCardJsonPath)).toBe(true)
-      expect(hotCardTemplate).toContain('hot-card-e2e')
-    }
-    finally {
-      await devProcess.stop(3_000)
-
-      await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
+  it.each(PLATFORM_LIST)(
+    'auto imports newly created SFC in dev (%s)',
+    async (platform) => {
+      await fs.remove(DIST_ROOT)
+      await fs.remove(TYPED_COMPONENTS_DTS)
+      await fs.remove(VUE_COMPONENTS_DTS)
       await fs.remove(HOT_COMPONENT_DIR)
-    }
-  })
+
+      const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
+      const pageSourceWithHotCard = /<HotCard\s*\/>/.test(originalPageSource)
+        ? originalPageSource
+        : insertStandaloneTagAfter(
+            originalPageSource,
+            'ResolverCard',
+            'HotCard',
+          )
+
+      if (pageSourceWithHotCard === originalPageSource) {
+        throw new Error('Failed to inject <HotCard /> into page source.')
+      }
+
+      const devProcess = startDevProcess(
+        'node',
+        [
+          '--import',
+          'tsx',
+          CLI_PATH,
+          'dev',
+          APP_ROOT,
+          '--platform',
+          platform,
+          '--skipNpm',
+        ],
+        {
+          env: createDevProcessEnv(),
+          stdio: 'inherit',
+        },
+      )
+
+      try {
+        const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
+        const hotCardKey = resolveComponentKey(platform, 'HotCard')
+        await devProcess.waitFor(
+          waitForFileContains(pageJsonPath, ['"usingComponents"']),
+          `${platform} initial usingComponents`,
+        )
+        await devProcess.waitFor(
+          waitForMissingUsingComponent(pageJsonPath, hotCardKey),
+          `${platform} hotCard absence`,
+        )
+
+        const hotCardSource = createHotCardSfc()
+        await fs.ensureDir(HOT_COMPONENT_DIR)
+        await replaceFileByRename(HOT_COMPONENT_SOURCE_PATH, hotCardSource)
+        await replaceFileByRename(PAGE_SOURCE_PATH, pageSourceWithHotCard)
+
+        await devProcess.waitFor(
+          waitForTaskWithSourceHeartbeat(
+            () =>
+              waitForUsingComponent(
+                pageJsonPath,
+                hotCardKey,
+                '/components/HotCard/index',
+                1_000,
+              ),
+            PAGE_SOURCE_PATH,
+            pageSourceWithHotCard,
+          ),
+          `${platform} hotCard registration`,
+        )
+
+        const hotCardJsonPath = path.join(
+          DIST_ROOT,
+          'components/HotCard/index.json',
+        )
+        const hotCardTemplatePath = path.join(
+          DIST_ROOT,
+          `components/HotCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`,
+        )
+
+        await devProcess.waitFor(
+          waitForTaskWithSourceHeartbeat(
+            () =>
+              waitForFileContains(hotCardTemplatePath, ['hot-card-e2e'], 1_000),
+            HOT_COMPONENT_SOURCE_PATH,
+            hotCardSource,
+          ),
+          `${platform} hotCard template output`,
+        )
+        const hotCardTemplate = await devProcess.waitFor(
+          waitForFileContains(hotCardTemplatePath, ['hot-card-e2e']),
+          `${platform} hotCard template output verification`,
+        )
+        expect(await fs.pathExists(hotCardJsonPath)).toBe(true)
+        expect(hotCardTemplate).toContain('hot-card-e2e')
+      }
+      finally {
+        await devProcess.stop(3_000)
+
+        await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
+        await fs.remove(HOT_COMPONENT_DIR)
+      }
+    },
+  )
 })

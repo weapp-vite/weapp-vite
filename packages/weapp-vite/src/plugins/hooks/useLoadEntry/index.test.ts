@@ -191,7 +191,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(4)
   })
 
-  it('keeps direct entry updates incremental even when they import shared chunks', async () => {
+  it('expands direct entry updates across shared chunk importers to preserve common chunk extraction', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const hook = useLoadEntry(ctx, {
@@ -209,7 +209,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
   })
 
   it('expands direct updates when a shared chunk spans main package and subpackage entries', async () => {
