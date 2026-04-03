@@ -52,6 +52,11 @@ jobs:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
     steps:
+      - name: Enable Git long paths on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: git config --system core.longpaths true
+
       - name: Check out code
         uses: actions/checkout@v6
         with:
