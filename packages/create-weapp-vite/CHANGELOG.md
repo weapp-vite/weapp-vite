@@ -1,5 +1,23 @@
 # create-weapp-vite
 
+## 2.0.74
+
+### Patch Changes
+
+- 🐛 **同步升级 workspace catalog 与 `create-weapp-vite` 模板 catalog 中的 Vue 相关依赖版本，统一到 `3.5.32`，并刷新 `@types/node`、`@tanstack/vue-query` 及锁文件，确保工作区内发布包、示例应用与脚手架生成结果使用一致的依赖基线。** [`d2ea11e`](https://github.com/weapp-vite/weapp-vite/commit/d2ea11efc6b2248a9a5ee6e5e692646c0562a211) by @sonofmagic
+
+- 🐛 **修复 `wevu`、`wevu/*` 与 `vue-demi` 在工作区构建中的默认别名解析，避免因包入口解析失败导致 `pnpm build` 在 `weapp-vite` 相关 e2e 应用构建阶段报错。** [`9244f1a`](https://github.com/weapp-vite/weapp-vite/commit/9244f1a8017aa12545d189cbaaa74924c8ba9410) by @sonofmagic
+
+- 🐛 **修复 request globals 在小程序运行时里遇到残缺构造器时的注入与绑定链路，确保 `axios`、`graphql-request` 等依赖 `URL`、`XMLHttpRequest` 的请求库在 WeChat DevTools 真实环境下可以正常工作，并补充对应的运行时与 IDE 回归测试。** [#394](https://github.com/weapp-vite/weapp-vite/pull/394) by @sonofmagic
+
+- 🐛 **修复原生 `Page()` 通过 `weapp-vite/runtime` 调用 `setPageLayout()` 时的运行时导出链路，避免仅为原生 layout 切换而额外命中 `wevu` 的 page-layout 运行时代码；同时补充 `github-issues` 的 issue #389 复现页与定向回归测试。** [`b9322fb`](https://github.com/weapp-vite/weapp-vite/commit/b9322fb99c7d7ff3a00060867b7ae076390b8782) by @sonofmagic
+
+- 🐛 **修复开发态 watch 场景下主包多个入口共享模块的增量重建回归。现在当直接编辑其中一个共享入口时，`weapp-vite` 会同步发射同一 shared chunk 的其他 importer，避免原本应继续落在 `common.js` 的共享代码被错误内联进当前页面；同时补充 `github-issues` 的 issue #391 复现页与定向 watch 回归测试。** [#396](https://github.com/weapp-vite/weapp-vite/pull/396) by @sonofmagic
+
+- 🐛 **修复 `chunks.sharedMode: 'path'` 命中 npm devDependency 共享模块时会把 chunk 输出到 `dist/node_modules/**`的问题。现在 path 模式会把`node_modules`依赖改写为包相对路径（例如`debounce/index.js`），同时补充 `github-issues` 的 issue #393 复现页与构建回归测试。\*\* [#395](https://github.com/weapp-vite/weapp-vite/pull/395) by @sonofmagic
+
+- 🐛 **修复开发态 HMR 在页面编辑后可能遗漏 layout 和组件 shared chunk importer 的增量重建问题。现在当页面改动触发共享 chunk 重新生成时，`weapp-vite` 会一并重新发射同一 shared chunk 的 layout/component importer，避免 `onMounted` 等共享导出别名变化后仍被旧组件 chunk 继续引用，导致热更新后页面在 attached 阶段崩溃；同时补充 `github-issues` 的 issue #398 最小复现页与定向 watch 回归测试。** [#399](https://github.com/weapp-vite/weapp-vite/pull/399) by @sonofmagic
+
 ## 2.0.73
 
 ### Patch Changes
