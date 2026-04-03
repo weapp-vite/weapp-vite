@@ -161,7 +161,7 @@ describe('request globals runtime', () => {
         targets: ['fetch'],
       })
 
-      expect(() => new globalThis.URL('https://request-globals.test/graphql')).not.toThrow()
+      expect(() => new globalThis.URL('https://example.com/graphql')).not.toThrow()
       expect(new globalThis.URLSearchParams({ client: 'graphql-request' }).toString()).toBe('client=graphql-request')
     }
     finally {

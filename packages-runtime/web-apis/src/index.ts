@@ -87,7 +87,7 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectReque
 }
 
 function installUrlGlobals(host: Record<string, any>) {
-  if (!hasUsableConstructor(host.URL, ['https://request-globals.test'])) {
+  if (!hasUsableConstructor(host.URL, ['https://example.com'])) {
     host.URL = URLPolyfill
   }
   if (!hasUsableConstructor(host.URLSearchParams, ['client=graphql-request'])) {
