@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import axios from 'axios'
 import { onLoad, ref } from 'wevu'
 import {
   createErrorState,
@@ -20,7 +21,6 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
-    const { default: axios } = await import('axios')
     const requestConfig = {
       data: {
         client: 'axios',
