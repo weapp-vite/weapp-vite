@@ -28,6 +28,14 @@ const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const scenarios = [1, 5, 20] as const
 const allResolverEntries = Object.entries(VantResolver().components ?? {}).sort(([a], [b]) => a.localeCompare(b))
+const ORIGINAL_AUTO_IMPORT_BLOCK = [
+  '      autoImportComponents: {',
+  '        globs: [\'components/**/*\'],',
+  '        resolvers: [',
+  '          VantResolver()',
+  '        ]',
+  '      }',
+].join('\n')
 
 if (!Number.isFinite(iterations) || iterations <= 0) {
   throw new Error(`Invalid BENCH_ITERATIONS value: ${iterations}`)
@@ -192,7 +200,7 @@ async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current'
   const viteConfig = await readFile(viteConfigPath, 'utf8')
   const replacement = mode === 'disabled'
     ? [
-        '      autoImportComponents: false',
+        '      autoImportComponents: false,',
       ].join('\n')
     : [
         '      autoImportComponents: {',
@@ -205,13 +213,7 @@ async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current'
         '        ]',
         '      }',
       ].join('\n')
-  const startMarker = '      autoImportComponents: {'
-  const endMarker = '      },'
-  const startIndex = viteConfig.indexOf(startMarker)
-  const endIndex = startIndex >= 0 ? viteConfig.indexOf(endMarker, startIndex) : -1
-  const nextViteConfig = startIndex >= 0 && endIndex >= 0
-    ? `${viteConfig.slice(0, startIndex)}${replacement}${viteConfig.slice(endIndex)}`
-    : viteConfig
+  const nextViteConfig = viteConfig.replace(ORIGINAL_AUTO_IMPORT_BLOCK, replacement)
 
   if (nextViteConfig === viteConfig) {
     throw new Error(`Failed to patch benchmark vite config: ${viteConfigPath}`)
