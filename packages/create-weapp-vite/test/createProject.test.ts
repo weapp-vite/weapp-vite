@@ -337,7 +337,7 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['typescript']).toBe(TEMPLATE_CATALOG.typescript)
     expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe(TEMPLATE_CATALOG['miniprogram-api-typings'])
     expect(pkgJson.devDependencies['postcss']).toBe('^8.5.6')
-    expect(pkgJson.devDependencies['sass']).toBe('^1.98.0')
+    expect(pkgJson.devDependencies['sass']).toBe(TEMPLATE_CATALOG.sass)
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('catalog:')
   })
@@ -373,7 +373,7 @@ describe('createProject', () => {
     expect(pkgJson.peerDependencies.wevu).not.toContain('workspace:')
     expect(pkgJson.peerDependencies.wevu).not.toContain('catalog:')
     expect(pkgJson.peerDependencies.vue).toBe('^3.5.13')
-    expect(pkgJson.optionalDependencies.sass).toBe('^1.98.0')
+    expect(pkgJson.optionalDependencies.sass).toBe(TEMPLATE_CATALOG.sass)
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
   })
 
