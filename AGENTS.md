@@ -185,10 +185,14 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - Add or update e2e tests (including the `e2e-apps/github-issues` case when applicable) to verify end-to-end regression coverage.
   - Run targeted unit + e2e verification and confirm the bug is fixed before opening review.
   - Open a PR back to the mainline branch after local verification is complete.
-  - PR title, PR body, and follow-up review comments for this repository should default to Chinese unless the user explicitly requests another language.
-  - PR title, PR body, and follow-up review comments must not contain local absolute filesystem paths, usernames, home-directory paths, machine-specific environment variable values, tokens, email addresses, or any other personal/privacy-sensitive information. When referencing commands or files in PR text, rewrite them as repo-relative paths or generic commands that are reproducible in CI.
-  - Ensure the PR CI/CD checks are all passing before considering the fix ready to merge.
-  - After the PR is merged, delete the temporary local worktree used for that issue.
+- PR title, PR body, and follow-up review comments for this repository should default to Chinese unless the user explicitly requests another language.
+- PR title, PR body, and follow-up review comments must not contain local absolute filesystem paths, usernames, home-directory paths, machine-specific environment variable values, tokens, email addresses, or any other personal/privacy-sensitive information. When referencing commands or files in PR text, rewrite them as repo-relative paths or generic commands that are reproducible in CI.
+- When an assistant posts or edits any GitHub-facing text for this repository, treat privacy-safe wording as mandatory:
+  - never paste local absolute paths such as `/Users/...`, `/home/...`, `C:\\Users\\...`
+  - never include local usernames, workspace directory names, or machine-specific temp/cache paths
+  - when showing verification commands, rewrite them with repo-relative paths or generic commands that another maintainer can run in CI/local without depending on your machine layout
+- Ensure the PR CI/CD checks are all passing before considering the fix ready to merge.
+- After the PR is merged, delete the temporary local worktree used for that issue.
 - All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
 - When adding pages in any `e2e-apps/*`, also update `project.private.config.json` under `condition.miniprogram.list`.
 
