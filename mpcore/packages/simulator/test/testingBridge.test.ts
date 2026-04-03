@@ -388,6 +388,27 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('supports compound component selectors through the testing bridge session handle', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const component = await miniProgram.selectComponent('status-card.primary-card[data-role="main"]')
+    const components = await miniProgram.selectAllComponents('status-card.primary-card[data-role="main"]')
+
+    expect(component).not.toBeNull()
+    expect(components).toHaveLength(1)
+    expect(await component?.snapshot()).toMatchObject({
+      properties: {
+        count: 2,
+      },
+      type: 'component',
+    })
+  })
+
   it('dispatches component input, change and blur events through the testing bridge', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
@@ -429,6 +450,27 @@ describe('headless testing bridge', () => {
       data: {
         readyState: 'ready',
       },
+      properties: {
+        label: 'stable',
+      },
+      type: 'component',
+    })
+  })
+
+  it('supports descendant component selectors through the testing bridge session handle', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const badge = await miniProgram.selectComponent('status-card mini-badge')
+    const badges = await miniProgram.selectAllComponents('status-card mini-badge')
+
+    expect(badge).not.toBeNull()
+    expect(badges).toHaveLength(1)
+    expect(await badge?.snapshot()).toMatchObject({
       properties: {
         label: 'stable',
       },
@@ -504,6 +546,29 @@ describe('headless testing bridge', () => {
 
     expect(badge.scopeId).toContain('mini-badge')
     expect(badges).toHaveLength(1)
+  })
+
+  it('waits for descendant selectors through a testing scope handle', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const card = await miniProgram.waitForComponent('status-card', {
+      timeout: 200,
+    })
+    const badge = await card.waitForComponent('mini-badge', {
+      timeout: 200,
+    })
+
+    expect(badge.scopeId).toContain('mini-badge')
+    expect(await badge.snapshot()).toMatchObject({
+      properties: {
+        label: 'stable',
+      },
+    })
   })
 
   it('waits for components to appear through the testing bridge session handle', async () => {
