@@ -332,6 +332,34 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-renamed.txt']).toBe('rename-out')
   })
 
+  it('supports selector-based pageScrollTo through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('commerce-shell')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'commerce-shell' && state.currentRoute === 'pages/home/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('pingSelectorScroll')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      (nextState) => {
+        const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
+        return pageData.scrollTop === 228 && Array.isArray(pageData.logs) && pageData.logs.includes('home:pageScrollTo:selector:complete')
+      },
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(pageData.scrollTop).toBe(228)
+    expect(pageData.logs).toContain('home:onPageScroll:{"scrollTop":228}')
+    expect(pageData.logs).toContain('home:pageScrollTo:selector:success')
+    expect(pageData.logs).toContain('home:pageScrollTo:selector:complete')
+  })
+
   it('drives browser session host features through the demo workbench api', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')

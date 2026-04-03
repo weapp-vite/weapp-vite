@@ -374,6 +374,7 @@ Page({
     logs: [],
     menuButtonRect: '',
     callbacks: [],
+    selectorCallbacks: [],
     windowInfoAsync: '',
     windowInfoSync: '',
     systemInfoAsync: '',
@@ -396,6 +397,21 @@ Page({
       complete: () => {
         this.setData({
           callbacks: [...this.data.callbacks, 'complete'],
+        })
+      },
+    })
+  },
+  runScrollBySelector() {
+    wx.pageScrollTo({
+      selector: '#anchor-card',
+      success: () => {
+        this.setData({
+          selectorCallbacks: [...this.data.selectorCallbacks, 'success'],
+        })
+      },
+      complete: () => {
+        this.setData({
+          selectorCallbacks: [...this.data.selectorCallbacks, 'complete'],
         })
       },
     })
@@ -453,6 +469,10 @@ Page({
     })
   },
 })
+`)
+  writeText(path.join(root, 'dist/pages/events/index.wxml'), `
+<view>scroll: {{scrollTop}}</view>
+<view id="anchor-card" style="top: 236px; height: 40px;">anchor</view>
 `)
 
   return root

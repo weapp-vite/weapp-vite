@@ -4066,6 +4066,50 @@ Page({
     })
   })
 
+  it('supports wx.pageScrollTo selector targets in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    callbacks: [],
+    scrollTop: 0
+  },
+  runSelectorScroll() {
+    wx.pageScrollTo({
+      selector: '#anchor-card',
+      success: () => {
+        this.setData({
+          callbacks: [...this.data.callbacks, 'success']
+        })
+      },
+      complete: () => {
+        this.setData({
+          callbacks: [...this.data.callbacks, 'complete']
+        })
+      }
+    })
+  },
+  onPageScroll(options) {
+    this.setData({
+      scrollTop: options?.scrollTop ?? 0
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view id="anchor-card" style="top: 176px; height: 20px;">Anchor</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runSelectorScroll()
+
+    expect(page.data.scrollTop).toBe(176)
+    expect(page.data.callbacks).toEqual(['success', 'complete'])
+  })
+
   it('supports createSelectorQuery.in(component) in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

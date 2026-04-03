@@ -26,6 +26,7 @@ import {
 } from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
+import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
@@ -983,10 +984,26 @@ export class BrowserHeadlessSession {
   }
 
   pageScrollTo(option: {
+    duration?: number
+    selector?: string
     scrollTop?: number
   }) {
     const current = this.requireCurrentPage('wx.pageScrollTo()')
-    current.__scrollTop__ = Number(option.scrollTop ?? 0)
+    const rendered = renderBrowserPageTree({
+      changedPageKeys: current.__lastChangedKeys__ ?? [],
+      componentCache: this.componentCache,
+      componentScopes: this.componentScopes,
+      files: this.files,
+      moduleLoader: this.moduleLoader,
+      project: this.project,
+      session: {
+        selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
+        selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
+        selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
+      },
+    }, current)
+    const selectorScrollTop = resolveSelectorScrollTop(rendered.root, option.selector)
+    current.__scrollTop__ = Number(selectorScrollTop ?? option.scrollTop ?? 0)
     current.onPageScroll?.({
       scrollTop: current.__scrollTop__,
     })

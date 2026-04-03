@@ -16,6 +16,7 @@ import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
+import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
@@ -877,7 +878,9 @@ export class HeadlessSession {
     complete?: () => void
   }) {
     const current = this.requireCurrentPage('wx.pageScrollTo()')
-    current.__scrollTop__ = Number(option.scrollTop ?? 0)
+    const rendered = this.renderCurrentPage()
+    const selectorScrollTop = resolveSelectorScrollTop(rendered.root, option.selector)
+    current.__scrollTop__ = Number(selectorScrollTop ?? option.scrollTop ?? 0)
     current.onPageScroll?.({
       scrollTop: current.__scrollTop__,
     })
