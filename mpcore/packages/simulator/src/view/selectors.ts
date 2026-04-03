@@ -9,6 +9,7 @@ interface DomNodeLike {
 
 const WHITESPACE_RE = /\s+/
 const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
+const COMPOUND_SELECTOR_PART_RE = /#[\w-]+|\.[\w-]+|\[data-[^=\]]+="[^"]*"\]|[A-Za-z][\w-]*/g
 
 function getClassList(node: DomNodeLike) {
   return String(node.attribs?.class ?? '')
@@ -39,6 +40,19 @@ function matchesSimpleSelector(node: DomNodeLike, selector: string) {
   return node.name === selector
 }
 
+function parseCompoundSelector(selector: string) {
+  const parts = selector.match(COMPOUND_SELECTOR_PART_RE) ?? []
+  return parts.join('') === selector ? parts : []
+}
+
+function matchesSelectorToken(node: DomNodeLike, selector: string) {
+  const simpleSelectors = parseCompoundSelector(selector)
+  if (simpleSelectors.length === 0) {
+    return false
+  }
+  return simpleSelectors.every(simpleSelector => matchesSimpleSelector(node, simpleSelector))
+}
+
 function collectDescendants(node: DomNodeLike, into: DomNodeLike[]) {
   for (const child of node.children ?? []) {
     into.push(child)
@@ -62,7 +76,7 @@ export function querySelectorAll(root: DomNodeLike, selector: string): DomNodeLi
       }
       collectDescendants(node, candidates)
       for (const candidate of candidates) {
-        if (matchesSimpleSelector(candidate, part)) {
+        if (matchesSelectorToken(candidate, part)) {
           next.push(candidate)
         }
       }

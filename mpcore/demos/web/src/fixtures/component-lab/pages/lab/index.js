@@ -7,6 +7,7 @@ Page({
     events: [],
     eventShape: '',
     componentSnapshot: '',
+    compoundSelectorSnapshot: '',
     directorySnapshot: '',
     downloadSnapshot: '',
     fileTransferFailureInfo: '',
@@ -689,5 +690,22 @@ Page({
       }),
     })
     this.push('lab:inspectCard')
+  },
+  inspectCompoundSelector() {
+    const card = this.selectComponent?.('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .select('view.panel-row[data-phase="pulse"]')
+      .fields({
+        dataset: true,
+        id: true,
+      }, (result) => {
+        this.setData({
+          compoundSelectorSnapshot: JSON.stringify(result),
+        }, () => {
+          this.push('lab:inspectCompoundSelector')
+        })
+      })
+      .exec()
   },
 })

@@ -2,4 +2,4 @@
 '@mpcore/simulator': patch
 ---
 
-修复 `@mpcore/simulator` 中 `wx.pageScrollTo({ selector })` 被忽略的问题。现在 headless runtime 与 browser runtime 都会基于当前渲染树解析目标节点位置并同步 `scrollTop`，同时补充对应的单测、browser e2e 断言，以及 `mpcore/demos/web` 的 `commerce-shell` 场景验证入口。
+增强 `@mpcore/simulator` 的选择器相关行为。现在 headless runtime 与 browser runtime 都支持根据当前渲染树处理 `wx.pageScrollTo({ selector })`，并且 `createSelectorQuery` 可匹配 `tag/id/class/data-*` 组合形式的简单复合选择器。与此同时补充对应单测、browser e2e 断言，以及 `mpcore/demos/web` 中 `commerce-shell` 与 `component-lab` 场景的验证入口。

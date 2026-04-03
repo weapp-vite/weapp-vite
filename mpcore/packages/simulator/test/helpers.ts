@@ -541,8 +541,23 @@ export function createSelectorQueryFixture() {
   writeScript(path.join(root, 'dist/pages/index/index.js'), `
 Page({
   data: {
+    compoundSelectorResult: null,
     selectorQueryResult: null,
     viewportResult: null,
+  },
+  runCompoundSelectorQuery() {
+    wx.createSelectorQuery()
+      .select('view.panel[data-role="hero"]')
+      .fields({
+        dataset: true,
+        id: true,
+        properties: ['class']
+      }, (result) => {
+        this.setData({
+          compoundSelectorResult: result
+        })
+      })
+      .exec()
   },
   runSelectorQuery() {
     wx.createSelectorQuery()

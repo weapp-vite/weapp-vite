@@ -125,6 +125,7 @@ describe.sequential('simulator browser e2e', () => {
     )
 
     bridge.runPageMethod('inspectCard')
+    bridge.runPageMethod('inspectCompoundSelector')
     bridge.runPageMethod('runFileManagerLab')
     bridge.runPageMethod('runMissingStatLab')
     bridge.runPageMethod('runMissingReadDirLab')
@@ -159,6 +160,7 @@ describe.sequential('simulator browser e2e', () => {
         const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
         return Boolean(
           pageData.componentSnapshot
+          && pageData.compoundSelectorSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
           && pageData.fileTransferFailureInfo
@@ -198,6 +200,8 @@ describe.sequential('simulator browser e2e', () => {
 
     const pageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(pageData.componentSnapshot).toContain('"size":1')
+    expect(pageData.compoundSelectorSnapshot).toContain('"id":"status-card-pulse"')
+    expect(pageData.compoundSelectorSnapshot).toContain('"phase":"pulse"')
     expect(pageData.directorySnapshot).toBe('["daily"]')
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
     expect(pageData.fileTransferFailureInfo).toContain('"downloadNoMockError":"No downloadFile mock matched in headless runtime: https://mock.mpcore.dev/files/component-lab-unmatched-report.txt"')

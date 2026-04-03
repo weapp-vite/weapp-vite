@@ -4006,8 +4006,23 @@ Component({
       ['pages/index/index.js', `
 Page({
   data: {
+    compoundSelectorResult: null,
     selectorQueryResult: null,
     viewportResult: null
+  },
+  runCompoundSelectorQuery() {
+    wx.createSelectorQuery()
+      .select('view#card.item[data-kind="browser"]')
+      .fields({
+        dataset: true,
+        id: true,
+        properties: ['class']
+      }, (result) => {
+        this.setData({
+          compoundSelectorResult: result
+        })
+      })
+      .exec()
   },
   runSelectorQuery() {
     wx.createSelectorQuery()
@@ -4039,7 +4054,7 @@ Page({
   }
 })
 `],
-      ['pages/index/index.wxml', '<view id="card" data-kind="browser" style="left: 8px; top: 10px; width: 200px; height: 40px;">Browser Card</view>'],
+      ['pages/index/index.wxml', '<view id="card" class="item hero" data-kind="browser" style="left: 8px; top: 10px; width: 200px; height: 40px;">Browser Card</view>'],
     ])
 
     const session = createBrowserHeadlessSession({ files })
@@ -4057,6 +4072,15 @@ Page({
       right: 208,
       top: 10,
       width: 200,
+    })
+
+    page.runCompoundSelectorQuery()
+    expect(page.data.compoundSelectorResult).toEqual({
+      class: 'item hero',
+      dataset: {
+        kind: 'browser',
+      },
+      id: 'card',
     })
 
     page.runViewportQuery()

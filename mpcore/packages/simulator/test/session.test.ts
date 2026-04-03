@@ -2907,6 +2907,17 @@ Page({
       width: 120,
     })
 
+    page.runCompoundSelectorQuery()
+
+    expect(page.data.compoundSelectorResult).toEqual({
+      class: 'panel primary',
+      dataset: {
+        phase: 'ready',
+        role: 'hero',
+      },
+      id: 'card',
+    })
+
     page.runViewportQuery()
 
     expect(page.data.viewportResult).toEqual({
