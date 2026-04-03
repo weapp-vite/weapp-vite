@@ -3,51 +3,48 @@ name: CI E2E
 on:
   pull_request:
     types: [opened, synchronize]
+  schedule:
+    - cron: '50 1 * * *'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  miniapp-e2e-ci:
+  miniapp-e2e-ci-pr:
+    if: github.event_name != 'schedule'
     name: Miniapp E2E CI (${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.platform }})
     timeout-minutes: 35
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - weapp
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [20, 22]
+        include:
+          - platform: weapp
+            os: ubuntu-latest
+            node-version: 20
+          - platform: weapp
+            os: ubuntu-latest
+            node-version: 22
+          - platform: weapp
+            os: windows-latest
+            node-version: 20
+          - platform: weapp
+            os: macos-latest
+            node-version: 20
 
     steps:
-      - name: Enable Git long paths on Windows
-        if: runner.os == 'Windows'
-        run: git config --system core.longpaths true
-
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: pnpm/action-setup@v5
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build package artifacts for CLI e2e
-        run: pnpm build:pkgs
-
-      - name: Refresh injected workspace dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm build:pkgs
 
       - name: Increase file descriptor limit
         if: runner.os != 'Windows'
@@ -58,38 +55,100 @@ jobs:
           E2E_PLATFORM: ${{ matrix.platform }}
         run: pnpm e2e:ci
 
-  web-e2e-baseline:
+  miniapp-e2e-ci-full:
+    if: github.event_name == 'schedule'
+    name: Miniapp E2E CI (${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.platform }})
+    timeout-minutes: 35
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: weapp
+            os: ubuntu-latest
+            node-version: 20
+          - platform: weapp
+            os: windows-latest
+            node-version: 20
+          - platform: weapp
+            os: macos-latest
+            node-version: 20
+          - platform: weapp
+            os: ubuntu-latest
+            node-version: 22
+          - platform: weapp
+            os: windows-latest
+            node-version: 22
+          - platform: weapp
+            os: macos-latest
+            node-version: 22
+          - platform: weapp
+            os: ubuntu-latest
+            node-version: 24
+          - platform: weapp
+            os: windows-latest
+            node-version: 24
+          - platform: weapp
+            os: macos-latest
+            node-version: 24
+
+    steps:
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm build:pkgs
+
+      - name: Increase file descriptor limit
+        if: runner.os != 'Windows'
+        run: ulimit -n 65536 || true
+
+      - name: Run miniapp CI e2e suite
+        env:
+          E2E_PLATFORM: ${{ matrix.platform }}
+        run: pnpm e2e:ci
+
+  web-e2e-baseline-pr:
+    if: github.event_name != 'schedule'
+    name: Web E2E Baseline (Node 20)
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 20
+
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm build:pkgs
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Run web runtime baseline e2e
+        run: pnpm e2e:web
+
+  web-e2e-baseline-full:
+    if: github.event_name == 'schedule'
     name: Web E2E Baseline (Node ${{ matrix.node-version }})
     timeout-minutes: 20
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [20, 22, 24]
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - uses: pnpm/action-setup@v5
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build package artifacts for CLI e2e
-        run: pnpm build:pkgs
-
-      - name: Refresh injected workspace dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm build:pkgs
 
       - name: Install Playwright Chromium
         run: pnpm exec playwright install chromium
