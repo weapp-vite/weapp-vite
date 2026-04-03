@@ -59,10 +59,16 @@ async function main() {
 
 async function runScenario(usedCount: number) {
   const tags = allResolverEntries.slice(0, usedCount).map(([tag]) => tag)
+  const disabledSamples = []
   const currentSamples = []
   const legacySamples = []
 
   for (let i = 0; i < iterations; i += 1) {
+    disabledSamples.push(await measureScenario({
+      usedTags: tags,
+      mode: 'disabled',
+      iteration: i,
+    }))
     currentSamples.push(await measureScenario({
       usedTags: tags,
       mode: 'current',
@@ -75,14 +81,23 @@ async function runScenario(usedCount: number) {
     }))
   }
 
+  const disabled = summarizeSamples(disabledSamples)
   const current = summarizeSamples(currentSamples)
   const legacy = summarizeSamples(legacySamples)
 
   return {
     usedCount,
+    disabled,
     current,
     legacy,
-    speedup: {
+    currentVsDisabled: {
+      ratio: current.duration.mean > 0 ? current.duration.mean / disabled.duration.mean : 0,
+      extraMs: current.duration.mean - disabled.duration.mean,
+      extraPercent: disabled.duration.mean > 0
+        ? ((current.duration.mean - disabled.duration.mean) / disabled.duration.mean) * 100
+        : 0,
+    },
+    currentVsLegacy: {
       ratio: legacy.duration.mean > 0 ? legacy.duration.mean / current.duration.mean : 0,
       savedMs: legacy.duration.mean - current.duration.mean,
       savedPercent: legacy.duration.mean > 0
@@ -94,7 +109,7 @@ async function runScenario(usedCount: number) {
 
 async function measureScenario(options: {
   usedTags: string[]
-  mode: 'current' | 'legacy'
+  mode: 'disabled' | 'current' | 'legacy'
   iteration: number
 }) {
   const { usedTags, mode, iteration } = options
@@ -105,7 +120,7 @@ async function measureScenario(options: {
   const key = `auto-import-bench-${mode}-${usedTags.length}-${iteration}-${Date.now()}`
 
   try {
-    await seedFixture(project.tempDir, usedTags)
+    await seedFixture(project.tempDir, usedTags, mode)
     const ctx = await createCompilerContext({
       cwd: project.tempDir,
       key,
@@ -114,7 +129,10 @@ async function measureScenario(options: {
 
     try {
       const start = performance.now()
-      if (mode === 'current') {
+      if (mode === 'disabled') {
+        await syncSupportFilesDisabled(ctx)
+      }
+      else if (mode === 'current') {
         await syncSupportFilesCurrent(ctx)
       }
       else {
@@ -140,30 +158,15 @@ async function measureScenario(options: {
   }
 }
 
-async function seedFixture(projectRoot: string, usedTags: string[]) {
+async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disabled' | 'current' | 'legacy') {
   const pageDir = path.join(projectRoot, 'src/pages/bench-auto-import')
   const pagePath = path.join(pageDir, 'index.vue')
-  const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
   const tags = usedTags
     .map(tag => `    <${tag} data-bench="${tag}" />`)
     .join('\n')
 
-  const viteConfig = await readFile(viteConfigPath, 'utf8')
-  const nextViteConfig = viteConfig.replace(
-    'globs: [\'components/**/*\'],',
-    [
-      'globs: [\'components/**/*\'],',
-      '        typedComponents: true,',
-      '        vueComponents: true,',
-      '        htmlCustomData: true,',
-    ].join('\n'),
-  )
-  if (nextViteConfig === viteConfig) {
-    throw new Error(`Failed to patch benchmark vite config: ${viteConfigPath}`)
-  }
-
   await mkdir(pageDir, { recursive: true })
-  await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+  await patchViteConfig(projectRoot, mode)
   await writeFile(
     pagePath,
     [
@@ -182,6 +185,39 @@ async function seedFixture(projectRoot: string, usedTags: string[]) {
     ].join('\n'),
     'utf8',
   )
+}
+
+async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current' | 'legacy') {
+  const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
+  const viteConfig = await readFile(viteConfigPath, 'utf8')
+  const replacement = mode === 'disabled'
+    ? [
+        '      autoImportComponents: false',
+      ].join('\n')
+    : [
+        '      autoImportComponents: {',
+        '        globs: [\'components/**/*\'],',
+        '        typedComponents: true,',
+        '        vueComponents: true,',
+        '        htmlCustomData: true,',
+        '        resolvers: [',
+        '          VantResolver()',
+        '        ]',
+        '      }',
+      ].join('\n')
+  const startMarker = '      autoImportComponents: {'
+  const endMarker = '      },'
+  const startIndex = viteConfig.indexOf(startMarker)
+  const endIndex = startIndex >= 0 ? viteConfig.indexOf(endMarker, startIndex) : -1
+  const nextViteConfig = startIndex >= 0 && endIndex >= 0
+    ? `${viteConfig.slice(0, startIndex)}${replacement}${viteConfig.slice(endIndex)}`
+    : viteConfig
+
+  if (nextViteConfig === viteConfig) {
+    throw new Error(`Failed to patch benchmark vite config: ${viteConfigPath}`)
+  }
+
+  await writeFile(viteConfigPath, nextViteConfig, 'utf8')
 }
 
 async function ensureWorkspacePackageLink(projectRoot: string) {
@@ -255,6 +291,12 @@ async function syncSupportFilesCurrent(ctx: Awaited<ReturnType<typeof createComp
     ctx.autoImportService.resolve(tag, importerBaseName)
   }
   await ctx.autoImportService.awaitManifestWrites()
+}
+
+async function syncSupportFilesDisabled(ctx: Awaited<ReturnType<typeof createCompilerContext>>) {
+  await syncManagedTsconfigFiles(ctx)
+  ctx.autoImportService?.reset()
+  await ctx.autoImportService?.awaitManifestWrites()
 }
 
 async function syncSupportFilesLegacy(ctx: Awaited<ReturnType<typeof createCompilerContext>>) {
@@ -395,6 +437,15 @@ function printScenarioResult(result: Awaited<ReturnType<typeof runScenario>>) {
   console.log(`\n[scenario] used resolver components=${result.usedCount}`)
   console.log(
     [
+      'disabled',
+      `avg ${result.disabled.duration.mean.toFixed(2)}ms`,
+      `manifest ${result.disabled.manifestComponentCount.mean.toFixed(0)}`,
+      `typed ${result.disabled.typedComponentCount.mean.toFixed(0)}`,
+      `vue ${result.disabled.vueComponentCount.mean.toFixed(0)}`,
+    ].join(' | '),
+  )
+  console.log(
+    [
       'current',
       `avg ${result.current.duration.mean.toFixed(2)}ms`,
       `manifest ${result.current.manifestComponentCount.mean.toFixed(0)}`,
@@ -413,10 +464,18 @@ function printScenarioResult(result: Awaited<ReturnType<typeof runScenario>>) {
   )
   console.log(
     [
-      'delta',
-      `saved ${result.speedup.savedMs.toFixed(2)}ms`,
-      `saved ${result.speedup.savedPercent.toFixed(2)}%`,
-      `speedup ${result.speedup.ratio.toFixed(2)}x`,
+      'current-vs-disabled',
+      `extra ${result.currentVsDisabled.extraMs.toFixed(2)}ms`,
+      `extra ${result.currentVsDisabled.extraPercent.toFixed(2)}%`,
+      `ratio ${result.currentVsDisabled.ratio.toFixed(2)}x`,
+    ].join(' | '),
+  )
+  console.log(
+    [
+      'current-vs-legacy',
+      `saved ${result.currentVsLegacy.savedMs.toFixed(2)}ms`,
+      `saved ${result.currentVsLegacy.savedPercent.toFixed(2)}%`,
+      `speedup ${result.currentVsLegacy.ratio.toFixed(2)}x`,
     ].join(' | '),
   )
 }
@@ -428,22 +487,23 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
     `- iterations: \`${iterations}\``,
     `- total resolver components: \`${allResolverEntries.length}\``,
     '',
-    '| 场景 | current avg | legacy avg | 平均节省 | 平均提速 | current manifest | legacy manifest |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| 场景 | disabled avg | current avg | legacy avg | 开启自动导入额外成本 | 相对旧行为节省 | disabled manifest | current manifest | legacy manifest |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   ]
 
   for (const result of results) {
     lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.current.duration.mean.toFixed(2)} ms | ${result.legacy.duration.mean.toFixed(2)} ms | ${result.speedup.savedMs.toFixed(2)} ms (${result.speedup.savedPercent.toFixed(2)}%) | ${result.speedup.ratio.toFixed(2)}x | ${result.current.manifestComponentCount.mean.toFixed(0)} | ${result.legacy.manifestComponentCount.mean.toFixed(0)} |`,
+      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.disabled.duration.mean.toFixed(2)} ms | ${result.current.duration.mean.toFixed(2)} ms | ${result.legacy.duration.mean.toFixed(2)} ms | ${result.currentVsDisabled.extraMs.toFixed(2)} ms (${result.currentVsDisabled.extraPercent.toFixed(2)}%) | ${result.currentVsLegacy.savedMs.toFixed(2)} ms (${result.currentVsLegacy.savedPercent.toFixed(2)}%) | ${result.disabled.manifestComponentCount.mean.toFixed(0)} | ${result.current.manifestComponentCount.mean.toFixed(0)} | ${result.legacy.manifestComponentCount.mean.toFixed(0)} |`,
     )
   }
 
   lines.push('')
   lines.push('## 说明')
   lines.push('')
+  lines.push('- `disabled`：关闭 `autoImportComponents`，作为自动导入关闭时的基线。')
   lines.push('- `current`：仅为模板中实际命中的 resolver 组件生成支持文件。')
   lines.push('- `legacy`：模拟旧行为，在支持文件同步阶段预热全部 resolver 组件。')
-  lines.push('- 两种模式都基于同一份临时 fixture、同一组模板标签与相同的 autoImport 配置。')
+  lines.push('- 三种模式都基于同一份临时 fixture、同一组模板标签与相同的页面内容。')
   lines.push('')
 
   return `${lines.join('\n')}\n`
