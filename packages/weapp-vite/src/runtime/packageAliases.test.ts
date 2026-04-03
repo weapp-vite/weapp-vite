@@ -19,24 +19,74 @@ describe('runtime package aliases', () => {
     vi.clearAllMocks()
   })
 
-  it('adds built file aliases and vue-demi compatibility alias', () => {
+  it('adds built file aliases and resolves vue-demi to an absolute entry', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string) => {
+      if (packageName === 'class-variance-authority') {
+        return { rootPath: '/project/node_modules/class-variance-authority' }
+      }
+      if (packageName === 'wevu') {
+        return { rootPath: '/project/node_modules/wevu' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockReturnValue(true)
+
+    const aliases = resolveBuiltinPackageAliases()
+
+    expect(aliases).toHaveLength(9)
+    expect(aliases).toEqual(expect.arrayContaining([
+      {
+        find: 'class-variance-authority',
+        replacement: '/project/node_modules/class-variance-authority/dist/index.js',
+      },
+      {
+        find: 'wevu',
+        replacement: '/project/node_modules/wevu/dist/index.mjs',
+      },
+      {
+        find: 'wevu/router',
+        replacement: '/project/node_modules/wevu/dist/router.mjs',
+      },
+      {
+        find: 'vue-demi',
+        replacement: '/project/node_modules/wevu/dist/vue-demi.mjs',
+      },
+    ]))
+  })
+
+  it('falls back to workspace dist entry when workspace package lookup is unavailable', () => {
     getPackageInfoSyncMock.mockImplementation((packageName: string) => {
       if (packageName === 'class-variance-authority') {
         return { rootPath: '/project/node_modules/class-variance-authority' }
       }
       return undefined
     })
-    existsSyncMock.mockReturnValue(true)
+    existsSyncMock.mockImplementation((filePath: string) =>
+      filePath === '/project/node_modules/class-variance-authority/dist/index.js'
+      || filePath.endsWith('/pnpm-workspace.yaml')
+      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|jsx-runtime|store|api|fetch|router|vue-demi)\.mjs$/.test(filePath),
+    )
 
-    expect(resolveBuiltinPackageAliases()).toEqual([
+    const aliases = resolveBuiltinPackageAliases()
+
+    expect(aliases).toHaveLength(9)
+    expect(aliases).toEqual(expect.arrayContaining([
       {
         find: 'class-variance-authority',
         replacement: '/project/node_modules/class-variance-authority/dist/index.js',
       },
-      {
+      expect.objectContaining({
+        find: 'wevu',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/index\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/api',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/api\.mjs$/),
+      }),
+      expect.objectContaining({
         find: 'vue-demi',
-        replacement: 'wevu/vue-demi',
-      },
-    ])
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/vue-demi\.mjs$/),
+      }),
+    ]))
   })
 })
