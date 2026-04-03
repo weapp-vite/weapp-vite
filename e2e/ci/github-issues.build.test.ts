@@ -67,6 +67,21 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('||this.setData({__wv_page_layout_name:n,__wv_page_layout_props:r})')
   })
 
+  it('issue #389: keeps native setPageLayout off the wevu layout runtime path', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-389/index.js')
+    const commonJsPath = path.join(DIST_ROOT, 'common.js')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const commonJs = await fs.readFile(commonJsPath, 'utf-8')
+
+    expect(pageJs).toContain('issue-389 native runtime export should stay native-only')
+    expect(pageJs).toContain('__wevuSetPageLayout')
+    expect(commonJs).not.toContain('__wevuPageLayoutState')
+    expect(commonJs).not.toContain('usePageLayout() 必须在 setup() 的同步阶段调用')
+    expect(commonJs).not.toContain('syncRuntimePageLayoutStateFromRuntime')
+  })
+
   it('issue #289: compiles split pages with per-page controls and safe class bindings', async () => {
     await runBuild()
 
