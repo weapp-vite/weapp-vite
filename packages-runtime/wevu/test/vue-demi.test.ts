@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { version as rootVersion } from '@/index'
 import * as vueDemi from '@/vue-demi'
 
 describe('vue-demi compatibility entry', () => {
@@ -11,6 +12,6 @@ describe('vue-demi compatibility entry', () => {
     expect(typeof vueDemi.watchEffect).toBe('function')
     expect(typeof vueDemi.inject).toBe('function')
     expect(typeof vueDemi.createApp).toBe('function')
-    expect(typeof vueDemi.version).toBe('string')
+    expect(vueDemi.version).toBe(rootVersion)
   })
 })

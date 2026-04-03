@@ -16,6 +16,7 @@ defineComponent({
     openLifecycle() {},
     openLifecycleHooks() {},
     openStore() {},
+    openZustandStore() {},
     openProvider() {},
     openEffects() {},
     openVueIndex() {},
@@ -168,6 +169,9 @@ defineComponent({
       },
       openStore() {
         wx.navigateTo({ url: '/pages/store/index' })
+      },
+      openZustandStore() {
+        wx.navigateTo({ url: '/pages/zustand-store/index' })
       },
       openProvider() {
         wx.navigateTo({ url: '/pages/provider/index' })

@@ -6,6 +6,7 @@ import type {
   RuntimeApp,
   WevuPlugin,
 } from './types'
+import { version } from '../version'
 import { createRuntimeMount } from './app/mount'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { getMiniProgramGlobalObject } from './platform'
@@ -88,6 +89,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       appUnmountCleanups.clear()
     },
     config: appConfig,
+    version,
   }
 
   const hasGlobalApp = typeof App === 'function'

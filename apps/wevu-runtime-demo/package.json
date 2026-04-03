@@ -20,6 +20,7 @@
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*"
+    "wevu": "workspace:*",
+    "zustand": "^5.0.12"
   }
 }

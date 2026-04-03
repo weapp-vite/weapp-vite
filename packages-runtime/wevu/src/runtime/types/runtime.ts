@@ -25,6 +25,7 @@ export interface RuntimeApp<D extends object, C extends ComputedDefinitions, M e
   onUnmount: (cleanup: () => void) => RuntimeApp<D, C, M>
   unmount: () => void
   config: AppConfig
+  version: string
 }
 
 export interface RuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions> {

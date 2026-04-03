@@ -1,6 +1,6 @@
 import type { RuntimeApp, RuntimeInstance } from '@/index'
 import { expectType } from 'tsd'
-import { createApp } from '@/index'
+import { createApp, version } from '@/index'
 
 const app = createApp({
   data: () => ({ count: 0 }),
@@ -16,9 +16,11 @@ const app = createApp({
 })
 
 expectType<RuntimeApp<{ count: number }, { double: () => number }, { inc: () => void }>>(app)
+expectType<string>(app.version)
 expectType<RuntimeApp<{ count: number }, { double: () => number }, { inc: () => void }>>(app.provide('token', 1))
 expectType<RuntimeApp<{ count: number }, { double: () => number }, { inc: () => void }>>(app.onUnmount(() => {}))
 expectType<void>(app.unmount())
+expectType<string>(version)
 
 const instance = app.mount()
 expectType<RuntimeInstance<{ count: number }, { double: () => number }, { inc: () => void }>>(instance)

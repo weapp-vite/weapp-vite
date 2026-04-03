@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">Zustand 计数器</text>
+      <text class="card-meta">double: {{ doubled }}</text>
+    </view>
+    <text class="card-desc">通过 `zustand/vanilla` 创建 store，再用 `subscribe()` 把外部状态同步回 wevu 页面。</text>
+    <text class="counter-value">{{ count }}</text>
+    <view class="counter-actions">
+      <button size="mini" bindtap="dec">-{{ step }}</button>
+      <button size="mini" type="primary" bindtap="inc">+{{ step }}</button>
+      <button size="mini" class="ghost" bindtap="reset">重置</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">步长切换</text>
+      <text class="card-meta">current: {{ step }}</text>
+    </view>
+    <view class="counter-actions">
+      <button size="mini" bindtap="useStep1">step 1</button>
+      <button size="mini" type="primary" bindtap="useStep5">step 5</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card-title">最近变更</text>
+    <text class="history-summary">{{ historySummary }}</text>
+    <block wx:if="{{ history.length }}">
+      <view class="log-item" wx:for="{{ history }}" wx:key="*this">
+        <text>{{ item }}</text>
+      </view>
+    </block>
+  </view>
+</view>
