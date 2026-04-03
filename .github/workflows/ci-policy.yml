@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -16,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: ${{ fromJson(github.event_name == 'pull_request' && '[20]' || '[20,22]') }}
 
     steps:
       - name: Check out code
