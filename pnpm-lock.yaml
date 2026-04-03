@@ -1138,10 +1138,6 @@ importers:
         version: link:../../packages-runtime/wevu
 
   apps/wevu-runtime-demo:
-    dependencies:
-      zustand:
-        specifier: ^5.0.12
-        version: 5.0.12
     devDependencies:
       '@tanstack/vue-query':
         specifier: ^5.96.2
@@ -1167,6 +1163,9 @@ importers:
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
+      zustand:
+        specifier: ^5.0.12
+        version: 5.0.12
 
   apps/wevu-vue-demo:
     devDependencies:
