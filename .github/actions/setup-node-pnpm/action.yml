@@ -1,14 +1,10 @@
 name: Setup Node and pnpm
-description: Checkout repository, enable pnpm, setup Node.js cache, and install dependencies.
+description: Enable pnpm, setup Node.js cache, and install dependencies after checkout.
 
 inputs:
   node-version:
     description: Node.js version to use
     required: true
-  fetch-depth:
-    description: Checkout fetch depth
-    required: false
-    default: '2'
 
 runs:
   using: composite
@@ -17,11 +13,6 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: git config --system core.longpaths true
-
-    - name: Check out code
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: ${{ inputs.fetch-depth }}
 
     - uses: pnpm/action-setup@v5
 
