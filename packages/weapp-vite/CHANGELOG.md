@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.13.2
+
+### Patch Changes
+
+- 🐛 **修复 `autoRoutes` 在无 `pages/` 目录的分包根目录下误把共享脚本模块识别为页面的问题。现在像 `subpackages/item/issue-340-shared.ts` 这类仅供其他页面复用的裸脚本文件，不会再被写入 `dist/app.json` 或自动路由类型定义，从而避免 `pnpm dev:open` / 首次编译时微信开发者工具因为找不到对应 `.wxml` 页面文件而报错。** [#402](https://github.com/weapp-vite/weapp-vite/pull/402) by @sonofmagic
+
+- 🐛 **修复 `autoImportComponents` 在搭配 `VantResolver` 等大型 resolver 时默认全量产出 resolver 组件支持文件的问题。现在仅会为模板里实际命中的 resolver 组件生成 manifest、typed components 与 Vue 编辑器声明，同时 `prepare`/支持文件同步阶段也会扫描 `.vue`、`.wxml` 模板以补齐真实使用到的组件，减少大型组件库带来的编译与支持文件生成开销。** [#401](https://github.com/weapp-vite/weapp-vite/pull/401) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite --ui` / `weapp-vite build --ui` / `weapp-vite dev --ui` 在消费端项目中优先启动 `@weapp-vite/dashboard` 源码工程的问题。现在 UI 模式统一服务 dashboard 已编译的 `dist` 静态资源，避免用户项目里的 Tailwind / PostCSS 配置继续参与 dashboard 样式编译，从而消除与 Tailwind 3、Tailwind 4 或自定义 PostCSS 流水线的冲突。** [`23230bd`](https://github.com/weapp-vite/weapp-vite/commit/23230bdd26888ecc6c854b84c2af2448f2c9142c) by @sonofmagic
+- 📦 **Dependencies** [`48695e3`](https://github.com/weapp-vite/weapp-vite/commit/48695e342bcf0959b20ccb58636ac125ca09f2b5)
+  → `wevu@6.13.2`, `@weapp-vite/ast@6.13.2`
+
 ## 6.13.1
 
 ### Patch Changes
