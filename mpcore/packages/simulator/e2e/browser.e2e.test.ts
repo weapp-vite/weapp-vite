@@ -125,6 +125,7 @@ describe.sequential('simulator browser e2e', () => {
     )
 
     bridge.runPageMethod('inspectCard')
+    bridge.runPageMethod('inspectCompoundCard')
     bridge.runPageMethod('inspectCompoundSelector')
     bridge.runPageMethod('runFileManagerLab')
     bridge.runPageMethod('runMissingStatLab')
@@ -160,6 +161,7 @@ describe.sequential('simulator browser e2e', () => {
         const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
         return Boolean(
           pageData.componentSnapshot
+          && pageData.compoundComponentSnapshot
           && pageData.compoundSelectorSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
@@ -200,6 +202,9 @@ describe.sequential('simulator browser e2e', () => {
 
     const pageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(pageData.componentSnapshot).toContain('"size":1')
+    expect(pageData.compoundComponentSnapshot).toContain('"count":3')
+    expect(pageData.compoundComponentSnapshot).toContain('"status":"stable"')
+    expect(pageData.compoundComponentSnapshot).toContain('"size":1')
     expect(pageData.compoundSelectorSnapshot).toContain('"id":"status-card-pulse"')
     expect(pageData.compoundSelectorSnapshot).toContain('"phase":"pulse"')
     expect(pageData.directorySnapshot).toBe('["daily"]')

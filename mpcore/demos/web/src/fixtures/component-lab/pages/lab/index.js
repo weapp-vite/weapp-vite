@@ -8,6 +8,7 @@ Page({
     eventShape: '',
     componentSnapshot: '',
     compoundSelectorSnapshot: '',
+    compoundComponentSnapshot: '',
     directorySnapshot: '',
     downloadSnapshot: '',
     fileTransferFailureInfo: '',
@@ -690,6 +691,19 @@ Page({
       }),
     })
     this.push('lab:inspectCard')
+  },
+  inspectCompoundCard() {
+    const card = this.selectComponent?.('status-card.primary-card[data-role="main"]')
+    const cards = this.selectAllComponents?.('status-card.primary-card[data-role="main"]') ?? []
+    this.setData({
+      compoundComponentSnapshot: JSON.stringify({
+        count: card?.properties?.count,
+        status: card?.properties?.status ?? '',
+        size: cards.length,
+      }),
+    }, () => {
+      this.push('lab:inspectCompoundCard')
+    })
   },
   inspectCompoundSelector() {
     const card = this.selectComponent?.('#status-card')

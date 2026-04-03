@@ -2940,6 +2940,11 @@ Page({
     expect(page.data.snapshot).toContain('"hasPulse":true')
     expect(page.data.snapshot).toContain('"size":1')
 
+    const compoundCard = page.selectComponent?.('status-card.primary-card[data-role="main"]')
+    const compoundCards = page.selectAllComponents?.('status-card.primary-card[data-role="main"]')
+    expect(compoundCard?.properties?.count).toBe(2)
+    expect(compoundCards).toHaveLength(1)
+
     const card = page.selectComponent?.('#status-card')
     card?.pulse()
 

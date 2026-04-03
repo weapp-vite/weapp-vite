@@ -62,6 +62,7 @@ interface HeadlessPullDownRefreshState {
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
 const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
+const COMPOUND_SELECTOR_PART_RE = /#[\w-]+|\.[\w-]+|\[data-[^=\]]+="[^"]*"\]|[A-Za-z][\w-]*/g
 const DATASET_KEY_RE = /-([a-z])/g
 
 function stripLeadingSlash(route: string) {
@@ -89,6 +90,39 @@ function parseNavigationUrl(url: string) {
     pathname: pathname || '',
     query: normalizeQuery(queryString),
   }
+}
+
+function parseCompoundSelector(selector: string) {
+  const parts = selector.match(COMPOUND_SELECTOR_PART_RE) ?? []
+  return parts.join('') === selector ? parts : []
+}
+
+function matchesComponentSelector(
+  scope: { alias: string, classList?: string[], dataset?: Record<string, string>, id?: string },
+  selector: string,
+) {
+  const parts = parseCompoundSelector(selector)
+  if (parts.length === 0) {
+    return false
+  }
+
+  return parts.every((part) => {
+    if (part.startsWith('#')) {
+      return scope.id === part.slice(1)
+    }
+    if (part.startsWith('.')) {
+      return scope.classList?.includes(part.slice(1)) ?? false
+    }
+
+    const dataAttrMatch = part.match(DATA_ATTR_SELECTOR_RE)
+    if (dataAttrMatch) {
+      const [, key, value] = dataAttrMatch
+      const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
+      return scope.dataset?.[datasetKey] === value
+    }
+
+    return scope.alias === part
+  })
 }
 
 function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessWxLaunchOptions {
@@ -686,19 +720,7 @@ export class BrowserHeadlessSession {
         if (rootScopeId && !candidateScopeId.startsWith(`${rootScopeId}/`)) {
           return false
         }
-        if (normalizedSelector.startsWith('#')) {
-          return scope.id === normalizedSelector.slice(1)
-        }
-        if (normalizedSelector.startsWith('.')) {
-          return scope.classList?.includes(normalizedSelector.slice(1)) ?? false
-        }
-        const dataAttrMatch = normalizedSelector.match(DATA_ATTR_SELECTOR_RE)
-        if (dataAttrMatch) {
-          const [, key, value] = dataAttrMatch
-          const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
-          return scope.dataset?.[datasetKey] === value
-        }
-        return scope.alias === normalizedSelector
+        return matchesComponentSelector(scope, normalizedSelector)
       })
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
       .filter(Boolean)
