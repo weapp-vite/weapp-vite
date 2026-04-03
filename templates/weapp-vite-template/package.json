@@ -28,8 +28,8 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
-    "@icebreakers/eslint-config": "^3.0.1",
-    "@icebreakers/stylelint-config": "^2.2.1",
+    "@icebreakers/eslint-config": "^4.0.0",
+    "@icebreakers/stylelint-config": "^3.0.0",
     "eslint": "^10.1.0",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
