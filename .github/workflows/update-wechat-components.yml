@@ -4,15 +4,6 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-    inputs:
-      node-version:
-        description: Node.js version for the update workflow
-        required: true
-        default: '20'
-        type: choice
-        options:
-          - '20'
-          - '22'
 
 concurrency:
   group: update-wechat-components
@@ -27,7 +18,7 @@ env:
 
 jobs:
   update:
-    name: Update builtin and auto-import components (Node ${{ github.event.inputs['node-version'] || '20' }})
+    name: Update builtin and auto-import components
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -42,7 +33,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ github.event.inputs['node-version'] || '20' }}
+          node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
