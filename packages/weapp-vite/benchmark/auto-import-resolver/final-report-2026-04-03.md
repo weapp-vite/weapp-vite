@@ -2,7 +2,7 @@
 
 日期：`2026-04-03`
 
-脚本：[`packages/weapp-vite/scripts/benchmark-auto-import-resolver.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/.codex-tmp/fix-discussion-338-vantresolver/packages/weapp-vite/scripts/benchmark-auto-import-resolver.ts)
+脚本：`packages/weapp-vite/scripts/benchmark-auto-import-resolver.ts`
 
 support-files benchmark 命令：
 
@@ -51,9 +51,9 @@ BENCH_ITERATIONS=3 pnpm --filter weapp-vite run benchmark:auto-import:build
 
 | 场景 | disabled avg | current avg | legacy avg | 开启自动导入额外成本 | 相对旧行为节省 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 使用 1 个 Vant 组件 | 1.54 ms | 37.77 ms | 245.84 ms | 36.24 ms（2358.72%） | 208.07 ms（84.64%） |
-| 使用 5 个 Vant 组件 | 1.13 ms | 52.73 ms | 283.00 ms | 51.60 ms（4565.27%） | 230.27 ms（81.37%） |
-| 使用 20 个 Vant 组件 | 1.26 ms | 95.83 ms | 180.14 ms | 94.57 ms（7493.59%） | 84.30 ms（46.80%） |
+| 使用 1 个 Vant 组件 | 4.47 ms | 66.05 ms | 338.09 ms | 61.58 ms（1377.39%） | 272.04 ms（80.46%） |
+| 使用 5 个 Vant 组件 | 1.16 ms | 142.79 ms | 265.02 ms | 141.63 ms（12229.04%） | 122.23 ms（46.12%） |
+| 使用 20 个 Vant 组件 | 1.23 ms | 120.01 ms | 311.55 ms | 118.78 ms（9687.07%） | 191.55 ms（61.48%） |
 
 ### B. full build benchmark
 
@@ -62,6 +62,17 @@ BENCH_ITERATIONS=3 pnpm --filter weapp-vite run benchmark:auto-import:build
 | 使用 1 个 Vant 组件 | 1021.61 ms | 1038.31 ms | 16.71 ms（1.64%） |
 | 使用 5 个 Vant 组件 | 926.26 ms | 1186.66 ms | 260.40 ms（28.11%） |
 | 使用 20 个 Vant 组件 | 898.08 ms | 1452.75 ms | 554.67 ms（61.76%） |
+
+### C. support-files profiling（mean）
+
+| 场景 | 模式 | tsconfig | register local | scan template | resolve tags/all | flush outputs |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 使用 1 个 Vant 组件 | current | 2.33 ms | 27.04 ms | 7.42 ms | 24.88 ms | 4.23 ms |
+| 使用 1 个 Vant 组件 | legacy | 3.09 ms | 22.41 ms | - | 1.02 ms | 311.38 ms |
+| 使用 5 个 Vant 组件 | current | 1.78 ms | 23.82 ms | 27.83 ms | 72.37 ms | 16.93 ms |
+| 使用 5 个 Vant 组件 | legacy | 2.74 ms | 14.20 ms | - | 0.86 ms | 247.17 ms |
+| 使用 20 个 Vant 组件 | current | 2.86 ms | 14.04 ms | 2.29 ms | 65.43 ms | 35.34 ms |
+| 使用 20 个 Vant 组件 | legacy | 1.25 ms | 11.24 ms | - | 0.88 ms | 298.14 ms |
 
 ## 产物规模
 
@@ -78,8 +89,9 @@ BENCH_ITERATIONS=3 pnpm --filter weapp-vite run benchmark:auto-import:build
 按当前测试口径，`autoImportComponents` 的额外成本主要体现在两层：
 
 - support-files 同步阶段：
-  - 用到很少量 Vant 组件时，额外成本大约几十毫秒。
-  - 用到 20 个 Vant 组件时，额外成本接近 `100ms`。
+  - 用到很少量 Vant 组件时，额外成本大约 `61.58ms`。
+  - 用到 5 个 Vant 组件时，额外成本约 `141.63ms`。
+  - 用到 20 个 Vant 组件时，额外成本约 `118.78ms`。
 - 完整 `build` 阶段：
   - 使用 1 个 Vant 组件时，额外成本约 `16.71ms`
   - 使用 5 个 Vant 组件时，额外成本约 `260.40ms`
@@ -91,11 +103,33 @@ BENCH_ITERATIONS=3 pnpm --filter weapp-vite run benchmark:auto-import:build
 
 有，而且非常明确。
 
-- 在只用 `1` 个 Vant 组件时，当前实现比旧行为快约 `6.51x`
-- 在用 `5` 个 Vant 组件时，当前实现比旧行为快约 `5.37x`
-- 在用 `20` 个 Vant 组件时，当前实现仍快约 `1.88x`
+- 在只用 `1` 个 Vant 组件时，当前实现比旧行为快约 `5.12x`
+- 在用 `5` 个 Vant 组件时，当前实现比旧行为快约 `1.86x`
+- 在用 `20` 个 Vant 组件时，当前实现仍快约 `2.60x`
 
 原因很直接：旧行为会把 `VantResolver` 的全部组件都带入 manifest、typed-components 和 `components.d.ts`；当前实现只处理实际命中的组件。
+
+### 3. 还能不能继续优化
+
+可以，但优先级已经比较清楚了。
+
+从 profiling 看：
+
+- 旧行为的主瓶颈非常明确，几乎都堆在 `flush outputs`
+  - 这说明全量 resolver 组件进入 typed / vue 支持文件后，元数据预加载与最终写出是核心成本
+- 当前实现的剩余主瓶颈主要落在 `resolve tags/all`
+  - 使用 5 个组件时约 `72.37ms`
+  - 使用 20 个组件时约 `65.43ms`
+- 当前实现的第二梯队成本是 `flush outputs`
+  - 使用 20 个组件时约 `35.34ms`
+- `tsconfig sync` 基本不是问题
+- 模板扫描有一定波动，但不是当前最主要瓶颈
+
+因此，下一阶段如果还要继续提速，最值得优先挖的是：
+
+1. 降低 `resolve()` 阶段的单组件成本
+2. 减少当前模式下 `flush outputs` 的重复工作
+3. 最后再考虑模板扫描缓存
 
 ## 解释边界
 

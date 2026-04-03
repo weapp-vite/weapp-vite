@@ -37,6 +37,8 @@ const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '      }',
 ].join('\n')
 
+type PhaseTimings = Record<string, number>
+
 if (!Number.isFinite(iterations) || iterations <= 0) {
   throw new Error(`Invalid BENCH_ITERATIONS value: ${iterations}`)
 }
@@ -154,6 +156,7 @@ async function measureScenario(options: {
         manifestComponentCount: Object.keys(outputs.manifest).length,
         typedComponentCount: countTypedComponents(outputs.typedDefinition),
         vueComponentCount: countVueComponents(outputs.vueDefinition),
+        phases: ctx.__autoImportBenchPhases ?? {},
       }
     }
     finally {
@@ -279,7 +282,11 @@ async function createTempFixtureProject(
 }
 
 async function syncSupportFilesCurrent(ctx: Awaited<ReturnType<typeof createCompilerContext>>) {
-  await syncManagedTsconfigFiles(ctx)
+  const phases = createPhaseRecorder(ctx)
+
+  await recordPhase(phases, 'tsconfigSyncMs', async () => {
+    await syncManagedTsconfigFiles(ctx)
+  })
 
   const autoImportConfig = getAutoImportConfig(ctx.configService)
   if (!autoImportConfig || !ctx.autoImportService || !ctx.configService) {
@@ -287,22 +294,38 @@ async function syncSupportFilesCurrent(ctx: Awaited<ReturnType<typeof createComp
   }
 
   ctx.autoImportService.reset()
-  await registerPotentialComponents(ctx, autoImportConfig.globs)
-  const templateTags = await collectTemplateAutoImportTags(ctx)
-  for (const { tag, importerBaseName } of templateTags) {
-    ctx.autoImportService.resolve(tag, importerBaseName)
-  }
-  await ctx.autoImportService.awaitManifestWrites()
+  await recordPhase(phases, 'registerLocalComponentsMs', async () => {
+    await registerPotentialComponents(ctx, autoImportConfig.globs)
+  })
+  const templateTags = await recordPhase(phases, 'scanTemplateTagsMs', async () => {
+    return await collectTemplateAutoImportTags(ctx)
+  })
+  await recordPhase(phases, 'resolveTemplateTagsMs', async () => {
+    for (const { tag, importerBaseName } of templateTags) {
+      ctx.autoImportService!.resolve(tag, importerBaseName)
+    }
+  })
+  await recordPhase(phases, 'flushOutputsMs', async () => {
+    await ctx.autoImportService!.awaitManifestWrites()
+  })
 }
 
 async function syncSupportFilesDisabled(ctx: Awaited<ReturnType<typeof createCompilerContext>>) {
-  await syncManagedTsconfigFiles(ctx)
+  const phases = createPhaseRecorder(ctx)
+  await recordPhase(phases, 'tsconfigSyncMs', async () => {
+    await syncManagedTsconfigFiles(ctx)
+  })
   ctx.autoImportService?.reset()
-  await ctx.autoImportService?.awaitManifestWrites()
+  await recordPhase(phases, 'flushOutputsMs', async () => {
+    await ctx.autoImportService?.awaitManifestWrites()
+  })
 }
 
 async function syncSupportFilesLegacy(ctx: Awaited<ReturnType<typeof createCompilerContext>>) {
-  await syncManagedTsconfigFiles(ctx)
+  const phases = createPhaseRecorder(ctx)
+  await recordPhase(phases, 'tsconfigSyncMs', async () => {
+    await syncManagedTsconfigFiles(ctx)
+  })
 
   const autoImportConfig = getAutoImportConfig(ctx.configService)
   if (!autoImportConfig || !ctx.autoImportService || !ctx.configService) {
@@ -310,15 +333,21 @@ async function syncSupportFilesLegacy(ctx: Awaited<ReturnType<typeof createCompi
   }
 
   ctx.autoImportService.reset()
-  await registerPotentialComponents(ctx, autoImportConfig.globs)
+  await recordPhase(phases, 'registerLocalComponentsMs', async () => {
+    await registerPotentialComponents(ctx, autoImportConfig.globs)
+  })
 
-  for (const resolver of autoImportConfig.resolvers ?? []) {
-    for (const name of Object.keys(resolver.components ?? {})) {
-      ctx.autoImportService.resolve(name)
+  await recordPhase(phases, 'resolveAllResolverComponentsMs', async () => {
+    for (const resolver of autoImportConfig.resolvers ?? []) {
+      for (const name of Object.keys(resolver.components ?? {})) {
+        ctx.autoImportService!.resolve(name)
+      }
     }
-  }
+  })
 
-  await ctx.autoImportService.awaitManifestWrites()
+  await recordPhase(phases, 'flushOutputsMs', async () => {
+    await ctx.autoImportService!.awaitManifestWrites()
+  })
 }
 
 async function registerPotentialComponents(
@@ -412,13 +441,44 @@ function summarizeSamples(samples: Array<{
   manifestComponentCount: number
   typedComponentCount: number
   vueComponentCount: number
+  phases: PhaseTimings
 }>) {
+  const phaseKeys = new Set<string>()
+  for (const sample of samples) {
+    for (const key of Object.keys(sample.phases)) {
+      phaseKeys.add(key)
+    }
+  }
+
   return {
     duration: summarizeNumbers(samples.map(sample => sample.durationMs)),
     manifestComponentCount: summarizeNumbers(samples.map(sample => sample.manifestComponentCount)),
     typedComponentCount: summarizeNumbers(samples.map(sample => sample.typedComponentCount)),
     vueComponentCount: summarizeNumbers(samples.map(sample => sample.vueComponentCount)),
+    phases: Object.fromEntries(
+      Array.from(phaseKeys, key => [
+        key,
+        summarizeNumbers(samples.map(sample => sample.phases[key] ?? 0)),
+      ]),
+    ),
   }
+}
+
+function createPhaseRecorder(ctx: Awaited<ReturnType<typeof createCompilerContext>>) {
+  const target = ctx as typeof ctx & { __autoImportBenchPhases?: PhaseTimings }
+  target.__autoImportBenchPhases = {}
+  return target.__autoImportBenchPhases
+}
+
+async function recordPhase<T>(
+  phases: PhaseTimings,
+  key: string,
+  fn: () => Promise<T>,
+) {
+  const start = performance.now()
+  const result = await fn()
+  phases[key] = (phases[key] ?? 0) + (performance.now() - start)
+  return result
 }
 
 function summarizeNumbers(values: number[]) {
@@ -480,6 +540,8 @@ function printScenarioResult(result: Awaited<ReturnType<typeof runScenario>>) {
       `speedup ${result.currentVsLegacy.ratio.toFixed(2)}x`,
     ].join(' | '),
   )
+  printPhaseBreakdown('current phases', result.current.phases)
+  printPhaseBreakdown('legacy phases', result.legacy.phases)
 }
 
 function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>) {
@@ -507,8 +569,37 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
   lines.push('- `legacy`：模拟旧行为，在支持文件同步阶段预热全部 resolver 组件。')
   lines.push('- 三种模式都基于同一份临时 fixture、同一组模板标签与相同的页面内容。')
   lines.push('')
+  lines.push('## Profiling（mean）')
+  lines.push('')
+
+  for (const result of results) {
+    lines.push(`### 使用 ${result.usedCount} 个 Vant 组件`)
+    lines.push('')
+    lines.push('| 模式 | tsconfig | register local | scan template | resolve tags/all | flush outputs |')
+    lines.push('| --- | ---: | ---: | ---: | ---: | ---: |')
+    lines.push(`| current | ${formatPhaseMean(result.current.phases.tsconfigSyncMs)} | ${formatPhaseMean(result.current.phases.registerLocalComponentsMs)} | ${formatPhaseMean(result.current.phases.scanTemplateTagsMs)} | ${formatPhaseMean(result.current.phases.resolveTemplateTagsMs)} | ${formatPhaseMean(result.current.phases.flushOutputsMs)} |`)
+    lines.push(`| legacy | ${formatPhaseMean(result.legacy.phases.tsconfigSyncMs)} | ${formatPhaseMean(result.legacy.phases.registerLocalComponentsMs)} | - | ${formatPhaseMean(result.legacy.phases.resolveAllResolverComponentsMs)} | ${formatPhaseMean(result.legacy.phases.flushOutputsMs)} |`)
+    lines.push('')
+  }
 
   return `${lines.join('\n')}\n`
+}
+
+function printPhaseBreakdown(
+  label: string,
+  phases: Record<string, { mean: number }>,
+) {
+  const entries = Object.entries(phases)
+    .sort((a, b) => b[1].mean - a[1].mean)
+    .map(([key, value]) => `${key} ${value.mean.toFixed(2)}ms`)
+  if (entries.length === 0) {
+    return
+  }
+  console.log(`${label} | ${entries.join(' | ')}`)
+}
+
+function formatPhaseMean(phase?: { mean: number }) {
+  return phase ? `${phase.mean.toFixed(2)} ms` : '-'
 }
 
 function formatTimestamp(date: Date) {
