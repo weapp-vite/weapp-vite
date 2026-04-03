@@ -102,7 +102,7 @@ describe('request globals third-party integration', () => {
   it('supports fetch, graphql-request and axios through installed request globals', async () => {
     installRequestGlobals()
 
-    const fetchResponse = await fetch('https://example.com/fetch', {
+    const fetchResponse = await fetch('https://request-globals.invalid/fetch', {
       method: 'POST',
       body: JSON.stringify({ run: 1 }),
     })
@@ -112,7 +112,7 @@ describe('request globals third-party integration', () => {
     })
 
     const graphqlPayload = await gqlRequest<{ transport: { client: string } }>(
-      'https://example.com/graphql',
+      'https://request-globals.invalid/graphql',
       /* GraphQL */ `
         query RequestGlobalsTransport {
           transport {
@@ -123,7 +123,7 @@ describe('request globals third-party integration', () => {
     )
     expect(graphqlPayload.transport.client).toBe('graphql-request')
 
-    const axiosPayload = await axios.get('https://example.com/axios', {
+    const axiosPayload = await axios.get('https://request-globals.invalid/axios', {
       adapter: 'fetch',
     })
     expect(axiosPayload.data.transport).toBe('axios')
@@ -137,7 +137,7 @@ describe('request globals third-party integration', () => {
     installRequestGlobals()
 
     const graphqlPayload = await gqlRequest<{ transport: { client: string } }>(
-      'https://example.com/graphql',
+      'https://request-globals.invalid/graphql',
       /* GraphQL */ `
         query RequestGlobalsTransport {
           transport {
@@ -148,7 +148,7 @@ describe('request globals third-party integration', () => {
     )
     expect(graphqlPayload.transport.client).toBe('graphql-request')
 
-    const axiosPayload = await axios.get('https://example.com/axios', {
+    const axiosPayload = await axios.get('https://request-globals.invalid/axios', {
       adapter: 'fetch',
     })
     expect(axiosPayload.data.transport).toBe('axios')

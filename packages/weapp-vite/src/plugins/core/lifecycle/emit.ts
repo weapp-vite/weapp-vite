@@ -506,7 +506,7 @@ function createRequestGlobalsPassiveBindingsCode(bindingTargets: string[]) {
     const placeholderFactory = `__weappViteCreateLazyRequestGlobalsConstructor__(${JSON.stringify(target)})`
     const actualRef = `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}]`
     if (target === 'URL') {
-      return `var URL = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://example.com"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URL,["https://example.com"])?globalThis.URL:${placeholderFactory}`
+      return `var URL = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory}`
     }
     if (target === 'URLSearchParams') {
       return `var URLSearchParams = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["client=graphql-request"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory}`
@@ -521,7 +521,7 @@ function createRequestGlobalsPassiveBindingsCode(bindingTargets: string[]) {
       return `var Headers = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory}`
     }
     if (target === 'Request') {
-      return `var Request = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://example.com"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Request,["https://example.com"])?globalThis.Request:${placeholderFactory}`
+      return `var Request = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory}`
     }
     if (target === 'Response') {
       return `var Response = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[null])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Response,[null])?globalThis.Response:${placeholderFactory}`

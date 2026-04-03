@@ -61,13 +61,13 @@ describe('request globals runtime', () => {
     const { installRequestGlobals } = await import('../src')
     installRequestGlobals()
 
-    const response = await globalThis.fetch('https://example.com/data', {
+    const response = await globalThis.fetch('https://request-globals.invalid/data', {
       method: 'POST',
       body: JSON.stringify({ ok: true }),
     })
 
     expect(wpiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
-      url: 'https://example.com/data',
+      url: 'https://request-globals.invalid/data',
       method: 'POST',
       responseType: 'arraybuffer',
     }))
@@ -92,12 +92,12 @@ describe('request globals runtime', () => {
     installRequestGlobals()
 
     const xhr = new globalThis.XMLHttpRequest()
-    xhr.open('GET', 'https://example.com/data')
+    xhr.open('GET', 'https://request-globals.invalid/data')
     xhr.responseType = 'json'
     await xhr.send()
 
     expect(wpiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
-      url: 'https://example.com/data',
+      url: 'https://request-globals.invalid/data',
       method: 'GET',
     }))
     expect(xhr.status).toBe(200)
@@ -161,7 +161,7 @@ describe('request globals runtime', () => {
         targets: ['fetch'],
       })
 
-      expect(() => new globalThis.URL('https://example.com/graphql')).not.toThrow()
+      expect(() => new globalThis.URL('https://request-globals.invalid/graphql')).not.toThrow()
       expect(new globalThis.URLSearchParams({ client: 'graphql-request' }).toString()).toBe('client=graphql-request')
     }
     finally {
@@ -172,10 +172,10 @@ describe('request globals runtime', () => {
 
   it('provides URL and URLSearchParams support required by graphql-request style callers', async () => {
     const { URLPolyfill, URLSearchParamsPolyfill } = await import('../src/url')
-    const url = new URLPolyfill('https://example.com/graphql?existing=1')
+    const url = new URLPolyfill('https://request-globals.invalid/graphql?existing=1')
     url.searchParams.append('query', 'hello world')
 
-    expect(url.toString()).toBe('https://example.com/graphql?existing=1&query=hello+world')
+    expect(url.toString()).toBe('https://request-globals.invalid/graphql?existing=1&query=hello+world')
 
     const searchParams = new URLSearchParamsPolyfill()
     searchParams.append('variables', '{"ok":true}')
