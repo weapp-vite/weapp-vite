@@ -63,6 +63,17 @@ pnpm add -g weapp-ide-cli
 
 - <https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html>
 
+其中 `weapp cloud` 为云开发命令族入口，可继续透传官方子命令，例如：
+
+```bash
+weapp cloud env list
+weapp cloud functions list
+weapp cloud functions info --name hello
+weapp cloud functions deploy --name hello
+weapp cloud functions inc-deploy --name hello
+weapp cloud functions download --name hello
+```
+
 缓存清理示例：
 
 ```bash
@@ -70,6 +81,16 @@ weapp cache --clean compile
 weapp cache --clean network
 weapp cache --clean all
 ```
+
+支持的缓存类型：
+
+- `storage`
+- `file`
+- `compile`
+- `auth`
+- `network`
+- `session`
+- `all`
 
 ### 2) automator 增强命令
 

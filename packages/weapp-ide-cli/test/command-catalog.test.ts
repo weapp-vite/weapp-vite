@@ -8,11 +8,47 @@ import {
 } from '../src/cli/command-catalog'
 import { AUTOMATOR_COMMAND_NAMES } from '../src/cli/run-automator'
 
+const OFFICIAL_WECHAT_CLI_COMMAND_NAMES = [
+  'login',
+  'islogin',
+  'preview',
+  'upload',
+  'auto-preview',
+  'auto',
+  'auto-replay',
+  'build-npm',
+  'cache',
+  'open',
+  'open-other',
+  'close',
+  'quit',
+  'reset-fileutils',
+  'cloud',
+] as const
+
+const EXTRA_SUPPORTED_WECHAT_CLI_COMMAND_NAMES = [
+  'engine',
+  'build-ipa',
+  'build-apk',
+] as const
+
 describe('command catalog', () => {
-  it('contains all wechat official command entries', () => {
-    expect(WECHAT_CLI_COMMAND_NAMES).toContain('preview')
-    expect(WECHAT_CLI_COMMAND_NAMES).toContain('upload')
-    expect(WECHAT_CLI_COMMAND_NAMES).toContain('cloud')
+  it('contains all wechat official command index entries', () => {
+    for (const command of OFFICIAL_WECHAT_CLI_COMMAND_NAMES) {
+      expect(WECHAT_CLI_COMMAND_NAMES).toContain(command)
+    }
+  })
+
+  it('keeps extra supported wechat cli entries', () => {
+    for (const command of EXTRA_SUPPORTED_WECHAT_CLI_COMMAND_NAMES) {
+      expect(WECHAT_CLI_COMMAND_NAMES).toContain(command)
+    }
+  })
+
+  it('does not duplicate wechat cli entries', () => {
+    expect(new Set(WECHAT_CLI_COMMAND_NAMES).size).toBe(
+      WECHAT_CLI_COMMAND_NAMES.length,
+    )
   })
 
   it('contains all automator command entries', () => {
