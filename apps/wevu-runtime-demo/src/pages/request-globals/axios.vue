@@ -30,7 +30,7 @@ async function runChecks() {
   }
 
   try {
-    const payload = await axios.get('https://request-globals.test/axios')
+    const payload = await axios.get('https://request-globals.invalid/axios')
     state.value = {
       ...state.value,
       ...createSuccessState(JSON.stringify(payload.data)),

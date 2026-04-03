@@ -239,12 +239,38 @@ describe.sequential('e2e app: request-clients-real', () => {
     }
   })
 
-  it('skips axios on WeChat DevTools until the runtime URL constructor bug is fixed', async (ctx) => {
-    ctx.skip('WeChat DevTools 当前存在 URL constructor 运行时缺陷，axios real runtime case 暂时跳过。')
+  it('covers axios against a local real server', async (ctx) => {
+    if (sharedInfraUnavailableMessage) {
+      ctx.skip(sharedInfraUnavailableMessage)
+    }
+    const miniProgram = await getMiniProgram(ctx)
+    const page = await miniProgram.reLaunch(withBaseUrl('/pages/axios/index'))
+    if (!page) {
+      throw new Error('Failed to launch /pages/axios/index')
+    }
+
+    const result = await page.callMethod('runE2E')
+    expect(result?.ok, JSON.stringify({ result, requestCounts })).toBe(true)
+    expect(result?.snapshot?.requestPath).toBe('/axios')
+    expect(result?.snapshot?.payload).toContain('"transport":"axios"')
+    expect(result?.snapshot?.pageStatus).toBe('全部通过')
   })
 
-  it('skips graphql-request on WeChat DevTools until the runtime URL constructor bug is fixed', async (ctx) => {
-    ctx.skip('WeChat DevTools 当前存在 URL constructor 运行时缺陷，graphql-request real runtime case 暂时跳过。')
+  it('covers graphql-request against a local real server', async (ctx) => {
+    if (sharedInfraUnavailableMessage) {
+      ctx.skip(sharedInfraUnavailableMessage)
+    }
+    const miniProgram = await getMiniProgram(ctx)
+    const page = await miniProgram.reLaunch(withBaseUrl('/pages/graphql-request/index'))
+    if (!page) {
+      throw new Error('Failed to launch /pages/graphql-request/index')
+    }
+
+    const result = await page.callMethod('runE2E')
+    expect(result?.ok, JSON.stringify({ result, requestCounts })).toBe(true)
+    expect(result?.snapshot?.requestPath).toBe('/graphql')
+    expect(result?.snapshot?.payload).toContain('"client":"graphql-request"')
+    expect(result?.snapshot?.pageStatus).toBe('全部通过')
   })
 
   it('covers vue-query with tab switch, refetch and query key rotation against a local real server', async (ctx) => {

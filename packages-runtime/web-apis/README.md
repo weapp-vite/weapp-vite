@@ -33,7 +33,7 @@ import { installRequestGlobals } from '@wevu/web-apis'
 
 installRequestGlobals()
 
-const response = await fetch('https://example.com/data')
+const response = await fetch('https://request-globals.invalid/data')
 console.log(await response.json())
 ```
 
