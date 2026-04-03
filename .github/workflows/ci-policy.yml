@@ -10,9 +10,13 @@ permissions:
 
 jobs:
   policy:
-    name: Policy Checks
+    name: Policy Checks (Node ${{ matrix.node-version }})
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
 
     steps:
       - name: Check out code
@@ -25,7 +29,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 

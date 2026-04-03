@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      node-version:
+        description: Node.js version for the release workflow
+        required: true
+        default: '24'
+        type: choice
+        options:
+          - '20'
+          - '24'
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 env:
@@ -18,7 +27,7 @@ permissions:
 
 jobs:
   release:
-    name: Release
+    name: Release (Node ${{ github.event.inputs['node-version'] || '24' }})
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -29,7 +38,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: ${{ github.event.inputs['node-version'] || '24' }}
           cache: pnpm
 
       - name: Install Dependencies

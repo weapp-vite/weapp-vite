@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   miniapp-e2e-ci:
-    name: Miniapp E2E CI (${{ matrix.os }} / ${{ matrix.platform }})
+    name: Miniapp E2E CI (${{ matrix.os }} / Node ${{ matrix.node-version }} / ${{ matrix.platform }})
     timeout-minutes: 35
     runs-on: ${{ matrix.os }}
     strategy:
@@ -19,6 +19,7 @@ jobs:
         platform:
           - weapp
         os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20, 22]
 
     steps:
       - name: Enable Git long paths on Windows
@@ -35,7 +36,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -58,9 +59,13 @@ jobs:
         run: pnpm e2e:ci
 
   web-e2e-baseline:
-    name: Web E2E Baseline
+    name: Web E2E Baseline (Node ${{ matrix.node-version }})
     timeout-minutes: 20
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
 
     steps:
       - name: Check out code
@@ -73,7 +78,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
