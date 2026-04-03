@@ -28,7 +28,7 @@ async function runChecks() {
   }
 
   try {
-    const response = await fetch('https://request-globals.test/fetch', {
+    const response = await fetch('https://request-globals.invalid/fetch', {
       method: 'POST',
       body: JSON.stringify({ run: state.value.runCount }),
     })

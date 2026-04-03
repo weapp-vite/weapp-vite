@@ -40,7 +40,7 @@ const PRETTY_NODE_MODULES_RE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?
 const REQUEST_GLOBAL_EXPORT_RE = /Object\.defineProperty\(exports,\s*(?:`([^`]+)`|'([^']+)'|"([^"]+)"),\s*\{[\s\S]*?get:function\(\)\{return ([A-Za-z_$][\w$]*)\}\}\)/g
 const REQUEST_GLOBAL_INSTALLER_RE = /function\s+([A-Za-z_$][\w$]*)\([^)]*=\{\}\)\{[\s\S]{0,200}?targets\?\?\[[\s\S]{0,80}?fetch[\s\S]{0,80}?Headers[\s\S]{0,80}?Request[\s\S]{0,80}?Response[\s\S]{0,80}?AbortController[\s\S]{0,80}?AbortSignal[\s\S]{0,80}?XMLHttpRequest[\s\S]{0,240}?return [^}]+\}/
 const REQUEST_GLOBAL_ENTRY_NAME_RE = /\.[^/.]+$/
-const REQUEST_GLOBAL_REQUIRE_RE = /^(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\((`([^`]+)`|'([^']+)'|"([^"]+)")\);?/
+const REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE = /([A-Za-z_$][\w$]*)\s*=\s*require\((`([^`]+)`|'([^']+)'|"([^"]+)")\)/g
 const REQUEST_GLOBAL_TARGET_SIGNATURES = [
   'fetch',
   'Headers',
@@ -490,6 +490,55 @@ function resolveRequestGlobalsBindingTargets(targets: string[]) {
   return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
 }
 
+function createRequestGlobalsPassiveBindingsCode(bindingTargets: string[]) {
+  const helperCode = [
+    'const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))',
+    'function __weappViteMarkRequestGlobalsPlaceholder__(value){try{Object.defineProperty(value,"__weappViteRequestGlobalsPlaceholder__",{value:true,configurable:true})}catch{value.__weappViteRequestGlobalsPlaceholder__=true}return value}',
+    'function __weappViteCreateLazyRequestGlobalsFunction__(name){const placeholder=function(...args){const actual=__weappViteRequestGlobalsActuals__[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return actual.apply(this,args)};return __weappViteMarkRequestGlobalsPlaceholder__(placeholder)}',
+    'function __weappViteCreateLazyRequestGlobalsConstructor__(name){const placeholder=function(...args){const actual=__weappViteRequestGlobalsActuals__[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return Reflect.construct(actual,args)};return __weappViteMarkRequestGlobalsPlaceholder__(placeholder)}',
+    'function __weappViteHasUsableRequestGlobalsConstructor__(value,args){if(typeof value!=="function"||value?.__weappViteRequestGlobalsPlaceholder__===true){return false}try{return Reflect.construct(value,args),true}catch{return false}}',
+  ].join(';')
+  const bindingCode = bindingTargets.map((target) => {
+    if (target === 'fetch') {
+      return 'var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"&&__weappViteRequestGlobalsActuals__["fetch"]?.__weappViteRequestGlobalsPlaceholder__!==true?__weappViteRequestGlobalsActuals__["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.fetch:__weappViteCreateLazyRequestGlobalsFunction__("fetch")'
+    }
+
+    const placeholderFactory = `__weappViteCreateLazyRequestGlobalsConstructor__(${JSON.stringify(target)})`
+    const actualRef = `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}]`
+    if (target === 'URL') {
+      return `var URL = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory}`
+    }
+    if (target === 'URLSearchParams') {
+      return `var URLSearchParams = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["client=graphql-request"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory}`
+    }
+    if (target === 'Blob') {
+      return `var Blob = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory}`
+    }
+    if (target === 'FormData') {
+      return `var FormData = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory}`
+    }
+    if (target === 'Headers') {
+      return `var Headers = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory}`
+    }
+    if (target === 'Request') {
+      return `var Request = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory}`
+    }
+    if (target === 'Response') {
+      return `var Response = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[null])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Response,[null])?globalThis.Response:${placeholderFactory}`
+    }
+    if (target === 'XMLHttpRequest') {
+      return `var XMLHttpRequest = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory}`
+    }
+    if (target === 'AbortController') {
+      return `var AbortController = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory}`
+    }
+
+    return `var ${target} = typeof ${actualRef}==="function"&&${actualRef}?.__weappViteRequestGlobalsPlaceholder__!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.${target}:${placeholderFactory}`
+  }).join(';')
+
+  return `${helperCode};${bindingCode};`
+}
+
 function injectRequestGlobalsBundleRuntime(
   bundle: OutputBundle,
   targets: string[],
@@ -517,20 +566,66 @@ function injectRequestGlobalsBundleRuntime(
     }
 
     installerChunks.set(toPosixPath(chunk.fileName), exportName)
-    const placeholderCode = bindingTargets.map((target) => {
-      const placeholderValue = target === 'fetch'
-        ? 'function __weappViteFetchPlaceholder__(){throw new Error("fetch is not initialized")}'
-        : `function ${target}(){}`
-      return `var ${target} = typeof globalThis.${target} !== "undefined" ? globalThis.${target} : ${placeholderValue}`
-    }).join(';')
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(bindingTargets)
     const runtimeBindingCode = [
       `const __weappViteRequestGlobalsBundleHost__ = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      ...bindingTargets.map(target => `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappViteRequestGlobalsBundleHost__.${target}`),
       ...bindingTargets.map(target => `${target} = __weappViteRequestGlobalsBundleHost__.${target}`),
     ].join(';')
-    chunk.code = `/* __weappViteRequestGlobalsBundleInstalled__ */ ${placeholderCode};\n${chunk.code}\n;${runtimeBindingCode};\n`
+    const bundlePrelude = `/* __weappViteRequestGlobalsBundleInstalled__ */ ${passiveBindingsCode}\n`
+    const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
+    if (firstRequireMatch?.[0]) {
+      chunk.code = `${bundlePrelude}${chunk.code.replace(firstRequireMatch[0], match => `${match};${runtimeBindingCode}`)}\n`
+      continue
+    }
+
+    chunk.code = `${bundlePrelude}${chunk.code}\n;${runtimeBindingCode};\n`
   }
 
   return installerChunks
+}
+
+function injectRequestGlobalsPassiveBindings(
+  bundle: OutputBundle,
+  installerChunks: Map<string, string>,
+  targets: string[],
+  entriesMap: Map<string, { type?: string } | undefined> | undefined,
+) {
+  if (installerChunks.size === 0 || targets.length === 0) {
+    return
+  }
+
+  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  if (bindingTargets.length === 0) {
+    return
+  }
+
+  const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(bindingTargets)
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    if (installerChunks.has(toPosixPath(chunk.fileName))) {
+      continue
+    }
+    if (
+      chunk.code.includes('__weappViteRequestGlobalsPassiveBindings__')
+      || chunk.code.includes('__weappViteRequestGlobalsLocalBindings__')
+      || chunk.code.includes('__weappViteRequestGlobalsBundleInstalled__')
+    ) {
+      continue
+    }
+
+    const entryName = chunk.fileName.replace(REQUEST_GLOBAL_ENTRY_NAME_RE, '')
+    const entryType = entriesMap?.get(entryName)?.type
+    if (entryType === 'page' || entryType === 'component') {
+      continue
+    }
+
+    chunk.code = `/* __weappViteRequestGlobalsPassiveBindings__ */ ${passiveBindingsCode}\n${chunk.code}`
+  }
 }
 
 function injectRequestGlobalsLocalBindings(
@@ -563,32 +658,37 @@ function injectRequestGlobalsLocalBindings(
     if (chunk.code.includes('__weappViteRequestGlobalsLocalBindings__')) {
       continue
     }
-    if (chunk.code.includes('__weappViteRequestGlobalsHost__') || chunk.code.includes('__weappViteInstallRequestGlobals')) {
-      continue
+    let requireImportLiteral: string | null = null
+    let exportName: string | undefined
+
+    for (const requireMatch of chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)) {
+      const importee = requireMatch[3] ?? requireMatch[4] ?? requireMatch[5]
+      if (!importee) {
+        continue
+      }
+
+      const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, importee)
+      exportName = installerChunks.get(installerChunkFileName)
+      if (!exportName) {
+        continue
+      }
+
+      requireImportLiteral = requireMatch[2] ?? null
+      break
     }
 
-    const requireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_RE)
-    const requireAlias = requireMatch?.[2]
-    const importee = requireMatch?.[4] ?? requireMatch?.[5] ?? requireMatch?.[6]
-    if (!requireAlias || !importee) {
-      continue
-    }
-
-    const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, importee)
-    const exportName = installerChunks.get(installerChunkFileName)
-    if (!exportName) {
+    if (!requireImportLiteral || !exportName) {
       continue
     }
 
     const injectionCode = [
-      `const __weappViteRequestGlobalsHost__ = ${requireAlias}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
-      ...bindingTargets.map(target => `var ${target} = __weappViteRequestGlobalsHost__.${target}`),
+      `const __weappViteChunkRequestGlobalsModule__ = require(${requireImportLiteral})`,
+      `const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      'const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))',
+      ...bindingTargets.map(target => `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappViteChunkRequestGlobalsHost__.${target}`),
+      ...bindingTargets.map(target => `var ${target} = __weappViteChunkRequestGlobalsHost__.${target}`),
     ].join(';')
-
-    chunk.code = chunk.code.replace(
-      REQUEST_GLOBAL_REQUIRE_RE,
-      match => `${match};/* __weappViteRequestGlobalsLocalBindings__ */ ${injectionCode};`,
-    )
+    chunk.code = `/* __weappViteRequestGlobalsLocalBindings__ */ ${injectionCode};\n${chunk.code}`
   }
 }
 
@@ -988,6 +1088,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     if (injectRequestGlobalsOptions?.targets?.length) {
       const installerChunks = injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets)
+      injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
       injectRequestGlobalsLocalBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
     }
 

@@ -10,6 +10,7 @@ import {
   createSharedPathResolver,
   createStringOrRegExpMatcher,
   normalizeSharedPathCandidate,
+  resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,
   resolveSharedPathRoot,
 } from './sharedBuildConfig'
@@ -88,6 +89,14 @@ describe('sharedBuildConfig', () => {
 
     expect(resolveSharedPath('shared/feature.ts')).toBeUndefined()
     expect(resolveSharedPath('/project/src/pages/index.ts')).toBeUndefined()
+    expect(resolveSharedPath('/external/workspace/feature.ts')).toBeUndefined()
+  })
+
+  it('normalizes node_modules paths without leaking the node_modules segment', () => {
+    expect(resolveNodeModulesSharedPath('/project/node_modules/fake-pkg/index.js')).toBe('fake-pkg/index.js')
+    expect(resolveNodeModulesSharedPath('/project/node_modules/.pnpm/@scope+pkg@1.0.0/node_modules/@scope/pkg/dist/index.mjs'))
+      .toBe('@scope/pkg/dist/index.mjs')
+    expect(resolveNodeModulesSharedPath('/project/src/shared/feature.ts')).toBeUndefined()
   })
 
   it('resolves chunk options with defaults and overrides', () => {
@@ -248,7 +257,7 @@ describe('sharedBuildConfig', () => {
     expect(inlineResult).toBeUndefined()
   })
 
-  it('falls back to normalized relative ids for non-src path chunks', () => {
+  it('uses package-relative ids for node_modules path chunks', () => {
     const resolveName = createChunkNameResolver({
       sharedMode: 'path',
       sharedPathRoot: 'src/shared',
@@ -263,7 +272,7 @@ describe('sharedBuildConfig', () => {
       }),
     })
 
-    expect(result).toBe('node_modules/fake-pkg/index')
+    expect(result).toBe('fake-pkg/index')
   })
 
   it('falls back to the default sharedMode when overrides do not match', () => {

@@ -30,7 +30,7 @@ async function runChecks() {
 
   try {
     const payload = await gqlRequest<{ transport: { client: string, source: string } }>(
-      'https://request-globals.test/graphql',
+      'https://request-globals.invalid/graphql',
       /* GraphQL */ `
         query RequestGlobalsTransport {
           transport {

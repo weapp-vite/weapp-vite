@@ -102,7 +102,7 @@ describe('request globals third-party integration', () => {
   it('supports fetch, graphql-request and axios through installed request globals', async () => {
     installRequestGlobals()
 
-    const fetchResponse = await fetch('https://request-globals.test/fetch', {
+    const fetchResponse = await fetch('https://request-globals.invalid/fetch', {
       method: 'POST',
       body: JSON.stringify({ run: 1 }),
     })
@@ -112,7 +112,7 @@ describe('request globals third-party integration', () => {
     })
 
     const graphqlPayload = await gqlRequest<{ transport: { client: string } }>(
-      'https://request-globals.test/graphql',
+      'https://request-globals.invalid/graphql',
       /* GraphQL */ `
         query RequestGlobalsTransport {
           transport {
@@ -123,10 +123,35 @@ describe('request globals third-party integration', () => {
     )
     expect(graphqlPayload.transport.client).toBe('graphql-request')
 
-    const axiosPayload = await axios.get('https://request-globals.test/axios', {
+    const axiosPayload = await axios.get('https://request-globals.invalid/axios', {
       adapter: 'fetch',
     })
     expect(axiosPayload.data.transport).toBe('axios')
     expect(wpiRequestMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('replaces broken host URL constructors before graphql-request and axios use them', async () => {
+    setGlobalValue('URL', () => undefined)
+    setGlobalValue('URLSearchParams', () => undefined)
+
+    installRequestGlobals()
+
+    const graphqlPayload = await gqlRequest<{ transport: { client: string } }>(
+      'https://request-globals.invalid/graphql',
+      /* GraphQL */ `
+        query RequestGlobalsTransport {
+          transport {
+            client
+          }
+        }
+      `,
+    )
+    expect(graphqlPayload.transport.client).toBe('graphql-request')
+
+    const axiosPayload = await axios.get('https://request-globals.invalid/axios', {
+      adapter: 'fetch',
+    })
+    expect(axiosPayload.data.transport).toBe('axios')
+    expect(wpiRequestMock).toHaveBeenCalledTimes(2)
   })
 })

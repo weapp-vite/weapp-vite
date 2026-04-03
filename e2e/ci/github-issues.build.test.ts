@@ -1,4 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse fs-extra helpers to inspect generated artifacts. */
+import { execa } from 'execa'
+import { fdir } from 'fdir'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -7,6 +9,7 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
@@ -21,7 +24,49 @@ async function runBuild() {
   })
 }
 
+async function scanFiles(root: string) {
+  // eslint-disable-next-line new-cap
+  const fd = new fdir({
+    relativePaths: true,
+    pathSeparator: '/',
+  })
+  return (await fd.crawl(root).withPromise()).sort()
+}
+
+async function runIssue393Build() {
+  await fs.remove(ISSUE_393_DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      WEAPP_GITHUB_ISSUE_393: 'true',
+    },
+  })
+}
+
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {
+    await runIssue393Build()
+
+    const files = await scanFiles(ISSUE_393_DIST_ROOT)
+    const pageJs = await fs.readFile(path.join(ISSUE_393_DIST_ROOT, 'pages/issue-393/index.js'), 'utf8')
+
+    expect(files).toContain('pages/issue-393/index.js')
+    expect(files).toContain('debounce/index.js')
+    expect(files.some(file => file.startsWith('node_modules/'))).toBe(false)
+    expect(pageJs).toContain('../../debounce/index.js')
+  })
+
   it('issue #369: does not inject vite client types when weapp.web is not configured', async () => {
     await runBuild()
 
