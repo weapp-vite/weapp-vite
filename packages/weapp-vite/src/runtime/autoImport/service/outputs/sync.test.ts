@@ -486,6 +486,10 @@ describe('autoImport outputs sync helpers', () => {
 
   it('reuses prepared sync state across typed, html and vue outputs in one flush', async () => {
     const outputsState = createOutputsState()
+    const getComponentMetadata = vi.fn(() => ({
+      types: new Map<string, string>(),
+      docs: new Map<string, string>(),
+    }))
     const options = createCommonOptions({
       ctx: {
         configService: {
@@ -494,6 +498,7 @@ describe('autoImport outputs sync helpers', () => {
         },
       },
       outputsState,
+      getComponentMetadata,
       resolverComponentsMapRef: { value: {} },
       resolveNavigationImport: vi.fn(),
     })
@@ -516,5 +521,6 @@ describe('autoImport outputs sync helpers', () => {
     expect(options.syncResolverComponentProps).toHaveBeenCalledTimes(1)
     expect(options.preloadResolverComponentMetadata).toHaveBeenCalledTimes(1)
     expect(collectAllComponentNamesMock).toHaveBeenCalledTimes(1)
+    expect(getComponentMetadata).toHaveBeenCalledTimes(2)
   })
 })

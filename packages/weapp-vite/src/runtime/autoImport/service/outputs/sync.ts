@@ -44,9 +44,11 @@ async function getPreparedSyncState(options: CommonSyncOptions): Promise<Prepare
     outputsState.preparedSyncStatePromise = Promise.resolve().then(() => {
       options.syncResolverComponentProps()
       options.preloadResolverComponentMetadata()
-      return {
-        componentNames: collectAllComponentNames(options),
-      }
+      const componentNames = collectAllComponentNames(options)
+      const componentMetadataMap = new Map(
+        componentNames.map(name => [name, options.getComponentMetadata(name)]),
+      )
+      return { componentNames, componentMetadataMap }
     })
   }
   return await outputsState.preparedSyncStatePromise
@@ -230,8 +232,11 @@ export async function syncTypedComponentsDefinition(
     return
   }
 
-  const { componentNames } = await getPreparedSyncState(options)
-  const nextDefinition = createTypedComponentsDefinition(componentNames, options.getComponentMetadata)
+  const prepared = await getPreparedSyncState(options)
+  const nextDefinition = createTypedComponentsDefinition(
+    prepared.componentNames,
+    name => prepared.componentMetadataMap.get(name) ?? { types: new Map(), docs: new Map() },
+  )
   if (nextDefinition === outputsState.lastWrittenTypedDefinition && settings.outputPath === outputsState.lastTypedDefinitionOutputPath) {
     return
   }
@@ -282,14 +287,14 @@ export async function syncVueComponentsDefinition(
     return
   }
 
-  const { componentNames } = await getPreparedSyncState(options)
+  const prepared = await getPreparedSyncState(options)
   const outputPath = settings.outputPath
 
   const layoutNames = await collectLayoutNames(configService.absoluteSrcRoot)
   const layoutPropsMap = await collectLayoutPropsMap(ctx)
   const layoutTypesOutputPath = resolveLayoutTypesDefaultPath(configService)
   const layoutTypesDefinition = createLayoutTypesDefinition(layoutNames, layoutPropsMap)
-  const nextDefinition = createVueComponentsDefinition(componentNames, options.getComponentMetadata, {
+  const nextDefinition = createVueComponentsDefinition(prepared.componentNames, name => prepared.componentMetadataMap.get(name) ?? { types: new Map(), docs: new Map() }, {
     useTypedComponents: getTypedComponentsSettings({ configService } as MutableCompilerContext).enabled,
     moduleName: settings.moduleName,
     layoutNames,
@@ -360,9 +365,13 @@ export async function syncHtmlCustomData(
     return
   }
 
-  const { componentNames } = await getPreparedSyncState(options)
+  const prepared = await getPreparedSyncState(options)
   const builtinTags = loadWeappBuiltinHtmlTags()
-  const nextDefinition = createHtmlCustomDataDefinition(componentNames, options.getComponentMetadata, builtinTags)
+  const nextDefinition = createHtmlCustomDataDefinition(
+    prepared.componentNames,
+    name => prepared.componentMetadataMap.get(name) ?? { types: new Map(), docs: new Map() },
+    builtinTags,
+  )
   if (nextDefinition === outputsState.lastWrittenHtmlCustomData && settings.outputPath === outputsState.lastHtmlCustomDataOutputPath) {
     return
   }

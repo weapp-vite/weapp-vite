@@ -186,3 +186,49 @@ BENCH_ITERATIONS=3 pnpm --filter weapp-vite run benchmark:auto-import:build
 - 这次优化主要命中了 support-files 阶段的 resolver 热点。
 - 完整 build 的主要成本已经不只在重复 `resolve()`，而更可能在支持文件输出同步与整体构建链路的叠加成本上。
 - 如果继续以“用户感知编译时间”为目标推进，下一阶段应该优先检查 `flushOutputs` 的批量化/去重复策略，而不是继续深挖 resolver 命中缓存。
+
+## 追补：2026-04-04 flush 共享准备态 + metadata 快照复用
+
+在上一轮把重复 `resolve()` 压下去之后，热点已经集中到 `flushOutputs`。因此又做了第二轮 follow-up：
+
+1. typed/html/vue 三类输出在同一轮 flush 中共享准备态，不再重复做：
+   - `syncResolverComponentProps()`
+   - `preloadResolverComponentMetadata()`
+   - `collectAllComponentNames()`
+2. 在共享准备态中提前构建一次组件 metadata 快照，避免 typed/html/vue 各自重复调用 `getComponentMetadata()`。
+
+### support-files 串行复测
+
+同样使用 `BENCH_ITERATIONS=3` 串行执行后，`current` 模式均值进一步收敛为：
+
+| 场景 | 上一轮 current avg | 本轮 current avg | 变化 |
+| --- | ---: | ---: | ---: |
+| 使用 1 个 Vant 组件 | 65.59 ms | 39.66 ms | -25.93 ms（-39.53%） |
+| 使用 5 个 Vant 组件 | 49.79 ms | 38.48 ms | -11.31 ms（-22.72%） |
+| 使用 20 个 Vant 组件 | 385.15 ms | 84.18 ms | -300.97 ms（-78.14%） |
+
+phase 变化更直接：
+
+- `resolveTemplateTagsMs`
+  - `1` 个组件：`0.33ms -> 0.25ms`
+  - `5` 个组件：`0.26ms -> 0.22ms`
+  - `20` 个组件：`1.02ms -> 0.46ms`
+- `flushOutputsMs`
+  - `1` 个组件：`2.50ms -> 8.55ms`
+  - `5` 个组件：`18.26ms -> 7.98ms`
+  - `20` 个组件：`203.57ms -> 19.48ms`
+
+这里最关键的是 `20` 组件场景：当前实现的大头不再是 resolver，也不再是巨大的 flush 放大，而是更接近由本地组件注册与少量输出写入共同构成的常规成本。
+
+### 当前判断
+
+到这一步，`autoImportComponents` 当前实现已经把两类明显的重复工作都砍掉了：
+
+- 重复 resolver 命中
+- 同一轮 flush 内重复准备数据、重复抓 metadata
+
+如果还要继续提速，优先级会进一步下沉到：
+
+1. `registerPotentialComponents()` / 本地组件扫描注册
+2. Vue 输出本身的字符串生成与写文件成本
+3. 更接近真实项目的 full build / dev 冷启动链路
