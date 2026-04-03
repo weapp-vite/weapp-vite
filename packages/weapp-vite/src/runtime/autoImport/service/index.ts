@@ -54,6 +54,7 @@ export interface AutoImportService {
 export function createAutoImportService(ctx: MutableCompilerContext): AutoImportService {
   const autoImportState = ctx.runtimeState.autoImport
   const registry = autoImportState.registry
+  const resolvedResolverComponents = autoImportState.resolvedResolverComponents
   const manifestFileName = DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME
   const manifestCache = new Map<string, string>()
   const componentMetadataMap = new Map<string, ComponentMetadata>()
@@ -86,6 +87,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   const resolverHelpers = createResolverHelpers({
     ctx,
     registry,
+    resolvedResolverComponents,
     componentMetadataMap,
     resolverComponentNames,
     resolverComponentsMapRef,
@@ -134,6 +136,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       registry.clear()
       autoImportState.matcher = undefined
       autoImportState.matcherKey = ''
+      resolvedResolverComponents.clear()
       outputsHelpers.scheduleManifestWrite(true)
       componentMetadataMap.clear()
       resolverComponentNames.clear()
@@ -190,6 +193,8 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
 
       const resolvedValue = resolverHelpers.resolveWithResolvers(componentName, importerBaseName)
       if (resolvedValue) {
+        const previousFrom = resolvedResolverComponents.get(resolvedValue.name)
+        resolvedResolverComponents.set(resolvedValue.name, resolvedValue.from)
         const resolved: ResolverAutoImportMatch = {
           kind: 'resolver',
           value: resolvedValue,
@@ -213,6 +218,9 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         }
         if (vueSettings.enabled) {
           outputsHelpers.scheduleVueComponentsWrite(true)
+        }
+        if (previousFrom !== resolvedValue.from) {
+          outputsHelpers.scheduleManifestWrite(true)
         }
         return resolved
       }

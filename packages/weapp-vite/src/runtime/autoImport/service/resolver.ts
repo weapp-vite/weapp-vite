@@ -27,6 +27,7 @@ export interface ResolverHelpers {
 interface ResolverState {
   ctx: MutableCompilerContext
   registry: Map<string, LocalAutoImportMatch>
+  resolvedResolverComponents: Map<string, string>
   componentMetadataMap: Map<string, ComponentMetadata>
   resolverComponentNames: Set<string>
   resolverComponentsMapRef: { value: Record<string, string> }
@@ -159,23 +160,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   }
 
   function collectResolverComponents(): Record<string, string> {
-    const resolvers = getAutoImportConfig(state.ctx.configService)?.resolvers
-    if (!Array.isArray(resolvers)) {
-      return {}
-    }
-
-    const entries: [string, string][] = []
-    for (const resolver of resolvers as Resolver[]) {
-      const map = resolver?.components
-      if (!map) {
-        continue
-      }
-      for (const [name, from] of Object.entries(map)) {
-        entries.push([name, from])
-      }
-    }
-
-    return Object.fromEntries(entries)
+    return Object.fromEntries(state.resolvedResolverComponents)
   }
 
   function syncResolverComponentProps() {

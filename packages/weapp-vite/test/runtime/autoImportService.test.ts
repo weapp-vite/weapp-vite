@@ -219,6 +219,7 @@ describe('autoImportService', () => {
       name: 'van-button',
       from: '@vant/weapp/button',
     })
+    expect(ctx.runtimeState.autoImport.resolvedResolverComponents.get('van-button')).toBe('@vant/weapp/button')
   })
 
   it('supports object-style resolver via components map', () => {
@@ -263,6 +264,8 @@ describe('autoImportService', () => {
 
   it('persists registered components to the manifest file', async () => {
     await registerAllLocalComponents()
+    ctx.autoImportService.resolve('van-button')
+    await ctx.autoImportService.awaitManifestWrites()
     const manifestAfterRegister = await readManifest()
     expect(manifestAfterRegister).toMatchObject({
       'Avatar': '/components/Avatar/Avatar',
@@ -332,6 +335,8 @@ describe('autoImportService', () => {
 
     try {
       await ctx.autoImportService.registerPotentialComponent(helloWorldTemplate)
+      ctx.autoImportService.resolve('van-button')
+      await ctx.autoImportService.awaitManifestWrites()
       const manifestAfterRegister = await readManifest(customManifestPath)
       expect(manifestAfterRegister).toMatchObject({
         'HelloWorld': '/components/HelloWorld/index',
@@ -358,6 +363,7 @@ describe('autoImportService', () => {
     await ctx.autoImportService.awaitManifestWrites()
 
     await registerAllLocalComponents()
+    ctx.autoImportService.resolve('van-button')
     await ctx.autoImportService.awaitManifestWrites()
 
     expect(await fs.pathExists(typedDefinitionPath)).toBe(true)
@@ -392,6 +398,7 @@ describe('autoImportService', () => {
     await ctx.autoImportService.awaitManifestWrites()
 
     await registerAllLocalComponents()
+    ctx.autoImportService.resolve('van-button')
     await ctx.autoImportService.awaitManifestWrites()
 
     expect(await fs.pathExists(vueComponentsDefinitionPath)).toBe(true)
@@ -427,6 +434,7 @@ describe('autoImportService', () => {
       ctx.autoImportService.reset()
       await ctx.autoImportService.awaitManifestWrites()
       await registerAllLocalComponents()
+      ctx.autoImportService.resolve('mock-empty')
       await ctx.autoImportService.awaitManifestWrites()
 
       const content = await fs.readFile(vueComponentsDefinitionPath, 'utf8')
@@ -489,6 +497,15 @@ describe('autoImportService', () => {
   it('emits resolver components even without local registrations', async () => {
     ctx.autoImportService.reset()
     const manifest = await readManifest()
+    expect(manifest).toEqual({})
+  })
+
+  it('emits only resolver components that were actually resolved', async () => {
+    ctx.autoImportService.reset()
+    ctx.autoImportService.resolve('van-button')
+    await ctx.autoImportService.awaitManifestWrites()
+
+    const manifest = await readManifest()
     expect(manifest).toMatchObject({
       'van-button': '@vant/weapp/button',
     })
@@ -504,6 +521,8 @@ describe('autoImportService', () => {
 
     try {
       await registerAllLocalComponents()
+      ctx.autoImportService.resolve('van-button')
+      await ctx.autoImportService.awaitManifestWrites()
       const manifest = await readManifest(relativeManifestPath)
       expect(manifest).toMatchObject({
         'Avatar': '/components/Avatar/Avatar',
