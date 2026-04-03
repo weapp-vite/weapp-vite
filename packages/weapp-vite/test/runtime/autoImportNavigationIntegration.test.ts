@@ -82,6 +82,7 @@ describe('autoImportComponents navigation integration', () => {
     await ctx.autoImportService.awaitManifestWrites()
 
     await ctx.autoImportService.registerPotentialComponent(helloWorldTemplate)
+    ctx.autoImportService.resolve('mock-empty')
     await ctx.autoImportService.awaitManifestWrites()
 
     const content = await fs.readFile(componentsDefinitionPath, 'utf8')
