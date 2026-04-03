@@ -1,12 +1,16 @@
 import path from 'pathe'
 
-export const DEFAULT_ENTRY_URL = 'https://developers.weixin.qq.com/miniprogram/dev/framework/'
-export const DEFAULT_OUTPUT_DIR = path.resolve(import.meta.dirname, '../../docs/wechat-miniprogram/framework')
+export const DEFAULT_ENTRY_URL
+  = 'https://developers.weixin.qq.com/miniprogram/dev/framework/'
+export const DEFAULT_OUTPUT_DIR = path.resolve(
+  import.meta.dirname,
+  '../../.tmp/wechat-docs-mirror/framework',
+)
+export const DEFAULT_MIRROR_REPO_URL
+  = 'https://github.com/sonofmagic/wechat-miniprogram-docs-mirror'
 export const FRAMEWORK_HOST = 'developers.weixin.qq.com'
 export const FRAMEWORK_PATH_PREFIX = '/miniprogram/dev/framework/'
-export const EXCLUDED_FRAMEWORK_PATH_SEGMENTS = [
-  '/user-privacy/',
-]
+export const EXCLUDED_FRAMEWORK_PATH_SEGMENTS = ['/user-privacy/']
 const HTML_SUFFIX_RE = /\.html$/
 
 function stripSearchAndHash(url: URL) {
@@ -19,7 +23,10 @@ function hasInvalidPlaceholderSegment(pathname: string) {
   return pathname.split('/').some(segment => segment.startsWith('('))
 }
 
-export function normalizeFrameworkPageUrl(input: string, baseUrl = DEFAULT_ENTRY_URL) {
+export function normalizeFrameworkPageUrl(
+  input: string,
+  baseUrl = DEFAULT_ENTRY_URL,
+) {
   if (!input || input.startsWith('javascript:')) {
     return null
   }
@@ -38,7 +45,11 @@ export function normalizeFrameworkPageUrl(input: string, baseUrl = DEFAULT_ENTRY
     return null
   }
 
-  if (EXCLUDED_FRAMEWORK_PATH_SEGMENTS.some(segment => url.pathname.includes(segment))) {
+  if (
+    EXCLUDED_FRAMEWORK_PATH_SEGMENTS.some(segment =>
+      url.pathname.includes(segment),
+    )
+  ) {
     return null
   }
 
@@ -88,7 +99,10 @@ export function toRelativeMarkdownHref(params: {
 
   const absoluteTargetUrl = new URL(targetHref, currentPageUrl)
   const targetHash = absoluteTargetUrl.hash
-  const normalizedPageUrl = normalizeFrameworkPageUrl(absoluteTargetUrl.toString(), currentPageUrl)
+  const normalizedPageUrl = normalizeFrameworkPageUrl(
+    absoluteTargetUrl.toString(),
+    currentPageUrl,
+  )
 
   if (!normalizedPageUrl) {
     return absoluteTargetUrl.toString()
