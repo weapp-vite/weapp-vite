@@ -3,6 +3,7 @@ import type { CompilerContext } from '@/context'
 import chokidar from 'chokidar'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
+import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
@@ -25,6 +26,10 @@ const LEADING_SLASHES_RE = /^\/+/
 const GLOB_WILDCARD_RE = /[*?[{]/
 const TRAILING_SLASHES_RE = /\/+$/
 const AUTO_IMPORT_WATCHER_KEY = '__auto-import-vue-watcher__'
+const AUTO_IMPORT_CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
+const AUTO_IMPORT_JS_SUFFIXES = new Set(jsExtensions.map(ext => `.${ext}`))
+const AUTO_IMPORT_TEMPLATE_SUFFIXES = new Set(templateExtensions.map(ext => `.${ext}`))
+const AUTO_IMPORT_VUE_SUFFIXES = new Set(vueExtensions.map(ext => `.${ext}`))
 
 function isEnabledOutputOption(option: unknown) {
   if (option === true) {
@@ -70,6 +75,68 @@ function normalizeChangedPath(id: string) {
 
   const [pathWithoutQuery] = id.split('?')
   return pathWithoutQuery
+}
+
+function getAutoImportCandidateKind(filePath: string) {
+  if (AUTO_IMPORT_VUE_SUFFIXES.has(path.extname(filePath))) {
+    return 'vue'
+  }
+  if (AUTO_IMPORT_TEMPLATE_SUFFIXES.has(path.extname(filePath))) {
+    return 'template'
+  }
+  if (AUTO_IMPORT_JS_SUFFIXES.has(path.extname(filePath))) {
+    return 'script'
+  }
+  if (AUTO_IMPORT_CONFIG_SUFFIXES.some(suffix => filePath.endsWith(suffix))) {
+    return 'config'
+  }
+  return undefined
+}
+
+function getAutoImportCandidateBase(filePath: string, kind: ReturnType<typeof getAutoImportCandidateKind>) {
+  if (!kind) {
+    return undefined
+  }
+  if (kind === 'config') {
+    const suffix = AUTO_IMPORT_CONFIG_SUFFIXES.find(item => filePath.endsWith(item))
+    return suffix ? filePath.slice(0, -suffix.length) : undefined
+  }
+  return filePath.slice(0, -path.extname(filePath).length)
+}
+
+function rankAutoImportCandidate(kind: ReturnType<typeof getAutoImportCandidateKind>) {
+  switch (kind) {
+    case 'vue':
+      return 4
+    case 'template':
+      return 3
+    case 'script':
+      return 2
+    case 'config':
+      return 1
+    default:
+      return 0
+  }
+}
+
+function collectDistinctAutoImportCandidates(files: string[]) {
+  const bestByBase = new Map<string, { filePath: string, rank: number }>()
+
+  for (const filePath of files) {
+    const kind = getAutoImportCandidateKind(filePath)
+    const base = getAutoImportCandidateBase(filePath, kind)
+    if (!kind || !base) {
+      continue
+    }
+
+    const rank = rankAutoImportCandidate(kind)
+    const existing = bestByBase.get(base)
+    if (!existing || rank > existing.rank || (rank === existing.rank && filePath < existing.filePath)) {
+      bestByBase.set(base, { filePath, rank })
+    }
+  }
+
+  return Array.from(bestByBase.values(), entry => entry.filePath).sort((a, b) => a.localeCompare(b))
 }
 
 function resolveAbsolutePath(ctx: AutoImportState['ctx'], candidate: string) {
@@ -135,13 +202,15 @@ export async function findAutoImportCandidates(state: AutoImportState, globs: st
     pathSeparator: '/',
   })
 
-  return await fdir
+  const files = await fdir
     .withFullPaths()
     .globWithOptions(globs.map(pattern => path.resolve(configService.absoluteSrcRoot, pattern)), {
       ignore,
     })
     .crawl(configService.absoluteSrcRoot)
     .withPromise()
+
+  return collectDistinctAutoImportCandidates(files)
 }
 
 function registerAutoImportWatchTargets(
@@ -213,6 +282,9 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
     }))
 
     watcher.on('add', (filePath) => {
+      if (!getAutoImportCandidateKind(filePath)) {
+        return
+      }
       if (!matchesAutoImportGlobs(ctx, filePath)) {
         return
       }
@@ -221,6 +293,9 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
     })
 
     watcher.on('unlink', (filePath) => {
+      if (!getAutoImportCandidateKind(filePath)) {
+        return
+      }
       if (!matchesAutoImportGlobs(ctx, filePath)) {
         return
       }
@@ -302,6 +377,9 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
 
       if (!matchesAutoImportGlobs(ctx, absolutePath)) {
+        return
+      }
+      if (!getAutoImportCandidateKind(absolutePath)) {
         return
       }
 
