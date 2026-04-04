@@ -7,7 +7,14 @@ defineComponentJson({
 
 const issue398NavbarLabel = 'issue-398 navbar'
 
-onMounted(() => {})
+onMounted(() => {
+  const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
+  if (!currentPage) {
+    return
+  }
+  currentPage.__issue398NavbarMounted = true
+  currentPage.__issue398NavbarLabel = issue398NavbarLabel
+})
 
 function _runE2E() {
   return {

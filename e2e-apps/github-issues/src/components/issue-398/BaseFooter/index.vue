@@ -7,7 +7,14 @@ defineComponentJson({
 
 const issue398FooterLabel = 'issue-398 footer'
 
-onMounted(() => {})
+onMounted(() => {
+  const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
+  if (!currentPage) {
+    return
+  }
+  currentPage.__issue398FooterMounted = true
+  currentPage.__issue398FooterLabel = issue398FooterLabel
+})
 
 function _runE2E() {
   return {

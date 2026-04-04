@@ -12,28 +12,20 @@ const issue398Title = 'issue-398 hmr shared chunk'
 const issue398TapLabel = 'remove-me'
 const issue398Body = 'editing this page should not break layout component chunks'
 const issue398PageMarker = 'issue-398-page-initial'
-const issue398NavbarLabel = 'issue-398 navbar'
-const issue398FooterLabel = 'issue-398 footer'
 
 function noopTap() {}
 
 function _runE2E() {
   const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
-  const navbar = currentPage?.selectComponent?.('#issue398-navbar')
-  const footer = currentPage?.selectComponent?.('#issue398-footer')
 
   return {
     ok: true,
     pageMarker: issue398PageMarker,
     title: issue398Title,
-    navbarMounted: Boolean(navbar),
-    footerMounted: Boolean(footer),
-    navbarLabel: typeof navbar?._runE2E === 'function'
-      ? navbar._runE2E()?.label ?? null
-      : issue398NavbarLabel,
-    footerLabel: typeof footer?._runE2E === 'function'
-      ? footer._runE2E()?.label ?? null
-      : issue398FooterLabel,
+    navbarMounted: Boolean(currentPage?.__issue398NavbarMounted),
+    footerMounted: Boolean(currentPage?.__issue398FooterMounted),
+    navbarLabel: currentPage?.__issue398NavbarLabel ?? null,
+    footerLabel: currentPage?.__issue398FooterLabel ?? null,
   }
 }
 </script>
