@@ -166,6 +166,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(navbarSharedImport?.[2]).toBe(footerSharedImport?.[2])
   })
 
+  it('issue #404: keeps onPageScroll page hooks enabled and exposes runtime probes in the page bundle', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-404/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-404/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-404 onPageScroll bridge')
+    expect(pageWxml).toContain('has instance onPageScroll')
+    expect(pageWxml).toContain('latest scrollTop')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('hasInstanceOnPageScroll')
+    expect(pageJs).toContain('enableOnPageScroll')
+  })
+
   it('issue #289: compiles split pages with per-page controls and safe class bindings', async () => {
     await runBuild()
 

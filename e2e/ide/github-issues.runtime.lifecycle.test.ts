@@ -112,6 +112,28 @@ async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function waitForIssue404Runtime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (runtime?.hasInstanceOnPageScroll && Number(runtime?.latestScrollTop ?? -1) >= 0) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -346,6 +368,37 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.title).toBe('issue-398 hmr shared chunk')
       expect(runtimeResult?.navbarLabel).toBe('issue-398 navbar')
       expect(runtimeResult?.footerLabel).toBe('issue-398 footer')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #404: exposes page.onPageScroll on the runtime instance and receives page scroll updates', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-404/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-404/index.js')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-404 onPageScroll bridge')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-404/index', 'has instance onPageScroll')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-404 page')
+      }
+
+      const initialRuntime = await waitForIssue404Runtime(issuePage)
+      expect(initialRuntime?.hasInstanceOnPageScroll).toBe(true)
+
+      await miniProgram.pageScrollTo(960)
+      await issuePage.waitFor(240)
+
+      const runtimeResult = await waitForIssue404Runtime(issuePage)
+      expect(runtimeResult?.hasInstanceOnPageScroll).toBe(true)
+      expect(Array.isArray(runtimeResult?.scrollLogs)).toBe(true)
+      expect(runtimeResult?.scrollLogs?.some((value: number) => value > 0)).toBe(true)
+      expect(Number(runtimeResult?.latestScrollTop ?? -1)).toBeGreaterThan(0)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
