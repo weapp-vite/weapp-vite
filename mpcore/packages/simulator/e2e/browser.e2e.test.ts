@@ -253,6 +253,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasSnapshot).toContain('"globalAlpha":0.6')
     expect(pageData.canvasSnapshot).toContain('"lineCap":"round"')
     expect(pageData.canvasSnapshot).toContain('"lineDash":[6,3]')
+    expect(pageData.canvasSnapshot).toContain('"lineDashOffset":2')
     expect(pageData.canvasSnapshot).toContain('"lineJoin":"bevel"')
     expect(pageData.canvasSnapshot).toContain('"miterLimit":6')
     expect(pageData.canvasSnapshot).toContain('"shadowBlur":4')

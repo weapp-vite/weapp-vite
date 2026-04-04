@@ -4701,6 +4701,7 @@ Page({
     expect(page.data.snapshot).toContain('"globalAlpha":0.7')
     expect(page.data.snapshot).toContain('"lineCap":"round"')
     expect(page.data.snapshot).toContain('"lineDash":[5,2]')
+    expect(page.data.snapshot).toContain('"lineDashOffset":1')
     expect(page.data.snapshot).toContain('"lineJoin":"bevel"')
     expect(page.data.snapshot).toContain('"miterLimit":5')
   })
