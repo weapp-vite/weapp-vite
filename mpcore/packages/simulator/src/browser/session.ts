@@ -27,6 +27,7 @@ import {
 import { createHeadlessWxState } from '../runtime/wxState'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
+import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createBrowserModuleLoader } from './moduleLoader'
@@ -59,6 +60,12 @@ interface HeadlessTabBarSnapshotItem extends HeadlessTabBarItem {
 interface HeadlessPullDownRefreshState {
   active: boolean
   stopCalls: number
+}
+
+interface HeadlessMediaQueryObserverEntry {
+  disconnect: () => void
+  notify: () => void
+  ownerPage: HeadlessPageInstance
 }
 
 const LEADING_SLASH_RE = /^\/+/
@@ -196,6 +203,7 @@ export class BrowserHeadlessSession {
   private readonly tabBarState = new Map<number, HeadlessTabBarSnapshotItem>()
   private tabBarVisible = false
   private readonly systemInfo = createDefaultSystemInfo()
+  private readonly mediaQueryObservers = new Set<HeadlessMediaQueryObserverEntry>()
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
   private readonly wxState = createHeadlessWxState()
@@ -769,6 +777,7 @@ export class BrowserHeadlessSession {
       project: this.project,
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
+        createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1053,6 +1062,7 @@ export class BrowserHeadlessSession {
       project: this.project,
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
+        createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1086,6 +1096,7 @@ export class BrowserHeadlessSession {
     applyResizeToSystemInfo(this.systemInfo, options)
     current.onResize?.(options)
     this.runPageComponentLifetime(current.route, 'resize', options)
+    this.notifyMediaQueryObservers()
     return current
   }
 
@@ -1122,6 +1133,7 @@ export class BrowserHeadlessSession {
       project: this.project,
       session: {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
+        createMediaQueryObserver: scope => this.createMediaQueryObserver(scope),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1144,6 +1156,7 @@ export class BrowserHeadlessSession {
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
     })
     pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
+    pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
     pageInstance.onLoad?.(target.query)
@@ -1217,11 +1230,13 @@ export class BrowserHeadlessSession {
     this.tabPages.clear()
     this.componentCache.clear()
     this.componentScopes.clear()
+    this.clearMediaQueryObservers()
     this.currentPageInstance = null
   }
 
   private unloadPage(page: HeadlessPageInstance) {
     page.onUnload?.()
+    this.clearMediaQueryObservers(page)
     this.detachPageComponents(page.route)
     this.tabPages.delete(stripLeadingSlash(page.route))
   }
@@ -1244,6 +1259,24 @@ export class BrowserHeadlessSession {
       instance.__definition__?.lifetimes?.detached?.call(instance)
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
+    }
+  }
+
+  private notifyMediaQueryObservers() {
+    for (const entry of [...this.mediaQueryObservers]) {
+      if (entry.ownerPage !== this.currentPageInstance) {
+        continue
+      }
+      entry.notify()
+    }
+  }
+
+  private clearMediaQueryObservers(ownerPage?: HeadlessPageInstance) {
+    for (const entry of [...this.mediaQueryObservers]) {
+      if (ownerPage && entry.ownerPage !== ownerPage) {
+        continue
+      }
+      entry.disconnect()
     }
   }
 
@@ -1329,6 +1362,29 @@ export class BrowserHeadlessSession {
       scope,
       options,
     )
+  }
+
+  private createMediaQueryObserver(scope?: Record<string, any>) {
+    const current = this.requireCurrentPage('createMediaQueryObserver()')
+    const ownerPage = scope === current || !scope
+      ? current
+      : this.currentPageInstance ?? current
+    let entry!: HeadlessMediaQueryObserverEntry
+    const controller = createHeadlessMediaQueryObserver(
+      {
+        getWindowInfo: () => this.getWindowInfo(),
+      },
+      () => {
+        this.mediaQueryObservers.delete(entry)
+      },
+    )
+    entry = {
+      disconnect: controller.disconnect,
+      notify: controller.notify,
+      ownerPage,
+    }
+    this.mediaQueryObservers.add(entry)
+    return controller.observer
   }
 }
 

@@ -59,6 +59,7 @@ export interface BrowserRendererContext {
   project: HeadlessProjectDescriptor
   session: {
     createIntersectionObserver: (scope: any, options?: Record<string, any>) => any
+    createMediaQueryObserver: (scope: any) => any
     selectAllComponentsWithin: (scopeId: string, selector: string) => any[]
     selectComponentWithin: (scopeId: string, selector: string) => any
     selectOwnerComponent: (scopeId: string) => any
@@ -660,6 +661,7 @@ function renderNodeTree(
         triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
       })
       componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
+      componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
       componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
       componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
       componentInstance.selectOwnerComponent = () => ownerScopeId ? context.session.selectOwnerComponent(componentScopeId) : null

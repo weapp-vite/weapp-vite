@@ -1,4 +1,4 @@
-import type { HeadlessPageDefinition } from '../host'
+import type { HeadlessPageDefinition, HeadlessWxMediaQueryObserver } from '../host'
 import type { HeadlessBackgroundSnapshot, HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
 
@@ -18,6 +18,7 @@ export interface HeadlessPageInstance extends Record<string, any> {
   options: Record<string, string>
   route: string
   createIntersectionObserver?: (options?: Record<string, any>) => any
+  createMediaQueryObserver?: () => HeadlessWxMediaQueryObserver
   selectAllComponents?: (selector: string) => any[]
   selectComponent?: (selector: string) => any
   setData: (patch: Record<string, any>, callback?: () => void) => void

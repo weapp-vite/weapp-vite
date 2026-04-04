@@ -129,6 +129,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('inspectCompoundSelector')
     bridge.runPageMethod('runVideoContextLab')
     bridge.runPageMethod('runIntersectionObserverLab')
+    bridge.runPageMethod('runMediaQueryObserverLab')
+    bridge.triggerResize(412, 915)
     bridge.runPageMethod('runFileManagerLab')
     bridge.runPageMethod('runMissingStatLab')
     bridge.runPageMethod('runMissingReadDirLab')
@@ -166,6 +168,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.compoundComponentSnapshot
           && pageData.compoundSelectorSnapshot
           && pageData.intersectionObserverSnapshot
+          && pageData.mediaQueryObserverSnapshot
           && pageData.videoContextSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
@@ -214,6 +217,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.intersectionObserverSnapshot).toContain('"id":"observer-card"')
     expect(pageData.intersectionObserverSnapshot).toContain('"intersectionRatio":1')
     expect(pageData.intersectionObserverSnapshot).toContain('"top":24')
+    expect(pageData.mediaQueryObserverSnapshot).toContain('"matches":true')
+    expect(pageData.mediaQueryObserverSnapshot).toContain('"width":412')
     expect(pageData.videoContextSnapshot).toContain('"phase":"fullscreen"')
     expect(pageData.videoContextSnapshot).toContain('"currentTime":6')
     expect(pageData.videoContextSnapshot).toContain('"fullScreen":false')

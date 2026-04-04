@@ -1,4 +1,4 @@
-import type { HeadlessBehaviorDefinition, HeadlessComponentDefinition } from '../host'
+import type { HeadlessBehaviorDefinition, HeadlessComponentDefinition, HeadlessWxMediaQueryObserver } from '../host'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
 const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
@@ -9,6 +9,7 @@ export interface HeadlessComponentInstance extends Record<string, any> {
   __propertySnapshots__?: Record<string, any>
   __ready__?: boolean
   createIntersectionObserver?: (options?: Record<string, any>) => any
+  createMediaQueryObserver?: () => HeadlessWxMediaQueryObserver
   data: Record<string, any>
   properties: Record<string, any>
   selectAllComponents?: (selector: string) => any[]

@@ -14,6 +14,7 @@ Page({
     fileTransferFailureInfo: '',
     fileManagerSnapshot: '',
     intersectionObserverSnapshot: '',
+    mediaQueryObserverSnapshot: '',
     requestSnapshot: '',
     videoContextSnapshot: '',
     savedOverwriteInfo: '',
@@ -136,6 +137,22 @@ Page({
         intersectionObserverSnapshot: JSON.stringify(result),
       })
       observer.disconnect()
+    })
+  },
+  runMediaQueryObserverLab() {
+    const observer = this.createMediaQueryObserver()
+    observer.observe({
+      minWidth: 400,
+      orientation: 'portrait',
+    }, (result) => {
+      const windowInfo = wx.getWindowInfo()
+      this.setData({
+        mediaQueryObserverSnapshot: JSON.stringify({
+          ...result,
+          height: windowInfo.windowHeight,
+          width: windowInfo.windowWidth,
+        }),
+      })
     })
   },
   handleVideoPlay(event) {

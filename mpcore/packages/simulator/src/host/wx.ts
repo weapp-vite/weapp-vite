@@ -53,6 +53,28 @@ export interface HeadlessWxCreateIntersectionObserverOption {
   thresholds?: number[]
 }
 
+export interface HeadlessWxObserveDescriptor {
+  height?: number
+  maxHeight?: number
+  maxWidth?: number
+  minHeight?: number
+  minWidth?: number
+  orientation?: string
+  width?: number
+}
+
+export interface HeadlessWxMediaQueryObserverObserveCallbackResult {
+  matches: boolean
+}
+
+export interface HeadlessWxMediaQueryObserver {
+  disconnect: () => void
+  observe: (
+    descriptor: HeadlessWxObserveDescriptor,
+    callback: (result: HeadlessWxMediaQueryObserverObserveCallbackResult) => void,
+  ) => void
+}
+
 export interface HeadlessWxSelectorQueryBoundingClientRectResult {
   bottom: number
   height: number

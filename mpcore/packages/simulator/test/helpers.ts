@@ -654,6 +654,78 @@ Page({
   return root
 }
 
+export function createMediaQueryObserverFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-media-query-observer-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/media/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeJson(path.join(root, 'dist/pages/media/index.json'), {
+    usingComponents: {
+      'media-probe': '../../components/media-probe/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/pages/media/index.js'), `
+Page({
+  data: {
+    componentMatches: [],
+    pageMatches: [],
+  },
+  inspectPageMediaQuery() {
+    const observer = this.createMediaQueryObserver()
+    observer.observe({
+      minWidth: 400,
+      orientation: 'portrait',
+    }, (result) => {
+      this.setData({
+        pageMatches: [...this.data.pageMatches, result.matches],
+      })
+    })
+  },
+  inspectComponentMediaQuery() {
+    this.selectComponent('#media-probe')?.startObservation()
+  },
+  handleComponentMediaQuery(event) {
+    this.setData({
+      componentMatches: [...this.data.componentMatches, event?.detail?.matches ?? null],
+    })
+  },
+})
+`)
+  writeText(path.join(root, 'dist/pages/media/index.wxml'), `
+<media-probe id="media-probe" bind:change="handleComponentMediaQuery" />
+<view>{{pageMatches}}</view>
+<view>{{componentMatches}}</view>
+`)
+  writeJson(path.join(root, 'dist/components/media-probe/index.json'), {})
+  writeScript(path.join(root, 'dist/components/media-probe/index.js'), `
+Component({
+  methods: {
+    startObservation() {
+      const observer = this.createMediaQueryObserver()
+      observer.observe({
+        minWidth: 400,
+        orientation: 'portrait',
+      }, (result) => {
+        this.triggerEvent('change', result, {
+          bubbles: true,
+          composed: true,
+        })
+      })
+    },
+  },
+})
+`)
+  writeText(path.join(root, 'dist/components/media-probe/index.wxml'), '<view>probe</view>\n')
+
+  return root
+}
+
 export function createAppLifecycleFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-app-lifecycle-'))
 

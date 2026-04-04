@@ -4437,6 +4437,69 @@ Component({
     expect(card?.data.snapshot).toContain('"top":10')
   })
 
+  it('supports createMediaQueryObserver within component scope in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'media-probe': '../../components/media-probe/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    matches: []
+  },
+  inspectMedia() {
+    this.selectComponent('#media-probe')?.startObservation()
+  },
+  handleChange(event) {
+    this.setData({
+      matches: [...this.data.matches, event?.detail?.matches ?? null]
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<media-probe id="media-probe" bind:change="handleChange" /><view>{{matches}}</view>'],
+      ['components/media-probe/index.js', `
+Component({
+  methods: {
+    startObservation() {
+      const observer = this.createMediaQueryObserver()
+      observer.observe({
+        maxWidth: 390,
+        orientation: 'portrait'
+      }, (result) => {
+        this.triggerEvent('change', result, {
+          bubbles: true,
+          composed: true
+        })
+      })
+    }
+  }
+})
+`],
+      ['components/media-probe/index.wxml', '<view>probe</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+
+    page.inspectMedia()
+    expect(page.data.matches).toEqual([true])
+
+    session.triggerResize({
+      size: {
+        windowWidth: 412,
+        windowHeight: 915,
+      },
+    })
+
+    expect(page.data.matches).toEqual([true, false])
+  })
+
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
