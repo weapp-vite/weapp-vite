@@ -1092,6 +1092,34 @@ describe.sequential('simulator browser e2e', () => {
     expect(parseJsonString<Record<string, any>>(recoveredState.pageData).title).toBe('Queue')
   })
 
+  it('reports invalid page method calls through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('missingHubMethod')
+    const failureState = await waitFor(
+      () => bridge.getState(),
+      state => state.errorMessage.includes('Method "missingHubMethod" does not exist on browser simulator page pages/hub/index.'),
+      20_000,
+    )
+    expect(failureState.currentRoute).toBe('pages/hub/index')
+    expect(failureState.pageStack).toEqual(['pages/hub/index'])
+
+    bridge.runPageMethod('openQueue')
+    const recoveredState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/queue/index' && state.errorMessage === '',
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(recoveredState.pageData).title).toBe('Queue')
+  })
+
   it('drives browser session host features through the demo workbench api', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')

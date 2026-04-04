@@ -200,7 +200,10 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
   function handleCallMethod(method: string) {
     run(() => {
       const page = session.value?.getCurrentPages().at(-1)
-      page?.[method]?.()
+      if (!page) {
+        throw new Error('Cannot call page method without an active browser simulator page.')
+      }
+      session.value?.callScopeMethodDirect(`page:${page.route}`, method)
     })
   }
 
