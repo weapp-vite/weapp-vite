@@ -978,6 +978,29 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.logs).toContain('home:pageScrollTo:selector:complete')
   })
 
+  it('opens routes directly through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('component-lab')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'component-lab' && state.currentRoute === 'pages/lab/index',
+      20_000,
+    )
+
+    bridge.openRoute('pages/profile/index')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/profile/index' && nextState.pageStack.length === 1,
+      20_000,
+    )
+
+    expect(state.pageStack).toEqual(['pages/profile/index'])
+    expect(state.pageRoutes).toContain('pages/profile/index')
+    expect(bridge.renderCurrentPage()).toContain('profile')
+  })
+
   it('drives browser session host features through the demo workbench api', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
