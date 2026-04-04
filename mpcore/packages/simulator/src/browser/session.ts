@@ -26,6 +26,7 @@ import {
 } from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
+import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createBrowserModuleLoader } from './moduleLoader'
@@ -240,6 +241,7 @@ export class BrowserHeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createVideoContext: (videoId, scope) => this.createVideoContext(videoId, scope),
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
@@ -766,6 +768,7 @@ export class BrowserHeadlessSession {
       moduleLoader: this.moduleLoader,
       project: this.project,
       session: {
+        createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1049,6 +1052,7 @@ export class BrowserHeadlessSession {
       moduleLoader: this.moduleLoader,
       project: this.project,
       session: {
+        createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1117,6 +1121,7 @@ export class BrowserHeadlessSession {
       moduleLoader: this.moduleLoader,
       project: this.project,
       session: {
+        createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
         selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
@@ -1138,6 +1143,7 @@ export class BrowserHeadlessSession {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
     })
+    pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
     pageInstance.onLoad?.(target.query)
@@ -1290,6 +1296,38 @@ export class BrowserHeadlessSession {
       },
       videoId,
       scope,
+    )
+  }
+
+  private createIntersectionObserver(
+    scope?: Record<string, any>,
+    options?: import('../host').HeadlessWxCreateIntersectionObserverOption,
+  ) {
+    return createHeadlessIntersectionObserver(
+      {
+        getWindowInfo: () => this.getWindowInfo(),
+        renderCurrentPage: () => this.renderCurrentPage(),
+        resolveScope: (value) => {
+          const current = this.currentPageInstance
+          if (!value || value === current) {
+            return {
+              kind: 'page' as const,
+            }
+          }
+          const scopeId = this.getScopeIdForComponent(value as import('../runtime').HeadlessComponentInstance)
+          if (!scopeId) {
+            return {
+              kind: 'missing' as const,
+            }
+          }
+          return {
+            kind: 'component' as const,
+            scopeId,
+          }
+        },
+      },
+      scope,
+      options,
     )
   }
 }

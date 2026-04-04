@@ -47,6 +47,18 @@ expectType<Record<string, string>>(browserSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(browserSession.getSavedFileListSnapshot())
 expectType<string | null>(browserSession.getFileText('headless://wxfile/temp/0001'))
 expectType<{
+  disconnect: () => void
+  observe: (selector: string, callback: (result: {
+    boundingClientRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+    id: string
+    intersectionRatio: number
+    intersectionRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+    relativeRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+  }) => void) => void
+  relativeTo: (selector: string, margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
+  relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
+}>(browserPage?.createIntersectionObserver?.({ thresholds: [0, 1] }))
+expectType<{
   exitFullScreen: () => void
   pause: () => void
   play: () => void
@@ -158,6 +170,18 @@ expectType<{ visible: boolean }>(headlessSession.getTabBar())
 expectType<Record<string, string>>(headlessSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(headlessSession.getSavedFileListSnapshot())
 expectType<string | null>(headlessSession.getFileText('headless://wxfile/temp/0001'))
+expectType<{
+  disconnect: () => void
+  observe: (selector: string, callback: (result: {
+    boundingClientRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+    id: string
+    intersectionRatio: number
+    intersectionRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+    relativeRect: { bottom: number, height: number, left: number, right: number, top: number, width: number }
+  }) => void) => void
+  relativeTo: (selector: string, margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
+  relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
+}>(headlessPage?.createIntersectionObserver?.({ thresholds: [0, 1] }))
 expectType<{
   exitFullScreen: () => void
   pause: () => void

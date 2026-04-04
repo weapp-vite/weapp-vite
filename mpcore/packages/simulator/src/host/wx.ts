@@ -27,6 +27,32 @@ export interface HeadlessWxVideoContext {
   stop: () => void
 }
 
+export interface HeadlessWxIntersectionObserverMargins {
+  bottom?: number
+  left?: number
+  right?: number
+  top?: number
+}
+
+export interface HeadlessWxIntersectionObserverObserveAllResult {
+  boundingClientRect: HeadlessWxSelectorQueryBoundingClientRectResult
+  id: string
+  intersectionRatio: number
+  intersectionRect: HeadlessWxSelectorQueryBoundingClientRectResult
+  relativeRect: HeadlessWxSelectorQueryBoundingClientRectResult
+}
+
+export interface HeadlessWxIntersectionObserver {
+  disconnect: () => void
+  observe: (selector: string, callback: (result: HeadlessWxIntersectionObserverObserveAllResult) => void) => void
+  relativeTo: (selector: string, margins?: HeadlessWxIntersectionObserverMargins) => HeadlessWxIntersectionObserver
+  relativeToViewport: (margins?: HeadlessWxIntersectionObserverMargins) => HeadlessWxIntersectionObserver
+}
+
+export interface HeadlessWxCreateIntersectionObserverOption {
+  thresholds?: number[]
+}
+
 export interface HeadlessWxSelectorQueryBoundingClientRectResult {
   bottom: number
   height: number
@@ -454,6 +480,10 @@ export interface HeadlessWxFileSystemManager {
 }
 
 export interface HeadlessWxDriver {
+  createIntersectionObserver: (
+    scope: Record<string, any> | undefined,
+    options?: HeadlessWxCreateIntersectionObserverOption,
+  ) => HeadlessWxIntersectionObserver
   createVideoContext: (videoId: string, scope?: Record<string, any>) => HeadlessWxVideoContext
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
@@ -513,6 +543,10 @@ export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  createIntersectionObserver: (
+    component?: Record<string, any>,
+    options?: HeadlessWxCreateIntersectionObserverOption,
+  ) => HeadlessWxIntersectionObserver
   createVideoContext: (videoId: string, component?: Record<string, any>) => HeadlessWxVideoContext
   createSelectorQuery: () => HeadlessWxSelectorQuery
   getFileSystemManager: () => HeadlessWxFileSystemManager
@@ -612,6 +646,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     canIUse: true,
     clearStorage: true,
     clearStorageSync: true,
+    createIntersectionObserver: true,
     createVideoContext: true,
     createSelectorQuery: true,
     getFileSystemManager: true,
@@ -796,6 +831,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    createIntersectionObserver: (component, options) => driver.createIntersectionObserver(component, options),
     createVideoContext: (videoId, component) => driver.createVideoContext(videoId, component),
     createSelectorQuery: () => {
       const requests: HeadlessWxSelectorQueryRequest[] = []

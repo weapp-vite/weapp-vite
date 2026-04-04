@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createComponentSelectorFixture, createPageEventsFixture, createVideoContextFixture } from './helpers'
+import { cleanupTempDirs, createComponentSelectorFixture, createIntersectionObserverFixture, createPageEventsFixture, createVideoContextFixture } from './helpers'
 
 describe('page event alignment', () => {
   const tempDirs: string[] = []
@@ -191,5 +191,24 @@ describe('page event alignment', () => {
     expect(page.data.exactSnapshot).toContain('"size":1')
     expect(page.data.nestedSnapshot).toContain('"label":"stable"')
     expect(page.data.nestedSnapshot).toContain('"size":1')
+  })
+
+  it('supports createIntersectionObserver in headless runtime', async () => {
+    const projectPath = createIntersectionObserverFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/observer/index')
+    page.inspectObserver()
+    page.inspectScopedObserver()
+
+    await Promise.resolve()
+
+    expect(page.data.directSnapshot).toContain('"id":"hero-card"')
+    expect(page.data.directSnapshot).toContain('"intersectionRatio":1')
+    expect(page.data.directSnapshot).toContain('"top":16')
+    expect(page.data.scopedSnapshot).toContain('"id":"hero-card"')
+    expect(page.data.scopedSnapshot).toContain('"intersectionRatio":1')
+    expect(page.data.scopedSnapshot).toContain('"width":80')
   })
 })

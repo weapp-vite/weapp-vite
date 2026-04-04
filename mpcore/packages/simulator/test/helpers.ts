@@ -604,6 +604,56 @@ Component({
   return root
 }
 
+export function createIntersectionObserverFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-intersection-observer-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/observer/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeScript(path.join(root, 'dist/pages/observer/index.js'), `
+Page({
+  data: {
+    directSnapshot: '',
+    scopedSnapshot: '',
+  },
+  inspectObserver() {
+    const observer = wx.createIntersectionObserver(this, {
+      thresholds: [0, 0.5, 1],
+    }).relativeToViewport()
+    observer.observe('#hero-card', (result) => {
+      this.setData({
+        directSnapshot: JSON.stringify(result),
+      })
+      observer.disconnect()
+    })
+  },
+  inspectScopedObserver() {
+    const observer = this.createIntersectionObserver({
+      thresholds: [0, 1],
+    }).relativeToViewport()
+    observer.observe('#hero-card', (result) => {
+      this.setData({
+        scopedSnapshot: JSON.stringify(result),
+      })
+      observer.disconnect()
+    })
+  },
+})
+`)
+  writeText(path.join(root, 'dist/pages/observer/index.wxml'), `
+<view id="hero-card" style="left: 12px; top: 16px; width: 80px; height: 40px;">hero</view>
+<view>{{directSnapshot}}</view>
+<view>{{scopedSnapshot}}</view>
+`)
+
+  return root
+}
+
 export function createAppLifecycleFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-app-lifecycle-'))
 
