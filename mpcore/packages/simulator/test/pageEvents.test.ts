@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createPageEventsFixture, createVideoContextFixture } from './helpers'
+import { cleanupTempDirs, createComponentSelectorFixture, createPageEventsFixture, createVideoContextFixture } from './helpers'
 
 describe('page event alignment', () => {
   const tempDirs: string[] = []
@@ -177,5 +177,19 @@ describe('page event alignment', () => {
       'fullscreen:{"currentTime":12.5,"fullScreen":true}',
       'fullscreen:{"currentTime":12.5,"fullScreen":false}',
     ])
+  })
+
+  it('keeps exact component selectors from matching nested descendants in headless runtime', () => {
+    const projectPath = createComponentSelectorFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/selectors/index')
+    page.inspectSelectors()
+
+    expect(page.data.exactSnapshot).toContain('"hasCard":true')
+    expect(page.data.exactSnapshot).toContain('"size":1')
+    expect(page.data.nestedSnapshot).toContain('"label":"stable"')
+    expect(page.data.nestedSnapshot).toContain('"size":1')
   })
 })

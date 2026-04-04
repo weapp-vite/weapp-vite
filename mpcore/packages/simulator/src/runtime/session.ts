@@ -1101,28 +1101,28 @@ export class HeadlessSession {
           return false
         }
 
-        let partIndex = selectorParts.length - 1
-        let currentScope = scope
-        while (partIndex >= 0) {
-          if (!currentScope || !matchesComponentSelector(currentScope, selectorParts[partIndex]!)) {
-            currentScope = currentScope?.ownerScopeId
+        const lastPart = selectorParts.at(-1)
+        if (!lastPart || !matchesComponentSelector(scope, lastPart)) {
+          return false
+        }
+
+        let currentScope = scope.ownerScopeId
+          ? this.componentScopes.get(scope.ownerScopeId)
+          : undefined
+
+        for (let partIndex = selectorParts.length - 2; partIndex >= 0; partIndex -= 1) {
+          while (currentScope && !matchesComponentSelector(currentScope, selectorParts[partIndex]!)) {
+            currentScope = currentScope.ownerScopeId
               ? this.componentScopes.get(currentScope.ownerScopeId)
               : undefined
-            if (!currentScope) {
-              return false
-            }
-            continue
           }
-
-          partIndex -= 1
-          if (partIndex < 0) {
-            return true
+          if (!currentScope) {
+            return false
           }
           currentScope = currentScope.ownerScopeId
             ? this.componentScopes.get(currentScope.ownerScopeId)
             : undefined
         }
-
         return true
       })
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
