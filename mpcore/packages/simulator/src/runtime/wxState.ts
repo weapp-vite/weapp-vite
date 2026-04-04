@@ -1,6 +1,8 @@
 import type {
   HeadlessWxAccessFileOption,
   HeadlessWxAppendFileOption,
+  HeadlessWxChooseMessageFileOption,
+  HeadlessWxChooseMessageFileResult,
   HeadlessWxCopyFileOption,
   HeadlessWxDownloadFileOption,
   HeadlessWxDownloadFileSuccessResult,
@@ -169,6 +171,9 @@ const TRAILING_SLASH_RE = /\/+$/
 const SAVED_FILE_PREFIXES = ['headless://saved/', 'headless://wxfile/saved/'] as const
 const textEncoder = new TextEncoder()
 const IMAGE_EXTENSION_RE = /\.([^.?#/]+)(?:[?#].*)?$/
+const LEADING_DOT_RE = /^\.+/
+const IMAGE_FILE_EXTENSIONS = new Set(['bmp', 'gif', 'heic', 'jpeg', 'jpg', 'png', 'webp'])
+const VIDEO_FILE_EXTENSIONS = new Set(['avi', 'm4v', 'mov', 'mp4', 'mpeg', 'mpg', 'webm'])
 
 interface HeadlessCanvasTempFilePayload {
   config?: {
@@ -225,6 +230,58 @@ function normalizeImageType(type: string | undefined) {
     return 'jpeg'
   }
   return normalized
+}
+
+function normalizeFileExtension(extension: string) {
+  return extension
+    .trim()
+    .replace(LEADING_DOT_RE, '')
+    .toLowerCase()
+}
+
+function isImageFileExtension(extension: string) {
+  return IMAGE_FILE_EXTENSIONS.has(normalizeFileExtension(extension))
+}
+
+function isVideoFileExtension(extension: string) {
+  return VIDEO_FILE_EXTENSIONS.has(normalizeFileExtension(extension))
+}
+
+function resolveMessageFileExtensions(option: HeadlessWxChooseMessageFileOption) {
+  const requestedExtensions = Array.isArray(option.extension)
+    ? option.extension
+        .filter((item): item is string => typeof item === 'string')
+        .map(normalizeFileExtension)
+        .filter(Boolean)
+    : []
+
+  const filteredExtensions = requestedExtensions.filter((extension) => {
+    if (option.type === 'image') {
+      return isImageFileExtension(extension)
+    }
+    if (option.type === 'video') {
+      return isVideoFileExtension(extension)
+    }
+    if (option.type === 'file') {
+      return !isImageFileExtension(extension) && !isVideoFileExtension(extension)
+    }
+    return true
+  })
+
+  if (filteredExtensions.length > 0) {
+    return filteredExtensions
+  }
+
+  if (option.type === 'image') {
+    return ['png', 'jpg']
+  }
+  if (option.type === 'video') {
+    return ['mp4']
+  }
+  if (option.type === 'file') {
+    return ['txt', 'pdf', 'doc']
+  }
+  return ['png', 'pdf', 'mp4']
 }
 
 function inferImageType(filePath: string, fileContent: string) {
@@ -1189,6 +1246,44 @@ export function createHeadlessWxState() {
       return {
         errMsg: 'chooseImage:ok',
         tempFilePaths: tempFiles.map(item => item.path),
+        tempFiles,
+      }
+    },
+    chooseMessageFile(option: HeadlessWxChooseMessageFileOption): HeadlessWxChooseMessageFileResult {
+      const count = Number.isFinite(option.count)
+        ? Math.max(1, Math.min(100, Math.trunc(option.count ?? 1)))
+        : 1
+      const extensions = resolveMessageFileExtensions(option)
+      const tempFiles = Array.from({ length: count }, (_, index) => {
+        const extension = extensions[index % extensions.length]
+        const sequence = String(index + 1).padStart(2, '0')
+        const fileName = `message-file-${sequence}.${extension}`
+        let fileContent = `headless message file ${fileName}`
+
+        if (isImageFileExtension(extension)) {
+          fileContent = buildImageTempFilePayload(extension, 160 + (index * 12), 120 + (index * 8), {
+            sourceType: ['message'],
+          })
+        }
+        else if (isVideoFileExtension(extension)) {
+          fileContent = buildVideoTempFilePayload(640, 360, 18 + index, {
+            compressed: true,
+            sourceType: ['message'],
+          })
+        }
+
+        const path = this.createTempFile(fileContent, `headless://wxfile/temp/chosen-message-file-${sequence}.${extension}`)
+        return {
+          name: fileName,
+          path,
+          size: byteLength(fileContent),
+          time: 1_710_000_000_000 + (index * 1_000),
+          type: extension,
+        }
+      })
+
+      return {
+        errMsg: 'chooseMessageFile:ok',
         tempFiles,
       }
     },

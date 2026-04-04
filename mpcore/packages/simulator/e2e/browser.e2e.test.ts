@@ -141,6 +141,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('previewCanvasImageLab')
     bridge.runPageMethod('previewInvalidCanvasImageLab')
     bridge.runPageMethod('chooseImageLab')
+    bridge.runPageMethod('chooseMessageFileLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -200,6 +201,9 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.previewImageInvalidInfo
           && pageData.chosenImageInfo
           && pageData.chosenImageDetail
+          && pageData.chosenMessageFileInfo
+          && pageData.chosenMessageFileImageDetail
+          && pageData.chosenMessageFileVideoDetail
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -324,6 +328,16 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.chosenImageDetail).toContain('"type":"jpeg"')
     expect(pageData.chosenImageDetail).toContain('"width":160')
     expect(pageData.chosenImageDetail).toContain('"height":120')
+    expect(pageData.chosenMessageFileInfo).toContain('"errMsg":"chooseMessageFile:ok"')
+    expect(pageData.chosenMessageFileInfo).toContain('"name":"message-file-01.png"')
+    expect(pageData.chosenMessageFileInfo).toContain('"type":"pdf"')
+    expect(pageData.chosenMessageFileInfo).toContain('"type":"mp4"')
+    expect(pageData.chosenMessageFileImageDetail).toContain('"errMsg":"getImageInfo:ok"')
+    expect(pageData.chosenMessageFileImageDetail).toContain('"type":"png"')
+    expect(pageData.chosenMessageFileImageDetail).toContain('"width":160')
+    expect(pageData.chosenMessageFileVideoDetail).toContain('"errMsg":"getVideoInfo:ok"')
+    expect(pageData.chosenMessageFileVideoDetail).toContain('"type":"mp4"')
+    expect(pageData.chosenMessageFileVideoDetail).toContain('"duration":20')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')

@@ -4861,6 +4861,73 @@ Page({
     expect(page.data.detailSummary).toContain('"height":120')
   })
 
+  it('supports chooseMessageFile in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    imageDetail: '',
+    messageSummary: '',
+    videoDetail: ''
+  },
+  runChooseMessageFileLab() {
+    wx.chooseMessageFile({
+      count: 3,
+      extension: ['png', 'pdf', 'mp4'],
+      type: 'all',
+      success: (result) => {
+        this.setData({
+          messageSummary: JSON.stringify(result),
+        })
+        const imageFile = result.tempFiles.find(file => file.type === 'png')
+        const videoFile = result.tempFiles.find(file => file.type === 'mp4')
+        if (imageFile) {
+          wx.getImageInfo({
+            src: imageFile.path,
+            success: (imageInfo) => {
+              this.setData({
+                imageDetail: JSON.stringify(imageInfo),
+              })
+            },
+          })
+        }
+        if (videoFile) {
+          wx.getVideoInfo({
+            src: videoFile.path,
+            success: (videoInfo) => {
+              this.setData({
+                videoDetail: JSON.stringify(videoInfo),
+              })
+            },
+          })
+        }
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{messageSummary}}</view><view>{{imageDetail}}</view><view>{{videoDetail}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runChooseMessageFileLab()
+
+    expect(page.data.messageSummary).toContain('"errMsg":"chooseMessageFile:ok"')
+    expect(page.data.messageSummary).toContain('"name":"message-file-01.png"')
+    expect(page.data.messageSummary).toContain('"type":"pdf"')
+    expect(page.data.messageSummary).toContain('"type":"mp4"')
+    expect(page.data.imageDetail).toContain('"errMsg":"getImageInfo:ok"')
+    expect(page.data.imageDetail).toContain('"type":"png"')
+    expect(page.data.imageDetail).toContain('"width":160')
+    expect(page.data.videoDetail).toContain('"errMsg":"getVideoInfo:ok"')
+    expect(page.data.videoDetail).toContain('"type":"mp4"')
+    expect(page.data.videoDetail).toContain('"duration":20')
+  })
+
   it('supports compressImage in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

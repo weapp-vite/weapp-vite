@@ -236,6 +236,20 @@ expectType<{
   sourceType: ['album'],
 }))
 expectType<{
+  errMsg: string
+  tempFiles: Array<{
+    name: string
+    path: string
+    size: number
+    time: number
+    type: string
+  }>
+} | undefined>(browserPage?.wx.chooseMessageFile({
+  count: 3,
+  extension: ['png', 'pdf', 'mp4'],
+  type: 'all',
+}))
+expectType<{
   duration: number
   errMsg: string
   height: number
@@ -565,6 +579,20 @@ expectType<{
   count: 2,
   sizeType: ['compressed'],
   sourceType: ['album'],
+}))
+expectType<{
+  errMsg: string
+  tempFiles: Array<{
+    name: string
+    path: string
+    size: number
+    time: number
+    type: string
+  }>
+} | undefined>(headlessPage?.wx.chooseMessageFile({
+  count: 3,
+  extension: ['png', 'pdf', 'mp4'],
+  type: 'all',
 }))
 expectType<{
   duration: number

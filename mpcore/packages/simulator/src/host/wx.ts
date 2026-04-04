@@ -574,6 +574,25 @@ export interface HeadlessWxChooseImageOption extends HeadlessWxCallbackOption<He
   sourceType?: string[]
 }
 
+export interface HeadlessWxChooseMessageFileTempFile {
+  name: string
+  path: string
+  size: number
+  time: number
+  type: string
+}
+
+export interface HeadlessWxChooseMessageFileResult {
+  errMsg: string
+  tempFiles: HeadlessWxChooseMessageFileTempFile[]
+}
+
+export interface HeadlessWxChooseMessageFileOption extends HeadlessWxCallbackOption<HeadlessWxChooseMessageFileResult> {
+  count?: number
+  extension?: string[]
+  type?: 'all' | 'file' | 'image' | 'video'
+}
+
 export interface HeadlessWxCompressImageResult {
   errMsg: string
   tempFilePath: string
@@ -759,6 +778,7 @@ export interface HeadlessWxFileSystemManager {
 
 export interface HeadlessWxDriver {
   chooseImage: (option: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult
+  chooseMessageFile: (option: HeadlessWxChooseMessageFileOption) => HeadlessWxChooseMessageFileResult
   chooseMedia: (option: HeadlessWxChooseMediaOption) => HeadlessWxChooseMediaResult
   chooseVideo: (option: HeadlessWxChooseVideoOption) => HeadlessWxChooseVideoResult
   compressImage: (option: HeadlessWxCompressImageOption) => HeadlessWxCompressImageResult
@@ -832,6 +852,7 @@ export interface HeadlessWxDriver {
 export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   chooseImage: (option?: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult | undefined
+  chooseMessageFile: (option?: HeadlessWxChooseMessageFileOption) => HeadlessWxChooseMessageFileResult | undefined
   chooseMedia: (option?: HeadlessWxChooseMediaOption) => HeadlessWxChooseMediaResult | undefined
   chooseVideo: (option?: HeadlessWxChooseVideoOption) => HeadlessWxChooseVideoResult | undefined
   compressImage: (option: HeadlessWxCompressImageOption) => HeadlessWxCompressImageResult | undefined
@@ -951,6 +972,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       return: {
         errMsg: true,
         tempFilePaths: true,
+        tempFiles: true,
+      },
+    },
+    chooseMessageFile: {
+      return: {
+        errMsg: true,
         tempFiles: true,
       },
     },
@@ -1187,6 +1214,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     canIUse: schema => typeof schema === 'string' && schema.trim() !== '' && resolveCapabilityValue(capabilityTree, schema.trim()) != null,
     canvasToTempFilePath: option => invokeWxApi(() => driver.canvasToTempFilePath(option), option),
     chooseImage: option => invokeWxApi(() => driver.chooseImage(option ?? {}), option),
+    chooseMessageFile: option => invokeWxApi(() => driver.chooseMessageFile(option ?? {}), option),
     chooseMedia: option => invokeWxApi(() => driver.chooseMedia(option ?? {}), option),
     chooseVideo: option => invokeWxApi(() => driver.chooseVideo(option ?? {}), option),
     compressImage: option => invokeWxApi(() => driver.compressImage(option), option),
