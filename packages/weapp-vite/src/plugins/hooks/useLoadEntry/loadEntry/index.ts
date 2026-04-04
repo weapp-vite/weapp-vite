@@ -358,6 +358,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       debug,
       relativeCwdId,
       getTime,
+      emittedWxmlCodeCache: ctx.runtimeState?.wxml?.emittedCode,
       skipEntries: shouldSkipAppEntries,
     })
 

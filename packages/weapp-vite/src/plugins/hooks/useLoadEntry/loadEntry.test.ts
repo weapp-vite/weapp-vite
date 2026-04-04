@@ -3,6 +3,8 @@ import type { Mock } from 'vitest'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../../logger'
+import { createRuntimeState } from '../../../runtime/runtimeState'
+import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { toPosixPath } from '../../../utils/path'
 import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
 import { createExtendedLibManager } from './extendedLib'
@@ -13,6 +15,7 @@ const normalizeWatchCall = (value: string) => toPosixPath(value)
 
 const {
   magicStringPrependMock,
+  magicStringUpdateMock,
   magicStringToStringMock,
   MagicStringMock,
   compilerClearFileCachesMock,
@@ -32,9 +35,11 @@ const {
   mockCompileVueFile,
 } = vi.hoisted(() => {
   const innerMagicStringPrepend = vi.fn()
+  const innerMagicStringUpdate = vi.fn()
   const innerMagicStringToString = vi.fn().mockReturnValue('transformed')
   const innerMagicString = vi.fn(function MagicStringMockImpl(this: Record<string, any>) {
     this.prepend = innerMagicStringPrepend
+    this.update = innerMagicStringUpdate
     this.toString = innerMagicStringToString
   })
 
@@ -76,6 +81,7 @@ const {
 
   return {
     magicStringPrependMock: innerMagicStringPrepend,
+    magicStringUpdateMock: innerMagicStringUpdate,
     magicStringToStringMock: innerMagicStringToString,
     MagicStringMock: innerMagicString,
     compilerClearFileCachesMock: innerCompilerClearFileCachesMock,
@@ -141,7 +147,8 @@ vi.mock('../../../logger', () => {
   }
 })
 
-vi.mock('../../../utils', () => {
+vi.mock('../../../utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils')>()
   const changeFileExtension = (filePath: string, extension: string) => {
     if (typeof filePath !== 'string') {
       throw new TypeError('filePath 必须是字符串')
@@ -156,6 +163,7 @@ vi.mock('../../../utils', () => {
 
   return {
     __esModule: true,
+    ...actual,
     changeFileExtension,
     findJsonEntry: mockFindJsonEntry,
     findTemplateEntry: mockFindTemplateEntry,
@@ -218,6 +226,7 @@ interface CreateLoaderOptions {
   buildTarget?: 'app' | 'plugin'
   pluginOnly?: boolean
   normalizeEntry?: (entry: string, jsonPath: string) => string
+  withWxmlService?: boolean
 }
 
 function createLoader(options?: CreateLoaderOptions) {
@@ -249,6 +258,7 @@ function createLoader(options?: CreateLoaderOptions) {
   const scanTemplateEntry = vi.fn()
   const applyAutoImports = vi.fn()
   const normalizeEntry = vi.fn(options?.normalizeEntry ?? ((entry: string) => entry))
+  const runtimeState = createRuntimeState()
   const scanService: { pluginJsonPath?: string, pluginJson?: any } | undefined = options?.plugin
     ? {
         pluginJsonPath: options.plugin.pluginJsonPath,
@@ -269,12 +279,19 @@ function createLoader(options?: CreateLoaderOptions) {
     configService.relativeOutputPath = vi.fn((id: string) => configService.relativeAbsoluteSrcRoot(id))
   }
 
+  const compilerCtx = {
+    jsonService,
+    configService,
+    scanService,
+    runtimeState,
+  } as any
+
+  if (options?.withWxmlService) {
+    createWxmlServicePlugin(compilerCtx)
+  }
+
   const loader = createEntryLoader({
-    ctx: {
-      jsonService,
-      configService,
-      scanService,
-    } as any,
+    ctx: compilerCtx,
     entriesMap,
     loadedEntrySet,
     dirtyEntrySet,
@@ -304,6 +321,8 @@ function createLoader(options?: CreateLoaderOptions) {
     normalizeEntry,
     scanService,
     extendedLibManager,
+    runtimeState,
+    wxmlService: compilerCtx.wxmlService,
   }
 }
 
@@ -1260,6 +1279,87 @@ import { VueCard } from '../../components'
       id: '/project/src/layouts/default/index.ts',
       fileName: 'layouts/default/index.js',
     }))
+  })
+
+  it('registers native layout shared template and wxs deps through the wxml pipeline', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      currentLayout: {
+        kind: 'native',
+        file: '/project/src/layouts/default/index',
+        importPath: '/layouts/default/index',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      },
+      layouts: [
+        {
+          kind: 'native',
+          file: '/project/src/layouts/default/index',
+          importPath: '/layouts/default/index',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+      ],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    mockApplyPageLayoutPlanToNativePage.mockImplementation((result: any) => result)
+    mockCollectNativeLayoutAssets.mockResolvedValue({
+      json: undefined,
+      template: '/project/src/layouts/default/index.wxml',
+      style: undefined,
+      script: undefined,
+    })
+
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/index/index.ts') {
+        return 'Page({})'
+      }
+      if (target === '/project/src/pages/index/index.wxml') {
+        return '<view>home</view>'
+      }
+      if (target === '/project/src/layouts/default/index.wxml') {
+        return [
+          '<import src="../../shared/layout-card.wxml" />',
+          '<wxs module="helper" src="../../shared/layout-helper.wxs" />',
+          '<template is="demo" />',
+          '',
+        ].join('\n')
+      }
+      return 'console.log("noop")'
+    })
+
+    const { loader, jsonService, wxmlService } = createLoader({ withWxmlService: true })
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
+
+    expect(wxmlService?.depsMap.get('/project/src/layouts/default/index.wxml')).toEqual(new Set([
+      '/project/src/shared/layout-card.wxml',
+      '/project/src/shared/layout-helper.wxs',
+    ]))
+    expect(wxmlService?.getImporters('/project/src/shared/layout-card.wxml')).toEqual(new Set([
+      '/project/src/layouts/default/index.wxml',
+    ]))
+    expect(wxmlService?.getImporters('/project/src/shared/layout-helper.wxs')).toEqual(new Set([
+      '/project/src/layouts/default/index.wxml',
+    ]))
+
+    const emitFile = pluginCtx.emitFile as unknown as Mock
+    expect(magicStringUpdateMock).toHaveBeenCalled()
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'layouts/default/index.wxml',
+      source: 'transformed',
+    })
   })
 
   it('includes vue layout components in page dependency entries', async () => {

@@ -17,6 +17,7 @@ import {
 } from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
+import { emitWxmlAssetFile, resolveWxmlEmitContext } from '../../../utils/wxmlEmit'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
 
@@ -101,6 +102,7 @@ interface EmitEntryOutputOptions {
   getTime: () => string
   skipEntries?: boolean
   entryResolveRoot: string
+  emittedWxmlCodeCache?: Map<string, string>
 }
 
 export async function emitEntryOutput(options: EmitEntryOutputOptions) {
@@ -131,6 +133,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     debug,
     relativeCwdId,
     getTime,
+    emittedWxmlCodeCache,
   } = options
   let json = initialJson
 
@@ -165,10 +168,46 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       readFile: fs.readFile,
     })
 
+    const emittedCodeCache = emittedWxmlCodeCache ?? new Map<string, string>()
+    const wxmlEmitContext = wxmlService
+      ? resolveWxmlEmitContext({
+          wxmlService,
+          configService,
+          scanService: {
+            isMainPackageFileName: () => true,
+          },
+        } as any)
+      : undefined
+
     for (const asset of assetEntries) {
       if (emittedLayoutAssets.has(asset.fileName)) {
         continue
       }
+
+      if (asset.kind === 'template' && assets.template && wxmlService && wxmlEmitContext) {
+        const token = wxmlService.analyze(asset.source)
+        wxmlService.tokenMap.set(assets.template, token)
+        const deps = wxmlService.collectDepsFromToken(assets.template, token.deps)
+        await wxmlService.setDeps(assets.template, deps)
+        wxmlService.setWxmlComponentsMap(assets.template, token.components)
+        emitWxmlAssetFile({
+          runtime: {
+            addWatchFile: pluginCtx.addWatchFile?.bind(pluginCtx),
+            emitFile: payload => pluginCtx.emitFile(payload),
+          },
+          id: assets.template,
+          fileName: asset.fileName,
+          token,
+          deps: wxmlService.depsMap.get(assets.template),
+          emittedCodeCache,
+          scriptModuleExtension: wxmlEmitContext.scriptModuleExtension,
+          scriptModuleTag: wxmlEmitContext.scriptModuleTag,
+          templateExtension: wxmlEmitContext.templateExtension,
+        })
+        emittedLayoutAssets.add(asset.fileName)
+        continue
+      }
+
       emittedLayoutAssets.add(asset.fileName)
       pluginCtx.emitFile({
         type: 'asset',

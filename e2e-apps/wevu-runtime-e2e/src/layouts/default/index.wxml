@@ -1,4 +1,8 @@
+<import src="../../shared-layout-hmr/layout-template.wxml" />
+<include src="../../shared-layout-hmr/layout-include.wxml" />
+<wxs module="layoutShared" src="../../shared-layout-hmr/layout-helper.wxs" />
 <view class="layout-default">
   <text class="layout-default__marker">DEFAULT-LAYOUT-TEMPLATE-BASE</text>
+  <template is="hmrLayoutCard" data="{{ label: layoutShared.label() }}" />
   <slot />
 </view>
