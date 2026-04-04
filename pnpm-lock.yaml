@@ -117,9 +117,6 @@ catalogs:
     miniprogram-api-typings:
       specifier: ^5.1.2
       version: 5.1.2
-    object-hash:
-      specifier: ^3.0.0
-      version: 3.0.0
     oxc-parser:
       specifier: ^0.123.0
       version: 0.123.0
@@ -298,9 +295,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.5.2
-      '@types/object-hash':
-        specifier: ^3.0.6
-        version: 3.0.6
       '@types/picomatch':
         specifier: ^4.0.3
         version: 4.0.3
@@ -451,9 +445,6 @@ importers:
       mock-fs:
         specifier: ^5.5.0
         version: 5.5.0
-      object-hash:
-        specifier: 'catalog:'
-        version: 3.0.0
       only-allow:
         specifier: ^1.2.2
         version: 1.2.2
@@ -590,11 +581,7 @@ importers:
         specifier: 'catalog:'
         version: 4.3.6
 
-  '@weapp-core/shared':
-    dependencies:
-      object-hash:
-        specifier: 'catalog:'
-        version: 3.0.0
+  '@weapp-core/shared': {}
 
   apps/alipay-antd-mini-demo:
     dependencies:
@@ -7512,9 +7499,6 @@ packages:
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
-
-  '@types/object-hash@3.0.6':
-    resolution: {integrity: sha512-fOBV8C1FIu2ELinoILQ+ApxcUKz4ngq+IWUYrxSGjXzzjUALijilampwkMgEtJ+h2njAW3pi853QpzNVCHB73w==}
 
   '@types/parse-path@7.1.0':
     resolution: {integrity: sha512-EULJ8LApcVEPbrfND0cRQqutIOdiIgJ1Mgrhpy755r14xMohPTEpkV/k28SJvuOs9bHRFW8x+KeDAEPiGQPB9Q==}
@@ -20932,8 +20916,6 @@ snapshots:
 
   '@types/normalize-package-data@2.4.4': {}
 
-  '@types/object-hash@3.0.6': {}
-
   '@types/parse-path@7.1.0':
     dependencies:
       parse-path: 7.1.0
@@ -21049,8 +21031,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.58.0(typescript@6.0.2)
+      '@typescript-eslint/types': 8.58.0
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:

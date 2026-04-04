@@ -63,8 +63,6 @@
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts"
   },
-  "dependencies": {
-    "object-hash": "catalog:"
-  },
+  "dependencies": {},
   "devDependencies": {}
 }

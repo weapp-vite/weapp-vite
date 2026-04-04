@@ -23,4 +23,8 @@ describe('hash', () => {
 
     expect(objectHash({ x })).toBe(objectHash({ x }))
   })
+
+  it('z', () => {
+    expect(objectHash({ a: 1, b: 2 })).toBe(objectHash({ b: 2, a: 1 }))
+  })
 })
