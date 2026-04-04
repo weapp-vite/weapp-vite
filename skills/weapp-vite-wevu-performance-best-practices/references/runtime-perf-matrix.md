@@ -1,66 +1,67 @@
-# WeChat Runtime Perf Matrix (for weapp-vite / wevu)
+# WeChat Runtime Perf Matrix
 
-## 1) `setData`（runtime_setData）
-
-当前已具备：
-
-- `wevu` 支持 `setData.strategy: 'diff' | 'patch'`。
-- 支持 `pick/omit/includeComputed` 与 `autoSetDataPick`（weapp-vite 编译期注入）。
-- 支持 `highFrequencyWarning`（含 `onPageScroll` 专项告警）。
-- 支持 `suspendWhenHidden`（后台态合并下发）。
-
-仍可补强：
-
-- 提供 `setUpdatePerformanceListener` 的 wevu 友好封装与示例。
-- 提供编译期/诊断期规则：识别 `this.setData(this.data)`、高频整对象回写。
-
-## 2) 渲染（runtime_render）
+## `setData`
 
 当前已具备：
 
-- `useIntersectionObserver()` 并自动在卸载时 `disconnect`。
-- Weapp-vite 自动注入页面事件 `features.enableOnXxx`（含 `onPageScroll`）。
-- `onPageScroll + setData` 运行时专项告警。
+- `setData.strategy: 'diff' | 'patch'`
+- `pick/omit/includeComputed`
+- `autoSetDataPick`
+- `highFrequencyWarning`
+- `suspendWhenHidden`
 
 仍可补强：
 
-- 模板复杂度分析（节点数/深度）并输出阈值告警。
-- 静态检查空 `onPageScroll` 与滚动回调中的重逻辑模式。
+- `setUpdatePerformanceListener` 的 wevu 友好封装
+- 识别 `this.setData(this.data)` 与高频整对象回写的诊断规则
 
-## 3) 页面切换（runtime_nav）
+## 渲染
 
 当前已具备：
 
-- 分包与共享策略治理（`hoist/duplicate`）。
-- 推荐 `lazyCodeLoading: "requiredComponents"` 的文档与实践。
-- `weapp-vite analyze` 可辅助定位跨包共享与体积映射。
+- `useIntersectionObserver()` 自动清理
+- `features.enableOnXxx` 页面事件注入
+- `onPageScroll + setData` 专项告警
 
 仍可补强：
 
-- 增加 `handleWebviewPreload` 的策略化指导模板（static/auto/manual）。
-- 提供页面切换链路标准采样模板（route/firstRender 对照）。
+- 模板复杂度分析
+- 静态检查空 `onPageScroll` 与滚动回调重逻辑
 
-## 4) 资源加载（runtime_resource）
+## 页面切换
 
 当前已具备：
 
-- 完整构建链路可接入图片处理插件。
-- 组件类型系统覆盖 `image` 常见模式（含 `widthFix/heightFix`）。
+- 分包与共享策略治理：`hoist/duplicate`
+- `lazyCodeLoading: "requiredComponents"` 文档
+- `weapp-vite analyze` 辅助体积定位
 
 仍可补强：
 
-- CLI 级资源体积扫描（超阈值图片、尺寸与展示尺寸不匹配）。
-- 对 `widthFix/heightFix` 滥用场景输出构建告警。
+- `handleWebviewPreload` 策略模板
+- route / firstRender 标准采样模板
 
-## 5) 内存（runtime_memory）
+## 资源加载
 
 当前已具备：
 
-- `onMemoryWarning()` 生命周期支持。
-- `effectScope/onScopeDispose` 与卸载清理机制。
-- `suspendWhenHidden` 减少后台态无效更新资源争用。
+- 可接入图片处理插件
+- 类型系统覆盖 `image` 常见模式
 
 仍可补强：
 
-- 提供标准化副作用清理辅助（timer/listener/request disposer）。
-- 增加性能回归模板：内存告警触发后的自动采样与日志归档。
+- CLI 级资源体积扫描
+- `widthFix/heightFix` 滥用告警
+
+## 内存
+
+当前已具备：
+
+- `onMemoryWarning()`
+- `effectScope/onScopeDispose`
+- `suspendWhenHidden`
+
+仍可补强：
+
+- 副作用清理辅助
+- 内存告警后的自动采样与日志归档模板

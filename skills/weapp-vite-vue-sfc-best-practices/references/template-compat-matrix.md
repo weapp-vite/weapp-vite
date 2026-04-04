@@ -2,16 +2,16 @@
 
 ## `v-model`
 
-- Recommended: assignable left values (`x`, `x.y`, `x[i]`).
-- Avoid: expression targets (`a + b`, function calls, optional chaining targets).
-- Avoid assuming full web Vue `v-model` modifier/argument parity.
+- 推荐：可赋值左值，如 `x`、`x.y`、`x[i]`
+- 避免：表达式、函数调用、可选链目标
+- 不要假设 Web Vue 的完整 `v-model` 参数与修饰符能力
 
 ## `v-bind`
 
-- Do not use `v-bind="object"` expansion in current mini-program template pipeline.
-- Use explicit `:prop="..."` and `@event="..."` bindings.
+- 当前小程序模板链路不要使用 `v-bind="object"` 展开
+- 改用显式 `:prop="..."` 与 `@event="..."`
 
-## Component events
+## 组件事件
 
-- Prefer mini-program event naming/semantics in templates.
-- For custom components, keep `valueProp` + `event` contract explicit.
+- 优先小程序事件命名与语义
+- 自定义组件保持 `valueProp` 与 `event` 契约显式

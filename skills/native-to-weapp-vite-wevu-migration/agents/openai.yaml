@@ -1,11 +1,11 @@
 interface:
   display_name: Native Migration Guide
-  short_description: '原生小程序迁移到 weapp-vite + wevu 的波次化工作流'
+  short_description: 原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 的波次化流程
   default_prompt: >-
-    当任务是把原生小程序代码渐进迁移到 `weapp-vite + wevu + Vue SFC` 时，
-    使用 $native-to-weapp-vite-wevu-migration。按波次规划，优先保证行为等价，
-    把机械迁移与语义升级拆开处理，并同步考虑迁移后 AI 维护入口（如 `AGENTS.md`、
-    packaged docs、wevu 编写约束）。
+    当任务主轴是把原生小程序代码渐进迁移到 `weapp-vite + wevu + Vue SFC`，
+    包括 `Page/Component` 改造、`setData` 响应式迁移、事件契约改写、页面元信息迁移
+    与迁移后 AI 维护约束接入时，使用 $native-to-weapp-vite-wevu-migration。
+    按波次推进，优先保证行为等价，把机械迁移与语义升级拆开处理。
 
 policy:
   allow_implicit_invocation: true

@@ -1,11 +1,11 @@
 interface:
   display_name: Release And Changeset Best Practices
-  short_description: changeset、create-weapp-vite 联动、发布判定与提交规范
+  short_description: changeset、版本联动、发布判定与提交规范
   default_prompt: >-
-    当任务是判断某次改动是否需要 changeset、准备 release notes、保持
-    create-weapp-vite 与 weapp-vite/wevu/templates 的联动，或判断
-    `dist/docs`、模板 `AGENTS.md`、website/skills 变更是否属于用户可见发布时，
-    使用 $release-and-changeset-best-practices。要求 changeset summary 使用中文，
+    当任务主轴是判断某次改动是否需要 changeset、准备发布、处理
+    `create-weapp-vite` 与 `weapp-vite/wevu/templates` 的联动，或判断 website、
+    skills、`dist/docs`、模板 `AGENTS.md` 是否属于用户可见变更时，使用
+    $release-and-changeset-best-practices。changeset summary 使用中文，
     提交遵循 Conventional Commits，并遵循仓库默认交付策略。
 
 policy:

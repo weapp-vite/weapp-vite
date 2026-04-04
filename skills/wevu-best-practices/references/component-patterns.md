@@ -1,6 +1,6 @@
 # wevu Component Patterns
 
-## 1) Minimal page pattern
+## Minimal page
 
 ```ts
 import { defineComponent, onShow, ref } from 'wevu'
@@ -16,7 +16,7 @@ export default defineComponent({
 })
 ```
 
-## 2) Minimal component pattern
+## Minimal component
 
 ```ts
 import { computed, defineComponent } from 'wevu'
@@ -33,7 +33,7 @@ export default defineComponent({
 })
 ```
 
-## 3) Hook discipline
+## Hook discipline
 
-- Register hooks synchronously inside `setup()`.
-- Keep return-value page hooks unique per instance where required.
+- hooks 在同步 `setup()` 中注册
+- 需要唯一性的 page hook 返回值按实例隔离

@@ -1,6 +1,6 @@
 # wevu Store Patterns
 
-## Setup store preferred
+## Setup store 优先
 
 ```ts
 import { computed, defineStore, ref } from 'wevu'
@@ -13,7 +13,7 @@ export const useCounter = defineStore('counter', () => {
 })
 ```
 
-## Consumption pattern
+## 消费模式
 
 ```ts
 import { storeToRefs } from 'wevu'
@@ -22,5 +22,5 @@ const store = useCounter()
 const { count, doubled } = storeToRefs(store)
 ```
 
-- Destructure actions directly.
-- Destructure state/getters through `storeToRefs`.
+- actions 直接解构
+- state/getters 通过 `storeToRefs`

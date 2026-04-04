@@ -1,25 +1,24 @@
 # weapp-vite CLI Dispatch Playbook
 
-## Goal
+## 目标
 
-Unify command routing between `weapp-vite` and `weapp-ide-cli` with deterministic ownership:
+统一 `weapp-vite` 与 `weapp-ide-cli` 的命令路由：
 
-1. `weapp-vite` native commands run first.
-2. Only unregistered commands that exist in `weapp-ide-cli` catalog are delegated.
-3. Unknown commands are not blindly delegated.
+1. `weapp-vite` 原生命令先执行。
+2. 只有命中 `weapp-ide-cli` catalog 的命令才透传。
+3. 未知命令不盲目透传。
 
 ## Source of truth
 
-- Keep top-level command catalog in `packages/weapp-ide-cli`.
-- Export:
-  - command arrays (official CLI, automator, config, minidev namespace)
+- 顶层命令目录维护在 `packages/weapp-ide-cli`。
+- 对外导出：
+  - command arrays
   - `isWeappIdeTopLevelCommand(command)`
-- Consume this API in `packages/weapp-vite/src/cli/ide.ts`.
+- `packages/weapp-vite/src/cli/ide.ts` 消费这一层 API。
 
-## Recommended implementation pattern
+## 推荐实现
 
 ```ts
-// pseudo-code
 if (command in weappViteNativeCommands) {
   runWeappVite()
 }
@@ -31,19 +30,17 @@ else {
 }
 ```
 
-### Notes
+## 细节
 
-- Keep `weapp-vite ide <args...>` as forced passthrough namespace.
-- For `help <cmd>`:
-  - native command => keep native help behavior
-  - cataloged ide command => forward to `weapp-ide-cli` help
+- `weapp-vite ide <args...>` 保持强制 passthrough 命名空间。
+- `help <cmd>`：
+  - native command：保留 native help
+  - ide command：转发给 `weapp-ide-cli`
 
-## Validation checklist
+## 验证
 
-- Add unit tests for:
-  - native command not forwarded
-  - cataloged ide command forwarded
-  - unknown command not forwarded
-  - `help` dispatch for native vs ide command
-- Update docs in both package README and website command docs.
-- Add changeset when behavior or public command routing changes.
+- native command 不会被转发
+- cataloged ide command 会被转发
+- unknown command 不会被转发
+- `help` 对 native / ide 命令的分发正确
+- 文档与 changeset 已同步

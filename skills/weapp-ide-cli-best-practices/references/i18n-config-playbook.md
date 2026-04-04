@@ -1,27 +1,23 @@
 # weapp-ide-cli i18n And Config Playbook
 
-## Language policy
+## 语言策略
 
-- Default language: Chinese (`zh`).
-- Optional English (`en`) fallback.
-- Allow temporary command-level override via `--lang`.
-- Allow persistent override via config file and config command.
+- 默认中文：`zh`
+- 英文兜底：`en`
+- 支持 `--lang` 做临时覆盖
+- 支持配置文件做持久覆盖
 
-## Config persistence
+## 配置落盘
 
-Persist to:
+- macOS/Linux：`~/.weapp-ide-cli/config.json`
+- Windows：`C:\Users\<username>\.weapp-ide-cli\config.json`
 
-- macOS/Linux: `~/.weapp-ide-cli/config.json`
-- Windows: `C:\Users\<username>\.weapp-ide-cli\config.json`
-
-Typical keys:
+常见字段：
 
 - `cliPath`
 - `locale`
 
-## Config command expectations
-
-Supported operations should remain stable:
+## `config` 命令预期
 
 - `config`
 - `config lang <zh|en>`
@@ -34,8 +30,8 @@ Supported operations should remain stable:
 - `config export [path]`
 - `config import <path>`
 
-## Validation guidance
+## 校验要点
 
-- Validate locale values strictly (`zh|en`).
-- Validate imported config payload shape.
-- Return Chinese-first user-facing errors with i18n fallback.
+- 严格校验 locale 值：`zh|en`
+- 严格校验导入配置结构
+- 用户提示保持中文优先，英文兜底

@@ -1,41 +1,41 @@
 # weapp-ide-cli Command Catalog And Dispatch
 
-## Objective
+## 目标
 
-Use one source of truth for CLI command support and expose it for upstream delegators.
+使用单一 source-of-truth 管理 CLI 命令目录，并暴露给上游 delegator 使用。
 
-## Recommended structure
+## 推荐结构
 
-In `packages/weapp-ide-cli/src/cli/command-catalog.ts`:
+在 `packages/weapp-ide-cli/src/cli/command-catalog.ts` 导出：
 
 - `WECHAT_CLI_COMMAND_NAMES`
-- `AUTOMATOR_COMMAND_NAMES` (imported from automator module)
+- `AUTOMATOR_COMMAND_NAMES`
 - `MINIDEV_NAMESPACE_COMMAND_NAMES`
 - `CONFIG_COMMAND_NAME`
-- `WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES` (merged list)
+- `WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES`
 - `isWeappIdeTopLevelCommand(command)`
 
-## Dispatch sequence in weapp-ide-cli
+## weapp-ide-cli 内部分发顺序
 
-1. Parse locale option and configure locale.
-2. Route minidev namespace commands.
-3. Route automator commands.
-4. Handle `help` for automator commands.
-5. Handle `config` commands.
-6. Run official WeChat CLI passthrough with validation.
+1. 解析 locale 并配置语言。
+2. 路由 `minidev` 命名空间。
+3. 路由 automator 命令。
+4. 处理 automator `help`。
+5. 处理 `config` 子命令。
+6. 最后执行官方 WeChat CLI passthrough。
 
-## Dispatch sequence in upstream CLIs
+## 上游 CLI 分发顺序
 
-For `weapp-vite` or other wrappers:
+对 `weapp-vite` 或其他 wrapper：
 
-1. Run wrapper-native commands first.
-2. Delegate only if command hits `isWeappIdeTopLevelCommand`.
-3. Do not delegate unknown commands blindly.
+1. 先运行 wrapper 原生命令。
+2. 仅当命中 `isWeappIdeTopLevelCommand` 时才透传。
+3. 不要盲目透传未知命令。
 
-## Test matrix
+## 最小测试矩阵
 
-- Catalog contains all command groups.
-- `isWeappIdeTopLevelCommand` returns true for known commands.
-- Upstream wrapper does not delegate native commands.
-- Upstream wrapper delegates cataloged commands.
-- Upstream wrapper rejects unknown commands.
+- catalog 覆盖全部命令组。
+- `isWeappIdeTopLevelCommand` 对已知命令返回 `true`。
+- 上游 wrapper 不透传原生命令。
+- 上游 wrapper 能透传 catalog 命令。
+- 上游 wrapper 会拒绝未知命令。

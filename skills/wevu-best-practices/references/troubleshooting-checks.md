@@ -1,20 +1,20 @@
 # wevu Troubleshooting Checks
 
-1. State not updating
+## State 不更新
 
-- Confirm APIs are imported from `wevu`.
-- Confirm template depends on changed reactive value.
+- 确认 API 来自 `wevu`
+- 确认模板依赖了变化的响应式值
 
-2. Hook not firing
+## Hook 不触发
 
-- Confirm hook registered synchronously in `setup()`.
-- Confirm hook belongs to page/component context.
+- 确认在同步 `setup()` 中注册
+- 确认 hook 属于当前 page / component 上下文
 
-3. Component render issues
+## 组件渲染异常
 
-- Confirm `usingComponents` path and `component: true`.
-- Confirm mini-program event names/semantics.
+- 确认 `usingComponents` 路径
+- 确认事件名与小程序语义一致
 
-4. Store reactivity loss
+## Store 响应性丢失
 
-- Confirm `storeToRefs` is used for destructuring.
+- 确认解构 state/getters 时使用 `storeToRefs`

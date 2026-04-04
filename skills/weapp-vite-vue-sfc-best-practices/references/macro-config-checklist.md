@@ -1,20 +1,18 @@
 # Macro & Config Checklist
 
-## JSON config strategy
+## JSON 配置策略
 
-- Component SFC: prefer `defineComponentJson` for both static and dynamic config.
-- Page/App SFC: prefer `definePageJson` / `defineAppJson`.
-- `<json>` blocks are legacy-compatible fallback only; avoid for new code.
+- Component SFC：优先 `defineComponentJson`
+- Page / App SFC：优先 `definePageJson` / `defineAppJson`
+- `<json>` 仅作历史兼容兜底
 
-## Macro rules
+## 宏规则
 
-- One JSON macro per SFC role.
-- `definePageMeta` is a separate page-meta macro and may coexist with `definePageJson` in page SFCs.
-- Top-level calls only.
-- Single argument only.
-- Prefer deterministic, side-effect-free macro functions.
+- 一个 SFC 角色只保留一套 JSON 宏
+- `definePageMeta` 可与 `definePageJson` 共存
+- 宏调用保持顶层、单参数、无副作用
 
-## IDE/type hints
+## IDE / 类型提示
 
-- Enable `weapp-vite/volar` plugin in `vueCompilerOptions.plugins`.
-- Set `vueCompilerOptions.lib` to `wevu` when using wevu script setup macro typing.
+- 在 `vueCompilerOptions.plugins` 中启用 `weapp-vite/volar`
+- 使用 wevu 宏类型时，把 `vueCompilerOptions.lib` 设为 `wevu`

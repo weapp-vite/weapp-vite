@@ -1,23 +1,25 @@
 # weapp-vite Debug Playbook
 
-## Symptoms -> First checks
+## 症状 -> 第一检查点
 
-1. Page/route missing
+### 页面或路由缺失
 
-- Check `srcRoot` and page directory structure.
-- Check auto routes enablement and generated route typings.
+- 检查 `srcRoot`
+- 检查页面目录结构
+- 检查 `autoRoutes` 与生成的 route typings
 
-2. Component not resolved
+### 组件未解析
 
-- Check `component: true` and path casing.
-- Check auto import `globs` and resolver coverage.
+- 检查组件目标与路径大小写
+- 检查 `autoImportComponents.globs/resolvers`
 
-3. Build output misplaced
+### 构建输出位置不对
 
-- Check `project.config.json` roots and weapp output assumptions.
-- Use debug hooks to verify watched files and resolved IDs.
+- 检查 `project.config.json`
+- 检查 `build.outDir`
+- 检查小程序输出根目录假设
 
-4. Subpackage chunk surprises
+### 分包 chunk 异常
 
-- Confirm `sharedStrategy` and overrides.
-- Inspect analyze output before adding more overrides.
+- 确认 `sharedStrategy` 与 overrides
+- 先看 analyze 输出，再决定是否加更多 override

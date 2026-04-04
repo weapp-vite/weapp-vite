@@ -1,21 +1,21 @@
 # SFC Troubleshooting Playbook
 
-1. Component not rendered
+## 组件不渲染
 
-- Check `usingComponents` path/case.
-- Check `component: true` for component targets.
+- 检查 `usingComponents` 路径与大小写
+- 检查组件目标是否声明 `component: true`
 
-2. State not reflected
+## 状态不更新
 
-- Ensure runtime APIs come from `wevu`.
-- Ensure template actually consumes changed reactive state.
+- 确认 runtime API 来自 `wevu`
+- 确认模板真正消费了变化的响应式状态
 
-3. Hook not firing
+## Hook 不触发
 
-- Ensure synchronous registration in `setup()`.
-- Ensure hook type matches page/component context.
+- 确认在同步 `setup()` 中注册
+- 确认 hook 属于当前 page / component 上下文
 
-4. Unexpected template output
+## 模板输出异常
 
-- Check directive compatibility limits (`v-model`, `v-bind`).
-- Reduce to explicit bindings to isolate compile transform issues.
+- 先查 `v-model`、`v-bind` 等兼容限制
+- 用显式绑定把编译变换问题最小化
