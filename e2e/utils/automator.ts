@@ -30,6 +30,11 @@ const DEVTOOLS_CONNECTION_CLOSED_PATTERNS = [
   /WebSocket is not open/i,
   /socket hang up/i,
 ]
+const DEVTOOLS_CLI_EARLY_EXIT_PATTERNS = [
+  /WeChat DevTools CLI exited before automator socket was ready/i,
+  /ERR_INVALID_ARG_TYPE/i,
+  /The ["']path["'] argument must be of type string/i,
+]
 const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
   /需要重新登录/,
@@ -631,6 +636,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
+    || DEVTOOLS_CLI_EARLY_EXIT_PATTERNS.some(pattern => pattern.test(message))
     || isLikelySimulatorBootErrorMessage(message)
     || isLikelyRelaunchRetryableError(error)
 }

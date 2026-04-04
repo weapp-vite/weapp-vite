@@ -1,8 +1,11 @@
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
+import { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 interface AutomatorCliBridgePayload {
   projectPath?: string
@@ -16,6 +19,75 @@ interface AutomatorCliBridgePayload {
 
 interface AutomatorCliBridgeResult {
   wsEndpoint: string
+}
+
+interface WaitForSocketReadyOptions {
+  child?: ChildProcessWithoutNullStreams
+  timeoutMs: number
+  port: number
+}
+
+const FATAL_CLI_EARLY_EXIT_PATTERNS = [
+  /ERR_INVALID_ARG_TYPE/i,
+  /The ["']path["'] argument must be of type string/i,
+  /Missing projectPath/i,
+  /Failed to read project config/i,
+]
+
+function summarizeTextOutput(value: string | undefined, maxLength = 400) {
+  const normalized = typeof value === 'string' ? value.trim() : ''
+  if (!normalized) {
+    return ''
+  }
+  if (normalized.length <= maxLength) {
+    return normalized
+  }
+  return `${normalized.slice(0, maxLength)}...`
+}
+
+function formatCliExitDetails(options: {
+  cliPath: string
+  exitCode: number | null
+  signal: NodeJS.Signals | null
+  stdout: string
+  stderr: string
+}) {
+  const { cliPath, exitCode, signal, stdout, stderr } = options
+  const parts = [
+    `WeChat DevTools CLI exited before automator socket was ready: ${cliPath}`,
+  ]
+
+  if (typeof exitCode === 'number') {
+    parts.push(`exitCode=${exitCode}`)
+  }
+  if (signal) {
+    parts.push(`signal=${signal}`)
+  }
+
+  const stderrText = summarizeTextOutput(stderr)
+  const stdoutText = summarizeTextOutput(stdout)
+  if (stderrText) {
+    parts.push(`stderr=${stderrText}`)
+  }
+  if (stdoutText) {
+    parts.push(`stdout=${stdoutText}`)
+  }
+
+  return parts.join(' | ')
+}
+
+function shouldFailFastOnCliExit(options: {
+  exitCode: number | null
+  stdout: string
+  stderr: string
+}) {
+  const { exitCode, stdout, stderr } = options
+  if (typeof exitCode === 'number' && exitCode !== 0) {
+    return true
+  }
+
+  const combined = `${stderr}\n${stdout}`
+  return FATAL_CLI_EARLY_EXIT_PATTERNS.some(pattern => pattern.test(combined))
 }
 
 function sleep(ms: number) {
@@ -80,10 +152,45 @@ async function reserveLoopbackPort() {
   })
 }
 
-async function waitForSocketReady(port: number, timeoutMs: number) {
+export async function waitForSocketReady(options: WaitForSocketReadyOptions) {
+  const { child, timeoutMs, port } = options
   const startedAt = Date.now()
   let lastError: unknown
+  const stdoutChunks: Buffer[] = []
+  const stderrChunks: Buffer[] = []
+
+  if (child?.stdout) {
+    child.stdout.on('data', chunk => stdoutChunks.push(Buffer.from(chunk)))
+  }
+  if (child?.stderr) {
+    child.stderr.on('data', chunk => stderrChunks.push(Buffer.from(chunk)))
+  }
+
+  const getStdout = () => Buffer.concat(stdoutChunks).toString('utf8')
+  const getStderr = () => Buffer.concat(stderrChunks).toString('utf8')
+  let childExit: { exitCode: number | null, signal: NodeJS.Signals | null } | null = null
+
+  if (child) {
+    child.once('exit', (exitCode, signal) => {
+      childExit = { exitCode, signal }
+    })
+  }
+
   while (Date.now() - startedAt <= timeoutMs) {
+    if (childExit && shouldFailFastOnCliExit({
+      exitCode: childExit.exitCode,
+      stdout: getStdout(),
+      stderr: getStderr(),
+    })) {
+      throw new Error(formatCliExitDetails({
+        cliPath: child.spawnfile,
+        exitCode: childExit.exitCode,
+        signal: childExit.signal,
+        stdout: getStdout(),
+        stderr: getStderr(),
+      }))
+    }
+
     try {
       await new Promise<void>((resolve, reject) => {
         const socket = net.createConnection({
@@ -103,6 +210,23 @@ async function waitForSocketReady(port: number, timeoutMs: number) {
       await sleep(400)
     }
   }
+
+  if (childExit && shouldFailFastOnCliExit({
+    exitCode: childExit.exitCode,
+    stdout: getStdout(),
+    stderr: getStderr(),
+  })) {
+    throw new Error(formatCliExitDetails({
+      cliPath: child.spawnfile,
+      exitCode: childExit.exitCode,
+      signal: childExit.signal,
+      stdout: getStdout(),
+      stderr: getStderr(),
+    }), {
+      cause: lastError as Error,
+    })
+  }
+
   throw new Error(`Timed out waiting for automator socket 127.0.0.1:${port}`, {
     cause: lastError as Error,
   })
@@ -153,20 +277,29 @@ async function main() {
 
   const child = spawn(cliPath, args, {
     cwd: payload.cwd,
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
     detached: false,
   })
   child.unref()
 
   const wsEndpoint = `ws://127.0.0.1:${autoPort}`
-  await waitForSocketReady(autoPort, payload.timeout ?? 30_000)
+  await waitForSocketReady({
+    child,
+    port: autoPort,
+    timeoutMs: payload.timeout ?? 30_000,
+  })
 
   const result: AutomatorCliBridgeResult = { wsEndpoint }
   process.stdout.write(JSON.stringify(result))
 }
 
-main().catch((error) => {
-  const message = error instanceof Error ? error.stack || error.message : String(error)
-  process.stderr.write(`${message}\n`)
-  process.exitCode = 1
-})
+const currentFilePath = fileURLToPath(import.meta.url)
+const entryFilePath = process.argv[1] ? path.resolve(process.argv[1]) : ''
+
+if (entryFilePath === currentFilePath) {
+  main().catch((error) => {
+    const message = error instanceof Error ? error.stack || error.message : String(error)
+    process.stderr.write(`${message}\n`)
+    process.exitCode = 1
+  })
+}
