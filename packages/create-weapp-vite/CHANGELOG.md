@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.0.76
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` 页面中 `onPageScroll()` 只注册到组件选项、未同步桥接到页面实例的问题。现在页面实例会暴露可调用的 `page.onPageScroll`，因此真实滚动分发路径与依赖页面实例 hook 的业务 fallback 都能收到滚动事件。** [#406](https://github.com/weapp-vite/weapp-vite/pull/406) by @sonofmagic
+
+- 🐛 **修复 `autoImportComponents` 使用对象配置时未自动继承支持文件默认输出的问题。现在像 `VantResolver()` 这类 resolver 场景，即使只配置 `resolvers`，也会默认生成 `.weapp-vite/typed-components.d.ts`、`components.d.ts` 与 `mini-program.html-data.json`，补齐模板项目中的组件智能提示与类型声明。** [`7c361a4`](https://github.com/weapp-vite/weapp-vite/commit/7c361a45a72b1e096001a4fca05ae591e6aea3d8) by @sonofmagic
+
+- 🐛 **增强 `autoImportComponents` 的 resolver 支持文件生成策略。现在 resolver 可以声明 `.weapp-vite` 支持文件采用“按需”还是“全量”收集；内置第三方 resolver 默认会在 `prepare` / 支持文件同步阶段为其静态组件全集生成 `auto-import-components.json`、`typed-components.d.ts`、`components.d.ts` 与 `mini-program.html-data.json`，从而补齐未在模板中直接使用的组件智能提示，同时保持运行时自动导入仍按实际命中工作。** [`74bb317`](https://github.com/weapp-vite/weapp-vite/commit/74bb31722ccbc14c89f355495d7302d06e43bdb2) by @sonofmagic
+
 ## 2.0.75
 
 ### Patch Changes
