@@ -1578,6 +1578,10 @@ Page({
     this.selectComponent?.('#status-card')?.inspectComponentIntersection?.()
     this.push('lab:inspectCardIntersection')
   },
+  inspectCardMedia() {
+    this.selectComponent?.('#status-card')?.inspectComponentMedia?.()
+    this.push('lab:inspectCardMedia')
+  },
   inspectCompoundCard() {
     const card = this.selectComponent?.('status-card.primary-card[data-role="main"]')
     const cards = this.selectAllComponents?.('status-card.primary-card[data-role="main"]') ?? []

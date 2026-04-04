@@ -17,6 +17,7 @@ Component({
     internalClicks: 0,
     nestedBadge: '',
     componentIntersectionSnapshot: '',
+    componentMediaMatches: [],
     observerLog: 'cold',
     actionLog: [],
     actionPills: ['warm', 'hot'],
@@ -89,6 +90,17 @@ Component({
           componentIntersectionSnapshot: JSON.stringify(result),
         })
         observer.disconnect()
+      })
+    },
+    inspectComponentMedia() {
+      const observer = this.createMediaQueryObserver()
+      observer.observe({
+        maxWidth: 390,
+        orientation: 'portrait',
+      }, (result) => {
+        this.setData({
+          componentMediaMatches: [...this.data.componentMediaMatches, result.matches],
+        })
       })
     },
     applyInternalAction(event) {

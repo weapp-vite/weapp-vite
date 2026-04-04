@@ -23,5 +23,6 @@
   <view wx:else class="panel-row">状态缺失</view>
   <view class="panel-row">Nested: {{nestedBadge}}</view>
   <view class="panel-row">Intersection: {{componentIntersectionSnapshot}}</view>
+  <view class="panel-row">MediaMatches: {{componentMediaMatches.0}}/{{componentMediaMatches.1}}</view>
   <view class="panel-row">ActionLog: {{actionLog.0}}</view>
 </view>
