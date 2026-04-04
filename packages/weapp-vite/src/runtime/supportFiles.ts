@@ -103,7 +103,15 @@ export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Prom
       ctx.autoImportService.resolve(tag, importerBaseName)
     }
 
-    await ctx.autoImportService.awaitManifestWrites()
+    ctx.autoImportService.setSupportFileResolverComponents(
+      ctx.autoImportService.collectStaticResolverComponentsForSupportFiles(),
+    )
+    try {
+      await ctx.autoImportService.awaitManifestWrites()
+    }
+    finally {
+      ctx.autoImportService.clearSupportFileResolverComponents()
+    }
   }
 
   return {

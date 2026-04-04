@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite-wevu-tailwindcss-tdesign-retail-template",
   "type": "module",
-  "version": "1.0.41",
+  "version": "1.0.43",
   "private": true,
   "description": "weapp-vite + tdesign retail 模板",
   "author": "ice breaker <1324318532@qq.com>",
@@ -37,7 +37,7 @@
     "@icebreakers/eslint-config": "^4.0.0",
     "@icebreakers/stylelint-config": "^3.0.0",
     "autoprefixer": "catalog:",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
     "stylelint": "^17.6.0",

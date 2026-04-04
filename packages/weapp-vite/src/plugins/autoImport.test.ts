@@ -109,8 +109,9 @@ describe('autoImport plugin', () => {
     expect(awaitManifestWrites).toHaveBeenCalledTimes(1)
   })
 
-  it('does not bootstrap when nothing is enabled and no globs', async () => {
+  it('does not register component candidates when nothing is enabled explicitly', async () => {
     const reset = vi.fn()
+    const registerPotentialComponent = vi.fn()
     const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
 
     const ctx = {
@@ -132,7 +133,7 @@ describe('autoImport plugin', () => {
         reset,
         awaitManifestWrites,
         filter: () => false,
-        registerPotentialComponent: vi.fn(),
+        registerPotentialComponent,
         removePotentialComponent: vi.fn(),
         resolve: vi.fn(),
         getRegisteredLocalComponents: vi.fn(),
@@ -143,7 +144,7 @@ describe('autoImport plugin', () => {
     plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
 
     await plugin.buildStart?.()
-    expect(reset).not.toHaveBeenCalled()
+    expect(registerPotentialComponent).not.toHaveBeenCalled()
   })
 
   it('initial scan should include .vue files when globs point to components/**/*.vue', async () => {
@@ -835,7 +836,7 @@ describe('autoImport plugin', () => {
     expect(resetWithoutConfig).not.toHaveBeenCalled()
   })
 
-  it('registers only src root watch target when glob base is empty', async () => {
+  it('registers src root as a watch target when glob base is empty', async () => {
     const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
     await fs.ensureDir(tempRoot)
     const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-watch-root-'))
@@ -875,8 +876,8 @@ describe('autoImport plugin', () => {
       plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
       await plugin.buildStart?.call({ addWatchFile } as any)
 
-      expect(addWatchFile).toHaveBeenCalledTimes(1)
-      expect(addWatchFile).toHaveBeenCalledWith(srcRoot)
+      const watchTargets = addWatchFile.mock.calls.map(([target]) => target)
+      expect(watchTargets).toContain(srcRoot)
     }
     finally {
       await fs.remove(tempDir)

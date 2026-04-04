@@ -30,7 +30,7 @@
   "devDependencies": {
     "@icebreakers/eslint-config": "^4.0.0",
     "@icebreakers/stylelint-config": "^3.0.0",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "miniprogram-api-typings": "catalog:",
     "stylelint": "^17.6.0",
     "typescript": "catalog:",

@@ -1,4 +1,5 @@
 import type { Resolver } from '../../../auto-import-components/resolvers'
+// eslint-disable-next-line e18e/ban-dependencies -- 这里需要真实文件系统能力验证包解析与导航导入
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -241,6 +242,54 @@ describe('autoImport resolver helpers', () => {
       types: new Map(),
       docs: new Map(),
     })
+  })
+
+  it('collects full-strategy resolver components only for support files', () => {
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [
+          {
+            supportFilesStrategy: 'full',
+            components: {
+              'van-button': '@vant/weapp/button',
+              'van-cell': '@vant/weapp/cell',
+            },
+          },
+          {
+            supportFilesStrategy: 'used',
+            components: {
+              't-button': 'tdesign-miniprogram/button/button',
+            },
+          },
+          {
+            components: {
+              'mp-button': 'weui-miniprogram/button/button',
+            },
+          },
+        ],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+
+    expect(helpers.collectStaticResolverComponentsForSupportFiles()).toEqual({
+      'van-button': '@vant/weapp/button',
+      'van-cell': '@vant/weapp/cell',
+    })
+
+    helpers.setSupportFileResolverComponents({
+      'van-button': '@vant/weapp/button',
+      'van-cell': '@vant/weapp/cell',
+    })
+
+    expect(helpers.collectResolverComponents()).toEqual({
+      'van-button': '@vant/weapp/button',
+      'van-cell': '@vant/weapp/cell',
+    })
+
+    helpers.clearSupportFileResolverComponents()
+
+    expect(helpers.collectResolverComponents()).toEqual({})
   })
 
   it('returns undefined for invalid navigation imports or missing cwd', () => {

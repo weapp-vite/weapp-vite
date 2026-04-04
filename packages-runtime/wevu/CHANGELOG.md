@@ -1,5 +1,21 @@
 # wevu
 
+## 6.13.3
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` 页面中 `onPageScroll()` 只注册到组件选项、未同步桥接到页面实例的问题。现在页面实例会暴露可调用的 `page.onPageScroll`，因此真实滚动分发路径与依赖页面实例 hook 的业务 fallback 都能收到滚动事件。** [#406](https://github.com/weapp-vite/weapp-vite/pull/406) by @sonofmagic
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.13.3`
+
+## 6.13.2
+
+### Patch Changes
+
+- 🐛 **为 `wevu` 补充与 Vue 3 对齐的 `version` 兼容能力。现在既可以从 `wevu` 主入口直接导入 `version`，也可以通过 `createApp()` 返回的 app 实例读取 `app.version`；同时 `wevu/vue-demi` 改为复用 `wevu` 自身的版本导出，避免在 `vue -> wevu` alias 场景下继续直接引用 `vue` 而引发循环依赖。** [`48695e3`](https://github.com/weapp-vite/weapp-vite/commit/48695e342bcf0959b20ccb58636ac125ca09f2b5) by @sonofmagic
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.13.2`
+
 ## 6.13.1
 
 ### Patch Changes

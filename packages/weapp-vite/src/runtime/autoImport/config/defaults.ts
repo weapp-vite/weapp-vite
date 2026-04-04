@@ -81,12 +81,15 @@ export function getAutoImportConfig(configService?: MutableCompilerContext['conf
   }
 
   const userConfigured = weappConfig.autoImportComponents ?? weappConfig.enhance?.autoImportComponents
+  const enabledDefaults = createEnabledAutoImportComponents(configService)
   if (userConfigured === false) {
     return undefined
   }
   const normalizedConfig = userConfigured === true
-    ? createEnabledAutoImportComponents(configService)
+    ? enabledDefaults
     : userConfigured
+      ? mergeAutoImportComponents(enabledDefaults, cloneAutoImportComponents(userConfigured), true)
+      : undefined
   const fallbackConfig = normalizedConfig === undefined
     ? createDefaultAutoImportComponents(configService)
     : undefined

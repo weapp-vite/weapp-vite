@@ -1,4 +1,4 @@
-import { assertInSetup, ensurePageShareMenusOnSetup, ensureSinglePageHookOnInstance, pushHook } from './base'
+import { assertInSetup, ensurePageHookOnInstance, ensurePageShareMenusOnSetup, ensureSinglePageHookOnInstance, pushHook } from './base'
 
 function registerHook(name: string, handler: (...args: any[]) => any, options?: { single?: boolean }) {
   pushHook(assertInSetup(name), name, handler as any, options as any)
@@ -56,7 +56,9 @@ export function onReachBottom(handler: WechatMiniprogram.Page.ILifetime['onReach
 }
 
 export function onPageScroll(handler: (opt: WechatMiniprogram.Page.IPageScrollOption) => void) {
-  registerHook('onPageScroll', handler as any)
+  const instance = assertInSetup('onPageScroll')
+  pushHook(instance, 'onPageScroll', handler as any)
+  ensurePageHookOnInstance(instance, 'onPageScroll')
 }
 
 export function onRouteDone(handler: WechatMiniprogram.Page.ILifetime['onRouteDone'] | ((opt?: unknown) => void)) {

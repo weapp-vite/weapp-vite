@@ -96,20 +96,29 @@ describe('support files integration', () => {
     const { ctx, dispose } = await createTestCompilerContext({ cwd })
     const manifestPath = path.resolve(cwd, '.weapp-vite/auto-import-components.json')
     const managedTsconfigPath = path.resolve(cwd, '.weapp-vite/tsconfig.app.json')
+    const typedDefinitionPath = path.resolve(cwd, '.weapp-vite/typed-components.d.ts')
+    const vueComponentsPath = path.resolve(cwd, '.weapp-vite/components.d.ts')
 
     try {
       await fs.rm(manifestPath, { force: true })
       await fs.rm(managedTsconfigPath, { force: true })
+      await fs.rm(typedDefinitionPath, { force: true })
+      await fs.rm(vueComponentsPath, { force: true })
       ctx.autoImportService.reset()
       warnSpy.mockClear()
 
       const result = await syncProjectSupportFiles(ctx)
       const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'))
       const tsconfig = JSON.parse(await fs.readFile(managedTsconfigPath, 'utf8'))
+      const typedDefinition = await fs.readFile(typedDefinitionPath, 'utf8')
+      const vueComponentsDefinition = await fs.readFile(vueComponentsPath, 'utf8')
 
       expect(result.managedTsconfigChanged).toBe(true)
       expect(manifest.HelloWorld).toBe('/components/HelloWorld/index')
       expect(manifest['van-button']).toBe('@vant/weapp/button')
+      expect(manifest['van-action-sheet']).toBe('@vant/weapp/action-sheet')
+      expect(typedDefinition).toContain('\'van-action-sheet\': Record<string, any>;')
+      expect(vueComponentsDefinition).toContain('VanActionSheet:')
       expect(tsconfig.compilerOptions.paths).toMatchObject({
         '@/*': ['../src/*'],
       })

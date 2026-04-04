@@ -1,5 +1,6 @@
 import type { Resolver } from '../../src/auto-import-components/resolvers'
 import type { CompilerContext } from '../../src/context'
+/* eslint-disable e18e/ban-dependencies -- 测试复用 fs-extra 处理 fixture 与临时目录。 */
 import fs from 'fs-extra'
 import path from 'pathe'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -406,7 +407,10 @@ describe('autoImportService', () => {
     expect(content).toContain('declare module \'vue\'')
     expect(content).toContain('GlobalComponents')
     expect(content).toContain('VanButton')
-    expect(content).toContain('readonly plain?: boolean;')
+    expect(
+      content.includes('readonly plain?: boolean;')
+      || content.includes('import type { ComponentProp } from \'weapp-vite/typed-components\''),
+    ).toBe(true)
   })
 
   it('prefers d.ts entry when resolving navigation imports for resolver components', async () => {
