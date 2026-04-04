@@ -65,6 +65,18 @@ export function useWorkbench() {
       callComponentMethod: (scopeId: string, method: string, ...args: any[]) => {
         return sessionState.run(() => sessionState.session.value?.callScopeMethodDirect(scopeId, method, ...args))
       },
+      dispatchTapChain: (payload: {
+        activeScopeId: string
+        chain: Array<{
+          event: {
+            currentTarget: { dataset: Record<string, string>, id: string }
+            target: { dataset: Record<string, string>, id: string }
+          }
+          method: string
+          scopeId: string
+          stopAfter: boolean
+        }>
+      }) => sessionState.handleDispatchTapChain(payload),
       mockActionSheet: (definition: { cancel?: boolean, tapIndex?: number } = {}) => {
         sessionState.session.value?.mockActionSheet?.(definition)
       },
