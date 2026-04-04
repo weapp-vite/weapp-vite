@@ -815,6 +815,9 @@ Page({
     canvasTempFilePath: '',
     canvasQuerySnapshot: '',
     componentCanvasSnapshot: '',
+    shareMenuShownInfo: '',
+    shareMenuUpdatedInfo: '',
+    shareMenuHiddenInfo: '',
     textMeasureWidth: 0,
   },
   runCanvasLab() {
@@ -1130,6 +1133,36 @@ Page({
               loadingHiddenInfo: JSON.stringify(result),
             })
           },
+        })
+      },
+    })
+  },
+  showShareMenuLab() {
+    wx.showShareMenu({
+      withShareTicket: true,
+      success: (result) => {
+        this.setData({
+          shareMenuShownInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  updateShareMenuLab() {
+    wx.updateShareMenu({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      complete: (result) => {
+        this.setData({
+          shareMenuUpdatedInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  hideShareMenuLab() {
+    wx.hideShareMenu({
+      complete: (result) => {
+        this.setData({
+          shareMenuHiddenInfo: JSON.stringify(result),
         })
       },
     })
