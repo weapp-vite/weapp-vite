@@ -1122,6 +1122,49 @@ describe.sequential('simulator browser e2e', () => {
       .toContain('"from":"queue"')
   })
 
+  it('tracks redirect navigation through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('openQueue')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/queue/index' && state.pageStack.length === 2,
+      20_000,
+    )
+
+    bridge.runPageMethod('openDetail')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/detail/index' && state.pageStack.length === 3,
+      20_000,
+    )
+
+    bridge.runPageMethod('replaceInsights')
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/insights/index' && nextState.pageStack.length === 3,
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(state.pageStack).toEqual([
+      'pages/hub/index',
+      'package-flow/queue/index',
+      'pages/insights/index',
+    ])
+    expect(pageData.title).toBe('Insights')
+    expect(pageData.from).toBe('detail')
+    expect(state.previewMarkup).toContain('Insights')
+    expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
+  })
+
   it('tracks browser route stack transitions through runtime navigation', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
