@@ -5660,4 +5660,47 @@ Page({
     })
     expect(session.renderCurrentPage().wxml).toContain('pull-down')
   })
+
+  it('supports startPullDownRefresh in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/events/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/events/index.js', `
+Page({
+  data: {
+    logs: [],
+    startSummary: ''
+  },
+  onPullDownRefresh() {
+    this.setData({
+      logs: [...this.data.logs, 'pull-down']
+    })
+    wx.stopPullDownRefresh()
+  },
+  runStartPullDownRefreshLab() {
+    wx.startPullDownRefresh({
+      success: (result) => {
+        this.setData({
+          startSummary: JSON.stringify(result),
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/events/index.wxml', '<view>{{logs.0}}</view><view>{{startSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/events/index')
+
+    page.runStartPullDownRefreshLab()
+
+    expect(page.data.startSummary).toContain('"errMsg":"startPullDownRefresh:ok"')
+    expect(session.getPullDownRefreshState()).toEqual({
+      active: false,
+      stopCalls: 1,
+    })
+    expect(session.renderCurrentPage().wxml).toContain('pull-down')
+  })
 })

@@ -305,6 +305,7 @@ export class HeadlessSession {
         showLoading: option => this.wxState.showLoading(option),
         showModal: option => this.wxState.showModal(option),
         showToast: option => this.wxState.showToast(option),
+        startPullDownRefresh: () => this.startPullDownRefresh(),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
         uploadFile: option => this.wxState.uploadFile(option),
@@ -974,6 +975,13 @@ export class HeadlessSession {
     }
     current.onPullDownRefresh?.()
     return current
+  }
+
+  startPullDownRefresh() {
+    this.triggerPullDownRefresh()
+    return {
+      errMsg: 'startPullDownRefresh:ok',
+    }
   }
 
   triggerReachBottom() {

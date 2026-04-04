@@ -280,6 +280,7 @@ describe('page event alignment', () => {
     page.inspectMissingFileInfoLab()
     page.openDocumentLab()
     page.openMissingDocumentLab()
+    page.startPullDownRefreshLab()
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -372,6 +373,11 @@ describe('page event alignment', () => {
     expect(page.data.openDocumentInfo).toContain('"errMsg":"openDocument:ok"')
     expect(page.data.openSavedDocumentInfo).toContain('"errMsg":"openDocument:ok"')
     expect(page.data.openMissingDocumentInfo).toContain('"error":"openDocument:fail no such file or directory, open \'headless://wxfile/temp/missing-open-document.pdf\'"')
+    expect(page.data.startPullDownRefreshInfo).toContain('"errMsg":"startPullDownRefresh:ok"')
+    expect(session.getPullDownRefreshState()).toEqual({
+      active: true,
+      stopCalls: 0,
+    })
     expect(session.getOpenedDocument()).toEqual({
       filePath: 'headless://saved/open-document/report.txt',
       fileType: 'txt',

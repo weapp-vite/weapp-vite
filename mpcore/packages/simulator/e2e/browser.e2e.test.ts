@@ -146,6 +146,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('inspectMissingFileInfoLab')
     bridge.runPageMethod('openDocumentLab')
     bridge.runPageMethod('openMissingDocumentLab')
+    bridge.runPageMethod('startPullDownRefreshLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -214,6 +215,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.openDocumentInfo
           && pageData.openSavedDocumentInfo
           && pageData.openMissingDocumentInfo
+          && pageData.startPullDownRefreshInfo
+          && pageData.pullDownRefreshInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -358,6 +361,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.openDocumentInfo).toContain('"errMsg":"openDocument:ok"')
     expect(pageData.openSavedDocumentInfo).toContain('"errMsg":"openDocument:ok"')
     expect(pageData.openMissingDocumentInfo).toContain('"error":"openDocument:fail no such file or directory, open \'headless://wxfile/temp/missing-open-document.pdf\'"')
+    expect(pageData.startPullDownRefreshInfo).toContain('"errMsg":"startPullDownRefresh:ok"')
+    expect(pageData.pullDownRefreshInfo).toContain('"handled":true')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -453,6 +458,10 @@ describe.sequential('simulator browser e2e', () => {
       fileType: 'txt',
       showMenu: false,
       visible: true,
+    })
+    expect(bridge.sessionSnapshot().pullDownRefreshState).toEqual({
+      active: false,
+      stopCalls: 1,
     })
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
