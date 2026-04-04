@@ -121,9 +121,12 @@ describe('suiteRunner', () => {
     const ideSmokeTasks = getSuiteTasks('ide-smoke')
     const ideGateTasks = getSuiteTasks('ide-gate')
     const ideFullTasks = getSuiteTasks('ide-full')
+    const ideChunkModesTasks = getSuiteTasks('ide-full:chunk-modes')
     const ideGithubIssuesTasks = getSuiteTasks('ide-full:github-issues')
     const ideSmokeLabels = ideSmokeTasks.map(task => task.label)
     const ideGateLabels = ideGateTasks.map(task => task.label)
+    const ideFullLabels = ideFullTasks.map(task => task.label)
+    const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
@@ -133,6 +136,12 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/index.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
+    expect(ideChunkModesLabels).toEqual([
+      'ide/chunk-modes.runtime.duplicate.test.ts',
+      'ide/chunk-modes.runtime.extras.test.ts',
+      'ide/chunk-modes.runtime.hoist.test.ts',
+    ])
+    expect(ideFullLabels.slice(-3)).toEqual(ideChunkModesLabels)
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesTasks.length).toBe(4)

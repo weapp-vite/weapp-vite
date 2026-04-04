@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- e2e 套件清单需要 fast-glob 收集测试文件。 */
 import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import fg from 'fast-glob'
@@ -12,6 +13,11 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue297-302.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
   'ide/github-issues.runtime.props.test.ts',
+]
+const IDE_CHUNK_MODES_PATTERNS = [
+  'ide/chunk-modes.runtime.duplicate.test.ts',
+  'ide/chunk-modes.runtime.extras.test.ts',
+  'ide/chunk-modes.runtime.hoist.test.ts',
 ]
 const IDE_WEVU_FEATURES_PATTERNS = [
   'ide/template-wevu-features-app.test.ts',
@@ -118,13 +124,22 @@ export function getCiTasks() {
 }
 
 export function getIdeTasks() {
-  return fg.sync('ide/**/*.test.ts', {
+  const tasks = fg.sync('ide/**/*.test.ts', {
     cwd: ROOT,
     absolute: true,
     onlyFiles: true,
   })
     .sort()
     .map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath))
+
+  return tasks.sort((left, right) => {
+    const leftIsChunkModes = IDE_CHUNK_MODES_PATTERNS.includes(left.label)
+    const rightIsChunkModes = IDE_CHUNK_MODES_PATTERNS.includes(right.label)
+    if (leftIsChunkModes === rightIsChunkModes) {
+      return left.label.localeCompare(right.label)
+    }
+    return leftIsChunkModes ? 1 : -1
+  })
 }
 
 function getIdePatternTasks(patterns: string[]) {
@@ -155,6 +170,10 @@ export function getIdeWevuFeaturesTasks() {
 
 export function getIdeTemplatesTasks() {
   return getIdePatternTasks(IDE_TEMPLATES_PATTERNS)
+}
+
+export function getIdeChunkModesTasks() {
+  return getIdePatternTasks(IDE_CHUNK_MODES_PATTERNS)
 }
 
 export function getFullTasks() {
@@ -232,6 +251,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-full:templates',
     description: 'IDE regression suite focused on template runtime coverage',
     tasks: getIdeTemplatesTasks,
+  },
+  'ide-full:chunk-modes': {
+    name: 'ide-full:chunk-modes',
+    description: 'IDE regression suite focused on chunk-modes runtime matrix coverage',
+    tasks: getIdeChunkModesTasks,
   },
   'full': {
     name: 'full',
