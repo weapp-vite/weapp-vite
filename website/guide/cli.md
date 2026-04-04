@@ -1,6 +1,6 @@
 ---
 title: CLI 命令参考
-description: weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、ide logs、generate 与 weapp-ide-cli 透传规则。
+description: weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、ide logs、generate，以及 screenshot/compare 等 weapp-ide-cli 透传规则。
 keywords:
   - guide
   - cli
@@ -13,7 +13,7 @@ keywords:
 
 本文汇总 `weapp-vite` 在当前版本可用的命令与参数，优先覆盖日常开发、构建、支持文件预生成、AI 协作与 IDE 自动化场景。
 
-> 需要调用微信开发者工具能力（`preview/upload/automator/config` 等）时，`weapp-vite` 会在未命中自身命令后自动透传到 `weapp-ide-cli`。
+> 需要调用微信开发者工具能力（`preview/upload/automator/config/screenshot/compare` 等）时，`weapp-vite` 会在未命中自身命令后自动透传到 `weapp-ide-cli`。
 
 > `weapp-vite` CLI 也提供简写命令 `wv`。`weapp-vite dev` 与 `wv dev`、`weapp-vite build` 与 `wv build` 都是等价写法。下文统一使用 `weapp-vite` 作为主示例。
 
@@ -307,6 +307,8 @@ wv ide upload --project ./dist -v 1.0.0 -d "ci upload"
 weapp-vite preview --project ./dist -q terminal
 weapp-vite upload --project ./dist -v 1.0.0 -d "ci upload"
 weapp-vite cache --clean compile
+weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 weapp-vite cache --clean all
 wv cache --clean all
 ```
@@ -337,6 +339,14 @@ wv prepare
 # 持续监听 DevTools console
 weapp-vite ide logs --open
 wv ide logs --open
+
+# 小程序截图采集
+weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+
+# 小程序截图对比
+weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 
 # 透传微信预览命令
 weapp-vite preview --project ./dist -q terminal

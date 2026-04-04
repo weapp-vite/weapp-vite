@@ -20,7 +20,10 @@ keywords:
 ## 选型建议（先看这个）
 
 - 新建项目：优先用 `create-weapp-vite`
+- 新建项目后，希望把推荐的 AI skills 一并装好：用 `create-weapp-vite` 的 skills 安装选项
 - 在 CI/脚本里调用微信开发者工具：用 `weapp-ide-cli`
+- 想做小程序运行时截图：优先用 `weapp-vite screenshot` 或 `weapp screenshot`
+- 想做截图对比 / visual regression：优先用 `weapp-vite compare` 或 `weapp compare`
 - 想把 DevTools 里的小程序日志桥接回 AI 终端：优先用 `weapp-vite ide logs`，底层能力由 `weapp-ide-cli` 提供
 - 想让 AI 助手直接理解并操作仓库：用 `@weapp-vite/mcp`，或直接执行 `weapp-vite mcp`
 - 需要“打包后执行配置文件”：用 `rolldown-require`
@@ -32,17 +35,17 @@ keywords:
 
 ## 包能力矩阵
 
-| 包名                      | 定位                                     | 适用场景                       | 文档入口                                                                   |
-| ------------------------- | ---------------------------------------- | ------------------------------ | -------------------------------------------------------------------------- |
-| `create-weapp-vite`       | 官方脚手架                               | 快速创建模板项目、统一模板版本 | [/packages/create-weapp-vite](/packages/create-weapp-vite)                 |
-| `weapp-ide-cli`           | 微信开发者工具 CLI 增强封装              | 本地自动化、CI 预览/上传       | [/packages/weapp-ide-cli](/packages/weapp-ide-cli)                         |
-| `rolldown-require`        | 以 Rolldown 为核心的 bundle+require 工具 | 加载 TS/MJS/CJS 配置文件       | [/packages/rolldown-require/index.zh](/packages/rolldown-require/index.zh) |
-| `vite-plugin-performance` | Vite 插件 Hook 耗时分析                  | 定位构建慢点、插件调优         | [/packages/vite-plugin-performance](/packages/vite-plugin-performance)     |
-| `@wevu/compiler`          | Wevu 编译能力底座                        | 复用 SFC/模板编译管线          | [/packages-runtime/wevu-compiler](/packages-runtime/wevu-compiler)                         |
-| `@wevu/api`               | 跨平台小程序 API 封装                    | Promise 风格统一调用           | [/packages-runtime/weapi/](/packages-runtime/weapi/)                                       |
-| `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面    | [/packages-runtime/web](/packages-runtime/web)                                             |
-| `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放  | [/packages/mcp](/packages/mcp)                                             |
-| `@weapp-vite/volar`       | Volar 语言插件                           | `<json>` 配置块补全与校验      | [/packages/volar](/packages/volar)                                         |
+| 包名                      | 定位                                     | 适用场景                                           | 文档入口                                                                   |
+| ------------------------- | ---------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
+| `create-weapp-vite`       | 官方脚手架                               | 快速创建模板项目、统一模板版本、可选安装 AI skills | [/packages/create-weapp-vite](/packages/create-weapp-vite)                 |
+| `weapp-ide-cli`           | 微信开发者工具 CLI 增强封装              | 本地自动化、CI 预览/上传、截图与截图对比           | [/packages/weapp-ide-cli](/packages/weapp-ide-cli)                         |
+| `rolldown-require`        | 以 Rolldown 为核心的 bundle+require 工具 | 加载 TS/MJS/CJS 配置文件                           | [/packages/rolldown-require/index.zh](/packages/rolldown-require/index.zh) |
+| `vite-plugin-performance` | Vite 插件 Hook 耗时分析                  | 定位构建慢点、插件调优                             | [/packages/vite-plugin-performance](/packages/vite-plugin-performance)     |
+| `@wevu/compiler`          | Wevu 编译能力底座                        | 复用 SFC/模板编译管线                              | [/packages-runtime/wevu-compiler](/packages-runtime/wevu-compiler)         |
+| `@wevu/api`               | 跨平台小程序 API 封装                    | Promise 风格统一调用                               | [/packages-runtime/weapi/](/packages-runtime/weapi/)                       |
+| `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                        | [/packages-runtime/web](/packages-runtime/web)                             |
+| `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放                      | [/packages/mcp](/packages/mcp)                                             |
+| `@weapp-vite/volar`       | Volar 语言插件                           | `<json>` 配置块补全与校验                          | [/packages/volar](/packages/volar)                                         |
 
 ## 已有独立文档模块
 
@@ -54,4 +57,4 @@ keywords:
 
 - `rolldown-require-bench` 主要用于基准测试，不建议直接作为业务依赖。
 - `@weapp-vite/web` 仍偏实验用途，适合技术验证、浏览器预览与 Web 侧调试。
-- `@weapp-vite/mcp` 已被 `weapp-vite` CLI 集成，通常直接使用 `weapp-vite mcp` 即可。
+- `@weapp-vite/mcp` 已被 `weapp-vite` CLI 集成，通常直接使用 `weapp-vite mcp` 即可；如果你希望 AI 更稳定命中截图与截图对比，也可以直接调用 `take_weapp_screenshot` 与 `compare_weapp_screenshot`。

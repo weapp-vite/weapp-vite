@@ -276,6 +276,7 @@ weapp-vite preview --project ./dist/build/mp-weixin
 weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 weapp-vite config lang en
 weapp-vite screenshot --project ./dist/build/mp-weixin --json
+weapp-vite compare --project ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-pixels 100 --json
 wv preview --project ./dist/build/mp-weixin
 
 # 或使用命名空间透传
