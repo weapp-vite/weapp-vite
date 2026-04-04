@@ -1,9 +1,9 @@
 import process from 'node:process'
-// eslint-disable-next-line e18e/ban-dependencies
+
+import { fs } from '@weapp-core/shared'
 import axios from 'axios'
+
 import * as cheerio from 'cheerio'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
 import path from 'pathe'
 
 interface ExtractContext {

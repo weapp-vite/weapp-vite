@@ -1,8 +1,8 @@
 import fsNative from 'node:fs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
-// eslint-disable-next-line e18e/ban-dependencies
-import fsExtra from 'fs-extra'
+
+import { fs as fsExtra } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, invalidateResolvedPageLayoutsCache, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'

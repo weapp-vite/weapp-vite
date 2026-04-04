@@ -103,19 +103,17 @@ vi.mock('magic-string', () => {
   }
 })
 
-vi.mock('fs-extra', () => {
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
   return {
-    __esModule: true,
-    default: {
+    ...actual,
+    fs: {
+      ...actual.fs,
       exists: existsMock,
       pathExists: existsMock,
       readFile: readFileMock,
       stat: statMock,
     },
-    exists: existsMock,
-    pathExists: existsMock,
-    readFile: readFileMock,
-    stat: statMock,
   }
 })
 

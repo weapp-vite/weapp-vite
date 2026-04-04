@@ -1,5 +1,5 @@
 import os from 'node:os'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { initConfig, resetContext } from '@/index'

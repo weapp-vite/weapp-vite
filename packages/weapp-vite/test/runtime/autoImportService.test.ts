@@ -1,7 +1,7 @@
 import type { Resolver } from '../../src/auto-import-components/resolvers'
 import type { CompilerContext } from '../../src/context'
-/* eslint-disable e18e/ban-dependencies -- 测试复用 fs-extra 处理 fixture 与临时目录。 */
-import fs from 'fs-extra'
+
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'

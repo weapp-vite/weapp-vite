@@ -1,5 +1,5 @@
+import { watch } from 'node:fs'
 import chokidar from 'chokidar'
-import { watch } from 'fs-extra'
 import path from 'pathe'
 import { touch } from '@/utils/file'
 

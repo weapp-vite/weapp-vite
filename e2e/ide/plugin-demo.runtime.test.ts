@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
@@ -60,6 +60,10 @@ function shouldRetryAutomatorError(error: unknown) {
     || message.includes('Timeout in ')
     || message.includes('Execution context was destroyed')
     || message.includes('Target closed')
+}
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function runAutomatorOp<T>(
@@ -155,10 +159,6 @@ async function tapElement(page: any, selector: string) {
 
 function normalizeRoutePath(routePath: string) {
   return routePath.replace(/^\/+/, '')
-}
-
-async function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 12_000) {

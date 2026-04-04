@@ -1,12 +1,14 @@
+import { fs } from '@weapp-core/shared'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
-import fs from 'fs-extra'
 import path from 'pathe'
+
+const CHINESE_RE = /[\u4E00-\u9FA5]/
+const BUILTIN_COMPONENT_NAME_RE = /^[a-z][a-z0-9]*/
 
 // 判断字符串是否包含中文
 function containsChinese(text: string) {
-  const chineseRegex = /[\u4E00-\u9FA5]/ // 匹配中文字符的正则表达式
-  return chineseRegex.test(text)
+  return CHINESE_RE.test(text)
 }
 
 async function main() {
@@ -17,7 +19,7 @@ async function main() {
   const arr = $('.main-container .sidebar ul.NavigationLevel__children .NavigationItem .NavigationItem__router-link').map((_, el) => {
     return $(el).text().trim()
   }).filter((_, value) => {
-    return !containsChinese(value) && /^[a-z][a-z0-9]*/.test(value)
+    return !containsChinese(value) && BUILTIN_COMPONENT_NAME_RE.test(value)
   })
   const arrr = [
     // 内置

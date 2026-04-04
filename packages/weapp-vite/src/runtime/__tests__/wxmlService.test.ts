@@ -1,8 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { WxmlService } from '../wxmlPlugin'
 import { Buffer } from 'node:buffer'
-// eslint-disable-next-line e18e/ban-dependencies -- 这里需要直接 mock 运行时当前使用的 fs-extra 模块
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
 import { createWxmlServicePlugin } from '../wxmlPlugin'
@@ -22,11 +21,11 @@ const mockFileSystem: Record<string, string> = {
   '/mock/project/header.wxml': initialHeaderContent,
 }
 
-vi.mock('fs-extra', async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, any>
-  const mockedModule = {
-    ...actual,
-    pathExists: vi.fn(async (filePath: string) => (filePath in mockFileSystem) || await actual.pathExists(filePath)),
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  const mockedFs = {
+    ...actual.fs,
+    pathExists: vi.fn(async (filePath: string) => (filePath in mockFileSystem) || await actual.fs.pathExists(filePath)),
     readFile: vi.fn(async (filePath: string, encoding?: any) => {
       if (filePath in mockFileSystem) {
         const content = mockFileSystem[filePath]
@@ -36,11 +35,11 @@ vi.mock('fs-extra', async (importOriginal) => {
         }
         return Buffer.from(content)
       }
-      return await actual.readFile(filePath, encoding)
+      return await actual.fs.readFile(filePath, encoding)
     }),
     stat: vi.fn(async (filePath: string) => {
       if (!(filePath in mockFileSystem)) {
-        return await actual.stat(filePath)
+        return await actual.fs.stat(filePath)
       }
       return {
         mtimeMs: 1,
@@ -49,8 +48,8 @@ vi.mock('fs-extra', async (importOriginal) => {
     }),
   }
   return {
-    ...mockedModule,
-    default: mockedModule,
+    ...actual,
+    fs: mockedFs,
   }
 })
 

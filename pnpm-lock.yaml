@@ -93,9 +93,6 @@ catalogs:
     fdir:
       specifier: ^6.5.0
       version: 6.5.0
-    fs-extra:
-      specifier: ^11.3.4
-      version: 11.3.4
     gm-crypto:
       specifier: ^0.1.12
       version: 0.1.12
@@ -277,9 +274,6 @@ importers:
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
-      '@types/fs-extra':
-        specifier: ^11.0.4
-        version: 11.0.4
       '@types/lodash':
         specifier: ^4.17.24
         version: 4.17.24
@@ -385,9 +379,6 @@ importers:
       fdir:
         specifier: 'catalog:'
         version: 6.5.0(picomatch@4.0.4)
-      fs-extra:
-        specifier: 'catalog:'
-        version: 11.3.4
       get-value:
         specifier: ^4.0.1
         version: 4.0.1
@@ -562,9 +553,6 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:^
         version: link:../shared
-      fs-extra:
-        specifier: 'catalog:'
-        version: 11.3.4
 
   '@weapp-core/logger':
     dependencies:
@@ -1972,9 +1960,6 @@ importers:
       fdir:
         specifier: 'catalog:'
         version: 6.5.0(picomatch@4.0.4)
-      fs-extra:
-        specifier: 'catalog:'
-        version: 11.3.4
       htmlparser2:
         specifier: 'catalog:'
         version: 12.0.0
@@ -7416,9 +7401,6 @@ packages:
   '@types/express@5.0.6':
     resolution: {integrity: sha512-sKYVuV7Sv9fbPIt/442koC7+IIwK5olP1KWeD88e/idgoJqDm3JV/YUiPwkoKK92ylff2MGxSz1CSjsXelx0YA==}
 
-  '@types/fs-extra@11.0.4':
-    resolution: {integrity: sha512-yTbItCNreRooED33qjunPthRcSjERP1r4MqCZc7wv0u2sUkzTFp45tgUfS5+r7FrZPdmCCNflLhVSP/o+SemsQ==}
-
   '@types/geojson@7946.0.16':
     resolution: {integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==}
 
@@ -7445,9 +7427,6 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
-
-  '@types/jsonfile@6.1.4':
-    resolution: {integrity: sha512-D5qGUYwjvnNNextdU59/+fI+spnwtTFmyQP0h+PfIOSkNfpU6AOICUOkm4i0OnSk+NyjdPJrxCDro0sJsWlRpQ==}
 
   '@types/katex@0.16.8':
     resolution: {integrity: sha512-trgaNyfU+Xh2Tc+ABIb44a5AYUpicB3uwirOioeOkNPPbmgRNtcWyDeeFRzjPZENO9Vq8gvVqfhaaXWLlevVwg==}
@@ -20830,11 +20809,6 @@ snapshots:
       '@types/express-serve-static-core': 5.1.0
       '@types/serve-static': 2.2.0
 
-  '@types/fs-extra@11.0.4':
-    dependencies:
-      '@types/jsonfile': 6.1.4
-      '@types/node': 25.5.2
-
   '@types/geojson@7946.0.16': {}
 
   '@types/hast@3.0.4':
@@ -20859,10 +20833,6 @@ snapshots:
   '@types/jsesc@2.5.1': {}
 
   '@types/json-schema@7.0.15': {}
-
-  '@types/jsonfile@6.1.4':
-    dependencies:
-      '@types/node': 25.5.2
 
   '@types/katex@0.16.8': {}
 

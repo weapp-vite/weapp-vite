@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '@/analyze/subpackages'
 import { startAnalyzeDashboard } from '@/cli/analyze/dashboard'
@@ -18,12 +18,17 @@ vi.mock('@/createContext', () => ({
   createCompilerContext: vi.fn(),
 }))
 
-vi.mock('fs-extra', () => ({
-  default: {
-    ensureDir: vi.fn(),
-    writeFile: vi.fn(),
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      ensureDir: vi.fn(),
+      writeFile: vi.fn(),
+    },
+  }
+})
 
 vi.mock('@/logger', () => ({
   default: {

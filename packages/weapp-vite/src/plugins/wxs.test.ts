@@ -1,7 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
-// eslint-disable-next-line e18e/ban-dependencies -- 测试临时目录清理沿用现有 fs-extra 用法
-import fs from 'fs-extra'
+
+import { fs } from '@weapp-core/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { wxs } from './wxs'
 

@@ -1,6 +1,6 @@
+import { fs } from '@weapp-core/shared'
 // import logger from '@/logger'
 import CI from 'ci-info'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import { getFixture, scanFiles } from './utils'

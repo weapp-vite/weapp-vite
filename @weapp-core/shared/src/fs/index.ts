@@ -1,5 +1,5 @@
 import type { FileHandle, OpenMode, PathLike } from 'node:fs/promises'
-import { close as closeFd, closeSync, constants, Dirent, existsSync, promises as nodeFs, openSync, readFileSync, Stats, utimesSync } from 'node:fs'
+import { close as closeFd, closeSync, constants, Dirent, existsSync, mkdirSync, promises as nodeFs, openSync, readFileSync, Stats, unlinkSync, utimesSync, watch, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 export interface JsonReadOptions {
@@ -65,8 +65,31 @@ async function ensureDir(dir: string) {
   await nodeFs.mkdir(dir, { recursive: true })
 }
 
+async function ensureFile(file: string) {
+  await ensureDir(path.dirname(file))
+  const handle = await nodeFs.open(file, 'a')
+  await handle.close()
+}
+
 async function remove(target: string) {
   await nodeFs.rm(target, { force: true, recursive: true })
+}
+
+async function ensureSymlink(target: string, file: string) {
+  await ensureDir(path.dirname(file))
+  try {
+    const existing = await nodeFs.readlink(file)
+    if (existing === target) {
+      return
+    }
+    await remove(file)
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException | undefined)?.code !== 'ENOENT') {
+      throw error
+    }
+  }
+  await nodeFs.symlink(target, file)
 }
 
 async function emptyDir(dir: string) {
@@ -80,6 +103,11 @@ async function emptyDir(dir: string) {
 async function outputFile(file: string, data: string | NodeJS.ArrayBufferView, options?: BufferEncoding) {
   await ensureDir(path.dirname(file))
   await nodeFs.writeFile(file, data, options)
+}
+
+async function appendFile(file: string, data: string | NodeJS.ArrayBufferView, options?: BufferEncoding) {
+  await ensureDir(path.dirname(file))
+  await nodeFs.appendFile(file, data, options)
 }
 
 async function writeJson(file: string, data: unknown, options?: JsonWriteOptions) {
@@ -192,14 +220,19 @@ export const fs = {
   Dirent,
   Stats,
   access: nodeFs.access,
+  appendFile,
   close,
   closeSync,
   constants,
   copy,
   emptyDir,
   ensureDir,
+  ensureFile,
+  ensureSymlink,
   exists,
   existsSync,
+  mkdir: nodeFs.mkdir,
+  mkdirSync,
   mkdtemp: nodeFs.mkdtemp,
   move,
   open: (file: PathLike, flags: OpenMode) => nodeFs.open(file, flags),
@@ -215,11 +248,16 @@ export const fs = {
   readJson,
   readJsonSync,
   readdir: nodeFs.readdir,
+  rm: nodeFs.rm,
   remove,
   stat: nodeFs.stat,
+  symlink: nodeFs.symlink,
+  unlinkSync,
   utimes: nodeFs.utimes,
   utimesSync,
+  watch,
   writeFile: nodeFs.writeFile,
+  writeFileSync,
   writeJSON,
   writeJson,
 }

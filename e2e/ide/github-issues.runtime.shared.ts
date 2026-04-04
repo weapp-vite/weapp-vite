@@ -1,6 +1,5 @@
-/* eslint-disable e18e/ban-dependencies -- github issues IDE e2e 使用 fs-extra 简化构建产物读写。 */
 import process from 'node:process'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { expect } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'

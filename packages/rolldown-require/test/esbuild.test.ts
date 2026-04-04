@@ -1,5 +1,5 @@
 import { platform } from 'node:os'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { posix as path } from 'pathe'
 import { assert } from 'vitest'
 import { bundleRequire } from './esbuild'

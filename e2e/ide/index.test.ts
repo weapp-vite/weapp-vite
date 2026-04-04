@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterAll } from 'vitest'
 import { formatWxml } from '../template-e2e.utils'

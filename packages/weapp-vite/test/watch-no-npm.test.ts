@@ -1,5 +1,5 @@
+import { fs } from '@weapp-core/shared'
 import { sort } from 'fast-sort'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import logger from '@/logger'

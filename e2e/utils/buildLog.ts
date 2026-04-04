@@ -1,9 +1,9 @@
-/* eslint-disable e18e/ban-dependencies -- e2e 构建日志采集需要 execa 驱动 CLI，并使用 fs-extra 清理构建产物。 */
+/* eslint-disable e18e/ban-dependencies -- e2e 构建日志采集需要 execa 驱动 CLI，并使用 shared fs 清理构建产物。 */
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { fs as fsExtra } from '@weapp-core/shared'
 import { execa } from 'execa'
-import fsExtra from 'fs-extra'
 import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
 
 const WARN_PATTERN = /\[warn\]/i

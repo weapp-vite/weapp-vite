@@ -16,12 +16,17 @@ vi.mock('../plugins/utils/cache', () => ({
   pathExists: pathExistsCachedMock,
 }))
 
-vi.mock('fs-extra', () => ({
-  default: {
-    stat: statMock,
-    pathExists: vi.fn(),
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      stat: statMock,
+      pathExists: vi.fn(),
+    },
+  }
+})
 
 describe('resolveEntryPath', () => {
   it('resolves entry extension priority by import kind and directory state', () => {

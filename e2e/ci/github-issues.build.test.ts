@@ -1,7 +1,7 @@
-/* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse fs-extra helpers to inspect generated artifacts. */
+/* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
+import { fs } from '@weapp-core/shared'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'

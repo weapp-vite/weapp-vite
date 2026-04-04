@@ -1,27 +1,27 @@
-import { defaultAssetExtensions } from '../../../src/defaults'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
-import fs from 'fs-extra'
+import { defaultAssetExtensions } from '../../../src/defaults'
 
 async function main() {
   await Promise.all(
     [
-      ...[...defaultAssetExtensions, 'fuck', 'shit', 'bitch'].map(x => {
+      ...[...defaultAssetExtensions, 'fuck', 'shit', 'bitch'].map((x) => {
         return Promise.all(
           [
             fs.outputFile(
-              path.resolve(import.meta.dirname, 'src/assets', 'index.' + x),
+              path.resolve(import.meta.dirname, 'src/assets', `index.${x}`),
               '',
-              'binary'
+              'binary',
             ),
             fs.outputFile(
-              path.resolve(import.meta.dirname, 'src/packageB/assets', 'index.' + x),
+              path.resolve(import.meta.dirname, 'src/packageB/assets', `index.${x}`),
               '',
-              'binary'
-            )
-          ]
+              'binary',
+            ),
+          ],
         )
       }),
-    ]
+    ],
   )
 }
 

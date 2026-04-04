@@ -1,6 +1,6 @@
-/* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI，并使用 fs-extra 简化产物与 fixture 读写。 */
+/* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI，并使用 shared fs 简化产物与 fixture 读写。 */
+import { fs } from '@weapp-core/shared'
 import { execa } from 'execa'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'

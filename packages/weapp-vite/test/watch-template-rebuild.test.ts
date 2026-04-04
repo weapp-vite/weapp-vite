@@ -1,7 +1,7 @@
 import type { WatcherInstance } from '@/runtime/watcherPlugin'
 import os from 'node:os'
 import { pathToFileURL } from 'node:url'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { changeFileExtension } from '@/utils/file'

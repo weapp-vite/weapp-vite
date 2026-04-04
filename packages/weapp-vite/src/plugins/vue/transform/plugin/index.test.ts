@@ -34,13 +34,18 @@ vi.mock('../scopedSlot', () => ({
   resolveScopedSlotVirtualId: resolveScopedSlotVirtualIdMock,
 }))
 
-vi.mock('fs-extra', () => ({
-  default: {
-    pathExists: fsPathExistsMock,
-    readFile: fsReadFileMock,
-    existsSync: fsExistsSyncMock,
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      pathExists: fsPathExistsMock,
+      readFile: fsReadFileMock,
+      existsSync: fsExistsSyncMock,
+    },
+  }
+})
 
 vi.mock('../../../../utils/resolvedId', () => ({
   normalizeFsResolvedId: normalizeFsResolvedIdMock,

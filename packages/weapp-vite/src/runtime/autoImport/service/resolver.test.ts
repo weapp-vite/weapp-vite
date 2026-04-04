@@ -1,6 +1,6 @@
 import type { Resolver } from '../../../auto-import-components/resolvers'
-// eslint-disable-next-line e18e/ban-dependencies -- 这里需要真实文件系统能力验证包解析与导航导入
-import fs from 'fs-extra'
+
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createResolverHelpers } from './resolver'

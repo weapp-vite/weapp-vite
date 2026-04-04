@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
@@ -89,7 +89,7 @@ function normalizeEntries(entries: any[]) {
   // Keep only the latest entry in a continuous segment.
   const compacted: any[] = []
   for (const entry of normalized) {
-    const prev = compacted[compacted.length - 1]
+    const prev = compacted.at(-1)
     if (
       (entry.hook === 'onPageScroll' && prev?.hook === 'onPageScroll')
       || (entry.hook === 'onRouteDone' && prev?.hook === 'onRouteDone')

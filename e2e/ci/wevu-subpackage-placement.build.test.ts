@@ -1,5 +1,4 @@
-// eslint-disable-next-line e18e/ban-dependencies -- e2e 测试使用 fs-extra 简化构建产物断言
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'

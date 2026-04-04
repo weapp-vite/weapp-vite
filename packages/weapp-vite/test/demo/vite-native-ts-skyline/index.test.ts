@@ -1,6 +1,6 @@
+import { fs } from '@weapp-core/shared'
 import { isCI } from 'ci-info'
 import { fdir as Fdir } from 'fdir'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { appRoot } from '../shared'
 

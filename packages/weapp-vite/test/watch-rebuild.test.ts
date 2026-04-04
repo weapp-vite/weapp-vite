@@ -1,6 +1,6 @@
 import type { CompilerContext } from '@/context'
 import type { WatcherInstance } from '@/runtime/watcherPlugin'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createCompilerContext } from '@/createContext'

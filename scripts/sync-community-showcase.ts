@@ -1,10 +1,11 @@
+/* eslint-disable e18e/ban-dependencies, ts/no-use-before-define -- 脚本需要 execa，同文件工具函数按阅读顺序组织。 */
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { fs } from '@weapp-core/shared'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { execa } from 'execa'
-import fs from 'fs-extra'
 import path from 'pathe'
 
 export interface GithubIssueComment {

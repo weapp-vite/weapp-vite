@@ -1,5 +1,5 @@
+import { fs } from '@weapp-core/shared'
 import CI from 'ci-info'
-import fs from 'fs-extra'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { createCompilerContext } from '@/createContext'

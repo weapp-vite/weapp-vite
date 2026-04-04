@@ -1,5 +1,6 @@
+/* eslint-disable e18e/ban-dependencies -- IDE e2e 测试需要 execa 驱动准备脚本。 */
+import { fs } from '@weapp-core/shared'
 import { execa } from 'execa'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { runtimeBaseRoutes } from '../chunk-modes.matrix'

@@ -1,7 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
-/* eslint-disable e18e/ban-dependencies -- tests reuse fs-extra helpers to mirror module behavior. */
-import fs from 'fs-extra'
+
+import { fs } from '@weapp-core/shared'
 import { describe, expect, it, vi } from 'vitest'
 import { jsExtensions } from '../constants'
 import {

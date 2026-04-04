@@ -1,6 +1,7 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
+/* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
+import { fs } from '@weapp-core/shared'
 import { execa } from 'execa'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'

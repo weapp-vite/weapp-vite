@@ -1,7 +1,7 @@
 import type { CompilerContext } from '@/context'
 import fs from 'node:fs'
 import os from 'node:os'
-import fsExtra from 'fs-extra'
+import { fs as fsExtra } from '@weapp-core/shared'
 import path from 'pathe'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

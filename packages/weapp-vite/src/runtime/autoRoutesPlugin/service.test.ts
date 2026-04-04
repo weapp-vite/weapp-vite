@@ -49,16 +49,21 @@ const cloneRoutesMock = vi.hoisted(() => vi.fn((routes: any) => ({
 const matchesRouteFileMock = vi.hoisted(() => vi.fn(() => true))
 const updateCandidateFromFileMock = vi.hoisted(() => vi.fn(async () => true))
 
-vi.mock('fs-extra', () => ({
-  default: {
-    outputFile: outputFileMock,
-    outputJson: outputJsonMock,
-    pathExists: pathExistsMock,
-    readJson: readJsonMock,
-    remove: removeMock,
-    stat: statMock,
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      outputFile: outputFileMock,
+      outputJson: outputJsonMock,
+      pathExists: pathExistsMock,
+      readJson: readJsonMock,
+      remove: removeMock,
+      stat: statMock,
+    },
+  }
+})
 
 vi.mock('../../context/shared', () => ({
   logger: {

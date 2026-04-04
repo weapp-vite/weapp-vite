@@ -1,7 +1,7 @@
 import os from 'node:os'
 import process from 'node:process'
-// eslint-disable-next-line e18e/ban-dependencies -- 测试临时工程目录仍沿用 fs-extra 以复用现有文件辅助方法
-import fs from 'fs-extra'
+
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '../../createContext'

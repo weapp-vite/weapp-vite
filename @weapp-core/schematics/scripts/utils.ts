@@ -1,5 +1,5 @@
 import type { JSONSchema4 } from 'json-schema'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { compile } from 'json-schema-to-typescript'
 import path from 'pathe'
 import { JSON_SCHEMA_DEFINITIONS } from './json'

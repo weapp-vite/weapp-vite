@@ -1,10 +1,10 @@
 import { access } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+
+import { fs } from '@weapp-core/shared'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
 
 function parsePackJson(stdout: string) {
   const jsonText = stdout.match(/\[\s*\{[\s\S]*\}\s*\]\s*$/)?.[0]

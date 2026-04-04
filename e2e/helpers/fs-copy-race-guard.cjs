@@ -1,13 +1,14 @@
 'use strict'
 
 const path = require('node:path')
-const fs = require('fs-extra')
+const nodeFs = require('node:fs')
+const nodeFsPromises = nodeFs.promises
 
 if (process.env.WEAPP_VITE_TEST_COPY_RACE_GUARD === '1') {
-  const originalCopy = fs.copy.bind(fs)
+  const originalCopy = nodeFsPromises.cp.bind(nodeFsPromises)
   const activeDestinations = new Set()
 
-  fs.copy = async function patchedCopy(src, dest, ...rest) {
+  nodeFsPromises.cp = async function patchedCopy(src, dest, ...rest) {
     const resolvedDest = path.resolve(String(dest))
     if (activeDestinations.has(resolvedDest)) {
       const error = new Error(`detected concurrent fs.copy to "${resolvedDest}"`)

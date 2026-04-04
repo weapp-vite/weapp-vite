@@ -1,7 +1,7 @@
 import type { UserConfig } from 'weapp-vite'
 import process from 'node:process'
 // import consola from 'consola'
-// import fs from 'fs-extra'
+// import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 // import Inspect from 'vite-plugin-inspect'

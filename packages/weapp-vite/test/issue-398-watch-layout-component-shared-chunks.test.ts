@@ -1,7 +1,6 @@
-/* eslint-disable e18e/ban-dependencies -- watch 回归测试沿用 fs-extra 处理临时 fixture 与输出文件。 */
 import type { CompilerContext } from '@/context'
 import type { WatcherInstance } from '@/runtime/watcherPlugin'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createTempFixtureProject, createTestCompilerContext } from './utils'

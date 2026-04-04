@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'wevu'
+import { ref } from 'wevu'
 import MainVueCard from '../../components/main-vue-card/index.vue'
 
 definePageJson({
@@ -10,7 +10,10 @@ definePageJson({
 })
 
 const count = ref(0)
-const double = computed(() => count.value * 2)
+
+function getDouble() {
+  return count.value * 2
+}
 
 function increase() {
   count.value += 1
@@ -32,7 +35,7 @@ function runE2E() {
   increase()
   return {
     count: count.value,
-    double: double.value,
+    double: getDouble(),
   }
 }
 
@@ -49,7 +52,7 @@ defineExpose({
     <view id="main-marker">
       __WSP_MAIN_VUE__
     </view>
-    <MainVueCard title="main package vue card" :count="count" :double="double" />
+    <MainVueCard title="main package vue card" :count="count" :double="getDouble()" />
     <native-badge label="main package native component" />
     <view id="main-normal-path">
       /subpackages/normal-wevu/pages/entry/index

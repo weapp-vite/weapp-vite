@@ -18,18 +18,19 @@ const loadWeappBuiltinHtmlTagsMock = vi.hoisted(() => vi.fn())
 const collectAllComponentNamesMock = vi.hoisted(() => vi.fn())
 const extractComponentPropsMock = vi.hoisted(() => vi.fn())
 
-vi.mock('fs-extra', () => {
-  const mocked = {
-    remove: fsRemoveMock,
-    outputFile: fsOutputFileMock,
-    readdir: fsReaddirMock,
-    stat: fsStatMock,
-    readFile: fsReadFileMock,
-    readJson: fsReadJsonMock,
-  }
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
   return {
-    ...mocked,
-    default: mocked,
+    ...actual,
+    fs: {
+      ...actual.fs,
+      remove: fsRemoveMock,
+      outputFile: fsOutputFileMock,
+      readdir: fsReaddirMock,
+      stat: fsStatMock,
+      readFile: fsReadFileMock,
+      readJson: fsReadJsonMock,
+    },
   }
 })
 

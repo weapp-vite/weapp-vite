@@ -21,16 +21,16 @@ const getVueComponentsSettingsMock = vi.hoisted(() => vi.fn())
 const extractJsonPropMetadataMock = vi.hoisted(() => vi.fn())
 const mergePropMapsMock = vi.hoisted(() => vi.fn())
 
-vi.mock('fs-extra', async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, any>
-  const mocked = {
-    ...actual,
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  const mockedFs = {
+    ...actual.fs,
     readFile: readFileMock,
     readJson: readJsonMock,
   }
   return {
-    ...mocked,
-    default: mocked,
+    ...actual,
+    fs: mockedFs,
   }
 })
 

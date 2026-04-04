@@ -98,8 +98,8 @@ vi.mock('wevu/compiler', async (importOriginal) => {
   }
 })
 
-vi.mock('fs-extra', () => ({
-  default: {
+vi.mock('@weapp-core/shared', () => ({
+  fs: {
     readFile: readFileMock,
   },
 }))

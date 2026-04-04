@@ -14,11 +14,16 @@ const compileVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({
 const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
 const emitNativeLayoutScriptChunkIfNeededSharedMock = vi.hoisted(() => vi.fn())
 
-vi.mock('fs-extra', () => ({
-  default: {
-    readFile: readFileMock,
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      readFile: readFileMock,
+    },
+  }
+})
 
 vi.mock('../pageLayout', () => ({
   collectNativeLayoutAssets: collectNativeLayoutAssetsMock,

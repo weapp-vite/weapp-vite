@@ -1,7 +1,7 @@
 import type { Options } from 'tinybench'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 
 export const defaultBenchOptions: Options = {
   time: 200,

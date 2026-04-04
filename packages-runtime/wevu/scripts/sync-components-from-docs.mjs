@@ -1,7 +1,7 @@
 import process from 'node:process'
+import { fs } from '@weapp-core/shared'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
-import fs from 'fs-extra'
 import path from 'pathe'
 
 const componentsPath = path.resolve(import.meta.dirname, '../components.json')

@@ -24,7 +24,6 @@ export const TEMPLATE_CATALOG = {
   'class-variance-authority': '^0.7.1',
   'comment-json': '^4.6.2',
   'estree-walker': '^3.0.3',
-  'fs-extra': '^11.3.4',
   'gm-crypto': '^0.1.12',
   'lru-cache': '^11.2.7',
   'magic-string': '^0.30.21',

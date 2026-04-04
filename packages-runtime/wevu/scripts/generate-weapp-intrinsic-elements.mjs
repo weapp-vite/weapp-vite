@@ -1,6 +1,6 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 
 /* eslint-disable no-template-curly-in-string -- 生成的类型定义需要保留模板字符串字面量 */

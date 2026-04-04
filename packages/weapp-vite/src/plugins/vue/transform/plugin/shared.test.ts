@@ -73,11 +73,16 @@ vi.mock('../styleRequest', () => ({
   buildWeappVueStyleRequest: buildWeappVueStyleRequestMock,
 }))
 
-vi.mock('fs-extra', () => ({
-  default: {
-    readFile: fsReadFileMock,
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      readFile: fsReadFileMock,
+    },
+  }
+})
 
 describe('vue transform plugin shared helpers', () => {
   beforeEach(() => {

@@ -1,6 +1,7 @@
+/* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
+import { fs } from '@weapp-core/shared'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 

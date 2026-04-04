@@ -12,12 +12,17 @@ const readFileMock = vi.hoisted(() => vi.fn())
 const preprocessCSSMock = vi.hoisted(() => vi.fn())
 const cssPostProcessMock = vi.hoisted(() => vi.fn())
 
-vi.mock('fs-extra', () => ({
-  default: {
-    stat: statMock,
-    readFile: readFileMock,
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      stat: statMock,
+      readFile: readFileMock,
+    },
+  }
+})
 
 vi.mock('vite', () => ({
   preprocessCSS: preprocessCSSMock,

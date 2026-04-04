@@ -1,8 +1,8 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
-import { createCompilerContext } from '../../createContext'
 import { ensureWorkspacePackageLink } from '../../../test/utils'
+import { createCompilerContext } from '../../createContext'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../../../../apps/plugin-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')

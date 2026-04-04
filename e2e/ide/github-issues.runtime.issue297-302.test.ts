@@ -1,5 +1,4 @@
-/* eslint-disable e18e/ban-dependencies -- github issues IDE e2e 使用 fs-extra 读取构建产物。 */
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
