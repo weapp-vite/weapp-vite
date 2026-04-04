@@ -530,6 +530,80 @@ Page({
   return root
 }
 
+export function createComponentSelectorFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-component-selector-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/selectors/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeJson(path.join(root, 'dist/pages/selectors/index.json'), {
+    usingComponents: {
+      'status-card': '../../components/status-card/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/pages/selectors/index.js'), `
+Page({
+  data: {
+    exactSnapshot: '',
+    nestedSnapshot: '',
+    status: 'stable',
+  },
+  inspectSelectors() {
+    const card = this.selectComponent('status-card')
+    const cards = this.selectAllComponents('status-card') ?? []
+    const badge = this.selectComponent('status-card mini-badge')
+    const badges = this.selectAllComponents('status-card mini-badge') ?? []
+    this.setData({
+      exactSnapshot: JSON.stringify({
+        hasCard: !!card,
+        size: cards.length,
+      }),
+      nestedSnapshot: JSON.stringify({
+        label: badge?.properties?.label ?? '',
+        size: badges.length,
+      }),
+    })
+  },
+})
+`)
+  writeText(path.join(root, 'dist/pages/selectors/index.wxml'), '<status-card id="status-card" status="{{status}}" /><view>{{exactSnapshot}}</view><view>{{nestedSnapshot}}</view>\n')
+  writeJson(path.join(root, 'dist/components/status-card/index.json'), {
+    usingComponents: {
+      'mini-badge': '../mini-badge/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/components/status-card/index.js'), `
+Component({
+  properties: {
+    status: {
+      type: String,
+      value: '',
+    },
+  },
+})
+`)
+  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<mini-badge id="mini-badge" label="{{status}}" />\n')
+  writeJson(path.join(root, 'dist/components/mini-badge/index.json'), {})
+  writeScript(path.join(root, 'dist/components/mini-badge/index.js'), `
+Component({
+  properties: {
+    label: {
+      type: String,
+      value: '',
+    },
+  },
+})
+`)
+  writeText(path.join(root, 'dist/components/mini-badge/index.wxml'), '<view>{{label}}</view>\n')
+
+  return root
+}
+
 export function createAppLifecycleFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-app-lifecycle-'))
 
