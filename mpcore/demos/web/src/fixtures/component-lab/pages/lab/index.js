@@ -29,6 +29,9 @@ Page({
     chosenVideoInfo: '',
     chosenVideoSavedInfo: '',
     chosenVideoMissingSaveInfo: '',
+    chosenMediaInfo: '',
+    chosenMediaImageDetail: '',
+    chosenMediaVideoSavedInfo: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -409,6 +412,36 @@ Page({
           chosenVideoMissingSaveInfo: JSON.stringify({
             error: error.message,
           }),
+        })
+      },
+    })
+  },
+  chooseMediaLab() {
+    wx.chooseMedia({
+      count: 2,
+      maxDuration: 24,
+      mediaType: ['image', 'video'],
+      sizeType: ['compressed'],
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          chosenMediaInfo: JSON.stringify(result),
+        })
+        wx.getImageInfo({
+          src: result.tempFiles[0]?.tempFilePath,
+          success: (imageInfo) => {
+            this.setData({
+              chosenMediaImageDetail: JSON.stringify(imageInfo),
+            })
+          },
+        })
+        wx.saveVideoToPhotosAlbum({
+          filePath: result.tempFiles[1]?.tempFilePath,
+          success: (savedResult) => {
+            this.setData({
+              chosenMediaVideoSavedInfo: JSON.stringify(savedResult),
+            })
+          },
         })
       },
     })

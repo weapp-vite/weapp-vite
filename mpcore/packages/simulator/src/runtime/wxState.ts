@@ -202,6 +202,8 @@ interface HeadlessChosenVideoTempFilePayload {
   }
 }
 
+type HeadlessChooseMediaKind = 'image' | 'video'
+
 function byteLength(input: string) {
   return textEncoder.encode(input).byteLength
 }
@@ -270,6 +272,24 @@ function buildImageTempFilePayload(
       width,
     },
   })
+}
+
+function buildVideoTempFilePayload(
+  width: number,
+  height: number,
+  duration: number,
+  metadata: Partial<HeadlessChosenVideoTempFilePayload['config']> = {},
+) {
+  return JSON.stringify({
+    config: {
+      compressed: metadata.compressed ?? true,
+      duration,
+      height,
+      maxDuration: metadata.maxDuration ?? duration,
+      sourceType: metadata.sourceType ?? [],
+      width,
+    },
+  } satisfies HeadlessChosenVideoTempFilePayload)
 }
 
 function createNetworkSnapshot(networkType: HeadlessWxNetworkType): HeadlessWxNetworkSnapshot {
@@ -1137,6 +1157,77 @@ export function createHeadlessWxState() {
         errMsg: 'chooseImage:ok',
         tempFilePaths: tempFiles.map(item => item.path),
         tempFiles,
+      }
+    },
+    chooseMedia(option: {
+      count?: number
+      maxDuration?: number
+      mediaType?: Array<'image' | 'video'>
+      sizeType?: string[]
+      sourceType?: string[]
+    }) {
+      const count = Number.isFinite(option.count)
+        ? Math.max(1, Math.min(9, Math.trunc(option.count ?? 1)))
+        : 1
+      const mediaTypes = Array.isArray(option.mediaType) && option.mediaType.length > 0
+        ? option.mediaType.filter((item): item is HeadlessChooseMediaKind => item === 'image' || item === 'video')
+        : ['image']
+      const sourceType = Array.isArray(option.sourceType) && option.sourceType.length > 0
+        ? option.sourceType.filter((item): item is string => typeof item === 'string')
+        : ['album', 'camera']
+      const sizeType = Array.isArray(option.sizeType) && option.sizeType.length > 0
+        ? option.sizeType.filter((item): item is string => typeof item === 'string')
+        : ['compressed']
+      const maxDuration = Number.isFinite(option.maxDuration)
+        ? Math.max(1, Math.trunc(option.maxDuration ?? 60))
+        : 60
+      const tempFiles = Array.from({ length: count }, (_, index) => {
+        const kind = mediaTypes[index % mediaTypes.length]
+        if (kind === 'video') {
+          const duration = Math.min(maxDuration, 18 + index)
+          const width = 640
+          const height = 360
+          const payload = buildVideoTempFilePayload(width, height, duration, {
+            compressed: sizeType.includes('compressed'),
+            maxDuration,
+            sourceType: [...sourceType],
+          })
+          const tempFilePath = this.createTempFile(payload, `headless://wxfile/temp/chosen-media-video-${String(index + 1).padStart(2, '0')}.mp4`)
+          const thumbPayload = buildImageTempFilePayload('jpg', 160, 90, {
+            sizeType: ['compressed'],
+            sourceType: [...sourceType],
+          })
+          const thumbTempFilePath = this.createTempFile(thumbPayload, `headless://wxfile/temp/chosen-media-video-thumb-${String(index + 1).padStart(2, '0')}.jpg`)
+          return {
+            duration,
+            fileType: 'video' as const,
+            height,
+            size: payload.length,
+            tempFilePath,
+            thumbTempFilePath,
+            width,
+          }
+        }
+
+        const width = 160 + (index * 12)
+        const height = 120 + (index * 8)
+        const fileType = sizeType.includes('compressed') ? 'jpg' : 'png'
+        const payload = buildImageTempFilePayload(fileType, width, height, {
+          sizeType: [...sizeType],
+          sourceType: [...sourceType],
+        })
+        return {
+          fileType: 'image' as const,
+          height,
+          size: payload.length,
+          tempFilePath: this.createTempFile(payload, `headless://wxfile/temp/chosen-media-image-${String(index + 1).padStart(2, '0')}.${fileType}`),
+          width,
+        }
+      })
+      return {
+        errMsg: 'chooseMedia:ok',
+        tempFiles,
+        type: mediaTypes.length > 1 ? 'mix' : mediaTypes[0],
       }
     },
     chooseVideo(option: {

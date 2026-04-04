@@ -236,6 +236,25 @@ expectType<{
 }))
 expectType<{
   errMsg: string
+  tempFiles: Array<{
+    duration?: number
+    fileType: 'image' | 'video'
+    height: number
+    size: number
+    tempFilePath: string
+    thumbTempFilePath?: string
+    width: number
+  }>
+  type: 'image' | 'mix' | 'video'
+} | undefined>(browserPage?.wx.chooseMedia({
+  count: 2,
+  maxDuration: 24,
+  mediaType: ['image', 'video'],
+  sizeType: ['compressed'],
+  sourceType: ['album'],
+}))
+expectType<{
+  errMsg: string
   tempFilePath: string
 } | undefined>(browserPage?.wx.compressImage({
   compressedHeight: 48,
@@ -531,6 +550,25 @@ expectType<{
 } | undefined>(headlessPage?.wx.chooseVideo({
   compressed: true,
   maxDuration: 24,
+  sourceType: ['album'],
+}))
+expectType<{
+  errMsg: string
+  tempFiles: Array<{
+    duration?: number
+    fileType: 'image' | 'video'
+    height: number
+    size: number
+    tempFilePath: string
+    thumbTempFilePath?: string
+    width: number
+  }>
+  type: 'image' | 'mix' | 'video'
+} | undefined>(headlessPage?.wx.chooseMedia({
+  count: 2,
+  maxDuration: 24,
+  mediaType: ['image', 'video'],
+  sizeType: ['compressed'],
   sourceType: ['album'],
 }))
 expectType<{

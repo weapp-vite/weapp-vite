@@ -253,6 +253,7 @@ export class BrowserHeadlessSession {
       () => this.getApp(),
       {
         chooseImage: option => this.wxState.chooseImage(option ?? {}),
+        chooseMedia: option => this.wxState.chooseMedia(option ?? {}),
         chooseVideo: option => this.wxState.chooseVideo(option ?? {}),
         compressImage: option => this.wxState.compressImage(option),
         createAnimation: option => this.createAnimation(option),

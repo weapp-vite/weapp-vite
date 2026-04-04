@@ -4991,6 +4991,66 @@ Page({
     expect(session.getFileText('headless://wxfile/temp/chosen-video-01.mp4')).toContain('"duration":18')
   })
 
+  it('supports chooseMedia in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    imageDetail: '',
+    mediaSummary: '',
+    savedSummary: ''
+  },
+  runChooseMediaLab() {
+    wx.chooseMedia({
+      count: 2,
+      maxDuration: 24,
+      mediaType: ['image', 'video'],
+      sizeType: ['compressed'],
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          mediaSummary: JSON.stringify(result),
+        })
+        wx.getImageInfo({
+          src: result.tempFiles[0].tempFilePath,
+          success: (imageInfo) => {
+            this.setData({
+              imageDetail: JSON.stringify(imageInfo),
+            })
+          },
+        })
+        wx.saveVideoToPhotosAlbum({
+          filePath: result.tempFiles[1].tempFilePath,
+          success: (savedResult) => {
+            this.setData({
+              savedSummary: JSON.stringify(savedResult),
+            })
+          },
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{mediaSummary}}</view><view>{{imageDetail}}</view><view>{{savedSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runChooseMediaLab()
+
+    expect(page.data.mediaSummary).toContain('"errMsg":"chooseMedia:ok"')
+    expect(page.data.mediaSummary).toContain('"type":"mix"')
+    expect(page.data.mediaSummary).toContain('"fileType":"image"')
+    expect(page.data.mediaSummary).toContain('"fileType":"video"')
+    expect(page.data.imageDetail).toContain('"errMsg":"getImageInfo:ok"')
+    expect(page.data.imageDetail).toContain('"type":"jpeg"')
+    expect(page.data.savedSummary).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+  })
+
   it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
