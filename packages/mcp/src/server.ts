@@ -40,6 +40,37 @@ async function readTextFile(filePath: string) {
   return fs.readFile(filePath, 'utf8')
 }
 
+async function runWeappViteCliTool(
+  workspaceRoot: string,
+  input: {
+    subCommand: string
+    projectPath?: string
+    platform?: string
+    args?: string[]
+    timeoutMs?: number
+  },
+) {
+  const cliPath = (await resolveExposedPackage(workspaceRoot, 'weapp-vite')).cliPath
+  if (!cliPath) {
+    throw new Error('当前工作区中的 weapp-vite 未暴露 CLI 入口')
+  }
+
+  const finalArgs = [cliPath, input.subCommand]
+  if (input.projectPath) {
+    finalArgs.push(resolveSubPath(workspaceRoot, input.projectPath))
+  }
+  if (input.platform) {
+    finalArgs.push('--platform', input.platform)
+  }
+  if (Array.isArray(input.args) && input.args.length > 0) {
+    finalArgs.push(...input.args)
+  }
+
+  return runCommand(workspaceRoot, 'node', finalArgs, {
+    timeoutMs: input.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  })
+}
+
 export async function createWeappViteMcpServer(options?: CreateServerOptions) {
   const workspaceRoot = resolveWorkspaceRoot(options?.workspaceRoot)
   const server = new McpServer({
@@ -202,25 +233,108 @@ export async function createWeappViteMcpServer(options?: CreateServerOptions) {
     },
   }, async ({ subCommand, projectPath, platform, args, timeoutMs }) => {
     try {
-      const cliPath = (await resolveExposedPackage(workspaceRoot, 'weapp-vite')).cliPath
-      if (!cliPath) {
-        throw new Error('当前工作区中的 weapp-vite 未暴露 CLI 入口')
-      }
-      const finalArgs = [cliPath, subCommand]
-      if (projectPath) {
-        finalArgs.push(resolveSubPath(workspaceRoot, projectPath))
-      }
-      if (platform) {
-        finalArgs.push('--platform', platform)
-      }
-      if (Array.isArray(args) && args.length > 0) {
-        finalArgs.push(...args)
-      }
-
-      const result = await runCommand(workspaceRoot, 'node', finalArgs, {
-        timeoutMs: timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      const result = await runWeappViteCliTool(workspaceRoot, {
+        subCommand,
+        projectPath,
+        platform,
+        args,
+        timeoutMs,
       })
       return toToolResult(result)
+    }
+    catch (error) {
+      return toToolError(error)
+    }
+  })
+
+  server.registerTool('take_weapp_screenshot', {
+    title: 'Take Weapp Screenshot',
+    description: '当用户提到截图、页面快照、运行时截图时，优先调用此工具执行 weapp-vite screenshot',
+    inputSchema: {
+      projectPath: z.string().describe('相对 workspace 根路径，通常是 dist/build/mp-weixin 或具体小程序项目目录'),
+      page: z.string().optional().describe('截图前先跳转的小程序页面路径'),
+      outputPath: z.string().optional().describe('截图输出路径，建议写入 .tmp/ 或工作区相对路径'),
+      timeoutMs: z.number().int().positive().max(900_000).optional(),
+    },
+  }, async ({ projectPath, page, outputPath, timeoutMs }) => {
+    try {
+      const args = ['--json']
+      if (page) {
+        args.push('--page', page)
+      }
+      if (outputPath) {
+        args.push('--output', outputPath)
+      }
+      const result = await runWeappViteCliTool(workspaceRoot, {
+        subCommand: 'screenshot',
+        projectPath,
+        args,
+        timeoutMs,
+      })
+      return toToolResult({
+        ...result,
+        projectPath,
+        page: page ?? null,
+        outputPath: outputPath ?? null,
+        recommendedIntent: 'screenshot',
+      })
+    }
+    catch (error) {
+      return toToolError(error)
+    }
+  })
+
+  server.registerTool('compare_weapp_screenshot', {
+    title: 'Compare Weapp Screenshot',
+    description: '当用户提到截图对比、diff、baseline、视觉回归、像素对比时，优先调用此工具执行 weapp-vite compare',
+    inputSchema: {
+      projectPath: z.string().describe('相对 workspace 根路径，通常是 dist/build/mp-weixin 或具体小程序项目目录'),
+      baselinePath: z.string().describe('相对 workspace 根路径的 baseline 图片路径'),
+      page: z.string().optional().describe('截图对比前先跳转的小程序页面路径'),
+      currentOutputPath: z.string().optional().describe('当前截图输出路径'),
+      diffOutputPath: z.string().optional().describe('diff 图片输出路径'),
+      threshold: z.number().min(0).max(1).optional(),
+      maxDiffPixels: z.number().int().min(0).optional(),
+      maxDiffRatio: z.number().min(0).max(1).optional(),
+      timeoutMs: z.number().int().positive().max(900_000).optional(),
+    },
+  }, async ({ projectPath, baselinePath, page, currentOutputPath, diffOutputPath, threshold, maxDiffPixels, maxDiffRatio, timeoutMs }) => {
+    try {
+      const args = ['--json', '--baseline', baselinePath]
+      if (page) {
+        args.push('--page', page)
+      }
+      if (currentOutputPath) {
+        args.push('--current-output', currentOutputPath)
+      }
+      if (diffOutputPath) {
+        args.push('--diff-output', diffOutputPath)
+      }
+      if (threshold != null) {
+        args.push('--threshold', String(threshold))
+      }
+      if (maxDiffPixels != null) {
+        args.push('--max-diff-pixels', String(maxDiffPixels))
+      }
+      if (maxDiffRatio != null) {
+        args.push('--max-diff-ratio', String(maxDiffRatio))
+      }
+
+      const result = await runWeappViteCliTool(workspaceRoot, {
+        subCommand: 'compare',
+        projectPath,
+        args,
+        timeoutMs,
+      })
+      return toToolResult({
+        ...result,
+        projectPath,
+        baselinePath,
+        page: page ?? null,
+        currentOutputPath: currentOutputPath ?? null,
+        diffOutputPath: diffOutputPath ?? null,
+        recommendedIntent: 'compare',
+      })
     }
     catch (error) {
       return toToolError(error)

@@ -100,6 +100,15 @@ function handleClick() {
 - 不要把小程序运行时截图退化成通用浏览器截图
 - 需要看 DevTools 终端日志时，优先使用 `weapp-vite ide logs --open` 或 `wv ide logs --open`
 
+推荐把下面这组意图映射写进项目根 `AGENTS.md`，让常见 AI 更稳定命中：
+
+- 提到 `截图`、`页面快照`、`runtime screenshot`
+  - 默认使用 `weapp-vite screenshot` / `wv screenshot`
+- 提到 `截图对比`、`diff`、`baseline`、`视觉回归`、`像素对比`
+  - 默认使用 `weapp-vite compare` / `wv compare`
+- 提到 `运行时日志`、`DevTools 日志`
+  - 默认使用 `weapp-vite ide logs --open` / `wv ide logs --open`
+
 `dist/docs` 当前会内置这些文件：
 
 - `README.md`

@@ -134,6 +134,8 @@ describe('mcp server registration', () => {
       'search_source_code',
       'run_package_script',
       'run_weapp_vite_cli',
+      'take_weapp_screenshot',
+      'compare_weapp_screenshot',
       'run_repo_command',
     ]))
   })

@@ -57,6 +57,19 @@ wv mcp
 - 不要退化成普通浏览器截图来替代小程序运行时截图
 - 查看 DevTools 终端日志优先使用 `weapp-vite ide logs --open` / `wv ide logs --open`
 
+## AI 意图映射
+
+当用户请求包含以下意图时，AI 应直接命中对应命令，而不是先尝试泛化的浏览器工具：
+
+- `截图`、`截个图`、`页面快照`、`运行时截图`、`capture current page`
+  - 默认使用 `weapp-vite screenshot` / `wv screenshot`
+- `截图对比`、`视觉回归`、`diff`、`baseline`、`像素对比`、`acceptance compare`
+  - 默认使用 `weapp-vite compare` / `wv compare`
+- `DevTools 日志`、`运行时日志`、`小程序 console`
+  - 默认使用 `weapp-vite ide logs --open` / `wv ide logs --open`
+
+如果目标明确是 Web runtime，而不是微信开发者工具中的小程序运行时，才改用普通浏览器截图或 Web E2E 工具。
+
 ## 推荐阅读顺序
 
 - 项目初始化、命令和 AI 使用入口：[`getting-started.md`](./getting-started.md)

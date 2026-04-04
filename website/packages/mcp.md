@@ -60,7 +60,9 @@ Tools：
 4. `search_source_code`
 5. `run_package_script`
 6. `run_weapp_vite_cli`
-7. `run_repo_command`
+7. `take_weapp_screenshot`
+8. `compare_weapp_screenshot`
+9. `run_repo_command`
 
 Resources：
 
@@ -73,6 +75,17 @@ Prompts：
 
 1. `plan-weapp-vite-change`
 2. `debug-wevu-runtime`
+
+## AI 友好的截图工具
+
+为了让 AI 在自然语言里更稳定地命中 mini-program runtime 能力，`@weapp-vite/mcp` 额外提供：
+
+- `take_weapp_screenshot`
+  - 面向“截图 / 页面快照 / runtime screenshot”
+- `compare_weapp_screenshot`
+  - 面向“截图对比 / diff / baseline / 视觉回归 / 像素对比”
+
+这两个工具本质上分别封装了 `weapp-vite screenshot --json` 与 `weapp-vite compare --json`，但对 AI 更容易命中，也更适合在 prompt 里直接点名。
 
 ## 安全约束
 

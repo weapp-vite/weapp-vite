@@ -191,13 +191,26 @@ MCP 服务端做了以下约束：
 
 建议在 CI 或团队环境中继续加上外层沙箱策略（容器、只读挂载、命令审计）。
 
-## 8. 故障排查
+## 8. AI 直达工具
+
+除了通用的 `run_weapp_vite_cli`，MCP 还提供了更适合 AI 直接命中的显式工具：
+
+1. `take_weapp_screenshot`
+   - 用于“小程序截图 / 页面快照 / runtime screenshot”语义
+   - 等价于执行 `weapp-vite screenshot --json ...`
+2. `compare_weapp_screenshot`
+   - 用于“截图对比 / diff / baseline / 视觉回归 / 像素对比”语义
+   - 等价于执行 `weapp-vite compare --json ...`
+
+推荐让 AI 优先选择这两个显式工具，而不是先拼通用 CLI 参数。这样命中率和结果一致性会更高。
+
+## 9. 故障排查
 
 1. `weapp-vite mcp` 启动失败：先确认 Node 版本符合 `^20.19.0 || >=22.12.0`。
 2. AI 看不到包内容：检查 `--workspace-root` 是否指向正确仓库根目录。
 3. 命令执行失败：确认命令在白名单中，并检查子目录权限与脚本名是否存在。
 
-## 9. 示例：AI 驱动 weapp-vite screenshot 验收
+## 10. 示例：AI 驱动 weapp-vite screenshot 验收
 
 下面给一个简化版示例：只给 AI 一段提示词，让它通过 MCP 自动执行构建与截图验收。
 
@@ -228,3 +241,21 @@ MCP 服务端做了以下约束：
 1. AI 输出 `screenshot-ok`。
 2. 工作区生成 `.tmp/mcp-screenshot.png`。
 3. AI 输出本次验收摘要（命令、关键日志、结论）。
+
+## 11. 示例：AI 驱动 screenshot compare 验收
+
+如果提示词里出现“截图对比 / baseline / diff / 视觉回归”，应优先让 AI 使用 `compare_weapp_screenshot`，或退回到 `weapp-vite compare`。
+
+```text
+你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图对比验收：
+1. 先阅读 node_modules/weapp-vite/dist/docs/index.md、node_modules/weapp-vite/dist/docs/ai-workflows.md 和 node_modules/weapp-vite/dist/docs/mcp.md。
+2. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
+3. 执行截图对比：
+   - projectPath: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
+   - page: pages/home/index
+   - baselinePath: .screenshots/baseline/home.png
+   - diffOutputPath: .tmp/mcp-home.diff.png
+   - maxDiffPixels: 100
+4. 如果命令通过，输出 compare-ok；如果对比失败，输出 compare-failed。
+5. 最后汇总：执行命令、关键输出、最终结论。
+```

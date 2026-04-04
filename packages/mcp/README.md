@@ -43,6 +43,8 @@ await handle.close?.()
 - `search_source_code`: 在包源码中检索关键词
 - `run_package_script`: 在指定包目录执行 `pnpm run <script>`
 - `run_weapp_vite_cli`: 执行 `node packages/weapp-vite/bin/weapp-vite.js ...`
+- `take_weapp_screenshot`: 面向“小程序截图 / 页面快照”语义，执行 `weapp-vite screenshot --json`
+- `compare_weapp_screenshot`: 面向“截图对比 / diff / baseline / 视觉回归”语义，执行 `weapp-vite compare --json`
 - `run_repo_command`: 执行仓库级命令（`pnpm/node/git/rg`）
 
 ## 主要 Resources

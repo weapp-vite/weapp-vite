@@ -88,7 +88,20 @@ $playwright-cli
 - `node_modules/weapp-vite/dist/docs/README.md`
 - `node_modules/weapp-vite/dist/docs/mcp.md`
 
-这样 AI 会先基于你当前安装版本的本地说明工作，再去执行 `weapp-vite screenshot`、`weapp-vite ide logs --open` 或其他 CLI 命令。
+这样 AI 会先基于你当前安装版本的本地说明工作，再去执行 `weapp-vite screenshot`、`weapp-vite compare`、`weapp-vite ide logs --open` 或其他 CLI 命令。
+
+### AI 意图路由
+
+如果你希望 AI 在自然语言里稳定命中 mini-program runtime 能力，建议把下面这组映射写进项目级 `AGENTS.md`：
+
+- 提到 `截图`、`页面快照`、`runtime screenshot`
+  - 默认使用 `weapp-vite screenshot` / `wv screenshot`
+- 提到 `截图对比`、`diff`、`baseline`、`视觉回归`、`像素对比`
+  - 默认使用 `weapp-vite compare` / `wv compare`
+- 提到 `DevTools 日志`、`运行时日志`
+  - 默认使用 `weapp-vite ide logs --open` / `wv ide logs --open`
+
+除非目标明确是 Web runtime，否则不要退化成普通浏览器截图工具。
 
 默认行为：
 
@@ -137,6 +150,25 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 
 1. AI 输出 `screenshot-ok`。
 2. 工作区产出 `.tmp/mcp-screenshot.png`。
+
+### 示例：驱动 weapp-vite compare 做验收
+
+可直接复制的提示词：
+
+```text
+你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图对比验收：
+1. 先阅读 node_modules/weapp-vite/dist/docs/index.md、node_modules/weapp-vite/dist/docs/ai-workflows.md 和 node_modules/weapp-vite/dist/docs/mcp.md。
+2. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
+3. 如果 MCP 提供 `compare_weapp_screenshot` 工具，优先使用它；否则执行 `weapp-vite compare`，参数如下：
+   - projectPath: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
+   - page: pages/home/index
+   - baselinePath: .screenshots/baseline/home.png
+   - diffOutputPath: .tmp/mcp-home.diff.png
+   - maxDiffPixels: 100
+   - 使用 JSON 结果
+4. 如果对比通过，输出 compare-ok；否则输出 compare-failed。
+5. 最后汇总：执行命令、关键输出、最终结论。
+```
 
 ## AI 终端里的 DevTools 日志桥接
 
