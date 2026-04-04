@@ -399,6 +399,8 @@ export interface HeadlessWxClearStorageOption extends HeadlessWxCallbackOption<H
 
 export interface HeadlessWxHideLoadingOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
 
+export interface HeadlessWxStartPullDownRefreshOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
+
 export interface HeadlessWxSetBackgroundTextStyleOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
   textStyle: string
 }
@@ -864,6 +866,7 @@ export interface HeadlessWxDriver {
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string }
+  startPullDownRefresh: () => { errMsg: string }
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
   uploadFile: (option: HeadlessWxUploadFileOption) => HeadlessWxRequestTask
@@ -948,6 +951,7 @@ export interface HeadlessWx {
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string } | undefined
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult | undefined
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string } | undefined
+  startPullDownRefresh: (option?: HeadlessWxStartPullDownRefreshOption) => { errMsg: string } | undefined
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
   uploadFile: (option: HeadlessWxUploadFileOption) => HeadlessWxRequestTask
@@ -1239,6 +1243,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     showLoading: true,
     showModal: true,
     showToast: true,
+    startPullDownRefresh: true,
     stopPullDownRefresh: true,
     switchTab: true,
     uploadFile: true,
@@ -1419,6 +1424,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     showLoading: option => invokeWxApi(() => driver.showLoading(option), option),
     showModal: option => invokeWxApi(() => driver.showModal(option), option),
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
+    startPullDownRefresh: option => invokeWxApi(() => driver.startPullDownRefresh(), option),
     stopPullDownRefresh: () => driver.stopPullDownRefresh(),
     switchTab: option => invokeWxApi(() => {
       driver.switchTab(option)

@@ -29,6 +29,8 @@ Page({
     openDocumentInfo: '',
     openSavedDocumentInfo: '',
     openMissingDocumentInfo: '',
+    startPullDownRefreshInfo: '',
+    pullDownRefreshInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -92,6 +94,15 @@ Page({
     this.setData({
       traces: [...this.data.traces, message],
     })
+  },
+  onPullDownRefresh() {
+    this.push('lab:onPullDownRefresh')
+    this.setData({
+      pullDownRefreshInfo: JSON.stringify({
+        handled: true,
+      }),
+    })
+    wx.stopPullDownRefresh()
   },
   onLoad(query) {
     this.push('lab:onLoad:' + JSON.stringify(query))
@@ -466,6 +477,15 @@ Page({
           openMissingDocumentInfo: JSON.stringify({
             error: error.message,
           }),
+        })
+      },
+    })
+  },
+  startPullDownRefreshLab() {
+    wx.startPullDownRefresh({
+      success: (result) => {
+        this.setData({
+          startPullDownRefreshInfo: JSON.stringify(result),
         })
       },
     })

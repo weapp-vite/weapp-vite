@@ -203,6 +203,7 @@ expectType<{ errMsg: string } | undefined>(browserPage?.wx.openDocument({
   fileType: 'pdf',
   showMenu: true,
 }))
+expectType<{ errMsg: string } | undefined>(browserPage?.wx.startPullDownRefresh())
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
@@ -557,6 +558,7 @@ expectType<{ errMsg: string } | undefined>(headlessPage?.wx.openDocument({
   filePath: 'headless://wxfile/temp/0001.txt',
   showMenu: false,
 }))
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.startPullDownRefresh())
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))

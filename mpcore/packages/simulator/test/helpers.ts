@@ -1086,6 +1086,15 @@ Page({
       },
     })
   },
+  startPullDownRefreshLab() {
+    wx.startPullDownRefresh({
+      success: (result) => {
+        this.setData({
+          startPullDownRefreshInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
   compressChosenImageLab() {
     wx.chooseImage({
       count: 1,
