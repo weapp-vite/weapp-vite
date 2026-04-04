@@ -58,7 +58,9 @@ expectType<{
     drawCalls: Array<{ args: unknown[], type: string }>
     fillStyle: string
     fontSize: number
+    globalAlpha: number
     lineCap: string
+    lineDash: number[]
     lineJoin: string
     miterLimit: number
     lineWidth: number
@@ -72,6 +74,7 @@ expectType<{
   bezierCurveTo: (cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
+  clip: () => void
   closePath: () => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
@@ -89,7 +92,9 @@ expectType<{
   scale: (scaleWidth: number, scaleHeight: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
+  setGlobalAlpha: (value: number) => void
   setLineCap: (value: string) => void
+  setLineDash: (pattern: number[], offset?: number) => void
   setLineJoin: (value: string) => void
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
@@ -103,6 +108,7 @@ expectType<{
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arc(10, 12, 6, 0, Math.PI, false)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arcTo(18, 6, 24, 12, 4)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).clip()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).closePath()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rect(2, 3, 16, 10)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).quadraticCurveTo(8, 4, 12, 16)
@@ -110,7 +116,9 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).restore()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rotate(0.5)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).save()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).scale(1.2, 0.8)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setGlobalAlpha(0.6)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineCap('round')
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineDash([6, 3], 2)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineJoin('bevel')
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setMiterLimit(6)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setTextAlign('center')
@@ -279,6 +287,8 @@ expectType<{
     reserve: boolean
     strokeStyle: string
     textAlign: string
+    globalAlpha: number
+    lineDash: number[]
     textBaseline: string
   }
   arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
@@ -286,6 +296,7 @@ expectType<{
   bezierCurveTo: (cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
+  clip: () => void
   closePath: () => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
@@ -303,7 +314,9 @@ expectType<{
   scale: (scaleWidth: number, scaleHeight: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
+  setGlobalAlpha: (value: number) => void
   setLineCap: (value: string) => void
+  setLineDash: (pattern: number[], offset?: number) => void
   setLineJoin: (value: string) => void
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
@@ -317,6 +330,7 @@ expectType<{
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arc(10, 12, 6, 0, Math.PI, false)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arcTo(18, 6, 24, 12, 4)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).clip()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).closePath()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rect(2, 3, 16, 10)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).quadraticCurveTo(8, 4, 12, 16)
@@ -324,7 +338,9 @@ headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).restore()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rotate(0.5)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).save()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).scale(1.2, 0.8)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setGlobalAlpha(0.6)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineCap('round')
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineDash([6, 3], 2)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineJoin('bevel')
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setMiterLimit(6)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setTextAlign('center')

@@ -76,7 +76,9 @@ export interface HeadlessWxCanvasSnapshot {
   drawCalls: HeadlessWxCanvasDrawCall[]
   fillStyle: string
   fontSize: number
+  globalAlpha: number
   lineCap: string
+  lineDash: number[]
   lineJoin: string
   miterLimit: number
   lineWidth: number
@@ -100,6 +102,7 @@ export interface HeadlessWxCanvasContext {
   ) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
+  clip: () => void
   closePath: () => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
@@ -117,7 +120,9 @@ export interface HeadlessWxCanvasContext {
   scale: (scaleWidth: number, scaleHeight: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
+  setGlobalAlpha: (value: number) => void
   setLineCap: (value: string) => void
+  setLineDash: (pattern: number[], offset?: number) => void
   setLineJoin: (value: string) => void
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
