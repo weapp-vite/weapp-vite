@@ -148,6 +148,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('openMissingDocumentLab')
     bridge.runPageMethod('startPullDownRefreshLab')
     bridge.runPageMethod('clipboardLab')
+    bridge.runPageMethod('loadingLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -220,6 +221,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.pullDownRefreshInfo
           && pageData.clipboardSetInfo
           && pageData.clipboardReadInfo
+          && pageData.loadingShownInfo
+          && pageData.loadingHiddenInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -369,6 +372,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.clipboardSetInfo).toContain('"errMsg":"setClipboardData:ok"')
     expect(pageData.clipboardReadInfo).toContain('"errMsg":"getClipboardData:ok"')
     expect(pageData.clipboardReadInfo).toContain('"data":"component-lab clipboard payload"')
+    expect(pageData.loadingShownInfo).toContain('"errMsg":"showLoading:ok"')
+    expect(pageData.loadingHiddenInfo).toContain('"errMsg":"hideLoading:ok"')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -472,6 +477,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(bridge.sessionSnapshot().clipboardData).toEqual({
       data: 'component-lab clipboard payload',
     })
+    expect(bridge.sessionSnapshot().loading).toBeNull()
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)

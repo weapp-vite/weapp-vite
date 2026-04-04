@@ -5750,4 +5750,49 @@ Page({
       data: 'browser clipboard payload',
     })
   })
+
+  it('supports loading snapshots in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    hideSummary: '',
+    showSummary: ''
+  },
+  runLoadingLab() {
+    wx.showLoading({
+      mask: true,
+      title: 'Browser Loading',
+      success: (result) => {
+        this.setData({
+          showSummary: JSON.stringify(result),
+        })
+      },
+      complete: () => {
+        wx.hideLoading({
+          success: (result) => {
+            this.setData({
+              hideSummary: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{showSummary}}</view><view>{{hideSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runLoadingLab()
+
+    expect(page.data.showSummary).toContain('"errMsg":"showLoading:ok"')
+    expect(page.data.hideSummary).toContain('"errMsg":"hideLoading:ok"')
+    expect(session.getLoading()).toBeNull()
+  })
 })

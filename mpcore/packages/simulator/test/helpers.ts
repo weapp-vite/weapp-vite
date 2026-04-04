@@ -1114,6 +1114,26 @@ Page({
       },
     })
   },
+  loadingLab() {
+    wx.showLoading({
+      mask: true,
+      title: 'Component Loading',
+      success: (result) => {
+        this.setData({
+          loadingShownInfo: JSON.stringify(result),
+        })
+      },
+      complete: () => {
+        wx.hideLoading({
+          success: (result) => {
+            this.setData({
+              loadingHiddenInfo: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  },
   compressChosenImageLab() {
     wx.chooseImage({
       count: 1,

@@ -156,6 +156,7 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
 expectType<{ data: string }>(browserSession.getClipboardData())
+expectType<{ mask: boolean, title: string } | null>(browserSession.getLoading())
 expectType<{ visible: boolean }>(browserSession.getTabBar())
 expectType<Record<string, string>>(browserSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(browserSession.getSavedFileListSnapshot())
@@ -209,6 +210,11 @@ expectType<{ errMsg: string } | undefined>(browserPage?.wx.setClipboardData({
   data: 'clipboard',
 }))
 expectType<{ data: string, errMsg: string } | undefined>(browserPage?.wx.getClipboardData())
+expectType<{ errMsg: string } | undefined>(browserPage?.wx.showLoading({
+  mask: true,
+  title: 'loading',
+}))
+expectType<{ errMsg: string } | undefined>(browserPage?.wx.hideLoading())
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
@@ -502,6 +508,7 @@ headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).translate(3, 4
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ data: string }>(headlessSession.getClipboardData())
+expectType<{ mask: boolean, title: string } | null>(headlessSession.getLoading())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())
 expectType<Record<string, string>>(headlessSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(headlessSession.getSavedFileListSnapshot())
@@ -569,6 +576,11 @@ expectType<{ errMsg: string } | undefined>(headlessPage?.wx.setClipboardData({
   data: 'clipboard',
 }))
 expectType<{ data: string, errMsg: string } | undefined>(headlessPage?.wx.getClipboardData())
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.showLoading({
+  mask: false,
+  title: 'loading',
+}))
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.hideLoading())
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
