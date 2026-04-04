@@ -309,6 +309,8 @@ describe('page event alignment', () => {
     expect(page.data.canvasSnapshot).toContain('"textBaseline":"alphabetic"')
     expect(page.data.canvasSnapshot).toContain('"fillStyle":"#ff5500"')
     expect(page.data.canvasSnapshot).toContain('"type":"strokeText"')
+    expect(page.data.canvasSnapshot).toContain('"/tmp/canvas-thumb.png",2,4')
+    expect(page.data.canvasSnapshot).toContain('"/tmp/canvas-sprite.png",0,0,24,24,8,10,12,14')
     expect(page.data.textMeasureWidth).toBe(54)
     expect(page.data.componentCanvasSnapshot).toContain('"canvasId":"inner-canvas"')
     expect(page.data.componentCanvasSnapshot).toContain('"type":"strokeRect"')

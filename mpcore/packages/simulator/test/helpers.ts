@@ -824,6 +824,8 @@ Page({
     const metrics = ctx.measureText('canvas')
     ctx.fillText('canvas', 6, 20)
     ctx.strokeText('canvas', 6, 20)
+    ctx.drawImage('/tmp/canvas-thumb.png', 2, 4)
+    ctx.drawImage('/tmp/canvas-sprite.png', 0, 0, 24, 24, 8, 10, 12, 14)
     ctx.restore()
     ctx.draw(false, () => {
       this.setData({
