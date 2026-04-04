@@ -191,7 +191,7 @@ Page({
     ctx.arcTo(36, 6, 44, 16, 4)
     ctx.rect(2, 3, 14, 9)
     ctx.arc(10, 10, 6, 0, Math.PI, false)
-    ctx.clip()
+    ctx.clip('evenodd')
     ctx.closePath()
     ctx.translate(3, 4)
     ctx.rotate(0.4)

@@ -276,6 +276,7 @@ describe('page event alignment', () => {
     expect(page.data.canvasSnapshot).toContain('"type":"arcTo"')
     expect(page.data.canvasSnapshot).toContain('"type":"bezierCurveTo"')
     expect(page.data.canvasSnapshot).toContain('"type":"clip"')
+    expect(page.data.canvasSnapshot).toContain('"args":["evenodd"]')
     expect(page.data.canvasSnapshot).toContain('"type":"quadraticCurveTo"')
     expect(page.data.canvasSnapshot).toContain('"type":"rect"')
     expect(page.data.canvasSnapshot).toContain('"type":"save"')

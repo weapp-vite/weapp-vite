@@ -106,11 +106,11 @@ export interface HeadlessWxCanvasContext {
   ) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
-  clip: () => void
+  clip: (fillRule?: string) => void
   closePath: () => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
-  fill: () => void
+  fill: (fillRule?: string) => void
   fillRect: (x: number, y: number, width: number, height: number) => void
   fillText: (text: string, x: number, y: number, maxWidth?: number) => void
   lineTo: (x: number, y: number) => void

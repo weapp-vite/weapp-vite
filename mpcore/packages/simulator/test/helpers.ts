@@ -813,7 +813,7 @@ Page({
     ctx.closePath()
     ctx.rect(2, 3, 16, 10)
     ctx.arc(10, 12, 6, 0, Math.PI, false)
-    ctx.clip()
+    ctx.clip('evenodd')
     ctx.translate(3, 4)
     ctx.rotate(0.5)
     ctx.scale(1.2, 0.8)
