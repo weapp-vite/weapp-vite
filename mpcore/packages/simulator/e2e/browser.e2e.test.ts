@@ -1165,6 +1165,39 @@ describe.sequential('simulator browser e2e', () => {
     expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
   })
 
+  it('tracks switchTab navigation through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('openQueue')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/queue/index' && state.pageStack.length === 2,
+      20_000,
+    )
+
+    bridge.runPageMethod('bounceSettings')
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/settings/index' && nextState.pageStack.length === 1,
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(state.pageStack).toEqual(['pages/settings/index'])
+    expect(pageData.title).toBe('Settings Tab')
+    expect(pageData.logs).toContain('settings-tab:onShow')
+    expect(pageData.logs).toContain('settings-tab:onTabItemTap:{"index":1,"pagePath":"pages/settings/index","text":"Settings"}')
+    expect(state.previewMarkup).toContain('Settings Tab')
+    expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
+  })
+
   it('tracks browser route stack transitions through runtime navigation', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
