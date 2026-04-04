@@ -8,40 +8,153 @@ on:
         required: false
         default: latest
         type: string
+      full-matrix:
+        description: run the full OS / Node matrix
+        required: false
+        default: false
+        type: boolean
+      os:
+        description: target OS when full matrix is disabled
+        required: false
+        default: ubuntu-latest
+        type: choice
+        options:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+      node-version:
+        description: target Node.js version when full matrix is disabled
+        required: false
+        default: '20'
+        type: choice
+        options:
+          - '20'
+          - '22'
+          - '24'
+      templates:
+        description: comma-separated template list
+        required: false
+        default: default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign
+        type: string
+      scenarios:
+        description: comma-separated package manager scenario list
+        required: false
+        default: pnpm,yarn,npm
+        type: string
   schedule:
     - cron: '0 3 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  prepare:
+    name: Prepare Smoke Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      package_spec: ${{ steps.inputs.outputs.package_spec }}
+      templates: ${{ steps.inputs.outputs.templates }}
+      scenarios: ${{ steps.inputs.outputs.scenarios }}
+      resolved_version: ${{ steps.resolve.outputs.resolved_version }}
+
+    steps:
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Resolve workflow inputs
+        id: inputs
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PACKAGE_SPEC: ${{ github.event.inputs['package-spec'] || '' }}
+          INPUT_TEMPLATES: ${{ github.event.inputs.templates || '' }}
+          INPUT_SCENARIOS: ${{ github.event.inputs.scenarios || '' }}
+        run: |
+          package_spec="${INPUT_PACKAGE_SPEC:-latest}"
+          templates="${INPUT_TEMPLATES:-default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign}"
+          scenarios="${INPUT_SCENARIOS:-pnpm,yarn,npm}"
+          {
+            echo "package_spec=${package_spec}"
+            echo "templates=${templates}"
+            echo "scenarios=${scenarios}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build matrix
+        id: matrix
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_FULL_MATRIX: ${{ github.event.inputs['full-matrix'] || 'false' }}
+          INPUT_OS: ${{ github.event.inputs.os || 'ubuntu-latest' }}
+          INPUT_NODE_VERSION: ${{ github.event.inputs['node-version'] || '20' }}
+        run: |
+          full_matrix='{"include":[
+            {"os":"ubuntu-latest","node-version":"20"},
+            {"os":"windows-latest","node-version":"20"},
+            {"os":"macos-latest","node-version":"20"},
+            {"os":"ubuntu-latest","node-version":"22"},
+            {"os":"windows-latest","node-version":"22"},
+            {"os":"macos-latest","node-version":"22"},
+            {"os":"ubuntu-latest","node-version":"24"},
+            {"os":"windows-latest","node-version":"24"},
+            {"os":"macos-latest","node-version":"24"}
+          ]}'
+
+          single_matrix="$(printf '{"include":[{"os":"%s","node-version":"%s"}]}' "${INPUT_OS}" "${INPUT_NODE_VERSION}")"
+
+          if [[ "${EVENT_NAME}" == "schedule" || "${INPUT_FULL_MATRIX}" == "true" ]]; then
+            matrix="${full_matrix}"
+          else
+            matrix="${single_matrix}"
+          fi
+
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### smoke matrix"
+            echo "- event: \`${EVENT_NAME}\`"
+            echo "- full matrix: \`${INPUT_FULL_MATRIX}\`"
+            echo "- selected matrix:"
+            echo '```json'
+            echo "${matrix}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Resolve create-weapp-vite version from npm
+        id: resolve
+        shell: bash
+        env:
+          CREATE_WEAPP_VITE_SPEC: ${{ steps.inputs.outputs.package_spec }}
+        run: |
+          resolved_version="$(npm view "create-weapp-vite@${CREATE_WEAPP_VITE_SPEC}" version)"
+          echo "create-weapp-vite spec: ${CREATE_WEAPP_VITE_SPEC}"
+          echo "create-weapp-vite resolved version: ${resolved_version}"
+          echo "resolved_version=${resolved_version}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### smoke inputs"
+            echo "- templates: \`${{ steps.inputs.outputs.templates }}\`"
+            echo "- scenarios: \`${{ steps.inputs.outputs.scenarios }}\`"
+            echo "### create-weapp-vite"
+            echo "- spec: \`${CREATE_WEAPP_VITE_SPEC}\`"
+            echo "- resolved version: \`${resolved_version}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   smoke:
+    needs: [prepare]
     name: Create Smoke (${{ matrix.os }} / Node ${{ matrix.node-version }})
     timeout-minutes: 90
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       max-parallel: 3
-      matrix:
-        include:
-          - os: ubuntu-latest
-            node-version: 20
-          - os: windows-latest
-            node-version: 20
-          - os: macos-latest
-            node-version: 20
-          - os: ubuntu-latest
-            node-version: 22
-          - os: windows-latest
-            node-version: 22
-          - os: macos-latest
-            node-version: 22
-          - os: ubuntu-latest
-            node-version: 24
-          - os: windows-latest
-            node-version: 24
-          - os: macos-latest
-            node-version: 24
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
     steps:
       - name: Enable Git long paths on Windows
@@ -84,30 +197,12 @@ jobs:
           print_version pnpm pnpm -v
           print_version yarn yarn -v
 
-      - name: Resolve create-weapp-vite version from npm
-        id: resolve-create-weapp-vite-version
-        shell: bash
-        env:
-          CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
-        run: |
-          resolved_version="$(npm view "create-weapp-vite@${CREATE_WEAPP_VITE_SPEC}" version)"
-          echo "create-weapp-vite spec: ${CREATE_WEAPP_VITE_SPEC}"
-          echo "create-weapp-vite resolved version: ${resolved_version}"
-          {
-            echo "CREATE_WEAPP_VITE_RESOLVED_VERSION=${resolved_version}"
-          } >> "$GITHUB_ENV"
-          {
-            echo "### create-weapp-vite"
-            echo "- spec: \`${CREATE_WEAPP_VITE_SPEC}\`"
-            echo "- resolved version: \`${resolved_version}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-
       - name: Run create-weapp-vite smoke matrix
         env:
-          CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
-          CREATE_WEAPP_VITE_RESOLVED_VERSION: ${{ env.CREATE_WEAPP_VITE_RESOLVED_VERSION }}
-          CREATE_WEAPP_VITE_TEMPLATES: default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign
-          CREATE_WEAPP_VITE_SCENARIOS: pnpm,yarn,npm
+          CREATE_WEAPP_VITE_SPEC: ${{ needs.prepare.outputs.package_spec }}
+          CREATE_WEAPP_VITE_RESOLVED_VERSION: ${{ needs.prepare.outputs.resolved_version }}
+          CREATE_WEAPP_VITE_TEMPLATES: ${{ needs.prepare.outputs.templates }}
+          CREATE_WEAPP_VITE_SCENARIOS: ${{ needs.prepare.outputs.scenarios }}
           CREATE_WEAPP_VITE_REPORT_FILE: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json
           CREATE_WEAPP_VITE_REPORT_OS: ${{ matrix.os }}
           CREATE_WEAPP_VITE_REPORT_NODE: ${{ matrix.node-version }}
