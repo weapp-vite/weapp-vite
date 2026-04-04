@@ -5703,4 +5703,51 @@ Page({
     })
     expect(session.renderCurrentPage().wxml).toContain('pull-down')
   })
+
+  it('supports clipboard data in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    readSummary: '',
+    setSummary: ''
+  },
+  runClipboardLab() {
+    wx.setClipboardData({
+      data: 'browser clipboard payload',
+      success: (result) => {
+        this.setData({
+          setSummary: JSON.stringify(result),
+        })
+      },
+      complete: () => {
+        wx.getClipboardData({
+          success: (result) => {
+            this.setData({
+              readSummary: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{setSummary}}</view><view>{{readSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runClipboardLab()
+
+    expect(page.data.setSummary).toContain('"errMsg":"setClipboardData:ok"')
+    expect(page.data.readSummary).toContain('"errMsg":"getClipboardData:ok"')
+    expect(page.data.readSummary).toContain('"data":"browser clipboard payload"')
+    expect(session.getClipboardData()).toEqual({
+      data: 'browser clipboard payload',
+    })
+  })
 })

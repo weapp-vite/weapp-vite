@@ -327,6 +327,21 @@ export interface HeadlessWxSetStorageOption extends HeadlessWxCallbackOption<Hea
   key: string
 }
 
+export interface HeadlessWxSetClipboardDataResult {
+  errMsg: string
+}
+
+export interface HeadlessWxSetClipboardDataOption extends HeadlessWxCallbackOption<HeadlessWxSetClipboardDataResult> {
+  data: string
+}
+
+export interface HeadlessWxGetClipboardDataResult {
+  data: string
+  errMsg: string
+}
+
+export interface HeadlessWxGetClipboardDataOption extends HeadlessWxCallbackOption<HeadlessWxGetClipboardDataResult> {}
+
 export interface HeadlessWxGetStorageOption extends HeadlessWxCallbackOption<HeadlessWxGetStorageResult> {
   key: string
 }
@@ -825,6 +840,7 @@ export interface HeadlessWxDriver {
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
+  getClipboardData: () => HeadlessWxGetClipboardDataResult
   getNetworkType: () => HeadlessWxGetNetworkTypeResult
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorageSync: (key: string) => unknown
@@ -851,6 +867,7 @@ export interface HeadlessWxDriver {
   saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string }
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string }
+  setClipboardData: (option: HeadlessWxSetClipboardDataOption) => HeadlessWxSetClipboardDataResult
   setStorageSync: (key: string, value: unknown) => void
   setNavigationBarColor: (option: HeadlessWxSetNavigationBarColorOption) => { errMsg: string }
   setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string }
@@ -904,6 +921,7 @@ export interface HeadlessWx {
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
+  getClipboardData: (option?: HeadlessWxGetClipboardDataOption) => HeadlessWxGetClipboardDataResult | undefined
   getNetworkType: (option?: HeadlessWxGetNetworkTypeOption) => HeadlessWxGetNetworkTypeResult | undefined
   getStorageInfo: (option?: HeadlessWxGetStorageInfoOption) => HeadlessWxStorageInfoResult | undefined
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
@@ -935,6 +953,7 @@ export interface HeadlessWx {
   saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult | undefined
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string } | undefined
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string } | undefined
+  setClipboardData: (option: HeadlessWxSetClipboardDataOption) => HeadlessWxSetClipboardDataResult | undefined
   setStorage: (option: HeadlessWxSetStorageOption) => HeadlessWxStorageResult | undefined
   setStorageSync: (key: string, value: unknown) => void
   setNavigationBarColor: (option: HeadlessWxSetNavigationBarColorOption) => { errMsg: string } | undefined
@@ -1124,6 +1143,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         scene: true,
       },
     },
+    getClipboardData: {
+      return: {
+        data: true,
+        errMsg: true,
+      },
+    },
     getMenuButtonBoundingClientRect: {
       return: {
         bottom: true,
@@ -1227,6 +1252,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     saveFile: true,
     setBackgroundColor: true,
     setBackgroundTextStyle: true,
+    setClipboardData: true,
     setStorage: true,
     setStorageSync: true,
     setNavigationBarColor: true,
@@ -1353,6 +1379,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
     getLaunchOptionsSync: () => driver.getLaunchOptionsSync(),
+    getClipboardData: option => invokeWxApi(() => driver.getClipboardData(), option),
     getMenuButtonBoundingClientRect: () => driver.getMenuButtonBoundingClientRect(),
     getNetworkType: option => invokeWxApi(() => driver.getNetworkType(), option),
     getStorageInfo: option => invokeWxApi(() => driver.getStorageInfoSync(), option),
@@ -1403,6 +1430,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     saveFile: option => invokeWxApi(() => driver.saveFile(option), option),
     setBackgroundColor: option => invokeWxApi(() => driver.setBackgroundColor(option), option),
     setBackgroundTextStyle: option => invokeWxApi(() => driver.setBackgroundTextStyle(option), option),
+    setClipboardData: option => invokeWxApi(() => driver.setClipboardData(option), option),
     setStorage: option => invokeWxApi(() => {
       driver.setStorageSync(option.key, option.data)
       return {

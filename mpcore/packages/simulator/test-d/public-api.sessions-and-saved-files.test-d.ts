@@ -155,6 +155,7 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
+expectType<{ data: string }>(browserSession.getClipboardData())
 expectType<{ visible: boolean }>(browserSession.getTabBar())
 expectType<Record<string, string>>(browserSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(browserSession.getSavedFileListSnapshot())
@@ -204,6 +205,10 @@ expectType<{ errMsg: string } | undefined>(browserPage?.wx.openDocument({
   showMenu: true,
 }))
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.startPullDownRefresh())
+expectType<{ errMsg: string } | undefined>(browserPage?.wx.setClipboardData({
+  data: 'clipboard',
+}))
+expectType<{ data: string, errMsg: string } | undefined>(browserPage?.wx.getClipboardData())
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
@@ -496,6 +501,7 @@ headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).strokeText('ca
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).translate(3, 4)
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
+expectType<{ data: string }>(headlessSession.getClipboardData())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())
 expectType<Record<string, string>>(headlessSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(headlessSession.getSavedFileListSnapshot())
@@ -559,6 +565,10 @@ expectType<{ errMsg: string } | undefined>(headlessPage?.wx.openDocument({
   showMenu: false,
 }))
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.startPullDownRefresh())
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.setClipboardData({
+  data: 'clipboard',
+}))
+expectType<{ data: string, errMsg: string } | undefined>(headlessPage?.wx.getClipboardData())
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))

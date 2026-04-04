@@ -31,6 +31,8 @@ Page({
     openMissingDocumentInfo: '',
     startPullDownRefreshInfo: '',
     pullDownRefreshInfo: '',
+    clipboardSetInfo: '',
+    clipboardReadInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -486,6 +488,25 @@ Page({
       success: (result) => {
         this.setData({
           startPullDownRefreshInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  clipboardLab() {
+    wx.setClipboardData({
+      data: 'component-lab clipboard payload',
+      success: (result) => {
+        this.setData({
+          clipboardSetInfo: JSON.stringify(result),
+        })
+      },
+      complete: () => {
+        wx.getClipboardData({
+          success: (result) => {
+            this.setData({
+              clipboardReadInfo: JSON.stringify(result),
+            })
+          },
         })
       },
     })

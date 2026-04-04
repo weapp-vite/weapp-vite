@@ -84,6 +84,10 @@ export interface HeadlessWxShareMenuSnapshot {
   withShareTicket: boolean
 }
 
+export interface HeadlessWxClipboardSnapshot {
+  data: string
+}
+
 export interface HeadlessWxActionSheetMockDefinition {
   cancel?: boolean
   tapIndex?: number
@@ -887,6 +891,7 @@ export function createHeadlessWxState() {
   let networkType: HeadlessWxNetworkType = 'wifi'
   let previewImage: HeadlessWxPreviewImageSnapshot | null = null
   let openedDocument: HeadlessWxOpenDocumentSnapshot | null = null
+  let clipboardData = ''
   let shareMenu: HeadlessWxShareMenuSnapshot = {
     isUpdatableMessage: false,
     menus: [],
@@ -1787,6 +1792,17 @@ export function createHeadlessWxState() {
         Array.from(storage.entries(), ([key, value]) => [key, cloneValue(value)]),
       )
     },
+    getClipboardData() {
+      return {
+        data: clipboardData,
+        errMsg: 'getClipboardData:ok',
+      }
+    },
+    getClipboardSnapshot() {
+      return {
+        data: clipboardData,
+      }
+    },
     getStorageSync(key: string) {
       return cloneValue(storage.get(key))
     },
@@ -2018,6 +2034,12 @@ export function createHeadlessWxState() {
     },
     setStorageSync(key: string, value: unknown) {
       storage.set(key, cloneValue(value))
+    },
+    setClipboardData(option: { data: string }) {
+      clipboardData = String(option.data)
+      return {
+        errMsg: 'setClipboardData:ok',
+      }
     },
     setFile(filePath: string, fileContent: string) {
       const normalizedPath = normalizeFsPath(filePath)

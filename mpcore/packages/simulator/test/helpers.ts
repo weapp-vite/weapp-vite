@@ -1095,6 +1095,25 @@ Page({
       },
     })
   },
+  clipboardLab() {
+    wx.setClipboardData({
+      data: 'component-lab clipboard payload',
+      success: (result) => {
+        this.setData({
+          clipboardSetInfo: JSON.stringify(result),
+        })
+      },
+      complete: () => {
+        wx.getClipboardData({
+          success: (result) => {
+            this.setData({
+              clipboardReadInfo: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  },
   compressChosenImageLab() {
     wx.chooseImage({
       count: 1,
