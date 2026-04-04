@@ -11,6 +11,7 @@ import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
+import { formatDuration } from '../formatDuration'
 import { maybeStartForwardConsole } from '../forwardConsole'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectRoot } from '../openIde'
@@ -312,7 +313,9 @@ export function registerServeCommand(cli: CAC) {
       }
 
       if (targets.runMini) {
+        const miniBuildStartedAt = Date.now()
         const buildResult = await buildService.build(options)
+        logger.success(`小程序初次构建完成，耗时：${formatDuration(Date.now() - miniBuildStartedAt)}`)
 
         if (enableAnalyze) {
           const initialAnalyze = await runAnalyze()
@@ -370,6 +373,7 @@ export function registerServeCommand(cli: CAC) {
         const webServerStartedAt = Date.now()
         try {
           webServer = await webService?.startDevServer()
+          logger.success(`Web 开发服务启动完成，耗时：${formatDuration(Date.now() - webServerStartedAt)}`)
           emitDashboardEvents(analyzeHandle, [
             {
               kind: 'system',

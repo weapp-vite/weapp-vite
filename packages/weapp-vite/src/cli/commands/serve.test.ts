@@ -21,9 +21,11 @@ const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const maybeStartForwardConsoleMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
+const loggerSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../logger', () => ({
   default: {
+    success: loggerSuccessMock,
     warn: vi.fn(),
     error: vi.fn(),
   },
@@ -175,5 +177,6 @@ describe('serve cli command', () => {
       modules: [{ id: 'm1', source: 'src/a.ts', sourceType: 'src', packages: [] }],
       subPackages: [],
     })
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
   })
 })

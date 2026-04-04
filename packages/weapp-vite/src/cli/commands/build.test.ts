@@ -21,10 +21,11 @@ const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const logBuildPackageSizeReportMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
+const loggerSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../logger', () => ({
   default: {
-    success: vi.fn(),
+    success: loggerSuccessMock,
     error: vi.fn(),
   },
   colors: {
@@ -155,5 +156,6 @@ describe('build cli command', () => {
         durationMs: expect.any(Number),
       }),
     ])
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序构建完成，耗时：'))
   })
 })

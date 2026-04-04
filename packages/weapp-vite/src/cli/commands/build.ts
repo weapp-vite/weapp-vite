@@ -7,6 +7,7 @@ import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
+import { formatDuration } from '../formatDuration'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { openIde, resolveIdeProjectPath } from '../openIde'
@@ -89,6 +90,8 @@ export function registerBuildCommand(cli: CAC) {
       if (targets.runMini) {
         const miniBuildStartedAt = Date.now()
         const output = await buildService.build(options)
+        const miniBuildDurationMs = Date.now() - miniBuildStartedAt
+        logger.success(`小程序构建完成，耗时：${colors.green(formatDuration(miniBuildDurationMs))}`)
         if (!Array.isArray(output) && 'output' in output) {
           logBuildPackageSizeReport({
             output,
@@ -109,7 +112,7 @@ export function registerBuildCommand(cli: CAC) {
               level: 'success',
               title: 'mini build completed',
               detail: `生产构建已完成，当前 analyze 结果包含 ${analyzeResult.packages.length} 个包。`,
-              durationMs: Date.now() - miniBuildStartedAt,
+              durationMs: miniBuildDurationMs,
               tags: ['build', 'mini'],
             },
           ])
@@ -120,14 +123,15 @@ export function registerBuildCommand(cli: CAC) {
         const webBuildStartedAt = Date.now()
         try {
           await webService?.build()
-          logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}`)
+          const webBuildDurationMs = Date.now() - webBuildStartedAt
+          logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}，耗时：${colors.green(formatDuration(webBuildDurationMs))}`)
           emitDashboardEvents(analyzeHandle, [
             {
               kind: 'build',
               level: 'success',
               title: 'web build completed',
               detail: `Web 构建已完成，输出目录 ${configService.relativeCwd(webConfig.outDir)}。`,
-              durationMs: Date.now() - webBuildStartedAt,
+              durationMs: webBuildDurationMs,
               tags: ['build', 'web'],
             },
           ])
