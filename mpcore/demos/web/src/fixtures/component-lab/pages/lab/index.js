@@ -13,6 +13,7 @@ Page({
     downloadSnapshot: '',
     fileTransferFailureInfo: '',
     fileManagerSnapshot: '',
+    intersectionObserverSnapshot: '',
     requestSnapshot: '',
     videoContextSnapshot: '',
     savedOverwriteInfo: '',
@@ -125,6 +126,17 @@ Page({
     this.videoContext.pause()
     this.videoContext.requestFullScreen()
     this.videoContext.exitFullScreen()
+  },
+  runIntersectionObserverLab() {
+    const observer = this.createIntersectionObserver({
+      thresholds: [0, 1],
+    }).relativeToViewport()
+    observer.observe('#observer-card', (result) => {
+      this.setData({
+        intersectionObserverSnapshot: JSON.stringify(result),
+      })
+      observer.disconnect()
+    })
   },
   handleVideoPlay(event) {
     this.setData({

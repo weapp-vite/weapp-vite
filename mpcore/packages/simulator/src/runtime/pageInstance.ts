@@ -17,6 +17,7 @@ export interface HeadlessPageInstance extends Record<string, any> {
   data: Record<string, any>
   options: Record<string, string>
   route: string
+  createIntersectionObserver?: (options?: Record<string, any>) => any
   selectAllComponents?: (selector: string) => any[]
   selectComponent?: (selector: string) => any
   setData: (patch: Record<string, any>, callback?: () => void) => void

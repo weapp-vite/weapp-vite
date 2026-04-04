@@ -1,10 +1,14 @@
 import type { HeadlessBehaviorDefinition, HeadlessComponentDefinition } from '../host'
 
+const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
+const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
+
 export interface HeadlessComponentInstance extends Record<string, any> {
   __definition__?: HeadlessComponentDefinition
   __lastInteractionEvent__?: Record<string, any>
   __propertySnapshots__?: Record<string, any>
   __ready__?: boolean
+  createIntersectionObserver?: (options?: Record<string, any>) => any
   data: Record<string, any>
   properties: Record<string, any>
   selectAllComponents?: (selector: string) => any[]
@@ -40,14 +44,14 @@ export { cloneValue }
 
 function parseDataPath(path: string) {
   return path
-    .replace(/\[(\d+)\]/g, '.$1')
+    .replace(ARRAY_INDEX_PATH_RE, '.$1')
     .split('.')
     .map(segment => segment.trim())
     .filter(Boolean)
 }
 
 function isArrayIndexSegment(segment: string) {
-  return /^\d+$/.test(segment)
+  return ARRAY_INDEX_SEGMENT_RE.test(segment)
 }
 
 function createContainerByNextSegment(nextSegment?: string) {
@@ -72,7 +76,7 @@ function assignByPath(target: Record<string, any>, path: string, value: unknown)
     current = current[normalizedSegment]
   }
 
-  const leafSegment = segments[segments.length - 1]!
+  const leafSegment = segments.at(-1)!
   const normalizedLeafSegment = isArrayIndexSegment(leafSegment) ? Number(leafSegment) : leafSegment
   current[normalizedLeafSegment] = value
 }
@@ -296,7 +300,7 @@ function resolveInitialProperties(
   const propOptions = definition.properties
   if (propOptions && typeof propOptions === 'object' && !Array.isArray(propOptions)) {
     for (const [key, option] of Object.entries(propOptions)) {
-      if (Object.prototype.hasOwnProperty.call(properties, key)) {
+      if (Object.hasOwn(properties, key)) {
         resolved[key] = coerceComponentPropertyValue(properties[key], option)
         continue
       }
@@ -371,7 +375,7 @@ function resolveObservedValue(instance: HeadlessComponentInstance, pattern: stri
   }
 
   const [rootSegment, ...restSegments] = segments
-  const rootSource = Object.prototype.hasOwnProperty.call(instance.properties, rootSegment)
+  const rootSource = Object.hasOwn(instance.properties, rootSegment)
     ? instance.properties
     : instance.data
 

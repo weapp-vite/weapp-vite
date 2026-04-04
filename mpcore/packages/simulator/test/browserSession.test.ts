@@ -4279,6 +4279,43 @@ Page({
     })
   })
 
+  it('supports page-level createIntersectionObserver in browser runtime', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    snapshot: '',
+  },
+  inspectIntersection() {
+    const observer = this.createIntersectionObserver({
+      thresholds: [0, 1],
+    }).relativeToViewport()
+    observer.observe('#hero-card', (result) => {
+      this.setData({
+        snapshot: JSON.stringify(result),
+      })
+      observer.disconnect()
+    })
+  },
+})
+`],
+      ['pages/lab/index.wxml', '<view id="hero-card" style="left: 8px; top: 14px; width: 44px; height: 26px;">hero</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+
+    page.inspectIntersection()
+    await Promise.resolve()
+
+    expect(page.data.snapshot).toContain('"id":"hero-card"')
+    expect(page.data.snapshot).toContain('"intersectionRatio":1')
+    expect(page.data.snapshot).toContain('"top":14')
+  })
+
   it('supports createVideoContext within component scope in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
@@ -4348,6 +4385,56 @@ Component({
       'fullscreen:{"currentTime":8,"fullScreen":true}',
       'fullscreen:{"currentTime":8,"fullScreen":false}',
     ])
+  })
+
+  it('supports createIntersectionObserver within component scope in browser runtime', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'observer-card': '../../components/observer-card/index',
+        },
+      })],
+      ['pages/lab/index.js', 'Page({})'],
+      ['pages/lab/index.wxml', '<observer-card id="observer-card" />'],
+      ['components/observer-card/index.json', '{}'],
+      ['components/observer-card/index.js', `
+Component({
+  data: {
+    snapshot: '',
+  },
+  methods: {
+    inspectIntersection() {
+      const observer = this.createIntersectionObserver({
+        thresholds: [0, 1],
+      }).relativeToViewport()
+      observer.observe('#hero-card', (result) => {
+        this.setData({
+          snapshot: JSON.stringify(result),
+        })
+        observer.disconnect()
+      })
+    },
+  },
+})
+`],
+      ['components/observer-card/index.wxml', '<view id="hero-card" style="left: 4px; top: 10px; width: 40px; height: 24px;">hero</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+
+    const card = session.selectComponent('#observer-card')
+    expect(card).toBeTruthy()
+
+    card?.inspectIntersection()
+    await Promise.resolve()
+
+    expect(card?.data.snapshot).toContain('"id":"hero-card"')
+    expect(card?.data.snapshot).toContain('"intersectionRatio":1')
+    expect(card?.data.snapshot).toContain('"top":10')
   })
 
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
