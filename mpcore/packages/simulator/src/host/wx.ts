@@ -79,6 +79,7 @@ export interface HeadlessWxCanvasSnapshot {
   globalAlpha: number
   lineCap: string
   lineDash: number[]
+  lineDashOffset: number
   lineJoin: string
   miterLimit: number
   lineWidth: number

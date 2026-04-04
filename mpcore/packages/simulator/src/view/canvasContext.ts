@@ -57,6 +57,7 @@ export function createHeadlessCanvasContext(
     globalAlpha: 1,
     lineCap: 'butt',
     lineDash: [] as number[],
+    lineDashOffset: 0,
     lineJoin: 'miter',
     miterLimit: 10,
     lineWidth: 1,
@@ -82,6 +83,7 @@ export function createHeadlessCanvasContext(
     globalAlpha: state.globalAlpha,
     lineCap: state.lineCap,
     lineDash: [...state.lineDash],
+    lineDashOffset: state.lineDashOffset,
     lineJoin: state.lineJoin,
     miterLimit: state.miterLimit,
     lineWidth: state.lineWidth,
@@ -142,6 +144,7 @@ export function createHeadlessCanvasContext(
         globalAlpha: snapshot.globalAlpha,
         lineCap: snapshot.lineCap,
         lineDash: [...snapshot.lineDash],
+        lineDashOffset: snapshot.lineDashOffset,
         lineJoin: snapshot.lineJoin,
         miterLimit: snapshot.miterLimit,
         lineWidth: snapshot.lineWidth,
@@ -179,6 +182,7 @@ export function createHeadlessCanvasContext(
         globalAlpha: state.globalAlpha,
         lineCap: state.lineCap,
         lineDash: [...state.lineDash],
+        lineDashOffset: state.lineDashOffset,
         lineJoin: state.lineJoin,
         miterLimit: state.miterLimit,
         lineWidth: state.lineWidth,
@@ -263,6 +267,7 @@ export function createHeadlessCanvasContext(
     },
     setLineDash(pattern, offset) {
       state.lineDash = pattern.map(item => Number(item))
+      state.lineDashOffset = offset == null ? 0 : Number(offset)
       record('setLineDash', offset == null ? [pattern.map(item => Number(item))] : [pattern.map(item => Number(item)), Number(offset)])
     },
     setLineJoin(value) {

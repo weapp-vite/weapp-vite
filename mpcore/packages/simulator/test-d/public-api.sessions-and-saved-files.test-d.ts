@@ -61,6 +61,7 @@ expectType<{
     globalAlpha: number
     lineCap: string
     lineDash: number[]
+    lineDashOffset: number
     lineJoin: string
     miterLimit: number
     lineWidth: number
@@ -302,6 +303,7 @@ expectType<{
     textAlign: string
     globalAlpha: number
     lineDash: number[]
+    lineDashOffset: number
     textBaseline: string
   }
   arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
