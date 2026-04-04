@@ -301,7 +301,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
   it('issue #380: keeps custom tab bar out of default layout at runtime', async (ctx) => {
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-380/index', 'issue-380 page')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-380/index')
       if (!issuePage) {
         throw new Error('Failed to launch issue-380 page')
       }
@@ -383,7 +383,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-404/index', 'has instance onPageScroll')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-404/index')
       if (!issuePage) {
         throw new Error('Failed to launch issue-404 page')
       }
