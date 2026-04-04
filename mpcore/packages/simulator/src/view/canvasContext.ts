@@ -61,6 +61,7 @@ export function createHeadlessCanvasContext(
   let state = {
     ...defaultState,
   }
+  let stateStack: typeof state[] = []
   let drawCalls: HeadlessWxCanvasDrawCall[] = []
   let snapshot: HeadlessWxCanvasSnapshot = {
     canvasId,
@@ -101,6 +102,9 @@ export function createHeadlessCanvasContext(
   }
 
   const context: HeadlessWxCanvasContext = {
+    arc(x, y, r, sAngle, eAngle, counterclockwise) {
+      record('arc', [x, y, r, sAngle, eAngle, Boolean(counterclockwise)])
+    },
     __getSnapshot() {
       return {
         canvasId: snapshot.canvasId,
@@ -117,6 +121,9 @@ export function createHeadlessCanvasContext(
     },
     clearRect(x, y, width, height) {
       record('clearRect', [x, y, width, height])
+    },
+    closePath() {
+      record('closePath', [])
     },
     draw(reserve, callback) {
       ensureCanvas()
@@ -135,6 +142,7 @@ export function createHeadlessCanvasContext(
       state = {
         ...defaultState,
       }
+      stateStack = []
       callback?.()
     },
     drawImage(image, ...args) {
@@ -160,6 +168,27 @@ export function createHeadlessCanvasContext(
     moveTo(x, y) {
       record('moveTo', [x, y])
     },
+    rect(x, y, width, height) {
+      record('rect', [x, y, width, height])
+    },
+    restore() {
+      state = stateStack.pop() ?? {
+        ...defaultState,
+      }
+      record('restore', [])
+    },
+    rotate(rotate) {
+      record('rotate', [rotate])
+    },
+    save() {
+      stateStack.push({
+        ...state,
+      })
+      record('save', [])
+    },
+    scale(scaleWidth, scaleHeight) {
+      record('scale', [scaleWidth, scaleHeight])
+    },
     setFillStyle(value) {
       state.fillStyle = String(value)
       record('setFillStyle', [value])
@@ -181,6 +210,9 @@ export function createHeadlessCanvasContext(
     },
     strokeRect(x, y, width, height) {
       record('strokeRect', [x, y, width, height])
+    },
+    translate(x, y) {
+      record('translate', [x, y])
     },
   }
 

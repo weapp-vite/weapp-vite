@@ -4621,6 +4621,52 @@ Page({
     expect(page.data.width).toBe(54)
   })
 
+  it('supports canvas transform and path helpers in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    snapshot: ''
+  },
+  runCanvasTransformLab() {
+    const ctx = wx.createCanvasContext('hero-canvas', this)
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(2, 3, 16, 10)
+    ctx.arc(10, 12, 6, 0, Math.PI, false)
+    ctx.translate(3, 4)
+    ctx.rotate(0.5)
+    ctx.scale(1.2, 0.8)
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
+    ctx.draw(false, () => {
+      this.setData({
+        snapshot: JSON.stringify(ctx.__getSnapshot())
+      })
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<canvas canvas-id="hero-canvas"></canvas><view>{{snapshot}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runCanvasTransformLab()
+
+    expect(page.data.snapshot).toContain('"type":"save"')
+    expect(page.data.snapshot).toContain('"type":"rect"')
+    expect(page.data.snapshot).toContain('"type":"arc"')
+    expect(page.data.snapshot).toContain('"type":"translate"')
+    expect(page.data.snapshot).toContain('"type":"rotate"')
+    expect(page.data.snapshot).toContain('"type":"scale"')
+    expect(page.data.snapshot).toContain('"type":"restore"')
+  })
+
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
