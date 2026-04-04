@@ -280,6 +280,7 @@ export class BrowserHeadlessSession {
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
         removeSavedFile: option => this.wxState.removeSavedFile(option),
+        saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         nextTick: callback => queueMicrotask(() => callback?.()),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),

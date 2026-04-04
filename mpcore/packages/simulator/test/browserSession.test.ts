@@ -4630,6 +4630,69 @@ Page({
     expect(page.data.exported).toContain('"fileType":"png"')
   })
 
+  it('supports saveImageToPhotosAlbum for exported canvas files in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingSummary: '',
+    savedSummary: '',
+    tempFilePath: ''
+  },
+  runCanvasSaveImageLab() {
+    const ctx = wx.createCanvasContext('hero-canvas', this)
+    ctx.setFillStyle('#ff5500')
+    ctx.fillRect(0, 0, 20, 10)
+    ctx.draw(false, () => {
+      wx.canvasToTempFilePath({
+        canvasId: 'hero-canvas',
+        component: this,
+        fileType: 'png',
+        success: ({ tempFilePath }) => {
+          this.setData({
+            tempFilePath,
+          })
+          wx.saveImageToPhotosAlbum({
+            filePath: tempFilePath,
+            success: (result) => {
+              this.setData({
+                savedSummary: JSON.stringify(result),
+              })
+            },
+          })
+        }
+      })
+    })
+  },
+  runMissingCanvasSaveImageLab() {
+    wx.saveImageToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/browser-missing-canvas-export.png',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<canvas canvas-id="hero-canvas"></canvas><view>{{savedSummary}}</view><view>{{missingSummary}}</view><view>{{tempFilePath}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runCanvasSaveImageLab()
+    page.runMissingCanvasSaveImageLab()
+
+    expect(page.data.savedSummary).toContain('"errMsg":"saveImageToPhotosAlbum:ok"')
+    expect(page.data.missingSummary).toBe('saveImageToPhotosAlbum:fail file not found: headless://wxfile/temp/browser-missing-canvas-export.png')
+    expect(page.data.tempFilePath).toContain('headless://wxfile/temp/')
+    expect(session.getFileText(page.data.tempFilePath)).toContain('"canvasId":"hero-canvas"')
+  })
+
   it('supports canvas path and text helpers in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

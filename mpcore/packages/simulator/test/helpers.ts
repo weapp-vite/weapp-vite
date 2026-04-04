@@ -789,6 +789,8 @@ export function createCanvasContextFixture() {
 Page({
   data: {
     canvasSnapshot: '',
+    canvasSavedImageInfo: '',
+    canvasSavedImageMissingInfo: '',
     canvasTempFileContent: '',
     canvasTempFilePath: '',
     canvasQuerySnapshot: '',
@@ -857,6 +859,28 @@ Page({
       },
     })
   },
+  saveExportedCanvasLab() {
+    wx.saveImageToPhotosAlbum({
+      filePath: this.data.canvasTempFilePath,
+      success: (result) => {
+        this.setData({
+          canvasSavedImageInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  saveMissingCanvasImageLab() {
+    wx.saveImageToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/missing-canvas-export.png',
+      fail: (error) => {
+        this.setData({
+          canvasSavedImageMissingInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
   inspectCanvasQuery() {
     wx.createSelectorQuery()
       .select('canvas')
@@ -891,6 +915,8 @@ Page({
 <canvas canvas-id="hero-canvas"></canvas>
 <canvas-probe id="canvas-probe" bind:paint="handleCanvasPaint" />
 <view>{{canvasSnapshot}}</view>
+<view>{{canvasSavedImageInfo}}</view>
+<view>{{canvasSavedImageMissingInfo}}</view>
 <view>{{canvasTempFilePath}}</view>
 <view>{{canvasTempFileContent}}</view>
 <view>{{canvasQuerySnapshot}}</view>

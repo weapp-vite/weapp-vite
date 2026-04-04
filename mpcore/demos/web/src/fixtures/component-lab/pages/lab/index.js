@@ -15,6 +15,8 @@ Page({
     fileManagerSnapshot: '',
     animationSnapshot: '',
     canvasSnapshot: '',
+    canvasSavedImageInfo: '',
+    canvasSavedImageMissingInfo: '',
     canvasTempFileContent: '',
     canvasTempFilePath: '',
     canvasQuerySnapshot: '',
@@ -231,6 +233,28 @@ Page({
         this.setData({
           canvasTempFileContent: fs.readFileSync(tempFilePath, 'utf8'),
           canvasTempFilePath: tempFilePath,
+        })
+      },
+    })
+  },
+  saveExportedCanvasLab() {
+    wx.saveImageToPhotosAlbum({
+      filePath: this.data.canvasTempFilePath,
+      success: (result) => {
+        this.setData({
+          canvasSavedImageInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  saveMissingCanvasImageLab() {
+    wx.saveImageToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/missing-component-lab-canvas-export.png',
+      fail: (error) => {
+        this.setData({
+          canvasSavedImageMissingInfo: JSON.stringify({
+            error: error.message,
+          }),
         })
       },
     })
