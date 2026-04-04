@@ -38,6 +38,7 @@ const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=(\S+)/
 const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
+const TASK_HEARTBEAT_INTERVAL_MS = 30_000
 
 function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
@@ -111,6 +112,16 @@ function createOutputForwarder(
   return {
     flush,
     handleText,
+  }
+}
+
+function startTaskHeartbeat(suiteName: string, label: string, startedAt: number) {
+  const timer = setInterval(() => {
+    console.log(`[${suiteName}] still running ${label} (${formatDuration(Date.now() - startedAt)})`)
+  }, TASK_HEARTBEAT_INTERVAL_MS)
+
+  return () => {
+    clearInterval(timer)
   }
 }
 
@@ -206,6 +217,7 @@ export async function runTaskSuite(
   for (const task of tasks) {
     console.log(`[${suiteName}] run ${task.label}`)
     const startedAt = Date.now()
+    const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt)
     let exitCode = 1
 
     try {
@@ -216,6 +228,9 @@ export async function runTaskSuite(
       const message = error instanceof Error ? error.message : String(error)
       console.error(`[${suiteName}] task crashed: ${task.label}`)
       console.error(message)
+    }
+    finally {
+      stopHeartbeat()
     }
 
     const durationMs = Date.now() - startedAt

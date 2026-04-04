@@ -87,6 +87,36 @@ describe('suiteRunner', () => {
     process.exitCode = previousExitCode
   })
 
+  it('prints heartbeat logs while a task is still running', async () => {
+    vi.useFakeTimers()
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+
+    let resolveTask!: (value: number) => void
+    const pendingTask = new Promise<number>((resolve) => {
+      resolveTask = resolve
+    })
+
+    const runPromise = runTaskSuite('e2e:test', [
+      { label: 'slow-task', command: 'pnpm', args: ['vitest'] },
+    ], {
+      runTask: vi.fn().mockReturnValue(pendingTask),
+      writeReport: false,
+    })
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(consoleLog).toHaveBeenCalledWith('[e2e:test] still running slow-task (30.0s)')
+
+    resolveTask(0)
+    await runPromise
+
+    process.exitCode = previousExitCode
+    consoleLog.mockRestore()
+    vi.useRealTimers()
+  })
+
   it('keeps ide gate smaller than ide full and includes core runtime coverage', () => {
     const ideSmokeTasks = getSuiteTasks('ide-smoke')
     const ideGateTasks = getSuiteTasks('ide-gate')
