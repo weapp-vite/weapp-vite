@@ -13,7 +13,7 @@ const DEFAULT_TEMPLATE_NAMES = ['default', 'lib', 'wevu', 'wevu-tdesign', 'tailw
 const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? DEFAULT_TEMPLATE_NAMES)
   .map(name => name.trim())
   .filter(Boolean)
-const DEFAULT_SCENARIO_NAMES = ['pnpm', 'yarn', 'npm', 'bun']
+const DEFAULT_SCENARIO_NAMES = ['pnpm', 'yarn', 'npm']
 const REQUESTED_SCENARIO_NAMES = (
   process.env.CREATE_WEAPP_VITE_SCENARIOS?.split(',') ?? DEFAULT_SCENARIO_NAMES
 )
@@ -283,33 +283,6 @@ const SCENARIOS = [
     devCommand() {
       return {
         command: 'npm',
-        args: ['run', 'dev'],
-      }
-    },
-  },
-  {
-    name: 'bun',
-    createCommand(projectName, templateName, packageSpec) {
-      return {
-        command: 'bun',
-        args: ['create', getCreatePackageSpecifier('bun', packageSpec), projectName, templateName],
-      }
-    },
-    installCommand() {
-      return {
-        command: 'bun',
-        args: ['install'],
-      }
-    },
-    buildCommand() {
-      return {
-        command: 'bun',
-        args: ['run', 'build'],
-      }
-    },
-    devCommand() {
-      return {
-        command: 'bun',
         args: ['run', 'dev'],
       }
     },
