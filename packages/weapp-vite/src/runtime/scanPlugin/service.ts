@@ -9,6 +9,7 @@ import { isObject } from '@weapp-core/shared'
 import path from 'pathe'
 import logger from '../../logger'
 import { findJsEntry, findJsonEntry, findVueEntry } from '../../utils'
+import { normalizeRoot, toPosixPath } from '../../utils/path'
 import { requireConfigService } from '../utils/requireConfigService'
 import { normalizeSubPackageStyleEntries } from './styleEntries'
 import { resolveSubPackageEntries } from './subpackages'
@@ -304,10 +305,12 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
           ...json.subpackages ?? [],
         ] as SubPackage[]
         for (const subPackage of independentSubPackages) {
-          const subPackageConfig = configService.weappViteConfig?.subPackages?.[subPackage.root!]
-          const npmSubPackageConfig = configService.weappViteConfig?.npm?.subPackages?.[subPackage.root!]
+          const normalizedRoot = subPackage.root ? normalizeRoot(subPackage.root) : undefined
+          const subPackageConfig = normalizedRoot ? configService.weappViteConfig?.subPackages?.[normalizedRoot] : undefined
+          const npmSubPackageConfig = normalizedRoot ? configService.weappViteConfig?.npm?.subPackages?.[normalizedRoot] : undefined
           const resolvedSubPackage = {
             ...subPackage,
+            ...(normalizedRoot ? { root: normalizedRoot } : {}),
             dependencies: npmSubPackageConfig?.dependencies,
             inlineConfig: subPackageConfig?.inlineConfig,
           }
@@ -323,12 +326,12 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
           )
           meta.watchSharedStyles = subPackageConfig?.watchSharedStyles ?? true
           metas.push(meta)
-          if (subPackage.root) {
-            subPackageMap.set(subPackage.root, meta)
+          if (normalizedRoot) {
+            subPackageMap.set(normalizedRoot, meta)
             if (subPackage.independent) {
-              independentSubPackageMap.set(subPackage.root, meta)
+              independentSubPackageMap.set(normalizedRoot, meta)
               if (scanState.isDirty) {
-                independentDirtyRoots.add(subPackage.root)
+                independentDirtyRoots.add(normalizedRoot)
               }
             }
           }
@@ -351,8 +354,9 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
   }
 
   function isMainPackageFileName(fileName: string) {
+    const normalizedFileName = toPosixPath(fileName)
     return [...independentSubPackageMap.keys()].every((root) => {
-      return !fileName.startsWith(root)
+      return !normalizedFileName.startsWith(root)
     })
   }
 
@@ -399,8 +403,9 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
       if (!root) {
         return
       }
-      if (independentSubPackageMap.has(root)) {
-        independentDirtyRoots.add(root)
+      const normalizedRoot = normalizeRoot(root)
+      if (independentSubPackageMap.has(normalizedRoot)) {
+        independentDirtyRoots.add(normalizedRoot)
       }
     },
     drainIndependentDirtyRoots() {

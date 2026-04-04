@@ -412,6 +412,68 @@ describe('scanPlugin service', () => {
     expect(resolveSubPackageEntriesMock).toHaveBeenCalled()
   })
 
+  it('normalizes windows-style subpackage roots before config lookup and tracking', async () => {
+    const ctx = createCtx({
+      runtimeState: {
+        scan: {
+          appEntry: {
+            path: '/project/src/app.ts',
+            jsonPath: '/project/src/app.json',
+            type: 'app',
+            json: {
+              subPackages: [{ root: 'pkgA\\nested', pages: ['pages/a'], independent: true }],
+            },
+          },
+          pluginJson: undefined,
+          pluginJsonPath: undefined,
+          isDirty: true,
+          warnedMessages: new Set<string>(),
+          subPackageMap: new Map(),
+          independentSubPackageMap: new Map(),
+          independentDirtyRoots: new Set<string>(),
+        },
+        autoRoutes: {
+          loadingAppConfig: false,
+        },
+      },
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: '/project/plugin-root',
+        weappViteConfig: {
+          npm: {
+            subPackages: {
+              'pkgA/nested': {
+                dependencies: ['dep-a-from-npm'],
+              },
+            },
+          },
+          subPackages: {
+            'pkgA/nested': {
+              inlineConfig: { mode: 'bundle' },
+              autoImportComponents: ['c-a'],
+              watchSharedStyles: false,
+              styles: [],
+            },
+          },
+        },
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+
+    service.loadSubPackages()
+
+    expect(service.subPackageMap.has('pkgA/nested')).toBe(true)
+    expect(service.independentSubPackageMap.has('pkgA/nested')).toBe(true)
+    expect(service.subPackageMap.get('pkgA/nested')?.subPackage.root).toBe('pkgA/nested')
+    expect(service.subPackageMap.get('pkgA/nested')?.subPackage.dependencies).toEqual(['dep-a-from-npm'])
+    expect(service.isMainPackageFileName('pkgA\\nested/pages/a')).toBe(false)
+
+    service.markIndependentDirty('pkgA\\nested')
+    expect(service.drainIndependentDirtyRoots()).toEqual(['pkgA/nested'])
+  })
+
   it('throws when loading subpackages without appEntry', async () => {
     const ctx = createCtx()
     ctx.runtimeState.scan.isDirty = false
