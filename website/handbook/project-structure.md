@@ -51,6 +51,25 @@ src/
    └─ icons/
 ```
 
+在真实项目根目录里，通常还会看到这些不属于 `src/`、但同样重要的文件：
+
+```txt
+.
+├─ vite.config.ts
+├─ project.config.json
+├─ AGENTS.md
+├─ .weapp-vite/
+└─ dist/
+```
+
+它们分别负责：
+
+- `vite.config.ts`：项目配置入口
+- `project.config.json`：微信开发者工具工程配置
+- `AGENTS.md`：给 AI 的项目级工作流约束
+- `.weapp-vite/`：托管的支持文件与类型产物
+- `dist/`：最终给开发者工具或 CI 使用的构建产物
+
 它背后的分工很简单：
 
 - `pages/`
@@ -201,6 +220,42 @@ utils/formatPrice.ts
 ### 3. 过早拆成特别复杂的领域层
 
 如果你的项目还没超过几个核心业务页面，就不必一上来设计太复杂的模块边界。
+
+### 4. 忽略项目根目录的 AI / 工具文件
+
+当前版本里，下面几个文件或目录不应该被当成“无关生成物”：
+
+- `AGENTS.md`
+- `.weapp-vite/`
+- `dist/`
+
+建议理解为：
+
+- `AGENTS.md` 决定 AI 进入项目后先读什么、优先用什么命令
+- `.weapp-vite/` 决定编辑器类型提示、自动路由类型、自动导入组件类型是否稳定
+- `dist/` 决定开发者工具最终看到的到底是不是你以为的输出
+
+如果类型提示异常、AI 行为跑偏、下游验证与源码不一致，先检查这三者是否同步。
+
+## 什么时候应该运行 `weapp-vite prepare`
+
+优先在这些场景执行：
+
+- 新 clone 下来的项目第一次打开
+- 升级了 `weapp-vite`
+- `.weapp-vite` 缺失
+- Volar / TypeScript 提示异常
+- 想在 `dev/build` 之前先把支持文件生成好
+
+```bash
+weapp-vite prepare
+```
+
+如果你是让 AI 进入项目处理问题，也建议它先读：
+
+1. 根目录 `AGENTS.md`
+2. `node_modules/weapp-vite/dist/docs/index.md`
+3. `vite.config.ts`
 
 ## 一句话建议
 

@@ -235,6 +235,17 @@ weapp-vite ide logs
 weapp-vite ide logs --open
 ```
 
+### 推荐配套命令
+
+如果你正在做 AI 联调、运行时排障或截图验收，通常会和下面几个命令一起使用：
+
+```bash
+weapp-vite dev --open
+weapp-vite ide logs --open
+weapp-vite screenshot --project ./dist/build/mp-weixin --json
+weapp-vite compare --project ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-pixels 100 --json
+```
+
 ### 注意事项
 
 - 当前只支持微信小程序平台。
@@ -333,6 +344,17 @@ export default defineConfig({
 
 > [!TIP]
 > 完整接入流程、客户端配置与测试建议请看：[AI 协作指南](/guide/ai)。
+
+### 当前推荐的 AI 使用方式
+
+如果你希望 AI 更稳定地命中小程序运行时能力，建议优先让它：
+
+1. 先读取根目录 `AGENTS.md`
+2. 再读取 `node_modules/weapp-vite/dist/docs/*.md`
+3. 对截图使用 `take_weapp_screenshot` 或 `weapp-vite screenshot`
+4. 对截图对比使用 `compare_weapp_screenshot` 或 `weapp-vite compare`
+
+这样通常比直接让 AI 自己猜“该用浏览器截图还是 DevTools automator”更稳定。
 
 ## 关联阅读
 

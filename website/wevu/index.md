@@ -47,6 +47,14 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - “状态为什么不更新 / hooks 为什么不触发？” → 先看 `/wevu/runtime` 与 `/wevu/compatibility`
 - “项目应该先看哪一层文档？” → 先看 `/guide/` 和 `/config/`；那里解决的是编译与工程问题，不是运行时问题。
 
+如果你是在 `weapp-vite` 项目里让 AI 协助修改 Wevu 代码，建议再加一个前置顺序：
+
+1. 先读项目根目录 `AGENTS.md`
+2. 再读 `node_modules/weapp-vite/dist/docs/wevu-authoring.md`
+3. 最后才进入具体的 `pages/components/stores`
+
+这样 AI 更容易先遵守小程序运行时约束，而不是直接套用 Vue Web 的默认写法。
+
 ## 3. Wevu 不是什么
 
 - 它不是浏览器 DOM 运行时，也不是把 Vue 3 完整搬进小程序。

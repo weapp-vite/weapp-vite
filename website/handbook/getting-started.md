@@ -55,6 +55,19 @@ my-app/
 └─ vite.config.ts
 ```
 
+如果你使用的是 `create-weapp-vite`，当前初始化流程通常还会额外做两件事：
+
+1. 询问是否安装推荐的 AI skills
+2. 在项目根目录生成 `AGENTS.md`
+
+推荐的 skills 安装命令是：
+
+```bash
+npx skills add sonofmagic/skills
+```
+
+如果你创建项目时先跳过了，也可以后面手动执行。
+
 ## 3. 第 2 步：先写一个最小页面
 
 先不要急着做请求、登录、路由守卫。先让页面真的显示出来。
@@ -157,6 +170,20 @@ pnpm dev
 2. 开发者工具导入的根目录正确。
 3. 页面能正常展示并响应按钮点击。
 
+如果你当前是在 AI 终端里工作，还可以顺手记住这三个高频命令：
+
+```bash
+weapp-vite prepare
+weapp-vite ide logs --open
+weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/home/index --output .tmp/home.png --json
+```
+
+它们分别对应：
+
+- 生成 `.weapp-vite` 支持文件
+- 把 DevTools console 桥接回终端
+- 做一次真实小程序运行时截图
+
 ## 6. 第 5 步：学会看“最终产物”
 
 很多新用户只看源码，不看构建产物。这个习惯在小程序里很容易误判问题。
@@ -239,6 +266,8 @@ definePageJson(() => ({
 | 页面能否被编译      | `dist/pages/**` 是否生成 `json/js/wxml/wxss` |
 | 页面能否响应更新    | 响应式 API 是否从 `wevu` 导入                |
 | 页面能否在 IDE 打开 | 开发者工具根目录是否指向正确产物             |
+| 类型提示是否稳定    | 是否执行过 `weapp-vite prepare`              |
+| AI 是否读对项目说明 | 是否先读取根目录 `AGENTS.md`                 |
 
 ## 9. 接下来该学什么
 
@@ -247,6 +276,7 @@ definePageJson(() => ({
 - [目录结构怎么放最顺手](/handbook/project-structure)
 - [环境变量与配置怎么分层](/handbook/env-and-config)
 - [先建立 SFC 心智模型](/handbook/sfc/)
+- [AI 协作指南](/guide/ai)
 
 ## 10. 参考资源
 

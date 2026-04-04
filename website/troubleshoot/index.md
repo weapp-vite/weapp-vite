@@ -122,6 +122,59 @@ sudo sysctl -p
 > [!NOTE]
 > Skyline 的 [全局工具栏](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/appbar.html#%E4%BD%BF%E7%94%A8%E6%B5%81%E7%A8%8B) 也遵循同样的目录要求。
 
+## `.weapp-vite` 支持文件缺失或过期？
+
+- **症状**：
+  - Volar / TypeScript 提示异常
+  - 自动路由类型丢失
+  - 终端提示支持文件缺失或已过期
+- **优先操作**：
+
+```bash
+weapp-vite prepare
+```
+
+- **补充说明**：
+  - `.weapp-vite/` 是托管支持文件目录，不建议长期手写并偏离工具输出。
+  - 如果你刚升级 `weapp-vite`，优先先跑一次 `prepare` 再继续排查。
+
+## AI 截图失败或截图对比失败？
+
+优先检查：
+
+1. 微信开发者工具是否已登录；
+2. 是否开启了「设置 > 安全设置 > 服务端口」；
+3. `--project` 是否真的指向小程序构建目录；
+4. `--page` 是否为真实路由；
+5. baseline 图片尺寸是否与当前截图一致。
+
+推荐命令：
+
+```bash
+weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+```
+
+## 终端里看不到小程序日志？
+
+优先使用：
+
+```bash
+weapp-vite ide logs --open
+```
+
+如果项目启用了 `weapp.forwardConsole.enabled = 'auto'`，AI 终端场景下 `weapp-vite dev --open` 也可能自动附加日志桥。
+
+## 修改源码后，下游验证结果还是旧的？
+
+如果你改的是 `packages/weapp-vite/src/**`、`packages-runtime/**/src/**` 之类的源码，但验证走的是 app/template/e2e 产物，优先怀疑 `dist` 产物陈旧。
+
+先重建相关包，再做下游验证：
+
+```bash
+pnpm --filter weapp-vite build
+```
+
 ---
 
 若以上方案未解决问题，请收集：
