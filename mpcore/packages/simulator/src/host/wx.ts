@@ -27,6 +27,45 @@ export interface HeadlessWxVideoContext {
   stop: () => void
 }
 
+export interface HeadlessWxAnimationStepOption {
+  delay?: number
+  duration?: number
+  timingFunction?: 'ease' | 'ease-in' | 'ease-in-out' | 'ease-out' | 'linear' | 'step-end' | 'step-start'
+  transformOrigin?: string
+}
+
+export interface HeadlessWxAnimationAction {
+  args: unknown[]
+  type: string
+}
+
+export interface HeadlessWxAnimationExportResult {
+  actions: Array<{
+    animates: HeadlessWxAnimationAction[]
+    option: Required<HeadlessWxAnimationStepOption>
+  }>
+}
+
+export interface HeadlessWxAnimation {
+  backgroundColor: (value: string) => HeadlessWxAnimation
+  bottom: (value: number | string) => HeadlessWxAnimation
+  export: () => HeadlessWxAnimationExportResult
+  height: (value: number | string) => HeadlessWxAnimation
+  left: (value: number | string) => HeadlessWxAnimation
+  opacity: (value: number) => HeadlessWxAnimation
+  right: (value: number | string) => HeadlessWxAnimation
+  rotate: (angle: number) => HeadlessWxAnimation
+  scale: (sx: number, sy?: number) => HeadlessWxAnimation
+  step: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
+  top: (value: number | string) => HeadlessWxAnimation
+  translate: (tx?: number | string, ty?: number | string) => HeadlessWxAnimation
+  translate3d: (tx?: number | string, ty?: number | string, tz?: number | string) => HeadlessWxAnimation
+  translateX: (translation: number) => HeadlessWxAnimation
+  translateY: (translation: number) => HeadlessWxAnimation
+  translateZ: (translation: number) => HeadlessWxAnimation
+  width: (value: number | string) => HeadlessWxAnimation
+}
+
 export interface HeadlessWxIntersectionObserverMargins {
   bottom?: number
   left?: number
@@ -502,6 +541,7 @@ export interface HeadlessWxFileSystemManager {
 }
 
 export interface HeadlessWxDriver {
+  createAnimation: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
   createIntersectionObserver: (
     scope: Record<string, any> | undefined,
     options?: HeadlessWxCreateIntersectionObserverOption,
@@ -565,6 +605,7 @@ export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  createAnimation: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
   createIntersectionObserver: (
     component?: Record<string, any>,
     options?: HeadlessWxCreateIntersectionObserverOption,
@@ -668,6 +709,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     canIUse: true,
     clearStorage: true,
     clearStorageSync: true,
+    createAnimation: true,
     createIntersectionObserver: true,
     createVideoContext: true,
     createSelectorQuery: true,
@@ -853,6 +895,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    createAnimation: option => driver.createAnimation(option),
     createIntersectionObserver: (component, options) => driver.createIntersectionObserver(component, options),
     createVideoContext: (videoId, component) => driver.createVideoContext(videoId, component),
     createSelectorQuery: () => {
