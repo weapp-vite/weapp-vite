@@ -220,13 +220,15 @@ export default defineComponent({
       const afterHooks = hookLogs.value.slice()
       const extraHooks = afterHooks.slice(beforeHooks.length)
       const templateReady = await waitForTemplateRef()
+      const currentFormTitle = target?.data?.form?.title
+      const runtimeFormTitle = bindModel.value('form.title')
 
       const checks = {
         inSetupInstance: Boolean(instance),
         inSetupContext: Boolean(setupCtx),
         outsideSetupInstance: getCurrentInstance() == null,
-        bindModelUpdated: target?.data?.form?.title === 'changed',
-        bindModelHelpers: Boolean(titleOnInput) && bindModel.value('form.title') === 'changed',
+        bindModelUpdated: runtimeFormTitle === 'changed',
+        bindModelHelpers: Boolean(titleOnInput) && runtimeFormTitle === 'changed',
         ctxBindModel: typeof ctxModelPayload.onInput === 'function',
         templateRefReady: templateReady && templateRef.value?.selector === '#runtime-ref',
         hooksCollected: extraHooks.length >= 6,
@@ -262,6 +264,8 @@ export default defineComponent({
         modelAfter,
         childAttrs,
         childSlots,
+        currentFormTitle,
+        runtimeFormTitle,
       })
 
       target?.setData?.({
@@ -274,6 +278,10 @@ export default defineComponent({
 
     const getScrollDebugLogs = () => {
       return scrollDebugLogs.value.slice()
+    }
+
+    const getHookLogs = () => {
+      return hookLogs.value.slice()
     }
 
     return {
@@ -290,6 +298,7 @@ export default defineComponent({
       styleText,
       mergedArray,
       mergedObject,
+      getHookLogs,
       getScrollDebugLogs,
       runE2E,
     }

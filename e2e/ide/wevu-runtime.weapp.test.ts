@@ -183,7 +183,10 @@ describe.sequential('wevu runtime (weapp e2e)', () => {
         throw new Error('Expected runtime scroll debug logs, but none were produced')
       }
 
-      const hookLogs = await page.data('hookLogs')
+      const hookLogs = await waitForTruthy(async () => {
+        const logs = await page.callMethod('getHookLogs')
+        return Array.isArray(logs) && logs.includes('onPageScroll') ? logs : null
+      })
       expect(Array.isArray(hookLogs)).toBe(true)
       expect(hookLogs).toContain('onPageScroll')
       expect(scrollLogs.some((item: any) => Number(item?.scrollTop ?? -1) > 0)).toBe(true)
