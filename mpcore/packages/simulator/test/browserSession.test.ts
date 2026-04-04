@@ -4930,6 +4930,67 @@ Page({
     expect(page.data.missingSummary).toBe('compressImage:fail file not found: headless://wxfile/temp/browser-missing-compress-image.jpg')
   })
 
+  it('supports chooseVideo in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingSummary: '',
+    savedSummary: '',
+    videoSummary: ''
+  },
+  runChooseVideoLab() {
+    wx.chooseVideo({
+      compressed: true,
+      maxDuration: 24,
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          videoSummary: JSON.stringify(result),
+        })
+        wx.saveVideoToPhotosAlbum({
+          filePath: result.tempFilePath,
+          success: (savedResult) => {
+            this.setData({
+              savedSummary: JSON.stringify(savedResult),
+            })
+          },
+        })
+      },
+    })
+  },
+  runMissingSaveVideoLab() {
+    wx.saveVideoToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/browser-missing-chosen-video.mp4',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{videoSummary}}</view><view>{{savedSummary}}</view><view>{{missingSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runChooseVideoLab()
+    page.runMissingSaveVideoLab()
+
+    expect(page.data.videoSummary).toContain('"errMsg":"chooseVideo:ok"')
+    expect(page.data.videoSummary).toContain('"duration":18')
+    expect(page.data.videoSummary).toContain('"width":640')
+    expect(page.data.videoSummary).toContain('"height":360')
+    expect(page.data.savedSummary).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+    expect(page.data.missingSummary).toBe('saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/browser-missing-chosen-video.mp4')
+    expect(session.getFileText('headless://wxfile/temp/chosen-video-01.mp4')).toContain('"duration":18')
+  })
+
   it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

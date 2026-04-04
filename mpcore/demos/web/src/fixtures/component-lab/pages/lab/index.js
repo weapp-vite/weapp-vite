@@ -26,6 +26,9 @@ Page({
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
+    chosenVideoInfo: '',
+    chosenVideoSavedInfo: '',
+    chosenVideoMissingSaveInfo: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -372,6 +375,38 @@ Page({
       fail: (error) => {
         this.setData({
           compressedImageMissingInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
+  chooseVideoLab() {
+    wx.chooseVideo({
+      compressed: true,
+      maxDuration: 24,
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          chosenVideoInfo: JSON.stringify(result),
+        })
+        wx.saveVideoToPhotosAlbum({
+          filePath: result.tempFilePath,
+          success: (savedResult) => {
+            this.setData({
+              chosenVideoSavedInfo: JSON.stringify(savedResult),
+            })
+          },
+        })
+      },
+    })
+  },
+  saveMissingChosenVideoLab() {
+    wx.saveVideoToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/missing-chosen-video.mp4',
+      fail: (error) => {
+        this.setData({
+          chosenVideoMissingSaveInfo: JSON.stringify({
             error: error.message,
           }),
         })

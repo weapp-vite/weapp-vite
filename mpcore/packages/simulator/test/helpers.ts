@@ -800,6 +800,9 @@ Page({
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
+    chosenVideoInfo: '',
+    chosenVideoSavedInfo: '',
+    chosenVideoMissingSaveInfo: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -1000,6 +1003,38 @@ Page({
       },
     })
   },
+  chooseVideoLab() {
+    wx.chooseVideo({
+      compressed: true,
+      maxDuration: 24,
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          chosenVideoInfo: JSON.stringify(result),
+        })
+        wx.saveVideoToPhotosAlbum({
+          filePath: result.tempFilePath,
+          success: (savedResult) => {
+            this.setData({
+              chosenVideoSavedInfo: JSON.stringify(savedResult),
+            })
+          },
+        })
+      },
+    })
+  },
+  saveMissingChosenVideoLab() {
+    wx.saveVideoToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/missing-chosen-video.mp4',
+      fail: (error) => {
+        this.setData({
+          chosenVideoMissingSaveInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
   saveTempVideoLab() {
     const fs = wx.getFileSystemManager()
     const filePath = 'headless://wxfile/temp/fixture-video.mp4'
@@ -1070,6 +1105,9 @@ Page({
 <view>{{compressedImageInfo}}</view>
 <view>{{compressedImageDetail}}</view>
 <view>{{compressedImageMissingInfo}}</view>
+<view>{{chosenVideoInfo}}</view>
+<view>{{chosenVideoSavedInfo}}</view>
+<view>{{chosenVideoMissingSaveInfo}}</view>
 <view>{{tempVideoSavedInfo}}</view>
 <view>{{tempVideoSavedMissingInfo}}</view>
 <view>{{canvasTempFilePath}}</view>
