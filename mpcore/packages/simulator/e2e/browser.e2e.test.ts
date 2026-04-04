@@ -1010,6 +1010,18 @@ describe.sequential('simulator browser e2e', () => {
       scopeId: 'page:pages/profile/index',
       type: 'page',
     })
+    bridge.selectScope('page:pages/profile/index')
+    const selectedPageState = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.selectedScope?.scopeId === 'page:pages/profile/index',
+      20_000,
+    )
+    expect(selectedPageState.selectedScope).toMatchObject({
+      data: {},
+      properties: {},
+      scopeId: 'page:pages/profile/index',
+      type: 'page',
+    })
   })
 
   it('drives browser session host features through the demo workbench api', async () => {
