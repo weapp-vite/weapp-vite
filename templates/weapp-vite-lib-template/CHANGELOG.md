@@ -1,5 +1,12 @@
 # weapp-vite-lib-template
 
+## 4.0.3
+
+### Patch Changes
+
+- 📦 **Dependencies** [`0f5af43`](https://github.com/weapp-vite/weapp-vite/commit/0f5af43b2a699c341a47236ee6d7f3303298bf1f)
+  → `wevu@6.13.3`
+
 ## 4.0.2
 
 ### Patch Changes

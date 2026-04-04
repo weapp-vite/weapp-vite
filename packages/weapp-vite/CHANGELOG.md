@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.13.3
+
+### Patch Changes
+
+- 🐛 **修复 `autoImportComponents` 使用对象配置时未自动继承支持文件默认输出的问题。现在像 `VantResolver()` 这类 resolver 场景，即使只配置 `resolvers`，也会默认生成 `.weapp-vite/typed-components.d.ts`、`components.d.ts` 与 `mini-program.html-data.json`，补齐模板项目中的组件智能提示与类型声明。** [`7c361a4`](https://github.com/weapp-vite/weapp-vite/commit/7c361a45a72b1e096001a4fca05ae591e6aea3d8) by @sonofmagic
+
+- 🐛 **增强 `autoImportComponents` 的 resolver 支持文件生成策略。现在 resolver 可以声明 `.weapp-vite` 支持文件采用“按需”还是“全量”收集；内置第三方 resolver 默认会在 `prepare` / 支持文件同步阶段为其静态组件全集生成 `auto-import-components.json`、`typed-components.d.ts`、`components.d.ts` 与 `mini-program.html-data.json`，从而补齐未在模板中直接使用的组件智能提示，同时保持运行时自动导入仍按实际命中工作。** [`74bb317`](https://github.com/weapp-vite/weapp-vite/commit/74bb31722ccbc14c89f355495d7302d06e43bdb2) by @sonofmagic
+- 📦 **Dependencies** [`0f5af43`](https://github.com/weapp-vite/weapp-vite/commit/0f5af43b2a699c341a47236ee6d7f3303298bf1f)
+  → `wevu@6.13.3`, `@weapp-vite/ast@6.13.3`
+
 ## 6.13.2
 
 ### Patch Changes
