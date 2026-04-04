@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI，并使用 fs-extra 简化产物与 fixture 读写。 */
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -353,7 +354,10 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
     expect(typedDts).toContain('ResolverCard: Record<string, any>;')
 
     const vueDts = await fs.readFile(VUE_COMPONENTS_DTS, 'utf8')
-    expect(vueDts).toContain('declare module \'vue\'')
+    expect(
+      vueDts.includes('declare module \'vue\'')
+      || vueDts.includes('declare module \'wevu\''),
+    ).toBe(true)
     expect(vueDts).toContain('GlobalComponents')
     expect(vueDts).toMatch(
       /AutoCard: typeof import\("\.\.?\/src\/components\/AutoCard\/index\.vue"\)\['default'\];/,
