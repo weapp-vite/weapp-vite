@@ -161,8 +161,8 @@ export function createHeadlessCanvasContext(
     clearRect(x, y, width, height) {
       record('clearRect', [x, y, width, height])
     },
-    clip() {
-      record('clip', [])
+    clip(fillRule) {
+      record('clip', fillRule == null ? [] : [fillRule])
     },
     closePath() {
       record('closePath', [])
@@ -201,8 +201,8 @@ export function createHeadlessCanvasContext(
     drawImage(image, ...args) {
       record('drawImage', [image, ...args])
     },
-    fill() {
-      record('fill', [])
+    fill(fillRule) {
+      record('fill', fillRule == null ? [] : [fillRule])
     },
     fillRect(x, y, width, height) {
       record('fillRect', [x, y, width, height])

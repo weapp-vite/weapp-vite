@@ -233,6 +233,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasSnapshot).toContain('"type":"arcTo"')
     expect(pageData.canvasSnapshot).toContain('"type":"bezierCurveTo"')
     expect(pageData.canvasSnapshot).toContain('"type":"clip"')
+    expect(pageData.canvasSnapshot).toContain('"args":["evenodd"]')
     expect(pageData.canvasSnapshot).toContain('"type":"quadraticCurveTo"')
     expect(pageData.canvasSnapshot).toContain('"type":"rect"')
     expect(pageData.canvasSnapshot).toContain('"type":"save"')
