@@ -117,6 +117,7 @@ export interface RuntimeState {
   scan: {
     subPackageMap: Map<string, SubPackageMetaValue>
     independentSubPackageMap: Map<string, SubPackageMetaValue>
+    warnedMessages: Set<string>
     appEntry?: AppEntry
     pluginJson?: PluginJson
     pluginJsonPath?: string
@@ -185,6 +186,7 @@ export function createRuntimeState(): RuntimeState {
     scan: {
       subPackageMap: new Map<string, SubPackageMetaValue>(),
       independentSubPackageMap: new Map<string, SubPackageMetaValue>(),
+      warnedMessages: new Set<string>(),
       isDirty: true,
       independentDirtyRoots: new Set<string>(),
       pluginJsonPath: undefined,

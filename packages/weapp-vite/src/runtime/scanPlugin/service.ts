@@ -51,7 +51,20 @@ export function resolveScanJsonEntryBasename(
 
 export function createScanService(ctx: MutableCompilerContext): ScanService {
   const scanState = ctx.runtimeState.scan
-  const { subPackageMap, independentSubPackageMap, independentDirtyRoots } = scanState
+  const {
+    subPackageMap,
+    independentSubPackageMap,
+    independentDirtyRoots,
+    warnedMessages,
+  } = scanState
+
+  function warnOnce(message: string) {
+    if (warnedMessages.has(message)) {
+      return
+    }
+    warnedMessages.add(message)
+    logger.warn(message)
+  }
 
   function mergeAutoRoutePages(
     pages: AppJson['pages'] | undefined,
@@ -197,10 +210,10 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     }
 
     if (appEntryPath && vueAppPath) {
-      logger.warn(`[app] 检测到 ${path.basename(appEntryPath)} 与 ${path.basename(vueAppPath)} 同时存在，当前将优先使用 ${path.basename(appEntryPath)} 作为应用入口，${path.basename(vueAppPath)} 将被忽略。`)
+      warnOnce(`[app] 检测到 ${path.basename(appEntryPath)} 与 ${path.basename(vueAppPath)} 同时存在，当前将优先使用 ${path.basename(appEntryPath)} 作为应用入口，${path.basename(vueAppPath)} 将被忽略。`)
     }
     if (discoveredAppConfigFile && vueAppPath) {
-      logger.warn(`[app] 检测到 ${path.basename(discoveredAppConfigFile)} 与 ${path.basename(vueAppPath)} 同时存在，当前将优先使用 ${path.basename(discoveredAppConfigFile)} 作为应用配置来源，${path.basename(vueAppPath)} 中的 app 配置不会生效。`)
+      warnOnce(`[app] 检测到 ${path.basename(discoveredAppConfigFile)} 与 ${path.basename(vueAppPath)} 同时存在，当前将优先使用 ${path.basename(discoveredAppConfigFile)} 作为应用配置来源，${path.basename(vueAppPath)} 中的 app 配置不会生效。`)
     }
 
     if (ctx.configService.absolutePluginRoot) {

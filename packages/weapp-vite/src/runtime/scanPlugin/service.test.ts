@@ -43,6 +43,7 @@ function createCtx(overrides: Record<string, any> = {}) {
     pluginJson: undefined,
     pluginJsonPath: undefined,
     isDirty: true,
+    warnedMessages: new Set<string>(),
     subPackageMap: new Map(),
     independentSubPackageMap: new Map(),
     independentDirtyRoots: new Set<string>(),
@@ -216,6 +217,34 @@ describe('scanPlugin service', () => {
     expect(loggerWarnMock).toHaveBeenCalledWith(
       '[app] 检测到 app.json 与 app.vue 同时存在，当前将优先使用 app.json 作为应用配置来源，app.vue 中的 app 配置不会生效。',
     )
+  })
+
+  it('warns app/app config conflicts only once within the same scan context', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: '/project/src/app.json' })
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
+    findVueEntryMock.mockResolvedValue('/project/src/app.vue')
+
+    const ctx = createCtx({
+      jsonService: {
+        read: vi.fn(async () => ({
+          pages: ['pages/index/index'],
+        })),
+      },
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {},
+      },
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+
+    await service.loadAppEntry()
+    ctx.runtimeState.scan.appEntry = undefined
+    await service.loadAppEntry()
+
+    expect(loggerWarnMock).toHaveBeenCalledTimes(2)
   })
 
   it('uses app.vue fallback when app.json/app.ts are missing', async () => {
