@@ -532,6 +532,15 @@ export interface HeadlessWxSaveVideoToPhotosAlbumOption extends HeadlessWxCallba
   filePath: string
 }
 
+export interface HeadlessWxPreviewImageResult {
+  errMsg: string
+}
+
+export interface HeadlessWxPreviewImageOption extends HeadlessWxCallbackOption<HeadlessWxPreviewImageResult> {
+  current?: string
+  urls: string[]
+}
+
 export interface HeadlessWxSavedFileInfo {
   createTime: number
   filePath: string
@@ -699,6 +708,7 @@ export interface HeadlessWxDriver {
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  previewImage: (option: HeadlessWxPreviewImageOption) => HeadlessWxPreviewImageResult
   removeSavedFile: (option: HeadlessWxRemoveSavedFileOption) => { errMsg: string }
   saveImageToPhotosAlbum: (option: HeadlessWxSaveImageToPhotosAlbumOption) => HeadlessWxSaveImageToPhotosAlbumResult
   saveVideoToPhotosAlbum: (option: HeadlessWxSaveVideoToPhotosAlbumOption) => HeadlessWxSaveVideoToPhotosAlbumResult
@@ -768,6 +778,7 @@ export interface HeadlessWx {
   offNetworkStatusChange: (callback?: HeadlessWxNetworkStatusChangeCallback) => void
   onNetworkStatusChange: (callback: HeadlessWxNetworkStatusChangeCallback) => void
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
+  previewImage: (option: HeadlessWxPreviewImageOption) => HeadlessWxPreviewImageResult | undefined
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
   removeSavedFile: (option: HeadlessWxRemoveSavedFileOption) => { errMsg: string } | undefined
@@ -998,6 +1009,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     offNetworkStatusChange: true,
     onNetworkStatusChange: true,
     pageScrollTo: true,
+    previewImage: true,
     reLaunch: true,
     redirectTo: true,
     saveImageToPhotosAlbum: true,
@@ -1154,6 +1166,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     pageScrollTo: option => invokeWxApi(() => {
       driver.pageScrollTo(option)
     }, option),
+    previewImage: option => invokeWxApi(() => driver.previewImage(option), option),
     reLaunch: option => invokeWxApi(() => {
       driver.reLaunch(option)
     }, option),

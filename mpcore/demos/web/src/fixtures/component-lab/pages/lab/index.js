@@ -19,6 +19,8 @@ Page({
     canvasSavedImageMissingInfo: '',
     canvasImageInfo: '',
     canvasImageInfoMissing: '',
+    previewImageInfo: '',
+    previewImageInvalidInfo: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -279,6 +281,32 @@ Page({
       fail: (error) => {
         this.setData({
           canvasImageInfoMissing: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
+  previewCanvasImageLab() {
+    wx.previewImage({
+      current: this.data.canvasTempFilePath,
+      urls: [
+        this.data.canvasTempFilePath,
+        'headless://wxfile/temp/preview-component-lab-alt.png',
+      ],
+      success: (result) => {
+        this.setData({
+          previewImageInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  previewInvalidCanvasImageLab() {
+    wx.previewImage({
+      urls: [],
+      fail: (error) => {
+        this.setData({
+          previewImageInvalidInfo: JSON.stringify({
             error: error.message,
           }),
         })

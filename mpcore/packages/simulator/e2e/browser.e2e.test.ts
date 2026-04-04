@@ -33,6 +33,7 @@ interface SimulatorE2EApi {
     downloadFileLogs: unknown[]
     fileSnapshot: Record<string, string>
     modalLogs: unknown[]
+    previewImage: unknown
     pullDownRefreshState: { active: boolean, stopCalls: number } | null
     requestLogs: unknown[]
     savedFileList: Array<{ createTime: number, filePath: string, size: number }>
@@ -137,6 +138,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('saveMissingCanvasImageLab')
     bridge.runPageMethod('inspectExportedCanvasImageLab')
     bridge.runPageMethod('inspectMissingCanvasImageLab')
+    bridge.runPageMethod('previewCanvasImageLab')
+    bridge.runPageMethod('previewInvalidCanvasImageLab')
     bridge.runPageMethod('saveTempVideoLab')
     bridge.runPageMethod('saveMissingTempVideoLab')
     bridge.runPageMethod('inspectCanvasQuery')
@@ -185,6 +188,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.canvasSavedImageMissingInfo
           && pageData.canvasImageInfo
           && pageData.canvasImageInfoMissing
+          && pageData.previewImageInfo
+          && pageData.previewImageInvalidInfo
           && pageData.tempVideoSavedInfo
           && pageData.tempVideoSavedMissingInfo
           && pageData.canvasTempFileContent
@@ -289,6 +294,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasImageInfo).toContain('"height":40')
     expect(pageData.canvasImageInfo).toContain('"type":"png"')
     expect(pageData.canvasImageInfoMissing).toContain('"error":"getImageInfo:fail file not found: headless://wxfile/temp/missing-component-lab-canvas-image-info.png"')
+    expect(pageData.previewImageInfo).toContain('"errMsg":"previewImage:ok"')
+    expect(pageData.previewImageInvalidInfo).toContain('"error":"previewImage:fail invalid urls"')
     expect(pageData.tempVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
     expect(pageData.tempVideoSavedMissingInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-video.mp4"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')
@@ -418,6 +425,14 @@ describe.sequential('simulator browser e2e', () => {
       filePath: 'headless://saved/component-lab/transfers/rename-out.txt',
     }))
     expect(sessionSnapshot.uploadFileLogs).toHaveLength(2)
+    expect(sessionSnapshot.previewImage).toEqual({
+      current: pageData.canvasTempFilePath,
+      urls: [
+        pageData.canvasTempFilePath,
+        'headless://wxfile/temp/preview-component-lab-alt.png',
+      ],
+      visible: true,
+    })
     expect(sessionSnapshot.uploadFileLogs).toContainEqual(expect.objectContaining({
       fileContent: 'upload-no-mock',
       matched: false,

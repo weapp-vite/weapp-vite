@@ -57,6 +57,12 @@ export interface HeadlessWxToastSnapshot {
   title: string
 }
 
+export interface HeadlessWxPreviewImageSnapshot {
+  current: string
+  urls: string[]
+  visible: boolean
+}
+
 export interface HeadlessWxNetworkSnapshot extends HeadlessWxNetworkStatusChangeResult {}
 
 export interface HeadlessWxShareMenuSnapshot {
@@ -459,6 +465,7 @@ export function createHeadlessWxState() {
   let fileId = 0
   let loading: HeadlessWxLoadingSnapshot | null = null
   let networkType: HeadlessWxNetworkType = 'wifi'
+  let previewImage: HeadlessWxPreviewImageSnapshot | null = null
   let shareMenu: HeadlessWxShareMenuSnapshot = {
     isUpdatableMessage: false,
     menus: [],
@@ -1128,6 +1135,15 @@ export function createHeadlessWxState() {
     getLoading() {
       return loading ? { ...loading } : null
     },
+    getPreviewImage() {
+      return previewImage
+        ? {
+            current: previewImage.current,
+            urls: [...previewImage.urls],
+            visible: previewImage.visible,
+          }
+        : null
+    },
     hideShareMenu() {
       shareMenu = {
         ...shareMenu,
@@ -1202,6 +1218,25 @@ export function createHeadlessWxState() {
     },
     onNetworkStatusChange(callback: HeadlessWxNetworkStatusChangeCallback) {
       networkStatusChangeCallbacks.add(callback)
+    },
+    previewImage(option: { current?: string, urls: string[] }) {
+      const urls = Array.isArray(option.urls)
+        ? option.urls.filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+        : []
+      if (urls.length === 0) {
+        throw new Error('previewImage:fail invalid urls')
+      }
+      const current = typeof option.current === 'string' && option.current.trim() !== ''
+        ? option.current
+        : urls[0]
+      previewImage = {
+        current,
+        urls: [...urls],
+        visible: true,
+      }
+      return {
+        errMsg: 'previewImage:ok',
+      }
     },
     removeStorageSync(key: string) {
       storage.delete(key)

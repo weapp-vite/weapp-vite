@@ -276,6 +276,7 @@ export class HeadlessSession {
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
+        previewImage: option => this.wxState.previewImage(option),
         request: option => this.wxState.request(option),
         saveFile: option => this.wxState.saveFile(option),
         setBackgroundColor: option => this.setBackgroundColor(option),
@@ -535,6 +536,10 @@ export class HeadlessSession {
 
   getStorageInfo() {
     return this.wxState.getStorageInfoSync()
+  }
+
+  getPreviewImage() {
+    return this.wxState.getPreviewImage()
   }
 
   getPullDownRefreshState() {
