@@ -66,6 +66,32 @@ export interface HeadlessWxAnimation {
   width: (value: number | string) => HeadlessWxAnimation
 }
 
+export interface HeadlessWxCanvasDrawCall {
+  args: unknown[]
+  type: string
+}
+
+export interface HeadlessWxCanvasSnapshot {
+  canvasId: string
+  drawCalls: HeadlessWxCanvasDrawCall[]
+  fillStyle: string
+  lineWidth: number
+  reserve: boolean
+  strokeStyle: string
+}
+
+export interface HeadlessWxCanvasContext {
+  __getSnapshot: () => HeadlessWxCanvasSnapshot
+  clearRect: (x: number, y: number, width: number, height: number) => void
+  draw: (reserve?: boolean, callback?: () => void) => void
+  drawImage: (image: string, ...args: number[]) => void
+  fillRect: (x: number, y: number, width: number, height: number) => void
+  setFillStyle: (value: string) => void
+  setLineWidth: (value: number) => void
+  setStrokeStyle: (value: string) => void
+  strokeRect: (x: number, y: number, width: number, height: number) => void
+}
+
 export interface HeadlessWxIntersectionObserverMargins {
   bottom?: number
   left?: number
@@ -542,6 +568,7 @@ export interface HeadlessWxFileSystemManager {
 
 export interface HeadlessWxDriver {
   createAnimation: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
+  createCanvasContext: (canvasId: string, scope?: Record<string, any>) => HeadlessWxCanvasContext
   createIntersectionObserver: (
     scope: Record<string, any> | undefined,
     options?: HeadlessWxCreateIntersectionObserverOption,
@@ -606,6 +633,7 @@ export interface HeadlessWx {
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
   createAnimation: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
+  createCanvasContext: (canvasId: string, component?: Record<string, any>) => HeadlessWxCanvasContext
   createIntersectionObserver: (
     component?: Record<string, any>,
     options?: HeadlessWxCreateIntersectionObserverOption,
@@ -710,6 +738,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     clearStorage: true,
     clearStorageSync: true,
     createAnimation: true,
+    createCanvasContext: true,
     createIntersectionObserver: true,
     createVideoContext: true,
     createSelectorQuery: true,
@@ -896,6 +925,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
     createAnimation: option => driver.createAnimation(option),
+    createCanvasContext: (canvasId, component) => driver.createCanvasContext(canvasId, component),
     createIntersectionObserver: (component, options) => driver.createIntersectionObserver(component, options),
     createVideoContext: (videoId, component) => driver.createVideoContext(videoId, component),
     createSelectorQuery: () => {

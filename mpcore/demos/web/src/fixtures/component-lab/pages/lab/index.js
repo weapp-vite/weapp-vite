@@ -14,6 +14,7 @@ Page({
     fileTransferFailureInfo: '',
     fileManagerSnapshot: '',
     animationSnapshot: '',
+    canvasSnapshot: '',
     intersectionObserverSnapshot: '',
     mediaQueryObserverSnapshot: '',
     requestSnapshot: '',
@@ -168,6 +169,17 @@ Page({
     animation.scale(1.1).rotate(30).backgroundColor('#ff5500').step()
     this.setData({
       animationSnapshot: JSON.stringify(animation.export()),
+    })
+  },
+  runCanvasLab() {
+    const ctx = wx.createCanvasContext('lab-canvas', this)
+    ctx.setFillStyle('#ff5500')
+    ctx.fillRect(4, 6, 28, 18)
+    ctx.drawImage('/tmp/component-lab.png', 8, 10, 12, 12)
+    ctx.draw(false, () => {
+      this.setData({
+        canvasSnapshot: JSON.stringify(ctx.__getSnapshot()),
+      })
     })
   },
   handleVideoPlay(event) {

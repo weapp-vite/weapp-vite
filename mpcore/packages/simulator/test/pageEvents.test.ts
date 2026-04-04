@@ -4,6 +4,7 @@ import { launch } from '../src/testing'
 import {
   cleanupTempDirs,
   createAnimationFixture,
+  createCanvasContextFixture,
   createComponentSelectorFixture,
   createIntersectionObserverFixture,
   createMediaQueryObserverFixture,
@@ -257,5 +258,22 @@ describe('page event alignment', () => {
     expect(page.data.animationSnapshot).toContain('"type":"backgroundColor"')
     expect(page.data.animationSnapshot).toContain('"timingFunction":"ease-in"')
     expect(page.data.animationSecondSnapshot).toBe('{"actions":[]}')
+  })
+
+  it('supports createCanvasContext in headless runtime', () => {
+    const projectPath = createCanvasContextFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/canvas/index')
+    page.runCanvasLab()
+    page.runComponentCanvasLab()
+
+    expect(page.data.canvasSnapshot).toContain('"canvasId":"hero-canvas"')
+    expect(page.data.canvasSnapshot).toContain('"type":"fillRect"')
+    expect(page.data.canvasSnapshot).toContain('"fillStyle":"#ff5500"')
+    expect(page.data.componentCanvasSnapshot).toContain('"canvasId":"inner-canvas"')
+    expect(page.data.componentCanvasSnapshot).toContain('"type":"strokeRect"')
+    expect(page.data.componentCanvasSnapshot).toContain('"lineWidth":3')
   })
 })

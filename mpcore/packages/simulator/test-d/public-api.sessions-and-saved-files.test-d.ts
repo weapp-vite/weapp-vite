@@ -52,6 +52,24 @@ expectType<{
 }>(browserPage?.wx.createAnimation({
   duration: 120,
 }).opacity(0.4).step().export())
+expectType<{
+  __getSnapshot: () => {
+    canvasId: string
+    drawCalls: Array<{ args: unknown[], type: string }>
+    fillStyle: string
+    lineWidth: number
+    reserve: boolean
+    strokeStyle: string
+  }
+  clearRect: (x: number, y: number, width: number, height: number) => void
+  draw: (reserve?: boolean, callback?: () => void) => void
+  drawImage: (image: string, ...args: number[]) => void
+  fillRect: (x: number, y: number, width: number, height: number) => void
+  setFillStyle: (value: string) => void
+  setLineWidth: (value: number) => void
+  setStrokeStyle: (value: string) => void
+  strokeRect: (x: number, y: number, width: number, height: number) => void
+}>(browserPage?.wx.createCanvasContext('hero-canvas', browserPage))
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
@@ -202,6 +220,24 @@ expectType<{
 }>(headlessPage?.wx.createAnimation({
   duration: 120,
 }).translateX(12).step().export())
+expectType<{
+  __getSnapshot: () => {
+    canvasId: string
+    drawCalls: Array<{ args: unknown[], type: string }>
+    fillStyle: string
+    lineWidth: number
+    reserve: boolean
+    strokeStyle: string
+  }
+  clearRect: (x: number, y: number, width: number, height: number) => void
+  draw: (reserve?: boolean, callback?: () => void) => void
+  drawImage: (image: string, ...args: number[]) => void
+  fillRect: (x: number, y: number, width: number, height: number) => void
+  setFillStyle: (value: string) => void
+  setLineWidth: (value: number) => void
+  setStrokeStyle: (value: string) => void
+  strokeRect: (x: number, y: number, width: number, height: number) => void
+}>(headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage))
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())

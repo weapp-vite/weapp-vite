@@ -1,0 +1,157 @@
+import type {
+  HeadlessWxCanvasContext,
+  HeadlessWxCanvasDrawCall,
+  HeadlessWxCanvasSnapshot,
+} from '../host'
+import { resolveSelectorQueryScopeRoot } from './selectorQuery'
+
+interface DomNodeLike {
+  attribs?: Record<string, string>
+  children?: DomNodeLike[]
+  data?: string
+  name?: string
+  parent?: DomNodeLike | null
+  type?: string
+}
+
+export interface HeadlessCanvasContextScopeResolution {
+  kind: 'component' | 'missing' | 'page'
+  scopeId?: string
+}
+
+export interface HeadlessCanvasContextDriver {
+  renderCurrentPage: () => { root: DomNodeLike }
+  resolveScope: (scope?: Record<string, any>) => HeadlessCanvasContextScopeResolution
+}
+
+function findCanvasNode(root: DomNodeLike, canvasId: string): DomNodeLike | null {
+  if (root.type === 'tag' && root.name === 'canvas' && root.attribs?.['canvas-id'] === canvasId) {
+    return root
+  }
+
+  for (const child of root.children ?? []) {
+    const match = findCanvasNode(child, canvasId)
+    if (match) {
+      return match
+    }
+  }
+
+  return null
+}
+
+function cloneCall(call: HeadlessWxCanvasDrawCall): HeadlessWxCanvasDrawCall {
+  return {
+    args: [...call.args],
+    type: call.type,
+  }
+}
+
+export function createHeadlessCanvasContext(
+  driver: HeadlessCanvasContextDriver,
+  canvasId: string,
+  scope?: Record<string, any>,
+): HeadlessWxCanvasContext {
+  const defaultState = {
+    fillStyle: '#000000',
+    lineWidth: 1,
+    strokeStyle: '#000000',
+  }
+
+  let state = {
+    ...defaultState,
+  }
+  let drawCalls: HeadlessWxCanvasDrawCall[] = []
+  let snapshot: HeadlessWxCanvasSnapshot = {
+    canvasId,
+    drawCalls: [],
+    fillStyle: state.fillStyle,
+    lineWidth: state.lineWidth,
+    reserve: false,
+    strokeStyle: state.strokeStyle,
+  }
+
+  const resolveCanvas = () => {
+    const scopeResolution = driver.resolveScope(scope)
+    if (scopeResolution.kind === 'missing') {
+      return null
+    }
+    const rendered = driver.renderCurrentPage()
+    const root = scopeResolution.kind === 'component'
+      ? resolveSelectorQueryScopeRoot(rendered.root, scopeResolution.scopeId)
+      : rendered.root
+    return root ? findCanvasNode(root, canvasId) : null
+  }
+
+  const ensureCanvas = () => {
+    const node = resolveCanvas()
+    if (!node) {
+      throw new Error(`Canvas with canvas-id "${canvasId}" was not found in headless runtime.`)
+    }
+    return node
+  }
+
+  const record = (type: string, args: unknown[]) => {
+    ensureCanvas()
+    drawCalls.push({
+      args,
+      type,
+    })
+  }
+
+  const context: HeadlessWxCanvasContext = {
+    __getSnapshot() {
+      return {
+        canvasId: snapshot.canvasId,
+        drawCalls: snapshot.drawCalls.map(cloneCall),
+        fillStyle: snapshot.fillStyle,
+        lineWidth: snapshot.lineWidth,
+        reserve: snapshot.reserve,
+        strokeStyle: snapshot.strokeStyle,
+      }
+    },
+    clearRect(x, y, width, height) {
+      record('clearRect', [x, y, width, height])
+    },
+    draw(reserve, callback) {
+      ensureCanvas()
+      snapshot = {
+        canvasId,
+        drawCalls: reserve
+          ? [...snapshot.drawCalls.map(cloneCall), ...drawCalls.map(cloneCall)]
+          : drawCalls.map(cloneCall),
+        fillStyle: state.fillStyle,
+        lineWidth: state.lineWidth,
+        reserve: Boolean(reserve),
+        strokeStyle: state.strokeStyle,
+      }
+      drawCalls = []
+      state = {
+        ...defaultState,
+      }
+      callback?.()
+    },
+    drawImage(image, ...args) {
+      record('drawImage', [image, ...args])
+    },
+    fillRect(x, y, width, height) {
+      record('fillRect', [x, y, width, height])
+    },
+    setFillStyle(value) {
+      state.fillStyle = String(value)
+      record('setFillStyle', [value])
+    },
+    setLineWidth(value) {
+      state.lineWidth = Number(value)
+      record('setLineWidth', [value])
+    },
+    setStrokeStyle(value) {
+      state.strokeStyle = String(value)
+      record('setStrokeStyle', [value])
+    },
+    strokeRect(x, y, width, height) {
+      record('strokeRect', [x, y, width, height])
+    },
+  }
+
+  return context
+}
