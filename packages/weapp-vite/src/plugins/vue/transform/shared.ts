@@ -60,6 +60,7 @@ export function registerVueTemplateToken(
   try {
     const token = wxmlService.analyze(template)
     wxmlService.tokenMap.set(filename, token)
+    void wxmlService.setDeps(filename, wxmlService.collectDepsFromToken(filename, token.deps))
     wxmlService.setWxmlComponentsMap(filename, token.components)
   }
   catch {

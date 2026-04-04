@@ -59,6 +59,14 @@ function createContext() {
         sidecarWatcherMap: new Map<string, { close: () => Promise<void> | void }>(),
       },
     },
+    wxmlService: {
+      getImporters: (value: string) => {
+        if (value === '/project/src/shared/helper.wxs') {
+          return new Set(['/project/src/pages/hmr/index.wxml'])
+        }
+        return new Set<string>()
+      },
+    },
   } as any
 }
 
@@ -132,5 +140,27 @@ describe('invalidateEntry sidecar watcher', () => {
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledTimes(1)
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'delete')
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->delete] src/pages/hmr/index.wxml')
+  })
+
+  it('forwards wxs change events as sidecar invalidations', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    const existsSpy = vi.spyOn(fs, 'existsSync')
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    existsSpy.mockImplementation((value) => {
+      const filePath = String(value)
+      return filePath === '/project/src' || filePath === '/project/src/shared/helper.wxs'
+    })
+
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+
+    watcher.emit('ready')
+    watcher.emit('change', '/project/src/shared/helper.wxs')
+
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/shared/helper.wxs', 'update')
+    expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/shared/helper.wxs')
   })
 })

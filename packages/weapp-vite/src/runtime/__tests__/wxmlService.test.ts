@@ -91,6 +91,10 @@ vi.mock('@/utils', async (importOriginal) => {
   }
 })
 
+vi.mock('@/utils/wxmlScriptModule', () => ({
+  isScriptModuleTagName: vi.fn(tagName => tagName === 'wxs' || tagName === 'sjs' || tagName === 'import-sjs'),
+}))
+
 vi.mock('../../context/shared', () => ({
   isEmptyObject: vi.fn(obj => Object.keys(obj).length === 0),
 }))
@@ -166,6 +170,7 @@ describe('wxmlService', () => {
     })
     expect(wxmlService.depsMap.has('/mock/project/file.wxml')).toBe(true)
     expect(wxmlService.tokenMap.get('/mock/project/file.wxml')).toEqual(result)
+    expect(wxmlService.getImporters('/mock/project/header.wxml')).toEqual(new Set(['/mock/project/file.wxml']))
   })
 
   it('stores component map when not empty', () => {
@@ -200,6 +205,8 @@ describe('wxmlService', () => {
 
     const secondScan = await wxmlService.scan(filepath)
     expect(secondScan).toMatchObject({ deps: [] })
+    expect(wxmlService.depsMap.get(filepath)).toEqual(new Set())
+    expect(wxmlService.getImporters('/mock/project/header.wxml')).toEqual(new Set())
   })
 
   it('reuses cached token when file signature does not change', async () => {
@@ -233,6 +240,27 @@ describe('wxmlService', () => {
       { tagName: 'include', value: './footer.wxml' },
     ])
     expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/footer.wxml']))
+  })
+
+  it('collects wxs deps for reverse invalidation', async () => {
+    const filepath = '/mock/project/file.wxml'
+
+    const deps = wxmlService.collectDepsFromToken(filepath, [
+      {
+        tagName: 'wxs',
+        value: './helper.wxs',
+        name: 'src',
+        quote: '"',
+        start: 0,
+        end: 0,
+        attrs: { src: './helper.wxs' },
+      },
+    ] as any)
+
+    await wxmlService.setDeps(filepath, deps)
+
+    expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/helper.wxs']))
+    expect(wxmlService.getImporters('/mock/project/helper.wxs')).toEqual(new Set([filepath]))
   })
 
   it('throws non-ENOENT fs.stat errors during scan', async () => {

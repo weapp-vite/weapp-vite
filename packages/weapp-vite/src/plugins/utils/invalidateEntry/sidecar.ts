@@ -2,9 +2,9 @@ import type { CompilerContext } from '../../../context'
 import type { ChangeEvent } from '../../../types'
 import path from 'pathe'
 import logger from '../../../logger'
-import { findJsEntry, touch } from '../../../utils/file'
+import { findJsEntry, findVueEntry, touch } from '../../../utils/file'
 import { collectAffectedScriptsAndImporters } from './cssGraph'
-import { configSuffixes, normalizePath, watchedCssExts, watchedTemplateExts } from './shared'
+import { configSuffixes, normalizePath, watchedCssExts, watchedScriptModuleExts, watchedTemplateExts } from './shared'
 
 export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: string, event: ChangeEvent = 'update') {
   const configSuffix = configSuffixes.find(suffix => filePath.endsWith(suffix))
@@ -23,25 +23,42 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
     scriptBasePath = filePath.slice(0, -ext.length)
   }
 
-  if (!scriptBasePath) {
+  const isScriptModuleSidecar = Array.from(watchedScriptModuleExts).some(suffix => normalizedPath.endsWith(suffix))
+
+  if (!scriptBasePath && !isScriptModuleSidecar) {
     return
   }
 
   const touchedTargets = new Set<string>()
   const touchedScripts = new Set<string>()
 
-  const primaryScript = await findJsEntry(scriptBasePath)
-  if (primaryScript.path) {
-    touchedScripts.add(primaryScript.path)
-  }
-
-  if (!primaryScript.path && ext && watchedCssExts.has(ext)) {
-    const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, normalizedPath)
+  if (isScriptModuleSidecar || (ext && watchedTemplateExts.has(ext))) {
+    const importers = ctx.wxmlService?.getImporters(normalizedPath) ?? new Set<string>()
     for (const importer of importers) {
       touchedTargets.add(importer)
     }
-    for (const script of scripts) {
-      touchedScripts.add(script)
+  }
+
+  if (scriptBasePath) {
+    const primaryScript = await findJsEntry(scriptBasePath)
+    if (primaryScript.path) {
+      touchedScripts.add(primaryScript.path)
+    }
+    else if (ext && watchedTemplateExts.has(ext)) {
+      const primaryVueEntry = await findVueEntry(scriptBasePath)
+      if (primaryVueEntry) {
+        touchedTargets.add(primaryVueEntry)
+      }
+    }
+
+    if (!primaryScript.path && ext && watchedCssExts.has(ext)) {
+      const { importers, scripts } = await collectAffectedScriptsAndImporters(ctx, normalizedPath)
+      for (const importer of importers) {
+        touchedTargets.add(importer)
+      }
+      for (const script of scripts) {
+        touchedScripts.add(script)
+      }
     }
   }
 
@@ -65,7 +82,7 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   }
 
   if (!touchedTargets.size && !touchedScripts.size) {
-    if (event === 'create' && (isCssSidecar || isTemplateSidecar)) {
+    if (event === 'create' && (isCssSidecar || isTemplateSidecar || isScriptModuleSidecar)) {
       logger.info(`[sidecar:${event}] ${relativeSource} 新增，但未找到引用方，等待后续关联`)
     }
     return

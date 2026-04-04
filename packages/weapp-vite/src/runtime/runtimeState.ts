@@ -109,6 +109,7 @@ export interface RuntimeState {
   }
   wxml: {
     depsMap: Map<string, Set<string>>
+    importerMap: Map<string, Set<string>>
     tokenMap: Map<string, ScanWxmlResult>
     componentsMap: Map<string, ComponentsMap>
     cache: FileCache<ScanWxmlResult>
@@ -178,6 +179,7 @@ export function createRuntimeState(): RuntimeState {
     },
     wxml: {
       depsMap: new Map<string, Set<string>>(),
+      importerMap: new Map<string, Set<string>>(),
       tokenMap: new Map<string, ScanWxmlResult>(),
       componentsMap: new Map<string, ComponentsMap>(),
       cache: new FileCache<ScanWxmlResult>(),

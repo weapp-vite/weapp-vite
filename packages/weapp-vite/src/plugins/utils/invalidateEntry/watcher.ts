@@ -8,7 +8,7 @@ import { configExtensions, supportedCssLangs, templateExtensions } from '../../.
 import logger from '../../../logger'
 import { createSidecarWatchOptions } from '../../../runtime/watch/options'
 import { cleanupCssImporterGraph, extractCssImportDependencies } from './cssGraph'
-import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts } from './shared'
+import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts, watchedScriptModuleExts, watchedTemplateExts } from './shared'
 import { invalidateEntryForSidecar } from './sidecar'
 
 export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
@@ -45,13 +45,17 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
     const ext = path.extname(filePath)
     const isCssFile = Boolean(ext && watchedCssExts.has(ext))
+    const isTemplateFile = Boolean(ext && watchedTemplateExts.has(ext))
+    const isScriptModuleFile = Array.from(watchedScriptModuleExts).some(suffix => filePath.endsWith(suffix))
+    const hasReverseImporters = Boolean(isTemplateFile || isScriptModuleFile)
+      && (ctx.wxmlService?.getImporters(filePath).size ?? 0) > 0
 
     if (isCssFile && (event === 'create' || event === 'update')) {
       void extractCssImportDependencies(ctx, filePath)
     }
 
     const isDeleteEvent = event === 'delete'
-    const shouldInvalidate = (event === 'create' && ready) || isDeleteEvent
+    const shouldInvalidate = (event === 'create' && ready) || isDeleteEvent || (event === 'update' && hasReverseImporters)
     if (shouldInvalidate) {
       void (async () => {
         await invalidateEntryForSidecar(ctx, filePath, event)
@@ -71,8 +75,10 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     ...configExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
     ...supportedCssLangs.map(ext => path.join(absRoot, `**/*.${ext}`)),
     ...templateExtensions.map(ext => path.join(absRoot, `**/*.${ext}`)),
+    ...Array.from(watchedScriptModuleExts).map(ext => path.join(absRoot, `**/*${ext}`)),
   ]
 
+  // eslint-disable-next-line ts/no-use-before-define -- 同文件内 helper，保持对外导出顺序稳定
   const ignoredMatcher = createSidecarIgnoredMatcher(ctx, absRoot)
 
   const watcher = chokidar.watch(patterns, createSidecarWatchOptions(ctx.configService, {

@@ -7,14 +7,19 @@ import path from 'pathe'
 import { isEmptyObject } from '../context/shared'
 import logger from '../logger'
 import { isTemplate, toPosixPath } from '../utils'
+import { isScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { isTemplateImportTag, scanWxml } from '../wxml'
 import { requireConfigService } from './utils/requireConfigService'
 
 export interface WxmlService {
   depsMap: Map<string, Set<string>>
+  importerMap: Map<string, Set<string>>
   tokenMap: Map<string, ScanWxmlResult>
   wxmlComponentsMap: Map<string, ComponentsMap>
   addDeps: (filepath: string, deps?: string[]) => Promise<void>
+  setDeps: (filepath: string, deps?: string[]) => Promise<void>
+  collectDepsFromToken: (filepath: string, deps?: ScanWxmlResult['deps']) => string[]
+  getImporters: (filepath: string) => Set<string>
   getAllDeps: () => Set<string>
   clearAll: () => void
   analyze: (wxml: string) => ScanWxmlResult
@@ -23,26 +28,77 @@ export interface WxmlService {
 }
 
 function createWxmlService(ctx: MutableCompilerContext): WxmlService {
-  const { depsMap, tokenMap, componentsMap, cache, emittedCode } = ctx.runtimeState.wxml
+  const { depsMap, importerMap, tokenMap, componentsMap, cache, emittedCode } = ctx.runtimeState.wxml
+
+  function linkImporter(dep: string, importer: string) {
+    let importers = importerMap.get(dep)
+    if (!importers) {
+      importers = new Set<string>()
+      importerMap.set(dep, importers)
+    }
+    importers.add(importer)
+  }
+
+  function unlinkImporter(dep: string, importer: string) {
+    const importers = importerMap.get(dep)
+    if (!importers) {
+      return
+    }
+    importers.delete(importer)
+    if (importers.size === 0) {
+      importerMap.delete(dep)
+    }
+  }
+
+  async function setDeps(filepath: string, deps: string[] = []) {
+    const nextDeps = new Set<string>(deps)
+    const previousDeps = depsMap.get(filepath) ?? new Set<string>()
+
+    for (const previousDep of previousDeps) {
+      if (!nextDeps.has(previousDep)) {
+        unlinkImporter(previousDep, filepath)
+      }
+    }
+
+    for (const dep of nextDeps) {
+      linkImporter(dep, filepath)
+    }
+
+    depsMap.set(filepath, nextDeps)
+    // eslint-disable-next-line ts/no-use-before-define -- 递归扫描依赖模板，需要复用下方 scan 实现
+    await Promise.all(Array.from(nextDeps).map(dep => scan(dep)))
+  }
 
   async function addDeps(filepath: string, deps: string[] = []) {
-    if (!depsMap.has(filepath)) {
-      const set = new Set<string>()
-      for (const dep of deps) {
-        set.add(dep)
-      }
-      depsMap.set(filepath, set)
-      // eslint-disable-next-line ts/no-use-before-define -- 互相递归依赖，确保子依赖能被扫描到
-      await Promise.all(deps.map(dep => scan(dep)))
+    const currentDeps = depsMap.get(filepath) ?? new Set<string>()
+    await setDeps(filepath, [...currentDeps, ...deps])
+  }
+
+  function resolveDepPath(filepath: string, value: string) {
+    const configService = requireConfigService(ctx, '解析 WXML 依赖前必须初始化 configService。')
+    const dirname = path.dirname(filepath)
+    if (value.startsWith('/')) {
+      return path.resolve(configService.absoluteSrcRoot, value.slice(1))
     }
-    else {
-      const setRef = depsMap.get(filepath)
-      if (setRef) {
-        for (const dep of deps) {
-          setRef.add(dep)
+    return path.resolve(dirname, value)
+  }
+
+  function collectDepsFromToken(filepath: string, deps: ScanWxmlResult['deps'] = []) {
+    return deps
+      .filter((dep) => {
+        if (!dep.value) {
+          return false
         }
-      }
-    }
+        if (isTemplateImportTag(dep.tagName)) {
+          return isTemplate(dep.value)
+        }
+        return isScriptModuleTagName(dep.tagName)
+      })
+      .map(dep => resolveDepPath(filepath, dep.value))
+  }
+
+  function getImporters(filepath: string) {
+    return new Set(importerMap.get(filepath) ?? [])
   }
 
   function getAllDeps() {
@@ -60,6 +116,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     const currentRoot = ctx.configService?.currentSubPackageRoot
     if (!currentRoot) {
       depsMap.clear()
+      importerMap.clear()
       tokenMap.clear()
       componentsMap.clear()
       cache.cache.clear()
@@ -76,6 +133,12 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
     for (const key of Array.from(depsMap.keys())) {
       if (shouldClear(key)) {
+        const depSet = depsMap.get(key)
+        if (depSet) {
+          for (const dep of depSet) {
+            unlinkImporter(dep, key)
+          }
+        }
         depsMap.delete(key)
         continue
       }
@@ -84,9 +147,16 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       if (depSet) {
         for (const dep of Array.from(depSet)) {
           if (shouldClear(dep)) {
+            unlinkImporter(dep, key)
             depSet.delete(dep)
           }
         }
+      }
+    }
+
+    for (const key of Array.from(importerMap.keys())) {
+      if (shouldClear(key)) {
+        importerMap.delete(key)
       }
     }
 
@@ -159,22 +229,11 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       }
     }
 
-    const dirname = path.dirname(filepath)
     const wxml = await fs.readFile(filepath, 'utf8')
     const res = analyze(wxml)
     tokenMap.set(filepath, res)
     cache.set(filepath, res)
-    await addDeps(
-      filepath,
-      res.deps.filter(x => isTemplateImportTag(x.tagName) && isTemplate(x.value)).map((x) => {
-        if (x.value.startsWith('/')) {
-          return path.resolve(configService.absoluteSrcRoot, x.value.slice(1))
-        }
-        else {
-          return path.resolve(dirname, x.value)
-        }
-      }),
-    )
+    await setDeps(filepath, collectDepsFromToken(filepath, res.deps))
     return res
   }
 
@@ -186,9 +245,13 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
   return {
     depsMap,
+    importerMap,
     tokenMap,
     wxmlComponentsMap: componentsMap,
     addDeps,
+    setDeps,
+    collectDepsFromToken,
+    getImporters,
     getAllDeps,
     clearAll,
     analyze,

@@ -284,6 +284,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       if (transformed.template && wxmlService) {
         const token = wxmlService.analyze(transformed.template)
         wxmlService.tokenMap.set(templatePath, token)
+        void wxmlService.setDeps(templatePath, wxmlService.collectDepsFromToken(templatePath, token.deps))
         wxmlService.setWxmlComponentsMap(templatePath, token.components)
       }
 
