@@ -9,6 +9,7 @@ Page({
     componentSnapshot: '',
     compoundSelectorSnapshot: '',
     compoundComponentSnapshot: '',
+    scopedComponentRect: '',
     directorySnapshot: '',
     downloadSnapshot: '',
     fileTransferFailureInfo: '',
@@ -1585,6 +1586,20 @@ Page({
     }, () => {
       this.push('lab:inspectCompoundCard')
     })
+  },
+  inspectScopedComponentQuery() {
+    const card = this.selectComponent?.('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .select('.card-shell')
+      .boundingClientRect((result) => {
+        this.setData({
+          scopedComponentRect: JSON.stringify(result),
+        }, () => {
+          this.push('lab:inspectScopedComponentQuery')
+        })
+      })
+      .exec()
   },
   inspectCompoundSelector() {
     const card = this.selectComponent?.('#status-card')

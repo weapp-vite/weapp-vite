@@ -322,6 +322,7 @@ describe('page event alignment', () => {
     page.saveTempVideoLab()
     page.saveMissingTempVideoLab()
     page.runComponentCanvasLab()
+    page.inspectScopedComponentQuery()
 
     expect(page.data.canvasSnapshot).toContain('"canvasId":"hero-canvas"')
     expect(page.data.canvasSnapshot).toContain('"type":"fillRect"')
@@ -519,6 +520,14 @@ describe('page event alignment', () => {
       'change:none:false',
       'change:4g:true',
     ])
+    expect(JSON.parse(page.data.scopedComponentRect)).toEqual({
+      bottom: 21,
+      height: 14,
+      left: 4,
+      right: 26,
+      top: 7,
+      width: 22,
+    })
     expect(session.getNetworkType()).toEqual({
       errMsg: 'getNetworkType:ok',
       networkType: '5g',

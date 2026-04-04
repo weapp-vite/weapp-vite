@@ -1,4 +1,5 @@
 <view class="screen">
+  <view class="card-shell" style="left: 6px; top: 9px; width: 30px; height: 20px;">shell</view>
   <view class="panel-row">{{title}}</view>
   <view class="panel-row">Count: {{count}}</view>
   <view class="panel-row">Status: {{status}}</view>
