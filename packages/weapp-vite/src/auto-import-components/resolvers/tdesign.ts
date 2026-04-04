@@ -5,8 +5,9 @@ import components from './json/tdesign.json'
 const defaultPrefix = 't-'
 // 参考：https://tdesign.tencent.com/miniprogram/components/button
 export const TDesignResolver: CreateResolver = (opts) => {
-  const { prefix, resolve } = defu<Required<Options>, Options[]>(opts, {
+  const { prefix, resolve, supportFilesStrategy } = defu<Required<Options>, Options[]>(opts, {
     prefix: defaultPrefix,
+    supportFilesStrategy: 'full',
     resolve({ name, prefix }) {
       return {
         key: `${prefix}${name}`,
@@ -26,6 +27,7 @@ export const TDesignResolver: CreateResolver = (opts) => {
   }, {})
   const resolver: ResolverObject = {
     components: Object.freeze({ ...map }),
+    supportFilesStrategy,
     resolve(componentName) {
       const from = map[componentName]
       if (!from) {

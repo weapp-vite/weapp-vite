@@ -218,6 +218,47 @@ describe('autoImport config helpers', () => {
       expect(config?.vueComponentsModule).toBeUndefined()
     })
 
+    it('merges enhanced defaults into object config and keeps user resolvers', () => {
+      const resolver = { components: { 'van-button': '@vant/weapp/button' } }
+      const ctx = createContext({
+        autoImportComponents: {
+          resolvers: [resolver],
+        },
+        subPackages: {
+          'packages/order': {},
+        },
+      })
+      const config = getAutoImportConfig(ctx.configService)
+
+      expect(config?.globs).toEqual(
+        expect.arrayContaining([
+          'components/**/*.wxml',
+          'packages/order/components/**/*.wxml',
+        ]),
+      )
+      expect(config?.resolvers).toEqual([resolver])
+      expect(config?.output).toBe(true)
+      expect(config?.typedComponents).toBe(true)
+      expect(config?.htmlCustomData).toBe(true)
+      expect(config?.vueComponents).toBe(true)
+    })
+
+    it('allows object config to disable enhanced defaults explicitly', () => {
+      const ctx = createContext({
+        autoImportComponents: {
+          resolvers: [{ components: { 'van-button': '@vant/weapp/button' } }],
+          typedComponents: false,
+          htmlCustomData: false,
+          vueComponents: false,
+        },
+      })
+      const config = getAutoImportConfig(ctx.configService)
+
+      expect(config?.typedComponents).toBe(false)
+      expect(config?.htmlCustomData).toBe(false)
+      expect(config?.vueComponents).toBe(false)
+    })
+
     it('omits default subpackage globs when subpackage disables auto import', () => {
       const ctx = createContext({
         subPackages: {
@@ -262,6 +303,17 @@ describe('autoImport config helpers', () => {
     it('disables typed components when not configured', () => {
       const ctx = createContext()
       expect(getTypedComponentsSettings(ctx)).toEqual({ enabled: false })
+    })
+
+    it('enables typed components for object auto import config by default', () => {
+      const ctx = createContext({
+        autoImportComponents: {
+          resolvers: [{ components: { 'van-button': '@vant/weapp/button' } }],
+        },
+      })
+      const result = getTypedComponentsSettings(ctx)
+      expect(result.enabled).toBe(true)
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'typed-components.d.ts'))
     })
 
     it('returns default path when enabled with boolean true', () => {
@@ -333,6 +385,17 @@ describe('autoImport config helpers', () => {
     it('disables html custom data when not configured', () => {
       const ctx = createContext()
       expect(getHtmlCustomDataSettings(ctx)).toEqual({ enabled: false })
+    })
+
+    it('enables html custom data for object auto import config by default', () => {
+      const ctx = createContext({
+        autoImportComponents: {
+          resolvers: [{ components: { 'van-button': '@vant/weapp/button' } }],
+        },
+      })
+      const result = getHtmlCustomDataSettings(ctx)
+      expect(result.enabled).toBe(true)
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'mini-program.html-data.json'))
     })
 
     it('returns default path when html custom data is enabled', () => {

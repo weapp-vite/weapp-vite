@@ -5,8 +5,9 @@ import components from './json/vant.json'
 const defaultPrefix = 'van-'
 // 参考：https://vant-ui.github.io/vant-weapp/#/home
 export const VantResolver: CreateResolver = (opts) => {
-  const { prefix, resolve } = defu<Required<Options>, Options[]>(opts, {
+  const { prefix, resolve, supportFilesStrategy } = defu<Required<Options>, Options[]>(opts, {
     prefix: defaultPrefix,
+    supportFilesStrategy: 'full',
     resolve({ name, prefix }) {
       return {
         key: `${prefix}${name}`,
@@ -28,6 +29,7 @@ export const VantResolver: CreateResolver = (opts) => {
 
   const resolver: ResolverObject = {
     components: Object.freeze({ ...map }),
+    supportFilesStrategy,
     resolve(componentName) {
       const from = map[componentName]
       if (!from) {
