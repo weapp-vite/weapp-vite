@@ -388,6 +388,27 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('clears stale component interaction targets before direct component method calls', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const component = await miniProgram.selectComponent('#status-card')
+    const input = await page.$('#card-input')
+
+    expect(component).not.toBeNull()
+    expect(input).not.toBeNull()
+
+    await input?.input('typed-in-component')
+    await component?.callMethod('pulse')
+
+    expect(await page.data('eventSnapshot')).toContain('"targetId":"status-card"')
+    expect(await page.data('eventSnapshot')).toContain('"targetDataset":{"role":"main"}')
+  })
+
   it('supports compound component selectors through the testing bridge session handle', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
