@@ -153,9 +153,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(layoutJs).toContain('BaseNavbar')
     expect(layoutJs).toContain('BaseFooter')
     expect(navbarJs).toContain('issue-398 navbar')
-    expect(navbarJs).toContain('e.a(()=>{})')
+    expect(navbarJs).toContain('__issue398NavbarMounted')
+    expect(navbarJs).toContain('__issue398NavbarLabel')
     expect(footerJs).toContain('issue-398 footer')
-    expect(footerJs).toContain('e.a(()=>{})')
+    expect(footerJs).toContain('__issue398FooterMounted')
+    expect(footerJs).toContain('__issue398FooterLabel')
 
     const sharedImportPattern = /require\((['"`])(\.\.\/\.\.\/\.\.\/src-[^'"`]+\.js)\1\)/
     const navbarSharedImport = navbarJs.match(sharedImportPattern)
