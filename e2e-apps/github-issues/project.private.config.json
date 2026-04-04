@@ -211,6 +211,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-404/index",
+          "pathName": "pages/issue-404/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/item/index",
           "pathName": "subpackages/item/index",
           "query": "",

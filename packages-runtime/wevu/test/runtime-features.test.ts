@@ -271,6 +271,29 @@ describe('runtime: features & hooks', () => {
     expect(logs.at(-1)).toBe(10)
   })
 
+  it('binds onPageScroll onto page instance directly', async () => {
+    const logs: number[] = []
+    defineComponent({
+      features: { enableOnPageScroll: true },
+      setup() {
+        onPageScroll((e: any) => {
+          logs.push(Number(e?.scrollTop ?? -1))
+        })
+      },
+    })
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+
+    expect(typeof pageInst.onPageScroll).toBe('function')
+
+    pageInst.onPageScroll({ scrollTop: 24 })
+    await nextTick()
+
+    expect(logs.at(-1)).toBe(24)
+  })
+
   it('Page onLoad bridges to wevu hook', async () => {
     const logs: string[] = []
     defineComponent({

@@ -170,6 +170,25 @@ export function callHookList(target: InternalRuntimeState, name: string, args: a
   }
 }
 
+export function ensurePageHookOnInstance(target: InternalRuntimeState, name: 'onPageScroll') {
+  const bridges = ((target as any).__wevuPageHookBridges ??= Object.create(null)) as Record<string, (...args: any[]) => any>
+  if (typeof bridges[name] === 'function') {
+    return
+  }
+
+  const original = (target as any)[name]
+  const bridge = function onWevuPageHookBridge(this: InternalRuntimeState, ...args: any[]) {
+    callHookList(this, name, args)
+    if (typeof original === 'function') {
+      return original.apply(this, args)
+    }
+    return undefined
+  }
+
+  bridges[name] = bridge
+  ;(target as any)[name] = bridge
+}
+
 /**
  * 调用返回值型 hook（框架内部调度入口）。
  * @internal
