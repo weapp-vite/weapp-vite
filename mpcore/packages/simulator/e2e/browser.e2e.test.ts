@@ -999,6 +999,12 @@ describe.sequential('simulator browser e2e', () => {
     expect(state.pageStack).toEqual(['pages/profile/index'])
     expect(state.pageRoutes).toContain('pages/profile/index')
     expect(bridge.renderCurrentPage()).toContain('profile')
+    expect(bridge.readScopeSnapshot('page:pages/profile/index')).toMatchObject({
+      data: {},
+      properties: {},
+      scopeId: 'page:pages/profile/index',
+      type: 'page',
+    })
   })
 
   it('drives browser session host features through the demo workbench api', async () => {
