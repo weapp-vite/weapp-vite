@@ -943,6 +943,7 @@ describe.sequential('simulator browser e2e', () => {
       matched: false,
       url: 'https://mock.mpcore.dev/upload/component-lab-unmatched-report',
     }))
+    expect(parseJsonString<{ timeline: string[] }>(state.appData).timeline[0]).toContain('component-lab:onLaunch:')
     expect(parseJsonString<Record<string, unknown>>(state.storageData)).toEqual(sessionSnapshot.storageSnapshot)
     expect(parseJsonString<Record<string, unknown> | null>(state.toastData)).toEqual(sessionSnapshot.toast)
     expect(parseJsonString<unknown[]>(state.requestLogData)).toEqual(sessionSnapshot.requestLogs)
