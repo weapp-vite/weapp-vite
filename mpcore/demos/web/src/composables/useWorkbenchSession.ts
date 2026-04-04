@@ -129,10 +129,29 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     touch()
   }
 
+  function syncSelectedScopeAfterRun(previousRoute: string) {
+    const nextRoute = session.value?.getCurrentPages().at(-1)?.route ?? ''
+    if (!nextRoute) {
+      selectedScopeId.value = ''
+      return
+    }
+
+    if (!selectedScopeId.value || nextRoute !== previousRoute) {
+      selectedScopeId.value = `page:${nextRoute}`
+      return
+    }
+
+    if (!session.value?.getScopeSnapshot(selectedScopeId.value)) {
+      selectedScopeId.value = `page:${nextRoute}`
+    }
+  }
+
   function run(action: () => void) {
+    const previousRoute = session.value?.getCurrentPages().at(-1)?.route ?? ''
     try {
       errorMessage.value = ''
       action()
+      syncSelectedScopeAfterRun(previousRoute)
     }
     catch (error) {
       errorMessage.value = String((error as Error).message ?? error)

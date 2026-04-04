@@ -1114,6 +1114,42 @@ describe.sequential('simulator browser e2e', () => {
     expect(snapshot.storageSnapshot).toBeTypeOf('object')
   })
 
+  it('keeps selected scope aligned with the current page after bridge navigation', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    const hubState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.selectedScope?.scopeId === 'page:pages/hub/index',
+      20_000,
+    )
+    expect(hubState.currentRoute).toBe('pages/hub/index')
+
+    bridge.runPageMethod('openQueue')
+    const queueState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/queue/index' && state.selectedScope?.scopeId === 'page:package-flow/queue/index',
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(queueState.pageData).title).toBe('Queue')
+
+    bridge.runPageMethod('openDetail')
+    const detailState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/detail/index' && state.selectedScope?.scopeId === 'page:package-flow/detail/index',
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(detailState.pageData).title).toBe('Detail')
+
+    bridge.navigateBack(2)
+    const backState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/hub/index' && state.selectedScope?.scopeId === 'page:pages/hub/index',
+      20_000,
+    )
+    expect(parseJsonString<Record<string, any>>(backState.pageData).title).toBe('Route Maze Hub')
+  })
+
   it('reports missing route navigation through the web demo bridge', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
