@@ -1,7 +1,6 @@
 import { createRequire } from 'node:module'
 import process from 'node:process'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'

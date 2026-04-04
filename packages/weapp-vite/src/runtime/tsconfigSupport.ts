@@ -1,8 +1,7 @@
 import type { CompilerOptions } from 'typescript'
 import type { MutableCompilerContext } from '../context'
+import { fs } from '@weapp-core/shared'
 import { parse as parseJson } from 'comment-json'
-/* eslint-disable e18e/ban-dependencies -- fs-extra is still the project-standard file helper in this module. */
-import fs from 'fs-extra'
 import path from 'pathe'
 import { getPlatformAppTypesPackage } from '../platform'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from './autoImport/config/base'

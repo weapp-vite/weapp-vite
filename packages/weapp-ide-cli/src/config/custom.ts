@@ -1,5 +1,5 @@
 import type { BaseConfig } from '../types'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { resolvePath } from '../utils/path'
 import { defaultCustomConfigDirPath, defaultCustomConfigFilePath } from './paths'
 
@@ -11,6 +11,43 @@ const JSON_OPTIONS = {
 interface CustomConfigFile {
   cliPath?: string
   locale?: 'zh' | 'en'
+}
+
+export async function readCustomConfig(): Promise<CustomConfigFile> {
+  if (!(await fs.pathExists(defaultCustomConfigFilePath))) {
+    return {}
+  }
+
+  try {
+    const config = await fs.readJSON(defaultCustomConfigFilePath)
+    if (!config || typeof config !== 'object') {
+      return {}
+    }
+
+    const candidate = config as { cliPath?: unknown, locale?: unknown }
+    const next: CustomConfigFile = {}
+
+    if (typeof candidate.cliPath === 'string' && candidate.cliPath.trim()) {
+      next.cliPath = candidate.cliPath.trim()
+    }
+
+    if (candidate.locale === 'zh' || candidate.locale === 'en') {
+      next.locale = candidate.locale
+    }
+
+    return next
+  }
+  catch {
+    return {}
+  }
+}
+
+async function writeCustomConfig(patch: CustomConfigFile, options: { replace?: boolean } = {}) {
+  const currentConfig = options.replace ? {} : await readCustomConfig()
+  const nextConfig = { ...currentConfig, ...patch }
+
+  await fs.ensureDir(defaultCustomConfigDirPath)
+  await fs.writeJSON(defaultCustomConfigFilePath, nextConfig, JSON_OPTIONS)
 }
 
 /**
@@ -69,44 +106,4 @@ export async function overwriteCustomConfig(config: CustomConfigFile) {
   }
 
   await writeCustomConfig(nextConfig, { replace: true })
-}
-
-/**
- * @description 读取原始自定义配置。
- */
-export async function readCustomConfig(): Promise<CustomConfigFile> {
-  if (!(await fs.pathExists(defaultCustomConfigFilePath))) {
-    return {}
-  }
-
-  try {
-    const config = await fs.readJSON(defaultCustomConfigFilePath)
-    if (!config || typeof config !== 'object') {
-      return {}
-    }
-
-    const candidate = config as { cliPath?: unknown, locale?: unknown }
-    const next: CustomConfigFile = {}
-
-    if (typeof candidate.cliPath === 'string' && candidate.cliPath.trim()) {
-      next.cliPath = candidate.cliPath.trim()
-    }
-
-    if (candidate.locale === 'zh' || candidate.locale === 'en') {
-      next.locale = candidate.locale
-    }
-
-    return next
-  }
-  catch {
-    return {}
-  }
-}
-
-async function writeCustomConfig(patch: CustomConfigFile, options: { replace?: boolean } = {}) {
-  const currentConfig = options.replace ? {} : await readCustomConfig()
-  const nextConfig = { ...currentConfig, ...patch }
-
-  await fs.ensureDir(defaultCustomConfigDirPath)
-  await fs.writeJSON(defaultCustomConfigFilePath, nextConfig, JSON_OPTIONS)
 }

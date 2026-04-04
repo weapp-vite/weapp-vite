@@ -1,7 +1,7 @@
 import type { TemplateName } from '@/enums'
 import os from 'node:os'
 import path from 'node:path'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // shared answers object for mocked prompts

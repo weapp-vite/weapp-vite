@@ -1673,12 +1673,12 @@ importers:
       '@babel/types':
         specifier: 'catalog:'
         version: 7.29.0
+      '@weapp-core/shared':
+        specifier: workspace:^
+        version: link:../../@weapp-core/shared
       domhandler:
         specifier: ^6.0.1
         version: 6.0.1
-      fs-extra:
-        specifier: 'catalog:'
-        version: 11.3.4
       htmlparser2:
         specifier: 'catalog:'
         version: 12.0.0
@@ -1787,9 +1787,9 @@ importers:
       '@weapp-core/logger':
         specifier: workspace:^
         version: link:../../@weapp-core/logger
-      fs-extra:
-        specifier: 'catalog:'
-        version: 11.3.4
+      '@weapp-core/shared':
+        specifier: workspace:^
+        version: link:../../@weapp-core/shared
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -1900,6 +1900,9 @@ importers:
       '@weapp-core/logger':
         specifier: workspace:^
         version: link:../../@weapp-core/logger
+      '@weapp-core/shared':
+        specifier: workspace:^
+        version: link:../../@weapp-core/shared
       '@weapp-vite/miniprogram-automator':
         specifier: workspace:*
         version: link:../miniprogram-automator
@@ -1909,9 +1912,6 @@ importers:
       execa:
         specifier: 9.6.1
         version: 9.6.1
-      fs-extra:
-        specifier: 'catalog:'
-        version: 11.3.4
       pathe:
         specifier: 'catalog:'
         version: 2.0.3

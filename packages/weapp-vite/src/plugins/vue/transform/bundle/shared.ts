@@ -1,8 +1,7 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { JsonMergeStrategy } from '../../../../types'
-// eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'

@@ -24,17 +24,13 @@ const platformMock = vi.hoisted(() => ({
   getDefaultCliPath: vi.fn(),
 }))
 
-vi.mock('fs-extra', () => ({
-  default: {
+vi.mock('@weapp-core/shared', () => ({
+  fs: {
     ensureDir: fsMock.ensureDir,
     writeJSON: fsMock.writeJSON,
     pathExists: fsMock.pathExists,
     readJSON: fsMock.readJSON,
   },
-  ensureDir: fsMock.ensureDir,
-  writeJSON: fsMock.writeJSON,
-  pathExists: fsMock.pathExists,
-  readJSON: fsMock.readJSON,
 }))
 
 vi.mock('../src/logger', () => ({

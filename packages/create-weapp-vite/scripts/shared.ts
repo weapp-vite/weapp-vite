@@ -1,8 +1,7 @@
 import crypto from 'node:crypto'
 import fsPromises from 'node:fs/promises'
 import os from 'node:os'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { Templates } from './constants'
 

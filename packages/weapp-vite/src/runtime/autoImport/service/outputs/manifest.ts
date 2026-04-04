@@ -1,6 +1,6 @@
 import type { ComponentMetadata } from '../../metadata'
 import type { LocalAutoImportMatch } from '../../types'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 
 export function collectAllComponentNames(options: {
   collectResolverComponents: () => Record<string, string>

@@ -1,7 +1,6 @@
-import { removeExtensionDeep } from '@weapp-core/shared'
+import type { FsDirent } from '@weapp-core/shared'
+import { fs, removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
 import path from 'pathe'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
 import { toPosixPath } from '../../utils/path'
@@ -69,7 +68,7 @@ async function discoverPagesRoots(root: string) {
       continue
     }
 
-    let entries: fs.Dirent[]
+    let entries: FsDirent[]
     try {
       entries = await fs.readdir(current, { withFileTypes: true })
     }

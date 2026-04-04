@@ -1,5 +1,4 @@
-// eslint-disable-next-line e18e/ban-dependencies -- 入口解析工具仍统一复用 fs-extra 的 pathExists/stat
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { jsExtensions, vueExtensions } from '../constants'
 import { pathExists as pathExistsCached } from '../plugins/utils/cache'

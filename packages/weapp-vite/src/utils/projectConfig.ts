@@ -1,6 +1,5 @@
 import type { MpPlatform, ProjectConfig } from '@/types'
-/* eslint-disable e18e/ban-dependencies -- fs-extra is the existing project utility for JSON/copy helpers here. */
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { getProjectPlatformOptions } from '../platform'
 

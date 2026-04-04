@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { getConfig } from '../config/resolver'
 
 /**

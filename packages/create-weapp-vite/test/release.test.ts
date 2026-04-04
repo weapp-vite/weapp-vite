@@ -1,9 +1,8 @@
 import os from 'node:os'
 import path from 'node:path'
+import { fs } from '@weapp-core/shared'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
 import { TemplateName } from '@/enums'
 
 function parsePackJson(stdout: string) {

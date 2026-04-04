@@ -1,6 +1,5 @@
+import { fs } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
 import path from 'pathe'
 import { generate, parseJsLike, traverse } from '../../../utils'
 import {

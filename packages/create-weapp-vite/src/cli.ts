@@ -2,7 +2,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { confirm, input, select } from '@inquirer/prompts'
 import logger from '@weapp-core/logger'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { createProject, TemplateName } from './index'
 
 const cwd = process.cwd()

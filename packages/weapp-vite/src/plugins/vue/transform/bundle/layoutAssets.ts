@@ -1,7 +1,6 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
-// eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取布局资产
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import {
   emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded,
   resolveNativeLayoutOutputOptions,

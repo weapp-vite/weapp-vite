@@ -1,5 +1,4 @@
-// eslint-disable-next-line e18e/ban-dependencies -- 当前页面回退扫描仍统一复用 fs-extra 目录遍历
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { isVueLikeFile, stripVueLikeExtension } from './shared'
 

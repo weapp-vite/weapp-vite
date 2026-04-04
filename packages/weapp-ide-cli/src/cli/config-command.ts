@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { createCustomConfig, createLocaleConfig, overwriteCustomConfig, readCustomConfig, removeCustomConfigKey } from '../config/custom'
 import { defaultCustomConfigFilePath } from '../config/paths'
 import { i18nText } from '../i18n'

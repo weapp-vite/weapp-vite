@@ -1,9 +1,10 @@
+import type { FsStats } from '@weapp-core/shared'
 import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../../../context'
 import type { SubPackageStyleEntry } from '../../../types'
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { preprocessCSS } from 'vite'
@@ -71,7 +72,7 @@ export async function renderSharedStyleEntry(
   const absolutePath = entry.absolutePath
   const cacheKey = `${absolutePath}:${resolvedConfig ? 'resolved' : 'raw'}`
 
-  let stats: fs.Stats
+  let stats: FsStats
   try {
     stats = await fs.stat(absolutePath)
   }

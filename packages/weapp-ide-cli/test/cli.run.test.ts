@@ -16,7 +16,7 @@ const createCustomConfigMock = vi.hoisted(() => vi.fn())
 const overwriteCustomConfigMock = vi.hoisted(() => vi.fn())
 const readCustomConfigMock = vi.hoisted(() => vi.fn())
 const removeCustomConfigKeyMock = vi.hoisted(() => vi.fn())
-const fsExtraMock = vi.hoisted(() => ({
+const fsMock = vi.hoisted(() => ({
   pathExists: vi.fn(),
   writeJSON: vi.fn(),
   readJSON: vi.fn(),
@@ -83,11 +83,8 @@ vi.mock('../src/logger', () => ({
   },
 }))
 
-vi.mock('fs-extra', () => ({
-  default: fsExtraMock,
-  pathExists: fsExtraMock.pathExists,
-  writeJSON: fsExtraMock.writeJSON,
-  readJSON: fsExtraMock.readJSON,
+vi.mock('@weapp-core/shared', () => ({
+  fs: fsMock,
 }))
 
 async function loadRunModule() {
@@ -134,9 +131,9 @@ describe('cli parsing', () => {
     overwriteCustomConfigMock.mockReset()
     readCustomConfigMock.mockReset()
     removeCustomConfigKeyMock.mockReset()
-    fsExtraMock.pathExists.mockReset()
-    fsExtraMock.writeJSON.mockReset()
-    fsExtraMock.readJSON.mockReset()
+    fsMock.pathExists.mockReset()
+    fsMock.writeJSON.mockReset()
+    fsMock.readJSON.mockReset()
     isOperatingSystemSupportedMock.mockReturnValue(true)
     executeMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
@@ -175,9 +172,9 @@ describe('cli parsing', () => {
     overwriteCustomConfigMock.mockResolvedValue(undefined)
     readCustomConfigMock.mockResolvedValue({})
     removeCustomConfigKeyMock.mockResolvedValue(undefined)
-    fsExtraMock.pathExists.mockResolvedValue(true)
-    fsExtraMock.writeJSON.mockResolvedValue(undefined)
-    fsExtraMock.readJSON.mockResolvedValue({})
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.writeJSON.mockResolvedValue(undefined)
+    fsMock.readJSON.mockResolvedValue({})
   })
 
   afterEach(() => {
@@ -386,7 +383,7 @@ describe('cli parsing', () => {
 
     await parse(['config', 'export', '/tmp/weapp-config.json'])
 
-    expect(fsExtraMock.writeJSON).toHaveBeenCalledWith(
+    expect(fsMock.writeJSON).toHaveBeenCalledWith(
       '/tmp/weapp-config.json',
       { locale: 'en' },
       { spaces: 2, encoding: 'utf8' },
@@ -395,14 +392,14 @@ describe('cli parsing', () => {
 
   it('supports config import from file', async () => {
     const { parse } = await loadRunModule()
-    fsExtraMock.readJSON.mockResolvedValue({
+    fsMock.readJSON.mockResolvedValue({
       cliPath: '/imported/cli',
       locale: 'en',
     })
 
     await parse(['config', 'import', '/tmp/weapp-config.json'])
 
-    expect(fsExtraMock.readJSON).toHaveBeenCalledWith('/tmp/weapp-config.json')
+    expect(fsMock.readJSON).toHaveBeenCalledWith('/tmp/weapp-config.json')
     expect(overwriteCustomConfigMock).toHaveBeenCalledWith({
       cliPath: '/imported/cli',
       locale: 'en',

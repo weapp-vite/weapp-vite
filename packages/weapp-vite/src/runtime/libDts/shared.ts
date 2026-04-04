@@ -1,8 +1,7 @@
 import type { ResolvedWeappLibEntry } from './lib'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
-import { removeExtensionDeep } from '@weapp-core/shared'
-import fs from 'fs-extra'
+import { fs, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 
 const DTS_INPUT_EXTENSIONS = new Set(['.ts', '.tsx', '.mts', '.cts'])

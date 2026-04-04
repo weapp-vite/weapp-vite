@@ -1,6 +1,6 @@
 import type { Options as RolldownDtsOptions } from 'rolldown-plugin-dts'
 import type { ConfigService } from './config/types'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { build } from 'rolldown'
 import { dts } from 'rolldown-plugin-dts'

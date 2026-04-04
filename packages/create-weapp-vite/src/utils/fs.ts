@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 
 /**
  * @description 文件读取错误

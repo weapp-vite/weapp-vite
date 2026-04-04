@@ -73,7 +73,7 @@
   "dependencies": {
     "@inquirer/prompts": "^8.3.2",
     "@weapp-core/logger": "workspace:^",
-    "fs-extra": "catalog:",
+    "@weapp-core/shared": "workspace:^",
     "pathe": "catalog:",
     "pkg-types": "catalog:"
   }

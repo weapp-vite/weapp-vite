@@ -2,7 +2,7 @@ import type { OutputAsset, OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { changeFileExtension, isJsOrTs } from '../utils'
 import { getPathExistsTtlMs } from '../utils/cachePolicy'
@@ -23,8 +23,10 @@ type OutputChunkWithViteMetadata = OutputChunk & {
   viteMetadata?: ViteMetadata
 }
 
+const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
+
 function stripLeadingBlankLines(code: string) {
-  return code.replace(/^(?:[ \t]*\r?\n)+/, '')
+  return code.replace(LEADING_BLANK_LINES_RE, '')
 }
 
 async function handleBundleEntry(

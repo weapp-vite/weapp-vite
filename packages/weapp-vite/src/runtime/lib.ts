@@ -1,7 +1,6 @@
 import type { WeappLibConfig, WeappLibDtsOptions } from '../types'
 import type { ConfigService, ResolvedWeappLibConfig } from './config/types'
-import { isObject, removeExtensionDeep } from '@weapp-core/shared'
-import fs from 'fs-extra'
+import { fs, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { findJsEntry, findVueEntry } from '../utils/file'
 import { normalizeRelativePath, stripLeadingSlashes } from '../utils/path'

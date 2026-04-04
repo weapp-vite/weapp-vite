@@ -1,6 +1,6 @@
 import type { ConfigService } from '../../../../runtime/config/types'
 import type { DiscoveredLayoutFile, LayoutPropValue, NativeLayoutAssets, PageLayoutConfigService, ResolvedLayoutMeta, ResolvedPageLayout, ResolvedPageLayoutPlan } from './types'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../../utils'
@@ -63,6 +63,19 @@ function normalizeRouteRuleLayoutMeta(input: unknown): ResolvedLayoutMeta | unde
   }
 }
 
+function compareRuleScore(left: number[], right: number[]) {
+  const maxLength = Math.max(left.length, right.length)
+  for (let index = 0; index < maxLength; index += 1) {
+    const leftValue = left[index] ?? 0
+    const rightValue = right[index] ?? 0
+    if (leftValue === rightValue) {
+      continue
+    }
+    return leftValue > rightValue ? 1 : -1
+  }
+  return 0
+}
+
 function resolveRouteRuleLayoutMeta(
   filename: string,
   configService: Pick<ConfigService, 'relativeOutputPath' | 'weappViteConfig'>,
@@ -100,19 +113,6 @@ function resolveRouteRuleLayoutMeta(
   }
 
   return matched?.meta
-}
-
-function compareRuleScore(left: number[], right: number[]) {
-  const maxLength = Math.max(left.length, right.length)
-  for (let index = 0; index < maxLength; index += 1) {
-    const leftValue = left[index] ?? 0
-    const rightValue = right[index] ?? 0
-    if (leftValue === rightValue) {
-      continue
-    }
-    return leftValue > rightValue ? 1 : -1
-  }
-  return 0
 }
 
 async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredLayoutFile>> {
@@ -245,15 +245,6 @@ export function invalidateResolvedPageLayoutsCache(absoluteSrcRoot?: string) {
   resolvedLayoutsCache.delete(normalizeComparablePath(absoluteSrcRoot))
 }
 
-export async function resolvePageLayout(
-  source: string,
-  filename: string,
-  configService: PageLayoutConfigService,
-): Promise<ResolvedPageLayout | undefined> {
-  const plan = await resolvePageLayoutPlan(source, filename, configService)
-  return plan?.currentLayout
-}
-
 export async function resolvePageLayoutPlan(
   source: string,
   filename: string,
@@ -303,6 +294,15 @@ export async function resolvePageLayoutPlan(
         ]))
       : [],
   }
+}
+
+export async function resolvePageLayout(
+  source: string,
+  filename: string,
+  configService: PageLayoutConfigService,
+): Promise<ResolvedPageLayout | undefined> {
+  const plan = await resolvePageLayoutPlan(source, filename, configService)
+  return plan?.currentLayout
 }
 
 export function isLayoutFile(

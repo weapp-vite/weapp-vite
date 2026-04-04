@@ -1,8 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
-// eslint-disable-next-line e18e/ban-dependencies
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { version as wevuApiVersion } from '../../../packages-runtime/weapi/package.json'
 import { version as wevuVersion } from '../../../packages-runtime/wevu/package.json'

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { extname } from 'node:path'
 import { createDefu } from 'defu'
 
+export * from './fs'
 export { default as defu } from 'defu'
 export { default as get } from 'get-value'
 

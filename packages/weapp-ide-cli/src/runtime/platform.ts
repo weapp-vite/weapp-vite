@@ -1,6 +1,6 @@
 import os from 'node:os'
 import process from 'node:process'
-import fs from 'fs-extra'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import logger from '../logger'
 
@@ -34,6 +34,24 @@ export function isOperatingSystemSupported(osName: string = os.type()): osName i
 export const operatingSystemName = os.type()
 
 type CliPathResolver = () => Promise<string | undefined>
+
+async function getFirstBinaryPath(command: string): Promise<string | undefined> {
+  const envPath = process.env.PATH || ''
+  const pathDirs = envPath.split(path.delimiter)
+
+  for (const dir of pathDirs) {
+    const fullPath = path.join(dir, command)
+    try {
+      await fs.access(fullPath, fs.constants.X_OK)
+      return fullPath
+    }
+    catch {
+      continue
+    }
+  }
+
+  return undefined
+}
 
 function createLinuxCliResolver(): CliPathResolver {
   let resolvedPath: string | undefined
@@ -92,22 +110,4 @@ export async function getDefaultCliPath(targetOs: string = operatingSystemName) 
   const resolver = cliPathResolvers[targetOs]
   const resolvedPath = await resolver()
   return resolvedPath
-}
-
-async function getFirstBinaryPath(command: string): Promise<string | undefined> {
-  const envPath = process.env.PATH || ''
-  const pathDirs = envPath.split(path.delimiter)
-
-  for (const dir of pathDirs) {
-    const fullPath = path.join(dir, command)
-    try {
-      await fs.access(fullPath, fs.constants.X_OK)
-      return fullPath
-    }
-    catch {
-      continue
-    }
-  }
-
-  return undefined
 }
