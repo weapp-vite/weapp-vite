@@ -4861,6 +4861,75 @@ Page({
     expect(page.data.detailSummary).toContain('"height":120')
   })
 
+  it('supports compressImage in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    detailSummary: '',
+    missingSummary: '',
+    compressSummary: ''
+  },
+  runCompressImageLab() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album'],
+      success: (result) => {
+        wx.compressImage({
+          compressedHeight: 48,
+          compressedWidth: 64,
+          quality: 70,
+          src: result.tempFilePaths[0],
+          success: (compressed) => {
+            this.setData({
+              compressSummary: JSON.stringify(compressed),
+            })
+            wx.getImageInfo({
+              src: compressed.tempFilePath,
+              success: (imageInfo) => {
+                this.setData({
+                  detailSummary: JSON.stringify(imageInfo),
+                })
+              },
+            })
+          },
+        })
+      },
+    })
+  },
+  runMissingCompressImageLab() {
+    wx.compressImage({
+      src: 'headless://wxfile/temp/browser-missing-compress-image.jpg',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{compressSummary}}</view><view>{{detailSummary}}</view><view>{{missingSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runCompressImageLab()
+    page.runMissingCompressImageLab()
+
+    expect(page.data.compressSummary).toContain('"errMsg":"compressImage:ok"')
+    expect(page.data.compressSummary).toContain('headless://wxfile/temp/compressed-image-')
+    expect(page.data.detailSummary).toContain('"errMsg":"getImageInfo:ok"')
+    expect(page.data.detailSummary).toContain('"width":64')
+    expect(page.data.detailSummary).toContain('"height":48')
+    expect(page.data.detailSummary).toContain('"type":"jpeg"')
+    expect(page.data.missingSummary).toBe('compressImage:fail file not found: headless://wxfile/temp/browser-missing-compress-image.jpg')
+  })
+
   it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

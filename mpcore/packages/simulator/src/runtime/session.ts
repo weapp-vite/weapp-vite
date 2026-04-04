@@ -242,6 +242,7 @@ export class HeadlessSession {
       () => this.getApp(),
       {
         chooseImage: option => this.wxState.chooseImage(option ?? {}),
+        compressImage: option => this.wxState.compressImage(option),
         createAnimation: option => this.createAnimation(option),
         createCanvasContext: (canvasId, scope) => this.createCanvasContext(canvasId, scope),
         canvasToTempFilePath: option => this.canvasToTempFilePath(option),

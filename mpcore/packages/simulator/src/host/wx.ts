@@ -558,6 +558,18 @@ export interface HeadlessWxChooseImageOption extends HeadlessWxCallbackOption<He
   sourceType?: string[]
 }
 
+export interface HeadlessWxCompressImageResult {
+  errMsg: string
+  tempFilePath: string
+}
+
+export interface HeadlessWxCompressImageOption extends HeadlessWxCallbackOption<HeadlessWxCompressImageResult> {
+  compressedHeight?: number
+  compressedWidth?: number
+  quality?: number
+  src: string
+}
+
 export interface HeadlessWxSavedFileInfo {
   createTime: number
   filePath: string
@@ -690,6 +702,7 @@ export interface HeadlessWxFileSystemManager {
 
 export interface HeadlessWxDriver {
   chooseImage: (option: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult
+  compressImage: (option: HeadlessWxCompressImageOption) => HeadlessWxCompressImageResult
   createAnimation: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
   createCanvasContext: (canvasId: string, scope?: Record<string, any>) => HeadlessWxCanvasContext
   canvasToTempFilePath: (option: HeadlessWxCanvasToTempFilePathOption) => HeadlessWxCanvasToTempFilePathSuccessResult
@@ -759,6 +772,7 @@ export interface HeadlessWxDriver {
 export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   chooseImage: (option?: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult | undefined
+  compressImage: (option: HeadlessWxCompressImageOption) => HeadlessWxCompressImageResult | undefined
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
   canvasToTempFilePath: (option: HeadlessWxCanvasToTempFilePathOption) => HeadlessWxCanvasToTempFilePathSuccessResult | undefined
@@ -875,6 +889,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         errMsg: true,
         tempFilePaths: true,
         tempFiles: true,
+      },
+    },
+    compressImage: {
+      return: {
+        errMsg: true,
+        tempFilePath: true,
       },
     },
     clearStorage: true,
@@ -1074,6 +1094,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     canIUse: schema => typeof schema === 'string' && schema.trim() !== '' && resolveCapabilityValue(capabilityTree, schema.trim()) != null,
     canvasToTempFilePath: option => invokeWxApi(() => driver.canvasToTempFilePath(option), option),
     chooseImage: option => invokeWxApi(() => driver.chooseImage(option ?? {}), option),
+    compressImage: option => invokeWxApi(() => driver.compressImage(option), option),
     clearStorage: option => invokeWxApi(() => {
       driver.clearStorageSync()
       return {

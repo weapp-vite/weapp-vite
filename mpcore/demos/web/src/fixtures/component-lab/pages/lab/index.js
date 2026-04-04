@@ -23,6 +23,9 @@ Page({
     previewImageInvalidInfo: '',
     chosenImageInfo: '',
     chosenImageDetail: '',
+    compressedImageInfo: '',
+    compressedImageDetail: '',
+    compressedImageMissingInfo: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -331,6 +334,46 @@ Page({
               chosenImageDetail: JSON.stringify(imageInfo),
             })
           },
+        })
+      },
+    })
+  },
+  compressChosenImageLab() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album'],
+      success: (result) => {
+        wx.compressImage({
+          compressedHeight: 48,
+          compressedWidth: 64,
+          quality: 70,
+          src: result.tempFilePaths[0],
+          success: (compressed) => {
+            this.setData({
+              compressedImageInfo: JSON.stringify(compressed),
+            })
+            wx.getImageInfo({
+              src: compressed.tempFilePath,
+              success: (imageInfo) => {
+                this.setData({
+                  compressedImageDetail: JSON.stringify(imageInfo),
+                })
+              },
+            })
+          },
+        })
+      },
+    })
+  },
+  compressMissingImageLab() {
+    wx.compressImage({
+      src: 'headless://wxfile/temp/missing-compress-image.jpg',
+      fail: (error) => {
+        this.setData({
+          compressedImageMissingInfo: JSON.stringify({
+            error: error.message,
+          }),
         })
       },
     })
