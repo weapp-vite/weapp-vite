@@ -17,6 +17,8 @@ Page({
     canvasSnapshot: '',
     canvasSavedImageInfo: '',
     canvasSavedImageMissingInfo: '',
+    canvasImageInfo: '',
+    canvasImageInfoMissing: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -255,6 +257,28 @@ Page({
       fail: (error) => {
         this.setData({
           canvasSavedImageMissingInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
+  inspectExportedCanvasImageLab() {
+    wx.getImageInfo({
+      src: this.data.canvasTempFilePath,
+      success: (result) => {
+        this.setData({
+          canvasImageInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  inspectMissingCanvasImageLab() {
+    wx.getImageInfo({
+      src: 'headless://wxfile/temp/missing-component-lab-canvas-image-info.png',
+      fail: (error) => {
+        this.setData({
+          canvasImageInfoMissing: JSON.stringify({
             error: error.message,
           }),
         })

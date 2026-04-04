@@ -6,6 +6,8 @@ import type {
   HeadlessWxDownloadFileSuccessResult,
   HeadlessWxFileSystemManager,
   HeadlessWxFileSystemResult,
+  HeadlessWxGetImageInfoOption,
+  HeadlessWxGetImageInfoResult,
   HeadlessWxGetNetworkTypeResult,
   HeadlessWxGetSavedFileInfoOption,
   HeadlessWxGetSavedFileInfoSuccessResult,
@@ -160,6 +162,17 @@ const DEFAULT_MODAL_CONFIRM_TEXT = '确定'
 const TRAILING_SLASH_RE = /\/+$/
 const SAVED_FILE_PREFIXES = ['headless://saved/', 'headless://wxfile/saved/'] as const
 const textEncoder = new TextEncoder()
+const IMAGE_EXTENSION_RE = /\.([^.?#/]+)(?:[?#].*)?$/
+
+interface HeadlessCanvasTempFilePayload {
+  config?: {
+    destHeight?: number
+    destWidth?: number
+    fileType?: string
+    height?: number
+    width?: number
+  }
+}
 
 function byteLength(input: string) {
   return textEncoder.encode(input).byteLength
@@ -171,6 +184,45 @@ function cloneShareMenuSnapshot(snapshot: HeadlessWxShareMenuSnapshot) {
     menus: [...snapshot.menus],
     visible: snapshot.visible,
     withShareTicket: snapshot.withShareTicket,
+  }
+}
+
+function normalizeImageType(type: string | undefined) {
+  const normalized = (type ?? '').trim().toLowerCase()
+  if (normalized === 'jpg') {
+    return 'jpeg'
+  }
+  return normalized
+}
+
+function inferImageType(filePath: string, fileContent: string) {
+  const extensionMatch = filePath.match(IMAGE_EXTENSION_RE)
+  if (extensionMatch) {
+    return normalizeImageType(extensionMatch[1])
+  }
+
+  try {
+    const payload = JSON.parse(fileContent) as HeadlessCanvasTempFilePayload
+    return normalizeImageType(payload?.config?.fileType) || 'png'
+  }
+  catch {
+    return 'unknown'
+  }
+}
+
+function inferImageSize(fileContent: string) {
+  try {
+    const payload = JSON.parse(fileContent) as HeadlessCanvasTempFilePayload
+    return {
+      height: payload?.config?.destHeight ?? payload?.config?.height ?? 0,
+      width: payload?.config?.destWidth ?? payload?.config?.width ?? 0,
+    }
+  }
+  catch {
+    return {
+      height: 0,
+      width: 0,
+    }
   }
 }
 
@@ -1012,6 +1064,21 @@ export function createHeadlessWxState() {
       return {
         errMsg: 'getNetworkType:ok',
         networkType,
+      }
+    },
+    getImageInfo(option: HeadlessWxGetImageInfoOption): HeadlessWxGetImageInfoResult {
+      const fileContent = files.get(option.src)
+      if (fileContent == null) {
+        throw new Error(`getImageInfo:fail file not found: ${option.src}`)
+      }
+      const size = inferImageSize(fileContent)
+      return {
+        errMsg: 'getImageInfo:ok',
+        height: size.height,
+        orientation: 'up',
+        path: option.src,
+        type: inferImageType(option.src, fileContent),
+        width: size.width,
       }
     },
     getModalLogs() {

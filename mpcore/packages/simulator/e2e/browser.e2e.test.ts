@@ -135,6 +135,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('exportCanvasLab')
     bridge.runPageMethod('saveExportedCanvasLab')
     bridge.runPageMethod('saveMissingCanvasImageLab')
+    bridge.runPageMethod('inspectExportedCanvasImageLab')
+    bridge.runPageMethod('inspectMissingCanvasImageLab')
     bridge.runPageMethod('saveTempVideoLab')
     bridge.runPageMethod('saveMissingTempVideoLab')
     bridge.runPageMethod('inspectCanvasQuery')
@@ -181,6 +183,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.canvasSnapshot
           && pageData.canvasSavedImageInfo
           && pageData.canvasSavedImageMissingInfo
+          && pageData.canvasImageInfo
+          && pageData.canvasImageInfoMissing
           && pageData.tempVideoSavedInfo
           && pageData.tempVideoSavedMissingInfo
           && pageData.canvasTempFileContent
@@ -280,6 +284,11 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasTempFileContent).toContain('"fileType":"png"')
     expect(pageData.canvasSavedImageInfo).toContain('"errMsg":"saveImageToPhotosAlbum:ok"')
     expect(pageData.canvasSavedImageMissingInfo).toContain('"error":"saveImageToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-canvas-export.png"')
+    expect(pageData.canvasImageInfo).toContain('"errMsg":"getImageInfo:ok"')
+    expect(pageData.canvasImageInfo).toContain('"width":60')
+    expect(pageData.canvasImageInfo).toContain('"height":40')
+    expect(pageData.canvasImageInfo).toContain('"type":"png"')
+    expect(pageData.canvasImageInfoMissing).toContain('"error":"getImageInfo:fail file not found: headless://wxfile/temp/missing-component-lab-canvas-image-info.png"')
     expect(pageData.tempVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
     expect(pageData.tempVideoSavedMissingInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-video.mp4"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')

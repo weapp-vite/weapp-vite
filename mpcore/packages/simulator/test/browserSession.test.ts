@@ -4693,6 +4693,68 @@ Page({
     expect(session.getFileText(page.data.tempFilePath)).toContain('"canvasId":"hero-canvas"')
   })
 
+  it('supports getImageInfo for exported canvas files in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    imageInfo: '',
+    missingSummary: ''
+  },
+  runImageInfoLab() {
+    const ctx = wx.createCanvasContext('hero-canvas', this)
+    ctx.setFillStyle('#ff5500')
+    ctx.fillRect(0, 0, 20, 10)
+    ctx.draw(false, () => {
+      wx.canvasToTempFilePath({
+        canvasId: 'hero-canvas',
+        component: this,
+        destHeight: 40,
+        destWidth: 60,
+        fileType: 'png',
+        success: ({ tempFilePath }) => {
+          wx.getImageInfo({
+            src: tempFilePath,
+            success: (result) => {
+              this.setData({
+                imageInfo: JSON.stringify(result),
+              })
+            },
+          })
+        }
+      })
+    })
+  },
+  runMissingImageInfoLab() {
+    wx.getImageInfo({
+      src: 'headless://wxfile/temp/browser-missing-image-info.png',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<canvas canvas-id="hero-canvas"></canvas><view>{{imageInfo}}</view><view>{{missingSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runImageInfoLab()
+    page.runMissingImageInfoLab()
+
+    expect(page.data.imageInfo).toContain('"errMsg":"getImageInfo:ok"')
+    expect(page.data.imageInfo).toContain('"width":60')
+    expect(page.data.imageInfo).toContain('"height":40')
+    expect(page.data.imageInfo).toContain('"type":"png"')
+    expect(page.data.missingSummary).toBe('getImageInfo:fail file not found: headless://wxfile/temp/browser-missing-image-info.png')
+  })
+
   it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

@@ -258,6 +258,7 @@ export class BrowserHeadlessSession {
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createVideoContext: (videoId, scope) => this.createVideoContext(videoId, scope),
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
+        getImageInfo: option => this.wxState.getImageInfo(option),
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
         getSavedFileInfo: option => this.wxState.getSavedFileInfo(option),
         getSavedFileList: () => this.wxState.getSavedFileList(),
