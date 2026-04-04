@@ -282,6 +282,7 @@ describe('page event alignment', () => {
     page.openMissingDocumentLab()
     page.startPullDownRefreshLab()
     page.clipboardLab()
+    page.loadingLab()
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -385,6 +386,9 @@ describe('page event alignment', () => {
     expect(session.getClipboardData()).toEqual({
       data: 'component-lab clipboard payload',
     })
+    expect(page.data.loadingShownInfo).toContain('"errMsg":"showLoading:ok"')
+    expect(page.data.loadingHiddenInfo).toContain('"errMsg":"hideLoading:ok"')
+    expect(session.getLoading()).toBeNull()
     expect(session.getOpenedDocument()).toEqual({
       filePath: 'headless://saved/open-document/report.txt',
       fileType: 'txt',

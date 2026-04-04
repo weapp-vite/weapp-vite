@@ -33,6 +33,8 @@ Page({
     pullDownRefreshInfo: '',
     clipboardSetInfo: '',
     clipboardReadInfo: '',
+    loadingShownInfo: '',
+    loadingHiddenInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -505,6 +507,26 @@ Page({
           success: (result) => {
             this.setData({
               clipboardReadInfo: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  },
+  loadingLab() {
+    wx.showLoading({
+      mask: true,
+      title: 'Component Loading',
+      success: (result) => {
+        this.setData({
+          loadingShownInfo: JSON.stringify(result),
+        })
+      },
+      complete: () => {
+        wx.hideLoading({
+          success: (result) => {
+            this.setData({
+              loadingHiddenInfo: JSON.stringify(result),
             })
           },
         })

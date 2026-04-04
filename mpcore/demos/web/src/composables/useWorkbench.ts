@@ -77,6 +77,7 @@ export function useWorkbench() {
         directorySnapshot: sessionState.session.value?.getDirectorySnapshot?.() ?? [],
         downloadFileLogs: sessionState.session.value?.getDownloadFileLogs?.() ?? [],
         fileSnapshot: sessionState.session.value?.getFileSnapshot?.() ?? {},
+        loading: sessionState.session.value?.getLoading?.() ?? null,
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],
         openedDocument: sessionState.session.value?.getOpenedDocument?.() ?? null,
         previewImage: sessionState.session.value?.getPreviewImage?.() ?? null,
