@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createComponentSelectorFixture, createIntersectionObserverFixture, createPageEventsFixture, createVideoContextFixture } from './helpers'
+import {
+  cleanupTempDirs,
+  createComponentSelectorFixture,
+  createIntersectionObserverFixture,
+  createMediaQueryObserverFixture,
+  createPageEventsFixture,
+  createVideoContextFixture,
+} from './helpers'
 
 describe('page event alignment', () => {
   const tempDirs: string[] = []
@@ -210,5 +217,28 @@ describe('page event alignment', () => {
     expect(page.data.scopedSnapshot).toContain('"id":"hero-card"')
     expect(page.data.scopedSnapshot).toContain('"intersectionRatio":1')
     expect(page.data.scopedSnapshot).toContain('"width":80')
+  })
+
+  it('supports createMediaQueryObserver in headless runtime', () => {
+    const projectPath = createMediaQueryObserverFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/media/index')
+    page.inspectPageMediaQuery()
+    page.inspectComponentMediaQuery()
+
+    expect(page.data.pageMatches).toEqual([false])
+    expect(page.data.componentMatches).toEqual([false])
+
+    session.triggerResize({
+      size: {
+        windowWidth: 412,
+        windowHeight: 915,
+      },
+    })
+
+    expect(page.data.pageMatches).toEqual([false, true])
+    expect(page.data.componentMatches).toEqual([false, true])
   })
 })

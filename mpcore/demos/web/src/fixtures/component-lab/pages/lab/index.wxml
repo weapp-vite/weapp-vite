@@ -16,6 +16,7 @@
   <view class="panel-row" bindtap="inspectCompoundCard">检查复合组件选择器</view>
   <view class="panel-row" bindtap="runVideoContextLab">检查 VideoContext</view>
   <view class="panel-row" bindtap="runIntersectionObserverLab">检查 IntersectionObserver</view>
+  <view class="panel-row" bindtap="runMediaQueryObserverLab">检查 MediaQueryObserver</view>
   <view class="panel-row" bindtap="loadMockQueue">调用 request mock</view>
   <view class="panel-row" bindtap="storeSnapshot">写入 storage</view>
   <view class="panel-row" bindtap="toastSnapshot">触发 toast</view>
@@ -41,6 +42,7 @@
   <view class="panel-row">复合组件快照：{{compoundComponentSnapshot}}</view>
   <view id="observer-card" class="panel-row" style="left: 18px; top: 24px; width: 96px; height: 32px;">observer target</view>
   <view class="panel-row">Observer 快照：{{intersectionObserverSnapshot}}</view>
+  <view class="panel-row">MediaQuery 快照：{{mediaQueryObserverSnapshot}}</view>
   <video
     id="lab-video"
     bindplay="handleVideoPlay"

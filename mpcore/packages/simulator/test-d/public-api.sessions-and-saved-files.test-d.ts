@@ -59,6 +59,18 @@ expectType<{
   relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
 }>(browserPage?.createIntersectionObserver?.({ thresholds: [0, 1] }))
 expectType<{
+  disconnect: () => void
+  observe: (descriptor: {
+    height?: number
+    maxHeight?: number
+    maxWidth?: number
+    minHeight?: number
+    minWidth?: number
+    orientation?: string
+    width?: number
+  }, callback: (result: { matches: boolean }) => void) => void
+}>(browserPage?.createMediaQueryObserver?.())
+expectType<{
   exitFullScreen: () => void
   pause: () => void
   play: () => void
@@ -182,6 +194,18 @@ expectType<{
   relativeTo: (selector: string, margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
   relativeToViewport: (margins?: { bottom?: number, left?: number, right?: number, top?: number }) => any
 }>(headlessPage?.createIntersectionObserver?.({ thresholds: [0, 1] }))
+expectType<{
+  disconnect: () => void
+  observe: (descriptor: {
+    height?: number
+    maxHeight?: number
+    maxWidth?: number
+    minHeight?: number
+    minWidth?: number
+    orientation?: string
+    width?: number
+  }, callback: (result: { matches: boolean }) => void) => void
+}>(headlessPage?.createMediaQueryObserver?.())
 expectType<{
   exitFullScreen: () => void
   pause: () => void
