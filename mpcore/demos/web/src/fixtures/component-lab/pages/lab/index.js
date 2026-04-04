@@ -202,6 +202,8 @@ Page({
     ctx.setTextBaseline('middle')
     ctx.fillText('lab', 6, 20)
     ctx.strokeText('lab', 6, 20)
+    ctx.drawImage('/tmp/lab-thumb.png', 2, 4)
+    ctx.drawImage('/tmp/lab-sprite.png', 0, 0, 24, 24, 8, 10, 12, 14)
     ctx.restore()
     ctx.drawImage('/tmp/component-lab.png', 8, 10, 12, 12)
     ctx.draw(false, () => {

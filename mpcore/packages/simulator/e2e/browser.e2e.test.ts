@@ -260,6 +260,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasSnapshot).toContain('"shadowColor":"#112233"')
     expect(pageData.canvasSnapshot).toContain('"textAlign":"start"')
     expect(pageData.canvasSnapshot).toContain('"textBaseline":"alphabetic"')
+    expect(pageData.canvasSnapshot).toContain('"/tmp/lab-thumb.png",2,4')
+    expect(pageData.canvasSnapshot).toContain('"/tmp/lab-sprite.png",0,0,24,24,8,10,12,14')
     expect(pageData.canvasSnapshot).toContain('"type":"drawImage"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')
     expect(pageData.canvasQuerySnapshot).toContain('"type":"fillRect"')

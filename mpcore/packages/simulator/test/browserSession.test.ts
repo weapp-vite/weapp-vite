@@ -4555,7 +4555,9 @@ Page({
     ctx.setFillStyle('#ff5500')
     ctx.fillRect(0, 0, 20, 10)
     ctx.draw(false)
+    ctx.drawImage('/tmp/thumb.png', 2, 4)
     ctx.drawImage('/tmp/report.png', 4, 6, 12, 8)
+    ctx.drawImage('/tmp/sprite.png', 0, 0, 24, 24, 8, 10, 12, 14)
     ctx.draw(true, () => {
       this.setData({
         snapshot: JSON.stringify(ctx.__getSnapshot())
@@ -4575,6 +4577,9 @@ Page({
     expect(page.data.snapshot).toContain('"canvasId":"hero-canvas"')
     expect(page.data.snapshot).toContain('"type":"fillRect"')
     expect(page.data.snapshot).toContain('"type":"drawImage"')
+    expect(page.data.snapshot).toContain('"/tmp/thumb.png",2,4')
+    expect(page.data.snapshot).toContain('"/tmp/report.png",4,6,12,8')
+    expect(page.data.snapshot).toContain('"/tmp/sprite.png",0,0,24,24,8,10,12,14')
     expect(page.data.snapshot).toContain('"reserve":true')
   })
 
