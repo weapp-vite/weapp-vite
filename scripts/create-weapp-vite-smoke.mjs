@@ -14,11 +14,12 @@ const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? D
   .map(name => name.trim())
   .filter(Boolean)
 const DEFAULT_SCENARIO_NAMES = ['pnpm', 'yarn', 'npm', 'bun']
-const ENABLED_SCENARIO_NAMES = new Set(
-  (process.env.CREATE_WEAPP_VITE_SCENARIOS?.split(',') ?? DEFAULT_SCENARIO_NAMES)
-    .map(name => name.trim())
-    .filter(Boolean),
+const REQUESTED_SCENARIO_NAMES = (
+  process.env.CREATE_WEAPP_VITE_SCENARIOS?.split(',') ?? DEFAULT_SCENARIO_NAMES
 )
+  .map(name => name.trim())
+  .filter(Boolean)
+const NODE_MAJOR = Number.parseInt(process.versions.node.split('.')[0] ?? '', 10)
 const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_MS || 10 * 60 * 1000)
 const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS || 10 * 60 * 1000)
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
@@ -42,6 +43,21 @@ const TEMPLATE_DIR_MAP = {
   'tdesign': 'weapp-vite-tailwindcss-tdesign-template',
   'vant': 'weapp-vite-tailwindcss-vant-template',
 }
+
+function resolveEnabledScenarioNames() {
+  const names = new Set(REQUESTED_SCENARIO_NAMES)
+
+  // Yarn Classic 会在 install 阶段严格拦截 engines。
+  // 当前模板链路里的部分 ESLint 依赖要求 Node >= 22，
+  // 因此 Node 20 的 smoke 仅验证 npm / pnpm / bun 发布链路。
+  if (NODE_MAJOR > 0 && NODE_MAJOR < 22) {
+    names.delete('yarn')
+  }
+
+  return names
+}
+
+const ENABLED_SCENARIO_NAMES = resolveEnabledScenarioNames()
 
 function getExecutableName(command) {
   return process.platform === 'win32' ? `${command}.cmd` : command
@@ -233,13 +249,13 @@ const SCENARIOS = [
     },
     buildCommand() {
       return {
-        command: 'pnpm',
+        command: 'yarn',
         args: ['build'],
       }
     },
     devCommand() {
       return {
-        command: 'pnpm',
+        command: 'yarn',
         args: ['dev'],
       }
     },
@@ -260,14 +276,14 @@ const SCENARIOS = [
     },
     buildCommand() {
       return {
-        command: 'pnpm',
-        args: ['build'],
+        command: 'npm',
+        args: ['run', 'build'],
       }
     },
     devCommand() {
       return {
-        command: 'pnpm',
-        args: ['dev'],
+        command: 'npm',
+        args: ['run', 'dev'],
       }
     },
   },
@@ -647,6 +663,9 @@ async function main() {
     console.log(`Resolved create-weapp-vite version: ${RESOLVED_CREATE_WEAPP_VITE_VERSION}`)
   }
   console.log(`Templates: ${TEMPLATE_NAMES.join(', ')}`)
+  if (REQUESTED_SCENARIO_NAMES.join(', ') !== Array.from(ENABLED_SCENARIO_NAMES).join(', ')) {
+    console.log(`Requested scenarios: ${REQUESTED_SCENARIO_NAMES.join(', ')}`)
+  }
   console.log(`Scenarios: ${SCENARIOS.map(scenario => scenario.name).join(', ')}`)
   console.log(`Workspace: ${tmpRoot}`)
 

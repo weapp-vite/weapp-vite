@@ -180,6 +180,7 @@ jobs:
 
       - name: Print package manager versions
         shell: bash
+        working-directory: ${{ runner.temp }}
         run: |
           print_version() {
             local name="$1"
