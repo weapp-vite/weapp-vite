@@ -1,129 +1,114 @@
 ---
 name: github-issue-fix-workflow
-description: 面向采用 weapp-vite monorepo 布局仓库的 GitHub issue 修复工作流。适用于修复已报告的 GitHub issue、在 `e2e-apps/github-issues` 中复现 bug、从隔离 worktree 准备 PR，或执行完整的“复现 -> 根因分析 -> 修 packages/weapp-vite|wevu|templates|website|skills -> unit/e2e 覆盖 -> changeset -> PR”闭环。也适用于 issue 最终需要通过 `weapp-vite screenshot` / `compare` / `ide logs` 或 `@weapp-vite/mcp` 路径来验证 AI/运行时行为的场景。触发语句包括“修 GitHub issue”“复现这个 issue”“给这个 bug 补 github-issues case”“开 PR 修复”“按仓库流程修这个问题”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 GitHub issue 修复工作流。适用于从隔离 worktree 开始，完成“复现 -> 根因分析 -> 修 packages/weapp-vite|wevu|weapp-ide-cli|website|skills -> unit/e2e/截图验收 -> changeset -> PR”的闭环，也覆盖 `screenshot/compare/ide logs`、MCP、`dist/docs`、`AGENTS.md`、文档与 skill 同步等 GitHub issue 收尾动作。
 ---
 
 # github-issue-fix-workflow
 
-## Purpose
+## 目的
 
-把 GitHub issue 修复流程标准化，确保每次都按“独立 worktree、先复现、后定位、补 unit/e2e、再 PR”的顺序推进。
+把 GitHub issue 修复流程标准化，确保每次都按“独立 worktree、先复现、后修复、补回归、再 PR”的顺序推进。
 
 ## 触发信号
 
-- 用户要求修复某个 GitHub issue。
-- 用户要求在 `e2e-apps/github-issues` 增加复现案例。
-- 用户要求“开 PR 修这个 bug”或“按 issue 流程处理”。
-- 用户给出 issue 链接/编号，希望完成从复现到验证的闭环。
-- 用户要求对 bug 做最小复现、根因分析、回归用例补齐。
-- 用户要求用截图、截图对比、DevTools 日志或 MCP 工具证明 issue 已修复。
+- 用户要求修某个 GitHub issue。
+- 用户要求在 `e2e-apps/github-issues` 落一个复现案例。
+- 用户要求“按仓库流程修这个问题”或“开 PR 修复”。
+- 用户要求用真实运行时截图、截图对比、日志桥接或 MCP 工具证明问题已修复。
 
 ## 适用边界
 
-本 skill 聚焦“GitHub issue 修复工作流”。
+本 skill 聚焦 issue 修复闭环。
 
 以下情况不应作为主 skill：
 
-- 主要是在现有项目里做常规配置优化。使用 `weapp-vite-best-practices`。
-- 主要是 `.vue` 宏和模板兼容。使用 `weapp-vite-vue-sfc-best-practices`。
-- 主要是 `wevu` 生命周期、store 或事件语义。使用 `wevu-best-practices`。
-- 主要是原生到 `weapp-vite + wevu` 的迁移规划。使用 `native-to-weapp-vite-wevu-migration`。
-- 主要是网站、文档或 skill 入口同步。使用 `docs-and-website-sync`。
+- 只是常规项目配置优化。使用 `weapp-vite-best-practices`。
+- 只是 `.vue` 宏和模板兼容。使用 `weapp-vite-vue-sfc-best-practices`。
+- 只是 `wevu` 运行时语义。使用 `wevu-best-practices`。
+- 只是文档或 skills 对齐。使用 `docs-and-website-sync`。
 
 ## 快速开始
 
-1. 从主线或目标基线分支创建独立 `git worktree`。
+1. 从主线创建独立 `git worktree`。
 2. 在 `e2e-apps/github-issues` 先建立最小复现。
-3. 复现稳定后再做根因分析和源码修复。
-4. 补 unit + e2e + changeset，完成定向验证后再开 PR。
+3. 根因稳定后再改源码。
+4. 用 unit/e2e/截图或日志把回归锁死。
+5. 补 changeset，开 PR。
 
 ## 执行流程
 
-1. 先隔离工作区
+1. 隔离工作区
 
-- 在主线分支或约定基线上创建独立 `git worktree`。
-- worktree 放在仓库可写目录内（例如 `.codex-tmp/<issue>`），不要放到仓库外。
-- 不要在混杂其他未完成改动的工作区里直接做 issue 修复。
-- worktree 命名与 issue 标识保持可追踪。
+- 在仓库可写目录内创建 worktree，例如 `.codex-tmp/<issue>`.
+- 不要在已有脏工作区里直接修 issue。
 
 2. 先复现，后修复
 
-- 先在 `e2e-apps/github-issues` 落地最小、可评审的复现案例。
-- 确保问题可稳定复现后，再进入源码分析。
-- 如果问题无法稳定复现，不要过早改源代码。
+- 优先在 `e2e-apps/github-issues` 落最小复现。
+- 如果问题涉及 CLI、MCP、skills、website、packaged docs，也要先找到能稳定证明问题的入口。
+- 若问题无法稳定复现，不要直接碰源码。
 
 3. 做根因分析
 
-- 先确认问题落在哪一层：
-  - `weapp-vite` 构建/编译
+- 先判断问题在哪一层：
+  - `weapp-vite` 配置/构建/CLI
+  - `weapp-ide-cli` / automator / compare
   - `wevu` 运行时
-  - `wevu-compiler` / SFC 转换
-  - IDE / e2e / project config
-- 分析结果要能解释复现现象，而不只是“修到不报错”。
+  - `wevu-compiler` / Vue SFC
+  - docs / skills / AI contract
+  - DevTools 环境限制
 
-4. 再做源码修复
+4. 修复时保持范围清晰
 
-- 只改与根因相关的包和文件。
-- 若修改 `packages/*/src/**` 后要做 downstream 验证，先重建对应包产物。
-- 不把“复现 app 调整”和“根因修复”混成无法审阅的大改动。
-- 若修复会改变 AI 使用路径（如 screenshot、packaged docs、模板 `AGENTS.md`），同步补对应 docs/skills 入口。
+- 只改根因相关包。
+- 若修复改到 `packages/*/src/**`，下游验证前先重建对应包。
+- 若 issue 影响公开 AI 路径，同步修：
+  - `AGENTS.md` 模板
+  - `dist/docs`
+  - website / README / skills
 
 5. 锁定回归
 
-- 补或更新 unit tests，覆盖根因行为。
-- 补或更新 e2e tests，验证端到端回归。
-- 如 issue 的最终验收依赖真实运行时截图或日志，优先固定：
+- 补或更新 unit tests。
+- 补或更新 e2e tests。
+- 如最终验收依赖真实运行时，优先固定：
   - `weapp-vite screenshot`
   - `weapp-vite compare`
   - `weapp-vite ide logs --open`
-  - `take_weapp_screenshot` / `compare_weapp_screenshot`
-- 对 `e2e-apps/github-issues` 新增页面时：
-  - 同步更新 `project.private.config.json` 的 `condition.miniprogram.list`
-  - 保持 `project.config.json` 使用真实 AppID
+  - `take_weapp_screenshot`
+  - `compare_weapp_screenshot`
 
-6. 变更交付要求
+6. 交付要求
 
-- GitHub bug fix 必须补 changeset。
-- 如果变更涉及 `weapp-vite`、`wevu` 或 `templates/*`，同时补 `create-weapp-vite` bump changeset。
-- `.changeset/*.md` summary 段落使用中文。
-
-7. 验证与收尾
-
-- 先跑定向 unit + e2e 验证，再决定是否扩大范围。
-- 如果 issue 会改变公开工作流（如 screenshot/compare、`AGENTS.md`、`dist/docs`、skills 安装），同步更新 docs/website/skills，必要时联动 `docs-and-website-sync`。
-- 验证通过后再开 PR 回目标主线分支。
-- PR 标题、正文和后续 review comment 默认使用中文，除非用户明确要求其他语言。
-- 继续跟进 CI/CD，确认检查通过后再视为可合并；合并后清理临时 worktree。
+- 源码 bug fix 默认必须补 changeset。
+- 若发布影响 `weapp-vite`、`wevu` 或 `templates/*`，联动补 `create-weapp-vite` bump。
+- PR 标题、正文和 review comment 默认中文。
 
 ## 约束
 
-- 不要跳过 `git worktree` 隔离步骤。
-- 不要在复现不稳定时直接改源码碰运气。
-- 不要只补 e2e 不补 unit，或只补 unit 不补 e2e。
-- 不要漏掉 changeset，尤其是源码 bug fix。
-- 不要在 issue 修复过程中顺手夹带无关重构。
+- 不要跳过 `git worktree`。
+- 不要在复现不稳定时直接修源码。
+- 不要只补 unit 不补 e2e，或只补 e2e 不补 unit。
+- 不要遗漏 changeset。
+- 不要把真实 DevTools 环境问题误判成产品逻辑回归。
 
 ## 输出要求
 
 应用本 skill 时，输出必须包含：
 
-- issue 复现路径与最小案例位置。
-- 根因定位结论。
+- 复现路径。
+- 根因结论。
 - 源码修复范围。
-- unit/e2e/changeset/PR 的完成状态。
-- worktree 位置与 PR/CI 状态。
-- 定向验证命令与结果。
+- unit / e2e / 截图或日志验收状态。
+- changeset / PR 状态。
 
 ## 完成检查
 
-- 已创建独立 worktree 并在其中完成 issue 工作。
-- worktree 位于仓库可写目录内。
-- `e2e-apps/github-issues` 已有最小复现或已确认无需新增并说明原因。
-- 根因分析与最终修复一一对应。
-- unit tests 与 e2e tests 已补齐。
-- changeset 已添加且内容符合该仓库规则。
-- PR 已创建或已明确记录下一步 PR 动作，且 CI 状态已确认。
-- 若 issue 影响公开 AI/CLI 合约，对应 docs/website/skills 已同步或已明确记录后续同步动作。
+- 独立 worktree 已创建并使用。
+- 最小复现已建立或已说明为何不需要。
+- 根因与修复一一对应。
+- 回归测试已锁定。
+- 影响公开 AI/CLI/文档合约时，相关入口已同步。
 
 ## 参考资料
 

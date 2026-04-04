@@ -1,138 +1,125 @@
 ---
 name: weapp-vite-best-practices
-description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、`app.json` routes/subPackages、`routeRules/layout`、自动路由、自动导入组件、托管 TypeScript 支持文件、`prepare`、`wv`/`weapp-vite` CLI 用法、`dist/docs` 随包文档、脚手架生成项目里的 `AGENTS.md`、AI skills 安装、MCP、screenshot / compare / ide logs、Web runtime、lib mode 以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置 `autoRoutes/autoImportComponents/routeRules`、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”“layout 不生效”“`.weapp-vite` 文件怎么接入”“其他仓库里的 AI 怎么正确使用 weapp-vite”）。
+description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、自动路由、routeRules/layout、自动导入组件、分包、npm、多平台、受管 TypeScript、`prepare`、`forwardConsole`、`mcp`、`screenshot/compare/ide logs`、Web runtime、lib mode、worker、`dist/docs`、脚手架 `AGENTS.md` 与 AI skills 安装等当前能力。
 ---
 
 # weapp-vite-best-practices
 
 ## 目的
 
-Build or refactor weapp-vite projects with stable defaults first, then optimize packaging and performance. Prioritize predictable output and reproducible CI.
+用稳定默认值先把 weapp-vite 项目跑顺，再按目标逐步接入分包、AI、Web runtime、库模式和性能优化。
 
 ## 触发信号
 
-- User asks about `vite.config.ts` + `weapp` config design.
-- User asks how to organize pages/components/subpackages in weapp-vite.
-- User reports build output problems: missing pages/components, wrong output root, route generation mismatch, chunk duplication.
-- User asks about CI automation with WeChat DevTools or `weapp-ide-cli`.
-- User asks how `weapp-vite` CLI and `weapp-ide-cli` should split command ownership / passthrough.
-- User asks when to use `autoRoutes`, auto-imported components, or chunk shared strategy.
-- User asks about `.weapp-vite`, `prepare`, generated `AGENTS.md`, packaged docs under `dist/docs`, or how AI should use screenshot / compare / mcp in a real project.
+- 用户要配置 `vite.config.ts` 里的 `weapp`。
+- 用户要排查输出缺页、路径不对、自动路由不生效、layout 不生效。
+- 用户要接入分包、npm 落位、多平台、worker、web runtime、lib mode。
+- 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
 
 ## 适用边界
 
-Use this skill when the core issue is project-level architecture or build orchestration.
+本 skill 聚焦项目级架构、构建编排和 AI 工作流对齐。
 
-Do not use this as the primary skill when:
+以下情况不应作为主 skill：
 
-- The issue is mainly Vue SFC template/macro syntax. Use `weapp-vite-vue-sfc-best-practices`.
-- The issue is mainly runtime lifecycle/state/store patterns. Use `wevu-best-practices`.
-- The task is native mini-program to weapp-vite migration planning. Use `native-to-weapp-vite-wevu-migration`.
+- 主要是 `.vue` 宏和模板兼容。使用 `weapp-vite-vue-sfc-best-practices`。
+- 主要是 `wevu` 生命周期、状态和事件。使用 `wevu-best-practices`。
+- 主要是原生迁移。使用 `native-to-weapp-vite-wevu-migration`。
 
 ## 快速开始
 
-1. Confirm baseline runtime and source roots.
-2. Classify goal: new setup, refactor, debug, or performance optimization.
-3. Read local package docs first when available: `node_modules/weapp-vite/dist/docs/index.md`.
-4. Apply minimum viable config changes in `vite.config.ts` and app/page JSON sources.
-5. Verify with targeted build/type checks before suggesting broader cleanup.
-6. If validation touches apps/templates/e2e after editing `packages/*/src/**`, rebuild the touched package first to avoid stale `dist`.
+1. 先确认 `srcRoot`、输出目录和页面来源。
+2. 再确认是手写 `app.json` 还是 `autoRoutes`。
+3. 若类型或产物异常，先跑 `weapp-vite prepare`。
+4. 若项目已安装 `weapp-vite`，优先读本地 `node_modules/weapp-vite/dist/docs/`。
+5. 若项目来自脚手架，先读根 `AGENTS.md`。
 
 ## 执行流程
 
-1. Gather context first
+1. 先收集上下文
 
-- Inspect `vite.config.ts`, `app.json` source strategy, pages/subpackages layout, and scripts.
-- If the project installs `weapp-vite`, prefer local package docs under `node_modules/weapp-vite/dist/docs/` before relying on stale web examples.
-- If the project comes from `create-weapp-vite`, read root `AGENTS.md` before proposing AI workflow or CLI guidance.
-- Confirm `weapp.srcRoot` and expected output root.
-- Ask for missing constraints only when blocked (target platform, package limits, CI environment).
+- 看 `vite.config.ts`
+- 看 `app.json` / `app.json.ts`
+- 看分包、组件、页面目录
+- 看 package scripts
+- 看根 `AGENTS.md`
+- 看本地 `dist/docs`
 
-2. Build a minimal strategy
+2. 保持配置分层清晰
 
-- Keep config layering explicit: generic Vite config vs mini-program-specific `weapp` section.
-- Prefer convention-first setup (`autoRoutes`, auto components) and add overrides only when required.
-- Choose subpackage mode intentionally:
-  - `normal subpackage` for shared context.
-  - `independent subpackage` only when strict isolation is necessary.
-- Choose `weapp.chunks.sharedStrategy` by explicit goal:
-  - `duplicate` for better subpackage first-open performance.
-  - `hoist` for stronger deduplication and package-size control.
-- When handling CLI orchestration between `weapp-vite` and `weapp-ide-cli`, keep a single source-of-truth command catalog:
-  - Define and export full top-level command names in `weapp-ide-cli`.
-  - Let `weapp-vite` consume that export for passthrough decision.
-  - Resolve commands in this order: `weapp-vite` native commands first, then `weapp-ide-cli` passthrough only if command is cataloged.
-- Treat `wv` as an alias of `weapp-vite` in all command guidance.
-- When the project comes from `create-weapp-vite`, treat root `AGENTS.md` as a project-level workflow contract, not disposable boilerplate.
-- If the project relies on AI-driven acceptance, keep these defaults explicit:
-  - screenshot -> `weapp-vite screenshot`
-  - screenshot compare -> `weapp-vite compare`
-  - DevTools logs -> `weapp-vite ide logs --open`
-  - explicit MCP tools -> `take_weapp_screenshot` / `compare_weapp_screenshot`
+- 顶层 Vite 字段：`build`、`resolve`、`server`、`css`
+- 小程序专属字段：`weapp.*`
 
-3. Diagnose by symptom category
+优先把这些基础项先理顺：
 
-- Output missing/wrong path: verify `srcRoot`, route generation source, and glob coverage.
-- `.weapp-vite` support files stale or missing: run `weapp-vite prepare` before deeper diagnosis.
-- Slow build: inspect plugin timing and high-cost transforms.
-- Route/component generation mismatch: verify generated artifacts and resolver behavior.
-- If downstream app/template/e2e behavior does not match recent source edits, suspect stale `dist` first and rebuild the touched package before deeper diagnosis.
-- If an AI workflow involves screenshot acceptance or DevTools log collection, prefer `weapp-vite screenshot` / `wv screenshot` and `weapp-vite ide logs --open` / `wv ide logs --open`.
+- `weapp.srcRoot`
+- `weapp.platform`
+- `weapp.multiPlatform`
+- `weapp.autoRoutes`
+- `weapp.autoImportComponents`
+- `weapp.routeRules`
+- `weapp.typescript`
 
-4. Propose actionable edits
+3. 按目标启用能力
 
-- Give concrete file-level changes with rationale and expected impact.
-- Avoid broad config rewrites when a local fix can solve the issue.
+- AI / 调试：
+  - `weapp.forwardConsole`
+  - `weapp.mcp`
+  - `weapp-vite screenshot`
+  - `weapp-vite compare`
+  - `weapp-vite ide logs --open`
+- 产物与结构：
+  - `subPackages`
+  - `npm`
+  - `chunks`
+  - `worker`
+- 进阶链路：
+  - `web`
+  - `lib`
 
-5. Verify narrowly
+4. 症状分诊
 
-- When edits touch `packages/*/src/**` and validation goes through `apps/*`, `templates/*`, or `e2e-apps/*`, rebuild the touched package first.
-- For `weapp-vite` CLI-linked validation, use this order:
-  1. `pnpm --filter weapp-vite build`
-  2. downstream app/template/e2e command
-  3. targeted assertion command
-- Before step 2, state: `dist sync: rebuilt weapp-vite before downstream validation`
-- Prefer targeted checks, for example:
+- 输出路径不对：先查 `srcRoot`、project config、`build.outDir`
+- `.weapp-vite` 类型或提示不对：先跑 `prepare`
+- 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
+- 组件没自动注册：查 `autoImportComponents`、`wxml` 扫描和 resolver
+- AI 无法稳定操作项目：查 `AGENTS.md`、`dist/docs`、CLI 路由和 MCP
 
-```bash
-pnpm build:pkgs
-pnpm vitest run <related-test-file>
-```
+5. 保持 CLI 所有权清晰
 
-- Only suggest full regression when change scope requires it.
+- `weapp-vite` 原生命令优先
+- `weapp-ide-cli` 通过 catalog 命中后再透传
+- `wv` 视为 `weapp-vite` 等价别名
+
+6. 验证顺序
+
+- 先最小改动、最小验证
+- 若改了 `packages/*/src/**` 再做下游验证，先重建对应包
+- 下游验证前要明确：`dist sync: rebuilt weapp-vite before downstream validation`
 
 ## 约束
 
-- Do not optimize chunk strategy before `srcRoot` and route generation are confirmed.
-- Do not combine many advanced overrides in the first iteration.
-- Do not assume web-only conventions; keep mini-program JSON semantics explicit.
-- Do not mix architecture refactor with unrelated business logic changes.
-- Do not trust downstream app/template/e2e validation against stale package `dist`.
-- Do not implement IDE command passthrough with hardcoded duplicate lists in multiple packages.
-- Do not passthrough unknown commands blindly; require catalog hit before delegation.
-- Do not ignore packaged docs and generated `AGENTS.md` when they exist; they are part of the current product contract.
+- 不要在 `srcRoot` 和页面来源没确认前先调 chunk 策略。
+- 不要把 Web runtime 当作小程序真机等价运行时。
+- 不要忽略 `AGENTS.md` 和 `dist/docs`，它们是当前 AI 合约的一部分。
+- 不要让 `weapp-vite` 和 `weapp-ide-cli` 命令名单分裂。
 
 ## 输出要求
 
-When applying this skill, return:
+应用本 skill 时，输出必须包含：
 
-- A short diagnosis summary.
-- A minimal change list with concrete file targets.
-- Suggested verification commands (narrow first, then broad if needed).
-- Tradeoff notes for subpackage/chunk choices.
+- 诊断摘要。
+- 最小改动列表。
+- 推荐验证命令。
+- 分包 / chunk / AI 工作流的取舍说明。
 
 ## 完成检查
 
-- `vite.config.ts` has a clear and minimal `weapp` section.
-- `pages/subPackages` source-of-truth is explicit (manual or auto routes).
-- Component registration strategy is deterministic (auto import + resolver policy).
-- Subpackage/chunk strategy is selected with stated reason.
-- `.weapp-vite` support files and `prepare` workflow are accounted for when type/tooling issues are involved.
-- Dev/CI workflow is reproducible and not dependent on manual IDE clicks.
-- Downstream validation is performed against rebuilt package output, not stale `dist`.
-- CLI dispatch ownership is deterministic: native-first, catalog-based passthrough second.
-- Command catalog changes are made in `weapp-ide-cli` and consumed by `weapp-vite`, not duplicated.
-- AI-facing entry points (`dist/docs`, root `AGENTS.md`, screenshot/logs commands) stay aligned with current CLI behavior.
+- `weapp` 配置结构清晰。
+- 路由和组件来源明确。
+- `.weapp-vite` 支持文件流程已考虑。
+- CLI 原生命令、IDE 透传和 AI 路由不冲突。
+- `AGENTS.md`、`dist/docs`、MCP、截图和日志入口保持一致。
 
 ## 参考资料
 

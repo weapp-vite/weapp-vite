@@ -1,113 +1,110 @@
 ---
 name: weapp-ide-cli-best-practices
-description: 面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、`preview/upload/open/login/screenshot/compare`、automator 增强命令、`config doctor/export/import`、i18n 持久化、命令目录导出，以及与 weapp-vite CLI 原生命令优先 + catalog 透传的集成契约。适用于“weapp-vite screenshot 怎么走”“IDE 命令该留在谁那边”“automator 和 screenshot/compare 如何给 AI 用”“透传规则要怎么定”等场景。
+description: 面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、`preview/upload/open/login/screenshot/compare/ide logs`、automator 增强命令、`config doctor/export/import`、i18n 持久化、命令目录导出，以及与 `weapp-vite` 原生命令优先 + catalog 透传的 AI 友好集成契约。
 ---
 
 # weapp-ide-cli-best-practices
 
 ## 目的
 
-Design and evolve `weapp-ide-cli` with deterministic command behavior, automation-friendly UX, and stable integration contracts for other CLIs (especially `weapp-vite`).
+让 `weapp-ide-cli` 的命令行为、参数体验、JSON 输出和上游 CLI 集成契约保持稳定、可自动化、对 AI 友好。
 
 ## 触发信号
 
-- User asks to add/refactor `weapp-ide-cli` commands or argument validation.
-- User asks to expose command metadata for external CLI dispatch.
-- User asks to improve DevTools automation, screenshot, or automator subcommands.
-- User asks to add screenshot compare, JSON output stability, current/diff file outputs, or AI-friendly command routing.
-- User asks to add language switching or config persistence behavior.
-- User asks how `weapp-vite` should delegate to `weapp-ide-cli`.
+- 用户要新增或改造 `weapp-ide-cli` 命令。
+- 用户要增强 screenshot / compare / automator / logs。
+- 用户要暴露命令目录给上游 CLI 复用。
+- 用户要改 i18n、配置持久化或 doctor / export / import。
+- 用户要优化 `weapp-vite` 和 `weapp-ide-cli` 的透传边界。
 
 ## 适用边界
 
-Use this skill when the center of gravity is command routing, CLI UX, config persistence, and cross-package CLI contracts.
+本 skill 聚焦命令治理、配置持久化和跨包 CLI 合约。
 
-Do not use this as the primary skill when:
+以下情况不应作为主 skill：
 
-- The issue is mainly `weapp-vite` project build/subpackage architecture. Use `weapp-vite-best-practices`.
-- The issue is mainly Vue SFC syntax/macro compatibility. Use `weapp-vite-vue-sfc-best-practices`.
-- The issue is runtime lifecycle/state architecture in components/pages. Use `wevu-best-practices`.
+- 主要是工程构建和配置。使用 `weapp-vite-best-practices`。
+- 主要是 DevTools runtime e2e。使用 `weapp-devtools-e2e-best-practices`。
+- 主要是 `wevu` 或 `.vue` 运行时问题。使用对应 skill。
 
 ## 快速开始
 
-1. Classify change type: command addition, validation, i18n/config, or dispatch contract.
-2. Update command source-of-truth first, then update parser/dispatcher.
-3. Add/adjust tests around routing and error behavior.
-4. Sync docs in package README, website package page, packaged docs, and AI-facing guidance when relevant.
-5. If screenshot or compare semantics change, also check `@weapp-vite/mcp` explicit tool docs and upstream AI routing guidance.
+1. 先明确改动属于哪类命令。
+2. 更新命令目录 source-of-truth。
+3. 再改 parser / dispatch / validation。
+4. 补文档和测试。
+5. 若改动影响 AI 路由，联动检查上游 `AGENTS.md`、MCP 和 packaged docs。
 
 ## 执行流程
 
-1. Keep command taxonomy explicit
+1. 保持命令分类清晰
 
-- Maintain command groups as separate layers:
-  - WeChat official passthrough commands
-  - automator enhanced commands
-  - config commands
-  - minidev namespace passthrough
-- Keep screenshot behavior explicit because AI workflows frequently depend on deterministic file output.
-- Keep compare behavior explicit:
-  - baseline required
-  - threshold / max-diff-pixels / max-diff-ratio semantics clear
-  - compare failure should surface as non-zero exit
-- Export top-level command catalog from `weapp-ide-cli` for external reuse.
-- Provide a direct predicate function to check command support.
+- 官方 CLI 透传命令
+- automator 增强命令
+- `config` 子命令
+- `minidev` 命名空间
 
-2. Enforce dispatch invariants
+其中这几类 AI 合约必须显式：
 
-- Parse global language option before command routing.
-- Route minidev namespace and automator commands before generic WeChat CLI passthrough.
-- Keep `help <automator-command>` behavior explicit and deterministic.
-- Validate critical arguments before invoking external CLI.
+- `screenshot`
+- `compare`
+- `ide logs`
 
-3. Keep i18n + config predictable
+2. 强化参数与输出契约
 
-- Default language is Chinese.
-- Support command-level temporary language override and persistent config language.
-- Persist config to user directory config file and expose `config` subcommands for read/write/export/import.
-- Prefer Chinese user-facing messages, with switchable English fallback.
+- `compare`：
+  - `--baseline` 必填
+  - 阈值语义清晰
+  - 失败应返回非零退出码
+- `screenshot` / `compare`：
+  - 文件输出路径稳定
+  - `--json` 结构稳定
+- `ide logs`：
+  - 持续监听与退出行为明确
 
-4. Establish integration contract for upstream CLI
+3. 保持 i18n 与配置一致
 
-- Upstream CLI (e.g. `weapp-vite`) should:
-  - execute its native command table first
-  - delegate only when `isWeappIdeTopLevelCommand(command)` is true
-  - avoid blind passthrough for unknown commands
-- Keep `wv` and `weapp-vite` examples aligned in upstream docs and generated project guidance.
-- Keep this rule documented and tested on both sides.
+- 默认中文。
+- 支持命令级语言覆盖和持久化语言配置。
+- 配置持久化到用户目录，并通过 `config` 子命令读写。
 
-5. Verify narrowly
+4. 建立上游 CLI 契约
 
-- Prefer targeted tests in:
-  - `packages/weapp-ide-cli/test/*.test.ts`
-  - related `packages/weapp-vite/src/cli/*.test.ts` when dispatch contract changes
-- Run lint on touched docs and source files only.
+- 上游 `weapp-vite` 应：
+  - 先执行原生命令
+  - 仅当 `isWeappIdeTopLevelCommand(command)` 命中时再透传
+  - 不对未知命令盲目 passthrough
+- `weapp` / `weapp-vite` / `wv` 的使用示例要保持一致
+
+5. 联动 AI 能力
+
+- 若 screenshot / compare 语义变化，同步检查：
+  - `@weapp-vite/mcp` 显式工具文档
+  - `packages/weapp-vite/docs/packaged/ai-workflows.md`
+  - 脚手架 `AGENTS.md`
 
 ## 约束
 
-- Do not duplicate command lists in multiple packages as independent sources of truth.
-- Do not add user-facing text without i18n wrapping.
-- Do not couple command parsing with business side effects before validation.
-- Do not let unknown commands silently passthrough when integrating with another CLI.
+- 不要在多个包维护独立的命令名单。
+- 不要让未知命令静默透传。
+- 不要新增用户提示却不走 i18n。
+- 不要让 screenshot / compare 的文件或 JSON 合约漂移。
 
 ## 输出要求
 
-When applying this skill, return:
+应用本 skill 时，输出必须包含：
 
-- Command-level design summary (what changed and why).
-- Concrete file edits for catalog/routing/validation/docs/tests.
-- Verification commands and expected outcomes.
-- Cross-package contract notes when `weapp-vite` integration is touched.
+- 命令级设计摘要。
+- 具体改动文件。
+- 验证命令。
+- 如涉及上游集成，说明跨包契约影响。
 
 ## 完成检查
 
-- Top-level command catalog and predicate are exported from `weapp-ide-cli`.
-- Dispatch priority is deterministic and covered by tests.
-- New/changed user-facing messages support Chinese default and English switch.
-- Config persistence and command behavior are documented.
-- If integration changed, `weapp-vite` uses exported catalog instead of duplicated lists.
-- Screenshot and log-related commands stay documented for AI-driven acceptance workflows.
-- Screenshot compare behavior, JSON output contract, and file-output paths are deterministic and covered by tests/docs.
+- 命令目录和命中谓词已导出。
+- dispatch 优先级清晰且有测试。
+- screenshot / compare / logs 对 AI 友好且契约稳定。
+- `weapp-vite` 集成未复制独立名单。
 
 ## 参考资料
 

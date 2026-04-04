@@ -1,107 +1,104 @@
 ---
 name: weapp-vite-wevu-performance-best-practices
-description: 面向使用 `weapp-vite + wevu` 的小程序项目的性能实践手册，对齐微信运行时建议（`setData`、render、navigation、resource、memory），并覆盖 `weapp.wevu.preset`、`autoSetDataPick`、页面切换窗口期、图片与分包加载治理。适用于用户反馈卡顿/掉帧/白屏/页面切换慢/内存告警，或希望系统性做性能治理、压测与回归的场景，也适用于 AI 需要在截图/截图对比/日志验收前先把性能链路稳定下来的场景。
+description: 面向使用 `weapp-vite + wevu` 的小程序项目的性能实践手册，对齐 `setData`、渲染、页面切换、资源和内存治理，并覆盖 `weapp.wevu.preset`、`autoSetDataPick`、分包加载、截图/截图对比/日志验收前的性能稳定化流程。
 ---
 
 # weapp-vite-wevu-performance-best-practices
 
 ## 目的
 
-在 `weapp-vite + wevu` 项目中做“可测量、可回归”的性能优化，优先处理运行时瓶颈（`setData`、滚动渲染、页面切换、资源加载、内存）。
+在 `weapp-vite + wevu` 项目里做“有基线、可回归、能落地”的性能优化。
 
 ## 触发信号
 
-- 用户反馈页面卡顿、滚动掉帧、交互延迟。
-- 用户反馈页面切换慢、首屏慢、偶发白屏。
-- 用户提到 `setData` 频繁、payload 大、调试日志告警。
-- 用户提到图片导致卡顿/内存上涨。
-- 用户提到 iOS 内存告警、被系统回收、闪退。
-- 用户要求“做一套性能优化方案/Checklist/基线与回归机制”。
+- 用户反馈卡顿、掉帧、首屏慢、切换慢、白屏。
+- 用户提到 `setData` 高频、payload 大、图片过大、内存告警。
+- 用户要做系统性性能治理或性能回归。
 
 ## 适用边界
 
-本 skill 聚焦“性能诊断与优化执行”。
+本 skill 聚焦性能诊断与优化执行。
 
 以下情况不应作为主 skill：
 
-- 主要是工程架构/分包/构建编排问题。使用 `weapp-vite-best-practices`。
-- 主要是 `.vue` 宏和模板兼容问题。使用 `weapp-vite-vue-sfc-best-practices`。
-- 主要是生命周期/store/event 语义重构。使用 `wevu-best-practices`。
-- 主要是原生到 wevu 的迁移方案。使用 `native-to-weapp-vite-wevu-migration`。
+- 主要是工程配置和构建策略。使用 `weapp-vite-best-practices`。
+- 主要是 `.vue` 宏或模板兼容。使用 `weapp-vite-vue-sfc-best-practices`。
+- 主要是 `wevu` 运行时语义。使用 `wevu-best-practices`。
 
 ## 快速开始
 
-1. 建立基线：明确慢点是 `setData`、渲染、切换、资源还是内存。
-2. 先开低风险优化：`weapp.wevu.preset: 'performance'` + 针对页面启用 `autoSetDataPick`。
-3. 按五类场景逐项收敛：`setData -> 渲染 -> 切换 -> 资源 -> 内存`。
-4. 每次只改一类变量，并附带最小验证命令与回归信号。
-5. 如果最终验收依赖 screenshot / compare，先稳定运行时帧率、路由切换和日志链路，再做视觉验收。
+1. 先建立基线。
+2. 优先看 `setData` 路径。
+3. 再看渲染、切换、资源、内存。
+4. 每次只改一类变量。
+5. 先稳定性能，再做 screenshot / compare 验收。
 
 ## 执行流程
 
 1. Baseline first
 
-- 收集关键链路：页面切换耗时、首屏渲染耗时、滚动时长链路、内存告警出现时机。
-- 区分“偶发抖动”与“稳定复现”场景，优先复现稳定问题。
+- 明确慢点属于：
+  - `setData`
+  - render
+  - navigation
+  - resource
+  - memory
 
-2. setData path（最高优先）
+2. `setData` 路径
 
-- 先启用/确认 `setData` 策略：`patch`、`suspendWhenHidden`、`highFrequencyWarning`。
-- 用 `autoSetDataPick` 减少模板未使用字段进入快照。
-- 避免在高频回调（尤其 `onPageScroll`）里直接高频 `setData`。
+- 优先启用或确认：
+  - `weapp.wevu.preset: 'performance'`
+  - `autoSetDataPick`
+- 避免高频回调里直接高频 `setData`
 
-3. Render path
+3. render 路径
 
-- 非必要不监听 `onPageScroll`。
-- 元素曝光与可见性逻辑优先使用 `useIntersectionObserver()`。
-- 动画优先 CSS / 平台动画，不用连续 `setData` 驱动整页动画。
+- 非必要不监听 `onPageScroll`
+- 曝光逻辑优先 `useIntersectionObserver`
+- 动画优先 CSS / 平台动画
 
-4. Navigation path
+4. navigation 路径
 
-- 控制前页 `onHide/onUnload` 耗时逻辑，必要时延后执行。
-- 对分包页面的“跳转到 onLoad 前窗口期”提前请求数据。
-- 结合分包与 `lazyCodeLoading`，减少切换时注入与阻塞。
+- 控制 `onHide/onUnload` 阻塞
+- 结合分包和提前请求减少切换窗口期成本
 
-5. Resource + Memory path
+5. resource + memory 路径
 
-- 图片按展示尺寸供图，避免大图与无节制 `widthFix/heightFix`。
-- 在 `onMemoryWarning()` 回调释放缓存、监听、定时器和长生命周期对象。
-- 页面/组件卸载时确保副作用清理闭环（监听、timer、长任务回调）。
+- 图片按展示尺寸供图
+- 内存告警时释放缓存、监听和定时器
+- 页面卸载时清理副作用
 
-6. Verify narrowly
+6. AI 验收前的稳定化
 
-- 每轮改动给出“预期收益 + 可观测信号 + 回滚开关”。
-- 优先跑定向验证，再决定是否扩大验证范围。
-- 如果需要 AI 参与验收，补充：
+- 若最终验收依赖：
+  - `weapp-vite screenshot`
+  - `weapp-vite compare`
   - `weapp-vite ide logs --open`
-  - `weapp-vite screenshot ... --json`
-  - `weapp-vite compare ... --json`
-- 但把它们当作“性能修改后的验收补充”，不是替代性能基线。
+- 先保证帧率、路由切换和日志链路稳定，再做视觉验收
 
 ## 约束
 
-- 不要一次性同时改“构建策略 + 运行时策略 + 业务逻辑”。
-- 不要只看平均值，至少观察慢链路（P95/P99）或最差帧表现。
-- 不要把“告警消失”当作“性能已达标”的唯一依据。
-- 不要在未建立基线时做大规模重构。
+- 不要一次性同时改构建、运行时和业务逻辑。
+- 不要只看平均值，不看慢链路。
+- 不要把“告警没了”当作性能达标。
+- 不要在没基线时大改。
 
 ## 输出要求
 
 应用本 skill 时，输出必须包含：
 
-- 性能问题分类（setData/render/nav/resource/memory）。
-- 文件级最小改动建议（按优先级）。
-- 对应验证命令与验收信号。
-- 风险、回滚点与后续观察项。
+- 性能问题分类。
+- 文件级最小改动建议。
+- 验证命令与验收信号。
+- 风险和回滚点。
 
 ## 完成检查
 
-- 有明确的优化前后基线对照。
-- `setData` 高频路径已收敛（频率/范围/payload）。
-- 滚动与曝光逻辑不依赖高频 `onPageScroll + setData` 轮询。
-- 页面切换链路没有明显 `onHide/onUnload` 阻塞。
-- 资源策略对图片体积和布局抖动有约束。
-- 内存告警与卸载清理机制已覆盖关键页面。
+- 有优化前后基线。
+- 高频 `setData` 已收敛。
+- 滚动和曝光逻辑已从高频轮询中解耦。
+- 页面切换没有明显阻塞。
+- 资源和内存策略覆盖关键页面。
 
 ## 参考资料
 

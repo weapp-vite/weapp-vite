@@ -1,113 +1,100 @@
 ---
 name: wevu-best-practices
-description: 面向小程序中 wevu 运行时的实践手册：覆盖生命周期注册、响应式更新、事件契约、`bindModel/useBindModel`、`setPageLayout/usePageLayout`、根入口的 `useNativeRouter/useNativePageRouter`，以及 `wevu/router` 的 `createRouter/useRouter/useRoute` 和带有小程序兼容约束的 store 使用模式。适用于实现或重构 wevu pages/components/stores、排查 hook 时序、router 使用方式或 setData diff 行为、指导 AI 在 `wevu` 模板里按约定编写业务代码，或解释它与 Vue 3 Web runtime 差异的场景。
+description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周期注册、响应式更新、事件契约、`bindModel/useBindModel`、`setPageLayout/usePageLayout`、根入口 `useNativeRouter/useNativePageRouter`、`wevu/router`、store 约束，以及和脚手架 `AGENTS.md`、本地 `dist/docs/wevu-authoring.md` 对齐的当前 wevu 写法。
 ---
 
 # wevu-best-practices
 
 ## 目的
 
-Implement mini-program runtime logic with Vue-style ergonomics while respecting wevu constraints. Keep lifecycle timing, reactive updates, and component contracts explicit.
+在小程序运行时里用 `wevu` 写出边界清晰、更新可控、契约明确的页面、组件和 store。
 
 ## 触发信号
 
-- User asks how to implement page/component logic with `wevu`.
-- User asks about lifecycle hook timing or setup patterns.
-- User asks about props/emit contracts, event detail payloads, or two-way binding patterns.
-- User asks about store architecture, `storeToRefs`, or type inference behavior.
-- User reports runtime differences versus Vue 3 web behavior.
-- User asks about `setPageLayout/usePageLayout`、`useNativeRouter/useNativePageRouter`、`wevu/router` route semantics, or how AI should keep wevu code aligned with scaffolded `AGENTS.md`.
+- 用户问 `wevu` 页面或组件应该怎么写。
+- 用户问生命周期、hook 时序或 setup 约束。
+- 用户问 props / emit / 双向绑定 / store。
+- 用户问 `setPageLayout`、`useNativeRouter` 或 `wevu/router`。
+- 用户问 AI 应如何保持 wevu 代码和模板约定一致。
 
 ## 适用边界
 
-Use this skill when the main problem is runtime behavior and state/event contracts.
+本 skill 聚焦运行时行为和状态/事件契约。
 
-Do not use this as the primary skill when:
+以下情况不应作为主 skill：
 
-- The task is build/config/subpackage/CI orchestration. Use `weapp-vite-best-practices`.
-- The task is mainly `.vue` macro/template syntax compatibility. Use `weapp-vite-vue-sfc-best-practices`.
-- The task is native mini-program phased migration. Use `native-to-weapp-vite-wevu-migration`.
+- 主要是构建配置和分包。使用 `weapp-vite-best-practices`。
+- 主要是 `.vue` 模板和宏。使用 `weapp-vite-vue-sfc-best-practices`。
+- 主要是原生迁移。使用 `native-to-weapp-vite-wevu-migration`。
 
 ## 快速开始
 
-1. Verify runtime API imports and component registration model.
-2. Confirm hook registration timing and component/page boundaries.
-3. Normalize state/event binding patterns (`ref/reactive`, `emit`, `bindModel`).
-4. Check whether project root `AGENTS.md` already constrains `wevu` authoring and keep changes consistent with it.
-5. Validate with targeted runtime or unit tests.
-6. If the project installs `weapp-vite`, prefer `node_modules/weapp-vite/dist/docs/wevu-authoring.md` for current-version wevu conventions.
+1. 确认 API 从 `wevu` 导入。
+2. 确认 hook 在同步 `setup()` 中注册。
+3. 明确状态、事件和 store 边界。
+4. 对照项目根 `AGENTS.md` 和本地 `dist/docs/wevu-authoring.md`。
 
 ## 执行流程
 
-1. Establish runtime conventions
+1. 建立运行时约定
 
-- Import runtime APIs from `wevu` only.
-- Use `defineComponent` registration for both pages and components.
-- Keep options-style `data` as a function when used.
+- 业务代码里的运行时 API 从 `wevu` 导入
+- 页面和组件的上下文边界要明确
+- 选项式 `data` 若存在，保持函数形式
 
-2. Validate boundaries and timing
+2. 校验时序
 
-- Keep page hooks in page context only.
-- Register lifecycle hooks synchronously in `setup()`.
-- Avoid post-`await` hook registration.
+- 生命周期注册放在同步 `setup()` 中
+- 不要在 `await` 之后注册 hooks
 
-3. Normalize reactive update patterns
+3. 规范响应式更新
 
-- Prefer `ref/reactive/computed` for state derivation.
-- Avoid large opaque state writes; prefer fine-grained reactive updates.
-- Use explicit bindings when form/event semantics are non-trivial.
-- Keep mini-program serializability in mind when exposing data to templates and page state snapshots.
+- 优先 `ref/reactive/computed`
+- 避免大对象、不透明状态写入
+- 记住模板状态要可序列化、可同步到小程序快照
 
-4. Define event and two-way binding contracts
+4. 规范事件与双向绑定
 
-- Use `ctx.emit(event, detail, options)` with mini-program semantics.
-- Prefer `bindModel`/`useBindModel` for reusable field contracts.
-- Document parser/formatter behavior when value transforms are involved.
+- 事件使用小程序语义的 `emit`
+- 通用字段契约优先 `bindModel/useBindModel`
+- 值转换要明确 parser / formatter
 
-5. Handle page layout and router explicitly
+5. 处理 layout 与 router
 
-- Use `setPageLayout` / `usePageLayout` for runtime layout changes instead of ad-hoc page-state flags.
-- Distinguish native router helpers (`useNativeRouter` / `useNativePageRouter`) from `wevu/router` abstractions.
-- Keep route parsing and navigation contracts mini-program-first, not browser-first.
+- 运行时 layout 变化用 `setPageLayout` / `usePageLayout`
+- 区分：
+  - 原生 router helpers
+  - `wevu/router`
 
-6. Apply store discipline
+6. store discipline
 
-- Prefer Setup Store for simple domains and strong TS inference.
-- Use `storeToRefs` when destructuring state/getters.
-- Introduce `createStore()` only when global plugin/persistence behavior is required.
-- Prefer small store boundaries over giant cross-page stores.
-
-7. Verify compatibility explicitly
-
-- Avoid DOM/browser-only APIs in runtime business logic.
-- In Node/Vitest, stub `Component`/`wx` for bridge tests.
-- Treat platform differences as explicit constraints, not implicit bugs.
+- 小 domain 优先 Setup Store
+- 解构 state/getters 用 `storeToRefs`
+- 不要轻易做巨大跨页 store
 
 ## 约束
 
-- Avoid hook registration after `await` in `setup()`.
-- Avoid direct state destructuring without `storeToRefs` for stores.
-- Avoid relying on undocumented Vue web-only behavior in templates or lifecycle timing.
-- Avoid returning non-serializable native instance objects into template state.
+- 不要在 `await` 后注册 hooks。
+- 不要直接解构 store 丢失响应性。
+- 不要返回不可序列化原生实例到模板状态。
+- 不要把浏览器 Vue 行为当成 wevu 默认行为。
 
 ## 输出要求
 
-When applying this skill, return:
+应用本 skill 时，输出必须包含：
 
-- A runtime risk summary (lifecycle/state/event/store).
-- Concrete file-level edits.
-- Compatibility caveats versus Vue 3 web runtime.
-- Minimal verification commands and expected signals.
+- 运行时风险摘要。
+- 文件级改动建议。
+- 相对 Vue Web runtime 的兼容说明。
+- 最小验证命令。
 
 ## 完成检查
 
-- API imports come from `wevu`, not `vue` runtime in business code.
-- Page/component boundary usage is consistent.
-- Hook registration timing is synchronous and predictable.
-- Page layout and router helpers are chosen intentionally (`native router` vs `wevu/router`).
-- Store usage follows singleton + `storeToRefs` conventions.
-- Template/event bindings match mini-program-supported semantics.
-- Guidance stays aligned with generated project `AGENTS.md` for wevu templates.
+- API 导入来自 `wevu`。
+- 页面 / 组件边界清晰。
+- hook 注册时序正确。
+- layout、router、store 选择有明确理由。
+- 与项目 `AGENTS.md` 约定一致。
 
 ## 参考资料
 

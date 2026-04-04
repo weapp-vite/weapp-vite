@@ -1,113 +1,104 @@
 ---
 name: weapp-devtools-e2e-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML/页面数据断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` 的 DevTools 项目配置与条件页。也适用于和 AI screenshot / compare / logs 工作流配合验证真实运行时。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、真实运行时页面断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联、`project.private.config.json` 条件页维护，以及和 `weapp-vite screenshot/compare/ide logs` 配合形成真实运行时验收链路。
 ---
 
 # weapp-devtools-e2e-best-practices
 
-## Purpose
+## 目的
 
-统一 WeChat DevTools runtime e2e 的写法和验证顺序，避免重复启动 automator、脆弱导航、错误的项目配置，以及无法稳定复现的 IDE 自动化测试。
+统一 WeChat DevTools runtime e2e 的写法和验证顺序，避免重复启动 automator、脆弱导航和不稳定的 IDE 自动化。
 
 ## 触发信号
 
-- 用户要新增或修改 `e2e/ide/**` 测试。
-- 用户要使用 `miniprogram-automator` 做真实运行时断言。
-- 用户问 `launchAutomator` 应该如何复用。
-- 用户问 `miniProgram.reLaunch(...)` 的推荐策略。
-- 用户要在 `e2e-apps/*` 增加页面，并同步 DevTools 调试入口。
-- 用户遇到 DevTools 服务端口、登录、warmup、runtime snapshot 相关问题。
-- 用户希望把 e2e 路径和 `weapp-vite screenshot` / `compare` / `ide logs` 串成统一验收链路。
+- 用户要新增或修改 `e2e/ide/**`。
+- 用户要用 `miniprogram-automator` 做真实运行时断言。
+- 用户问 `launchAutomator` 该怎么复用。
+- 用户问是否该用 `miniProgram.reLaunch(...)`。
+- 用户要把 e2e 和 screenshot / compare / logs 串成验收链路。
 
 ## 适用边界
 
-本 skill 聚焦 WeChat DevTools runtime e2e。
+本 skill 聚焦 DevTools runtime e2e。
 
 以下情况不应作为主 skill：
 
-- 主要是 `weapp-ide-cli` 命令设计或 automator 子命令透传。使用 `weapp-ide-cli-best-practices`。
-- 主要是 GitHub issue 修复整体流程。使用 `github-issue-fix-workflow`。
-- 主要是项目架构、分包、构建编排。使用 `weapp-vite-best-practices`。
-- 主要是 `wevu` 生命周期、运行时语义。使用 `wevu-best-practices`。
+- 主要是 CLI 设计和命令分发。使用 `weapp-ide-cli-best-practices`。
+- 主要是构建配置。使用 `weapp-vite-best-practices`。
+- 主要是 `wevu` 运行时语义。使用 `wevu-best-practices`。
 
 ## 快速开始
 
-1. 先确认是否真的需要 `e2e/ide/**` 级别的真实运行时验证。
+1. 先确认是否真的需要 IDE 级真实运行时验证。
 2. 同一个 `e2e-app` 在同一 suite 只启动一次 automator。
-3. 多页面/多场景优先通过 `miniProgram.reLaunch(...)` 切换，不重复拉起 DevTools。
-4. 更新 `e2e-apps/*` 页面时，同步维护 `project.private.config.json` 条件页和真实 AppID。
-5. 如果后续要做截图验收，先把路由切换和页面稳定性设计好，再接 `weapp-vite screenshot` / `compare`。
+3. 多场景优先通过 `miniProgram.reLaunch(...)` 切换。
+4. 页面新增时同步条件页和真实 AppID。
+5. 先把路由和页面稳定，再接截图 / compare。
 
 ## 执行流程
 
-1. 先检查环境前提
+1. 检查环境前提
 
 - WeChat DevTools 已登录。
-- 已开启服务端口。
-- 目标 app 的 `project.config.json` 使用真实 AppID，不要用 `touristappid`。
+- 服务端口已开启。
+- 目标 app 使用真实 AppID。
 
 2. 设计 suite 结构
 
-- 对同一个 `e2e-app`，在 `describe` 级别共享 automator 会话。
-- 使用 `launchAutomator()` 只拉起一次，再在多个 `it` 中复用 `miniProgram`。
-- 如果必须隔离启动，必须在注释里说明原因。
+- 在 `describe` 级别共享 automator 会话。
+- 同一 `e2e-app` 不要在多个 `it` 里重复 `launchAutomator()`。
+- 若必须隔离启动，在注释里说明原因。
 
-3. 设计导航与页面切换
+3. 设计导航与切换
 
-- 多场景验证优先使用 `miniProgram.reLaunch(route)`。
-- 不要为每个页面单独重新启动 DevTools。
-- 需要处理瞬时空白、warmup 或重试时，复用仓库里的 automator 工具与兜底逻辑。
+- 多场景验证优先 `miniProgram.reLaunch(route)`。
+- 不要为了切页面反复重启 DevTools。
+- 对 warmup、空白态、重试统一复用仓库已有工具。
 
 4. 断言策略
 
-- 优先做稳定的页面级/结构级断言，避免脆弱的瞬时状态依赖。
-- 需要 runtime 错误收集时，接入统一的 runtime error 收集器。
-- 更新行为变更时，同步更新 snapshot/assertion。
-- 若问题最终要给 AI 做截图验收，先保证 e2e 路径和页面路由足够稳定，再考虑 `weapp-vite screenshot` 补充验收。
+- 优先做稳定的页面级/结构级断言。
+- 需要 runtime 错误收集时，接入统一收集器。
+- 若最终要做 AI 截图验收，先确保 e2e 路由和页面稳定，再补：
+  - `weapp-vite screenshot --json`
+  - `weapp-vite compare --json`
+  - `weapp-vite ide logs --open`
 
-5. e2e app 维护规则
+5. 维护 `e2e-apps/*`
 
-- 新增页面时：
-  - 更新 `project.private.config.json` 的 `condition.miniprogram.list`
-  - 确保 `project.config.json` 继续使用真实 AppID
-- 不要让 IDE 调试入口与实际页面结构脱节。
+- 新增页面时同步：
+  - `project.private.config.json` 的 `condition.miniprogram.list`
+  - `project.config.json` 的真实 AppID
 
-6. 验证与守护
+6. 验证顺序
 
-- 优先运行目标 IDE e2e 文件，而不是整套全量 e2e。
-- 修改 `e2e/ide/**` 后，优先跑共享启动约束检查：
+- 先跑共享启动检查：
   - `node --import tsx scripts/check-e2e-ide-shared-launch.ts`
-- 再跑目标 `vitest` 用例。
-- 如本轮还需要做 AI 视觉验收，再补充：
-  - `weapp-vite screenshot --project <dist/build/mp-weixin> --page <route> --json`
-  - `weapp-vite compare --project <dist/build/mp-weixin> --baseline <png> --max-diff-pixels <n> --json`
+- 再跑目标 IDE e2e 文件。
+- 需要视觉回归时，再补 screenshot / compare。
 
 ## 约束
 
-- 不要在同一 `e2e-app` 的多个 `it/test` 回调里重复调用 `launchAutomator()`。
-- 不要为了切换页面反复重启 DevTools。
-- 不要新增页面却漏掉 `project.private.config.json` 条件页。
-- 不要把环境错误（未登录、端口未开）误判成业务回归。
-- 不要默认上来跑所有 IDE e2e。
-- 不要在页面路由还不稳定时先做 screenshot / compare 验收。
+- 不要在同一 `e2e-app` 重复启动 automator。
+- 不要为切页面反复重启 DevTools。
+- 不要在路由不稳定时先做截图对比。
+- 不要把环境问题误判成业务回归。
 
 ## 输出要求
 
 应用本 skill 时，输出必须包含：
 
-- suite 结构设计（共享启动还是隔离启动）。
-- `reLaunch` 路由切换方案。
-- 相关 `e2e-app` 配置同步项。
+- suite 结构。
+- 页面切换方案。
+- `e2e-app` 配置同步项。
 - 最小验证命令。
 
 ## 完成检查
 
-- 同一 `e2e-app` 的 automator 启动已复用。
-- 多场景验证通过 `miniProgram.reLaunch(...)` 串联。
-- snapshot/assertion 已随行为变更同步。
-- `project.config.json` 保持真实 AppID。
-- 新增页面时 `project.private.config.json` 条件页已更新。
-- 已运行共享启动检查和目标 IDE e2e。
+- automator 启动已复用。
+- 多场景通过 `reLaunch` 串联。
+- 条件页和 AppID 已同步。
+- 已跑共享启动检查和目标 IDE e2e。
 
 ## 参考资料
 
