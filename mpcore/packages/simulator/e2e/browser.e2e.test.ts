@@ -1198,6 +1198,38 @@ describe.sequential('simulator browser e2e', () => {
     expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
   })
 
+  it('tracks switchTab return to hub through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('switchSettings')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/settings/index' && state.pageStack.length === 1,
+      20_000,
+    )
+
+    bridge.runPageMethod('backHub')
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'pages/hub/index' && nextState.pageStack.length === 1,
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(state.pageStack).toEqual(['pages/hub/index'])
+    expect(pageData.title).toBe('Route Maze Hub')
+    expect(pageData.logs).toContain('hub:onShow')
+    expect(state.previewMarkup).toContain('Route Maze Hub')
+    expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
+  })
+
   it('tracks relaunch navigation through the web demo bridge', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
