@@ -21,6 +21,8 @@ interface SimulatorE2EApi {
     toastData: string
     viewportSize: { height: number, width: number }
   }
+  mockActionSheet: (definition?: { cancel?: boolean, tapIndex?: number }) => void
+  mockModal: (definition?: { cancel?: boolean, confirm?: boolean }) => void
   navigateBack: (delta?: number) => void
   openRoute: (route: string) => void
   pickScenario: (scenarioId: string) => void
@@ -152,6 +154,12 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('showShareMenuLab')
     bridge.runPageMethod('updateShareMenuLab')
     bridge.runPageMethod('hideShareMenuLab')
+    bridge.runPageMethod('openDefaultModalLab')
+    bridge.mockModal({ confirm: false })
+    bridge.runPageMethod('openCancelModalLab')
+    bridge.runPageMethod('openDefaultActionSheetLab')
+    bridge.mockActionSheet({ cancel: true })
+    bridge.runPageMethod('openCancelActionSheetLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -229,6 +237,10 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.shareMenuShownInfo
           && pageData.shareMenuUpdatedInfo
           && pageData.shareMenuHiddenInfo
+          && pageData.modalDefaultInfo
+          && pageData.modalCancelInfo
+          && pageData.actionSheetDefaultInfo
+          && pageData.actionSheetCancelInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -383,6 +395,12 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.shareMenuShownInfo).toContain('"errMsg":"showShareMenu:ok"')
     expect(pageData.shareMenuUpdatedInfo).toContain('"errMsg":"updateShareMenu:ok"')
     expect(pageData.shareMenuHiddenInfo).toContain('"errMsg":"hideShareMenu:ok"')
+    expect(pageData.modalDefaultInfo).toContain('"confirm":true')
+    expect(pageData.modalDefaultInfo).toContain('"cancel":false')
+    expect(pageData.modalCancelInfo).toContain('"confirm":false')
+    expect(pageData.modalCancelInfo).toContain('"cancel":true')
+    expect(pageData.actionSheetDefaultInfo).toContain('"tapIndex":0')
+    expect(pageData.actionSheetCancelInfo).toContain('"error":"showActionSheet:fail cancel"')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -493,6 +511,48 @@ describe.sequential('simulator browser e2e', () => {
       visible: false,
       withShareTicket: true,
     })
+    expect(bridge.sessionSnapshot().modalLogs).toEqual([
+      {
+        cancelColor: '#000000',
+        cancelText: '取消',
+        confirmColor: '#576B95',
+        confirmText: '确定',
+        content: 'Confirm flow',
+        result: {
+          cancel: false,
+          confirm: true,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Warmup',
+      },
+      {
+        cancelColor: '#000000',
+        cancelText: '返回',
+        confirmColor: '#576B95',
+        confirmText: '继续',
+        content: 'Cancel flow',
+        result: {
+          cancel: true,
+          confirm: false,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Blocker',
+      },
+    ])
+    expect(bridge.sessionSnapshot().actionSheetLogs).toEqual([
+      {
+        itemList: ['copy', 'open'],
+        result: {
+          errMsg: 'showActionSheet:ok',
+          tapIndex: 0,
+        },
+      },
+      {
+        itemList: ['copy', 'open'],
+      },
+    ])
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)

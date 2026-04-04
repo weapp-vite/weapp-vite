@@ -286,6 +286,12 @@ describe('page event alignment', () => {
     page.showShareMenuLab()
     page.updateShareMenuLab()
     page.hideShareMenuLab()
+    page.openDefaultModalLab()
+    session.mockModal({ confirm: false })
+    page.openCancelModalLab()
+    page.openDefaultActionSheetLab()
+    session.mockActionSheet({ cancel: true })
+    page.openCancelActionSheetLab()
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -401,6 +407,54 @@ describe('page event alignment', () => {
       visible: false,
       withShareTicket: true,
     })
+    expect(page.data.modalDefaultInfo).toContain('"confirm":true')
+    expect(page.data.modalDefaultInfo).toContain('"cancel":false')
+    expect(page.data.modalCancelInfo).toContain('"confirm":false')
+    expect(page.data.modalCancelInfo).toContain('"cancel":true')
+    expect(session.getModalLogs()).toEqual([
+      {
+        cancelColor: '#000000',
+        cancelText: '取消',
+        confirmColor: '#576B95',
+        confirmText: '确定',
+        content: 'Confirm flow',
+        result: {
+          cancel: false,
+          confirm: true,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Warmup',
+      },
+      {
+        cancelColor: '#000000',
+        cancelText: '返回',
+        confirmColor: '#576B95',
+        confirmText: '继续',
+        content: 'Cancel flow',
+        result: {
+          cancel: true,
+          confirm: false,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Blocker',
+      },
+    ])
+    expect(page.data.actionSheetDefaultInfo).toContain('"tapIndex":0')
+    expect(page.data.actionSheetCancelInfo).toContain('"error":"showActionSheet:fail cancel"')
+    expect(session.getActionSheetLogs()).toEqual([
+      {
+        itemList: ['copy', 'open'],
+        result: {
+          errMsg: 'showActionSheet:ok',
+          tapIndex: 0,
+        },
+      },
+      {
+        itemList: ['copy', 'open'],
+      },
+    ])
     expect(session.getOpenedDocument()).toEqual({
       filePath: 'headless://saved/open-document/report.txt',
       fileType: 'txt',
