@@ -801,6 +801,7 @@ Page({
     ctx.setLineDash([6, 3], 2)
     ctx.setLineJoin('bevel')
     ctx.setMiterLimit(6)
+    ctx.setShadow(2, 3, 4, '#112233')
     ctx.fillRect(4, 8, 40, 24)
     ctx.save()
     ctx.beginPath()
@@ -822,6 +823,7 @@ Page({
     ctx.setTextBaseline('middle')
     const metrics = ctx.measureText('canvas')
     ctx.fillText('canvas', 6, 20)
+    ctx.strokeText('canvas', 6, 20)
     ctx.restore()
     ctx.draw(false, () => {
       this.setData({
@@ -878,6 +880,7 @@ Component({
       ctx.setGlobalAlpha(0.8)
       ctx.setLineCap('square')
       ctx.setLineDash([4, 2])
+      ctx.setShadow(1, 1, 2, '#445566')
       ctx.setLineWidth(3)
       ctx.save()
       ctx.translate(2, 3)

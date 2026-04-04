@@ -180,6 +180,7 @@ Page({
     ctx.setLineDash([6, 3], 2)
     ctx.setLineJoin('bevel')
     ctx.setMiterLimit(6)
+    ctx.setShadow(2, 3, 4, '#112233')
     ctx.fillRect(4, 6, 28, 18)
     ctx.save()
     ctx.beginPath()
@@ -200,6 +201,7 @@ Page({
     ctx.setTextAlign('center')
     ctx.setTextBaseline('middle')
     ctx.fillText('lab', 6, 20)
+    ctx.strokeText('lab', 6, 20)
     ctx.restore()
     ctx.drawImage('/tmp/component-lab.png', 8, 10, 12, 12)
     ctx.draw(false, () => {
