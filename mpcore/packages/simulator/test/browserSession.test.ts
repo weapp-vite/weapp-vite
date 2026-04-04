@@ -4991,6 +4991,62 @@ Page({
     expect(session.getFileText('headless://wxfile/temp/chosen-video-01.mp4')).toContain('"duration":18')
   })
 
+  it('supports getVideoInfo in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingSummary: '',
+    videoDetail: ''
+  },
+  runVideoInfoLab() {
+    wx.chooseVideo({
+      compressed: true,
+      maxDuration: 24,
+      sourceType: ['album'],
+      success: (result) => {
+        wx.getVideoInfo({
+          src: result.tempFilePath,
+          success: (videoInfo) => {
+            this.setData({
+              videoDetail: JSON.stringify(videoInfo),
+            })
+          },
+        })
+      },
+    })
+  },
+  runMissingVideoInfoLab() {
+    wx.getVideoInfo({
+      src: 'headless://wxfile/temp/browser-missing-video-info.mp4',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{videoDetail}}</view><view>{{missingSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runVideoInfoLab()
+    page.runMissingVideoInfoLab()
+
+    expect(page.data.videoDetail).toContain('"errMsg":"getVideoInfo:ok"')
+    expect(page.data.videoDetail).toContain('"duration":18')
+    expect(page.data.videoDetail).toContain('"width":640')
+    expect(page.data.videoDetail).toContain('"height":360')
+    expect(page.data.videoDetail).toContain('"type":"mp4"')
+    expect(page.data.missingSummary).toBe('getVideoInfo:fail file not found: headless://wxfile/temp/browser-missing-video-info.mp4')
+  })
+
   it('supports chooseMedia in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
@@ -5029,12 +5085,20 @@ Page({
             })
           },
         })
+        wx.getVideoInfo({
+          src: result.tempFiles[1].tempFilePath,
+          success: (videoInfo) => {
+            this.setData({
+              videoDetail: JSON.stringify(videoInfo),
+            })
+          },
+        })
       },
     })
   }
 })
 `],
-      ['pages/index/index.wxml', '<view>{{mediaSummary}}</view><view>{{imageDetail}}</view><view>{{savedSummary}}</view>'],
+      ['pages/index/index.wxml', '<view>{{mediaSummary}}</view><view>{{imageDetail}}</view><view>{{savedSummary}}</view><view>{{videoDetail}}</view>'],
     ])
 
     const session = createBrowserHeadlessSession({ files })
@@ -5049,6 +5113,8 @@ Page({
     expect(page.data.imageDetail).toContain('"errMsg":"getImageInfo:ok"')
     expect(page.data.imageDetail).toContain('"type":"jpeg"')
     expect(page.data.savedSummary).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+    expect(page.data.videoDetail).toContain('"errMsg":"getVideoInfo:ok"')
+    expect(page.data.videoDetail).toContain('"duration":19')
   })
 
   it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {

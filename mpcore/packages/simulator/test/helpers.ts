@@ -803,9 +803,12 @@ Page({
     chosenVideoInfo: '',
     chosenVideoSavedInfo: '',
     chosenVideoMissingSaveInfo: '',
+    chosenVideoDetail: '',
+    chosenVideoDetailMissing: '',
     chosenMediaInfo: '',
     chosenMediaImageDetail: '',
     chosenMediaVideoSavedInfo: '',
+    chosenMediaVideoDetail: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -1038,6 +1041,35 @@ Page({
       },
     })
   },
+  inspectChosenVideoLab() {
+    wx.chooseVideo({
+      compressed: true,
+      maxDuration: 24,
+      sourceType: ['album'],
+      success: (result) => {
+        wx.getVideoInfo({
+          src: result.tempFilePath,
+          success: (videoInfo) => {
+            this.setData({
+              chosenVideoDetail: JSON.stringify(videoInfo),
+            })
+          },
+        })
+      },
+    })
+  },
+  inspectMissingChosenVideoLab() {
+    wx.getVideoInfo({
+      src: 'headless://wxfile/temp/missing-video-info.mp4',
+      fail: (error) => {
+        this.setData({
+          chosenVideoDetailMissing: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
   chooseMediaLab() {
     wx.chooseMedia({
       count: 2,
@@ -1062,6 +1094,14 @@ Page({
           success: (savedResult) => {
             this.setData({
               chosenMediaVideoSavedInfo: JSON.stringify(savedResult),
+            })
+          },
+        })
+        wx.getVideoInfo({
+          src: result.tempFiles[1]?.tempFilePath,
+          success: (videoInfo) => {
+            this.setData({
+              chosenMediaVideoDetail: JSON.stringify(videoInfo),
             })
           },
         })
@@ -1141,9 +1181,12 @@ Page({
 <view>{{chosenVideoInfo}}</view>
 <view>{{chosenVideoSavedInfo}}</view>
 <view>{{chosenVideoMissingSaveInfo}}</view>
+<view>{{chosenVideoDetail}}</view>
+<view>{{chosenVideoDetailMissing}}</view>
 <view>{{chosenMediaInfo}}</view>
 <view>{{chosenMediaImageDetail}}</view>
 <view>{{chosenMediaVideoSavedInfo}}</view>
+<view>{{chosenMediaVideoDetail}}</view>
 <view>{{tempVideoSavedInfo}}</view>
 <view>{{tempVideoSavedMissingInfo}}</view>
 <view>{{canvasTempFilePath}}</view>

@@ -354,6 +354,22 @@ export interface HeadlessWxGetImageInfoOption extends HeadlessWxCallbackOption<H
   src: string
 }
 
+export interface HeadlessWxGetVideoInfoResult {
+  bitrate: number
+  duration: number
+  errMsg: string
+  fps: number
+  height: number
+  orientation: 'up'
+  size: number
+  type: string
+  width: number
+}
+
+export interface HeadlessWxGetVideoInfoOption extends HeadlessWxCallbackOption<HeadlessWxGetVideoInfoResult> {
+  src: string
+}
+
 export interface HeadlessWxRemoveStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   key: string
 }
@@ -757,6 +773,7 @@ export interface HeadlessWxDriver {
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult
+  getVideoInfo: (option: HeadlessWxGetVideoInfoOption) => HeadlessWxGetVideoInfoResult
   getFileSystemManager: () => HeadlessWxFileSystemManager
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult
   getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult
@@ -830,6 +847,7 @@ export interface HeadlessWx {
   createVideoContext: (videoId: string, component?: Record<string, any>) => HeadlessWxVideoContext
   createSelectorQuery: () => HeadlessWxSelectorQuery
   getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult | undefined
+  getVideoInfo: (option: HeadlessWxGetVideoInfoOption) => HeadlessWxGetVideoInfoResult | undefined
   getFileSystemManager: () => HeadlessWxFileSystemManager
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult | undefined
   getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult | undefined
@@ -972,6 +990,19 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         height: true,
         orientation: true,
         path: true,
+        type: true,
+        width: true,
+      },
+    },
+    getVideoInfo: {
+      return: {
+        bitrate: true,
+        duration: true,
+        errMsg: true,
+        fps: true,
+        height: true,
+        orientation: true,
+        size: true,
         type: true,
         width: true,
       },
@@ -1244,6 +1275,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     },
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
     getImageInfo: option => invokeWxApi(() => driver.getImageInfo(option), option),
+    getVideoInfo: option => invokeWxApi(() => driver.getVideoInfo(option), option),
     getFileSystemManager: () => driver.getFileSystemManager(),
     getSavedFileInfo: option => invokeWxApi(() => driver.getSavedFileInfo(option), option),
     getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),

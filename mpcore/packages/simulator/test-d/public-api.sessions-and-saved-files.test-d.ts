@@ -209,6 +209,19 @@ expectType<{
 } | undefined>(browserPage?.wx.getImageInfo({
   src: 'headless://wxfile/temp/0001',
 }))
+expectType<{
+  bitrate: number
+  duration: number
+  errMsg: string
+  fps: number
+  height: number
+  orientation: 'up'
+  size: number
+  type: string
+  width: number
+} | undefined>(browserPage?.wx.getVideoInfo({
+  src: 'headless://wxfile/temp/0001.mp4',
+}))
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.previewImage({
   current: 'headless://wxfile/temp/0001',
   urls: ['headless://wxfile/temp/0001'],
@@ -526,6 +539,19 @@ expectType<{
   width: number
 } | undefined>(headlessPage?.wx.getImageInfo({
   src: 'headless://wxfile/temp/0001',
+}))
+expectType<{
+  bitrate: number
+  duration: number
+  errMsg: string
+  fps: number
+  height: number
+  orientation: 'up'
+  size: number
+  type: string
+  width: number
+} | undefined>(headlessPage?.wx.getVideoInfo({
+  src: 'headless://wxfile/temp/0001.mp4',
 }))
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.previewImage({
   current: 'headless://wxfile/temp/0001',
