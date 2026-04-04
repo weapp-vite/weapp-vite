@@ -65,6 +65,12 @@ export function useWorkbench() {
       callComponentMethod: (scopeId: string, method: string, ...args: any[]) => {
         return sessionState.session.value?.callScopeMethodDirect(scopeId, method, ...args)
       },
+      mockActionSheet: (definition: { cancel?: boolean, tapIndex?: number } = {}) => {
+        sessionState.session.value?.mockActionSheet?.(definition)
+      },
+      mockModal: (definition: { cancel?: boolean, confirm?: boolean } = {}) => {
+        sessionState.session.value?.mockModal?.(definition)
+      },
       navigateBack: (delta = 1) => sessionState.run(() => sessionState.session.value?.navigateBack(delta)),
       openRoute: (route: string) => sessionState.handleOpenRoute(route),
       pickScenario: (scenarioId: string) => handlePickScenario(scenarioId),

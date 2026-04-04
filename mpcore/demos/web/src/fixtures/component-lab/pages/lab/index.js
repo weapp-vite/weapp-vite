@@ -38,6 +38,10 @@ Page({
     shareMenuShownInfo: '',
     shareMenuUpdatedInfo: '',
     shareMenuHiddenInfo: '',
+    modalDefaultInfo: '',
+    modalCancelInfo: '',
+    actionSheetDefaultInfo: '',
+    actionSheetCancelInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -562,6 +566,52 @@ Page({
       complete: (result) => {
         this.setData({
           shareMenuHiddenInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  openDefaultModalLab() {
+    wx.showModal({
+      title: 'Warmup',
+      content: 'Confirm flow',
+      success: (result) => {
+        this.setData({
+          modalDefaultInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  openCancelModalLab() {
+    wx.showModal({
+      title: 'Blocker',
+      content: 'Cancel flow',
+      cancelText: '返回',
+      confirmText: '继续',
+      success: (result) => {
+        this.setData({
+          modalCancelInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  openDefaultActionSheetLab() {
+    wx.showActionSheet({
+      itemList: ['copy', 'open'],
+      success: (result) => {
+        this.setData({
+          actionSheetDefaultInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  openCancelActionSheetLab() {
+    wx.showActionSheet({
+      itemList: ['copy', 'open'],
+      fail: (error) => {
+        this.setData({
+          actionSheetCancelInfo: JSON.stringify({
+            error: error.message,
+          }),
         })
       },
     })
