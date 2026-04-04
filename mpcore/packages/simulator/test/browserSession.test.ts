@@ -4595,6 +4595,8 @@ Page({
     ctx.lineTo(12, 8)
     ctx.stroke()
     ctx.setFontSize(18)
+    ctx.setTextAlign('center')
+    ctx.setTextBaseline('middle')
     const metrics = ctx.measureText('canvas')
     ctx.fillText('canvas', 4, 12)
     ctx.draw(false, () => {
@@ -4617,7 +4619,11 @@ Page({
     expect(page.data.snapshot).toContain('"type":"moveTo"')
     expect(page.data.snapshot).toContain('"type":"stroke"')
     expect(page.data.snapshot).toContain('"type":"fillText"')
+    expect(page.data.snapshot).toContain('"type":"setTextAlign"')
+    expect(page.data.snapshot).toContain('"type":"setTextBaseline"')
     expect(page.data.snapshot).toContain('"fontSize":18')
+    expect(page.data.snapshot).toContain('"textAlign":"center"')
+    expect(page.data.snapshot).toContain('"textBaseline":"middle"')
     expect(page.data.width).toBe(54)
   })
 

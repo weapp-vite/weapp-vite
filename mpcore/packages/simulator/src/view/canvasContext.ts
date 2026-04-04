@@ -59,6 +59,8 @@ export function createHeadlessCanvasContext(
     miterLimit: 10,
     lineWidth: 1,
     strokeStyle: '#000000',
+    textAlign: 'start',
+    textBaseline: 'alphabetic',
   }
 
   let state = {
@@ -77,6 +79,8 @@ export function createHeadlessCanvasContext(
     lineWidth: state.lineWidth,
     reserve: false,
     strokeStyle: state.strokeStyle,
+    textAlign: state.textAlign,
+    textBaseline: state.textBaseline,
   }
 
   const resolveCanvas = () => {
@@ -129,6 +133,8 @@ export function createHeadlessCanvasContext(
         lineWidth: snapshot.lineWidth,
         reserve: snapshot.reserve,
         strokeStyle: snapshot.strokeStyle,
+        textAlign: snapshot.textAlign,
+        textBaseline: snapshot.textBaseline,
       }
     },
     beginPath() {
@@ -155,6 +161,8 @@ export function createHeadlessCanvasContext(
         lineWidth: state.lineWidth,
         reserve: Boolean(reserve),
         strokeStyle: state.strokeStyle,
+        textAlign: state.textAlign,
+        textBaseline: state.textBaseline,
       }
       drawCalls = []
       state = {
@@ -237,6 +245,14 @@ export function createHeadlessCanvasContext(
     setStrokeStyle(value) {
       state.strokeStyle = String(value)
       record('setStrokeStyle', [value])
+    },
+    setTextAlign(value) {
+      state.textAlign = String(value)
+      record('setTextAlign', [value])
+    },
+    setTextBaseline(value) {
+      state.textBaseline = String(value)
+      record('setTextBaseline', [value])
     },
     stroke() {
       record('stroke', [])

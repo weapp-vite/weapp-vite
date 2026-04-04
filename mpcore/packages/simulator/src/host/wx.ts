@@ -82,6 +82,8 @@ export interface HeadlessWxCanvasSnapshot {
   lineWidth: number
   reserve: boolean
   strokeStyle: string
+  textAlign: string
+  textBaseline: string
 }
 
 export interface HeadlessWxCanvasContext {
@@ -120,6 +122,8 @@ export interface HeadlessWxCanvasContext {
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
+  setTextAlign: (value: string) => void
+  setTextBaseline: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
   translate: (x: number, y: number) => void

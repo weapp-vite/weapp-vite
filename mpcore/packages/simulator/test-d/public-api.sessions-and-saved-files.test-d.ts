@@ -64,6 +64,8 @@ expectType<{
     lineWidth: number
     reserve: boolean
     strokeStyle: string
+    textAlign: string
+    textBaseline: string
   }
   arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
   arcTo: (x1: number, y1: number, x2: number, y2: number, radius: number) => void
@@ -92,6 +94,8 @@ expectType<{
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
+  setTextAlign: (value: string) => void
+  setTextBaseline: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
   translate: (x: number, y: number) => void
@@ -109,6 +113,8 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).scale(1.2, 0.8)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineCap('round')
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineJoin('bevel')
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setMiterLimit(6)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setTextAlign('center')
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setTextBaseline('middle')
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
@@ -272,6 +278,8 @@ expectType<{
     lineWidth: number
     reserve: boolean
     strokeStyle: string
+    textAlign: string
+    textBaseline: string
   }
   arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
   arcTo: (x1: number, y1: number, x2: number, y2: number, radius: number) => void
@@ -300,6 +308,8 @@ expectType<{
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
+  setTextAlign: (value: string) => void
+  setTextBaseline: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
   translate: (x: number, y: number) => void
@@ -317,6 +327,8 @@ headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).scale(1.2, 0.8
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineCap('round')
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineJoin('bevel')
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setMiterLimit(6)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setTextAlign('center')
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setTextBaseline('middle')
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).translate(3, 4)
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())

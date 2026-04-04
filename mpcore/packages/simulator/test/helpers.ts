@@ -815,6 +815,8 @@ Page({
     ctx.scale(1.2, 0.8)
     ctx.stroke()
     ctx.setFontSize(18)
+    ctx.setTextAlign('center')
+    ctx.setTextBaseline('middle')
     const metrics = ctx.measureText('canvas')
     ctx.fillText('canvas', 6, 20)
     ctx.restore()
