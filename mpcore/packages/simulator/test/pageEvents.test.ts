@@ -267,6 +267,7 @@ describe('page event alignment', () => {
 
     const page = session.reLaunch('/pages/canvas/index')
     page.runCanvasLab()
+    page.exportCanvasLab()
     page.runComponentCanvasLab()
 
     expect(page.data.canvasSnapshot).toContain('"canvasId":"hero-canvas"')
@@ -311,6 +312,10 @@ describe('page event alignment', () => {
     expect(page.data.canvasSnapshot).toContain('"type":"strokeText"')
     expect(page.data.canvasSnapshot).toContain('"/tmp/canvas-thumb.png",2,4')
     expect(page.data.canvasSnapshot).toContain('"/tmp/canvas-sprite.png",0,0,24,24,8,10,12,14')
+    expect(page.data.canvasTempFilePath).toContain('headless://wxfile/temp/')
+    expect(page.data.canvasTempFileContent).toContain('"canvasId":"hero-canvas"')
+    expect(page.data.canvasTempFileContent).toContain('"type":"fillRect"')
+    expect(page.data.canvasTempFileContent).toContain('"fileType":"png"')
     expect(page.data.textMeasureWidth).toBe(54)
     expect(page.data.componentCanvasSnapshot).toContain('"canvasId":"inner-canvas"')
     expect(page.data.componentCanvasSnapshot).toContain('"type":"strokeRect"')

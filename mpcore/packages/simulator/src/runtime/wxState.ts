@@ -1002,6 +1002,12 @@ export function createHeadlessWxState() {
     getFileText(filePath: string) {
       return files.get(filePath) ?? null
     },
+    createTempFile(fileContent: string, preferredPath?: string) {
+      const tempFilePath = allocateFilePath('temp', preferredPath)
+      ensureDirectoryTree(tempFilePath)
+      files.set(tempFilePath, String(fileContent))
+      return tempFilePath
+    },
     getNetworkType(): HeadlessWxGetNetworkTypeResult {
       return {
         errMsg: 'getNetworkType:ok',

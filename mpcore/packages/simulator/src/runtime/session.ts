@@ -197,6 +197,7 @@ export class HeadlessSession {
   private tabBarVisible = false
   private readonly systemInfo = createDefaultSystemInfo()
   private readonly mediaQueryObservers = new Set<HeadlessMediaQueryObserverEntry>()
+  private readonly canvasContexts = new Map<string, import('../host').HeadlessWxCanvasContext>()
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
   private readonly wxState = createHeadlessWxState()
@@ -242,6 +243,7 @@ export class HeadlessSession {
       {
         createAnimation: option => this.createAnimation(option),
         createCanvasContext: (canvasId, scope) => this.createCanvasContext(canvasId, scope),
+        canvasToTempFilePath: option => this.canvasToTempFilePath(option),
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createVideoContext: (videoId, scope) => this.createVideoContext(videoId, scope),
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
@@ -1249,8 +1251,17 @@ export class HeadlessSession {
     return createHeadlessAnimation(option)
   }
 
+  private resolveCanvasScopeKey(scope?: Record<string, any>) {
+    const current = this.currentPageInstance
+    if (!scope || scope === current) {
+      return 'page'
+    }
+    const scopeId = this.getScopeIdForComponent(scope as HeadlessComponentInstance)
+    return scopeId ? `component:${scopeId}` : 'missing'
+  }
+
   private createCanvasContext(canvasId: string, scope?: Record<string, any>) {
-    return createHeadlessCanvasContext(
+    const context = createHeadlessCanvasContext(
       {
         renderCurrentPage: () => this.renderCurrentPage(),
         resolveScope: (value) => {
@@ -1275,6 +1286,33 @@ export class HeadlessSession {
       canvasId,
       scope,
     )
+    this.canvasContexts.set(`${this.resolveCanvasScopeKey(scope)}:${canvasId}`, context)
+    return context
+  }
+
+  private canvasToTempFilePath(option: import('../host').HeadlessWxCanvasToTempFilePathOption) {
+    const context = this.canvasContexts.get(`${this.resolveCanvasScopeKey(option.component)}:${option.canvasId}`)
+    if (!context) {
+      throw new Error(`canvasToTempFilePath:fail canvas "${option.canvasId}" has not been drawn in headless runtime.`)
+    }
+    const tempFilePath = this.wxState.createTempFile(JSON.stringify({
+      canvasId: option.canvasId,
+      config: {
+        destHeight: option.destHeight,
+        destWidth: option.destWidth,
+        fileType: option.fileType,
+        height: option.height,
+        quality: option.quality,
+        width: option.width,
+        x: option.x,
+        y: option.y,
+      },
+      snapshot: context.__getSnapshot(),
+    }))
+    return {
+      errMsg: 'canvasToTempFilePath:ok',
+      tempFilePath,
+    }
   }
 
   private createIntersectionObserver(

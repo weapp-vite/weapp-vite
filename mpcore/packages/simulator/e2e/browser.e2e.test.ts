@@ -132,6 +132,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runMediaQueryObserverLab')
     bridge.runPageMethod('runAnimationLab')
     bridge.runPageMethod('runCanvasLab')
+    bridge.runPageMethod('exportCanvasLab')
     bridge.runPageMethod('inspectCanvasQuery')
     bridge.triggerResize(412, 915)
     bridge.runPageMethod('runFileManagerLab')
@@ -174,6 +175,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.mediaQueryObserverSnapshot
           && pageData.animationSnapshot
           && pageData.canvasSnapshot
+          && pageData.canvasTempFileContent
+          && pageData.canvasTempFilePath
           && pageData.canvasQuerySnapshot
           && pageData.videoContextSnapshot
           && pageData.directorySnapshot
@@ -263,6 +266,10 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasSnapshot).toContain('"/tmp/lab-thumb.png",2,4')
     expect(pageData.canvasSnapshot).toContain('"/tmp/lab-sprite.png",0,0,24,24,8,10,12,14')
     expect(pageData.canvasSnapshot).toContain('"type":"drawImage"')
+    expect(pageData.canvasTempFilePath).toContain('headless://wxfile/temp/')
+    expect(pageData.canvasTempFileContent).toContain('"canvasId":"lab-canvas"')
+    expect(pageData.canvasTempFileContent).toContain('"type":"fillRect"')
+    expect(pageData.canvasTempFileContent).toContain('"fileType":"png"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')
     expect(pageData.canvasQuerySnapshot).toContain('"type":"fillRect"')
     expect(pageData.videoContextSnapshot).toContain('"phase":"fullscreen"')

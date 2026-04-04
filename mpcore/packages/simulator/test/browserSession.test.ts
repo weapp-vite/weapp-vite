@@ -4583,6 +4583,53 @@ Page({
     expect(page.data.snapshot).toContain('"reserve":true')
   })
 
+  it('supports canvasToTempFilePath in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    exported: '',
+    tempFilePath: ''
+  },
+  runCanvasExportLab() {
+    const ctx = wx.createCanvasContext('hero-canvas', this)
+    const fs = wx.getFileSystemManager()
+    ctx.setFillStyle('#ff5500')
+    ctx.fillRect(0, 0, 20, 10)
+    ctx.draw(false, () => {
+      wx.canvasToTempFilePath({
+        canvasId: 'hero-canvas',
+        component: this,
+        fileType: 'png',
+        destWidth: 60,
+        destHeight: 40,
+        success: ({ tempFilePath }) => {
+          this.setData({
+            exported: fs.readFileSync(tempFilePath, 'utf8'),
+            tempFilePath,
+          })
+        }
+      })
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<canvas canvas-id="hero-canvas"></canvas><view>{{exported}}</view><view>{{tempFilePath}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runCanvasExportLab()
+
+    expect(page.data.tempFilePath).toContain('headless://wxfile/temp/')
+    expect(page.data.exported).toContain('"canvasId":"hero-canvas"')
+    expect(page.data.exported).toContain('"type":"fillRect"')
+    expect(page.data.exported).toContain('"fileType":"png"')
+  })
+
   it('supports canvas path and text helpers in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
