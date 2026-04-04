@@ -40,6 +40,22 @@ pnpm add -g weapp-ide-cli
 
 `weapp` 与 `weapp-ide-cli` 为等价入口。
 
+## 快速开始
+
+```bash
+# 打开当前目录项目
+weapp open -p
+
+# 打开指定项目
+weapp open --project ./dist/build/mp-weixin
+
+# 运行时截图
+weapp screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/index.png --json
+
+# 运行时截图对比
+weapp compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --current-output .tmp/current.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+```
+
 ## 命令大全
 
 ### 1) 微信官方 CLI 透传命令
@@ -128,6 +144,45 @@ weapp compare --help
 weapp compare --baseline .screenshots/baseline/home.png --max-diff-pixels 100 --json
 ```
 
+#### `weapp screenshot` 选项
+
+| 参数                   | 说明                   |
+| ---------------------- | ---------------------- |
+| `-p, --project <path>` | 项目路径，默认当前目录 |
+| `-o, --output <path>`  | 截图输出文件           |
+| `--page <path>`        | 截图前先跳转页面       |
+| `-t, --timeout <ms>`   | 连接超时，默认 `30000` |
+| `--json`               | JSON 输出              |
+| `--lang <lang>`        | 语言切换：`zh` / `en`  |
+
+输出规则：
+
+- 不传 `--output` 时，默认把 base64 输出到 stdout
+- 传入 `--output` 时，会把截图写到文件，并在 `--json` 结果里返回路径
+
+#### `weapp compare` 选项
+
+| 参数                        | 说明                             |
+| --------------------------- | -------------------------------- |
+| `-p, --project <path>`      | 项目路径，默认当前目录           |
+| `--baseline <path>`         | baseline 图片路径，必填          |
+| `--current-output <path>`   | 保存当前截图                     |
+| `--diff-output <path>`      | 保存 diff 图                     |
+| `--page <path>`             | 对比前先跳转页面                 |
+| `--threshold <number>`      | pixelmatch threshold，默认 `0.1` |
+| `--max-diff-pixels <count>` | 最大允许差异像素数               |
+| `--max-diff-ratio <number>` | 最大允许差异占比，范围 `0-1`     |
+| `-t, --timeout <ms>`        | 连接超时，默认 `30000`           |
+| `--json`                    | JSON 输出                        |
+| `--lang <lang>`             | 语言切换：`zh` / `en`            |
+
+对比规则：
+
+- 必须提供 `--baseline`
+- 至少提供 `--max-diff-pixels` 或 `--max-diff-ratio` 之一
+- baseline 与当前截图尺寸不一致时直接失败
+- 对比失败时命令退出码会变为非 `0`
+
 ### 3) config 子命令
 
 | 命令                                         | 说明                              |
@@ -165,6 +220,8 @@ weapp compare --baseline .screenshots/baseline/home.png --max-diff-pixels 100 --
 | `weapp ali <args...>`              | `alipay` 别名                |
 | `weapp open --platform alipay ...` | 自动转发为 `minidev ide ...` |
 
+首次使用前，请确保已全局安装 `minidev`。如果命令不存在，CLI 会给出安装提示。
+
 ### 5) 程序化命令目录导出
 
 可直接复用 `weapp-ide-cli` 提供的命令判断能力：
@@ -197,6 +254,13 @@ weapp config lang en
 WEAPP_IDE_CLI_LANG=en weapp open -p
 ```
 
+## 路径与脚本兼容
+
+- `-p` 会被自动替换为 `--project`
+- 相对路径会自动解析为绝对路径
+- `--qr-output`、`--result-output`、`--info-output` 在缺省值场景下会默认写到当前工作目录
+- 若未显式传路径参数，CLI 会自动注入当前终端目录，方便脚本化调用
+
 ## 参数前置校验（增强）
 
 在调用官方 CLI 前，会进行本地校验：
@@ -208,6 +272,35 @@ WEAPP_IDE_CLI_LANG=en weapp open -p
 - `--port` 必须为正整数
 - `--login-retry` 仅支持 `never` / `once` / `always`
 - `--login-retry-timeout` 必须为正整数
+
+## CI / 非交互场景
+
+推荐在 CI 或非交互脚本里显式传入：
+
+```bash
+weapp build-npm -p ./dist/build/mp-weixin --non-interactive
+```
+
+登录重试相关参数：
+
+| 参数                         | 说明                                      |
+| ---------------------------- | ----------------------------------------- |
+| `--non-interactive`          | 非交互模式；登录失效时直接失败            |
+| `--login-retry=<strategy>`   | 登录重试策略：`never` / `once` / `always` |
+| `--login-retry-timeout=<ms>` | 交互重试等待超时，默认 `30000`            |
+
+自动启用非交互模式的场景：
+
+- `CI=true`
+- `stdin` 不是 TTY
+
+## 平台支持
+
+| 平台            | 支持情况 | 默认查找路径                                               |
+| --------------- | -------- | ---------------------------------------------------------- |
+| macOS           | ✅       | `/Applications/wechatwebdevtools.app/Contents/MacOS/cli`   |
+| Windows         | ✅       | `C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat` |
+| Linux（社区版） | ⚠️       | 通过 `PATH` 搜索 `wechat-devtools-cli`                     |
 
 ## 参考
 

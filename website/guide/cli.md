@@ -313,6 +313,50 @@ weapp-vite cache --clean all
 wv cache --clean all
 ```
 
+高频透传命令里，和 AI 验收最相关的是下面两类：
+
+### `weapp-vite screenshot`
+
+```bash
+weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+```
+
+关键参数：
+
+| 参数               | 说明                          |
+| ------------------ | ----------------------------- |
+| `--project <path>` | 小程序项目目录                |
+| `--page <path>`    | 截图前先跳转页面              |
+| `--output <path>`  | 截图输出路径                  |
+| `--timeout <ms>`   | automator 连接超时            |
+| `--json`           | JSON 输出，适合 AI / 脚本解析 |
+
+### `weapp-vite compare`
+
+```bash
+weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --current-output .tmp/current.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+```
+
+关键参数：
+
+| 参数                        | 说明                             |
+| --------------------------- | -------------------------------- |
+| `--project <path>`          | 小程序项目目录                   |
+| `--baseline <path>`         | baseline 图片，必填              |
+| `--page <path>`             | 对比前先跳转页面                 |
+| `--current-output <path>`   | 保存当前截图                     |
+| `--diff-output <path>`      | 保存 diff 图                     |
+| `--threshold <number>`      | pixelmatch threshold，默认 `0.1` |
+| `--max-diff-pixels <count>` | 最大允许差异像素数               |
+| `--max-diff-ratio <number>` | 最大允许差异占比                 |
+| `--json`                    | JSON 输出                        |
+
+使用约束：
+
+- `compare` 必须提供 `--baseline`
+- `compare` 至少提供 `--max-diff-pixels` 或 `--max-diff-ratio` 之一
+- 对比失败时命令会返回非 `0`，适合直接接 CI 或 AI 验收流程
+
 ## 常用示例
 
 ```bash

@@ -27,6 +27,8 @@ keywords:
 npx skills add sonofmagic/skills
 ```
 
+如果项目是通过 `create-weapp-vite` 初始化的，交互模式默认会直接询问你是否安装推荐的 AI skills；即使你当时跳过，也可以后续手动执行同一条命令。
+
 如果你正在这个 monorepo 里开发，优先把仓库自带技能链接到本地环境：
 
 ```bash
@@ -90,6 +92,8 @@ $playwright-cli
 
 这样 AI 会先基于你当前安装版本的本地说明工作，再去执行 `weapp-vite screenshot`、`weapp-vite compare`、`weapp-vite ide logs --open` 或其他 CLI 命令。
 
+如果项目本身就是通过 `create-weapp-vite` 创建的，还应优先读取项目根目录的 `AGENTS.md`。这个文件由脚手架自动生成，里面会把截图、截图对比、日志桥接等 AI 意图路由预先写好。
+
 ### AI 意图路由
 
 如果你希望 AI 在自然语言里稳定命中 mini-program runtime 能力，建议把下面这组映射写进项目级 `AGENTS.md`：
@@ -107,6 +111,13 @@ $playwright-cli
 
 1. `weapp-vite` 默认启用 MCP 能力。
 2. 默认不会自动启动 MCP 服务（`autoStart: false`）。
+
+如果你的 AI 客户端支持显式工具命名，建议优先直接调用：
+
+1. `take_weapp_screenshot`
+2. `compare_weapp_screenshot`
+
+它们分别对应 `weapp-vite screenshot --json` 与 `weapp-vite compare --json`，比泛化的“browser screenshot”类工具更稳定。
 
 手动启动（推荐）：
 
@@ -211,6 +222,19 @@ weapp-vite ide logs --open
 2. 连接小程序 automator 会话。
 3. 持续输出 `console.log / info / warn / error` 与未捕获异常。
 4. 一直保持运行，直到你按 `Ctrl+C` 主动退出。
+
+## 推荐的 AI 工具优先级
+
+为了减少 AI 误用普通浏览器工具，建议统一约定以下优先级：
+
+| 用户意图                                  | 默认工具                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| 截图、页面快照、runtime screenshot        | `weapp-vite screenshot` / `wv screenshot` / `take_weapp_screenshot` |
+| 截图对比、baseline、diff、视觉回归        | `weapp-vite compare` / `wv compare` / `compare_weapp_screenshot`    |
+| DevTools 日志、运行时日志、小程序 console | `weapp-vite ide logs --open` / `wv ide logs --open`                 |
+| 读取当前安装版本的本地说明                | `node_modules/weapp-vite/dist/docs/*.md`                            |
+
+只有当目标明确是 Web runtime，而不是微信开发者工具里的小程序运行时，才改用浏览器自动化、网页截图或 Playwright 一类 Web 工具。
 
 ### 推荐给 AI 的提示词
 
