@@ -10,6 +10,10 @@ import * as npm from '@/npm'
 import * as skills from '@/skills'
 import { logger } from '../vitest.setup'
 
+function normalizeRelativePath(value: string) {
+  return value.split(path.sep).join('/')
+}
+
 async function scanFiles(root: string) {
   const out: string[] = []
 
@@ -17,7 +21,7 @@ async function scanFiles(root: string) {
     const entries = await fs.readdir(dir)
     for (const entry of entries) {
       const full = path.join(dir, entry)
-      const rel = path.join(base, entry)
+      const rel = normalizeRelativePath(path.join(base, entry))
       const stat = await fs.stat(full)
       if (stat.isDirectory()) {
         await walk(full, rel)

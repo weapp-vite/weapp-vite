@@ -3,6 +3,7 @@ import type { InputOption } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { NpmBuildOptions } from '../../types'
+import { win32 as pathWin32, relative as relativeNative } from 'node:path'
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { debug } from '../../context/shared'
@@ -15,6 +16,7 @@ import { createDependenciesCache } from './cache'
 import { getPackNpmRelationList } from './relations'
 
 const LEADING_SLASHES_RE = /^\/+/
+const WINDOWS_PATH_RE = /\\|^[A-Z]:[\\/]/i
 
 function matchDependencyName(patterns: (string | RegExp)[], dep: string) {
   return patterns.some((pattern) => {
@@ -42,6 +44,14 @@ function matchDependencyPath(patterns: (string | RegExp)[], value: string) {
     pattern.lastIndex = 0
     return pattern.test(value)
   })
+}
+
+export function resolveCopyFilterRelativePath(sourceRoot: string, sourcePath: string) {
+  const relativePath = WINDOWS_PATH_RE.test(sourceRoot) || WINDOWS_PATH_RE.test(sourcePath)
+    ? pathWin32.relative(sourceRoot, sourcePath)
+    : relativeNative(sourceRoot, sourcePath)
+
+  return toPosixPath(relativePath)
 }
 
 export function resolveTargetDependencies(
@@ -232,7 +242,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
               overwrite: true,
               filter: (src) => {
                 if (Array.isArray(meta.subPackage.dependencies)) {
-                  const relPath = toPosixPath(path.relative(sourceOutDir, src))
+                  const relPath = resolveCopyFilterRelativePath(sourceOutDir, String(src))
                   if (relPath === '') {
                     return true
                   }

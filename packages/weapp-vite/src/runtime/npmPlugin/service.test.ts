@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createNpmService,
   hasLocalSubPackageNpmConfig,
+  resolveCopyFilterRelativePath,
   resolveNpmDistDirName,
   resolveNpmSourceCacheOutDir,
   resolveTargetDependencies,
@@ -120,6 +121,15 @@ describe('runtime npm service', () => {
 
   it('stores npm source cache inside the project-local .weapp-vite directory', () => {
     expect(resolveNpmSourceCacheOutDir('/project', 'miniprogram_npm')).toBe('/project/.weapp-vite/npm-source/miniprogram_npm')
+  })
+
+  it('normalizes fs.copy filter relative paths for Windows-style paths', () => {
+    expect(
+      resolveCopyFilterRelativePath(
+        'C:\\project\\.weapp-vite\\npm-source\\miniprogram_npm',
+        'C:\\project\\.weapp-vite\\npm-source\\miniprogram_npm\\dayjs\\index.js',
+      ),
+    ).toBe('dayjs/index.js')
   })
 
   it('builds cached npm source and removes main output when main output is disabled', async () => {
