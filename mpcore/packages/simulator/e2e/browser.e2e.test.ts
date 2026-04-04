@@ -1198,6 +1198,31 @@ describe.sequential('simulator browser e2e', () => {
     expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
   })
 
+  it('tracks relaunch navigation through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('relaunchQueue')
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'package-flow/queue/index' && nextState.pageStack.length === 1,
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(state.pageStack).toEqual(['package-flow/queue/index'])
+    expect(pageData.title).toBe('Queue')
+    expect(pageData.from).toBe('relaunch')
+    expect(state.previewMarkup).toContain('Queue')
+    expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
+  })
+
   it('tracks browser route stack transitions through runtime navigation', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
