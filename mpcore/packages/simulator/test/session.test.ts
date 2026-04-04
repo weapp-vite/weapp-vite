@@ -3,7 +3,16 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
-import { cleanupTempDirs, createBaseFixture, createComponentFixture, createComponentLifecycleFixture, createNavigationFixture, createNestedComponentFixture, createSelectorQueryFixture } from './helpers'
+import {
+  cleanupTempDirs,
+  createBaseFixture,
+  createCanvasContextFixture,
+  createComponentFixture,
+  createComponentLifecycleFixture,
+  createNavigationFixture,
+  createNestedComponentFixture,
+  createSelectorQueryFixture,
+} from './helpers'
 
 function writeFixtureFile(target: string, content: string) {
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -3007,6 +3016,19 @@ Page({
 
     pageA.openB()
     expect(rendered.wxml).toContain('resize:375')
+  })
+
+  it('returns canvas context from selector query in headless runtime', () => {
+    const projectPath = createCanvasContextFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/canvas/index')
+    page.inspectCanvasQuery()
+
+    expect(page.data.canvasQuerySnapshot).toContain('"canvasId":"hero-canvas"')
+    expect(page.data.canvasQuerySnapshot).toContain('"type":"fillRect"')
+    expect(page.data.canvasQuerySnapshot).toContain('"type":"canvas"')
   })
 
   it('supports descendant component selectors in headless runtime', () => {
