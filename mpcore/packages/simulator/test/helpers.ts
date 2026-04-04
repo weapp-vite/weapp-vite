@@ -796,7 +796,9 @@ Page({
   runCanvasLab() {
     const ctx = wx.createCanvasContext('hero-canvas', this)
     ctx.setFillStyle('#ff5500')
+    ctx.setGlobalAlpha(0.6)
     ctx.setLineCap('round')
+    ctx.setLineDash([6, 3], 2)
     ctx.setLineJoin('bevel')
     ctx.setMiterLimit(6)
     ctx.fillRect(4, 8, 40, 24)
@@ -810,6 +812,7 @@ Page({
     ctx.closePath()
     ctx.rect(2, 3, 16, 10)
     ctx.arc(10, 12, 6, 0, Math.PI, false)
+    ctx.clip()
     ctx.translate(3, 4)
     ctx.rotate(0.5)
     ctx.scale(1.2, 0.8)
@@ -872,7 +875,9 @@ Component({
     paint() {
       const ctx = wx.createCanvasContext('inner-canvas', this)
       ctx.setStrokeStyle('#0055ff')
+      ctx.setGlobalAlpha(0.8)
       ctx.setLineCap('square')
+      ctx.setLineDash([4, 2])
       ctx.setLineWidth(3)
       ctx.save()
       ctx.translate(2, 3)

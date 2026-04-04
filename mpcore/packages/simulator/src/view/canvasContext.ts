@@ -41,7 +41,7 @@ function findCanvasNode(root: DomNodeLike, canvasId: string): DomNodeLike | null
 
 function cloneCall(call: HeadlessWxCanvasDrawCall): HeadlessWxCanvasDrawCall {
   return {
-    args: [...call.args],
+    args: call.args.map(arg => Array.isArray(arg) ? [...arg] : arg),
     type: call.type,
   }
 }
@@ -54,7 +54,9 @@ export function createHeadlessCanvasContext(
   const defaultState = {
     fillStyle: '#000000',
     fontSize: 16,
+    globalAlpha: 1,
     lineCap: 'butt',
+    lineDash: [] as number[],
     lineJoin: 'miter',
     miterLimit: 10,
     lineWidth: 1,
@@ -73,7 +75,9 @@ export function createHeadlessCanvasContext(
     drawCalls: [],
     fillStyle: state.fillStyle,
     fontSize: state.fontSize,
+    globalAlpha: state.globalAlpha,
     lineCap: state.lineCap,
+    lineDash: [...state.lineDash],
     lineJoin: state.lineJoin,
     miterLimit: state.miterLimit,
     lineWidth: state.lineWidth,
@@ -127,7 +131,9 @@ export function createHeadlessCanvasContext(
         drawCalls: snapshot.drawCalls.map(cloneCall),
         fillStyle: snapshot.fillStyle,
         fontSize: snapshot.fontSize,
+        globalAlpha: snapshot.globalAlpha,
         lineCap: snapshot.lineCap,
+        lineDash: [...snapshot.lineDash],
         lineJoin: snapshot.lineJoin,
         miterLimit: snapshot.miterLimit,
         lineWidth: snapshot.lineWidth,
@@ -143,6 +149,9 @@ export function createHeadlessCanvasContext(
     clearRect(x, y, width, height) {
       record('clearRect', [x, y, width, height])
     },
+    clip() {
+      record('clip', [])
+    },
     closePath() {
       record('closePath', [])
     },
@@ -155,7 +164,9 @@ export function createHeadlessCanvasContext(
           : drawCalls.map(cloneCall),
         fillStyle: state.fillStyle,
         fontSize: state.fontSize,
+        globalAlpha: state.globalAlpha,
         lineCap: state.lineCap,
+        lineDash: [...state.lineDash],
         lineJoin: state.lineJoin,
         miterLimit: state.miterLimit,
         lineWidth: state.lineWidth,
@@ -226,9 +237,17 @@ export function createHeadlessCanvasContext(
       state.fontSize = Number(fontSize)
       record('setFontSize', [fontSize])
     },
+    setGlobalAlpha(value) {
+      state.globalAlpha = Number(value)
+      record('setGlobalAlpha', [value])
+    },
     setLineCap(value) {
       state.lineCap = String(value)
       record('setLineCap', [value])
+    },
+    setLineDash(pattern, offset) {
+      state.lineDash = pattern.map(item => Number(item))
+      record('setLineDash', offset == null ? [pattern.map(item => Number(item))] : [pattern.map(item => Number(item)), Number(offset)])
     },
     setLineJoin(value) {
       state.lineJoin = String(value)
