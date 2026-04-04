@@ -54,6 +54,9 @@ export function createHeadlessCanvasContext(
   const defaultState = {
     fillStyle: '#000000',
     fontSize: 16,
+    lineCap: 'butt',
+    lineJoin: 'miter',
+    miterLimit: 10,
     lineWidth: 1,
     strokeStyle: '#000000',
   }
@@ -68,6 +71,9 @@ export function createHeadlessCanvasContext(
     drawCalls: [],
     fillStyle: state.fillStyle,
     fontSize: state.fontSize,
+    lineCap: state.lineCap,
+    lineJoin: state.lineJoin,
+    miterLimit: state.miterLimit,
     lineWidth: state.lineWidth,
     reserve: false,
     strokeStyle: state.strokeStyle,
@@ -111,6 +117,9 @@ export function createHeadlessCanvasContext(
         drawCalls: snapshot.drawCalls.map(cloneCall),
         fillStyle: snapshot.fillStyle,
         fontSize: snapshot.fontSize,
+        lineCap: snapshot.lineCap,
+        lineJoin: snapshot.lineJoin,
+        miterLimit: snapshot.miterLimit,
         lineWidth: snapshot.lineWidth,
         reserve: snapshot.reserve,
         strokeStyle: snapshot.strokeStyle,
@@ -134,6 +143,9 @@ export function createHeadlessCanvasContext(
           : drawCalls.map(cloneCall),
         fillStyle: state.fillStyle,
         fontSize: state.fontSize,
+        lineCap: state.lineCap,
+        lineJoin: state.lineJoin,
+        miterLimit: state.miterLimit,
         lineWidth: state.lineWidth,
         reserve: Boolean(reserve),
         strokeStyle: state.strokeStyle,
@@ -196,6 +208,18 @@ export function createHeadlessCanvasContext(
     setFontSize(fontSize) {
       state.fontSize = Number(fontSize)
       record('setFontSize', [fontSize])
+    },
+    setLineCap(value) {
+      state.lineCap = String(value)
+      record('setLineCap', [value])
+    },
+    setLineJoin(value) {
+      state.lineJoin = String(value)
+      record('setLineJoin', [value])
+    },
+    setMiterLimit(value) {
+      state.miterLimit = Number(value)
+      record('setMiterLimit', [value])
     },
     setLineWidth(value) {
       state.lineWidth = Number(value)
