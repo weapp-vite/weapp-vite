@@ -159,6 +159,7 @@ expectType<{ visible: boolean }>(browserSession.getTabBar())
 expectType<Record<string, string>>(browserSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(browserSession.getSavedFileListSnapshot())
 expectType<string | null>(browserSession.getFileText('headless://wxfile/temp/0001'))
+expectType<{ filePath: string, fileType: string, showMenu: boolean, visible: boolean } | null>(browserSession.getOpenedDocument())
 expectType<{
   disconnect: () => void
   observe: (selector: string, callback: (result: {
@@ -196,6 +197,11 @@ expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: str
 expectType<{ digest: string, errMsg: string, size: number } | undefined>(browserPage?.wx.getFileInfo({
   digestAlgorithm: 'md5',
   filePath: 'headless://wxfile/temp/0001',
+}))
+expectType<{ errMsg: string } | undefined>(browserPage?.wx.openDocument({
+  filePath: 'headless://wxfile/temp/0001.pdf',
+  fileType: 'pdf',
+  showMenu: true,
 }))
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
@@ -493,6 +499,7 @@ expectType<{ visible: boolean }>(headlessSession.getTabBar())
 expectType<Record<string, string>>(headlessSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(headlessSession.getSavedFileListSnapshot())
 expectType<string | null>(headlessSession.getFileText('headless://wxfile/temp/0001'))
+expectType<{ filePath: string, fileType: string, showMenu: boolean, visible: boolean } | null>(headlessSession.getOpenedDocument())
 expectType<{
   errMsg: string
   tempFilePath: string
@@ -545,6 +552,10 @@ expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: str
 expectType<{ digest: string, errMsg: string, size: number } | undefined>(headlessPage?.wx.getFileInfo({
   digestAlgorithm: 'sha1',
   filePath: 'headless://wxfile/temp/0001',
+}))
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.openDocument({
+  filePath: 'headless://wxfile/temp/0001.txt',
+  showMenu: false,
 }))
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
