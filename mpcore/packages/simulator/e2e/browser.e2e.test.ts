@@ -1001,7 +1001,8 @@ describe.sequential('simulator browser e2e', () => {
 
     expect(state.pageStack).toEqual(['pages/profile/index'])
     expect(state.pageRoutes).toContain('pages/profile/index')
-    expect(bridge.renderCurrentPage()).toContain('profile')
+    expect(state.previewMarkup).toContain('profile')
+    expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
     expect(bridge.readScopeSnapshot('page:pages/profile/index')).toMatchObject({
       data: {},
       properties: {},
