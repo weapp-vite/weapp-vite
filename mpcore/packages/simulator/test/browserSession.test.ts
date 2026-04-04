@@ -4578,6 +4578,49 @@ Page({
     expect(page.data.snapshot).toContain('"reserve":true')
   })
 
+  it('supports canvas path and text helpers in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    snapshot: '',
+    width: 0
+  },
+  runCanvasTextLab() {
+    const ctx = wx.createCanvasContext('hero-canvas', this)
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(12, 8)
+    ctx.stroke()
+    ctx.setFontSize(18)
+    const metrics = ctx.measureText('canvas')
+    ctx.fillText('canvas', 4, 12)
+    ctx.draw(false, () => {
+      this.setData({
+        snapshot: JSON.stringify(ctx.__getSnapshot()),
+        width: metrics.width
+      })
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<canvas canvas-id="hero-canvas"></canvas><view>{{snapshot}}</view><view>{{width}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runCanvasTextLab()
+
+    expect(page.data.snapshot).toContain('"type":"moveTo"')
+    expect(page.data.snapshot).toContain('"type":"stroke"')
+    expect(page.data.snapshot).toContain('"type":"fillText"')
+    expect(page.data.snapshot).toContain('"fontSize":18')
+    expect(page.data.width).toBe(54)
+  })
+
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

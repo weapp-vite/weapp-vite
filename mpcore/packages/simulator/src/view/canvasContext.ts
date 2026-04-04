@@ -53,6 +53,7 @@ export function createHeadlessCanvasContext(
 ): HeadlessWxCanvasContext {
   const defaultState = {
     fillStyle: '#000000',
+    fontSize: 16,
     lineWidth: 1,
     strokeStyle: '#000000',
   }
@@ -65,6 +66,7 @@ export function createHeadlessCanvasContext(
     canvasId,
     drawCalls: [],
     fillStyle: state.fillStyle,
+    fontSize: state.fontSize,
     lineWidth: state.lineWidth,
     reserve: false,
     strokeStyle: state.strokeStyle,
@@ -104,10 +106,14 @@ export function createHeadlessCanvasContext(
         canvasId: snapshot.canvasId,
         drawCalls: snapshot.drawCalls.map(cloneCall),
         fillStyle: snapshot.fillStyle,
+        fontSize: snapshot.fontSize,
         lineWidth: snapshot.lineWidth,
         reserve: snapshot.reserve,
         strokeStyle: snapshot.strokeStyle,
       }
+    },
+    beginPath() {
+      record('beginPath', [])
     },
     clearRect(x, y, width, height) {
       record('clearRect', [x, y, width, height])
@@ -120,6 +126,7 @@ export function createHeadlessCanvasContext(
           ? [...snapshot.drawCalls.map(cloneCall), ...drawCalls.map(cloneCall)]
           : drawCalls.map(cloneCall),
         fillStyle: state.fillStyle,
+        fontSize: state.fontSize,
         lineWidth: state.lineWidth,
         reserve: Boolean(reserve),
         strokeStyle: state.strokeStyle,
@@ -133,12 +140,33 @@ export function createHeadlessCanvasContext(
     drawImage(image, ...args) {
       record('drawImage', [image, ...args])
     },
+    fill() {
+      record('fill', [])
+    },
     fillRect(x, y, width, height) {
       record('fillRect', [x, y, width, height])
+    },
+    fillText(text, x, y, maxWidth) {
+      record('fillText', maxWidth == null ? [text, x, y] : [text, x, y, maxWidth])
+    },
+    lineTo(x, y) {
+      record('lineTo', [x, y])
+    },
+    measureText(text) {
+      return {
+        width: text.length * state.fontSize * 0.5,
+      }
+    },
+    moveTo(x, y) {
+      record('moveTo', [x, y])
     },
     setFillStyle(value) {
       state.fillStyle = String(value)
       record('setFillStyle', [value])
+    },
+    setFontSize(fontSize) {
+      state.fontSize = Number(fontSize)
+      record('setFontSize', [fontSize])
     },
     setLineWidth(value) {
       state.lineWidth = Number(value)
@@ -147,6 +175,9 @@ export function createHeadlessCanvasContext(
     setStrokeStyle(value) {
       state.strokeStyle = String(value)
       record('setStrokeStyle', [value])
+    },
+    stroke() {
+      record('stroke', [])
     },
     strokeRect(x, y, width, height) {
       record('strokeRect', [x, y, width, height])
