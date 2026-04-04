@@ -111,6 +111,12 @@ export function createHeadlessCanvasContext(
     arc(x, y, r, sAngle, eAngle, counterclockwise) {
       record('arc', [x, y, r, sAngle, eAngle, Boolean(counterclockwise)])
     },
+    arcTo(x1, y1, x2, y2, radius) {
+      record('arcTo', [x1, y1, x2, y2, radius])
+    },
+    bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
+      record('bezierCurveTo', [cp1x, cp1y, cp2x, cp2y, x, y])
+    },
     __getSnapshot() {
       return {
         canvasId: snapshot.canvasId,
@@ -179,6 +185,9 @@ export function createHeadlessCanvasContext(
     },
     moveTo(x, y) {
       record('moveTo', [x, y])
+    },
+    quadraticCurveTo(cpx, cpy, x, y) {
+      record('quadraticCurveTo', [cpx, cpy, x, y])
     },
     rect(x, y, width, height) {
       record('rect', [x, y, width, height])
