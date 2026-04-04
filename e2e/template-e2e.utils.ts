@@ -1,5 +1,5 @@
+import { access, readFile } from 'node:fs/promises'
 import process from 'node:process'
-import fs from 'fs-extra'
 import path from 'pathe'
 import prettier from 'prettier'
 import { expect } from 'vitest'
@@ -12,6 +12,27 @@ const APP_JSON_PATH = 'src/app.json'
 const APP_VUE_PATH = 'src/app.vue'
 const DIST_APP_JSON_PATH = 'dist/app.json'
 const TEMPLATE_E2E_DEBUG = process.env.WEAPP_VITE_TEMPLATE_E2E_DEBUG === '1'
+const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
+const TAP_ATTR_RE = /\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g
+const PHONE_NUMBER_NO_QUOTA_TOAST_ATTR_RE = /\s+phone-number-no-quota-toast=""/g
+const INVALID_INPUT_RE = /<input\b([^>]*)>([\s\S]*?)<\/input>/gi
+const LEADING_SLASH_RE = /^\/+/
+const TRAILING_SLASH_RE = /\/+$/
+const CSS_DECLARATION_START_RE = /^(\s*)([a-z-]+):(?:\s.*)?$/
+
+async function pathExists(filePath: string) {
+  try {
+    await access(filePath)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+async function readJson<T>(filePath: string) {
+  return JSON.parse(await readFile(filePath, 'utf-8')) as T
+}
 
 function debugTemplateE2E(templateName: string, phase: string, detail?: string) {
   if (!TEMPLATE_E2E_DEBUG) {
@@ -38,19 +59,6 @@ export async function formatWxml(wxml: string) {
     printWidth: 100,
     bracketSameLine: true,
     htmlWhitespaceSensitivity: 'ignore',
-  })
-}
-
-export async function formatWxss(wxss: string) {
-  return await prettier.format(wxss, {
-    parser: 'css',
-    tabWidth: 2,
-    useTabs: false,
-    semi: false,
-    singleQuote: true,
-    endOfLine: 'lf',
-    trailingComma: 'none',
-    printWidth: 120,
   })
 }
 
@@ -124,14 +132,15 @@ function normalizeButtonCompatAttrs(wxml: string) {
 
 function stripAutomatorOverlay(wxml: string) {
   // Strip devtools overlay styles appended by automator.
-  return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
+  return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
 }
 
 export function normalizeWxmlForSnapshot(wxml: string) {
   const cleaned = normalizeButtonCompatAttrs(stripAutomatorOverlay(wxml))
-    .replace(/\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g, '')
+    .replace(TAP_ATTR_RE, '')
+    .replace(PHONE_NUMBER_NO_QUOTA_TOAST_ATTR_RE, '')
     // Normalize invalid void-element markup from devtools.
-    .replace(/<input\b([^>]*)>([\s\S]*?)<\/input>/gi, '<input$1 />$2')
+    .replace(INVALID_INPUT_RE, '<input$1 />$2')
 
   const normalizedTabs = cleaned
     // Normalize dynamic hashes in tdesign ids/aria attributes.
@@ -178,8 +187,60 @@ export function normalizeWxmlForSnapshot(wxml: string) {
   return normalizedTabs
 }
 
+function normalizeWxssForSnapshot(wxss: string) {
+  const lines = wxss.split('\n')
+  const normalized: string[] = []
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]!
+    const declarationMatch = CSS_DECLARATION_START_RE.exec(line)
+    if (!declarationMatch || line.trimStart().startsWith('@')) {
+      normalized.push(line)
+      continue
+    }
+
+    const block = [line]
+    while (index + 1 < lines.length && !block.at(-1)?.trimEnd().endsWith(';')) {
+      index += 1
+      block.push(lines[index]!)
+    }
+
+    const property = declarationMatch[2]
+    const previousStart = normalized.at(-1)
+    const previousMatch = previousStart
+      ? CSS_DECLARATION_START_RE.exec(previousStart)
+      : null
+
+    if (previousMatch?.[1] === declarationMatch[1] && previousMatch[2] === property) {
+      while (normalized.length > 0) {
+        const current = normalized.pop()
+        if (current?.trimEnd().endsWith(';')) {
+          break
+        }
+      }
+    }
+
+    normalized.push(...block)
+  }
+
+  return normalized.join('\n')
+}
+
+export async function formatWxss(wxss: string) {
+  return await prettier.format(normalizeWxssForSnapshot(wxss), {
+    parser: 'css',
+    tabWidth: 2,
+    useTabs: false,
+    semi: false,
+    singleQuote: true,
+    endOfLine: 'lf',
+    trailingComma: 'none',
+    printWidth: 120,
+  })
+}
+
 function normalizeSegment(value: string) {
-  return value.replace(/^\/+/, '').replace(/\/+$/, '')
+  return value.replace(LEADING_SLASH_RE, '').replace(TRAILING_SLASH_RE, '')
 }
 
 function pushUnique(list: string[], seen: Set<string>, value: string) {
@@ -214,13 +275,13 @@ async function waitForPageRoot(page: any, timeoutMs = 12_000) {
 
 async function loadAppConfig(templateRoot: string) {
   const distAppJsonPath = path.resolve(templateRoot, DIST_APP_JSON_PATH)
-  if (await fs.pathExists(distAppJsonPath)) {
-    return await fs.readJson(distAppJsonPath)
+  if (await pathExists(distAppJsonPath)) {
+    return await readJson<Record<string, any>>(distAppJsonPath)
   }
 
   const appJsonPath = path.resolve(templateRoot, APP_JSON_PATH)
-  if (await fs.pathExists(appJsonPath)) {
-    const raw = await fs.readFile(appJsonPath, 'utf-8')
+  if (await pathExists(appJsonPath)) {
+    const raw = await readFile(appJsonPath, 'utf-8')
     const { parse: parseJson } = await import('comment-json')
     const config = parseJson(raw, undefined, true)
     if (config && typeof config === 'object' && !Array.isArray(config)) {
@@ -230,7 +291,7 @@ async function loadAppConfig(templateRoot: string) {
   }
 
   const appVuePath = path.resolve(templateRoot, APP_VUE_PATH)
-  if (await fs.pathExists(appVuePath)) {
+  if (await pathExists(appVuePath)) {
     const config = await extractConfigFromVue(appVuePath)
     if (config && typeof config === 'object' && !Array.isArray(config)) {
       return config
@@ -288,11 +349,11 @@ function resolvePages(config: Record<string, any>) {
 
 async function runBuild(templateRoot: string) {
   const packageJsonPath = path.resolve(templateRoot, 'package.json')
-  const packageJson = await fs.readJson(packageJsonPath)
+  const packageJson = await readJson<Record<string, any>>(packageJsonPath)
   const hasDependencies = packageJson?.dependencies && Object.keys(packageJson.dependencies).length > 0
   const outputRoot = path.join(templateRoot, 'dist')
   const npmOutputRoot = path.join(outputRoot, 'miniprogram_npm')
-  const hasPrebuiltNpm = await fs.pathExists(npmOutputRoot)
+  const hasPrebuiltNpm = await pathExists(npmOutputRoot)
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
     projectRoot: templateRoot,
@@ -318,10 +379,10 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   }
 
   const appWxssPath = path.join(templateRoot, 'dist', 'app.wxss')
-  if (!(await fs.pathExists(appWxssPath))) {
+  if (!(await pathExists(appWxssPath))) {
     throw new Error(`[${templateName}] Missing app.wxss in dist output`)
   }
-  const appWxss = await fs.readFile(appWxssPath, 'utf-8')
+  const appWxss = await readFile(appWxssPath, 'utf-8')
   expect(await formatWxss(appWxss)).toMatchSnapshot(`${templateName}::app.wxss`)
   debugTemplateE2E(templateName, 'app-wxss-snapshot-done')
 

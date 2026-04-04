@@ -54,6 +54,7 @@ import type {
   TriggerEventOptions,
   VNode,
   VNodeProps,
+  WeappIntrinsicElementBaseAttributes,
   WevuPlugin,
   WevuTypedRouterRouteMap,
 } from 'wevu'
@@ -287,6 +288,7 @@ type _TypeCoverage = [
   TriggerEventOptions,
   VNode,
   VNodeProps,
+  WeappIntrinsicElementBaseAttributes,
   WevuTypedRouterRouteMap,
   WevuPlugin,
 ]

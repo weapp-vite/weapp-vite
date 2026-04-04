@@ -9,11 +9,11 @@ defineComponentJson({
 
 <template>
   <view class="issue-398-shell">
-    <BaseNavbar />
+    <BaseNavbar id="issue398-navbar" />
     <view class="issue-398-shell__body">
       <slot />
     </view>
-    <BaseFooter />
+    <BaseFooter id="issue398-footer" />
   </view>
 </template>
 

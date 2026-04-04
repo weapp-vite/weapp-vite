@@ -8,6 +8,12 @@ defineComponentJson({
 const issue398NavbarLabel = 'issue-398 navbar'
 
 onMounted(() => {})
+
+function _runE2E() {
+  return {
+    label: issue398NavbarLabel,
+  }
+}
 </script>
 
 <template>

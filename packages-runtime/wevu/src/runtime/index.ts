@@ -1,3 +1,7 @@
+export type {
+  WeappIntrinsicElementBaseAttributes,
+  WeappIntrinsicEventHandler,
+} from '../weappIntrinsicElements'
 export * from './app'
 export { resetWevuDefaults, setWevuDefaults } from './defaults'
 export type { WevuDefaults } from './defaults'

@@ -201,7 +201,7 @@ export function createVueComponentsDefinition(
     '// oxlint-disable',
     '// ------',
     '// 由 weapp-vite autoImportComponents 生成',
-    'import type { ComponentOptionsMixin, DefineComponent, PublicProps } from \'wevu\'',
+    'import type { ComponentOptionsMixin, DefineComponent, PublicProps, WeappIntrinsicElementBaseAttributes } from \'wevu\'',
     ...(options.useTypedComponents
       ? [
           'import type { ComponentProp } from \'weapp-vite/typed-components\'',
@@ -210,7 +210,7 @@ export function createVueComponentsDefinition(
     '',
     'export {}',
     '',
-    'type WeappComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props, {}>>',
+    'type WeappComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, Props & WeappIntrinsicElementBaseAttributes, {}>>',
     'type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component & Fallback : Fallback',
     '',
     `declare module '${moduleName}' {`,

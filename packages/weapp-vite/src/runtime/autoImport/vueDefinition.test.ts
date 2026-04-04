@@ -8,9 +8,10 @@ describe('createVueComponentsDefinition', () => {
       () => ({ types: new Map([['size', 'string']]), docs: new Map() }),
       { useTypedComponents: false },
     )
-    expect(code).toContain('import type { ComponentOptionsMixin, DefineComponent, PublicProps } from \'wevu\'')
+    expect(code).toContain('import type { ComponentOptionsMixin, DefineComponent, PublicProps, WeappIntrinsicElementBaseAttributes } from \'wevu\'')
     expect(code).not.toContain('weapp-vite/typed-components')
     expect(code).toContain('readonly size?: string;')
+    expect(code).toContain('Props & WeappIntrinsicElementBaseAttributes')
     expect(code).toContain('InstanceType<DefineComponent<{}, {}, {}, {}, {}, ComponentOptionsMixin')
     expect(code).not.toContain('@ts-nocheck')
   })

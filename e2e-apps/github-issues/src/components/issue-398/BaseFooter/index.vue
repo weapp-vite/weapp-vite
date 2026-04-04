@@ -8,6 +8,12 @@ defineComponentJson({
 const issue398FooterLabel = 'issue-398 footer'
 
 onMounted(() => {})
+
+function _runE2E() {
+  return {
+    label: issue398FooterLabel,
+  }
+}
 </script>
 
 <template>

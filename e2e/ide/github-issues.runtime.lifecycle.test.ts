@@ -90,13 +90,19 @@ async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
       const wxml = await readPageWxml(page)
       if (
-        wxml.includes('issue-398 navbar')
+        runtime?.navbarMounted
+        && runtime?.footerMounted
+        && wxml.includes('issue-398 navbar')
         && wxml.includes('issue-398 footer')
         && wxml.includes('issue-398-page-initial')
       ) {
-        return wxml
+        return {
+          runtime,
+          wxml,
+        }
       }
     }
     catch {
@@ -112,12 +118,39 @@ async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue404Runtime(page: any, timeoutMs = 20_000) {
+async function waitForIssue404HookReady(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
       const runtime = await callPageMethodWithTimeout(page, '_runE2E')
-      if (runtime?.hasInstanceOnPageScroll && Number(runtime?.latestScrollTop ?? -1) >= 0) {
+      if (runtime?.hasInstanceOnPageScroll) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
+async function waitForIssue404ScrollRuntime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (
+        runtime?.hasInstanceOnPageScroll
+        && Array.isArray(runtime?.scrollLogs)
+        && runtime.scrollLogs.some((value: number) => value > 0)
+        && Number(runtime?.latestScrollTop ?? -1) > 0
+      ) {
         return runtime
       }
     }
@@ -355,17 +388,19 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to launch issue-398 page')
       }
 
-      const renderedWxml = await waitForIssue398LayoutContent(issuePage)
-      expect(renderedWxml).toBeTruthy()
-      expect(renderedWxml).toContain('issue-398 hmr shared chunk')
-      expect(renderedWxml).toContain('issue-398 navbar')
-      expect(renderedWxml).toContain('issue-398 footer')
-      expect(renderedWxml).toContain('issue-398-page-initial')
+      const layoutResult = await waitForIssue398LayoutContent(issuePage)
+      expect(layoutResult).toBeTruthy()
+      expect(layoutResult?.wxml).toContain('issue-398 hmr shared chunk')
+      expect(layoutResult?.wxml).toContain('issue-398 navbar')
+      expect(layoutResult?.wxml).toContain('issue-398 footer')
+      expect(layoutResult?.wxml).toContain('issue-398-page-initial')
 
-      const runtimeResult = await issuePage.callMethod('_runE2E')
+      const runtimeResult = layoutResult?.runtime ?? await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.pageMarker).toBe('issue-398-page-initial')
       expect(runtimeResult?.title).toBe('issue-398 hmr shared chunk')
+      expect(runtimeResult?.navbarMounted).toBe(true)
+      expect(runtimeResult?.footerMounted).toBe(true)
       expect(runtimeResult?.navbarLabel).toBe('issue-398 navbar')
       expect(runtimeResult?.footerLabel).toBe('issue-398 footer')
     }
@@ -388,13 +423,13 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         throw new Error('Failed to launch issue-404 page')
       }
 
-      const initialRuntime = await waitForIssue404Runtime(issuePage)
+      const initialRuntime = await waitForIssue404HookReady(issuePage)
       expect(initialRuntime?.hasInstanceOnPageScroll).toBe(true)
 
       await miniProgram.pageScrollTo(960)
       await issuePage.waitFor(240)
 
-      const runtimeResult = await waitForIssue404Runtime(issuePage)
+      const runtimeResult = await waitForIssue404ScrollRuntime(issuePage)
       expect(runtimeResult?.hasInstanceOnPageScroll).toBe(true)
       expect(Array.isArray(runtimeResult?.scrollLogs)).toBe(true)
       expect(runtimeResult?.scrollLogs?.some((value: number) => value > 0)).toBe(true)

@@ -18,12 +18,22 @@ const issue398FooterLabel = 'issue-398 footer'
 function noopTap() {}
 
 function _runE2E() {
+  const currentPage = (getCurrentPages() as Array<Record<string, any>>).at(-1)
+  const navbar = currentPage?.selectComponent?.('#issue398-navbar')
+  const footer = currentPage?.selectComponent?.('#issue398-footer')
+
   return {
     ok: true,
     pageMarker: issue398PageMarker,
     title: issue398Title,
-    navbarLabel: issue398NavbarLabel,
-    footerLabel: issue398FooterLabel,
+    navbarMounted: Boolean(navbar),
+    footerMounted: Boolean(footer),
+    navbarLabel: typeof navbar?._runE2E === 'function'
+      ? navbar._runE2E()?.label ?? null
+      : issue398NavbarLabel,
+    footerLabel: typeof footer?._runE2E === 'function'
+      ? footer._runE2E()?.label ?? null
+      : issue398FooterLabel,
   }
 }
 </script>
