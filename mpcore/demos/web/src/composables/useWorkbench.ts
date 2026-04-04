@@ -47,6 +47,7 @@ export function useWorkbench() {
         appData: sessionState.appData.value,
         currentRoute: sessionState.currentRoute.value,
         currentScenarioId: sessionState.currentScenarioId.value,
+        errorMessage: sessionState.errorMessage.value,
         pageData: sessionState.pageData.value,
         pageRoutes: sessionState.pageRoutes.value,
         pageStack: sessionState.pageStack.value,

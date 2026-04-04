@@ -23,6 +23,7 @@ interface SimulatorE2EApi {
     appData: string
     currentRoute: string
     currentScenarioId: string
+    errorMessage: string
     pageData: string
     pageRoutes: string[]
     pageStack: string[]
@@ -1060,6 +1061,35 @@ describe.sequential('simulator browser e2e', () => {
       scopeId: 'page:package-flow/queue/index',
       type: 'page',
     })
+  })
+
+  it('reports direct bridge route failures and clears them after recovery', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.openRoute('package-flow/ghost/index')
+    const failureState = await waitFor(
+      () => bridge.getState(),
+      state => state.errorMessage.includes('Unknown route for browser simulator navigation: /package-flow/ghost/index'),
+      20_000,
+    )
+    expect(failureState.currentRoute).toBe('pages/hub/index')
+    expect(failureState.pageStack).toEqual(['pages/hub/index'])
+
+    bridge.openRoute('package-flow/queue/index')
+    const recoveredState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/queue/index' && state.errorMessage === '',
+      20_000,
+    )
+    expect(recoveredState.pageStack).toEqual(['package-flow/queue/index'])
+    expect(parseJsonString<Record<string, any>>(recoveredState.pageData).title).toBe('Queue')
   })
 
   it('drives browser session host features through the demo workbench api', async () => {
