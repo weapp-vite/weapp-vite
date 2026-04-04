@@ -28,6 +28,8 @@ jobs:
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
           pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+        elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
         else
           pnpm seo:quality:strict
         fi
@@ -52,6 +54,8 @@ jobs:
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
           pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+        elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          pnpm seo:quality:strict -- --git-diff-base "HEAD~1"
         else
           pnpm seo:quality:strict
         fi
