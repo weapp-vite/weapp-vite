@@ -797,13 +797,21 @@ Page({
     const ctx = wx.createCanvasContext('hero-canvas', this)
     ctx.setFillStyle('#ff5500')
     ctx.fillRect(4, 8, 40, 24)
+    ctx.save()
     ctx.beginPath()
     ctx.moveTo(0, 0)
     ctx.lineTo(18, 12)
+    ctx.closePath()
+    ctx.rect(2, 3, 16, 10)
+    ctx.arc(10, 12, 6, 0, Math.PI, false)
+    ctx.translate(3, 4)
+    ctx.rotate(0.5)
+    ctx.scale(1.2, 0.8)
     ctx.stroke()
     ctx.setFontSize(18)
     const metrics = ctx.measureText('canvas')
     ctx.fillText('canvas', 6, 20)
+    ctx.restore()
     ctx.draw(false, () => {
       this.setData({
         canvasSnapshot: JSON.stringify(ctx.__getSnapshot()),
@@ -857,7 +865,10 @@ Component({
       const ctx = wx.createCanvasContext('inner-canvas', this)
       ctx.setStrokeStyle('#0055ff')
       ctx.setLineWidth(3)
+      ctx.save()
+      ctx.translate(2, 3)
       ctx.strokeRect(10, 12, 30, 18)
+      ctx.restore()
       ctx.draw(false, () => {
         this.triggerEvent('paint', ctx.__getSnapshot(), {
           bubbles: true,

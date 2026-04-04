@@ -79,6 +79,14 @@ expectType<{
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
 }>(browserPage?.wx.createCanvasContext('hero-canvas', browserPage))
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arc(10, 12, 6, 0, Math.PI, false)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).closePath()
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rect(2, 3, 16, 10)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).restore()
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rotate(0.5)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).save()
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).scale(1.2, 0.8)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
@@ -256,6 +264,14 @@ expectType<{
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
 }>(headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage))
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arc(10, 12, 6, 0, Math.PI, false)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).closePath()
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rect(2, 3, 16, 10)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).restore()
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rotate(0.5)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).save()
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).scale(1.2, 0.8)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).translate(3, 4)
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())

@@ -83,8 +83,10 @@ export interface HeadlessWxCanvasSnapshot {
 
 export interface HeadlessWxCanvasContext {
   __getSnapshot: () => HeadlessWxCanvasSnapshot
+  arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
+  closePath: () => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
   fill: () => void
@@ -93,12 +95,18 @@ export interface HeadlessWxCanvasContext {
   lineTo: (x: number, y: number) => void
   measureText: (text: string) => { width: number }
   moveTo: (x: number, y: number) => void
+  rect: (x: number, y: number, width: number, height: number) => void
+  restore: () => void
+  rotate: (rotate: number) => void
+  save: () => void
+  scale: (scaleWidth: number, scaleHeight: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
+  translate: (x: number, y: number) => void
 }
 
 export interface HeadlessWxIntersectionObserverMargins {
