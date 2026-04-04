@@ -1060,6 +1060,11 @@ describe.sequential('simulator browser e2e', () => {
       20_000,
     )
     expect(state.viewportSize).toEqual({ width: 390, height: 844 })
+    const queuePageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(queuePageData.title).toBe('Queue')
+    expect(queuePageData.from).toBe('hub')
+    expect(state.previewMarkup).toContain('Queue')
+    expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
 
     const snapshot = bridge.sessionSnapshot()
     expect(Array.isArray(snapshot.requestLogs)).toBe(true)
