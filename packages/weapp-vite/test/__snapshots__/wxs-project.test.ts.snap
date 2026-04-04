@@ -13,6 +13,7 @@ exports[`wxs-project > scanFiles 1`] = `
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxs",
+  "pages/index/index.wxs.wxml",
   "pages/index/index.wxss",
   "pages/index/vue.js",
   "pages/index/vue.json",
@@ -31,6 +32,12 @@ exports[`wxs-project > scanFiles 2`] = `
   <view>Hello World From Weapp-vite!</view>
   <wxs src="./index.wxs"></wxs>
 </view>
+",
+  "export const foo = '\\'hello world\\' from comm.wxs'
+
+export const bar = function (d: string) {
+  return d
+}
 ",
   "<view>
   <Navbar />
