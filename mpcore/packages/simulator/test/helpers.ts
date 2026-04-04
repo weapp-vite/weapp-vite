@@ -791,6 +791,8 @@ Page({
     canvasSnapshot: '',
     canvasSavedImageInfo: '',
     canvasSavedImageMissingInfo: '',
+    canvasImageInfo: '',
+    canvasImageInfoMissing: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -883,6 +885,28 @@ Page({
       },
     })
   },
+  inspectExportedCanvasImageLab() {
+    wx.getImageInfo({
+      src: this.data.canvasTempFilePath,
+      success: (result) => {
+        this.setData({
+          canvasImageInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  inspectMissingCanvasImageLab() {
+    wx.getImageInfo({
+      src: 'headless://wxfile/temp/missing-canvas-image-info.png',
+      fail: (error) => {
+        this.setData({
+          canvasImageInfoMissing: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
   saveTempVideoLab() {
     const fs = wx.getFileSystemManager()
     const filePath = 'headless://wxfile/temp/fixture-video.mp4'
@@ -944,6 +968,8 @@ Page({
 <view>{{canvasSnapshot}}</view>
 <view>{{canvasSavedImageInfo}}</view>
 <view>{{canvasSavedImageMissingInfo}}</view>
+<view>{{canvasImageInfo}}</view>
+<view>{{canvasImageInfoMissing}}</view>
 <view>{{tempVideoSavedInfo}}</view>
 <view>{{tempVideoSavedMissingInfo}}</view>
 <view>{{canvasTempFilePath}}</view>

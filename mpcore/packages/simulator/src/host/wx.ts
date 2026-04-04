@@ -341,6 +341,19 @@ export interface HeadlessWxGetWindowInfoOption extends HeadlessWxCallbackOption<
 
 export interface HeadlessWxGetAppBaseInfoOption extends HeadlessWxCallbackOption<HeadlessWxAppBaseInfoResult> {}
 
+export interface HeadlessWxGetImageInfoResult {
+  errMsg: string
+  height: number
+  orientation: 'up'
+  path: string
+  type: string
+  width: number
+}
+
+export interface HeadlessWxGetImageInfoOption extends HeadlessWxCallbackOption<HeadlessWxGetImageInfoResult> {
+  src: string
+}
+
 export interface HeadlessWxRemoveStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   key: string
 }
@@ -660,6 +673,7 @@ export interface HeadlessWxDriver {
   createVideoContext: (videoId: string, scope?: Record<string, any>) => HeadlessWxVideoContext
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult
   getFileSystemManager: () => HeadlessWxFileSystemManager
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult
   getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult
@@ -727,6 +741,7 @@ export interface HeadlessWx {
   ) => HeadlessWxIntersectionObserver
   createVideoContext: (videoId: string, component?: Record<string, any>) => HeadlessWxVideoContext
   createSelectorQuery: () => HeadlessWxSelectorQuery
+  getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult | undefined
   getFileSystemManager: () => HeadlessWxFileSystemManager
   getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult | undefined
   getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult | undefined
@@ -832,6 +847,16 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     createIntersectionObserver: true,
     createVideoContext: true,
     createSelectorQuery: true,
+    getImageInfo: {
+      return: {
+        errMsg: true,
+        height: true,
+        orientation: true,
+        path: true,
+        type: true,
+        width: true,
+      },
+    },
     getFileSystemManager: true,
     getSavedFileInfo: true,
     getSavedFileList: true,
@@ -1094,6 +1119,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       return query
     },
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
+    getImageInfo: option => invokeWxApi(() => driver.getImageInfo(option), option),
     getFileSystemManager: () => driver.getFileSystemManager(),
     getSavedFileInfo: option => invokeWxApi(() => driver.getSavedFileInfo(option), option),
     getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),
