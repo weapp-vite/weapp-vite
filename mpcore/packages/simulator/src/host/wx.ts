@@ -354,6 +354,17 @@ export interface HeadlessWxGetImageInfoOption extends HeadlessWxCallbackOption<H
   src: string
 }
 
+export interface HeadlessWxGetFileInfoResult {
+  digest: string
+  errMsg: string
+  size: number
+}
+
+export interface HeadlessWxGetFileInfoOption extends HeadlessWxCallbackOption<HeadlessWxGetFileInfoResult> {
+  digestAlgorithm?: 'md5' | 'sha1'
+  filePath: string
+}
+
 export interface HeadlessWxGetVideoInfoResult {
   bitrate: number
   duration: number
@@ -792,6 +803,7 @@ export interface HeadlessWxDriver {
   createVideoContext: (videoId: string, scope?: Record<string, any>) => HeadlessWxVideoContext
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getFileInfo: (option: HeadlessWxGetFileInfoOption) => HeadlessWxGetFileInfoResult
   getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult
   getVideoInfo: (option: HeadlessWxGetVideoInfoOption) => HeadlessWxGetVideoInfoResult
   getFileSystemManager: () => HeadlessWxFileSystemManager
@@ -867,6 +879,7 @@ export interface HeadlessWx {
   ) => HeadlessWxIntersectionObserver
   createVideoContext: (videoId: string, component?: Record<string, any>) => HeadlessWxVideoContext
   createSelectorQuery: () => HeadlessWxSelectorQuery
+  getFileInfo: (option: HeadlessWxGetFileInfoOption) => HeadlessWxGetFileInfoResult | undefined
   getImageInfo: (option: HeadlessWxGetImageInfoOption) => HeadlessWxGetImageInfoResult | undefined
   getVideoInfo: (option: HeadlessWxGetVideoInfoOption) => HeadlessWxGetVideoInfoResult | undefined
   getFileSystemManager: () => HeadlessWxFileSystemManager
@@ -1019,6 +1032,13 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         path: true,
         type: true,
         width: true,
+      },
+    },
+    getFileInfo: {
+      return: {
+        digest: true,
+        errMsg: true,
+        size: true,
       },
     },
     getVideoInfo: {
@@ -1302,6 +1322,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       return query
     },
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
+    getFileInfo: option => invokeWxApi(() => driver.getFileInfo(option), option),
     getImageInfo: option => invokeWxApi(() => driver.getImageInfo(option), option),
     getVideoInfo: option => invokeWxApi(() => driver.getVideoInfo(option), option),
     getFileSystemManager: () => driver.getFileSystemManager(),
