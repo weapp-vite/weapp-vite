@@ -292,6 +292,13 @@ describe('page event alignment', () => {
     page.openDefaultActionSheetLab()
     session.mockActionSheet({ cancel: true })
     page.openCancelActionSheetLab()
+    page.hideTabBarLab()
+    page.showTabBarLab()
+    page.showTabBarDotLab()
+    page.setTabBarBadgeLab()
+    page.removeTabBarBadgeLab()
+    page.showTabBarDotLab()
+    page.hideTabBarDotLab()
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -455,6 +462,19 @@ describe('page event alignment', () => {
         itemList: ['copy', 'open'],
       },
     ])
+    expect(page.data.tabBarHiddenInfo).toContain('"errMsg":"hideTabBar:ok"')
+    expect(page.data.tabBarShownInfo).toContain('"errMsg":"showTabBar:ok"')
+    expect(page.data.tabBarDotInfo).toContain('"errMsg":"showTabBarRedDot:ok"')
+    expect(page.data.tabBarHideDotInfo).toContain('"errMsg":"hideTabBarRedDot:ok"')
+    expect(page.data.tabBarBadgeInfo).toContain('"errMsg":"setTabBarBadge:ok"')
+    expect(page.data.tabBarRemoveBadgeInfo).toContain('"errMsg":"removeTabBarBadge:ok"')
+    expect(session.getTabBarSnapshot()).toEqual({
+      items: [
+        { badge: null, index: 0, pagePath: 'pages/canvas/index', redDot: false, text: 'Canvas' },
+        { badge: null, index: 1, pagePath: 'pages/profile/index', redDot: false, text: 'Profile' },
+      ],
+      visible: true,
+    })
     expect(session.getOpenedDocument()).toEqual({
       filePath: 'headless://saved/open-document/report.txt',
       fileType: 'txt',

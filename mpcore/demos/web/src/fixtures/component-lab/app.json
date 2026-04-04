@@ -1,5 +1,18 @@
 {
   "pages": [
-    "pages/lab/index"
-  ]
+    "pages/lab/index",
+    "pages/profile/index"
+  ],
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/lab/index",
+        "text": "Lab"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "Profile"
+      }
+    ]
+  }
 }

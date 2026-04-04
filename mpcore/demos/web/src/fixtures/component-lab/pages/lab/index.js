@@ -42,6 +42,12 @@ Page({
     modalCancelInfo: '',
     actionSheetDefaultInfo: '',
     actionSheetCancelInfo: '',
+    tabBarHiddenInfo: '',
+    tabBarShownInfo: '',
+    tabBarDotInfo: '',
+    tabBarHideDotInfo: '',
+    tabBarBadgeInfo: '',
+    tabBarRemoveBadgeInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -612,6 +618,65 @@ Page({
           actionSheetCancelInfo: JSON.stringify({
             error: error.message,
           }),
+        })
+      },
+    })
+  },
+  hideTabBarLab() {
+    wx.hideTabBar({
+      success: (result) => {
+        this.setData({
+          tabBarHiddenInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  showTabBarLab() {
+    wx.showTabBar({
+      success: (result) => {
+        this.setData({
+          tabBarShownInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  showTabBarDotLab() {
+    wx.showTabBarRedDot({
+      index: 1,
+      success: (result) => {
+        this.setData({
+          tabBarDotInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  hideTabBarDotLab() {
+    wx.hideTabBarRedDot({
+      index: 1,
+      complete: (result) => {
+        this.setData({
+          tabBarHideDotInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setTabBarBadgeLab() {
+    wx.setTabBarBadge({
+      index: 1,
+      text: '9+',
+      success: (result) => {
+        this.setData({
+          tabBarBadgeInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  removeTabBarBadgeLab() {
+    wx.removeTabBarBadge({
+      index: 1,
+      complete: (result) => {
+        this.setData({
+          tabBarRemoveBadgeInfo: JSON.stringify(result),
         })
       },
     })
