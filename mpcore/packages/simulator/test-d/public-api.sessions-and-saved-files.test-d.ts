@@ -193,6 +193,9 @@ expectType<{
 }>(browserPage?.wx.createVideoContext('hero-video', browserPage))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserPage?.wx.getSavedFileList())
+expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveImageToPhotosAlbum({
+  filePath: 'headless://wxfile/temp/0001',
+}))
 expectType<{ abort: () => void }>(browserPage?.wx.downloadFile({
   url: 'https://mock.mpcore.dev/files/report.txt',
   success: (result) => {
@@ -442,6 +445,9 @@ expectType<{
 }>(headlessPage?.wx.createVideoContext('hero-video', headlessPage))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessPage?.wx.getSavedFileList())
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveImageToPhotosAlbum({
+  filePath: 'headless://wxfile/temp/0001',
+}))
 expectType<{ abort: () => void }>(headlessPage?.wx.downloadFile({
   url: 'https://mock.mpcore.dev/files/report.txt',
   success: (result) => {

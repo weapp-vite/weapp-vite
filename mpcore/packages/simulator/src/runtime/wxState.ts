@@ -1188,6 +1188,15 @@ export function createHeadlessWxState() {
     removeSavedFile(option: HeadlessWxRemoveSavedFileOption) {
       return removeSavedFile(option.filePath)
     },
+    saveImageToPhotosAlbum(option: { filePath: string }) {
+      const fileContent = files.get(option.filePath)
+      if (fileContent == null) {
+        throw new Error(`saveImageToPhotosAlbum:fail file not found: ${option.filePath}`)
+      }
+      return {
+        errMsg: 'saveImageToPhotosAlbum:ok',
+      }
+    },
     saveFile(option: HeadlessWxSaveFileOption): HeadlessWxSaveFileSuccessResult {
       const fileContent = files.get(option.tempFilePath)
       if (fileContent == null) {

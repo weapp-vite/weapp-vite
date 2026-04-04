@@ -268,6 +268,8 @@ describe('page event alignment', () => {
     const page = session.reLaunch('/pages/canvas/index')
     page.runCanvasLab()
     page.exportCanvasLab()
+    page.saveExportedCanvasLab()
+    page.saveMissingCanvasImageLab()
     page.runComponentCanvasLab()
 
     expect(page.data.canvasSnapshot).toContain('"canvasId":"hero-canvas"')
@@ -316,6 +318,8 @@ describe('page event alignment', () => {
     expect(page.data.canvasTempFileContent).toContain('"canvasId":"hero-canvas"')
     expect(page.data.canvasTempFileContent).toContain('"type":"fillRect"')
     expect(page.data.canvasTempFileContent).toContain('"fileType":"png"')
+    expect(page.data.canvasSavedImageInfo).toContain('"errMsg":"saveImageToPhotosAlbum:ok"')
+    expect(page.data.canvasSavedImageMissingInfo).toContain('"error":"saveImageToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-canvas-export.png"')
     expect(page.data.textMeasureWidth).toBe(54)
     expect(page.data.componentCanvasSnapshot).toContain('"canvasId":"inner-canvas"')
     expect(page.data.componentCanvasSnapshot).toContain('"type":"strokeRect"')

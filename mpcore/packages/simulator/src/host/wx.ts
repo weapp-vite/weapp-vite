@@ -503,6 +503,14 @@ export interface HeadlessWxCanvasToTempFilePathOption extends HeadlessWxCallback
   y?: number
 }
 
+export interface HeadlessWxSaveImageToPhotosAlbumResult {
+  errMsg: string
+}
+
+export interface HeadlessWxSaveImageToPhotosAlbumOption extends HeadlessWxCallbackOption<HeadlessWxSaveImageToPhotosAlbumResult> {
+  filePath: string
+}
+
 export interface HeadlessWxSavedFileInfo {
   createTime: number
   filePath: string
@@ -670,6 +678,7 @@ export interface HeadlessWxDriver {
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   removeSavedFile: (option: HeadlessWxRemoveSavedFileOption) => { errMsg: string }
+  saveImageToPhotosAlbum: (option: HeadlessWxSaveImageToPhotosAlbumOption) => HeadlessWxSaveImageToPhotosAlbumResult
   saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string }
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string }
@@ -738,6 +747,7 @@ export interface HeadlessWx {
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
   removeSavedFile: (option: HeadlessWxRemoveSavedFileOption) => { errMsg: string } | undefined
+  saveImageToPhotosAlbum: (option: HeadlessWxSaveImageToPhotosAlbumOption) => HeadlessWxSaveImageToPhotosAlbumResult | undefined
   removeStorage: (option: HeadlessWxRemoveStorageOption) => HeadlessWxStorageResult | undefined
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
@@ -955,6 +965,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     pageScrollTo: true,
     reLaunch: true,
     redirectTo: true,
+    saveImageToPhotosAlbum: true,
     removeStorage: true,
     removeStorageSync: true,
     request: true,
@@ -1113,6 +1124,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       driver.redirectTo(option)
     }, option),
     removeSavedFile: option => invokeWxApi(() => driver.removeSavedFile(option), option),
+    saveImageToPhotosAlbum: option => invokeWxApi(() => driver.saveImageToPhotosAlbum(option), option),
     removeStorage: option => invokeWxApi(() => {
       driver.removeStorageSync(option.key)
       return {
