@@ -55,6 +55,9 @@ Page({
     backgroundLightInfo: '',
     backgroundColorInfo: '',
     backgroundInvalidInfo: '',
+    networkInitialInfo: '',
+    networkCurrentInfo: '',
+    networkLogs: [],
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -764,6 +767,28 @@ Page({
         })
       },
     })
+  },
+  inspectNetworkLab() {
+    wx.getNetworkType({
+      success: (result) => {
+        this.setData({
+          networkInitialInfo: JSON.stringify(result),
+          networkLogs: [...this.data.networkLogs, `get:${result.networkType}`],
+        })
+      },
+    })
+  },
+  startWatchingNetworkLab() {
+    this.networkHandler = (result) => {
+      this.setData({
+        networkCurrentInfo: JSON.stringify(result),
+        networkLogs: [...this.data.networkLogs, `change:${result.networkType}:${result.isConnected}`],
+      })
+    }
+    wx.onNetworkStatusChange(this.networkHandler)
+  },
+  stopWatchingNetworkLab() {
+    wx.offNetworkStatusChange(this.networkHandler)
   },
   compressChosenImageLab() {
     wx.chooseImage({

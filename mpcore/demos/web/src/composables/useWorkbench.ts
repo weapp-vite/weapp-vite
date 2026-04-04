@@ -71,6 +71,9 @@ export function useWorkbench() {
       mockModal: (definition: { cancel?: boolean, confirm?: boolean } = {}) => {
         sessionState.session.value?.mockModal?.(definition)
       },
+      setNetworkType: (networkType: 'wifi' | '2g' | '3g' | '4g' | '5g' | 'none' | 'unknown') => {
+        sessionState.session.value?.setNetworkType?.(networkType)
+      },
       navigateBack: (delta = 1) => sessionState.run(() => sessionState.session.value?.navigateBack(delta)),
       openRoute: (route: string) => sessionState.handleOpenRoute(route),
       pickScenario: (scenarioId: string) => handlePickScenario(scenarioId),
@@ -87,6 +90,7 @@ export function useWorkbench() {
         fileSnapshot: sessionState.session.value?.getFileSnapshot?.() ?? {},
         loading: sessionState.session.value?.getLoading?.() ?? null,
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],
+        networkType: sessionState.session.value?.getNetworkType?.() ?? null,
         openedDocument: sessionState.session.value?.getOpenedDocument?.() ?? null,
         previewImage: sessionState.session.value?.getPreviewImage?.() ?? null,
         pullDownRefreshState: sessionState.session.value?.getPullDownRefreshState?.() ?? null,
