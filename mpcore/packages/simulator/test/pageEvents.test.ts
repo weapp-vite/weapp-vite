@@ -283,6 +283,9 @@ describe('page event alignment', () => {
     page.startPullDownRefreshLab()
     page.clipboardLab()
     page.loadingLab()
+    page.showShareMenuLab()
+    page.updateShareMenuLab()
+    page.hideShareMenuLab()
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -389,6 +392,15 @@ describe('page event alignment', () => {
     expect(page.data.loadingShownInfo).toContain('"errMsg":"showLoading:ok"')
     expect(page.data.loadingHiddenInfo).toContain('"errMsg":"hideLoading:ok"')
     expect(session.getLoading()).toBeNull()
+    expect(page.data.shareMenuShownInfo).toContain('"errMsg":"showShareMenu:ok"')
+    expect(page.data.shareMenuUpdatedInfo).toContain('"errMsg":"updateShareMenu:ok"')
+    expect(page.data.shareMenuHiddenInfo).toContain('"errMsg":"hideShareMenu:ok"')
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      visible: false,
+      withShareTicket: true,
+    })
     expect(session.getOpenedDocument()).toEqual({
       filePath: 'headless://saved/open-document/report.txt',
       fileType: 'txt',

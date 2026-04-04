@@ -149,6 +149,9 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('startPullDownRefreshLab')
     bridge.runPageMethod('clipboardLab')
     bridge.runPageMethod('loadingLab')
+    bridge.runPageMethod('showShareMenuLab')
+    bridge.runPageMethod('updateShareMenuLab')
+    bridge.runPageMethod('hideShareMenuLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -223,6 +226,9 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.clipboardReadInfo
           && pageData.loadingShownInfo
           && pageData.loadingHiddenInfo
+          && pageData.shareMenuShownInfo
+          && pageData.shareMenuUpdatedInfo
+          && pageData.shareMenuHiddenInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -374,6 +380,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.clipboardReadInfo).toContain('"data":"component-lab clipboard payload"')
     expect(pageData.loadingShownInfo).toContain('"errMsg":"showLoading:ok"')
     expect(pageData.loadingHiddenInfo).toContain('"errMsg":"hideLoading:ok"')
+    expect(pageData.shareMenuShownInfo).toContain('"errMsg":"showShareMenu:ok"')
+    expect(pageData.shareMenuUpdatedInfo).toContain('"errMsg":"updateShareMenu:ok"')
+    expect(pageData.shareMenuHiddenInfo).toContain('"errMsg":"hideShareMenu:ok"')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -478,6 +487,12 @@ describe.sequential('simulator browser e2e', () => {
       data: 'component-lab clipboard payload',
     })
     expect(bridge.sessionSnapshot().loading).toBeNull()
+    expect(bridge.sessionSnapshot().shareMenu).toEqual({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      visible: false,
+      withShareTicket: true,
+    })
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)
