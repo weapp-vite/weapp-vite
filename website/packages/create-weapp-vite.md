@@ -32,10 +32,24 @@ pnpm create weapp-vite
 # 或 npx create-weapp-vite
 ```
 
+交互模式下，脚手架会默认询问是否安装推荐的本地 AI skills，并提前提示将执行：
+
+```bash
+npx skills add sonofmagic/skills
+```
+
+如果你选择跳过，也可以在项目创建完成后手动执行该命令。
+
 ### 非交互模式
 
 ```bash
 pnpm create weapp-vite my-app wevu
+
+# 显式安装推荐 skills
+pnpm create weapp-vite my-app wevu --install-skills
+
+# 显式跳过推荐 skills 安装
+pnpm create weapp-vite my-app wevu --no-install-skills
 ```
 
 第二个参数是模板名，内部对应 `TemplateName` 枚举。
@@ -46,6 +60,7 @@ pnpm create weapp-vite my-app wevu
 import { createProject, TemplateName } from 'create-weapp-vite'
 
 await createProject('my-app', TemplateName.wevu)
+await createProject('my-app', TemplateName.wevu, { installSkills: true })
 ```
 
 ## 可选模板（当前实现）

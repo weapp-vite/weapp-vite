@@ -10,6 +10,7 @@ import { createAgentsGuidelines } from './agents'
 import { TemplateName } from './enums'
 import { TEMPLATE_CATALOG, TEMPLATE_NAMED_CATALOG } from './generated/catalog'
 import { latestVersion } from './npm'
+import { installRecommendedSkills, RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 import { updateGitIgnore } from './updateGitignore'
 import { writeJsonFile } from './utils/fs'
 
@@ -245,10 +246,18 @@ function normalizeTemplateDependencySpecs(pkgJson: PackageJson) {
   }
 }
 
+export interface CreateProjectOptions {
+  installSkills?: boolean
+}
+
 /**
  * @description 根据模板创建项目
  */
-export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
+export async function createProject(
+  targetDir: string = '',
+  templateName: TemplateName = TemplateName.default,
+  options: CreateProjectOptions = {},
+) {
   const {
     preferredTemplateDir,
     workspaceTemplateDir,
@@ -291,6 +300,20 @@ export async function createProject(targetDir: string = '', templateName: Templa
   await fs.writeFile(path.resolve(targetDir, 'AGENTS.md'), createAgentsGuidelines(templateName))
   await updateGitIgnore({ root: targetDir, write: true })
 
+  if (options.installSkills) {
+    logger.info(`🤖 即将安装本地 AI skills：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
+    logger.info('如果你更想手动执行，也可以在项目创建后自行运行上面的命令。')
+    try {
+      await installRecommendedSkills(targetDir)
+      logger.log('✨ 已安装推荐的本地 AI skills!')
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.warn(`安装本地 AI skills 失败：${message}`)
+      logger.warn(`你可以稍后手动执行：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
+    }
+  }
+
   logger.log('✨ 创建模板成功!')
 }
 
@@ -300,5 +323,6 @@ export const __internal = {
   ensureDotGitignore,
   resolveTemplateDirs,
   shouldSkipTemplateFile,
+  installRecommendedSkills,
   upsertTailwindcssVersion,
 }

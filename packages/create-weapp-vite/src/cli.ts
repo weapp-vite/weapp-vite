@@ -4,13 +4,39 @@ import { confirm, input, select } from '@inquirer/prompts'
 import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared'
 import { createProject, TemplateName } from './index'
+import { RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 
 const cwd = process.cwd()
+
+function parseCliArgs(argv: string[]) {
+  const positionals: string[] = []
+  let installSkills: boolean | undefined
+
+  for (const arg of argv) {
+    if (arg === '--install-skills') {
+      installSkills = true
+      continue
+    }
+    if (arg === '--no-install-skills') {
+      installSkills = false
+      continue
+    }
+    positionals.push(arg)
+  }
+
+  return {
+    targetDir: positionals[0],
+    templateName: positionals[1] as TemplateName | undefined,
+    installSkills,
+  }
+}
+
 // Note: export a callable run() for tests; still invoke at module load for CLI
 export async function run() {
   // Support non-interactive usage: node cli.mjs <targetDir> <templateName>
   // Example: node dist/cli.js my-app default
-  const [argTarget, argTemplate] = process.argv.slice(2)
+  const parsedArgs = parseCliArgs(process.argv.slice(2))
+  const { targetDir: argTarget, templateName: argTemplate, installSkills: argInstallSkills } = parsedArgs
   const isArgMode = Boolean(argTarget)
   const targetDir = isArgMode
     ? argTarget
@@ -24,7 +50,7 @@ export async function run() {
     }
   }
   const templateName = isArgMode
-    ? (argTemplate as TemplateName | undefined) ?? TemplateName.default
+    ? argTemplate ?? TemplateName.default
     : await select<TemplateName>({
         message: '选择模板',
         choices: [
@@ -59,7 +85,17 @@ export async function run() {
         ],
         default: TemplateName.default,
       })
-  await createProject(targetDir, templateName)
+
+  const installSkills = isArgMode
+    ? argInstallSkills ?? false
+    : await confirm({
+        message: `是否安装推荐的本地 AI skills？将执行 \`${RECOMMENDED_SKILLS_INSTALL_COMMAND}\`，也可稍后手动执行`,
+        default: true,
+      })
+
+  await createProject(targetDir, templateName, {
+    installSkills,
+  })
 }
 
 /**

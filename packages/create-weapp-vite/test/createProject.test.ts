@@ -7,6 +7,7 @@ import { TemplateName } from '@/enums'
 import { TEMPLATE_CATALOG, TEMPLATE_NAMED_CATALOG } from '@/generated/catalog'
 import { createProject } from '@/index'
 import * as npm from '@/npm'
+import * as skills from '@/skills'
 import { logger } from '../vitest.setup'
 
 async function scanFiles(root: string) {
@@ -83,6 +84,36 @@ describe('createProject', () => {
     const files = await scanFiles(root)
     expect(files).toContain('package.json')
     expect(files).toContain('AGENTS.md')
+  })
+
+  it('installs recommended local skills when enabled', async () => {
+    const root = await createTmpRoot('install-skills')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+    const installSpy = vi.spyOn(skills, 'installRecommendedSkills').mockResolvedValue()
+
+    await createProject(root, TemplateName.default, {
+      installSkills: true,
+    })
+
+    expect(installSpy).toHaveBeenCalledWith(root)
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('npx skills add sonofmagic/skills'))
+    expect(logger.log).toHaveBeenCalledWith('✨ 已安装推荐的本地 AI skills!')
+  })
+
+  it('warns and keeps manual command when local skills install fails', async () => {
+    const root = await createTmpRoot('install-skills-fail')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+    vi.spyOn(skills, 'installRecommendedSkills').mockRejectedValue(new Error('boom'))
+
+    await createProject(root, TemplateName.default, {
+      installSkills: true,
+    })
+
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('安装本地 AI skills 失败'))
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('npx skills add sonofmagic/skills'))
+    expect(logger.log).toHaveBeenCalledWith('✨ 创建模板成功!')
   })
 
   it('writes richer wevu-specific AGENTS guidance for wevu templates', async () => {

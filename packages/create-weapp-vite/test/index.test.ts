@@ -9,6 +9,7 @@ const answers: {
   name: string
   overwrite?: boolean
   template?: TemplateName
+  installSkills?: boolean
 } = {
   name: 'my-app',
 }
@@ -19,7 +20,15 @@ let lastSelectChoices: Array<{ name: string, value: unknown }> | undefined
 vi.mock('@inquirer/prompts', () => {
   return {
     input: async () => answers.name,
-    confirm: async () => answers.overwrite ?? false,
+    confirm: async (opts: { message?: string }) => {
+      if (opts.message?.includes('覆盖')) {
+        return answers.overwrite ?? false
+      }
+      if (opts.message?.includes('AI skills')) {
+        return answers.installSkills ?? true
+      }
+      return false
+    },
     select: async (opts: { choices?: Array<{ name: string, value: unknown }> }) => {
       lastSelectChoices = opts.choices
       return (answers.template ?? 'default') // TemplateName.default
@@ -71,6 +80,7 @@ beforeEach(async () => {
   process.argv = process.argv.slice(0, 2)
   await fs.remove(tmpRoot)
   await fs.ensureDir(tmpRoot)
+  answers.installSkills = false
 })
 
 afterEach(async () => {
@@ -90,6 +100,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     process.chdir(cwd)
     answers.name = name
     answers.template = 'default' as unknown as TemplateName // default
+    answers.installSkills = false
 
     const npm = await import('@/npm')
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
@@ -120,6 +131,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     answers.name = name
     // tailwindcss template
     answers.template = 'tailwindcss' as unknown as TemplateName
+    answers.installSkills = false
 
     const npm = await import('@/npm')
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
@@ -146,6 +158,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     // directory exists, choose not to overwrite
     answers.overwrite = false
     answers.template = 0 as unknown as TemplateName
+    answers.installSkills = false
 
     const npm = await import('@/npm')
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
@@ -156,5 +169,25 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     // Not overwritten; sentinel stays and package.json should not be generated
     expect(await fs.pathExists(path.join(out, '.keep'))).toBe(true)
     expect(await fs.pathExists(path.join(out, 'package.json'))).toBe(false)
+  })
+
+  it('non-interactive arg mode defaults to not installing local skills', async () => {
+    const name = 'cli-arg-mode'
+    const cwd = path.join(tmpRoot, 'arg-mode')
+    await fs.ensureDir(cwd)
+    process.chdir(cwd)
+    process.argv = [...process.argv.slice(0, 2), name, 'default']
+
+    const createProjectModule = await import('@/createProject')
+    const createProjectSpy = vi.spyOn(createProjectModule, 'createProject')
+    const npm = await import('@/npm')
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    const cli = await import('../src/cli')
+    await cli.runPromise
+
+    expect(createProjectSpy).toHaveBeenCalledWith(name, 'default', {
+      installSkills: false,
+    })
   })
 })

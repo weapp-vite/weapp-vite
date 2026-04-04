@@ -10,6 +10,7 @@
 - 内置多种模板（默认、Wevu、Tailwindcss、TDesign、Vant 等）
 - 自动对齐 `weapp-vite` 与 `wevu` 版本
 - 自动处理 `.gitignore` 写入
+- 可选安装推荐的本地 AI skills（`sonofmagic/skills`）
 
 ## 安装
 
@@ -31,10 +32,24 @@ npx create-weapp-vite
 pnpm create weapp-vite
 ```
 
+交互流程会默认询问是否安装推荐的本地 AI skills，并提示将执行：
+
+```bash
+npx skills add sonofmagic/skills
+```
+
+如果你暂时不想安装，也可以先跳过，后面再手动执行上面的命令。
+
 非交互式创建：
 
 ```bash
 pnpm create weapp-vite my-app wevu
+
+# 显式安装推荐 skills
+pnpm create weapp-vite my-app wevu --install-skills
+
+# 显式跳过推荐 skills 安装
+pnpm create weapp-vite my-app wevu --no-install-skills
 ```
 
 在代码中使用：
@@ -43,6 +58,7 @@ pnpm create weapp-vite my-app wevu
 import { createProject, TemplateName } from 'create-weapp-vite'
 
 await createProject('my-app', TemplateName.wevu)
+await createProject('my-app', TemplateName.wevu, { installSkills: true })
 ```
 
 ## 配置
