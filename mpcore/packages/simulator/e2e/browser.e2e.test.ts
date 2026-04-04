@@ -706,6 +706,17 @@ describe.sequential('simulator browser e2e', () => {
       },
       type: 'component',
     })
+    const nestedBadgeScopeIds = bridge.findComponentScopeIds('status-card mini-badge')
+    expect(nestedBadgeScopeIds).toHaveLength(1)
+    expect(bridge.readScopeSnapshot(nestedBadgeScopeIds[0])).toMatchObject({
+      data: {
+        ping: 'ready',
+      },
+      properties: {
+        label: 'stable',
+      },
+      type: 'component',
+    })
     bridge.selectScope(scopeIds[0])
     const selectedComponentState = await waitFor(
       () => bridge.getState(),
