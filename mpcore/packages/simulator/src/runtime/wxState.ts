@@ -184,6 +184,7 @@ interface HeadlessChosenImageTempFilePayload {
   config: {
     fileType: string
     height: number
+    quality?: number
     sizeType: string[]
     sourceType: string[]
     width: number
@@ -240,6 +241,24 @@ function inferImageSize(fileContent: string) {
       width: 0,
     }
   }
+}
+
+function buildImageTempFilePayload(
+  fileType: string,
+  width: number,
+  height: number,
+  metadata: Partial<HeadlessChosenImageTempFilePayload['config']> = {},
+) {
+  return JSON.stringify({
+    config: {
+      fileType,
+      height,
+      quality: metadata.quality,
+      sizeType: metadata.sizeType ?? [],
+      sourceType: metadata.sourceType ?? [],
+      width,
+    },
+  })
 }
 
 function createNetworkSnapshot(networkType: HeadlessWxNetworkType): HeadlessWxNetworkSnapshot {
@@ -1093,14 +1112,9 @@ export function createHeadlessWxState() {
         : ['album', 'camera']
       const fileType = sizeType.includes('compressed') ? 'jpg' : 'png'
       const tempFiles = Array.from({ length: count }, (_, index) => {
-        const payload = JSON.stringify({
-          config: {
-            fileType,
-            height: 120 + (index * 8),
-            sizeType: [...sizeType],
-            sourceType: [...sourceType],
-            width: 160 + (index * 12),
-          },
+        const payload = buildImageTempFilePayload(fileType, 160 + (index * 12), 120 + (index * 8), {
+          sizeType: [...sizeType],
+          sourceType: [...sourceType],
         })
         const path = this.createTempFile(payload, `headless://wxfile/temp/chosen-image-${String(index + 1).padStart(2, '0')}.${fileType}`)
         return {
@@ -1112,6 +1126,35 @@ export function createHeadlessWxState() {
         errMsg: 'chooseImage:ok',
         tempFilePaths: tempFiles.map(item => item.path),
         tempFiles,
+      }
+    },
+    compressImage(option: {
+      compressedHeight?: number
+      compressedWidth?: number
+      quality?: number
+      src: string
+    }) {
+      const fileContent = files.get(option.src)
+      if (fileContent == null) {
+        throw new Error(`compressImage:fail file not found: ${option.src}`)
+      }
+      const sourceSize = inferImageSize(fileContent)
+      const sourceType = inferImageType(option.src, fileContent)
+      const width = Number.isFinite(option.compressedWidth)
+        ? Math.max(1, Math.trunc(option.compressedWidth ?? sourceSize.width))
+        : Math.max(1, sourceSize.width)
+      const height = Number.isFinite(option.compressedHeight)
+        ? Math.max(1, Math.trunc(option.compressedHeight ?? sourceSize.height))
+        : Math.max(1, sourceSize.height)
+      const normalizedType = sourceType === 'unknown' ? 'jpg' : sourceType
+      const fileExtension = normalizedType === 'jpeg' ? 'jpg' : normalizedType
+      const payload = buildImageTempFilePayload(normalizedType, width, height, {
+        quality: Number.isFinite(option.quality) ? Number(option.quality) : undefined,
+      })
+      const tempFilePath = this.createTempFile(payload, `headless://wxfile/temp/compressed-image-${String(fileId + 1).padStart(2, '0')}.${fileExtension}`)
+      return {
+        errMsg: 'compressImage:ok',
+        tempFilePath,
       }
     },
     getNetworkType(): HeadlessWxGetNetworkTypeResult {
