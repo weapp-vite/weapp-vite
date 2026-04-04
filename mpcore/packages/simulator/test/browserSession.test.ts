@@ -4693,6 +4693,55 @@ Page({
     expect(session.getFileText(page.data.tempFilePath)).toContain('"canvasId":"hero-canvas"')
   })
 
+  it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingSummary: '',
+    savedSummary: ''
+  },
+  runSaveVideoLab() {
+    const fs = wx.getFileSystemManager()
+    const filePath = 'headless://wxfile/temp/browser-video.mp4'
+    fs.writeFileSync(filePath, 'browser-video')
+    wx.saveVideoToPhotosAlbum({
+      filePath,
+      success: (result) => {
+        this.setData({
+          savedSummary: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  runMissingSaveVideoLab() {
+    wx.saveVideoToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/browser-missing-video.mp4',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{savedSummary}}</view><view>{{missingSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runSaveVideoLab()
+    page.runMissingSaveVideoLab()
+
+    expect(page.data.savedSummary).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+    expect(page.data.missingSummary).toBe('saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/browser-missing-video.mp4')
+    expect(session.getFileText('headless://wxfile/temp/browser-video.mp4')).toBe('browser-video')
+  })
+
   it('supports canvas path and text helpers in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

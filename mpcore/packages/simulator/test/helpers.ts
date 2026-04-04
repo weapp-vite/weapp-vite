@@ -791,6 +791,8 @@ Page({
     canvasSnapshot: '',
     canvasSavedImageInfo: '',
     canvasSavedImageMissingInfo: '',
+    tempVideoSavedInfo: '',
+    tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
     canvasTempFilePath: '',
     canvasQuerySnapshot: '',
@@ -881,6 +883,31 @@ Page({
       },
     })
   },
+  saveTempVideoLab() {
+    const fs = wx.getFileSystemManager()
+    const filePath = 'headless://wxfile/temp/fixture-video.mp4'
+    fs.writeFileSync(filePath, 'fixture-video')
+    wx.saveVideoToPhotosAlbum({
+      filePath,
+      success: (result) => {
+        this.setData({
+          tempVideoSavedInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  saveMissingTempVideoLab() {
+    wx.saveVideoToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/missing-fixture-video.mp4',
+      fail: (error) => {
+        this.setData({
+          tempVideoSavedMissingInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
   inspectCanvasQuery() {
     wx.createSelectorQuery()
       .select('canvas')
@@ -917,6 +944,8 @@ Page({
 <view>{{canvasSnapshot}}</view>
 <view>{{canvasSavedImageInfo}}</view>
 <view>{{canvasSavedImageMissingInfo}}</view>
+<view>{{tempVideoSavedInfo}}</view>
+<view>{{tempVideoSavedMissingInfo}}</view>
 <view>{{canvasTempFilePath}}</view>
 <view>{{canvasTempFileContent}}</view>
 <view>{{canvasQuerySnapshot}}</view>

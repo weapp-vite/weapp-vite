@@ -1197,6 +1197,15 @@ export function createHeadlessWxState() {
         errMsg: 'saveImageToPhotosAlbum:ok',
       }
     },
+    saveVideoToPhotosAlbum(option: { filePath: string }) {
+      const fileContent = files.get(option.filePath)
+      if (fileContent == null) {
+        throw new Error(`saveVideoToPhotosAlbum:fail file not found: ${option.filePath}`)
+      }
+      return {
+        errMsg: 'saveVideoToPhotosAlbum:ok',
+      }
+    },
     saveFile(option: HeadlessWxSaveFileOption): HeadlessWxSaveFileSuccessResult {
       const fileContent = files.get(option.tempFilePath)
       if (fileContent == null) {

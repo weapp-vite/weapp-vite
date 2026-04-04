@@ -17,6 +17,8 @@ Page({
     canvasSnapshot: '',
     canvasSavedImageInfo: '',
     canvasSavedImageMissingInfo: '',
+    tempVideoSavedInfo: '',
+    tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
     canvasTempFilePath: '',
     canvasQuerySnapshot: '',
@@ -253,6 +255,31 @@ Page({
       fail: (error) => {
         this.setData({
           canvasSavedImageMissingInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
+  saveTempVideoLab() {
+    const fs = wx.getFileSystemManager()
+    const filePath = 'headless://wxfile/temp/component-lab-video.mp4'
+    fs.writeFileSync(filePath, 'component-lab-video')
+    wx.saveVideoToPhotosAlbum({
+      filePath,
+      success: (result) => {
+        this.setData({
+          tempVideoSavedInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  saveMissingTempVideoLab() {
+    wx.saveVideoToPhotosAlbum({
+      filePath: 'headless://wxfile/temp/missing-component-lab-video.mp4',
+      fail: (error) => {
+        this.setData({
+          tempVideoSavedMissingInfo: JSON.stringify({
             error: error.message,
           }),
         })
