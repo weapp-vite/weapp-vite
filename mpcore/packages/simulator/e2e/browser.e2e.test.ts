@@ -140,6 +140,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('inspectMissingCanvasImageLab')
     bridge.runPageMethod('previewCanvasImageLab')
     bridge.runPageMethod('previewInvalidCanvasImageLab')
+    bridge.runPageMethod('chooseImageLab')
     bridge.runPageMethod('saveTempVideoLab')
     bridge.runPageMethod('saveMissingTempVideoLab')
     bridge.runPageMethod('inspectCanvasQuery')
@@ -190,6 +191,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.canvasImageInfoMissing
           && pageData.previewImageInfo
           && pageData.previewImageInvalidInfo
+          && pageData.chosenImageInfo
+          && pageData.chosenImageDetail
           && pageData.tempVideoSavedInfo
           && pageData.tempVideoSavedMissingInfo
           && pageData.canvasTempFileContent
@@ -296,6 +299,12 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasImageInfoMissing).toContain('"error":"getImageInfo:fail file not found: headless://wxfile/temp/missing-component-lab-canvas-image-info.png"')
     expect(pageData.previewImageInfo).toContain('"errMsg":"previewImage:ok"')
     expect(pageData.previewImageInvalidInfo).toContain('"error":"previewImage:fail invalid urls"')
+    expect(pageData.chosenImageInfo).toContain('"errMsg":"chooseImage:ok"')
+    expect(pageData.chosenImageInfo).toContain('headless://wxfile/temp/chosen-image-01.jpg')
+    expect(pageData.chosenImageDetail).toContain('"errMsg":"getImageInfo:ok"')
+    expect(pageData.chosenImageDetail).toContain('"type":"jpeg"')
+    expect(pageData.chosenImageDetail).toContain('"width":160')
+    expect(pageData.chosenImageDetail).toContain('"height":120')
     expect(pageData.tempVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
     expect(pageData.tempVideoSavedMissingInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-video.mp4"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')

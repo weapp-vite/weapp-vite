@@ -241,6 +241,7 @@ export class HeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        chooseImage: option => this.wxState.chooseImage(option ?? {}),
         createAnimation: option => this.createAnimation(option),
         createCanvasContext: (canvasId, scope) => this.createCanvasContext(canvasId, scope),
         canvasToTempFilePath: option => this.canvasToTempFilePath(option),

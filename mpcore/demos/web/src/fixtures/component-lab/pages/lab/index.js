@@ -21,6 +21,8 @@ Page({
     canvasImageInfoMissing: '',
     previewImageInfo: '',
     previewImageInvalidInfo: '',
+    chosenImageInfo: '',
+    chosenImageDetail: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -309,6 +311,26 @@ Page({
           previewImageInvalidInfo: JSON.stringify({
             error: error.message,
           }),
+        })
+      },
+    })
+  },
+  chooseImageLab() {
+    wx.chooseImage({
+      count: 2,
+      sizeType: ['compressed'],
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          chosenImageInfo: JSON.stringify(result),
+        })
+        wx.getImageInfo({
+          src: result.tempFilePaths[0],
+          success: (imageInfo) => {
+            this.setData({
+              chosenImageDetail: JSON.stringify(imageInfo),
+            })
+          },
         })
       },
     })
