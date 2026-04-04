@@ -98,7 +98,7 @@ describe('createProject', () => {
 
     expect(installSpy).toHaveBeenCalledWith(root)
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('npx skills add sonofmagic/skills'))
-    expect(logger.log).toHaveBeenCalledWith('✨ 已安装推荐的本地 AI skills!')
+    expect(logger.log).toHaveBeenCalledWith('✨ 已安装推荐的 AI skills!')
   })
 
   it('warns and keeps manual command when local skills install fails', async () => {
@@ -111,7 +111,7 @@ describe('createProject', () => {
       installSkills: true,
     })
 
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('安装本地 AI skills 失败'))
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('安装 AI skills 失败'))
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('npx skills add sonofmagic/skills'))
     expect(logger.log).toHaveBeenCalledWith('✨ 创建模板成功!')
   })

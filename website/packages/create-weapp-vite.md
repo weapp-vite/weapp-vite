@@ -32,7 +32,7 @@ pnpm create weapp-vite
 # 或 npx create-weapp-vite
 ```
 
-交互模式下，脚手架会默认询问是否安装推荐的本地 AI skills，并提前提示将执行：
+交互模式下，脚手架会默认询问是否安装推荐的 AI skills，并提前提示将执行：
 
 ```bash
 npx skills add sonofmagic/skills

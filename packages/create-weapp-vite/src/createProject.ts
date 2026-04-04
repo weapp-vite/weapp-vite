@@ -301,15 +301,15 @@ export async function createProject(
   await updateGitIgnore({ root: targetDir, write: true })
 
   if (options.installSkills) {
-    logger.info(`🤖 即将安装本地 AI skills：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
+    logger.info(`🤖 即将安装 AI skills：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
     logger.info('如果你更想手动执行，也可以在项目创建后自行运行上面的命令。')
     try {
       await installRecommendedSkills(targetDir)
-      logger.log('✨ 已安装推荐的本地 AI skills!')
+      logger.log('✨ 已安装推荐的 AI skills!')
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`安装本地 AI skills 失败：${message}`)
+      logger.warn(`安装 AI skills 失败：${message}`)
       logger.warn(`你可以稍后手动执行：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
     }
   }

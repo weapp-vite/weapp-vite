@@ -10,7 +10,7 @@
 - 内置多种模板（默认、Wevu、Tailwindcss、TDesign、Vant 等）
 - 自动对齐 `weapp-vite` 与 `wevu` 版本
 - 自动处理 `.gitignore` 写入
-- 可选安装推荐的本地 AI skills（`sonofmagic/skills`）
+- 可选安装推荐的 AI skills（`sonofmagic/skills`）
 
 ## 安装
 
@@ -32,7 +32,7 @@ npx create-weapp-vite
 pnpm create weapp-vite
 ```
 
-交互流程会默认询问是否安装推荐的本地 AI skills，并提示将执行：
+交互流程会默认询问是否安装推荐的 AI skills，并提示将执行：
 
 ```bash
 npx skills add sonofmagic/skills

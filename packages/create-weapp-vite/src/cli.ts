@@ -89,7 +89,7 @@ export async function run() {
   const installSkills = isArgMode
     ? argInstallSkills ?? false
     : await confirm({
-        message: `是否安装推荐的本地 AI skills？将执行 \`${RECOMMENDED_SKILLS_INSTALL_COMMAND}\`，也可稍后手动执行`,
+        message: `是否安装推荐的 AI skills？将执行 \`${RECOMMENDED_SKILLS_INSTALL_COMMAND}\`，也可稍后手动执行`,
         default: true,
       })
 

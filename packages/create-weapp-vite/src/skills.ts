@@ -9,7 +9,7 @@ function resolveNpxCommand() {
 }
 
 /**
- * @description 安装推荐的本地 AI skills。
+ * @description 安装推荐的 AI skills。
  */
 export async function installRecommendedSkills(cwd: string) {
   const command = resolveNpxCommand()
