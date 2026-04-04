@@ -485,6 +485,7 @@ export class HeadlessSession {
     if (!instance) {
       throw new Error(`Unknown scope "${normalizedScopeId}" in headless runtime.`)
     }
+    instance.__lastInteractionEvent__ = undefined
     const method = instance[methodName]
     if (typeof method !== 'function') {
       throw new TypeError(`Method "${methodName}" does not exist on headless component scope "${normalizedScopeId}".`)

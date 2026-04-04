@@ -694,6 +694,22 @@ describe.sequential('simulator browser e2e', () => {
       type: 'component',
     })
 
+    bridge.callComponentMethod(scopeIds[0], 'pulse')
+    const pulsedPageSnapshot = await waitFor(
+      () => bridge.readScopeSnapshot('page:pages/lab/index') as Record<string, any> | null,
+      snapshot => Array.isArray(snapshot?.data?.events) && snapshot.data.events.includes('pulse-1') && Boolean(snapshot.data.eventShape),
+      20_000,
+    )
+    expect(pulsedPageSnapshot?.data?.events).toContain('pulse-1')
+    expect(parseJsonString(pulsedPageSnapshot?.data?.eventShape)).toEqual({
+      bubbles: true,
+      composed: true,
+      dataset: {
+        role: 'main',
+      },
+      targetId: 'status-card',
+    })
+
     bridge.callComponentMethod(scopeIds[0], 'inspectNested')
     const nestedSnapshot = await waitFor(
       () => bridge.readScopeSnapshot(scopeIds[0]) as Record<string, any> | null,
