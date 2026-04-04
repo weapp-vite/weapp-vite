@@ -278,6 +278,8 @@ describe('page event alignment', () => {
     page.chooseMessageFileLab()
     page.inspectFileInfoLab()
     page.inspectMissingFileInfoLab()
+    page.openDocumentLab()
+    page.openMissingDocumentLab()
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -367,6 +369,15 @@ describe('page event alignment', () => {
     expect(page.data.savedFileDigestInfo).toContain('"size":23')
     expect(page.data.savedFileDigestInfo).toContain('"digest":"ae09af7f8346ddea3b2dac248fb4795cc7880ed1"')
     expect(page.data.missingFileInfo).toContain('"error":"getFileInfo:fail no such file or directory, stat \'headless://wxfile/temp/missing-file-info.txt\'"')
+    expect(page.data.openDocumentInfo).toContain('"errMsg":"openDocument:ok"')
+    expect(page.data.openSavedDocumentInfo).toContain('"errMsg":"openDocument:ok"')
+    expect(page.data.openMissingDocumentInfo).toContain('"error":"openDocument:fail no such file or directory, open \'headless://wxfile/temp/missing-open-document.pdf\'"')
+    expect(session.getOpenedDocument()).toEqual({
+      filePath: 'headless://saved/open-document/report.txt',
+      fileType: 'txt',
+      showMenu: false,
+      visible: true,
+    })
     expect(page.data.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(page.data.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(page.data.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')

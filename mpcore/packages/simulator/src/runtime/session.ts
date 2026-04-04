@@ -7,6 +7,7 @@ import type {
   HeadlessWxActionSheetMockDefinition,
   HeadlessWxDownloadFileMockDefinition,
   HeadlessWxModalMockDefinition,
+  HeadlessWxOpenDocumentSnapshot,
   HeadlessWxRequestMockDefinition,
   HeadlessWxUploadFileMockDefinition,
 } from './wxState'
@@ -266,6 +267,7 @@ export class HeadlessSession {
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
+        openDocument: option => this.wxState.openDocument(option),
         clearStorageSync: () => this.wxState.clearStorageSync(),
         getStorageInfoSync: () => this.wxState.getStorageInfoSync(),
         getStorageSync: key => this.wxState.getStorageSync(key),
@@ -547,6 +549,10 @@ export class HeadlessSession {
 
   getPreviewImage() {
     return this.wxState.getPreviewImage()
+  }
+
+  getOpenedDocument(): HeadlessWxOpenDocumentSnapshot | null {
+    return this.wxState.getOpenedDocument()
   }
 
   getPullDownRefreshState() {

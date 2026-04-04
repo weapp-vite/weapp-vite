@@ -144,6 +144,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('chooseMessageFileLab')
     bridge.runPageMethod('inspectFileInfoLab')
     bridge.runPageMethod('inspectMissingFileInfoLab')
+    bridge.runPageMethod('openDocumentLab')
+    bridge.runPageMethod('openMissingDocumentLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -209,6 +211,9 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.tempFileInfo
           && pageData.savedFileDigestInfo
           && pageData.missingFileInfo
+          && pageData.openDocumentInfo
+          && pageData.openSavedDocumentInfo
+          && pageData.openMissingDocumentInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -350,6 +355,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.savedFileDigestInfo).toContain('"size":23')
     expect(pageData.savedFileDigestInfo).toContain('"digest":"ae09af7f8346ddea3b2dac248fb4795cc7880ed1"')
     expect(pageData.missingFileInfo).toContain('"error":"getFileInfo:fail no such file or directory, stat \'headless://wxfile/temp/missing-file-info.txt\'"')
+    expect(pageData.openDocumentInfo).toContain('"errMsg":"openDocument:ok"')
+    expect(pageData.openSavedDocumentInfo).toContain('"errMsg":"openDocument:ok"')
+    expect(pageData.openMissingDocumentInfo).toContain('"error":"openDocument:fail no such file or directory, open \'headless://wxfile/temp/missing-open-document.pdf\'"')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -440,6 +448,12 @@ describe.sequential('simulator browser e2e', () => {
       'headless://saved/component-lab/ordering/alpha.txt',
       'headless://saved/component-lab/ordering/zeta.txt',
     ])
+    expect(bridge.sessionSnapshot().openedDocument).toEqual({
+      filePath: 'headless://saved/open-document/report.txt',
+      fileType: 'txt',
+      showMenu: false,
+      visible: true,
+    })
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)

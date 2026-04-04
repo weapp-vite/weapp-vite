@@ -26,6 +26,9 @@ Page({
     tempFileInfo: '',
     savedFileDigestInfo: '',
     missingFileInfo: '',
+    openDocumentInfo: '',
+    openSavedDocumentInfo: '',
+    openMissingDocumentInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -419,6 +422,48 @@ Page({
       fail: (error) => {
         this.setData({
           missingFileInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
+      },
+    })
+  },
+  openDocumentLab() {
+    const fsManager = wx.getFileSystemManager()
+    const tempFilePath = 'headless://wxfile/temp/open-document-source.pdf'
+    fsManager.writeFileSync(tempFilePath, 'open-document-content')
+    wx.openDocument({
+      filePath: tempFilePath,
+      fileType: 'pdf',
+      showMenu: true,
+      success: (result) => {
+        this.setData({
+          openDocumentInfo: JSON.stringify(result),
+        })
+      },
+    })
+    wx.saveFile({
+      filePath: 'headless://saved/open-document/report.txt',
+      tempFilePath,
+      success: (saveResult) => {
+        wx.openDocument({
+          filePath: saveResult.savedFilePath,
+          showMenu: false,
+          success: (result) => {
+            this.setData({
+              openSavedDocumentInfo: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  },
+  openMissingDocumentLab() {
+    wx.openDocument({
+      filePath: 'headless://wxfile/temp/missing-open-document.pdf',
+      fail: (error) => {
+        this.setData({
+          openMissingDocumentInfo: JSON.stringify({
             error: error.message,
           }),
         })

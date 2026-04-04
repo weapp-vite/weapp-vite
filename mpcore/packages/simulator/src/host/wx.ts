@@ -365,6 +365,16 @@ export interface HeadlessWxGetFileInfoOption extends HeadlessWxCallbackOption<He
   filePath: string
 }
 
+export interface HeadlessWxOpenDocumentResult {
+  errMsg: string
+}
+
+export interface HeadlessWxOpenDocumentOption extends HeadlessWxCallbackOption<HeadlessWxOpenDocumentResult> {
+  filePath: string
+  fileType?: string
+  showMenu?: boolean
+}
+
 export interface HeadlessWxGetVideoInfoResult {
   bitrate: number
   duration: number
@@ -826,6 +836,7 @@ export interface HeadlessWxDriver {
   nextTick: (callback?: () => void) => void
   offNetworkStatusChange: (callback?: HeadlessWxNetworkStatusChangeCallback) => void
   onNetworkStatusChange: (callback: HeadlessWxNetworkStatusChangeCallback) => void
+  openDocument: (option: HeadlessWxOpenDocumentOption) => HeadlessWxOpenDocumentResult
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
@@ -907,6 +918,7 @@ export interface HeadlessWx {
   nextTick: (callback?: () => void) => void
   offNetworkStatusChange: (callback?: HeadlessWxNetworkStatusChangeCallback) => void
   onNetworkStatusChange: (callback: HeadlessWxNetworkStatusChangeCallback) => void
+  openDocument: (option: HeadlessWxOpenDocumentOption) => HeadlessWxOpenDocumentResult | undefined
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   previewImage: (option: HeadlessWxPreviewImageOption) => HeadlessWxPreviewImageResult | undefined
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
@@ -1039,6 +1051,11 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         digest: true,
         errMsg: true,
         size: true,
+      },
+    },
+    openDocument: {
+      return: {
+        errMsg: true,
       },
     },
     getVideoInfo: {
@@ -1356,6 +1373,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     nextTick: callback => driver.nextTick(callback),
     offNetworkStatusChange: callback => driver.offNetworkStatusChange(callback),
     onNetworkStatusChange: callback => driver.onNetworkStatusChange(callback),
+    openDocument: option => invokeWxApi(() => driver.openDocument(option), option),
     pageScrollTo: option => invokeWxApi(() => {
       driver.pageScrollTo(option)
     }, option),

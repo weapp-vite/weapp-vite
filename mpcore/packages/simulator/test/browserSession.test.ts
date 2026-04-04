@@ -4998,6 +4998,79 @@ Page({
     expect(page.data.missingSummary).toBe('getFileInfo:fail no such file or directory, stat \'headless://wxfile/temp/browser-missing-file-info.txt\'')
   })
 
+  it('supports openDocument in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingSummary: '',
+    savedSummary: '',
+    tempSummary: ''
+  },
+  runOpenDocumentLab() {
+    const fsManager = wx.getFileSystemManager()
+    const tempFilePath = 'headless://wxfile/temp/browser-open-document-source.pdf'
+    fsManager.writeFileSync(tempFilePath, 'browser-open-document')
+    wx.openDocument({
+      filePath: tempFilePath,
+      fileType: 'pdf',
+      showMenu: true,
+      success: (result) => {
+        this.setData({
+          tempSummary: JSON.stringify(result),
+        })
+      },
+    })
+    wx.saveFile({
+      filePath: 'headless://saved/browser-open-document/report.txt',
+      tempFilePath,
+      success: (saveResult) => {
+        wx.openDocument({
+          filePath: saveResult.savedFilePath,
+          showMenu: false,
+          success: (result) => {
+            this.setData({
+              savedSummary: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  },
+  runMissingOpenDocumentLab() {
+    wx.openDocument({
+      filePath: 'headless://wxfile/temp/browser-missing-open-document.pdf',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{tempSummary}}</view><view>{{savedSummary}}</view><view>{{missingSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runOpenDocumentLab()
+    page.runMissingOpenDocumentLab()
+
+    expect(page.data.tempSummary).toContain('"errMsg":"openDocument:ok"')
+    expect(page.data.savedSummary).toContain('"errMsg":"openDocument:ok"')
+    expect(page.data.missingSummary).toBe('openDocument:fail no such file or directory, open \'headless://wxfile/temp/browser-missing-open-document.pdf\'')
+    expect(session.getOpenedDocument()).toEqual({
+      filePath: 'headless://saved/browser-open-document/report.txt',
+      fileType: 'txt',
+      showMenu: false,
+      visible: true,
+    })
+  })
+
   it('supports compressImage in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

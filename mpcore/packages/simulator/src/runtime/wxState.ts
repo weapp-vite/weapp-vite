@@ -20,6 +20,7 @@ import type {
   HeadlessWxNetworkStatusChangeCallback,
   HeadlessWxNetworkStatusChangeResult,
   HeadlessWxNetworkType,
+  HeadlessWxOpenDocumentOption,
   HeadlessWxReadDirOption,
   HeadlessWxReadDirSuccessResult,
   HeadlessWxReadFileOption,
@@ -64,6 +65,13 @@ export interface HeadlessWxToastSnapshot {
 export interface HeadlessWxPreviewImageSnapshot {
   current: string
   urls: string[]
+  visible: boolean
+}
+
+export interface HeadlessWxOpenDocumentSnapshot {
+  filePath: string
+  fileType: string
+  showMenu: boolean
   visible: boolean
 }
 
@@ -496,6 +504,11 @@ function normalizeFileExtension(extension: string) {
     .toLowerCase()
 }
 
+function inferDocumentFileType(filePath: string) {
+  const extensionMatch = filePath.match(IMAGE_EXTENSION_RE)
+  return extensionMatch ? normalizeFileExtension(extensionMatch[1]) : 'unknown'
+}
+
 function isImageFileExtension(extension: string) {
   return IMAGE_FILE_EXTENSIONS.has(normalizeFileExtension(extension))
 }
@@ -873,6 +886,7 @@ export function createHeadlessWxState() {
   let loading: HeadlessWxLoadingSnapshot | null = null
   let networkType: HeadlessWxNetworkType = 'wifi'
   let previewImage: HeadlessWxPreviewImageSnapshot | null = null
+  let openedDocument: HeadlessWxOpenDocumentSnapshot | null = null
   let shareMenu: HeadlessWxShareMenuSnapshot = {
     isUpdatableMessage: false,
     menus: [],
@@ -1791,6 +1805,16 @@ export function createHeadlessWxState() {
           }
         : null
     },
+    getOpenedDocument() {
+      return openedDocument
+        ? {
+            filePath: openedDocument.filePath,
+            fileType: openedDocument.fileType,
+            showMenu: openedDocument.showMenu,
+            visible: openedDocument.visible,
+          }
+        : null
+    },
     hideShareMenu() {
       shareMenu = {
         ...shareMenu,
@@ -1865,6 +1889,24 @@ export function createHeadlessWxState() {
     },
     onNetworkStatusChange(callback: HeadlessWxNetworkStatusChangeCallback) {
       networkStatusChangeCallbacks.add(callback)
+    },
+    openDocument(option: HeadlessWxOpenDocumentOption) {
+      const normalizedPath = normalizeFsPath(option.filePath)
+      if (!files.has(normalizedPath)) {
+        throw new Error(`openDocument:fail no such file or directory, open '${normalizedPath}'`)
+      }
+      const fileType = typeof option.fileType === 'string' && option.fileType.trim() !== ''
+        ? normalizeFileExtension(option.fileType)
+        : inferDocumentFileType(normalizedPath)
+      openedDocument = {
+        filePath: normalizedPath,
+        fileType,
+        showMenu: option.showMenu !== false,
+        visible: true,
+      }
+      return {
+        errMsg: 'openDocument:ok',
+      }
     },
     previewImage(option: { current?: string, urls: string[] }) {
       const urls = Array.isArray(option.urls)
