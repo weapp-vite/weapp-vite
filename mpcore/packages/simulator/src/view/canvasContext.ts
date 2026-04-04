@@ -60,6 +60,10 @@ export function createHeadlessCanvasContext(
     lineJoin: 'miter',
     miterLimit: 10,
     lineWidth: 1,
+    shadowBlur: 0,
+    shadowColor: '#000000',
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
     strokeStyle: '#000000',
     textAlign: 'start',
     textBaseline: 'alphabetic',
@@ -82,6 +86,10 @@ export function createHeadlessCanvasContext(
     miterLimit: state.miterLimit,
     lineWidth: state.lineWidth,
     reserve: false,
+    shadowBlur: state.shadowBlur,
+    shadowColor: state.shadowColor,
+    shadowOffsetX: state.shadowOffsetX,
+    shadowOffsetY: state.shadowOffsetY,
     strokeStyle: state.strokeStyle,
     textAlign: state.textAlign,
     textBaseline: state.textBaseline,
@@ -138,6 +146,10 @@ export function createHeadlessCanvasContext(
         miterLimit: snapshot.miterLimit,
         lineWidth: snapshot.lineWidth,
         reserve: snapshot.reserve,
+        shadowBlur: snapshot.shadowBlur,
+        shadowColor: snapshot.shadowColor,
+        shadowOffsetX: snapshot.shadowOffsetX,
+        shadowOffsetY: snapshot.shadowOffsetY,
         strokeStyle: snapshot.strokeStyle,
         textAlign: snapshot.textAlign,
         textBaseline: snapshot.textBaseline,
@@ -171,6 +183,10 @@ export function createHeadlessCanvasContext(
         miterLimit: state.miterLimit,
         lineWidth: state.lineWidth,
         reserve: Boolean(reserve),
+        shadowBlur: state.shadowBlur,
+        shadowColor: state.shadowColor,
+        shadowOffsetX: state.shadowOffsetX,
+        shadowOffsetY: state.shadowOffsetY,
         strokeStyle: state.strokeStyle,
         textAlign: state.textAlign,
         textBaseline: state.textBaseline,
@@ -261,6 +277,13 @@ export function createHeadlessCanvasContext(
       state.lineWidth = Number(value)
       record('setLineWidth', [value])
     },
+    setShadow(offsetX, offsetY, blur, color) {
+      state.shadowOffsetX = Number(offsetX)
+      state.shadowOffsetY = Number(offsetY)
+      state.shadowBlur = Number(blur)
+      state.shadowColor = String(color)
+      record('setShadow', [offsetX, offsetY, blur, color])
+    },
     setStrokeStyle(value) {
       state.strokeStyle = String(value)
       record('setStrokeStyle', [value])
@@ -278,6 +301,9 @@ export function createHeadlessCanvasContext(
     },
     strokeRect(x, y, width, height) {
       record('strokeRect', [x, y, width, height])
+    },
+    strokeText(text, x, y, maxWidth) {
+      record('strokeText', maxWidth == null ? [text, x, y] : [text, x, y, maxWidth])
     },
     translate(x, y) {
       record('translate', [x, y])

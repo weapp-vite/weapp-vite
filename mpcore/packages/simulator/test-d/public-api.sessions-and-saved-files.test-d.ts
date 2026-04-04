@@ -65,6 +65,10 @@ expectType<{
     miterLimit: number
     lineWidth: number
     reserve: boolean
+    shadowBlur: number
+    shadowColor: string
+    shadowOffsetX: number
+    shadowOffsetY: number
     strokeStyle: string
     textAlign: string
     textBaseline: string
@@ -98,11 +102,13 @@ expectType<{
   setLineJoin: (value: string) => void
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
+  setShadow: (offsetX: number, offsetY: number, blur: number, color: string) => void
   setStrokeStyle: (value: string) => void
   setTextAlign: (value: string) => void
   setTextBaseline: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
+  strokeText: (text: string, x: number, y: number, maxWidth?: number) => void
   translate: (x: number, y: number) => void
 }>(browserPage?.wx.createCanvasContext('hero-canvas', browserPage))
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arc(10, 12, 6, 0, Math.PI, false)
@@ -121,8 +127,10 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineCap('roun
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineDash([6, 3], 2)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineJoin('bevel')
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setMiterLimit(6)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setShadow(2, 3, 4, '#112233')
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setTextAlign('center')
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setTextBaseline('middle')
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).strokeText('canvas', 6, 20)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
@@ -285,6 +293,10 @@ expectType<{
     miterLimit: number
     lineWidth: number
     reserve: boolean
+    shadowBlur: number
+    shadowColor: string
+    shadowOffsetX: number
+    shadowOffsetY: number
     strokeStyle: string
     textAlign: string
     globalAlpha: number
@@ -320,11 +332,13 @@ expectType<{
   setLineJoin: (value: string) => void
   setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
+  setShadow: (offsetX: number, offsetY: number, blur: number, color: string) => void
   setStrokeStyle: (value: string) => void
   setTextAlign: (value: string) => void
   setTextBaseline: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
+  strokeText: (text: string, x: number, y: number, maxWidth?: number) => void
   translate: (x: number, y: number) => void
 }>(headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage))
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arc(10, 12, 6, 0, Math.PI, false)
@@ -343,8 +357,10 @@ headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineCap('ro
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineDash([6, 3], 2)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineJoin('bevel')
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setMiterLimit(6)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setShadow(2, 3, 4, '#112233')
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setTextAlign('center')
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setTextBaseline('middle')
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).strokeText('canvas', 6, 20)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).translate(3, 4)
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
