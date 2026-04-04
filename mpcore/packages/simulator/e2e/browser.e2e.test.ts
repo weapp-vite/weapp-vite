@@ -133,6 +133,7 @@ describe.sequential('simulator browser e2e', () => {
 
     bridge.runPageMethod('inspectCard')
     bridge.runPageMethod('inspectCardIntersection')
+    bridge.runPageMethod('inspectCardMedia')
     bridge.runPageMethod('inspectCompoundCard')
     bridge.runPageMethod('inspectScopedComponentQuery')
     bridge.runPageMethod('inspectCompoundSelector')
@@ -679,6 +680,19 @@ describe.sequential('simulator browser e2e', () => {
     expect(intersectionSnapshot?.data?.componentIntersectionSnapshot).toContain('"id":"component-observer-target"')
     expect(intersectionSnapshot?.data?.componentIntersectionSnapshot).toContain('"intersectionRatio":1')
     expect(intersectionSnapshot?.data?.componentIntersectionSnapshot).toContain('"top":16')
+    const initialMediaSnapshot = await waitFor(
+      () => bridge.readScopeSnapshot(scopeIds[0]) as Record<string, any> | null,
+      snapshot => Array.isArray(snapshot?.data?.componentMediaMatches) && snapshot.data.componentMediaMatches.length >= 1,
+      20_000,
+    )
+    expect(initialMediaSnapshot?.data?.componentMediaMatches?.[0]).toBe(true)
+    const resizedMediaSnapshot = await waitFor(
+      () => bridge.readScopeSnapshot(scopeIds[0]) as Record<string, any> | null,
+      snapshot => Array.isArray(snapshot?.data?.componentMediaMatches) && snapshot.data.componentMediaMatches.includes(false),
+      20_000,
+    )
+    expect(resizedMediaSnapshot?.data?.componentMediaMatches).toContain(true)
+    expect(resizedMediaSnapshot?.data?.componentMediaMatches).toContain(false)
 
     const sessionSnapshot = bridge.sessionSnapshot()
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports')

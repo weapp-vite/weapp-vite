@@ -14,6 +14,7 @@
   <view class="panel-row" bindtap="toggleMeta">切换 meta 区块</view>
   <view class="panel-row" bindtap="inspectCard">检查组件实例</view>
   <view class="panel-row" bindtap="inspectCardIntersection">检查组件内 IntersectionObserver</view>
+  <view class="panel-row" bindtap="inspectCardMedia">检查组件内 MediaQueryObserver</view>
   <view class="panel-row" bindtap="inspectCompoundCard">检查复合组件选择器</view>
   <view class="panel-row" bindtap="inspectScopedComponentQuery">检查组件作用域 SelectorQuery</view>
   <view class="panel-row" bindtap="runVideoContextLab">检查 VideoContext</view>
