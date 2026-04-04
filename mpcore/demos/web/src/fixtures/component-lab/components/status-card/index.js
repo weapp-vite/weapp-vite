@@ -16,6 +16,7 @@ Component({
   data: {
     internalClicks: 0,
     nestedBadge: '',
+    componentIntersectionSnapshot: '',
     observerLog: 'cold',
     actionLog: [],
     actionPills: ['warm', 'hot'],
@@ -77,6 +78,17 @@ Component({
       }, {
         bubbles: true,
         composed: true
+      })
+    },
+    inspectComponentIntersection() {
+      const observer = this.createIntersectionObserver({
+        thresholds: [0, 1],
+      }).relativeToViewport()
+      observer.observe('#component-observer-target', (result) => {
+        this.setData({
+          componentIntersectionSnapshot: JSON.stringify(result),
+        })
+        observer.disconnect()
       })
     },
     applyInternalAction(event) {
