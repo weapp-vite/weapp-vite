@@ -1,104 +1,153 @@
 ---
 title: 基础目录与资源收集
-description: 基础目录与资源收集 {#paths-config}，聚焦 config / paths 相关场景，覆盖 Weapp-vite 与
-  Wevu 的能力、配置和实践要点。
+description: 说明 weapp-vite 如何确定源码根目录、插件目录和资源复制范围，以及这些配置与 Vite root/publicDir 的边界。
 keywords:
   - 配置
   - config
   - paths
-  - 基础目录与资源收集
-  - 聚焦
-  - /
-  - 相关场景
+  - srcRoot
+  - pluginRoot
+  - copy
 ---
 
 # 基础目录与资源收集 {#paths-config}
 
-本页涵盖：
+这一页聚焦几类最基础、也最容易把整个工程带偏的配置：
 
-1. **源码根目录**（`app.json` 在哪）
-2. **插件根目录**（是否同时构建小程序插件）
-3. **静态资源收集与复制**（哪些文件会被搬进 `dist/`）
-4. **额外 WXML**（可选，当前版本为预留字段）
+1. 小程序源码从哪里开始扫描
+2. 插件源码在哪里
+3. 哪些非代码资源会被复制进产物
+4. 哪些字段目前仍是预留位
+
+如果这些路径先没对齐，后面的自动路由、自动导入、分包和 TS 支持都会出现连锁误判。
 
 [[toc]]
 
 ## `weapp.srcRoot` {#weapp-srcroot}
+
 - **类型**：`string`
-- **默认值**：项目根目录（`''` 等价于 `.`）
-- **适用场景**：`app.json` 不在仓库根目录，或你希望把源码统一放在 `src/`、`miniprogram/` 等目录。
+- **默认值**：项目根目录
+
+表示小程序应用入口目录，也就是 `app.json` 所在目录。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
   weapp: {
-    srcRoot: './miniprogram',
+    srcRoot: 'miniprogram',
   },
 })
 ```
 
-说明：
-- `srcRoot` 会影响 **扫描入口**、**产物路径**、**资源复制** 与 **自动路由** 等行为。
-- 构建时会从该目录寻找 `app.json`，找不到会直接报错。
+它会影响：
+
+- `app.json`、页面、组件、分包的扫描起点
+- 自动路由默认扫描范围
+- 静态资源复制范围
+- `.weapp-vite` 托管类型里的一部分推导结果
+
+常见场景：
+
+- 老项目把源码放在 `miniprogram/`
+- Vue SFC / Wevu 项目把源码放在 `src/`
 
 ## `weapp.pluginRoot` {#weapp-pluginroot}
+
 - **类型**：`string`
 - **默认值**：`undefined`
-- **适用场景**：项目中同时维护“小程序插件”，需要一起打包 `plugin.json` 与插件代码。
+
+表示插件入口目录，也就是 `plugin.json` 所在目录。
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
-
 export default defineConfig({
   weapp: {
-    srcRoot: '.',
-    pluginRoot: './plugin',
+    srcRoot: 'miniprogram',
+    pluginRoot: 'plugin',
   },
 })
 ```
 
-说明：
-- `pluginRoot` 指向 `plugin.json` 所在目录。
-- 插件产物输出路径会根据 `project.config.json` 的 `pluginRoot`（若有）或构建输出目录自动推导。
-- 插件构建与主应用构建复用同一套 alias/TS/依赖处理能力。
+适用场景：
+
+- 同仓库同时维护主应用和小程序插件
+- 需要让插件也走同一套 alias、TypeScript、npm 构建链路
+
+> [!NOTE]
+> `pluginRoot` 只负责声明插件源码入口。插件最终输出目录仍会结合平台 project config 和构建上下文推导。
 
 ## `weapp.copy` {#weapp-copy}
-- **类型**：`{ include?: string[]; exclude?: string[]; filter?: (filePath: string) => boolean }`
+
+- **类型**：`{ include?: string[]; exclude?: string[]; filter?: (filePath: string, index: number, array: string[]) => boolean }`
 - **默认值**：`undefined`
-- **适用场景**：把字体/证书/自定义数据等 **非代码资源** 复制到 `dist/`。
+
+用于把字体、证书、原始数据、模型、额外静态资源等复制到产物目录。
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
-
 export default defineConfig({
   weapp: {
     copy: {
-      include: ['**/*.ttf', '**/*.cer'],
-      exclude: ['**/examples/**'],
+      include: ['**/*.ttf', '**/*.wasm', 'assets/raw/**'],
+      exclude: ['**/__tests__/**'],
       filter(filePath) {
-        return !filePath.includes('README')
+        return !filePath.endsWith('.map')
       },
     },
   },
 })
 ```
 
-行为说明：
-- 默认会收集常见静态资源后缀（如 `png/jpg/svg/mp3/mp4/wasm`），并排除 `node_modules`、`miniprogram_npm`、`.wevu-config` 等目录。
-- `include` / `exclude` 是 glob 列表，匹配范围基于 `srcRoot`（主应用）或 `pluginRoot`（插件构建）。
-- `filter` 会在 glob 命中后再次过滤。
+说明：
 
-> [!TIP]
-> Vite 的 `public/` 目录仍会被原样复制。如果资源已经放在 `public/`，通常不需要再配置 `weapp.copy`。
+- `include` / `exclude` 基于 `srcRoot` 或 `pluginRoot` 匹配
+- `filter` 会在 glob 命中后再进行一次过滤
+- 默认情况下，常见图片、音视频、字体、`wasm` 等资源已经会被收集
+
+### 与 `public/` 的关系
+
+如果资源天然适合走 Vite 的公共资源目录，也可以使用顶层 `publicDir`。
+
+边界可以这样理解：
+
+- 需要按小程序源码树一起管理的资源，用 `weapp.copy`
+- 需要按 Vite 公共目录原样复制的资源，用 `publicDir`
+
+更多原生字段说明：
+
+- [Vite 中文官方配置文档 · shared options](https://cn.vite.dev/config/shared-options)
 
 ## `weapp.isAdditionalWxml` {#weapp-isadditionalwxml}
+
 - **类型**：`(wxmlFilePath: string) => boolean`
 - **默认值**：`() => false`
-- **状态**：**当前版本为预留字段**（尚未接入扫描/产物流程）。
 
-如果你的项目依赖“运行时动态拼接 WXML 路径”，建议 **改用显式文件引用** 或在构建阶段自行补充产物；该字段目前不会影响构建图谱。
+这是预留字段，当前版本尚未正式接入扫描和产物流程。
+
+如果你的项目有“运行时动态拼接额外 WXML”的历史逻辑，当前更稳的做法仍然是：
+
+- 改成显式引用
+- 或在你自己的构建前后置步骤里补充产物
+
+不要把核心流程建立在这个字段已经生效的假设上。
+
+## 顶层 `root` 和 `weapp.srcRoot` 的区别
+
+这两个字段经常被混淆：
+
+- 顶层 `root`：Vite 项目根目录，影响 Vite 自身的配置解析、`index.html`、插件上下文等
+- `weapp.srcRoot`：小程序源码根目录，影响 `app.json`、页面、组件、分包扫描
+
+通常业务项目里：
+
+- 不需要改 Vite `root`
+- 只需要改 `weapp.srcRoot`
+
+如果你确实在做多工程或自定义工作区结构，再去同时调整两者。
+
+更多原生字段说明：
+
+- [Vite 中文官方配置文档 · shared options](https://cn.vite.dev/config/shared-options)
 
 ---
 
-下一步：需要构建输出与兼容策略？请前往 [构建输出与兼容](./build-and-output.md)。
+接下来建议继续看 [构建输出与兼容](./build-and-output.md)。路径确定后，下一步通常就是把输出位置、平台和 JS 格式稳定下来。

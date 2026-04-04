@@ -1,38 +1,39 @@
 ---
 title: 分包配置
-description: Weapp-vite 会读取 app.json.subPackages 来生成分包产物；weapp.subPackages 则用于
-  **构建期补充配置**（独立分包、依赖裁剪、共享样式等）。
+description: weapp-vite 会读取 app.json.subPackages 生成分包产物；weapp.subPackages 则提供独立分包、分包级内联配置、自动导入覆盖与共享样式等增强能力。
 keywords:
   - 配置
-  - 分包
   - config
   - subpackages
   - 分包配置
-  - Weapp-vite
-  - 会读取
+  - independent
+  - styles
 ---
 
 # 分包配置 {#subpackages-config}
 
-`weapp-vite` 会读取 `app.json.subPackages` 来生成分包产物；`weapp.subPackages` 则用于 **构建期补充配置**（独立分包、`inlineConfig`、自动导入组件覆盖、共享样式等）。
-`weapp.subPackages` 本身不再负责 npm 依赖裁剪；这部分能力已收敛到 [`weapp.npm.mainPackage` / `weapp.npm.subPackages`](/config/npm.md#主包--分包依赖落位)。
+`app.json.subPackages` 决定“小程序有哪些分包”，而 `weapp.subPackages` 决定“这些分包在构建阶段还需要哪些额外能力”。
+
+这两者要一起看：
+
+- `app.json.subPackages`：声明分包本身
+- `weapp.subPackages`：补充构建期增强
 
 [[toc]]
 
 ## `weapp.subPackages` {#weapp-subpackages}
+
 - **类型**：
   ```ts
   Record<string, {
     independent?: boolean
     inlineConfig?: Partial<InlineConfig>
-    autoImportComponents?: AutoImportComponents | false
+    autoImportComponents?: AutoImportComponents | boolean
     watchSharedStyles?: boolean
     styles?: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[]
   }>
   ```
 - **默认值**：`undefined`
-
-示例：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -45,7 +46,10 @@ export default defineConfig({
         autoImportComponents: false,
         styles: [
           'styles/shared.wxss',
-          { source: 'styles/pages.wxss', scope: 'pages' },
+          {
+            source: 'styles/pages.wxss',
+            scope: 'pages',
+          },
         ],
       },
     },
@@ -53,28 +57,68 @@ export default defineConfig({
 })
 ```
 
-### 字段说明
-
-- `independent`：启用 **独立分包构建上下文**。常与 `app.json` 中的 `independent: true` 搭配使用。
-- `inlineConfig`：为该分包注入额外 Vite 配置（Rolldown/Rollup 插件、define 等）。
-- `autoImportComponents`：为该分包单独配置/禁用自动导入。
-- `watchSharedStyles`：分包文件变更时是否强制重新生成共享样式（默认 `true`）。
-- `styles`：分包共享样式入口，详见下文。
-
 > [!NOTE]
-> `weapp.subPackages` 的 key 必须与 `app.json.subPackages[].root` 对应，否则不会生效。
+> 这里的 key 必须与 `app.json.subPackages[].root` 一致，否则不会生效。
+
+## 字段说明
+
+### `independent`
+
+- **类型**：`boolean`
+
+表示该分包是否按独立分包上下文处理。
+
+它通常应和 `app.json` 中对应分包的 `independent: true` 保持一致，避免配置语义分裂。
+
+### `inlineConfig`
+
+- **类型**：`Partial<InlineConfig>`
+
+允许为单个分包追加 Vite 内联配置。
+
+适用场景：
+
+- 某个分包需要额外 `define`
+- 某个分包要临时增加插件或局部构建参数
 
 > [!TIP]
-> 若你想控制某个分包的 npm 依赖落位，请到 [npm 配置](/config/npm.md) 使用 `weapp.npm.subPackages.<root>.dependencies`，而不是写在 `weapp.subPackages` 里。
+> `inlineConfig` 里写的是 **Vite 原生配置**。字段本身的语义请直接看 [Vite 中文官方配置文档](https://cn.vite.dev/config/)。
 
-> [!TIP]
-> 当你开启 `weapp.autoRoutes` 时，`weapp.subPackages` 还有另一层作用：它会告诉自动路由“哪些 root 应按分包页面目录处理”。默认规则下，自动路由只会扫描 `srcRoot/pages/**` 与这些已声明 root 下的 `pages/**`。
+### `autoImportComponents`
+
+- **类型**：`AutoImportComponents | boolean`
+
+用于给单个分包覆盖全局组件自动导入策略，或直接关闭它。
+
+常见场景：
+
+- 某个分包不希望自动补 `usingComponents`
+- 某个分包需要额外的 resolver 或组件扫描规则
+
+### `watchSharedStyles`
+
+- **类型**：`boolean`
+
+控制该分包在开发时是否监听共享样式并触发重新生成。
+
+适合：
+
+- 分包共享样式很多，且你明确想控制 dev 监听成本
+
+### `styles`
+
+- **类型**：`SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[]`
+
+用于声明分包共享样式入口。
 
 ## `subPackages.*.styles` {#subpackages-styles}
 
-**类型**：`string | SubPackageStyleConfigObject | (string | SubPackageStyleConfigObject)[]`
+`SubPackageStyleConfigEntry` 支持两种形式：
 
-`SubPackageStyleConfigObject` 结构：
+- 字符串
+- 对象
+
+对象结构为：
 
 ```ts
 {
@@ -85,14 +129,80 @@ export default defineConfig({
 }
 ```
 
-说明：
-- `source` 支持 **相对分包 root / 相对 srcRoot / 绝对路径**。
-- `scope` 提供快捷范围：
-  - `all`（默认）分包内所有页面/组件
-  - `pages` 仅 `pages/**`
-  - `components` 仅 `components/**`
-- `include/exclude` 用于精确匹配（基于分包 root 的相对路径）。
+示例：
+
+```ts
+export default defineConfig({
+  weapp: {
+    subPackages: {
+      marketing: {
+        styles: [
+          'styles/shared.wxss',
+          {
+            source: 'styles/page-only.wxss',
+            scope: 'pages',
+            exclude: ['pages/legacy/**'],
+          },
+        ],
+      },
+    },
+  },
+})
+```
+
+字段说明：
+
+- `source`：样式源文件路径，可相对分包 root、相对 `srcRoot`，也可直接用绝对路径
+- `scope`：
+  - `all`：分包内所有页面和组件
+  - `pages`：只作用于页面
+  - `components`：只作用于组件
+- `include` / `exclude`：更精细的 glob 匹配
+
+## 与自动路由的关系
+
+当启用 `weapp.autoRoutes` 时，`weapp.subPackages` 还有一个额外作用：
+
+- 告诉自动路由“哪些 root 应按分包页面目录处理”
+
+如果你的分包页面不走默认 `root/pages/**` 约定，通常需要同时配置：
+
+- `weapp.subPackages`
+- `weapp.autoRoutes.include`
+
+## 与 npm 分包落位的关系
+
+`weapp.subPackages` 不负责 npm 包落位。
+
+如果你要控制：
+
+- 哪些依赖进入主包 `miniprogram_npm`
+- 哪些依赖进入指定分包 `miniprogram_npm`
+
+请使用：
+
+- `weapp.npm.mainPackage`
+- `weapp.npm.subPackages`
+
+详见 [npm 配置](./npm.md)。
+
+## 常见建议
+
+### 什么时候要用 `inlineConfig`
+
+只有当某个分包真的需要“局部构建差异”时再用。大多数分包项目先保持全局统一配置更稳。
+
+### 什么时候要把样式抽到 `styles`
+
+当一套共享样式要稳定作用于整个分包，而不是单个组件手动导入时，这个字段价值最高。
+
+### 独立分包为什么还要单独关注共享 chunk
+
+因为独立分包不参与普通分包那套共享分发模型。做分包优化时，要一起看：
+
+- [共享 Chunk 配置](./chunks.md)
+- [npm 配置](./npm.md)
 
 ---
 
-更多分包实践与产物示例，请阅读 [分包指南](/guide/subpackage)。
+如果你接下来要继续处理分包依赖落位，请看 [npm 配置](./npm.md)。如果你要继续处理共享模块落盘策略，请看 [共享 Chunk 配置](./chunks.md)。

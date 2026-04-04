@@ -1,6 +1,6 @@
 ---
 title: TypeScript 支持文件
-description: weapp-vite 会生成 .weapp-vite 下的托管 tsconfig 与类型文件，用于让旧项目平滑迁移并稳定接入编辑器提示。
+description: weapp-vite 会生成 .weapp-vite 下的托管 tsconfig 与类型文件，用于稳定承接自动路由、自动导入组件、layout 和编辑器提示。
 keywords:
   - 配置
   - config
@@ -13,14 +13,14 @@ keywords:
 
 # TypeScript 支持文件 {#typescript-support}
 
-`weapp-vite` 当前会在项目根目录下生成一组 `.weapp-vite/*` 支持文件，用来承接两类需求：
+`weapp-vite` 会在项目根目录生成一组 `.weapp-vite/*` 托管文件，用来解决两类问题：
 
-- 给 `autoRoutes`、`autoImportComponents`、layout 类型增强等能力提供稳定输出位置
-- 让新项目和旧项目都能逐步接入托管的 TypeScript 配置，而不是强依赖用户手写引用结构
+- 给自动路由、自动导入组件、layout 等增强能力提供稳定的类型输出位置
+- 让旧项目也能逐步接入更规范的 TS 引用结构，而不是一次性强制重构
 
 [[toc]]
 
-## 会生成什么
+## 会生成哪些文件
 
 常见输出包括：
 
@@ -33,48 +33,64 @@ keywords:
 - `.weapp-vite/components.d.ts`
 - `.weapp-vite/wevu-layouts.d.ts`
 
-其中前四个是托管 `tsconfig`，后四个是由自动路由、自动导入组件、layout 扫描生成的类型文件。
+它们分别服务于：
+
+- 业务源码与页面/组件类型检查
+- Node / 配置文件类型检查
+- 自动路由类型输出
+- 自动导入组件与 Vue 模板补全
+- layout 名称和 props 类型增强
 
 ## 什么时候生成
 
-- 执行 `weapp-vite dev`
-- 执行 `weapp-vite build`
-- 执行 `weapp-vite open`
-- 执行 `weapp-vite analyze`
-- 手动执行 `weapp-vite prepare`
+这些文件会在以下命令中自动生成或刷新：
 
-如果你想在编辑器启动前或 CI 里先把支持文件预热出来，推荐显式执行：
+- `weapp-vite dev`
+- `weapp-vite build`
+- `weapp-vite open`
+- `weapp-vite analyze`
+- `weapp-vite prepare`
+
+如果你希望在编辑器、CI、AI 工具接入前先预热类型产物，推荐显式执行：
 
 ```bash
 weapp-vite prepare
 ```
 
-## 对旧项目的兼容策略
+## `weapp.typescript` {#weapp-typescript}
 
-`weapp-vite` 不会要求所有旧项目必须立刻把根 `tsconfig.json` 改成固定的 `references` 结构，才允许项目运行。
+- **类型**：
+  ```ts
+  {
+    shared?: {
+      compilerOptions?: CompilerOptions
+      include?: string[]
+      exclude?: string[]
+      files?: string[]
+    }
+    app?: {
+      compilerOptions?: CompilerOptions
+      vueCompilerOptions?: Record<string, any>
+      include?: string[]
+      exclude?: string[]
+      files?: string[]
+    }
+    node?: {
+      compilerOptions?: CompilerOptions
+      include?: string[]
+      exclude?: string[]
+      files?: string[]
+    }
+    server?: {
+      compilerOptions?: CompilerOptions
+      include?: string[]
+      exclude?: string[]
+      files?: string[]
+    }
+  }
+  ```
 
-也就是说，即使用户当前的 `tsconfig.json` 还不是下面这种形式：
-
-```json
-{
-  "references": [
-    { "path": "./.weapp-vite/tsconfig.app.json" },
-    { "path": "./.weapp-vite/tsconfig.server.json" },
-    { "path": "./.weapp-vite/tsconfig.node.json" },
-    { "path": "./.weapp-vite/tsconfig.shared.json" }
-  ],
-  "files": []
-}
-```
-
-在 `.weapp-vite` 尚未生成时，也不应该因此直接导致项目报错。当前设计更偏向“渐进迁移”：
-
-- 新项目可以直接采用托管 `references`
-- 旧项目可以先跑起来，再逐步切换到托管结构
-
-## `weapp.typescript`
-
-你可以通过 `weapp.typescript` 定制托管 `tsconfig` 的部分内容。
+用于定制托管 `tsconfig` 的各分组内容。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -95,34 +111,93 @@ export default defineConfig({
           types: ['node'],
         },
       },
+      server: {
+        include: ['server/**/*.ts'],
+      },
     },
   },
 })
 ```
 
-支持的分组：
+### 四个分组分别管什么
 
-- `shared`：共享基础配置
-- `app`：业务源码与页面/组件侧配置
-- `node`：Node 脚本、配置文件相关配置
-- `server`：服务端辅助入口相关配置
+- `shared`：多端共享、公共基础配置
+- `app`：页面、组件、SFC、布局相关源码
+- `node`：`vite.config.*`、脚本、生成器、Node 工具
+- `server`：服务端辅助代码或本地 server 代码
 
-每组都支持：
+### 每个分组都支持什么
 
 - `compilerOptions`
 - `include`
 - `exclude`
 - `files`
 
-## 推荐迁移方式
+其中 `app` 额外支持：
 
-1. 先让项目正常运行，并执行一次 `weapp-vite prepare`
-2. 确认 `.weapp-vite/*.json` 与类型文件都已生成
-3. 再决定是否把根 `tsconfig.json` 收敛到托管 `references`
-4. 最后按需在 `weapp.typescript` 里补团队自己的 `compilerOptions/include/exclude`
+- `vueCompilerOptions`
 
-## 相关文档
+## 推荐接入方式
 
-- [CLI 命令参考](/guide/cli)
-- [共享配置](/config/shared)
-- [类型声明文件](/guide/directory-structure/generated-files)
+### 新项目
+
+优先采用托管 `references` 结构：
+
+```json
+{
+  "references": [
+    { "path": "./.weapp-vite/tsconfig.app.json" },
+    { "path": "./.weapp-vite/tsconfig.server.json" },
+    { "path": "./.weapp-vite/tsconfig.node.json" },
+    { "path": "./.weapp-vite/tsconfig.shared.json" }
+  ],
+  "files": []
+}
+```
+
+### 旧项目
+
+建议按这个顺序迁移：
+
+1. 先执行一次 `weapp-vite prepare`
+2. 确认 `.weapp-vite/*` 已生成
+3. 再逐步把根 `tsconfig.json` 收敛到托管 `references`
+4. 最后在 `weapp.typescript` 里补团队自己的覆盖项
+
+## 与顶层 `resolve.alias` / `compilerOptions.paths` 的关系
+
+`weapp.typescript` 只负责托管 TS 文件本身的结构和编译器选项。
+
+如果你在处理路径别名：
+
+- TS 层别名：`compilerOptions.paths`
+- Vite 解析层：顶层 `resolve.alias` 或 `weapp.tsconfigPaths`
+
+更多 Vite 原生配置说明：
+
+- [Vite 中文官方配置文档 · resolve](https://cn.vite.dev/config/shared-options#resolve-alias)
+
+## 常见问题
+
+### 为什么改了配置后编辑器还没提示
+
+优先检查：
+
+1. 是否已执行 `weapp-vite prepare`
+2. 根 `tsconfig.json` 是否包含 `.weapp-vite` 产物
+3. 是否使用了 `weapp-vite/config` 的 `defineConfig`
+
+### `typed-router.d.ts` / `typed-components.d.ts` 没生成
+
+分别检查：
+
+- 是否启用了 `weapp.autoRoutes`
+- 是否启用了 `weapp.autoImportComponents`
+
+### 可以手动改 `.weapp-vite/*.json` 吗
+
+不建议。它们属于托管产物，应通过 `weapp.typescript` 和相关功能配置来改。
+
+---
+
+接下来如果你要处理自动路由、日志桥接、MCP 或运行时注入，请继续看 [共享配置](./shared.md)。

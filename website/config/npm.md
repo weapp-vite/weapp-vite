@@ -1,43 +1,40 @@
 ---
 title: npm 配置
-description: Weapp-vite 会自动把 **dependencies** 里的依赖构建成 miniprogram_npm/，而把
-  **devDependencies** 视为“仅构建期依赖”，直接内联进产物。
+description: weapp-vite 会把运行时依赖构建到小程序 npm 目录，并允许你按主包、插件、分包精细控制依赖落位、缓存与底层构建参数。
 keywords:
   - 配置
   - config
   - npm
-  - Weapp-vite
-  - 会自动把
-  - dependencies
-  - 里的依赖构建成
+  - miniprogram_npm
+  - subPackages
+  - alipayNpmMode
 ---
 
 # npm 配置 {#config-npm}
 
-`weapp-vite` 会自动把 **dependencies** 里的依赖构建成 `miniprogram_npm/`，而把 **devDependencies** 视为“仅构建期依赖”，直接内联进产物。
+`weapp-vite` 内建了“小程序 npm 依赖落位”能力。它不仅仅是“把依赖打进 `miniprogram_npm`”，还允许你精细控制：
+
+- 主包放哪些依赖
+- 插件产物放哪些依赖
+- 哪些依赖下沉到特定分包
+- 单个 npm 包构建时用什么底层 Vite 配置
 
 [[toc]]
 
-## 依赖分类规则（默认）
+## 默认依赖分类规则
 
-```jsonc
-{
-  "dependencies": {
-    "lodash": "^4.17.21"
-  },
-  "devDependencies": {
-    "lodash-es": "^4.17.21"
-  }
-}
-```
+默认情况下：
 
-- 引入 `lodash` ⇒ 产物保留 `require('lodash')`，并生成 `miniprogram_npm/lodash`。
-- 引入 `lodash-es` ⇒ 相关实现会被打包并内联到页面/组件脚本。
+- `dependencies` 被视为运行时依赖
+- `devDependencies` 被视为构建期依赖
 
-> [!TIP]
-> 建议团队统一约定：**运行时依赖放 `dependencies`**，构建期依赖放 `devDependencies`。
+也就是说：
+
+- `dependencies` 中的包倾向于被保留为小程序 npm 依赖
+- `devDependencies` 中的包倾向于被直接打进业务产物
 
 ## `weapp.npm` {#weapp-npm}
+
 - **类型**：
   ```ts
   {
@@ -52,11 +49,10 @@ keywords:
     subPackages?: Record<string, {
       dependencies?: (string | RegExp)[]
     }>
-    buildOptions?: (options: NpmBuildOptions, meta: { name: string; entry: InputOption }) => NpmBuildOptions | undefined
-    alipayNpmMode?: 'node_modules' | 'miniprogram_npm'
+    buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
+    alipayNpmMode?: 'miniprogram_npm' | 'node_modules'
   }
   ```
-- **默认值**：`{ enable: true, cache: true, alipayNpmMode: 'node_modules' }`
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -74,157 +70,11 @@ export default defineConfig({
       },
       subPackages: {
         'packages/order': {
-          dependencies: [/^tdesign-miniprogram/],
-        },
-      },
-      buildOptions(options, { name }) {
-        if (name === 'lodash') {
-          return {
-            ...options,
-            build: {
-              ...options.build,
-              target: 'es2018',
-            },
-          }
-        }
-        return options
-      },
-    },
-  },
-})
-```
-
-字段说明：
-- `enable`：关闭后 **不会自动构建** `miniprogram_npm`。如果你的代码仍保留 `require('pkg')`，需要自行处理（如 devtools 构建 npm）。
-- `cache`：是否启用 npm 构建缓存（缓存目录：`node_modules/weapp-vite/.cache/`）。
-- `mainPackage.dependencies`：
-  - `undefined`：默认行为，按根 `package.json.dependencies` 输出到主包；
-  - `false`：禁止输出主包 `miniprogram_npm`；
-  - `string[] | RegExp[]`：只把命中的依赖输出到主包。
-- `pluginPackage.dependencies`：
-  - 仅在开启 `weapp.pluginRoot` 且执行插件构建链路时生效；
-  - `undefined`：默认按根 `package.json.dependencies` 输出到插件产物；
-  - `false`：禁止输出插件侧 `miniprogram_npm`；
-  - `string[] | RegExp[]`：只把命中的依赖输出到 `dist-plugin/miniprogram_npm`。
-- `subPackages`：为特定分包声明本地 npm 依赖范围。命中的分包会输出自己的 `miniprogram_npm`，并将分包内命中的 npm 引用重写到本地目录。
-- `buildOptions`：为单个包覆写 Vite 库模式构建参数。
-- `alipayNpmMode`：支付宝平台 npm 目录风格。默认 `node_modules`，若要兼容微信风格目录，可切到 `miniprogram_npm`。
-
-## 主包 / 分包依赖落位
-
-默认情况下，`weapp-vite` 会把根 `package.json.dependencies` 视为运行时依赖，输出到主包 `miniprogram_npm`。
-
-如果你希望把依赖尽量下沉到独立分包，可以这样做：
-
-```ts
-export default defineConfig({
-  weapp: {
-    npm: {
-      mainPackage: {
-        dependencies: false,
-      },
-      subPackages: {
-        'packages/order': {
           dependencies: [/^tdesign-miniprogram/, 'dayjs'],
         },
-        'packages/member': {
-          dependencies: ['@scope/member-sdk'],
-        },
       },
-    },
-  },
-})
-```
-
-适用场景：
-- 想把只被独立分包使用的依赖留在分包内，减少主包体积。
-- 想精确控制不同分包的 `miniprogram_npm` 内容。
-
-## 插件 npm 包落位演示
-
-如果项目同时维护小程序主应用和插件，可以通过 `weapp.pluginRoot` + `weapp.npm.pluginPackage.dependencies` 单独控制插件产物里的 npm 包落位。
-
-```ts [vite.config.mts]
-import { defineConfig } from 'weapp-vite/config'
-
-export default defineConfig({
-  weapp: {
-    srcRoot: 'miniprogram',
-    pluginRoot: 'plugin',
-    npm: {
-      enable: true,
-      pluginPackage: {
-        dependencies: ['dayjs'],
-      },
-      mainPackage: {
-        dependencies: false,
-      },
-    },
-  },
-})
-```
-
-假设根 `package.json` 是：
-
-```json
-{
-  "dependencies": {
-    "dayjs": "^1.11.13",
-    "lodash": "^4.17.21"
-  }
-}
-```
-
-而插件代码只在 `plugin/**` 下引用了 `dayjs`：
-
-```ts [plugin/utils/showcase.ts]
-import dayjs from 'dayjs'
-
-export const pluginNpmBuildStamp = dayjs('2026-03-19T12:34:00').format('YYYY/MM/DD HH:mm')
-```
-
-构建后会得到类似结果：
-
-```text
-dist/
-└── # 主应用产物；此例因为 mainPackage.dependencies = false，不生成根 miniprogram_npm
-
-dist-plugin/
-├── plugin.json
-├── common.js
-├── pages/native-playground/index.js
-└── miniprogram_npm
-    └── dayjs
-        └── index.js
-```
-
-这意味着：
-
-- `dayjs` 会落到 `dist-plugin/miniprogram_npm/dayjs`；
-- 插件 chunk / JSON 中的 npm 引用会被改写到插件本地目录；
-- `lodash` 不会进入 `dist-plugin/miniprogram_npm`，因为它没有命中 `pluginPackage.dependencies`；
-- 若 `pluginPackage.dependencies` 省略，则默认会按根 `dependencies` 构建插件侧 npm。
-
-> [!TIP]
-> 仓库里的 [`apps/plugin-demo`](/guide/plugin.md#示例项目) 与 `e2e/ci/plugin-demo.build.test.ts` 已覆盖这个场景：构建后要求 `dist-plugin/miniprogram_npm/dayjs/index.js` 存在，而 `lodash` 不存在。
-
-## 控制 npm 依赖的压缩与 sourcemap
-
-`weapp.npm` 内部依赖构建默认是：
-
-- `minify: true`
-- `sourcemap: false`
-
-如果你希望 `miniprogram_npm` 里的某些包不压缩并生成 sourcemap，可以在 `buildOptions` 中覆写：
-
-```ts
-import { defineConfig } from 'weapp-vite/config'
-
-export default defineConfig({
-  weapp: {
-    npm: {
       buildOptions(options, { name }) {
-        if (name === 'lodash') {
+        if (name === 'dayjs') {
           return {
             ...options,
             build: {
@@ -236,37 +86,185 @@ export default defineConfig({
         }
         return options
       },
+      alipayNpmMode: 'node_modules',
     },
   },
 })
 ```
 
-> [!NOTE]
-> `build.minify/build.sourcemap` 只影响你的主项目产物；  
-> `weapp.npm.buildOptions` 用于控制 `miniprogram_npm` 依赖包的构建行为。
+## 字段说明
 
-## 手动构建命令
+### `enable`
 
-如需在命令行触发开发者工具的 npm 构建：
+- **类型**：`boolean`
 
-```json
-{
-  "scripts": {
-    "build:npm": "weapp-vite build:npm",
-    "npm": "weapp-vite npm"
-  }
-}
+是否启用内建 npm 构建。
+
+关闭后：
+
+- `weapp-vite` 不再自动构建小程序 npm 目录
+- 若源码里仍保留 `require('pkg')` / 包路径引用，则需要你自己处理，例如改为开发者工具手动构建 npm
+
+### `cache`
+
+- **类型**：`boolean`
+
+是否启用 npm 构建缓存。
+
+默认缓存目录：
+
+- `node_modules/weapp-vite/.cache/`
+
+适用建议：
+
+- 日常开发保留 `true`
+- 如果怀疑 npm 构建结果陈旧，再临时设 `false` 或手动清缓存
+
+### `mainPackage.dependencies`
+
+- **类型**：`false | (string | RegExp)[] | undefined`
+
+控制主包里的 npm 依赖范围。
+
+行为：
+
+- `undefined`：默认按根 `dependencies` 处理
+- `false`：不输出主包 npm 目录
+- 数组：只输出命中的依赖
+
+### `pluginPackage.dependencies`
+
+- **类型**：`false | (string | RegExp)[] | undefined`
+
+控制插件产物里的 npm 依赖范围。
+
+仅在以下前提下有意义：
+
+- 配置了 `weapp.pluginRoot`
+- 当前走到了插件构建链路
+
+### `subPackages`
+
+- **类型**：`Record<string, { dependencies?: (string | RegExp)[] }>`
+
+控制特定分包内的 npm 依赖落位。
+
+适合：
+
+- 把只在某个分包使用的依赖下沉到该分包
+- 减少主包体积
+
+### `buildOptions`
+
+- **类型**：`(options, pkgMeta) => options | undefined`
+
+允许你在“构建单个 npm 包”的那一层覆写底层 Vite 配置。
+
+常见场景：
+
+- 给个别依赖关闭压缩
+- 给个别依赖开启 sourcemap
+- 调整构建 target
+
+> [!TIP]
+> 这里操作的是“npm 包内部构建用的 Vite 配置对象”。若你需要理解其中 `build.*` 字段的完整语义，请直接看 [Vite 中文官方配置文档](https://cn.vite.dev/config/)。
+
+### `alipayNpmMode`
+
+- **类型**：`'miniprogram_npm' | 'node_modules'`
+
+用于控制支付宝平台的本地 npm 输出目录风格。
+
+默认是：
+
+- `node_modules`
+
+如果你的历史链路或团队约定需要走微信风格目录，可切到：
+
+- `miniprogram_npm`
+
+## 常见落位策略
+
+### 主包尽量瘦身
+
+```ts
+export default defineConfig({
+  weapp: {
+    npm: {
+      mainPackage: {
+        dependencies: false,
+      },
+      subPackages: {
+        'packages/order': {
+          dependencies: ['dayjs'],
+        },
+      },
+    },
+  },
+})
 ```
 
-> [!NOTE]
-> 该命令依赖 **weapp-ide-cli**，请确保微信开发者工具已开启“服务端口”。
+适合把明确只在分包用到的依赖下沉出去。
+
+### 插件单独携带 npm
+
+```ts
+export default defineConfig({
+  weapp: {
+    srcRoot: 'miniprogram',
+    pluginRoot: 'plugin',
+    npm: {
+      pluginPackage: {
+        dependencies: ['dayjs'],
+      },
+      mainPackage: {
+        dependencies: false,
+      },
+    },
+  },
+})
+```
+
+适合主应用和插件同仓维护，但只希望插件产物包含指定 npm 包。
+
+## 与顶层 `build.*` 的边界
+
+顶层 Vite `build.*` 影响的是主项目构建。
+
+`weapp.npm.buildOptions` 影响的是：
+
+- 小程序 npm 依赖包自己的内部构建
+
+两者不要混淆。
+
+更多原生字段请看：
+
+- [Vite 中文官方配置文档 · build](https://cn.vite.dev/config/build-options)
 
 ## 常见问题
 
-- **npm 构建内容未更新**：尝试将 `cache` 设为 `false`，或清理 `node_modules/weapp-vite/.cache/`。
-- **分包体积过大**：使用 `weapp.npm.mainPackage.dependencies` 和 `weapp.npm.subPackages.<root>.dependencies` 精确控制依赖落位。
-- **支付宝平台下 npm 目录不符合预期**：检查 `weapp.npm.alipayNpmMode`，默认是 `node_modules` 而不是 `miniprogram_npm`。
+### npm 构建内容没更新
+
+优先尝试：
+
+1. 把 `cache` 设为 `false`
+2. 清理 `node_modules/weapp-vite/.cache/`
+3. 重新构建
+
+### 分包体积过大
+
+优先检查：
+
+- `mainPackage.dependencies`
+- `subPackages.<root>.dependencies`
+
+### 支付宝平台目录不符合预期
+
+优先检查：
+
+- `weapp.platform`
+- `weapp.npm.alipayNpmMode`
 
 ---
 
-下一步：需要分包能力？请前往 [分包配置](./subpackages.md)。
+如果你继续处理分包边界，请回看 [分包配置](./subpackages.md)。如果你要处理库模式，则继续看 [库模式配置](./lib.md)。

@@ -1,44 +1,55 @@
 ---
 title: 构建输出与兼容
-description: 解释 Weapp-vite 的产物输出目录、JS 输出格式与兼容策略，以及这些配置对包体积和运行稳定性的影响。
+description: 解释 weapp-vite 的平台、输出目录、JS 输出格式与兼容策略，以及这些配置与 Vite build 的边界。
 keywords:
   - 配置
   - config
   - build
   - output
   - 构建输出与兼容
-  - 构建产物
-  - 兼容策略
+  - jsFormat
+  - multiPlatform
 ---
 
 # 构建输出与兼容 {#build-and-output}
 
-本页说明 **产物输出目录** 与 **JS 输出格式/兼容策略**。它们直接决定：
-- `dist/` 的目录结构
-- 当前按哪个小程序平台解析 `project.config.*`
-- 是否输出 CommonJS 或 ESM
-- 是否启用 ES5 兼容降级
-- 是否启用多平台 `project.config` 解析
-- 开发态是否清空输出目录
-- 何时给包体积发出告警
-- 是否压缩代码、是否生成 sourcemap
+这一页回答两个问题：
+
+1. `weapp-vite` 最终把小程序产物输出到哪里
+2. 这些产物按哪个平台、哪种 JS 格式和怎样的兼容策略输出
+
+它覆盖的是 **小程序语义层** 的配置；如果你在找 `build.minify`、`build.sourcemap`、`build.rollupOptions` 这类 **Vite 原生 build 配置**，请结合阅读：
+
+- [Vite 中文官方配置文档 · build](https://cn.vite.dev/config/build-options)
 
 [[toc]]
 
-## 输出目录来源
+## 输出目录是怎么决定的
 
-`weapp-vite` 的输出目录默认由 `project.config.json`（或多端配置）中的 **miniprogramRoot** 决定：
+默认情况下，`weapp-vite` 会优先从当前平台对应的 `project.config.*` 中读取：
 
-- 若 `build.outDir` **未显式配置**，`weapp-vite` 会将 `build.outDir` 设置为 `miniprogramRoot`。
-- 若 `build.outDir` **已配置**，则以你的配置为准。
+- `miniprogramRoot`
+- `pluginRoot`
+
+如果顶层 Vite `build.outDir` 没有显式指定：
+
+- 小程序主应用默认输出到 `miniprogramRoot`
+- 插件输出目录会结合 `pluginRoot` 与构建上下文推导
+
+如果你显式配置了顶层 `build.outDir`，则以你的 Vite 配置为准。
 
 > [!NOTE]
-> 当启用 `weapp.multiPlatform` 且 `miniprogramRoot` 为相对路径 `dist` 时，输出会自动调整为 `dist/<platform>/dist`，以避免不同平台互相覆盖。
+> 当启用 `weapp.multiPlatform`，且多个平台共用相对 `miniprogramRoot` 时，建议明确检查最终产物目录，避免不同平台互相覆盖。
 
 ## `weapp.platform` {#weapp-platform}
+
 - **类型**：`'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'`
 - **默认值**：`'weapp'`
-- **作用**：指定当前构建按哪个小程序平台解析输出扩展名、`project.config` 文件名、平台差异逻辑与部分模板/JSON 兼容行为。
+
+作用：
+
+- 决定当前构建按哪个小程序平台解析扩展名和 project config
+- 影响平台分支逻辑、模板兼容策略、部分 JSON / npm 输出行为
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -50,20 +61,19 @@ export default defineConfig({
 })
 ```
 
-行为说明：
-- 不配时默认按微信小程序处理。
-- 在单平台项目里，直接写死 `weapp.platform` 即可。
-- 在多平台项目里，通常配合 CLI `--platform` 与 `weapp.multiPlatform` 一起使用。
-- 不同平台会影响输出扩展名与项目配置文件名，例如微信默认读取 `project.config.json`，支付宝读取 `mini.project.json`。
+适用建议：
+
+- 单平台项目：直接写死即可
+- 多平台项目：通常配合 CLI 的 `--platform` 与 `weapp.multiPlatform` 使用
 
 ## `weapp.multiPlatform` {#weapp-multiplatform}
+
 - **类型**：`boolean | { enabled?: boolean; projectConfigRoot?: string }`
 - **默认值**：`false`
-- **作用**：启用按平台读取 `project.config` 的模式，常用于同一仓库输出微信、支付宝、抖音等不同小程序平台。
+
+用于同仓库维护多套平台 `project.config.*`。
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
-
 export default defineConfig({
   weapp: {
     multiPlatform: {
@@ -75,19 +85,24 @@ export default defineConfig({
 ```
 
 行为说明：
-- `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`。
-- 启用后会按 `${projectConfigRoot}/${platform}/<platform-config-file>` 解析平台配置。
-- 需要配合 CLI `--platform` 指定目标平台，例如 `weapp-vite build --platform alipay`；未显式传入时，仍会回退到 `weapp.platform`。
-- 若你的多端项目都使用相对 `miniprogramRoot`，建议显式检查最终输出目录，避免多个平台互相覆盖。
+
+- `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`
+- 启用后会按平台读取 `${projectConfigRoot}/${platform}/...` 下的项目配置文件
+- 一般要配合命令行 `--platform` 使用，例如 `weapp-vite build --platform alipay`
+
+适用场景：
+
+- 同一业务同时维护微信、支付宝、抖音小程序
+- 平台间 `appid`、编译选项、输出目录策略不同
 
 ## `weapp.cleanOutputsInDev` {#weapp-cleanoutputsindev}
+
 - **类型**：`boolean`
 - **默认值**：`true`
-- **作用**：控制开发态启动构建前是否清空输出目录。
+
+控制开发态启动前是否清空输出目录。
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
-
 export default defineConfig({
   weapp: {
     cleanOutputsInDev: false,
@@ -95,19 +110,20 @@ export default defineConfig({
 })
 ```
 
-行为说明：
-- `dev` 模式默认会先清空输出目录，避免旧产物残留干扰调试。
-- 设为 `false` 后，可跳过每次启动前的全量清理，适合大项目或你明确知道输出残留不会造成误判的场景。
-- `build` 生产构建仍然会清空输出目录，不受此项影响。
+说明：
+
+- `dev` 模式默认会先清空输出目录，避免旧产物干扰
+- `build` 模式始终清空输出目录，不受此字段影响
+- 大项目若频繁冷启动，可按需关闭开发态清理换取速度
 
 ## `weapp.packageSizeWarningBytes` {#weapp-packagesizewarningbytes}
+
 - **类型**：`number`
-- **默认值**：`2097152`（`2 * 1024 * 1024`）
-- **作用**：控制主包/分包包体积告警阈值，超过时在构建日志中给出提示。
+- **默认值**：`2097152`
+
+用于主包/分包体积告警阈值，单位是字节。
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
-
 export default defineConfig({
   weapp: {
     packageSizeWarningBytes: 1.5 * 1024 * 1024,
@@ -115,18 +131,19 @@ export default defineConfig({
 })
 ```
 
-适用场景：
-- 团队希望更早发现主包逼近平台体积限制。
-- 项目有严格包体预算，需要把告警阈值调得比平台硬限制更保守。
+适合：
+
+- 团队想在逼近平台限制前更早收到提醒
+- 有明确包体预算，需要设置更保守的阈值
 
 ## `weapp.jsFormat` {#weapp-jsformat}
+
 - **类型**：`'cjs' | 'esm'`
 - **默认值**：`'cjs'`
-- **作用**：控制 Rolldown/Rollup 的输出格式。
+
+决定脚本产物使用 CommonJS 还是 ESM。
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
-
 export default defineConfig({
   weapp: {
     jsFormat: 'esm',
@@ -134,71 +151,112 @@ export default defineConfig({
 })
 ```
 
-行为说明：
-- `cjs`（默认）：输出 CommonJS，兼容性最好。
-- `esm`：输出 ESM；在微信开发者工具中建议开启「ES6 转 ES5」以降低预览差异。
+选择建议：
+
+- `cjs`：兼容性最好，默认推荐
+- `esm`：适合明确采用 ESM 输出策略的项目，但要结合目标平台验证
 
 > [!WARNING]
-> 如果你手动把 `build.target` 设为 **ES2015 以下**，会直接报错；历史上的 `weapp.es5` 兼容方案已废弃，不建议继续依赖。
+> 若你选择 `esm`，应同时检查目标开发者工具与平台对该输出形式的支持，不要只在 Web 或单机环境里验证。
 
 ## `weapp.es5` {#weapp-es5}
+
 - **类型**：`boolean`
-- **默认值**：`false`
-- **状态**：**已废弃**
-- **历史作用**：在输出 CommonJS 的基础上，用 `@swc/core` 进行 **ES5 降级**。
+- **状态**：已废弃
 
-```ts
-import { defineConfig } from 'weapp-vite/config'
-
-export default defineConfig({
-  weapp: {
-    jsFormat: 'cjs',
-    es5: true,
-  },
-})
-```
-
-使用须知：
-- 不建议在新项目中继续开启。
-- 仅支持 `jsFormat: 'cjs'`，与 `esm` 同用会直接报错。
-- 需要安装 `@swc/core`：`pnpm add -D @swc/core`。
-- 开启后，`build.target` 会被强制收敛到 `es2015`，再由 SWC 降级到 ES5。
+历史上它会借助 `@swc/core` 做额外 ES5 降级。当前不建议继续依赖。
 
 迁移建议：
-- 默认保持 `build.target >= es2020`，让 `?.` / `??` 不再进入 Rolldown 的降级分支。
-- 在微信开发者工具中开启「将 JS 编译成 ES5」功能。
-- 如果必须兼容极旧环境，再评估是否继续保留 `weapp.es5`。
 
-## `build.minify` 与 `build.sourcemap` {#build-minify-sourcemap}
+- 保持顶层 `build.target >= 'es2020'`
+- 在微信开发者工具中开启“将 JS 编译成 ES5”
+- 把兼容压力尽量交给平台工具链，而不是继续依赖已废弃链路
 
-`weapp-vite` 直接复用 Vite 的 `build` 配置：
+## 顶层 `build.*` 该怎么配
 
-- `build.minify`：是否压缩代码（默认生产环境开启）。
-- `build.sourcemap`：是否输出 sourcemap（可为 `true | false | 'inline' | 'hidden'`）。
+这些字段仍然按 Vite 标准语义工作：
 
-如果你希望 **打包产物不压缩且生成 sourcemap**，可以这样配置：
+- `build.outDir`
+- `build.target`
+- `build.minify`
+- `build.sourcemap`
+- `build.rolldownOptions`
+
+例如：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
   build: {
+    target: 'es2020',
     minify: false,
     sourcemap: true,
+  },
+  weapp: {
+    jsFormat: 'cjs',
   },
 })
 ```
 
-也可以通过 CLI 临时覆盖：
+建议这样理解边界：
 
-```bash
-weapp-vite build --minify false --sourcemap
+- `weapp.platform` / `weapp.jsFormat` / `weapp.multiPlatform` 决定“小程序产物应该长什么样”
+- 顶层 `build.*` 决定“Vite / Rolldown 用什么方式构建这些产物”
+
+更多字段说明请直接看：
+
+- [Vite 中文官方配置文档 · build](https://cn.vite.dev/config/build-options)
+
+## 常见组合
+
+### 多平台项目
+
+```ts
+export default defineConfig({
+  build: {
+    sourcemap: true,
+  },
+  weapp: {
+    platform: 'weapp',
+    multiPlatform: true,
+  },
+})
 ```
 
-> [!TIP]
-> 以上配置作用于你的项目产物（页面/组件/公共 chunk）。  
-> 若还需要控制 `miniprogram_npm` 中依赖包的压缩与 sourcemap，请看下方 npm 配置页说明。
+适合把“具体平台”交给 CLI 参数，而不是写死在单个配置文件里。
+
+### 保守兼容输出
+
+```ts
+export default defineConfig({
+  build: {
+    target: 'es2020',
+  },
+  weapp: {
+    jsFormat: 'cjs',
+  },
+})
+```
+
+这是绝大多数业务项目更稳的起点。
+
+### 调试优先输出
+
+```ts
+export default defineConfig({
+  build: {
+    minify: false,
+    sourcemap: true,
+  },
+  weapp: {
+    cleanOutputsInDev: false,
+  },
+})
+```
+
+适合当前重点在定位运行时和产物问题，而不是压缩包体。
 
 ---
 
-完成配置后建议重新执行 `pnpm build`，并在开发者工具内验证预览与上传流程。
+如果你接下来要处理源码入口、插件目录、资源复制，请继续看 [基础目录与资源收集](./paths.md)。如果你要处理分包和共享模块，再看 [分包配置](./subpackages.md) 与 [共享 Chunk 配置](./chunks.md)。
