@@ -48,6 +48,13 @@ Page({
     tabBarHideDotInfo: '',
     tabBarBadgeInfo: '',
     tabBarRemoveBadgeInfo: '',
+    navigationBarTitleInfo: '',
+    navigationBarColorInfo: '',
+    navigationBarLoadingShownInfo: '',
+    navigationBarLoadingHiddenInfo: '',
+    backgroundLightInfo: '',
+    backgroundColorInfo: '',
+    backgroundInvalidInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -677,6 +684,83 @@ Page({
       complete: (result) => {
         this.setData({
           tabBarRemoveBadgeInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  updateNavigationTitleLab() {
+    wx.setNavigationBarTitle({
+      title: 'Lab Updated',
+      success: (result) => {
+        this.setData({
+          navigationBarTitleInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  updateNavigationColorLab() {
+    wx.setNavigationBarColor({
+      frontColor: '#ffffff',
+      backgroundColor: '#135790',
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn',
+      },
+      complete: (result) => {
+        this.setData({
+          navigationBarColorInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  showNavigationLoadingLab() {
+    wx.showNavigationBarLoading({
+      success: (result) => {
+        this.setData({
+          navigationBarLoadingShownInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  hideNavigationLoadingLab() {
+    wx.hideNavigationBarLoading({
+      complete: (result) => {
+        this.setData({
+          navigationBarLoadingHiddenInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setLightBackgroundLab() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'light',
+      success: (result) => {
+        this.setData({
+          backgroundLightInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setBackgroundColorLab() {
+    wx.setBackgroundColor({
+      backgroundColor: '#444444',
+      backgroundColorTop: '#555555',
+      backgroundColorBottom: '#666666',
+      success: (result) => {
+        this.setData({
+          backgroundColorInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setInvalidBackgroundLab() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'weird',
+      fail: (error) => {
+        this.setData({
+          backgroundInvalidInfo: JSON.stringify({
+            error: error.message,
+          }),
         })
       },
     })

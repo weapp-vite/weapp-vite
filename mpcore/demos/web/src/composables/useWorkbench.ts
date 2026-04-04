@@ -79,6 +79,8 @@ export function useWorkbench() {
       runPageMethod: (method: string) => sessionState.handleCallMethod(method),
       sessionSnapshot: () => ({
         actionSheetLogs: sessionState.session.value?.getActionSheetLogs() ?? [],
+        currentPageBackground: sessionState.session.value?.getCurrentPageBackground?.() ?? null,
+        currentPageNavigationBar: sessionState.session.value?.getCurrentPageNavigationBar?.() ?? null,
         clipboardData: sessionState.session.value?.getClipboardData?.() ?? null,
         directorySnapshot: sessionState.session.value?.getDirectorySnapshot?.() ?? [],
         downloadFileLogs: sessionState.session.value?.getDownloadFileLogs?.() ?? [],

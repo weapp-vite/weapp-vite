@@ -3,6 +3,15 @@
     "pages/lab/index",
     "pages/profile/index"
   ],
+  "window": {
+    "navigationBarBackgroundColor": "#112233",
+    "navigationBarTitleText": "App Shell",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#fefefe",
+    "backgroundColorBottom": "#eeeeee",
+    "backgroundColorTop": "#ffffff",
+    "backgroundTextStyle": "light"
+  },
   "tabBar": {
     "list": [
       {

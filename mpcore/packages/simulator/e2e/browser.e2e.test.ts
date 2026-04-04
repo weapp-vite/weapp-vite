@@ -31,6 +31,8 @@ interface SimulatorE2EApi {
   runPageMethod: (method: string) => void
   sessionSnapshot: () => {
     actionSheetLogs: unknown[]
+    currentPageBackground: unknown
+    currentPageNavigationBar: unknown
     directorySnapshot: string[]
     downloadFileLogs: unknown[]
     fileSnapshot: Record<string, string>
@@ -167,6 +169,13 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('removeTabBarBadgeLab')
     bridge.runPageMethod('showTabBarDotLab')
     bridge.runPageMethod('hideTabBarDotLab')
+    bridge.runPageMethod('updateNavigationTitleLab')
+    bridge.runPageMethod('updateNavigationColorLab')
+    bridge.runPageMethod('showNavigationLoadingLab')
+    bridge.runPageMethod('hideNavigationLoadingLab')
+    bridge.runPageMethod('setLightBackgroundLab')
+    bridge.runPageMethod('setBackgroundColorLab')
+    bridge.runPageMethod('setInvalidBackgroundLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -254,6 +263,13 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.tabBarHideDotInfo
           && pageData.tabBarBadgeInfo
           && pageData.tabBarRemoveBadgeInfo
+          && pageData.navigationBarTitleInfo
+          && pageData.navigationBarColorInfo
+          && pageData.navigationBarLoadingShownInfo
+          && pageData.navigationBarLoadingHiddenInfo
+          && pageData.backgroundLightInfo
+          && pageData.backgroundColorInfo
+          && pageData.backgroundInvalidInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -420,6 +436,13 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.tabBarHideDotInfo).toContain('"errMsg":"hideTabBarRedDot:ok"')
     expect(pageData.tabBarBadgeInfo).toContain('"errMsg":"setTabBarBadge:ok"')
     expect(pageData.tabBarRemoveBadgeInfo).toContain('"errMsg":"removeTabBarBadge:ok"')
+    expect(pageData.navigationBarTitleInfo).toContain('"errMsg":"setNavigationBarTitle:ok"')
+    expect(pageData.navigationBarColorInfo).toContain('"errMsg":"setNavigationBarColor:ok"')
+    expect(pageData.navigationBarLoadingShownInfo).toContain('"errMsg":"showNavigationBarLoading:ok"')
+    expect(pageData.navigationBarLoadingHiddenInfo).toContain('"errMsg":"hideNavigationBarLoading:ok"')
+    expect(pageData.backgroundLightInfo).toContain('"errMsg":"setBackgroundTextStyle:ok"')
+    expect(pageData.backgroundColorInfo).toContain('"errMsg":"setBackgroundColor:ok"')
+    expect(pageData.backgroundInvalidInfo).toContain('"error":"setBackgroundTextStyle:fail invalid textStyle"')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -578,6 +601,22 @@ describe.sequential('simulator browser e2e', () => {
         { badge: null, index: 1, pagePath: 'pages/profile/index', redDot: false, text: 'Profile' },
       ],
       visible: true,
+    })
+    expect(bridge.sessionSnapshot().currentPageNavigationBar).toEqual({
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn',
+      },
+      backgroundColor: '#135790',
+      frontColor: '#ffffff',
+      loading: false,
+      title: 'Lab Updated',
+    })
+    expect(bridge.sessionSnapshot().currentPageBackground).toEqual({
+      backgroundColor: '#444444',
+      backgroundColorBottom: '#666666',
+      backgroundColorTop: '#555555',
+      textStyle: 'light',
     })
 
     const scopeIds = bridge.findComponentScopeIds('status-card')

@@ -299,6 +299,13 @@ describe('page event alignment', () => {
     page.removeTabBarBadgeLab()
     page.showTabBarDotLab()
     page.hideTabBarDotLab()
+    page.updateNavigationTitleLab()
+    page.updateNavigationColorLab()
+    page.showNavigationLoadingLab()
+    page.hideNavigationLoadingLab()
+    page.setLightBackgroundLab()
+    page.setBackgroundColorLab()
+    page.setInvalidBackgroundLab()
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -474,6 +481,29 @@ describe('page event alignment', () => {
         { badge: null, index: 1, pagePath: 'pages/profile/index', redDot: false, text: 'Profile' },
       ],
       visible: true,
+    })
+    expect(page.data.navigationBarTitleInfo).toContain('"errMsg":"setNavigationBarTitle:ok"')
+    expect(page.data.navigationBarColorInfo).toContain('"errMsg":"setNavigationBarColor:ok"')
+    expect(page.data.navigationBarLoadingShownInfo).toContain('"errMsg":"showNavigationBarLoading:ok"')
+    expect(page.data.navigationBarLoadingHiddenInfo).toContain('"errMsg":"hideNavigationBarLoading:ok"')
+    expect(session.getCurrentPageNavigationBar()).toEqual({
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn',
+      },
+      backgroundColor: '#135790',
+      frontColor: '#ffffff',
+      loading: false,
+      title: 'Canvas Updated',
+    })
+    expect(page.data.backgroundLightInfo).toContain('"errMsg":"setBackgroundTextStyle:ok"')
+    expect(page.data.backgroundColorInfo).toContain('"errMsg":"setBackgroundColor:ok"')
+    expect(page.data.backgroundInvalidInfo).toContain('"error":"setBackgroundTextStyle:fail invalid textStyle"')
+    expect(session.getCurrentPageBackground()).toEqual({
+      backgroundColor: '#444444',
+      backgroundColorBottom: '#666666',
+      backgroundColorTop: '#555555',
+      textStyle: 'light',
     })
     expect(session.getOpenedDocument()).toEqual({
       filePath: 'headless://saved/open-document/report.txt',
