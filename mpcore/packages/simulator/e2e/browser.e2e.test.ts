@@ -38,6 +38,7 @@ interface SimulatorE2EApi {
   navigateBack: (delta?: number) => void
   openRoute: (route: string) => void
   pickScenario: (scenarioId: string) => void
+  selectScope: (scopeId: string) => void
   readScopeSnapshot: (scopeId: string) => unknown
   renderCurrentPage: () => string
   runPageMethod: (method: string) => void
@@ -703,6 +704,20 @@ describe.sequential('simulator browser e2e', () => {
       properties: {
         count: 3,
       },
+      type: 'component',
+    })
+    bridge.selectScope(scopeIds[0])
+    const selectedComponentState = await waitFor(
+      () => bridge.getState(),
+      state => state.selectedScope?.scopeId === scopeIds[0],
+      20_000,
+    )
+    expect(selectedComponentState.selectedScope).toMatchObject({
+      properties: {
+        count: 3,
+        status: 'stable',
+      },
+      scopeId: scopeIds[0],
       type: 'component',
     })
 

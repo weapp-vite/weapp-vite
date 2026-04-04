@@ -89,6 +89,7 @@ export function useWorkbench() {
       navigateBack: (delta = 1) => sessionState.run(() => sessionState.session.value?.navigateBack(delta)),
       openRoute: (route: string) => sessionState.handleOpenRoute(route),
       pickScenario: (scenarioId: string) => handlePickScenario(scenarioId),
+      selectScope: (scopeId: string) => sessionState.handleSelectScope(scopeId),
       readScopeSnapshot: (scopeId: string) => sessionState.session.value?.getScopeSnapshot(scopeId) ?? null,
       renderCurrentPage: () => sessionState.session.value?.renderCurrentPage().wxml ?? '',
       runPageMethod: (method: string) => sessionState.handleCallMethod(method),
