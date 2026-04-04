@@ -1076,6 +1076,52 @@ describe.sequential('simulator browser e2e', () => {
     expect(snapshot.storageSnapshot).toBeTypeOf('object')
   })
 
+  it('reports missing route navigation through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('openQueue')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/queue/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('openMissing')
+    const state = await waitFor(
+      () => bridge.getState(),
+      (nextState) => {
+        const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
+        const appData = parseJsonString<{ timeline: string[] }>(nextState.appData)
+        return nextState.currentRoute === 'package-flow/queue/index'
+          && Array.isArray(pageData.logs)
+          && pageData.logs.includes('queue:ghost:complete')
+          && appData.timeline.some(entry => entry.includes('maze:onPageNotFound:'))
+      },
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    const appData = parseJsonString<{ timeline: string[] }>(state.appData)
+    expect(state.pageStack).toEqual([
+      'pages/hub/index',
+      'package-flow/queue/index',
+    ])
+    expect(pageData.logs).toContain('queue:ghost:complete')
+    expect(pageData.logs.find((entry: string) => entry.startsWith('queue:ghost:')))
+      .toContain('Unknown route for browser simulator navigation: ../ghost/index?from=queue')
+    expect(appData.timeline.find(entry => entry.includes('maze:onPageNotFound:')))
+      .toContain('"path":"package-flow/ghost/index"')
+    expect(appData.timeline.find(entry => entry.includes('maze:onPageNotFound:')))
+      .toContain('"from":"queue"')
+  })
+
   it('tracks browser route stack transitions through runtime navigation', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
