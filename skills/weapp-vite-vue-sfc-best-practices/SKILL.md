@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-vue-sfc-best-practices
-description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 `<script setup lang="ts">`、JSON 宏（`defineAppJson/definePageJson/defineComponentJson`）、`definePageMeta`/layout、`defineModel`、`usingComponents`、模板指令兼容性，以及 SFC 编译/运行时排障。适用于“v-model 在小程序里怎么写”“definePageJson 和 <json> 怎么选”“layout 在页面里怎么配”“SFC 编译报错”“usingComponents 不生效”“生成模板里的 wevu/vue 文件应该怎么写”等场景。
+description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 `<script setup lang="ts">`、JSON 宏（`defineAppJson/definePageJson/defineComponentJson`）、`definePageMeta`/layout、`defineModel`、`usingComponents`、模板指令兼容性、`.weapp-vite` 类型支持文件，以及 SFC 编译/运行时排障。适用于“v-model 在小程序里怎么写”“definePageJson 和 <json> 怎么选”“layout 在页面里怎么配”“SFC 编译报错”“usingComponents 不生效”“生成模板里的 wevu/vue 文件应该怎么写”等场景。
 ---
 
 # weapp-vite-vue-sfc-best-practices
@@ -34,6 +34,7 @@ Do not use this as the primary skill when:
 3. Validate template directives against mini-program compatibility constraints.
 4. Verify runtime API imports and hook timing.
 5. If the project installs `weapp-vite`, prefer packaged docs under `node_modules/weapp-vite/dist/docs/` for current-version examples.
+6. If tooling hints or generated route/component types look stale, consider `weapp-vite prepare` before changing SFC syntax.
 
 ## 执行流程
 
@@ -42,6 +43,7 @@ Do not use this as the primary skill when:
 - Compile-time: macro syntax, template transform, `usingComponents` declaration.
 - Runtime: hook timing, event payload, reactive update expectations.
 - Tooling/type: Volar config, `vueCompilerOptions.lib`, type resolution.
+- AI/project-contract: generated template `AGENTS.md` and packaged docs may already define required SFC conventions.
 
 2. Enforce SFC boundaries
 
@@ -95,6 +97,7 @@ When applying this skill, return:
 - Template usage avoids unsupported directive forms.
 - Runtime API imports come from `wevu`.
 - Hook timing and page/component context are valid.
+- `.weapp-vite` support files and editor type hints are still aligned after the change.
 - SFC guidance remains aligned with current template-level AI instructions and packaged docs.
 
 ## 参考资料

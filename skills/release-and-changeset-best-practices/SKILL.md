@@ -1,6 +1,6 @@
 ---
 name: release-and-changeset-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 changeset 工作流。适用于补 changeset、判断某次改动是否需要 release note、保持 `create-weapp-vite` 与 `weapp-vite`/`wevu`/`templates/*` 联动、检查 Conventional Commits，或准备包发布。也适用于源码 bug fix、模板行为变更、website/skills 用户可见改动、`dist/docs` 随包文档、脚手架生成 `AGENTS.md` 行为变更后的发布判定。触发语句包括“要不要加 changeset”“帮我补发版记录”“这个改动要不要 bump create-weapp-vite”“准备发布”“校验 changeset”“按仓库规范提交/发布”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 changeset 工作流。适用于补 changeset、判断某次改动是否需要 release note、保持 `create-weapp-vite` 与 `weapp-vite`/`wevu`/`templates/*` 联动、检查 Conventional Commits，或准备包发布。也适用于源码 bug fix、模板行为变更、website/skills 用户可见改动、`dist/docs` 随包文档、脚手架生成 `AGENTS.md`、AI skills 安装行为、screenshot/compare/MCP 工作流变更后的发布判定。触发语句包括“要不要加 changeset”“帮我补发版记录”“这个改动要不要 bump create-weapp-vite”“准备发布”“校验 changeset”“按仓库规范提交/发布”等。
 ---
 
 # release-and-changeset-best-practices
@@ -16,6 +16,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 change
 - 用户准备发布或做 release 相关检查。
 - 用户改了 `weapp-vite` / `wevu` / `templates/*`，需要判断是否联动 `create-weapp-vite`。
 - 用户要求按仓库规范准备提交或发版。
+- 用户改了 `skills/*`、`dist/docs`、`AGENTS.md` 模板、AI screenshot / compare / logs / MCP 路径，需要判断是否属于用户可见交付。
 
 ## 适用边界
 
@@ -51,6 +52,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 change
   - `templates/*`
 - 则同时补 `create-weapp-vite` bump changeset，保持模板与依赖版本同步。
 - 若改动影响脚手架生成文件（如 `AGENTS.md`）或随包文档（如 `dist/docs`），按用户可见行为处理，不要按“纯内部重构”跳过 release 判定。
+- 若改动影响脚手架交互（如 AI skills 安装提示）或 AI 默认路由（如 screenshot/compare/MCP explicit tools），按用户可见行为处理。
 
 3. 保持 changeset 内容规范
 
@@ -60,6 +62,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 change
 4. 提交与交付约束
 
 - 使用 Conventional Commits。
+- 如果改动落在 `skills/*`，通常还要同步检查 `website/guide/ai.md`、`website/packages/index.md` 与相关 package docs 是否需要一起更新。
 - 遵循仓库约定的默认交付方式；若未明确要求，不要擅自 push。
 - GitHub issue 修复任务按 PR 流程处理，不能用普通本地提交流程替代。
 

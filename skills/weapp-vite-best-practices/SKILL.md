@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-best-practices
-description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、`app.json` routes/subPackages、`routeRules/layout`、自动路由、自动导入组件、托管 TypeScript 支持文件、`prepare`、`wv`/`weapp-vite` CLI 用法、`dist/docs` 随包文档、脚手架生成项目里的 `AGENTS.md`、MCP、Web runtime、lib mode 以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置 `autoRoutes/autoImportComponents/routeRules`、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”“layout 不生效”“`.weapp-vite` 文件怎么接入”“其他仓库里的 AI 怎么正确使用 weapp-vite”）。
+description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、`app.json` routes/subPackages、`routeRules/layout`、自动路由、自动导入组件、托管 TypeScript 支持文件、`prepare`、`wv`/`weapp-vite` CLI 用法、`dist/docs` 随包文档、脚手架生成项目里的 `AGENTS.md`、AI skills 安装、MCP、screenshot / compare / ide logs、Web runtime、lib mode 以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置 `autoRoutes/autoImportComponents/routeRules`、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”“layout 不生效”“`.weapp-vite` 文件怎么接入”“其他仓库里的 AI 怎么正确使用 weapp-vite”）。
 ---
 
 # weapp-vite-best-practices
@@ -17,6 +17,7 @@ Build or refactor weapp-vite projects with stable defaults first, then optimize 
 - User asks about CI automation with WeChat DevTools or `weapp-ide-cli`.
 - User asks how `weapp-vite` CLI and `weapp-ide-cli` should split command ownership / passthrough.
 - User asks when to use `autoRoutes`, auto-imported components, or chunk shared strategy.
+- User asks about `.weapp-vite`, `prepare`, generated `AGENTS.md`, packaged docs under `dist/docs`, or how AI should use screenshot / compare / mcp in a real project.
 
 ## 适用边界
 
@@ -43,6 +44,7 @@ Do not use this as the primary skill when:
 
 - Inspect `vite.config.ts`, `app.json` source strategy, pages/subpackages layout, and scripts.
 - If the project installs `weapp-vite`, prefer local package docs under `node_modules/weapp-vite/dist/docs/` before relying on stale web examples.
+- If the project comes from `create-weapp-vite`, read root `AGENTS.md` before proposing AI workflow or CLI guidance.
 - Confirm `weapp.srcRoot` and expected output root.
 - Ask for missing constraints only when blocked (target platform, package limits, CI environment).
 
@@ -62,10 +64,16 @@ Do not use this as the primary skill when:
   - Resolve commands in this order: `weapp-vite` native commands first, then `weapp-ide-cli` passthrough only if command is cataloged.
 - Treat `wv` as an alias of `weapp-vite` in all command guidance.
 - When the project comes from `create-weapp-vite`, treat root `AGENTS.md` as a project-level workflow contract, not disposable boilerplate.
+- If the project relies on AI-driven acceptance, keep these defaults explicit:
+  - screenshot -> `weapp-vite screenshot`
+  - screenshot compare -> `weapp-vite compare`
+  - DevTools logs -> `weapp-vite ide logs --open`
+  - explicit MCP tools -> `take_weapp_screenshot` / `compare_weapp_screenshot`
 
 3. Diagnose by symptom category
 
 - Output missing/wrong path: verify `srcRoot`, route generation source, and glob coverage.
+- `.weapp-vite` support files stale or missing: run `weapp-vite prepare` before deeper diagnosis.
 - Slow build: inspect plugin timing and high-cost transforms.
 - Route/component generation mismatch: verify generated artifacts and resolver behavior.
 - If downstream app/template/e2e behavior does not match recent source edits, suspect stale `dist` first and rebuild the touched package before deeper diagnosis.
@@ -119,6 +127,7 @@ When applying this skill, return:
 - `pages/subPackages` source-of-truth is explicit (manual or auto routes).
 - Component registration strategy is deterministic (auto import + resolver policy).
 - Subpackage/chunk strategy is selected with stated reason.
+- `.weapp-vite` support files and `prepare` workflow are accounted for when type/tooling issues are involved.
 - Dev/CI workflow is reproducible and not dependent on manual IDE clicks.
 - Downstream validation is performed against rebuilt package output, not stale `dist`.
 - CLI dispatch ownership is deterministic: native-first, catalog-based passthrough second.

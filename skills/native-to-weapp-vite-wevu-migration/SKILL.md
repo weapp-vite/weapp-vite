@@ -1,6 +1,6 @@
 ---
 name: native-to-weapp-vite-wevu-migration
-description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SFC` 的结构化迁移工作流，覆盖分波次推进、行为等价转换、`Page/Component` 到 `.vue`、类型化 props/events、`definePageMeta`/layout、平台守卫、`.weapp-vite` 类型支持文件接入，以及面向迁移的 e2e 验证与回滚检查点。适用于“原生迁移到 weapp-vite”“setData 改造”“迁移 route/layout”“迁移回滚策略”“迁移 e2e 怎么测”“迁移后 AI 应该如何按 weapp-vite / wevu 约束继续维护”等场景。
+description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SFC` 的结构化迁移工作流，覆盖分波次推进、行为等价转换、`Page/Component` 到 `.vue`、类型化 props/events、`definePageMeta`/layout、平台守卫、`.weapp-vite` 类型支持文件接入、`AGENTS.md` / AI 工作流对齐，以及面向迁移的 e2e 验证与回滚检查点。适用于“原生迁移到 weapp-vite”“setData 改造”“迁移 route/layout”“迁移回滚策略”“迁移 e2e 怎么测”“迁移后 AI 应该如何按 weapp-vite / wevu 约束继续维护”等场景。
 ---
 
 # native-to-weapp-vite-wevu-migration
@@ -33,6 +33,7 @@ description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SF
 2. 建立迁移前基线（关键页面、关键交互、关键接口）。
 3. 按“机械迁移 -> 语义迁移 -> 定向验证”推进。
 4. 每个页面族独立提交，保证可单独回滚。
+5. 如果目标项目已安装 `weapp-vite`，优先读取根目录 `AGENTS.md` 与 `node_modules/weapp-vite/dist/docs/*.md`。
 
 ## 执行流程
 
@@ -76,6 +77,7 @@ description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SF
 - e2e 必须收集运行时错误日志，防止“页面可见但持续报错”。
 - 每个页面族独立提交，具备单独回滚能力。
 - 若迁移项目后续将交由 AI 继续维护，补充或校验项目级 `AGENTS.md` 是否已经把 `weapp-vite` / `wevu` 工作流写清楚。
+- 迁移完成后优先执行 `weapp-vite prepare`，确保 `.weapp-vite` 支持文件、自动路由类型与编辑器提示已稳定。
 
 ## 约束
 
@@ -102,6 +104,7 @@ description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SF
 - 多平台分支使用 `import.meta.env.PLATFORM`，并有至少 1 个次平台验证。
 - e2e 能捕获运行时报错，并对关键链路有断言。
 - 回滚点与迁移记录已写入变更说明。
+- `.weapp-vite` 支持文件已生成，项目级 `AGENTS.md` 或等价 AI 约束已对齐当前迁移后的工作流。
 
 ## 参考资料
 

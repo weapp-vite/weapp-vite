@@ -16,6 +16,7 @@ Implement mini-program runtime logic with Vue-style ergonomics while respecting 
 - User asks about props/emit contracts, event detail payloads, or two-way binding patterns.
 - User asks about store architecture, `storeToRefs`, or type inference behavior.
 - User reports runtime differences versus Vue 3 web behavior.
+- User asks about `setPageLayout/usePageLayout`、`useNativeRouter/useNativePageRouter`、`wevu/router` route semantics, or how AI should keep wevu code aligned with scaffolded `AGENTS.md`.
 
 ## 适用边界
 
@@ -34,6 +35,7 @@ Do not use this as the primary skill when:
 3. Normalize state/event binding patterns (`ref/reactive`, `emit`, `bindModel`).
 4. Check whether project root `AGENTS.md` already constrains `wevu` authoring and keep changes consistent with it.
 5. Validate with targeted runtime or unit tests.
+6. If the project installs `weapp-vite`, prefer `node_modules/weapp-vite/dist/docs/wevu-authoring.md` for current-version wevu conventions.
 
 ## 执行流程
 
@@ -62,14 +64,20 @@ Do not use this as the primary skill when:
 - Prefer `bindModel`/`useBindModel` for reusable field contracts.
 - Document parser/formatter behavior when value transforms are involved.
 
-5. Apply store discipline
+5. Handle page layout and router explicitly
+
+- Use `setPageLayout` / `usePageLayout` for runtime layout changes instead of ad-hoc page-state flags.
+- Distinguish native router helpers (`useNativeRouter` / `useNativePageRouter`) from `wevu/router` abstractions.
+- Keep route parsing and navigation contracts mini-program-first, not browser-first.
+
+6. Apply store discipline
 
 - Prefer Setup Store for simple domains and strong TS inference.
 - Use `storeToRefs` when destructuring state/getters.
 - Introduce `createStore()` only when global plugin/persistence behavior is required.
 - Prefer small store boundaries over giant cross-page stores.
 
-6. Verify compatibility explicitly
+7. Verify compatibility explicitly
 
 - Avoid DOM/browser-only APIs in runtime business logic.
 - In Node/Vitest, stub `Component`/`wx` for bridge tests.
@@ -96,6 +104,7 @@ When applying this skill, return:
 - API imports come from `wevu`, not `vue` runtime in business code.
 - Page/component boundary usage is consistent.
 - Hook registration timing is synchronous and predictable.
+- Page layout and router helpers are chosen intentionally (`native router` vs `wevu/router`).
 - Store usage follows singleton + `storeToRefs` conventions.
 - Template/event bindings match mini-program-supported semantics.
 - Guidance stays aligned with generated project `AGENTS.md` for wevu templates.

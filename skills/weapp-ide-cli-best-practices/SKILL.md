@@ -1,6 +1,6 @@
 ---
 name: weapp-ide-cli-best-practices
-description: 面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、`preview/upload/open/login/screenshot`、automator 增强命令、`config doctor/export/import`、i18n 持久化、命令目录导出，以及与 weapp-vite CLI 原生命令优先 + catalog 透传的集成契约。适用于“weapp-vite screenshot 怎么走”“IDE 命令该留在谁那边”“automator 和 screenshot 如何给 AI 用”“透传规则要怎么定”等场景。
+description: 面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、`preview/upload/open/login/screenshot/compare`、automator 增强命令、`config doctor/export/import`、i18n 持久化、命令目录导出，以及与 weapp-vite CLI 原生命令优先 + catalog 透传的集成契约。适用于“weapp-vite screenshot 怎么走”“IDE 命令该留在谁那边”“automator 和 screenshot/compare 如何给 AI 用”“透传规则要怎么定”等场景。
 ---
 
 # weapp-ide-cli-best-practices
@@ -14,6 +14,7 @@ Design and evolve `weapp-ide-cli` with deterministic command behavior, automatio
 - User asks to add/refactor `weapp-ide-cli` commands or argument validation.
 - User asks to expose command metadata for external CLI dispatch.
 - User asks to improve DevTools automation, screenshot, or automator subcommands.
+- User asks to add screenshot compare, JSON output stability, current/diff file outputs, or AI-friendly command routing.
 - User asks to add language switching or config persistence behavior.
 - User asks how `weapp-vite` should delegate to `weapp-ide-cli`.
 
@@ -33,6 +34,7 @@ Do not use this as the primary skill when:
 2. Update command source-of-truth first, then update parser/dispatcher.
 3. Add/adjust tests around routing and error behavior.
 4. Sync docs in package README, website package page, packaged docs, and AI-facing guidance when relevant.
+5. If screenshot or compare semantics change, also check `@weapp-vite/mcp` explicit tool docs and upstream AI routing guidance.
 
 ## 执行流程
 
@@ -44,6 +46,10 @@ Do not use this as the primary skill when:
   - config commands
   - minidev namespace passthrough
 - Keep screenshot behavior explicit because AI workflows frequently depend on deterministic file output.
+- Keep compare behavior explicit:
+  - baseline required
+  - threshold / max-diff-pixels / max-diff-ratio semantics clear
+  - compare failure should surface as non-zero exit
 - Export top-level command catalog from `weapp-ide-cli` for external reuse.
 - Provide a direct predicate function to check command support.
 
@@ -101,6 +107,7 @@ When applying this skill, return:
 - Config persistence and command behavior are documented.
 - If integration changed, `weapp-vite` uses exported catalog instead of duplicated lists.
 - Screenshot and log-related commands stay documented for AI-driven acceptance workflows.
+- Screenshot compare behavior, JSON output contract, and file-output paths are deterministic and covered by tests/docs.
 
 ## 参考资料
 

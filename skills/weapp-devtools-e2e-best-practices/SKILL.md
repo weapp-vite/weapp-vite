@@ -1,6 +1,6 @@
 ---
 name: weapp-devtools-e2e-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML/页面数据断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` 的 DevTools 项目配置与条件页。也适用于和 AI screenshot / logs 工作流配合验证真实运行时。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML/页面数据断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` 的 DevTools 项目配置与条件页。也适用于和 AI screenshot / compare / logs 工作流配合验证真实运行时。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
 ---
 
 # weapp-devtools-e2e-best-practices
@@ -17,6 +17,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 - 用户问 `miniProgram.reLaunch(...)` 的推荐策略。
 - 用户要在 `e2e-apps/*` 增加页面，并同步 DevTools 调试入口。
 - 用户遇到 DevTools 服务端口、登录、warmup、runtime snapshot 相关问题。
+- 用户希望把 e2e 路径和 `weapp-vite screenshot` / `compare` / `ide logs` 串成统一验收链路。
 
 ## 适用边界
 
@@ -35,6 +36,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 2. 同一个 `e2e-app` 在同一 suite 只启动一次 automator。
 3. 多页面/多场景优先通过 `miniProgram.reLaunch(...)` 切换，不重复拉起 DevTools。
 4. 更新 `e2e-apps/*` 页面时，同步维护 `project.private.config.json` 条件页和真实 AppID。
+5. 如果后续要做截图验收，先把路由切换和页面稳定性设计好，再接 `weapp-vite screenshot` / `compare`。
 
 ## 执行流程
 
@@ -76,6 +78,9 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 - 修改 `e2e/ide/**` 后，优先跑共享启动约束检查：
   - `node --import tsx scripts/check-e2e-ide-shared-launch.ts`
 - 再跑目标 `vitest` 用例。
+- 如本轮还需要做 AI 视觉验收，再补充：
+  - `weapp-vite screenshot --project <dist/build/mp-weixin> --page <route> --json`
+  - `weapp-vite compare --project <dist/build/mp-weixin> --baseline <png> --max-diff-pixels <n> --json`
 
 ## 约束
 
@@ -84,6 +89,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 - 不要新增页面却漏掉 `project.private.config.json` 条件页。
 - 不要把环境错误（未登录、端口未开）误判成业务回归。
 - 不要默认上来跑所有 IDE e2e。
+- 不要在页面路由还不稳定时先做 screenshot / compare 验收。
 
 ## 输出要求
 
