@@ -193,8 +193,10 @@ interface HeadlessChosenImageTempFilePayload {
 
 interface HeadlessChosenVideoTempFilePayload {
   config: {
+    bitrate?: number
     compressed: boolean
     duration: number
+    fps?: number
     height: number
     maxDuration: number
     sourceType: string[]
@@ -282,14 +284,45 @@ function buildVideoTempFilePayload(
 ) {
   return JSON.stringify({
     config: {
+      bitrate: metadata.bitrate ?? 1_500,
       compressed: metadata.compressed ?? true,
       duration,
+      fps: metadata.fps ?? 30,
       height,
       maxDuration: metadata.maxDuration ?? duration,
       sourceType: metadata.sourceType ?? [],
       width,
     },
   } satisfies HeadlessChosenVideoTempFilePayload)
+}
+
+function inferVideoInfo(filePath: string, fileContent: string) {
+  const size = byteLength(fileContent)
+  const extensionMatch = filePath.match(IMAGE_EXTENSION_RE)
+  const type = extensionMatch?.[1]?.toLowerCase() ?? 'mp4'
+  try {
+    const payload = JSON.parse(fileContent) as HeadlessChosenVideoTempFilePayload
+    return {
+      bitrate: payload.config.bitrate ?? 1_500,
+      duration: payload.config.duration ?? 0,
+      fps: payload.config.fps ?? 30,
+      height: payload.config.height ?? 0,
+      size,
+      type,
+      width: payload.config.width ?? 0,
+    }
+  }
+  catch {
+    return {
+      bitrate: 1_500,
+      duration: 0,
+      fps: 30,
+      height: 0,
+      size,
+      type,
+      width: 0,
+    }
+  }
 }
 
 function createNetworkSnapshot(networkType: HeadlessWxNetworkType): HeadlessWxNetworkSnapshot {
@@ -1310,6 +1343,24 @@ export function createHeadlessWxState() {
         path: option.src,
         type: inferImageType(option.src, fileContent),
         width: size.width,
+      }
+    },
+    getVideoInfo(option: { src: string }) {
+      const fileContent = files.get(option.src)
+      if (fileContent == null) {
+        throw new Error(`getVideoInfo:fail file not found: ${option.src}`)
+      }
+      const info = inferVideoInfo(option.src, fileContent)
+      return {
+        bitrate: info.bitrate,
+        duration: info.duration,
+        errMsg: 'getVideoInfo:ok',
+        fps: info.fps,
+        height: info.height,
+        orientation: 'up' as const,
+        size: info.size,
+        type: info.type,
+        width: info.width,
       }
     },
     getModalLogs() {

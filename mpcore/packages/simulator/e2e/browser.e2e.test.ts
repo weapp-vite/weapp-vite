@@ -145,6 +145,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
     bridge.runPageMethod('saveMissingChosenVideoLab')
+    bridge.runPageMethod('inspectChosenVideoLab')
+    bridge.runPageMethod('inspectMissingChosenVideoLab')
     bridge.runPageMethod('chooseMediaLab')
     bridge.runPageMethod('saveTempVideoLab')
     bridge.runPageMethod('saveMissingTempVideoLab')
@@ -204,9 +206,12 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.chosenVideoInfo
           && pageData.chosenVideoSavedInfo
           && pageData.chosenVideoMissingSaveInfo
+          && pageData.chosenVideoDetail
+          && pageData.chosenVideoDetailMissing
           && pageData.chosenMediaInfo
           && pageData.chosenMediaImageDetail
           && pageData.chosenMediaVideoSavedInfo
+          && pageData.chosenMediaVideoDetail
           && pageData.tempVideoSavedInfo
           && pageData.tempVideoSavedMissingInfo
           && pageData.canvasTempFileContent
@@ -332,6 +337,10 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.chosenVideoInfo).toContain('"height":360')
     expect(pageData.chosenVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
     expect(pageData.chosenVideoMissingSaveInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-chosen-video.mp4"')
+    expect(pageData.chosenVideoDetail).toContain('"errMsg":"getVideoInfo:ok"')
+    expect(pageData.chosenVideoDetail).toContain('"duration":18')
+    expect(pageData.chosenVideoDetail).toContain('"type":"mp4"')
+    expect(pageData.chosenVideoDetailMissing).toContain('"error":"getVideoInfo:fail file not found: headless://wxfile/temp/missing-video-info.mp4"')
     expect(pageData.chosenMediaInfo).toContain('"errMsg":"chooseMedia:ok"')
     expect(pageData.chosenMediaInfo).toContain('"type":"mix"')
     expect(pageData.chosenMediaInfo).toContain('"fileType":"image"')
@@ -339,6 +348,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.chosenMediaImageDetail).toContain('"errMsg":"getImageInfo:ok"')
     expect(pageData.chosenMediaImageDetail).toContain('"type":"jpeg"')
     expect(pageData.chosenMediaVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+    expect(pageData.chosenMediaVideoDetail).toContain('"errMsg":"getVideoInfo:ok"')
+    expect(pageData.chosenMediaVideoDetail).toContain('"duration":19')
     expect(pageData.tempVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
     expect(pageData.tempVideoSavedMissingInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-video.mp4"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')
