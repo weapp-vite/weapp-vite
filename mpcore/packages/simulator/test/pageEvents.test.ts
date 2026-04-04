@@ -3,6 +3,7 @@ import { createHeadlessSession } from '../src/runtime'
 import { launch } from '../src/testing'
 import {
   cleanupTempDirs,
+  createAnimationFixture,
   createComponentSelectorFixture,
   createIntersectionObserverFixture,
   createMediaQueryObserverFixture,
@@ -240,5 +241,21 @@ describe('page event alignment', () => {
 
     expect(page.data.pageMatches).toEqual([false, true])
     expect(page.data.componentMatches).toEqual([false, true])
+  })
+
+  it('supports createAnimation in headless runtime', () => {
+    const projectPath = createAnimationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/animation/index')
+    page.runAnimationLab()
+
+    expect(page.data.animationSnapshot).toContain('"type":"opacity"')
+    expect(page.data.animationSnapshot).toContain('"type":"translate"')
+    expect(page.data.animationSnapshot).toContain('"type":"rotate"')
+    expect(page.data.animationSnapshot).toContain('"type":"backgroundColor"')
+    expect(page.data.animationSnapshot).toContain('"timingFunction":"ease-in"')
+    expect(page.data.animationSecondSnapshot).toBe('{"actions":[]}')
   })
 })

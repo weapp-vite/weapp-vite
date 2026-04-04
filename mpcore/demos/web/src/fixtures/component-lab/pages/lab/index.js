@@ -13,6 +13,7 @@ Page({
     downloadSnapshot: '',
     fileTransferFailureInfo: '',
     fileManagerSnapshot: '',
+    animationSnapshot: '',
     intersectionObserverSnapshot: '',
     mediaQueryObserverSnapshot: '',
     requestSnapshot: '',
@@ -153,6 +154,20 @@ Page({
           width: windowInfo.windowWidth,
         }),
       })
+    })
+  },
+  runAnimationLab() {
+    const animation = wx.createAnimation({
+      duration: 160,
+      timingFunction: 'ease-out',
+      transformOrigin: '0 0 0',
+    })
+    animation.opacity(0.3).translate(8, 16).step({
+      delay: 20,
+    })
+    animation.scale(1.1).rotate(30).backgroundColor('#ff5500').step()
+    this.setData({
+      animationSnapshot: JSON.stringify(animation.export()),
     })
   },
   handleVideoPlay(event) {

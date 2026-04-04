@@ -26,6 +26,7 @@ import {
 } from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
+import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
@@ -249,6 +250,7 @@ export class BrowserHeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        createAnimation: option => this.createAnimation(option),
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createVideoContext: (videoId, scope) => this.createVideoContext(videoId, scope),
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
@@ -1330,6 +1332,10 @@ export class BrowserHeadlessSession {
       videoId,
       scope,
     )
+  }
+
+  private createAnimation(option?: import('../host').HeadlessWxAnimationStepOption) {
+    return createHeadlessAnimation(option)
   }
 
   private createIntersectionObserver(

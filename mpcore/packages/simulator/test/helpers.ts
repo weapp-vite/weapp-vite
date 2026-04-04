@@ -726,6 +726,49 @@ Component({
   return root
 }
 
+export function createAnimationFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-animation-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/animation/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeScript(path.join(root, 'dist/pages/animation/index.js'), `
+Page({
+  data: {
+    animationSnapshot: '',
+    animationSecondSnapshot: '',
+  },
+  runAnimationLab() {
+    const animation = wx.createAnimation({
+      duration: 120,
+      timingFunction: 'ease-in',
+      transformOrigin: '0 0 0',
+    })
+    animation.opacity(0.4).translate(12, 24).step({
+      delay: 16,
+    })
+    animation.rotate(45).scale(1.2).backgroundColor('#ff5500').step()
+    this.setData({
+      animationSnapshot: JSON.stringify(animation.export()),
+      animationSecondSnapshot: JSON.stringify(animation.export()),
+    })
+  },
+})
+`)
+  writeText(path.join(root, 'dist/pages/animation/index.wxml'), `
+<view animation="{{animationData}}"></view>
+<view>{{animationSnapshot}}</view>
+<view>{{animationSecondSnapshot}}</view>
+`)
+
+  return root
+}
+
 export function createAppLifecycleFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-app-lifecycle-'))
 

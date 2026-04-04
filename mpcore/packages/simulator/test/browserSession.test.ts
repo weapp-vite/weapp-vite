@@ -4500,6 +4500,47 @@ Component({
     expect(page.data.matches).toEqual([true, false])
   })
 
+  it('supports createAnimation in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    snapshot: '',
+    followup: ''
+  },
+  runAnimationLab() {
+    const animation = wx.createAnimation({
+      duration: 180,
+      timingFunction: 'ease-out'
+    })
+    animation.translateX(20).opacity(0.5).step({
+      delay: 12
+    })
+    animation.width(120).height('48rpx').step()
+    this.setData({
+      snapshot: JSON.stringify(animation.export()),
+      followup: JSON.stringify(animation.export())
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{snapshot}}</view><view>{{followup}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runAnimationLab()
+
+    expect(page.data.snapshot).toContain('"type":"translateX"')
+    expect(page.data.snapshot).toContain('"type":"opacity"')
+    expect(page.data.snapshot).toContain('"type":"width"')
+    expect(page.data.snapshot).toContain('"timingFunction":"ease-out"')
+    expect(page.data.followup).toBe('{"actions":[]}')
+  })
+
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

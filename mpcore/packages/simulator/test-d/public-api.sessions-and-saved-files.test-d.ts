@@ -39,6 +39,19 @@ expectType<void>(browserSession.mockUploadFile({
   },
   url: 'https://mock.mpcore.dev/upload/report',
 }))
+expectType<{
+  actions: Array<{
+    animates: Array<{ args: unknown[], type: string }>
+    option: {
+      delay: number
+      duration: number
+      timingFunction: 'ease' | 'ease-in' | 'ease-in-out' | 'ease-out' | 'linear' | 'step-end' | 'step-start'
+      transformOrigin: string
+    }
+  }>
+}>(browserPage?.wx.createAnimation({
+  duration: 120,
+}).opacity(0.4).step().export())
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
@@ -176,6 +189,19 @@ const headlessUploadMock: HeadlessWxUploadFileMockDefinition = {
   url: /upload\/report$/,
 }
 expectType<void>(headlessSession.mockUploadFile(headlessUploadMock))
+expectType<{
+  actions: Array<{
+    animates: Array<{ args: unknown[], type: string }>
+    option: {
+      delay: number
+      duration: number
+      timingFunction: 'ease' | 'ease-in' | 'ease-in-out' | 'ease-out' | 'linear' | 'step-end' | 'step-start'
+      transformOrigin: string
+    }
+  }>
+}>(headlessPage?.wx.createAnimation({
+  duration: 120,
+}).translateX(12).step().export())
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())
