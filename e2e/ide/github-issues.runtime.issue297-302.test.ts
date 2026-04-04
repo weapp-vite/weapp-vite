@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- github issues IDE e2e 使用 fs-extra 读取构建产物。 */
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -158,7 +159,7 @@ describe.sequential('e2e app: github-issues / issue-297-302', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-302/index', 'issue-302 v-for class binding update')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-302/index')
       if (!issuePage) {
         throw new Error('Failed to launch issue-302 page')
       }
