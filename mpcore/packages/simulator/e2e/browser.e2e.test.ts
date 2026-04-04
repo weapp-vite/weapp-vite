@@ -683,6 +683,24 @@ describe.sequential('simulator browser e2e', () => {
       filePath: 'headless://saved/component-lab/transfers/rename-out.txt',
     }))
     expect(sessionSnapshot.uploadFileLogs).toHaveLength(2)
+    expect(sessionSnapshot.requestLogs).toHaveLength(1)
+    expect(sessionSnapshot.requestLogs[0]).toMatchObject({
+      matched: true,
+      method: 'GET',
+      url: 'https://mock.mpcore.dev/api/queue-health',
+    })
+    expect(sessionSnapshot.storageSnapshot).toEqual({
+      'component-lab': {
+        count: 3,
+        status: 'stable',
+      },
+    })
+    expect(sessionSnapshot.toast).toEqual({
+      duration: 1500,
+      icon: 'success',
+      mask: false,
+      title: 'status:stable',
+    })
     expect(sessionSnapshot.previewImage).toEqual({
       current: pageData.canvasTempFilePath,
       urls: [
