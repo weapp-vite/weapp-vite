@@ -789,6 +789,7 @@ export function createCanvasContextFixture() {
 Page({
   data: {
     canvasSnapshot: '',
+    canvasQuerySnapshot: '',
     componentCanvasSnapshot: '',
   },
   runCanvasLab() {
@@ -800,6 +801,26 @@ Page({
         canvasSnapshot: JSON.stringify(ctx.__getSnapshot())
       })
     })
+  },
+  inspectCanvasQuery() {
+    wx.createSelectorQuery()
+      .select('canvas')
+      .fields({
+        context: true,
+        node: true,
+      }, (result) => {
+        result.context.setFillStyle('#00aa55')
+        result.context.fillRect(2, 4, 12, 6)
+        result.context.draw(false, () => {
+          this.setData({
+            canvasQuerySnapshot: JSON.stringify({
+              node: result.node,
+              snapshot: result.context.__getSnapshot(),
+            }),
+          })
+        })
+      })
+      .exec()
   },
   runComponentCanvasLab() {
     this.selectComponent('#canvas-probe')?.paint()
@@ -815,6 +836,7 @@ Page({
 <canvas canvas-id="hero-canvas"></canvas>
 <canvas-probe id="canvas-probe" bind:paint="handleCanvasPaint" />
 <view>{{canvasSnapshot}}</view>
+<view>{{canvasQuerySnapshot}}</view>
 <view>{{componentCanvasSnapshot}}</view>
 `)
   writeJson(path.join(root, 'dist/components/canvas-probe/index.json'), {})

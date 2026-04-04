@@ -1145,6 +1145,19 @@ export class BrowserHeadlessSession {
     }, current)
     return executeSelectorQueryRequests(requests, {
       page: current,
+      resolveContext: (node) => {
+        if (node.name !== 'canvas') {
+          return {
+            type: 'unsupported-context',
+          }
+        }
+        const canvasId = node.attribs?.['canvas-id']
+        return typeof canvasId === 'string' && canvasId
+          ? this.createCanvasContext(canvasId, scope)
+          : {
+              type: 'unsupported-context',
+            }
+      },
       root: resolveSelectorQueryScopeRoot(rendered.root, scopeId),
       windowInfo: this.getWindowInfo(),
     })

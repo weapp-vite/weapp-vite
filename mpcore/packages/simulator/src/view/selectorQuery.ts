@@ -19,6 +19,7 @@ interface DomNodeLike {
 
 export interface HeadlessSelectorQueryResolverOptions {
   page: HeadlessPageInstance
+  resolveContext?: (node: DomNodeLike) => unknown
   root: DomNodeLike
   windowInfo: HeadlessWxWindowInfoResult
 }
@@ -181,7 +182,7 @@ function pickComputedStyle(node: DomNodeLike, propertyNames: string[]) {
 function resolveFieldsResult(
   node: DomNodeLike,
   fields: HeadlessWxSelectorQueryFieldsOption,
-  _options: HeadlessSelectorQueryResolverOptions,
+  options: HeadlessSelectorQueryResolverOptions,
 ) {
   const result: Record<string, any> = {}
 
@@ -214,7 +215,7 @@ function resolveFieldsResult(
     Object.assign(result, pickComputedStyle(node, fields.computedStyle))
   }
   if (fields.context) {
-    result.context = {
+    result.context = options.resolveContext?.(node) ?? {
       type: 'unsupported-context',
     }
   }

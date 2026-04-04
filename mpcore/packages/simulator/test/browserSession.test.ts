@@ -4654,6 +4654,50 @@ Page({
     expect(page.data.summary).toContain('"type":"view"')
   })
 
+  it('returns canvas context from selector query in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    summary: ''
+  },
+  inspectCanvas() {
+    wx.createSelectorQuery()
+      .select('canvas')
+      .fields({
+        context: true,
+        node: true
+      }, (result) => {
+        result.context.setFillStyle('#00aa55')
+        result.context.fillRect(2, 4, 12, 6)
+        result.context.draw(false, () => {
+          this.setData({
+            summary: JSON.stringify({
+              node: result.node,
+              snapshot: result.context.__getSnapshot()
+            })
+          })
+        })
+      })
+      .exec()
+  }
+})
+`],
+      ['pages/index/index.wxml', '<canvas canvas-id="hero-canvas"></canvas><view>{{summary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.inspectCanvas()
+
+    expect(page.data.summary).toContain('"canvasId":"hero-canvas"')
+    expect(page.data.summary).toContain('"type":"fillRect"')
+    expect(page.data.summary).toContain('"type":"canvas"')
+  })
+
   it('tracks pull-down refresh state and stop calls in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/events/index'] })],

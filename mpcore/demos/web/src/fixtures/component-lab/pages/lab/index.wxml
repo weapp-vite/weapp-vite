@@ -19,6 +19,7 @@
   <view class="panel-row" bindtap="runMediaQueryObserverLab">检查 MediaQueryObserver</view>
   <view class="panel-row" bindtap="runAnimationLab">检查 Animation</view>
   <view class="panel-row" bindtap="runCanvasLab">检查 CanvasContext</view>
+  <view class="panel-row" bindtap="inspectCanvasQuery">检查 Canvas SelectorQuery context</view>
   <view class="panel-row" bindtap="loadMockQueue">调用 request mock</view>
   <view class="panel-row" bindtap="storeSnapshot">写入 storage</view>
   <view class="panel-row" bindtap="toastSnapshot">触发 toast</view>
@@ -47,6 +48,7 @@
   <view class="panel-row">MediaQuery 快照：{{mediaQueryObserverSnapshot}}</view>
   <view class="panel-row">Animation 快照：{{animationSnapshot}}</view>
   <view class="panel-row">Canvas 快照：{{canvasSnapshot}}</view>
+  <view class="panel-row">Canvas Query 快照：{{canvasQuerySnapshot}}</view>
   <canvas canvas-id="lab-canvas"></canvas>
   <video
     id="lab-video"

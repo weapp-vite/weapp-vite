@@ -15,6 +15,7 @@ Page({
     fileManagerSnapshot: '',
     animationSnapshot: '',
     canvasSnapshot: '',
+    canvasQuerySnapshot: '',
     intersectionObserverSnapshot: '',
     mediaQueryObserverSnapshot: '',
     requestSnapshot: '',
@@ -181,6 +182,26 @@ Page({
         canvasSnapshot: JSON.stringify(ctx.__getSnapshot()),
       })
     })
+  },
+  inspectCanvasQuery() {
+    wx.createSelectorQuery()
+      .select('canvas')
+      .fields({
+        context: true,
+        node: true,
+      }, (result) => {
+        result.context.setFillStyle('#00aa55')
+        result.context.fillRect(2, 4, 12, 6)
+        result.context.draw(false, () => {
+          this.setData({
+            canvasQuerySnapshot: JSON.stringify({
+              node: result.node,
+              snapshot: result.context.__getSnapshot(),
+            }),
+          })
+        })
+      })
+      .exec()
   },
   handleVideoPlay(event) {
     this.setData({
