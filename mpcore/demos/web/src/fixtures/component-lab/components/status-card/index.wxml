@@ -1,6 +1,12 @@
 <view class="screen">
   <view class="card-shell" style="left: 6px; top: 9px; width: 30px; height: 20px;">shell</view>
   <view id="component-observer-target" class="panel-row" style="left: 12px; top: 16px; width: 40px; height: 18px;">observer target</view>
+  <video
+    id="component-video"
+    bindplay="handleVideoPlay"
+    bindpause="handleVideoPause"
+    bindfullscreenchange="handleVideoFullscreen"
+  />
   <view class="panel-row">{{title}}</view>
   <view class="panel-row">Count: {{count}}</view>
   <view class="panel-row">Status: {{status}}</view>
@@ -24,5 +30,6 @@
   <view class="panel-row">Nested: {{nestedBadge}}</view>
   <view class="panel-row">Intersection: {{componentIntersectionSnapshot}}</view>
   <view class="panel-row">MediaMatches: {{componentMediaMatches.0}}/{{componentMediaMatches.1}}</view>
+  <view class="panel-row">VideoLogs: {{componentVideoLogs.0}}</view>
   <view class="panel-row">ActionLog: {{actionLog.0}}</view>
 </view>

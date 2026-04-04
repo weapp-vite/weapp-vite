@@ -1582,6 +1582,10 @@ Page({
     this.selectComponent?.('#status-card')?.inspectComponentMedia?.()
     this.push('lab:inspectCardMedia')
   },
+  inspectCardVideo() {
+    this.selectComponent?.('#status-card')?.inspectComponentVideo?.()
+    this.push('lab:inspectCardVideo')
+  },
   inspectCompoundCard() {
     const card = this.selectComponent?.('status-card.primary-card[data-role="main"]')
     const cards = this.selectAllComponents?.('status-card.primary-card[data-role="main"]') ?? []
