@@ -5,6 +5,7 @@ import type { HeadlessComponentInstance } from './componentInstance'
 import type { HeadlessPageInstance } from './pageInstance'
 import type {
   HeadlessWxActionSheetMockDefinition,
+  HeadlessWxClipboardSnapshot,
   HeadlessWxDownloadFileMockDefinition,
   HeadlessWxModalMockDefinition,
   HeadlessWxOpenDocumentSnapshot,
@@ -262,6 +263,7 @@ export class HeadlessSession {
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
+        getClipboardData: () => this.wxState.getClipboardData(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
@@ -290,6 +292,7 @@ export class HeadlessSession {
         saveFile: option => this.wxState.saveFile(option),
         setBackgroundColor: option => this.setBackgroundColor(option),
         setBackgroundTextStyle: option => this.setBackgroundTextStyle(option.textStyle),
+        setClipboardData: option => this.wxState.setClipboardData(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
         setNavigationBarColor: option => this.setNavigationBarColor(option),
         setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
@@ -546,6 +549,10 @@ export class HeadlessSession {
 
   getStorageInfo() {
     return this.wxState.getStorageInfoSync()
+  }
+
+  getClipboardData(): HeadlessWxClipboardSnapshot {
+    return this.wxState.getClipboardSnapshot()
   }
 
   getPreviewImage() {
