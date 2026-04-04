@@ -837,6 +837,7 @@ Page({
     canvasTempFilePath: '',
     canvasQuerySnapshot: '',
     componentCanvasSnapshot: '',
+    scopedComponentRect: '',
     shareMenuShownInfo: '',
     shareMenuUpdatedInfo: '',
     shareMenuHiddenInfo: '',
@@ -1597,6 +1598,18 @@ Page({
       })
       .exec()
   },
+  inspectScopedComponentQuery() {
+    const probe = this.selectComponent('#canvas-probe')
+    wx.createSelectorQuery()
+      .in(probe)
+      .select('.probe-shell')
+      .boundingClientRect((result) => {
+        this.setData({
+          scopedComponentRect: JSON.stringify(result),
+        })
+      })
+      .exec()
+  },
   runComponentCanvasLab() {
     this.selectComponent('#canvas-probe')?.paint()
   },
@@ -1637,6 +1650,7 @@ Page({
 <view>{{canvasTempFileContent}}</view>
 <view>{{canvasQuerySnapshot}}</view>
 <view>{{componentCanvasSnapshot}}</view>
+<view>{{scopedComponentRect}}</view>
 <view>{{textMeasureWidth}}</view>
 `)
   writeScript(path.join(root, 'dist/pages/profile/index.js'), 'Page({})\n')
@@ -1667,7 +1681,7 @@ Component({
   },
 })
 `)
-  writeText(path.join(root, 'dist/components/canvas-probe/index.wxml'), '<canvas canvas-id="inner-canvas"></canvas>\n')
+  writeText(path.join(root, 'dist/components/canvas-probe/index.wxml'), '<view class="probe-shell" style="left: 4px; top: 7px; width: 22px; height: 14px;">probe</view>\n<canvas canvas-id="inner-canvas"></canvas>\n')
 
   return root
 }
