@@ -194,6 +194,8 @@ Page({
     ctx.scale(1.1, 0.9)
     ctx.stroke()
     ctx.setFontSize(18)
+    ctx.setTextAlign('center')
+    ctx.setTextBaseline('middle')
     ctx.fillText('lab', 6, 20)
     ctx.restore()
     ctx.drawImage('/tmp/component-lab.png', 8, 10, 12, 12)
