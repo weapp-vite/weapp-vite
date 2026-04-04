@@ -1060,6 +1060,7 @@ describe.sequential('simulator browser e2e', () => {
       20_000,
     )
     expect(state.viewportSize).toEqual({ width: 390, height: 844 })
+    expect(parseJsonString<{ timeline: string[] }>(state.appData).timeline[0]).toContain('maze:onLaunch:')
     const queuePageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(queuePageData.title).toBe('Queue')
     expect(queuePageData.from).toBe('hub')
