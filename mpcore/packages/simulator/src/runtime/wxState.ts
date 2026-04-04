@@ -191,6 +191,17 @@ interface HeadlessChosenImageTempFilePayload {
   }
 }
 
+interface HeadlessChosenVideoTempFilePayload {
+  config: {
+    compressed: boolean
+    duration: number
+    height: number
+    maxDuration: number
+    sourceType: string[]
+    width: number
+  }
+}
+
 function byteLength(input: string) {
   return textEncoder.encode(input).byteLength
 }
@@ -1126,6 +1137,38 @@ export function createHeadlessWxState() {
         errMsg: 'chooseImage:ok',
         tempFilePaths: tempFiles.map(item => item.path),
         tempFiles,
+      }
+    },
+    chooseVideo(option: {
+      compressed?: boolean
+      maxDuration?: number
+      sourceType?: string[]
+    }) {
+      const compressed = option.compressed !== false
+      const maxDuration = Number.isFinite(option.maxDuration)
+        ? Math.max(1, Math.trunc(option.maxDuration ?? 60))
+        : 60
+      const sourceType = Array.isArray(option.sourceType) && option.sourceType.length > 0
+        ? option.sourceType.filter((item): item is string => typeof item === 'string')
+        : ['album', 'camera']
+      const payload = JSON.stringify({
+        config: {
+          compressed,
+          duration: Math.min(maxDuration, compressed ? 18 : 36),
+          height: compressed ? 360 : 720,
+          maxDuration,
+          sourceType: [...sourceType],
+          width: compressed ? 640 : 1280,
+        },
+      } satisfies HeadlessChosenVideoTempFilePayload)
+      const tempFilePath = this.createTempFile(payload, 'headless://wxfile/temp/chosen-video-01.mp4')
+      return {
+        duration: Math.min(maxDuration, compressed ? 18 : 36),
+        errMsg: 'chooseVideo:ok',
+        height: compressed ? 360 : 720,
+        size: payload.length,
+        tempFilePath,
+        width: compressed ? 640 : 1280,
       }
     },
     compressImage(option: {

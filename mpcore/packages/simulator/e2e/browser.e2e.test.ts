@@ -143,6 +143,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('chooseImageLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
+    bridge.runPageMethod('chooseVideoLab')
+    bridge.runPageMethod('saveMissingChosenVideoLab')
     bridge.runPageMethod('saveTempVideoLab')
     bridge.runPageMethod('saveMissingTempVideoLab')
     bridge.runPageMethod('inspectCanvasQuery')
@@ -198,6 +200,9 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
+          && pageData.chosenVideoInfo
+          && pageData.chosenVideoSavedInfo
+          && pageData.chosenVideoMissingSaveInfo
           && pageData.tempVideoSavedInfo
           && pageData.tempVideoSavedMissingInfo
           && pageData.canvasTempFileContent
@@ -317,6 +322,12 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.compressedImageDetail).toContain('"width":64')
     expect(pageData.compressedImageDetail).toContain('"height":48')
     expect(pageData.compressedImageMissingInfo).toContain('"error":"compressImage:fail file not found: headless://wxfile/temp/missing-compress-image.jpg"')
+    expect(pageData.chosenVideoInfo).toContain('"errMsg":"chooseVideo:ok"')
+    expect(pageData.chosenVideoInfo).toContain('"duration":18')
+    expect(pageData.chosenVideoInfo).toContain('"width":640')
+    expect(pageData.chosenVideoInfo).toContain('"height":360')
+    expect(pageData.chosenVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+    expect(pageData.chosenVideoMissingSaveInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-chosen-video.mp4"')
     expect(pageData.tempVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
     expect(pageData.tempVideoSavedMissingInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-video.mp4"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')

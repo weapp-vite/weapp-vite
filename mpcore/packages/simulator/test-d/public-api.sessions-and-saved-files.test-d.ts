@@ -223,6 +223,18 @@ expectType<{
   sourceType: ['album'],
 }))
 expectType<{
+  duration: number
+  errMsg: string
+  height: number
+  size: number
+  tempFilePath: string
+  width: number
+} | undefined>(browserPage?.wx.chooseVideo({
+  compressed: true,
+  maxDuration: 24,
+  sourceType: ['album'],
+}))
+expectType<{
   errMsg: string
   tempFilePath: string
 } | undefined>(browserPage?.wx.compressImage({
@@ -507,6 +519,18 @@ expectType<{
 } | undefined>(headlessPage?.wx.chooseImage({
   count: 2,
   sizeType: ['compressed'],
+  sourceType: ['album'],
+}))
+expectType<{
+  duration: number
+  errMsg: string
+  height: number
+  size: number
+  tempFilePath: string
+  width: number
+} | undefined>(headlessPage?.wx.chooseVideo({
+  compressed: true,
+  maxDuration: 24,
   sourceType: ['album'],
 }))
 expectType<{
