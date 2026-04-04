@@ -1,3 +1,5 @@
+/* eslint-disable e18e/ban-dependencies -- github issues IDE e2e 使用 fs-extra 简化构建产物读写。 */
+import process from 'node:process'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { expect } from 'vitest'
@@ -157,6 +159,11 @@ export async function closeSharedMiniProgram() {
   await closeMiniProgramSafely(miniProgram)
 }
 
+async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  await closeSharedMiniProgram()
+  return await getSharedMiniProgram(ctx)
+}
+
 function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
 }
@@ -219,6 +226,17 @@ function normalizeRoutePath(routePath: string) {
   return routePath.replace(LEADING_SLASH_RE, '')
 }
 
+function formatDebugSnippet(value: string | null | undefined, maxLength = 160) {
+  if (!value) {
+    return '<empty>'
+  }
+  const normalized = value.replace(WHITESPACE_RE, ' ').trim()
+  if (normalized.length <= maxLength) {
+    return normalized
+  }
+  return `${normalized.slice(0, maxLength)}...`
+}
+
 export async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 12_000) {
   const normalizedExpectedPath = normalizeRoutePath(expectedPath)
   const start = Date.now()
@@ -236,29 +254,77 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   return null
 }
 
-export async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 20_000) {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    let page: any = null
+async function waitForRouteReady(miniProgram: any, route: string, readyText?: string, timeoutMs = 20_000) {
+  const normalizedExpectedPath = normalizeRoutePath(route)
+  const start = Date.now()
+  let lastPath = ''
+  let lastWxmlSnippet = ''
+
+  while (Date.now() - start <= timeoutMs) {
     try {
-      page = await miniProgram.reLaunch(route)
+      const currentPage = await miniProgram.currentPage()
+      lastPath = normalizeRoutePath(currentPage?.path ?? '')
+      if (lastPath === normalizedExpectedPath) {
+        try {
+          lastWxmlSnippet = formatDebugSnippet(await readPageWxml(currentPage))
+        }
+        catch {
+        }
+        const ready = await waitForPageWxml(currentPage, readyText, 800)
+        if (ready) {
+          return currentPage
+        }
+      }
     }
     catch {
-      await delay(280)
-      continue
-    }
-    if (!page) {
-      await delay(220)
-      continue
-    }
-
-    const currentPage = await waitForCurrentPagePath(miniProgram, route, timeoutMs)
-    const targetPage = currentPage ?? page
-    const ready = await waitForPageWxml(targetPage, readyText, timeoutMs)
-    if (ready) {
-      return targetPage
     }
     await delay(220)
   }
+
+  process.stdout.write(
+    `[github-issues:relaunch] timeout route=${route} lastPath=${lastPath || '<none>'} readyText=${readyText || '<none>'} lastWxml=${lastWxmlSnippet || '<unavailable>'}\n`,
+  )
+  return null
+}
+
+export async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 20_000) {
+  async function runAttempts(targetMiniProgram: any, phase: 'primary' | 'restart') {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      process.stdout.write(`[github-issues:relaunch] phase=${phase} route=${route} attempt=${attempt + 1}/4\n`)
+      let page: any = null
+      try {
+        page = await targetMiniProgram.reLaunch(route)
+      }
+      catch {
+        await delay(280)
+        continue
+      }
+      if (!page) {
+        await delay(220)
+        continue
+      }
+
+      const readyPage = await waitForRouteReady(targetMiniProgram, route, readyText, timeoutMs)
+      if (readyPage) {
+        return readyPage
+      }
+      await delay(220)
+    }
+
+    return null
+  }
+
+  const primaryPage = await runAttempts(miniProgram, 'primary')
+  if (primaryPage) {
+    return primaryPage
+  }
+
+  if (miniProgram === sharedMiniProgram) {
+    process.stdout.write(`[github-issues:relaunch] restart shared automator route=${route}\n`)
+    const restartedMiniProgram = await restartSharedMiniProgram()
+    return await runAttempts(restartedMiniProgram, 'restart')
+  }
+
   return null
 }
 
