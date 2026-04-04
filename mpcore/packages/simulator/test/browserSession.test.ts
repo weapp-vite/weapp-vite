@@ -4755,6 +4755,63 @@ Page({
     expect(page.data.missingSummary).toBe('getImageInfo:fail file not found: headless://wxfile/temp/browser-missing-image-info.png')
   })
 
+  it('supports previewImage snapshots in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    invalidSummary: '',
+    previewSummary: ''
+  },
+  runPreviewImageLab() {
+    wx.previewImage({
+      current: 'headless://wxfile/temp/browser-image-a.png',
+      urls: [
+        'headless://wxfile/temp/browser-image-a.png',
+        'headless://wxfile/temp/browser-image-b.png'
+      ],
+      success: (result) => {
+        this.setData({
+          previewSummary: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  runInvalidPreviewImageLab() {
+    wx.previewImage({
+      urls: [],
+      fail: (error) => {
+        this.setData({
+          invalidSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{previewSummary}}</view><view>{{invalidSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runPreviewImageLab()
+    page.runInvalidPreviewImageLab()
+
+    expect(page.data.previewSummary).toContain('"errMsg":"previewImage:ok"')
+    expect(page.data.invalidSummary).toBe('previewImage:fail invalid urls')
+    expect(session.getPreviewImage()).toEqual({
+      current: 'headless://wxfile/temp/browser-image-a.png',
+      urls: [
+        'headless://wxfile/temp/browser-image-a.png',
+        'headless://wxfile/temp/browser-image-b.png',
+      ],
+      visible: true,
+    })
+  })
+
   it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
