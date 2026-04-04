@@ -30,7 +30,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 
 1. 先确认 `srcRoot`、输出目录和页面来源。
 2. 再确认是手写 `app.json` 还是 `autoRoutes`。
-3. 若类型或产物异常，先跑 `weapp-vite prepare`。
+3. 若类型或产物异常，先跑 `wv prepare`。
 4. 若项目已安装 `weapp-vite`，优先读本地 `node_modules/weapp-vite/dist/docs/`。
 5. 若项目来自脚手架，先读根 `AGENTS.md`。
 
@@ -65,9 +65,9 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - AI / 调试：
   - `weapp.forwardConsole`
   - `weapp.mcp`
-  - `weapp-vite screenshot`
-  - `weapp-vite compare`
-  - `weapp-vite ide logs --open`
+  - `wv screenshot`
+  - `wv compare`
+  - `wv ide logs --open`
 - 产物与结构：
   - `subPackages`
   - `npm`

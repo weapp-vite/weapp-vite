@@ -69,11 +69,11 @@ description: 面向将原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 的
   - 根 `AGENTS.md`
   - `node_modules/weapp-vite/dist/docs/*.md`
 - 迁移完成后优先执行：
-  - `weapp-vite prepare`
+  - `wv prepare`
 - 若项目后续交给 AI 维护，确保这些路径明确：
-  - `截图` -> `weapp-vite screenshot`
-  - `截图对比` -> `weapp-vite compare`
-  - `日志` -> `weapp-vite ide logs --open`
+  - `截图` -> `wv screenshot`
+  - `截图对比` -> `wv compare`
+  - `日志` -> `wv ide logs --open`
 
 6. 验证与回滚
 

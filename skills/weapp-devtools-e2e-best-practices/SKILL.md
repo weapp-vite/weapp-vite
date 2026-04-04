@@ -60,9 +60,9 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 - 优先做稳定的页面级/结构级断言。
 - 需要 runtime 错误收集时，接入统一收集器。
 - 若最终要做 AI 截图验收，先确保 e2e 路由和页面稳定，再补：
-  - `weapp-vite screenshot --json`
-  - `weapp-vite compare --json`
-  - `weapp-vite ide logs --open`
+  - `wv screenshot --json`
+  - `wv compare --json`
+  - `wv ide logs --open`
 
 5. 维护 `e2e-apps/*`
 
