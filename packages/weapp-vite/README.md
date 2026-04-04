@@ -95,7 +95,8 @@ function handleClick() {
 
 - 安装依赖后，优先阅读 `node_modules/weapp-vite/dist/docs/README.md`、`node_modules/weapp-vite/dist/docs/mcp.md` 等本地版本文档
 - CLI 同时支持 `weapp-vite` 与 `wv`
-- 需要做小程序截图验收时，优先使用 `weapp-vite screenshot` 或 `wv screenshot`
+- 需要做小程序截图采集时，优先使用 `weapp-vite screenshot` / `wv screenshot`
+- 需要做小程序截图对比验收时，优先使用 `weapp-vite compare` / `wv compare`
 - 不要把小程序运行时截图退化成通用浏览器截图
 - 需要看 DevTools 终端日志时，优先使用 `weapp-vite ide logs --open` 或 `wv ide logs --open`
 
@@ -121,6 +122,15 @@ weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index 
 
 # 等价写法
 wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+```
+
+推荐的截图对比命令示例：
+
+```sh
+weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+
+# 等价写法
+wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 ```
 
 ## DevTools 日志桥接

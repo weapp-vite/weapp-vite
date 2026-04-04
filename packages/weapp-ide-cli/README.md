@@ -130,6 +130,7 @@ weapp cache --clean all
 | 命令                             | 说明                           |
 | -------------------------------- | ------------------------------ |
 | `weapp screenshot`               | 截图（支持 base64 / 文件输出） |
+| `weapp compare`                  | 截图对比（pixelmatch）         |
 | `weapp navigate <url>`           | 保留栈跳转页面                 |
 | `weapp redirect <url>`           | 重定向页面                     |
 | `weapp back`                     | 页面返回                       |

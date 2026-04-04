@@ -18,6 +18,7 @@ import {
   systemInfo,
   tap,
 } from './commands'
+import { runCompare } from './compare'
 import { runScreenshot } from './screenshot'
 
 interface LocalizedText {
@@ -238,7 +239,7 @@ const COMMAND_DEFINITIONS: Record<string, CommandDefinition> = {
   }),
 }
 
-export const AUTOMATOR_COMMAND_NAMES = ['screenshot', ...Object.keys(COMMAND_DEFINITIONS)]
+export const AUTOMATOR_COMMAND_NAMES = ['screenshot', 'compare', ...Object.keys(COMMAND_DEFINITIONS)]
 const AUTOMATOR_COMMAND_SET = new Set(AUTOMATOR_COMMAND_NAMES)
 
 /**
@@ -284,6 +285,11 @@ function printCommandHelp(command: string) {
 export async function runAutomatorCommand(command: string, argv: string[]) {
   if (command === 'screenshot') {
     await runScreenshot(argv)
+    return
+  }
+
+  if (command === 'compare') {
+    await runCompare(argv)
     return
   }
 

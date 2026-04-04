@@ -18,6 +18,7 @@ const commandMocks = vi.hoisted(() => ({
 }))
 
 const runScreenshotMock = vi.hoisted(() => vi.fn())
+const runCompareMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   warn: vi.fn(),
 }))
@@ -25,6 +26,9 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('../src/cli/commands', () => commandMocks)
 vi.mock('../src/cli/screenshot', () => ({
   runScreenshot: runScreenshotMock,
+}))
+vi.mock('../src/cli/compare', () => ({
+  runCompare: runCompareMock,
 }))
 vi.mock('../src/logger', () => ({
   default: loggerMock,
@@ -47,6 +51,8 @@ describe('run-automator', () => {
     })
     runScreenshotMock.mockReset()
     runScreenshotMock.mockResolvedValue(undefined)
+    runCompareMock.mockReset()
+    runCompareMock.mockResolvedValue(undefined)
     loggerMock.warn.mockReset()
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   })
@@ -68,6 +74,14 @@ describe('run-automator', () => {
     await runAutomatorCommand('screenshot', ['-p', '/tmp/demo'])
 
     expect(runScreenshotMock).toHaveBeenCalledWith(['-p', '/tmp/demo'])
+  })
+
+  it('delegates compare command', async () => {
+    const { runAutomatorCommand } = await loadModule()
+
+    await runAutomatorCommand('compare', ['--baseline', '/tmp/baseline.png', '--max-diff-pixels', '1'])
+
+    expect(runCompareMock).toHaveBeenCalledWith(['--baseline', '/tmp/baseline.png', '--max-diff-pixels', '1'])
   })
 
   it('parses navigate arguments and calls navigateTo', async () => {

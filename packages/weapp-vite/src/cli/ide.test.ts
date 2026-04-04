@@ -14,7 +14,7 @@ describe('tryRunIdeCommand', () => {
     isWeappIdeTopLevelCommandMock.mockReset()
     parseWeappIdeCliMock.mockResolvedValue(undefined)
     isWeappIdeTopLevelCommandMock.mockImplementation((command: string) =>
-      ['cache', 'preview', 'navigate', 'config', 'screenshot'].includes(
+      ['cache', 'preview', 'navigate', 'config', 'screenshot', 'compare'].includes(
         command,
       ),
     )
@@ -60,6 +60,15 @@ describe('tryRunIdeCommand', () => {
       'navigate',
       'pages/index/index',
     ])
+  })
+
+  it('forwards compare command to weapp-ide-cli', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['compare', '--baseline', 'baseline.png'])
+
+    expect(forwarded).toBe(true)
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['compare', '--baseline', 'baseline.png'])
   })
 
   it('forwards help target for ide command', async () => {

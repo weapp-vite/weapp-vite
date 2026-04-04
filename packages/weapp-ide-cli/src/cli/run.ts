@@ -11,11 +11,12 @@ import {
   MINIDEV_NAMESPACE_COMMAND_NAMES,
   WECHAT_CLI_COMMAND_NAMES,
 } from './command-catalog'
+import { printCompareHelp } from './compare'
 import { handleConfigCommand } from './config-command'
 import { runMinidev } from './minidev'
 import { promptForCliPath } from './prompt'
 import { resolveCliPath } from './resolver'
-import { getAutomatorCommandHelp, isAutomatorCommand, runAutomatorCommand } from './run-automator'
+import { AUTOMATOR_COMMAND_NAMES, getAutomatorCommandHelp, isAutomatorCommand, runAutomatorCommand } from './run-automator'
 import { runWechatCliWithRetry } from './run-login'
 import { printScreenshotHelp } from './screenshot'
 import { validateWechatCliCommandArgs } from './wechat-command-schema'
@@ -51,7 +52,7 @@ export function createCli() {
 
   cli.command(`${CONFIG_COMMAND_NAME} [...args]`, '配置 weapp-ide-cli').allowUnknownOptions()
 
-  for (const command of ['screenshot', 'navigate', 'redirect', 'back', 'relaunch', 'switch-tab', 'page-stack', 'current-page', 'system-info', 'page-data', 'tap', 'input', 'scroll', 'audit', 'remote']) {
+  for (const command of AUTOMATOR_COMMAND_NAMES) {
     cli.command(`${command} [...args]`, 'automator 增强命令').allowUnknownOptions()
   }
 
@@ -68,6 +69,11 @@ async function handleHelpCommand(args: readonly string[]) {
 
   if (targetCommand === 'screenshot') {
     printScreenshotHelp()
+    return
+  }
+
+  if (targetCommand === 'compare') {
+    printCompareHelp()
     return
   }
 

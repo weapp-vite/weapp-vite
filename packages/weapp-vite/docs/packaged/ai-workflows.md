@@ -33,6 +33,7 @@ weapp-vite prepare
 weapp-vite dev --open
 weapp-vite build
 weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 weapp-vite ide logs --open
 weapp-vite mcp
 ```
@@ -44,13 +45,15 @@ wv prepare
 wv dev --open
 wv build
 wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 wv ide logs --open
 wv mcp
 ```
 
 ## 截图与日志
 
-- 小程序截图验收优先使用 `weapp-vite screenshot` / `wv screenshot`
+- 小程序截图采集优先使用 `weapp-vite screenshot` / `wv screenshot`
+- 小程序截图对比验收优先使用 `weapp-vite compare` / `wv compare`
 - 不要退化成普通浏览器截图来替代小程序运行时截图
 - 查看 DevTools 终端日志优先使用 `weapp-vite ide logs --open` / `wv ide logs --open`
 

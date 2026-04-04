@@ -92,6 +92,8 @@
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "cac": "^7.0.0",
     "execa": "9.6.1",
-    "pathe": "catalog:"
+    "pathe": "catalog:",
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0"
   }
 }

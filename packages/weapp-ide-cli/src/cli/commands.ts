@@ -301,9 +301,9 @@ export async function audit(options: AuditOptions) {
 }
 
 /**
- * @description 获取当前小程序截图。
+ * @description 捕获当前页面截图并返回二进制内容。
  */
-export async function takeScreenshot(options: ScreenshotOptions): Promise<ScreenshotResult> {
+export async function captureScreenshotBuffer(options: ScreenshotOptions): Promise<Buffer> {
   return await withMiniProgram(options, async (miniProgram) => {
     logger.info(i18nText(
       `正在连接 DevTools：${colors.cyan(options.projectPath)}...`,
@@ -320,23 +320,35 @@ export async function takeScreenshot(options: ScreenshotOptions): Promise<Screen
 
     logger.info(i18nText('正在截图...', 'Taking screenshot...'))
     const screenshot = await miniProgram.screenshot()
-    const base64 = typeof screenshot === 'string' ? screenshot : Buffer.from(screenshot).toString('base64')
+    const buffer = typeof screenshot === 'string'
+      ? Buffer.from(screenshot, 'base64')
+      : Buffer.from(screenshot)
 
-    if (!base64) {
+    if (buffer.length === 0) {
       throw new Error(i18nText('截图失败', 'Failed to capture screenshot'))
     }
 
-    if (options.outputPath) {
-      await fs.writeFile(options.outputPath, Buffer.from(base64, 'base64'))
-      logger.success(i18nText(
-        `截图已保存到 ${colors.cyan(options.outputPath)}`,
-        `Screenshot saved to ${colors.cyan(options.outputPath)}`,
-      ))
-      return { path: options.outputPath }
-    }
-
-    return { base64 }
+    return buffer
   })
+}
+
+/**
+ * @description 获取当前小程序截图。
+ */
+export async function takeScreenshot(options: ScreenshotOptions): Promise<ScreenshotResult> {
+  const screenshotBuffer = await captureScreenshotBuffer(options)
+  const base64 = screenshotBuffer.toString('base64')
+
+  if (options.outputPath) {
+    await fs.writeFile(options.outputPath, screenshotBuffer)
+    logger.success(i18nText(
+      `截图已保存到 ${colors.cyan(options.outputPath)}`,
+      `Screenshot saved to ${colors.cyan(options.outputPath)}`,
+    ))
+    return { path: options.outputPath }
+  }
+
+  return { base64 }
 }
 
 /**
