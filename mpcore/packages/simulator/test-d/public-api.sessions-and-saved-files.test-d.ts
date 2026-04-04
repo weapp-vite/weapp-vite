@@ -65,8 +65,12 @@ expectType<{
     reserve: boolean
     strokeStyle: string
   }
+  arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
+  arcTo: (x1: number, y1: number, x2: number, y2: number, radius: number) => void
+  bezierCurveTo: (cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
+  closePath: () => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
   fill: () => void
@@ -75,6 +79,12 @@ expectType<{
   lineTo: (x: number, y: number) => void
   measureText: (text: string) => { width: number }
   moveTo: (x: number, y: number) => void
+  quadraticCurveTo: (cpx: number, cpy: number, x: number, y: number) => void
+  rect: (x: number, y: number, width: number, height: number) => void
+  restore: () => void
+  rotate: (rotate: number) => void
+  save: () => void
+  scale: (scaleWidth: number, scaleHeight: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
   setLineCap: (value: string) => void
@@ -84,10 +94,14 @@ expectType<{
   setStrokeStyle: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
+  translate: (x: number, y: number) => void
 }>(browserPage?.wx.createCanvasContext('hero-canvas', browserPage))
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arc(10, 12, 6, 0, Math.PI, false)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).arcTo(18, 6, 24, 12, 4)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).closePath()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rect(2, 3, 16, 10)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).quadraticCurveTo(8, 4, 12, 16)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).restore()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rotate(0.5)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).save()
@@ -259,8 +273,12 @@ expectType<{
     reserve: boolean
     strokeStyle: string
   }
+  arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
+  arcTo: (x1: number, y1: number, x2: number, y2: number, radius: number) => void
+  bezierCurveTo: (cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
+  closePath: () => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
   fill: () => void
@@ -269,6 +287,12 @@ expectType<{
   lineTo: (x: number, y: number) => void
   measureText: (text: string) => { width: number }
   moveTo: (x: number, y: number) => void
+  quadraticCurveTo: (cpx: number, cpy: number, x: number, y: number) => void
+  rect: (x: number, y: number, width: number, height: number) => void
+  restore: () => void
+  rotate: (rotate: number) => void
+  save: () => void
+  scale: (scaleWidth: number, scaleHeight: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
   setLineCap: (value: string) => void
@@ -278,10 +302,14 @@ expectType<{
   setStrokeStyle: (value: string) => void
   stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
+  translate: (x: number, y: number) => void
 }>(headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage))
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arc(10, 12, 6, 0, Math.PI, false)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).arcTo(18, 6, 24, 12, 4)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).bezierCurveTo(10, 4, 14, 8, 18, 12)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).closePath()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rect(2, 3, 16, 10)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).quadraticCurveTo(8, 4, 12, 16)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).restore()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rotate(0.5)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).save()

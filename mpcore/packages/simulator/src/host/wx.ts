@@ -87,6 +87,15 @@ export interface HeadlessWxCanvasSnapshot {
 export interface HeadlessWxCanvasContext {
   __getSnapshot: () => HeadlessWxCanvasSnapshot
   arc: (x: number, y: number, r: number, sAngle: number, eAngle: number, counterclockwise?: boolean) => void
+  arcTo: (x1: number, y1: number, x2: number, y2: number, radius: number) => void
+  bezierCurveTo: (
+    cp1x: number,
+    cp1y: number,
+    cp2x: number,
+    cp2y: number,
+    x: number,
+    y: number,
+  ) => void
   beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
   closePath: () => void
@@ -98,6 +107,7 @@ export interface HeadlessWxCanvasContext {
   lineTo: (x: number, y: number) => void
   measureText: (text: string) => { width: number }
   moveTo: (x: number, y: number) => void
+  quadraticCurveTo: (cpx: number, cpy: number, x: number, y: number) => void
   rect: (x: number, y: number, width: number, height: number) => void
   restore: () => void
   rotate: (rotate: number) => void
