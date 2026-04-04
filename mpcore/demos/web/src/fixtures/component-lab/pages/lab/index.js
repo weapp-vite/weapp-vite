@@ -15,6 +15,8 @@ Page({
     fileManagerSnapshot: '',
     animationSnapshot: '',
     canvasSnapshot: '',
+    canvasTempFileContent: '',
+    canvasTempFilePath: '',
     canvasQuerySnapshot: '',
     intersectionObserverSnapshot: '',
     mediaQueryObserverSnapshot: '',
@@ -210,6 +212,27 @@ Page({
       this.setData({
         canvasSnapshot: JSON.stringify(ctx.__getSnapshot()),
       })
+    })
+  },
+  exportCanvasLab() {
+    const fs = wx.getFileSystemManager()
+    wx.canvasToTempFilePath({
+      canvasId: 'lab-canvas',
+      component: this,
+      destHeight: 40,
+      destWidth: 60,
+      fileType: 'png',
+      height: 20,
+      quality: 1,
+      width: 30,
+      x: 1,
+      y: 2,
+      success: ({ tempFilePath }) => {
+        this.setData({
+          canvasTempFileContent: fs.readFileSync(tempFilePath, 'utf8'),
+          canvasTempFilePath: tempFilePath,
+        })
+      },
     })
   },
   inspectCanvasQuery() {

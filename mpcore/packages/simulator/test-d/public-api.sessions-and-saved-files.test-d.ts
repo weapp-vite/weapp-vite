@@ -40,6 +40,21 @@ expectType<void>(browserSession.mockUploadFile({
   url: 'https://mock.mpcore.dev/upload/report',
 }))
 expectType<{
+  errMsg: string
+  tempFilePath: string
+}>(browserPage?.wx.canvasToTempFilePath({
+  canvasId: 'hero-canvas',
+  component: browserPage,
+  destHeight: 40,
+  destWidth: 60,
+  fileType: 'png',
+  height: 20,
+  quality: 1,
+  width: 30,
+  x: 1,
+  y: 2,
+}))
+expectType<{
   actions: Array<{
     animates: Array<{ args: unknown[], type: string }>
     option: {
@@ -378,6 +393,21 @@ expectType<{ visible: boolean }>(headlessSession.getTabBar())
 expectType<Record<string, string>>(headlessSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(headlessSession.getSavedFileListSnapshot())
 expectType<string | null>(headlessSession.getFileText('headless://wxfile/temp/0001'))
+expectType<{
+  errMsg: string
+  tempFilePath: string
+}>(headlessPage?.wx.canvasToTempFilePath({
+  canvasId: 'hero-canvas',
+  component: headlessPage,
+  destHeight: 40,
+  destWidth: 60,
+  fileType: 'png',
+  height: 20,
+  quality: 1,
+  width: 30,
+  x: 1,
+  y: 2,
+}))
 expectType<{
   disconnect: () => void
   observe: (selector: string, callback: (result: {

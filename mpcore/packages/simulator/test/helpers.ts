@@ -789,6 +789,8 @@ export function createCanvasContextFixture() {
 Page({
   data: {
     canvasSnapshot: '',
+    canvasTempFileContent: '',
+    canvasTempFilePath: '',
     canvasQuerySnapshot: '',
     componentCanvasSnapshot: '',
     textMeasureWidth: 0,
@@ -834,6 +836,27 @@ Page({
       })
     })
   },
+  exportCanvasLab() {
+    const fs = wx.getFileSystemManager()
+    wx.canvasToTempFilePath({
+      canvasId: 'hero-canvas',
+      component: this,
+      destHeight: 40,
+      destWidth: 60,
+      fileType: 'png',
+      height: 20,
+      quality: 1,
+      width: 30,
+      x: 1,
+      y: 2,
+      success: ({ tempFilePath }) => {
+        this.setData({
+          canvasTempFileContent: fs.readFileSync(tempFilePath, 'utf8'),
+          canvasTempFilePath: tempFilePath,
+        })
+      },
+    })
+  },
   inspectCanvasQuery() {
     wx.createSelectorQuery()
       .select('canvas')
@@ -868,6 +891,8 @@ Page({
 <canvas canvas-id="hero-canvas"></canvas>
 <canvas-probe id="canvas-probe" bind:paint="handleCanvasPaint" />
 <view>{{canvasSnapshot}}</view>
+<view>{{canvasTempFilePath}}</view>
+<view>{{canvasTempFileContent}}</view>
 <view>{{canvasQuerySnapshot}}</view>
 <view>{{componentCanvasSnapshot}}</view>
 <view>{{textMeasureWidth}}</view>

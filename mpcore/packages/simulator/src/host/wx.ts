@@ -485,6 +485,24 @@ export interface HeadlessWxSaveFileOption extends HeadlessWxCallbackOption<Headl
   tempFilePath: string
 }
 
+export interface HeadlessWxCanvasToTempFilePathSuccessResult {
+  errMsg: string
+  tempFilePath: string
+}
+
+export interface HeadlessWxCanvasToTempFilePathOption extends HeadlessWxCallbackOption<HeadlessWxCanvasToTempFilePathSuccessResult> {
+  canvasId: string
+  component?: Record<string, any>
+  destHeight?: number
+  destWidth?: number
+  fileType?: string
+  height?: number
+  quality?: number
+  width?: number
+  x?: number
+  y?: number
+}
+
 export interface HeadlessWxSavedFileInfo {
   createTime: number
   filePath: string
@@ -618,6 +636,7 @@ export interface HeadlessWxFileSystemManager {
 export interface HeadlessWxDriver {
   createAnimation: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
   createCanvasContext: (canvasId: string, scope?: Record<string, any>) => HeadlessWxCanvasContext
+  canvasToTempFilePath: (option: HeadlessWxCanvasToTempFilePathOption) => HeadlessWxCanvasToTempFilePathSuccessResult
   createIntersectionObserver: (
     scope: Record<string, any> | undefined,
     options?: HeadlessWxCreateIntersectionObserverOption,
@@ -681,6 +700,7 @@ export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  canvasToTempFilePath: (option: HeadlessWxCanvasToTempFilePathOption) => HeadlessWxCanvasToTempFilePathSuccessResult | undefined
   createAnimation: (option?: HeadlessWxAnimationStepOption) => HeadlessWxAnimation
   createCanvasContext: (canvasId: string, component?: Record<string, any>) => HeadlessWxCanvasContext
   createIntersectionObserver: (
@@ -784,6 +804,7 @@ function resolveCapabilityValue(source: Record<string, any>, schema: string) {
 export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
   const capabilityTree = {
     canIUse: true,
+    canvasToTempFilePath: true,
     clearStorage: true,
     clearStorageSync: true,
     createAnimation: true,
@@ -966,6 +987,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
 
   return {
     canIUse: schema => typeof schema === 'string' && schema.trim() !== '' && resolveCapabilityValue(capabilityTree, schema.trim()) != null,
+    canvasToTempFilePath: option => invokeWxApi(() => driver.canvasToTempFilePath(option), option),
     clearStorage: option => invokeWxApi(() => {
       driver.clearStorageSync()
       return {
