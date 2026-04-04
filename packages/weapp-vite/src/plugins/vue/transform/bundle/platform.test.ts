@@ -468,9 +468,12 @@ describe('bundle platform helpers', () => {
   it('tracks platform template analysis into wxml service caches', () => {
     const analyze = vi.fn(() => ({
       components: ['demo-card'],
+      deps: [],
     }))
     const tokenMapSet = vi.fn()
     const setWxmlComponentsMap = vi.fn()
+    const collectDepsFromToken = vi.fn(() => [])
+    const setDeps = vi.fn()
 
     trackPlatformTemplateAnalysis({
       wxmlService: {
@@ -478,6 +481,8 @@ describe('bundle platform helpers', () => {
         tokenMap: {
           set: tokenMapSet,
         },
+        collectDepsFromToken,
+        setDeps,
         setWxmlComponentsMap,
       },
     } as any, '/project/src/pages/demo/index.vue', '<view />')
@@ -485,7 +490,10 @@ describe('bundle platform helpers', () => {
     expect(analyze).toHaveBeenCalledWith('<view />')
     expect(tokenMapSet).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', {
       components: ['demo-card'],
+      deps: [],
     })
+    expect(collectDepsFromToken).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', [])
+    expect(setDeps).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', [])
     expect(setWxmlComponentsMap).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', ['demo-card'])
   })
 
@@ -507,6 +515,8 @@ describe('bundle platform helpers', () => {
           tokenMap: {
             set: vi.fn(),
           },
+          collectDepsFromToken: vi.fn(() => []),
+          setDeps: vi.fn(),
           setWxmlComponentsMap: vi.fn(),
         },
       } as any,

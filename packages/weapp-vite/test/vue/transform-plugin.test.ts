@@ -1281,12 +1281,16 @@ export default autoRoutes
     const analyze = vi.fn(() => ({ components: ['t-cell'] }))
     const tokenMap = new Map<string, any>()
     const setWxmlComponentsMap = vi.fn()
+    const collectDepsFromToken = vi.fn(() => [])
+    const setDeps = vi.fn()
     const addWatchFile = vi.fn()
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const ctx = createCtx({
       wxmlService: {
         analyze,
         tokenMap,
+        collectDepsFromToken,
+        setDeps,
         setWxmlComponentsMap,
       },
     })
@@ -1296,6 +1300,8 @@ export default autoRoutes
 
     expect(analyze).toHaveBeenCalledWith('<view><t-cell /></view>')
     expect(tokenMap.has(vuePath!)).toBe(true)
+    expect(collectDepsFromToken).toHaveBeenCalledWith(vuePath!, undefined)
+    expect(setDeps).toHaveBeenCalledWith(vuePath!, [])
     expect(setWxmlComponentsMap).toHaveBeenCalledWith(vuePath!, ['t-cell'])
     expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/dep/a.vue'))
     expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/dep/b.vue'))

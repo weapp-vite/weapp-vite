@@ -37,9 +37,12 @@ describe('vue transform shared helpers', () => {
       components: {
         FooCard: true,
       },
+      deps: [],
     }))
     const tokenMapSet = vi.fn()
     const setWxmlComponentsMap = vi.fn()
+    const collectDepsFromToken = vi.fn(() => [])
+    const setDeps = vi.fn()
 
     registerVueTemplateToken(
       {
@@ -48,6 +51,8 @@ describe('vue transform shared helpers', () => {
           tokenMap: {
             set: tokenMapSet,
           },
+          collectDepsFromToken,
+          setDeps,
           setWxmlComponentsMap,
         },
       } as any,
@@ -60,7 +65,10 @@ describe('vue transform shared helpers', () => {
       components: {
         FooCard: true,
       },
+      deps: [],
     })
+    expect(collectDepsFromToken).toHaveBeenCalledWith('/project/src/pages/home/index.vue', [])
+    expect(setDeps).toHaveBeenCalledWith('/project/src/pages/home/index.vue', [])
     expect(setWxmlComponentsMap).toHaveBeenCalledWith('/project/src/pages/home/index.vue', {
       FooCard: true,
     })
@@ -78,6 +86,8 @@ describe('vue transform shared helpers', () => {
             tokenMap: {
               set: vi.fn(),
             },
+            collectDepsFromToken: vi.fn(() => []),
+            setDeps: vi.fn(),
             setWxmlComponentsMap: vi.fn(),
           },
         } as any,
