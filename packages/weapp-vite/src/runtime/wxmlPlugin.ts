@@ -65,8 +65,14 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
 
     depsMap.set(filepath, nextDeps)
-    // eslint-disable-next-line ts/no-use-before-define -- 递归扫描依赖模板，需要复用下方 scan 实现
-    await Promise.all(Array.from(nextDeps).map(dep => scan(dep)))
+    await Promise.all(
+      Array.from(nextDeps)
+        .filter(dep => isTemplate(dep))
+        .map((dep) => {
+          // eslint-disable-next-line ts/no-use-before-define -- 递归扫描依赖模板，需要复用下方 scan 实现
+          return scan(dep)
+        }),
+    )
   }
 
   async function addDeps(filepath: string, deps: string[] = []) {

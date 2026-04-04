@@ -95,8 +95,10 @@ describe('emitWxmlAssetsWithCache', () => {
   it('resolves emit targets for main package, subpackage, and plugin builds', () => {
     const subPackageFile = '/project/src/pkg/pages/detail/index.wxml'
     const pluginFile = '/project/plugin/pages/demo/index.wxml'
+    const wxsFile = '/project/src/pages/index/index.wxs.ts'
     ctx.wxmlService!.tokenMap.set(subPackageFile, ctx.wxmlService!.analyze('<view />'))
     ctx.wxmlService!.tokenMap.set(pluginFile, ctx.wxmlService!.analyze('<view />'))
+    ctx.wxmlService!.tokenMap.set(wxsFile, ctx.wxmlService!.analyze('module.exports = {}'))
     ctx.scanService = {
       isMainPackageFileName: (fileName: string) => fileName === 'pages/index/index.wxml',
     } as any

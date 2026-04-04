@@ -263,6 +263,28 @@ describe('wxmlService', () => {
     expect(wxmlService.getImporters('/mock/project/helper.wxs')).toEqual(new Set([filepath]))
   })
 
+  it('does not recursively scan wxs deps as template tokens', async () => {
+    const filepath = '/mock/project/file.wxml'
+    mockFileSystem['/mock/project/helper.wxs'] = 'module.exports = {}'
+
+    const deps = wxmlService.collectDepsFromToken(filepath, [
+      {
+        tagName: 'wxs',
+        value: './helper.wxs',
+        name: 'src',
+        quote: '"',
+        start: 0,
+        end: 0,
+        attrs: { src: './helper.wxs' },
+      },
+    ] as any)
+
+    await wxmlService.setDeps(filepath, deps)
+
+    expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/helper.wxs']))
+    expect(wxmlService.tokenMap.has('/mock/project/helper.wxs')).toBe(false)
+  })
+
   it('throws non-ENOENT fs.stat errors during scan', async () => {
     vi.mocked(fs.stat).mockRejectedValueOnce(Object.assign(new Error('permission denied'), { code: 'EACCES' }))
     await expect(wxmlService.scan('/mock/project/file.wxml')).rejects.toThrow('permission denied')

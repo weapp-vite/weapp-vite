@@ -1,5 +1,6 @@
 import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import { isTemplate } from '../../utils'
 import { changeFileExtension } from '../../utils/file'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../utils/path'
@@ -57,6 +58,7 @@ export function resolveWxmlEmitTargets(options: {
   const { wxmlService, configService, scanService, templateExtension } = resolveWxmlEmitContext(compiler)
 
   return Array.from(wxmlService.tokenMap.entries())
+    .filter(([id]) => isTemplate(id))
     .map(([id, token]) => {
       const outputFileName = resolveRelativeOutputFileNameWithExtension(configService, id, templateExtension)
       return {
