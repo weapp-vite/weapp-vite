@@ -137,6 +137,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('inspectCardVideo')
     bridge.runPageMethod('inspectCompoundCard')
     bridge.runPageMethod('inspectScopedComponentQuery')
+    bridge.runPageMethod('inspectScopedSelectAll')
     bridge.runPageMethod('inspectCompoundSelector')
     bridge.runPageMethod('runVideoContextLab')
     bridge.runPageMethod('runIntersectionObserverLab')
@@ -235,6 +236,7 @@ describe.sequential('simulator browser e2e', () => {
           pageData.componentSnapshot
           && pageData.compoundComponentSnapshot
           && pageData.scopedComponentRect
+          && pageData.scopedComponentList
           && pageData.compoundSelectorSnapshot
           && pageData.intersectionObserverSnapshot
           && pageData.mediaQueryObserverSnapshot
@@ -476,6 +478,20 @@ describe.sequential('simulator browser e2e', () => {
       top: 9,
       width: 30,
     })
+    expect(parseJsonString(pageData.scopedComponentList)).toEqual([
+      {
+        dataset: {
+          kind: 'alpha',
+        },
+        id: 'component-multi-a',
+      },
+      {
+        dataset: {
+          kind: 'beta',
+        },
+        id: 'component-multi-b',
+      },
+    ])
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')

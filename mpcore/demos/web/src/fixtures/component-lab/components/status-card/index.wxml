@@ -1,6 +1,8 @@
 <view class="screen">
   <view class="card-shell" style="left: 6px; top: 9px; width: 30px; height: 20px;">shell</view>
   <view id="component-observer-target" class="panel-row" style="left: 12px; top: 16px; width: 40px; height: 18px;">observer target</view>
+  <view id="component-multi-a" class="multi-item" data-kind="alpha">alpha</view>
+  <view id="component-multi-b" class="multi-item" data-kind="beta">beta</view>
   <video
     id="component-video"
     bindplay="handleVideoPlay"

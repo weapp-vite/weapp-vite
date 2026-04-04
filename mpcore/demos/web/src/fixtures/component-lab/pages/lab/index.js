@@ -10,6 +10,7 @@ Page({
     compoundSelectorSnapshot: '',
     compoundComponentSnapshot: '',
     scopedComponentRect: '',
+    scopedComponentList: '',
     directorySnapshot: '',
     downloadSnapshot: '',
     fileTransferFailureInfo: '',
@@ -1609,6 +1610,23 @@ Page({
           scopedComponentRect: JSON.stringify(result),
         }, () => {
           this.push('lab:inspectScopedComponentQuery')
+        })
+      })
+      .exec()
+  },
+  inspectScopedSelectAll() {
+    const card = this.selectComponent?.('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .selectAll('.multi-item')
+      .fields({
+        dataset: true,
+        id: true,
+      }, (result) => {
+        this.setData({
+          scopedComponentList: JSON.stringify(result),
+        }, () => {
+          this.push('lab:inspectScopedSelectAll')
         })
       })
       .exec()
