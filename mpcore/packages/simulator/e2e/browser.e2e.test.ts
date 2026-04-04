@@ -142,6 +142,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('previewInvalidCanvasImageLab')
     bridge.runPageMethod('chooseImageLab')
     bridge.runPageMethod('chooseMessageFileLab')
+    bridge.runPageMethod('inspectFileInfoLab')
+    bridge.runPageMethod('inspectMissingFileInfoLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -204,6 +206,9 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.chosenMessageFileInfo
           && pageData.chosenMessageFileImageDetail
           && pageData.chosenMessageFileVideoDetail
+          && pageData.tempFileInfo
+          && pageData.savedFileDigestInfo
+          && pageData.missingFileInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -338,6 +343,13 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.chosenMessageFileVideoDetail).toContain('"errMsg":"getVideoInfo:ok"')
     expect(pageData.chosenMessageFileVideoDetail).toContain('"type":"mp4"')
     expect(pageData.chosenMessageFileVideoDetail).toContain('"duration":20')
+    expect(pageData.tempFileInfo).toContain('"errMsg":"getFileInfo:ok"')
+    expect(pageData.tempFileInfo).toContain('"size":23')
+    expect(pageData.tempFileInfo).toContain('"digest":"9ff15fd9f0a597794a846fcacdb42538"')
+    expect(pageData.savedFileDigestInfo).toContain('"errMsg":"getFileInfo:ok"')
+    expect(pageData.savedFileDigestInfo).toContain('"size":23')
+    expect(pageData.savedFileDigestInfo).toContain('"digest":"ae09af7f8346ddea3b2dac248fb4795cc7880ed1"')
+    expect(pageData.missingFileInfo).toContain('"error":"getFileInfo:fail no such file or directory, stat \'headless://wxfile/temp/missing-file-info.txt\'"')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')

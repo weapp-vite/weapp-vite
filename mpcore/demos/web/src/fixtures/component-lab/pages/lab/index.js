@@ -23,6 +23,9 @@ Page({
     previewImageInvalidInfo: '',
     chosenImageInfo: '',
     chosenImageDetail: '',
+    tempFileInfo: '',
+    savedFileDigestInfo: '',
+    missingFileInfo: '',
     compressedImageInfo: '',
     compressedImageDetail: '',
     compressedImageMissingInfo: '',
@@ -378,6 +381,47 @@ Page({
             },
           })
         }
+      },
+    })
+  },
+  inspectFileInfoLab() {
+    const fsManager = wx.getFileSystemManager()
+    const tempFilePath = 'headless://wxfile/temp/file-info-source.txt'
+    fsManager.writeFileSync(tempFilePath, 'component-lab-file-info')
+    wx.getFileInfo({
+      digestAlgorithm: 'md5',
+      filePath: tempFilePath,
+      success: (result) => {
+        this.setData({
+          tempFileInfo: JSON.stringify(result),
+        })
+      },
+    })
+    wx.saveFile({
+      filePath: 'headless://saved/file-info/report.txt',
+      tempFilePath,
+      success: (saveResult) => {
+        wx.getFileInfo({
+          digestAlgorithm: 'sha1',
+          filePath: saveResult.savedFilePath,
+          success: (result) => {
+            this.setData({
+              savedFileDigestInfo: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  },
+  inspectMissingFileInfoLab() {
+    wx.getFileInfo({
+      filePath: 'headless://wxfile/temp/missing-file-info.txt',
+      fail: (error) => {
+        this.setData({
+          missingFileInfo: JSON.stringify({
+            error: error.message,
+          }),
+        })
       },
     })
   },

@@ -193,6 +193,10 @@ expectType<{
 }>(browserPage?.wx.createVideoContext('hero-video', browserPage))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserPage?.wx.getSavedFileList())
+expectType<{ digest: string, errMsg: string, size: number } | undefined>(browserPage?.wx.getFileInfo({
+  digestAlgorithm: 'md5',
+  filePath: 'headless://wxfile/temp/0001',
+}))
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))
@@ -538,6 +542,10 @@ expectType<{
 }>(headlessPage?.wx.createVideoContext('hero-video', headlessPage))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessPage?.wx.getSavedFileList())
+expectType<{ digest: string, errMsg: string, size: number } | undefined>(headlessPage?.wx.getFileInfo({
+  digestAlgorithm: 'sha1',
+  filePath: 'headless://wxfile/temp/0001',
+}))
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.saveImageToPhotosAlbum({
   filePath: 'headless://wxfile/temp/0001',
 }))

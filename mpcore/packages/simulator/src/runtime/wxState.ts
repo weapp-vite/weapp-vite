@@ -8,6 +8,8 @@ import type {
   HeadlessWxDownloadFileSuccessResult,
   HeadlessWxFileSystemManager,
   HeadlessWxFileSystemResult,
+  HeadlessWxGetFileInfoOption,
+  HeadlessWxGetFileInfoResult,
   HeadlessWxGetImageInfoOption,
   HeadlessWxGetImageInfoResult,
   HeadlessWxGetNetworkTypeResult,
@@ -213,6 +215,261 @@ type HeadlessChooseMediaKind = 'image' | 'video'
 
 function byteLength(input: string) {
   return textEncoder.encode(input).byteLength
+}
+
+function rotateLeft(value: number, bits: number) {
+  return ((value << bits) | (value >>> (32 - bits))) >>> 0
+}
+
+function toHexWordLittleEndian(value: number) {
+  let output = ''
+  for (let index = 0; index < 4; index += 1) {
+    output += ((value >>> (index * 8)) & 0xFF).toString(16).padStart(2, '0')
+  }
+  return output
+}
+
+function toHexWordBigEndian(value: number) {
+  return value.toString(16).padStart(8, '0')
+}
+
+function computeMd5Digest(input: string) {
+  const bytes = Array.from(textEncoder.encode(input))
+  const bitLength = bytes.length * 8
+  const lowBits = bitLength >>> 0
+  const highBits = Math.floor(bitLength / 0x1_0000_0000) >>> 0
+
+  bytes.push(0x80)
+  while ((bytes.length % 64) !== 56) {
+    bytes.push(0)
+  }
+  for (let index = 0; index < 4; index += 1) {
+    bytes.push((lowBits >>> (index * 8)) & 0xFF)
+  }
+  for (let index = 0; index < 4; index += 1) {
+    bytes.push((highBits >>> (index * 8)) & 0xFF)
+  }
+
+  const shifts = [
+    7,
+    12,
+    17,
+    22,
+    7,
+    12,
+    17,
+    22,
+    7,
+    12,
+    17,
+    22,
+    7,
+    12,
+    17,
+    22,
+    5,
+    9,
+    14,
+    20,
+    5,
+    9,
+    14,
+    20,
+    5,
+    9,
+    14,
+    20,
+    5,
+    9,
+    14,
+    20,
+    4,
+    11,
+    16,
+    23,
+    4,
+    11,
+    16,
+    23,
+    4,
+    11,
+    16,
+    23,
+    4,
+    11,
+    16,
+    23,
+    6,
+    10,
+    15,
+    21,
+    6,
+    10,
+    15,
+    21,
+    6,
+    10,
+    15,
+    21,
+    6,
+    10,
+    15,
+    21,
+  ]
+  const table = Array.from({ length: 64 }, (_, index) => Math.floor(Math.abs(Math.sin(index + 1)) * 0x1_0000_0000) >>> 0)
+
+  let a0 = 0x67452301
+  let b0 = 0xEFCDAB89
+  let c0 = 0x98BADCFE
+  let d0 = 0x10325476
+
+  for (let chunkOffset = 0; chunkOffset < bytes.length; chunkOffset += 64) {
+    const words = Array.from({ length: 16 }, (_, index) => {
+      const wordOffset = chunkOffset + (index * 4)
+      return (
+        bytes[wordOffset]
+        | (bytes[wordOffset + 1] << 8)
+        | (bytes[wordOffset + 2] << 16)
+        | (bytes[wordOffset + 3] << 24)
+      ) >>> 0
+    })
+
+    let a = a0
+    let b = b0
+    let c = c0
+    let d = d0
+
+    for (let index = 0; index < 64; index += 1) {
+      let f = 0
+      let g = 0
+      if (index < 16) {
+        f = ((b & c) | (~b & d)) >>> 0
+        g = index
+      }
+      else if (index < 32) {
+        f = ((d & b) | (~d & c)) >>> 0
+        g = ((5 * index) + 1) % 16
+      }
+      else if (index < 48) {
+        f = (b ^ c ^ d) >>> 0
+        g = ((3 * index) + 5) % 16
+      }
+      else {
+        f = (c ^ (b | ~d)) >>> 0
+        g = (7 * index) % 16
+      }
+
+      const next = (a + f + table[index] + words[g]) >>> 0
+      a = d
+      d = c
+      c = b
+      b = (b + rotateLeft(next, shifts[index])) >>> 0
+    }
+
+    a0 = (a0 + a) >>> 0
+    b0 = (b0 + b) >>> 0
+    c0 = (c0 + c) >>> 0
+    d0 = (d0 + d) >>> 0
+  }
+
+  return [
+    toHexWordLittleEndian(a0),
+    toHexWordLittleEndian(b0),
+    toHexWordLittleEndian(c0),
+    toHexWordLittleEndian(d0),
+  ].join('')
+}
+
+function computeSha1Digest(input: string) {
+  const bytes = Array.from(textEncoder.encode(input))
+  const bitLength = bytes.length * 8
+  const lowBits = bitLength >>> 0
+  const highBits = Math.floor(bitLength / 0x1_0000_0000) >>> 0
+
+  bytes.push(0x80)
+  while ((bytes.length % 64) !== 56) {
+    bytes.push(0)
+  }
+  for (let index = 3; index >= 0; index -= 1) {
+    bytes.push((highBits >>> (index * 8)) & 0xFF)
+  }
+  for (let index = 3; index >= 0; index -= 1) {
+    bytes.push((lowBits >>> (index * 8)) & 0xFF)
+  }
+
+  let h0 = 0x67452301
+  let h1 = 0xEFCDAB89
+  let h2 = 0x98BADCFE
+  let h3 = 0x10325476
+  let h4 = 0xC3D2E1F0
+
+  for (let chunkOffset = 0; chunkOffset < bytes.length; chunkOffset += 64) {
+    const words = Array.from({ length: 80 }, (_, index) => {
+      if (index < 16) {
+        const wordOffset = chunkOffset + (index * 4)
+        return (
+          (bytes[wordOffset] << 24)
+          | (bytes[wordOffset + 1] << 16)
+          | (bytes[wordOffset + 2] << 8)
+          | bytes[wordOffset + 3]
+        ) >>> 0
+      }
+
+      return 0
+    })
+
+    for (let index = 16; index < 80; index += 1) {
+      words[index] = rotateLeft(words[index - 3] ^ words[index - 8] ^ words[index - 14] ^ words[index - 16], 1)
+    }
+
+    let a = h0
+    let b = h1
+    let c = h2
+    let d = h3
+    let e = h4
+
+    for (let index = 0; index < 80; index += 1) {
+      let f = 0
+      let k = 0
+      if (index < 20) {
+        f = ((b & c) | (~b & d)) >>> 0
+        k = 0x5A827999
+      }
+      else if (index < 40) {
+        f = (b ^ c ^ d) >>> 0
+        k = 0x6ED9EBA1
+      }
+      else if (index < 60) {
+        f = ((b & c) | (b & d) | (c & d)) >>> 0
+        k = 0x8F1BBCDC
+      }
+      else {
+        f = (b ^ c ^ d) >>> 0
+        k = 0xCA62C1D6
+      }
+
+      const next = (rotateLeft(a, 5) + f + e + k + words[index]) >>> 0
+      e = d
+      d = c
+      c = rotateLeft(b, 30)
+      b = a
+      a = next
+    }
+
+    h0 = (h0 + a) >>> 0
+    h1 = (h1 + b) >>> 0
+    h2 = (h2 + c) >>> 0
+    h3 = (h3 + d) >>> 0
+    h4 = (h4 + e) >>> 0
+  }
+
+  return [
+    toHexWordBigEndian(h0),
+    toHexWordBigEndian(h1),
+    toHexWordBigEndian(h2),
+    toHexWordBigEndian(h3),
+    toHexWordBigEndian(h4),
+  ].join('')
 }
 
 function cloneShareMenuSnapshot(snapshot: HeadlessWxShareMenuSnapshot) {
@@ -933,6 +1190,23 @@ export function createHeadlessWxState() {
     }
   }
 
+  const getFileInfo = (option: HeadlessWxGetFileInfoOption): HeadlessWxGetFileInfoResult => {
+    const normalizedPath = normalizeFsPath(option.filePath)
+    const fileContent = files.get(normalizedPath)
+    if (fileContent == null) {
+      throw new Error(`getFileInfo:fail no such file or directory, stat '${normalizedPath}'`)
+    }
+
+    const digestAlgorithm = option.digestAlgorithm === 'sha1' ? 'sha1' : 'md5'
+    return {
+      digest: digestAlgorithm === 'sha1'
+        ? computeSha1Digest(fileContent)
+        : computeMd5Digest(fileContent),
+      errMsg: 'getFileInfo:ok',
+      size: byteLength(fileContent),
+    }
+  }
+
   const removeSavedFile = (filePath: string) => {
     const normalizedPath = normalizeFsPath(filePath)
     if (!savedFiles.has(normalizedPath)) {
@@ -1204,6 +1478,9 @@ export function createHeadlessWxState() {
     },
     getSavedFileInfo(option: HeadlessWxGetSavedFileInfoOption) {
       return getSavedFileInfo(option.filePath)
+    },
+    getFileInfo(option: HeadlessWxGetFileInfoOption) {
+      return getFileInfo(option)
     },
     getSavedFileList() {
       return getSavedFileList()

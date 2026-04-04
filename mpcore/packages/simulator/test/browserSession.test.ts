@@ -4928,6 +4928,76 @@ Page({
     expect(page.data.videoDetail).toContain('"duration":20')
   })
 
+  it('supports getFileInfo in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingSummary: '',
+    savedSummary: '',
+    tempSummary: ''
+  },
+  runGetFileInfoLab() {
+    const fsManager = wx.getFileSystemManager()
+    const tempFilePath = 'headless://wxfile/temp/browser-file-info-source.txt'
+    fsManager.writeFileSync(tempFilePath, 'component-lab-file-info')
+    wx.getFileInfo({
+      digestAlgorithm: 'md5',
+      filePath: tempFilePath,
+      success: (result) => {
+        this.setData({
+          tempSummary: JSON.stringify(result),
+        })
+      },
+    })
+    wx.saveFile({
+      filePath: 'headless://saved/browser-file-info/report.txt',
+      tempFilePath,
+      success: (saveResult) => {
+        wx.getFileInfo({
+          digestAlgorithm: 'sha1',
+          filePath: saveResult.savedFilePath,
+          success: (result) => {
+            this.setData({
+              savedSummary: JSON.stringify(result),
+            })
+          },
+        })
+      },
+    })
+  },
+  runMissingGetFileInfoLab() {
+    wx.getFileInfo({
+      filePath: 'headless://wxfile/temp/browser-missing-file-info.txt',
+      fail: (error) => {
+        this.setData({
+          missingSummary: error.message,
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{tempSummary}}</view><view>{{savedSummary}}</view><view>{{missingSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runGetFileInfoLab()
+    page.runMissingGetFileInfoLab()
+
+    expect(page.data.tempSummary).toContain('"errMsg":"getFileInfo:ok"')
+    expect(page.data.tempSummary).toContain('"size":23')
+    expect(page.data.tempSummary).toContain('"digest":"9ff15fd9f0a597794a846fcacdb42538"')
+    expect(page.data.savedSummary).toContain('"errMsg":"getFileInfo:ok"')
+    expect(page.data.savedSummary).toContain('"size":23')
+    expect(page.data.savedSummary).toContain('"digest":"ae09af7f8346ddea3b2dac248fb4795cc7880ed1"')
+    expect(page.data.missingSummary).toBe('getFileInfo:fail no such file or directory, stat \'headless://wxfile/temp/browser-missing-file-info.txt\'')
+  })
+
   it('supports compressImage in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
