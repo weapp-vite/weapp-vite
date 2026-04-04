@@ -57,17 +57,26 @@ expectType<{
     canvasId: string
     drawCalls: Array<{ args: unknown[], type: string }>
     fillStyle: string
+    fontSize: number
     lineWidth: number
     reserve: boolean
     strokeStyle: string
   }
+  beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
+  fill: () => void
   fillRect: (x: number, y: number, width: number, height: number) => void
+  fillText: (text: string, x: number, y: number, maxWidth?: number) => void
+  lineTo: (x: number, y: number) => void
+  measureText: (text: string) => { width: number }
+  moveTo: (x: number, y: number) => void
   setFillStyle: (value: string) => void
+  setFontSize: (fontSize: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
+  stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
 }>(browserPage?.wx.createCanvasContext('hero-canvas', browserPage))
 
@@ -225,17 +234,26 @@ expectType<{
     canvasId: string
     drawCalls: Array<{ args: unknown[], type: string }>
     fillStyle: string
+    fontSize: number
     lineWidth: number
     reserve: boolean
     strokeStyle: string
   }
+  beginPath: () => void
   clearRect: (x: number, y: number, width: number, height: number) => void
   draw: (reserve?: boolean, callback?: () => void) => void
   drawImage: (image: string, ...args: number[]) => void
+  fill: () => void
   fillRect: (x: number, y: number, width: number, height: number) => void
+  fillText: (text: string, x: number, y: number, maxWidth?: number) => void
+  lineTo: (x: number, y: number) => void
+  measureText: (text: string) => { width: number }
+  moveTo: (x: number, y: number) => void
   setFillStyle: (value: string) => void
+  setFontSize: (fontSize: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
+  stroke: () => void
   strokeRect: (x: number, y: number, width: number, height: number) => void
 }>(headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage))
 

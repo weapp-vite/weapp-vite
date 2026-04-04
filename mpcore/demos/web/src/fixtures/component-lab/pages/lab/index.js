@@ -176,6 +176,12 @@ Page({
     const ctx = wx.createCanvasContext('lab-canvas', this)
     ctx.setFillStyle('#ff5500')
     ctx.fillRect(4, 6, 28, 18)
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(16, 10)
+    ctx.stroke()
+    ctx.setFontSize(18)
+    ctx.fillText('lab', 6, 20)
     ctx.drawImage('/tmp/component-lab.png', 8, 10, 12, 12)
     ctx.draw(false, () => {
       this.setData({

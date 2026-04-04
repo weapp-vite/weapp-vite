@@ -791,14 +791,23 @@ Page({
     canvasSnapshot: '',
     canvasQuerySnapshot: '',
     componentCanvasSnapshot: '',
+    textMeasureWidth: 0,
   },
   runCanvasLab() {
     const ctx = wx.createCanvasContext('hero-canvas', this)
     ctx.setFillStyle('#ff5500')
     ctx.fillRect(4, 8, 40, 24)
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(18, 12)
+    ctx.stroke()
+    ctx.setFontSize(18)
+    const metrics = ctx.measureText('canvas')
+    ctx.fillText('canvas', 6, 20)
     ctx.draw(false, () => {
       this.setData({
-        canvasSnapshot: JSON.stringify(ctx.__getSnapshot())
+        canvasSnapshot: JSON.stringify(ctx.__getSnapshot()),
+        textMeasureWidth: metrics.width,
       })
     })
   },
@@ -838,6 +847,7 @@ Page({
 <view>{{canvasSnapshot}}</view>
 <view>{{canvasQuerySnapshot}}</view>
 <view>{{componentCanvasSnapshot}}</view>
+<view>{{textMeasureWidth}}</view>
 `)
   writeJson(path.join(root, 'dist/components/canvas-probe/index.json'), {})
   writeScript(path.join(root, 'dist/components/canvas-probe/index.js'), `

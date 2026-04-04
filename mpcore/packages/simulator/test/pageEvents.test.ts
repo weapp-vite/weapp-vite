@@ -271,7 +271,11 @@ describe('page event alignment', () => {
 
     expect(page.data.canvasSnapshot).toContain('"canvasId":"hero-canvas"')
     expect(page.data.canvasSnapshot).toContain('"type":"fillRect"')
+    expect(page.data.canvasSnapshot).toContain('"type":"beginPath"')
+    expect(page.data.canvasSnapshot).toContain('"type":"fillText"')
+    expect(page.data.canvasSnapshot).toContain('"fontSize":18')
     expect(page.data.canvasSnapshot).toContain('"fillStyle":"#ff5500"')
+    expect(page.data.textMeasureWidth).toBe(54)
     expect(page.data.componentCanvasSnapshot).toContain('"canvasId":"inner-canvas"')
     expect(page.data.componentCanvasSnapshot).toContain('"type":"strokeRect"')
     expect(page.data.componentCanvasSnapshot).toContain('"lineWidth":3')
