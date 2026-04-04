@@ -63,7 +63,7 @@ export function useWorkbench() {
           .filter((scopeId): scopeId is string => Boolean(scopeId))
       },
       callComponentMethod: (scopeId: string, method: string, ...args: any[]) => {
-        return sessionState.session.value?.callScopeMethodDirect(scopeId, method, ...args)
+        return sessionState.run(() => sessionState.session.value?.callScopeMethodDirect(scopeId, method, ...args))
       },
       mockActionSheet: (definition: { cancel?: boolean, tapIndex?: number } = {}) => {
         sessionState.session.value?.mockActionSheet?.(definition)

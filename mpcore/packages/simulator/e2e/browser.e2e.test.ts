@@ -695,13 +695,13 @@ describe.sequential('simulator browser e2e', () => {
     })
 
     bridge.callComponentMethod(scopeIds[0], 'pulse')
-    const pulsedPageSnapshot = await waitFor(
-      () => bridge.readScopeSnapshot('page:pages/lab/index') as Record<string, any> | null,
-      snapshot => Array.isArray(snapshot?.data?.events) && snapshot.data.events.includes('pulse-1') && Boolean(snapshot.data.eventShape),
+    const pulsedPageState = await waitFor(
+      () => parseJsonString<Record<string, any>>(bridge.getState().pageData),
+      snapshot => Array.isArray(snapshot.events) && snapshot.events.includes('pulse-1') && Boolean(snapshot.eventShape),
       20_000,
     )
-    expect(pulsedPageSnapshot?.data?.events).toContain('pulse-1')
-    expect(parseJsonString(pulsedPageSnapshot?.data?.eventShape)).toEqual({
+    expect(pulsedPageState.events).toContain('pulse-1')
+    expect(parseJsonString(pulsedPageState.eventShape)).toEqual({
       bubbles: true,
       composed: true,
       dataset: {
