@@ -306,6 +306,12 @@ describe('page event alignment', () => {
     page.setLightBackgroundLab()
     page.setBackgroundColorLab()
     page.setInvalidBackgroundLab()
+    page.startWatchingNetworkLab()
+    page.inspectNetworkLab()
+    session.setNetworkType('none')
+    session.setNetworkType('4g')
+    page.stopWatchingNetworkLab()
+    session.setNetworkType('5g')
     page.compressChosenImageLab()
     page.compressMissingImageLab()
     page.chooseVideoLab()
@@ -504,6 +510,18 @@ describe('page event alignment', () => {
       backgroundColorBottom: '#666666',
       backgroundColorTop: '#555555',
       textStyle: 'light',
+    })
+    expect(page.data.networkInitialInfo).toContain('"networkType":"wifi"')
+    expect(page.data.networkCurrentInfo).toContain('"networkType":"4g"')
+    expect(page.data.networkCurrentInfo).toContain('"isConnected":true')
+    expect(page.data.networkLogs).toEqual([
+      'get:wifi',
+      'change:none:false',
+      'change:4g:true',
+    ])
+    expect(session.getNetworkType()).toEqual({
+      errMsg: 'getNetworkType:ok',
+      networkType: '5g',
     })
     expect(session.getOpenedDocument()).toEqual({
       filePath: 'headless://saved/open-document/report.txt',

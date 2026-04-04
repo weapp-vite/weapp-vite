@@ -29,6 +29,7 @@ interface SimulatorE2EApi {
   readScopeSnapshot: (scopeId: string) => unknown
   renderCurrentPage: () => string
   runPageMethod: (method: string) => void
+  setNetworkType: (networkType: 'wifi' | '2g' | '3g' | '4g' | '5g' | 'none' | 'unknown') => void
   sessionSnapshot: () => {
     actionSheetLogs: unknown[]
     currentPageBackground: unknown
@@ -37,6 +38,7 @@ interface SimulatorE2EApi {
     downloadFileLogs: unknown[]
     fileSnapshot: Record<string, string>
     modalLogs: unknown[]
+    networkType: unknown
     previewImage: unknown
     pullDownRefreshState: { active: boolean, stopCalls: number } | null
     requestLogs: unknown[]
@@ -176,6 +178,12 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('setLightBackgroundLab')
     bridge.runPageMethod('setBackgroundColorLab')
     bridge.runPageMethod('setInvalidBackgroundLab')
+    bridge.runPageMethod('startWatchingNetworkLab')
+    bridge.runPageMethod('inspectNetworkLab')
+    bridge.setNetworkType('none')
+    bridge.setNetworkType('4g')
+    bridge.runPageMethod('stopWatchingNetworkLab')
+    bridge.setNetworkType('5g')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -270,6 +278,10 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.backgroundLightInfo
           && pageData.backgroundColorInfo
           && pageData.backgroundInvalidInfo
+          && pageData.networkInitialInfo
+          && pageData.networkCurrentInfo
+          && Array.isArray(pageData.networkLogs)
+          && pageData.networkLogs.length === 3
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -443,6 +455,14 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.backgroundLightInfo).toContain('"errMsg":"setBackgroundTextStyle:ok"')
     expect(pageData.backgroundColorInfo).toContain('"errMsg":"setBackgroundColor:ok"')
     expect(pageData.backgroundInvalidInfo).toContain('"error":"setBackgroundTextStyle:fail invalid textStyle"')
+    expect(pageData.networkInitialInfo).toContain('"networkType":"wifi"')
+    expect(pageData.networkCurrentInfo).toContain('"networkType":"4g"')
+    expect(pageData.networkCurrentInfo).toContain('"isConnected":true')
+    expect(pageData.networkLogs).toEqual([
+      'get:wifi',
+      'change:none:false',
+      'change:4g:true',
+    ])
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -617,6 +637,10 @@ describe.sequential('simulator browser e2e', () => {
       backgroundColorBottom: '#666666',
       backgroundColorTop: '#555555',
       textStyle: 'light',
+    })
+    expect(bridge.sessionSnapshot().networkType).toEqual({
+      errMsg: 'getNetworkType:ok',
+      networkType: '5g',
     })
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
