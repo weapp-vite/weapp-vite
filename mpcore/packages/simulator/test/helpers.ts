@@ -777,7 +777,13 @@ export function createCanvasContextFixture() {
     miniprogramRoot: 'dist',
   })
   writeJson(path.join(root, 'dist/app.json'), {
-    pages: ['pages/canvas/index'],
+    pages: ['pages/canvas/index', 'pages/profile/index'],
+    tabBar: {
+      list: [
+        { pagePath: 'pages/canvas/index', text: 'Canvas' },
+        { pagePath: 'pages/profile/index', text: 'Profile' },
+      ],
+    },
   })
   writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
   writeJson(path.join(root, 'dist/pages/canvas/index.json'), {
@@ -822,6 +828,12 @@ Page({
     modalCancelInfo: '',
     actionSheetDefaultInfo: '',
     actionSheetCancelInfo: '',
+    tabBarHiddenInfo: '',
+    tabBarShownInfo: '',
+    tabBarDotInfo: '',
+    tabBarHideDotInfo: '',
+    tabBarBadgeInfo: '',
+    tabBarRemoveBadgeInfo: '',
     textMeasureWidth: 0,
   },
   runCanvasLab() {
@@ -1217,6 +1229,65 @@ Page({
       },
     })
   },
+  hideTabBarLab() {
+    wx.hideTabBar({
+      success: (result) => {
+        this.setData({
+          tabBarHiddenInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  showTabBarLab() {
+    wx.showTabBar({
+      success: (result) => {
+        this.setData({
+          tabBarShownInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  showTabBarDotLab() {
+    wx.showTabBarRedDot({
+      index: 1,
+      success: (result) => {
+        this.setData({
+          tabBarDotInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  hideTabBarDotLab() {
+    wx.hideTabBarRedDot({
+      index: 1,
+      complete: (result) => {
+        this.setData({
+          tabBarHideDotInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setTabBarBadgeLab() {
+    wx.setTabBarBadge({
+      index: 1,
+      text: '9+',
+      success: (result) => {
+        this.setData({
+          tabBarBadgeInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  removeTabBarBadgeLab() {
+    wx.removeTabBarBadge({
+      index: 1,
+      complete: (result) => {
+        this.setData({
+          tabBarRemoveBadgeInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
   compressChosenImageLab() {
     wx.chooseImage({
       count: 1,
@@ -1443,6 +1514,8 @@ Page({
 <view>{{componentCanvasSnapshot}}</view>
 <view>{{textMeasureWidth}}</view>
 `)
+  writeScript(path.join(root, 'dist/pages/profile/index.js'), 'Page({})\n')
+  writeText(path.join(root, 'dist/pages/profile/index.wxml'), '<view>profile</view>')
   writeJson(path.join(root, 'dist/components/canvas-probe/index.json'), {})
   writeScript(path.join(root, 'dist/components/canvas-probe/index.js'), `
 Component({

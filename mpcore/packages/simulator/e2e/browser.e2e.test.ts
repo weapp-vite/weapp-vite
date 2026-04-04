@@ -160,6 +160,13 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('openDefaultActionSheetLab')
     bridge.mockActionSheet({ cancel: true })
     bridge.runPageMethod('openCancelActionSheetLab')
+    bridge.runPageMethod('hideTabBarLab')
+    bridge.runPageMethod('showTabBarLab')
+    bridge.runPageMethod('showTabBarDotLab')
+    bridge.runPageMethod('setTabBarBadgeLab')
+    bridge.runPageMethod('removeTabBarBadgeLab')
+    bridge.runPageMethod('showTabBarDotLab')
+    bridge.runPageMethod('hideTabBarDotLab')
     bridge.runPageMethod('compressChosenImageLab')
     bridge.runPageMethod('compressMissingImageLab')
     bridge.runPageMethod('chooseVideoLab')
@@ -241,6 +248,12 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.modalCancelInfo
           && pageData.actionSheetDefaultInfo
           && pageData.actionSheetCancelInfo
+          && pageData.tabBarHiddenInfo
+          && pageData.tabBarShownInfo
+          && pageData.tabBarDotInfo
+          && pageData.tabBarHideDotInfo
+          && pageData.tabBarBadgeInfo
+          && pageData.tabBarRemoveBadgeInfo
           && pageData.compressedImageInfo
           && pageData.compressedImageDetail
           && pageData.compressedImageMissingInfo
@@ -401,6 +414,12 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.modalCancelInfo).toContain('"cancel":true')
     expect(pageData.actionSheetDefaultInfo).toContain('"tapIndex":0')
     expect(pageData.actionSheetCancelInfo).toContain('"error":"showActionSheet:fail cancel"')
+    expect(pageData.tabBarHiddenInfo).toContain('"errMsg":"hideTabBar:ok"')
+    expect(pageData.tabBarShownInfo).toContain('"errMsg":"showTabBar:ok"')
+    expect(pageData.tabBarDotInfo).toContain('"errMsg":"showTabBarRedDot:ok"')
+    expect(pageData.tabBarHideDotInfo).toContain('"errMsg":"hideTabBarRedDot:ok"')
+    expect(pageData.tabBarBadgeInfo).toContain('"errMsg":"setTabBarBadge:ok"')
+    expect(pageData.tabBarRemoveBadgeInfo).toContain('"errMsg":"removeTabBarBadge:ok"')
     expect(pageData.compressedImageInfo).toContain('"errMsg":"compressImage:ok"')
     expect(pageData.compressedImageInfo).toContain('headless://wxfile/temp/compressed-image-')
     expect(pageData.compressedImageDetail).toContain('"errMsg":"getImageInfo:ok"')
@@ -553,6 +572,13 @@ describe.sequential('simulator browser e2e', () => {
         itemList: ['copy', 'open'],
       },
     ])
+    expect(bridge.sessionSnapshot().tabBarSnapshot).toEqual({
+      items: [
+        { badge: null, index: 0, pagePath: 'pages/lab/index', redDot: false, text: 'Lab' },
+        { badge: null, index: 1, pagePath: 'pages/profile/index', redDot: false, text: 'Profile' },
+      ],
+      visible: true,
+    })
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)
