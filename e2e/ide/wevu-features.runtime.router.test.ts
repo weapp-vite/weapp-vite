@@ -1,11 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
-  getSharedMiniProgram,
   launchIsolatedMiniProgram,
   readPageWxml,
   relaunchPage,
-  releaseSharedMiniProgram,
   resolveSelectorById,
   ROUTER_NAVIGATION_SETTLE_TIMEOUT,
   tapControlUntil,
@@ -84,110 +82,109 @@ async function assertRouterActionRoute(
   expect(targetPage).toBeTruthy()
 }
 
+let routerMiniProgram: any = null
+
+async function getRouterMiniProgram() {
+  if (!routerMiniProgram) {
+    routerMiniProgram = await launchIsolatedMiniProgram()
+  }
+  return routerMiniProgram
+}
+
 describe.sequential('e2e app: wevu-features / router', () => {
   afterAll(async () => {
+    if (routerMiniProgram) {
+      const miniProgram = routerMiniProgram
+      routerMiniProgram = null
+      await miniProgram.close()
+    }
     await closeSharedMiniProgram()
   })
 
   it('covers advanced wevu/router showcase and dynamic pages', async () => {
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getRouterMiniProgram()
 
-    try {
-      const showcasePage = await relaunchPage(miniProgram, '/pages/router-showcase/index', 'wevu/router 能力展示 (showcase)')
-      if (!showcasePage) {
-        throw new Error('Failed to launch router-showcase page')
-      }
-
-      const showcaseBeforeWxml = await readPageWxml(showcasePage)
-      expect(showcaseBeforeWxml).toContain('parse summary = pending')
-      expect(showcaseBeforeWxml).toContain('named summary = pending')
-      expect(showcaseBeforeWxml).toContain('run summary = idle')
-
-      const showcaseResult = await showcasePage.callMethod('runE2E')
-      expect(showcaseResult?.ok, JSON.stringify(showcaseResult)).toBe(true)
-      expect(showcaseResult?.checks?.parseOk).toBe(true)
-      expect(showcaseResult?.checks?.stringifyOk).toBe(true)
-      expect(showcaseResult?.checks?.namedOk).toBe(true)
-      expect(showcaseResult?.checks?.aliasOk).toBe(true)
-      expect(showcaseResult?.checks?.relativeOk).toBe(true)
-      expect(showcaseResult?.checks?.hashOnlyOk).toBe(true)
-      expect(showcaseResult?.checks?.forwardOk).toBe(true)
-      expect(showcaseResult?.checks?.goOk).toBe(true)
-      expect(showcaseResult?.checks?.readyOk).toBe(true)
-      expect(showcaseResult?.details?.namedRouteSummary).toContain('/pages/router-showcase/profile/12/detail/logs?from=named')
-      expect(showcaseResult?.details?.aliasSummary).toContain('/router-profile/9/detail-alias/trace')
-      expect(showcaseResult?.details?.runSummary).toBe('ok')
-
-      const showcaseAfterWxml = await readPageWxml(showcasePage)
-      expect(showcaseAfterWxml).toContain('hash-only summary = aborted')
-      expect(showcaseAfterWxml).toContain('forward summary = aborted')
-      expect(showcaseAfterWxml).toContain('go summary = noop')
-      expect(showcaseAfterWxml).toContain('ready summary = ready')
-      expect(showcaseAfterWxml).toContain('run summary = ok')
-
-      const dynamicPage = await relaunchPage(miniProgram, '/pages/router-dynamic/index', 'wevu/router 能力展示 (dynamic + guards)')
-      if (!dynamicPage) {
-        throw new Error('Failed to launch router-dynamic page')
-      }
-
-      const dynamicBeforeWxml = await readPageWxml(dynamicPage)
-      expect(dynamicBeforeWxml).toContain('base routes = pending')
-      expect(dynamicBeforeWxml).toContain('guard summary = pending')
-      expect(dynamicBeforeWxml).toContain('run summary = idle')
-
-      const dynamicResult = await dynamicPage.callMethod('runE2E')
-      expect(dynamicResult?.ok, JSON.stringify(dynamicResult)).toBe(true)
-      expect(dynamicResult?.checks?.baseRoutesOk).toBe(true)
-      expect(dynamicResult?.checks?.addRemoveOk).toBe(true)
-      expect(dynamicResult?.checks?.clearOk).toBe(true)
-      expect(dynamicResult?.checks?.optionsOk).toBe(true)
-      expect(dynamicResult?.checks?.guardOk).toBe(true)
-      expect(dynamicResult?.checks?.errorOk).toBe(true)
-      expect(dynamicResult?.details?.addRemoveSummary).toContain('/router-dynamic/parent/5/child/metrics?from=dynamic')
-      expect(dynamicResult?.details?.clearSummary).toContain('->0')
-      expect(dynamicResult?.details?.guardSummary).toContain('after=2')
-      expect(dynamicResult?.details?.errorSummary).toContain('guard-fail-intentional')
-      expect(dynamicResult?.details?.runSummary).toBe('ok')
-
-      const dynamicAfterWxml = await readPageWxml(dynamicPage)
-      expect(dynamicAfterWxml).toContain('clear summary = ')
-      expect(dynamicAfterWxml).toContain('-&gt;0')
-      expect(dynamicAfterWxml).toContain('guard summary = block-ok|error-ok|after=2')
-      expect(dynamicAfterWxml).toContain('error summary = guard-fail-intentional')
-      expect(dynamicAfterWxml).toContain('run summary = ok')
+    const showcasePage = await relaunchPage(miniProgram, '/pages/router-showcase/index', 'wevu/router 能力展示 (showcase)')
+    if (!showcasePage) {
+      throw new Error('Failed to launch router-showcase page')
     }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
+
+    const showcaseBeforeWxml = await readPageWxml(showcasePage)
+    expect(showcaseBeforeWxml).toContain('parse summary = pending')
+    expect(showcaseBeforeWxml).toContain('named summary = pending')
+    expect(showcaseBeforeWxml).toContain('run summary = idle')
+
+    const showcaseResult = await showcasePage.callMethod('runE2E')
+    expect(showcaseResult?.ok, JSON.stringify(showcaseResult)).toBe(true)
+    expect(showcaseResult?.checks?.parseOk).toBe(true)
+    expect(showcaseResult?.checks?.stringifyOk).toBe(true)
+    expect(showcaseResult?.checks?.namedOk).toBe(true)
+    expect(showcaseResult?.checks?.aliasOk).toBe(true)
+    expect(showcaseResult?.checks?.relativeOk).toBe(true)
+    expect(showcaseResult?.checks?.hashOnlyOk).toBe(true)
+    expect(showcaseResult?.checks?.forwardOk).toBe(true)
+    expect(showcaseResult?.checks?.goOk).toBe(true)
+    expect(showcaseResult?.checks?.readyOk).toBe(true)
+    expect(showcaseResult?.details?.namedRouteSummary).toContain('/pages/router-showcase/profile/12/detail/logs?from=named')
+    expect(showcaseResult?.details?.aliasSummary).toContain('/router-profile/9/detail-alias/trace')
+    expect(showcaseResult?.details?.runSummary).toBe('ok')
+
+    const showcaseAfterWxml = await readPageWxml(showcasePage)
+    expect(showcaseAfterWxml).toContain('hash-only summary = aborted')
+    expect(showcaseAfterWxml).toContain('forward summary = aborted')
+    expect(showcaseAfterWxml).toContain('go summary = noop')
+    expect(showcaseAfterWxml).toContain('ready summary = ready')
+    expect(showcaseAfterWxml).toContain('run summary = ok')
+
+    const dynamicPage = await relaunchPage(miniProgram, '/pages/router-dynamic/index', 'wevu/router 能力展示 (dynamic + guards)')
+    if (!dynamicPage) {
+      throw new Error('Failed to launch router-dynamic page')
     }
+
+    const dynamicBeforeWxml = await readPageWxml(dynamicPage)
+    expect(dynamicBeforeWxml).toContain('base routes = pending')
+    expect(dynamicBeforeWxml).toContain('guard summary = pending')
+    expect(dynamicBeforeWxml).toContain('run summary = idle')
+
+    const dynamicResult = await dynamicPage.callMethod('runE2E')
+    expect(dynamicResult?.ok, JSON.stringify(dynamicResult)).toBe(true)
+    expect(dynamicResult?.checks?.baseRoutesOk).toBe(true)
+    expect(dynamicResult?.checks?.addRemoveOk).toBe(true)
+    expect(dynamicResult?.checks?.clearOk).toBe(true)
+    expect(dynamicResult?.checks?.optionsOk).toBe(true)
+    expect(dynamicResult?.checks?.guardOk).toBe(true)
+    expect(dynamicResult?.checks?.errorOk).toBe(true)
+    expect(dynamicResult?.details?.addRemoveSummary).toContain('/router-dynamic/parent/5/child/metrics?from=dynamic')
+    expect(dynamicResult?.details?.clearSummary).toContain('->0')
+    expect(dynamicResult?.details?.guardSummary).toContain('after=2')
+    expect(dynamicResult?.details?.errorSummary).toContain('guard-fail-intentional')
+    expect(dynamicResult?.details?.runSummary).toBe('ok')
+
+    const dynamicAfterWxml = await readPageWxml(dynamicPage)
+    expect(dynamicAfterWxml).toContain('clear summary = ')
+    expect(dynamicAfterWxml).toContain('-&gt;0')
+    expect(dynamicAfterWxml).toContain('guard summary = block-ok|error-ok|after=2')
+    expect(dynamicAfterWxml).toContain('error summary = guard-fail-intentional')
+    expect(dynamicAfterWxml).toContain('run summary = ok')
   })
 
   it('resolves previous-page pageRouter.navigateTo relative route using original page base path', async () => {
-    const miniProgram = await launchIsolatedMiniProgram()
-    try {
-      await assertRouterActionRoute(
-        miniProgram,
-        'router-sub-call-prev-page-router',
-        '/pages/router-stability/target/index',
-        'route=pages/router-stability/target/index source=page-router-from-index',
-      )
-    }
-    finally {
-      await miniProgram.close()
-    }
+    const miniProgram = await getRouterMiniProgram()
+    await assertRouterActionRoute(
+      miniProgram,
+      'router-sub-call-prev-page-router',
+      '/pages/router-stability/target/index',
+      'route=pages/router-stability/target/index source=page-router-from-index',
+    )
   })
 
   it('resolves component this.router.navigateTo relative route using component base path', async () => {
-    const miniProgram = await launchIsolatedMiniProgram()
-    try {
-      await assertRouterActionRoute(
-        miniProgram,
-        'router-sub-call-component-router',
-        '/components/router-origin-probe/target/index',
-        'route=components/router-origin-probe/target/index source=component-router',
-      )
-    }
-    finally {
-      await miniProgram.close()
-    }
+    const miniProgram = await getRouterMiniProgram()
+    await assertRouterActionRoute(
+      miniProgram,
+      'router-sub-call-component-router',
+      '/components/router-origin-probe/target/index',
+      'route=components/router-origin-probe/target/index source=component-router',
+    )
   })
 })

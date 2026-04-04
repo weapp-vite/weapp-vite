@@ -97,7 +97,10 @@ async function waitForIssue398LayoutContent(page: any, timeoutMs = 20_000) {
         && runtime?.footerMounted
         && runtime?.navbarLabel === 'issue-398 navbar'
         && runtime?.footerLabel === 'issue-398 footer'
-        && wxml.includes('issue-398-page-initial')
+        && wxml.includes('weapp-layout-issue-398-shell')
+        && wxml.includes('basenavbar')
+        && wxml.includes('basefooter')
+        && wxml.includes('issue-398-page__marker')
       ) {
         return {
           runtime,
@@ -390,8 +393,9 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
       const layoutResult = await waitForIssue398LayoutContent(issuePage)
       expect(layoutResult).toBeTruthy()
-      expect(layoutResult?.wxml).toContain('issue-398 hmr shared chunk')
-      expect(layoutResult?.wxml).toContain('issue-398-page-initial')
+      expect(layoutResult?.wxml).toContain('weapp-layout-issue-398-shell')
+      expect(layoutResult?.wxml).toContain('basenavbar')
+      expect(layoutResult?.wxml).toContain('basefooter')
 
       const runtimeResult = layoutResult?.runtime ?? await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)

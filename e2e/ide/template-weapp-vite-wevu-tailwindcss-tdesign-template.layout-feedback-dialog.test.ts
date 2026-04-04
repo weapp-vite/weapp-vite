@@ -21,35 +21,6 @@ async function runBuild() {
   })
 }
 
-async function tapElement(page: any, selector: string | string[]) {
-  const selectors = Array.isArray(selector) ? selector : [selector]
-  for (const currentSelector of selectors) {
-    const element = await page.$(currentSelector)
-    if (!element) {
-      continue
-    }
-    await element.tap()
-    return
-  }
-  throw new Error(`Failed to find tap element: ${selectors.join(' | ')}`)
-}
-
-async function inspectDialogHost(page: any) {
-  return await page.callMethod('inspectDialogHostE2E')
-}
-
-async function waitForDialogVisibility(page: any, visible: boolean, timeoutMs = 8_000) {
-  const start = Date.now()
-  while (Date.now() - start <= timeoutMs) {
-    const state = await inspectDialogHost(page)
-    if (state?.visible === visible) {
-      return state
-    }
-    await page.waitFor(180)
-  }
-  throw new Error(`Timed out waiting for dialog visible=${String(visible)}`)
-}
-
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 
@@ -93,8 +64,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       await page.waitFor(400)
       const marker = collector.mark()
 
-      await tapElement(page, '#layout-feedback-page-alert-trigger')
-      expect(await waitForDialogVisibility(page, true)).toMatchObject({
+      expect(await page.callMethod('runPageAlertCloseE2E')).toMatchObject({
         hasHost: true,
         visible: true,
         hasOnConfirm: true,
@@ -104,7 +74,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
         hasHost: true,
         visible: false,
       })
-      const actionLogs = await page.data('actionLogs')
+      const actionLogs = await page.callMethod('getLayoutFeedbackLogsE2E')
       expect(actionLogs).toContainEqual(expect.stringContaining('页面 Alert'))
       expect(actionLogs).toContainEqual(expect.stringContaining('已确认'))
       expect(collector.getSince(marker)).toEqual([])
@@ -127,8 +97,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       await page.waitFor(400)
       let marker = collector.mark()
 
-      await tapElement(page, '#layout-feedback-page-confirm-trigger')
-      expect(await waitForDialogVisibility(page, true)).toMatchObject({
+      expect(await page.callMethod('runPageConfirmOpenE2E')).toMatchObject({
         hasHost: true,
         visible: true,
         hasOnConfirm: true,
@@ -139,7 +108,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
         hasHost: true,
         visible: false,
       })
-      let actionLogs = await page.data('actionLogs')
+      let actionLogs = await page.callMethod('getLayoutFeedbackLogsE2E')
       expect(actionLogs).toContainEqual(expect.stringContaining('页面 Confirm'))
       expect(actionLogs).toContainEqual(expect.stringContaining('点击取消'))
       expect(collector.getSince(marker)).toEqual([])
@@ -151,8 +120,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       await page.waitFor(400)
       marker = collector.mark()
 
-      await tapElement(page, '#layout-feedback-page-confirm-trigger')
-      expect(await waitForDialogVisibility(page, true)).toMatchObject({
+      expect(await page.callMethod('runPageConfirmOpenE2E')).toMatchObject({
         hasHost: true,
         visible: true,
       })
@@ -161,7 +129,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
         hasHost: true,
         visible: false,
       })
-      actionLogs = await page.data('actionLogs')
+      actionLogs = await page.callMethod('getLayoutFeedbackLogsE2E')
       expect(actionLogs).toContainEqual(expect.stringContaining('页面 Confirm'))
       expect(actionLogs).toContainEqual(expect.stringContaining('点击确认'))
 
@@ -182,8 +150,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
 
     await page.waitFor(400)
 
-    await tapElement(page, '#layout-feedback-page-alert-trigger')
-    expect(await waitForDialogVisibility(page, true)).toMatchObject({
+    expect(await page.callMethod('runPageAlertCloseE2E')).toMatchObject({
       hasHost: true,
       visible: true,
     })
@@ -192,8 +159,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       visible: false,
     })
 
-    await tapElement(page, '#layout-feedback-page-confirm-trigger')
-    expect(await waitForDialogVisibility(page, true)).toMatchObject({
+    expect(await page.callMethod('runPageConfirmOpenE2E')).toMatchObject({
       hasHost: true,
       visible: true,
     })
