@@ -5,11 +5,11 @@ description: 面向将原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 的
 
 # native-to-weapp-vite-wevu-migration
 
-## 目的
+## 用途
 
 把原生小程序迁移到 `weapp-vite + wevu + Vue SFC`，遵循“行为等价优先、语义逐步升级、每步可回滚”。
 
-## 触发信号
+## 何时使用
 
 - 用户要把原生 `Page/Component` 迁到 `.vue`。
 - 用户要把 `setData` 重构为响应式状态。
@@ -17,69 +17,32 @@ description: 面向将原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 的
 - 用户要引入 `definePageMeta` / layout / autoRoutes / 受管 TS。
 - 用户要在迁移后让 AI 能稳定使用项目。
 
-## 适用边界
+## 不适用场景
 
 本 skill 聚焦迁移路径和风险治理。
 
-以下情况不应作为主 skill：
+- 普通 weapp-vite 配置问题：使用 `weapp-vite-best-practices`。
+- `.vue` 宏或模板兼容：使用 `weapp-vite-vue-sfc-best-practices`。
+- `wevu` 运行时写法优化：使用 `wevu-best-practices`。
 
-- 只是普通 weapp-vite 配置问题。使用 `weapp-vite-best-practices`。
-- 只是 `.vue` 宏或模板兼容。使用 `weapp-vite-vue-sfc-best-practices`。
-- 只是 `wevu` 运行时写法优化。使用 `wevu-best-practices`。
+## 核心流程
 
-## 快速开始
-
-1. 划分迁移波次。
-2. 固化迁移前基线。
-3. 先机械迁移，再语义迁移。
-4. 每波次都保留回滚点。
-5. 迁移后同步 AI 约束、`prepare`、截图和日志链路。
-
-## 执行流程
-
-1. 锁定迁移边界
-
-- 本轮只明确一个页面族或组件族。
-- 不要把迁移与大规模业务重构绑在一起。
-
-2. 建立迁移前基线
-
-- 记录页面入口、关键交互、关键接口、已知异常。
-- 固化至少一条可复现冒烟路径。
-- 如果后续要做截图验收，先确认目标页面和稳定路由。
-
-3. 机械迁移
-
-- `js/wxml/wxss/json` -> `.vue`
-- 先保持行为等价，不急于做语义升级
-- 组件契约优先迁：
-  - `properties` -> `defineProps`
-  - `triggerEvent` -> `defineEmits`
-  - `observers` -> `watch/watchEffect`
-
-4. 语义迁移
-
-- `this.data/setData` -> `ref/reactive/computed`
-- 引入 `definePageMeta`、layout、routeRules 时保持页面壳子语义明确
-- 平台分支统一收敛到 `import.meta.env.PLATFORM`
-
-5. 工具链和 AI 对齐
-
-- 迁移项目若已安装 `weapp-vite`，优先读：
-  - 根 `AGENTS.md`
-  - `node_modules/weapp-vite/dist/docs/*.md`
-- 迁移完成后优先执行：
-  - `wv prepare`
-- 若项目后续交给 AI 维护，确保这些路径明确：
-  - `截图` -> `wv screenshot`
-  - `截图对比` -> `wv compare`
-  - `日志` -> `wv ide logs --open`
-
-6. 验证与回滚
-
-- 顺序：单页冒烟 -> 定向 e2e -> 关键链路回归
-- 每波次独立提交，保证可单独回滚
-- 如迁移涉及布局、页面结构或视觉回归，再补截图 / compare 验收
+1. 先按页面族或组件族划分迁移波次，不要把迁移和大规模业务重构绑在一起。
+2. 固化迁移前基线：页面入口、关键交互、关键接口、已知异常、至少一条冒烟路径。
+3. 先做机械迁移，再做语义迁移：
+   - `js/wxml/wxss/json` -> `.vue`
+   - `properties` -> `defineProps`
+   - `triggerEvent` -> `defineEmits`
+   - `observers` -> `watch/watchEffect`
+4. 再做运行时升级：
+   - `this.data/setData` -> `ref/reactive/computed`
+   - 页面元信息走 `definePageMeta`
+   - 平台分支收敛到 `import.meta.env.PLATFORM`
+5. 迁移后统一 AI/工具链约束：
+   - 先读根 `AGENTS.md` 与 `node_modules/weapp-vite/dist/docs/*.md`
+   - 先跑 `wv prepare`
+   - 明确 `wv screenshot` / `wv compare` / `wv ide logs --open`
+6. 每波次独立验证并保留回滚点；布局或视觉变化再补截图对比。
 
 ## 约束
 
@@ -88,7 +51,7 @@ description: 面向将原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 的
 - 不要跳过 `prepare` 和 `.weapp-vite` 支持文件验证。
 - 不要只看 dev 环境，不看构建产物和真实运行时。
 
-## 输出要求
+## 输出
 
 应用本 skill 时，输出必须包含：
 
@@ -97,7 +60,7 @@ description: 面向将原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 的
 - 风险点与回滚点。
 - 最小验证命令。
 
-## 完成检查
+## 完成标记
 
 - 页面/组件已完成 `.vue` 化或明确记录留在原生的原因。
 - 状态更新不依赖大对象 `setData`。
