@@ -30,7 +30,7 @@ catalog:
   "@mini-types/alipay": ^3.0.14
   "@tailwindcss/postcss": ^4.2.2
   "@tailwindcss/vite": ^4.2.2
-  "@types/node": ^25.5.1
+  "@types/node": ^25.5.2
   "@types/semver": ^7.7.1
   "@vant/weapp": ^1.11.7
   "@vitejs/plugin-vue": ^6.0.5

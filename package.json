@@ -190,7 +190,7 @@
     "defu": "^6.1.6",
     "es-toolkit": "^1.45.1",
     "esbuild": "catalog:",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "esrap": "^2.2.4",
     "estree-walker": "catalog:",
     "execa": "^9.6.1",
