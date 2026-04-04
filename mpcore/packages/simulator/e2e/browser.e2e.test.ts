@@ -134,6 +134,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('inspectCard')
     bridge.runPageMethod('inspectCardIntersection')
     bridge.runPageMethod('inspectCardMedia')
+    bridge.runPageMethod('inspectCardVideo')
     bridge.runPageMethod('inspectCompoundCard')
     bridge.runPageMethod('inspectScopedComponentQuery')
     bridge.runPageMethod('inspectCompoundSelector')
@@ -693,6 +694,17 @@ describe.sequential('simulator browser e2e', () => {
     )
     expect(resizedMediaSnapshot?.data?.componentMediaMatches).toContain(true)
     expect(resizedMediaSnapshot?.data?.componentMediaMatches).toContain(false)
+    const videoSnapshot = await waitFor(
+      () => bridge.readScopeSnapshot(scopeIds[0]) as Record<string, any> | null,
+      snapshot => Array.isArray(snapshot?.data?.componentVideoLogs) && snapshot.data.componentVideoLogs.length === 4,
+      20_000,
+    )
+    expect(videoSnapshot?.data?.componentVideoLogs).toEqual([
+      'play:{"currentTime":8}',
+      'pause:{"currentTime":8}',
+      'fullscreen:{"currentTime":8,"fullScreen":true}',
+      'fullscreen:{"currentTime":8,"fullScreen":false}',
+    ])
 
     const sessionSnapshot = bridge.sessionSnapshot()
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports')

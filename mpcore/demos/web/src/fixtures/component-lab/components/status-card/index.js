@@ -18,6 +18,7 @@ Component({
     nestedBadge: '',
     componentIntersectionSnapshot: '',
     componentMediaMatches: [],
+    componentVideoLogs: [],
     observerLog: 'cold',
     actionLog: [],
     actionPills: ['warm', 'hot'],
@@ -101,6 +102,29 @@ Component({
         this.setData({
           componentMediaMatches: [...this.data.componentMediaMatches, result.matches],
         })
+      })
+    },
+    inspectComponentVideo() {
+      this.videoContext = wx.createVideoContext('component-video', this)
+      this.videoContext.seek(8)
+      this.videoContext.play()
+      this.videoContext.pause()
+      this.videoContext.requestFullScreen()
+      this.videoContext.exitFullScreen()
+    },
+    handleVideoPlay(event) {
+      this.setData({
+        componentVideoLogs: [...this.data.componentVideoLogs, `play:${JSON.stringify(event?.detail ?? null)}`],
+      })
+    },
+    handleVideoPause(event) {
+      this.setData({
+        componentVideoLogs: [...this.data.componentVideoLogs, `pause:${JSON.stringify(event?.detail ?? null)}`],
+      })
+    },
+    handleVideoFullscreen(event) {
+      this.setData({
+        componentVideoLogs: [...this.data.componentVideoLogs, `fullscreen:${JSON.stringify(event?.detail ?? null)}`],
       })
     },
     applyInternalAction(event) {
