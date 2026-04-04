@@ -796,6 +796,9 @@ Page({
   runCanvasLab() {
     const ctx = wx.createCanvasContext('hero-canvas', this)
     ctx.setFillStyle('#ff5500')
+    ctx.setLineCap('round')
+    ctx.setLineJoin('bevel')
+    ctx.setMiterLimit(6)
     ctx.fillRect(4, 8, 40, 24)
     ctx.save()
     ctx.beginPath()
@@ -864,6 +867,7 @@ Component({
     paint() {
       const ctx = wx.createCanvasContext('inner-canvas', this)
       ctx.setStrokeStyle('#0055ff')
+      ctx.setLineCap('square')
       ctx.setLineWidth(3)
       ctx.save()
       ctx.translate(2, 3)

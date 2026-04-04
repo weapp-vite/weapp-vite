@@ -4632,6 +4632,9 @@ Page({
   },
   runCanvasTransformLab() {
     const ctx = wx.createCanvasContext('hero-canvas', this)
+    ctx.setLineCap('round')
+    ctx.setLineJoin('bevel')
+    ctx.setMiterLimit(5)
     ctx.save()
     ctx.beginPath()
     ctx.rect(2, 3, 16, 10)
@@ -4665,6 +4668,12 @@ Page({
     expect(page.data.snapshot).toContain('"type":"rotate"')
     expect(page.data.snapshot).toContain('"type":"scale"')
     expect(page.data.snapshot).toContain('"type":"restore"')
+    expect(page.data.snapshot).toContain('"type":"setLineCap"')
+    expect(page.data.snapshot).toContain('"type":"setLineJoin"')
+    expect(page.data.snapshot).toContain('"type":"setMiterLimit"')
+    expect(page.data.snapshot).toContain('"lineCap":"round"')
+    expect(page.data.snapshot).toContain('"lineJoin":"bevel"')
+    expect(page.data.snapshot).toContain('"miterLimit":5')
   })
 
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {

@@ -76,6 +76,9 @@ export interface HeadlessWxCanvasSnapshot {
   drawCalls: HeadlessWxCanvasDrawCall[]
   fillStyle: string
   fontSize: number
+  lineCap: string
+  lineJoin: string
+  miterLimit: number
   lineWidth: number
   reserve: boolean
   strokeStyle: string
@@ -102,6 +105,9 @@ export interface HeadlessWxCanvasContext {
   scale: (scaleWidth: number, scaleHeight: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
+  setLineCap: (value: string) => void
+  setLineJoin: (value: string) => void
+  setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
   stroke: () => void

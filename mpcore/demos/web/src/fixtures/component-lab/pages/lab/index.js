@@ -175,6 +175,9 @@ Page({
   runCanvasLab() {
     const ctx = wx.createCanvasContext('lab-canvas', this)
     ctx.setFillStyle('#ff5500')
+    ctx.setLineCap('round')
+    ctx.setLineJoin('bevel')
+    ctx.setMiterLimit(6)
     ctx.fillRect(4, 6, 28, 18)
     ctx.save()
     ctx.beginPath()

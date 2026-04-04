@@ -58,6 +58,9 @@ expectType<{
     drawCalls: Array<{ args: unknown[], type: string }>
     fillStyle: string
     fontSize: number
+    lineCap: string
+    lineJoin: string
+    miterLimit: number
     lineWidth: number
     reserve: boolean
     strokeStyle: string
@@ -74,6 +77,9 @@ expectType<{
   moveTo: (x: number, y: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
+  setLineCap: (value: string) => void
+  setLineJoin: (value: string) => void
+  setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
   stroke: () => void
@@ -86,6 +92,9 @@ browserPage?.wx.createCanvasContext('hero-canvas', browserPage).restore()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).rotate(0.5)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).save()
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).scale(1.2, 0.8)
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineCap('round')
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setLineJoin('bevel')
+browserPage?.wx.createCanvasContext('hero-canvas', browserPage).setMiterLimit(6)
 browserPage?.wx.createCanvasContext('hero-canvas', browserPage).translate(3, 4)
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
@@ -243,6 +252,9 @@ expectType<{
     drawCalls: Array<{ args: unknown[], type: string }>
     fillStyle: string
     fontSize: number
+    lineCap: string
+    lineJoin: string
+    miterLimit: number
     lineWidth: number
     reserve: boolean
     strokeStyle: string
@@ -259,6 +271,9 @@ expectType<{
   moveTo: (x: number, y: number) => void
   setFillStyle: (value: string) => void
   setFontSize: (fontSize: number) => void
+  setLineCap: (value: string) => void
+  setLineJoin: (value: string) => void
+  setMiterLimit: (value: number) => void
   setLineWidth: (value: number) => void
   setStrokeStyle: (value: string) => void
   stroke: () => void
@@ -271,6 +286,9 @@ headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).restore()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).rotate(0.5)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).save()
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).scale(1.2, 0.8)
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineCap('round')
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setLineJoin('bevel')
+headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).setMiterLimit(6)
 headlessPage?.wx.createCanvasContext('hero-canvas', headlessPage).translate(3, 4)
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
