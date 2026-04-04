@@ -53,7 +53,7 @@ export default defineConfig({
 如果你还没跑过 `dev/build`，但希望先把这些支持文件产出来，也可以手动执行：
 
 ```bash
-weapp-vite prepare
+wv prepare
 ```
 
 ## 默认扫描规则

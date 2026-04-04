@@ -14,18 +14,18 @@ keywords:
 
 `@weapp-vite/mcp` 是 `weapp-vite` 官方维护的 MCP 服务实现，目标是把 `weapp-vite / wevu / wevu-compiler` 的关键研发能力暴露给 AI 助手。
 
-在当前版本中，`weapp-vite` 已集成该能力。大多数场景下，你不需要单独使用此包，而是直接通过 `weapp-vite mcp` 启动。
+在当前版本中，`weapp-vite` 已集成该能力。大多数场景下，你不需要单独使用此包，而是直接通过 `wv mcp` 启动。
 
 ## 推荐使用方式
 
 ```bash
-weapp-vite mcp
+wv mcp
 ```
 
 如果你的 AI 客户端支持 `streamable-http`，也可以切换到 HTTP 传输：
 
 ```bash
-weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
 
 ## 何时使用
@@ -54,17 +54,17 @@ pnpm --filter @weapp-vite/mcp start
 
 ### Tools
 
-| Tool                       | 作用                                               | 关键输入                                                |
-| -------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
-| `workspace_catalog`        | 输出暴露包目录、版本、脚本清单                     | 无                                                      |
-| `list_source_files`        | 列出包内文件（默认 `src`）                         | `packageId`、`directory`、`maxResults`                  |
-| `read_source_file`         | 读取源码文件，支持行区间裁剪                       | `packageId`、`filePath`、`startLine`、`endLine`         |
-| `search_source_code`       | 在源码里做关键词检索                               | `query`、`packageId`、`directory`                       |
-| `run_package_script`       | 在指定包目录执行 `pnpm run <script>`               | `packageId`、`script`、`args`                           |
-| `run_weapp_vite_cli`       | 调用 `weapp-vite` CLI                              | `subCommand`、`projectPath`、`platform`、`args`         |
-| `take_weapp_screenshot`    | 显式截图工具，封装 `weapp-vite screenshot --json`  | `projectPath`、`page`、`outputPath`                     |
-| `compare_weapp_screenshot` | 显式截图对比工具，封装 `weapp-vite compare --json` | `projectPath`、`baselinePath`、`page`、`diffOutputPath` |
-| `run_repo_command`         | 执行仓库级白名单命令                               | `command`、`args`、`cwdRelative`                        |
+| Tool                       | 作用                                       | 关键输入                                                |
+| -------------------------- | ------------------------------------------ | ------------------------------------------------------- |
+| `workspace_catalog`        | 输出暴露包目录、版本、脚本清单             | 无                                                      |
+| `list_source_files`        | 列出包内文件（默认 `src`）                 | `packageId`、`directory`、`maxResults`                  |
+| `read_source_file`         | 读取源码文件，支持行区间裁剪               | `packageId`、`filePath`、`startLine`、`endLine`         |
+| `search_source_code`       | 在源码里做关键词检索                       | `query`、`packageId`、`directory`                       |
+| `run_package_script`       | 在指定包目录执行 `pnpm run <script>`       | `packageId`、`script`、`args`                           |
+| `run_weapp_vite_cli`       | 调用 `weapp-vite` CLI                      | `subCommand`、`projectPath`、`platform`、`args`         |
+| `take_weapp_screenshot`    | 显式截图工具，封装 `wv screenshot --json`  | `projectPath`、`page`、`outputPath`                     |
+| `compare_weapp_screenshot` | 显式截图对比工具，封装 `wv compare --json` | `projectPath`、`baselinePath`、`page`、`diffOutputPath` |
+| `run_repo_command`         | 执行仓库级白名单命令                       | `command`、`args`、`cwdRelative`                        |
 
 ### Resources
 
@@ -91,7 +91,7 @@ pnpm --filter @weapp-vite/mcp start
 - `compare_weapp_screenshot`
   - 面向“截图对比 / diff / baseline / 视觉回归 / 像素对比”
 
-这两个工具本质上分别封装了 `weapp-vite screenshot --json` 与 `weapp-vite compare --json`，但对 AI 更容易命中，也更适合在 prompt 里直接点名。
+这两个工具本质上分别封装了 `wv screenshot --json` 与 `wv compare --json`，但对 AI 更容易命中，也更适合在 prompt 里直接点名。
 
 ### `take_weapp_screenshot` 输入参数
 

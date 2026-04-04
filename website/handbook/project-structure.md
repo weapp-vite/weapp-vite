@@ -237,7 +237,7 @@ utils/formatPrice.ts
 
 如果类型提示异常、AI 行为跑偏、下游验证与源码不一致，先检查这三者是否同步。
 
-## 什么时候应该运行 `weapp-vite prepare`
+## 什么时候应该运行 `wv prepare`
 
 优先在这些场景执行：
 
@@ -248,7 +248,7 @@ utils/formatPrice.ts
 - 想在 `dev/build` 之前先把支持文件生成好
 
 ```bash
-weapp-vite prepare
+wv prepare
 ```
 
 如果你是让 AI 进入项目处理问题，也建议它先读：

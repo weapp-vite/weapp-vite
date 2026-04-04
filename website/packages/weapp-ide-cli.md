@@ -21,13 +21,13 @@ keywords:
 
 在 `weapp-vite` 项目里，你通常不必单独记忆两套命令。`weapp-vite` 会在未命中自身命令时自动透传到 `weapp-ide-cli`，所以 `preview`、`upload`、`automator` 等能力也可以直接从 `weapp-vite` 入口调用。
 
-如果你的目标是把 DevTools 里的小程序日志持续桥接到终端，当前更推荐直接使用 `weapp-vite ide logs`。`weapp-ide-cli` 负责底层连接与日志订阅，`weapp-vite` 则补充了 AI 终端自动检测、默认策略与常驻命令封装。
+如果你的目标是把 DevTools 里的小程序日志持续桥接到终端，当前更推荐直接使用 `wv ide logs`。`weapp-ide-cli` 负责底层连接与日志订阅，`weapp-vite` 则补充了 AI 终端自动检测、默认策略与常驻命令封装。
 
 如果你在做 AI 验收，建议把下面这组路由当成默认约定：
 
 - 提到截图、页面快照、runtime screenshot：优先用 `weapp screenshot`
 - 提到截图对比、diff、baseline、视觉回归：优先用 `weapp compare`
-- 提到 DevTools 日志桥接：优先用 `weapp-vite ide logs`
+- 提到 DevTools 日志桥接：优先用 `wv ide logs`
 
 > 使用前请在微信开发者工具开启：`设置 -> 安全设置 -> 服务端口`。
 

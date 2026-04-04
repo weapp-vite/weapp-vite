@@ -184,7 +184,7 @@ export default defineConfig({
 ```
 
 > [!TIP]
-> 如果你不想把“独立分包开发”的配置长期留在主配置里，可以单独新建一个 `vite.config.order.ts`，再用 `weapp-vite dev -c vite.config.order.ts` 运行；生产构建仍用默认的 `vite.config.ts`。
+> 如果你不想把“独立分包开发”的配置长期留在主配置里，可以单独新建一个 `vite.config.order.ts`，再用 `wv dev -c vite.config.order.ts` 运行；生产构建仍用默认的 `vite.config.ts`。
 
 ## 分包样式共享
 
@@ -248,7 +248,7 @@ export default defineConfig({
 ```json
 {
   "scripts": {
-    "analyze": "weapp-vite analyze"
+    "analyze": "wv analyze"
   }
 }
 ```

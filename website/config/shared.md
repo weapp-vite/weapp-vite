@@ -176,9 +176,9 @@ export default defineConfig({
 相关命令：
 
 ```bash
-weapp-vite dev --open
-weapp-vite ide logs
-weapp-vite ide logs --open
+wv dev --open
+wv ide logs
+wv ide logs --open
 ```
 
 ## `weapp.injectWeapi` {#weapp-injectweapi}
@@ -286,7 +286,7 @@ export default defineConfig({
 - `forwardConsole`
 - 自动截图
 - 截图对比
-- `weapp-vite prepare`
+- `wv prepare`
 
 ## 这页和 Vite 原生配置的边界
 

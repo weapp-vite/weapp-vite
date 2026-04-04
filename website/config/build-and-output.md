@@ -88,7 +88,7 @@ export default defineConfig({
 
 - `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`
 - 启用后会按平台读取 `${projectConfigRoot}/${platform}/...` 下的项目配置文件
-- 一般要配合命令行 `--platform` 使用，例如 `weapp-vite build --platform alipay`
+- 一般要配合命令行 `--platform` 使用，例如 `wv build --platform alipay`
 
 适用场景：
 

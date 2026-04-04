@@ -152,7 +152,7 @@ keywords:
 
 1. 将 Web 运行时作为“开发期预览与调试层”，不要直接等价真机验收。
 2. 新增 Web 能力时，同步更新本矩阵，并补齐单测/E2E 用例。
-3. 需要查看 Web 侧静态分析时，可执行 `weapp-vite analyze --platform h5 --json`。
+3. 需要查看 Web 侧静态分析时，可执行 `wv analyze --platform h5 --json`。
 4. 若业务依赖 `⛔` 能力，建议在业务侧提供平台分支与降级策略。
 
 <style scoped>

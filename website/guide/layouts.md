@@ -489,7 +489,7 @@ defineProps<{
 
 如果你在编辑器里没有拿到 layout 类型提示，优先检查：
 
-1. 是否执行过 `weapp-vite prepare`
+1. 是否执行过 `wv prepare`
 2. `tsconfig.json` 是否已经引用 `.weapp-vite/*`
 3. `srcRoot/layouts/**` 是否位于当前项目真实源码根目录下
 

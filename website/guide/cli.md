@@ -15,27 +15,24 @@ keywords:
 
 > 需要调用微信开发者工具能力（`preview/upload/automator/config/screenshot/compare` 等）时，`weapp-vite` 会在未命中自身命令后自动透传到 `weapp-ide-cli`。
 
-> `weapp-vite` CLI 也提供简写命令 `wv`。`weapp-vite dev` 与 `wv dev`、`weapp-vite build` 与 `wv build` 都是等价写法。下文统一使用 `weapp-vite` 作为主示例。
+> `wv` 是 `weapp-vite` 的简写。下文统一使用 `wv` 作为命令示例。
 
 ## 命令格式
 
 ```bash
-weapp-vite [全局参数] <command> [command options]
-# 或
 wv [全局参数] <command> [command options]
 ```
 
 默认命令是 `dev`，也就是：
 
 ```bash
-weapp-vite
 wv
 ```
 
 等价于：
 
 ```bash
-weapp-vite dev
+wv dev
 ```
 
 ## 全局参数
@@ -57,10 +54,6 @@ weapp-vite dev
 用于本地开发与监听构建。
 
 ```bash
-weapp-vite dev [root]
-weapp-vite serve [root]
-weapp-vite [root]
-# 等价写法
 wv dev [root]
 wv serve [root]
 wv [root]
@@ -79,7 +72,7 @@ wv [root]
 
 补充说明：
 
-- 当目标平台为 `weapp` 且启用了 `weapp.forwardConsole` 时，`weapp-vite dev --open` 会在打开微信开发者工具后，自动尝试把小程序 `console` 日志桥接到当前终端。
+- 当目标平台为 `weapp` 且启用了 `weapp.forwardConsole` 时，`wv dev --open` 会在打开微信开发者工具后，自动尝试把小程序 `console` 日志桥接到当前终端。
 - 默认配置是 `enabled: 'auto'`，也就是仅在检测到 AI 终端时自动启用。
 
 ### 2) `build`
@@ -87,8 +80,6 @@ wv [root]
 用于生产构建（支持 watch）。
 
 ```bash
-weapp-vite build [root]
-# 等价写法
 wv build [root]
 ```
 
@@ -113,8 +104,6 @@ wv build [root]
 分析小程序分包产物映射，或输出 Web 静态分析结果。
 
 ```bash
-weapp-vite analyze [root]
-# 等价写法
 wv analyze [root]
 ```
 
@@ -132,8 +121,6 @@ wv analyze [root]
 打开 IDE（微信或支付宝场景由平台决定）。
 
 ```bash
-weapp-vite open [root]
-# 等价写法
 wv open [root]
 ```
 
@@ -148,8 +135,6 @@ wv open [root]
 持续监听微信开发者工具里的小程序日志，并转发到当前终端。
 
 ```bash
-weapp-vite ide logs [root]
-# 等价写法
 wv ide logs [root]
 ```
 
@@ -165,14 +150,14 @@ wv ide logs [root]
 
 - 该命令是常驻进程，按 `Ctrl+C` 退出。
 - 当前仅支持微信小程序平台，不支持 `alipay` / `h5`。
-- 若你只想在开发时自动附加，而不是手动执行此命令，可直接使用 `weapp-vite dev --open` 并配合 `weapp.forwardConsole`。
+- 若你只想在开发时自动附加，而不是手动执行此命令，可直接使用 `wv dev --open` 并配合 `weapp.forwardConsole`。
 
 示例：
 
 ```bash
-weapp-vite ide logs
-weapp-vite ide logs --open
-weapp-vite ide logs ./dist/dev -p weapp
+wv ide logs
+wv ide logs --open
+wv ide logs ./dist/dev -p weapp
 ```
 
 ### 6) `npm`（含别名）
@@ -180,10 +165,6 @@ weapp-vite ide logs ./dist/dev -p weapp
 调用 IDE 的 npm 构建能力。
 
 ```bash
-weapp-vite npm
-weapp-vite build:npm
-weapp-vite build-npm
-# 等价写法
 wv npm
 wv build:npm
 wv build-npm
@@ -194,9 +175,6 @@ wv build-npm
 生成 app / page / component 文件骨架。
 
 ```bash
-weapp-vite generate [filepath]
-weapp-vite g [filepath]
-# 等价写法
 wv generate [filepath]
 wv g [filepath]
 ```
@@ -214,8 +192,6 @@ wv g [filepath]
 初始化项目配置。
 
 ```bash
-weapp-vite init
-# 等价写法
 wv init
 ```
 
@@ -224,8 +200,6 @@ wv init
 预生成 `.weapp-vite` 下的支持文件，包括托管 `tsconfig`、自动路由类型、自动导入组件清单与类型等。
 
 ```bash
-weapp-vite prepare [root]
-# 等价写法
 wv prepare [root]
 ```
 
@@ -240,8 +214,6 @@ wv prepare [root]
 启动 `weapp-vite` MCP 服务（用于 AI 助手接入）。
 
 ```bash
-weapp-vite mcp
-# 等价写法
 wv mcp
 ```
 
@@ -259,8 +231,8 @@ wv mcp
 示例：
 
 ```bash
-weapp-vite mcp
-weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+wv mcp
+wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
 
 不在仓库目录执行时，可选追加 `--workspace-root /path/to/weapp-vite`。
@@ -289,13 +261,11 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 你也可以显式使用命名空间透传：
 
 ```bash
-weapp-vite ide preview --project ./dist -q terminal
-weapp-vite ide upload --project ./dist -v 1.0.0 -d "ci upload"
 wv ide preview --project ./dist -q terminal
 wv ide upload --project ./dist -v 1.0.0 -d "ci upload"
 ```
 
-但 `weapp-vite` 自己保留了 `weapp-vite ide logs` 这个原生命令，不会透传到 `weapp-ide-cli`。
+但 `weapp-vite` 自己保留了 `wv ide logs` 这个原生命令，不会透传到 `weapp-ide-cli`。
 
 完整 IDE 命令列表请参考：
 
@@ -304,21 +274,20 @@ wv ide upload --project ./dist -v 1.0.0 -d "ci upload"
 常见透传示例：
 
 ```bash
-weapp-vite preview --project ./dist -q terminal
-weapp-vite upload --project ./dist -v 1.0.0 -d "ci upload"
-weapp-vite cache --clean compile
-weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
-weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
-weapp-vite cache --clean all
+wv preview --project ./dist -q terminal
+wv upload --project ./dist -v 1.0.0 -d "ci upload"
+wv cache --clean compile
+wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 wv cache --clean all
 ```
 
 高频透传命令里，和 AI 验收最相关的是下面两类：
 
-### `weapp-vite screenshot`
+### `wv screenshot`
 
 ```bash
-weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 ```
 
 关键参数：
@@ -331,10 +300,10 @@ weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index 
 | `--timeout <ms>`   | automator 连接超时            |
 | `--json`           | JSON 输出，适合 AI / 脚本解析 |
 
-### `weapp-vite compare`
+### `wv compare`
 
 ```bash
-weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --current-output .tmp/current.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --current-output .tmp/current.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 ```
 
 关键参数：
@@ -361,42 +330,42 @@ weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --b
 
 ```bash
 # 小程序开发
-weapp-vite dev -p weapp
+wv dev -p weapp
 wv dev -p weapp
 
 # Web 开发（指定 host）
-weapp-vite dev -p h5 --host 0.0.0.0
+wv dev -p h5 --host 0.0.0.0
 wv dev -p h5 --host 0.0.0.0
 
 # 小程序生产构建（不压缩 + 产出 sourcemap）
-weapp-vite build -p weapp --minify false --sourcemap
+wv build -p weapp --minify false --sourcemap
 wv build -p weapp --minify false --sourcemap
 
 # 输出分析 JSON 到文件
-weapp-vite analyze -p weapp --output ./reports/analyze.json
+wv analyze -p weapp --output ./reports/analyze.json
 wv analyze -p weapp --output ./reports/analyze.json
 
 # 预生成 .weapp-vite 支持文件
-weapp-vite prepare
+wv prepare
 wv prepare
 
 # 持续监听 DevTools console
-weapp-vite ide logs --open
+wv ide logs --open
 wv ide logs --open
 
 # 小程序截图采集
-weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 
 # 小程序截图对比
-weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 
 # 透传微信预览命令
-weapp-vite preview --project ./dist -q terminal
+wv preview --project ./dist -q terminal
 wv preview --project ./dist -q terminal
 
 # 清理微信开发者工具缓存
-weapp-vite cache --clean compile
+wv cache --clean compile
 wv cache --clean all
 ```

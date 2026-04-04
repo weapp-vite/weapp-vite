@@ -97,7 +97,7 @@ AI 协作验收：MCP 驱动截图
 场景：
 
 - 构建一个 e2e app
-- 调用 `weapp-vite screenshot`
+- 调用 `wv screenshot`
 - 产出截图文件并给出机器可读结果
 
 来源文档：`website/guide/ai.md`
@@ -112,7 +112,7 @@ AI 协作验收：MCP 驱动截图
 
 ```bash
 # 1) 启动 MCP（本地）
-weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
 
 把下面提示词交给接入 MCP 的 AI 客户端：
@@ -120,7 +120,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 ```text
 你现在连接的是 weapp-vite MCP。
 1. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
-2. 执行 weapp-vite screenshot：
+2. 执行 wv screenshot：
    - project: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
    - page: pages/home/index
    - output: .tmp/mcp-screenshot.png
@@ -669,7 +669,7 @@ flowchart LR
 
 ```bash
 # 案例1：AI + MCP
-weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 
 # 案例2：Tailwind 动态类
 node packages/weapp-vite/bin/weapp-vite.js build e2e-apps/issue-814-tailwind4 --platform weapp --skipNpm

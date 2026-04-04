@@ -82,8 +82,8 @@ keywords:
 
 ## 手动构建
 
-执行命令 `weapp-vite npm` 会调用「微信开发者工具 → 工具 → 构建 npm」，手动构建 `miniprogram_npm`。
+执行命令 `wv npm` 会调用「微信开发者工具 → 工具 → 构建 npm」，手动构建 `miniprogram_npm`。
 
 这相当于你在开发者工具里手动点了一遍“构建 npm”。
 
-> `weapp-vite npm` 别名 `weapp-vite build:npm` / `weapp-vite build-npm`
+> `wv npm` 别名 `wv build:npm` / `wv build-npm`

@@ -22,14 +22,14 @@ keywords:
 
 ## 快速上手
 
-命令形式为 `weapp-vite generate [outDir]`，别名 `weapp-vite g [outDir]`。在执行 `weapp-vite init` 后，`package.json` 中会新增脚本 `pnpm g`，方便在项目中调用。
+命令形式为 `wv generate [outDir]`，别名 `wv g [outDir]`。在执行 `wv init` 后，`package.json` 中会新增脚本 `pnpm g`，方便在项目中调用。
 
 示例：在项目根目录执行：
 
 ```sh
 pnpm g components/avatar
 # 或直接调用二进制
-pnpm weapp-vite g components/avatar
+pnpm wv g components/avatar
 ```
 
 默认会创建如下结构：
@@ -45,7 +45,7 @@ pnpm weapp-vite g components/avatar
 ```
 
 > [!TIP]
-> `weapp-vite init` 会自动把脚本添加到 `package.json`。如果你在现有项目中手动安装了 Weapp-vite，也可以自行补上 `"g": "weapp-vite generate"`。
+> `wv init` 会自动把脚本添加到 `package.json`。如果你在现有项目中手动安装了 Weapp-vite，也可以自行补上 `"g": "wv generate"`。
 
 ## 自定义文件后缀与目录
 

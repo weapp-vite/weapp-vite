@@ -187,7 +187,7 @@ npx skills add sonofmagic/skills
 然后启动 MCP：
 
 ```bash
-weapp-vite mcp
+wv mcp
 ```
 
 如果你不在仓库目录下执行，再补 `--workspace-root /path/to/weapp-vite`。

@@ -48,7 +48,7 @@ keywords:
 import utils from '@/utils'
 ```
 
-运行 `weapp-vite dev` / `weapp-vite build` 时，别名会被自动解析成真实文件位置。
+运行 `wv dev` / `wv build` 时，别名会被自动解析成真实文件位置。
 
 > [!TIP]
 > 默认场景建议直接使用原生 `resolve.tsconfigPaths`。如果需要指定多个 `tsconfig` 或忽略某些目录，再在 `vite.config.ts` 中通过 [`weapp.tsconfigPaths`](/config/js.md#weapp-tsconfigpaths) 传入对象启用 `vite-tsconfig-paths` 的高级选项。

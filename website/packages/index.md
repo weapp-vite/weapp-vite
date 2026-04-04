@@ -23,11 +23,11 @@ keywords:
 - 新建项目后，希望把推荐的 AI skills 一并装好：用 `create-weapp-vite` 的 skills 安装选项
 - 想让新项目默认带上 AI 工作流约束：用 `create-weapp-vite` 生成的 `AGENTS.md`
 - 在 CI/脚本里调用微信开发者工具：用 `weapp-ide-cli`
-- 想做小程序运行时截图：优先用 `weapp-vite screenshot` 或 `weapp screenshot`
-- 想做截图对比 / visual regression：优先用 `weapp-vite compare` 或 `weapp compare`
-- 想把 DevTools 里的小程序日志桥接回 AI 终端：优先用 `weapp-vite ide logs`，底层能力由 `weapp-ide-cli` 提供
-- 想让 AI 助手直接理解并操作仓库：用 `@weapp-vite/mcp`，或直接执行 `weapp-vite mcp`
-- 想先把类型支持文件、自动路由类型和自动导入组件类型生成出来：先运行 `weapp-vite prepare`
+- 想做小程序运行时截图：优先用 `wv screenshot` 或 `weapp screenshot`
+- 想做截图对比 / visual regression：优先用 `wv compare` 或 `weapp compare`
+- 想把 DevTools 里的小程序日志桥接回 AI 终端：优先用 `wv ide logs`，底层能力由 `weapp-ide-cli` 提供
+- 想让 AI 助手直接理解并操作仓库：用 `@weapp-vite/mcp`，或直接执行 `wv mcp`
+- 想先把类型支持文件、自动路由类型和自动导入组件类型生成出来：先运行 `wv prepare`
 - 需要“打包后执行配置文件”：用 `rolldown-require`
 - 想追踪 Vite 插件耗时瓶颈：用 `vite-plugin-performance`
 - 想在非 Vite 场景复用 Wevu 编译能力：用 `@wevu/compiler`
@@ -60,4 +60,4 @@ keywords:
 
 - `rolldown-require-bench` 主要用于基准测试，不建议直接作为业务依赖。
 - `@weapp-vite/web` 仍偏实验用途，适合技术验证、浏览器预览与 Web 侧调试。
-- `@weapp-vite/mcp` 已被 `weapp-vite` CLI 集成，通常直接使用 `weapp-vite mcp` 即可；如果你希望 AI 更稳定命中截图与截图对比，也可以直接调用 `take_weapp_screenshot` 与 `compare_weapp_screenshot`。
+- `@weapp-vite/mcp` 已被 `weapp-vite` CLI 集成，通常直接使用 `wv mcp` 即可；如果你希望 AI 更稳定命中截图与截图对比，也可以直接调用 `take_weapp_screenshot` 与 `compare_weapp_screenshot`。

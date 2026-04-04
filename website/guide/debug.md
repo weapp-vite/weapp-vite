@@ -70,7 +70,7 @@ pnpm dev --open
 想手动进入持续监听模式时，可执行：
 
 ```sh
-weapp-vite ide logs --open
+wv ide logs --open
 ```
 
 这个方式适合：

@@ -13,9 +13,9 @@ keywords:
   - 补齐必需的配置文件
 ---
 
-# `weapp-vite init` 做了什么？
+# `wv init` 做了什么？
 
-`weapp-vite init` 是在现有原生项目上接入 Weapp-vite 的最快方式。它会检查当前目录结构、补齐必需的配置文件，然后提示你后续可以手动调整的地方。本节逐步拆解各项改动，方便团队在需要时自行定制或纯手动迁移。
+`wv init` 是在现有原生项目上接入 Weapp-vite 的最快方式。它会检查当前目录结构、补齐必需的配置文件，然后提示你后续可以手动调整的地方。本节逐步拆解各项改动，方便团队在需要时自行定制或纯手动迁移。
 
 > [!TIP]
 > 如果你更倾向于完全手工搭建，也可以把下面每一小节视为 Checklist，按需执行对应步骤。
@@ -37,9 +37,9 @@ keywords:
 ```json
 {
   "scripts": {
-    "dev": "weapp-vite dev",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
+    "dev": "wv dev",
+    "build": "wv build",
+    "open": "wv open",
     "lint": "eslint . --ext .ts,.js --fix"
   }
 }
@@ -82,7 +82,7 @@ export default defineConfig({
 
 ---
 
-完成 `weapp-vite init` 后，建议依次执行：
+完成 `wv init` 后，建议依次执行：
 
 1. `pnpm install` 安装依赖；
 2. `pnpm dev --open` 验证项目能在微信开发者工具中正常运行；

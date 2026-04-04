@@ -44,7 +44,7 @@ date: 2026-03-04
 
 - `packages/weapp-vite/src/defaults.ts`：`mcp` 默认启用（`enabled: true`，`autoStart: false`）。
 - `packages/weapp-vite/src/mcp.ts`：实现服务启动与配置解析，支持 `stdio` 和 `streamable-http`。
-- `packages/weapp-vite/src/cli/commands/mcp.ts`：提供 `weapp-vite mcp` 命令入口。
+- `packages/weapp-vite/src/cli/commands/mcp.ts`：提供 `wv mcp` 命令入口。
 
 工程含义很直接：
 你不是在“让 AI 猜你的项目结构”，而是在“把项目能力显式暴露给 AI”。

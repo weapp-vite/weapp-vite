@@ -174,7 +174,7 @@ export default defineConfig(env => ({
 优先排查这几项：
 
 1. 是否从 `weapp-vite/config` 导入 `defineConfig`
-2. 是否已经执行过 `weapp-vite prepare`
+2. 是否已经执行过 `wv prepare`
 3. 根 `tsconfig.json` 是否包含 `.weapp-vite` 生成的引用或类型输出
 4. 是否误把小程序字段写到了 Vite 顶层，而不是 `weapp` 下
 

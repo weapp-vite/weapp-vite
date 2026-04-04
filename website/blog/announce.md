@@ -72,7 +72,7 @@ date: 2025-05-06
 ```sh
 npm i -D weapp-vite
 # 执行初始化命令
-npx weapp-vite init
+npx wv init
 ```
 
 于是就初始化成功了！然后再执行一下安装包的命令，去安装智能提示的类型定义

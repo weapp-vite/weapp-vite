@@ -173,9 +173,9 @@ pnpm dev
 如果你当前是在 AI 终端里工作，还可以顺手记住这三个高频命令：
 
 ```bash
-weapp-vite prepare
-weapp-vite ide logs --open
-weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/home/index --output .tmp/home.png --json
+wv prepare
+wv ide logs --open
+wv screenshot --project ./dist/build/mp-weixin --page pages/home/index --output .tmp/home.png --json
 ```
 
 它们分别对应：
@@ -266,7 +266,7 @@ definePageJson(() => ({
 | 页面能否被编译      | `dist/pages/**` 是否生成 `json/js/wxml/wxss` |
 | 页面能否响应更新    | 响应式 API 是否从 `wevu` 导入                |
 | 页面能否在 IDE 打开 | 开发者工具根目录是否指向正确产物             |
-| 类型提示是否稳定    | 是否执行过 `weapp-vite prepare`              |
+| 类型提示是否稳定    | 是否执行过 `wv prepare`                      |
 | AI 是否读对项目说明 | 是否先读取根目录 `AGENTS.md`                 |
 
 ## 9. 接下来该学什么

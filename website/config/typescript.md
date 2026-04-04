@@ -45,16 +45,16 @@ keywords:
 
 这些文件会在以下命令中自动生成或刷新：
 
-- `weapp-vite dev`
-- `weapp-vite build`
-- `weapp-vite open`
-- `weapp-vite analyze`
-- `weapp-vite prepare`
+- `wv dev`
+- `wv build`
+- `wv open`
+- `wv analyze`
+- `wv prepare`
 
 如果你希望在编辑器、CI、AI 工具接入前先预热类型产物，推荐显式执行：
 
 ```bash
-weapp-vite prepare
+wv prepare
 ```
 
 ## `weapp.typescript` {#weapp-typescript}
@@ -159,7 +159,7 @@ export default defineConfig({
 
 建议按这个顺序迁移：
 
-1. 先执行一次 `weapp-vite prepare`
+1. 先执行一次 `wv prepare`
 2. 确认 `.weapp-vite/*` 已生成
 3. 再逐步把根 `tsconfig.json` 收敛到托管 `references`
 4. 最后在 `weapp.typescript` 里补团队自己的覆盖项
@@ -183,7 +183,7 @@ export default defineConfig({
 
 优先检查：
 
-1. 是否已执行 `weapp-vite prepare`
+1. 是否已执行 `wv prepare`
 2. 根 `tsconfig.json` 是否包含 `.weapp-vite` 产物
 3. 是否使用了 `weapp-vite/config` 的 `defineConfig`
 

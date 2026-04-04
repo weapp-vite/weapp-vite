@@ -162,7 +162,7 @@ bun dev --open # 已开启服务端口时自动打开微信开发者工具
 > 想手动进入持续监听模式时，可直接执行：
 >
 > ```sh
-> weapp-vite ide logs --open
+> wv ide logs --open
 > # 或
 > wv ide logs --open
 > ```
@@ -240,7 +240,7 @@ bun i
 
 完成后，小程序 API 类型声明、`weapp-vite` 生成的支持文件，以及后续可选的自动路由 / 自动导入组件类型文件，都会逐步接入到编辑器提示体系里。
 
-> 想要一步步把现有项目接入 Weapp-vite：参考[《手动集成》](/guide/manual-integration)。想知道 CLI 初始化做了哪些改动：阅读 [`weapp-vite init 做了什么?`](/deep/init)。
+> 想要一步步把现有项目接入 Weapp-vite：参考[《手动集成》](/guide/manual-integration)。想知道 CLI 初始化做了哪些改动：阅读 [`wv init 做了什么?`](/deep/init)。
 
 ## 常用命令
 
@@ -252,8 +252,7 @@ bun i
 pnpm dev
 pnpm dev --open # 已开启服务端口时自动打开微信开发者工具
 pnpm dev -o # 已开启服务端口时自动打开微信开发者工具
-weapp-vite ide logs --open # 持续监听 DevTools console，并桥接回终端
-wv ide logs --open # 与 weapp-vite ide logs --open 等价
+wv ide logs --open # 持续监听 DevTools console，并桥接回终端
 ```
 
 命令会启动监听构建。保存后会自动重新编译并同步到开发目录；如果已开启服务端口，也可以配合 `--open` 直接拉起微信开发者工具。
@@ -280,17 +279,15 @@ pnpm open
 
 ```sh
 # 直接透传（推荐在脚本中使用）
-weapp-vite preview --project ./dist/build/mp-weixin
-weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
-weapp-vite config lang en
-weapp-vite screenshot --project ./dist/build/mp-weixin --json
-weapp-vite compare --project ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-pixels 100 --json
 wv preview --project ./dist/build/mp-weixin
+wv upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+wv config lang en
+wv screenshot --project ./dist/build/mp-weixin --json
+wv compare --project ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-pixels 100 --json
 
 # 或使用命名空间透传
-weapp-vite ide preview --project ./dist/build/mp-weixin
-weapp-vite ide config show
 wv ide preview --project ./dist/build/mp-weixin
+wv ide config show
 ```
 
 > [!WARNING]

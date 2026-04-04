@@ -17,9 +17,9 @@ description: 项目脚本与依赖入口，通常承载 dev、build、open 等 w
 ```json
 {
   "scripts": {
-    "dev": "weapp-vite dev",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open"
+    "dev": "wv dev",
+    "build": "wv build",
+    "open": "wv open"
   }
 }
 ```

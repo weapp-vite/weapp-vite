@@ -160,7 +160,7 @@ flowchart LR
 - `packages/weapp-vite/src/mcp.ts`
   - 提供 `stdio` / `streamable-http`
 - `packages/weapp-vite/src/cli/commands/mcp.ts`
-  - 直接支持 `weapp-vite mcp`
+  - 直接支持 `wv mcp`
 
 结论：AI 不是外挂窗口，而是工程内角色。
 
@@ -315,7 +315,7 @@ flowchart LR
 
 - 开发初期优先 `duplicate`（先保证体验）
 - 稳定期结合数据评估是否切 `hoist`
-- 使用 `weapp-vite analyze` 定期审查跨包共享与冗余
+- 使用 `wv analyze` 定期审查跨包共享与冗余
 - 设定冗余体积告警阈值（`duplicateWarningBytes`）
 
 <v-click>
@@ -496,7 +496,7 @@ flowchart LR
 
 # 第 1 周：基线盘点
 
-- 跑一次 `weapp-vite analyze`，输出包体与共享模块图
+- 跑一次 `wv analyze`，输出包体与共享模块图
 - 盘点当前 HMR 耗时波动区间
 - 梳理样式体系现状：token、组件、重复率
 - 明确 AI 协作入口（Skills/MCP/llms）

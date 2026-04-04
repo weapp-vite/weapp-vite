@@ -131,7 +131,7 @@ sudo sysctl -p
 - **优先操作**：
 
 ```bash
-weapp-vite prepare
+wv prepare
 ```
 
 - **补充说明**：
@@ -151,8 +151,8 @@ weapp-vite prepare
 推荐命令：
 
 ```bash
-weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
-weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
+wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
+wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 ```
 
 ## 终端里看不到小程序日志？
@@ -160,10 +160,10 @@ weapp-vite compare --project ./dist/build/mp-weixin --page pages/index/index --b
 优先使用：
 
 ```bash
-weapp-vite ide logs --open
+wv ide logs --open
 ```
 
-如果项目启用了 `weapp.forwardConsole.enabled = 'auto'`，AI 终端场景下 `weapp-vite dev --open` 也可能自动附加日志桥。
+如果项目启用了 `weapp.forwardConsole.enabled = 'auto'`，AI 终端场景下 `wv dev --open` 也可能自动附加日志桥。
 
 ## 修改源码后，下游验证结果还是旧的？
 
@@ -172,7 +172,7 @@ weapp-vite ide logs --open
 先重建相关包，再做下游验证：
 
 ```bash
-pnpm --filter weapp-vite build
+pnpm --filter wv build
 ```
 
 ---

@@ -32,7 +32,7 @@ date: 2026-03-04
 
 文档里已经把协作路径写得很清楚了：`Skills` 负责给 AI 固定流程，`MCP` 负责把仓库能力暴露给 AI，`llms.txt` 负责给模型稳定喂上下文（见 `/guide/ai`）。
 
-这件事在源码里不是口号。`packages/weapp-vite/src/defaults.ts` 里，`mcp` 默认就是启用状态（`enabled: true`，`autoStart: false`）；`packages/weapp-vite/src/mcp.ts` 和 `src/cli/commands/mcp.ts` 直接提供了 `weapp-vite mcp` 的启动入口，支持 `stdio` 和 `streamable-http` 两种传输。
+这件事在源码里不是口号。`packages/weapp-vite/src/defaults.ts` 里，`mcp` 默认就是启用状态（`enabled: true`，`autoStart: false`）；`packages/weapp-vite/src/mcp.ts` 和 `src/cli/commands/mcp.ts` 直接提供了 `wv mcp` 的启动入口，支持 `stdio` 和 `streamable-http` 两种传输。
 
 这意味着，AI 在这个体系里不是“另一个聊天窗口”，而是一个能真实读仓库、跑命令、走工程规则的参与者。
 

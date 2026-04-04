@@ -150,7 +150,7 @@ export default <UserConfig>{
 如果你需要在编辑器或 CI 预热阶段提前生成这些文件，可以执行：
 
 ```bash
-weapp-vite prepare
+wv prepare
 ```
 
 ## 常见疑问

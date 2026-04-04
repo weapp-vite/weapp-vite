@@ -90,7 +90,7 @@ $playwright-cli
 - `node_modules/weapp-vite/dist/docs/README.md`
 - `node_modules/weapp-vite/dist/docs/mcp.md`
 
-这样 AI 会先基于你当前安装版本的本地说明工作，再去执行 `weapp-vite screenshot`、`weapp-vite compare`、`weapp-vite ide logs --open` 或其他 CLI 命令。
+这样 AI 会先基于你当前安装版本的本地说明工作，再去执行 `wv screenshot`、`wv compare`、`wv ide logs --open` 或其他 CLI 命令。
 
 如果项目本身就是通过 `create-weapp-vite` 创建的，还应优先读取项目根目录的 `AGENTS.md`。这个文件由脚手架自动生成，里面会把截图、截图对比、日志桥接等 AI 意图路由预先写好。
 
@@ -99,11 +99,11 @@ $playwright-cli
 如果你希望 AI 在自然语言里稳定命中 mini-program runtime 能力，建议把下面这组映射写进项目级 `AGENTS.md`：
 
 - 提到 `截图`、`页面快照`、`runtime screenshot`
-  - 默认使用 `weapp-vite screenshot` / `wv screenshot`
+  - 默认使用 `wv screenshot`
 - 提到 `截图对比`、`diff`、`baseline`、`视觉回归`、`像素对比`
-  - 默认使用 `weapp-vite compare` / `wv compare`
+  - 默认使用 `wv compare`
 - 提到 `DevTools 日志`、`运行时日志`
-  - 默认使用 `weapp-vite ide logs --open` / `wv ide logs --open`
+  - 默认使用 `wv ide logs --open`
 
 除非目标明确是 Web runtime，否则不要退化成普通浏览器截图工具。
 
@@ -117,23 +117,23 @@ $playwright-cli
 1. `take_weapp_screenshot`
 2. `compare_weapp_screenshot`
 
-它们分别对应 `weapp-vite screenshot --json` 与 `weapp-vite compare --json`，比泛化的“browser screenshot”类工具更稳定。
+它们分别对应 `wv screenshot --json` 与 `wv compare --json`，比泛化的“browser screenshot”类工具更稳定。
 
 手动启动（推荐）：
 
 ```bash
-weapp-vite mcp
+wv mcp
 ```
 
 需要 HTTP 连接时：
 
 ```bash
-weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
 
 可选：不在仓库目录执行时，再加 `--workspace-root /path/to/weapp-vite`。
 
-### 示例：驱动 weapp-vite screenshot 做验收
+### 示例：驱动 wv screenshot 做验收
 
 前置条件：
 
@@ -146,7 +146,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图验收：
 1. 先阅读 node_modules/weapp-vite/dist/docs/index.md 和 node_modules/weapp-vite/dist/docs/mcp.md，确认当前版本的本地说明。
 2. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
-3. 执行 weapp-vite screenshot，参数如下：
+3. 执行 wv screenshot，参数如下：
    - project: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
    - page: pages/home/index
    - output: .tmp/mcp-screenshot.png
@@ -162,7 +162,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 1. AI 输出 `screenshot-ok`。
 2. 工作区产出 `.tmp/mcp-screenshot.png`。
 
-### 示例：驱动 weapp-vite compare 做验收
+### 示例：驱动 wv compare 做验收
 
 可直接复制的提示词：
 
@@ -170,7 +170,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图对比验收：
 1. 先阅读 node_modules/weapp-vite/dist/docs/index.md、node_modules/weapp-vite/dist/docs/ai-workflows.md 和 node_modules/weapp-vite/dist/docs/mcp.md。
 2. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
-3. 如果 MCP 提供 `compare_weapp_screenshot` 工具，优先使用它；否则执行 `weapp-vite compare`，参数如下：
+3. 如果 MCP 提供 `compare_weapp_screenshot` 工具，优先使用它；否则执行 `wv compare`，参数如下：
    - projectPath: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
    - page: pages/home/index
    - baselinePath: .screenshots/baseline/home.png
@@ -213,7 +213,7 @@ pnpm dev --open
 如果你希望手动进入持续监听模式，而不依赖自动检测，可执行：
 
 ```bash
-weapp-vite ide logs --open
+wv ide logs --open
 ```
 
 这个命令会：
@@ -227,12 +227,12 @@ weapp-vite ide logs --open
 
 为了减少 AI 误用普通浏览器工具，建议统一约定以下优先级：
 
-| 用户意图                                  | 默认工具                                                            |
-| ----------------------------------------- | ------------------------------------------------------------------- |
-| 截图、页面快照、runtime screenshot        | `weapp-vite screenshot` / `wv screenshot` / `take_weapp_screenshot` |
-| 截图对比、baseline、diff、视觉回归        | `weapp-vite compare` / `wv compare` / `compare_weapp_screenshot`    |
-| DevTools 日志、运行时日志、小程序 console | `weapp-vite ide logs --open` / `wv ide logs --open`                 |
-| 读取当前安装版本的本地说明                | `node_modules/weapp-vite/dist/docs/*.md`                            |
+| 用户意图                                  | 默认工具                                  |
+| ----------------------------------------- | ----------------------------------------- |
+| 截图、页面快照、runtime screenshot        | `wv screenshot` / `take_weapp_screenshot` |
+| 截图对比、baseline、diff、视觉回归        | `wv compare` / `compare_weapp_screenshot` |
+| DevTools 日志、运行时日志、小程序 console | `wv ide logs --open`                      |
+| 读取当前安装版本的本地说明                | `node_modules/weapp-vite/dist/docs/*.md`  |
 
 只有当目标明确是 Web runtime，而不是微信开发者工具里的小程序运行时，才改用浏览器自动化、网页截图或 Playwright 一类 Web 工具。
 
@@ -243,7 +243,7 @@ weapp-vite ide logs --open
 ```text
 请在当前 weapp-vite 项目里帮我做一次 DevTools 终端联调：
 1. 用 weapp 平台启动开发命令，并打开微信开发者工具。
-2. 如果当前终端没有自动看到小程序 console，请改用 `weapp-vite ide logs --open` 进入持续监听。
+2. 如果当前终端没有自动看到小程序 console，请改用 `wv ide logs --open` 进入持续监听。
 3. 复现页面操作后，汇总终端里看到的 console 输出、warn、error 和未捕获异常。
 4. 最后给出结论：问题是否已经复现、最关键的日志是哪一条、下一步建议改哪里。
 ```

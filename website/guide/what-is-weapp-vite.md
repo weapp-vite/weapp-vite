@@ -32,16 +32,16 @@ keywords:
 - **工程化开箱即用**：默认支持 TypeScript、PostCSS、Sass/Less、Tailwind CSS、JSONC 等常用特性，并提供 `pnpm create weapp-vite` 和 `pnpm g` 等脚手架命令。
 - **小程序特色增强**：自动构建 `miniprogram_npm`、智能分包依赖分析、自动组件注册、WeChat Developer Tools CLI 集成。
 - **良好的调试体验**：保存即热更新、详细的构建日志、`weapp.debug` 钩子帮助排查路径解析、产物归属等问题。
-- **AI 协作内建**：内置 `weapp-vite mcp`、`weapp-vite ide logs`、运行时截图与截图对比，并通过 `create-weapp-vite` 默认生成 `AGENTS.md`。
+- **AI 协作内建**：内置 `wv mcp`、`wv ide logs`、运行时截图与截图对比，并通过 `create-weapp-vite` 默认生成 `AGENTS.md`。
 
 ## 现在不只是构建器
 
 在当前版本里，`weapp-vite` 更像一整条“小程序研发工具链”，常见能力可以按这几层理解：
 
 - **项目创建**：`create-weapp-vite` 负责模板、依赖版本对齐、`AGENTS.md`、推荐 AI skills 安装。
-- **开发与构建**：`weapp-vite dev/build/prepare/analyze/open` 负责工程主链路。
+- **开发与构建**：`wv dev/build/prepare/analyze/open` 负责工程主链路。
 - **IDE 自动化**：通过 `weapp-ide-cli` 透传 `preview/upload/config/screenshot/compare` 等命令。
-- **AI 协作**：通过 `weapp-vite mcp`、`take_weapp_screenshot`、`compare_weapp_screenshot`、`weapp-vite ide logs --open` 把真实项目能力暴露给 AI。
+- **AI 协作**：通过 `wv mcp`、`take_weapp_screenshot`、`compare_weapp_screenshot`、`wv ide logs --open` 把真实项目能力暴露给 AI。
 - **运行时**：`wevu` 负责响应式、生命周期、store 与最小化 `setData` 更新。
 
 如果你把它只理解成“把原生小程序改成 Vite 构建”，就会错过当前版本很大一部分能力面。
@@ -59,7 +59,7 @@ keywords:
 
 ## 迁移与生态
 
-- `weapp-vite init` 支持在现有原生项目上直接生成配置，沿用原目录结构即可。
+- `wv init` 支持在现有原生项目上直接生成配置，沿用原目录结构即可。
 - 构建产物完全兼容微信开发者工具，分包、插件、Worker 等官方能力都可以继续使用。
 - 通过 Vite 插件体系可以快速接入 Tailwind CSS、UnoCSS、自动化测试、Rollup 插件等生态资源。
 
@@ -73,9 +73,9 @@ keywords:
 这两者会告诉 AI：
 
 - 先读当前安装版本的本地文档，而不是依赖过时网站或模型记忆
-- 提到截图时优先使用 `weapp-vite screenshot`
-- 提到截图对比时优先使用 `weapp-vite compare`
-- 提到 DevTools 日志时优先使用 `weapp-vite ide logs --open`
+- 提到截图时优先使用 `wv screenshot`
+- 提到截图对比时优先使用 `wv compare`
+- 提到 DevTools 日志时优先使用 `wv ide logs --open`
 
 这也是为什么当前文档里会反复强调 AI 工作流、MCP 与 DevTools 日志桥接。
 

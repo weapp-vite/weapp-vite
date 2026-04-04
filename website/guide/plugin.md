@@ -127,10 +127,10 @@ dist-plugin/
   ```json
   {
     "scripts": {
-      "dev": "weapp-vite dev",
-      "dev:open": "weapp-vite dev -o",
-      "build": "weapp-vite build",
-      "open": "weapp-vite open"
+      "dev": "wv dev",
+      "dev:open": "wv dev -o",
+      "build": "wv build",
+      "open": "wv open"
     }
   }
   ```

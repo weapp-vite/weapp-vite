@@ -237,7 +237,7 @@ export {
 
 `weapp-vite` 内置了生成脚手架工具，可快速生成一系列文件（如 `js`、`wxml`、`wxss` 和 `json`），用于提升开发效率。
 
-最基础的用法只需要 `weapp-vite g [outDir]`
+最基础的用法只需要 `wv g [outDir]`
 
 详情请参考：[生成脚手架文档](https://vite.icebreaker.top/guide/generate.html)。
 
