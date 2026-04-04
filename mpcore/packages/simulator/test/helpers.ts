@@ -778,6 +778,15 @@ export function createCanvasContextFixture() {
   })
   writeJson(path.join(root, 'dist/app.json'), {
     pages: ['pages/canvas/index', 'pages/profile/index'],
+    window: {
+      backgroundColor: '#fefefe',
+      backgroundColorBottom: '#eeeeee',
+      backgroundColorTop: '#ffffff',
+      backgroundTextStyle: 'light',
+      navigationBarBackgroundColor: '#112233',
+      navigationBarTextStyle: 'white',
+      navigationBarTitleText: 'App Shell',
+    },
     tabBar: {
       list: [
         { pagePath: 'pages/canvas/index', text: 'Canvas' },
@@ -787,6 +796,13 @@ export function createCanvasContextFixture() {
   })
   writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
   writeJson(path.join(root, 'dist/pages/canvas/index.json'), {
+    backgroundColor: '#101010',
+    backgroundColorBottom: '#202020',
+    backgroundColorTop: '#303030',
+    backgroundTextStyle: 'dark',
+    navigationBarBackgroundColor: '#abc123',
+    navigationBarTextStyle: 'black',
+    navigationBarTitleText: 'Canvas Title',
     usingComponents: {
       'canvas-probe': '../../components/canvas-probe/index',
     },
@@ -834,6 +850,13 @@ Page({
     tabBarHideDotInfo: '',
     tabBarBadgeInfo: '',
     tabBarRemoveBadgeInfo: '',
+    navigationBarTitleInfo: '',
+    navigationBarColorInfo: '',
+    navigationBarLoadingShownInfo: '',
+    navigationBarLoadingHiddenInfo: '',
+    backgroundLightInfo: '',
+    backgroundColorInfo: '',
+    backgroundInvalidInfo: '',
     textMeasureWidth: 0,
   },
   runCanvasLab() {
@@ -1284,6 +1307,83 @@ Page({
       complete: (result) => {
         this.setData({
           tabBarRemoveBadgeInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  updateNavigationTitleLab() {
+    wx.setNavigationBarTitle({
+      title: 'Canvas Updated',
+      success: (result) => {
+        this.setData({
+          navigationBarTitleInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  updateNavigationColorLab() {
+    wx.setNavigationBarColor({
+      frontColor: '#ffffff',
+      backgroundColor: '#135790',
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn',
+      },
+      complete: (result) => {
+        this.setData({
+          navigationBarColorInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  showNavigationLoadingLab() {
+    wx.showNavigationBarLoading({
+      success: (result) => {
+        this.setData({
+          navigationBarLoadingShownInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  hideNavigationLoadingLab() {
+    wx.hideNavigationBarLoading({
+      complete: (result) => {
+        this.setData({
+          navigationBarLoadingHiddenInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setLightBackgroundLab() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'light',
+      success: (result) => {
+        this.setData({
+          backgroundLightInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setBackgroundColorLab() {
+    wx.setBackgroundColor({
+      backgroundColor: '#444444',
+      backgroundColorTop: '#555555',
+      backgroundColorBottom: '#666666',
+      success: (result) => {
+        this.setData({
+          backgroundColorInfo: JSON.stringify(result),
+        })
+      },
+    })
+  },
+  setInvalidBackgroundLab() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'weird',
+      fail: (error) => {
+        this.setData({
+          backgroundInvalidInfo: JSON.stringify({
+            error: error.message,
+          }),
         })
       },
     })

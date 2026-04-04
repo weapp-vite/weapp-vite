@@ -1,4 +1,11 @@
 {
+  "navigationBarBackgroundColor": "#abc123",
+  "navigationBarTitleText": "Lab Title",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#101010",
+  "backgroundColorBottom": "#202020",
+  "backgroundColorTop": "#303030",
+  "backgroundTextStyle": "dark",
   "usingComponents": {
     "status-card": "../../components/status-card/index"
   }
