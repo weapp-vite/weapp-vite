@@ -1,5 +1,3 @@
-import type { Buffer } from 'node:buffer'
-
 declare module 'pngjs' {
   export class PNG {
     constructor(options?: { width?: number, height?: number })
@@ -7,8 +5,8 @@ declare module 'pngjs' {
     height: number
     data: Uint8Array
     static sync: {
-      read: (buffer: Buffer) => PNG
-      write: (png: PNG) => Buffer
+      read: (buffer: import('node:buffer').Buffer) => PNG
+      write: (png: PNG) => import('node:buffer').Buffer
     }
   }
 }
