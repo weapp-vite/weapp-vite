@@ -969,6 +969,40 @@ Page({
       },
     })
   },
+  chooseMessageFileLab() {
+    wx.chooseMessageFile({
+      count: 3,
+      extension: ['png', 'pdf', 'mp4'],
+      type: 'all',
+      success: (result) => {
+        this.setData({
+          chosenMessageFileInfo: JSON.stringify(result),
+        })
+        const imageFile = result.tempFiles.find(file => file.type === 'png')
+        const videoFile = result.tempFiles.find(file => file.type === 'mp4')
+        if (imageFile?.path) {
+          wx.getImageInfo({
+            src: imageFile.path,
+            success: (imageInfo) => {
+              this.setData({
+                chosenMessageFileImageDetail: JSON.stringify(imageInfo),
+              })
+            },
+          })
+        }
+        if (videoFile?.path) {
+          wx.getVideoInfo({
+            src: videoFile.path,
+            success: (videoInfo) => {
+              this.setData({
+                chosenMessageFileVideoDetail: JSON.stringify(videoInfo),
+              })
+            },
+          })
+        }
+      },
+    })
+  },
   compressChosenImageLab() {
     wx.chooseImage({
       count: 1,
