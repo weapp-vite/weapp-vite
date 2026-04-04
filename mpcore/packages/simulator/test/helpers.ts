@@ -795,6 +795,8 @@ Page({
     canvasImageInfoMissing: '',
     previewImageInfo: '',
     previewImageInvalidInfo: '',
+    chosenImageInfo: '',
+    chosenImageDetail: '',
     tempVideoSavedInfo: '',
     tempVideoSavedMissingInfo: '',
     canvasTempFileContent: '',
@@ -935,6 +937,26 @@ Page({
       },
     })
   },
+  chooseImageLab() {
+    wx.chooseImage({
+      count: 2,
+      sizeType: ['compressed'],
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          chosenImageInfo: JSON.stringify(result),
+        })
+        wx.getImageInfo({
+          src: result.tempFilePaths[0],
+          success: (imageInfo) => {
+            this.setData({
+              chosenImageDetail: JSON.stringify(imageInfo),
+            })
+          },
+        })
+      },
+    })
+  },
   saveTempVideoLab() {
     const fs = wx.getFileSystemManager()
     const filePath = 'headless://wxfile/temp/fixture-video.mp4'
@@ -1000,6 +1022,8 @@ Page({
 <view>{{canvasImageInfoMissing}}</view>
 <view>{{previewImageInfo}}</view>
 <view>{{previewImageInvalidInfo}}</view>
+<view>{{chosenImageInfo}}</view>
+<view>{{chosenImageDetail}}</view>
 <view>{{tempVideoSavedInfo}}</view>
 <view>{{tempVideoSavedMissingInfo}}</view>
 <view>{{canvasTempFilePath}}</view>

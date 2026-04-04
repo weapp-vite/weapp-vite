@@ -4812,6 +4812,55 @@ Page({
     })
   })
 
+  it('supports chooseImage in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    detailSummary: '',
+    chooseSummary: ''
+  },
+  runChooseImageLab() {
+    wx.chooseImage({
+      count: 2,
+      sizeType: ['compressed'],
+      sourceType: ['album'],
+      success: (result) => {
+        this.setData({
+          chooseSummary: JSON.stringify(result),
+        })
+        wx.getImageInfo({
+          src: result.tempFilePaths[0],
+          success: (imageInfo) => {
+            this.setData({
+              detailSummary: JSON.stringify(imageInfo),
+            })
+          },
+        })
+      },
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{chooseSummary}}</view><view>{{detailSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runChooseImageLab()
+
+    expect(page.data.chooseSummary).toContain('"errMsg":"chooseImage:ok"')
+    expect(page.data.chooseSummary).toContain('headless://wxfile/temp/chosen-image-01.jpg')
+    expect(page.data.chooseSummary).toContain('headless://wxfile/temp/chosen-image-02.jpg')
+    expect(page.data.detailSummary).toContain('"errMsg":"getImageInfo:ok"')
+    expect(page.data.detailSummary).toContain('"type":"jpeg"')
+    expect(page.data.detailSummary).toContain('"width":160')
+    expect(page.data.detailSummary).toContain('"height":120')
+  })
+
   it('supports saveVideoToPhotosAlbum for temp files in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

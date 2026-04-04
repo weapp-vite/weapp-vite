@@ -213,6 +213,15 @@ expectType<{ errMsg: string } | undefined>(browserPage?.wx.previewImage({
   current: 'headless://wxfile/temp/0001',
   urls: ['headless://wxfile/temp/0001'],
 }))
+expectType<{
+  errMsg: string
+  tempFilePaths: string[]
+  tempFiles: Array<{ path: string, size: number }>
+} | undefined>(browserPage?.wx.chooseImage({
+  count: 2,
+  sizeType: ['compressed'],
+  sourceType: ['album'],
+}))
 expectType<{ abort: () => void }>(browserPage?.wx.downloadFile({
   url: 'https://mock.mpcore.dev/files/report.txt',
   success: (result) => {
@@ -481,6 +490,15 @@ expectType<{
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.previewImage({
   current: 'headless://wxfile/temp/0001',
   urls: ['headless://wxfile/temp/0001'],
+}))
+expectType<{
+  errMsg: string
+  tempFilePaths: string[]
+  tempFiles: Array<{ path: string, size: number }>
+} | undefined>(headlessPage?.wx.chooseImage({
+  count: 2,
+  sizeType: ['compressed'],
+  sourceType: ['album'],
 }))
 expectType<{ abort: () => void }>(headlessPage?.wx.downloadFile({
   url: 'https://mock.mpcore.dev/files/report.txt',

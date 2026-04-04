@@ -180,6 +180,16 @@ interface HeadlessCanvasTempFilePayload {
   }
 }
 
+interface HeadlessChosenImageTempFilePayload {
+  config: {
+    fileType: string
+    height: number
+    sizeType: string[]
+    sourceType: string[]
+    width: number
+  }
+}
+
 function byteLength(input: string) {
   return textEncoder.encode(input).byteLength
 }
@@ -218,7 +228,7 @@ function inferImageType(filePath: string, fileContent: string) {
 
 function inferImageSize(fileContent: string) {
   try {
-    const payload = JSON.parse(fileContent) as HeadlessCanvasTempFilePayload
+    const payload = JSON.parse(fileContent) as HeadlessCanvasTempFilePayload | HeadlessChosenImageTempFilePayload
     return {
       height: payload?.config?.destHeight ?? payload?.config?.height ?? 0,
       width: payload?.config?.destWidth ?? payload?.config?.width ?? 0,
@@ -1066,6 +1076,43 @@ export function createHeadlessWxState() {
       ensureDirectoryTree(tempFilePath)
       files.set(tempFilePath, String(fileContent))
       return tempFilePath
+    },
+    chooseImage(option: {
+      count?: number
+      sizeType?: string[]
+      sourceType?: string[]
+    }) {
+      const count = Number.isFinite(option.count)
+        ? Math.max(1, Math.min(9, Math.trunc(option.count ?? 1)))
+        : 9
+      const sizeType = Array.isArray(option.sizeType) && option.sizeType.length > 0
+        ? option.sizeType.filter((item): item is string => typeof item === 'string')
+        : ['original']
+      const sourceType = Array.isArray(option.sourceType) && option.sourceType.length > 0
+        ? option.sourceType.filter((item): item is string => typeof item === 'string')
+        : ['album', 'camera']
+      const fileType = sizeType.includes('compressed') ? 'jpg' : 'png'
+      const tempFiles = Array.from({ length: count }, (_, index) => {
+        const payload = JSON.stringify({
+          config: {
+            fileType,
+            height: 120 + (index * 8),
+            sizeType: [...sizeType],
+            sourceType: [...sourceType],
+            width: 160 + (index * 12),
+          },
+        })
+        const path = this.createTempFile(payload, `headless://wxfile/temp/chosen-image-${String(index + 1).padStart(2, '0')}.${fileType}`)
+        return {
+          path,
+          size: payload.length,
+        }
+      })
+      return {
+        errMsg: 'chooseImage:ok',
+        tempFilePaths: tempFiles.map(item => item.path),
+        tempFiles,
+      }
     },
     getNetworkType(): HeadlessWxGetNetworkTypeResult {
       return {
