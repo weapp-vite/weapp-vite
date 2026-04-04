@@ -17,6 +17,7 @@ import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
+import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
@@ -240,6 +241,7 @@ export class HeadlessSession {
       () => this.getApp(),
       {
         createAnimation: option => this.createAnimation(option),
+        createCanvasContext: (canvasId, scope) => this.createCanvasContext(canvasId, scope),
         createIntersectionObserver: (scope, options) => this.createIntersectionObserver(scope, options),
         createVideoContext: (videoId, scope) => this.createVideoContext(videoId, scope),
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
@@ -1232,6 +1234,34 @@ export class HeadlessSession {
 
   private createAnimation(option?: import('../host').HeadlessWxAnimationStepOption) {
     return createHeadlessAnimation(option)
+  }
+
+  private createCanvasContext(canvasId: string, scope?: Record<string, any>) {
+    return createHeadlessCanvasContext(
+      {
+        renderCurrentPage: () => this.renderCurrentPage(),
+        resolveScope: (value) => {
+          const current = this.currentPageInstance
+          if (!value || value === current) {
+            return {
+              kind: 'page' as const,
+            }
+          }
+          const scopeId = this.getScopeIdForComponent(value as HeadlessComponentInstance)
+          if (!scopeId) {
+            return {
+              kind: 'missing' as const,
+            }
+          }
+          return {
+            kind: 'component' as const,
+            scopeId,
+          }
+        },
+      },
+      canvasId,
+      scope,
+    )
   }
 
   private createIntersectionObserver(

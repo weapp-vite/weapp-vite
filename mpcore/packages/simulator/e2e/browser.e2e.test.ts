@@ -131,6 +131,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runIntersectionObserverLab')
     bridge.runPageMethod('runMediaQueryObserverLab')
     bridge.runPageMethod('runAnimationLab')
+    bridge.runPageMethod('runCanvasLab')
     bridge.triggerResize(412, 915)
     bridge.runPageMethod('runFileManagerLab')
     bridge.runPageMethod('runMissingStatLab')
@@ -171,6 +172,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.intersectionObserverSnapshot
           && pageData.mediaQueryObserverSnapshot
           && pageData.animationSnapshot
+          && pageData.canvasSnapshot
           && pageData.videoContextSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
@@ -223,6 +225,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.mediaQueryObserverSnapshot).toContain('"width":412')
     expect(pageData.animationSnapshot).toContain('"type":"opacity"')
     expect(pageData.animationSnapshot).toContain('"type":"rotate"')
+    expect(pageData.canvasSnapshot).toContain('"canvasId":"lab-canvas"')
+    expect(pageData.canvasSnapshot).toContain('"type":"drawImage"')
     expect(pageData.videoContextSnapshot).toContain('"phase":"fullscreen"')
     expect(pageData.videoContextSnapshot).toContain('"currentTime":6')
     expect(pageData.videoContextSnapshot).toContain('"fullScreen":false')

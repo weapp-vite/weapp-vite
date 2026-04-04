@@ -769,6 +769,78 @@ Page({
   return root
 }
 
+export function createCanvasContextFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-canvas-context-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/canvas/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeJson(path.join(root, 'dist/pages/canvas/index.json'), {
+    usingComponents: {
+      'canvas-probe': '../../components/canvas-probe/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/pages/canvas/index.js'), `
+Page({
+  data: {
+    canvasSnapshot: '',
+    componentCanvasSnapshot: '',
+  },
+  runCanvasLab() {
+    const ctx = wx.createCanvasContext('hero-canvas', this)
+    ctx.setFillStyle('#ff5500')
+    ctx.fillRect(4, 8, 40, 24)
+    ctx.draw(false, () => {
+      this.setData({
+        canvasSnapshot: JSON.stringify(ctx.__getSnapshot())
+      })
+    })
+  },
+  runComponentCanvasLab() {
+    this.selectComponent('#canvas-probe')?.paint()
+  },
+  handleCanvasPaint(event) {
+    this.setData({
+      componentCanvasSnapshot: JSON.stringify(event?.detail ?? null)
+    })
+  },
+})
+`)
+  writeText(path.join(root, 'dist/pages/canvas/index.wxml'), `
+<canvas canvas-id="hero-canvas"></canvas>
+<canvas-probe id="canvas-probe" bind:paint="handleCanvasPaint" />
+<view>{{canvasSnapshot}}</view>
+<view>{{componentCanvasSnapshot}}</view>
+`)
+  writeJson(path.join(root, 'dist/components/canvas-probe/index.json'), {})
+  writeScript(path.join(root, 'dist/components/canvas-probe/index.js'), `
+Component({
+  methods: {
+    paint() {
+      const ctx = wx.createCanvasContext('inner-canvas', this)
+      ctx.setStrokeStyle('#0055ff')
+      ctx.setLineWidth(3)
+      ctx.strokeRect(10, 12, 30, 18)
+      ctx.draw(false, () => {
+        this.triggerEvent('paint', ctx.__getSnapshot(), {
+          bubbles: true,
+          composed: true,
+        })
+      })
+    },
+  },
+})
+`)
+  writeText(path.join(root, 'dist/components/canvas-probe/index.wxml'), '<canvas canvas-id="inner-canvas"></canvas>\n')
+
+  return root
+}
+
 export function createAppLifecycleFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-app-lifecycle-'))
 

@@ -4541,6 +4541,43 @@ Page({
     expect(page.data.followup).toBe('{"actions":[]}')
   })
 
+  it('supports createCanvasContext with reserve semantics in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    snapshot: ''
+  },
+  runCanvasLab() {
+    const ctx = wx.createCanvasContext('hero-canvas', this)
+    ctx.setFillStyle('#ff5500')
+    ctx.fillRect(0, 0, 20, 10)
+    ctx.draw(false)
+    ctx.drawImage('/tmp/report.png', 4, 6, 12, 8)
+    ctx.draw(true, () => {
+      this.setData({
+        snapshot: JSON.stringify(ctx.__getSnapshot())
+      })
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<canvas canvas-id="hero-canvas"></canvas><view>{{snapshot}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runCanvasLab()
+
+    expect(page.data.snapshot).toContain('"canvasId":"hero-canvas"')
+    expect(page.data.snapshot).toContain('"type":"fillRect"')
+    expect(page.data.snapshot).toContain('"type":"drawImage"')
+    expect(page.data.snapshot).toContain('"reserve":true')
+  })
+
   it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
