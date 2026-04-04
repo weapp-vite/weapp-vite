@@ -164,7 +164,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
     - the local verification server starts successfully
     - native `fetch` cases pass
     - but third-party request clients such as `axios` or `graphql-request` fail with the same `URL is not a constructor` or similar `URL` / `URLSearchParams` constructor error
-    then treat it as a WeChat DevTools runtime compatibility defect first, not an app/business regression first.
+      then treat it as a WeChat DevTools runtime compatibility defect first, not an app/business regression first.
   - For the above platform defect pattern:
     - minimize the reproduction first
     - record the limitation in a GitHub issue
@@ -175,7 +175,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
     - pure newline-only rewrites in `project.config.json`
     - generated `docs/reports/**`
     - other DevTools-touched files unrelated to the task
-    Clean these before staging so the commit contains only intentional source/test changes.
+      Clean these before staging so the commit contains only intentional source/test changes.
 - For GitHub issue fixes (especially cases mapped to `e2e-apps/github-issues`), follow this order strictly:
   - Before starting the fix, create a local `git worktree` from the mainline branch and do the issue work inside that isolated worktree.
   - Create the worktree inside this repository's writable area (for example `.codex-tmp/<issue>`); do not place issue worktrees in directories outside the repository root, because external directories may not be writable in the agent environment.
@@ -225,12 +225,9 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - This repo ships user-facing skills under `skills/*`:
   - `weapp-vite-best-practices`
   - `docs-and-website-sync`
-  - `github-issue-fix-workflow`
   - `release-and-changeset-best-practices`
   - `weapp-devtools-e2e-best-practices`
-  - `weapp-ide-cli-best-practices`
   - `weapp-vite-vue-sfc-best-practices`
-  - `weapp-vite-wevu-performance-best-practices`
   - `wevu-best-practices`
   - `native-to-weapp-vite-wevu-migration`
 - Recommended remote install source for all public skills is `sonofmagic/skills`:

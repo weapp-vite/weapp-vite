@@ -59,9 +59,9 @@ export function createAgentsGuidelines(templateName: TemplateName) {
     '',
     '- Recommend installing shared skills with `npx skills add sonofmagic/skills`.',
     '- In Codex/Claude environments, prefer these skills first when available:',
-    '  - `$weapp-vite-best-practices` for config, build, subpackage, route, and CLI orchestration work.',
+    '  - `$weapp-vite-best-practices` for config, build, subpackage, route, DevTools CLI orchestration, and screenshot/compare command work.',
     '  - `$weapp-vite-vue-sfc-best-practices` for `.vue` SFC macros, JSON blocks, and template compatibility.',
-    '  - `$weapp-ide-cli-best-practices` for DevTools automation, screenshot, preview, upload, and config commands.',
+    '  - `$release-and-changeset-best-practices` for issue delivery, changesets, release decisions, and PR workflow.',
     '  - `$docs-and-website-sync` when documentation or AI guidance must be refreshed together with code changes.',
   ]
 

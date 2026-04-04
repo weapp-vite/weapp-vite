@@ -1,11 +1,11 @@
 interface:
   display_name: Wevu Best Practices
-  short_description: wevu 生命周期、layout、router、事件契约与 store 约束
+  short_description: wevu 生命周期、layout、router、store 与运行时性能治理
   default_prompt: >-
     当任务主轴是 wevu pages/components/stores 的运行时行为、生命周期注册、
-    layout、router、事件契约、`bindModel`、`storeToRefs`，或 AI 应如何继续编写
-    wevu 业务代码时，使用 $wevu-best-practices。优先保持小程序语义，不套用
-    Vue Web-only 假设。若主轴转为 `.vue` 宏或模板编译，切到
+    layout、router、事件契约、`bindModel`、`storeToRefs`，或小程序卡顿、掉帧、
+    白屏、切页慢、内存告警等运行时性能治理时，使用 $wevu-best-practices。
+    优先保持小程序语义，不套用 Vue Web-only 假设。若主轴转为 `.vue` 宏或模板编译，切到
     $weapp-vite-vue-sfc-best-practices；若主轴转为项目级 `weapp-vite` 配置与构建，
     切到 $weapp-vite-best-practices。
 

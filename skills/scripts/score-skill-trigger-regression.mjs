@@ -20,21 +20,21 @@ const EXPECTED_BY_ID = {
   G3: 'docs-and-website-sync',
   G4: 'docs-and-website-sync',
   G5: 'weapp-vite-best-practices',
-  H1: 'github-issue-fix-workflow',
-  H2: 'github-issue-fix-workflow',
-  H3: 'github-issue-fix-workflow',
-  H4: 'github-issue-fix-workflow',
+  H1: 'release-and-changeset-best-practices',
+  H2: 'release-and-changeset-best-practices',
+  H3: 'release-and-changeset-best-practices',
+  H4: 'release-and-changeset-best-practices',
   H5: 'docs-and-website-sync',
   I1: 'weapp-devtools-e2e-best-practices',
   I2: 'weapp-devtools-e2e-best-practices',
   I3: 'weapp-devtools-e2e-best-practices',
   I4: 'weapp-devtools-e2e-best-practices',
-  I5: 'weapp-ide-cli-best-practices',
+  I5: 'weapp-vite-best-practices',
   J1: 'release-and-changeset-best-practices',
   J2: 'release-and-changeset-best-practices',
   J3: 'release-and-changeset-best-practices',
   J4: 'release-and-changeset-best-practices',
-  J5: 'github-issue-fix-workflow',
+  J5: 'release-and-changeset-best-practices',
   B1: 'weapp-vite-vue-sfc-best-practices',
   B2: 'weapp-vite-vue-sfc-best-practices',
   B3: 'weapp-vite-vue-sfc-best-practices',
@@ -50,84 +50,38 @@ const EXPECTED_BY_ID = {
   D3: 'native-to-weapp-vite-wevu-migration',
   D4: 'native-to-weapp-vite-wevu-migration',
   D5: 'weapp-vite-best-practices',
-  E1: 'weapp-ide-cli-best-practices',
-  E2: 'weapp-ide-cli-best-practices',
-  E3: 'weapp-ide-cli-best-practices',
-  E4: 'weapp-ide-cli-best-practices',
+  E1: 'weapp-vite-best-practices',
+  E2: 'weapp-vite-best-practices',
+  E3: 'weapp-vite-best-practices',
+  E4: 'weapp-vite-best-practices',
   E5: 'weapp-vite-best-practices',
-  F1: 'weapp-vite-wevu-performance-best-practices',
-  F2: 'weapp-vite-wevu-performance-best-practices',
-  F3: 'weapp-vite-wevu-performance-best-practices',
-  F4: 'weapp-vite-wevu-performance-best-practices',
+  F1: 'wevu-best-practices',
+  F2: 'wevu-best-practices',
+  F3: 'wevu-best-practices',
+  F4: 'wevu-best-practices',
   F5: 'weapp-vite-best-practices',
   X1: 'weapp-vite-vue-sfc-best-practices',
   X2: 'native-to-weapp-vite-wevu-migration',
   X3: 'weapp-vite-vue-sfc-best-practices',
-  X4: 'weapp-ide-cli-best-practices',
-  X5: 'weapp-vite-wevu-performance-best-practices',
+  X4: 'weapp-vite-best-practices',
+  X5: 'wevu-best-practices',
   X6: 'docs-and-website-sync',
-  X7: 'github-issue-fix-workflow',
+  X7: 'release-and-changeset-best-practices',
   X8: 'weapp-devtools-e2e-best-practices',
-  X9: 'github-issue-fix-workflow',
+  X9: 'release-and-changeset-best-practices',
 }
-
-const MAIN_IDS = new Set([
-  'A1',
-  'A2',
-  'A3',
-  'A4',
-  'B1',
-  'B2',
-  'B3',
-  'B4',
-  'C1',
-  'C2',
-  'C3',
-  'C4',
-  'D1',
-  'D2',
-  'D3',
-  'D4',
-  'E1',
-  'E2',
-  'E3',
-  'E4',
-  'F1',
-  'F2',
-  'F3',
-  'F4',
-  'G1',
-  'G2',
-  'G3',
-  'G4',
-  'H1',
-  'H2',
-  'H3',
-  'H4',
-  'I1',
-  'I2',
-  'I3',
-  'I4',
-  'J1',
-  'J2',
-  'J3',
-  'J4',
-])
 
 const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5', 'E5', 'F5', 'G5', 'H5', 'I5', 'J5'])
 const CONFLICT_IDS = new Set(['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9'])
 
-const SKILL_BY_GROUP = {
-  A: 'weapp-vite-best-practices',
-  B: 'weapp-vite-vue-sfc-best-practices',
-  C: 'wevu-best-practices',
-  D: 'native-to-weapp-vite-wevu-migration',
-  E: 'weapp-ide-cli-best-practices',
-  F: 'weapp-vite-wevu-performance-best-practices',
-  G: 'docs-and-website-sync',
-  H: 'github-issue-fix-workflow',
-  I: 'weapp-devtools-e2e-best-practices',
-  J: 'release-and-changeset-best-practices',
+const MAIN_SKILL_CASES = {
+  'weapp-vite-best-practices': ['A1', 'A2', 'A3', 'A4', 'E1', 'E2', 'E3', 'E4'],
+  'weapp-vite-vue-sfc-best-practices': ['B1', 'B2', 'B3', 'B4'],
+  'wevu-best-practices': ['C1', 'C2', 'C3', 'C4', 'F1', 'F2', 'F3', 'F4'],
+  'native-to-weapp-vite-wevu-migration': ['D1', 'D2', 'D3', 'D4'],
+  'docs-and-website-sync': ['G1', 'G2', 'G3', 'G4'],
+  'weapp-devtools-e2e-best-practices': ['I1', 'I2', 'I3', 'I4'],
+  'release-and-changeset-best-practices': ['H1', 'H2', 'H3', 'H4', 'J1', 'J2', 'J3', 'J4'],
 }
 
 function parseArgs(argv) {
@@ -241,13 +195,11 @@ function calc(rows) {
   const filledRows = evaluated.filter(item => item.hasActual)
   const totalPass = filledRows.filter(item => item.pass).length
 
-  const perSkill = Object.entries(SKILL_BY_GROUP).map(([group, skill]) => {
-    const ids = [...MAIN_IDS].filter(id => id.startsWith(group))
+  const perSkill = Object.entries(MAIN_SKILL_CASES).map(([skill, ids]) => {
     const items = evaluated.filter(item => ids.includes(item.id))
     const filled = items.filter(item => item.hasActual)
     const pass = filled.filter(item => item.pass).length
     return {
-      group,
       skill,
       pass,
       filled: filled.length,
@@ -318,7 +270,7 @@ function printHuman(report, filePath) {
   console.log(`- Pass: ${report.overall.passCount}/${report.overall.filledCount} (${toPercent(report.overall.passCount, report.overall.filledCount)})`)
   console.log('')
 
-  console.log('Main Skill Hit Rate (A1-4/B1-4/C1-4/D1-4/E1-4/F1-4/G1-4/H1-4/I1-4/J1-4)')
+  console.log('Main Skill Hit Rate')
   for (const item of report.perSkill) {
     console.log(`- ${item.skill}: ${item.pass}/${item.filled} (${toPercent(item.pass, item.filled)}) | rule(pass>=3): ${formatGate(item.passThreshold)}`)
   }

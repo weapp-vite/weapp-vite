@@ -21,7 +21,7 @@ description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools ru
 
 本 skill 聚焦 DevTools runtime e2e。
 
-- CLI 设计和命令分发：使用 `weapp-ide-cli-best-practices`。
+- CLI 设计和命令分发：使用 `weapp-vite-best-practices`。
 - 构建配置：使用 `weapp-vite-best-practices`。
 - `wevu` 运行时语义：使用 `wevu-best-practices`。
 

@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-best-practices
-description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、自动路由、routeRules/layout、自动导入组件、分包、npm、多平台、受管 TypeScript、`prepare`、`forwardConsole`、`mcp`、`screenshot/compare/ide logs`、Web runtime、lib mode、worker、`dist/docs`、脚手架 `AGENTS.md` 与 AI skills 安装等当前能力。
+description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite` 依赖项目的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、自动路由、routeRules/layout、自动导入组件、分包、npm、多平台、受管 TypeScript、`prepare`、`forwardConsole`、`mcp`、`screenshot/compare/ide logs`、Web runtime、lib mode、worker、`dist/docs`、脚手架 `AGENTS.md`、AI skills 安装，以及与 `weapp-ide-cli` 的命令治理和透传边界。
 ---
 
 # weapp-vite-best-practices
@@ -15,10 +15,11 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 用户要排查输出缺页、路径不对、自动路由不生效、layout 不生效。
 - 用户要接入分包、npm 落位、多平台、worker、web runtime、lib mode。
 - 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
+- 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、透传边界、`preview/upload/open/config` 这类 DevTools CLI 能力。
 
 ## 不适用场景
 
-本 skill 聚焦项目级架构、构建编排和 AI 工作流对齐。
+本 skill 聚焦项目级架构、CLI 所有权、构建编排和 AI 工作流对齐。
 
 - `.vue` 宏和模板兼容：使用 `weapp-vite-vue-sfc-best-practices`。
 - `wevu` 生命周期、状态和事件：使用 `wevu-best-practices`。
@@ -45,13 +46,17 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - AI / 调试：`weapp.forwardConsole`、`weapp.mcp`、`wv screenshot`、`wv compare`、`wv ide logs --open`
    - 产物与结构：`subPackages`、`npm`、`chunks`、`worker`
    - 进阶链路：`web`、`lib`
-4. 常见症状先分诊：
+4. CLI 与 IDE 所有权保持清晰：
+   - `weapp-vite` 原生命令优先
+   - `weapp-ide-cli` 只在 catalog 命中后透传
+   - `preview` / `upload` / `open` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
+   - 不要让未知命令盲目 passthrough
+5. 常见症状先分诊：
    - 输出路径不对：查 `srcRoot`、project config、`build.outDir`
    - `.weapp-vite` 类型异常：先跑 `wv prepare`
    - 页面 / layout 不对：查 `autoRoutes`、`routeRules`、`definePageMeta`
    - 自动导入异常：查 `autoImportComponents` 与 resolver
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
-5. CLI 所有权保持清晰：`weapp-vite` 原生命令优先，`weapp-ide-cli` 仅在 catalog 命中后透传，`wv` 视为等价别名。
 6. 验证按最小范围进行；若改了 `packages/*/src/**`，下游验证前先重建对应包，并明确 `dist sync: rebuilt weapp-vite before downstream validation`。
 
 ## 约束
@@ -60,6 +65,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 不要把 Web runtime 当作小程序真机等价运行时。
 - 不要忽略 `AGENTS.md` 和 `dist/docs`，它们是当前 AI 合约的一部分。
 - 不要让 `weapp-vite` 和 `weapp-ide-cli` 命令名单分裂。
+- 不要让 `screenshot` / `compare` / `ide logs` 的文件和 JSON 合约漂移。
 
 ## 输出
 
@@ -83,3 +89,5 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - `references/config-playbook.md`
 - `references/debug-playbook.md`
 - `references/cli-dispatch-playbook.md`
+- `references/ide-command-playbook.md`
+- `references/ide-i18n-config-playbook.md`

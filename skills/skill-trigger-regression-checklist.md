@@ -2,18 +2,15 @@
 
 ## 目标
 
-验证以下 10 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 7 个主 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
 - `docs-and-website-sync`
-- `github-issue-fix-workflow`
 - `release-and-changeset-best-practices`
 - `weapp-devtools-e2e-best-practices`
-- `weapp-ide-cli-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
 - `native-to-weapp-vite-wevu-migration`
-- `weapp-vite-wevu-performance-best-practices`
 
 ## 执行方式
 
@@ -122,36 +119,36 @@ pnpm skills:score:json
 5. 边界提问：我们现在不是迁移，只是优化现有 weapp-vite 的分包配置。
    预期 skill：`weapp-vite-best-practices`
 
-### E. weapp-ide-cli-best-practices
+### E. weapp-vite-best-practices（吸收 CLI 治理）
 
 1. 提问：请把 `weapp-ide-cli` 的命令整理成统一目录导出，让上游 CLI 可以判断是否透传，尤其是 `screenshot` 这种 AI 会直接用到的命令。
-   预期 skill：`weapp-ide-cli-best-practices`
+   预期 skill：`weapp-vite-best-practices`
 
 2. 提问：`weapp-vite` / `wv` 和 `weapp-ide-cli` 的命令分发优先级该怎么设计，避免 `screenshot`、`open` 这些命令冲突？
-   预期 skill：`weapp-ide-cli-best-practices`
+   预期 skill：`weapp-vite-best-practices`
 
 3. 提问：`weapp-ide-cli` 的报错文案默认中文，但要支持切换英文，配置应该怎么落地？
-   预期 skill：`weapp-ide-cli-best-practices`
+   预期 skill：`weapp-vite-best-practices`
 
 4. 提问：我需要给 `weapp-ide-cli` 新增 `config import/export/doctor` 的规范和测试策略。
-   预期 skill：`weapp-ide-cli-best-practices`
+   预期 skill：`weapp-vite-best-practices`
 
 5. 边界提问：我们现在只想优化 `vite.config.ts` 的分包和 chunk，不改 CLI。
    预期 skill：`weapp-vite-best-practices`
 
-### F. weapp-vite-wevu-performance-best-practices
+### F. wevu-best-practices（吸收性能治理）
 
 1. 提问：页面滚动明显掉帧，怀疑是 `onPageScroll` 里频繁 `setData`，该怎么系统排查？
-   预期 skill：`weapp-vite-wevu-performance-best-practices`
+   预期 skill：`wevu-best-practices`
 
 2. 提问：首屏还行，但页面切换经常慢半拍甚至白屏，我想按导航链路做性能治理。
-   预期 skill：`weapp-vite-wevu-performance-best-practices`
+   预期 skill：`wevu-best-practices`
 
 3. 提问：商品图片列表在 iPhone 上容易触发内存告警，`wevu` 这边该怎么收敛资源和缓存？
-   预期 skill：`weapp-vite-wevu-performance-best-practices`
+   预期 skill：`wevu-best-practices`
 
 4. 提问：想给 `weapp-vite + wevu` 项目建一套性能基线、回归信号和回滚开关，应该怎么设计？
-   预期 skill：`weapp-vite-wevu-performance-best-practices`
+   预期 skill：`wevu-best-practices`
 
 5. 边界提问：我们主要是想调 `subpackage` 和 `sharedStrategy`，提升首开速度，先看哪个 skill？
    预期 skill：`weapp-vite-best-practices`
@@ -173,19 +170,19 @@ pnpm skills:score:json
 5. 边界提问：我不是要同步文档，我是要改 `vite.config.ts` 的分包策略。
    预期 skill：`weapp-vite-best-practices`
 
-### H. github-issue-fix-workflow
+### H. release-and-changeset-best-practices（吸收 issue workflow）
 
 1. 提问：这个 GitHub issue 我想按仓库流程修，先在仓库里的可写目录建 worktree，并补一个最小复现。
-   预期 skill：`github-issue-fix-workflow`
+   预期 skill：`release-and-changeset-best-practices`
 
 2. 提问：请把这个 bug 先放进 `e2e-apps/github-issues` 复现，再分析根因和修复。
-   预期 skill：`github-issue-fix-workflow`
+   预期 skill：`release-and-changeset-best-practices`
 
 3. 提问：我需要一个从 issue 复现、补单测、补 e2e 到开 PR 的完整闭环。
-   预期 skill：`github-issue-fix-workflow`
+   预期 skill：`release-and-changeset-best-practices`
 
 4. 提问：这个线上 bug 已经有 issue 了，帮我按 worktree + changeset + 中文 PR + CI 跟进的标准流程处理。
-   预期 skill：`github-issue-fix-workflow`
+   预期 skill：`release-and-changeset-best-practices`
 
 5. 边界提问：我只是要更新 AI 文档入口，不是修 issue。
    预期 skill：`docs-and-website-sync`
@@ -205,7 +202,7 @@ pnpm skills:score:json
    预期 skill：`weapp-devtools-e2e-best-practices`
 
 5. 边界提问：我现在不是写 IDE e2e，而是设计 `weapp-ide-cli` 的 automator 命令。
-   预期 skill：`weapp-ide-cli-best-practices`
+   预期 skill：`weapp-vite-best-practices`
 
 ### J. release-and-changeset-best-practices
 
@@ -222,7 +219,7 @@ pnpm skills:score:json
    预期 skill：`release-and-changeset-best-practices`
 
 5. 边界提问：我现在不是准备发版，而是要补 GitHub issue 的复现和 PR 闭环。
-   预期 skill：`github-issue-fix-workflow`
+   预期 skill：`release-and-changeset-best-practices`
 
 ## 冲突场景回归
 
@@ -239,27 +236,27 @@ pnpm skills:score:json
    预期次 skill：`weapp-vite-best-practices`
 
 4. 提问：我在 `weapp-vite` 里执行 `preview/upload`，想知道该走原生命令还是 `weapp-ide-cli` 透传。
-   预期主 skill：`weapp-ide-cli-best-practices`
+   预期主 skill：`weapp-vite-best-practices`
    预期次 skill：`weapp-vite-best-practices`
 
 5. 提问：页面切换慢，同时 `onUnload` 里还有一堆运行时状态清理，先按性能还是运行时语义来拆？
-   预期主 skill：`weapp-vite-wevu-performance-best-practices`
+   预期主 skill：`wevu-best-practices`
    预期次 skill：`wevu-best-practices`
 
 6. 提问：CLI 能力刚变了，我既要更新站点说明，也要梳理命令归属和透传规则，先看哪个？
    预期主 skill：`docs-and-website-sync`
-   预期次 skill：`weapp-ide-cli-best-practices`
+   预期次 skill：`weapp-vite-best-practices`
 
 7. 提问：一个 GitHub issue 里的复现同时涉及运行时生命周期异常，先按 issue workflow 还是 wevu 语义来拆？
-   预期主 skill：`github-issue-fix-workflow`
+   预期主 skill：`release-and-changeset-best-practices`
    预期次 skill：`wevu-best-practices`
 
 8. 提问：我要新增 DevTools runtime e2e，同时 CLI 的 automator 子命令也要对齐，先看哪个？
    预期主 skill：`weapp-devtools-e2e-best-practices`
-   预期次 skill：`weapp-ide-cli-best-practices`
+   预期次 skill：`weapp-vite-best-practices`
 
 9. 提问：这个 issue 修复快做完了，我还想一起判断 changeset、commit 和 PR 交付方式，先看哪个？
-   预期主 skill：`github-issue-fix-workflow`
+   预期主 skill：`release-and-changeset-best-practices`
    预期次 skill：`release-and-changeset-best-practices`
 
 ## 通过标准
