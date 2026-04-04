@@ -45,6 +45,9 @@ export interface AutoImportService {
   registerPotentialComponent: (filePath: string) => Promise<void>
   removePotentialComponent: (filePath: string) => void
   resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined
+  setSupportFileResolverComponents: (components: Record<string, string>) => void
+  clearSupportFileResolverComponents: () => void
+  collectStaticResolverComponentsForSupportFiles: () => Record<string, string>
   filter: (id: string, meta?: SubPackageMetaValue) => boolean
   getRegisteredLocalComponents: () => LocalAutoImportMatch[]
   awaitPendingRegistrations?: () => Promise<void>
@@ -185,6 +188,36 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       outputsHelpers.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
       outputsHelpers.scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
       outputsHelpers.scheduleVueComponentsWrite(removed || removedNames.length > 0)
+    },
+
+    setSupportFileResolverComponents(components: Record<string, string>) {
+      resolverHelpers.setSupportFileResolverComponents(components)
+      outputsHelpers.scheduleManifestWrite(true)
+      const typedSettings = getTypedComponentsSettings(ctx)
+      const htmlSettings = getHtmlCustomDataSettings(ctx)
+      const vueSettings = getVueComponentsSettings(ctx)
+      if (typedSettings.enabled || htmlSettings.enabled) {
+        resolverHelpers.syncResolverComponentProps()
+      }
+      if (typedSettings.enabled) {
+        outputsHelpers.scheduleTypedComponentsWrite(true)
+      }
+      if (htmlSettings.enabled) {
+        outputsHelpers.scheduleHtmlCustomDataWrite(true)
+      }
+      if (vueSettings.enabled) {
+        resolverHelpers.syncResolverComponentProps()
+        outputsHelpers.scheduleVueComponentsWrite(true)
+      }
+    },
+
+    clearSupportFileResolverComponents() {
+      resolverHelpers.clearSupportFileResolverComponents()
+      resolverHelpers.syncResolverComponentProps()
+    },
+
+    collectStaticResolverComponentsForSupportFiles() {
+      return resolverHelpers.collectStaticResolverComponentsForSupportFiles()
     },
 
     resolve(componentName: string, importerBaseName?: string) {

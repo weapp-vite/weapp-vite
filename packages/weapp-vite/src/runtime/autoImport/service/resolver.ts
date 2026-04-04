@@ -1,4 +1,4 @@
-import type { ResolvedValue, Resolver } from '../../../auto-import-components/resolvers'
+import type { ResolvedValue, Resolver, ResolverSupportFilesStrategy } from '../../../auto-import-components/resolvers'
 import type { MutableCompilerContext } from '../../../context'
 import type { ComponentMetadata } from '../metadata'
 import type { LocalAutoImportMatch } from '../types'
@@ -21,6 +21,9 @@ export interface ResolverHelpers {
   collectResolverComponents: () => Record<string, string>
   clearResolveCache: () => void
   syncResolverComponentProps: () => void
+  setSupportFileResolverComponents: (components: Record<string, string>) => void
+  clearSupportFileResolverComponents: () => void
+  collectStaticResolverComponentsForSupportFiles: () => Record<string, string>
   resolveWithResolvers: (componentName: string, importerBaseName?: string) => ResolvedValue | undefined
   resolveNavigationImport: (from: string) => string | undefined
 }
@@ -37,9 +40,16 @@ interface ResolverState {
 export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   const miniprogramDirCache = new Map<string, string | undefined>()
   const resolveCache = new Map<string, ResolvedValue | null>()
+  const supportFileResolverComponents = new Map<string, string>()
 
   function getResolveCacheKey(componentName: string, importerBaseName?: string) {
     return `${importerBaseName ?? ''}\0${componentName}`
+  }
+
+  function getSupportFilesStrategy(resolver: Resolver | undefined): ResolverSupportFilesStrategy {
+    return resolver && typeof (resolver as any).supportFilesStrategy === 'string'
+      ? (resolver as any).supportFilesStrategy
+      : 'used'
   }
 
   function resolveWithResolver(resolver: Resolver, componentName: string, baseName: string) {
@@ -166,11 +176,45 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   }
 
   function collectResolverComponents(): Record<string, string> {
-    return Object.fromEntries(state.resolvedResolverComponents)
+    return Object.fromEntries([
+      ...state.resolvedResolverComponents,
+      ...supportFileResolverComponents,
+    ])
   }
 
   function clearResolveCache() {
     resolveCache.clear()
+  }
+
+  function setSupportFileResolverComponents(components: Record<string, string>) {
+    supportFileResolverComponents.clear()
+    for (const [name, from] of Object.entries(components)) {
+      supportFileResolverComponents.set(name, from)
+    }
+  }
+
+  function clearSupportFileResolverComponents() {
+    supportFileResolverComponents.clear()
+  }
+
+  function collectStaticResolverComponentsForSupportFiles(): Record<string, string> {
+    const resolvers = getAutoImportConfig(state.ctx.configService)?.resolvers
+    if (!Array.isArray(resolvers)) {
+      return {}
+    }
+
+    const allComponents = new Map<string, string>()
+    for (const resolver of resolvers) {
+      if (getSupportFilesStrategy(resolver) !== 'full') {
+        continue
+      }
+
+      for (const [name, from] of Object.entries((resolver as any)?.components ?? {})) {
+        allComponents.set(name, from)
+      }
+    }
+
+    return Object.fromEntries(allComponents)
   }
 
   function syncResolverComponentProps() {
@@ -223,6 +267,9 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     collectResolverComponents,
     clearResolveCache,
     syncResolverComponentProps,
+    setSupportFileResolverComponents,
+    clearSupportFileResolverComponents,
+    collectStaticResolverComponentsForSupportFiles,
     resolveWithResolvers,
     resolveNavigationImport,
   }
