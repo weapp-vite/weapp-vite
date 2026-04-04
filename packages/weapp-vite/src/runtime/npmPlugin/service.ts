@@ -9,7 +9,7 @@ import path from 'pathe'
 import { debug } from '../../context/shared'
 import { getPlatformNpmDistDirName } from '../../platform'
 import { resolveNpmDependencyId } from '../../utils/npmImport'
-import { toPosixPath } from '../../utils/path'
+import { normalizePath, toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { createPackageBuilder } from './builder'
 import { createDependenciesCache } from './cache'
@@ -17,6 +17,7 @@ import { getPackNpmRelationList } from './relations'
 
 const LEADING_SLASHES_RE = /^\/+/
 const WINDOWS_PATH_RE = /\\|^[A-Z]:[\\/]/i
+const TRAILING_SLASHES_RE = /\/+$/
 
 function matchDependencyName(patterns: (string | RegExp)[], dep: string) {
   return patterns.some((pattern) => {
@@ -47,6 +48,15 @@ function matchDependencyPath(patterns: (string | RegExp)[], value: string) {
 }
 
 export function resolveCopyFilterRelativePath(sourceRoot: string, sourcePath: string) {
+  const normalizedRoot = normalizePath(sourceRoot).replace(TRAILING_SLASHES_RE, '')
+  const normalizedPath = normalizePath(sourcePath)
+  if (normalizedPath === normalizedRoot) {
+    return ''
+  }
+  if (normalizedPath.startsWith(`${normalizedRoot}/`)) {
+    return normalizedPath.slice(normalizedRoot.length + 1)
+  }
+
   const relativePath = WINDOWS_PATH_RE.test(sourceRoot) || WINDOWS_PATH_RE.test(sourcePath)
     ? pathWin32.relative(sourceRoot, sourcePath)
     : relativeNative(sourceRoot, sourcePath)

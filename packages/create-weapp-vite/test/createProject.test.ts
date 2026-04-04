@@ -11,7 +11,7 @@ import * as skills from '@/skills'
 import { logger } from '../vitest.setup'
 
 function normalizeRelativePath(value: string) {
-  return value.split(path.sep).join('/')
+  return value.replaceAll('\\', '/')
 }
 
 async function scanFiles(root: string) {

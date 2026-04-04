@@ -130,6 +130,20 @@ describe('runtime npm service', () => {
         'C:\\project\\.weapp-vite\\npm-source\\miniprogram_npm\\dayjs\\index.js',
       ),
     ).toBe('dayjs/index.js')
+
+    expect(
+      resolveCopyFilterRelativePath(
+        'D:/project/.weapp-vite/npm-source/miniprogram_npm',
+        'D:/project/.weapp-vite/npm-source/miniprogram_npm/dayjs/index.js',
+      ),
+    ).toBe('dayjs/index.js')
+
+    expect(
+      resolveCopyFilterRelativePath(
+        'D:/project/.weapp-vite/npm-source/miniprogram_npm',
+        'D:\\project\\.weapp-vite\\npm-source\\miniprogram_npm\\dayjs\\index.js',
+      ),
+    ).toBe('dayjs/index.js')
   })
 
   it('builds cached npm source and removes main output when main output is disabled', async () => {
