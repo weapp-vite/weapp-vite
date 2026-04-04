@@ -11,6 +11,7 @@ Page({
     compoundComponentSnapshot: '',
     scopedComponentRect: '',
     scopedComponentList: '',
+    scopedComponentMeta: '',
     directorySnapshot: '',
     downloadSnapshot: '',
     fileTransferFailureInfo: '',
@@ -1627,6 +1628,24 @@ Page({
           scopedComponentList: JSON.stringify(result),
         }, () => {
           this.push('lab:inspectScopedSelectAll')
+        })
+      })
+      .exec()
+  },
+  inspectScopedMetaQuery() {
+    const card = this.selectComponent?.('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .select('#status-card-pulse')
+      .fields({
+        context: true,
+        mark: true,
+        node: true,
+      }, (result) => {
+        this.setData({
+          scopedComponentMeta: JSON.stringify(result),
+        }, () => {
+          this.push('lab:inspectScopedMetaQuery')
         })
       })
       .exec()
