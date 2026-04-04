@@ -270,6 +270,8 @@ describe('page event alignment', () => {
     page.exportCanvasLab()
     page.saveExportedCanvasLab()
     page.saveMissingCanvasImageLab()
+    page.saveTempVideoLab()
+    page.saveMissingTempVideoLab()
     page.runComponentCanvasLab()
 
     expect(page.data.canvasSnapshot).toContain('"canvasId":"hero-canvas"')
@@ -320,6 +322,8 @@ describe('page event alignment', () => {
     expect(page.data.canvasTempFileContent).toContain('"fileType":"png"')
     expect(page.data.canvasSavedImageInfo).toContain('"errMsg":"saveImageToPhotosAlbum:ok"')
     expect(page.data.canvasSavedImageMissingInfo).toContain('"error":"saveImageToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-canvas-export.png"')
+    expect(page.data.tempVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+    expect(page.data.tempVideoSavedMissingInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-fixture-video.mp4"')
     expect(page.data.textMeasureWidth).toBe(54)
     expect(page.data.componentCanvasSnapshot).toContain('"canvasId":"inner-canvas"')
     expect(page.data.componentCanvasSnapshot).toContain('"type":"strokeRect"')

@@ -270,6 +270,7 @@ export class HeadlessSession {
         redirectTo: option => this.redirectTo(option.url),
         removeSavedFile: option => this.wxState.removeSavedFile(option),
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
+        saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
         nextTick: callback => queueMicrotask(() => callback?.()),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),

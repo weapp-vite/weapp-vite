@@ -135,6 +135,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('exportCanvasLab')
     bridge.runPageMethod('saveExportedCanvasLab')
     bridge.runPageMethod('saveMissingCanvasImageLab')
+    bridge.runPageMethod('saveTempVideoLab')
+    bridge.runPageMethod('saveMissingTempVideoLab')
     bridge.runPageMethod('inspectCanvasQuery')
     bridge.triggerResize(412, 915)
     bridge.runPageMethod('runFileManagerLab')
@@ -179,6 +181,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.canvasSnapshot
           && pageData.canvasSavedImageInfo
           && pageData.canvasSavedImageMissingInfo
+          && pageData.tempVideoSavedInfo
+          && pageData.tempVideoSavedMissingInfo
           && pageData.canvasTempFileContent
           && pageData.canvasTempFilePath
           && pageData.canvasQuerySnapshot
@@ -276,6 +280,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.canvasTempFileContent).toContain('"fileType":"png"')
     expect(pageData.canvasSavedImageInfo).toContain('"errMsg":"saveImageToPhotosAlbum:ok"')
     expect(pageData.canvasSavedImageMissingInfo).toContain('"error":"saveImageToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-canvas-export.png"')
+    expect(pageData.tempVideoSavedInfo).toContain('"errMsg":"saveVideoToPhotosAlbum:ok"')
+    expect(pageData.tempVideoSavedMissingInfo).toContain('"error":"saveVideoToPhotosAlbum:fail file not found: headless://wxfile/temp/missing-component-lab-video.mp4"')
     expect(pageData.canvasQuerySnapshot).toContain('"canvasId":"lab-canvas"')
     expect(pageData.canvasQuerySnapshot).toContain('"type":"fillRect"')
     expect(pageData.videoContextSnapshot).toContain('"phase":"fullscreen"')
