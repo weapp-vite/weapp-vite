@@ -1024,6 +1024,44 @@ describe.sequential('simulator browser e2e', () => {
     })
   })
 
+  it('opens subpackage routes directly through the web demo bridge', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.openRoute('package-flow/queue/index')
+
+    const state = await waitFor(
+      () => bridge.getState(),
+      nextState => nextState.currentRoute === 'package-flow/queue/index' && nextState.pageStack.length === 1,
+      20_000,
+    )
+
+    const pageData = parseJsonString<Record<string, any>>(state.pageData)
+    expect(state.pageStack).toEqual(['package-flow/queue/index'])
+    expect(state.pageRoutes).toContain('package-flow/queue/index')
+    expect(pageData.title).toBe('Queue')
+    expect(pageData.from).toBe('unknown')
+    expect(pageData.logs).toContain('queue:onShow')
+    expect(state.previewMarkup).toContain('Queue')
+    expect(state.previewMarkup).toContain('From: unknown')
+    expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
+    expect(bridge.readScopeSnapshot('page:package-flow/queue/index')).toMatchObject({
+      data: expect.objectContaining({
+        from: 'unknown',
+        title: 'Queue',
+      }),
+      properties: {},
+      scopeId: 'page:package-flow/queue/index',
+      type: 'page',
+    })
+  })
+
   it('drives browser session host features through the demo workbench api', async () => {
     const bridge = getBridge()!
     bridge.pickScenario('route-maze')
