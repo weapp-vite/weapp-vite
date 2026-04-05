@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared workspace dependency
+        run: pnpm --filter @weapp-core/shared build
+
       - name: Update WeChat builtins
         run: pnpm builtin
 
