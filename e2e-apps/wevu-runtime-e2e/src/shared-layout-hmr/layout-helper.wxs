@@ -1,0 +1,5 @@
+module.exports = {
+  label: function() {
+    return 'LAYOUT-SHARED-WXS-BASE'
+  },
+}

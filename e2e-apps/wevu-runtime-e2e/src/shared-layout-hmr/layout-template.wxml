@@ -1,0 +1,3 @@
+<template name="hmrLayoutCard">
+  <view class="layout-shared-template">LAYOUT-SHARED-TEMPLATE-BASE: {{ label }}</view>
+</template>

@@ -76,6 +76,35 @@ function buildAdminLayoutWxml() {
   ].join('\n')
 }
 
+async function captureOriginalSharedFiles() {
+  const existed = await fs.pathExists(SHARED_DIR)
+  return {
+    existed,
+    template: await fs.readFile(SHARED_IMPORT_TEMPLATE, 'utf8').catch(() => undefined),
+    include: await fs.readFile(SHARED_INCLUDE_TEMPLATE, 'utf8').catch(() => undefined),
+    wxs: await fs.readFile(SHARED_WXS, 'utf8').catch(() => undefined),
+  }
+}
+
+async function restoreOriginalSharedFiles(snapshot: Awaited<ReturnType<typeof captureOriginalSharedFiles>>) {
+  if (!snapshot.existed) {
+    await fs.remove(SHARED_DIR)
+    return
+  }
+
+  await fs.ensureDir(SHARED_DIR)
+
+  if (snapshot.template !== undefined) {
+    await fs.writeFile(SHARED_IMPORT_TEMPLATE, snapshot.template, 'utf8')
+  }
+  if (snapshot.include !== undefined) {
+    await fs.writeFile(SHARED_INCLUDE_TEMPLATE, snapshot.include, 'utf8')
+  }
+  if (snapshot.wxs !== undefined) {
+    await fs.writeFile(SHARED_WXS, snapshot.wxs, 'utf8')
+  }
+}
+
 async function waitForFileContainsWithRetry(
   filePath: string,
   marker: string,
@@ -105,6 +134,7 @@ describe.sequential('HMR layout shared template and wxs dependencies (dev watch)
 
     const originalDefaultLayout = await fs.readFile(DEFAULT_LAYOUT_WXML, 'utf8')
     const originalAdminLayout = await fs.readFile(ADMIN_LAYOUT_WXML, 'utf8')
+    const originalSharedFiles = await captureOriginalSharedFiles()
 
     const initialTemplateMarker = createHmrMarker('LAYOUT-SHARED-TEMPLATE-INIT', platform)
     const updatedTemplateMarker = createHmrMarker('LAYOUT-SHARED-TEMPLATE-UPDATE', platform)
@@ -167,7 +197,7 @@ describe.sequential('HMR layout shared template and wxs dependencies (dev watch)
       await dev.stop(5_000)
       await fs.writeFile(DEFAULT_LAYOUT_WXML, originalDefaultLayout, 'utf8')
       await fs.writeFile(ADMIN_LAYOUT_WXML, originalAdminLayout, 'utf8')
-      await fs.remove(SHARED_DIR)
+      await restoreOriginalSharedFiles(originalSharedFiles)
     }
   })
 })
