@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 6.13.5
+
+### Patch Changes
+
+- 📦 Updated 4 dependencies [`f112199`](https://github.com/weapp-vite/weapp-vite/commit/f1121993ab02ed64862a43328ee1997c7d391ec5)
+  <details><summary>Details</summary>
+
+  `wevu@6.13.5`, `@weapp-vite/miniprogram-automator@1.0.2`, `weapp-ide-cli@5.2.1`, `@weapp-vite/ast@6.13.5`
+
+  </details>
+
 ## 6.13.4
 
 ### Patch Changes
