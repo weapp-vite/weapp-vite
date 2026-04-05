@@ -1,5 +1,13 @@
 # @weapp-core/shared
 
+## 3.0.3
+
+### Patch Changes
+
+- 🐛 **将多个源码包中直接使用的 `fs-extra` 调用统一迁移到 `@weapp-core/shared` 提供的原生 `node:fs` / `node:fs/promises` 兼容层，减少重复文件系统封装，并清理相关直接依赖与测试 mock。** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97) by @sonofmagic
+
+- 🐛 **将 `@weapp-core/shared` 导出的 `objectHash` 从 `object-hash` 依赖切换为内置的稳定序列化加 `sha256` 哈希实现，移除已被禁用的直接依赖，同时保持现有导出接口不变，避免影响下游缓存签名调用。** [`c1c30dd`](https://github.com/weapp-vite/weapp-vite/commit/c1c30dd9b52af408098dd23abf13f7539e9e8b2d) by @sonofmagic
+
 ## 3.0.2
 
 ### Patch Changes

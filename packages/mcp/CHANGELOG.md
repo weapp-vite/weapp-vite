@@ -1,5 +1,11 @@
 # @weapp-vite/mcp
 
+## 1.2.0
+
+### Minor Changes
+
+- ✨ **增强 weapp-vite 的 AI 亲和性：为 MCP 新增显式的截图与截图对比工具，补充随包文档和网站中的 AI 意图映射说明，并让 create-weapp-vite 生成的项目级 AGENTS 指引默认把截图与截图对比请求路由到 weapp-vite 的原生命令能力。** [`933826c`](https://github.com/weapp-vite/weapp-vite/commit/933826cbd52e0de267069c4b67d0e6b8a669afdb) by @sonofmagic
+
 ## 1.1.2
 
 ### Patch Changes
