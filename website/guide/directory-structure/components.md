@@ -1,6 +1,11 @@
 ---
 title: components
-description: 主包组件目录，默认参与自动导入组件扫描。
+description: 主包组件目录，默认参与自动导入组件扫描，并作为 `usingComponents` 自动补全的重要来源。
+keywords:
+  - components
+  - 自动导入组件
+  - usingComponents
+  - 目录结构
 ---
 
 # `components/`

@@ -9,9 +9,7 @@ keywords:
   - setPageLayout
   - usePageLayout
   - layout-host
-  - page layout communication
   - provide
-  - inject
 ---
 
 # 页面 Layout 使用指南

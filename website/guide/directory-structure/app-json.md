@@ -1,6 +1,11 @@
 ---
 title: app.json(.js|.ts)?
 description: 应用配置入口，既支持原生 JSON，也支持 app.json.js 和 app.json.ts 这类脚本化形式。
+keywords:
+  - app.json
+  - 应用配置
+  - 目录结构
+  - weapp-vite
 ---
 
 # `app.json(.js|.ts)?`

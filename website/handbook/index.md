@@ -6,7 +6,6 @@ keywords:
   - Wevu
   - Vue SFC
   - handbook
-  - 教程
   - 学习路径
 ---
 

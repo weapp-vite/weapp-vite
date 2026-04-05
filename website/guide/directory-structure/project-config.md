@@ -1,6 +1,11 @@
 ---
 title: project.config.json
 description: 微信开发者工具项目配置文件，定义 miniprogramRoot、appid 等平台侧参数。
+keywords:
+  - project.config.json
+  - 微信开发者工具
+  - miniprogramRoot
+  - 目录结构
 ---
 
 # `project.config.json`

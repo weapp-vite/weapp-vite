@@ -1,6 +1,11 @@
 ---
 title: utils
-description: 通用工具函数的推荐目录。
+description: 通用工具函数的推荐目录，适合放业务无关、可复用且能在主包与分包之间共享的辅助模块。
+keywords:
+  - utils
+  - 工具函数
+  - 公共模块
+  - 目录结构
 ---
 
 # `utils/`

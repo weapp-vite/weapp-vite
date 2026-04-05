@@ -1,6 +1,11 @@
 ---
 title: shared
-description: 跨主包与分包共享模块的推荐目录。
+description: 跨主包与分包共享模块的推荐目录，用来沉淀复用逻辑、常量、样式与跨包共享能力。
+keywords:
+  - shared
+  - 分包共享
+  - 公共模块
+  - 目录结构
 ---
 
 # `shared/`

@@ -1,6 +1,11 @@
 ---
 title: API 全量清单 · 转发
-description: "@wevu/api API 全量清单中的转发能力。"
+description: "@wevu/api 的 API 全量清单页，聚焦转发能力分类，便于快速检索微信小程序相关接口与组件 API。"
+keywords:
+  - weapi
+  - 微信小程序
+  - API
+  - 转发
 ---
 
 # API 全量清单 · 转发

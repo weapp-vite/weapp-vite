@@ -1,6 +1,11 @@
 ---
 title: workers
 description: Worker 入口的推荐目录，可与 app.json 和 worker 配置联动。
+keywords:
+  - workers
+  - Worker
+  - 目录结构
+  - 微信小程序
 ---
 
 # `workers/`

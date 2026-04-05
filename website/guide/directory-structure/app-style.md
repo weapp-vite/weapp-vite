@@ -1,6 +1,11 @@
 ---
 title: app.(css|scss|wxss|...)
 description: 应用级全局样式入口，支持 CSS、WXSS 与常见预处理器后缀。
+keywords:
+  - 全局样式
+  - WXSS
+  - 目录结构
+  - weapp-vite
 ---
 
 # `app.(css|scss|wxss|...)`

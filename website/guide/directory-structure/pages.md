@@ -1,6 +1,11 @@
 ---
 title: pages
-description: 主包页面目录，是自动路由的默认扫描入口之一。
+description: 主包页面目录，是自动路由的默认扫描入口之一，也是页面级构建产物与路由生成的核心来源。
+keywords:
+  - pages
+  - 自动路由
+  - 页面目录
+  - 目录结构
 ---
 
 # `pages/`

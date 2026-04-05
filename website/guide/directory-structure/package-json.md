@@ -1,6 +1,11 @@
 ---
 title: package.json
 description: 项目脚本与依赖入口，通常承载 dev、build、open 等 weapp-vite 命令。
+keywords:
+  - package.json
+  - 脚本命令
+  - wv
+  - 目录结构
 ---
 
 # `package.json`

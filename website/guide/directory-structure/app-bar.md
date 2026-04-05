@@ -1,6 +1,11 @@
 ---
 title: app-bar
 description: Skyline 全局工具栏的固定保留目录，与 appBar 配置一一对应。
+keywords:
+  - Skyline
+  - appBar
+  - 目录结构
+  - app-bar
 ---
 
 # `app-bar/`

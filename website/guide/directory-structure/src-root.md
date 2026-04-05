@@ -1,6 +1,11 @@
 ---
 title: <srcRoot>
 description: Weapp-vite 的源码根目录概念，所有 pages、components、分包、自动生成类型文件都基于它定位。
+keywords:
+  - srcRoot
+  - 源码根目录
+  - weapp-vite
+  - 目录结构
 ---
 
 # `<srcRoot>/`

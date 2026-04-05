@@ -1,6 +1,11 @@
 ---
 title: app.(js|ts)
 description: 应用脚本入口，支持 JavaScript 与 TypeScript，承载 App 生命周期和全局初始化逻辑。
+keywords:
+  - App 生命周期
+  - TypeScript
+  - 目录结构
+  - app.ts
 ---
 
 # `app.(js|ts)`

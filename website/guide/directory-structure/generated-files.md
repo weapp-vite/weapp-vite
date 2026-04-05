@@ -1,6 +1,11 @@
 ---
 title: 类型声明文件
 description: weapp-vite 自动生成的类型与支持文件，默认输出到 .weapp-vite 目录。
+keywords:
+  - .weapp-vite
+  - 类型声明
+  - 自动生成文件
+  - 目录结构
 ---
 
 # 类型声明文件

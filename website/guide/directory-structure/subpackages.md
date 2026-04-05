@@ -1,6 +1,11 @@
 ---
 title: <subPackageRoot>
 description: 分包目录与分包 root 的关系说明，weapp.subPackages 才是分包边界的权威配置。
+keywords:
+  - subPackages
+  - 分包
+  - 目录结构
+  - weapp-vite
 ---
 
 # `<subPackageRoot>/`

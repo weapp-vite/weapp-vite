@@ -1,6 +1,11 @@
 ---
 title: public
-description: 构建时原样复制到产物目录的静态资源目录。
+description: 构建时原样复制到产物目录的静态资源目录，适合放无需参与模块分析和编译转换的文件。
+keywords:
+  - public
+  - 静态资源
+  - 构建复制
+  - 目录结构
 ---
 
 # `public/`

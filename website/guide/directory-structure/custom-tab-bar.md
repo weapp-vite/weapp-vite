@@ -1,6 +1,11 @@
 ---
 title: custom-tab-bar
 description: 微信自定义 tabBar 的固定保留目录，必须与 app.json 处于同一个 srcRoot 下。
+keywords:
+  - custom-tab-bar
+  - tabBar
+  - 微信小程序
+  - 目录结构
 ---
 
 # `custom-tab-bar/`

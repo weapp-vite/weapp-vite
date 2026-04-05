@@ -1,6 +1,11 @@
 ---
 title: app.vue
 description: Vue SFC 形式的应用入口，可在一个文件中组织脚本、defineAppJson 宏与样式。
+keywords:
+  - app.vue
+  - Vue SFC
+  - defineAppJson
+  - 目录结构
 ---
 
 # `app.vue`

@@ -1,6 +1,11 @@
 ---
 title: vite.config.ts
 description: Weapp-vite 目录结构能力的总开关，负责定义 srcRoot、自动路由、分包、自动导入组件等行为。
+keywords:
+  - vite.config.ts
+  - weapp 配置
+  - 自动路由
+  - 目录结构
 ---
 
 # `vite.config.ts`
