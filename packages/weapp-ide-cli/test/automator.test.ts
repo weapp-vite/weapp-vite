@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   formatAutomatorLoginError,
   isAutomatorLoginError,
+  isDevtoolsExtensionContextInvalidatedError,
   isDevtoolsHttpPortError,
+  isRetryableAutomatorLaunchError,
   launchAutomator,
 } from '../src/cli/automator'
 
@@ -58,6 +60,28 @@ describe('automator helpers', () => {
       expect(isDevtoolsHttpPortError('string error')).toBe(false)
       expect(isDevtoolsHttpPortError(null)).toBe(false)
       expect(isDevtoolsHttpPortError(undefined)).toBe(false)
+    })
+  })
+
+  describe('isDevtoolsExtensionContextInvalidatedError', () => {
+    it('recognises extension context invalidated errors', () => {
+      const error = new Error('Extension context invalidated.')
+      expect(isDevtoolsExtensionContextInvalidatedError(error)).toBe(true)
+    })
+
+    it('returns false for unrelated errors', () => {
+      const error = new Error('Some other error')
+      expect(isDevtoolsExtensionContextInvalidatedError(error)).toBe(false)
+    })
+  })
+
+  describe('isRetryableAutomatorLaunchError', () => {
+    it('recognises launch timeout as retryable', () => {
+      expect(isRetryableAutomatorLaunchError(new Error('Wait timed out after 15000 ms'))).toBe(true)
+    })
+
+    it('recognises websocket bootstrap errors as retryable', () => {
+      expect(isRetryableAutomatorLaunchError(new Error('Failed connecting to ws://127.0.0.1:19510, check if target project window is opened with automation enabled'))).toBe(true)
     })
   })
 
@@ -150,6 +174,18 @@ describe('automator helpers', () => {
         projectPath: '/workspace/project',
         timeout: 30_000,
       })
+    })
+
+    it('retries once for retryable startup jitter', async () => {
+      launchMock
+        .mockRejectedValueOnce(new Error('Wait timed out after 15000 ms'))
+        .mockResolvedValueOnce({ connected: true })
+
+      await expect(launchAutomator({
+        projectPath: '/workspace/project',
+      })).resolves.toEqual({ connected: true })
+
+      expect(launchMock).toHaveBeenCalledTimes(2)
     })
   })
 })

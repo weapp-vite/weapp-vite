@@ -6,11 +6,23 @@
   </view>
 
   <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-    <van-button type="primary" bind:tap="applyDefaultLayout">使用 default 布局</van-button>
-    <van-button custom-class="layout-btn" type="danger" plain bind:tap="applyAdminLayout">切到 admin 布局</van-button>
-    <van-button custom-class="layout-btn" type="default" plain bind:tap="clearLayout">关闭布局</van-button>
-    <van-button custom-class="layout-btn" type="success" plain bind:tap="showState">查看当前状态</van-button>
-    <van-button custom-class="layout-btn" type="default" bind:tap="backHome">返回首页</van-button>
+    <view class="layout-actions">
+      <view class="layout-actions__item">
+        <van-button block type="primary" bind:tap="applyDefaultLayout">使用 default 布局</van-button>
+      </view>
+      <view class="layout-actions__item">
+        <van-button block type="danger" plain bind:tap="applyAdminLayout">切到 admin 布局</van-button>
+      </view>
+      <view class="layout-actions__item">
+        <van-button block type="default" plain bind:tap="clearLayout">关闭布局</van-button>
+      </view>
+      <view class="layout-actions__item">
+        <van-button block type="success" plain bind:tap="showState">查看当前状态</van-button>
+      </view>
+      <view class="layout-actions__item">
+        <van-button block type="default" bind:tap="backHome">返回首页</van-button>
+      </view>
+    </view>
   </view>
 
   <van-dialog id="van-dialog" />

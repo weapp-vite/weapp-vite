@@ -4,6 +4,7 @@ import logger from '../logger'
 import {
   formatAutomatorLoginError,
   isAutomatorLoginError,
+  isDevtoolsExtensionContextInvalidatedError,
   isDevtoolsHttpPortError,
   launchAutomator,
 } from './automator'
@@ -44,6 +45,18 @@ function normalizeMiniProgramConnectionError(error: unknown) {
       'Please enable service port in Wechat DevTools: Settings -> Security -> Service Port',
     ))
     return new Error('DEVTOOLS_HTTP_PORT_ERROR')
+  }
+
+  if (isDevtoolsExtensionContextInvalidatedError(error)) {
+    logger.error(i18nText(
+      '微信开发者工具自动化上下文尚未就绪，通常是刚启动或正在重载。',
+      'Wechat DevTools automation context is not ready yet, usually because the IDE has just started or is still reloading.',
+    ))
+    logger.warn(i18nText(
+      '请稍后重试；若持续失败，关闭多余的开发者工具窗口后重试。',
+      'Please retry shortly. If it keeps failing, close extra DevTools windows and try again.',
+    ))
+    return new Error('DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED')
   }
 
   return error instanceof Error ? error : new Error(String(error))

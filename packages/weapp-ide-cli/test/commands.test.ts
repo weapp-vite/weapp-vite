@@ -15,6 +15,7 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('../src/cli/automator', () => ({
   launchAutomator: launchAutomatorMock,
   isAutomatorLoginError: vi.fn(() => false),
+  isDevtoolsExtensionContextInvalidatedError: vi.fn(() => false),
   isDevtoolsHttpPortError: vi.fn(() => false),
   formatAutomatorLoginError: vi.fn(),
 }))

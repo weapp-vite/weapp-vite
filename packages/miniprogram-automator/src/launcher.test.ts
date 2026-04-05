@@ -9,8 +9,17 @@ const accessMock = vi.fn(async () => undefined)
 const readFileMock = vi.fn(async () => '{}')
 const writeFileMock = vi.fn(async () => undefined)
 const getPortMock = vi.fn(async (value: number) => value)
-const waitUntilMock = vi.fn(async (condition: () => unknown | Promise<unknown>) => {
-  await condition()
+const waitUntilMock = vi.fn(async (condition: () => unknown | Promise<unknown>, timeout = 0) => {
+  const startTime = Date.now()
+  while (true) {
+    const value = await condition()
+    if (value) {
+      return value
+    }
+    if (timeout && Date.now() - startTime >= timeout) {
+      throw new Error(`Wait timed out after ${timeout} ms`)
+    }
+  }
 })
 const sleepMock = vi.fn(async () => {})
 const connectCreateMock = vi.fn()
@@ -110,6 +119,41 @@ describe('Launcher', () => {
     expect(checkVersion).toHaveBeenCalledTimes(1)
     expect(sleepMock).toHaveBeenCalledWith(5000)
     expect(result).toEqual({ checkVersion })
+  })
+
+  it('retries websocket validation when devtools extension context is still reloading', async () => {
+    const { default: Launcher } = await import('./Launcher')
+    const child = new EventEmitter() as EventEmitter & { unref: () => void }
+    child.unref = vi.fn()
+    spawnMock.mockReturnValue(child)
+
+    const disconnect = vi.fn()
+    const firstCandidate = {
+      checkVersion: vi.fn(async () => {
+        throw new Error('Extension context invalidated.')
+      }),
+      disconnect,
+    }
+    const secondCandidate = {
+      checkVersion: vi.fn(async () => {}),
+    }
+
+    const launcher = new Launcher()
+    const connectToolSpy = vi.spyOn(launcher as any, 'connectTool')
+    connectToolSpy
+      .mockResolvedValueOnce(firstCandidate)
+      .mockResolvedValueOnce(secondCandidate)
+
+    const result = await launcher.launch({
+      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      projectPath: '/tmp/project',
+    })
+
+    expect(connectToolSpy).toHaveBeenCalledTimes(2)
+    expect(firstCandidate.checkVersion).toHaveBeenCalledTimes(1)
+    expect(disconnect).toHaveBeenCalledTimes(1)
+    expect(secondCandidate.checkVersion).toHaveBeenCalledTimes(1)
+    expect(result).toEqual(secondCandidate)
   })
 
   it('extends project config before launch when overrides are provided', async () => {

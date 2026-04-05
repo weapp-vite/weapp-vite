@@ -14,7 +14,13 @@ const DEFAULT_PORT = 9420
 const DEFAULT_TIMEOUT = 30000
 const DEFAULT_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_AUTOMATOR_RUNTIME_PROVIDER'
 const LEGACY_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_E2E_RUNTIME_PROVIDER'
+const EXTENSION_CONTEXT_INVALIDATED_RE = /Extension context invalidated/i
 let localhostListenPatched = false
+
+function isExtensionContextInvalidatedError(error: unknown) {
+  return error instanceof Error && EXTENSION_CONTEXT_INVALIDATED_RE.test(error.message)
+}
+
 function patchNetListenToLoopback() {
   if (localhostListenPatched) {
     return
@@ -135,17 +141,31 @@ export default class Launcher {
       processError = error
     }
     let miniProgram: MiniProgram | null = null
+    let lastConnectError: unknown = null
     await waitUntil(async () => {
       try {
         if (processError || exited) {
           return true
         }
-        miniProgram = await this.connectTool({
+        const candidate = await this.connectTool({
           wsEndpoint: `ws://127.0.0.1:${port}`,
         })
+        try {
+          await candidate.checkVersion()
+        }
+        catch (error) {
+          candidate.disconnect()
+          lastConnectError = error
+          if (isExtensionContextInvalidatedError(error)) {
+            return false
+          }
+          throw error
+        }
+        miniProgram = candidate
         return true
       }
-      catch {
+      catch (error) {
+        lastConnectError = error
         return false
       }
     }, timeout, 1000)
@@ -153,13 +173,15 @@ export default class Launcher {
       if (processError) {
         throw new Error('Failed to launch wechat web devTools, please make sure cliPath is correctly specified')
       }
+      if (lastConnectError) {
+        throw lastConnectError
+      }
       if (exited) {
         throw new Error('Failed to launch wechat web devTools, please make sure http port is open')
       }
       throw new Error('Failed connecting to devtools websocket endpoint')
     }
     const resolvedMiniProgram = miniProgram as MiniProgram
-    await resolvedMiniProgram.checkVersion()
     await sleep(5000)
     return resolvedMiniProgram
   }

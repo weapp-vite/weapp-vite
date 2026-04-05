@@ -15,6 +15,9 @@ const LOGIN_REQUIRED_CN_RE = /需要重新登录/
 const LOGIN_REQUIRED_EN_RE = /need\s+re-?login|re-?login/i
 const LOGIN_REQUIRED_CODE_RE = /code\s*[:=]\s*(\d+)/i
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
+const DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED_RE = /Extension context invalidated/i
+const AUTOMATOR_LAUNCH_TIMEOUT_RE = /Wait timed out after \d+ ms/i
+const AUTOMATOR_WS_CONNECT_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+/i
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /listen EPERM/i,
   /operation not permitted 0\.0\.0\.0/i,
@@ -96,6 +99,24 @@ export function isDevtoolsHttpPortError(error: unknown): boolean {
 }
 
 /**
+ * @description 判断错误是否属于开发者工具 automator 扩展上下文尚未就绪。
+ */
+export function isDevtoolsExtensionContextInvalidatedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED_RE.test(message)
+}
+
+/**
+ * @description 判断错误是否属于可重试的 automator 启动抖动。
+ */
+export function isRetryableAutomatorLaunchError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED_RE.test(message)
+    || AUTOMATOR_LAUNCH_TIMEOUT_RE.test(message)
+    || AUTOMATOR_WS_CONNECT_RE.test(message)
+}
+
+/**
  * @description 判断错误是否属于开发者工具登录失效。
  */
 export function isAutomatorLoginError(error: unknown): boolean {
@@ -136,10 +157,23 @@ export async function launchAutomator(options: AutomatorOptions) {
   const { cliPath, projectPath, timeout = 30_000 } = options
   const resolvedCliPath = cliPath ?? (await resolveCliPath()).cliPath ?? undefined
   const launcher = new Launcher()
+  let lastError: unknown = null
 
-  return await launcher.launch({
-    cliPath: resolvedCliPath,
-    projectPath,
-    timeout,
-  })
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await launcher.launch({
+        cliPath: resolvedCliPath,
+        projectPath,
+        timeout,
+      })
+    }
+    catch (error) {
+      lastError = error
+      if (!isRetryableAutomatorLaunchError(error) || attempt === 1) {
+        throw error
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }
