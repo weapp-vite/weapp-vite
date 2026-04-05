@@ -1,6 +1,4 @@
 {
-  "vue.server.hybridMode": true,
-  "vue.tsserver.useWorkspaceTsdk": true,
   "prettier.enable": false,
   "editor.formatOnSave": false,
   "editor.codeActionsOnSave": {
