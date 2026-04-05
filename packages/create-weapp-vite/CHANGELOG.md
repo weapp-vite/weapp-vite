@@ -1,5 +1,29 @@
 # create-weapp-vite
 
+## 2.0.77
+
+### Patch Changes
+
+- 🐛 **增强 `weapp-vite` 打开微信开发者工具项目时的默认行为：对微信小程序平台的 `open` / `dev -o` / `build -o` / `ide logs --open` 默认透传 `--trust-project`，减少每次打开新项目时都要手动确认“信任代码”的重复操作。同时保留 `--no-trust-project` 作为显式回退开关，便于在需要时关闭该默认行为。** [`d4e7992`](https://github.com/weapp-vite/weapp-vite/commit/d4e7992df32220bd1d723a7fa03aaee5a81dc0d3) by @sonofmagic
+
+- 🐛 **修复原生 layout 模板引入共享 `template`、`include` 与 `wxs`/`sjs` 文件时的热更新传播。现在当 layout 自身或其依赖的共享模板脚本模块保存后，所有使用该 layout 的原生页面都能正确重新生成，并覆盖真实 IDE 运行态下的回归场景。** [`0d5ac7d`](https://github.com/weapp-vite/weapp-vite/commit/0d5ac7d0bb94173c4f9326389ec5d9316ecebbd8) by @sonofmagic
+
+- 🐛 **修复 Windows 环境下的路径分隔符兼容问题。现在 `create-weapp-vite` 的模板文件校验会统一使用 POSIX 相对路径，`weapp-vite` 在分包 `miniprogram_npm` 复制阶段也会正确处理 Windows 原生路径，避免出现 CI 断言误报以及分包 npm 产物缺失的问题。** [`5bfa92e`](https://github.com/weapp-vite/weapp-vite/commit/5bfa92e52936b559deb7388cfc4db7100fc958a8) by @sonofmagic
+
+- 🐛 **修复小程序独立模板与脚本模块文件的热更新依赖传播。现在当被多个 WXML 或 Vue 页面通过 `import`、`include`、`wxs` 等方式引用的共享 `.wxml`、`.html`、`.wxs`、`.sjs` 文件发生保存时，所有引用方都会被正确标记并重新生成，避免共享模板持续演进后热更新失效。** [`2d6aa2d`](https://github.com/weapp-vite/weapp-vite/commit/2d6aa2dc4743980c6d51e4d1bbb9a17935125095) by @sonofmagic
+
+- 🐛 **将多个源码包中直接使用的 `fs-extra` 调用统一迁移到 `@weapp-core/shared` 提供的原生 `node:fs` / `node:fs/promises` 兼容层，减少重复文件系统封装，并清理相关直接依赖与测试 mock。** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97) by @sonofmagic
+
+- 🐛 **为 `create-weapp-vite` 新增“是否安装推荐 AI skills”的初始化选项。交互式创建时默认会提示安装 `sonofmagic/skills`，并在执行前明确展示 `npx skills add sonofmagic/skills`；非交互模式支持通过 `--install-skills` 与 `--no-install-skills` 控制该行为，同时保留创建后手动执行的路径。** [`002b855`](https://github.com/weapp-vite/weapp-vite/commit/002b855bccd823c1f728e7620af741948ffd8e36) by @sonofmagic
+
+- 🐛 **增强 weapp-vite 的 AI 亲和性：为 MCP 新增显式的截图与截图对比工具，补充随包文档和网站中的 AI 意图映射说明，并让 create-weapp-vite 生成的项目级 AGENTS 指引默认把截图与截图对比请求路由到 weapp-vite 的原生命令能力。** [`933826c`](https://github.com/weapp-vite/weapp-vite/commit/933826cbd52e0de267069c4b67d0e6b8a669afdb) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 在处理 `<wxs src="./foo.wxs.ts">` 等脚本模块依赖时，会把 `.wxs/.sjs` 文件错误加入模板发射队列的问题。现在构建产物不再生成内容为脚本却后缀为 `.wxml` 的异常文件，例如 `index.wxs.wxml`、`bbc.wxml`、`esm.wxml`。** [`0ee43e5`](https://github.com/weapp-vite/weapp-vite/commit/0ee43e526ac13ce6bae494b13fb14b4edd70b847) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` CLI 在 `dev` 与 `build` 初始阶段未在终端输出构建耗时的问题。现在小程序首次构建、生产构建，以及 Web 构建或开发服务启动完成后，都会直接打印毫秒级耗时，便于在不启用 analyze UI 的情况下快速判断启动与构建性能。** [`edca3ee`](https://github.com/weapp-vite/weapp-vite/commit/edca3eec78db7967f79ef6c29729ee094d8023a0) by @sonofmagic
+- 📦 **Dependencies** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97)
+  → `@weapp-core/shared@3.0.3`
+
 ## 2.0.76
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # weapp-ide-cli
 
+## 5.2.0
+
+### Minor Changes
+
+- ✨ **为 `weapp-ide-cli` 新增 `weapp compare` 截图对比命令，基于 `pixelmatch` 支持基准图比对、diff 图输出、阈值判定与 JSON 结果输出，并同步接入 `weapp-vite` / `wv` 的上层命令透传与 AI 工作流文档。** [`d43b232`](https://github.com/weapp-vite/weapp-vite/commit/d43b2320b0cb38b69d8993d00d41930eb65d0fbc) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **将多个源码包中直接使用的 `fs-extra` 调用统一迁移到 `@weapp-core/shared` 提供的原生 `node:fs` / `node:fs/promises` 兼容层，减少重复文件系统封装，并清理相关直接依赖与测试 mock。** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97) by @sonofmagic
+- 📦 **Dependencies** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97)
+  → `@weapp-core/shared@3.0.3`
+
 ## 5.1.5
 
 ### Patch Changes

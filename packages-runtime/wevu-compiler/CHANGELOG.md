@@ -1,5 +1,12 @@
 # @wevu/compiler
 
+## 6.13.4
+
+### Patch Changes
+
+- 📦 **Dependencies** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97)
+  → `@weapp-core/shared@3.0.3`, `@weapp-vite/ast@6.13.4`
+
 ## 6.13.3
 
 ### Patch Changes

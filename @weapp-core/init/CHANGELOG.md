@@ -1,5 +1,13 @@
 # @weapp-core/init
 
+## 6.0.6
+
+### Patch Changes
+
+- 🐛 **将多个源码包中直接使用的 `fs-extra` 调用统一迁移到 `@weapp-core/shared` 提供的原生 `node:fs` / `node:fs/promises` 兼容层，减少重复文件系统封装，并清理相关直接依赖与测试 mock。** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97) by @sonofmagic
+- 📦 **Dependencies** [`09b2383`](https://github.com/weapp-vite/weapp-vite/commit/09b2383906143adebb7717d59fe274d34a7b9a97)
+  → `@weapp-core/shared@3.0.3`
+
 ## 6.0.5
 
 ### Patch Changes
