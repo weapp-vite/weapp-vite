@@ -41,6 +41,16 @@ export interface OpenIdeOptions {
   trustProject?: boolean
 }
 
+async function openWechatIdeByAutomator(projectPath: string) {
+  const { Launcher } = await import('@weapp-vite/miniprogram-automator')
+  const launcher = new Launcher()
+  const miniProgram = await launcher.launch({
+    projectPath,
+    trustProject: true,
+  })
+  miniProgram.disconnect()
+}
+
 /**
  * @description 执行 IDE 打开流程，并在登录失效时允许按键重试。
  */
@@ -130,15 +140,23 @@ export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
 }
 
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
+  if (platform === 'weapp' && projectPath && options.trustProject !== false) {
+    try {
+      await openWechatIdeByAutomator(projectPath)
+      return
+    }
+    catch (error) {
+      logger.warn('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
+      logger.error(error)
+    }
+  }
+
   const argv = ['open', '-p']
   if (projectPath) {
     argv.push(projectPath)
   }
   if (shouldPassPlatformArgToIdeOpen(platform)) {
     argv.push('--platform', platform)
-  }
-  if (platform === 'weapp' && options.trustProject !== false) {
-    argv.push('--trust-project')
   }
 
   await runWechatIdeOpenWithRetry(argv)

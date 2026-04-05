@@ -114,6 +114,7 @@
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
+    "@weapp-vite/miniprogram-automator": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "@weapp-vite/web": "workspace:*",
     "@wevu/api": "workspace:*",

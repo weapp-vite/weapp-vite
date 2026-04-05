@@ -18,6 +18,8 @@ const colorsMock = vi.hoisted(() => ({
 const execFileMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
 const createInlineConfigMock = vi.hoisted(() => vi.fn((platform?: string) => ({ platform })))
+const launcherLaunchMock = vi.hoisted(() => vi.fn())
+const miniProgramDisconnectMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
   parse: parseMock,
@@ -40,6 +42,12 @@ vi.mock('./runtime', () => ({
   createInlineConfig: createInlineConfigMock,
 }))
 
+vi.mock('@weapp-vite/miniprogram-automator', () => ({
+  Launcher: class {
+    launch = launcherLaunchMock
+  },
+}))
+
 vi.mock('../logger', () => ({
   default: loggerMock,
   colors: colorsMock,
@@ -58,6 +66,8 @@ describe('openIde', () => {
     loggerMock.error.mockReset()
     execFileMock.mockReset()
     createCompilerContextMock.mockReset()
+    launcherLaunchMock.mockReset()
+    miniProgramDisconnectMock.mockReset()
     createInlineConfigMock.mockClear()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
@@ -75,6 +85,10 @@ describe('openIde', () => {
       return {} as any
     })
     createCompilerContextMock.mockRejectedValue(new Error('load config failed'))
+    launcherLaunchMock.mockResolvedValue({
+      disconnect: miniProgramDisconnectMock,
+    })
+    miniProgramDisconnectMock.mockReset()
   })
 
   it('passes project path and alipay platform to weapp-ide-cli parse', async () => {
@@ -94,18 +108,35 @@ describe('openIde', () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
 
-    expect(parseMock).toHaveBeenCalledWith([
-      'open',
-      '-p',
-      'dist/dev/mp-weixin',
-      '--trust-project',
-    ])
+    expect(launcherLaunchMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      trustProject: true,
+    })
+    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
+    expect(parseMock).not.toHaveBeenCalled()
   })
 
   it('does not append trust-project when explicitly disabled', async () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+    ])
+    expect(launcherLaunchMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to weapp open when automator trust launch fails', async () => {
+    const { openIde } = await import('./openIde')
+    const error = new Error('automator failed')
+    launcherLaunchMock.mockRejectedValueOnce(error)
+
+    await openIde('weapp', 'dist/dev/mp-weixin')
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
+    expect(loggerMock.error).toHaveBeenCalledWith(error)
     expect(parseMock).toHaveBeenCalledWith([
       'open',
       '-p',
@@ -250,7 +281,7 @@ describe('openIde', () => {
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
     waitForRetryKeypressMock.mockResolvedValue(true)
 
-    await openIde('weapp', 'dist/dev/mp-weixin')
+    await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
     expect(parseMock).toHaveBeenCalledTimes(2)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
@@ -268,7 +299,7 @@ describe('openIde', () => {
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
     waitForRetryKeypressMock.mockResolvedValue(false)
 
-    await openIde('weapp', 'dist/dev/mp-weixin')
+    await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
     expect(parseMock).toHaveBeenCalledTimes(1)
     expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
@@ -282,7 +313,7 @@ describe('openIde', () => {
     parseMock.mockRejectedValueOnce(error)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
 
-    await openIde('weapp', 'dist/dev/mp-weixin')
+    await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
     expect(loggerMock.error).toHaveBeenCalledWith(error)
     expect(waitForRetryKeypressMock).not.toHaveBeenCalled()

@@ -1939,6 +1939,9 @@ importers:
       '@weapp-vite/mcp':
         specifier: workspace:*
         version: link:../mcp
+      '@weapp-vite/miniprogram-automator':
+        specifier: workspace:*
+        version: link:../miniprogram-automator
       '@weapp-vite/volar':
         specifier: workspace:*
         version: link:../volar
