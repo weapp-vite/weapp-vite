@@ -1,5 +1,19 @@
 # create-weapp-vite
 
+## 2.0.78
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` App 全局事件在微信开发者工具中可能重复注册的问题，避免 `onError`、`onPageNotFound`、`onUnhandledRejection` 与 `onThemeChange` 在 `github-issues` 等 IDE 运行时场景下触发大量 listener 泄漏告警；同时清理 `issue-320` 复现页的路由初始化噪音，保持 IDE warning 报告聚焦真实异常。** [`f112199`](https://github.com/weapp-vite/weapp-vite/commit/f1121993ab02ed64862a43328ee1997c7d391ec5) by @sonofmagic
+
+- 🐛 **移除模板 `.vscode/settings.json` 中非必需的 Vue 扩展工作区偏好配置，减少新项目默认携带的编辑器个性化设置。** [`26549fc`](https://github.com/weapp-vite/weapp-vite/commit/26549fc4496ca287b8130edc47e1a7d25b52ea06) by @sonofmagic
+
+- 🐛 **同步所有模板的 `.vscode/settings.json` 编辑器配置，禁用 Prettier，并改为使用 ESLint 提示问题与执行保存修复，同时保留 Stylelint 校验能力。** [`801ec1c`](https://github.com/weapp-vite/weapp-vite/commit/801ec1cd88de0de1d81e4c479c9ad92e048e5ecb) by @sonofmagic
+
+- 🐛 **修复微信开发者工具自动化会话在启动抖动阶段容易误判为“HTTP 服务端口未开启”的问题。现在会在 `Extension context invalidated`、websocket 启动超时等可恢复场景下自动重试一次，并在仍然失败时输出更贴近真实状态的错误分类。同步修正 `weapp-vite-tailwindcss-vant-template` 的布局演示页操作区排版，避免 `@vant/weapp` 按钮以内联方式挤压换行导致页面错乱。** [`b4cfb7b`](https://github.com/weapp-vite/weapp-vite/commit/b4cfb7b6503ee4fc8758b9275aabd5f57372dd3e) by @sonofmagic
+
+- 🐛 **移除模板 `.vscode/settings.json` 中已弃用的 TypeScript 编辑器配置，避免新项目默认继承过时设置提示。** [`f5c8169`](https://github.com/weapp-vite/weapp-vite/commit/f5c81693ce7931432ac1436cf55499485705a69a) by @sonofmagic
+
 ## 2.0.77
 
 ### Patch Changes
