@@ -115,7 +115,11 @@ jobs:
             matrix="${single_matrix}"
           fi
 
-          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+          {
+            echo 'matrix<<__CREATE_WEAPP_VITE_MATRIX__'
+            echo "${matrix}"
+            echo '__CREATE_WEAPP_VITE_MATRIX__'
+          } >> "$GITHUB_OUTPUT"
 
           {
             echo "### smoke matrix"

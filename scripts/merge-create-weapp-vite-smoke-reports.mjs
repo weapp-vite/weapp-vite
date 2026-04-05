@@ -19,6 +19,13 @@ function formatMs(value) {
 }
 
 async function findReportFiles(root) {
+  try {
+    await fs.access(root)
+  }
+  catch {
+    return []
+  }
+
   const entries = await fs.readdir(root, { withFileTypes: true })
   const files = []
   for (const entry of entries) {
@@ -36,6 +43,23 @@ async function findReportFiles(root) {
 
 async function main() {
   const files = await findReportFiles(reportsDir)
+  if (files.length === 0) {
+    await fs.mkdir(outputDir, { recursive: true })
+    const emptyMarkdown = [
+      '# Create Weapp Vite Smoke Report',
+      '',
+      'Rows: 0',
+      'Failures: 0',
+      '',
+      'No smoke report artifacts were found.',
+      '',
+      `Source directory: \`${reportsDir}\``,
+    ]
+    await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.md'), `${emptyMarkdown.join('\n')}\n`, 'utf8')
+    await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.json'), `${JSON.stringify({ rows: [], failures: [] }, null, 2)}\n`, 'utf8')
+    return
+  }
+
   const reports = await Promise.all(files.map(async file => JSON.parse(await fs.readFile(file, 'utf8'))))
   const rows = reports.flatMap(report =>
     report.results.map(result => ({
