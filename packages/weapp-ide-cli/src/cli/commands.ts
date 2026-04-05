@@ -11,6 +11,7 @@ import logger, { colors } from '../logger'
 import {
   withMiniProgram,
 } from './automator-session'
+import { captureFullPageScreenshotBuffer } from './fullPageScreenshot'
 
 export interface AutomatorCommandOptions extends AutomatorSessionOptions {}
 
@@ -47,6 +48,7 @@ export interface AuditOptions extends AutomatorCommandOptions {
 export interface ScreenshotOptions extends AutomatorCommandOptions {
   outputPath?: string
   page?: string
+  fullPage?: boolean
 }
 
 export interface ScreenshotResult {
@@ -67,6 +69,14 @@ function createTimeoutError(message: string, code: string) {
   const error = new Error(message) as Error & { code: string }
   error.code = code
   return error
+}
+
+function normalizePagePath(page: string) {
+  return page.startsWith('/') ? page : `/${page}`
+}
+
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
 function withCommandTimeout<T>(task: Promise<T>, timeoutMs: number, message: string, code: string) {
@@ -330,6 +340,10 @@ export async function audit(options: AuditOptions) {
 export async function captureScreenshotBuffer(options: ScreenshotOptions): Promise<Buffer> {
   return await withMiniProgram(options, async (miniProgram) => {
     const commandTimeout = options.timeout ?? 30_000
+    const screenshotTimeoutMessage = i18nText(
+      `截图请求在 ${commandTimeout}ms 内未收到 DevTools 回包，请检查当前微信开发者工具是否仍停留在目标项目；若近期执行过其他 e2e / screenshot 任务，关闭多余窗口并清理残留 automator 会话后重试。`,
+      `Screenshot request did not receive a DevTools response within ${commandTimeout}ms. Check that the current Wechat DevTools window is still the target project. If you recently ran other e2e or screenshot tasks, close extra windows and clean up stale automator sessions before retrying.`,
+    )
 
     logger.info(i18nText(
       `正在连接 DevTools：${colors.cyan(options.projectPath)}...`,
@@ -337,21 +351,32 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
     ))
 
     if (options.page) {
+      const normalizedPage = normalizePagePath(options.page)
       logger.info(i18nText(
-        `正在跳转页面 ${colors.cyan(options.page)}...`,
-        `Navigating to page ${colors.cyan(options.page)}...`,
+        `正在跳转页面 ${colors.cyan(normalizedPage)}...`,
+        `Navigating to page ${colors.cyan(normalizedPage)}...`,
       ))
-      await miniProgram.reLaunch(options.page)
+      await miniProgram.reLaunch(normalizedPage)
+      if (options.fullPage) {
+        await sleep(1000)
+      }
+    }
+
+    if (options.fullPage) {
+      logger.info(i18nText('正在生成整页长截图...', 'Capturing full-page screenshot...'))
+      return await captureFullPageScreenshotBuffer({
+        miniProgram,
+        timeoutMs: commandTimeout,
+        runWithTimeout: withCommandTimeout,
+        screenshotTimeoutMessage,
+      })
     }
 
     logger.info(i18nText('正在截图...', 'Taking screenshot...'))
     const screenshot = await withCommandTimeout(
       miniProgram.screenshot(),
       commandTimeout,
-      i18nText(
-        `截图请求在 ${commandTimeout}ms 内未收到 DevTools 回包，请检查当前微信开发者工具是否仍停留在目标项目；若近期执行过其他 e2e / screenshot 任务，关闭多余窗口并清理残留 automator 会话后重试。`,
-        `Screenshot request did not receive a DevTools response within ${commandTimeout}ms. Check that the current Wechat DevTools window is still the target project. If you recently ran other e2e or screenshot tasks, close extra windows and clean up stale automator sessions before retrying.`,
-      ),
+      screenshotTimeoutMessage,
       'DEVTOOLS_SCREENSHOT_TIMEOUT',
     )
     const buffer = typeof screenshot === 'string'

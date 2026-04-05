@@ -14,6 +14,7 @@ ${colors.bold('参数:')}
   -p, --project <path>   项目路径（默认：当前目录）
   -o, --output <path>    截图输出文件路径
       --page <path>      截图前先跳转页面
+      --full-page        输出整页长截图
   -t, --timeout <ms>     连接超时时间（默认：30000）
       --json             以 JSON 格式输出
       --lang <lang>      语言切换：zh | en（默认：zh）
@@ -29,6 +30,9 @@ ${colors.bold('示例:')}
   # 先跳转页面再截图
   weapp screenshot -p /path/to/project --page pages/index/index
 
+  # 输出整页长截图
+  weapp screenshot -p /path/to/project --page pages/index/index --full-page -o full.png
+
   # 以 JSON 输出便于脚本解析
   weapp screenshot -p /path/to/project --json
 `, `
@@ -38,6 +42,7 @@ ${colors.bold('Options:')}
   -p, --project <path>   Project path (default: current directory)
   -o, --output <path>    Output file path for screenshot
       --page <path>      Navigate to page before taking screenshot
+      --full-page        Capture a stitched full-page screenshot
   -t, --timeout <ms>     Connection timeout in milliseconds (default: 30000)
       --json             Output as JSON format
       --lang <lang>      Language: zh | en (default: zh)
@@ -53,6 +58,9 @@ ${colors.bold('Examples:')}
   # Navigate to page first
   weapp screenshot -p /path/to/project --page pages/index/index
 
+  # Capture a stitched full-page screenshot
+  weapp screenshot -p /path/to/project --page pages/index/index --full-page -o full.png
+
   # JSON output for parsing
   weapp screenshot -p /path/to/project --json
 `))
@@ -63,12 +71,16 @@ ${colors.bold('Examples:')}
  */
 export function parseScreenshotArgs(argv: string[]): ScreenshotOptions {
   const parsed = parseAutomatorArgs(argv)
+  const outputPath = readOptionValue(argv, '-o') || readOptionValue(argv, '--output')
+  const page = readOptionValue(argv, '--page')
+  const fullPage = argv.includes('--full-page')
 
   return {
     projectPath: parsed.projectPath,
-    timeout: parsed.timeout,
-    outputPath: readOptionValue(argv, '-o') || readOptionValue(argv, '--output'),
-    page: readOptionValue(argv, '--page'),
+    ...(parsed.timeout ? { timeout: parsed.timeout } : {}),
+    ...(outputPath ? { outputPath } : {}),
+    ...(page ? { page } : {}),
+    ...(fullPage ? { fullPage: true } : {}),
   }
 }
 

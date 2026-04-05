@@ -61,6 +61,11 @@ describe('screenshot helpers', () => {
       expect(options.page).toBe('pages/index/index')
     })
 
+    it('parses --full-page flag', () => {
+      const options = parseScreenshotArgs(['--full-page'])
+      expect(options.fullPage).toBe(true)
+    })
+
     it('parses -t for timeout', () => {
       const options = parseScreenshotArgs(['-t', '60000'])
       expect(options.timeout).toBe(60000)
@@ -84,6 +89,7 @@ describe('screenshot helpers', () => {
         'output.png',
         '--page',
         'pages/home/index',
+        '--full-page',
         '-t',
         '45000',
       ])
@@ -91,6 +97,7 @@ describe('screenshot helpers', () => {
         projectPath: '/my/project',
         outputPath: 'output.png',
         page: 'pages/home/index',
+        fullPage: true,
         timeout: 45000,
       })
     })

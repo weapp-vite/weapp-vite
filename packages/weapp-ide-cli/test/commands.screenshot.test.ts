@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { PNG } from 'pngjs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
@@ -18,6 +19,19 @@ vi.mock('../src/logger', () => ({
 }))
 
 describe('captureScreenshotBuffer', () => {
+  function createSolidPng(width: number, height: number, rgba: [number, number, number, number]) {
+    const png = new PNG({ width, height })
+
+    for (let index = 0; index < png.data.length; index += 4) {
+      png.data[index] = rgba[0]
+      png.data[index + 1] = rgba[1]
+      png.data[index + 2] = rgba[2]
+      png.data[index + 3] = rgba[3]
+    }
+
+    return PNG.sync.write(png)
+  }
+
   beforeEach(() => {
     vi.resetModules()
     vi.useFakeTimers()
@@ -61,5 +75,66 @@ describe('captureScreenshotBuffer', () => {
     })
 
     expect(result.equals(expected)).toBe(true)
+  })
+
+  it('normalizes page paths before relaunching', async () => {
+    const reLaunch = vi.fn()
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        reLaunch,
+        screenshot: () => Promise.resolve(Buffer.from('png-data').toString('base64')),
+      })
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+
+    await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      page: 'pages/index/index',
+    })
+
+    expect(reLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('stitches multiple viewport screenshots when fullPage is enabled', async () => {
+    const red = createSolidPng(8, 20, [255, 0, 0, 255])
+    const green = createSolidPng(8, 20, [0, 255, 0, 255])
+    const blue = createSolidPng(8, 20, [0, 0, 255, 255])
+    const pageScrollTo = vi.fn()
+    const waitFor = vi.fn().mockResolvedValue(undefined)
+    const screenshot = vi.fn()
+      .mockResolvedValueOnce(red.toString('base64'))
+      .mockResolvedValueOnce(green.toString('base64'))
+      .mockResolvedValueOnce(blue.toString('base64'))
+
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        currentPage: () => Promise.resolve({
+          size: () => Promise.resolve({ width: 8, height: 45 }),
+          waitFor,
+        }),
+        systemInfo: () => Promise.resolve({ windowHeight: 20 }),
+        pageScrollTo,
+        screenshot,
+      })
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+    const result = await captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      fullPage: true,
+      timeout: 1234,
+    })
+    const stitched = PNG.sync.read(result)
+
+    expect(pageScrollTo).toHaveBeenNthCalledWith(1, 0)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(2, 20)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(3, 25)
+    expect(waitFor).toHaveBeenCalledTimes(3)
+    expect(stitched.height).toBe(45)
+    expect(stitched.width).toBe(8)
+    expect(Array.from(stitched.data.slice(0, 4))).toEqual([255, 0, 0, 255])
+    expect(Array.from(stitched.data.slice(20 * 8 * 4, 20 * 8 * 4 + 4))).toEqual([0, 255, 0, 255])
+    expect(Array.from(stitched.data.slice(40 * 8 * 4, 40 * 8 * 4 + 4))).toEqual([0, 0, 255, 255])
   })
 })
