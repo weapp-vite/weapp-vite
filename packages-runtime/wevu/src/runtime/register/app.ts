@@ -5,6 +5,7 @@ import { getMiniProgramGlobalObject } from '../platform'
 import { runInlineExpression } from './inline'
 import { mountRuntimeInstance } from './runtimeInstance'
 
+const APP_GLOBAL_LISTENER_STORE_KEY = '__wevuAppGlobalListeners'
 const MEMORY_WARNING_LISTENER_KEY = '__wevuOnMemoryWarningListener'
 
 function bindMemoryWarningListener(target: InternalRuntimeState) {
@@ -39,6 +40,85 @@ function bindMemoryWarningListener(target: InternalRuntimeState) {
   onMemoryWarning(listener)
 }
 
+function bindAppGlobalListener(target: InternalRuntimeState, options: {
+  hookName: 'onError' | 'onPageNotFound' | 'onUnhandledRejection' | 'onThemeChange'
+  onApiName: 'onError' | 'onPageNotFound' | 'onUnhandledRejection' | 'onThemeChange'
+  offApiName: 'offError' | 'offPageNotFound' | 'offUnhandledRejection' | 'offThemeChange'
+  userHandler?: ((...args: any[]) => any) | undefined
+}) {
+  const { hookName, onApiName, offApiName, userHandler } = options
+  const hooks = target.__wevuHooks as Record<string, any> | undefined
+  const hasHook = Boolean(hooks?.[hookName])
+  const wxGlobal = getMiniProgramGlobalObject()
+  const onApi = wxGlobal?.[onApiName]
+  const offApi = wxGlobal?.[offApiName]
+  const store = ((target as any)[APP_GLOBAL_LISTENER_STORE_KEY] ??= Object.create(null)) as Record<string, ((...args: any[]) => void) | undefined>
+  const existing = store[hookName]
+
+  if (typeof existing === 'function' && typeof offApi === 'function') {
+    try {
+      offApi(existing)
+    }
+    catch {
+      // 忽略平台差异导致的取消监听异常
+    }
+  }
+
+  if (!hasHook && typeof userHandler !== 'function') {
+    delete store[hookName]
+    return
+  }
+
+  const dispatch = (...args: any[]) => {
+    callHookList(target, hookName, args)
+    if (typeof userHandler === 'function') {
+      userHandler.apply(target, args)
+    }
+  }
+
+  ;(target as any)[hookName] = dispatch
+  store[hookName] = dispatch
+
+  if (typeof onApi === 'function') {
+    onApi(dispatch)
+  }
+}
+
+function bindAppGlobalListeners(
+  target: InternalRuntimeState,
+  handlers: {
+    onError?: ((...args: any[]) => any) | undefined
+    onPageNotFound?: ((...args: any[]) => any) | undefined
+    onUnhandledRejection?: ((...args: any[]) => any) | undefined
+    onThemeChange?: ((...args: any[]) => any) | undefined
+  },
+) {
+  bindAppGlobalListener(target, {
+    hookName: 'onError',
+    onApiName: 'onError',
+    offApiName: 'offError',
+    userHandler: handlers.onError,
+  })
+  bindAppGlobalListener(target, {
+    hookName: 'onPageNotFound',
+    onApiName: 'onPageNotFound',
+    offApiName: 'offPageNotFound',
+    userHandler: handlers.onPageNotFound,
+  })
+  bindAppGlobalListener(target, {
+    hookName: 'onUnhandledRejection',
+    onApiName: 'onUnhandledRejection',
+    offApiName: 'offUnhandledRejection',
+    userHandler: handlers.onUnhandledRejection,
+  })
+  bindAppGlobalListener(target, {
+    hookName: 'onThemeChange',
+    onApiName: 'onThemeChange',
+    offApiName: 'offThemeChange',
+    userHandler: handlers.onThemeChange,
+  })
+}
+
 /**
  * 注册 App 入口（框架内部使用）。
  * @internal
@@ -71,10 +151,20 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   }
 
   const userOnLaunch = appOptions.onLaunch
+  const userOnError = appOptions.onError
+  const userOnPageNotFound = (appOptions as any).onPageNotFound
+  const userOnUnhandledRejection = (appOptions as any).onUnhandledRejection
+  const userOnThemeChange = (appOptions as any).onThemeChange
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
     this.__wevuIsAppInstance = true
     mountRuntimeInstance(this, runtimeApp, watch, setup)
     bindMemoryWarningListener(this)
+    bindAppGlobalListeners(this, {
+      onError: userOnError,
+      onPageNotFound: userOnPageNotFound,
+      onUnhandledRejection: userOnUnhandledRejection,
+      onThemeChange: userOnThemeChange,
+    })
     callHookList(this, 'onLaunch', args)
     if (typeof userOnLaunch === 'function') {
       userOnLaunch.apply(this, args)
@@ -97,37 +187,10 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
     }
   }
 
-  const userOnError = appOptions.onError
-  appOptions.onError = function onError(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onError', args)
-    if (typeof userOnError === 'function') {
-      userOnError.apply(this, args)
-    }
-  }
-
-  const userOnPageNotFound = (appOptions as any).onPageNotFound
-  ;(appOptions as any).onPageNotFound = function onPageNotFound(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onPageNotFound', args)
-    if (typeof userOnPageNotFound === 'function') {
-      userOnPageNotFound.apply(this, args)
-    }
-  }
-
-  const userOnUnhandledRejection = (appOptions as any).onUnhandledRejection
-  ;(appOptions as any).onUnhandledRejection = function onUnhandledRejection(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onUnhandledRejection', args)
-    if (typeof userOnUnhandledRejection === 'function') {
-      userOnUnhandledRejection.apply(this, args)
-    }
-  }
-
-  const userOnThemeChange = (appOptions as any).onThemeChange
-  ;(appOptions as any).onThemeChange = function onThemeChange(this: InternalRuntimeState, ...args: any[]) {
-    callHookList(this, 'onThemeChange', args)
-    if (typeof userOnThemeChange === 'function') {
-      userOnThemeChange.apply(this, args)
-    }
-  }
+  delete appOptions.onError
+  delete (appOptions as any).onPageNotFound
+  delete (appOptions as any).onUnhandledRejection
+  delete (appOptions as any).onThemeChange
 
   for (const methodName of methodNames) {
     const userMethod = appOptions[methodName]

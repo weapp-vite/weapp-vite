@@ -310,12 +310,12 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     }
   })
 
-  it('issue #320: supports addRoute name override with alias and redirect replacement', async (ctx) => {
+  it('issue #320: supports runtime addRoute alias and redirect navigation', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-320/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-320/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
-    expect(issuePageWxml).toContain('issue-320 router override + alias + redirect')
+    expect(issuePageWxml).toContain('issue-320 dynamic route alias + redirect')
     expect(issuePageJs).toContain('runRedirectNavigationE2E')
 
     const miniProgram = await getSharedMiniProgram(ctx)

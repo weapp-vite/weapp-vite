@@ -16,16 +16,6 @@ export function ensureGithubIssuesRouter() {
       ...autoRoutes.entries.map(path => ({
         path: `/${path}`,
       })),
-      {
-        name: 'issue320-home',
-        path: '/pages/issue-320/index',
-      },
-      {
-        name: 'issue320-legacy',
-        path: '/pages/issue-320/legacy',
-        alias: '/pages/issue-320/legacy-alias',
-        redirect: '/pages/issue-320/index?from=legacy',
-      },
     ],
   })
 

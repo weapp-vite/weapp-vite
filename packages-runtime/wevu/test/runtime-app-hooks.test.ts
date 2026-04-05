@@ -46,6 +46,33 @@ describe('runtime: app-level hooks', () => {
 
   it('onLaunch/onShow/onPageNotFound/onUnhandledRejection/onThemeChange via wevu hooks', async () => {
     const logs: string[] = []
+    let errorListener: ((...args: any[]) => void) | undefined
+    let pageNotFoundListener: ((...args: any[]) => void) | undefined
+    let unhandledRejectionListener: ((...args: any[]) => void) | undefined
+    let themeChangeListener: ((...args: any[]) => void) | undefined
+    const offError = vi.fn()
+    const offPageNotFound = vi.fn()
+    const offUnhandledRejection = vi.fn()
+    const offThemeChange = vi.fn()
+    ;(globalThis as any).wx = {
+      onError: vi.fn((fn: (...args: any[]) => void) => {
+        errorListener = fn
+      }),
+      offError,
+      onPageNotFound: vi.fn((fn: (...args: any[]) => void) => {
+        pageNotFoundListener = fn
+      }),
+      offPageNotFound,
+      onUnhandledRejection: vi.fn((fn: (...args: any[]) => void) => {
+        unhandledRejectionListener = fn
+      }),
+      offUnhandledRejection,
+      onThemeChange: vi.fn((fn: (...args: any[]) => void) => {
+        themeChangeListener = fn
+      }),
+      offThemeChange,
+    }
+
     createApp({
       data: () => ({}),
       setup() {
@@ -64,14 +91,24 @@ describe('runtime: app-level hooks', () => {
     const appInst: any = {}
 
     appOptions.onLaunch.call(appInst, {})
+    expect(appOptions.onError).toBeUndefined()
+    expect(appOptions.onPageNotFound).toBeUndefined()
+    expect(appOptions.onUnhandledRejection).toBeUndefined()
+    expect(appOptions.onThemeChange).toBeUndefined()
     appOptions.onShow.call(appInst, {})
     appOptions.onHide.call(appInst)
-    appOptions.onError.call(appInst, 'boom')
-    appOptions.onPageNotFound.call(appInst, { path: '/missing', query: {}, isEntryPage: true })
-    appOptions.onUnhandledRejection.call(appInst, { promise: Promise.resolve(), reason: 'oops' })
-    appOptions.onThemeChange.call(appInst, { theme: 'dark' })
+    errorListener?.('boom')
+    pageNotFoundListener?.({ path: '/missing', query: {}, isEntryPage: true })
+    unhandledRejectionListener?.({ promise: Promise.resolve(), reason: 'oops' })
+    themeChangeListener?.({ theme: 'dark' })
 
     expect(logs).toEqual(['launch', 'show', 'hide', 'error', 'notFound', 'unhandled', 'theme'])
+
+    appOptions.onLaunch.call(appInst, {})
+    expect(offError).toHaveBeenCalledTimes(1)
+    expect(offPageNotFound).toHaveBeenCalledTimes(1)
+    expect(offUnhandledRejection).toHaveBeenCalledTimes(1)
+    expect(offThemeChange).toHaveBeenCalledTimes(1)
   })
 
   it('binds wx.onMemoryWarning and dispatches onMemoryWarning hook', async () => {

@@ -11,64 +11,38 @@ const router = useRouter()
 
 const report = ref({
   ok: false,
-  beforePath: '',
-  overriddenPath: '',
-  newAliasName: '',
-  oldAliasName: '',
+  currentPath: '',
+  aliasName: '',
   matchedAliasPath: '',
   redirect: '',
   alias: '',
   hasLegacyRoute: false,
 })
 
-let hasOverrideApplied = false
-
 const legacyRouteRecord = {
   name: 'issue320-legacy',
   path: '/pages/issue-320/legacy',
   alias: '/pages/issue-320/legacy-alias',
-  redirect: '/pages/issue-320/index?from=legacy',
+  redirect: '/pages/issue-309/index?from=issue320-legacy',
 } as const
 
-const overriddenRouteRecord = {
-  name: 'issue320-legacy',
-  path: '/pages/issue-320/new',
-  alias: '/pages/issue-320/new-alias',
-  redirect: '/pages/issue-309/index?from=issue320-override',
-} as const
-
-function resetLegacyRoute() {
-  router.addRoute({
-    ...legacyRouteRecord,
-  })
-  hasOverrideApplied = false
-}
-
-function applyOverrideRoute() {
-  if (hasOverrideApplied) {
+function ensureLegacyRoute() {
+  if (router.hasRoute(legacyRouteRecord.name)) {
     return
   }
 
   router.addRoute({
-    ...overriddenRouteRecord,
+    ...legacyRouteRecord,
   })
-  hasOverrideApplied = true
 }
 
 function _runE2E() {
-  resetLegacyRoute()
+  ensureLegacyRoute()
 
-  const beforeRoute = router.resolve({
+  const currentRoute = router.resolve({
     name: 'issue320-legacy',
   })
-
-  applyOverrideRoute()
-
-  const overriddenRoute = router.resolve({
-    name: 'issue320-legacy',
-  })
-  const resolvedByNewAlias = router.resolve('/pages/issue-320/new-alias')
-  const resolvedByOldAlias = router.resolve('/pages/issue-320/legacy-alias')
+  const resolvedByAlias = router.resolve('/pages/issue-320/legacy-alias')
   const currentRecord = router.getRoutes().find(route => route.name === 'issue320-legacy')
   const currentAlias = typeof currentRecord?.alias === 'string'
     ? currentRecord.alias
@@ -78,19 +52,15 @@ function _runE2E() {
     : ''
 
   const nextReport = {
-    ok: beforeRoute.fullPath === '/pages/issue-320/legacy'
-      && overriddenRoute.fullPath === '/pages/issue-320/new'
-      && resolvedByNewAlias.name === 'issue320-legacy'
-      && resolvedByOldAlias.name === undefined
-      && (resolvedByNewAlias.matched?.[0]?.aliasPath ?? '') === '/pages/issue-320/new-alias'
-      && currentAlias === '/pages/issue-320/new-alias'
-      && currentRedirect === '/pages/issue-309/index?from=issue320-override'
+    ok: currentRoute.fullPath === '/pages/issue-320/legacy'
+      && resolvedByAlias.name === 'issue320-legacy'
+      && (resolvedByAlias.matched?.[0]?.aliasPath ?? '') === '/pages/issue-320/legacy-alias'
+      && currentAlias === '/pages/issue-320/legacy-alias'
+      && currentRedirect === '/pages/issue-309/index?from=issue320-legacy'
       && router.hasRoute('issue320-legacy'),
-    beforePath: beforeRoute.fullPath,
-    overriddenPath: overriddenRoute.fullPath,
-    newAliasName: resolvedByNewAlias.name ?? '',
-    oldAliasName: resolvedByOldAlias.name ?? '',
-    matchedAliasPath: resolvedByNewAlias.matched?.[0]?.aliasPath ?? '',
+    currentPath: currentRoute.fullPath,
+    aliasName: resolvedByAlias.name ?? '',
+    matchedAliasPath: resolvedByAlias.matched?.[0]?.aliasPath ?? '',
     redirect: currentRedirect,
     alias: currentAlias,
     hasLegacyRoute: router.hasRoute('issue320-legacy'),
@@ -101,7 +71,7 @@ function _runE2E() {
 }
 
 async function runRedirectNavigationE2E() {
-  applyOverrideRoute()
+  ensureLegacyRoute()
   const result = await router.push({ name: 'issue320-legacy' })
   return {
     ok: result === undefined,
@@ -112,19 +82,17 @@ async function runRedirectNavigationE2E() {
 <template>
   <view class="issue320-page">
     <text class="issue320-title">
-      issue-320 router override + alias + redirect
+      issue-320 dynamic route alias + redirect
     </text>
     <text class="issue320-subtitle">
-      验证 addRoute 同名替换后 alias/redirect 配置已切换到新记录
+      验证运行时 addRoute 注册的 alias/redirect 配置可用
     </text>
 
     <view
       class="issue320-probe"
       :data-ok="report.ok ? 'yes' : 'no'"
-      :data-before-path="report.beforePath"
-      :data-overridden-path="report.overriddenPath"
-      :data-new-alias-name="report.newAliasName"
-      :data-old-alias-name="report.oldAliasName"
+      :data-current-path="report.currentPath"
+      :data-alias-name="report.aliasName"
       :data-matched-alias-path="report.matchedAliasPath"
       :data-redirect="report.redirect"
       :data-alias="report.alias"

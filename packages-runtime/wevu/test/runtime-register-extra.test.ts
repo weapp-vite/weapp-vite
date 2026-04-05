@@ -29,6 +29,7 @@ beforeEach(() => {
 afterEach(() => {
   delete (globalThis as any).Component
   delete (globalThis as any).App
+  delete (globalThis as any).wx
   setCurrentInstance(undefined)
 })
 
@@ -399,6 +400,13 @@ describe('registerApp', () => {
     const userOnHide = vi.fn()
     const userOnError = vi.fn()
     const userMethod = vi.fn(() => 'user')
+    let errorListener: ((...args: any[]) => void) | undefined
+    ;(globalThis as any).wx = {
+      onError: vi.fn((fn: (...args: any[]) => void) => {
+        errorListener = fn
+      }),
+      offError: vi.fn(),
+    }
 
     registerApp(app, { ping: vi.fn(() => 'pong') }, undefined, undefined, {
       onLaunch: userOnLaunch,
@@ -414,12 +422,13 @@ describe('registerApp', () => {
     options.onLaunch.call(instance)
     options.onShow.call(instance)
     options.onHide.call(instance)
-    options.onError.call(instance)
+    errorListener?.()
 
     expect(userOnLaunch).toHaveBeenCalled()
     expect(userOnShow).toHaveBeenCalled()
     expect(userOnHide).toHaveBeenCalled()
     expect(userOnError).toHaveBeenCalled()
+    expect(options.onError).toBeUndefined()
 
     instance.__wevu = { methods: { ping: () => 'pong' }, proxy: {} }
     expect(options.ping.call(instance)).toBe('user')
