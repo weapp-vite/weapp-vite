@@ -17,8 +17,29 @@ interface IAuditsOptions {
   path?: string
 }
 type AutomatorCallable = (...args: any[]) => any
+
+const CLOSE_STEP_TIMEOUT = 2000
+
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function withTimeout<T>(task: Promise<T>, timeoutMs: number) {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`Operation timed out after ${timeoutMs}ms`))
+    }, timeoutMs)
+
+    task
+      .then((value) => {
+        clearTimeout(timeout)
+        resolve(value)
+      })
+      .catch((error) => {
+        clearTimeout(timeout)
+        reject(error)
+      })
+  })
 }
 function isFnStr(value: unknown) {
   if (!isStr(value)) {
@@ -141,13 +162,19 @@ export default class MiniProgram extends EventEmitter {
 
   async close() {
     try {
-      await this.send('App.exit')
+      await withTimeout(this.send('App.exit'), CLOSE_STEP_TIMEOUT)
     }
     catch {
     }
     await sleep(1000)
-    await this.send('Tool.close')
-    this.disconnect()
+    try {
+      await withTimeout(this.send('Tool.close'), CLOSE_STEP_TIMEOUT)
+    }
+    catch {
+    }
+    finally {
+      this.disconnect()
+    }
   }
 
   async remote(auto = false) {

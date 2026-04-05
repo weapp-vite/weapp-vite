@@ -63,6 +63,30 @@ interface PageSnapshot {
   query: Record<string, unknown> | undefined
 }
 
+function createTimeoutError(message: string, code: string) {
+  const error = new Error(message) as Error & { code: string }
+  error.code = code
+  return error
+}
+
+function withCommandTimeout<T>(task: Promise<T>, timeoutMs: number, message: string, code: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(createTimeoutError(message, code))
+    }, timeoutMs)
+
+    task
+      .then((value) => {
+        clearTimeout(timeout)
+        resolve(value)
+      })
+      .catch((error) => {
+        clearTimeout(timeout)
+        reject(error)
+      })
+  })
+}
+
 async function runRouteCommand(
   options: AutomatorCommandOptions,
   startMessage: string,
@@ -305,6 +329,8 @@ export async function audit(options: AuditOptions) {
  */
 export async function captureScreenshotBuffer(options: ScreenshotOptions): Promise<Buffer> {
   return await withMiniProgram(options, async (miniProgram) => {
+    const commandTimeout = options.timeout ?? 30_000
+
     logger.info(i18nText(
       `正在连接 DevTools：${colors.cyan(options.projectPath)}...`,
       `Connecting to DevTools at ${colors.cyan(options.projectPath)}...`,
@@ -319,7 +345,15 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
     }
 
     logger.info(i18nText('正在截图...', 'Taking screenshot...'))
-    const screenshot = await miniProgram.screenshot()
+    const screenshot = await withCommandTimeout(
+      miniProgram.screenshot(),
+      commandTimeout,
+      i18nText(
+        `截图请求在 ${commandTimeout}ms 内未收到 DevTools 回包，请检查当前微信开发者工具是否仍停留在目标项目；若近期执行过其他 e2e / screenshot 任务，关闭多余窗口并清理残留 automator 会话后重试。`,
+        `Screenshot request did not receive a DevTools response within ${commandTimeout}ms. Check that the current Wechat DevTools window is still the target project. If you recently ran other e2e or screenshot tasks, close extra windows and clean up stale automator sessions before retrying.`,
+      ),
+      'DEVTOOLS_SCREENSHOT_TIMEOUT',
+    )
     const buffer = typeof screenshot === 'string'
       ? Buffer.from(screenshot, 'base64')
       : Buffer.from(screenshot)

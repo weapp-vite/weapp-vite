@@ -158,4 +158,23 @@ describe('MiniProgram', () => {
     expect(first).toBe(second)
     expect(connection.dispose).toHaveBeenCalledTimes(1)
   })
+
+  it('still disposes the connection when close steps never respond', async () => {
+    const connection = new FakeConnection()
+    connection.send.mockImplementation((method: string) => {
+      if (method === 'App.exit' || method === 'Tool.close') {
+        return new Promise(() => {})
+      }
+      return Promise.resolve({})
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.close()
+    await vi.advanceTimersByTimeAsync(5000)
+    await pending
+
+    expect(connection.send).toHaveBeenCalledWith('App.exit', {})
+    expect(connection.send).toHaveBeenCalledWith('Tool.close', {})
+    expect(connection.dispose).toHaveBeenCalledTimes(1)
+  })
 })

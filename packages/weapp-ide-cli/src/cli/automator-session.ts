@@ -4,6 +4,7 @@ import logger from '../logger'
 import {
   formatAutomatorLoginError,
   isAutomatorLoginError,
+  isAutomatorWsConnectError,
   isDevtoolsExtensionContextInvalidatedError,
   isDevtoolsHttpPortError,
   launchAutomator,
@@ -57,6 +58,18 @@ function normalizeMiniProgramConnectionError(error: unknown) {
       'Please retry shortly. If it keeps failing, close extra DevTools windows and try again.',
     ))
     return new Error('DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED')
+  }
+
+  if (isAutomatorWsConnectError(error)) {
+    logger.error(i18nText(
+      '无法连接到当前项目的微信开发者工具自动化 websocket。',
+      'Cannot connect to the Wechat DevTools automation websocket for the current project.',
+    ))
+    logger.warn(i18nText(
+      '请确认当前打开的是目标项目；若之前跑过其他 e2e / screenshot 任务，关闭多余的微信开发者工具窗口，或结束残留的 `wechatwebdevtools cli auto --project ...` 进程后重试。',
+      'Please confirm the current DevTools window is the target project. If you recently ran other e2e or screenshot tasks, close extra DevTools windows or stop stale `wechatwebdevtools cli auto --project ...` processes and retry.',
+    ))
+    return new Error('DEVTOOLS_WS_CONNECT_ERROR')
   }
 
   return error instanceof Error ? error : new Error(String(error))

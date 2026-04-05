@@ -117,6 +117,14 @@ export function isRetryableAutomatorLaunchError(error: unknown): boolean {
 }
 
 /**
+ * @description 判断错误是否属于开发者工具 websocket 连接失败。
+ */
+export function isAutomatorWsConnectError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return AUTOMATOR_WS_CONNECT_RE.test(message)
+}
+
+/**
  * @description 判断错误是否属于开发者工具登录失效。
  */
 export function isAutomatorLoginError(error: unknown): boolean {

@@ -97,31 +97,22 @@ function resolveManagedTsconfigBootstrapRoot(args: string[]) {
 }
 
 try {
-  Promise.resolve()
-    .then(async () => {
-      const args = process.argv.slice(2)
-      const forwarded = await tryRunIdeCommand(args)
-      if (forwarded) {
-        return
-      }
-      const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
-      if (managedTsconfigBootstrapRoot) {
-        await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
-      }
-      cli.parse(process.argv, { run: false })
-      await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
-      await cli.runMatchedCommand()
-    })
-    .catch((error) => {
-      const args = process.argv.slice(2)
-      if (handlePrepareLifecycleError(args, error)) {
-        return
-      }
-      handleCLIError(error)
-      process.exitCode = 1
-    })
+  const args = process.argv.slice(2)
+  const forwarded = await tryRunIdeCommand(args)
+  if (!forwarded) {
+    const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
+    if (managedTsconfigBootstrapRoot) {
+      await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
+    }
+    cli.parse(process.argv, { run: false })
+    await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+    await cli.runMatchedCommand()
+  }
 }
 catch (error) {
-  handleCLIError(error)
-  process.exitCode = 1
+  const args = process.argv.slice(2)
+  if (!handlePrepareLifecycleError(args, error)) {
+    handleCLIError(error)
+    process.exitCode = 1
+  }
 }
