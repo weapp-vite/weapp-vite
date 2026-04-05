@@ -11,6 +11,7 @@ const templates = Templates.map((x) => {
     dest: `../templates/${x.dest}`,
   }
 })
+const WINDOWS_VERBATIM_PATH_RE = /^\\\\\?\\/
 
 async function ensureGitignoreForTemplate(templateRoot: string) {
   const dotGitignore = path.resolve(templateRoot, '.gitignore')
@@ -21,16 +22,22 @@ async function ensureGitignoreForTemplate(templateRoot: string) {
   }
 }
 
+function normalizeTemplatePath(value: string) {
+  return value.replace(WINDOWS_VERBATIM_PATH_RE, '').split('\\').join('/')
+}
+
 function normalizeTemplateRelativePath(relativePath: string) {
   if (!relativePath || relativePath === '.') {
     return ''
   }
 
-  return relativePath.split('\\').join('/')
+  return normalizeTemplatePath(relativePath)
 }
 
 function shouldSkipTemplateFile(filePath: string, templateRoot: string) {
-  const relativePath = normalizeTemplateRelativePath(path.relative(templateRoot, filePath))
+  const relativePath = normalizeTemplateRelativePath(
+    path.relative(normalizeTemplatePath(templateRoot), normalizeTemplatePath(filePath)),
+  )
 
   if (!relativePath) {
     return false

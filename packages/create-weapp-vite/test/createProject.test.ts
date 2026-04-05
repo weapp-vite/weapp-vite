@@ -269,6 +269,25 @@ describe('createProject', () => {
     ).toBe(true)
   })
 
+  it('does not skip template files when Windows verbatim paths are used', () => {
+    const fakeInstalledTemplateRoot = 'C:/tmp/node_modules/create-weapp-vite/templates/default'
+    const windowsVerbatimFilePath = '\\\\?\\C:\\tmp\\node_modules\\create-weapp-vite\\templates\\default\\src\\app.json'
+    const windowsVerbatimNestedNodeModulesPath = '\\\\?\\C:\\tmp\\node_modules\\create-weapp-vite\\templates\\default\\node_modules\\foo\\index.js'
+
+    expect(
+      createProjectInternal.shouldSkipTemplateFile(
+        windowsVerbatimFilePath,
+        fakeInstalledTemplateRoot,
+      ),
+    ).toBe(false)
+    expect(
+      createProjectInternal.shouldSkipTemplateFile(
+        windowsVerbatimNestedNodeModulesPath,
+        fakeInstalledTemplateRoot,
+      ),
+    ).toBe(true)
+  })
+
   it('upserts tailwindcss versions across code paths', async () => {
     const versionSpy = vi.spyOn(npm, 'latestVersion')
       .mockResolvedValueOnce(null)

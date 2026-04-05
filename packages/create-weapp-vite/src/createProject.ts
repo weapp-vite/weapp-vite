@@ -16,6 +16,7 @@ import { writeJsonFile } from './utils/fs'
 
 const DIGIT_RE = /\d/
 const CRLF_RE = /\r\n/g
+const WINDOWS_VERBATIM_PATH_RE = /^\\\\\?\\/
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATE_DIR_MAP: Record<TemplateName, string> = {
   [TemplateName.default]: 'weapp-vite-template',
@@ -38,12 +39,16 @@ function resolveWorkspaceTemplateDir(templateName: TemplateName) {
     : path.resolve(moduleDir, '../../../templates', templateName)
 }
 
+function normalizeTemplatePath(value: string) {
+  return value.replace(WINDOWS_VERBATIM_PATH_RE, '').split('\\').join('/')
+}
+
 function normalizeTemplateRelativePath(relativePath: string) {
   if (!relativePath || relativePath === '.') {
     return ''
   }
 
-  return relativePath.split('\\').join('/')
+  return normalizeTemplatePath(relativePath)
 }
 
 async function resolveTemplateDirs(templateName: TemplateName) {
@@ -61,7 +66,9 @@ async function resolveTemplateDirs(templateName: TemplateName) {
 }
 
 function shouldSkipTemplateFile(filePath: string, templateRoot: string) {
-  const relativePath = normalizeTemplateRelativePath(path.relative(templateRoot, filePath))
+  const relativePath = normalizeTemplateRelativePath(
+    path.relative(normalizeTemplatePath(templateRoot), normalizeTemplatePath(filePath)),
+  )
 
   if (!relativePath) {
     return false
