@@ -88,6 +88,7 @@ ${colors.bold('参数:')}
       --current-output <path>    当前截图输出路径
       --diff-output <path>       diff 图片输出路径
       --page <path>              对比前先跳转页面
+      --full-page                对比时使用整页长截图
       --threshold <number>       pixelmatch threshold（默认：0.1）
       --max-diff-pixels <count>  最大允许差异像素数
       --max-diff-ratio <number>  最大允许差异占比（0-1）
@@ -102,6 +103,8 @@ ${colors.bold('规则:')}
   - baseline 与当前截图尺寸不一致时直接失败
 
 ${colors.bold('示例:')}
+  weapp compare -p ./dist/build/mp-weixin --page pages/index/index --full-page --baseline .screenshots/baseline/index.full.png --current-output .screenshots/current/index.full.png --diff-output .screenshots/diff/index.full.diff.png --max-diff-pixels 100 --json
+
   weapp compare -p ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --current-output .screenshots/current/index.png --diff-output .screenshots/diff/index.diff.png --max-diff-pixels 100 --json
 
   weapp compare -p ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-ratio 0.001
@@ -114,6 +117,7 @@ ${colors.bold('Options:')}
       --current-output <path>    Output file path for current screenshot
       --diff-output <path>       Output file path for diff image
       --page <path>              Navigate to page before comparison
+      --full-page                Use stitched full-page screenshots for comparison
       --threshold <number>       Pixelmatch threshold (default: 0.1)
       --max-diff-pixels <count>  Maximum allowed diff pixels
       --max-diff-ratio <number>  Maximum allowed diff ratio (0-1)
@@ -128,6 +132,8 @@ ${colors.bold('Rules:')}
   - Baseline and current screenshot must have identical dimensions
 
 ${colors.bold('Examples:')}
+  weapp compare -p ./dist/build/mp-weixin --page pages/index/index --full-page --baseline .screenshots/baseline/index.full.png --current-output .screenshots/current/index.full.png --diff-output .screenshots/diff/index.full.diff.png --max-diff-pixels 100 --json
+
   weapp compare -p ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --current-output .screenshots/current/index.png --diff-output .screenshots/diff/index.diff.png --max-diff-pixels 100 --json
 
   weapp compare -p ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-ratio 0.001
@@ -175,6 +181,7 @@ export function parseCompareArgs(argv: string[]): CompareOptions {
     projectPath: parsed.projectPath,
     timeout: parsed.timeout,
     page: readOptionValue(argv, '--page'),
+    fullPage: argv.includes('--full-page'),
     baselinePath,
     currentOutputPath: readOptionValue(argv, '--current-output'),
     diffOutputPath: readOptionValue(argv, '--diff-output'),

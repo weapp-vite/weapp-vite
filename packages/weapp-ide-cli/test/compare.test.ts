@@ -89,6 +89,7 @@ describe('compare helpers', () => {
         '--diff-output=/diff.png',
         '--page',
         'pages/home/index',
+        '--full-page',
         '--threshold',
         '0.2',
         '--max-diff-pixels',
@@ -103,6 +104,7 @@ describe('compare helpers', () => {
         projectPath: '/project',
         timeout: 5000,
         page: 'pages/home/index',
+        fullPage: true,
         baselinePath: '/baseline.png',
         currentOutputPath: '/current.png',
         diffOutputPath: '/diff.png',
@@ -195,6 +197,25 @@ describe('compare helpers', () => {
         maxDiffRatio: undefined,
       }, null, 2))
       expect(process.exitCode).toBeUndefined()
+    })
+
+    it('passes fullPage through to screenshot capture', async () => {
+      const { runCompare } = await loadModule()
+
+      await runCompare([
+        '--baseline',
+        '/baseline.png',
+        '--page',
+        'pages/index/index',
+        '--full-page',
+        '--max-diff-pixels',
+        '100',
+      ])
+
+      expect(captureScreenshotBufferMock).toHaveBeenCalledWith(expect.objectContaining({
+        page: 'pages/index/index',
+        fullPage: true,
+      }))
     })
 
     it('prints text summary and sets exitCode to 1 when comparison fails', async () => {
