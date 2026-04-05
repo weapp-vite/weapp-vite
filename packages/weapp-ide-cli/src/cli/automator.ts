@@ -18,6 +18,7 @@ const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please m
 const DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED_RE = /Extension context invalidated/i
 const AUTOMATOR_LAUNCH_TIMEOUT_RE = /Wait timed out after \d+ ms/i
 const AUTOMATOR_WS_CONNECT_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+/i
+const DEVTOOLS_PROTOCOL_TIMEOUT_RE = /DevTools did not respond to protocol method (\S+) within \d+ms/i
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /listen EPERM/i,
   /operation not permitted 0\.0\.0\.0/i,
@@ -122,6 +123,22 @@ export function isRetryableAutomatorLaunchError(error: unknown): boolean {
 export function isAutomatorWsConnectError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
   return AUTOMATOR_WS_CONNECT_RE.test(message)
+}
+
+/**
+ * @description 判断错误是否属于开发者工具协议调用超时。
+ */
+export function isAutomatorProtocolTimeoutError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return DEVTOOLS_PROTOCOL_TIMEOUT_RE.test(message)
+}
+
+/**
+ * @description 提取协议超时的方法名。
+ */
+export function getAutomatorProtocolTimeoutMethod(error: unknown): string | undefined {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.match(DEVTOOLS_PROTOCOL_TIMEOUT_RE)?.[1]
 }
 
 /**

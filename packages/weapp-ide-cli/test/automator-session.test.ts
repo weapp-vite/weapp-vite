@@ -34,4 +34,19 @@ describe('automator session diagnostics', () => {
     expect(loggerMock.error).toHaveBeenCalledWith('无法连接到当前项目的微信开发者工具自动化 websocket。')
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('wechatwebdevtools cli auto --project'))
   })
+
+  it('maps protocol request timeouts to a friendly diagnostic error', async () => {
+    launchAutomatorMock.mockRejectedValueOnce(Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    ))
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+
+    await expect(connectMiniProgram({ projectPath: '/workspace/project' })).rejects.toThrow('DEVTOOLS_PROTOCOL_TIMEOUT')
+    expect(loggerMock.error).toHaveBeenCalledWith('微信开发者工具在协议调用 App.getCurrentPage 上超时，未按预期返回结果。')
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('当前 DevTools 版本'))
+  })
 })

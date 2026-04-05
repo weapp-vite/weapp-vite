@@ -57,6 +57,24 @@ describe('Connection', () => {
     await expect(pending).rejects.toThrow('Connection closed')
   })
 
+  it('rejects requests that never receive a protocol response', async () => {
+    vi.useFakeTimers()
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+
+    const pending = connection.send('App.getCurrentPage')
+    const assertion = expect(pending).rejects.toMatchObject({
+      code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+      method: 'App.getCurrentPage',
+    })
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    await assertion
+
+    vi.useRealTimers()
+  })
+
   it('emits protocol events without request ids', async () => {
     const { default: Connection } = await import('./Connection')
     const transport = new FakeTransport()

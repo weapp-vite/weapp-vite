@@ -3,7 +3,9 @@ import { i18nText } from '../i18n'
 import logger from '../logger'
 import {
   formatAutomatorLoginError,
+  getAutomatorProtocolTimeoutMethod,
   isAutomatorLoginError,
+  isAutomatorProtocolTimeoutError,
   isAutomatorWsConnectError,
   isDevtoolsExtensionContextInvalidatedError,
   isDevtoolsHttpPortError,
@@ -70,6 +72,19 @@ function normalizeMiniProgramConnectionError(error: unknown) {
       'Please confirm the current DevTools window is the target project. If you recently ran other e2e or screenshot tasks, close extra DevTools windows or stop stale `wechatwebdevtools cli auto --project ...` processes and retry.',
     ))
     return new Error('DEVTOOLS_WS_CONNECT_ERROR')
+  }
+
+  if (isAutomatorProtocolTimeoutError(error)) {
+    const method = getAutomatorProtocolTimeoutMethod(error) ?? 'unknown'
+    logger.error(i18nText(
+      `微信开发者工具在协议调用 ${method} 上超时，未按预期返回结果。`,
+      `Wechat DevTools timed out while executing protocol method ${method} and did not return a result.`,
+    ))
+    logger.warn(i18nText(
+      '这通常表示当前 DevTools 自动化会话已卡住、窗口不在目标项目、或当前 DevTools 版本对该协议调用无响应。请重开目标项目窗口后重试；若仍复现，优先记录当前 DevTools 版本与协议方法名继续排查。',
+      'This usually means the current DevTools automation session is stuck, the window is not on the target project, or the current DevTools version is not responding to that protocol method. Reopen the target project window and retry. If it still reproduces, record the current DevTools version and protocol method name for follow-up debugging.',
+    ))
+    return new Error('DEVTOOLS_PROTOCOL_TIMEOUT')
   }
 
   return error instanceof Error ? error : new Error(String(error))
