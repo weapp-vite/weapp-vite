@@ -22,6 +22,9 @@ const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const maybeStartForwardConsoleMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
+const startDevHotkeysMock = vi.hoisted(() => vi.fn(() => ({
+  close: vi.fn(),
+})))
 
 vi.mock('../../logger', () => ({
   default: {
@@ -66,6 +69,10 @@ vi.mock('../forwardConsole', () => ({
 vi.mock('../openIde', () => ({
   openIde: openIdeMock,
   resolveIdeProjectRoot: vi.fn((root: string) => root),
+}))
+
+vi.mock('../devHotkeys', () => ({
+  startDevHotkeys: startDevHotkeysMock,
 }))
 
 function createServeActionHandler() {
@@ -176,6 +183,11 @@ describe('serve cli command', () => {
       packages: [{ id: 'refresh', label: 'refresh', files: [] }],
       modules: [{ id: 'm1', source: 'src/a.ts', sourceType: 'src', packages: [] }],
       subPackages: [],
+    })
+    expect(startDevHotkeysMock).toHaveBeenCalledWith({
+      cwd: '/project',
+      platform: 'weapp',
+      projectPath: '/project/dist',
     })
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
   })
