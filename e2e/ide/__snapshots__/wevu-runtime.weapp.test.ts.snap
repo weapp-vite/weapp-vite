@@ -2,8 +2,12 @@
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/class-style/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Class Style</view>
       <view class="summary">ok: true</view>
@@ -69,8 +73,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/diff/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Diff</view>
       <view class="summary">ok: true</view>
@@ -91,8 +99,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">HMR</view>
       <view class="summary">ok: true</view>
@@ -109,8 +121,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr-html/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="hmr-html-page">
       <view class="title">HMR-HTML</view>
       <view class="content">HMR-HTML-TEMPLATE</view>
@@ -122,8 +138,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr-sfc/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="hmr-sfc-page">
       <view class="title">HMR-SFC</view>
       <view class="marker">HMR-SFC-SCRIPT</view>
@@ -135,8 +155,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/layouts/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="hero">
         <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
@@ -173,8 +197,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/reactivity/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Reactivity</view>
       <view class="summary">ok: true</view>
@@ -197,8 +225,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/root-guard/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Root Guard Class</view>
       <view class="summary">ok: true</view>
@@ -215,8 +247,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/runtime/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Runtime</view>
       <view class="ref-target" id="runtime-ref">template-ref</view>
@@ -282,8 +318,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/store/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Store</view>
       <view class="summary">ok: true</view>
@@ -305,8 +345,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/store-share/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Store Share</view>
       <view class="summary">ok: true</view>
@@ -323,8 +367,12 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 
 exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/style-matrix/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
     <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
     <view class="page">
       <view class="title">Style Matrix</view>
       <view class="summary">ok: true</view>

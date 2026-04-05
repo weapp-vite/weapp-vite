@@ -31,6 +31,16 @@ interface DependencyMeta {
   source: 'dependencies' | 'none'
 }
 
+const BUILD_ENV_STRIP_PREFIXES = [
+  'npm_lifecycle_',
+  'npm_package_',
+]
+
+const BUILD_ENV_STRIP_KEYS = new Set([
+  'PNPM_PACKAGE_NAME',
+  'PNPM_SCRIPT_SRC_DIR',
+])
+
 function createSkipNpmGuardKey(label: string, projectRoot: string, dependencyMeta: DependencyMeta) {
   return `${label}::${projectRoot}::${dependencyMeta.source}::${dependencyMeta.count}`
 }
@@ -138,6 +148,25 @@ function readDependencyMeta(projectRoot: string): DependencyMeta {
   }
 }
 
+export function sanitizeBuildCommandEnv(env = process.env) {
+  const nextEnv: Record<string, string> = {}
+
+  for (const [key, value] of Object.entries(env)) {
+    if (typeof value !== 'string') {
+      continue
+    }
+    if (BUILD_ENV_STRIP_KEYS.has(key)) {
+      continue
+    }
+    if (BUILD_ENV_STRIP_PREFIXES.some(prefix => key.startsWith(prefix))) {
+      continue
+    }
+    nextEnv[key] = value
+  }
+
+  return nextEnv
+}
+
 export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptions) {
   const {
     cliPath,
@@ -177,6 +206,8 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     const subprocess = execa('node', args, {
       cwd,
       all: true,
+      extendEnv: false,
+      env: sanitizeBuildCommandEnv(),
       reject: false,
     })
 

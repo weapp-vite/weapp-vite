@@ -107,4 +107,18 @@ describe('waitForSocketReady', () => {
 
     await expect(task).rejects.toThrow(/Timed out waiting for automator socket/)
   })
+
+  it('fails fast when spawning the devtools cli itself errors', async () => {
+    const { child } = createMockChild()
+
+    const task = waitForSocketReady({
+      child: child as any,
+      port: 6555,
+      timeoutMs: 5_000,
+    })
+
+    child.emit('error', new Error('spawn /Applications/wechatwebdevtools.app/Contents/MacOS/cli ENOENT'))
+
+    await expect(task).rejects.toThrow(/Failed to spawn WeChat DevTools CLI/)
+  })
 })

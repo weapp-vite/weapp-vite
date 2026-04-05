@@ -6,6 +6,8 @@ import process from 'node:process'
 import { createSuiteReport } from './suiteReport'
 
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
+const DEVTOOLS_SKIP_LOGIN_CHECK_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK'
+const DEVTOOLS_CONFIG_BASENAME = 'vitest.e2e.devtools.config.ts'
 
 export interface SuiteTask {
   artifacts?: SuiteTaskArtifact[]
@@ -42,6 +44,14 @@ const TASK_HEARTBEAT_INTERVAL_MS = 30_000
 
 function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
+}
+
+function isDevtoolsVitestTask(task: SuiteTask) {
+  if (task.command !== 'pnpm') {
+    return false
+  }
+
+  return task.args.some(arg => arg.endsWith(DEVTOOLS_CONFIG_BASENAME))
 }
 
 function createTaskArtifactCollector() {
@@ -212,6 +222,7 @@ export async function runTaskSuite(
   const runTask = options.runTask ?? defaultRunTask
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
+  let devtoolsLoginPreflightPassed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
 
   for (const task of tasks) {
@@ -221,6 +232,12 @@ export async function runTaskSuite(
     let exitCode = 1
 
     try {
+      if (devtoolsLoginPreflightPassed && isDevtoolsVitestTask(task)) {
+        task.env = {
+          ...task.env,
+          [DEVTOOLS_SKIP_LOGIN_CHECK_ENV]: '1',
+        }
+      }
       await options.beforeEachTask?.(task)
       exitCode = await runTask(task)
     }
@@ -243,6 +260,10 @@ export async function runTaskSuite(
 
     const status = exitCode === 0 ? 'pass' : 'fail'
     console.log(`[${suiteName}] ${status} ${task.label} (${formatDuration(durationMs)})`)
+
+    if (exitCode === 0 && isDevtoolsVitestTask(task)) {
+      devtoolsLoginPreflightPassed = true
+    }
   }
 
   await options.afterAll?.()

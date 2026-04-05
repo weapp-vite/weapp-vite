@@ -216,4 +216,38 @@ describe('suiteRunner', () => {
       WEAPP_VITE_E2E_REPORT_MARKERS: '1',
     })
   })
+
+  it('skips repeated devtools login checks after the first successful devtools task', async () => {
+    const tasks: SuiteTask[] = [
+      {
+        label: 'ide/first.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts', '/repo/e2e/ide/first.test.ts'],
+      },
+      {
+        label: 'ide/second.test.ts',
+        command: 'pnpm',
+        args: ['vitest', 'run', '-c', '/repo/e2e/vitest.e2e.devtools.config.ts', '/repo/e2e/ide/second.test.ts'],
+      },
+    ]
+    const observedEnv = vi.fn<(task: SuiteTask) => void>()
+
+    await runTaskSuite('e2e:ide-full', tasks, {
+      beforeEachTask: observedEnv,
+      runTask: vi.fn().mockResolvedValue(0),
+      writeReport: false,
+    })
+
+    const [firstTask] = observedEnv.mock.calls[0] ?? []
+    const [secondTask] = observedEnv.mock.calls[1] ?? []
+
+    expect(firstTask?.label).toBe('ide/first.test.ts')
+    expect(firstTask?.env).toBeUndefined()
+    expect(secondTask).toMatchObject({
+      env: {
+        WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK: '1',
+      },
+      label: 'ide/second.test.ts',
+    })
+  })
 })

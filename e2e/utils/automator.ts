@@ -210,6 +210,7 @@ interface AutomatorCliBridgePayload {
 
 interface AutomatorCliBridgeResult {
   wsEndpoint: string
+  cliPid?: number
 }
 
 function patchNetListenToLoopback() {
@@ -635,6 +636,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
 
   const message = error instanceof Error ? error.message : String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
+    || LAUNCH_TIMEOUT_PATTERN.test(message)
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
     || DEVTOOLS_CLI_EARLY_EXIT_PATTERNS.some(pattern => pattern.test(message))
     || isLikelySimulatorBootErrorMessage(message)
@@ -885,6 +887,66 @@ function patchMiniProgramOn() {
   } as typeof MiniProgram.prototype.on
 }
 
+function isMissingProcessError(error: unknown) {
+  return error instanceof Error && 'code' in error && error.code === 'ESRCH'
+}
+
+export async function terminateBridgeCliProcess(cliPid: number) {
+  const signalTarget = process.platform === 'win32' ? cliPid : -cliPid
+
+  try {
+    process.kill(signalTarget, 'SIGTERM')
+  }
+  catch (error) {
+    if (isMissingProcessError(error)) {
+      return
+    }
+    throw error
+  }
+
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= 1_500) {
+    try {
+      process.kill(cliPid, 0)
+      await sleep(120)
+    }
+    catch (error) {
+      if (isMissingProcessError(error)) {
+        return
+      }
+      throw error
+    }
+  }
+
+  try {
+    process.kill(signalTarget, 'SIGKILL')
+  }
+  catch (error) {
+    if (!isMissingProcessError(error)) {
+      throw error
+    }
+  }
+}
+
+function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, cliPid: number) {
+  const metaKey = '__weappViteBridgeCliCleanupWrapped'
+  if ((miniProgram as Record<string, any>)[metaKey]) {
+    return miniProgram
+  }
+
+  ;(miniProgram as Record<string, any>)[metaKey] = true
+  const rawClose = miniProgram.close.bind(miniProgram)
+  miniProgram.close = async (...args: any[]) => {
+    try {
+      return await rawClose(...args)
+    }
+    finally {
+      await terminateBridgeCliProcess(cliPid).catch(() => {})
+    }
+  }
+  return miniProgram
+}
+
 async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, project: string) {
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
   const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify(options)], {
@@ -977,6 +1039,9 @@ async function launchAutomatorViaCliBridge(options: AutomatorCliBridgePayload, p
     channel: 'launch-bridge',
     text: `connected=${bridgeResult.wsEndpoint}`,
   })
+  if (typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0) {
+    enhanceMiniProgramWithBridgeCliCleanup(miniProgram, bridgeResult.cliPid)
+  }
   return miniProgram
 }
 

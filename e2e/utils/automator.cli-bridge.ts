@@ -19,6 +19,7 @@ interface AutomatorCliBridgePayload {
 
 interface AutomatorCliBridgeResult {
   wsEndpoint: string
+  cliPid?: number
 }
 
 interface WaitForSocketReadyOptions {
@@ -94,6 +95,50 @@ function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
+function isMissingProcessError(error: unknown) {
+  return error instanceof Error && 'code' in error && error.code === 'ESRCH'
+}
+
+async function terminateCliProcessTree(cliPid?: number) {
+  if (!cliPid || cliPid <= 0) {
+    return
+  }
+
+  const signalTarget = process.platform === 'win32' ? cliPid : -cliPid
+  try {
+    process.kill(signalTarget, 'SIGTERM')
+  }
+  catch (error) {
+    if (isMissingProcessError(error)) {
+      return
+    }
+    throw error
+  }
+
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= 1_500) {
+    try {
+      process.kill(cliPid, 0)
+      await sleep(120)
+    }
+    catch (error) {
+      if (isMissingProcessError(error)) {
+        return
+      }
+      throw error
+    }
+  }
+
+  try {
+    process.kill(signalTarget, 'SIGKILL')
+  }
+  catch (error) {
+    if (!isMissingProcessError(error)) {
+      throw error
+    }
+  }
+}
+
 function readJsonObject(filePath: string) {
   try {
     const content = fs.readFileSync(filePath, 'utf8')
@@ -156,6 +201,7 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions) {
   const { child, timeoutMs, port } = options
   const startedAt = Date.now()
   let lastError: unknown
+  let childSpawnError: Error | null = null
   const stdoutChunks: Buffer[] = []
   const stderrChunks: Buffer[] = []
 
@@ -174,9 +220,18 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions) {
     child.once('exit', (exitCode, signal) => {
       childExit = { exitCode, signal }
     })
+    child.once('error', (error) => {
+      childSpawnError = error instanceof Error ? error : new Error(String(error))
+    })
   }
 
   while (Date.now() - startedAt <= timeoutMs) {
+    if (childSpawnError) {
+      throw new Error(`Failed to spawn WeChat DevTools CLI: ${child.spawnfile}`, {
+        cause: childSpawnError,
+      })
+    }
+
     if (childExit && shouldFailFastOnCliExit({
       exitCode: childExit.exitCode,
       stdout: getStdout(),
@@ -209,6 +264,12 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions) {
       lastError = error
       await sleep(400)
     }
+  }
+
+  if (childSpawnError) {
+    throw new Error(`Failed to spawn WeChat DevTools CLI: ${child?.spawnfile ?? '<unknown>'}`, {
+      cause: childSpawnError,
+    })
   }
 
   if (childExit && shouldFailFastOnCliExit({
@@ -278,18 +339,27 @@ async function main() {
   const child = spawn(cliPath, args, {
     cwd: payload.cwd,
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: false,
+    detached: process.platform !== 'win32',
   })
   child.unref()
 
   const wsEndpoint = `ws://127.0.0.1:${autoPort}`
-  await waitForSocketReady({
-    child,
-    port: autoPort,
-    timeoutMs: payload.timeout ?? 30_000,
-  })
+  try {
+    await waitForSocketReady({
+      child,
+      port: autoPort,
+      timeoutMs: payload.timeout ?? 30_000,
+    })
+  }
+  catch (error) {
+    await terminateCliProcessTree(child.pid).catch(() => {})
+    throw error
+  }
 
-  const result: AutomatorCliBridgeResult = { wsEndpoint }
+  const result: AutomatorCliBridgeResult = {
+    wsEndpoint,
+    cliPid: typeof child.pid === 'number' && child.pid > 0 ? child.pid : undefined,
+  }
   process.stdout.write(JSON.stringify(result))
 }
 

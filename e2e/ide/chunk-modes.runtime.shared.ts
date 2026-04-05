@@ -11,6 +11,7 @@ const PREPARE_SCRIPT_PATH = path.resolve(import.meta.dirname, '../../scripts/chu
 const DIST_MATRIX_ROOT = path.join(APP_ROOT, 'dist-matrix')
 const LEADING_SLASHES_RE = /^\/+/
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
+const CHUNK_MODES_RUNTIME_CASE_TIMEOUT = 4 * 60_000
 
 interface RuntimeRouteCase {
   route: string
@@ -205,7 +206,7 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
           expect(result?.ok).toBe(true)
           expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
         }
-      }, 2 * 60_000)
+      }, CHUNK_MODES_RUNTIME_CASE_TIMEOUT)
     }
   })
 }

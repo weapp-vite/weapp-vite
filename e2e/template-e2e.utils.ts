@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises'
+import { access, readFile, rm } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import prettier from 'prettier'
@@ -354,6 +354,13 @@ async function runBuild(templateRoot: string) {
   const outputRoot = path.join(templateRoot, 'dist')
   const npmOutputRoot = path.join(outputRoot, 'miniprogram_npm')
   const hasPrebuiltNpm = await pathExists(npmOutputRoot)
+  const tailwindPatchCacheRoot = path.join(templateRoot, 'node_modules/.cache/weapp-tailwindcss')
+
+  await rm(tailwindPatchCacheRoot, {
+    force: true,
+    recursive: true,
+  })
+
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
     projectRoot: templateRoot,
