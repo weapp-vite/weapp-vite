@@ -179,4 +179,18 @@ describe('serve cli command', () => {
     })
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
   })
+
+  it('forwards trust-project setting when opening ide in serve mode', async () => {
+    const action = createServeActionHandler()
+
+    await action('/project', {
+      platform: 'weapp',
+      open: true,
+      trustProject: false,
+    })
+
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      trustProject: false,
+    })
+  })
 })

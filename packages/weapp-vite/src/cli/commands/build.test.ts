@@ -158,4 +158,18 @@ describe('build cli command', () => {
     ])
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序构建完成，耗时：'))
   })
+
+  it('forwards trust-project setting when opening ide after build', async () => {
+    const action = createBuildActionHandler()
+
+    await action('/project', {
+      platform: 'weapp',
+      open: true,
+      trustProject: false,
+    })
+
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      trustProject: false,
+    })
+  })
 })

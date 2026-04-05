@@ -9,6 +9,7 @@ export function registerOpenCommand(cli: CAC) {
   cli
     .command('open [root]')
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .action(async (root: string | undefined, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
@@ -21,6 +22,8 @@ export function registerOpenCommand(cli: CAC) {
         cliPlatform: targets.rawPlatform,
       })
 
-      await openIde(platform, projectPath ?? resolveIdeProjectRoot(mpDistRoot, process.cwd()))
+      await openIde(platform, projectPath ?? resolveIdeProjectRoot(mpDistRoot, process.cwd()), {
+        trustProject: options.trustProject,
+      })
     })
 }

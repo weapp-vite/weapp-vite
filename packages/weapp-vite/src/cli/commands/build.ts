@@ -68,6 +68,7 @@ export function registerBuildCommand(cli: CAC) {
     .option('-w, --watch', `[boolean] rebuilds when modules have changed on disk`)
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
+    .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
     .action(async (root: string, options: GlobalCLIOptions) => {
@@ -164,7 +165,9 @@ export function registerBuildCommand(cli: CAC) {
             tags: ['ide', 'open'],
           },
         ])
-        await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot))
+        await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot), {
+          trustProject: options.trustProject,
+        })
       }
 
       if (analyzeHandle) {

@@ -93,7 +93,19 @@ describe('ide logs command', () => {
 
     await runIdeCommand('logs', undefined, { open: true })
 
-    expect(openIdeMock).toHaveBeenCalledWith('weapp', 'dist/dev')
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', 'dist/dev', {
+      trustProject: undefined,
+    })
+  })
+
+  it('forwards trust-project override when opening ide logs bridge', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('logs', undefined, { open: true, trustProject: false })
+
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', 'dist/dev', {
+      trustProject: false,
+    })
   })
 
   it('rejects non-weapp platforms', async () => {

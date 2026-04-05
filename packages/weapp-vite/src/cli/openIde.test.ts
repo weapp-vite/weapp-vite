@@ -90,9 +90,21 @@ describe('openIde', () => {
     ])
   })
 
-  it('does not append platform for non-alipay', async () => {
+  it('appends trust-project by default for weapp', async () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
+
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+  })
+
+  it('does not append trust-project when explicitly disabled', async () => {
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
     expect(parseMock).toHaveBeenCalledWith([
       'open',

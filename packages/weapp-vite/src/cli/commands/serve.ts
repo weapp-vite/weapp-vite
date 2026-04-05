@@ -158,6 +158,7 @@ export function registerServeCommand(cli: CAC) {
     .option('-o, --open', `[boolean] open ide`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5 | all)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
+    .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--host [host]', `[string] web dev server host`)
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
@@ -426,7 +427,9 @@ export function registerServeCommand(cli: CAC) {
           weappViteConfig: configService.weappViteConfig,
         })
         if (!openedByForwardConsole) {
-          await openIde(configService.platform, resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd))
+          await openIde(configService.platform, resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd), {
+            trustProject: options.trustProject,
+          })
         }
       }
 

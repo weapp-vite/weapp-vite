@@ -37,6 +37,10 @@ export interface ResolvedIdeCommandContext {
   mpDistRoot?: string
 }
 
+export interface OpenIdeOptions {
+  trustProject?: boolean
+}
+
 /**
  * @description 执行 IDE 打开流程，并在登录失效时允许按键重试。
  */
@@ -125,13 +129,16 @@ export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
   return resolveIdeProjectPath(mpDistRoot) ?? cwd
 }
 
-export async function openIde(platform?: MpPlatform, projectPath?: string) {
+export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   const argv = ['open', '-p']
   if (projectPath) {
     argv.push(projectPath)
   }
   if (shouldPassPlatformArgToIdeOpen(platform)) {
     argv.push('--platform', platform)
+  }
+  if (platform === 'weapp' && options.trustProject !== false) {
+    argv.push('--trust-project')
   }
 
   await runWechatIdeOpenWithRetry(argv)
