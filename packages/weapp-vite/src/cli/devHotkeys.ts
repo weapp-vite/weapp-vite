@@ -75,6 +75,13 @@ function formatStatusLines(state: DevHotkeyState) {
   ]
 }
 
+function formatFooterLine(state: DevHotkeyState) {
+  if (state.currentAction) {
+    return `执行中    ${state.currentAction}`
+  }
+  return 'READY  waiting for actions...'
+}
+
 /**
  * @description 生成带状态的开发态快捷键帮助文本。
  */
@@ -97,6 +104,9 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     '',
     ...formatStatusLines(state),
     '',
+    formatFooterLine(state),
+    'press h to show help, press q to quit',
+    '',
     'Dev Usage',
     ...formattedRows,
     '',
@@ -116,7 +126,8 @@ export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
     '',
     ...formatStatusLines(state),
     '',
-    `按 ${key('h')} 显示帮助，按 ${key('q')} 退出`,
+    formatFooterLine(state),
+    `press ${key('h')} to show help, press ${key('q')} to quit`,
   ].join('\n')
 }
 
