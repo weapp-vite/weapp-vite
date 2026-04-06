@@ -9,6 +9,7 @@ import fs from 'node:fs/promises'
 import { i18nText } from '../i18n'
 import logger, { colors } from '../logger'
 import {
+  closeSharedMiniProgram,
   withMiniProgram,
 } from './automator-session'
 import { captureFullPageScreenshotBuffer } from './fullPageScreenshot'
@@ -397,7 +398,32 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
  * @description 获取当前小程序截图。
  */
 export async function takeScreenshot(options: ScreenshotOptions): Promise<ScreenshotResult> {
-  const screenshotBuffer = await captureScreenshotBuffer(options)
+  let screenshotBuffer: Buffer
+
+  try {
+    screenshotBuffer = await captureScreenshotBuffer(options)
+  }
+  catch (error) {
+    const isProtocolTimeout = error instanceof Error && error.message === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    const canRetryWithFreshSession = Boolean(options.sharedSession && !options.miniProgram && isProtocolTimeout)
+
+    if (!canRetryWithFreshSession) {
+      throw error
+    }
+
+    await closeSharedMiniProgram(options.projectPath)
+    logger.warn(i18nText(
+      '当前共享 DevTools 会话截图超时，正在改用全新自动化会话重试一次...',
+      'The current shared DevTools session timed out while capturing screenshot. Retrying once with a fresh automation session...',
+    ))
+
+    screenshotBuffer = await captureScreenshotBuffer({
+      ...options,
+      preferOpenedSession: false,
+      sharedSession: false,
+    })
+  }
+
   const base64 = screenshotBuffer.toString('base64')
 
   if (options.outputPath) {

@@ -10,6 +10,7 @@ export interface AutomatorOptions {
   timeout?: number
   cliPath?: string
   trustProject?: boolean
+  preferOpenedSession?: boolean
 }
 
 interface PersistedAutomatorSession {

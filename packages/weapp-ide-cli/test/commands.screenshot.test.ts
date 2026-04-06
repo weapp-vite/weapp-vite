@@ -3,11 +3,14 @@ import { PNG } from 'pngjs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
+const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
+  warn: vi.fn(),
 }))
 
 vi.mock('../src/cli/automator-session', () => ({
+  closeSharedMiniProgram: closeSharedMiniProgramMock,
   withMiniProgram: withMiniProgramMock,
 }))
 
@@ -36,7 +39,9 @@ describe('captureScreenshotBuffer', () => {
     vi.resetModules()
     vi.useFakeTimers()
     withMiniProgramMock.mockReset()
+    closeSharedMiniProgramMock.mockReset()
     loggerMock.info.mockReset()
+    loggerMock.warn.mockReset()
   })
 
   it('rejects with a timeout error when DevTools does not respond to captureScreenshot', async () => {
@@ -155,5 +160,35 @@ describe('captureScreenshotBuffer', () => {
     expect(Array.from(stitched.data.slice(0, 4))).toEqual([255, 0, 0, 255])
     expect(Array.from(stitched.data.slice(20 * 8 * 4, 20 * 8 * 4 + 4))).toEqual([0, 255, 0, 255])
     expect(Array.from(stitched.data.slice(40 * 8 * 4, 40 * 8 * 4 + 4))).toEqual([0, 0, 255, 255])
+  })
+
+  it('retries once with a fresh session when shared-session screenshot times out', async () => {
+    const expected = Buffer.from('png-data')
+    let callCount = 0
+
+    withMiniProgramMock.mockImplementation(async (options, runner) => {
+      callCount += 1
+      if (callCount === 1) {
+        expect(options.sharedSession).toBe(true)
+        throw new Error('DEVTOOLS_PROTOCOL_TIMEOUT')
+      }
+
+      expect(options.sharedSession).toBe(false)
+      expect(options.preferOpenedSession).toBe(false)
+      return await runner({
+        screenshot: () => Promise.resolve(expected.toString('base64')),
+      })
+    })
+
+    const { takeScreenshot } = await import('../src/cli/commands')
+    const result = await takeScreenshot({
+      projectPath: '/workspace/project',
+      sharedSession: true,
+    })
+
+    expect(result).toEqual({ base64: expected.toString('base64') })
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('正在改用全新自动化会话重试一次'))
+    expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
   })
 })

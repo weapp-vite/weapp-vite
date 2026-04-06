@@ -26,6 +26,7 @@ export type MiniProgramElement = InstanceType<typeof Element> & {
 
 export interface AutomatorSessionOptions {
   miniProgram?: MiniProgramLike
+  preferOpenedSession?: boolean
   projectPath: string
   sharedSession?: boolean
   timeout?: number
@@ -104,6 +105,15 @@ function normalizeMiniProgramConnectionError(error: unknown) {
  * @description 建立 automator 会话，并统一处理常见连接错误提示。
  */
 export async function connectMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
+  if (options.preferOpenedSession === false) {
+    try {
+      return await launchAutomator(options) as MiniProgramLike
+    }
+    catch (error) {
+      throw normalizeMiniProgramConnectionError(error)
+    }
+  }
+
   try {
     return await connectOpenedAutomator(options) as MiniProgramLike
   }
