@@ -416,6 +416,7 @@ export function registerServeCommand(cli: CAC) {
             skipWeb: !targets.runWeb,
             uiUrls: analyzeHandle?.urls,
           })
+          devHotkeysSession?.restore()
         }
         else if (targets.runWeb) {
           logBuildAppFinish(configService, webServer, { skipMini: true })

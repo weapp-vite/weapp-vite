@@ -195,6 +195,7 @@ describe('serve cli command', () => {
       platform: 'weapp',
       projectPath: '/project/dist',
     })
+    expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
   })
 
@@ -210,6 +211,6 @@ describe('serve cli command', () => {
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       trustProject: false,
     })
-    expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
+    expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
   })
 })
