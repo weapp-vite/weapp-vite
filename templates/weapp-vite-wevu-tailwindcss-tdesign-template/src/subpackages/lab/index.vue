@@ -22,20 +22,60 @@ const tabs = [
   { value: 'display', label: '展示' },
 ]
 
-function handleTabChange(e: any) {
-  activeTab.value = String(e.detail.value)
+function resolveChangeValue<T extends string | number>(event: unknown, fallback: T): T {
+  if (typeof event === typeof fallback) {
+    return event as T
+  }
+  if (event && typeof event === 'object') {
+    const payload = event as Record<string, any>
+    if (typeof payload.value === typeof fallback) {
+      return payload.value as T
+    }
+    const detail = payload.detail
+    if (typeof detail === typeof fallback) {
+      return detail as T
+    }
+    if (detail && typeof detail === 'object' && typeof detail.value === typeof fallback) {
+      return detail.value as T
+    }
+  }
+  return fallback
 }
 
-function handleRateChange(e: any) {
-  rating.value = Number(e.detail.value)
+function handleTabChange(event: unknown) {
+  activeTab.value = resolveChangeValue(event, activeTab.value)
 }
 
-function handleSliderChange(e: any) {
-  slider.value = Number(e.detail.value)
+function handleRateChange(event: unknown) {
+  rating.value = Number(resolveChangeValue(event, rating.value))
 }
 
-function handleToggleChange(e: any) {
-  toggle.value = Boolean(e.detail.value)
+function handleSliderChange(event: unknown) {
+  slider.value = Number(resolveChangeValue(event, slider.value))
+}
+
+function handleToggleChange(event: unknown) {
+  if (typeof event === 'boolean') {
+    toggle.value = event
+    return
+  }
+  if (event && typeof event === 'object') {
+    const payload = event as Record<string, any>
+    if (typeof payload.value === 'boolean') {
+      toggle.value = payload.value
+      return
+    }
+    const detail = payload.detail
+    if (typeof detail === 'boolean') {
+      toggle.value = detail
+      return
+    }
+    if (detail && typeof detail === 'object' && typeof detail.value === 'boolean') {
+      toggle.value = detail.value
+      return
+    }
+  }
+  toggle.value = !toggle.value
 }
 
 function navigateTo(url: string) {

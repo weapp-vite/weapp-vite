@@ -19,6 +19,26 @@ const ranges = [
 const activeRange = ref('week')
 const refreshTick = ref(0)
 
+function resolveRangeValue(event: unknown, fallback: string) {
+  if (typeof event === 'string') {
+    return event
+  }
+  if (event && typeof event === 'object') {
+    const payload = event as Record<string, any>
+    if (typeof payload.value === 'string') {
+      return payload.value
+    }
+    const detail = payload.detail
+    if (typeof detail === 'string') {
+      return detail
+    }
+    if (detail && typeof detail === 'object' && typeof detail.value === 'string') {
+      return detail.value
+    }
+  }
+  return fallback
+}
+
 const kpiItems = computed(() => {
   const scale = activeRange.value === 'today' ? 1 : activeRange.value === 'month' ? 4 : 2
   const drift = refreshTick.value
@@ -91,8 +111,8 @@ const reportLines = computed(() => [
   '重点事项：提升转化 > 优化留存',
 ])
 
-function onRangeChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
-  activeRange.value = e.detail.value
+function onRangeChange(event: unknown) {
+  activeRange.value = resolveRangeValue(event, activeRange.value)
 }
 
 watch(activeRange, () => {
