@@ -151,7 +151,8 @@ describe('devHotkeys', () => {
     stdin.emit('keypress', 'h', { name: 'h' })
 
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 q 退出当前 dev'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('重新显示这份帮助'))
   })
 
   it('runs screenshot action and writes logs', async () => {

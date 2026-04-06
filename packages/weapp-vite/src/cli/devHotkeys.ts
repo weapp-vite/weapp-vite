@@ -36,13 +36,23 @@ function forwardSigint() {
  */
 export function formatDevHotkeyHelp() {
   const key = (value: string) => colors.bold(colors.green(value))
+  const commandRows = [
+    { key: key('s'), description: '截图当前页面并保存到本地' },
+    { key: key('m'), description: '开关 MCP 服务' },
+    { key: key('q'), description: '退出当前 dev' },
+    { key: key('Ctrl+C'), description: '强制中断当前 dev' },
+  ]
+  const keyColumnWidth = Math.max(...commandRows.map(row => row.key.length))
+  const formattedRows = commandRows.map(({ key, description }) =>
+    `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
+  )
   return [
     '',
     '快捷命令',
-    `按 ${key('s')} 截图当前页面并保存到本地`,
-    `按 ${key('m')} 开关 MCP 服务`,
-    `按 ${key('q')} 退出当前 dev`,
-    `按 ${key('Ctrl+C')} 强制中断当前 dev`,
+    ...formattedRows,
+    '',
+    '帮助',
+    `按 ${key('h')} 重新显示这份帮助`,
   ].join('\n')
 }
 
