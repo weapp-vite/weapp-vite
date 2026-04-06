@@ -68,12 +68,14 @@ vi.mock('../logger', () => ({
 
 describe('devHotkeys', () => {
   let stdin: FakeStdin
+  let killMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.resetModules()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-06T10:11:12.345Z'))
     stdin = new FakeStdin()
+    killMock = vi.fn()
     mkdirMock.mockReset()
     mkdirMock.mockResolvedValue(undefined)
     closeMcpMock.mockReset()
@@ -99,6 +101,8 @@ describe('devHotkeys', () => {
   it('starts hotkeys in weapp tty mode', async () => {
     vi.doMock('node:process', () => ({
       default: {
+        kill: killMock,
+        pid: 1234,
         stdin,
       },
     }))
@@ -126,6 +130,8 @@ describe('devHotkeys', () => {
   it('runs screenshot action and writes logs', async () => {
     vi.doMock('node:process', () => ({
       default: {
+        kill: killMock,
+        pid: 1234,
         stdin,
       },
     }))
@@ -153,6 +159,8 @@ describe('devHotkeys', () => {
   it('skips hotkeys for non-weapp platforms', async () => {
     vi.doMock('node:process', () => ({
       default: {
+        kill: killMock,
+        pid: 1234,
         stdin,
       },
     }))
@@ -175,6 +183,8 @@ describe('devHotkeys', () => {
   it('toggles mcp service with hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: {
+        kill: killMock,
+        pid: 1234,
         stdin,
       },
     }))
@@ -209,5 +219,32 @@ describe('devHotkeys', () => {
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
     session?.close()
+  })
+
+  it('restores terminal and forwards sigint on ctrl+c', async () => {
+    vi.doMock('node:process', () => ({
+      default: {
+        kill: killMock,
+        pid: 1234,
+        stdin,
+      },
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('keypress', '\u0003', { ctrl: true, name: 'c' })
+
+    expect(stdin.setRawMode).toHaveBeenCalledWith(false)
+    expect(stdin.pause).toHaveBeenCalled()
+    expect(killMock).toHaveBeenCalledWith(1234, 'SIGINT')
   })
 })

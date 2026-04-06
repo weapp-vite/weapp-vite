@@ -27,6 +27,10 @@ function formatMcpUrl(host: string, port: number, endpoint: string) {
   return `http://${host}:${port}${endpoint}`
 }
 
+function forwardSigint() {
+  process.kill(process.pid, 'SIGINT')
+}
+
 /**
  * @description 生成开发态快捷键帮助文本。
  */
@@ -90,7 +94,24 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let closed = false
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
+  let onKeypress: (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => void
   const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
+  const close = () => {
+    if (closed) {
+      return
+    }
+    closed = true
+    process.stdin.off('keypress', onKeypress)
+    if (hasSetRawMode) {
+      process.stdin.setRawMode(false)
+    }
+    process.stdin.pause()
+    if (mcpHandle?.close) {
+      void mcpHandle.close().catch((error) => {
+        logger.warn(`[dev action] MCP 服务关闭失败：${error instanceof Error ? error.message : String(error)}`)
+      })
+    }
+  }
 
   const printHelp = () => {
     logger.info(formatDevHotkeyHelp())
@@ -143,12 +164,14 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       })
   }
 
-  const onKeypress = (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => {
+  onKeypress = (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => {
     if (!key || closed) {
       return
     }
 
     if (key.ctrl && key.name === 'c') {
+      close()
+      forwardSigint()
       return
     }
 
@@ -180,21 +203,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   }
 
   return {
-    close() {
-      if (closed) {
-        return
-      }
-      closed = true
-      process.stdin.off('keypress', onKeypress)
-      if (hasSetRawMode) {
-        process.stdin.setRawMode(false)
-      }
-      process.stdin.pause()
-      if (mcpHandle?.close) {
-        void mcpHandle.close().catch((error) => {
-          logger.warn(`[dev action] MCP 服务关闭失败：${error instanceof Error ? error.message : String(error)}`)
-        })
-      }
-    },
+    close,
   }
 }
