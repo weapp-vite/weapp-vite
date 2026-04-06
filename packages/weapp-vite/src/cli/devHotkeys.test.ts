@@ -120,11 +120,38 @@ describe('devHotkeys', () => {
 
     expect(session).toBeDefined()
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('[dev shortcuts]'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
 
     session?.close()
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
     expect(stdin.pause).toHaveBeenCalled()
+  })
+
+  it('prints full help on h hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: {
+        kill: killMock,
+        pid: 1234,
+        stdin,
+      },
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.emit('keypress', 'h', { name: 'h' })
+
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 q 退出当前 dev'))
   })
 
   it('runs screenshot action and writes logs', async () => {
@@ -242,6 +269,33 @@ describe('devHotkeys', () => {
     })
 
     stdin.emit('keypress', '\u0003', { ctrl: true, name: 'c' })
+
+    expect(stdin.setRawMode).toHaveBeenCalledWith(false)
+    expect(stdin.pause).toHaveBeenCalled()
+    expect(killMock).toHaveBeenCalledWith(1234, 'SIGINT')
+  })
+
+  it('quits dev on q hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: {
+        kill: killMock,
+        pid: 1234,
+        stdin,
+      },
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('keypress', 'q', { name: 'q' })
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
     expect(stdin.pause).toHaveBeenCalled()

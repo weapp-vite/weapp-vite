@@ -36,7 +36,22 @@ function forwardSigint() {
  */
 export function formatDevHotkeyHelp() {
   const key = (value: string) => colors.bold(colors.green(value))
-  return `[dev shortcuts] 按 ${key('s')} 截图当前页面，按 ${key('m')} 开关 MCP 服务，按 ${key('h')} 重新显示帮助`
+  return [
+    '',
+    '快捷命令',
+    `按 ${key('s')} 截图当前页面并保存到本地`,
+    `按 ${key('m')} 开关 MCP 服务`,
+    `按 ${key('q')} 退出当前 dev`,
+    `按 ${key('Ctrl+C')} 强制中断当前 dev`,
+  ].join('\n')
+}
+
+/**
+ * @description 生成开发态快捷键简短提示。
+ */
+export function formatDevHotkeyHint() {
+  const key = (value: string) => colors.bold(colors.green(value))
+  return `按 ${key('h')} 查看帮助，按 ${key('q')} 退出`
 }
 
 /**
@@ -117,6 +132,10 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     logger.info(formatDevHotkeyHelp())
   }
 
+  const printHint = () => {
+    logger.info(formatDevHotkeyHint())
+  }
+
   const toggleMcp = async () => {
     if (!resolvedMcp.enabled) {
       logger.warn('[dev action] MCP 已在配置中禁用，跳过切换。')
@@ -159,7 +178,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       .finally(() => {
         running = false
         if (!closed) {
-          printHelp()
+          printHint()
         }
       })
   }
@@ -170,6 +189,12 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
 
     if (key.ctrl && key.name === 'c') {
+      close()
+      forwardSigint()
+      return
+    }
+
+    if (key.name === 'q') {
       close()
       forwardSigint()
       return
@@ -195,7 +220,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   }
 
   process.stdin.on('keypress', onKeypress)
-  printHelp()
+  printHint()
   if (resolvedMcp.enabled && resolvedMcp.autoStart) {
     runAction('MCP 自动启动', async () => {
       await toggleMcp()
