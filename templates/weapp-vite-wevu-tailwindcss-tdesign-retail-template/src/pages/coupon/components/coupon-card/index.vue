@@ -1,5 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
+
 defineOptions({
   options: {
     addGlobalClass: true,
@@ -47,14 +49,14 @@ defineOptions({
   attached() {},
   methods: {
     // 跳转到详情页
-    gotoDetail() {
-      wx.navigateTo({
+    async gotoDetail() {
+      await wpi.navigateTo({
         url: `/pages/coupon/coupon-detail/index?id=${this.data.couponDTO.key}`,
       })
     },
     // 跳转到商品列表
-    gotoGoodsList() {
-      wx.navigateTo({
+    async gotoGoodsList() {
+      await wpi.navigateTo({
         url: `/pages/coupon/coupon-activity-goods/index?id=${this.data.couponDTO.key}`,
       })
     },

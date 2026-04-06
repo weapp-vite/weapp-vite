@@ -1,5 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
+
 defineOptions({
   externalClasses: ['my-video', 'my-cover-img', 'my-play-icon'],
   properties: {
@@ -16,7 +18,7 @@ defineOptions({
     multipleSlots: true, // 在组件定义时的选项中启用多slot支持
   },
   attached() {
-    this.videoContext = wx.createVideoContext('myVideo', this)
+    this.videoContext = wpi.createVideoContext('myVideo', this)
   },
   fullScreen: false,
   methods: {

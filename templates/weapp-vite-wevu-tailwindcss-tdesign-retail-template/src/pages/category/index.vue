@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { onLoad, onShow, ref, useNativeInstance } from 'wevu'
 import { getCategoryList } from '../../services/good/fetchCategoryList'
 
@@ -15,8 +16,8 @@ async function init() {
   }
 }
 
-function onChange() {
-  wx.navigateTo({
+async function onChange() {
+  await wpi.navigateTo({
     url: '/pages/goods/list/index',
   })
 }

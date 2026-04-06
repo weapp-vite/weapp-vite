@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { onLoad, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { fetchPerson } from '../../../services/usercenter/fetchPerson'
@@ -59,29 +60,19 @@ function init() {
 
 async function toModifyAvatar() {
   try {
-    const tempFilePath = await new Promise<string>((resolve, reject) => {
-      wx.chooseImage({
-        count: 1,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
-        success: (res) => {
-          const file = res.tempFiles?.[0]
-          if (!file?.path) {
-            reject(new Error('未获取到图片文件'))
-            return
-          }
-          if (file.size <= 10 * 1024 * 1024) {
-            resolve(file.path)
-            return
-          }
-          reject(new Error('图片大小超出限制，请重新上传'))
-        },
-        fail: (err: any) => {
-          const message = err?.errMsg || err?.message || String(err)
-          reject(new Error(message))
-        },
-      })
+    const result = await wpi.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
     })
+    const file = result.tempFiles?.[0]
+    if (!file?.path) {
+      throw new Error('未获取到图片文件')
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('图片大小超出限制，请重新上传')
+    }
+    const tempFilePath = file.path
 
     const tempUrlArr = tempFilePath.split('/')
     const tempFileName = tempUrlArr.at(-1) || tempFilePath
@@ -95,7 +86,7 @@ async function toModifyAvatar() {
   }
 }
 
-function onClickCell({ currentTarget }: any) {
+async function onClickCell({ currentTarget }: any) {
   const type = currentTarget?.dataset?.type
   const nickName = personInfo.value.nickName || ''
 
@@ -104,7 +95,7 @@ function onClickCell({ currentTarget }: any) {
       typeVisible.value = true
       break
     case 'name':
-      wx.navigateTo({
+      await wpi.navigateTo({
         url: `/pages/user/name-edit/index?name=${nickName}`,
       })
       break
@@ -131,8 +122,8 @@ function onConfirm(e: any) {
   showPersonToast('设置成功')
 }
 
-function openUnbindConfirm() {
-  wx.showModal({
+async function openUnbindConfirm() {
+  await wpi.showModal({
     title: '提示',
     content: '当前模板暂未接入账号切换流程',
     showCancel: false,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { onLoad, onReachBottom, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { getSearchResult } from '../../../services/good/fetchSearchResult'
@@ -129,8 +130,8 @@ async function init(reset = true) {
   loading.value = false
 }
 
-function handleCartTap() {
-  wx.switchTab({
+async function handleCartTap() {
+  await wpi.switchTab({
     url: '/pages/cart/index',
   })
 }
@@ -148,7 +149,7 @@ function handleAddCart() {
   })
 }
 
-function gotoGoodsDetail(e: any) {
+async function gotoGoodsDetail(e: any) {
   const index = Number(e?.detail?.index)
   if (!Number.isFinite(index)) {
     return
@@ -158,7 +159,7 @@ function gotoGoodsDetail(e: any) {
   if (!spuId) {
     return
   }
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: `/pages/goods/details/index?spuId=${spuId}`,
   })
 }

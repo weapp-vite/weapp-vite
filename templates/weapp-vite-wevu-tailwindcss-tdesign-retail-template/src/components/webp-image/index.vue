@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { onMounted, ref, toRefs, useNativeInstance } from 'wevu'
 import { getSrc } from './utils'
 
@@ -32,7 +33,7 @@ const emit = defineEmits<{
 
 const thumbHeight = ref(375)
 const thumbWidth = ref(375)
-const systemInfo = ref(wx.getSystemInfoSync())
+const systemInfo = ref(wpi.getSystemInfoSync())
 const nativeInstance = useNativeInstance()
 
 const { loadFailed, loading, src, mode, webp, lazyLoad, showMenuByLongpress } = toRefs(props)

@@ -1,3 +1,4 @@
+import { wpi } from '@wevu/api'
 import ActionSheet, { ActionSheetTheme } from 'tdesign-miniprogram/action-sheet/index'
 import { hello } from '@/utils/util'
 
@@ -69,7 +70,7 @@ Page({
   },
   async copy(e: WechatMiniprogram.BaseEvent) {
     if (e.mark?.url) {
-      await wx.setClipboardData({
+      await wpi.setClipboardData({
         data: e.mark.url,
       })
       // eslint-disable-next-line no-console
@@ -84,8 +85,8 @@ Page({
     // eslint-disable-next-line no-console
     console.log(hello())
   },
-  goToLayouts() {
-    wx.navigateTo({
+  async goToLayouts() {
+    await wpi.navigateTo({
       url: '/pages/layouts/index',
     })
   },

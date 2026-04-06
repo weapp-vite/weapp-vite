@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 // import { getCommentDetail } from '../../../../services/good/comments/fetchCommentDetail';
 
@@ -91,7 +92,7 @@ defineOptions({
       })
     }
   },
-  onSubmitBtnClick() {
+  async onSubmitBtnClick() {
     const {
       isAllowedSubmit,
     } = this.data
@@ -101,7 +102,7 @@ defineOptions({
       message: '评价提交成功',
       icon: 'check-circle',
     })
-    wx.navigateBack()
+    await wpi.navigateBack()
   },
 })
 

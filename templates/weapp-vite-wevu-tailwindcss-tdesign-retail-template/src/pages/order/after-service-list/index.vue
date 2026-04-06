@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { AfterServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { getRightsList } from './api'
 
@@ -201,8 +202,8 @@ defineOptions({
     this.refreshList(this.data.curTab)
   },
   // 点击订单卡片
-  onAfterServiceCardTap(e) {
-    wx.navigateTo({
+  async onAfterServiceCardTap(e) {
+    await wpi.navigateTo({
       url: `/pages/order/after-service-detail/index?rightsNo=${e.currentTarget.dataset.order.id}`,
     })
   },

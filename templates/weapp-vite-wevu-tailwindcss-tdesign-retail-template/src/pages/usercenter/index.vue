@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { onLoad, onPullDownRefresh, onShow, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { fetchUserCenter } from '../../services/usercenter/fetchUsercenter'
@@ -135,15 +136,15 @@ function fetUseriInfoHandle() {
     orderTagInfos.value = info
     customerServiceInfo.value = nextCustomerServiceInfo
     currAuthStep.value = 2
-    wx.stopPullDownRefresh()
+    return wpi.stopPullDownRefresh()
   })
 }
 
-function onClickCell({ currentTarget }: any) {
+async function onClickCell({ currentTarget }: any) {
   const type = currentTarget?.dataset?.type
   switch (type) {
     case 'address':
-      wx.navigateTo({
+      await wpi.navigateTo({
         url: '/pages/user/address/list/index',
       })
       break
@@ -167,7 +168,7 @@ function onClickCell({ currentTarget }: any) {
       })
       break
     case 'coupon':
-      wx.navigateTo({
+      await wpi.navigateTo({
         url: '/pages/coupon/coupon-list/index',
       })
       break
@@ -182,22 +183,22 @@ function onClickCell({ currentTarget }: any) {
   }
 }
 
-function jumpNav(e: any) {
+async function jumpNav(e: any) {
   const status = e?.detail?.tabType
   if (status === 0) {
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: '/pages/order/after-service-list/index',
     })
   }
   else {
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/order/order-list/index?status=${status}`,
     })
   }
 }
 
-function jumpAllOrder() {
-  wx.navigateTo({
+async function jumpAllOrder() {
+  await wpi.navigateTo({
     url: '/pages/order/order-list/index',
   })
 }
@@ -210,25 +211,25 @@ function closeMakePhone() {
   showMakePhone.value = false
 }
 
-function call() {
-  wx.makePhoneCall({
+async function call() {
+  await wpi.makePhoneCall({
     phoneNumber: customerServiceInfo.value.servicePhone,
   })
 }
 
-function gotoUserEditPage() {
+async function gotoUserEditPage() {
   if (currAuthStep.value === 2) {
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: '/pages/user/person-info/index',
     })
   }
   else {
-    fetUseriInfoHandle()
+    await fetUseriInfoHandle()
   }
 }
 
 function getVersionInfo() {
-  const versionInfo = wx.getAccountInfoSync() as any
+  const versionInfo = wpi.getAccountInfoSync() as any
   const miniProgramInfo = versionInfo?.miniProgram || {}
   const version = miniProgramInfo.version || ''
   const envVersion = miniProgramInfo.envVersion ?? (globalThis as any).__wxConfig

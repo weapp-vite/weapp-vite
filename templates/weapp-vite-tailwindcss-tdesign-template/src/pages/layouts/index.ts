@@ -1,3 +1,4 @@
+import { wpi } from '@wevu/api'
 import Toast from 'tdesign-miniprogram/toast/index'
 import { setPageLayout } from 'weapp-vite/runtime'
 
@@ -26,7 +27,7 @@ Page({
     setPageLayout(false)
     Toast({ context: this, selector: '#t-toast', message: '已关闭布局' })
   },
-  backHome() {
-    wx.navigateTo({ url: '/pages/index/index' })
+  async backHome() {
+    await wpi.navigateTo({ url: '/pages/index/index' })
   },
 })

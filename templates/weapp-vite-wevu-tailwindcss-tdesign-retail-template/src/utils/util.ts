@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import dayjs from 'dayjs'
 
 const formatTime = (date: dayjs.ConfigType, template: string) => dayjs(date).format(template)
@@ -75,7 +76,7 @@ export function loadSystemWidth() {
   }
 
   try {
-    const { screenWidth } = wx.getSystemInfoSync()
+    const { screenWidth } = wpi.getSystemInfoSync()
     systemWidth = screenWidth
   }
   catch (e) {

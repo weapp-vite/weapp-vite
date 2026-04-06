@@ -1,3 +1,4 @@
+import { wpi } from '@wevu/api'
 import { setPageLayout } from 'weapp-vite/runtime'
 
 Page({
@@ -36,8 +37,8 @@ Page({
     this.setData({ currentLayout: 'none' })
     setPageLayout(false)
   },
-  backHome() {
-    wx.navigateTo({
+  async backHome() {
+    await wpi.navigateTo({
       url: '/pages/index/index',
     })
   },

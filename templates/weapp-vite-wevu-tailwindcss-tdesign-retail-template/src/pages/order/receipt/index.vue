@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { alertDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { dispatchSupplementInvoice } from '../../../services/order/orderConfirm'
@@ -147,7 +148,7 @@ defineOptions({
         })
         setTimeout(() => {
           this.submitting = false
-          wx.navigateBack({
+          void wpi.navigateBack({
             delta: 1,
           })
         }, 1000)
@@ -161,8 +162,8 @@ defineOptions({
         receipts: receipts[receiptIndex],
         addressTags: addressTags[addressTagsIndex],
       })
-      wx.setStorageSync('invoiceData', data)
-      wx.navigateBack({
+      wpi.setStorageSync('invoiceData', data)
+      void wpi.navigateBack({
         delta: 1,
       })
     }

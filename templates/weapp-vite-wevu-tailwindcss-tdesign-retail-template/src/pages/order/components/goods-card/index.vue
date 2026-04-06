@@ -238,7 +238,7 @@ defineOptions({
       if (this.intersectionObserverContext || !this.data.independentID) {
         return
       }
-      this.intersectionObserverContext = wx.createIntersectionObserver(this, {
+      this.intersectionObserverContext = wpi.createIntersectionObserver(this, {
         thresholds: this.properties.thresholds,
       }).relativeToViewport()
       this.intersectionObserverContext.observe(`#${this.data.independentID}`, (res) => {

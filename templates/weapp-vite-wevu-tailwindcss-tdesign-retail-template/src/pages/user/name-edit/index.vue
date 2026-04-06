@@ -1,5 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
+
 defineOptions({
   data() {
     return {
@@ -14,8 +16,8 @@ defineOptions({
       nameValue: name,
     })
   },
-  onSubmit() {
-    wx.navigateBack({
+  async onSubmit() {
+    await wpi.navigateBack({
       backRefresh: true,
     })
   },

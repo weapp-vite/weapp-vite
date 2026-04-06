@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { ref } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
@@ -43,57 +44,56 @@ const capabilityCards = ref([
 
 const subscribeTemplateId = ''
 
-function handleCapability(key: string) {
-  switch (key) {
-    case 'scan':
-      wx.scanCode({
-        success: (result) => {
-          showToast(`识别结果：${result.result || '已完成'}`)
-        },
-        fail: () => {
-          showToast('扫码失败，请重试', 'warning')
-        },
-      })
-      break
-    case 'location':
-      wx.getLocation({
-        type: 'wgs84',
-        success: (result) => {
-          showToast(`定位成功：${result.latitude.toFixed(2)}, ${result.longitude.toFixed(2)}`)
-        },
-        fail: () => {
-          showToast('未获取定位权限', 'warning')
-        },
-      })
-      break
-    case 'clipboard':
-      wx.setClipboardData({
-        data: 'weapp-vite + wevu + TDesign',
-        success: () => showToast('已写入剪贴板'),
-      })
-      break
-    case 'share':
-      wx.showShareMenu({
-        withShareTicket: true,
-        success: () => showToast('已开启分享菜单'),
-        fail: () => showToast('分享菜单开启失败', 'warning'),
-      })
-      break
-    case 'image':
-      wx.chooseImage({
-        count: 3,
-        success: (result) => {
-          showToast(`已选择 ${result.tempFilePaths.length} 张图片`)
-        },
-        fail: () => showToast('未选择图片', 'warning'),
-      })
-      break
-    default:
-      break
+async function handleCapability(key: string) {
+  try {
+    switch (key) {
+      case 'scan': {
+        const result = await wpi.scanCode()
+        showToast(`识别结果：${result.result || '已完成'}`)
+        break
+      }
+      case 'location': {
+        const result = await wpi.getLocation({
+          type: 'wgs84',
+        })
+        showToast(`定位成功：${result.latitude.toFixed(2)}, ${result.longitude.toFixed(2)}`)
+        break
+      }
+      case 'clipboard':
+        await wpi.setClipboardData({
+          data: 'weapp-vite + wevu + TDesign',
+        })
+        showToast('已写入剪贴板')
+        break
+      case 'share':
+        await wpi.showShareMenu({
+          withShareTicket: true,
+        })
+        showToast('已开启分享菜单')
+        break
+      case 'image': {
+        const result = await wpi.chooseImage({
+          count: 3,
+        })
+        showToast(`已选择 ${result.tempFilePaths.length} 张图片`)
+        break
+      }
+      default:
+        break
+    }
+  }
+  catch {
+    const warningMap: Record<string, string> = {
+      scan: '扫码失败，请重试',
+      location: '未获取定位权限',
+      share: '分享菜单开启失败',
+      image: '未选择图片',
+    }
+    showToast(warningMap[key] || '操作失败，请重试', 'warning')
   }
 }
 
-function requestSubscribe() {
+async function requestSubscribe() {
   if (!subscribeTemplateId) {
     alert({
       title: '订阅消息',
@@ -102,15 +102,19 @@ function requestSubscribe() {
     })
     return
   }
-  wx.requestSubscribeMessage({
-    tmplIds: [subscribeTemplateId],
-    success: () => showToast('订阅成功'),
-    fail: () => showToast('订阅失败', 'warning'),
-  })
+  try {
+    await wpi.requestSubscribeMessage({
+      tmplIds: [subscribeTemplateId],
+    })
+    showToast('订阅成功')
+  }
+  catch {
+    showToast('订阅失败', 'warning')
+  }
 }
 
-function navigateTo(url: string) {
-  wx.navigateTo({
+async function navigateTo(url: string) {
+  await wpi.navigateTo({
     url,
   })
 }

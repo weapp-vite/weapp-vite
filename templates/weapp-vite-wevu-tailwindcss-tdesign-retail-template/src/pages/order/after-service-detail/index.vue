@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { ServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { formatTime, getRightsDetail } from './api'
@@ -124,7 +125,7 @@ defineOptions({
         'gallery.proofs': proofs,
         'showProofs': serviceRaw.rights.userRightsStatus === ServiceStatus.PENDING_VERIFY && (service.applyRemark || proofs.length > 0),
       })
-      wx.setNavigationBarTitle({
+      void wpi.setNavigationBarTitle({
         title: {
           [ServiceType.ORDER_CANCEL]: '退款详情',
           [ServiceType.ONLY_REFUND]: '退款详情',
@@ -168,22 +169,22 @@ defineOptions({
       'gallery.current': index,
     })
   },
-  onGoodsCardTap(e) {
+  async onGoodsCardTap(e) {
     const {
       index,
     } = e.currentTarget.dataset
     const goods = this.data.serviceRaw.rightsItem[index]
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/goods/details/index?skuId=${goods.skuId}`,
     })
   },
-  onServiceNoCopy() {
-    wx.setClipboardData({
+  async onServiceNoCopy() {
+    await wpi.setClipboardData({
       data: this.data.service.serviceNo,
     })
   },
-  onAddressCopy() {
-    wx.setClipboardData({
+  async onAddressCopy() {
+    await wpi.setClipboardData({
       data: `${this.data.service.receiverName}  ${this.data.service.receiverPhone}\n${this.data.service.receiverAddress}`,
     })
   },

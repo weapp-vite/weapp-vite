@@ -1,5 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
+
 defineOptions({
   externalClasses: ['custom-class'],
   properties: {
@@ -12,7 +14,7 @@ defineOptions({
     }
   },
   attached() {
-    wx.createSelectorQuery().in(this).select('.c-tabbar-more').boundingClientRect((rect) => {
+    wpi.createSelectorQuery().in(this).select('.c-tabbar-more').boundingClientRect((rect) => {
       this.setData({
         boardMaxHeight: rect.height,
       })

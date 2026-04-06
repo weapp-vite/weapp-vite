@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { OrderButtonTypes } from '../../config'
@@ -279,7 +280,7 @@ defineOptions({
         icon: 'check-circle',
       })
     },
-    onApplyRefund(this: OrderButtonBarInstance, order: OrderData) {
+    async onApplyRefund(this: OrderButtonBarInstance, order: OrderData) {
       const goodsList = Array.isArray(order?.goodsList) ? order.goodsList : []
       const goodsIndex = typeof this.properties.goodsIndex === 'number' ? this.properties.goodsIndex : 0
       const goods = goodsList[goodsIndex]
@@ -297,7 +298,7 @@ defineOptions({
         canApplyReturn: true,
       }
       const paramsStr = Object.entries(params).map(([key, value]) => `${key}=${value ?? ''}`).join('&')
-      wx.navigateTo({
+      await wpi.navigateTo({
         url: `/pages/order/apply-service/index?${paramsStr}`,
       })
     },
@@ -309,11 +310,11 @@ defineOptions({
       })
     },
     /** 添加订单评论 */
-    onAddComment(this: OrderButtonBarInstance, order: OrderData) {
+    async onAddComment(this: OrderButtonBarInstance, order: OrderData) {
       const imgUrl = order?.goodsList?.[0]?.thumb || ''
       const title = order?.goodsList?.[0]?.title || ''
       const specs = order?.goodsList?.[0]?.specs || ''
-      wx.navigateTo({
+      await wpi.navigateTo({
         url: `/pages/goods/comments/create/index?specs=${specs}&title=${title}&orderNo=${order?.orderNo}&imgUrl=${imgUrl}`,
       })
     },

@@ -1,3 +1,5 @@
+import { wpi } from '@wevu/api'
+
 Page({
   data: {
     hello: {
@@ -17,8 +19,8 @@ Page({
       ],
     },
   },
-  goToLayouts() {
-    wx.navigateTo({
+  async goToLayouts() {
+    await wpi.navigateTo({
       url: '/pages/layouts/index',
     })
   },

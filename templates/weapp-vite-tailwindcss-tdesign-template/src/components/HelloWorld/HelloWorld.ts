@@ -1,3 +1,5 @@
+import { wpi } from '@wevu/api'
+
 interface HelloWorldLink {
   text: string
   url: string
@@ -48,8 +50,8 @@ Component({
       }
 
       try {
-        await wx.setClipboardData({ data: url })
-        wx.showToast({
+        await wpi.setClipboardData({ data: url })
+        await wpi.showToast({
           title: '链接已复制',
           icon: 'success',
           duration: 1500,

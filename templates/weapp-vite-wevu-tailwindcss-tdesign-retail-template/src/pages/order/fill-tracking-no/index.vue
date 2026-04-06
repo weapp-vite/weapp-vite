@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import reasonSheet from '../components/reason-sheet/reasonSheet'
@@ -30,14 +31,14 @@ defineOptions({
         content: '',
         confirmBtn: '确认',
       }).then(() => {
-        wx.navigateBack({
+        void wpi.navigateBack({
           backRefresh: true,
         })
       })
     }
     this.rightsNo = rightsNo
     if (logisticsNo) {
-      wx.setNavigationBarTitle({
+      void wpi.setNavigationBarTitle({
         title: '修改运单号',
         fail() {},
       })
@@ -173,7 +174,7 @@ defineOptions({
         message: '保存成功',
         icon: '',
       })
-      setTimeout(() => wx.navigateBack({
+      setTimeout(() => void wpi.navigateBack({
         backRefresh: true,
       }), 1000)
     }).catch(() => {
@@ -182,20 +183,17 @@ defineOptions({
       })
     })
   },
-  onScanTap() {
-    wx.scanCode({
+  async onScanTap() {
+    const res = await wpi.scanCode({
       scanType: ['barCode'],
-      success: (res) => {
-        showToast({
-          context: this,
-          message: '扫码成功',
-          icon: '',
-        })
-        this.setData({
-          trackingNo: res.result,
-        })
-      },
-      fail: () => {},
+    })
+    showToast({
+      context: this,
+      message: '扫码成功',
+      icon: '',
+    })
+    this.setData({
+      trackingNo: res.result,
     })
   },
 })

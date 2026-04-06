@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { onLoad, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { fetchPromotion } from '../../../services/promotion/detail'
@@ -46,7 +47,7 @@ function getGoodsList(promotionID: number) {
   })
 }
 
-function goodClickHandle(e: any) {
+async function goodClickHandle(e: any) {
   const index = Number(e?.detail?.index)
   if (!Number.isFinite(index) || index < 0) {
     return
@@ -55,7 +56,7 @@ function goodClickHandle(e: any) {
   if (spuId == null) {
     return
   }
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: `/pages/goods/details/index?spuId=${spuId}`,
   })
 }

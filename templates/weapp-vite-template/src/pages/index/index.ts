@@ -1,3 +1,5 @@
+import { wpi } from '@wevu/api'
+
 Page({
   data: {
     hello: {
@@ -21,8 +23,8 @@ Page({
     // eslint-disable-next-line no-console
     console.log('on click')
   },
-  goToLayouts() {
-    wx.navigateTo({
+  async goToLayouts() {
+    await wpi.navigateTo({
       url: '/pages/layouts/index',
     })
   },

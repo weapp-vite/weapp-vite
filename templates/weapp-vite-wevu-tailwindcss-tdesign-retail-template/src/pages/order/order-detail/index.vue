@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../services/address/list'
 import { fetchBusinessTime, fetchOrderDetail } from '../../../services/order/orderDetail'
@@ -194,16 +195,16 @@ defineOptions({
       this.onRefresh()
     }
   },
-  onGoodsCardTap(e) {
+  async onGoodsCardTap(e) {
     const {
       index,
     } = e.currentTarget.dataset
     const goods = this.data.order.orderItemVOs[index]
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/goods/details/index?spuId=${goods.spuId}`,
     })
   },
-  onEditAddressTap() {
+  async onEditAddressTap() {
     getAddressPromise().then((address) => {
       this.setData({
         'order.logisticsVO.receiverName': address.name,
@@ -211,44 +212,44 @@ defineOptions({
         '_order.receiverAddress': address.address,
       })
     }).catch(() => {})
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/user/address/list/index?selectMode=1`,
     })
   },
-  onOrderNumCopy() {
-    wx.setClipboardData({
+  async onOrderNumCopy() {
+    await wpi.setClipboardData({
       data: this.data.order.orderNo,
     })
   },
-  onDeliveryNumCopy() {
-    wx.setClipboardData({
+  async onDeliveryNumCopy() {
+    await wpi.setClipboardData({
       data: this.data.order.logisticsVO.logisticsNo,
     })
   },
-  onToInvoice() {
-    wx.navigateTo({
+  async onToInvoice() {
+    await wpi.navigateTo({
       url: `/pages/order/invoice/index?orderNo=${this.data._order.orderNo}`,
     })
   },
-  onSuppleMentInvoice() {
-    wx.navigateTo({
+  async onSuppleMentInvoice() {
+    await wpi.navigateTo({
       url: `/pages/order/receipt/index?orderNo=${this.data._order.orderNo}`,
     })
   },
-  onDeliveryClick() {
+  async onDeliveryClick() {
     const logisticsData = {
       nodes: this.data.logisticsNodes,
       company: this.data.order.logisticsVO.logisticsCompanyName,
       logisticsNo: this.data.order.logisticsVO.logisticsNo,
       phoneNumber: this.data.order.logisticsVO.logisticsCompanyTel,
     }
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/order/delivery-detail/index?data=${encodeURIComponent(JSON.stringify(logisticsData))}`,
     })
   },
   /** 跳转订单评价 */
-  navToCommentCreate() {
-    wx.navigateTo({
+  async navToCommentCreate() {
+    await wpi.navigateTo({
       url: `/pages/order/createComment/index?orderNo=${this.orderNo}`,
     })
   },
@@ -264,8 +265,8 @@ defineOptions({
       message: '您点击了联系客服',
     })
   },
-  onOrderInvoiceView() {
-    wx.navigateTo({
+  async onOrderInvoiceView() {
+    await wpi.navigateTo({
       url: `/pages/order/invoice/index?orderNo=${this.orderNo}`,
     })
   },

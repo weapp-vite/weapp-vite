@@ -1,5 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
+
 defineOptions({
   data() {
     return {
@@ -23,29 +25,29 @@ defineOptions({
       groupId,
     })
   },
-  onTapReturn(e) {
+  async onTapReturn(e) {
     const target = e.currentTarget.dataset.type
     const {
       orderNo,
     } = this.data
     if (target === 'home') {
-      wx.switchTab({
+      await wpi.switchTab({
         url: '/pages/home/home',
       })
     }
     else if (target === 'orderList') {
-      wx.navigateTo({
+      await wpi.navigateTo({
         url: `/pages/order/order-list/index?orderNo=${orderNo}`,
       })
     }
     else if (target === 'order') {
-      wx.navigateTo({
+      await wpi.navigateTo({
         url: `/pages/order/order-detail/index?orderNo=${orderNo}`,
       })
     }
   },
-  navBackHandle() {
-    wx.navigateBack()
+  async navBackHandle() {
+    await wpi.navigateBack()
   },
 })
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { onLoad, onShow, reactive, ref, useNativeInstance } from 'wevu'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
@@ -275,18 +276,18 @@ function onQuantityChange(e: any) {
   }).then(() => refreshData())
 }
 
-function goCollect() {
+async function goCollect() {
   // 活动肯定有一个活动ID，用来获取活动banner，活动商品列表等
   const promotionID = '123'
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: `/pages/promotion/promotion-detail/index?promotion_id=${promotionID}`,
   })
 }
 
-function goGoodsDetail(e: any) {
+async function goGoodsDetail(e: any) {
   const spuId = e?.detail?.goods?.spuId
   const storeId = e?.detail?.goods?.storeId
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: `/pages/goods/details/index?spuId=${spuId}&storeId=${storeId}`,
   })
 }
@@ -323,7 +324,7 @@ function onSelectAll(event: any) {
   // 调用接口改变全选
 }
 
-function onToSettle() {
+async function onToSettle() {
   const goodsRequestList: any[] = []
   const storeGoods = cartGroupData.storeGoods || []
   storeGoods.forEach((store: any) => {
@@ -335,14 +336,14 @@ function onToSettle() {
       })
     })
   })
-  wx.setStorageSync('order.goodsRequestList', JSON.stringify(goodsRequestList))
-  wx.navigateTo({
+  wpi.setStorageSync('order.goodsRequestList', JSON.stringify(goodsRequestList))
+  await wpi.navigateTo({
     url: '/pages/order/order-confirm/index?type=cart',
   })
 }
 
-function onGotoHome() {
-  wx.switchTab({
+async function onGotoHome() {
+  await wpi.switchTab({
     url: '/pages/home/home',
   })
 }

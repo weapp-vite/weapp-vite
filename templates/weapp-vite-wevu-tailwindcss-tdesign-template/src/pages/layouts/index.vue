@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { ref, setPageLayout } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
@@ -51,14 +52,14 @@ function clearLayout() {
   showToast('已关闭布局')
 }
 
-function openLayoutFeedbackDemo() {
-  wx.navigateTo({
+async function openLayoutFeedbackDemo() {
+  await wpi.navigateTo({
     url: '/pages/layout-feedback/index',
   })
 }
 
-function openLayoutStoreDemo() {
-  wx.navigateTo({
+async function openLayoutStoreDemo() {
+  await wpi.navigateTo({
     url: '/pages/layout-store/index',
   })
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { fetchGoodsList } from '../../services/good/fetchGoods'
@@ -40,7 +41,7 @@ function init() {
 }
 
 async function loadHomePage() {
-  wx.stopPullDownRefresh()
+  await wpi.stopPullDownRefresh()
   pageLoading.value = true
   try {
     const { swiper, tabList: nextTabList } = await fetchHome()
@@ -74,7 +75,7 @@ function onReTry() {
 
 async function loadGoodsList(fresh = false) {
   if (fresh) {
-    wx.pageScrollTo({
+    await wpi.pageScrollTo({
       scrollTop: 0,
     })
   }
@@ -99,7 +100,7 @@ async function loadGoodsList(fresh = false) {
   }
 }
 
-function goodListClickHandle(e: any) {
+async function goodListClickHandle(e: any) {
   const index = Number(e?.detail?.index)
   if (!Number.isFinite(index) || index < 0) {
     return
@@ -108,7 +109,7 @@ function goodListClickHandle(e: any) {
   if (spuId == null) {
     return
   }
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: `/pages/goods/details/index?spuId=${spuId}`,
   })
 }
@@ -120,15 +121,15 @@ function goodListAddCartHandle() {
   })
 }
 
-function navToSearchPage() {
-  wx.navigateTo({
+async function navToSearchPage() {
+  await wpi.navigateTo({
     url: '/pages/goods/search/index',
   })
 }
 
-function navToActivityDetail({ detail }: { detail?: { index?: number } }) {
+async function navToActivityDetail({ detail }: { detail?: { index?: number } }) {
   const promotionID = detail?.index ?? 0
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: `/pages/promotion/promotion-detail/index?promotion_id=${promotionID}`,
   })
 }

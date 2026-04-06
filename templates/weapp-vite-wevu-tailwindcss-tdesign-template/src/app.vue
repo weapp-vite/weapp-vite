@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { onHide, onLaunch, onShow } from 'wevu'
 
 defineAppJson({
@@ -71,16 +72,18 @@ defineAppJson({
   sitemapLocation: 'sitemap.json',
 })
 
+const logger = wpi.getLogManager({ level: 1 })
+
 onShow(() => {
-  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app show')
+  logger.info('[weapp-vite-wevu-template] app show')
 })
 
 onHide(() => {
-  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app hide')
+  logger.info('[weapp-vite-wevu-template] app hide')
 })
 
 onLaunch(() => {
-  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app launch')
+  logger.info('[weapp-vite-wevu-template] app launch')
 })
 </script>
 

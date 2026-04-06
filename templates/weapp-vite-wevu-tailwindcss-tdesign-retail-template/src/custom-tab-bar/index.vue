@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import TabMenu from './data'
 
 defineOptions({
@@ -10,11 +11,11 @@ defineOptions({
     }
   },
   methods: {
-    onChange(event) {
+    async onChange(event) {
       this.setData({
         active: event.detail.value,
       })
-      wx.switchTab({
+      await wpi.switchTab({
         url: this.data.list[event.detail.value].url.startsWith('/') ? this.data.list[event.detail.value].url : `/${this.data.list[event.detail.value].url}`,
       })
     },

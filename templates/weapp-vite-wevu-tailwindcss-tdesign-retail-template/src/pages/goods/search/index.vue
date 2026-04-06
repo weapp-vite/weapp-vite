@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { onShow, ref } from 'wevu'
 import { getSearchHistory, getSearchPopular } from '../../../services/good/fetchSearchHistory'
 
@@ -76,22 +77,22 @@ function deleteCurr(e: any) {
   dialogShow.value = true
 }
 
-function handleHistoryTap(e: any) {
+async function handleHistoryTap(e: any) {
   const index = Number(e?.currentTarget?.dataset?.index || 0)
   const nextSearchValue = historyWords.value[index] || ''
   if (nextSearchValue) {
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/goods/result/index?searchValue=${nextSearchValue}`,
     })
   }
 }
 
-function handleSubmit(e: any) {
+async function handleSubmit(e: any) {
   const value = e?.detail?.value?.value || ''
   if (typeof value !== 'string' || value.length === 0) {
     return
   }
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: `/pages/goods/result/index?searchValue=${value}`,
   })
 }

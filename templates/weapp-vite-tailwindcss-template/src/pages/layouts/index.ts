@@ -1,3 +1,4 @@
+import { wpi } from '@wevu/api'
 import { setPageLayout } from 'weapp-vite/runtime'
 
 Page({
@@ -27,7 +28,7 @@ Page({
     this.setData({ currentLayout: 'none' })
     setPageLayout(false)
   },
-  backHome() {
-    wx.switchTab({ url: '/pages/index/index' })
+  async backHome() {
+    await wpi.switchTab({ url: '/pages/index/index' })
   },
 })

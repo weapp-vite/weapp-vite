@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
+
 defineOptions({
   data() {
     return {
@@ -11,8 +13,8 @@ defineOptions({
     },
   },
   methods: {
-    goToCart() {
-      wx.switchTab({
+    async goToCart() {
+      await wpi.switchTab({
         url: '/pages/cart/index',
       })
     },

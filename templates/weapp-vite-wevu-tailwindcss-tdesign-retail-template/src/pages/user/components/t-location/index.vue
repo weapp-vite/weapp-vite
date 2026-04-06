@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
 import { addressParse } from '../../../../utils/addressParse'
@@ -37,77 +38,76 @@ defineOptions({
       getPermission({
         code: 'scope.address',
         name: '通讯地址',
-      }).then(() => {
-        wx.chooseAddress({
-          success: async (options) => {
+      }).then(async () => {
+        try {
+          const options = await wpi.chooseAddress()
+          const {
+            provinceName,
+            cityName,
+            countyName,
+            detailInfo,
+            userName,
+            telNumber,
+          } = options
+          if (!phoneRegCheck(telNumber)) {
+            showToast({
+              context: this,
+              message: '请填写正确的手机号',
+            })
+            return
+          }
+          const target = {
+            name: userName,
+            phone: telNumber,
+            countryName: '中国',
+            countryCode: 'chn',
+            detailAddress: detailInfo,
+            provinceName,
+            cityName,
+            districtName: countyName,
+            isDefault: false,
+            isOrderSure: this.properties.isOrderSure,
+          }
+          try {
             const {
-              provinceName,
-              cityName,
-              countyName,
-              detailInfo,
-              userName,
-              telNumber,
-            } = options
-            if (!phoneRegCheck(telNumber)) {
-              showToast({
-                context: this,
-                message: '请填写正确的手机号',
-              })
-              return
+              provinceCode,
+              cityCode,
+              districtCode,
+            } = await addressParse(provinceName, cityName, countyName)
+            const params = Object.assign(target, {
+              provinceCode,
+              cityCode,
+              districtCode,
+            })
+            if (this.properties.isOrderSure) {
+              this.onHandleSubmit(params)
             }
-            const target = {
-              name: userName,
-              phone: telNumber,
-              countryName: '中国',
-              countryCode: 'chn',
-              detailAddress: detailInfo,
-              provinceName,
-              cityName,
-              districtName: countyName,
-              isDefault: false,
-              isOrderSure: this.properties.isOrderSure,
-            }
-            try {
+            else if (this.properties.navigateUrl != '') {
               const {
-                provinceCode,
-                cityCode,
-                districtCode,
-              } = await addressParse(provinceName, cityName, countyName)
-              const params = Object.assign(target, {
-                provinceCode,
-                cityCode,
-                districtCode,
-              })
-              if (this.properties.isOrderSure) {
-                this.onHandleSubmit(params)
-              }
-              else if (this.properties.navigateUrl != '') {
-                const {
-                  navigateEvent,
-                } = this.properties
-                this.triggerEvent('navigate')
-                wx.navigateTo({
-                  url: this.properties.navigateUrl,
-                  success(res) {
-                    res.eventChannel.emit(navigateEvent, params)
-                  },
-                })
-              }
-              else {
-                this.triggerEvent('change', params)
-              }
-            }
-            catch (error) {
-              showToast({
-                title: '地址解析出错，请稍后再试',
-                icon: 'none',
+                navigateEvent,
+              } = this.properties
+              this.triggerEvent('navigate')
+              await wpi.navigateTo({
+                url: this.properties.navigateUrl,
+                success(res) {
+                  res.eventChannel.emit(navigateEvent, params)
+                },
               })
             }
-          },
-          fail(err) {
-            console.warn('未选择微信收货地址', err)
-          },
-        })
+            else {
+              this.triggerEvent('change', params)
+            }
+          }
+          catch (error) {
+            showToast({
+              title: '地址解析出错，请稍后再试',
+              icon: 'none',
+            })
+          }
+        }
+        catch (err) {
+          console.warn('未选择微信收货地址', err)
+        }
       })
     },
     async queryAddress(addressId) {
@@ -132,7 +132,7 @@ defineOptions({
       try {
         const orderPageDeltaNum = this.findPage('pages/order/order-confirm/index')
         if (orderPageDeltaNum > -1) {
-          wx.navigateBack({
+          await wpi.navigateBack({
             delta: 1,
           })
           resolveAddress(params)

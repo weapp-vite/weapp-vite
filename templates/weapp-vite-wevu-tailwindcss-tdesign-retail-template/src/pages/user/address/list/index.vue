@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../../services/address/edit'
 import { fetchDeliveryAddressList } from '../../../../services/address/fetchAddress'
@@ -54,37 +55,34 @@ defineOptions({
       })
     })
   },
-  getWXAddressHandle() {
-    wx.chooseAddress({
-      success: (res) => {
-        if (!res.errMsg.includes('ok')) {
-          showToast({
-            context: this,
-            message: res.errMsg,
-            icon: '',
-            duration: 1000,
-          })
-          return
-        }
-        showToast({
-          context: this,
-          message: '添加成功',
-          icon: '',
-          duration: 1000,
-        })
-        const {
-          length: len,
-        } = this.data.addressList
-        this.setData({
-          [`addressList[${len}]`]: {
-            name: res.userName,
-            phoneNumber: res.telNumber,
-            address: `${res.provinceName}${res.cityName}${res.countryName}${res.detailInfo}`,
-            isDefault: 0,
-            tag: '微信地址',
-            id: len,
-          },
-        })
+  async getWXAddressHandle() {
+    const res = await wpi.chooseAddress()
+    if (!res.errMsg.includes('ok')) {
+      showToast({
+        context: this,
+        message: res.errMsg,
+        icon: '',
+        duration: 1000,
+      })
+      return
+    }
+    showToast({
+      context: this,
+      message: '添加成功',
+      icon: '',
+      duration: 1000,
+    })
+    const {
+      length: len,
+    } = this.data.addressList
+    this.setData({
+      [`addressList[${len}]`]: {
+        name: res.userName,
+        phoneNumber: res.telNumber,
+        address: `${res.provinceName}${res.cityName}${res.countryName}${res.detailInfo}`,
+        isDefault: 0,
+        tag: '微信地址',
+        id: len,
       },
     })
   },
@@ -125,24 +123,24 @@ defineOptions({
       showDeleteConfirm: false,
     })
   },
-  editAddressHandle({
+  async editAddressHandle({
     detail,
   }) {
     this.waitForNewAddress()
     const {
       id,
     } = detail || {}
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/user/address/edit/index?id=${id}`,
     })
   },
-  selectHandle({
+  async selectHandle({
     detail,
   }) {
     if (this.selectMode) {
       this.hasSelect = true
       resolveAddress(detail)
-      wx.navigateBack({
+      await wpi.navigateBack({
         delta: 1,
       })
     }
@@ -152,9 +150,9 @@ defineOptions({
       })
     }
   },
-  createHandle() {
+  async createHandle() {
     this.waitForNewAddress()
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: '/pages/user/address/edit/index',
     })
   },

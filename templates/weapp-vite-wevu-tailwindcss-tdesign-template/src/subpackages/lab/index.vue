@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { computed, ref } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
@@ -39,8 +40,8 @@ function handleToggleChange(event: unknown) {
   toggle.value = resolveBooleanChangeValue(event, !toggle.value)
 }
 
-function navigateTo(url: string) {
-  wx.navigateTo({
+async function navigateTo(url: string) {
+  await wpi.navigateTo({
     url,
   })
 }

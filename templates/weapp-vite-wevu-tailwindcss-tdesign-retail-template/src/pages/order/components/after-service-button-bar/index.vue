@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { cancelRights } from '../../after-service-detail/api'
@@ -109,18 +110,18 @@ defineOptions({
           break
       }
     },
-    onFillTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
-      wx.navigateTo({
+    async onFillTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
+      await wpi.navigateTo({
         url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id}`,
       })
     },
-    viewDelivery(this: AfterServiceButtonBarInstance, service: ServiceData) {
-      wx.navigateTo({
+    async viewDelivery(this: AfterServiceButtonBarInstance, service: ServiceData) {
+      await wpi.navigateTo({
         url: `/pages/order/delivery-detail/index?data=${JSON.stringify(service.logistics || service.logisticsVO)}&source=2`,
       })
     },
-    onChangeTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
-      wx.navigateTo({
+    async onChangeTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
+      await wpi.navigateTo({
         url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id}&logisticsNo=${service.logisticsNo}&logisticsCompanyName=${service.logisticsCompanyName}&logisticsCompanyCode=${service.logisticsCompanyCode}&remark=${service.remark || ''}`,
       })
     },

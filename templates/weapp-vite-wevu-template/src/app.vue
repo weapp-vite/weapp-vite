@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import autoRoutes from 'weapp-vite/auto-routes'
 import { onHide, onLaunch, onShow } from 'wevu'
 import { createRouter } from 'wevu/router'
@@ -16,6 +17,8 @@ defineAppJson({
   sitemapLocation: 'sitemap.json',
 })
 
+const logger = wpi.getLogManager({ level: 1 })
+
 const router = createRouter({
   routes: autoRoutes.entries.map(path => ({
     name: path,
@@ -24,7 +27,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from) => {
-  wx.getLogManager({ level: 1 }).info('[wevu-template-router] beforeEach', {
+  logger.info('[wevu-template-router] beforeEach', {
     to: to?.fullPath,
     from: from.fullPath,
   })
@@ -32,7 +35,7 @@ router.beforeEach((to, from) => {
 })
 
 router.beforeResolve((to, from) => {
-  wx.getLogManager({ level: 1 }).info('[wevu-template-router] beforeResolve', {
+  logger.info('[wevu-template-router] beforeResolve', {
     to: to?.fullPath,
     from: from.fullPath,
   })
@@ -40,7 +43,7 @@ router.beforeResolve((to, from) => {
 })
 
 router.afterEach((to, from, failure) => {
-  wx.getLogManager({ level: 1 }).info('[wevu-template-router] afterEach', {
+  logger.info('[wevu-template-router] afterEach', {
     to: to?.fullPath,
     from: from.fullPath,
     failureType: failure?.type,
@@ -48,7 +51,7 @@ router.afterEach((to, from, failure) => {
 })
 
 router.onError((error, context) => {
-  wx.getLogManager({ level: 1 }).info('[wevu-template-router] onError', {
+  logger.info('[wevu-template-router] onError', {
     error: error instanceof Error ? error.message : String(error),
     mode: context.mode,
     to: context.to?.fullPath,
@@ -58,15 +61,15 @@ router.onError((error, context) => {
 })
 
 onShow(() => {
-  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app show')
+  logger.info('[weapp-vite-wevu-template] app show')
 })
 
 onHide(() => {
-  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app hide')
+  logger.info('[weapp-vite-wevu-template] app hide')
 })
 
 onLaunch(() => {
-  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app launch')
+  logger.info('[weapp-vite-wevu-template] app launch')
 })
 </script>
 

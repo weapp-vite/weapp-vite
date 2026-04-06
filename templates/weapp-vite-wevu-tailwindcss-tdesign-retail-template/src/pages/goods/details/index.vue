@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { cdnBase } from '../../../config/index'
 import { fetchActivityList } from '../../../services/activity/fetchActivityList'
@@ -96,22 +97,22 @@ defineOptions({
   toAddCart() {
     this.showSkuSelectPopup(2)
   },
-  toNav(e) {
+  async toNav(e) {
     const {
       url,
     } = e.detail
-    wx.switchTab({
+    await wpi.switchTab({
       url,
     })
   },
-  showCurImg(e) {
+  async showCurImg(e) {
     const {
       index,
     } = e.detail
     const {
       images,
     } = this.data.details
-    wx.previewImage({
+    await wpi.previewImage({
       current: images[index],
       urls: images, // 需要预览的图片http链接列表
     })
@@ -222,7 +223,7 @@ defineOptions({
       duration: 1000,
     })
   },
-  gotoBuy(type) {
+  async gotoBuy(type) {
     const {
       isAllSelectedSku,
       buyNum,
@@ -259,7 +260,7 @@ defineOptions({
     })
     urlQueryStr = urlQueryStr ? `?${urlQueryStr}` : ''
     const path = `/pages/order/order-confirm/index${urlQueryStr}`
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: path,
     })
   },
@@ -285,11 +286,11 @@ defineOptions({
       isShowPromotionPop: false,
     })
   },
-  promotionChange(e) {
+  async promotionChange(e) {
     const {
       index,
     } = e.detail
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/promotion/promotion-detail/index?promotion_id=${index}`,
     })
   },
@@ -416,8 +417,8 @@ defineOptions({
     }
   },
   /** 跳转到评价列表 */
-  navToCommentsListPage() {
-    wx.navigateTo({
+  async navToCommentsListPage() {
+    await wpi.navigateTo({
       url: `/pages/goods/comments/index?spuId=${this.data.spuId}`,
     })
   },

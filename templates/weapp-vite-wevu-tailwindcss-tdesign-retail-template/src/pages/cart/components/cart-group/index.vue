@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { ref, toRefs, useNativeInstance, watch } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { hasPromotion, imgCut } from './helpers'
@@ -186,8 +187,8 @@ function goGoodsDetail(e: any) {
   emit('goodsclick', { goods })
 }
 
-function gotoCoupons() {
-  wx.navigateTo({
+async function gotoCoupons() {
+  await wpi.navigateTo({
     url: '/pages/coupon/coupon-list/index',
   })
 }

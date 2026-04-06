@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 
 defineOptions({
@@ -24,11 +25,11 @@ defineOptions({
         show: false,
       })
     },
-    onCall() {
+    async onCall() {
       const {
         phoneNumber,
       } = this.properties
-      wx.makePhoneCall({
+      await wpi.makePhoneCall({
         phoneNumber,
       })
     },

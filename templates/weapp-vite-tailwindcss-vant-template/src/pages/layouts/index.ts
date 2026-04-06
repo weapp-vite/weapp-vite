@@ -1,4 +1,5 @@
 import Dialog from '@vant/weapp/dialog/dialog'
+import { wpi } from '@wevu/api'
 import { setPageLayout } from 'weapp-vite/runtime'
 
 Page({
@@ -29,7 +30,7 @@ Page({
       message: `当前状态：${this.data.currentLayout}`,
     })
   },
-  backHome() {
-    wx.navigateTo({ url: '/pages/index/index' })
+  async backHome() {
+    await wpi.navigateTo({ url: '/pages/index/index' })
   },
 })

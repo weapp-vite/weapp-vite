@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { QuickActionItem } from '@/types/action'
 
+import { wpi } from '@wevu/api'
 import { computed, getCurrentInstance, ref, resolveLayoutBridge, resolveLayoutHost, watch } from 'wevu'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
@@ -218,18 +219,18 @@ void runLayoutToastE2E
 
 usePullDownRefresh(refreshDashboard)
 
-function onQuickAction(action: QuickActionItem) {
+async function onQuickAction(action: QuickActionItem) {
   if (!action.path) {
     showToast('该入口暂未配置')
     return
   }
   if (action.type === 'tab') {
-    wx.switchTab({
+    await wpi.switchTab({
       url: action.path,
     })
     return
   }
-  wx.navigateTo({
+  await wpi.navigateTo({
     url: action.path,
   })
 }

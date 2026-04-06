@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { areaData } from '../../../../config/index'
 import { fetchDeliveryAddress } from '../../../../services/address/fetchAddress'
@@ -251,92 +252,67 @@ defineOptions({
       tips: '添加成功',
     }
   },
-  builtInSearch({
+  async builtInSearch({
     code,
     name,
   }) {
-    return new Promise((resolve, reject) => {
-      wx.getSetting({
-        success: (res) => {
-          if (res.authSetting[code] === false) {
-            wx.showModal({
-              title: `获取${name}失败`,
-              content: `获取${name}失败，请在【右上角】-小程序【设置】项中，将【${name}】开启。`,
-              confirmText: '去设置',
-              confirmColor: '#FA550F',
-              cancelColor: '取消',
-              success(res) {
-                if (res.confirm) {
-                  wx.openSetting({
-                    success(settinRes) {
-                      if (settinRes.authSetting[code] === true) {
-                        resolve()
-                      }
-                      else {
-                        console.warn('用户未打开权限', name, code)
-                        reject()
-                      }
-                    },
-                  })
-                }
-                else {
-                  reject()
-                }
-              },
-              fail() {
-                reject()
-              },
-            })
-          }
-          else {
-            resolve()
-          }
-        },
-        fail() {
-          reject()
-        },
-      })
+    const settingRes = await wpi.getSetting()
+    if (settingRes.authSetting[code] !== false) {
+      return
+    }
+    const modalRes = await wpi.showModal({
+      title: `获取${name}失败`,
+      content: `获取${name}失败，请在【右上角】-小程序【设置】项中，将【${name}】开启。`,
+      confirmText: '去设置',
+      confirmColor: '#FA550F',
+      cancelColor: '取消',
     })
+    if (!modalRes.confirm) {
+      throw new Error(`用户取消开启${name}权限`)
+    }
+    const openSettingRes = await wpi.openSetting()
+    if (openSettingRes.authSetting[code] !== true) {
+      console.warn('用户未打开权限', name, code)
+      throw new Error(`用户未开启${name}权限`)
+    }
   },
-  onSearchAddress() {
-    this.builtInSearch({
+  async onSearchAddress() {
+    await this.builtInSearch({
       code: 'scope.userLocation',
       name: '地址位置',
-    }).then(() => {
-      wx.chooseLocation({
-        success: (res) => {
-          if (res.name) {
-            this.triggerEvent('addressParse', {
-              address: res.address,
-              name: res.name,
-              latitude: res.latitude,
-              longitude: res.longitude,
-            })
-          }
-          else {
-            showToast({
-              context: this,
-              message: '地点为空，请重新选择',
-              icon: '',
-              duration: 1000,
-            })
-          }
-        },
-        fail(res) {
-          console.warn(`wx.chooseLocation fail: ${JSON.stringify(res)}`)
-          if (res.errMsg !== 'chooseLocation:fail cancel') {
-            showToast({
-              context: this,
-              message: '地点错误，请重新选择',
-              icon: '',
-              duration: 1000,
-            })
-          }
-        },
-      })
     })
+    try {
+      const res = await wpi.chooseLocation()
+      if (res.name) {
+        this.triggerEvent('addressParse', {
+          address: res.address,
+          name: res.name,
+          latitude: res.latitude,
+          longitude: res.longitude,
+        })
+      }
+      else {
+        showToast({
+          context: this,
+          message: '地点为空，请重新选择',
+          icon: '',
+          duration: 1000,
+        })
+      }
+    }
+    catch (res) {
+      console.warn(`wpi.chooseLocation fail: ${JSON.stringify(res)}`)
+      if (res.errMsg !== 'chooseLocation:fail cancel') {
+        showToast({
+          context: this,
+          message: '地点错误，请重新选择',
+          icon: '',
+          duration: 1000,
+        })
+      }
+    }
   },
-  formSubmit() {
+  async formSubmit() {
     const {
       submitActive,
     } = this.data
@@ -376,7 +352,7 @@ defineOptions({
       longitude: locationState.longitude,
       storeId: null,
     })
-    wx.navigateBack({
+    await wpi.navigateBack({
       delta: 1,
     })
   },

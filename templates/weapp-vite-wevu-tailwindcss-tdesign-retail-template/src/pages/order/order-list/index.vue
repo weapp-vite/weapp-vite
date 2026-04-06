@@ -201,11 +201,11 @@ defineOptions({
   onRefresh() {
     this.refreshList(this.data.curTab)
   },
-  onOrderCardTap(e) {
+  async onOrderCardTap(e) {
     const {
       order,
     } = e.currentTarget.dataset
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/order/order-detail/index?orderNo=${order.orderNo}`,
     })
   },

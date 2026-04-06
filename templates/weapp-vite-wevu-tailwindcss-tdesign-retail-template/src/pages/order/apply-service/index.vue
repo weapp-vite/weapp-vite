@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { alertDialog, confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { dispatchApplyService, dispatchConfirmReceived, fetchApplyReasonList, fetchRightsPreview } from '../../../services/order/applyService'
@@ -138,7 +139,7 @@ defineOptions({
       alertDialog({
         content: '请先选择订单',
       }).then(() => {
-        wx.redirectTo({
+        void wpi.redirectTo({
           url: 'pages/order/order-list/index',
         })
       })
@@ -148,19 +149,19 @@ defineOptions({
       alertDialog({
         content: '请先选择商品',
       }).then(() => {
-        wx.redirectTo(`pages/order/order-detail/index?orderNo=${orderNo}`)
+        void wpi.redirectTo(`pages/order/order-detail/index?orderNo=${orderNo}`)
       })
       return false
     }
     return true
   },
   async refresh() {
-    wx.showLoading({
+    await wpi.showLoading({
       title: 'loading',
     })
     try {
       const res = await this.getRightsPreview()
-      wx.hideLoading()
+      await wpi.hideLoading()
       const goodsInfo = {
         id: res.data.skuId,
         thumb: res.data.goodsInfo && res.data.goodsInfo.skuImage,
@@ -183,7 +184,7 @@ defineOptions({
       })
     }
     catch (err) {
-      wx.hideLoading()
+      await wpi.hideLoading()
       throw err
     }
   },
@@ -202,8 +203,8 @@ defineOptions({
     const res = await fetchRightsPreview(params)
     return res
   },
-  onApplyOnlyRefund() {
-    wx.setNavigationBarTitle({
+  async onApplyOnlyRefund() {
+    await wpi.setNavigationBarTitle({
       title: '申请退款',
     })
     this.setData({
@@ -211,8 +212,8 @@ defineOptions({
     })
     this.switchReceiptStatus(0)
   },
-  onApplyReturnGoods() {
-    wx.setNavigationBarTitle({
+  async onApplyReturnGoods() {
+    await wpi.setNavigationBarTitle({
       title: '申请退货退款',
     })
     this.setData({
@@ -428,7 +429,7 @@ defineOptions({
           message: '申请成功',
           icon: '',
         })
-        wx.redirectTo({
+        return wpi.redirectTo({
           url: `/pages/order/after-service-detail/index?rightsNo=${res.data.rightsNo}`,
         })
       }).then(() => this.setData({

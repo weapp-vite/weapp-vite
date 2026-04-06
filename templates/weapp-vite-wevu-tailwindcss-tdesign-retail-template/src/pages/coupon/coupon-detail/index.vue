@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { onLoad, ref } from 'wevu'
 import { fetchCouponDetail } from '../../../services/coupon/index'
 
@@ -12,8 +13,8 @@ function getGoodsList(couponId: number) {
   })
 }
 
-function navGoodListHandle() {
-  wx.navigateTo({
+async function navGoodListHandle() {
+  await wpi.navigateTo({
     url: `/pages/coupon/coupon-activity-goods/index?id=${id.value}`,
   })
 }

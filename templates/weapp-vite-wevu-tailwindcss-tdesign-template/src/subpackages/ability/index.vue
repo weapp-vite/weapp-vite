@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wpi } from '@wevu/api'
 import { computed, onShow, ref } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
@@ -32,16 +33,12 @@ const layoutRows = computed(() => {
   ]
 })
 
-function loadSystemInfo() {
-  wx.getSystemInfo({
-    success: (result) => {
-      systemInfo.value = result
-    },
-  })
+async function loadSystemInfo() {
+  systemInfo.value = await wpi.getSystemInfo()
 }
 
 onShow(() => {
-  loadSystemInfo()
+  void loadSystemInfo()
 })
 </script>
 

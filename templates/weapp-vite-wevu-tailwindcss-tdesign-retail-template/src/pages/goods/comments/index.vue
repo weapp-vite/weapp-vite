@@ -48,19 +48,7 @@ defineOptions({
       this.setData({
         countObj: result,
       })
-      // const { data, code = '' } = result;
-      // if (code.toUpperCase() === 'SUCCESS') {
-      //     wx.setNavigationBarTitle({
-      //     title: `全部评价(${data.commentCount})`,
-      //     });
-      //     this.setData({
-      //     countObj: data,
-      //     });
-      // } else {
-      //     showToast({
-      //     title: '查询失败，请稍候重试',
-      //     });
-      // }
+      // 旧版示例在这里还会额外更新导航栏标题，当前模板仅保留评论统计数据更新逻辑。
     }
     catch (error) {}
   },

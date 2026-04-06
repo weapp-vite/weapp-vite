@@ -1,5 +1,6 @@
 // @ts-nocheck
 
+import { wpi } from '@wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { dispatchCommitPay } from '../../../services/order/orderConfirm'
@@ -49,7 +50,7 @@ export function commitPay(params: CommitPayParams) {
   })
 }
 
-export function paySuccess(payOrderInfo: PayOrderInfo) {
+export async function paySuccess(payOrderInfo: PayOrderInfo) {
   const { payAmt, tradeNo, groupId, promotionId } = payOrderInfo
   // 支付成功
   showToast({
@@ -73,7 +74,7 @@ export function paySuccess(payOrderInfo: PayOrderInfo) {
     .map(k => `${k}=${params[k]}`)
     .join('&')
   // 跳转支付结果页面
-  wx.redirectTo({ url: `/pages/order/pay-result/index?${paramsStr}` })
+  await wpi.redirectTo({ url: `/pages/order/pay-result/index?${paramsStr}` })
 }
 
 export function payFail(payOrderInfo, resultMsg) {
@@ -86,7 +87,7 @@ export function payFail(payOrderInfo, resultMsg) {
         confirmBtn: '放弃',
         cancelBtn: '继续付款',
       }).then(() => {
-        wx.redirectTo({ url: '/pages/order/order-list/index' })
+        void wpi.redirectTo({ url: '/pages/order/order-list/index' })
       })
     }
     else {
@@ -107,7 +108,7 @@ export function payFail(payOrderInfo, resultMsg) {
       icon: 'close-circle',
     })
     setTimeout(() => {
-      wx.redirectTo({ url: '/pages/order/order-list/index' })
+      void wpi.redirectTo({ url: '/pages/order/order-list/index' })
     }, 2000)
   }
 }
@@ -118,21 +119,7 @@ export function wechatPayOrder(payOrderInfo) {
   // const { timeStamp, nonceStr, signType, paySign } = payInfo;
   return new Promise<void>((resolve) => {
     // demo 中直接走支付成功
-    paySuccess(payOrderInfo)
-    resolve()
-    /* wx.requestPayment({
-      timeStamp,
-      nonceStr,
-      package: payInfo.package,
-      signType,
-      paySign,
-      success: function () {
-        paySuccess(payOrderInfo);
-        resolve();
-      },
-      fail: function (err) {
-        payFail(payOrderInfo, err.errMsg);
-      },
-    }); */
+    void paySuccess(payOrderInfo).then(() => resolve())
+    // 真实支付链路可在此接入 wpi.requestPayment，再复用 paySuccess / payFail 处理结果。
   })
 }

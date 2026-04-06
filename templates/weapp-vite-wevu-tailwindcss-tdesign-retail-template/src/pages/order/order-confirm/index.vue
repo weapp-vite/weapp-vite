@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../services/address/list'
 import { fetchSettleDetail } from '../../../services/order/orderConfirm'
@@ -74,14 +75,14 @@ defineOptions({
     this.handleOptionsParams(options)
   },
   onShow() {
-    const invoiceData = wx.getStorageSync('invoiceData')
+    const invoiceData = wpi.getStorageSync('invoiceData')
     if (invoiceData) {
       // 处理发票
       this.invoiceData = invoiceData
       this.setData({
         invoiceData,
       })
-      wx.removeStorageSync('invoiceData')
+      wpi.removeStorageSync('invoiceData')
     }
   },
   init() {
@@ -111,7 +112,7 @@ defineOptions({
     }
     if (options.type === 'cart') {
       // 从购物车跳转过来时，获取传入的商品列表数据
-      const goodsRequestListJson = wx.getStorageSync('order.goodsRequestList')
+      const goodsRequestListJson = wpi.getStorageSync('order.goodsRequestList')
       goodsRequestList = goodsRequestListJson ? JSON.parse(goodsRequestListJson) : []
     }
     else if (typeof options.goodsRequestList === 'string') {
@@ -187,7 +188,7 @@ defineOptions({
       icon: '',
     })
     setTimeout(() => {
-      wx.navigateBack()
+      void wpi.navigateBack()
     }, 1500)
     this.setData({
       loading: false,
@@ -291,7 +292,7 @@ defineOptions({
     })
     return data
   },
-  onGotoAddress() {
+  async onGotoAddress() {
     /** 获取一个Promise */
     getAddressPromise().then((address) => {
       this.handleOptionsParams({
@@ -309,7 +310,7 @@ defineOptions({
     if (userAddressReq?.id) {
       id = `&id=${userAddressReq.id}`
     }
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/user/address/list/index?selectMode=1&isOrderSure=1${id}`,
     })
   },
@@ -459,7 +460,7 @@ defineOptions({
         })
         setTimeout(() => {
           // 提交支付失败   返回购物车
-          wx.navigateBack()
+          void wpi.navigateBack()
         }, 2000)
       }
     }, (err) => {
@@ -481,7 +482,7 @@ defineOptions({
           icon: 'close-circle',
         })
         setTimeout(() => {
-          wx.redirectTo({
+          void wpi.redirectTo({
             url: '/pages/order/order-list/index',
           })
         })
@@ -494,7 +495,7 @@ defineOptions({
           icon: 'close-circle',
         })
         setTimeout(() => {
-          wx.redirectTo({
+          void wpi.redirectTo({
             url: '/pages/order/order-list/index',
           })
         })
@@ -508,7 +509,7 @@ defineOptions({
         })
         setTimeout(() => {
           // 提交支付失败  返回购物车
-          wx.navigateBack()
+          void wpi.navigateBack()
         }, 2000)
       }
     })
@@ -545,10 +546,10 @@ defineOptions({
       'settleDetailData.abnormalDeliveryGoodsList': [],
     })
   },
-  onReceipt() {
+  async onReceipt() {
     // 跳转 开发票
     const invoiceData = this.invoiceData || {}
-    wx.navigateTo({
+    await wpi.navigateTo({
       url: `/pages/order/receipt/index?invoiceData=${JSON.stringify(invoiceData)}`,
     })
   },

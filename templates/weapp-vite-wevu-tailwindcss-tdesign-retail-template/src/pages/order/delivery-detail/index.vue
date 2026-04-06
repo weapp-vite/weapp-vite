@@ -1,5 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { wpi } from '@wevu/api'
+
 defineOptions({
   data() {
     return {
@@ -36,16 +38,16 @@ defineOptions({
       })
     }
   },
-  onLogisticsNoCopy() {
-    wx.setClipboardData({
+  async onLogisticsNoCopy() {
+    await wpi.setClipboardData({
       data: this.data.logisticsData.logisticsNo,
     })
   },
-  onCall() {
+  async onCall() {
     const {
       phoneNumber,
     } = this.data.logisticsData
-    wx.makePhoneCall({
+    await wpi.makePhoneCall({
       phoneNumber,
     })
   },
