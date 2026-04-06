@@ -6,6 +6,7 @@ import process from 'node:process'
 import { emitKeypressEvents } from 'node:readline'
 import path from 'pathe'
 import { takeScreenshot } from 'weapp-ide-cli'
+import { VERSION } from '../constants'
 import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
 
@@ -27,6 +28,7 @@ interface DevHotkeyState {
   lastAction?: string
   mcpEnabled: boolean
   mcpRunning: boolean
+  projectLabel?: string
 }
 
 const DEV_SCREENSHOT_DIR = '.tmp/weapp-vite-dev-screenshots'
@@ -45,6 +47,34 @@ function forwardSigtstp() {
   process.kill(process.pid, 'SIGTSTP')
 }
 
+function formatProjectLabel(cwd: string) {
+  return path.basename(cwd) || cwd
+}
+
+function formatSessionHeader(projectLabel?: string) {
+  const parts = [
+    colors.bold(colors.green('DEV')),
+    `weapp-vite v${VERSION}`,
+    projectLabel ?? 'weapp',
+  ]
+  return parts.join('  ')
+}
+
+function formatMcpStatus(state: DevHotkeyState) {
+  if (!state.mcpEnabled) {
+    return '已禁用'
+  }
+  return state.mcpRunning ? '运行中' : '未启动'
+}
+
+function formatStatusLines(state: DevHotkeyState) {
+  return [
+    `状态        ${state.currentAction ?? '等待操作'}`,
+    `MCP         ${formatMcpStatus(state)}`,
+    ...(state.lastAction ? [`最近操作    ${state.lastAction}`] : []),
+  ]
+}
+
 /**
  * @description 生成带状态的开发态快捷键帮助文本。
  */
@@ -61,23 +91,17 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
   const formattedRows = commandRows.map(({ key, description }) =>
     `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
   )
-  const mcpStatus = !state.mcpEnabled
-    ? '已禁用'
-    : state.mcpRunning
-      ? '运行中'
-      : '未启动'
   return [
     '',
-    '当前状态',
-    `MCP 服务  ${mcpStatus}`,
-    ...(state.currentAction ? [`执行中    ${state.currentAction}`] : []),
-    ...(state.lastAction ? [`刚刚完成  ${state.lastAction}`] : []),
+    formatSessionHeader(state.projectLabel),
     '',
-    '快捷命令',
+    ...formatStatusLines(state),
+    '',
+    'Dev Usage',
     ...formattedRows,
     '',
     '帮助',
-    `按 ${key('h')} 重新显示这份帮助`,
+    `按 ${key('h')} 重新显示这份帮助，按 ${key('q')} 退出当前 dev`,
   ].join('\n')
 }
 
@@ -86,16 +110,14 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
  */
 export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
   const key = (value: string) => colors.bold(colors.green(value))
-  if (state.currentAction) {
-    return `${state.currentAction}，按 ${key('h')} 查看帮助，按 ${key('q')} 退出`
-  }
-  const mcpStatus = !state.mcpEnabled
-    ? 'MCP 已禁用'
-    : state.mcpRunning
-      ? 'MCP 运行中'
-      : 'MCP 未启动'
-  const lastAction = state.lastAction ? `，刚刚完成：${state.lastAction}` : ''
-  return `${mcpStatus}${lastAction}，按 ${key('h')} 查看帮助，按 ${key('q')} 退出`
+  return [
+    '',
+    formatSessionHeader(state.projectLabel),
+    '',
+    ...formatStatusLines(state),
+    '',
+    `按 ${key('h')} 显示帮助，按 ${key('q')} 退出`,
+  ].join('\n')
 }
 
 /**
@@ -105,6 +127,7 @@ export function formatDevHotkeyHelp() {
   return formatDevHotkeyHelpWithState({
     mcpEnabled: true,
     mcpRunning: false,
+    projectLabel: 'weapp',
   })
 }
 
@@ -115,6 +138,7 @@ export function formatDevHotkeyHint() {
   return formatDevHotkeyHintWithState({
     mcpEnabled: true,
     mcpRunning: false,
+    projectLabel: 'weapp',
   })
 }
 
@@ -185,6 +209,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     lastAction,
     mcpEnabled: resolvedMcp.enabled,
     mcpRunning: Boolean(mcpHandle?.close),
+    projectLabel: formatProjectLabel(options.cwd),
   })
   const detachTerminal = () => {
     if (hasSetRawMode) {

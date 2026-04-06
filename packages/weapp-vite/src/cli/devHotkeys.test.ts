@@ -77,6 +77,10 @@ vi.mock('../logger', () => ({
   },
 }))
 
+vi.mock('../constants', () => ({
+  VERSION: 'test-version',
+}))
+
 describe('devHotkeys', () => {
   let stdin: FakeStdin
   let fakeProcess: FakeProcess
@@ -127,8 +131,9 @@ describe('devHotkeys', () => {
 
     expect(session).toBeDefined()
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('MCP 未启动'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('状态        等待操作'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助'))
 
     session?.close()
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
@@ -152,11 +157,11 @@ describe('devHotkeys', () => {
       silentStartupHint: true,
     })
 
-    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助'))
 
     session?.restore()
 
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助'))
     session?.close()
   })
 
@@ -179,8 +184,8 @@ describe('devHotkeys', () => {
     loggerMock.info.mockClear()
     stdin.emit('keypress', 'h', { name: 'h' })
 
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Dev Usage'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('重新显示这份帮助'))
   })
@@ -262,14 +267,14 @@ describe('devHotkeys', () => {
       workspaceRoot: '/project',
     })
     expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('MCP 运行中') && String(args[0]).includes('刚刚完成：MCP 已启动'),
+      String(args[0]).includes('MCP         运行中') && String(args[0]).includes('最近操作    MCP 已启动'),
     )).toBe(true)
 
     stdin.emit('keypress', '', { name: 'm' })
     await flushMicrotasks()
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('MCP 未启动'))
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('MCP         未启动'))
     session?.close()
   })
 
@@ -295,7 +300,7 @@ describe('devHotkeys', () => {
     await flushMicrotasks(10)
 
     expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('刚刚完成：截图已保存到'),
+      String(args[0]).includes('最近操作    截图已保存到'),
     )).toBe(true)
   })
 
@@ -324,7 +329,7 @@ describe('devHotkeys', () => {
     stdin.emit('keypress', 'h', { name: 'h' })
 
     expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('执行中') && String(args[0]).includes('正在截图当前页面'),
+      String(args[0]).includes('状态        正在截图当前页面'),
     )).toBe(true)
 
     resolveScreenshot?.({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
@@ -414,7 +419,7 @@ describe('devHotkeys', () => {
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
     expect(stdin.resume).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助'))
   })
 
   it('quits dev on q hotkey', async () => {
