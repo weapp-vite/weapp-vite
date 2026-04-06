@@ -22,8 +22,11 @@ const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const maybeStartForwardConsoleMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
+const devHotkeysCloseMock = vi.hoisted(() => vi.fn())
+const devHotkeysRestoreMock = vi.hoisted(() => vi.fn())
 const startDevHotkeysMock = vi.hoisted(() => vi.fn(() => ({
-  close: vi.fn(),
+  close: devHotkeysCloseMock,
+  restore: devHotkeysRestoreMock,
 })))
 
 vi.mock('../../logger', () => ({
@@ -99,6 +102,8 @@ function createServeActionHandler() {
 describe('serve cli command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    devHotkeysCloseMock.mockReset()
+    devHotkeysRestoreMock.mockReset()
     resolveConfigFileMock.mockReturnValue(undefined)
     const emitRuntimeEvents = vi.fn()
     const update = vi.fn().mockResolvedValue(undefined)
@@ -205,5 +210,6 @@ describe('serve cli command', () => {
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       trustProject: false,
     })
+    expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
   })
 })

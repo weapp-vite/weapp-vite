@@ -441,6 +441,7 @@ export function registerServeCommand(cli: CAC) {
               trustProject: options.trustProject,
             })
           }
+          devHotkeysSession?.restore()
         }
 
         if (analyzeHandle) {

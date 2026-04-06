@@ -18,6 +18,7 @@ export interface StartDevHotkeysOptions {
 
 export interface DevHotkeysSession {
   close: () => void
+  restore: () => void
 }
 
 interface DevHotkeyState {
@@ -194,6 +195,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     if (closed) {
       return
     }
+    emitKeypressEvents(process.stdin)
     if (hasSetRawMode) {
       process.stdin.setRawMode(true)
     }
@@ -222,6 +224,15 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   const printHint = () => {
     logger.info(formatDevHotkeyHintWithState(getState()))
+  }
+  const restore = () => {
+    if (closed) {
+      return
+    }
+    process.stdin.off('keypress', onKeypress)
+    attachTerminal()
+    process.stdin.on('keypress', onKeypress)
+    printHint()
   }
 
   const suspend = () => {
@@ -331,8 +342,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   process.stdin.on('keypress', onKeypress)
   onSigcont = () => {
-    attachTerminal()
-    printHint()
+    restore()
   }
   process.on('SIGCONT', onSigcont)
   printHint()
@@ -344,5 +354,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   return {
     close,
+    restore,
   }
 }
