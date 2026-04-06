@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const launchAutomatorMock = vi.hoisted(() => vi.fn())
+const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   error: vi.fn(),
   warn: vi.fn(),
@@ -10,6 +11,7 @@ vi.mock('../src/cli/automator', async () => {
   const actual = await vi.importActual<typeof import('../src/cli/automator')>('../src/cli/automator')
   return {
     ...actual,
+    connectOpenedAutomator: connectOpenedAutomatorMock,
     launchAutomator: launchAutomatorMock,
   }
 })
@@ -22,8 +24,10 @@ describe('automator session diagnostics', () => {
   beforeEach(() => {
     vi.resetModules()
     launchAutomatorMock.mockReset()
+    connectOpenedAutomatorMock.mockReset()
     loggerMock.error.mockReset()
     loggerMock.warn.mockReset()
+    connectOpenedAutomatorMock.mockRejectedValue(new Error('Failed connecting to ws://127.0.0.1:9420, check if target project window is opened with automation enabled'))
   })
 
   it('maps websocket connect failures to a friendly diagnostic error', async () => {
@@ -36,7 +40,7 @@ describe('automator session diagnostics', () => {
   })
 
   it('maps protocol request timeouts to a friendly diagnostic error', async () => {
-    launchAutomatorMock.mockRejectedValueOnce(Object.assign(
+    connectOpenedAutomatorMock.mockRejectedValueOnce(Object.assign(
       new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
       {
         code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
@@ -48,6 +52,39 @@ describe('automator session diagnostics', () => {
     await expect(connectMiniProgram({ projectPath: '/workspace/project' })).rejects.toThrow('DEVTOOLS_PROTOCOL_TIMEOUT')
     expect(loggerMock.error).toHaveBeenCalledWith('微信开发者工具在协议调用 App.getCurrentPage 上超时，未按预期返回结果。')
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('当前 DevTools 版本'))
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+  })
+
+  it('prefers connecting to an already opened project session before launching a new one', async () => {
+    const disconnectMock = vi.fn()
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: disconnectMock,
+    })
+
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+    const result = await connectMiniProgram({ projectPath: '/workspace/project' })
+
+    expect(result).toMatchObject({
+      disconnect: disconnectMock,
+    })
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to launching automator when opened-session reuse is unavailable', async () => {
+    const disconnectMock = vi.fn()
+    launchAutomatorMock.mockResolvedValueOnce({
+      disconnect: disconnectMock,
+    })
+
+    const { connectMiniProgram } = await import('../src/cli/automator-session')
+    const result = await connectMiniProgram({ projectPath: '/workspace/project' })
+
+    expect(result).toMatchObject({
+      disconnect: disconnectMock,
+    })
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
+    expect(launchAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
   })
 
   it('reuses shared miniProgram sessions for the same project path', async () => {

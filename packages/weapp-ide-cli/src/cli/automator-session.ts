@@ -2,6 +2,7 @@ import type { Element, MiniProgram, Page } from '@weapp-vite/miniprogram-automat
 import { i18nText } from '../i18n'
 import logger from '../logger'
 import {
+  connectOpenedAutomator,
   formatAutomatorLoginError,
   getAutomatorProtocolTimeoutMethod,
   isAutomatorLoginError,
@@ -104,10 +105,20 @@ function normalizeMiniProgramConnectionError(error: unknown) {
  */
 export async function connectMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
   try {
-    return await launchAutomator(options) as MiniProgramLike
+    return await connectOpenedAutomator(options) as MiniProgramLike
   }
   catch (error) {
-    throw normalizeMiniProgramConnectionError(error)
+    const normalizedOpenSessionError = normalizeMiniProgramConnectionError(error)
+    if (normalizedOpenSessionError instanceof Error && normalizedOpenSessionError.message === 'DEVTOOLS_PROTOCOL_TIMEOUT') {
+      throw normalizedOpenSessionError
+    }
+
+    try {
+      return await launchAutomator(options) as MiniProgramLike
+    }
+    catch (launchError) {
+      throw normalizeMiniProgramConnectionError(launchError)
+    }
   }
 }
 
