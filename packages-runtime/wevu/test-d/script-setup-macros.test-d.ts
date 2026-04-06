@@ -54,6 +54,7 @@ const emitByObject = defineEmits({
   open: null,
 })
 emitByObject('change', 1)
+emitByObject('change', 1, { bubbles: true, composed: true })
 emitByObject('open')
 // @ts-expect-error invalid payload type should be rejected
 emitByObject('change', '1')
@@ -75,7 +76,9 @@ const emitByNamedTuple = defineEmits<{
   rename: [value: string, force?: boolean]
 }>()
 emitByNamedTuple('change')
+emitByNamedTuple('change', undefined, { bubbles: true })
 emitByNamedTuple('update', 1)
+emitByNamedTuple('update', 1, { bubbles: true, composed: true })
 emitByNamedTuple('rename', 'name')
 emitByNamedTuple('rename', 'name', true)
 // @ts-expect-error missing tuple payload should be rejected

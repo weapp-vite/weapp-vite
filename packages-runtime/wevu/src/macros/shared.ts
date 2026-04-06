@@ -58,6 +58,12 @@ export type UnionToIntersection<U> = (U extends any ? (arg: U) => any : never) e
   ? I
   : never
 
+type ScriptSetupTriggerEventOptions = WechatMiniprogram.Component.TriggerEventOption
+
+type EmitArgsWithTriggerEventOptions<Args extends any[]> = Args extends []
+  ? [] | [detail: undefined, options: ScriptSetupTriggerEventOptions]
+  : Args | [...args: Args, options: ScriptSetupTriggerEventOptions]
+
 type ObjectEmitsOptions = Record<string, ((...args: any[]) => any) | null>
 export type EmitsOptions = ObjectEmitsOptions | string[]
 /* eslint-disable ts/no-empty-object-type -- 对齐 Vue 官方 EmitFn 判定逻辑，使用 {} extends Options 判断空对象分支。 */
@@ -67,9 +73,9 @@ export type EmitFn<Options = ObjectEmitsOptions, Event extends keyof Options = k
       ? (event: string, ...args: any[]) => void
       : UnionToIntersection<{
         [K in Event]: Options[K] extends (...args: infer Args) => any
-          ? (event: K, ...args: Args) => void
+          ? (event: K, ...args: EmitArgsWithTriggerEventOptions<Args>) => void
           : Options[K] extends any[]
-            ? (event: K, ...args: Options[K]) => void
+            ? (event: K, ...args: EmitArgsWithTriggerEventOptions<Options[K]>) => void
             : (event: K, ...args: any[]) => void
       }[Event]>
 /* eslint-enable ts/no-empty-object-type */
@@ -77,7 +83,7 @@ export type EmitFn<Options = ObjectEmitsOptions, Event extends keyof Options = k
 export type ComponentTypeEmits = ((...args: any[]) => any) | Record<string, any>
 type RecordToUnion<T extends Record<string, any>> = T[keyof T]
 export type ShortEmits<T extends Record<string, any>> = UnionToIntersection<RecordToUnion<{
-  [K in keyof T]: (evt: K, ...args: T[K]) => void
+  [K in keyof T]: (evt: K, ...args: EmitArgsWithTriggerEventOptions<T[K]>) => void
 }>>
 
 type ScriptSetupNativePropertyOption = WechatMiniprogram.Component.PropertyOption
