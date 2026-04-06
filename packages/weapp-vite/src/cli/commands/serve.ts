@@ -43,6 +43,19 @@ function hasAnalyzeData(result: AnalyzeSubpackagesResult) {
   return result.packages.length > 0 || result.modules.length > 0
 }
 
+function waitForServeShutdownSignal() {
+  return new Promise<void>((resolve) => {
+    const onSignal = () => {
+      process.off('SIGINT', onSignal)
+      process.off('SIGTERM', onSignal)
+      resolve()
+    }
+
+    process.on('SIGINT', onSignal)
+    process.on('SIGTERM', onSignal)
+  })
+}
+
 interface AnalyzeRunResult {
   result: AnalyzeSubpackagesResult
   durationMs: number
@@ -449,9 +462,13 @@ export function registerServeCommand(cli: CAC) {
         if (analyzeHandle) {
           await analyzeHandle.waitForExit()
         }
+        else if (targets.runMini || targets.runWeb) {
+          await waitForServeShutdownSignal()
+        }
       }
       finally {
         devHotkeysSession?.close()
+        ctx.watcherService?.closeAll()
       }
     })
 }

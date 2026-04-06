@@ -24,10 +24,38 @@ const openIdeMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const devHotkeysCloseMock = vi.hoisted(() => vi.fn())
 const devHotkeysRestoreMock = vi.hoisted(() => vi.fn())
+const watcherCloseAllMock = vi.hoisted(() => vi.fn())
+const fakeProcess = vi.hoisted(() => {
+  const listeners = new Map<string, Set<(...args: any[]) => void>>()
+  return {
+    env: {} as Record<string, string | undefined>,
+    emit(event: string, ...args: any[]) {
+      listeners.get(event)?.forEach(listener => listener(...args))
+    },
+    on(event: string, listener: (...args: any[]) => void) {
+      const bucket = listeners.get(event) ?? new Set<(...args: any[]) => void>()
+      bucket.add(listener)
+      listeners.set(event, bucket)
+      return this
+    },
+    off(event: string, listener: (...args: any[]) => void) {
+      listeners.get(event)?.delete(listener)
+      return this
+    },
+    removeAllListeners() {
+      listeners.clear()
+      return this
+    },
+  }
+})
 const startDevHotkeysMock = vi.hoisted(() => vi.fn(() => ({
   close: devHotkeysCloseMock,
   restore: devHotkeysRestoreMock,
 })))
+
+vi.mock('node:process', () => ({
+  default: fakeProcess,
+}))
 
 vi.mock('../../logger', () => ({
   default: {
@@ -122,6 +150,9 @@ describe('serve cli command', () => {
           weappViteConfig: {},
         },
         webService: undefined,
+        watcherService: {
+          closeAll: watcherCloseAllMock,
+        },
       })
       .mockResolvedValue({
         configService: {
@@ -147,6 +178,8 @@ describe('serve cli command', () => {
       close: vi.fn().mockResolvedValue(undefined),
       urls: ['http://127.0.0.1:4173/'],
     })
+    watcherCloseAllMock.mockReset()
+    fakeProcess.removeAllListeners()
   })
 
   it('emits initial analyze lifecycle events when ui mode is enabled in serve', async () => {
@@ -203,15 +236,35 @@ describe('serve cli command', () => {
   it('forwards trust-project setting when opening ide in serve mode', async () => {
     const action = createServeActionHandler()
 
-    await action('/project', {
+    const actionPromise = action('/project', {
       platform: 'weapp',
       open: true,
       trustProject: false,
     })
+    fakeProcess.emit('SIGINT')
+    await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
       trustProject: false,
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps dev hotkeys session alive until serve shutdown signal arrives', async () => {
+    const action = createServeActionHandler()
+
+    const actionPromise = action('/project', {
+      platform: 'weapp',
+    })
+
+    await Promise.resolve()
+
+    expect(devHotkeysCloseMock).not.toHaveBeenCalled()
+
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+
+    expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
+    expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
   })
 })
