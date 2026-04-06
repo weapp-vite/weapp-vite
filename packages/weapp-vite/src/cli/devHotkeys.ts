@@ -64,7 +64,7 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     '当前状态',
     `MCP 服务  ${mcpStatus}`,
     ...(state.currentAction ? [`执行中    ${state.currentAction}`] : []),
-    ...(state.lastAction ? [`最近动作  ${state.lastAction}`] : []),
+    ...(state.lastAction ? [`刚刚完成  ${state.lastAction}`] : []),
     '',
     '快捷命令',
     ...formattedRows,
@@ -87,7 +87,7 @@ export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
     : state.mcpRunning
       ? 'MCP 运行中'
       : 'MCP 未启动'
-  const lastAction = state.lastAction ? `，最近动作：${state.lastAction}` : ''
+  const lastAction = state.lastAction ? `，刚刚完成：${state.lastAction}` : ''
   return `${mcpStatus}${lastAction}，按 ${key('h')} 查看帮助，按 ${key('q')} 退出`
 }
 

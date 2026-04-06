@@ -246,7 +246,7 @@ describe('devHotkeys', () => {
       workspaceRoot: '/project',
     })
     expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('MCP 运行中') && String(args[0]).includes('最近动作：MCP 已启动'),
+      String(args[0]).includes('MCP 运行中') && String(args[0]).includes('刚刚完成：MCP 已启动'),
     )).toBe(true)
 
     stdin.emit('keypress', '', { name: 'm' })
@@ -283,7 +283,7 @@ describe('devHotkeys', () => {
     await flushMicrotasks(10)
 
     expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('最近动作：截图已保存到'),
+      String(args[0]).includes('刚刚完成：截图已保存到'),
     )).toBe(true)
   })
 
