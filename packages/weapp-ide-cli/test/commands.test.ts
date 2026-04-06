@@ -4,6 +4,7 @@ const mockCwd = '/workspace/project'
 
 // Mock dependencies
 const launchAutomatorMock = vi.hoisted(() => vi.fn())
+const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
   warn: vi.fn(),
@@ -13,8 +14,12 @@ const loggerMock = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/cli/automator', () => ({
+  connectOpenedAutomator: connectOpenedAutomatorMock,
   launchAutomator: launchAutomatorMock,
+  getAutomatorProtocolTimeoutMethod: vi.fn(() => undefined),
   isAutomatorLoginError: vi.fn(() => false),
+  isAutomatorProtocolTimeoutError: vi.fn(() => false),
+  isAutomatorWsConnectError: vi.fn(() => false),
   isDevtoolsExtensionContextInvalidatedError: vi.fn(() => false),
   isDevtoolsHttpPortError: vi.fn(() => false),
   formatAutomatorLoginError: vi.fn(),
@@ -38,6 +43,7 @@ describe('automator commands', () => {
     vi.resetModules()
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
     launchAutomatorMock.mockReset()
+    connectOpenedAutomatorMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.error.mockReset()
     loggerMock.success.mockReset()
@@ -65,6 +71,7 @@ describe('automator commands', () => {
       mockMiniProgram.switchTab.mockReset()
       mockMiniProgram.close.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
+      connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
 
     it('navigateTo calls miniProgram.navigateTo with url', async () => {
@@ -143,6 +150,7 @@ describe('automator commands', () => {
       mockMiniProgram.systemInfo.mockReset()
       mockMiniProgram.close.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
+      connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
 
     it('pageStack returns page stack info', async () => {
@@ -222,6 +230,7 @@ describe('automator commands', () => {
       mockMiniProgram.pageScrollTo.mockReset()
       mockMiniProgram.close.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
+      connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
 
     it('tap calls element.tap()', async () => {
@@ -280,6 +289,7 @@ describe('automator commands', () => {
       mockMiniProgram.remote.mockReset()
       mockMiniProgram.close.mockReset()
       launchAutomatorMock.mockResolvedValue(mockMiniProgram)
+      connectOpenedAutomatorMock.mockResolvedValue(mockMiniProgram)
     })
 
     it('audit calls stopAudits and returns result', async () => {
