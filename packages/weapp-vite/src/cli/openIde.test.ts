@@ -20,8 +20,10 @@ const createCompilerContextMock = vi.hoisted(() => vi.fn())
 const createInlineConfigMock = vi.hoisted(() => vi.fn((platform?: string) => ({ platform })))
 const launcherLaunchMock = vi.hoisted(() => vi.fn())
 const miniProgramDisconnectMock = vi.hoisted(() => vi.fn())
+const connectMiniProgramMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
+  connectMiniProgram: connectMiniProgramMock,
   parse: parseMock,
   getConfig: getConfigMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
@@ -68,6 +70,7 @@ describe('openIde', () => {
     createCompilerContextMock.mockReset()
     launcherLaunchMock.mockReset()
     miniProgramDisconnectMock.mockReset()
+    connectMiniProgramMock.mockReset()
     createInlineConfigMock.mockClear()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
@@ -88,6 +91,7 @@ describe('openIde', () => {
     launcherLaunchMock.mockResolvedValue({
       disconnect: miniProgramDisconnectMock,
     })
+    connectMiniProgramMock.mockRejectedValue(new Error('connect failed'))
     miniProgramDisconnectMock.mockReset()
   })
 
@@ -108,11 +112,33 @@ describe('openIde', () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
 
+    expect(connectMiniProgramMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 3000,
+    })
     expect(launcherLaunchMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('skips reopening when current weapp project is already open in devtools', async () => {
+    connectMiniProgramMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
+    })
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'dist/dev/mp-weixin')
+
+    expect(connectMiniProgramMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 3000,
+    })
+    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，跳过重复打开。')
+    expect(launcherLaunchMock).not.toHaveBeenCalled()
     expect(parseMock).not.toHaveBeenCalled()
   })
 

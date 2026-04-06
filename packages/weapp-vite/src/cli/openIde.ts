@@ -4,6 +4,7 @@ import process from 'node:process'
 import { promisify } from 'node:util'
 import path from 'pathe'
 import {
+  connectMiniProgram,
   formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
   getConfig,
@@ -49,6 +50,24 @@ async function openWechatIdeByAutomator(projectPath: string) {
     trustProject: true,
   })
   miniProgram.disconnect()
+}
+
+/**
+ * @description 若当前项目已在微信开发者工具中打开且自动化可连通，则直接复用现有会话，避免重复拉起 IDE。
+ */
+async function tryReuseOpenedWechatIde(projectPath: string) {
+  try {
+    const miniProgram = await connectMiniProgram({
+      projectPath,
+      timeout: 3_000,
+    })
+    miniProgram.disconnect()
+    logger.info('目标项目已在微信开发者工具中打开，跳过重复打开。')
+    return true
+  }
+  catch {
+    return false
+  }
 }
 
 /**
@@ -142,6 +161,9 @@ export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   if (platform === 'weapp' && projectPath && options.trustProject !== false) {
     try {
+      if (await tryReuseOpenedWechatIde(projectPath)) {
+        return
+      }
       await openWechatIdeByAutomator(projectPath)
       return
     }
