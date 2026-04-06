@@ -135,6 +135,31 @@ describe('devHotkeys', () => {
     expect(stdin.pause).toHaveBeenCalled()
   })
 
+  it('can skip startup hint until restore is called', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+      silentStartupHint: true,
+    })
+
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
+
+    session?.restore()
+
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
+    session?.close()
+  })
+
   it('prints full help on h hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,

@@ -194,6 +194,7 @@ describe('serve cli command', () => {
       mcpConfig: undefined,
       platform: 'weapp',
       projectPath: '/project/dist',
+      silentStartupHint: true,
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))

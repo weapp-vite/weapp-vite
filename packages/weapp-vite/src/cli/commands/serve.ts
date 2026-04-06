@@ -232,6 +232,7 @@ export function registerServeCommand(cli: CAC) {
             mcpConfig: configService.weappViteConfig?.weapp?.mcp,
             platform: configService.platform,
             projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
+            silentStartupHint: true,
           })
         : undefined
 

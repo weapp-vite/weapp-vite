@@ -14,6 +14,7 @@ export interface StartDevHotkeysOptions {
   mcpConfig?: boolean | WeappMcpConfig
   platform?: string
   projectPath: string
+  silentStartupHint?: boolean
 }
 
 export interface DevHotkeysSession {
@@ -345,7 +346,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     restore()
   }
   process.on('SIGCONT', onSigcont)
-  printHint()
+  if (!options.silentStartupHint) {
+    printHint()
+  }
   if (resolvedMcp.enabled && resolvedMcp.autoStart) {
     runAction('MCP 自动启动', '正在启动 MCP 服务', async () => {
       await toggleMcp()
