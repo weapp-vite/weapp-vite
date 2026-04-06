@@ -18,15 +18,16 @@ const colorsMock = vi.hoisted(() => ({
 const execFileMock = vi.hoisted(() => vi.fn())
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
 const createInlineConfigMock = vi.hoisted(() => vi.fn((platform?: string) => ({ platform })))
-const launcherLaunchMock = vi.hoisted(() => vi.fn())
 const miniProgramDisconnectMock = vi.hoisted(() => vi.fn())
-const connectMiniProgramMock = vi.hoisted(() => vi.fn())
+const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
+const launchAutomatorMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
-  connectMiniProgram: connectMiniProgramMock,
+  connectOpenedAutomator: connectOpenedAutomatorMock,
   parse: parseMock,
   getConfig: getConfigMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
+  launchAutomator: launchAutomatorMock,
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
   formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
   waitForRetryKeypress: waitForRetryKeypressMock,
@@ -42,12 +43,6 @@ vi.mock('../createContext', () => ({
 
 vi.mock('./runtime', () => ({
   createInlineConfig: createInlineConfigMock,
-}))
-
-vi.mock('@weapp-vite/miniprogram-automator', () => ({
-  Launcher: class {
-    launch = launcherLaunchMock
-  },
 }))
 
 vi.mock('../logger', () => ({
@@ -68,9 +63,9 @@ describe('openIde', () => {
     loggerMock.error.mockReset()
     execFileMock.mockReset()
     createCompilerContextMock.mockReset()
-    launcherLaunchMock.mockReset()
     miniProgramDisconnectMock.mockReset()
-    connectMiniProgramMock.mockReset()
+    connectOpenedAutomatorMock.mockReset()
+    launchAutomatorMock.mockReset()
     createInlineConfigMock.mockClear()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
@@ -88,10 +83,10 @@ describe('openIde', () => {
       return {} as any
     })
     createCompilerContextMock.mockRejectedValue(new Error('load config failed'))
-    launcherLaunchMock.mockResolvedValue({
+    connectOpenedAutomatorMock.mockRejectedValue(new Error('connect failed'))
+    launchAutomatorMock.mockResolvedValue({
       disconnect: miniProgramDisconnectMock,
     })
-    connectMiniProgramMock.mockRejectedValue(new Error('connect failed'))
     miniProgramDisconnectMock.mockReset()
   })
 
@@ -112,11 +107,11 @@ describe('openIde', () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
 
-    expect(connectMiniProgramMock).toHaveBeenCalledWith({
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
       timeout: 3000,
     })
-    expect(launcherLaunchMock).toHaveBeenCalledWith({
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
     })
@@ -125,20 +120,20 @@ describe('openIde', () => {
   })
 
   it('skips reopening when current weapp project is already open in devtools', async () => {
-    connectMiniProgramMock.mockResolvedValueOnce({
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
       disconnect: miniProgramDisconnectMock,
     })
 
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
 
-    expect(connectMiniProgramMock).toHaveBeenCalledWith({
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
       timeout: 3000,
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，跳过重复打开。')
-    expect(launcherLaunchMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
     expect(parseMock).not.toHaveBeenCalled()
   })
 
@@ -151,13 +146,13 @@ describe('openIde', () => {
       '-p',
       'dist/dev/mp-weixin',
     ])
-    expect(launcherLaunchMock).not.toHaveBeenCalled()
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
   })
 
   it('falls back to weapp open when automator trust launch fails', async () => {
     const { openIde } = await import('./openIde')
     const error = new Error('automator failed')
-    launcherLaunchMock.mockRejectedValueOnce(error)
+    launchAutomatorMock.mockRejectedValueOnce(error)
 
     await openIde('weapp', 'dist/dev/mp-weixin')
 

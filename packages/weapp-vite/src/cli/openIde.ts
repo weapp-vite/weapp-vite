@@ -4,11 +4,12 @@ import process from 'node:process'
 import { promisify } from 'node:util'
 import path from 'pathe'
 import {
-  connectMiniProgram,
+  connectOpenedAutomator,
   formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
   getConfig,
   isWechatIdeLoginRequiredError,
+  launchAutomator,
   parse,
   waitForRetryKeypress,
 } from 'weapp-ide-cli'
@@ -43,9 +44,7 @@ export interface OpenIdeOptions {
 }
 
 async function openWechatIdeByAutomator(projectPath: string) {
-  const { Launcher } = await import('@weapp-vite/miniprogram-automator')
-  const launcher = new Launcher()
-  const miniProgram = await launcher.launch({
+  const miniProgram = await launchAutomator({
     projectPath,
     trustProject: true,
   })
@@ -57,7 +56,7 @@ async function openWechatIdeByAutomator(projectPath: string) {
  */
 async function tryReuseOpenedWechatIde(projectPath: string) {
   try {
-    const miniProgram = await connectMiniProgram({
+    const miniProgram = await connectOpenedAutomator({
       projectPath,
       timeout: 3_000,
     })

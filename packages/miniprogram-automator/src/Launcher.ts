@@ -62,6 +62,12 @@ export interface ILaunchOptions {
   cwd?: string
   runtimeProvider?: 'devtools' | 'headless'
 }
+
+export interface ILauncherSessionMetadata {
+  port: number
+  projectPath: string
+  wsEndpoint: string
+}
 function resolveRuntimeProvider(options: ILaunchOptions) {
   return options.runtimeProvider
     || process.env[DEFAULT_RUNTIME_PROVIDER_ENV]
@@ -182,6 +188,11 @@ export default class Launcher {
       throw new Error('Failed connecting to devtools websocket endpoint')
     }
     const resolvedMiniProgram = miniProgram as MiniProgram
+    Reflect.set(resolvedMiniProgram, '__WEAPP_VITE_SESSION_METADATA', {
+      port,
+      projectPath,
+      wsEndpoint: `ws://127.0.0.1:${port}`,
+    } satisfies ILauncherSessionMetadata)
     await sleep(5000)
     return resolvedMiniProgram
   }

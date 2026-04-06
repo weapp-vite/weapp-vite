@@ -118,7 +118,14 @@ describe('Launcher', () => {
     })
     expect(checkVersion).toHaveBeenCalledTimes(1)
     expect(sleepMock).toHaveBeenCalledWith(5000)
-    expect(result).toEqual({ checkVersion })
+    expect(result).toEqual({
+      checkVersion,
+      __WEAPP_VITE_SESSION_METADATA: {
+        port: 9420,
+        projectPath: '/tmp/project',
+        wsEndpoint: 'ws://127.0.0.1:9420',
+      },
+    })
   })
 
   it('retries websocket validation when devtools extension context is still reloading', async () => {

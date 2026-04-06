@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  connectOpenedAutomator,
   formatAutomatorLoginError,
   isAutomatorLoginError,
   isDevtoolsExtensionContextInvalidatedError,
@@ -10,10 +11,16 @@ import {
 } from '../src/cli/automator'
 
 const launchMock = vi.hoisted(() => vi.fn())
+const connectMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
+const mkdirMock = vi.hoisted(() => vi.fn())
+const writeFileMock = vi.hoisted(() => vi.fn())
+const readFileMock = vi.hoisted(() => vi.fn())
+const rmMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@weapp-vite/miniprogram-automator', () => ({
   Launcher: class {
+    connect = connectMock
     launch = launchMock
   },
 }))
@@ -22,12 +29,31 @@ vi.mock('../src/cli/resolver', () => ({
   resolveCliPath: resolveCliPathMock,
 }))
 
+vi.mock('node:fs/promises', () => ({
+  default: {
+    mkdir: mkdirMock,
+    readFile: readFileMock,
+    rm: rmMock,
+    writeFile: writeFileMock,
+  },
+}))
+
 describe('automator helpers', () => {
   beforeEach(() => {
     launchMock.mockReset()
+    connectMock.mockReset()
     resolveCliPathMock.mockReset()
+    mkdirMock.mockReset()
+    writeFileMock.mockReset()
+    readFileMock.mockReset()
+    rmMock.mockReset()
     resolveCliPathMock.mockResolvedValue({ cliPath: '/Applications/wechat-cli', source: 'custom' })
     launchMock.mockResolvedValue({ connected: true })
+    connectMock.mockResolvedValue({ connected: true })
+    mkdirMock.mockResolvedValue(undefined)
+    writeFileMock.mockResolvedValue(undefined)
+    readFileMock.mockRejectedValue(new Error('missing'))
+    rmMock.mockResolvedValue(undefined)
   })
 
   describe('isDevtoolsHttpPortError', () => {
@@ -159,6 +185,7 @@ describe('automator helpers', () => {
         cliPath: '/Applications/wechat-cli',
         projectPath: '/workspace/project',
         timeout: 12_345,
+        trustProject: false,
       })
     })
 
@@ -173,6 +200,7 @@ describe('automator helpers', () => {
         cliPath: '/custom/cli',
         projectPath: '/workspace/project',
         timeout: 30_000,
+        trustProject: false,
       })
     })
 
@@ -186,6 +214,66 @@ describe('automator helpers', () => {
       })).resolves.toEqual({ connected: true })
 
       expect(launchMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('persists websocket session metadata after launch', async () => {
+      launchMock.mockResolvedValueOnce({
+        connected: true,
+        __WEAPP_VITE_SESSION_METADATA: {
+          wsEndpoint: 'ws://127.0.0.1:9420',
+        },
+      })
+
+      await launchAutomator({
+        projectPath: '/workspace/project',
+        trustProject: true,
+      })
+
+      expect(launchMock).toHaveBeenCalledWith({
+        cliPath: '/Applications/wechat-cli',
+        projectPath: '/workspace/project',
+        timeout: 30_000,
+        trustProject: true,
+      })
+      expect(mkdirMock).toHaveBeenCalledTimes(1)
+      expect(writeFileMock).toHaveBeenCalledTimes(1)
+      expect(String(writeFileMock.mock.calls[0]?.[1])).toContain('"wsEndpoint": "ws://127.0.0.1:9420"')
+    })
+  })
+
+  describe('connectOpenedAutomator', () => {
+    it('prefers persisted websocket endpoint for current project', async () => {
+      readFileMock.mockResolvedValueOnce(JSON.stringify({
+        projectPath: '/workspace/project',
+        updatedAt: '2026-04-06T00:00:00.000Z',
+        wsEndpoint: 'ws://127.0.0.1:19510',
+      }))
+
+      await connectOpenedAutomator({
+        projectPath: '/workspace/project',
+        timeout: 3_000,
+      })
+
+      expect(connectMock).toHaveBeenCalledWith({
+        wsEndpoint: 'ws://127.0.0.1:19510',
+      })
+      expect(rmMock).not.toHaveBeenCalled()
+    })
+
+    it('removes stale persisted endpoint when connect fails', async () => {
+      const error = new Error('connect failed')
+      readFileMock.mockResolvedValueOnce(JSON.stringify({
+        projectPath: '/workspace/project',
+        updatedAt: '2026-04-06T00:00:00.000Z',
+        wsEndpoint: 'ws://127.0.0.1:19510',
+      }))
+      connectMock.mockRejectedValueOnce(error)
+
+      await expect(connectOpenedAutomator({
+        projectPath: '/workspace/project',
+      })).rejects.toThrow(error)
+
+      expect(rmMock).toHaveBeenCalledTimes(1)
     })
   })
 })
