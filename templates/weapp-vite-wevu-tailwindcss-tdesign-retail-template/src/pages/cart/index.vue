@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 import { onLoad, onShow, reactive, ref, useNativeInstance } from 'wevu'
 import { confirmDialog } from '@/hooks/useDialog'

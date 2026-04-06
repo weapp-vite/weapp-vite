@@ -52,3 +52,5 @@ export function genUsercenter() {
     customerServiceInfo,
   }
 }
+
+export type UsercenterData = ReturnType<typeof genUsercenter>

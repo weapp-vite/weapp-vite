@@ -1,227 +1,263 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { RightsDetailResult } from './api'
 import { wpi } from '@wevu/api'
-import { showToast } from '@/hooks/useToast'
+import { onLoad, onShow, ref } from 'wevu'
 import { ServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { formatTime, getRightsDetail } from './api'
 
-defineOptions({
-  data() {
-    return {
-      pageLoading: true,
-      serviceRaw: {},
-      service: {},
-      deliveryButton: {},
-      gallery: {
-        current: 0,
-        show: false,
-        proofs: [],
-      },
-      showProofs: false,
-      backRefresh: false,
-    }
-  },
-  onLoad(query) {
-    this.rightsNo = query.rightsNo
-    this.inputDialog = this.selectComponent('#input-dialog')
-    this.init()
-  },
-  onShow() {
-    // 当从其他页面返回，并且 backRefresh 被置为 true 时，刷新数据
-    if (!this.data.backRefresh) { return }
-    this.init()
-    this.setData({
-      backRefresh: false,
-    })
-  },
-  // 页面刷新，展示下拉刷新
-  onPullDownRefresh_(e) {
-    const {
-      callback,
-    } = e.detail
-    return this.getService().then(() => callback && callback())
-  },
-  init() {
-    this.setData({
-      pageLoading: true,
-    })
-    this.getService().then(() => {
-      this.setData({
-        pageLoading: false,
-      })
-    })
-  },
-  getService() {
-    const params = {
-      rightsNo: this.rightsNo,
-    }
-    return getRightsDetail(params).then((res) => {
-      const serviceRaw = res.data[0]
-      // 滤掉填写运单号、修改运单号按钮，这两个按钮特殊处理，不在底部按钮栏展示
-      if (!serviceRaw.buttonVOs) { serviceRaw.buttonVOs = [] }
-      const deliveryButton = {}
-      const service = {
-        id: serviceRaw.rights.rightsNo,
-        serviceNo: serviceRaw.rights.rightsNo,
-        storeName: serviceRaw.rights.storeName,
-        type: serviceRaw.rights.rightsType,
-        typeDesc: ServiceTypeDesc[serviceRaw.rights.rightsType],
-        status: serviceRaw.rights.rightsStatus,
-        statusIcon: this.genStatusIcon(serviceRaw.rights),
-        statusName: serviceRaw.rights.userRightsStatusName,
-        statusDesc: serviceRaw.rights.userRightsStatusDesc,
-        amount: serviceRaw.rights.refundRequestAmount,
-        goodsList: (serviceRaw.rightsItem || []).map((item, i) => ({
-          id: i,
-          thumb: item.goodsPictureUrl,
-          title: item.goodsName,
-          specs: (item.specInfo || []).map(s => s.specValues || ''),
-          itemRefundAmount: item.itemRefundAmount,
-          rightsQuantity: item.rightsQuantity,
-        })),
-        orderNo: serviceRaw.rights.orderNo,
-        // 订单编号
-        rightsNo: serviceRaw.rights.rightsNo,
-        // 售后服务单号
-        rightsReasonDesc: serviceRaw.rights.rightsReasonDesc,
-        // 申请售后原因
-        isRefunded: serviceRaw.rights.userRightsStatus === ServiceStatus.REFUNDED,
-        // 是否已退款
-        refundMethodList: (serviceRaw.refundMethodList || []).map(m => ({
-          name: m.refundMethodName,
-          amount: m.refundMethodAmount,
-        })),
-        // 退款明细
-        refundRequestAmount: serviceRaw.rights.refundRequestAmount,
-        // 申请退款金额
-        payTraceNo: serviceRaw.rightsRefund.traceNo,
-        // 交易流水号
-        createTime: formatTime(Number.parseFloat(`${serviceRaw.rights.createTime}`), 'YYYY-MM-DD HH:mm'),
-        // 申请时间
-        logisticsNo: serviceRaw.logisticsVO.logisticsNo,
-        // 退货物流单号
-        logisticsCompanyName: serviceRaw.logisticsVO.logisticsCompanyName,
-        // 退货物流公司
-        logisticsCompanyCode: serviceRaw.logisticsVO.logisticsCompanyCode,
-        // 退货物流公司
-        remark: serviceRaw.logisticsVO.remark,
-        // 退货备注
-        receiverName: serviceRaw.logisticsVO.receiverName,
-        // 收货人
-        receiverPhone: serviceRaw.logisticsVO.receiverPhone,
-        // 收货人电话
-        receiverAddress: this.composeAddress(serviceRaw),
-        // 收货人地址
-        applyRemark: serviceRaw.rightsRefund.refundDesc,
-        // 申请退款时的填写的说明
-        buttons: serviceRaw.buttonVOs || [],
-        logistics: serviceRaw.logisticsVO,
+interface QueryOptions {
+  rightsNo?: string
+}
+
+type ServiceRawItem = RightsDetailResult['data'][number]
+
+interface ServiceGoodsItem {
+  id: number
+  thumb: string
+  title: string
+  specs: string[]
+  itemRefundAmount: number
+  rightsQuantity: number
+}
+
+interface ServiceViewItem {
+  id: string
+  serviceNo: string
+  storeName: string
+  type: number
+  typeDesc: string
+  status: number
+  statusIcon: string
+  statusName: string
+  statusDesc: string
+  amount: number
+  goodsList: ServiceGoodsItem[]
+  orderNo: string
+  rightsNo: string
+  rightsReasonDesc: string
+  isRefunded: boolean
+  refundMethodList: Array<{ name: string, amount: number }>
+  refundRequestAmount: number
+  payTraceNo: string
+  createTime: string
+  logisticsNo: string
+  logisticsCompanyName: string
+  logisticsCompanyCode: string
+  remark: string
+  receiverName: string
+  receiverPhone: string
+  receiverAddress: string
+  applyRemark: string
+  buttons: NonNullable<ServiceRawItem['buttonVOs']>
+  logistics: ServiceRawItem['logisticsVO']
+}
+
+const rightsNo = ref('')
+const pageLoading = ref(true)
+const serviceRaw = ref<ServiceRawItem | null>(null)
+const service = ref<ServiceViewItem>({
+  id: '',
+  serviceNo: '',
+  storeName: '',
+  type: ServiceType.ONLY_REFUND,
+  typeDesc: '',
+  status: 0,
+  statusIcon: 'goods_return',
+  statusName: '',
+  statusDesc: '',
+  amount: 0,
+  goodsList: [],
+  orderNo: '',
+  rightsNo: '',
+  rightsReasonDesc: '',
+  isRefunded: false,
+  refundMethodList: [],
+  refundRequestAmount: 0,
+  payTraceNo: '',
+  createTime: '',
+  logisticsNo: '',
+  logisticsCompanyName: '',
+  logisticsCompanyCode: '',
+  remark: '',
+  receiverName: '',
+  receiverPhone: '',
+  receiverAddress: '',
+  applyRemark: '',
+  buttons: [],
+  logistics: {} as ServiceRawItem['logisticsVO'],
+})
+const gallery = ref({
+  current: 0,
+  show: false,
+  proofs: [] as string[],
+})
+const showProofs = ref(false)
+const backRefresh = ref(false)
+const inputDialogVisible = ref(false)
+const amountTip = ref('')
+
+function composeAddress(currentService: ServiceRawItem) {
+  return [
+    currentService.logisticsVO.receiverProvince,
+    currentService.logisticsVO.receiverCity,
+    currentService.logisticsVO.receiverCountry,
+    currentService.logisticsVO.receiverArea,
+    currentService.logisticsVO.receiverAddress,
+  ].filter(Boolean).join(' ')
+}
+
+function genStatusIcon(item: ServiceRawItem['rights']) {
+  const { userRightsStatus, afterSaleRequireType } = item
+  switch (userRightsStatus) {
+    case ServiceStatus.REFUNDED:
+      return 'succeed'
+    case ServiceStatus.CLOSED:
+      return 'indent_close'
+    default:
+      switch (afterSaleRequireType) {
+        case 'REFUND_MONEY':
+          return 'goods_refund'
+        case 'REFUND_GOODS_MONEY':
+          return 'goods_return'
+        default:
+          return 'goods_return'
       }
-      const proofs = serviceRaw.rights.rightsImageUrls || []
-      this.setData({
-        serviceRaw,
-        service,
-        deliveryButton,
-        'gallery.proofs': proofs,
-        'showProofs': serviceRaw.rights.userRightsStatus === ServiceStatus.PENDING_VERIFY && (service.applyRemark || proofs.length > 0),
-      })
-      void wpi.setNavigationBarTitle({
-        title: {
-          [ServiceType.ORDER_CANCEL]: '退款详情',
-          [ServiceType.ONLY_REFUND]: '退款详情',
-          [ServiceType.RETURN_GOODS]: '退货退款详情',
-        }[service.type],
-      })
-    })
-  },
-  composeAddress(service) {
-    return [service.logisticsVO.receiverProvince, service.logisticsVO.receiverCity, service.logisticsVO.receiverCountry, service.logisticsVO.receiverArea, service.logisticsVO.receiverAddress].filter(item => !!item).join(' ')
-  },
-  onRefresh() {
-    this.init()
-  },
-  editLogistices() {
-    this.setData({
-      inputDialogVisible: true,
-    })
-    this.inputDialog.setData({
-      cancelBtn: '取消',
-      confirmBtn: '确定',
-    })
-    this.inputDialog._onConfirm = () => {
-      showToast({
-        message: '确定填写物流单号',
-      })
+  }
+}
+
+function normalizeService(currentServiceRaw: ServiceRawItem): ServiceViewItem {
+  return {
+    id: currentServiceRaw.rights.rightsNo,
+    serviceNo: currentServiceRaw.rights.rightsNo,
+    storeName: currentServiceRaw.rights.storeName,
+    type: currentServiceRaw.rights.rightsType,
+    typeDesc: ServiceTypeDesc[currentServiceRaw.rights.rightsType],
+    status: currentServiceRaw.rights.rightsStatus,
+    statusIcon: genStatusIcon(currentServiceRaw.rights),
+    statusName: currentServiceRaw.rights.userRightsStatusName,
+    statusDesc: currentServiceRaw.rights.userRightsStatusDesc,
+    amount: currentServiceRaw.rights.refundRequestAmount,
+    goodsList: (currentServiceRaw.rightsItem || []).map((item, index) => ({
+      id: index,
+      thumb: item.goodsPictureUrl,
+      title: item.goodsName,
+      specs: (item.specInfo || []).map(spec => spec.specValues || ''),
+      itemRefundAmount: item.itemRefundAmount,
+      rightsQuantity: item.rightsQuantity,
+    })),
+    orderNo: currentServiceRaw.rights.orderNo,
+    rightsNo: currentServiceRaw.rights.rightsNo,
+    rightsReasonDesc: currentServiceRaw.rights.rightsReasonDesc,
+    isRefunded: currentServiceRaw.rights.userRightsStatus === ServiceStatus.REFUNDED,
+    refundMethodList: (currentServiceRaw.refundMethodList || []).map(item => ({
+      name: item.refundMethodName,
+      amount: item.refundMethodAmount,
+    })),
+    refundRequestAmount: currentServiceRaw.rights.refundRequestAmount,
+    payTraceNo: currentServiceRaw.rightsRefund.traceNo,
+    createTime: formatTime(Number(currentServiceRaw.rights.createTime || 0), 'YYYY-MM-DD HH:mm'),
+    logisticsNo: currentServiceRaw.logisticsVO.logisticsNo,
+    logisticsCompanyName: currentServiceRaw.logisticsVO.logisticsCompanyName,
+    logisticsCompanyCode: currentServiceRaw.logisticsVO.logisticsCompanyCode,
+    remark: currentServiceRaw.logisticsVO.remark || '',
+    receiverName: currentServiceRaw.logisticsVO.receiverName,
+    receiverPhone: currentServiceRaw.logisticsVO.receiverPhone,
+    receiverAddress: composeAddress(currentServiceRaw),
+    applyRemark: currentServiceRaw.rightsRefund.refundDesc || '',
+    buttons: currentServiceRaw.buttonVOs || [],
+    logistics: currentServiceRaw.logisticsVO,
+  }
+}
+
+async function getService() {
+  const res = await getRightsDetail({
+    rightsNo: rightsNo.value,
+  })
+  const currentServiceRaw = res.data[0]
+  if (!currentServiceRaw) {
+    return
+  }
+  serviceRaw.value = currentServiceRaw
+  service.value = normalizeService(currentServiceRaw)
+  gallery.value = {
+    ...gallery.value,
+    proofs: currentServiceRaw.rights.rightsImageUrls || [],
+  }
+  showProofs.value = currentServiceRaw.rights.userRightsStatus === ServiceStatus.PENDING_VERIFY
+    && Boolean(service.value.applyRemark || gallery.value.proofs.length > 0)
+  await wpi.setNavigationBarTitle({
+    title: {
+      [ServiceType.ORDER_CANCEL]: '退款详情',
+      [ServiceType.ONLY_REFUND]: '退款详情',
+      [ServiceType.RETURN_GOODS]: '退货退款详情',
+    }[service.value.type],
+  })
+}
+
+async function init() {
+  pageLoading.value = true
+  try {
+    await getService()
+  }
+  finally {
+    pageLoading.value = false
+  }
+}
+
+async function onPullDownRefresh_(e: { detail?: { callback?: () => void } }) {
+  await getService()
+  e.detail?.callback?.()
+}
+
+function onProofTap(e: { currentTarget?: { dataset?: { index?: number | string } } }) {
+  if (gallery.value.show) {
+    gallery.value = {
+      ...gallery.value,
+      show: false,
     }
-  },
-  onProofTap(e) {
-    if (this.data.gallery.show) {
-      this.setData({
-        'gallery.show': false,
-      })
-      return
-    }
-    const {
-      index,
-    } = e.currentTarget.dataset
-    this.setData({
-      'gallery.show': true,
-      'gallery.current': index,
-    })
-  },
-  async onGoodsCardTap(e) {
-    const {
-      index,
-    } = e.currentTarget.dataset
-    const goods = this.data.serviceRaw.rightsItem[index]
-    await wpi.navigateTo({
-      url: `/pages/goods/details/index?skuId=${goods.skuId}`,
-    })
-  },
-  async onServiceNoCopy() {
-    await wpi.setClipboardData({
-      data: this.data.service.serviceNo,
-    })
-  },
-  async onAddressCopy() {
-    await wpi.setClipboardData({
-      data: `${this.data.service.receiverName}  ${this.data.service.receiverPhone}\n${this.data.service.receiverAddress}`,
-    })
-  },
-  /** 获取状态ICON */
-  genStatusIcon(item) {
-    const {
-      userRightsStatus,
-      afterSaleRequireType,
-    } = item
-    switch (userRightsStatus) {
-      // 退款成功
-      case ServiceStatus.REFUNDED:
-      {
-        return 'succeed'
-      }
-      // 已取消、已关闭
-      case ServiceStatus.CLOSED:
-      {
-        return 'indent_close'
-      }
-      default:
-      {
-        switch (afterSaleRequireType) {
-          case 'REFUND_MONEY':
-          {
-            return 'goods_refund'
-          }
-          case 'REFUND_GOODS_MONEY':
-            return 'goods_return'
-          default:
-          {
-            return 'goods_return'
-          }
-        }
-      }
-    }
-  },
+    return
+  }
+  gallery.value = {
+    ...gallery.value,
+    show: true,
+    current: Number(e.currentTarget?.dataset?.index ?? 0),
+  }
+}
+
+async function onGoodsCardTap(e: { currentTarget?: { dataset?: { index?: number | string } } }) {
+  const index = Number(e.currentTarget?.dataset?.index ?? 0)
+  const goods = serviceRaw.value?.rightsItem?.[index]
+  if (!goods) {
+    return
+  }
+  await wpi.navigateTo({
+    url: `/pages/goods/details/index?skuId=${goods.skuId}`,
+  })
+}
+
+async function onServiceNoCopy() {
+  await wpi.setClipboardData({
+    data: service.value.serviceNo,
+  })
+}
+
+async function onAddressCopy() {
+  await wpi.setClipboardData({
+    data: `${service.value.receiverName}  ${service.value.receiverPhone}\n${service.value.receiverAddress}`,
+  })
+}
+
+onLoad((query: QueryOptions = {}) => {
+  rightsNo.value = query.rightsNo || ''
+  void init()
+})
+
+onShow(() => {
+  if (!backRefresh.value) {
+    return
+  }
+  void init()
+  backRefresh.value = false
 })
 
 definePageJson({
@@ -277,7 +313,7 @@ definePageJson({
           </t-cell>
           <t-cell
             v-for="(item, index) in service.refundMethodList"
-            :key="name"
+            :key="item.name || index"
             t-class-title="t-cell-title"
             t-class-note="t-cell-title"
             t-class="t-class-wrapper ![padding:10rpx_24rpx]"
@@ -337,7 +373,7 @@ definePageJson({
                 <view>
                   <view> {{ service.receiverAddress }} </view>
                   <view>收货人：{{ service.receiverName }}</view>
-                  <view>收货人手机：{{ service.receiverName }}</view>
+                  <view>收货人手机：{{ service.receiverPhone }}</view>
                 </view>
               </template>
             </t-cell>
@@ -350,7 +386,7 @@ definePageJson({
         >
           <wr-service-goods-card
             v-for="(goods, index) in service.goodsList"
-            :key="id"
+            :key="goods.id || index"
             :goods="goods"
             no-top-line
             :data-index="index"

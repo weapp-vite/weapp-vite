@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 import { onLoad, onReachBottom, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
@@ -257,7 +256,7 @@ definePageJson({
     't-input': 'tdesign-miniprogram/input/input',
     't-empty': 'tdesign-miniprogram/empty/empty',
     'goods-list': '/components/goods-list/index',
-    'filter': '/components/filter/index',
+    'goods-filter': '/components/filter/index',
     'filter-popup': '/components/filter-popup/index',
     'load-more': '/components/load-more/index',
   },
@@ -266,7 +265,7 @@ definePageJson({
 
 <template>
   <view class="goods-list-container [display:block] [&_.t-search]:[padding:0_30rpx] [&_.t-search]:[background-color:#fff] [&_.t-class__input-container]:[height:64rpx] [&_.t-class__input-container]:[border-radius:32rpx] [&_.t-search__left-icon]:[display:flex] [&_.t-search__left-icon]:[align-items:center] [&_.t-search__input]:[font-size:28rpx] [&_.t-search__input]:[color:rgb(116,_116,_116)] [&_.category-goods-list]:[background-color:#f2f2f2] [&_.category-goods-list]:[overflow-y:scroll] [&_.category-goods-list]:[-webkit-overflow-scrolling:touch] [&_.category-goods-list]:[padding:20rpx_24rpx] [&_.wr-goods-list]:[background:#f2f2f2] [&_.t-image__mask]:[display:flex] [&_.empty-wrap]:[margin-top:184rpx] [&_.empty-wrap]:[margin-bottom:120rpx] [&_.empty-wrap]:[height:300rpx] [&_.empty-wrap_.empty-tips_.empty-content_.content-text]:[margin-top:40rpx] [&_.price-container]:[padding:32rpx] [&_.price-container]:[height:100vh] [&_.price-container]:[max-width:632rpx] [&_.price-container]:[background-color:#fff] [&_.price-container]:[border-radius:30rpx_0_0_30rpx] [&_.price-container]:[box-sizing:border-box] [&_.price-between]:[font-size:26rpx] [&_.price-between]:[font-weight:500] [&_.price-between]:[color:rgba(51,_51,_51,_1)] [&_.price-ipts-wrap]:[width:100%] [&_.price-ipts-wrap]:[display:flex] [&_.price-ipts-wrap]:[align-items:center] [&_.price-ipts-wrap]:[justify-content:space-around] [&_.price-ipts-wrap]:[margin-top:24rpx] [&_.price-ipts-wrap_.price-divided]:[width:16rpx] [&_.price-ipts-wrap_.price-divided]:[margin:0_24rpx] [&_.price-ipts-wrap_.price-divided]:[color:#333333] [&_.price-ipts-wrap_.t-input__wrapper]:[margin:0] [&_.price-ipts-wrap_.t-input__content]:[font-size:24rpx] [&_.price-ipts-wrap_.t-input__placeholder]:[font-size:24rpx] [&_.price-ipts-wrap_.price-ipt]:[border-radius:8rpx]">
-    <filter
+    <goods-filter
       wr-class="filter-container"
       :layout="layout"
       :sorts="sorts"
@@ -312,7 +311,7 @@ definePageJson({
           </template>
         </filter-popup>
       </template>
-    </filter>
+    </goods-filter>
     <view v-if="goodsList.length === 0 && hasLoaded" class="empty-wrap">
       <t-empty t-class="empty-tips" size="240rpx" description="暂无相关商品" />
     </view>

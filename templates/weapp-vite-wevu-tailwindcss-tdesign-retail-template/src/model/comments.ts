@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  *  @param {number} spuId
  * @param {number} pageNum
@@ -6,8 +5,8 @@
  * @param {number} commentsLevel
  * @param {boolean} hasImage
  */
-export function getGoodsAllComments(params) {
-  const { hasImage } = params.queryParameter
+export function getGoodsAllComments(params: { queryParameter?: { hasImage?: boolean } } = {}) {
+  const { hasImage } = params.queryParameter || {}
   if (hasImage) {
     return {
       pageNum: 1,
@@ -297,3 +296,7 @@ export function getGoodsCommentsCount(_spuId = 0) {
     uidCount: '0',
   }
 }
+
+export type GoodsAllCommentsResult = ReturnType<typeof getGoodsAllComments>
+export type GoodsCommentItem = GoodsAllCommentsResult['pageList'][number]
+export type GoodsCommentsCount = ReturnType<typeof getGoodsCommentsCount>

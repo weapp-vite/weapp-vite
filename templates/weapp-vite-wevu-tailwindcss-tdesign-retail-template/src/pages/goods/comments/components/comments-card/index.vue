@@ -1,56 +1,32 @@
 <script setup lang="ts">
-// @ts-nocheck
-defineOptions({
-  externalClasses: ['wr-class'],
-  options: {
-    multipleSlots: true,
-  },
-  properties: {
-    goodsDetailInfo: {
-      type: String,
-      value: '',
-    },
-    sellerReply: {
-      type: String,
-      value: '',
-    },
-    userHeadUrl: {
-      type: String,
-      value: '',
-    },
-    userName: {
-      type: String,
-      default: '',
-    },
-    commentContent: {
-      type: String,
-      value: '',
-    },
-    commentScore: {
-      type: Number,
-      value: 0,
-    },
-    commentTime: {
-      type: String,
-      value: '',
-    },
-    commentResources: {
-      type: Array,
-      value: [],
-    },
-  },
-  data() {
-    return {
-      showMoreStatus: false,
-      showContent: false,
-      hideText: false,
-      eleHeight: null,
-      overText: false,
-      isDisabled: true,
-      startColors: ['#FFC51C', '#DDDDDD'],
-    }
-  },
-  methods: {},
+interface CommentResource {
+  type?: 'image' | 'video' | string
+  src?: string
+  coverSrc?: string
+}
+
+const props = withDefaults(defineProps<{
+  goodsDetailInfo?: string
+  sellerReply?: string
+  userHeadUrl?: string
+  userName?: string
+  commentContent?: string
+  commentScore?: number
+  commentTime?: string
+  commentResources?: CommentResource[]
+}>(), {
+  goodsDetailInfo: '',
+  sellerReply: '',
+  userHeadUrl: '',
+  userName: '',
+  commentContent: '',
+  commentScore: 0,
+  commentTime: '',
+  commentResources: () => [],
+})
+
+defineExpose({
+  props,
 })
 
 defineComponentJson({
@@ -86,7 +62,7 @@ defineComponentJson({
         </view>
       </view>
       <view class="comments-card-item-container-content [margin-top:16rpx] [position:relative] [&_.content-text]:[font-size:28rpx] [&_.content-text]:[white-space:normal] [&_.content-text]:[word-break:break-all] [&_.content-text]:[font-weight:normal] [&_.hide-text]:[overflow:hidden] [&_.hide-text]:[text-overflow:ellipsis] [&_.hide-text]:[-webkit-line-clamp:5] [&_.hide-text]:[text-align:justify] [&_.hide-text]:[display:-webkit-box] [&_.hide-text]:[-webkit-box-orient:vertical] [&_.showMore]:[position:absolute] [&_.showMore]:[width:112rpx] [&_.showMore]:[height:36rpx] [&_.showMore]:[bottom:0] [&_.showMore]:[right:0] [&_.showMore]:[background:linear-gradient(_to_right,_rgba(255,_255,_255,_0.2)_0,_rgba(255,_255,_255,_0.45)_20%,_rgba(255,_255,_255,_0.7)_25%,_rgba(255,_255,_255,_0.9)_30%,_rgba(255,_255,_255,_0.95)_35%,_#ffffff_50%,_#fff_100%_)] [&_.showMore]:[font-size:26rpx] [&_.showMore]:[color:#fa550f] [&_.showMore]:[line-height:36rpx] [&_.showMore]:[text-align:right]">
-        <view class="content-text" :hidden="showContent">
+        <view class="content-text">
           {{ commentContent }}
         </view>
       </view>

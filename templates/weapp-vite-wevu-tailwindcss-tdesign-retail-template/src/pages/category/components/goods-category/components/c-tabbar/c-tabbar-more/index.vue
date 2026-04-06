@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 
 defineOptions({
@@ -13,7 +12,7 @@ defineOptions({
       boardMaxHeight: null,
     }
   },
-  attached() {
+  attached(this: any) {
     wpi.createSelectorQuery().in(this).select('.c-tabbar-more').boundingClientRect((rect) => {
       this.setData({
         boardMaxHeight: rect.height,
@@ -21,7 +20,7 @@ defineOptions({
     }).exec()
   },
   methods: {
-    changeFold() {
+    changeFold(this: any) {
       this.setData({
         unfolded: !this.data.unfolded,
       })
@@ -32,7 +31,7 @@ defineOptions({
         unfolded,
       })
     },
-    onSelect(event) {
+    onSelect(this: any, event: any) {
       const activeKey = event.currentTarget.dataset.index
       this.triggerEvent('select', activeKey)
       this.changeFold()

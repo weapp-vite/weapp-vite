@@ -1,235 +1,193 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { GoodsCommentItem, GoodsCommentsCount } from '../../../model/comments'
+import type { FetchCommentsParams } from '../../../services/comments/fetchComments'
 import dayjs from 'dayjs'
+import { onLoad, onReachBottom, ref } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { fetchComments } from '../../../services/comments/fetchComments'
 import { fetchCommentsCount } from '../../../services/comments/fetchCommentsCount'
 
-defineOptions({
-  data() {
-    return {
-      pageLoading: false,
-      commentList: [],
-      pageNum: 1,
-      myPageNum: 1,
-      pageSize: 10,
-      total: 0,
-      myTotal: 0,
-      hasLoaded: false,
-      layoutText: 'vertical',
-      loadMoreStatus: 0,
-      myLoadStatus: 0,
-      spuId: '1060004',
-      commentLevel: '',
-      hasImage: '',
-      commentType: '',
-      totalCount: 0,
-      countObj: {
-        badCount: '0',
-        commentCount: '0',
-        goodCount: '0',
-        middleCount: '0',
-        hasImageCount: '0',
-        uidCount: '0',
-      },
-    }
-  },
-  onLoad(options) {
-    this.getCount(options)
-    this.getComments(options)
-  },
-  async getCount(options) {
-    try {
-      const result = await fetchCommentsCount({
-        spuId: options.spuId,
-      }, {
-        method: 'POST',
-      })
-      this.setData({
-        countObj: result,
-      })
-      // 旧版示例在这里还会额外更新导航栏标题，当前模板仅保留评论统计数据更新逻辑。
-    }
-    catch (error) {}
-  },
-  generalQueryData(reset) {
-    const {
-      hasImage,
-      pageNum,
-      pageSize,
-      spuId,
-      commentLevel,
-    } = this.data
-    const params = {
-      pageNum: 1,
-      pageSize: 30,
-      queryParameter: {
-        spuId,
-      },
-    }
-    if (Number(commentLevel) === 3 || Number(commentLevel) === 2 || Number(commentLevel) === 1) {
-      params.queryParameter.commentLevel = Number(commentLevel)
-    }
-    if (hasImage && hasImage === '1') {
-      params.queryParameter.hasImage = true
-    }
-    else {
-      delete params.queryParameter.hasImage
-    }
-    // 重置请求
-    if (reset) { return params }
-    return {
-      ...params,
-      pageNum: pageNum + 1,
-      pageSize,
-    }
-  },
-  async init(reset = true) {
-    const {
-      loadMoreStatus,
-      commentList = [],
-    } = this.data
-    const params = this.generalQueryData(reset)
+interface QueryOptions {
+  spuId?: string
+  commentLevel?: string
+  hasImage?: string
+}
 
-    // 在加载中或者无更多数据，直接返回
-    if (loadMoreStatus !== 0) { return }
-    this.setData({
-      loadMoreStatus: 1,
+interface CommentCountState extends GoodsCommentsCount {}
+type NormalizedCommentItem = GoodsCommentItem & {
+  commentResources: Array<{
+    src?: string
+    type?: string
+    coverSrc?: string
+  }>
+}
+
+const pageLoading = ref(false)
+const commentList = ref<NormalizedCommentItem[]>([])
+const pageNum = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const hasLoaded = ref(false)
+const loadMoreStatus = ref(0)
+const spuId = ref('1060004')
+const commentLevel = ref('')
+const hasImage = ref('')
+const commentType = ref('')
+const totalCount = ref(0)
+const countObj = ref<CommentCountState>({
+  badCount: '0',
+  commentCount: '0',
+  goodCount: '0',
+  middleCount: '0',
+  hasImageCount: '0',
+  uidCount: '0',
+  goodRate: 0,
+})
+
+function generalQueryData(reset: boolean): FetchCommentsParams {
+  const params: FetchCommentsParams = {
+    pageNum: reset ? 1 : pageNum.value + 1,
+    pageSize: reset ? 30 : pageSize.value,
+    queryParameter: {
+      spuId: spuId.value,
+    },
+  }
+
+  const normalizedCommentLevel = Number(commentLevel.value)
+  if ([1, 2, 3].includes(normalizedCommentLevel)) {
+    params.queryParameter!.commentLevel = normalizedCommentLevel
+  }
+  if (hasImage.value === '1') {
+    params.queryParameter!.hasImage = true
+  }
+
+  return params
+}
+
+function normalizeCommentList(list: GoodsCommentItem[]): NormalizedCommentItem[] {
+  return list.map((item) => {
+    const resourceItem = item as GoodsCommentItem & {
+      commentResources?: NormalizedCommentItem['commentResources']
+      commentImageUrls?: NormalizedCommentItem['commentResources']
+    }
+    return {
+      ...item,
+      commentResources: resourceItem.commentResources || resourceItem.commentImageUrls || [],
+      commentTime: dayjs(Number(item.commentTime)).format('YYYY/MM/DD HH:mm'),
+    }
+  })
+}
+
+async function getCount(options: QueryOptions) {
+  try {
+    countObj.value = await fetchCommentsCount({
+      spuId: options.spuId,
+    }, {
+      method: 'POST',
     })
-    try {
-      const data = await fetchComments(params, {
-        method: 'POST',
-      })
-      const code = 'SUCCESS'
-      if (code.toUpperCase() === 'SUCCESS') {
-        const {
-          pageList,
-          totalCount = 0,
-        } = data
-        pageList.forEach((item) => {
-          item.commentTime = dayjs(Number(item.commentTime)).format('YYYY/MM/DD HH:mm')
-        })
-        if (Number(totalCount) === 0 && reset) {
-          this.setData({
-            commentList: [],
-            hasLoaded: true,
-            total: totalCount,
-            loadMoreStatus: 2,
-          })
-          return
-        }
-        const _commentList = reset ? pageList : commentList.concat(pageList)
-        const _loadMoreStatus = _commentList.length === Number(totalCount) ? 2 : 0
-        this.setData({
-          commentList: _commentList,
-          pageNum: params.pageNum || 1,
-          totalCount: Number(totalCount),
-          loadMoreStatus: _loadMoreStatus,
-        })
-      }
-      else {
-        showToast({
-          title: '查询失败，请稍候重试',
-        })
-      }
-    }
-    catch (error) {}
-    this.setData({
-      hasLoaded: true,
+  }
+  catch {}
+}
+
+async function init(reset = true) {
+  if (loadMoreStatus.value !== 0) {
+    return
+  }
+
+  pageLoading.value = true
+  loadMoreStatus.value = 1
+  const params = generalQueryData(reset)
+
+  try {
+    const data = await fetchComments(params, {
+      method: 'POST',
     })
-  },
-  getScoreArray(score) {
-    const array = []
-    for (let i = 0; i < 5; i++) {
-      if (i < score) {
-        array.push(2)
-      }
-      else {
-        array.push(0)
-      }
-    }
-    return array
-  },
-  getComments(options) {
-    const {
-      commentLevel = -1,
-      spuId,
-      hasImage = '',
-    } = options
-    if (commentLevel !== -1) {
-      this.setData({
-        commentLevel,
-      })
-    }
-    this.setData({
-      hasImage,
-      commentType: hasImage ? '4' : '',
-      spuId,
-    })
-    this.init(true)
-  },
-  changeTag(e) {
-    const {
-      commenttype,
-    } = e.currentTarget.dataset
-    const {
-      commentType,
-    } = this.data
-    if (commentType === commenttype) { return }
-    this.setData({
-      loadMoreStatus: 0,
-      commentList: [],
-      total: 0,
-      myTotal: 0,
-      myPageNum: 1,
-      pageNum: 1,
-    })
-    if (commenttype === '' || commenttype === '5') {
-      this.setData({
-        hasImage: '',
-        commentLevel: '',
-      })
-    }
-    else if (commenttype === '4') {
-      this.setData({
-        hasImage: '1',
-        commentLevel: '',
-      })
-    }
-    else {
-      this.setData({
-        hasImage: '',
-        commentLevel: commenttype,
-      })
-    }
-    if (commenttype === '5') {
-      this.setData({
-        myLoadStatus: 1,
-        commentType: commenttype,
-      })
-      this.getMyCommentsList()
-    }
-    else {
-      this.setData({
-        myLoadStatus: 0,
-        commentType: commenttype,
-      })
-      this.init(true)
-    }
-  },
-  onReachBottom() {
-    const {
-      total = 0,
-      commentList,
-    } = this.data
-    if (commentList.length === total) {
-      this.setData({
-        loadMoreStatus: 2,
-      })
+    const nextPageList = normalizeCommentList(data.pageList || [])
+    const nextTotalCount = Number(data.totalCount || 0)
+
+    if (nextTotalCount === 0 && reset) {
+      commentList.value = []
+      total.value = 0
+      totalCount.value = 0
+      loadMoreStatus.value = 2
       return
     }
-    this.init(false)
-  },
+
+    const mergedList = reset ? nextPageList : commentList.value.concat(nextPageList)
+    commentList.value = mergedList
+    pageNum.value = params.pageNum || 1
+    pageSize.value = params.pageSize || pageSize.value
+    total.value = nextTotalCount
+    totalCount.value = nextTotalCount
+    loadMoreStatus.value = mergedList.length >= nextTotalCount ? 2 : 0
+  }
+  catch {
+    loadMoreStatus.value = 0
+    showToast({
+      message: '查询失败，请稍候重试',
+    })
+  }
+  finally {
+    hasLoaded.value = true
+    pageLoading.value = false
+  }
+}
+
+function getComments(options: QueryOptions) {
+  const nextCommentLevel = options.commentLevel ?? ''
+  const nextHasImage = options.hasImage ?? ''
+
+  commentLevel.value = nextCommentLevel === '-1' ? '' : nextCommentLevel
+  hasImage.value = nextHasImage
+  commentType.value = nextHasImage ? '4' : (nextCommentLevel === '-1' ? '' : nextCommentLevel)
+  spuId.value = options.spuId || spuId.value
+  void init(true)
+}
+
+function resetListState() {
+  loadMoreStatus.value = 0
+  commentList.value = []
+  total.value = 0
+  totalCount.value = 0
+  pageNum.value = 1
+}
+
+function changeTag(e: { currentTarget?: { dataset?: { commenttype?: string } } }) {
+  const nextCommentType = e.currentTarget?.dataset?.commenttype ?? ''
+  if (commentType.value === nextCommentType) {
+    return
+  }
+
+  resetListState()
+
+  if (nextCommentType === '' || nextCommentType === '5') {
+    hasImage.value = ''
+    commentLevel.value = ''
+  }
+  else if (nextCommentType === '4') {
+    hasImage.value = '1'
+    commentLevel.value = ''
+  }
+  else {
+    hasImage.value = ''
+    commentLevel.value = nextCommentType
+  }
+
+  commentType.value = nextCommentType
+  void init(true)
+}
+
+onLoad((options: QueryOptions = {}) => {
+  void getCount(options)
+  getComments(options)
+})
+
+onReachBottom(() => {
+  if (commentList.value.length >= total.value) {
+    loadMoreStatus.value = 2
+    return
+  }
+  void init(false)
 })
 
 definePageJson({

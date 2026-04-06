@@ -1,3 +1,4 @@
+import type { GoodsDetailsComments, GoodsDetailsCommentsCount } from '../../model/detailsComments'
 import { config } from '../../config/index'
 import {
   getGoodsDetailsComments,
@@ -5,32 +6,32 @@ import {
 } from '../../model/detailsComments'
 import { delay } from '../_utils/delay'
 
-/** 获取商品详情页评论数 */
-function mockFetchGoodDetailsCommentsCount(spuId = 0) {
-  return delay().then(() => getGoodsDetailsCommentsCountModel(spuId))
+function normalizeSpuId(spuId: string | number) {
+  return typeof spuId === 'string' ? Number(spuId) || 0 : spuId
 }
 
 /** 获取商品详情页评论数 */
-export function getGoodsDetailsCommentsCount(spuId = 0) {
+function mockFetchGoodDetailsCommentsCount(spuId: string | number = 0): Promise<GoodsDetailsCommentsCount> {
+  return delay().then(() => getGoodsDetailsCommentsCountModel(normalizeSpuId(spuId)))
+}
+
+/** 获取商品详情页评论数 */
+export function getGoodsDetailsCommentsCount(spuId: string | number = 0): Promise<GoodsDetailsCommentsCount> {
   if (config.useMock) {
     return mockFetchGoodDetailsCommentsCount(spuId)
   }
-  return new Promise((resolve) => {
-    resolve('real api')
-  })
+  return Promise.resolve(getGoodsDetailsCommentsCountModel(normalizeSpuId(spuId)))
 }
 
 /** 获取商品详情页评论 */
-function mockFetchGoodDetailsCommentList(spuId = 0) {
-  return delay().then(() => getGoodsDetailsComments(spuId))
+function mockFetchGoodDetailsCommentList(spuId: string | number = 0): Promise<GoodsDetailsComments> {
+  return delay().then(() => getGoodsDetailsComments(normalizeSpuId(spuId)))
 }
 
 /** 获取商品详情页评论 */
-export function getGoodsDetailsCommentList(spuId = 0) {
+export function getGoodsDetailsCommentList(spuId: string | number = 0): Promise<GoodsDetailsComments> {
   if (config.useMock) {
     return mockFetchGoodDetailsCommentList(spuId)
   }
-  return new Promise((resolve) => {
-    resolve('real api')
-  })
+  return Promise.resolve(getGoodsDetailsComments(normalizeSpuId(spuId)))
 }

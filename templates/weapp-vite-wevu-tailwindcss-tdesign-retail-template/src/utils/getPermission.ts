@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 
 interface PermissionOptions {
@@ -8,7 +7,8 @@ interface PermissionOptions {
 
 export async function getPermission({ code, name }: PermissionOptions) {
   const res = await wpi.getSetting()
-  if (res.authSetting[code] !== false) {
+  const authSetting = res.authSetting as Record<string, boolean | undefined>
+  if (authSetting[code] !== false) {
     return
   }
 
@@ -25,7 +25,8 @@ export async function getPermission({ code, name }: PermissionOptions) {
   }
 
   const settingRes = await wpi.openSetting()
-  if (settingRes.authSetting[code] === true) {
+  const nextAuthSetting = settingRes.authSetting as Record<string, boolean | undefined>
+  if (nextAuthSetting[code] === true) {
     return
   }
 

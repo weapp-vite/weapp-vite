@@ -1,5 +1,37 @@
 /** 地址 */
-export function genAddress(id = 0) {
+export interface Address {
+  saasId: string
+  uid: string
+  authToken: null
+  id: string
+  addressId: string
+  phone: string
+  name: string
+  countryName: string
+  countryCode: string
+  provinceName: string
+  provinceCode: string
+  cityName: string
+  cityCode: string
+  districtName: string
+  districtCode: string
+  detailAddress: string
+  isDefault: 0 | 1
+  addressTag: string
+  latitude: string
+  longitude: string
+  storeId: null
+}
+
+/** 地址列表项 */
+export interface DeliveryAddress extends Address {
+  phoneNumber: string
+  address: string
+  tag: string
+  checked?: boolean
+}
+
+export function genAddress(id = 0): Address {
   return {
     saasId: '88888888',
     uid: `8888888820550${id}`,
@@ -26,6 +58,6 @@ export function genAddress(id = 0) {
 }
 
 /** 地址列表 */
-export function genAddressList(len = 10) {
+export function genAddressList(len = 10): Address[] {
   return new Array(len).fill(0).map((_, idx) => genAddress(idx))
 }

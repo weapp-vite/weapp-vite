@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { getSearchResult as getSearchResultModel } from '../../model/search'
 import { delay } from '../_utils/delay'
@@ -15,7 +14,7 @@ type SearchResultListItem = SearchResultSpuItem & {
 }
 
 /** 获取搜索历史 */
-function mockSearchResult(params) {
+function mockSearchResult(params?: unknown) {
   const data = getSearchResultModel(params)
   const spuList: SearchResultListItem[] = data.spuList.map((item: SearchResultSpuItem) => ({
     ...item,
@@ -33,7 +32,7 @@ function mockSearchResult(params) {
 }
 
 /** 获取搜索历史 */
-export function getSearchResult(params) {
+export function getSearchResult(params?: unknown) {
   if (config.useMock) {
     return mockSearchResult(params)
   }

@@ -10,6 +10,7 @@ import { registerWeapiIndexDouyinResultMappingAndCoverageTests } from './douyinR
 import { registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests } from './douyinStrictModeAndActionSheetCases'
 import { registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests } from './missingAdapterMethodUnsupportedCases'
 import { registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests } from './networkRequestPolicyAndTimeoutBehavior'
+import { registerWeapiIndexNonPromisifiedRuntimeBehaviorTests } from './nonPromisifiedRuntimeBehavior'
 import { registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests } from './rewardedAdAndCoreUnsupportedCapabilities'
 import { registerWeapiIndexStrictCompatibilityUnsupportedCasesTests } from './strictCompatibilityUnsupportedCases'
 import { registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests } from './unsupportedPaymentsAndPreviewMedia'
@@ -22,6 +23,7 @@ export function registerWeapiIndexTests() {
   registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests()
   registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests()
   registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests()
+  registerWeapiIndexNonPromisifiedRuntimeBehaviorTests()
   registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests()
   registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests()
   registerWeapiIndexStrictCompatibilityUnsupportedCasesTests()

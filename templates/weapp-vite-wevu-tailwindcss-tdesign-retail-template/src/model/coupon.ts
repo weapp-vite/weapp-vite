@@ -1,5 +1,17 @@
 export type CouponCardStatus = 'default' | 'useless' | 'disabled'
 export type CouponCardType = 1 | 2
+export interface Coupon {
+  key: string
+  status: CouponCardStatus
+  type: CouponCardType
+  value: number
+  tag: string
+  desc: string
+  base: number
+  title: string
+  timeLimit: string
+  currency: string
+}
 
 /**
  * 优惠券
@@ -12,7 +24,7 @@ export function getCoupon(
   id = 0,
   status: CouponCardStatus = 'default',
   type: CouponCardType = ((id % 2) + 1) as CouponCardType,
-) {
+): Coupon {
   return {
     /** key */
     key: `${id}`,
@@ -38,6 +50,6 @@ export function getCoupon(
 }
 
 /** 优惠券列表 */
-export function getCouponList(status: CouponCardStatus = 'default', length = 10) {
+export function getCouponList(status: CouponCardStatus = 'default', length = 10): Coupon[] {
   return new Array(length).fill(0).map((_, idx) => getCoupon(idx, status))
 }

@@ -1,11 +1,39 @@
-// @ts-nocheck
-function getInstance(context, selector = '#wr-reason-sheet') {
-  if (!context) {
+import type { ReasonSheetOption } from './index.vue'
+
+interface ReasonSheetContext {
+  selectComponent?: (selector: string) => ReasonSheetInstance | null
+}
+
+interface ReasonSheetInstance {
+  bindHandlers: (handlers: {
+    onCancel?: (reason?: unknown) => void
+    onConfirm?: (indexes: number[]) => void
+  }) => void
+  open: (options: Omit<ReasonSheetOptions, 'context' | 'selector'>) => void
+}
+
+export interface ReasonSheetOptions {
+  context?: ReasonSheetContext | null
+  selector?: string
+  show?: boolean
+  title?: string
+  options?: ReasonSheetOption[]
+  multiple?: boolean
+  showConfirmButton?: boolean
+  showCancelButton?: boolean
+  showCloseButton?: boolean
+  confirmButtonText?: string
+  cancelButtonText?: string
+  emptyTip?: string
+}
+
+function getInstance(context?: ReasonSheetContext | null, selector = '#wr-reason-sheet') {
+  let nextContext = context
+  if (!nextContext) {
     const pages = getCurrentPages()
-    const page = pages.at(-1)
-    context = page
+    nextContext = (pages.at(-1) ?? null) as ReasonSheetContext | null
   }
-  const instance = context && context.selectComponent(selector)
+  const instance = nextContext?.selectComponent?.(selector) ?? null
   if (!instance) {
     console.warn(`未找到reason-sheet组件,请检查selector是否正确`)
     return null
@@ -13,14 +41,21 @@ function getInstance(context, selector = '#wr-reason-sheet') {
   return instance
 }
 
-export default function (options) {
+export default function reasonSheet(options: ReasonSheetOptions) {
   const { context, selector, ..._options } = options
-  return new Promise((resolve, reject) => {
+  return new Promise<number[]>((resolve, reject) => {
     const instance = getInstance(context, selector)
     if (instance) {
-      instance.setData(Object.assign({}, _options))
-      instance._onCancel = () => reject()
-      instance._onConfirm = indexes => resolve(indexes)
+      instance.bindHandlers({
+        onCancel: () => reject(new Error('cancel')),
+        onConfirm: indexes => resolve(indexes),
+      })
+      instance.open({
+        ..._options,
+      })
+    }
+    else {
+      reject(new Error('reason-sheet instance not found'))
     }
   })
 }

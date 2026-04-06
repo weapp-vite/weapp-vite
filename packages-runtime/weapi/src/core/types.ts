@@ -1,3 +1,4 @@
+import type { WeapiNonPromisifiedMethodName } from './nonPromisifiedMethods'
 import type { WeapiCrossPlatformMethodDocs } from './types/methodDocs'
 
 /// <reference types="miniprogram-api-typings" />
@@ -114,9 +115,11 @@ export type WeapiPromisify<TAdapter extends WeapiAdapter> = {
   [Key in keyof TAdapter]: Key extends string
     ? Key extends `${string}Sync`
       ? TAdapter[Key]
-      : Key extends `on${Capitalize<string>}` | `off${Capitalize<string>}`
+      : Key extends WeapiNonPromisifiedMethodName
         ? TAdapter[Key]
-        : PromisifyMethod<TAdapter[Key]>
+        : Key extends `on${Capitalize<string>}` | `off${Capitalize<string>}`
+          ? TAdapter[Key]
+          : PromisifyMethod<TAdapter[Key]>
     : TAdapter[Key]
 }
 

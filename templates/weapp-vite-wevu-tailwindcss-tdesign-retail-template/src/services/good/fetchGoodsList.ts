@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { getSearchResult } from '../../model/search'
 import { delay } from '../_utils/delay'
@@ -13,7 +12,7 @@ type GoodsListSpuItem = SearchResultSpuItem & {
 }
 
 /** 获取商品列表 */
-function mockFetchGoodsList(params) {
+function mockFetchGoodsList(params?: unknown) {
   const data = getSearchResult(params)
   const spuList: GoodsListSpuItem[] = data.spuList.map((item: SearchResultSpuItem) => ({
     ...item,
@@ -32,7 +31,7 @@ function mockFetchGoodsList(params) {
 }
 
 /** 获取商品列表 */
-export function fetchGoodsList(params) {
+export function fetchGoodsList(params?: unknown) {
   if (config.useMock) {
     return mockFetchGoodsList(params)
   }

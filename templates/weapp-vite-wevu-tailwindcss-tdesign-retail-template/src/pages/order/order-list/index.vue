@@ -1,214 +1,226 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { OrdersResult } from '../../../model/order/orderList'
+import { wpi } from '@wevu/api'
+import { onLoad, onPageScroll, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
 import { fetchOrders, fetchOrdersCount } from '../../../services/order/orderList'
 import { cosThumb } from '../../../utils/util'
 import { OrderStatus } from '../config'
 
-defineOptions({
-  page: {
-    size: 5,
-    num: 1,
-  },
-  data() {
-    return {
-      tabs: [{
-        key: -1,
-        text: '全部',
-      }, {
-        key: OrderStatus.PENDING_PAYMENT,
-        text: '待付款',
-        info: '',
-      }, {
-        key: OrderStatus.PENDING_DELIVERY,
-        text: '待发货',
-        info: '',
-      }, {
-        key: OrderStatus.PENDING_RECEIPT,
-        text: '待收货',
-        info: '',
-      }, {
-        key: OrderStatus.COMPLETE,
-        text: '已完成',
-        info: '',
-      }],
-      curTab: -1,
-      orderList: [],
-      listLoading: 0,
-      pullDownRefreshing: false,
-      emptyImg: 'https://tdesign.gtimg.com/miniprogram/template/retail/order/empty-order-list.png',
-      backRefresh: false,
-      status: -1,
+interface TabItem {
+  key: number
+  text: string
+  info?: number | string
+}
+
+type SourceOrderItem = OrdersResult['data']['orders'][number]
+
+interface NormalizedGoodsItem {
+  id: string
+  thumb: string
+  title: string
+  skuId: string
+  spuId: string
+  specs: string[]
+  price: string | number
+  num: number
+  titlePrefixTags: Array<{ text: string }>
+}
+
+interface NormalizedOrderItem {
+  id: string
+  orderNo: string
+  parentOrderNo: string
+  storeId: string
+  storeName: string
+  status: number
+  statusDesc: string
+  amount: string
+  totalAmount: string
+  logisticsNo: string
+  createTime: string
+  goodsList: NormalizedGoodsItem[]
+  buttons: NonNullable<SourceOrderItem['buttonVOs']>
+  groupInfoVo?: any
+  freightFee: string
+}
+
+interface QueryOptions {
+  status?: string
+}
+
+const nativeInstance = useNativeInstance()
+const page = {
+  size: 5,
+  num: 1,
+}
+const tabs = ref<TabItem[]>([
+  { key: -1, text: '全部' },
+  { key: OrderStatus.PENDING_PAYMENT, text: '待付款', info: '' },
+  { key: OrderStatus.PENDING_DELIVERY, text: '待发货', info: '' },
+  { key: OrderStatus.PENDING_RECEIPT, text: '待收货', info: '' },
+  { key: OrderStatus.COMPLETE, text: '已完成', info: '' },
+])
+const curTab = ref(-1)
+const orderList = ref<NormalizedOrderItem[]>([])
+const listLoading = ref(0)
+const pullDownRefreshing = ref(false)
+const emptyImg = ref('https://tdesign.gtimg.com/miniprogram/template/retail/order/empty-order-list.png')
+const backRefresh = ref(false)
+const status = ref(-1)
+const pullDownRefresh = ref<any>(null)
+
+function normalizeStatus(rawStatus?: string) {
+  const parsedStatus = Number.parseInt(rawStatus || '-1', 10)
+  return tabs.value.map(item => item.key).includes(parsedStatus) ? parsedStatus : -1
+}
+
+function normalizeOrder(order: SourceOrderItem): NormalizedOrderItem {
+  return {
+    id: order.orderId,
+    orderNo: order.orderNo,
+    parentOrderNo: order.parentOrderNo,
+    storeId: order.storeId,
+    storeName: order.storeName,
+    status: order.orderStatus,
+    statusDesc: order.orderStatusName,
+    amount: order.paymentAmount,
+    totalAmount: order.totalAmount,
+    logisticsNo: order.logisticsVO.logisticsNo,
+    createTime: order.createTime,
+    goodsList: (order.orderItemVOs || []).map(goods => ({
+      id: goods.id,
+      thumb: cosThumb(goods.goodsPictureUrl, 70),
+      title: goods.goodsName,
+      skuId: goods.skuId,
+      spuId: goods.spuId,
+      specs: (goods.specifications || []).map(spec => spec.specValue),
+      price: goods.tagPrice || goods.actualPrice,
+      num: goods.buyQuantity,
+      titlePrefixTags: goods.tagText ? [{ text: goods.tagText }] : [],
+    })),
+    buttons: order.buttonVOs || [],
+    groupInfoVo: (order as any).groupInfoVo,
+    freightFee: order.freightFee,
+  }
+}
+
+async function getOrderList(statusCode = -1, reset = false) {
+  const params: {
+    parameter: {
+      pageSize: number
+      pageNum: number
+      orderStatus?: number
     }
-  },
-  onLoad(query) {
-    let status = Number.parseInt(query.status)
-    status = this.data.tabs.map(t => t.key).includes(status) ? status : -1
-    this.init(status)
-    this.pullDownRefresh = this.selectComponent('#wr-pull-down-refresh')
-  },
-  onShow() {
-    if (!this.data.backRefresh) { return }
-    this.onRefresh()
-    this.setData({
-      backRefresh: false,
-    })
-  },
-  onReachBottom() {
-    if (this.data.listLoading === 0) {
-      this.getOrderList(this.data.curTab)
-    }
-  },
-  onPageScroll(e) {
-    this.pullDownRefresh && this.pullDownRefresh.onPageScroll(e)
-  },
-  onPullDownRefresh_(e) {
-    const {
-      callback,
-    } = e.detail
-    this.setData({
-      pullDownRefreshing: true,
-    })
-    this.refreshList(this.data.curTab).then(() => {
-      this.setData({
-        pullDownRefreshing: false,
-      })
-      callback && callback()
-    }).catch((err) => {
-      this.setData({
-        pullDownRefreshing: false,
-      })
-      Promise.reject(err)
-    })
-  },
-  init(status) {
-    status = status !== undefined ? status : this.data.curTab
-    this.setData({
-      status,
-    })
-    this.refreshList(status)
-  },
-  getOrderList(statusCode = -1, reset = false) {
-    const params = {
-      parameter: {
-        pageSize: this.page.size,
-        pageNum: this.page.num,
-      },
-    }
-    if (statusCode !== -1) { params.parameter.orderStatus = statusCode }
-    this.setData({
-      listLoading: 1,
-    })
-    return fetchOrders(params).then((res) => {
-      this.page.num++
-      let orderList = []
-      if (res && res.data && res.data.orders) {
-        orderList = (res.data.orders || []).map((order) => {
-          return {
-            id: order.orderId,
-            orderNo: order.orderNo,
-            parentOrderNo: order.parentOrderNo,
-            storeId: order.storeId,
-            storeName: order.storeName,
-            status: order.orderStatus,
-            statusDesc: order.orderStatusName,
-            amount: order.paymentAmount,
-            totalAmount: order.totalAmount,
-            logisticsNo: order.logisticsVO.logisticsNo,
-            createTime: order.createTime,
-            goodsList: (order.orderItemVOs || []).map(goods => ({
-              id: goods.id,
-              thumb: cosThumb(goods.goodsPictureUrl, 70),
-              title: goods.goodsName,
-              skuId: goods.skuId,
-              spuId: goods.spuId,
-              specs: (goods.specifications || []).map(spec => spec.specValue),
-              price: goods.tagPrice ? goods.tagPrice : goods.actualPrice,
-              num: goods.buyQuantity,
-              titlePrefixTags: goods.tagText
-                ? [{
-                    text: goods.tagText,
-                  }]
-                : [],
-            })),
-            buttons: order.buttonVOs || [],
-            groupInfoVo: order.groupInfoVo,
-            freightFee: order.freightFee,
-          }
-        })
-      }
-      return new Promise((resolve) => {
-        if (reset) {
-          this.setData({
-            orderList: [],
-          }, () => resolve())
+  } = {
+    parameter: {
+      pageSize: page.size,
+      pageNum: page.num,
+    },
+  }
+  if (statusCode !== -1) {
+    params.parameter.orderStatus = statusCode
+  }
+  listLoading.value = 1
+
+  try {
+    const res = await fetchOrders(params)
+    page.num += 1
+    const nextOrderList = (res.data.orders || []).map(normalizeOrder)
+    orderList.value = reset ? nextOrderList : orderList.value.concat(nextOrderList)
+    listLoading.value = nextOrderList.length > 0 ? 0 : 2
+  }
+  catch (error) {
+    listLoading.value = 3
+    throw error
+  }
+}
+
+async function getOrdersCount() {
+  const res = await fetchOrdersCount()
+  const tabsCount = res.data || []
+  tabs.value = tabs.value.map((tab) => {
+    const tabCount = tabsCount.find(item => item.tabType === tab.key)
+    return tabCount
+      ? {
+          ...tab,
+          info: tabCount.orderNum,
         }
-        else {
-          resolve()
-        }
-      }).then(() => {
-        this.setData({
-          orderList: this.data.orderList.concat(orderList),
-          listLoading: orderList.length > 0 ? 0 : 2,
-        })
-      })
-    }).catch((err) => {
-      this.setData({
-        listLoading: 3,
-      })
-      return Promise.reject(err)
-    })
-  },
-  onReTryLoad() {
-    this.getOrderList(this.data.curTab)
-  },
-  onTabChange(e) {
-    const {
-      value,
-    } = e.detail
-    this.setData({
-      status: value,
-    })
-    this.refreshList(value)
-  },
-  getOrdersCount() {
-    return fetchOrdersCount().then((res) => {
-      const tabsCount = res.data || []
-      const {
-        tabs,
-      } = this.data
-      tabs.forEach((tab) => {
-        const tabCount = tabsCount.find(c => c.tabType === tab.key)
-        if (tabCount) {
-          tab.info = tabCount.orderNum
-        }
-      })
-      this.setData({
-        tabs,
-      })
-    })
-  },
-  refreshList(status = -1) {
-    this.page = {
-      size: this.page.size,
-      num: 1,
-    }
-    this.setData({
-      curTab: status,
-      orderList: [],
-    })
-    return Promise.all([this.getOrderList(status, true), this.getOrdersCount()])
-  },
-  onRefresh() {
-    this.refreshList(this.data.curTab)
-  },
-  async onOrderCardTap(e) {
-    const {
-      order,
-    } = e.currentTarget.dataset
-    await wpi.navigateTo({
-      url: `/pages/order/order-detail/index?orderNo=${order.orderNo}`,
-    })
-  },
+      : tab
+  })
+}
+
+async function refreshList(nextStatus = -1) {
+  page.num = 1
+  curTab.value = nextStatus
+  orderList.value = []
+  await Promise.all([
+    getOrderList(nextStatus, true),
+    getOrdersCount(),
+  ])
+}
+
+function init(nextStatus?: number) {
+  const resolvedStatus = typeof nextStatus === 'number' ? nextStatus : curTab.value
+  status.value = resolvedStatus
+  void refreshList(resolvedStatus)
+}
+
+async function onPullDownRefresh_(e: { detail?: { callback?: () => void } }) {
+  pullDownRefreshing.value = true
+  try {
+    await refreshList(curTab.value)
+  }
+  finally {
+    pullDownRefreshing.value = false
+    e.detail?.callback?.()
+  }
+}
+
+function onReTryLoad() {
+  void getOrderList(curTab.value)
+}
+
+function onTabChange(e: { detail?: { value?: number } }) {
+  const value = e.detail?.value ?? -1
+  status.value = value
+  void refreshList(value)
+}
+
+function onRefresh() {
+  void refreshList(curTab.value)
+}
+
+async function onOrderCardTap(e: { currentTarget?: { dataset?: { order?: NormalizedOrderItem } } }) {
+  const order = e.currentTarget?.dataset?.order
+  if (!order) {
+    return
+  }
+  await wpi.navigateTo({
+    url: `/pages/order/order-detail/index?orderNo=${order.orderNo}`,
+  })
+}
+
+onLoad((query: QueryOptions = {}) => {
+  init(normalizeStatus(query.status))
+  pullDownRefresh.value = nativeInstance.selectComponent?.('#pull-down-refresh') ?? null
+})
+
+onShow(() => {
+  if (!backRefresh.value) {
+    return
+  }
+  onRefresh()
+  backRefresh.value = false
+})
+
+onReachBottom(() => {
+  if (listLoading.value === 0) {
+    void getOrderList(curTab.value)
+  }
+})
+
+onPageScroll((e) => {
+  pullDownRefresh.value?.onPageScroll?.(e)
 })
 
 definePageJson({
@@ -260,7 +272,7 @@ definePageJson({
     >
       <order-card
         v-for="(order, oIndex) in orderList"
-        :key="id"
+        :key="order.id || oIndex"
         :order="order"
         :defaultShowNum="3"
         :data-order="order"
@@ -277,7 +289,7 @@ definePageJson({
         </template>
         <specs-goods-card
           v-for="(goods, gIndex) in order.goodsList"
-          :key="id"
+          :key="goods.id || gIndex"
           :data="goods"
           :no-top-line="gIndex === 0"
         />

@@ -1,97 +1,46 @@
 <script setup lang="ts">
-// @ts-nocheck
+import { computed } from 'wevu'
+
+interface OrderCardData {
+  storeLogo?: string
+  storeName?: string
+  statusDesc?: string
+  goodsList?: unknown[]
+}
+
 defineOptions({
-  externalClasses: ['wr-class', 'header-class', 'title-class'],
   options: {
     multipleSlots: true,
   },
-  relations: {
-    '../order-goods-card/index': {
-      type: 'descendant',
-      linked(target) {
-        const children = Array.isArray(this.children) ? this.children : (this.children = [])
-        children.push(target)
-        this.setHidden()
-      },
-      unlinked(target) {
-        const children = Array.isArray(this.children) ? this.children : []
-        this.children = children.filter(item => item !== target)
-      },
-    },
-    '../goods-card/index': {
-      type: 'descendant',
-      linked(target) {
-        const children = Array.isArray(this.children) ? this.children : (this.children = [])
-        children.push(target)
-        this.setHidden()
-      },
-      unlinked(target) {
-        const children = Array.isArray(this.children) ? this.children : []
-        this.children = children.filter(item => item !== target)
-      },
-    },
-    '../specs-goods-card/index': {
-      type: 'descendant',
-      linked(target) {
-        const children = Array.isArray(this.children) ? this.children : (this.children = [])
-        children.push(target)
-        this.setHidden()
-      },
-      unlinked(target) {
-        const children = Array.isArray(this.children) ? this.children : []
-        this.children = children.filter(item => item !== target)
-      },
-    },
-  },
-  data() {
-    return {
-      showAll: true,
-      // 是否展示所有商品，设置为false，可以使用展开更多功能
-      goodsCount: 0,
-    }
-  },
-  created() {
-    this.children = []
-  },
-  properties: {
-    order: {
-      type: Object,
-      observer(order) {
-        if (!order?.goodsList) { return }
-        const goodsCount = order.goodsList.length
-        this.setData({
-          goodsCount,
-        })
-      },
-    },
-    useTopRightSlot: Boolean,
-    //  初始显示的商品数量，超出部分会隐藏。
-    defaultShowNum: {
-      type: null,
-      value: 10,
-    },
-    useLogoSlot: {
-      type: Boolean,
-      value: false,
-    },
-  },
-  methods: {
-    setHidden() {
-      const isHidden = !this.data.showAll
-      const children = Array.isArray(this.children) ? this.children : []
-      children.forEach((c, i) => i >= this.properties.defaultShowNum && c.setHidden(isHidden))
-    },
-    onOrderCardTap() {
-      this.triggerEvent('cardtap')
-    },
-    onShowMoreTap() {
-      this.setData({
-        showAll: true,
-      }, () => this.setHidden())
-      this.triggerEvent('showall')
-    },
-  },
+  externalClasses: ['wr-class', 'header-class', 'title-class'],
 })
+
+const props = withDefaults(defineProps<{
+  order?: OrderCardData | null
+  useTopRightSlot?: boolean
+  defaultShowNum?: number
+  useLogoSlot?: boolean
+}>(), {
+  order: () => ({}),
+  useTopRightSlot: false,
+  defaultShowNum: 10,
+  useLogoSlot: false,
+})
+
+const emit = defineEmits<{
+  cardtap: []
+  showall: []
+}>()
+
+const goodsCount = computed(() => props.order?.goodsList?.length || 0)
+
+function onOrderCardTap() {
+  emit('cardtap')
+}
+
+function onShowMoreTap() {
+  emit('showall')
+}
 
 defineComponentJson({
   component: true,
@@ -107,23 +56,23 @@ defineComponentJson({
     <view class="header header-class">
       <view class="store-name title-class">
         <block v-if="!useLogoSlot">
-          <t-image v-if="order.storeLogo" t-class="store-name__logo" :src="order.storeLogo" />
+          <t-image v-if="order?.storeLogo" t-class="store-name__logo" :src="order.storeLogo" />
           <t-icon v-else prefix="wr" class="store-name__logo" name="store" size="40rpx" color="inherit" />
           <view class="store-name__label">
-            {{ order.storeName }}
+            {{ order?.storeName }}
           </view>
         </block>
         <slot v-else name="top-left" />
       </view>
       <view v-if="!useTopRightSlot" class="order-status">
-        {{ order.statusDesc }}
+        {{ order?.statusDesc }}
       </view>
       <slot v-else name="top-right" />
     </view>
     <view class="slot-wrapper">
       <slot />
     </view>
-    <view v-if="goodsCount > defaultShowNum && !showAll" class="more-mask" @tap.stop="onShowMoreTap">
+    <view v-if="false && goodsCount > defaultShowNum" class="more-mask" @tap.stop="onShowMoreTap">
       展开商品信息（共 {{ goodsCount }} 个）
       <t-icon name="chevron-down" size="32rpx" />
     </view>

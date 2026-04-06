@@ -1,493 +1,633 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { RightsPreviewResponse } from '../../../model/order/applyService'
+import type { DispatchApplyServicePayload } from '../../../services/order/applyService'
 import { wpi } from '@wevu/api'
+import { computed, onLoad, ref } from 'wevu'
 import { alertDialog, confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
-import { dispatchApplyService, dispatchConfirmReceived, fetchApplyReasonList, fetchRightsPreview } from '../../../services/order/applyService'
+import {
+  dispatchApplyService,
+
+  dispatchConfirmReceived,
+  fetchApplyReasonList,
+  fetchRightsPreview,
+} from '../../../services/order/applyService'
 import { priceFormat } from '../../../utils/util'
 import reasonSheet from '../components/reason-sheet/reasonSheet'
 import { OrderStatus, ServiceReceiptStatus, ServiceType } from '../config'
 
-defineOptions({
-  query: {},
-  validate() {
-    let valid = true
-    let msg = ''
-    // 检查必填项
-    if (!this.data.serviceFrom.applyReason.type) {
-      valid = false
-      msg = '请填写退款原因'
+interface QueryOptions {
+  orderNo?: string
+  skuId?: string
+  spuId?: string
+  canApplyReturn?: string
+  orderStatus?: string
+  logisticsNo?: string
+}
+
+interface ReceiptStatusItem {
+  desc: string
+  status: number | null
+}
+
+interface ApplyReasonItem {
+  desc: string
+  type: string | null
+}
+
+interface GoodsInfo {
+  id: string
+  thumb: string
+  title: string
+  spuId: string
+  skuId: string
+  specs: string[]
+  paidAmountEach: number
+  boughtQuantity: number
+  price: number
+}
+
+interface UploadFileItem {
+  [key: string]: unknown
+}
+
+interface ServiceAmountState {
+  max: number
+  current: number
+  temp: string
+  focus: boolean
+}
+
+interface ServiceFormState {
+  returnNum: number
+  receiptStatus: ReceiptStatusItem
+  applyReason: ApplyReasonItem
+  amount: ServiceAmountState
+  remark: string
+  rightsImageUrls: UploadFileItem[]
+}
+
+interface ValidateResult {
+  valid: boolean
+  msg: string
+}
+
+interface StepperChangeEvent {
+  detail?: {
+    value?: number | string
+  }
+}
+
+interface InputChangeEvent {
+  detail?: {
+    value?: string
+  }
+}
+
+interface DatasetIndexEvent {
+  currentTarget?: {
+    dataset?: {
+      index?: number | string
     }
-    else if (!this.data.serviceFrom.amount.current) {
-      valid = false
-      msg = '请填写退款金额'
-    }
-    if (this.data.serviceFrom.amount.current <= 0) {
-      valid = false
-      msg = '退款金额必须大于0'
-    }
-    this.setData({
-      validateRes: {
-        valid,
-        msg,
-      },
-    })
+  }
+}
+
+interface UploadSuccessEvent {
+  detail?: {
+    files?: UploadFileItem[]
+  }
+}
+
+interface UploadRemoveEvent {
+  detail?: {
+    index?: number
+  }
+}
+
+type ServiceRequireType = 'REFUND_MONEY' | 'REFUND_GOODS' | ''
+
+const AMOUNT_INPUT_RE = /\d+(\.?\d*)?/
+const AMOUNT_BLUR_RE = /\d+(\.?\d+)?/
+
+const defaultReceiptStatus: ReceiptStatusItem = {
+  desc: '请选择',
+  status: null,
+}
+
+const defaultApplyReason: ApplyReasonItem = {
+  desc: '请选择',
+  type: null,
+}
+
+const emptyGoodsInfo: GoodsInfo = {
+  id: '',
+  thumb: '',
+  title: '',
+  spuId: '',
+  skuId: '',
+  specs: [],
+  paidAmountEach: 0,
+  boughtQuantity: 0,
+  price: 0,
+}
+
+const receiptStatusList: ReceiptStatusItem[] = [
+  {
+    desc: '未收到货',
+    status: ServiceReceiptStatus.NOT_RECEIPTED,
   },
-  data() {
+  {
+    desc: '已收到货',
+    status: ServiceReceiptStatus.RECEIPTED,
+  },
+]
+
+const uploadGridConfig = {
+  column: 3,
+  width: 212,
+  height: 212,
+}
+
+const query = ref<QueryOptions>({})
+const uploading = ref(false)
+const canApplyReturn = ref(true)
+const goodsInfo = ref<GoodsInfo>({ ...emptyGoodsInfo })
+const applyReasons = ref<ApplyReasonItem[]>([])
+const serviceType = ref<number | null>(null)
+const serviceRequireType = ref<ServiceRequireType>('')
+const serviceFrom = ref<ServiceFormState>({
+  returnNum: 1,
+  receiptStatus: { ...defaultReceiptStatus },
+  applyReason: { ...defaultApplyReason },
+  amount: {
+    max: 0,
+    current: 0,
+    temp: '0',
+    focus: false,
+  },
+  remark: '',
+  rightsImageUrls: [],
+})
+const maxApplyNum = ref(2)
+const amountTip = ref('')
+const showReceiptStatusDialog = ref(false)
+const submitting = ref(false)
+const inputDialogVisible = ref(false)
+
+const validateRes = computed<ValidateResult>(() => {
+  if (!serviceFrom.value.receiptStatus.status) {
     return {
-      uploading: false,
-      // 凭证上传状态
-      canApplyReturn: true,
-      // 是否可退货
-      goodsInfo: {},
-      receiptStatusList: [{
-        desc: '未收到货',
-        status: ServiceReceiptStatus.NOT_RECEIPTED,
-      }, {
-        desc: '已收到货',
-        status: ServiceReceiptStatus.RECEIPTED,
-      }],
-      applyReasons: [],
-      serviceType: null,
-      // 20-仅退款，10-退货退款
-      serviceFrom: {
-        returnNum: 1,
-        receiptStatus: {
-          desc: '请选择',
-          status: null,
-        },
-        applyReason: {
-          desc: '请选择',
-          type: null,
-        },
-        // max-填写上限(单位分)，current-当前值(单位分)，temp输入框中的值(单位元)
-        amount: {
-          max: 0,
-          current: 0,
-          temp: 0,
-          focus: false,
-        },
-        remark: '',
-        rightsImageUrls: [],
-      },
-      maxApplyNum: 2,
-      // 最大可申请售后的商品数
-      amountTip: '',
-      showReceiptStatusDialog: false,
-      validateRes: {
-        valid: false,
-        msg: '',
-      },
-      submitting: false,
-      inputDialogVisible: false,
-      uploadGridConfig: {
-        column: 3,
-        width: 212,
-        height: 212,
-      },
-      serviceRequireType: '',
+      valid: false,
+      msg: '请选择收货状态',
     }
-  },
-  setWatcher(key, callback) {
-    let lastData = this.data
-    const keys = key.split('.')
-    keys.slice(0, -1).forEach((k) => {
-      lastData = lastData[k]
+  }
+  if (!serviceFrom.value.applyReason.type) {
+    return {
+      valid: false,
+      msg: '请填写退款原因',
+    }
+  }
+  if (!serviceFrom.value.amount.current) {
+    return {
+      valid: false,
+      msg: '请填写退款金额',
+    }
+  }
+  if (serviceFrom.value.amount.current <= 0) {
+    return {
+      valid: false,
+      msg: '退款金额必须大于0',
+    }
+  }
+  return {
+    valid: true,
+    msg: '',
+  }
+})
+
+const amountDialogClass = computed(() =>
+  `${serviceFrom.value.amount.focus ? 'amount-dialog--focus' : ''} [&_.popup__content--center]:[top:100rpx] [&_.popup__content--center]:[transform:translate(-50%,_0)]`,
+)
+
+function parsePriceToFen(value: string | number | undefined) {
+  if (typeof value === 'number') {
+    return value
+  }
+  const parsed = Number.parseFloat(String(value ?? '0'))
+  if (Number.isNaN(parsed)) {
+    return 0
+  }
+  return Math.round(parsed)
+}
+
+function formatAmountValue(value: number) {
+  return String(priceFormat(value) ?? '0')
+}
+
+function buildGoodsInfo(response: RightsPreviewResponse): GoodsInfo {
+  const data = response.data
+  return {
+    id: data.skuId,
+    thumb: data.goodsInfo?.skuImage ?? '',
+    title: data.goodsInfo?.goodsName ?? '',
+    spuId: data.spuId ?? query.value.spuId ?? '',
+    skuId: data.skuId,
+    specs: (data.goodsInfo?.specInfo ?? []).map(item => item.specValue),
+    paidAmountEach: parsePriceToFen(data.paidAmountEach),
+    boughtQuantity: data.boughtQuantity ?? 0,
+    price: parsePriceToFen(data.paidAmountEach),
+  }
+}
+
+async function checkQuery() {
+  const { orderNo, skuId } = query.value
+  if (!orderNo) {
+    await alertDialog({
+      content: '请先选择订单',
     })
-    const lastKey = keys.at(-1)
-    this.observe(lastData, lastKey, callback)
-  },
-  observe(data, k, callback) {
-    let val = data[k]
-    Object.defineProperty(data, k, {
-      configurable: true,
-      enumerable: true,
-      set: (value) => {
-        val = value
-        callback()
-      },
-      get: () => {
-        return val
-      },
+    await wpi.redirectTo({
+      url: '/pages/order/order-list/index',
     })
-  },
-  onLoad(query) {
-    this.query = query
-    if (!this.checkQuery()) { return }
-    this.setData({
-      canApplyReturn: query.canApplyReturn === 'true',
+    return false
+  }
+  if (!skuId) {
+    await alertDialog({
+      content: '请先选择商品',
     })
-    this.init()
-    this.inputDialog = this.selectComponent('#input-dialog')
-    this.setWatcher('serviceFrom.returnNum', this.validate.bind(this))
-    this.setWatcher('serviceFrom.applyReason', this.validate.bind(this))
-    this.setWatcher('serviceFrom.amount', this.validate.bind(this))
-    this.setWatcher('serviceFrom.rightsImageUrls', this.validate.bind(this))
-  },
-  async init() {
+    await wpi.redirectTo({
+      url: `/pages/order/order-detail/index?orderNo=${orderNo}`,
+    })
+    return false
+  }
+  return true
+}
+
+async function getRightsPreview() {
+  return fetchRightsPreview({
+    orderNo: query.value.orderNo,
+    skuId: query.value.skuId,
+    spuId: query.value.spuId,
+    numOfSku: serviceFrom.value.returnNum,
+  })
+}
+
+async function refresh() {
+  await wpi.showLoading({
+    title: 'loading',
+  })
+  try {
+    const response = await getRightsPreview()
+    goodsInfo.value = buildGoodsInfo(response)
+    const nextAmount: ServiceAmountState = {
+      ...serviceFrom.value.amount,
+      max: parsePriceToFen(response.data.refundableAmount),
+      current: parsePriceToFen(response.data.refundableAmount),
+      temp: formatAmountValue(parsePriceToFen(response.data.refundableAmount)),
+      focus: false,
+    }
+    serviceFrom.value = {
+      ...serviceFrom.value,
+      amount: nextAmount,
+      returnNum: response.data.numOfSku,
+    }
+    amountTip.value = `最多可申请退款¥ ${priceFormat(response.data.refundableAmount, 2)}，含发货运费¥ ${priceFormat(response.data.shippingFeeIncluded, 2)}`
+    maxApplyNum.value = response.data.numOfSkuAvailable
+  }
+  finally {
+    await wpi.hideLoading()
+  }
+}
+
+async function getApplyReasons(receiptStatus: number | null) {
+  if (!receiptStatus) {
+    return []
+  }
+  const rightsReasonType
+    = serviceRequireType.value === 'REFUND_MONEY' && receiptStatus === ServiceReceiptStatus.NOT_RECEIPTED
+      ? 'REFUND_MONEY'
+      : receiptStatus
+  try {
+    const response = await fetchApplyReasonList({
+      rightsReasonType,
+    })
+    return response.data.rightsReasonList.map(reason => ({
+      type: reason.id,
+      desc: reason.desc,
+    }))
+  }
+  catch {
+    return []
+  }
+}
+
+async function switchReceiptStatus(index: number) {
+  const statusItem = receiptStatusList[index]
+  showReceiptStatusDialog.value = false
+  if (!statusItem) {
+    serviceFrom.value = {
+      ...serviceFrom.value,
+      receiptStatus: { ...defaultReceiptStatus },
+      applyReason: { ...defaultApplyReason },
+    }
+    applyReasons.value = []
+    return
+  }
+  if (statusItem.status === serviceFrom.value.receiptStatus.status) {
+    return
+  }
+  const reasons = await getApplyReasons(statusItem.status)
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    receiptStatus: statusItem,
+    applyReason: { ...defaultApplyReason },
+  }
+  applyReasons.value = reasons
+}
+
+async function onApplyOnlyRefund() {
+  await wpi.setNavigationBarTitle({
+    title: '申请退款',
+  })
+  serviceRequireType.value = 'REFUND_MONEY'
+  serviceType.value = ServiceType.ONLY_REFUND
+  await switchReceiptStatus(0)
+}
+
+async function onApplyReturnGoods() {
+  await wpi.setNavigationBarTitle({
+    title: '申请退货退款',
+  })
+  const orderStatus = Number.parseInt(query.value.orderStatus ?? '0')
+  if (orderStatus === OrderStatus.PENDING_RECEIPT) {
     try {
-      await this.refresh()
-    }
-    catch (e) {}
-  },
-  checkQuery() {
-    const {
-      orderNo,
-      skuId,
-    } = this.query
-    if (!orderNo) {
-      alertDialog({
-        content: '请先选择订单',
-      }).then(() => {
-        void wpi.redirectTo({
-          url: 'pages/order/order-list/index',
-        })
+      await confirmDialog({
+        title: '订单商品是否已经收到货',
+        content: '',
+        confirmBtn: '确认收货，并申请退货',
+        cancelBtn: '未收到货',
       })
-      return false
-    }
-    if (!skuId) {
-      alertDialog({
-        content: '请先选择商品',
-      }).then(() => {
-        void wpi.redirectTo(`pages/order/order-detail/index?orderNo=${orderNo}`)
-      })
-      return false
-    }
-    return true
-  },
-  async refresh() {
-    await wpi.showLoading({
-      title: 'loading',
-    })
-    try {
-      const res = await this.getRightsPreview()
-      await wpi.hideLoading()
-      const goodsInfo = {
-        id: res.data.skuId,
-        thumb: res.data.goodsInfo && res.data.goodsInfo.skuImage,
-        title: res.data.goodsInfo && res.data.goodsInfo.goodsName,
-        spuId: res.data.spuId,
-        skuId: res.data.skuId,
-        specs: (res.data.goodsInfo && res.data.goodsInfo.specInfo || []).map(s => s.specValue),
-        paidAmountEach: res.data.paidAmountEach,
-        boughtQuantity: res.data.boughtQuantity,
-      }
-      this.setData({
-        goodsInfo,
-        'serviceFrom.amount': {
-          max: res.data.refundableAmount,
-          current: res.data.refundableAmount,
+      await dispatchConfirmReceived({
+        parameter: {
+          logisticsNo: query.value.logisticsNo,
+          orderNo: query.value.orderNo,
         },
-        'serviceFrom.returnNum': res.data.numOfSku,
-        'amountTip': `最多可申请退款¥ ${priceFormat(res.data.refundableAmount, 2)}，含发货运费¥ ${priceFormat(res.data.shippingFeeIncluded, 2)}`,
-        'maxApplyNum': res.data.numOfSkuAvailable,
       })
     }
-    catch (err) {
-      await wpi.hideLoading()
-      throw err
+    catch {
+      return
     }
-  },
-  async getRightsPreview() {
-    const {
-      orderNo,
-      skuId,
-      spuId,
-    } = this.query
-    const params = {
-      orderNo,
-      skuId,
-      spuId,
-      numOfSku: this.data.serviceFrom.returnNum,
-    }
-    const res = await fetchRightsPreview(params)
-    return res
-  },
-  async onApplyOnlyRefund() {
-    await wpi.setNavigationBarTitle({
-      title: '申请退款',
+  }
+  serviceRequireType.value = 'REFUND_GOODS'
+  serviceType.value = ServiceType.RETURN_GOODS
+  await switchReceiptStatus(1)
+}
+
+function onApplyGoodsStatus() {
+  showReceiptStatusDialog.value = true
+}
+
+async function onApplyReturnGoodsStatus() {
+  if (!applyReasons.value.length) {
+    showToast({
+      message: '请先选择收货状态',
+      icon: '',
     })
-    this.setData({
-      serviceRequireType: 'REFUND_MONEY',
-    })
-    this.switchReceiptStatus(0)
-  },
-  async onApplyReturnGoods() {
-    await wpi.setNavigationBarTitle({
-      title: '申请退货退款',
-    })
-    this.setData({
-      serviceRequireType: 'REFUND_GOODS',
-    })
-    const orderStatus = Number.parseInt(this.query.orderStatus)
-    Promise.resolve().then(() => {
-      if (orderStatus === OrderStatus.PENDING_RECEIPT) {
-        return confirmDialog({
-          title: '订单商品是否已经收到货',
-          content: '',
-          confirmBtn: '确认收货，并申请退货',
-          cancelBtn: '未收到货',
-        }).then(() => {
-          return dispatchConfirmReceived({
-            parameter: {
-              logisticsNo: this.query.logisticsNo,
-              orderNo: this.query.orderNo,
-            },
-          })
-        })
-      }
-    }).then(() => {
-      this.setData({
-        serviceType: ServiceType.RETURN_GOODS,
-      })
-      this.switchReceiptStatus(1)
-    })
-  },
-  onApplyReturnGoodsStatus() {
-    reasonSheet({
+    return
+  }
+  try {
+    const indexes = await reasonSheet({
       show: true,
       title: '选择退款原因',
-      options: this.data.applyReasons.map(r => ({
-        title: r.desc,
+      options: applyReasons.value.map(reason => ({
+        title: reason.desc,
+        checked: reason.type === serviceFrom.value.applyReason.type,
       })),
       showConfirmButton: true,
-      showCancelButton: true,
+      showCloseButton: true,
       emptyTip: '请选择退款原因',
-    }).then((indexes) => {
-      this.setData({
-        'serviceFrom.applyReason': this.data.applyReasons[indexes[0]],
-      })
     })
-  },
-  onChangeReturnNum(e) {
-    const {
-      value,
-    } = e.detail
-    this.setData({
-      'serviceFrom.returnNum': value,
-    })
-  },
-  onApplyGoodsStatus() {
-    reasonSheet({
-      show: true,
-      title: '请选择收货状态',
-      options: this.data.receiptStatusList.map(r => ({
-        title: r.desc,
-      })),
-      showConfirmButton: true,
-      emptyTip: '请选择收货状态',
-    }).then((indexes) => {
-      this.setData({
-        'serviceFrom.receiptStatus': this.data.receiptStatusList[indexes[0]],
-      })
-    })
-  },
-  switchReceiptStatus(index) {
-    const statusItem = this.data.receiptStatusList[index]
-    // 没有找到对应的状态，则清空/初始化
-    if (!statusItem) {
-      this.setData({
-        'showReceiptStatusDialog': false,
-        'serviceFrom.receiptStatus': {
-          desc: '请选择',
-          status: null,
-        },
-        'serviceFrom.applyReason': {
-          desc: '请选择',
-          type: null,
-        },
-        // 收货状态改变时，初始化申请原因
-        'applyReasons': [],
-      })
+    const selected = applyReasons.value[indexes[0]]
+    if (!selected) {
       return
     }
-    // 仅选中项与当前项不一致时，才切换申请原因列表applyReasons
-    if (!statusItem || statusItem.status === this.data.serviceFrom.receiptStatus.status) {
-      this.setData({
-        showReceiptStatusDialog: false,
-      })
-      return
+    serviceFrom.value = {
+      ...serviceFrom.value,
+      applyReason: selected,
     }
-    this.getApplyReasons(statusItem.status).then((reasons) => {
-      this.setData({
-        'showReceiptStatusDialog': false,
-        'serviceFrom.receiptStatus': statusItem,
-        'serviceFrom.applyReason': {
-          desc: '请选择',
-          type: null,
-        },
-        // 收货状态改变时，重置申请原因
-        'applyReasons': reasons,
-      })
+  }
+  catch {}
+}
+
+function onChangeReturnNum(event: StepperChangeEvent) {
+  const value = Number(event.detail?.value ?? 1)
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    returnNum: Number.isNaN(value) ? 1 : value,
+  }
+}
+
+function onReceiptStatusDialogConfirm(event: DatasetIndexEvent) {
+  const rawIndex = event.currentTarget?.dataset?.index
+  if (typeof rawIndex === 'undefined') {
+    showReceiptStatusDialog.value = false
+    return
+  }
+  void switchReceiptStatus(Number(rawIndex))
+}
+
+function closeReceiptStatusDialog() {
+  showReceiptStatusDialog.value = false
+}
+
+function onAmountTap() {
+  const nextAmount: ServiceAmountState = {
+    ...serviceFrom.value.amount,
+    temp: formatAmountValue(serviceFrom.value.amount.current),
+    focus: true,
+  }
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    amount: nextAmount,
+  }
+  inputDialogVisible.value = true
+}
+
+function onAmountInput(event: InputChangeEvent) {
+  const rawValue = event.detail?.value ?? ''
+  const matched = rawValue.match(AMOUNT_INPUT_RE)
+  const nextAmount: ServiceAmountState = {
+    ...serviceFrom.value.amount,
+    temp: matched ? matched[0] : '',
+  }
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    amount: nextAmount,
+  }
+}
+
+function onAmountBlur(event: InputChangeEvent) {
+  const rawValue = event.detail?.value ?? ''
+  const matched = rawValue.match(AMOUNT_BLUR_RE)
+  let value = matched ? Number.parseFloat(matched[0]) * 100 : 0
+  if (value > serviceFrom.value.amount.max) {
+    value = serviceFrom.value.amount.max
+  }
+  const nextAmount: ServiceAmountState = {
+    ...serviceFrom.value.amount,
+    temp: formatAmountValue(value),
+    focus: false,
+  }
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    amount: nextAmount,
+  }
+}
+
+function onAmountFocus() {
+  const nextAmount: ServiceAmountState = {
+    ...serviceFrom.value.amount,
+    focus: true,
+  }
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    amount: nextAmount,
+  }
+}
+
+function onAmountDialogConfirm() {
+  const normalized = Number.parseFloat(serviceFrom.value.amount.temp || '0')
+  const current = Number.isNaN(normalized) ? 0 : Math.min(Math.round(normalized * 100), serviceFrom.value.amount.max)
+  const nextAmount: ServiceAmountState = {
+    ...serviceFrom.value.amount,
+    current,
+    temp: formatAmountValue(current),
+    focus: false,
+  }
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    amount: nextAmount,
+  }
+  inputDialogVisible.value = false
+}
+
+function onAmountDialogCancel() {
+  const nextAmount: ServiceAmountState = {
+    ...serviceFrom.value.amount,
+    temp: formatAmountValue(serviceFrom.value.amount.current),
+    focus: false,
+  }
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    amount: nextAmount,
+  }
+  inputDialogVisible.value = false
+}
+
+function onRemarkChange(event: InputChangeEvent) {
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    remark: event.detail?.value ?? '',
+  }
+}
+
+async function submitCheck() {
+  const result = validateRes.value
+  if (!result.valid) {
+    showToast({
+      message: result.msg,
+      icon: '',
     })
-  },
-  getApplyReasons(receiptStatus) {
-    const params = {
-      rightsReasonType: receiptStatus,
-    }
-    return fetchApplyReasonList(params).then((res) => {
-      return res.data.rightsReasonList.map(reason => ({
-        type: reason.id,
-        desc: reason.desc,
-      }))
-    }).catch(() => {
-      return []
+    return false
+  }
+  if (!serviceType.value) {
+    showToast({
+      message: '请选择售后类型',
+      icon: '',
     })
-  },
-  onReceiptStatusDialogConfirm(e) {
-    const {
-      index,
-    } = e.currentTarget.dataset
-    this.switchReceiptStatus(index)
-  },
-  onAmountTap() {
-    this.setData({
-      'serviceFrom.amount.temp': priceFormat(this.data.serviceFrom.amount.current),
-      'serviceFrom.amount.focus': true,
-      'inputDialogVisible': true,
-    })
-    this.inputDialog.setData({
-      cancelBtn: '取消',
-      confirmBtn: '确定',
-    })
-    this.inputDialog._onConfirm = () => {
-      this.setData({
-        'serviceFrom.amount.current': this.data.serviceFrom.amount.temp * 100,
-      })
-    }
-    this.inputDialog._onCancel = () => {}
-  },
-  // 对输入的值进行过滤
-  onAmountInput(e) {
-    let {
-      value,
-    } = e.detail
-    // eslint-disable-next-line e18e/prefer-static-regex
-    const regRes = value.match(/\d+(\.?\d*)?/) // 输入中，允许末尾为小数点
-    value = regRes ? regRes[0] : ''
-    this.setData({
-      'serviceFrom.amount.temp': value,
-    })
-  },
-  // 失去焦点时，更严格的过滤并转化为float
-  onAmountBlur(e) {
-    let {
-      value,
-    } = e.detail
-    // eslint-disable-next-line e18e/prefer-static-regex
-    const regRes = value.match(/\d+(\.?\d+)?/) // 失去焦点时，不允许末尾为小数点
-    value = regRes ? regRes[0] : '0'
-    value = Number.parseFloat(value) * 100
-    if (value > this.data.serviceFrom.amount.max) {
-      value = this.data.serviceFrom.amount.max
-    }
-    this.setData({
-      'serviceFrom.amount.temp': priceFormat(value),
-      'serviceFrom.amount.focus': false,
-    })
-  },
-  onAmountFocus() {
-    this.setData({
-      'serviceFrom.amount.focus': true,
-    })
-  },
-  onRemarkChange(e) {
-    const {
-      value,
-    } = e.detail
-    this.setData({
-      'serviceFrom.remark': value,
-    })
-  },
-  // 发起申请售后请求
-  onSubmit() {
-    this.submitCheck().then(() => {
-      const params = {
-        rights: {
-          orderNo: this.query.orderNo,
-          refundRequestAmount: this.data.serviceFrom.amount.current,
-          rightsImageUrls: this.data.serviceFrom.rightsImageUrls,
-          rightsReasonDesc: this.data.serviceFrom.applyReason.desc,
-          rightsReasonType: this.data.serviceFrom.receiptStatus.status,
-          rightsType: this.data.serviceType,
-        },
-        rightsItem: [{
-          itemTotalAmount: this.data.goodsInfo.price * this.data.serviceFrom.returnNum,
-          rightsQuantity: this.data.serviceFrom.returnNum,
-          skuId: this.query.skuId,
-          spuId: this.query.spuId,
-        }],
-        refundMemo: this.data.serviceFrom.remark.current,
-      }
-      this.setData({
-        submitting: true,
-      })
-      // 发起申请售后请求
-      dispatchApplyService(params).then((res) => {
-        showToast({
-          context: this,
-          message: '申请成功',
-          icon: '',
-        })
-        return wpi.redirectTo({
-          url: `/pages/order/after-service-detail/index?rightsNo=${res.data.rightsNo}`,
-        })
-      }).then(() => this.setData({
-        submitting: false,
-      })).catch(() => this.setData({
-        submitting: false,
-      }))
-    })
-  },
-  submitCheck() {
-    return new Promise((resolve) => {
-      const {
-        msg,
-        valid,
-      } = this.data.validateRes
-      if (!valid) {
-        showToast({
-          context: this,
-          message: msg,
-          icon: '',
-        })
-        return
-      }
-      resolve()
-    })
-  },
-  handleSuccess(e) {
-    const {
-      files,
-    } = e.detail
-    this.setData({
-      'sessionFrom.rightsImageUrls': files,
-    })
-  },
-  handleRemove(e) {
-    const {
-      index,
-    } = e.detail
-    const {
-      sessionFrom: {
-        rightsImageUrls,
+    return false
+  }
+  return true
+}
+
+async function onSubmit() {
+  const passed = await submitCheck()
+  if (!passed || !serviceType.value) {
+    return
+  }
+  const params: DispatchApplyServicePayload = {
+    rights: {
+      orderNo: query.value.orderNo,
+      refundRequestAmount: serviceFrom.value.amount.current,
+      rightsImageUrls: serviceFrom.value.rightsImageUrls,
+      rightsReasonDesc: serviceFrom.value.applyReason.desc,
+      rightsReasonType: serviceFrom.value.applyReason.type,
+      rightsType: serviceType.value,
+    },
+    rightsItem: [
+      {
+        itemTotalAmount: goodsInfo.value.price * serviceFrom.value.returnNum,
+        rightsQuantity: serviceFrom.value.returnNum,
+        skuId: query.value.skuId,
+        spuId: query.value.spuId,
       },
-    } = this.data
-    rightsImageUrls.splice(index, 1)
-    this.setData({
-      'sessionFrom.rightsImageUrls': rightsImageUrls,
+    ],
+    refundMemo: serviceFrom.value.remark,
+  }
+
+  submitting.value = true
+  try {
+    const response = await dispatchApplyService(params)
+    showToast({
+      message: '申请成功',
+      icon: '',
     })
-  },
-  handleComplete() {
-    this.setData({
-      uploading: false,
+    await wpi.redirectTo({
+      url: `/pages/order/after-service-detail/index?rightsNo=${response.data.rightsNo}`,
     })
-  },
-  handleSelectChange() {
-    this.setData({
-      uploading: true,
-    })
-  },
+  }
+  finally {
+    submitting.value = false
+  }
+}
+
+function handleSuccess(event: UploadSuccessEvent) {
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    rightsImageUrls: event.detail?.files ?? [],
+  }
+}
+
+function handleRemove(event: UploadRemoveEvent) {
+  const index = event.detail?.index ?? -1
+  if (index < 0) {
+    return
+  }
+  const rightsImageUrls = [...serviceFrom.value.rightsImageUrls]
+  rightsImageUrls.splice(index, 1)
+  serviceFrom.value = {
+    ...serviceFrom.value,
+    rightsImageUrls,
+  }
+}
+
+function handleComplete() {
+  uploading.value = false
+}
+
+function handleSelectChange() {
+  uploading.value = true
+}
+
+onLoad((options: QueryOptions = {}) => {
+  query.value = options
+  canApplyReturn.value = options.canApplyReturn === 'true'
+  void (async () => {
+    const valid = await checkQuery()
+    if (!valid) {
+      return
+    }
+    await refresh()
+  })()
 })
 
 definePageJson({
@@ -540,7 +680,6 @@ definePageJson({
         >
           <template #left-icon>
             <t-icon
-
               prefix="wr"
               class="t-cell__left__icon [position:relative] [top:-24rpx] [margin-right:18rpx]"
               name="goods_refund"
@@ -558,7 +697,6 @@ definePageJson({
         >
           <template #left-icon>
             <t-icon
-
               prefix="wr"
               class="t-cell__left__icon [position:relative] [top:-24rpx] [margin-right:18rpx]"
               name="goods_return"
@@ -570,7 +708,6 @@ definePageJson({
         <t-cell v-else class="non-returnable" title="退货退款" description="该商品不支持退货">
           <template #left-icon>
             <t-icon
-
               prefix="wr"
               class="t-cell__left__icon [position:relative] [top:-24rpx] [margin-right:18rpx]"
               name="goods_return"
@@ -581,7 +718,6 @@ definePageJson({
         </t-cell>
       </t-cell-group>
     </view>
-    <!-- 售后表单 -->
     <view v-else class="service-form [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-class]:[font-size:36rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-class]:[font-family:DIN_Alternate] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-decimal]:[font-size:28rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-decimal]:[font-family:DIN_Alternate] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-symbol]:[font-size:24rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-symbol]:[font-family:DIN_Alternate]">
       <view class="service-from-group">
         <t-cell-group>
@@ -601,7 +737,6 @@ definePageJson({
           <t-cell title="退款商品数量">
             <template #note>
               <t-stepper
-
                 theme="filled"
                 min="1"
                 :max="maxApplyNum"
@@ -653,7 +788,7 @@ definePageJson({
       <view class="service-from-group__grid [padding:0_32rpx_48rpx] [background:#fff] [margin-bottom:148rpx]">
         <t-upload
           :media-type="['image', 'video']"
-          :files="sessionFrom.rightsImageUrls"
+          :files="serviceFrom.rightsImageUrls"
           :gridConfig="uploadGridConfig"
           max="3"
           @remove="handleRemove"
@@ -683,14 +818,13 @@ definePageJson({
       </view>
     </view>
   </view>
-  <!-- 收货状态选择 -->
-  <t-popup :visible="showReceiptStatusDialog" placement="bottom" @close="onReceiptStatusDialogConfirm">
+  <t-popup :visible="showReceiptStatusDialog" placement="bottom" @close="closeReceiptStatusDialog">
     <template #content>
       <view class="dialog--service-status [background-color:#f3f4f5] [overflow:hidden] [&_.options_.option]:[color:#333333] [&_.options_.option]:[font-size:30rpx] [&_.options_.option]:[text-align:center] [&_.options_.option]:[height:100rpx] [&_.options_.option]:[line-height:100rpx] [&_.options_.option]:[background-color:white] [&_.options_.option--active]:[opacity:0.5] [&_.options_.option_.main]:[color:#fa4126] [&_.cancel]:[color:#333333] [&_.cancel]:[font-size:30rpx] [&_.cancel]:[text-align:center] [&_.cancel]:[height:100rpx] [&_.cancel]:[line-height:100rpx] [&_.cancel]:[background-color:white] [&_.cancel]:[margin-top:20rpx] [&_.cancel--active]:[opacity:0.5]">
         <view class="options">
           <view
             v-for="(item, index) in receiptStatusList"
-            :key="status"
+            :key="item.status ?? index"
             class="option"
             hover-class="option--active"
             :data-index="index"
@@ -699,19 +833,21 @@ definePageJson({
             {{ item.desc }}
           </view>
         </view>
-        <view class="cancel" hover-class="cancel--active" @tap="onReceiptStatusDialogConfirm">
+        <view class="cancel" hover-class="cancel--active" @tap="closeReceiptStatusDialog">
           取消
         </view>
       </view>
     </template>
   </t-popup>
-  <!-- 理由选择 -->
   <wr-reason-sheet id="wr-reason-sheet" />
-  <!-- 金额填写 -->
   <t-dialog
     id="input-dialog"
     :visible="inputDialogVisible"
-    :class="`${serviceFrom.amount.focus ? 'amount-dialog--focus' : ''} [&_.popup__content--center]:[top:100rpx] [&_.popup__content--center]:[transform:translate(-50%,_0)]`"
+    :class="amountDialogClass"
+    confirm-btn="确定"
+    cancel-btn="取消"
+    @confirm="onAmountDialogConfirm"
+    @cancel="onAmountDialogCancel"
   >
     <template #title>
       <view class="input-dialog__title [color:#333] [font-size:32rpx] [font-weight:normal]">

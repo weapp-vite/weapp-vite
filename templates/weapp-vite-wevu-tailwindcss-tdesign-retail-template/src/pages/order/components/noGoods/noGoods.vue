@@ -1,73 +1,137 @@
 <script setup lang="ts">
-// @ts-nocheck
-defineOptions({
-  properties: {
-    settleDetailData: {
-      type: Object,
-      value: {},
-      observer(settleDetailData) {
-        const {
-          outOfStockGoodsList,
-          abnormalDeliveryGoodsList,
-          inValidGoodsList,
-          limitGoodsList,
-        } = settleDetailData
-        // 弹窗逻辑   限购  超出配送范围   失效    库存不足;
-        const tempList = limitGoodsList || abnormalDeliveryGoodsList || inValidGoodsList || outOfStockGoodsList || []
-        tempList.forEach((goods, index) => {
-          goods.id = index
-          goods.unSettlementGoods && goods.unSettlementGoods.forEach((ele) => {
-            ele.name = ele.goodsName
-            ele.price = ele.payPrice
-            ele.imgUrl = ele.image
-          })
-        })
-        this.setData({
-          // settleDetailData,
-          goodsList: tempList,
-        })
-      },
-    },
-  },
-  data() {
-    return {
-      goodList: [],
-    }
-  },
-  methods: {
-    onCard(e) {
-      const {
-        item,
-      } = e.currentTarget.dataset
-      if (item === 'cart') {
-        // 购物车
-        Navigator.gotoPage('/cart')
-      }
-      else if (item === 'orderSure') {
-        // 结算页
-        this.triggerEvent('change', undefined)
-      }
-    },
-    onDelive() {
-      // 修改配送地址
-      Navigator.gotoPage('/address', {
-        type: 'orderSure',
-      })
-    },
-  },
+import { wpi } from '@wevu/api'
+import { computed } from 'wevu'
+
+interface RawGoodsItem {
+  id?: number | string
+  goodsName?: string
+  title?: string
+  image?: string
+  imgUrl?: string
+  payPrice?: string | number
+  price?: string | number
+  quantity?: number
+  num?: number
+  skuSpecLst?: Array<{ specValue?: string }>
+}
+
+interface RawGoodsGroupItem {
+  id?: number | string
+  storeName?: string
+  unSettlementGoods?: RawGoodsItem[]
+}
+
+interface SettleDetailData {
+  limitGoodsList?: RawGoodsGroupItem[]
+  abnormalDeliveryGoodsList?: RawGoodsGroupItem[]
+  inValidGoodsList?: RawGoodsGroupItem[]
+  outOfStockGoodsList?: RawGoodsGroupItem[]
+  storeGoodsList?: unknown[]
+}
+
+interface NormalizedGoodsItem extends RawGoodsItem {
+  id: number | string
+  title: string
+  thumb: string
+  price: string | number
+  num: number
+  specs: string[]
+}
+
+interface NormalizedGoodsGroupItem {
+  id: number | string
+  storeName?: string
+  unSettlementGoods: NormalizedGoodsItem[]
+}
+
+const props = withDefaults(defineProps<{
+  settleDetailData?: SettleDetailData
+}>(), {
+  settleDetailData: () => ({}),
 })
 
-function isOnlyBack(data: Record<string, any>) {
-  return Boolean(data.limitGoodsList || (data.inValidGoodsList && !data.storeGoodsList))
+const emit = defineEmits<{
+  change: []
+}>()
+
+function pickGoodsList(data: SettleDetailData) {
+  const candidates = [
+    data.limitGoodsList,
+    data.abnormalDeliveryGoodsList,
+    data.inValidGoodsList,
+    data.outOfStockGoodsList,
+  ]
+  return candidates.find(list => Array.isArray(list) && list.length > 0) || []
 }
 
-function isShowChangeAddress(data: Record<string, any>) {
-  return Boolean(data.abnormalDeliveryGoodsList)
+function normalizeGoodsItem(goods: RawGoodsItem, index: number): NormalizedGoodsItem {
+  return {
+    ...goods,
+    id: goods.id ?? index,
+    title: goods.title || goods.goodsName || '',
+    thumb: goods.imgUrl || goods.image || '',
+    price: goods.price || goods.payPrice || '0',
+    num: goods.num || goods.quantity || 0,
+    specs: (goods.skuSpecLst || []).map(spec => spec.specValue || '').filter(Boolean),
+  }
 }
 
-function isShowKeepPay(data: Record<string, any>) {
-  return Boolean(data.outOfStockGoodsList || (data.storeGoodsList && data.inValidGoodsList))
+function normalizeGoodsGroup(item: RawGoodsGroupItem, index: number): NormalizedGoodsGroupItem {
+  const rawGoodsList = Array.isArray(item.unSettlementGoods) && item.unSettlementGoods.length > 0
+    ? item.unSettlementGoods
+    : [item as RawGoodsItem]
+
+  return {
+    id: item.id ?? index,
+    storeName: item.storeName,
+    unSettlementGoods: rawGoodsList.map((goods, goodsIndex) => normalizeGoodsItem(goods, goodsIndex)),
+  }
 }
+
+function isOnlyBack(data: SettleDetailData) {
+  return Boolean(
+    (data.limitGoodsList && data.limitGoodsList.length > 0)
+    || ((data.inValidGoodsList && data.inValidGoodsList.length > 0) && !data.storeGoodsList),
+  )
+}
+
+function isShowChangeAddress(data: SettleDetailData) {
+  return Boolean(data.abnormalDeliveryGoodsList && data.abnormalDeliveryGoodsList.length > 0)
+}
+
+function isShowKeepPay(data: SettleDetailData) {
+  return Boolean(
+    (data.outOfStockGoodsList && data.outOfStockGoodsList.length > 0)
+    || ((data.storeGoodsList && (data.inValidGoodsList && data.inValidGoodsList.length > 0))),
+  )
+}
+
+const goodsList = computed(() => pickGoodsList(props.settleDetailData).map((goods, index) => normalizeGoodsGroup(goods, index)))
+
+async function onCard(e: { currentTarget?: { dataset?: { item?: string } } }) {
+  const item = e.currentTarget?.dataset?.item
+  if (item === 'cart') {
+    await wpi.switchTab({
+      url: '/pages/cart/index',
+    })
+    return
+  }
+  if (item === 'orderSure') {
+    emit('change')
+  }
+}
+
+async function onDelive() {
+  await wpi.navigateTo({
+    url: '/pages/user/address/list/index?selectMode=1&isOrderSure=1',
+  })
+}
+
+function upper() {}
+
+function lower() {}
+
+function scroll() {}
 
 defineComponentJson({
   component: true,
@@ -122,12 +186,12 @@ defineComponentJson({
       @scrolltolower="lower"
       @scroll="scroll"
     >
-      <view v-for="(goods, index) in goodsList" :key="index" class="goods-list">
+      <view v-for="(goods, index) in goodsList" :key="goods.id || index" class="goods-list">
         <wr-order-card v-if="goods" :order="goods">
           <wr-order-goods-card
-            v-for="(goods, gIndex) in goods.unSettlementGoods"
-            :key="id"
-            :goods="goods"
+            v-for="(goodsItem, gIndex) in goods.unSettlementGoods"
+            :key="goodsItem.id || gIndex"
+            :goods="goodsItem"
             :no-top-line="gIndex === 0"
           />
         </wr-order-card>

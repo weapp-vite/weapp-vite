@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
@@ -110,20 +109,6 @@ defineOptions({
         }
       })
     },
-    async queryAddress(addressId) {
-      try {
-        const {
-          data,
-        } = await apis.userInfo.queryAddress({
-          addressId,
-        })
-        return data.userAddressVO
-      }
-      catch (err) {
-        console.error('查询地址错误', err)
-        throw err
-      }
-    },
     findPage(pageRouteUrl) {
       const currentRoutes = getCurrentPages().map(v => v.route)
       return currentRoutes.indexOf(pageRouteUrl)
@@ -139,7 +124,7 @@ defineOptions({
         }
       }
       catch (err) {
-        rejectAddress(params)
+        rejectAddress()
         console.error(err)
       }
     },

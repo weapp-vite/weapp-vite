@@ -5,3 +5,5 @@ export function getActivityList(baseID = 0, length = 10) {
 }
 
 export const activityList = getActivityList()
+
+export type ActivityList = ReturnType<typeof getActivityList>

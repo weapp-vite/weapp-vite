@@ -1,11 +1,17 @@
-// @ts-nocheck
-let addressPromise = []
+import type { Address } from '../../model/address'
+
+interface DeferredAddress {
+  resolver: (address: Address) => void
+  rejecter: (error: Error) => void
+}
+
+let addressPromise: DeferredAddress[] = []
 
 /** 地址编辑Promise */
 export function getAddressPromise() {
-  let resolver
-  let rejecter
-  const nextPromise = new Promise((resolve, reject) => {
+  let resolver!: (address: Address) => void
+  let rejecter!: (error: Error) => void
+  const nextPromise = new Promise<Address>((resolve, reject) => {
     resolver = resolve
     rejecter = reject
   })
@@ -16,7 +22,7 @@ export function getAddressPromise() {
 }
 
 /** 用户保存了一个地址 */
-export function resolveAddress(address) {
+export function resolveAddress(address: Address) {
   const allAddress = [...addressPromise]
   addressPromise = []
 

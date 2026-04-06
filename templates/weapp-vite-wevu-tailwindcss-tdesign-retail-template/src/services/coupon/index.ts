@@ -1,31 +1,34 @@
-import type { CouponCardStatus } from '../../model/coupon'
+import type { Coupon, CouponCardStatus } from '../../model/coupon'
 import { config } from '../../config/index'
 import { genAddressList } from '../../model/address'
 import { getCoupon, getCouponList } from '../../model/coupon'
 import { delay } from '../_utils/delay'
 
-type CouponDetail = ReturnType<typeof getCoupon> & {
+type CouponDetail = Coupon & {
   useNotes?: string
   storeAdapt?: string
 }
 
+interface CouponDetailResult {
+  detail: CouponDetail
+  storeInfoList: ReturnType<typeof genAddressList>
+}
+
 /** 获取优惠券列表 */
-function mockFetchCoupon(status: CouponCardStatus) {
+function mockFetchCoupon(status: CouponCardStatus): Promise<Coupon[]> {
   return delay().then(() => getCouponList(status))
 }
 
 /** 获取优惠券列表 */
-export function fetchCouponList(status: CouponCardStatus = 'default') {
+export function fetchCouponList(status: CouponCardStatus = 'default'): Promise<Coupon[]> {
   if (config.useMock) {
     return mockFetchCoupon(status)
   }
-  return new Promise((resolve) => {
-    resolve('real api')
-  })
+  return Promise.resolve(getCouponList(status))
 }
 
 /** 获取优惠券 详情 */
-function mockFetchCouponDetail(id: number | string, status: CouponCardStatus) {
+function mockFetchCouponDetail(id: number | string, status: CouponCardStatus): Promise<CouponDetailResult> {
   return delay().then(() => {
     const detail: CouponDetail = getCoupon(Number(id), status)
     const result = {
@@ -60,11 +63,9 @@ function mockFetchCouponDetail(id: number | string, status: CouponCardStatus) {
 }
 
 /** 获取优惠券 详情 */
-export function fetchCouponDetail(id: number | string, status: CouponCardStatus = 'default') {
+export function fetchCouponDetail(id: number | string, status: CouponCardStatus = 'default'): Promise<CouponDetailResult> {
   if (config.useMock) {
     return mockFetchCouponDetail(id, status)
   }
-  return new Promise((resolve) => {
-    resolve('real api')
-  })
+  return mockFetchCouponDetail(id, status)
 }

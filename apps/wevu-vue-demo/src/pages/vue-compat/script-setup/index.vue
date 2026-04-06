@@ -3,6 +3,7 @@ import { computed, ref } from 'wevu'
 import NativeBadge from '../../../native/native-badge/index'
 import NativeMeterTs from '../../../native/native-meter-ts/index'
 import CompatAltPanel from '../components/CompatAltPanel.vue'
+import CompatEmitMatrix from '../components/CompatEmitMatrix.vue'
 import CompatPanel from '../components/CompatPanel.vue'
 import ModelInput from '../components/ModelInput.vue'
 
@@ -21,6 +22,7 @@ const nativeBadgeIndex = ref(0)
 const nativeMeterTones = ['neutral', 'success', 'danger'] as const
 const nativeMeterToneIndex = ref(0)
 const nativeMeterValue = ref(28)
+const emitMatrixRecords = ref<Array<Record<string, any>>>([])
 
 const nativeBadgeType = computed(() => {
   return nativeBadgeTypes[nativeBadgeIndex.value]
@@ -61,6 +63,132 @@ function increaseNativeMeterValue() {
 
 function resetNativeMeterValue() {
   nativeMeterValue.value = 28
+}
+
+function resetEmitMatrixRecords() {
+  emitMatrixRecords.value = []
+}
+
+function pushEmitMatrixRecord(label: string, payload: any) {
+  const baseRecord = {
+    label,
+    payloadType: payload == null
+      ? String(payload)
+      : Array.isArray(payload)
+        ? 'array'
+        : typeof payload,
+  }
+
+  if (Array.isArray(payload)) {
+    emitMatrixRecords.value = [
+      {
+        ...baseRecord,
+        first: payload[0],
+        second: payload[1],
+        thirdOk: payload[2]?.ok === true,
+        tupleLength: payload.length,
+      },
+      ...emitMatrixRecords.value,
+    ].slice(0, 12)
+    return
+  }
+
+  if (payload && typeof payload === 'object') {
+    emitMatrixRecords.value = [
+      {
+        ...baseRecord,
+        detailType: payload.detail == null ? String(payload.detail) : typeof payload.detail,
+        kind: payload.kind,
+        marker: payload.detail?.marker,
+        metaSource: payload.meta?.source,
+        nativeType: payload.type,
+        timeStampType: typeof payload.timeStamp,
+        title: payload.title,
+      },
+      ...emitMatrixRecords.value,
+    ].slice(0, 12)
+    return
+  }
+
+  emitMatrixRecords.value = [
+    {
+      ...baseRecord,
+      value: payload,
+    },
+    ...emitMatrixRecords.value,
+  ].slice(0, 12)
+}
+
+function onEmitMatrixPayload(payload: {
+  detail?: { marker?: string }
+  kind: string
+  meta: { source: string }
+  title: string
+}) {
+  pushEmitMatrixRecord('payload-direct', payload)
+}
+
+function onEmitMatrixPayloadEvent(payload: {
+  detail?: { marker?: string }
+  kind: string
+  meta: { source: string }
+  title: string
+}) {
+  pushEmitMatrixRecord('payload-explicit-$event', payload)
+}
+
+function onEmitMatrixPayloadTitle(title: string) {
+  pushEmitMatrixRecord('payload-inline-title', title)
+}
+
+function onEmitMatrixNative(payload: {
+  detail?: Record<string, any>
+  timeStamp?: number
+  type?: string
+}) {
+  pushEmitMatrixRecord('native-direct', payload)
+}
+
+function onEmitMatrixNativeEvent(payload: {
+  detail?: Record<string, any>
+  timeStamp?: number
+  type?: string
+}) {
+  pushEmitMatrixRecord('native-explicit-$event', payload)
+}
+
+function onEmitMatrixTuple(payload: [string, number, { ok: boolean }]) {
+  pushEmitMatrixRecord('tuple-direct', payload)
+}
+
+function onEmitMatrixTupleEvent(payload: [string, number, { ok: boolean }]) {
+  pushEmitMatrixRecord('tuple-explicit-$event', payload)
+}
+
+function onEmitMatrixEmpty(payload: undefined) {
+  pushEmitMatrixRecord('empty-direct', payload)
+}
+
+function onEmitMatrixEmptyEvent(payload: undefined) {
+  pushEmitMatrixRecord('empty-explicit-$event', payload)
+}
+
+function onEmitMatrixOptions(payload: {
+  detail?: { marker?: string }
+  kind: string
+  meta: { source: string }
+  title: string
+}) {
+  pushEmitMatrixRecord('options-direct', payload)
+}
+
+function onEmitMatrixOptionsEvent(payload: {
+  detail?: { marker?: string }
+  kind: string
+  meta: { source: string }
+  title: string
+}) {
+  pushEmitMatrixRecord('options-explicit-$event', payload)
 }
 </script>
 
@@ -182,6 +310,45 @@ function resetNativeMeterValue() {
       <text class="card-meta">
         说明：`component :is` + 跨文件 `.vue` 组件在当前 wevu 构建链下会触发缺省导出问题，此处改为 v-if/v-else 对照。
       </text>
+    </view>
+
+    <view class="section">
+      <text class="section-title">
+        emit / $event 观察矩阵
+      </text>
+      <button id="emit-matrix-reset" class="btn light" @tap="resetEmitMatrixRecords">
+        清空矩阵记录
+      </button>
+      <CompatEmitMatrix
+        prefix="emit-direct"
+        title="写法 A: direct handler"
+        @payload="onEmitMatrixPayload"
+        @native="onEmitMatrixNative"
+        @tuple="onEmitMatrixTuple"
+        @empty="onEmitMatrixEmpty"
+        @options="onEmitMatrixOptions"
+      />
+      <CompatEmitMatrix
+        prefix="emit-explicit"
+        title="写法 B: explicit $event"
+        @payload="onEmitMatrixPayloadEvent($event)"
+        @native="onEmitMatrixNativeEvent($event)"
+        @tuple="onEmitMatrixTupleEvent($event)"
+        @empty="onEmitMatrixEmptyEvent($event)"
+        @options="onEmitMatrixOptionsEvent($event)"
+      />
+      <CompatEmitMatrix
+        prefix="emit-inline"
+        title="写法 C: inline $event.title"
+        @payload="onEmitMatrixPayloadTitle($event.title)"
+      />
+      <view class="card-list">
+        <view v-for="(item, index) in emitMatrixRecords" :key="`emit-matrix-${index}`" class="card">
+          <text class="card-meta">
+            {{ JSON.stringify(item) }}
+          </text>
+        </view>
+      </view>
     </view>
 
     <view class="section">

@@ -2,7 +2,7 @@
   "miniprogramRoot": "dist/",
   "compileType": "miniprogram",
   "appid": "wxb3d842a4a7e3440d",
-  "libVersion": "latest",
+  "libVersion": "3.13.2",
   "setting": {
     "es6": true,
     "enhance": false,

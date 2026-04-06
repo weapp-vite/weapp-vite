@@ -1,16 +1,16 @@
-// @ts-nocheck
+import type { DispatchSupplementInvoiceResult, OrderCommitResult, SettleDetailParams, SettleDetailResult } from '../../model/order/orderConfirm'
 import { config } from '../../config/index'
 import { genSettleDetail } from '../../model/order/orderConfirm'
 import { mockIp, mockReqId } from '../../utils/mock'
 import { delay } from '../_utils/delay'
 
 /** 获取结算mock数据 */
-function mockFetchSettleDetail(params) {
+function mockFetchSettleDetail(params?: SettleDetailParams): Promise<SettleDetailResult> {
   return delay().then(() => genSettleDetail(params))
 }
 
 /** 提交mock订单 */
-function mockDispatchCommitPay(_params?: unknown) {
+function mockDispatchCommitPay(_params?: unknown): Promise<OrderCommitResult> {
   return delay().then(() => ({
     data: {
       isSuccess: true,
@@ -33,34 +33,28 @@ function mockDispatchCommitPay(_params?: unknown) {
 }
 
 /** 获取结算数据 */
-export function fetchSettleDetail(params) {
+export function fetchSettleDetail(params?: SettleDetailParams): Promise<SettleDetailResult> {
   if (config.useMock) {
     return mockFetchSettleDetail(params)
   }
 
-  return new Promise((resolve) => {
-    resolve('real api')
-  })
+  return Promise.resolve(genSettleDetail(params))
 }
 
 /* 提交订单 */
-export function dispatchCommitPay(params) {
+export function dispatchCommitPay(params?: unknown): Promise<OrderCommitResult> {
   if (config.useMock) {
     return mockDispatchCommitPay(params)
   }
 
-  return new Promise((resolve) => {
-    resolve('real api')
-  })
+  return mockDispatchCommitPay(params)
 }
 
 /** 开发票 */
-export function dispatchSupplementInvoice() {
+export function dispatchSupplementInvoice(_params?: unknown): Promise<DispatchSupplementInvoiceResult> {
   if (config.useMock) {
-    return delay()
+    return delay().then(() => ({ success: true }))
   }
 
-  return new Promise((resolve) => {
-    resolve('real api')
-  })
+  return Promise.resolve({ success: true })
 }

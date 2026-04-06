@@ -2,6 +2,17 @@ import { cdnBase, config } from '../../config/index'
 import { genSwiperImageList } from '../../model/swiper'
 import { delay } from '../_utils/delay'
 
+export interface HomeTabItem {
+  text: string
+  key: number
+}
+
+export interface HomeResponse {
+  swiper: string[]
+  tabList: HomeTabItem[]
+  activityImg: string
+}
+
 /** 获取首页数据 */
 function mockFetchHome() {
   return delay().then(() => {
@@ -38,7 +49,7 @@ function mockFetchHome() {
         },
       ],
       activityImg: `${cdnBase}/activity/banner.png`,
-    }
+    } satisfies HomeResponse
   })
 }
 
@@ -47,7 +58,11 @@ export function fetchHome() {
   if (config.useMock) {
     return mockFetchHome()
   }
-  return new Promise((resolve) => {
-    resolve('real api')
+  return new Promise<HomeResponse>((resolve) => {
+    resolve({
+      swiper: [],
+      tabList: [],
+      activityImg: '',
+    })
   })
 }

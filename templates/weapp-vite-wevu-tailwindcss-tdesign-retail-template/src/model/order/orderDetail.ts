@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
 const orderResps = [
@@ -1168,7 +1167,7 @@ const orderResps = [
   },
 ]
 
-export function genOrderDetail(params) {
+export function genOrderDetail(params: { parameter?: string } = {}) {
   const { parameter } = params
   const resp = orderResps.find(r => r.data.orderNo === parameter)
   return resp
@@ -1190,3 +1189,7 @@ export function genBusinessTime(_params?: unknown) {
   }
   return resp
 }
+
+export type OrderDetailResult = NonNullable<ReturnType<typeof genOrderDetail>>
+export type OrderDetailData = OrderDetailResult['data']
+export type BusinessTimeResult = ReturnType<typeof genBusinessTime>

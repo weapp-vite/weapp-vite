@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { Coupon, CouponCardStatus } from '../../../model/coupon'
 import { onLoad, ref } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { fetchCouponList } from '../../../services/coupon/index'
@@ -19,14 +19,14 @@ const list = ref([
     key: 2,
   },
 ])
-const couponList = ref<any[]>([])
+const couponList = ref<Coupon[]>([])
 
 function init() {
   void fetchList()
 }
 
 function fetchList(fetchStatus = status.value) {
-  let statusInFetch = ''
+  let statusInFetch: CouponCardStatus = 'default'
   switch (Number(fetchStatus)) {
     case 0:
       statusInFetch = 'default'
@@ -40,7 +40,7 @@ function fetchList(fetchStatus = status.value) {
     default:
       throw new Error(`unknown fetchStatus: ${statusInFetch}`)
   }
-  fetchCouponList(statusInFetch).then((nextCouponList: any[]) => {
+  fetchCouponList(statusInFetch).then((nextCouponList) => {
     couponList.value = Array.isArray(nextCouponList) ? nextCouponList : []
   })
 }
@@ -99,8 +99,8 @@ definePageJson({
     @change="tabChange"
   >
     <t-tab-panel
-      v-for="(tab, index) in list"
-      :key="key"
+      v-for="tab in list"
+      :key="tab.key"
       :label="tab.text"
       :value="tab.key"
     />
@@ -112,7 +112,7 @@ definePageJson({
       background="#fff"
       @refresh="onPullDownRefresh_"
     >
-      <view v-for="(item, index) in couponList" :key="key" class="coupon-list-item">
+      <view v-for="item in couponList" :key="item.key" class="coupon-list-item">
         <coupon-card :couponDTO="item" />
       </view>
     </t-pull-down-refresh>

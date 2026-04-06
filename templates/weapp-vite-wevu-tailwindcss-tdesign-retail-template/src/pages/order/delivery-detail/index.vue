@@ -1,60 +1,98 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
+import { onLoad, ref } from 'wevu'
 
-defineOptions({
-  data() {
-    return {
-      logisticsData: {
-        logisticsNo: '',
-        nodes: [],
-        company: '',
-        phoneNumber: '',
-      },
-      active: 0,
-    }
-  },
-  onLoad(query) {
-    let data
-    try {
-      data = JSON.parse(decodeURIComponent(query.data || '{}'))
-    }
-    catch (e) {
-      console.warn('物流节点数据解析失败', e)
-    }
-    if (Number(query.source) === 2) {
-      const service = {
-        company: data.logisticsCompanyName,
-        logisticsNo: data.logisticsNo,
-        nodes: data.nodes,
-      }
-      this.setData({
-        logisticsData: service,
-      })
-    }
-    else if (data) {
-      this.setData({
-        logisticsData: data,
-      })
-    }
-  },
-  async onLogisticsNoCopy() {
-    await wpi.setClipboardData({
-      data: this.data.logisticsData.logisticsNo,
-    })
-  },
-  async onCall() {
-    const {
-      phoneNumber,
-    } = this.data.logisticsData
-    await wpi.makePhoneCall({
-      phoneNumber,
-    })
-  },
+interface LogisticsNode {
+  title: string
+  desc: string
+  date: string
+  icon: string
+}
+
+interface LogisticsData {
+  logisticsNo: string
+  nodes: LogisticsNode[]
+  company: string
+  phoneNumber: string
+}
+
+interface ServiceLogisticsPayload {
+  logisticsCompanyName?: string
+  logisticsNo?: string
+  nodes?: LogisticsNode[]
+}
+
+interface QueryOptions {
+  data?: string
+  source?: string
+}
+
+const logisticsData = ref<LogisticsData>({
+  logisticsNo: '',
+  nodes: [],
+  company: '',
+  phoneNumber: '',
 })
+const active = ref(0)
 
 function isUrl(value: string) {
   return value.includes('http')
+}
+
+function normalizeLogisticsData(payload: unknown): LogisticsData {
+  if (!payload || typeof payload !== 'object') {
+    return {
+      logisticsNo: '',
+      nodes: [],
+      company: '',
+      phoneNumber: '',
+    }
+  }
+  const data = payload as Partial<LogisticsData>
+  return {
+    logisticsNo: data.logisticsNo ?? '',
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
+    company: data.company ?? '',
+    phoneNumber: data.phoneNumber ?? '',
+  }
+}
+
+onLoad((query: QueryOptions = {}) => {
+  let data: unknown = null
+  try {
+    data = JSON.parse(decodeURIComponent(query.data || '{}'))
+  }
+  catch (error) {
+    console.warn('物流节点数据解析失败', error)
+  }
+
+  if (Number(query.source) === 2) {
+    const service = data as ServiceLogisticsPayload | null
+    logisticsData.value = {
+      logisticsNo: service?.logisticsNo ?? '',
+      nodes: service?.nodes ?? [],
+      company: service?.logisticsCompanyName ?? '',
+      phoneNumber: '',
+    }
+    return
+  }
+
+  logisticsData.value = normalizeLogisticsData(data)
+})
+
+async function onLogisticsNoCopy() {
+  await wpi.setClipboardData({
+    data: logisticsData.value.logisticsNo,
+  })
+}
+
+async function onCall() {
+  if (!logisticsData.value.phoneNumber) {
+    return
+  }
+  await wpi.makePhoneCall({
+    phoneNumber: logisticsData.value.phoneNumber,
+  })
 }
 
 definePageJson({
@@ -88,7 +126,6 @@ definePageJson({
         </template>
         <template #right-icon>
           <view
-
             class="text-btn [margin-left:20rpx] [display:inline] [font-size:24rpx] [padding:0_15rpx] [border:1rpx_solid_#ddd] [border-radius:28rpx] [color:#333]"
             hover-class="text-btn--active [opacity:0.5]"
             @tap="onLogisticsNoCopy"
@@ -104,11 +141,10 @@ definePageJson({
         t-class-note="wr-cell__value"
         t-class-left="order-group__left"
         :bordered="false"
-        :note="logisticsData.company + (logisticsData.phoneNumber ? `-${logisticsData.phoneNumber}` : '')"
+        :note="`${logisticsData.company}${logisticsData.phoneNumber ? `-${logisticsData.phoneNumber}` : ''}`"
       >
         <template #right-icon>
           <view
-
             v-if="logisticsData.phoneNumber"
             class="text-btn [margin-left:20rpx] [display:inline] [font-size:24rpx] [padding:0_15rpx] [border:1rpx_solid_#ddd] [border-radius:28rpx] [color:#333]"
             hover-class="text-btn--active [opacity:0.5]"
@@ -139,7 +175,6 @@ definePageJson({
           <template #icon>
             <t-image
               class="cell-steps__imgWrapper [width:48rpx] [height:48rpx]"
-
               t-class="cell-steps__img [width:48rpx] [height:48rpx]"
               :src="item.icon"
             />
@@ -148,7 +183,6 @@ definePageJson({
         <block v-else>
           <template #icon>
             <t-icon
-
               size="32rpx"
               prefix="wr"
               :color="index === 0 ? '#ef5433' : '#bbb'"

@@ -1,109 +1,91 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
+import { onLoad, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
-// import { getCommentDetail } from '../../../../services/good/comments/fetchCommentDetail';
 
-defineOptions({
-  data() {
-    return {
-      serviceRateValue: 1,
-      goodRateValue: 1,
-      conveyRateValue: 1,
-      isAnonymous: false,
-      uploadFiles: [],
-      gridConfig: {
-        width: 218,
-        height: 218,
-        column: 3,
-      },
-      isAllowedSubmit: false,
-      imgUrl: '',
-      title: '',
-      goodsDetail: '',
-      imageProps: {
-        mode: 'aspectFit',
-      },
-    }
-  },
-  onLoad(options) {
-    this.setData({
-      imgUrl: options.imgUrl,
-      title: options.title,
-      goodsDetail: options.specs,
-    })
-  },
-  onRateChange(e) {
-    const {
-      value,
-    } = e?.detail
-    const item = e?.currentTarget?.dataset?.item
-    this.setData({
-      [item]: value,
-    }, () => {
-      this.updateButtonStatus()
-    })
-  },
-  onAnonymousChange(e) {
-    const status = !!e?.detail?.checked
-    this.setData({
-      isAnonymous: status,
-    })
-  },
-  handleSuccess(e) {
-    const {
-      files,
-    } = e.detail
-    this.setData({
-      uploadFiles: files,
-    })
-  },
-  handleRemove(e) {
-    const {
-      index,
-    } = e.detail
-    const {
-      uploadFiles,
-    } = this.data
-    uploadFiles.splice(index, 1)
-    this.setData({
-      uploadFiles,
-    })
-  },
-  onTextAreaChange(e) {
-    const value = e?.detail?.value
-    this.textAreaValue = value
-    this.updateButtonStatus()
-  },
-  updateButtonStatus() {
-    const {
-      serviceRateValue,
-      goodRateValue,
-      conveyRateValue,
-      isAllowedSubmit,
-    } = this.data
-    const {
-      textAreaValue,
-    } = this
-    const temp = serviceRateValue && goodRateValue && conveyRateValue && textAreaValue
-    if (temp !== isAllowedSubmit) {
-      this.setData({
-        isAllowedSubmit: temp,
-      })
-    }
-  },
-  async onSubmitBtnClick() {
-    const {
-      isAllowedSubmit,
-    } = this.data
-    if (!isAllowedSubmit) { return }
-    showToast({
-      context: this,
-      message: '评价提交成功',
-      icon: 'check-circle',
-    })
-    await wpi.navigateBack()
-  },
+interface UploadFileItem {
+  [key: string]: any
+}
+
+const nativeInstance = useNativeInstance()
+
+const serviceRateValue = ref(1)
+const goodRateValue = ref(1)
+const conveyRateValue = ref(1)
+const isAnonymous = ref(false)
+const uploadFiles = ref<UploadFileItem[]>([])
+const gridConfig = ref({
+  width: 218,
+  height: 218,
+  column: 3,
+})
+const isAllowedSubmit = ref(false)
+const imgUrl = ref('')
+const title = ref('')
+const goodsDetail = ref('')
+const imageProps = ref({
+  mode: 'aspectFit',
+})
+const textAreaValue = ref('')
+
+function updateButtonStatus() {
+  isAllowedSubmit.value = !!(serviceRateValue.value && goodRateValue.value && conveyRateValue.value && textAreaValue.value)
+}
+
+function onRateChange(e: any) {
+  const value = Number(e?.detail?.value ?? 1)
+  const item = e?.currentTarget?.dataset?.item
+  if (item === 'serviceRateValue') {
+    serviceRateValue.value = value
+  }
+  else if (item === 'goodRateValue') {
+    goodRateValue.value = value
+  }
+  else if (item === 'conveyRateValue') {
+    conveyRateValue.value = value
+  }
+  updateButtonStatus()
+}
+
+function onAnonymousChange(e: any) {
+  isAnonymous.value = !!e?.detail?.checked
+}
+
+function handleSuccess(e: any) {
+  uploadFiles.value = e?.detail?.files || []
+}
+
+function handleRemove(e: any) {
+  const index = Number(e?.detail?.index ?? -1)
+  if (index < 0) {
+    return
+  }
+  uploadFiles.value = uploadFiles.value.filter((_, fileIndex) => fileIndex !== index)
+}
+
+function onTextAreaChange(e: any) {
+  textAreaValue.value = String(e?.detail?.value ?? '')
+  updateButtonStatus()
+}
+
+async function onSubmitBtnClick() {
+  if (!isAllowedSubmit.value) {
+    return
+  }
+  showToast({
+    context: nativeInstance as any,
+    message: '评价提交成功',
+    icon: 'check-circle',
+  })
+  await wpi.navigateBack({
+    delta: 1,
+  })
+}
+
+onLoad((options: Record<string, string | undefined> = {}) => {
+  imgUrl.value = options.imgUrl || ''
+  title.value = options.title || ''
+  goodsDetail.value = options.specs || ''
 })
 
 definePageJson({
@@ -219,8 +201,9 @@ definePageJson({
     <t-button
       content="提交"
       block
+      theme="primary"
       shape="round"
-      :t-class="`submit-button${isAllowedSubmit ? '' : '-disabled'}`"
+      :disabled="!isAllowedSubmit"
       @tap="onSubmitBtnClick"
     />
   </view>

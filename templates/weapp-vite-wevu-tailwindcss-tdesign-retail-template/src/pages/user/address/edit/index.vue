@@ -1,382 +1,394 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { Address } from '../../../../model/address'
 import { wpi } from '@wevu/api'
+import { onLoad, onUnload, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { areaData } from '../../../../config/index'
 import { fetchDeliveryAddress } from '../../../../services/address/fetchAddress'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
 
-defineOptions({
-  options: {
-    multipleSlots: true,
+interface LabelItem {
+  id: number
+  name: string
+}
+
+interface AddressFormState {
+  labelIndex: number | null
+  addressId: string
+  addressTag: string
+  cityCode: string
+  cityName: string
+  countryCode: string
+  countryName: string
+  detailAddress: string
+  districtCode: string
+  districtName: string
+  isDefault: 0 | 1
+  name: string
+  phone: string
+  provinceCode: string
+  provinceName: string
+  isEdit: boolean
+  isOrderDetail: boolean
+  isOrderSure: boolean
+  latitude: string
+  longitude: string
+}
+
+interface InputChangeEvent {
+  currentTarget?: { dataset?: { item?: string } }
+  detail?: {
+    value?: string
+    selectedOptions?: Array<{ value: string, label: string }>
+  }
+}
+
+const nativeInstance = useNativeInstance()
+const RECEIVER_NAME_RE = /^[a-z\d\u4E00-\u9FA5]+$/i
+const RECEIVER_PHONE_RE = /^1(?:3\d|4[4-9]|5[0-35-9]|6[67]|7[0-8]|8\d|9\d)\d{8}$/
+
+const defaultLabels: LabelItem[] = [
+  {
+    id: 0,
+    name: '家',
   },
-  externalClasses: ['theme-wrapper-class'],
-  data() {
-    return {
-      locationState: {
-        labelIndex: null,
-        addressId: '',
-        addressTag: '',
-        cityCode: '',
-        cityName: '',
-        countryCode: '',
-        countryName: '',
-        detailAddress: '',
-        districtCode: '',
-        districtName: '',
-        isDefault: false,
-        name: '',
-        phone: '',
-        provinceCode: '',
-        provinceName: '',
-        isEdit: false,
-        isOrderDetail: false,
-        isOrderSure: false,
-      },
-      areaData,
-      labels: [{
-        id: 0,
-        name: '家',
-      }, {
-        id: 1,
-        name: '公司',
-      }],
-      areaPickerVisible: false,
-      submitActive: false,
-      visible: false,
-      labelValue: '',
-      columns: 3,
-    }
+  {
+    id: 1,
+    name: '公司',
   },
-  privateData: {
-    verifyTips: '',
-  },
-  onLoad(options) {
-    const {
-      id,
-    } = options
-    this.init(id)
-  },
-  onUnload() {
-    if (!this.hasSava) {
-      rejectAddress()
-    }
-  },
-  hasSava: false,
-  init(id) {
-    if (id) {
-      this.getAddressDetail(Number(id))
-    }
-  },
-  getAddressDetail(id) {
-    fetchDeliveryAddress(id).then((detail) => {
-      this.setData({
-        locationState: detail,
-      }, () => {
-        const {
-          isLegal,
-          tips,
-        } = this.onVerifyInputLegal()
-        this.setData({
-          submitActive: isLegal,
-        })
-        this.privateData.verifyTips = tips
-      })
-    })
-  },
-  onInputValue(e) {
-    const {
-      item,
-    } = e.currentTarget.dataset
-    if (item === 'address') {
-      const {
-        selectedOptions = [],
-      } = e.detail
-      this.setData({
-        'locationState.provinceCode': selectedOptions[0].value,
-        'locationState.provinceName': selectedOptions[0].label,
-        'locationState.cityName': selectedOptions[1].label,
-        'locationState.cityCode': selectedOptions[1].value,
-        'locationState.districtCode': selectedOptions[2].value,
-        'locationState.districtName': selectedOptions[2].label,
-        'areaPickerVisible': false,
-      }, () => {
-        const {
-          isLegal,
-          tips,
-        } = this.onVerifyInputLegal()
-        this.setData({
-          submitActive: isLegal,
-        })
-        this.privateData.verifyTips = tips
-      })
-    }
-    else {
-      const {
-        value = '',
-      } = e.detail
-      this.setData({
-        [`locationState.${item}`]: value,
-      }, () => {
-        const {
-          isLegal,
-          tips,
-        } = this.onVerifyInputLegal()
-        this.setData({
-          submitActive: isLegal,
-        })
-        this.privateData.verifyTips = tips
-      })
-    }
-  },
-  onPickArea() {
-    this.setData({
-      areaPickerVisible: true,
-    })
-  },
-  onPickLabels(e) {
-    const {
-      item,
-    } = e.currentTarget.dataset
-    const {
-      locationState: {
-        labelIndex = undefined,
-      },
-      labels = [],
-    } = this.data
-    let payload = {
-      labelIndex: item,
-      addressTag: labels[item].name,
-    }
-    if (item === labelIndex) {
-      payload = {
-        labelIndex: null,
-        addressTag: '',
-      }
-    }
-    this.setData({
-      'locationState.labelIndex': payload.labelIndex,
-    })
-    this.triggerEvent('triggerUpdateValue', payload)
-  },
-  addLabels() {
-    this.setData({
-      visible: true,
-    })
-  },
-  confirmHandle() {
-    const {
-      labels,
-      labelValue,
-    } = this.data
-    this.setData({
-      visible: false,
-      labels: [...labels, {
-        id: (labels.at(-1)?.id ?? 0) + 1,
-        name: labelValue,
-      }],
-      labelValue: '',
-    })
-  },
-  cancelHandle() {
-    this.setData({
-      visible: false,
-      labelValue: '',
-    })
-  },
-  onCheckDefaultAddress({
-    detail,
-  }) {
-    const {
-      value,
-    } = detail
-    this.setData({
-      'locationState.isDefault': value,
-    })
-  },
-  onVerifyInputLegal() {
-    const {
-      name,
-      phone,
-      detailAddress,
-      districtName,
-    } = this.data.locationState
-    const prefixPhoneReg = String(this.properties.phoneReg || '^1(?:3\\d|4[4-9]|5[0-35-9]|6[67]|7[0-8]|8\\d|9\\d)\\d{8}$')
-    const prefixNameReg = String(this.properties.nameReg || '^[a-zA-Z\\d\\u4e00-\\u9fa5]+$')
-    const nameRegExp = new RegExp(prefixNameReg)
-    const phoneRegExp = new RegExp(prefixPhoneReg)
-    if (!name || !name.trim()) {
-      return {
-        isLegal: false,
-        tips: '请填写收货人',
-      }
-    }
-    if (!nameRegExp.test(name)) {
-      return {
-        isLegal: false,
-        tips: '收货人仅支持输入中文、英文（区分大小写）、数字',
-      }
-    }
-    if (!phone || !phone.trim()) {
-      return {
-        isLegal: false,
-        tips: '请填写手机号',
-      }
-    }
-    if (!phoneRegExp.test(phone)) {
-      return {
-        isLegal: false,
-        tips: '请填写正确的手机号',
-      }
-    }
-    if (!districtName || !districtName.trim()) {
-      return {
-        isLegal: false,
-        tips: '请选择省市区信息',
-      }
-    }
-    if (!detailAddress || !detailAddress.trim()) {
-      return {
-        isLegal: false,
-        tips: '请完善详细地址',
-      }
-    }
-    if (detailAddress && detailAddress.trim().length > 50) {
-      return {
-        isLegal: false,
-        tips: '详细地址不能超过50个字符',
-      }
-    }
-    return {
-      isLegal: true,
-      tips: '添加成功',
-    }
-  },
-  async builtInSearch({
-    code,
-    name,
-  }) {
-    const settingRes = await wpi.getSetting()
-    if (settingRes.authSetting[code] !== false) {
+]
+
+function createInitialLocationState(): AddressFormState {
+  return {
+    labelIndex: null,
+    addressId: '',
+    addressTag: '',
+    cityCode: '',
+    cityName: '',
+    countryCode: '',
+    countryName: '',
+    detailAddress: '',
+    districtCode: '',
+    districtName: '',
+    isDefault: 0,
+    name: '',
+    phone: '',
+    provinceCode: '',
+    provinceName: '',
+    isEdit: false,
+    isOrderDetail: false,
+    isOrderSure: false,
+    latitude: '',
+    longitude: '',
+  }
+}
+
+const locationState = ref<AddressFormState>(createInitialLocationState())
+const labels = ref<LabelItem[]>([...defaultLabels])
+const areaPickerVisible = ref(false)
+const submitActive = ref(false)
+const visible = ref(false)
+const labelValue = ref('')
+const hasSaved = ref(false)
+const verifyTips = ref('')
+
+function updateSubmitState() {
+  const validationResult = onVerifyInputLegal()
+  submitActive.value = validationResult.isLegal
+  verifyTips.value = validationResult.tips
+}
+
+function syncLocationState(nextState: Partial<AddressFormState>) {
+  locationState.value = {
+    ...locationState.value,
+    ...nextState,
+  }
+  updateSubmitState()
+}
+
+function getLabelIndexByTag(addressTag: string) {
+  const index = labels.value.findIndex(label => label.name === addressTag)
+  return index >= 0 ? index : null
+}
+
+async function getAddressDetail(id: number) {
+  const detail = await fetchDeliveryAddress(id)
+  locationState.value = {
+    ...locationState.value,
+    ...detail,
+    labelIndex: getLabelIndexByTag(detail.addressTag),
+    isDefault: detail.isDefault,
+    latitude: detail.latitude,
+    longitude: detail.longitude,
+  }
+  updateSubmitState()
+}
+
+function init(id?: string) {
+  if (id) {
+    void getAddressDetail(Number(id))
+  }
+}
+
+function onInputValue(e: InputChangeEvent) {
+  const item = e.currentTarget?.dataset?.item
+  if (!item) {
+    return
+  }
+  if (item === 'address') {
+    const selectedOptions = e.detail?.selectedOptions ?? []
+    if (selectedOptions.length < 3) {
       return
     }
-    const modalRes = await wpi.showModal({
-      title: `获取${name}失败`,
-      content: `获取${name}失败，请在【右上角】-小程序【设置】项中，将【${name}】开启。`,
-      confirmText: '去设置',
-      confirmColor: '#FA550F',
-      cancelColor: '取消',
+    syncLocationState({
+      provinceCode: selectedOptions[0]?.value ?? '',
+      provinceName: selectedOptions[0]?.label ?? '',
+      cityName: selectedOptions[1]?.label ?? '',
+      cityCode: selectedOptions[1]?.value ?? '',
+      districtCode: selectedOptions[2]?.value ?? '',
+      districtName: selectedOptions[2]?.label ?? '',
     })
-    if (!modalRes.confirm) {
-      throw new Error(`用户取消开启${name}权限`)
-    }
-    const openSettingRes = await wpi.openSetting()
-    if (openSettingRes.authSetting[code] !== true) {
-      console.warn('用户未打开权限', name, code)
-      throw new Error(`用户未开启${name}权限`)
-    }
-  },
-  async onSearchAddress() {
-    await this.builtInSearch({
-      code: 'scope.userLocation',
-      name: '地址位置',
+    areaPickerVisible.value = false
+    return
+  }
+
+  const value = e.detail?.value ?? ''
+  syncLocationState({
+    [item]: value,
+  } as Partial<AddressFormState>)
+}
+
+function onPickArea() {
+  areaPickerVisible.value = true
+}
+
+function onPickLabels(e: { currentTarget?: { dataset?: { item?: number } } }) {
+  const item = e.currentTarget?.dataset?.item
+  if (item === undefined) {
+    return
+  }
+  if (item === locationState.value.labelIndex) {
+    syncLocationState({
+      labelIndex: null,
+      addressTag: '',
     })
-    try {
-      const res = await wpi.chooseLocation()
-      if (res.name) {
-        this.triggerEvent('addressParse', {
-          address: res.address,
-          name: res.name,
-          latitude: res.latitude,
-          longitude: res.longitude,
-        })
-      }
-      else {
-        showToast({
-          context: this,
-          message: '地点为空，请重新选择',
-          icon: '',
-          duration: 1000,
-        })
-      }
+    return
+  }
+  syncLocationState({
+    labelIndex: item,
+    addressTag: labels.value[item]?.name ?? '',
+  })
+}
+
+function addLabels() {
+  visible.value = true
+}
+
+function confirmHandle() {
+  const nextLabel = labelValue.value.trim()
+  if (!nextLabel) {
+    visible.value = false
+    labelValue.value = ''
+    return
+  }
+  labels.value = [
+    ...labels.value,
+    {
+      id: (labels.value.at(-1)?.id ?? 0) + 1,
+      name: nextLabel,
+    },
+  ]
+  visible.value = false
+  labelValue.value = ''
+}
+
+function cancelHandle() {
+  visible.value = false
+  labelValue.value = ''
+}
+
+function onCheckDefaultAddress({ detail }: { detail?: { value?: boolean | 0 | 1 } }) {
+  syncLocationState({
+    isDefault: detail?.value ? 1 : 0,
+  })
+}
+
+function onVerifyInputLegal() {
+  const {
+    name,
+    phone,
+    detailAddress,
+    districtName,
+  } = locationState.value
+  if (!name || !name.trim()) {
+    return {
+      isLegal: false,
+      tips: '请填写收货人',
     }
-    catch (res) {
-      console.warn(`wpi.chooseLocation fail: ${JSON.stringify(res)}`)
-      if (res.errMsg !== 'chooseLocation:fail cancel') {
-        showToast({
-          context: this,
-          message: '地点错误，请重新选择',
-          icon: '',
-          duration: 1000,
-        })
-      }
+  }
+  if (!RECEIVER_NAME_RE.test(name)) {
+    return {
+      isLegal: false,
+      tips: '收货人仅支持输入中文、英文（区分大小写）、数字',
     }
-  },
-  async formSubmit() {
-    const {
-      submitActive,
-    } = this.data
-    if (!submitActive) {
+  }
+  if (!phone || !phone.trim()) {
+    return {
+      isLegal: false,
+      tips: '请填写手机号',
+    }
+  }
+  if (!RECEIVER_PHONE_RE.test(phone)) {
+    return {
+      isLegal: false,
+      tips: '请填写正确的手机号',
+    }
+  }
+  if (!districtName || !districtName.trim()) {
+    return {
+      isLegal: false,
+      tips: '请选择省市区信息',
+    }
+  }
+  if (!detailAddress || !detailAddress.trim()) {
+    return {
+      isLegal: false,
+      tips: '请完善详细地址',
+    }
+  }
+  if (detailAddress.trim().length > 50) {
+    return {
+      isLegal: false,
+      tips: '详细地址不能超过50个字符',
+    }
+  }
+  return {
+    isLegal: true,
+    tips: '添加成功',
+  }
+}
+
+async function builtInSearch({ code, name }: { code: string, name: string }) {
+  const settingRes = await wpi.getSetting()
+  const authSetting = settingRes.authSetting as Record<string, boolean | undefined>
+  if (authSetting[code] !== false) {
+    return
+  }
+  const modalRes = await wpi.showModal({
+    title: `获取${name}失败`,
+    content: `获取${name}失败，请在【右上角】-小程序【设置】项中，将【${name}】开启。`,
+    confirmText: '去设置',
+    confirmColor: '#FA550F',
+    cancelColor: '取消',
+  })
+  if (!modalRes.confirm) {
+    throw new Error(`用户取消开启${name}权限`)
+  }
+  const openSettingRes = await wpi.openSetting()
+  const nextAuthSetting = openSettingRes.authSetting as Record<string, boolean | undefined>
+  if (nextAuthSetting[code] !== true) {
+    console.warn('用户未打开权限', name, code)
+    throw new Error(`用户未开启${name}权限`)
+  }
+}
+
+async function onSearchAddress() {
+  await builtInSearch({
+    code: 'scope.userLocation',
+    name: '地址位置',
+  })
+  try {
+    const res = await wpi.chooseLocation({} as any)
+    if (!res.name) {
       showToast({
-        context: this,
-        message: this.privateData.verifyTips,
+        context: nativeInstance as any,
+        message: '地点为空，请重新选择',
         icon: '',
         duration: 1000,
       })
       return
     }
-    const {
-      locationState,
-    } = this.data
-    this.hasSava = true
-    resolveAddress({
-      saasId: '88888888',
-      uid: `88888888205500`,
-      authToken: null,
-      id: locationState.addressId,
-      addressId: locationState.addressId,
-      phone: locationState.phone,
-      name: locationState.name,
-      countryName: locationState.countryName,
-      countryCode: locationState.countryCode,
-      provinceName: locationState.provinceName,
-      provinceCode: locationState.provinceCode,
-      cityName: locationState.cityName,
-      cityCode: locationState.cityCode,
-      districtName: locationState.districtName,
-      districtCode: locationState.districtCode,
-      detailAddress: locationState.detailAddress,
-      isDefault: locationState.isDefault === 1 ? 1 : 0,
-      addressTag: locationState.addressTag,
-      latitude: locationState.latitude,
-      longitude: locationState.longitude,
-      storeId: null,
+    syncLocationState({
+      detailAddress: res.address || res.name,
+      latitude: String(res.latitude ?? ''),
+      longitude: String(res.longitude ?? ''),
     })
-    await wpi.navigateBack({
-      delta: 1,
-    })
-  },
-  getWeixinAddress(e) {
-    const {
-      locationState,
-    } = this.data
-    const weixinAddress = e.detail
-    this.setData({
-      locationState: {
-        ...locationState,
-        ...weixinAddress,
-      },
-    }, () => {
-      const {
-        isLegal,
-        tips,
-      } = this.onVerifyInputLegal()
-      this.setData({
-        submitActive: isLegal,
+  }
+  catch (error: any) {
+    console.warn(`wpi.chooseLocation fail: ${JSON.stringify(error)}`)
+    if (error?.errMsg !== 'chooseLocation:fail cancel') {
+      showToast({
+        context: nativeInstance as any,
+        message: '地点错误，请重新选择',
+        icon: '',
+        duration: 1000,
       })
-      this.privateData.verifyTips = tips
+    }
+  }
+}
+
+async function formSubmit() {
+  if (!submitActive.value) {
+    showToast({
+      context: nativeInstance as any,
+      message: verifyTips.value,
+      icon: '',
+      duration: 1000,
     })
-  },
+    return
+  }
+
+  hasSaved.value = true
+  const currentState = locationState.value
+  resolveAddress({
+    saasId: '88888888',
+    uid: '88888888205500',
+    authToken: null,
+    id: currentState.addressId,
+    addressId: currentState.addressId,
+    phone: currentState.phone,
+    phoneNumber: currentState.phone,
+    name: currentState.name,
+    countryName: currentState.countryName,
+    countryCode: currentState.countryCode,
+    provinceName: currentState.provinceName,
+    provinceCode: currentState.provinceCode,
+    cityName: currentState.cityName,
+    cityCode: currentState.cityCode,
+    districtName: currentState.districtName,
+    districtCode: currentState.districtCode,
+    detailAddress: currentState.detailAddress,
+    address: `${currentState.provinceName}${currentState.cityName}${currentState.districtName}${currentState.detailAddress}`,
+    isDefault: currentState.isDefault,
+    addressTag: currentState.addressTag,
+    tag: currentState.addressTag,
+    latitude: currentState.latitude,
+    longitude: currentState.longitude,
+    storeId: null,
+  })
+  await wpi.navigateBack({
+    delta: 1,
+  })
+}
+
+function getWeixinAddress(e: { detail?: Partial<Address> }) {
+  syncLocationState({
+    ...e.detail,
+    labelIndex: getLabelIndexByTag(e.detail?.addressTag ?? ''),
+    isDefault: e.detail?.isDefault ?? locationState.value.isDefault,
+    latitude: e.detail?.latitude ?? locationState.value.latitude,
+    longitude: e.detail?.longitude ?? locationState.value.longitude,
+  })
+}
+
+onLoad((options: { id?: string } = {}) => {
+  init(options.id)
+})
+
+onUnload(() => {
+  if (!hasSaved.value) {
+    rejectAddress()
+  }
 })
 
 definePageJson({
@@ -415,7 +427,6 @@ definePageJson({
             <template #note>
               <t-input
                 class="t-input"
-
                 t-class="field-text"
                 borderless
                 data-item="name"
@@ -430,7 +441,6 @@ definePageJson({
           <t-cell class="form-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" t-class-title="t-cell-title" title="手机号">
             <template #note>
               <t-input
-
                 class="t-input"
                 t-class="field-text"
                 borderless
@@ -446,7 +456,6 @@ definePageJson({
           <t-cell class="form-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" t-class-title="t-cell-title" title="地区">
             <template #note>
               <t-input
-
                 class="t-input"
                 t-class="field-text"
                 borderless
@@ -507,7 +516,6 @@ definePageJson({
             <template #note>
               <t-switch
                 :value="locationState.isDefault"
-
                 :colors="['#0ABF5B', '#c6c6c6']"
                 @change="onCheckDefaultAddress"
               />

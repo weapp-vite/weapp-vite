@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { HomeResponse } from '../../services/home/home'
 import { wpi } from '@wevu/api'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
@@ -44,7 +44,7 @@ async function loadHomePage() {
   await wpi.stopPullDownRefresh()
   pageLoading.value = true
   try {
-    const { swiper, tabList: nextTabList } = await fetchHome()
+    const { swiper, tabList: nextTabList } = await fetchHome() as HomeResponse
     tabList.value = Array.isArray(nextTabList) ? nextTabList : []
     imgSrcs.value = Array.isArray(swiper) ? swiper : []
     await loadGoodsList(true)

@@ -1,54 +1,34 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
+import { onLoad, ref } from 'wevu'
 
-defineOptions({
-  data() {
-    return {
-      totalPaid: 0,
-      orderNo: '',
-      groupId: '',
-      groupon: null,
-      spu: null,
-      adUrl: '',
-    }
-  },
-  onLoad(options) {
-    const {
-      totalPaid = 0,
-      orderNo = '',
-      groupId = '',
-    } = options
-    this.setData({
-      totalPaid,
-      orderNo,
-      groupId,
+const totalPaid = ref<number | string>(0)
+const orderNo = ref('')
+const groupId = ref('')
+
+async function onTapReturn(e: { currentTarget?: { dataset?: { type?: string } } }) {
+  const target = e.currentTarget?.dataset?.type
+  if (target === 'home') {
+    await wpi.switchTab({
+      url: '/pages/home/home',
     })
-  },
-  async onTapReturn(e) {
-    const target = e.currentTarget.dataset.type
-    const {
-      orderNo,
-    } = this.data
-    if (target === 'home') {
-      await wpi.switchTab({
-        url: '/pages/home/home',
-      })
-    }
-    else if (target === 'orderList') {
-      await wpi.navigateTo({
-        url: `/pages/order/order-list/index?orderNo=${orderNo}`,
-      })
-    }
-    else if (target === 'order') {
-      await wpi.navigateTo({
-        url: `/pages/order/order-detail/index?orderNo=${orderNo}`,
-      })
-    }
-  },
-  async navBackHandle() {
-    await wpi.navigateBack()
-  },
+  }
+  else if (target === 'orderList') {
+    await wpi.navigateTo({
+      url: `/pages/order/order-list/index?orderNo=${orderNo.value}`,
+    })
+  }
+  else if (target === 'order') {
+    await wpi.navigateTo({
+      url: `/pages/order/order-detail/index?orderNo=${orderNo.value}`,
+    })
+  }
+}
+
+onLoad((options: { totalPaid?: string | number, orderNo?: string, groupId?: string } = {}) => {
+  totalPaid.value = options.totalPaid ?? 0
+  orderNo.value = options.orderNo || ''
+  groupId.value = options.groupId || ''
 })
 
 definePageJson({

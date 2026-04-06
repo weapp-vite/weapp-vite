@@ -1,6 +1,10 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { ref, toRefs, watch } from 'wevu'
+
+interface GoodsListItem {
+  currency?: string
+  [key: string]: any
+}
 
 defineOptions({
   setupLifecycle: 'created',
@@ -8,7 +12,7 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<{
-  goodsList?: unknown[]
+  goodsList?: GoodsListItem[]
   id?: string
   thresholds?: unknown[]
 }>(), {
