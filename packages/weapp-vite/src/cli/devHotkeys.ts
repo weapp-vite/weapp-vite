@@ -1,11 +1,11 @@
-import type { MiniProgramLike, ScreenshotResult } from 'weapp-ide-cli'
+import type { ScreenshotResult } from 'weapp-ide-cli'
 import type { WeappViteMcpServerHandle } from '../mcp'
 import type { WeappMcpConfig } from '../types'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
-import { connectMiniProgram, takeScreenshot } from 'weapp-ide-cli'
+import { closeSharedMiniProgram, takeScreenshot } from 'weapp-ide-cli'
 import packageJson from '../../package.json'
 import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
@@ -13,7 +13,6 @@ import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
 export interface StartDevHotkeysOptions {
   cwd: string
   mcpConfig?: boolean | WeappMcpConfig
-  miniProgram?: MiniProgramLike
   platform?: string
   projectPath: string
   silentStartupHint?: boolean
@@ -183,8 +182,8 @@ export async function runScreenshotAction(options: StartDevHotkeysOptions) {
   logger.info(`[dev action] 正在截图当前页面，输出到 ${colors.cyan(formatLogPath(options.cwd, outputPath))}`)
   const result = await takeScreenshot({
     fullPage: true,
-    miniProgram: options.miniProgram,
     projectPath: options.projectPath,
+    sharedSession: true,
     outputPath,
     timeout: DEFAULT_SCREENSHOT_TIMEOUT,
   })
@@ -210,7 +209,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let closed = false
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
-  let miniProgramSession = options.miniProgram
   let onData: ((chunk: string | Uint8Array) => void) | undefined
   let onSigcont: (() => void) | undefined
   let currentAction: string | undefined
@@ -265,8 +263,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
         logger.warn(`[dev action] MCP 服务关闭失败：${error instanceof Error ? error.message : String(error)}`)
       })
     }
-    miniProgramSession?.disconnect()
-    miniProgramSession = undefined
+    void closeSharedMiniProgram(options.projectPath).catch((error) => {
+      logger.warn(`[dev action] DevTools 会话关闭失败：${error instanceof Error ? error.message : String(error)}`)
+    })
   }
 
   const printPanel = (message: string, force = false) => {
@@ -304,35 +303,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     lastRenderedPanel = ''
     detachTerminal()
     forwardSigtstp()
-  }
-
-  const resetMiniProgramSession = () => {
-    miniProgramSession?.disconnect()
-    miniProgramSession = undefined
-  }
-
-  const withMiniProgramSession = async <T>(runner: (miniProgram: MiniProgramLike) => Promise<T>) => {
-    let retried = false
-
-    while (true) {
-      try {
-        if (!miniProgramSession) {
-          miniProgramSession = await connectMiniProgram({
-            projectPath: options.projectPath,
-            timeout: DEFAULT_SCREENSHOT_TIMEOUT,
-          })
-        }
-        return await runner(miniProgramSession)
-      }
-      catch (error) {
-        resetMiniProgramSession()
-        if (retried) {
-          throw error
-        }
-        retried = true
-        logger.warn('[dev action] 当前 DevTools 会话不可用，正在重新连接后重试一次截图。')
-      }
-    }
   }
 
   const toggleMcp = async () => {
@@ -418,12 +388,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
     if (normalized === 's') {
       runAction('截图', '正在截图当前页面', async () => {
-        const screenshotPath = await withMiniProgramSession(async (miniProgram) => {
-          return await runScreenshotAction({
-            ...options,
-            miniProgram,
-          })
-        })
+        const screenshotPath = await runScreenshotAction(options)
         return `截图已保存到 ${screenshotPath}`
       })
       return

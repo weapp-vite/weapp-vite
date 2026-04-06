@@ -49,4 +49,32 @@ describe('automator session diagnostics', () => {
     expect(loggerMock.error).toHaveBeenCalledWith('微信开发者工具在协议调用 App.getCurrentPage 上超时，未按预期返回结果。')
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('当前 DevTools 版本'))
   })
+
+  it('reuses shared miniProgram sessions for the same project path', async () => {
+    const disconnectMock = vi.fn()
+    launchAutomatorMock.mockResolvedValue({
+      disconnect: disconnectMock,
+    })
+    const {
+      acquireSharedMiniProgram,
+      closeSharedMiniProgram,
+      getSharedMiniProgramSessionCount,
+      releaseSharedMiniProgram,
+    } = await import('../src/cli/automator-session')
+
+    const first = await acquireSharedMiniProgram({ projectPath: '/workspace/project', sharedSession: true })
+    const second = await acquireSharedMiniProgram({ projectPath: '/workspace/project', sharedSession: true })
+
+    expect(first).toBe(second)
+    expect(launchAutomatorMock).toHaveBeenCalledTimes(1)
+    expect(getSharedMiniProgramSessionCount()).toBe(1)
+
+    releaseSharedMiniProgram('/workspace/project')
+    releaseSharedMiniProgram('/workspace/project')
+    expect(getSharedMiniProgramSessionCount()).toBe(1)
+
+    await closeSharedMiniProgram('/workspace/project')
+    expect(disconnectMock).toHaveBeenCalledTimes(1)
+    expect(getSharedMiniProgramSessionCount()).toBe(0)
+  })
 })
