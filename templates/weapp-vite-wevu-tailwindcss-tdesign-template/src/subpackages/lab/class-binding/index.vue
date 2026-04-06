@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
+import { resolveBooleanChangeValue } from '@/utils/changeEvent'
 
 definePageJson({
   navigationBarTitleText: 'Class 绑定',
@@ -13,40 +14,20 @@ const hasError = ref(false)
 const isRound = ref(false)
 const isGhost = ref(false)
 
-function resolveSwitchValue(event: unknown, fallback: boolean) {
-  if (typeof event === 'boolean') {
-    return event
-  }
-  if (event && typeof event === 'object') {
-    const payload = event as Record<string, any>
-    const detail = payload.detail
-    if (typeof detail === 'boolean') {
-      return detail
-    }
-    if (detail && typeof detail === 'object' && typeof detail.value === 'boolean') {
-      return detail.value
-    }
-    if (typeof payload.value === 'boolean') {
-      return payload.value
-    }
-  }
-  return fallback
-}
-
 function onActiveChange(event: unknown) {
-  isActive.value = resolveSwitchValue(event, !isActive.value)
+  isActive.value = resolveBooleanChangeValue(event, !isActive.value)
 }
 
 function onErrorChange(event: unknown) {
-  hasError.value = resolveSwitchValue(event, !hasError.value)
+  hasError.value = resolveBooleanChangeValue(event, !hasError.value)
 }
 
 function onRoundChange(event: unknown) {
-  isRound.value = resolveSwitchValue(event, !isRound.value)
+  isRound.value = resolveBooleanChangeValue(event, !isRound.value)
 }
 
 function onGhostChange(event: unknown) {
-  isGhost.value = resolveSwitchValue(event, !isGhost.value)
+  isGhost.value = resolveBooleanChangeValue(event, !isGhost.value)
 }
 
 const classObject = reactive({

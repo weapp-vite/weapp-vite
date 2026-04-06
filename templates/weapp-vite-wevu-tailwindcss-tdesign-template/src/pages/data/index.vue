@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'wevu'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import SectionTitle from '@/components/SectionTitle/index.vue'
 import TrendCard from '@/components/TrendCard/index.vue'
+import { resolveStringChangeValue } from '@/utils/changeEvent'
 
 definePageJson({
   navigationBarTitleText: '数据',
@@ -18,26 +19,6 @@ const ranges = [
 
 const activeRange = ref('week')
 const refreshTick = ref(0)
-
-function resolveRangeValue(event: unknown, fallback: string) {
-  if (typeof event === 'string') {
-    return event
-  }
-  if (event && typeof event === 'object') {
-    const payload = event as Record<string, any>
-    if (typeof payload.value === 'string') {
-      return payload.value
-    }
-    const detail = payload.detail
-    if (typeof detail === 'string') {
-      return detail
-    }
-    if (detail && typeof detail === 'object' && typeof detail.value === 'string') {
-      return detail.value
-    }
-  }
-  return fallback
-}
 
 const kpiItems = computed(() => {
   const scale = activeRange.value === 'today' ? 1 : activeRange.value === 'month' ? 4 : 2
@@ -112,7 +93,7 @@ const reportLines = computed(() => [
 ])
 
 function onRangeChange(event: unknown) {
-  activeRange.value = resolveRangeValue(event, activeRange.value)
+  activeRange.value = resolveStringChangeValue(event, activeRange.value)
 }
 
 watch(activeRange, () => {

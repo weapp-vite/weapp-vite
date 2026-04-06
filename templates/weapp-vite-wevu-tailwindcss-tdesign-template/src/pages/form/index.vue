@@ -9,6 +9,7 @@ import ResultCard from '@/components/ResultCard/index.vue'
 import SectionTitle from '@/components/SectionTitle/index.vue'
 import { useFormBinder } from '@/hooks/useFormBinder'
 import { useToast } from '@/hooks/useToast'
+import { resolveBooleanChangeValue } from '@/utils/changeEvent'
 
 definePageJson({
   navigationBarTitleText: '表单',
@@ -79,25 +80,6 @@ const summaryRows = computed(() => [
   { label: '风险级别', value: riskLevel.value },
 ])
 
-function resolveSwitchValue(event: unknown, fallback: boolean) {
-  if (typeof event === 'boolean') {
-    return event
-  }
-  if (event && typeof event === 'object') {
-    const payload = event as Record<string, any>
-    if (typeof payload.detail === 'boolean') {
-      return payload.detail
-    }
-    if (payload.detail && typeof payload.detail === 'object' && typeof payload.detail.value === 'boolean') {
-      return payload.detail.value
-    }
-    if (typeof payload.value === 'boolean') {
-      return payload.value
-    }
-  }
-  return fallback
-}
-
 watch(
   () => formState.urgent,
   (value) => {
@@ -127,7 +109,7 @@ function toggleUrgent() {
 }
 
 function handleUrgentChange(event: unknown) {
-  setUrgent(resolveSwitchValue(event, !formState.urgent))
+  setUrgent(resolveBooleanChangeValue(event, !formState.urgent))
 }
 
 function stopUrgentTap() {

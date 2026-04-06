@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
+import { resolveStringChangeValue } from '@/utils/changeEvent'
 
 const props = withDefaults(defineProps<{
   query?: string
@@ -28,8 +29,8 @@ interface FilterItem {
 
 const filterItems = computed(() => (Array.isArray(props.filters) ? props.filters : []))
 
-function onQueryChange(e: WechatMiniprogram.CustomEvent<{ value: string }>) {
-  emit('update:query', e.detail.value)
+function onQueryChange(event: unknown) {
+  emit('update:query', resolveStringChangeValue(event, props.query))
 }
 
 function onSelect(value: string) {
