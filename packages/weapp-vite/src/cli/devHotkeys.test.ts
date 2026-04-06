@@ -188,9 +188,10 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('READY  waiting for actions...'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('press h to show help, press q to quit'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Dev Usage'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('重新显示这份帮助'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Watch Usage'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Process'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Help'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('press h'))
   })
 
   it('runs screenshot action and writes logs', async () => {

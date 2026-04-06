@@ -87,16 +87,21 @@ function formatFooterLine(state: DevHotkeyState) {
  */
 export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
   const key = (value: string) => colors.bold(colors.green(value))
-  const commandRows = [
+  const actionRows = [
     { key: key('s'), description: '截图当前页面并保存到本地' },
     { key: key('m'), description: '开关 MCP 服务' },
+  ]
+  const processRows = [
     { key: key('q'), description: '退出当前 dev' },
     { key: key('Ctrl+C'), description: '强制中断当前 dev' },
     { key: key('Ctrl+Z'), description: '暂时挂起当前 dev，恢复终端控制' },
   ]
-  const keyColumnWidth = Math.max(...commandRows.map(row => row.key.length))
-  const formattedRows = commandRows.map(({ key, description }) =>
-    `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
+  const helpRows = [
+    { key: key('h'), description: '重新显示这份帮助' },
+  ]
+  const keyColumnWidth = Math.max(...[...actionRows, ...processRows, ...helpRows].map(row => row.key.length))
+  const formatRows = (rows: { key: string, description: string }[]) => rows.map(({ key, description }) =>
+    `press ${key.padEnd(keyColumnWidth)}  ${description}`,
   )
   return [
     '',
@@ -107,11 +112,14 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     formatFooterLine(state),
     'press h to show help, press q to quit',
     '',
-    'Dev Usage',
-    ...formattedRows,
+    'Watch Usage',
+    ...formatRows(actionRows),
     '',
-    '帮助',
-    `按 ${key('h')} 重新显示这份帮助，按 ${key('q')} 退出当前 dev`,
+    'Process',
+    ...formatRows(processRows),
+    '',
+    'Help',
+    ...formatRows(helpRows),
   ].join('\n')
 }
 
