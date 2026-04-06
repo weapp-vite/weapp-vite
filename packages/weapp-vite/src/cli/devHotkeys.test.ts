@@ -323,6 +323,39 @@ describe('devHotkeys', () => {
     await flushMicrotasks(10)
   })
 
+  it('warns with the current running action when pressing another hotkey while busy', async () => {
+    vi.doMock('node:process', () => ({
+      default: {
+        kill: killMock,
+        pid: 1234,
+        stdin,
+      },
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+    let resolveScreenshot: ((value: { path: string }) => void) | undefined
+    takeScreenshotMock.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveScreenshot = resolve as (value: { path: string }) => void
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('keypress', '', { name: 's' })
+    stdin.emit('keypress', '', { name: 'm' })
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('[dev action] 当前正在截图当前页面，请稍后再试。')
+
+    resolveScreenshot?.({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
+    await flushMicrotasks(10)
+  })
+
   it('restores terminal and forwards sigint on ctrl+c', async () => {
     vi.doMock('node:process', () => ({
       default: {

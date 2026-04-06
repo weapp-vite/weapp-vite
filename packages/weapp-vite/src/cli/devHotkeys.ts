@@ -29,6 +29,7 @@ interface DevHotkeyState {
 
 const DEV_SCREENSHOT_DIR = '.tmp/weapp-vite-dev-screenshots'
 const DEFAULT_SCREENSHOT_TIMEOUT = 30_000
+const REG_PENDING_PREFIX = /^正在/
 
 function formatMcpUrl(host: string, port: number, endpoint: string) {
   return `http://${host}:${port}${endpoint}`
@@ -233,7 +234,8 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   const runAction = (label: string, pendingLabel: string, action: () => Promise<string | undefined>) => {
     if (running) {
-      logger.warn('[dev action] 当前已有命令在执行，请等待完成后再试。')
+      const current = currentAction ?? '已有命令'
+      logger.warn(`[dev action] 当前正在${current.replace(REG_PENDING_PREFIX, '')}，请稍后再试。`)
       return
     }
 
