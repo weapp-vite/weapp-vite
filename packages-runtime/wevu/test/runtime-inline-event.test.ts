@@ -122,6 +122,46 @@ describe('runtime: inline event handler', () => {
     expect(result).toBe('Alt Script Setup 面板')
   })
 
+  it('passes undefined when component event marker is set but detail is undefined', () => {
+    const handle = vi.fn((payload: any) => payload)
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        handle,
+      },
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      __wevu: {
+        proxy: {
+          handle,
+        },
+      },
+    }
+    const event = {
+      type: 'empty',
+      timeStamp: 123,
+      detail: undefined,
+      currentTarget: {
+        dataset: {
+          wvHandler: 'handle',
+          wvArgs: ['$event'],
+          wvEventDetail: '1',
+        },
+      },
+    }
+
+    const result = opts.methods.__weapp_vite_inline.call(inst, event)
+    expect(handle).toHaveBeenCalledWith(undefined)
+    expect(result).toBeUndefined()
+  })
+
   it('decodes WXML entities in wvArgs before JSON parse', () => {
     const handle = vi.fn((msg: string, evt: any) => ({ msg, marker: evt.marker }))
 
