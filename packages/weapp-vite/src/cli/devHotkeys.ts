@@ -39,6 +39,10 @@ function forwardSigint() {
   process.kill(process.pid, 'SIGINT')
 }
 
+function forwardSigtstp() {
+  process.kill(process.pid, 'SIGTSTP')
+}
+
 /**
  * @description 生成带状态的开发态快捷键帮助文本。
  */
@@ -49,6 +53,7 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     { key: key('m'), description: '开关 MCP 服务' },
     { key: key('q'), description: '退出当前 dev' },
     { key: key('Ctrl+C'), description: '强制中断当前 dev' },
+    { key: key('Ctrl+Z'), description: '暂时挂起当前 dev，恢复终端控制' },
   ]
   const keyColumnWidth = Math.max(...commandRows.map(row => row.key.length))
   const formattedRows = commandRows.map(({ key, description }) =>
@@ -169,6 +174,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
   let onKeypress: (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => void
+  let onSigcont: (() => void) | undefined
   let currentAction: string | undefined
   let lastAction: string | undefined
   const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
@@ -178,16 +184,31 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     mcpEnabled: resolvedMcp.enabled,
     mcpRunning: Boolean(mcpHandle?.close),
   })
+  const detachTerminal = () => {
+    if (hasSetRawMode) {
+      process.stdin.setRawMode(false)
+    }
+    process.stdin.pause()
+  }
+  const attachTerminal = () => {
+    if (closed) {
+      return
+    }
+    if (hasSetRawMode) {
+      process.stdin.setRawMode(true)
+    }
+    process.stdin.resume()
+  }
   const close = () => {
     if (closed) {
       return
     }
     closed = true
     process.stdin.off('keypress', onKeypress)
-    if (hasSetRawMode) {
-      process.stdin.setRawMode(false)
+    if (onSigcont) {
+      process.off('SIGCONT', onSigcont)
     }
-    process.stdin.pause()
+    detachTerminal()
     if (mcpHandle?.close) {
       void mcpHandle.close().catch((error) => {
         logger.warn(`[dev action] MCP 服务关闭失败：${error instanceof Error ? error.message : String(error)}`)
@@ -201,6 +222,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   const printHint = () => {
     logger.info(formatDevHotkeyHintWithState(getState()))
+  }
+
+  const suspend = () => {
+    detachTerminal()
+    forwardSigtstp()
   }
 
   const toggleMcp = async () => {
@@ -271,6 +297,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       return
     }
 
+    if (key.ctrl && key.name === 'z') {
+      suspend()
+      return
+    }
+
     if (key.name === 'q') {
       close()
       forwardSigint()
@@ -299,6 +330,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   }
 
   process.stdin.on('keypress', onKeypress)
+  onSigcont = () => {
+    attachTerminal()
+    printHint()
+  }
+  process.on('SIGCONT', onSigcont)
   printHint()
   if (resolvedMcp.enabled && resolvedMcp.autoStart) {
     runAction('MCP 自动启动', '正在启动 MCP 服务', async () => {

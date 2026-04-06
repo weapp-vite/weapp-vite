@@ -19,6 +19,17 @@ class FakeStdin extends EventEmitter {
   pause = vi.fn()
 }
 
+class FakeProcess extends EventEmitter {
+  kill = vi.fn()
+  pid = 1234
+  stdin: FakeStdin
+
+  constructor(stdin: FakeStdin) {
+    super()
+    this.stdin = stdin
+  }
+}
+
 async function flushMicrotasks(times = 4) {
   for (let index = 0; index < times; index++) {
     await Promise.resolve()
@@ -68,14 +79,14 @@ vi.mock('../logger', () => ({
 
 describe('devHotkeys', () => {
   let stdin: FakeStdin
-  let killMock: ReturnType<typeof vi.fn>
+  let fakeProcess: FakeProcess
 
   beforeEach(() => {
     vi.resetModules()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-06T10:11:12.345Z'))
     stdin = new FakeStdin()
-    killMock = vi.fn()
+    fakeProcess = new FakeProcess(stdin)
     mkdirMock.mockReset()
     mkdirMock.mockResolvedValue(undefined)
     closeMcpMock.mockReset()
@@ -100,11 +111,7 @@ describe('devHotkeys', () => {
 
   it('starts hotkeys in weapp tty mode', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -130,11 +137,7 @@ describe('devHotkeys', () => {
 
   it('prints full help on h hotkey', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -159,11 +162,7 @@ describe('devHotkeys', () => {
 
   it('runs screenshot action and writes logs', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -188,11 +187,7 @@ describe('devHotkeys', () => {
 
   it('skips hotkeys for non-weapp platforms', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -212,11 +207,7 @@ describe('devHotkeys', () => {
 
   it('toggles mcp service with hotkey', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -259,11 +250,7 @@ describe('devHotkeys', () => {
 
   it('shows screenshot summary in hint after screenshot action', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -289,11 +276,7 @@ describe('devHotkeys', () => {
 
   it('shows running action in full help when action is in progress', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -325,11 +308,7 @@ describe('devHotkeys', () => {
 
   it('warns with the current running action when pressing another hotkey while busy', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -358,11 +337,7 @@ describe('devHotkeys', () => {
 
   it('restores terminal and forwards sigint on ctrl+c', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -380,16 +355,46 @@ describe('devHotkeys', () => {
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
     expect(stdin.pause).toHaveBeenCalled()
-    expect(killMock).toHaveBeenCalledWith(1234, 'SIGINT')
+    expect(fakeProcess.kill).toHaveBeenCalledWith(1234, 'SIGINT')
+  })
+
+  it('temporarily restores terminal and forwards sigtstp on ctrl+z, then reattaches on sigcont', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.setRawMode.mockClear()
+    stdin.pause.mockClear()
+    stdin.resume.mockClear()
+
+    stdin.emit('keypress', '\u001A', { ctrl: true, name: 'z' })
+
+    expect(stdin.setRawMode).toHaveBeenCalledWith(false)
+    expect(stdin.pause).toHaveBeenCalledTimes(1)
+    expect(fakeProcess.kill).toHaveBeenCalledWith(1234, 'SIGTSTP')
+
+    fakeProcess.emit('SIGCONT')
+
+    expect(stdin.setRawMode).toHaveBeenCalledWith(true)
+    expect(stdin.resume).toHaveBeenCalledTimes(1)
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
   })
 
   it('quits dev on q hotkey', async () => {
     vi.doMock('node:process', () => ({
-      default: {
-        kill: killMock,
-        pid: 1234,
-        stdin,
-      },
+      default: fakeProcess,
     }))
     vi.doMock('node:readline', () => ({
       emitKeypressEvents: vi.fn(),
@@ -407,6 +412,6 @@ describe('devHotkeys', () => {
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
     expect(stdin.pause).toHaveBeenCalled()
-    expect(killMock).toHaveBeenCalledWith(1234, 'SIGINT')
+    expect(fakeProcess.kill).toHaveBeenCalledWith(1234, 'SIGINT')
   })
 })
