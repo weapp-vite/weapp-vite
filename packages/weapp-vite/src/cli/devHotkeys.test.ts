@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const emitKeypressEventsMock = vi.hoisted(() => vi.fn())
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
@@ -40,6 +41,10 @@ async function flushMicrotasks(times = 4) {
 vi.mock('weapp-ide-cli', () => ({
   closeSharedMiniProgram: closeSharedMiniProgramMock,
   takeScreenshot: takeScreenshotMock,
+}))
+
+vi.mock('node:readline', () => ({
+  emitKeypressEvents: emitKeypressEventsMock,
 }))
 
 vi.mock('node:fs/promises', () => ({
@@ -108,6 +113,7 @@ describe('devHotkeys', () => {
     })
     takeScreenshotMock.mockReset()
     takeScreenshotMock.mockResolvedValue({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
+    emitKeypressEventsMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
@@ -132,6 +138,7 @@ describe('devHotkeys', () => {
     })
 
     expect(session).toBeDefined()
+    expect(emitKeypressEventsMock).toHaveBeenCalledWith(stdin)
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
@@ -202,6 +209,24 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('进程控制'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态：等待操作 / MCP 未启动'))
+  })
+
+  it('prints full help on keypress hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.emit('keypress', 'h', { name: 'h' })
+
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
   })
 
   it('supports fullwidth hotkeys such as ｈ under ime-style input', async () => {

@@ -4,6 +4,7 @@ import type { WeappMcpConfig } from '../types'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import process from 'node:process'
+import { emitKeypressEvents } from 'node:readline'
 import path from 'pathe'
 import { closeSharedMiniProgram, takeScreenshot } from 'weapp-ide-cli'
 import packageJson from '../../package.json'
@@ -31,12 +32,15 @@ interface DevHotkeyState {
   projectLabel?: string
 }
 
+type HotkeyInputSource = 'data' | 'keypress'
+
 const DEV_SCREENSHOT_DIR = '.tmp/weapp-vite-dev-screenshots'
 const DEFAULT_SCREENSHOT_TIMEOUT = 30_000
 const REG_PENDING_PREFIX = /^正在/
 const FULLWIDTH_ASCII_START = 0xFF01
 const FULLWIDTH_ASCII_END = 0xFF5E
 const FULLWIDTH_ASCII_OFFSET = 0xFEE0
+const HOTKEY_DEDUP_WINDOW_MS = 32
 
 function formatMcpUrl(host: string, port: number, endpoint: string) {
   return `http://${host}:${port}${endpoint}`
@@ -200,6 +204,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     return
   }
 
+  emitKeypressEvents(process.stdin)
   const hasSetRawMode = typeof process.stdin.setRawMode === 'function'
   if (hasSetRawMode) {
     process.stdin.setRawMode(true)
@@ -210,10 +215,12 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
   let onData: ((chunk: string | Uint8Array) => void) | undefined
+  let onKeypress: ((str: string, key: { name?: string, ctrl?: boolean } | undefined) => void) | undefined
   let onSigcont: (() => void) | undefined
   let currentAction: string | undefined
   let lastAction: string | undefined
   let lastRenderedPanel = ''
+  const recentInputs = new Map<string, number>()
   const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
   const getState = (): DevHotkeyState => ({
     currentAction,
@@ -254,6 +261,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     if (onData) {
       process.stdin.off('data', onData)
     }
+    if (onKeypress) {
+      process.stdin.off('keypress', onKeypress)
+    }
     if (onSigcont) {
       process.off('SIGCONT', onSigcont)
     }
@@ -292,9 +302,15 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     if (onData) {
       process.stdin.off('data', onData)
     }
+    if (onKeypress) {
+      process.stdin.off('keypress', onKeypress)
+    }
     attachTerminal()
     if (onData) {
       process.stdin.on('data', onData)
+    }
+    if (onKeypress) {
+      process.stdin.on('keypress', onKeypress)
     }
     printHint()
   }
@@ -401,13 +417,50 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
   }
 
+  const handleInputOnce = (input: string, source: HotkeyInputSource) => {
+    const normalizedInput = normalizeInputChar(input)
+    const now = Date.now()
+
+    for (const [token, timestamp] of recentInputs) {
+      if (now - timestamp > HOTKEY_DEDUP_WINDOW_MS) {
+        recentInputs.delete(token)
+      }
+    }
+
+    const dedupKey = normalizedInput
+    const recentEntry = recentInputs.get(dedupKey)
+    if (recentEntry !== undefined) {
+      const [recentSource, recentTimestamp] = recentEntry.split(':')
+      if (recentSource !== source && now - Number(recentTimestamp) <= HOTKEY_DEDUP_WINDOW_MS) {
+        return
+      }
+    }
+
+    recentInputs.set(dedupKey, `${source}:${now}`)
+    handleInput(normalizedInput)
+  }
+
   onData = (chunk) => {
     const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8')
     for (const char of text) {
-      handleInput(char)
+      handleInputOnce(char, 'data')
     }
   }
   process.stdin.on('data', onData)
+  onKeypress = (str, key) => {
+    if (key?.ctrl && key.name === 'c') {
+      handleInputOnce('\u0003', 'keypress')
+      return
+    }
+    if (key?.ctrl && key.name === 'z') {
+      handleInputOnce('\u001A', 'keypress')
+      return
+    }
+    if (typeof str === 'string' && str) {
+      handleInputOnce(str, 'keypress')
+    }
+  }
+  process.stdin.on('keypress', onKeypress)
   onSigcont = () => {
     restore()
   }
