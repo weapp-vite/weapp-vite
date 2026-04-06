@@ -232,7 +232,9 @@ describe('devHotkeys', () => {
       projectPath: '/project/dist',
     })
 
+    loggerMock.info.mockClear()
     stdin.emit('keypress', '', { name: 'm' })
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在启动 MCP 服务'))
     await flushMicrotasks()
 
     expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
@@ -275,12 +277,50 @@ describe('devHotkeys', () => {
       projectPath: '/project/dist',
     })
 
+    loggerMock.info.mockClear()
     stdin.emit('keypress', '', { name: 's' })
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在截图当前页面'))
     await flushMicrotasks(10)
 
     expect(loggerMock.info.mock.calls.some(args =>
       String(args[0]).includes('最近动作：截图已保存到'),
     )).toBe(true)
+  })
+
+  it('shows running action in full help when action is in progress', async () => {
+    vi.doMock('node:process', () => ({
+      default: {
+        kill: killMock,
+        pid: 1234,
+        stdin,
+      },
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+    let resolveScreenshot: ((value: { path: string }) => void) | undefined
+    takeScreenshotMock.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveScreenshot = resolve as (value: { path: string }) => void
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.emit('keypress', '', { name: 's' })
+    stdin.emit('keypress', 'h', { name: 'h' })
+
+    expect(loggerMock.info.mock.calls.some(args =>
+      String(args[0]).includes('执行中') && String(args[0]).includes('正在截图当前页面'),
+    )).toBe(true)
+
+    resolveScreenshot?.({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
+    await flushMicrotasks(10)
   })
 
   it('restores terminal and forwards sigint on ctrl+c', async () => {

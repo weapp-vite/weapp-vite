@@ -21,6 +21,7 @@ export interface DevHotkeysSession {
 }
 
 interface DevHotkeyState {
+  currentAction?: string
   lastAction?: string
   mcpEnabled: boolean
   mcpRunning: boolean
@@ -61,6 +62,7 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     '',
     '当前状态',
     `MCP 服务  ${mcpStatus}`,
+    ...(state.currentAction ? [`执行中    ${state.currentAction}`] : []),
     ...(state.lastAction ? [`最近动作  ${state.lastAction}`] : []),
     '',
     '快捷命令',
@@ -76,6 +78,9 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
  */
 export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
   const key = (value: string) => colors.bold(colors.green(value))
+  if (state.currentAction) {
+    return `${state.currentAction}，按 ${key('h')} 查看帮助，按 ${key('q')} 退出`
+  }
   const mcpStatus = !state.mcpEnabled
     ? 'MCP 已禁用'
     : state.mcpRunning
@@ -163,9 +168,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
   let onKeypress: (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => void
+  let currentAction: string | undefined
   let lastAction: string | undefined
   const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
   const getState = (): DevHotkeyState => ({
+    currentAction,
     lastAction,
     mcpEnabled: resolvedMcp.enabled,
     mcpRunning: Boolean(mcpHandle?.close),
@@ -224,13 +231,15 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     return `MCP 已启动 (${url})`
   }
 
-  const runAction = (label: string, action: () => Promise<string | undefined>) => {
+  const runAction = (label: string, pendingLabel: string, action: () => Promise<string | undefined>) => {
     if (running) {
       logger.warn('[dev action] 当前已有命令在执行，请等待完成后再试。')
       return
     }
 
     running = true
+    currentAction = pendingLabel
+    printHint()
     void action()
       .then((summary) => {
         if (summary) {
@@ -242,6 +251,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       })
       .finally(() => {
         running = false
+        currentAction = undefined
         if (!closed) {
           printHint()
         }
@@ -271,7 +281,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
 
     if (key.name === 's') {
-      runAction('截图', async () => {
+      runAction('截图', '正在截图当前页面', async () => {
         const screenshotPath = await runScreenshotAction(options)
         return `截图已保存到 ${screenshotPath}`
       })
@@ -279,7 +289,8 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
 
     if (key.name === 'm') {
-      runAction('MCP 切换', async () => {
+      const pendingLabel = mcpHandle?.close ? '正在关闭 MCP 服务' : '正在启动 MCP 服务'
+      runAction('MCP 切换', pendingLabel, async () => {
         return await toggleMcp()
       })
     }
@@ -288,7 +299,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   process.stdin.on('keypress', onKeypress)
   printHint()
   if (resolvedMcp.enabled && resolvedMcp.autoStart) {
-    runAction('MCP 自动启动', async () => {
+    runAction('MCP 自动启动', '正在启动 MCP 服务', async () => {
       await toggleMcp()
     })
   }
