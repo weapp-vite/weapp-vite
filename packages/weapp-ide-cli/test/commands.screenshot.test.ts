@@ -96,6 +96,25 @@ describe('captureScreenshotBuffer', () => {
     expect(reLaunch).toHaveBeenCalledWith('/pages/index/index')
   })
 
+  it('skips devtools reconnect log when an existing miniProgram session is provided', async () => {
+    const screenshot = vi.fn().mockResolvedValue(Buffer.from('png-data').toString('base64'))
+    withMiniProgramMock.mockImplementation(async (options, runner) => {
+      return await runner(options.miniProgram)
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+    const result = await captureScreenshotBuffer({
+      miniProgram: {
+        screenshot,
+      } as any,
+      projectPath: '/workspace/project',
+    })
+
+    expect(result.equals(Buffer.from('png-data'))).toBe(true)
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在连接 DevTools'))
+    expect(withMiniProgramMock).toHaveBeenCalledTimes(1)
+  })
+
   it('stitches multiple viewport screenshots when fullPage is enabled', async () => {
     const red = createSolidPng(8, 20, [255, 0, 0, 255])
     const green = createSolidPng(8, 20, [0, 255, 0, 255])

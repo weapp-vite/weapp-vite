@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
+const connectMiniProgramMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
 const closeMcpMock = vi.hoisted(() => vi.fn())
@@ -37,6 +38,7 @@ async function flushMicrotasks(times = 4) {
 }
 
 vi.mock('weapp-ide-cli', () => ({
+  connectMiniProgram: connectMiniProgramMock,
   takeScreenshot: takeScreenshotMock,
 }))
 
@@ -95,6 +97,10 @@ describe('devHotkeys', () => {
     fakeProcess = new FakeProcess(stdin)
     mkdirMock.mockReset()
     mkdirMock.mockResolvedValue(undefined)
+    connectMiniProgramMock.mockReset()
+    connectMiniProgramMock.mockResolvedValue({
+      disconnect: vi.fn(),
+    })
     closeMcpMock.mockReset()
     closeMcpMock.mockResolvedValue(undefined)
     startWeappViteMcpServerMock.mockReset()
@@ -251,6 +257,8 @@ describe('devHotkeys', () => {
     })
 
     expect(takeScreenshotMock).toHaveBeenCalledWith({
+      fullPage: true,
+      miniProgram: undefined,
       outputPath: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
       projectPath: '/project/dist',
       timeout: 30000,
@@ -329,6 +337,46 @@ describe('devHotkeys', () => {
     await flushMicrotasks(10)
 
     expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('开发快捷键已就绪'))
+  })
+
+  it('reuses a connected miniProgram session across screenshots', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const disconnectMock = vi.fn()
+    connectMiniProgramMock.mockResolvedValueOnce({
+      disconnect: disconnectMock,
+    })
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('data', 's')
+    await flushMicrotasks(10)
+    stdin.emit('data', 's')
+    await flushMicrotasks(10)
+
+    expect(connectMiniProgramMock).toHaveBeenCalledTimes(1)
+    expect(takeScreenshotMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      fullPage: true,
+      miniProgram: expect.objectContaining({
+        disconnect: disconnectMock,
+      }),
+    }))
+    expect(takeScreenshotMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      fullPage: true,
+      miniProgram: expect.objectContaining({
+        disconnect: disconnectMock,
+      }),
+    }))
+
+    session?.close()
+    expect(disconnectMock).toHaveBeenCalledTimes(1)
   })
 
   it('shows running action in full help when action is in progress', async () => {

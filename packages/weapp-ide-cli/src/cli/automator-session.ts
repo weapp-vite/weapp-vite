@@ -12,11 +12,6 @@ import {
   launchAutomator,
 } from './automator'
 
-export interface AutomatorSessionOptions {
-  projectPath: string
-  timeout?: number
-}
-
 export interface MiniProgramEventMap {
   console: (payload: unknown) => void
   exception: (payload: unknown) => void
@@ -26,6 +21,12 @@ export type MiniProgramLike = InstanceType<typeof MiniProgram>
 export type MiniProgramPage = InstanceType<typeof Page>
 export type MiniProgramElement = InstanceType<typeof Element> & {
   input?: (value: string) => Promise<void>
+}
+
+export interface AutomatorSessionOptions {
+  miniProgram?: MiniProgramLike
+  projectPath: string
+  timeout?: number
 }
 
 function normalizeMiniProgramConnectionError(error: unknown) {
@@ -109,6 +110,10 @@ export async function withMiniProgram<T>(
   options: AutomatorSessionOptions,
   runner: (miniProgram: MiniProgramLike) => Promise<T>,
 ): Promise<T> {
+  if (options.miniProgram) {
+    return await runner(options.miniProgram)
+  }
+
   let miniProgram: MiniProgramLike | null = null
 
   try {

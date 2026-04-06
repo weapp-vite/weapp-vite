@@ -345,10 +345,12 @@ export async function captureScreenshotBuffer(options: ScreenshotOptions): Promi
       `Screenshot request did not receive a DevTools response within ${commandTimeout}ms. Check that the current Wechat DevTools window is still the target project. If you recently ran other e2e or screenshot tasks, close extra windows and clean up stale automator sessions before retrying.`,
     )
 
-    logger.info(i18nText(
-      `正在连接 DevTools：${colors.cyan(options.projectPath)}...`,
-      `Connecting to DevTools at ${colors.cyan(options.projectPath)}...`,
-    ))
+    if (!options.miniProgram) {
+      logger.info(i18nText(
+        `正在连接 DevTools：${colors.cyan(options.projectPath)}...`,
+        `Connecting to DevTools at ${colors.cyan(options.projectPath)}...`,
+      ))
+    }
 
     if (options.page) {
       const normalizedPage = normalizePagePath(options.page)
