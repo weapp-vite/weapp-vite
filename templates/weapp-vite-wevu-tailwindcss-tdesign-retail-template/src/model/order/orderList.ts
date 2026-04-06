@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
-export function genOrders(params) {
+export function genOrders(params: Record<string, any> = {}) {
   const resp = {
     data: {
       pageNum: 1,
@@ -1023,3 +1022,6 @@ export function genOrdersCount(_params?: unknown) {
   }
   return resp
 }
+
+export type OrdersResult = ReturnType<typeof genOrders>
+export type OrdersCountResult = ReturnType<typeof genOrdersCount>

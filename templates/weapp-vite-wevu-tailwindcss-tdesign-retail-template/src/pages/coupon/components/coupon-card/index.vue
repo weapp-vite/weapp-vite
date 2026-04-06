@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { Coupon, CouponCardStatus } from '../../../../model/coupon'
 import { wpi } from '@wevu/api'
+import { computed } from 'wevu'
 
 defineOptions({
   options: {
@@ -8,60 +9,52 @@ defineOptions({
     multipleSlots: true, // 在组件定义时的选项中启用多slot支持
   },
   externalClasses: ['coupon-class'],
-  properties: {
-    couponDTO: {
-      type: Object,
-      value: {}, // 优惠券数据
-    },
-  },
-  data() {
-    return {
-      btnText: '',
-      btnTheme: '',
-    }
-  },
-  observers: {
-    couponDTO(couponDTO) {
-      if (!couponDTO) {
-        return
-      }
-      const statusMap = {
-        default: {
-          text: '去使用',
-          theme: 'primary',
-        },
-        useless: {
-          text: '已使用',
-          theme: 'default',
-        },
-        disabled: {
-          text: '已过期',
-          theme: 'default',
-        },
-      }
-      const statusInfo = statusMap[couponDTO.status]
-      this.setData({
-        btnText: statusInfo.text,
-        btnTheme: statusInfo.theme,
-      })
-    },
-  },
-  attached() {},
-  methods: {
-    // 跳转到详情页
-    async gotoDetail() {
-      await wpi.navigateTo({
-        url: `/pages/coupon/coupon-detail/index?id=${this.data.couponDTO.key}`,
-      })
-    },
-    // 跳转到商品列表
-    async gotoGoodsList() {
-      await wpi.navigateTo({
-        url: `/pages/coupon/coupon-activity-goods/index?id=${this.data.couponDTO.key}`,
-      })
-    },
-  },
+} as any)
+
+const props = withDefaults(defineProps<{
+  couponDTO?: Coupon | null
+}>(), {
+  couponDTO: null,
 })
+
+const statusMap: Record<CouponCardStatus, { text: string, theme: string }> = {
+  default: {
+    text: '去使用',
+    theme: 'primary',
+  },
+  useless: {
+    text: '已使用',
+    theme: 'default',
+  },
+  disabled: {
+    text: '已过期',
+    theme: 'default',
+  },
+}
+
+const btnStatus = computed(() => statusMap[props.couponDTO?.status ?? 'default'])
+const btnText = computed(() => btnStatus.value.text)
+const btnTheme = computed(() => btnStatus.value.theme)
+
+async function gotoDetail() {
+  const couponKey = props.couponDTO?.key
+  if (!couponKey) {
+    return
+  }
+  await wpi.navigateTo({
+    url: `/pages/coupon/coupon-detail/index?id=${couponKey}`,
+  })
+}
+
+async function gotoGoodsList() {
+  const couponKey = props.couponDTO?.key
+  if (!couponKey) {
+    return
+  }
+  await wpi.navigateTo({
+    url: `/pages/coupon/coupon-activity-goods/index?id=${couponKey}`,
+  })
+}
 
 defineComponentJson({
   component: true,
@@ -74,14 +67,14 @@ defineComponentJson({
 
 <template>
   <ui-coupon-card
-    :title="couponDTO.title || ''"
-    :type="couponDTO.type || ''"
-    :value="couponDTO.value || '0'"
-    :tag="couponDTO.tag || ''"
-    :desc="couponDTO.desc || ''"
-    :currency="couponDTO.currency || ''"
-    :timeLimit="couponDTO.timeLimit || ''"
-    :status="couponDTO.status || ''"
+    :title="couponDTO?.title || ''"
+    :type="couponDTO?.type || ''"
+    :value="couponDTO?.value || '0'"
+    :tag="couponDTO?.tag || ''"
+    :desc="couponDTO?.desc || ''"
+    :currency="couponDTO?.currency || ''"
+    :timeLimit="couponDTO?.timeLimit || ''"
+    :status="couponDTO?.status || ''"
     @tap="gotoDetail"
   >
     <template #operator>

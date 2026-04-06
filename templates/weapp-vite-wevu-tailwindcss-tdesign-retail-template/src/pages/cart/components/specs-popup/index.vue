@@ -1,81 +1,74 @@
 <script setup lang="ts">
-// @ts-nocheck
+import { computed } from 'wevu'
+
+interface PopupGoods {
+  title: string
+  thumb: string
+  price: string
+  hideKey: {
+    originPrice: boolean
+    tags: boolean
+    specs: boolean
+    num: boolean
+  }
+}
+
 defineOptions({
   options: {
     addGlobalClass: true,
-    multipleSlots: true, // 在组件定义时的选项中启用多slot支持
+    multipleSlots: true,
   },
-  properties: {
-    show: {
-      type: Boolean,
-      value: false,
-    },
-    value: {
-      type: String,
-      value: '',
-    },
-    title: {
-      type: String,
-      observer(newVal) {
-        this.setData({
-          'goods.title': newVal,
-        })
-      },
-    },
-    price: {
-      type: String,
-      value: '',
-      observer(newVal) {
-        this.setData({
-          'goods.price': newVal,
-        })
-      },
-    },
-    thumb: {
-      type: String,
-      value: '',
-      observer(newVal) {
-        this.setData({
-          'goods.thumb': newVal,
-        })
-      },
-    },
-    thumbMode: {
-      type: String,
-      value: 'aspectFit',
-    },
-    zIndex: {
-      type: Number,
-      value: 99,
-    },
-    specs: {
-      type: Array,
-      value: [],
-    },
+})
+
+const props = withDefaults(defineProps<{
+  show?: boolean
+  value?: string
+  title?: string
+  price?: string
+  thumb?: string
+  thumbMode?: string
+  zIndex?: number
+  specs?: string[]
+}>(), {
+  show: false,
+  value: '',
+  title: '',
+  price: '',
+  thumb: '',
+  thumbMode: 'aspectFit',
+  zIndex: 99,
+  specs: () => [],
+})
+
+const emit = defineEmits<{
+  close: []
+  closeover: []
+}>()
+
+const goods = computed<PopupGoods>(() => ({
+  title: props.title,
+  thumb: props.thumb,
+  price: props.price,
+  hideKey: {
+    originPrice: true,
+    tags: true,
+    specs: true,
+    num: true,
   },
-  data() {
-    return {
-      goods: {
-        title: '',
-        thumb: '',
-        price: '',
-        hideKey: {
-          originPrice: true,
-          tags: true,
-          specs: true,
-          num: true,
-        },
-      },
-    }
-  },
-  methods: {
-    onClose() {
-      this.triggerEvent('close')
-    },
-    onCloseOver() {
-      this.triggerEvent('closeover')
-    },
-  },
+}))
+
+function onClose() {
+  emit('close')
+}
+
+function onCloseOver() {
+  emit('closeover')
+}
+
+defineExpose({
+  goods,
+  onClose,
+  onCloseOver,
 })
 
 defineComponentJson({
@@ -97,7 +90,7 @@ defineComponentJson({
             已选规格
           </view>
           <view class="options">
-            <view v-for="(spec, index) in specs" :key="spec" class="option">
+            <view v-for="spec in specs" :key="spec" class="option">
               {{ spec }}
             </view>
           </view>

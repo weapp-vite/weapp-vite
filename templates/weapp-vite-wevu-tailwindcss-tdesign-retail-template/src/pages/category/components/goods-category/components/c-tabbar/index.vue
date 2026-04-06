@@ -1,68 +1,69 @@
 <script setup lang="ts">
-// @ts-nocheck
+import { ref, watch } from 'wevu'
+
+interface TabItem {
+  name?: string
+  disabled?: boolean
+}
+
 defineOptions({
   externalClasses: ['custom-class'],
-  properties: {
-    activeKey: {
-      type: Number,
-      value: 0,
-    },
-    tabList: {
-      type: Array,
-      value: [],
-    },
-    showMore: Boolean, // 是否需要下拉功能
-  },
-  observers: {
-    activeKey(newVal) {
-      if (this.properties.tabList && newVal) {
-        this.setActive(newVal).catch((e) => {
-          console.error(e)
-        })
-      }
-    },
-  },
-  data() {
-    return {
-      currentActive: -1,
+})
+
+const props = withDefaults(defineProps<{
+  activeKey?: number
+  tabList?: TabItem[]
+  showMore?: boolean
+}>(), {
+  activeKey: 0,
+  tabList: () => [],
+  showMore: false,
+})
+
+const emit = defineEmits<{
+  change: [payload: { index: number }]
+}>()
+
+const currentActive = ref(-1)
+
+function setActive(activeKey: number) {
+  if (!props.tabList[activeKey] || props.tabList[activeKey]?.disabled) {
+    return Promise.reject(new Error('数据异常或不可操作'))
+  }
+  currentActive.value = activeKey
+  return Promise.resolve()
+}
+
+function onClick(event: any) {
+  const activeKey = event?.type === 'select'
+    ? Number(event?.detail ?? 0)
+    : Number(event?.currentTarget?.dataset?.index ?? 0)
+  void setActive(activeKey).then(() => {
+    emit('change', {
+      index: currentActive.value,
+    })
+  }).catch((error) => {
+    console.error(error)
+  })
+}
+
+watch(
+  () => props.activeKey,
+  (newVal) => {
+    if (props.tabList.length && newVal !== undefined && newVal !== null) {
+      void setActive(newVal).catch((error) => {
+        console.error(error)
+      })
     }
   },
-  attached() {
-    this.setActive(this.properties.activeKey).catch((e) => {
-      console.error(e)
-    })
+  {
+    immediate: true,
   },
-  methods: {
-    setActive(activeKey) {
-      if (!this.properties.tabList[activeKey] || this.properties.tabList[activeKey].disabled) {
-        return Promise.reject('数据异常或不可操作')
-      }
-      return new Promise((resolve) => {
-        this.setData({
-          currentActive: activeKey,
-        }, () => resolve())
-      })
-    },
-    onClick(event) {
-      let activeKey
-      if (event.type === 'select') {
-        activeKey = event.detail
-      }
-      else {
-        activeKey = event.currentTarget.dataset.index
-      }
-      this.setActive(activeKey).then(() => {
-        const {
-          currentActive,
-        } = this.data
-        this.triggerEvent('change', {
-          index: currentActive,
-        })
-      }).catch((e) => {
-        console.error(e)
-      })
-    },
-  },
+)
+
+defineExpose({
+  currentActive,
+  onClick,
 })
 
 defineComponentJson({

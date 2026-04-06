@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { cdnBase } from '../config/index'
 
 const imgPrefix = cdnBase
@@ -1890,12 +1889,13 @@ const allGoods = [
  * @param {string} id
  * @param {number} [available] 库存, 默认1
  */
-export function genGood(id, available = 1) {
+export function genGood(id: string, available = 1) {
   const specID = ['135681624', '135681628']
   if (specID.includes(id)) {
     return allGoods.filter(good => good.spuId === id)[0]
   }
-  const item = allGoods[id % allGoods.length]
+  const normalizedId = Number(id)
+  const item = allGoods[normalizedId % allGoods.length]
   return {
     ...item,
     spuId: `${id}`,
@@ -1904,3 +1904,5 @@ export function genGood(id, available = 1) {
     images: item?.images || [item?.primaryImage],
   }
 }
+
+export type GoodDetail = ReturnType<typeof genGood>

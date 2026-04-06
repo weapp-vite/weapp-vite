@@ -1,10 +1,22 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
-export function transformGoodsDataToConfirmData(goodsDataList) {
-  const list = []
+type OrderConfirmGoodsData = Record<string, any>
+interface DiscountCoupon {
+  status?: string
+  type?: number
+  value?: number
+}
 
-  goodsDataList.forEach((goodsData) => {
+export interface SettleDetailParams {
+  userAddressReq?: Record<string, any>
+  couponList?: DiscountCoupon[]
+  goodsRequestList?: OrderConfirmGoodsData[]
+}
+
+export function transformGoodsDataToConfirmData(goodsDataList: OrderConfirmGoodsData[] = []) {
+  const list: Record<string, any>[] = []
+
+  goodsDataList.forEach((goodsData: OrderConfirmGoodsData) => {
     list.push({
       storeId: goodsData.storeId,
       spuId: goodsData.spuId,
@@ -37,10 +49,10 @@ export function transformGoodsDataToConfirmData(goodsDataList) {
 }
 
 /** 生成结算数据 */
-export function genSettleDetail(params) {
-  const { userAddressReq, couponList, goodsRequestList } = params
+export function genSettleDetail(params: SettleDetailParams = {}) {
+  const { userAddressReq, couponList, goodsRequestList } = (params || {}) as SettleDetailParams
 
-  const resp = {
+  const resp: Record<string, any> = {
     data: {
       settleType: 0,
       userAddress: null,
@@ -69,7 +81,7 @@ export function genSettleDetail(params) {
           storeTotalPayAmount: '179997',
           storeTotalDiscountAmount: '110000',
           storeTotalCouponAmount: '0',
-          skuDetailVos: [],
+          skuDetailVos: [] as Record<string, any>[],
           couponList: [
             {
               couponId: 11,
@@ -92,16 +104,16 @@ export function genSettleDetail(params) {
     success: true,
   }
 
-  const list = transformGoodsDataToConfirmData(goodsRequestList)
+  const list = transformGoodsDataToConfirmData(goodsRequestList || [])
 
   // 获取购物车传递的商品数据
   resp.data.storeGoodsList[0].skuDetailVos = list
 
   // 判断是否携带优惠券数据
-  const discountPrice = []
+  const discountPrice: Array<{ type?: number, value?: number }> = []
 
   if (couponList && couponList.length > 0) {
-    couponList.forEach((coupon) => {
+    couponList.forEach((coupon: DiscountCoupon) => {
       if (coupon.status === 'default') {
         discountPrice.push({
           type: coupon.type,
@@ -123,13 +135,13 @@ export function genSettleDetail(params) {
     = discountPrice.length > 0
       ? discountPrice.reduce((pre, cur) => {
           if (cur.type === 1) {
-            return pre + cur.value
+            return pre + Number(cur.value || 0)
           }
           if (cur.type === 2) {
-            return pre + (Number(totalPrice) * cur.value) / 10
+            return pre + (Number(totalPrice) * Number(cur.value || 0)) / 10
           }
 
-          return pre + cur
+          return pre + Number(cur.value || 0)
         }, 0)
       : 0
 
@@ -145,4 +157,28 @@ export function genSettleDetail(params) {
     resp.data.userAddress = userAddressReq
   }
   return resp
+}
+
+export type SettleDetailResult = ReturnType<typeof genSettleDetail>
+export interface DispatchSupplementInvoiceResult {
+  success: boolean
+}
+export interface OrderCommitResult {
+  data: {
+    isSuccess: boolean
+    tradeNo: string
+    payInfo: string
+    code: string | null
+    transactionId: string
+    msg: string | null
+    interactId: string
+    channel: string
+    limitGoodsList: unknown
+  }
+  code: string
+  msg: string | null
+  requestId: string
+  clientIp: string
+  rt: number
+  success: boolean
 }

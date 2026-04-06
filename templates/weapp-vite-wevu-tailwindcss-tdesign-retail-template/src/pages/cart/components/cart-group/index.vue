@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 import { ref, toRefs, useNativeInstance, watch } from 'wevu'
 import { showToast } from '@/hooks/useToast'
@@ -45,7 +44,7 @@ let isSpecsTap = false
 
 function normalizeGoodsSpecs(goods: any) {
   const specInfo = Array.isArray(goods?.specInfo) ? goods.specInfo : []
-  goods.specs = specInfo.map(item => item?.specValue)
+  goods.specs = specInfo.map((item: any) => item?.specValue)
 }
 
 function syncStoreGoods(nextStoreGoods: any[]) {
@@ -231,7 +230,7 @@ defineComponentJson({
 
 <template>
   <view class="cart-group [border-radius:8rpx] [&_.goods-wrap]:[margin-top:40rpx] [&_.goods-wrap]:[background-color:#fff] [&_.goods-wrap]:[border-radius:8rpx] [&_.goods-wrap]:[overflow:hidden] [&_.goods-wrap:first-of-type]:[margin-top:0] [&_.cart-store]:[height:96rpx] [&_.cart-store]:[background-color:#fff] [&_.cart-store]:[box-sizing:border-box] [&_.cart-store]:[display:flex] [&_.cart-store]:[align-items:center] [&_.cart-store]:[padding:0rpx_24rpx_0rpx_36rpx] [&_.cart-store_.cart-store__check]:[padding:28rpx_32rpx_28rpx_0rpx] [&_.cart-store__content]:[box-sizing:border-box] [&_.cart-store__content]:[flex:auto] [&_.cart-store__content]:[display:flex] [&_.cart-store__content]:[align-items:center] [&_.cart-store__content]:[justify-content:space-between] [&_.cart-store__content_.store-title]:[flex:auto] [&_.cart-store__content_.store-title]:[font-size:28rpx] [&_.cart-store__content_.store-title]:[line-height:40rpx] [&_.cart-store__content_.store-title]:[color:#333333] [&_.cart-store__content_.store-title]:[display:flex] [&_.cart-store__content_.store-title]:[align-items:center] [&_.cart-store__content_.store-title]:[font-weight:bold] [&_.cart-store__content_.store-title]:[overflow:hidden] [&_.cart-store__content_.store-title_.wr-store]:[font-size:32rpx] [&_.cart-store__content_.store-title_.store-name]:[overflow:hidden] [&_.cart-store__content_.store-title_.store-name]:[white-space:nowrap] [&_.cart-store__content_.store-title_.store-name]:[text-overflow:ellipsis] [&_.cart-store__content_.store-title_.store-name]:[margin-left:12rpx] [&_.cart-store__content_.get-coupon]:[width:112rpx] [&_.cart-store__content_.get-coupon]:[height:40rpx] [&_.cart-store__content_.get-coupon]:[border-radius:20rpx] [&_.cart-store__content_.get-coupon]:[background-color:#ffecf9] [&_.cart-store__content_.get-coupon]:[line-height:40rpx] [&_.cart-store__content_.get-coupon]:[text-align:center] [&_.cart-store__content_.get-coupon]:[font-size:26rpx] [&_.cart-store__content_.get-coupon]:[color:#fa4126] [&_.promotion-wrap]:[display:flex] [&_.promotion-wrap]:[justify-content:space-between] [&_.promotion-wrap]:[align-items:center] [&_.promotion-wrap]:[padding:0rpx_24rpx_32rpx_36rpx] [&_.promotion-wrap]:[background-color:#ffffff] [&_.promotion-wrap]:[font-size:24rpx] [&_.promotion-wrap]:[line-height:36rpx] [&_.promotion-wrap]:[color:#222427] [&_.promotion-wrap_.promotion-title]:[font-weight:bold] [&_.promotion-wrap_.promotion-title]:[flex:auto] [&_.promotion-wrap_.promotion-title]:[overflow:hidden] [&_.promotion-wrap_.promotion-title]:[margin-right:20rpx] [&_.promotion-wrap_.promotion-title]:[display:flex] [&_.promotion-wrap_.promotion-title]:[align-items:center] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[flex:none] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[font-weight:normal] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[display:inline-block] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[padding:0_8rpx] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[color:#ffffff] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[background:#fa4126] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[font-size:20rpx] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[height:32rpx] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[line-height:32rpx] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[margin-right:16rpx] [&_.promotion-wrap_.promotion-title_.promotion-icon]:[border-radius:16rpx] [&_.promotion-wrap_.promotion-title_.promotion-text]:[flex:auto] [&_.promotion-wrap_.promotion-title_.promotion-text]:[overflow:hidden] [&_.promotion-wrap_.promotion-title_.promotion-text]:[text-overflow:ellipsis] [&_.promotion-wrap_.promotion-title_.promotion-text]:[white-space:nowrap] [&_.promotion-wrap_.promotion-action]:[flex:none] [&_.promotion-wrap_.promotion-action]:[color:#333333] [&_.promotion-line-wrap]:[background-color:#fff] [&_.promotion-line-wrap]:[height:2rpx] [&_.promotion-line-wrap]:[display:flex] [&_.promotion-line-wrap]:[justify-content:flex-end] [&_.promotion-line-wrap_.promotion-line]:[width:684rpx] [&_.promotion-line-wrap_.promotion-line]:[height:2rpx] [&_.promotion-line-wrap_.promotion-line]:[background-color:#e6e6e6] [&_.goods-item-info]:[display:flex] [&_.goods-item-info]:[background-color:#fff] [&_.goods-item-info]:[align-items:flex-start] [&_.goods-item-info_.check-wrap]:[margin-top:56rpx] [&_.goods-item-info_.check-wrap]:[padding:20rpx_28rpx_20rpx_36rpx] [&_.goods-item-info_.check-wrap_.unCheck-icon]:[box-sizing:border-box] [&_.goods-item-info_.check-wrap_.unCheck-icon]:[width:36rpx] [&_.goods-item-info_.check-wrap_.unCheck-icon]:[height:36rpx] [&_.goods-item-info_.check-wrap_.unCheck-icon]:[border-radius:20rpx] [&_.goods-item-info_.check-wrap_.unCheck-icon]:[background:#f5f5f5] [&_.goods-item-info_.check-wrap_.unCheck-icon]:[border:2rpx_solid_#bbbbbb] [&_.goods-item-info_.goods-sku-info]:[padding:0rpx_32rpx_40rpx_0] [&_.goods-item-info_.goods-sku-info]:[flex-grow:1] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[position:absolute] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[color:#fff] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[font-size:24rpx] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[bottom:0rpx] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[background-color:rgba(0,_0,_0,_0.5)] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[width:100%] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[height:40rpx] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[line-height:40rpx] [&_.goods-item-info_.goods-sku-info_.stock-mask]:[text-align:center] [&_.goods-item-info_.goods-sku-info_.goods-stepper]:[position:absolute] [&_.goods-item-info_.goods-sku-info_.goods-stepper]:[right:0] [&_.goods-item-info_.goods-sku-info_.goods-stepper]:[bottom:8rpx] [&_.goods-item-info_.goods-sku-info_.goods-stepper_.stepper-tip]:[position:absolute] [&_.goods-item-info_.goods-sku-info_.goods-stepper_.stepper-tip]:[top:-36rpx] [&_.goods-item-info_.goods-sku-info_.goods-stepper_.stepper-tip]:[right:0] [&_.goods-item-info_.goods-sku-info_.goods-stepper_.stepper-tip]:[height:28rpx] [&_.goods-item-info_.goods-sku-info_.goods-stepper_.stepper-tip]:[color:#ff2525] [&_.goods-item-info_.goods-sku-info_.goods-stepper_.stepper-tip]:[font-size:20rpx] [&_.goods-item-info_.goods-sku-info_.goods-stepper_.stepper-tip]:[line-height:28rpx] [&_.shortage-line]:[width:662rpx] [&_.shortage-line]:[height:2rpx] [&_.shortage-line]:[background-color:#e6e6e6] [&_.shortage-line]:[margin:0_auto] [&_.shortage-goods-wrap]:[background-color:#fff] [&_.shortage-goods-wrap_.shortage-tip-title]:[height:72rpx] [&_.shortage-goods-wrap_.shortage-tip-title]:[line-height:72rpx] [&_.shortage-goods-wrap_.shortage-tip-title]:[padding-left:28rpx] [&_.shortage-goods-wrap_.shortage-tip-title]:[font-size:24rpx] [&_.shortage-goods-wrap_.shortage-tip-title]:[color:#999]">
-    <view v-for="(store, si) in _storeGoods" :key="storeId" class="goods-wrap">
+    <view v-for="(store, si) in _storeGoods" :key="store.storeId || si" class="goods-wrap">
       <view class="cart-store">
         <t-icon
           size="40rpx"
@@ -278,7 +277,7 @@ defineComponentJson({
         </view>
         <view
           v-for="(goods, gi) in promotion.goodsPromotionList"
-          :key="extKey"
+          :key="goods.extKey || goods.id || gi"
           class="goods-item"
         >
           <swipeout :right-width="72">
@@ -346,8 +345,8 @@ defineComponentJson({
       </block>
       <block v-if="store.shortageGoodsList.length > 0">
         <view
-          v-for="(goods, gi) in store.shortageGoodsList"
-          :key="extKey" class="goods-item"
+          v-for="goods in store.shortageGoodsList"
+          :key="goods.extKey || goods.id || goods.spuId" class="goods-item"
         >
           <swipeout :right-width="72">
             <view class="goods-item-info">
@@ -381,12 +380,6 @@ defineComponentJson({
               </view>
             </template>
           </swipeout>
-        </view>
-        <view
-          v-if="hasPromotion(promotion.promotionCode) && promoindex != (store.promotionGoodsList.length - 2)"
-          class="promotion-line-wrap"
-        >
-          <view class="promotion-line" />
         </view>
       </block>
     </view>

@@ -1,4 +1,20 @@
-export function handleInvoice(invoiceData: Record<string, any>) {
+export interface InvoiceData {
+  email?: string
+  buyerTaxNo?: string
+  invoiceType?: number | null
+  buyerPhone?: string
+  buyerName?: string
+  titleType?: string | number
+  contentType?: string | number
+}
+
+export interface StoreInfoItem {
+  storeId: string
+  storeName: string
+  remark?: string
+}
+
+export function handleInvoice(invoiceData: InvoiceData) {
   if (!invoiceData || invoiceData.invoiceType == 0) {
     return '暂不开发票'
   }
@@ -9,7 +25,7 @@ export function handleInvoice(invoiceData: Record<string, any>) {
     : '暂不开发票'
 }
 
-export function getNotes(storeInfoList: Record<string, any>[] | undefined, storeIndex: number) {
+export function getNotes(storeInfoList: StoreInfoItem[] | undefined, storeIndex: number) {
   if (!storeInfoList) {
     return ''
   }

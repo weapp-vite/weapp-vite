@@ -1,275 +1,417 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { BusinessTimeResult, OrderDetailData } from '../../../model/order/orderDetail'
+import type { SelectableAddress } from '../../../services/address/list'
 import { wpi } from '@wevu/api'
+import { onLoad, onPageScroll, onShow, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../services/address/list'
 import { fetchBusinessTime, fetchOrderDetail } from '../../../services/order/orderDetail'
 import { formatTime } from '../../../utils/util'
 import { LogisticsIconMap, OrderStatus } from '../config'
 
-defineOptions({
-  data() {
-    return {
-      pageLoading: true,
-      order: {},
-      // 后台返回的原始数据
-      _order: {},
-      // 内部使用和提供给 order-card 的数据
-      storeDetail: {},
-      countDownTime: null,
-      addressEditable: false,
-      backRefresh: false,
-      // 用于接收其他页面back时的状态
-      formatCreateTime: '',
-      // 格式化订单创建时间
-      logisticsNodes: [],
-      /** 订单评论状态 */
-      orderHasCommented: true,
-    }
+interface QueryOptions {
+  orderNo?: string
+}
+
+type OrderDetailView = OrderDetailData & {
+  holdStatus?: number
+  groupInfoVo?: {
+    groupId?: string | number
+    promotionId?: string | number
+    remainMember?: number
+    groupPrice?: number
+    residueTime?: number
+  } | null
+  trajectoryVos?: Array<{
+    title?: string
+    code?: string
+    nodes?: Array<{
+      status?: string
+      timestamp?: string | number
+    }>
+  }>
+}
+
+interface LogisticsNodeItem {
+  title: string
+  desc: string
+  date: string
+  icon: string
+}
+
+interface NormalizedGoodsItem {
+  id: string
+  thumb: string
+  title: string
+  skuId: string
+  spuId: string
+  specs: string[]
+  price: string | number
+  num: number
+  titlePrefixTags: Array<{ text: string }>
+  buttons: NonNullable<OrderDetailData['orderItemVOs'][number]['buttonVOs']>
+}
+
+interface NormalizedOrderData {
+  id: string
+  orderNo: string
+  parentOrderNo: string
+  storeId: string
+  storeName: string
+  status: number
+  statusDesc: string
+  amount: string
+  totalAmount: string
+  logisticsNo: string
+  goodsList: NormalizedGoodsItem[]
+  buttons: NonNullable<OrderDetailData['buttonVOs']>
+  createTime: string
+  receiverAddress: string
+  groupInfoVo: OrderDetailView['groupInfoVo']
+}
+
+interface StoreDetailState {
+  storeTel: string
+  storeBusiness: string
+}
+
+interface PageInstanceWithBackRefresh extends WechatMiniprogram.Page.Instance<Record<string, any>, Record<string, any>> {
+  data: {
+    backRefresh?: boolean
+  } & Record<string, any>
+}
+
+const nativeInstance = useNativeInstance()
+const orderNo = ref('')
+const pageLoading = ref(true)
+const order = ref<OrderDetailView>(({
+  saasId: '',
+  storeId: '',
+  storeName: '',
+  uid: '',
+  parentOrderNo: '',
+  orderId: '',
+  orderNo: '',
+  orderType: 0,
+  orderSubType: 0,
+  orderStatus: 0,
+  orderSubStatus: null,
+  totalAmount: '0',
+  goodsAmount: '0',
+  goodsAmountApp: '0',
+  paymentAmount: '0',
+  freightFee: '0',
+  packageFee: '0',
+  discountAmount: '0',
+  channelType: 0,
+  channelSource: '',
+  channelIdentity: '',
+  remark: '',
+  cancelType: null,
+  cancelReasonType: null,
+  cancelReason: '',
+  rightsType: 0,
+  createTime: '',
+  orderItemVOs: [],
+  logisticsVO: {
+    logisticsType: 0,
+    logisticsNo: '',
+    logisticsStatus: null,
+    logisticsCompanyCode: '',
+    logisticsCompanyName: '',
+    receiverAddressId: '',
+    provinceCode: '',
+    cityCode: '',
+    countryCode: '',
+    receiverProvince: '',
+    receiverCity: '',
+    receiverCountry: '',
+    receiverArea: '',
+    receiverAddress: '',
+    receiverPostCode: '',
+    receiverLongitude: '',
+    receiverLatitude: '',
+    receiverIdentity: '',
+    receiverPhone: '',
+    receiverName: '',
+    expectArrivalTime: null,
+    senderName: '',
+    senderPhone: '',
+    senderAddress: '',
+    sendTime: null,
+    arrivalTime: null,
   },
-  onLoad(query) {
-    this.orderNo = query.orderNo
-    this.init()
-    this.navbar = this.selectComponent('#navbar')
-    this.pullDownRefresh = this.selectComponent('#wr-pull-down-refresh')
+  paymentVO: {
+    payStatus: 0,
+    amount: '0',
+    currency: null,
+    payType: null,
+    payWay: null,
+    payWayName: null,
+    interactId: null,
+    traceNo: null,
+    channelTrxNo: null,
+    period: null,
+    payTime: null,
+    paySuccessTime: null,
   },
-  onShow() {
-    // 当从其他页面返回，并且 backRefresh 被置为 true 时，刷新数据
-    if (!this.data.backRefresh) { return }
-    this.onRefresh()
-    this.setData({
-      backRefresh: false,
-    })
-  },
-  onPageScroll(e) {
-    this.pullDownRefresh && this.pullDownRefresh.onPageScroll(e)
-  },
-  onImgError(e) {
-    if (e.detail) {
-      console.error('img 加载失败')
-    }
-  },
-  // 页面初始化，会展示pageLoading
-  init() {
-    this.setData({
-      pageLoading: true,
-    })
-    this.getStoreDetail()
-    this.getDetail().then(() => {
-      this.setData({
-        pageLoading: false,
+  buttonVOs: [],
+  labelVOs: null,
+  invoiceVO: null,
+  couponAmount: '0',
+  autoCancelTime: '0',
+  orderStatusName: '',
+  orderStatusRemark: '',
+  logisticsLogVO: null,
+  invoiceStatus: 0,
+  invoiceDesc: '',
+  invoiceUrl: null,
+} as unknown) as OrderDetailView)
+const _order = ref<NormalizedOrderData>({
+  id: '',
+  orderNo: '',
+  parentOrderNo: '',
+  storeId: '',
+  storeName: '',
+  status: 0,
+  statusDesc: '',
+  amount: '0',
+  totalAmount: '0',
+  logisticsNo: '',
+  goodsList: [],
+  buttons: [],
+  createTime: '',
+  receiverAddress: '',
+  groupInfoVo: null,
+})
+const storeDetail = ref<StoreDetailState>({
+  storeTel: '',
+  storeBusiness: '',
+})
+const countDownTime = ref<number | null>(null)
+const addressEditable = ref(false)
+const backRefresh = ref(false)
+const formatCreateTime = ref('')
+const logisticsNodes = ref<LogisticsNodeItem[]>([])
+const invoiceType = ref('不开发票')
+const isPaid = ref(false)
+const pullDownRefresh = ref<any>(null)
+
+function composeAddress(currentOrder: Pick<OrderDetailData, 'logisticsVO'>) {
+  return [
+    currentOrder.logisticsVO.receiverCity,
+    currentOrder.logisticsVO.receiverCountry,
+    currentOrder.logisticsVO.receiverArea,
+    currentOrder.logisticsVO.receiverAddress,
+  ].filter(Boolean).join(' ')
+}
+
+function flattenNodes(nodes: Array<{ title?: string, code?: string, nodes?: Array<{ status?: string, timestamp?: string | number }> }> = []) {
+  return nodes.reduce<LogisticsNodeItem[]>((result, node) => {
+    return (node.nodes || []).reduce<LogisticsNodeItem[]>((children, subNode, index) => {
+      children.push({
+        title: index === 0 ? node.title || '' : '',
+        desc: subNode.status || '',
+        date: formatTime(Number(subNode.timestamp || 0), 'YYYY-MM-DD HH:mm:ss'),
+        icon: index === 0 && node.code ? (LogisticsIconMap as Record<string, string>)[node.code] || '' : '',
       })
-    }).catch((e) => {
-      console.error(e)
-    })
-  },
-  // 页面刷新，展示下拉刷新
-  onRefresh() {
-    this.init()
-    // 如果上一页为订单列表，通知其刷新数据
-    const pages = getCurrentPages()
-    const lastPage = pages[pages.length - 2]
-    if (lastPage) {
-      lastPage.data.backRefresh = true
+      return children
+    }, result)
+  }, [])
+}
+
+function datermineInvoiceStatus(currentOrder: Pick<OrderDetailData, 'invoiceStatus'>) {
+  return currentOrder.invoiceStatus
+}
+
+function computeCountDownTime(currentOrder: Pick<OrderDetailData, 'orderStatus' | 'autoCancelTime'>) {
+  if (currentOrder.orderStatus !== OrderStatus.PENDING_PAYMENT) {
+    return null
+  }
+  const autoCancelTime = Number(currentOrder.autoCancelTime || 0)
+  return autoCancelTime > 1577808000000 ? autoCancelTime - Date.now() : autoCancelTime
+}
+
+function normalizeOrder(currentOrder: OrderDetailView): NormalizedOrderData {
+  return {
+    id: currentOrder.orderId,
+    orderNo: currentOrder.orderNo,
+    parentOrderNo: currentOrder.parentOrderNo,
+    storeId: currentOrder.storeId,
+    storeName: currentOrder.storeName,
+    status: currentOrder.orderStatus,
+    statusDesc: currentOrder.orderStatusName,
+    amount: currentOrder.paymentAmount,
+    totalAmount: currentOrder.goodsAmountApp,
+    logisticsNo: currentOrder.logisticsVO.logisticsNo,
+    goodsList: (currentOrder.orderItemVOs || []).map(goods => ({
+      ...goods,
+      id: goods.id,
+      thumb: goods.goodsPictureUrl,
+      title: goods.goodsName,
+      skuId: goods.skuId,
+      spuId: goods.spuId,
+      specs: (goods.specifications || []).map(spec => spec.specValue),
+      price: goods.tagPrice || goods.actualPrice,
+      num: goods.buyQuantity,
+      titlePrefixTags: goods.tagText ? [{ text: goods.tagText }] : [],
+      buttons: goods.buttonVOs || [],
+    })),
+    buttons: currentOrder.buttonVOs || [],
+    createTime: currentOrder.createTime,
+    receiverAddress: composeAddress(currentOrder),
+    groupInfoVo: currentOrder.groupInfoVo,
+  }
+}
+
+async function getDetail() {
+  const res = await fetchOrderDetail({
+    parameter: orderNo.value,
+  })
+  const currentOrder = res.data as OrderDetailView
+  order.value = currentOrder
+  _order.value = normalizeOrder(currentOrder)
+  formatCreateTime.value = formatTime(Number(currentOrder.createTime || 0), 'YYYY-MM-DD HH:mm')
+  countDownTime.value = computeCountDownTime(currentOrder)
+  addressEditable.value = [OrderStatus.PENDING_PAYMENT, OrderStatus.PENDING_DELIVERY].includes(currentOrder.orderStatus) && currentOrder.orderSubStatus !== -1
+  isPaid.value = Boolean(currentOrder.paymentVO.paySuccessTime)
+  datermineInvoiceStatus(currentOrder)
+  invoiceType.value = currentOrder.invoiceVO?.invoiceType === 5 ? '电子普通发票' : '不开发票'
+  logisticsNodes.value = flattenNodes(currentOrder.trajectoryVos || [])
+}
+
+async function getStoreDetail() {
+  const res: BusinessTimeResult = await fetchBusinessTime()
+  storeDetail.value = {
+    storeTel: res.data.telphone,
+    storeBusiness: res.data.businessTime.join('\n'),
+  }
+}
+
+async function init() {
+  pageLoading.value = true
+  try {
+    await Promise.all([
+      getStoreDetail(),
+      getDetail(),
+    ])
+  }
+  finally {
+    pageLoading.value = false
+  }
+}
+
+function onRefresh() {
+  void init()
+  const pages = getCurrentPages() as PageInstanceWithBackRefresh[]
+  const lastPage = pages[pages.length - 2]
+  if (lastPage) {
+    lastPage.data.backRefresh = true
+  }
+}
+
+async function onPullDownRefresh_(e: { detail?: { callback?: () => void } }) {
+  await getDetail()
+  e.detail?.callback?.()
+}
+
+function onCountDownFinish() {
+  if ((countDownTime.value || 0) > 0 || (order.value.groupInfoVo?.residueTime || 0) > 0) {
+    onRefresh()
+  }
+}
+
+async function onGoodsCardTap(e: { currentTarget?: { dataset?: { index?: number | string } } }) {
+  const index = Number(e.currentTarget?.dataset?.index ?? 0)
+  const goods = order.value.orderItemVOs[index]
+  if (!goods) {
+    return
+  }
+  await wpi.navigateTo({
+    url: `/pages/goods/details/index?spuId=${goods.spuId}`,
+  })
+}
+
+function normalizeSelectedAddress(address: SelectableAddress) {
+  return {
+    name: address.name,
+    phone: address.phone,
+    receiverAddress: address.detailAddress,
+  }
+}
+
+async function onEditAddressTap() {
+  void getAddressPromise().then((address) => {
+    if (!address) {
+      return
     }
-  },
-  // 页面刷新，展示下拉刷新
-  onPullDownRefresh_(e) {
-    const {
-      callback,
-    } = e.detail
-    return this.getDetail().then(() => callback && callback())
-  },
-  getDetail() {
-    const params = {
-      parameter: this.orderNo,
+    const nextAddress = normalizeSelectedAddress(address)
+    order.value = {
+      ...order.value,
+      logisticsVO: {
+        ...order.value.logisticsVO,
+        receiverName: nextAddress.name,
+        receiverPhone: nextAddress.phone as string,
+      },
+    } as OrderDetailView
+    _order.value = {
+      ..._order.value,
+      receiverAddress: nextAddress.receiverAddress,
     }
-    return fetchOrderDetail(params).then((res) => {
-      const order = res.data
-      const _order = {
-        id: order.orderId,
-        orderNo: order.orderNo,
-        parentOrderNo: order.parentOrderNo,
-        storeId: order.storeId,
-        storeName: order.storeName,
-        status: order.orderStatus,
-        statusDesc: order.orderStatusName,
-        amount: order.paymentAmount,
-        totalAmount: order.goodsAmountApp,
-        logisticsNo: order.logisticsVO.logisticsNo,
-        goodsList: (order.orderItemVOs || []).map(goods => Object.assign({}, goods, {
-          id: goods.id,
-          thumb: goods.goodsPictureUrl,
-          title: goods.goodsName,
-          skuId: goods.skuId,
-          spuId: goods.spuId,
-          specs: (goods.specifications || []).map(s => s.specValue),
-          price: goods.tagPrice ? goods.tagPrice : goods.actualPrice,
-          // 商品销售单价, 优先取限时活动价
-          num: goods.buyQuantity,
-          titlePrefixTags: goods.tagText
-            ? [{
-                text: goods.tagText,
-              }]
-            : [],
-          buttons: goods.buttonVOs || [],
-        })),
-        buttons: order.buttonVOs || [],
-        createTime: order.createTime,
-        receiverAddress: this.composeAddress(order),
-        groupInfoVo: order.groupInfoVo,
-      }
-      this.setData({
-        order,
-        _order,
-        formatCreateTime: formatTime(Number.parseFloat(`${order.createTime}`), 'YYYY-MM-DD HH:mm'),
-        // 格式化订单创建时间
-        countDownTime: this.computeCountDownTime(order),
-        addressEditable: [OrderStatus.PENDING_PAYMENT, OrderStatus.PENDING_DELIVERY].includes(order.orderStatus) && order.orderSubStatus !== -1,
-        // 订单正在取消审核时不允许修改地址（但是返回的状态码与待发货一致）
-        isPaid: !!order.paymentVO.paySuccessTime,
-        invoiceStatus: this.datermineInvoiceStatus(order),
-        invoiceDesc: order.invoiceDesc,
-        invoiceType: order.invoiceVO?.invoiceType === 5 ? '电子普通发票' : '不开发票',
-        // 是否开票 0-不开 5-电子发票
-        logisticsNodes: this.flattenNodes(order.trajectoryVos || []),
-      })
-    })
-  },
-  // 展开物流节点
-  flattenNodes(nodes) {
-    return (nodes || []).reduce((res, node) => {
-      return (node.nodes || []).reduce((res1, subNode, index) => {
-        res1.push({
-          title: index === 0 ? node.title : '',
-          // 子节点中仅第一个显示title
-          desc: subNode.status,
-          date: formatTime(+subNode.timestamp, 'YYYY-MM-DD HH:mm:ss'),
-          icon: index === 0 ? LogisticsIconMap[node.code] || '' : '', // 子节点中仅第一个显示icon
-        })
-        return res1
-      }, res)
-    }, [])
-  },
-  datermineInvoiceStatus(order) {
-    // 1-已开票
-    // 2-未开票（可补开）
-    // 3-未开票
-    // 4-门店不支持开票
-    return order.invoiceStatus
-  },
-  // 拼接省市区
-  composeAddress(order) {
-    return [
-    // order.logisticsVO.receiverProvince,
-      order.logisticsVO.receiverCity,
-      order.logisticsVO.receiverCountry,
-      order.logisticsVO.receiverArea,
-      order.logisticsVO.receiverAddress,
-    ].filter(s => !!s).join(' ')
-  },
-  getStoreDetail() {
-    fetchBusinessTime().then((res) => {
-      const storeDetail = {
-        storeTel: res.data.telphone,
-        storeBusiness: res.data.businessTime.join('\n'),
-      }
-      this.setData({
-        storeDetail,
-      })
-    })
-  },
-  // 仅对待支付状态计算付款倒计时
-  // 返回时间若是大于2020.01.01，说明返回的是关闭时间，否则说明返回的直接就是剩余时间
-  computeCountDownTime(order) {
-    if (order.orderStatus !== OrderStatus.PENDING_PAYMENT) { return null }
-    return order.autoCancelTime > 1577808000000 ? order.autoCancelTime - Date.now() : order.autoCancelTime
-  },
-  onCountDownFinish() {
-    // this.setData({ countDownTime: -1 });
-    const {
-      countDownTime,
-      order,
-    } = this.data
-    if (countDownTime > 0 || order && order.groupInfoVo && order.groupInfoVo.residueTime > 0) {
-      this.onRefresh()
-    }
-  },
-  async onGoodsCardTap(e) {
-    const {
-      index,
-    } = e.currentTarget.dataset
-    const goods = this.data.order.orderItemVOs[index]
-    await wpi.navigateTo({
-      url: `/pages/goods/details/index?spuId=${goods.spuId}`,
-    })
-  },
-  async onEditAddressTap() {
-    getAddressPromise().then((address) => {
-      this.setData({
-        'order.logisticsVO.receiverName': address.name,
-        'order.logisticsVO.receiverPhone': address.phone,
-        '_order.receiverAddress': address.address,
-      })
-    }).catch(() => {})
-    await wpi.navigateTo({
-      url: `/pages/user/address/list/index?selectMode=1`,
-    })
-  },
-  async onOrderNumCopy() {
-    await wpi.setClipboardData({
-      data: this.data.order.orderNo,
-    })
-  },
-  async onDeliveryNumCopy() {
-    await wpi.setClipboardData({
-      data: this.data.order.logisticsVO.logisticsNo,
-    })
-  },
-  async onToInvoice() {
-    await wpi.navigateTo({
-      url: `/pages/order/invoice/index?orderNo=${this.data._order.orderNo}`,
-    })
-  },
-  async onSuppleMentInvoice() {
-    await wpi.navigateTo({
-      url: `/pages/order/receipt/index?orderNo=${this.data._order.orderNo}`,
-    })
-  },
-  async onDeliveryClick() {
-    const logisticsData = {
-      nodes: this.data.logisticsNodes,
-      company: this.data.order.logisticsVO.logisticsCompanyName,
-      logisticsNo: this.data.order.logisticsVO.logisticsNo,
-      phoneNumber: this.data.order.logisticsVO.logisticsCompanyTel,
-    }
-    await wpi.navigateTo({
-      url: `/pages/order/delivery-detail/index?data=${encodeURIComponent(JSON.stringify(logisticsData))}`,
-    })
-  },
-  /** 跳转订单评价 */
-  async navToCommentCreate() {
-    await wpi.navigateTo({
-      url: `/pages/order/createComment/index?orderNo=${this.orderNo}`,
-    })
-  },
-  /** 跳转拼团详情/分享页 */
-  toGrouponDetail() {
-    showToast({
-      title: '点击了拼团',
-    })
-  },
-  clickService() {
-    showToast({
-      context: this,
-      message: '您点击了联系客服',
-    })
-  },
-  async onOrderInvoiceView() {
-    await wpi.navigateTo({
-      url: `/pages/order/invoice/index?orderNo=${this.orderNo}`,
-    })
-  },
+  }).catch(() => {})
+  await wpi.navigateTo({
+    url: `/pages/user/address/list/index?selectMode=1`,
+  })
+}
+
+async function onOrderNumCopy() {
+  await wpi.setClipboardData({
+    data: order.value.orderNo,
+  })
+}
+
+async function onDeliveryClick() {
+  const logisticsData = {
+    nodes: logisticsNodes.value,
+    company: order.value.logisticsVO.logisticsCompanyName,
+    logisticsNo: order.value.logisticsVO.logisticsNo,
+    phoneNumber: (order.value.logisticsVO as any).logisticsCompanyTel,
+  }
+  await wpi.navigateTo({
+    url: `/pages/order/delivery-detail/index?data=${encodeURIComponent(JSON.stringify(logisticsData))}`,
+  })
+}
+
+function clickService() {
+  showToast({
+    message: '您点击了联系客服',
+  })
+}
+
+async function onOrderInvoiceView() {
+  await wpi.navigateTo({
+    url: `/pages/order/invoice/index?orderNo=${orderNo.value}`,
+  })
+}
+
+function onOpenCoupons() {}
+
+onLoad((query: QueryOptions = {}) => {
+  orderNo.value = query.orderNo || ''
+  pullDownRefresh.value = nativeInstance.selectComponent?.('#t-pull-down-refresh') ?? null
+  void init()
+})
+
+onShow(() => {
+  if (!backRefresh.value) {
+    return
+  }
+  onRefresh()
+  backRefresh.value = false
+})
+
+onPageScroll((e) => {
+  pullDownRefresh.value?.onPageScroll?.(e)
 })
 
 definePageJson({
@@ -300,7 +442,7 @@ definePageJson({
           </view>
           <view class="desc">
             <block v-if="order.holdStatus === 1">
-              <block v-if="order.groupInfoVo.residueTime > 0">
+              <block v-if="order.groupInfoVo?.residueTime && order.groupInfoVo.residueTime > 0">
                 拼团剩余
                 <t-count-down
                   :time="order.groupInfoVo.residueTime"
@@ -360,7 +502,7 @@ definePageJson({
       <order-card :order="_order" use-top-right-slot>
         <order-goods-card
           v-for="(goods, gIndex) in _order.goodsList"
-          :key="id"
+          :key="goods.id || gIndex"
           :goods="goods"
           :no-top-line="gIndex === 0"
           :data-index="gIndex"

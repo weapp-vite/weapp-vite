@@ -1,438 +1,410 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { Activity } from '../../../model/activity'
+import type { GoodsDetailsComments, GoodsDetailsCommentsCount } from '../../../model/detailsComments'
+import type { GoodDetail } from '../../../model/good'
 import { wpi } from '@wevu/api'
+import { computed, onLoad, onShareAppMessage, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 import { cdnBase } from '../../../config/index'
 import { fetchActivityList } from '../../../services/activity/fetchActivityList'
 import { fetchGood } from '../../../services/good/fetchGood'
 import { getGoodsDetailsCommentList, getGoodsDetailsCommentsCount } from '../../../services/good/fetchGoodsDetailsComments'
 
-defineOptions({
-  data() {
-    return {
-      commentsList: [],
-      commentsStatistics: {
-        badCount: 0,
-        commentCount: 0,
-        goodCount: 0,
-        goodRate: 0,
-        hasImageCount: 0,
-        middleCount: 0,
-      },
-      isShowPromotionPop: false,
-      activityList: [],
-      recLeftImg: `${cdnBase}/common/rec-left.png`,
-      recRightImg: `${cdnBase}/common/rec-right.png`,
-      details: {},
-      goodsTabArray: [{
-        name: '商品',
-        value: '', // 空字符串代表置顶
-      }, {
-        name: '详情',
-        value: 'goods-page',
-      }],
-      storeLogo: `${cdnBase}/common/store-logo.png`,
-      storeName: '云mall标准版旗舰店',
-      jumpArray: [{
-        title: '首页',
-        url: '/pages/home/home',
-        iconName: 'home',
-      }, {
-        title: '购物车',
-        url: '/pages/cart/index',
-        iconName: 'cart',
-        showCartNum: true,
-      }],
-      isStock: true,
-      cartNum: 0,
-      soldout: false,
-      buttonType: 1,
-      buyNum: 1,
-      selectedAttrStr: '',
-      skuArray: [],
-      primaryImage: '',
-      specImg: '',
-      isSpuSelectPopupShow: false,
-      isAllSelectedSku: false,
-      buyType: 0,
-      outOperateStatus: false,
-      // 是否外层加入购物车
-      operateType: 0,
-      selectSkuSellsPrice: 0,
-      maxLinePrice: 0,
-      minSalePrice: 0,
-      maxSalePrice: 0,
-      list: [],
-      spuId: '',
-      navigation: {
-        type: 'fraction',
-      },
-      current: 0,
-      autoplay: true,
-      duration: 500,
-      interval: 5000,
-      soldNum: 0, // 已售数量
-    }
+type DetailSpecItem = NonNullable<GoodDetail['specList']>[number]
+type DetailSpecValueItem = DetailSpecItem['specValueList'][number]
+type DetailSkuItem = NonNullable<GoodDetail['skuList']>[number]
+type SelectedSkuMap = Record<string, string | number | ''>
+type CommentItem = GoodsDetailsComments['homePageComments'][number] & {
+  isAnonymity?: boolean
+}
+
+interface CommentViewItem {
+  goodsSpu: string
+  userName: string
+  commentScore: number
+  commentContent: string
+  userHeadUrl: string
+}
+
+interface CommentStatistics {
+  badCount: number
+  commentCount: number
+  goodCount: number
+  goodRate: number
+  hasImageCount: number
+  middleCount: number
+}
+
+interface PromotionViewItem {
+  tag: string
+  label: string
+}
+
+interface JumpItem {
+  title: string
+  url: string
+  iconName: string
+  showCartNum?: boolean
+}
+
+interface NormalizedSkuItem {
+  skuId: string
+  quantity: number
+  price: number
+  skuImage: string
+  specInfo: DetailSkuItem['specInfo']
+}
+
+const nativeInstance = useNativeInstance()
+
+const anonymousAvatar = 'https://tdesign.gtimg.com/miniprogram/template/retail/avatar/avatar1.png'
+const recLeftImg = `${cdnBase}/common/rec-left.png`
+const recRightImg = `${cdnBase}/common/rec-right.png`
+const jumpArray: JumpItem[] = [
+  {
+    title: '首页',
+    url: '/pages/home/home',
+    iconName: 'home',
   },
-  obj2Params(obj = {}, encode = false) {
-    const result = []
-    Object.keys(obj).forEach(key => result.push(`${key}=${encode ? encodeURIComponent(obj[key]) : obj[key]}`))
-    return result.join('&')
+  {
+    title: '购物车',
+    url: '/pages/cart/index',
+    iconName: 'cart',
+    showCartNum: true,
   },
-  handlePopupHide() {
-    this.setData({
-      isSpuSelectPopupShow: false,
-    })
-  },
-  showSkuSelectPopup(type) {
-    this.setData({
-      buyType: type || 0,
-      outOperateStatus: type >= 1,
-      isSpuSelectPopupShow: true,
-    })
-  },
-  buyItNow() {
-    this.showSkuSelectPopup(1)
-  },
-  toAddCart() {
-    this.showSkuSelectPopup(2)
-  },
-  async toNav(e) {
-    const {
-      url,
-    } = e.detail
-    await wpi.switchTab({
-      url,
-    })
-  },
-  async showCurImg(e) {
-    const {
-      index,
-    } = e.detail
-    const {
-      images,
-    } = this.data.details
-    await wpi.previewImage({
-      current: images[index],
-      urls: images, // 需要预览的图片http链接列表
-    })
-  },
-  onPageScroll({
-    scrollTop,
-  }) {
-    const goodsTab = this.selectComponent('#goodsTab')
-    goodsTab && goodsTab.onScroll(scrollTop)
-  },
-  chooseSpecItem(e) {
-    const {
-      specList,
-    } = this.data.details
-    const {
-      selectedSku,
-      isAllSelectedSku,
-    } = e.detail
-    if (!isAllSelectedSku) {
-      this.setData({
-        selectSkuSellsPrice: 0,
-      })
-    }
-    this.setData({
-      isAllSelectedSku,
-    })
-    this.getSkuItem(specList, selectedSku)
-  },
-  getSkuItem(specList, selectedSku) {
-    const {
-      skuArray,
-      primaryImage,
-    } = this.data
-    const selectedSkuValues = this.getSelectedSkuValues(specList, selectedSku)
-    let selectedAttrStr = ` 件  `
-    selectedSkuValues.forEach((item) => {
-      selectedAttrStr += `，${item.specValue}  `
-    })
-    // eslint-disable-next-line array-callback-return
-    const skuItem = skuArray.filter((item) => {
-      let status = true;
-      (item.specInfo || []).forEach((subItem) => {
-        if (!selectedSku[subItem.specId] || selectedSku[subItem.specId] !== subItem.specValueId) {
-          status = false
-        }
-      })
-      if (status) { return item }
-    })
-    this.selectSpecsName(selectedSkuValues.length > 0 ? selectedAttrStr : '')
-    if (skuItem) {
-      this.setData({
-        selectItem: skuItem,
-        selectSkuSellsPrice: skuItem.price || 0,
-      })
-    }
-    else {
-      this.setData({
-        selectItem: null,
-        selectSkuSellsPrice: 0,
-      })
-    }
-    this.setData({
-      specImg: skuItem && skuItem.skuImage ? skuItem.skuImage : primaryImage,
-    })
-  },
-  // 获取已选择的sku名称
-  getSelectedSkuValues(skuTree, selectedSku) {
-    const normalizedTree = this.normalizeSkuTree(skuTree)
-    return Object.keys(selectedSku).reduce((selectedValues, skuKeyStr) => {
-      const skuValues = normalizedTree[skuKeyStr]
-      const skuValueId = selectedSku[skuKeyStr]
-      if (skuValueId !== '') {
-        const skuValue = skuValues.filter((value) => {
-          return value.specValueId === skuValueId
-        })[0]
-        skuValue && selectedValues.push(skuValue)
+]
+
+const commentsList = ref<CommentViewItem[]>([])
+const commentsStatistics = ref<CommentStatistics>({
+  badCount: 0,
+  commentCount: 0,
+  goodCount: 0,
+  goodRate: 0,
+  hasImageCount: 0,
+  middleCount: 0,
+})
+const isShowPromotionPop = ref(false)
+const activityList = ref<Activity[]>([])
+const details = ref<GoodDetail | null>(null)
+const isStock = ref(true)
+const cartNum = ref(0)
+const soldout = ref(false)
+const buttonType = ref(1)
+const buyNum = ref(1)
+const selectedAttrStr = ref('')
+const skuArray = ref<NormalizedSkuItem[]>([])
+const primaryImage = ref('')
+const specImg = ref('')
+const isSpuSelectPopupShow = ref(false)
+const isAllSelectedSku = ref(false)
+const buyType = ref(0)
+const outOperateStatus = ref(false)
+const selectSkuSellsPrice = ref(0)
+const maxLinePrice = ref(0)
+const minSalePrice = ref(0)
+const maxSalePrice = ref(0)
+const list = ref<PromotionViewItem[]>([])
+const spuId = ref('')
+const current = ref(0)
+const autoplay = ref(true)
+const duration = ref(500)
+const interval = ref(5000)
+const soldNum = ref(0)
+const selectedSkuItem = ref<NormalizedSkuItem | null>(null)
+const navigation = {
+  type: 'fraction',
+} as const
+
+const detailImages = computed(() => details.value?.images ?? [])
+const detailDesc = computed(() => details.value?.desc ?? [])
+const detailSpecList = computed(() => details.value?.specList ?? [])
+const detailLimitBuyInfo = computed(() => details.value?.limitInfo?.[0]?.text ?? '')
+const detailTitle = computed(() => details.value?.title ?? '')
+const detailPrimaryImage = computed(() => details.value?.primaryImage ?? '')
+const intro = computed(() => details.value?.etitle ?? '')
+const visibleActivityList = computed(() => activityList.value.slice(0, 4))
+
+function obj2Params(obj: Record<string, string>, encode = false) {
+  return Object.keys(obj).map((key) => {
+    const value = obj[key]
+    return `${key}=${encode ? encodeURIComponent(value) : value}`
+  }).join('&')
+}
+
+function handlePopupHide() {
+  isSpuSelectPopupShow.value = false
+}
+
+function showSkuSelectPopup(type?: number) {
+  const nextType = typeof type === 'number' ? type : 0
+  buyType.value = nextType
+  outOperateStatus.value = nextType >= 1
+  isSpuSelectPopupShow.value = true
+}
+
+function buyItNow() {
+  showSkuSelectPopup(1)
+}
+
+function toAddCart() {
+  showSkuSelectPopup(2)
+}
+
+async function toNav(payload: { url?: string }) {
+  if (!payload.url) {
+    return
+  }
+  await wpi.switchTab({
+    url: payload.url,
+  })
+}
+
+function normalizeSkuTree(skuTree: DetailSpecItem[]) {
+  return skuTree.reduce<Record<string, DetailSpecValueItem[]>>((tree, treeItem) => {
+    tree[treeItem.specId] = treeItem.specValueList
+    return tree
+  }, {})
+}
+
+function getSelectedSkuValues(skuTree: DetailSpecItem[], selectedSku: SelectedSkuMap) {
+  const normalizedTree = normalizeSkuTree(skuTree)
+  return Object.keys(selectedSku).reduce<DetailSpecValueItem[]>((selectedValues, skuKeyStr) => {
+    const skuValues = normalizedTree[skuKeyStr] ?? []
+    const skuValueId = selectedSku[skuKeyStr]
+    if (skuValueId !== '') {
+      const skuValue = skuValues.find(value => value.specValueId === skuValueId)
+      if (skuValue) {
+        selectedValues.push(skuValue)
       }
-      return selectedValues
-    }, [])
-  },
-  normalizeSkuTree(skuTree) {
-    const normalizedTree = {}
-    skuTree.forEach((treeItem) => {
-      normalizedTree[treeItem.specId] = treeItem.specValueList
+    }
+    return selectedValues
+  }, [])
+}
+
+function selectSpecsName(nextSelectSpecsName: string) {
+  selectedAttrStr.value = nextSelectSpecsName || ''
+}
+
+function getSkuItem(specList: DetailSpecItem[], selectedSku: SelectedSkuMap) {
+  const selectedSkuValues = getSelectedSkuValues(specList, selectedSku)
+  let nextSelectedAttrStr = ' 件'
+  selectedSkuValues.forEach((item) => {
+    nextSelectedAttrStr += `，${item.specValue}`
+  })
+
+  const skuItem = skuArray.value.find((item) => {
+    return (item.specInfo || []).every((subItem) => {
+      return selectedSku[subItem.specId] && selectedSku[subItem.specId] === subItem.specValueId
     })
-    return normalizedTree
-  },
-  selectSpecsName(selectSpecsName) {
-    if (selectSpecsName) {
-      this.setData({
-        selectedAttrStr: selectSpecsName,
-      })
-    }
-    else {
-      this.setData({
-        selectedAttrStr: '',
-      })
-    }
-  },
-  addCart() {
-    const {
-      isAllSelectedSku,
-    } = this.data
+  }) ?? null
+
+  selectSpecsName(selectedSkuValues.length > 0 ? nextSelectedAttrStr : '')
+  selectedSkuItem.value = skuItem
+  selectSkuSellsPrice.value = skuItem?.price ?? 0
+  specImg.value = skuItem?.skuImage || primaryImage.value
+}
+
+function chooseSpecItem(payload: {
+  specList: DetailSpecItem[]
+  selectedSku: SelectedSkuMap
+  isAllSelectedSku: boolean
+}) {
+  isAllSelectedSku.value = payload.isAllSelectedSku
+  if (!payload.isAllSelectedSku) {
+    selectSkuSellsPrice.value = 0
+  }
+  getSkuItem(payload.specList, payload.selectedSku)
+}
+
+function addCart() {
+  showToast({
+    context: nativeInstance as any,
+    message: isAllSelectedSku.value ? '点击加入购物车' : '请选择规格',
+    icon: '',
+    duration: 1000,
+  })
+}
+
+async function gotoBuy() {
+  const detail = details.value
+  if (!isAllSelectedSku.value || !detail) {
     showToast({
-      context: this,
-      message: isAllSelectedSku ? '点击加入购物车' : '请选择规格',
+      context: nativeInstance as any,
+      message: '请选择规格',
       icon: '',
       duration: 1000,
     })
-  },
-  async gotoBuy(type) {
-    const {
-      isAllSelectedSku,
-      buyNum,
-    } = this.data
-    if (!isAllSelectedSku) {
-      showToast({
-        context: this,
-        message: '请选择规格',
-        icon: '',
-        duration: 1000,
-      })
-      return
+    return
+  }
+
+  handlePopupHide()
+
+  const fallbackSkuId = detail.skuList?.[0]?.skuId ?? ''
+  const nextSkuId = selectedSkuItem.value?.skuId || fallbackSkuId
+  const specInfo = detail.specList?.map(item => ({
+    specTitle: item.title,
+    specValue: item.specValueList[0]?.specValue ?? '',
+  })) ?? []
+
+  const query = {
+    quantity: buyNum.value,
+    storeId: '1',
+    goodsName: detail.title,
+    skuId: nextSkuId,
+    available: detail.available,
+    price: detail.minSalePrice,
+    specInfo,
+    primaryImage: detail.primaryImage,
+    spuId: detail.spuId,
+    thumb: detail.primaryImage,
+    title: detail.title,
+  }
+
+  let urlQueryStr = obj2Params({
+    goodsRequestList: JSON.stringify([query]),
+  })
+  urlQueryStr = urlQueryStr ? `?${urlQueryStr}` : ''
+
+  await wpi.navigateTo({
+    url: `/pages/order/order-confirm/index${urlQueryStr}`,
+  })
+}
+
+function specsConfirm() {
+  if (buyType.value === 1) {
+    void gotoBuy()
+    return
+  }
+  addCart()
+}
+
+function changeNum(payload: { buyNum?: number }) {
+  buyNum.value = Number(payload.buyNum ?? 1)
+}
+
+function closePromotionPopup() {
+  isShowPromotionPop.value = false
+}
+
+async function promotionChange({ index }: { index: number }) {
+  await wpi.navigateTo({
+    url: `/pages/promotion/promotion-detail/index?promotion_id=${index}`,
+  })
+}
+
+function showPromotionPopup() {
+  isShowPromotionPop.value = true
+}
+
+function normalizeSkuList(detail: GoodDetail) {
+  return (detail.skuList || []).map((item) => {
+    const salePrice = Number(item.priceInfo?.find(price => price.priceType === 1)?.price ?? 0)
+    return {
+      skuId: item.skuId,
+      quantity: item.stockInfo?.stockQuantity ?? 0,
+      price: salePrice,
+      skuImage: item.skuImage || detail.primaryImage,
+      specInfo: item.specInfo,
     }
-    this.handlePopupHide()
-    const query = {
-      quantity: buyNum,
-      storeId: '1',
-      spuId: this.data.spuId,
-      goodsName: this.data.details.title,
-      skuId: type === 1 ? this.data.skuList[0].skuId : this.data.selectItem.skuId,
-      available: this.data.details.available,
-      price: this.data.details.minSalePrice,
-      specInfo: this.data.details.specList?.map(item => ({
-        specTitle: item.title,
-        specValue: item.specValueList[0].specValue,
-      })),
-      primaryImage: this.data.details.primaryImage,
-      spuId: this.data.details.spuId,
-      thumb: this.data.details.primaryImage,
-      title: this.data.details.title,
+  })
+}
+
+function normalizePromotionList(source: Activity[]) {
+  return source.map((item) => {
+    return {
+      tag: item.promotionSubCode === 'MYJ' ? '满减' : '满折',
+      label: item.activityLadder?.[0]?.label ?? '满100元减99.9元',
     }
-    let urlQueryStr = this.obj2Params({
-      goodsRequestList: JSON.stringify([query]),
-    })
-    urlQueryStr = urlQueryStr ? `?${urlQueryStr}` : ''
-    const path = `/pages/order/order-confirm/index${urlQueryStr}`
-    await wpi.navigateTo({
-      url: path,
-    })
-  },
-  specsConfirm() {
-    const {
-      buyType,
-    } = this.data
-    if (buyType === 1) {
-      this.gotoBuy()
-    }
-    else {
-      this.addCart()
-    }
-    // this.handlePopupHide();
-  },
-  changeNum(e) {
-    this.setData({
-      buyNum: e.detail.buyNum,
-    })
-  },
-  closePromotionPopup() {
-    this.setData({
-      isShowPromotionPop: false,
-    })
-  },
-  async promotionChange(e) {
-    const {
-      index,
-    } = e.detail
-    await wpi.navigateTo({
-      url: `/pages/promotion/promotion-detail/index?promotion_id=${index}`,
-    })
-  },
-  showPromotionPopup() {
-    this.setData({
-      isShowPromotionPop: true,
-    })
-  },
-  getDetail(spuId) {
-    Promise.all([fetchGood(spuId), fetchActivityList()]).then((res) => {
-      const [details, activityList] = res
-      const skuArray = []
-      const {
-        skuList,
-        primaryImage,
-        isPutOnSale,
-        minSalePrice,
-        maxSalePrice,
-        maxLinePrice,
-        soldNum,
-      } = details
-      skuList.forEach((item) => {
-        skuArray.push({
-          skuId: item.skuId,
-          quantity: item.stockInfo ? item.stockInfo.stockQuantity : 0,
-          specInfo: item.specInfo,
-        })
-      })
-      const promotionArray = []
-      activityList.forEach((item) => {
-        promotionArray.push({
-          tag: item.promotionSubCode === 'MYJ' ? '满减' : '满折',
-          label: '满100元减99.9元',
-        })
-      })
-      this.setData({
-        details,
-        activityList,
-        isStock: details.spuStockQuantity > 0,
-        maxSalePrice: maxSalePrice ? Number.parseInt(maxSalePrice) : 0,
-        maxLinePrice: maxLinePrice ? Number.parseInt(maxLinePrice) : 0,
-        minSalePrice: minSalePrice ? Number.parseInt(minSalePrice) : 0,
-        list: promotionArray,
-        skuArray,
-        primaryImage,
-        soldout: isPutOnSale === 0,
-        soldNum,
-      })
-    })
-  },
-  async getCommentsList() {
-    try {
-      const code = 'Success'
-      const data = await getGoodsDetailsCommentList()
-      const {
-        homePageComments,
-      } = data
-      if (code.toUpperCase() === 'SUCCESS') {
-        const nextState = {
-          commentsList: homePageComments.map((item) => {
-            return {
-              goodsSpu: item.spuId,
-              userName: item.userName || '',
-              commentScore: item.commentScore,
-              commentContent: item.commentContent || '用户未填写评价',
-              userHeadUrl: item.isAnonymity ? this.anonymityAvatar : item.userHeadUrl || this.anonymityAvatar,
-            }
-          }),
-        }
-        this.setData(nextState)
-      }
-    }
-    catch (error) {
-      console.error('comments error:', error)
-    }
-  },
-  onShareAppMessage() {
-    // 自定义的返回信息
-    const {
-      selectedAttrStr,
-    } = this.data
-    let shareSubTitle = ''
-    if (selectedAttrStr.includes('件')) {
-      const count = selectedAttrStr.indexOf('件')
-      shareSubTitle = selectedAttrStr.slice(count + 1, selectedAttrStr.length)
-    }
-    const customInfo = {
-      imageUrl: this.data.details.primaryImage,
-      title: this.data.details.title + shareSubTitle,
-      path: `/pages/goods/details/index?spuId=${this.data.spuId}`,
-    }
-    return customInfo
-  },
-  /** 获取评价统计 */
-  async getCommentsStatistics() {
-    try {
-      const code = 'Success'
-      const data = await getGoodsDetailsCommentsCount()
-      if (code.toUpperCase() === 'SUCCESS') {
-        const {
-          badCount,
-          commentCount,
-          goodCount,
-          goodRate,
-          hasImageCount,
-          middleCount,
-        } = data
-        const nextState = {
-          commentsStatistics: {
-            badCount: Number.parseInt(`${badCount}`),
-            commentCount: Number.parseInt(`${commentCount}`),
-            goodCount: Number.parseInt(`${goodCount}`),
-            /** 后端返回百分比后数据但没有限制位数 */
-            goodRate: Math.floor(goodRate * 10) / 10,
-            hasImageCount: Number.parseInt(`${hasImageCount}`),
-            middleCount: Number.parseInt(`${middleCount}`),
-          },
-        }
-        this.setData(nextState)
-      }
-    }
-    catch (error) {
-      console.error('comments statiistics error:', error)
-    }
-  },
-  /** 跳转到评价列表 */
-  async navToCommentsListPage() {
-    await wpi.navigateTo({
-      url: `/pages/goods/comments/index?spuId=${this.data.spuId}`,
-    })
-  },
-  onLoad(query) {
-    const {
-      spuId,
-    } = query
-    this.setData({
-      spuId,
-    })
-    this.getDetail(spuId)
-    this.getCommentsList(spuId)
-    this.getCommentsStatistics(spuId)
-  },
+  })
+}
+
+async function getDetail(nextSpuId: string) {
+  const [detail, activities] = await Promise.all([
+    fetchGood(nextSpuId),
+    fetchActivityList(),
+  ])
+
+  details.value = detail
+  activityList.value = activities
+  skuArray.value = normalizeSkuList(detail)
+  primaryImage.value = detail.primaryImage || ''
+  specImg.value = detail.primaryImage || ''
+  isStock.value = Number(detail.spuStockQuantity ?? 0) > 0
+  maxSalePrice.value = Number.parseInt(`${detail.maxSalePrice ?? 0}`) || 0
+  maxLinePrice.value = Number.parseInt(`${detail.maxLinePrice ?? 0}`) || 0
+  minSalePrice.value = Number.parseInt(`${detail.minSalePrice ?? 0}`) || 0
+  list.value = normalizePromotionList(activities)
+  soldout.value = detail.isPutOnSale === 0
+  soldNum.value = Number(detail.soldNum ?? 0)
+}
+
+function normalizeCommentItem(item: CommentItem): CommentViewItem {
+  return {
+    goodsSpu: item.spuId || '',
+    userName: item.userName || '',
+    commentScore: Number(item.commentScore ?? 0),
+    commentContent: item.commentContent || '用户未填写评价',
+    userHeadUrl: item.isAnonymity ? anonymousAvatar : item.userHeadUrl || anonymousAvatar,
+  }
+}
+
+async function getCommentsList(nextSpuId: string) {
+  try {
+    const data = await getGoodsDetailsCommentList(nextSpuId)
+    commentsList.value = (data.homePageComments || []).map(item => normalizeCommentItem(item as CommentItem))
+  }
+  catch (error) {
+    console.error('comments error:', error)
+  }
+}
+
+function normalizeCommentStatistics(data: GoodsDetailsCommentsCount): CommentStatistics {
+  return {
+    badCount: Number.parseInt(`${data.badCount}`),
+    commentCount: Number.parseInt(`${data.commentCount}`),
+    goodCount: Number.parseInt(`${data.goodCount}`),
+    goodRate: Math.floor(Number(data.goodRate ?? 0) * 10) / 10,
+    hasImageCount: Number.parseInt(`${data.hasImageCount}`),
+    middleCount: Number.parseInt(`${data.middleCount}`),
+  }
+}
+
+async function getCommentsStatistics(nextSpuId: string) {
+  try {
+    const data = await getGoodsDetailsCommentsCount(nextSpuId)
+    commentsStatistics.value = normalizeCommentStatistics(data)
+  }
+  catch (error) {
+    console.error('comments statistics error:', error)
+  }
+}
+
+async function navToCommentsListPage() {
+  await wpi.navigateTo({
+    url: `/pages/goods/comments/index?spuId=${spuId.value}`,
+  })
+}
+
+onShareAppMessage(() => {
+  const shareSubTitle = selectedAttrStr.value.includes('件')
+    ? selectedAttrStr.value.slice(selectedAttrStr.value.indexOf('件') + 1)
+    : ''
+
+  return {
+    imageUrl: detailPrimaryImage.value,
+    title: `${detailTitle.value}${shareSubTitle}`,
+    path: `/pages/goods/details/index?spuId=${spuId.value}`,
+  }
+})
+
+onLoad((query: { spuId?: string } = {}) => {
+  spuId.value = query.spuId || ''
+  if (!spuId.value) {
+    return
+  }
+  void getDetail(spuId.value)
+  void getCommentsList(spuId.value)
+  void getCommentsStatistics(spuId.value)
 })
 
 definePageJson({
@@ -458,14 +430,14 @@ definePageJson({
   <view class="goods-detail-page [&_.goods-info]:[margin:0_auto] [&_.goods-info]:[padding:26rpx_0_28rpx_30rpx] [&_.goods-info]:[background-color:#fff] [&_.swipe-img]:[width:100%] [&_.swipe-img]:[height:750rpx] [&_.goods-info_.goods-price]:[display:flex] [&_.goods-info_.goods-price]:[align-items:baseline] [&_.goods-info_.goods-price-up]:[color:#fa4126] [&_.goods-info_.goods-price-up]:[font-size:28rpx] [&_.goods-info_.goods-price-up]:[position:relative] [&_.goods-info_.goods-price-up]:[bottom:4rpx] [&_.goods-info_.goods-price-up]:[left:8rpx] [&_.goods-info_.goods-price_.class-goods-price]:[font-size:64rpx] [&_.goods-info_.goods-price_.class-goods-price]:[color:#fa4126] [&_.goods-info_.goods-price_.class-goods-price]:[font-weight:bold] [&_.goods-info_.goods-price_.class-goods-price]:[font-family:DIN_Alternate] [&_.goods-info_.goods-price_.class-goods-symbol]:[font-size:36rpx] [&_.goods-info_.goods-price_.class-goods-symbol]:[color:#fa4126] [&_.goods-info_.goods-price_.class-goods-del]:[position:relative] [&_.goods-info_.goods-price_.class-goods-del]:[font-weight:normal] [&_.goods-info_.goods-price_.class-goods-del]:[left:16rpx] [&_.goods-info_.goods-price_.class-goods-del]:[bottom:2rpx] [&_.goods-info_.goods-price_.class-goods-del]:[color:#999999] [&_.goods-info_.goods-price_.class-goods-del]:[font-size:32rpx] [&_.goods-info_.goods-number]:[display:flex] [&_.goods-info_.goods-number]:[align-items:center] [&_.goods-info_.goods-number]:[justify-content:space-between] [&_.goods-info_.goods-number_.sold-num]:[font-size:24rpx] [&_.goods-info_.goods-number_.sold-num]:[color:#999999] [&_.goods-info_.goods-number_.sold-num]:[display:flex] [&_.goods-info_.goods-number_.sold-num]:[align-items:flex-end] [&_.goods-info_.goods-number_.sold-num]:[margin-right:32rpx] [&_.goods-info_.goods-activity]:[display:flex] [&_.goods-info_.goods-activity]:[margin-top:16rpx] [&_.goods-info_.goods-activity]:[justify-content:space-between] [&_.goods-info_.goods-activity_.tags-container]:[display:flex] [&_.goods-info_.goods-activity_.tags-container_.goods-activity-tag]:[background:#ffece9] [&_.goods-info_.goods-activity_.tags-container_.goods-activity-tag]:[color:#fa4126] [&_.goods-info_.goods-activity_.tags-container_.goods-activity-tag]:[font-size:24rpx] [&_.goods-info_.goods-activity_.tags-container_.goods-activity-tag]:[margin-right:16rpx] [&_.goods-info_.goods-activity_.tags-container_.goods-activity-tag]:[padding:4rpx_8rpx] [&_.goods-info_.goods-activity_.tags-container_.goods-activity-tag]:[border-radius:4rpx] [&_.goods-info_.goods-activity_.activity-show]:[display:flex] [&_.goods-info_.goods-activity_.activity-show]:[justify-content:center] [&_.goods-info_.goods-activity_.activity-show]:[align-items:center] [&_.goods-info_.goods-activity_.activity-show]:[color:#fa4126] [&_.goods-info_.goods-activity_.activity-show]:[font-size:24rpx] [&_.goods-info_.goods-activity_.activity-show]:[padding-right:32rpx] [&_.goods-info_.goods-activity_.activity-show-text]:[line-height:42rpx] [&_.goods-info_.goods-title]:[display:flex] [&_.goods-info_.goods-title]:[justify-content:space-between] [&_.goods-info_.goods-title]:[align-items:center] [&_.goods-info_.goods-title]:[margin-top:20rpx] [&_.goods-info_.goods-title_.goods-name]:[width:600rpx] [&_.goods-info_.goods-title_.goods-name]:[font-weight:500] [&_.goods-info_.goods-title_.goods-name]:[display:-webkit-box] [&_.goods-info_.goods-title_.goods-name]:[-webkit-box-orient:vertical] [&_.goods-info_.goods-title_.goods-name]:[-webkit-line-clamp:2] [&_.goods-info_.goods-title_.goods-name]:[overflow:hidden] [&_.goods-info_.goods-title_.goods-name]:[font-size:32rpx] [&_.goods-info_.goods-title_.goods-name]:[word-break:break-all] [&_.goods-info_.goods-title_.goods-name]:[color:#333333] [&_.goods-info_.goods-title_.goods-tag]:[width:104rpx] [&_.goods-info_.goods-title_.goods-tag]:[margin-left:26rpx] [&_.goods-info_.goods-title_.goods-tag_.shareBtn]:[border-radius:200rpx_0px_0px_200rpx] [&_.goods-info_.goods-title_.goods-tag_.shareBtn]:[width:100rpx] [&_.goods-info_.goods-title_.goods-tag_.shareBtn]:[height:96rpx] [&_.goods-info_.goods-title_.goods-tag_.shareBtn]:[border:none] [&_.goods-info_.goods-title_.goods-tag_.shareBtn]:[padding-right:36rpx] [&_.goods-info_.goods-title_.goods-tag_.btn-icon]:[font-size:20rpx] [&_.goods-info_.goods-title_.goods-tag_.btn-icon]:[display:flex] [&_.goods-info_.goods-title_.goods-tag_.btn-icon]:[flex-direction:column] [&_.goods-info_.goods-title_.goods-tag_.btn-icon]:[align-items:center] [&_.goods-info_.goods-title_.goods-tag_.btn-icon]:[justify-content:center] [&_.goods-info_.goods-title_.goods-tag_.btn-icon]:[height:96rpx] [&_.goods-info_.goods-title_.goods-tag_.btn-icon]:[color:#999] [&_.goods-info_.goods-title_.goods-tag_.btn-icon_.share-text]:[padding-top:8rpx] [&_.goods-info_.goods-title_.goods-tag_.btn-icon_.share-text]:[font-size:20rpx] [&_.goods-info_.goods-title_.goods-tag_.btn-icon_.share-text]:[line-height:24rpx] [&_.goods-info_.goods-intro]:[font-size:26rpx] [&_.goods-info_.goods-intro]:[color:#888] [&_.goods-info_.goods-intro]:[line-height:36rpx] [&_.goods-info_.goods-intro]:[word-break:break-all] [&_.goods-info_.goods-intro]:[padding-right:30rpx] [&_.goods-info_.goods-intro]:[display:-webkit-box] [&_.goods-info_.goods-intro]:[-webkit-line-clamp:2] [&_.goods-info_.goods-intro]:[-webkit-box-orient:vertical] [&_.goods-info_.goods-intro]:[white-space:normal] [&_.goods-info_.goods-intro]:[overflow:hidden] [&_.desc-content]:[margin-top:20rpx] [&_.desc-content]:[background-color:#fff] [&_.desc-content]:[padding-bottom:120rpx] [&_.desc-content__title]:[font-size:28rpx] [&_.desc-content__title]:[line-height:36rpx] [&_.desc-content__title]:[text-align:center] [&_.desc-content__title]:[display:flex] [&_.desc-content__title]:[justify-content:center] [&_.desc-content__title]:[align-items:center] [&_.desc-content__title]:[padding:30rpx_20rpx] [&_.desc-content__title_.img]:[width:206rpx] [&_.desc-content__title_.img]:[height:10rpx] [&_.desc-content__title--text]:[font-size:26rpx] [&_.desc-content__title--text]:[margin:0_32rpx] [&_.desc-content__title--text]:[font-weight:600] [&_.desc-content__img]:[width:100%] [&_.desc-content__img]:[height:auto]">
     <view class="goods-head">
       <t-swiper
-        v-if="details.images.length > 0"
+        v-if="detailImages.length > 0"
         height="750rpx"
         :current="current"
         :autoplay="autoplay"
         :duration="duration"
         :interval="interval"
         :navigation="navigation"
-        :list="details.images"
+        :list="detailImages"
       />
       <view class="goods-info">
         <view class="goods-number">
@@ -487,7 +459,7 @@ definePageJson({
         </view>
         <view v-if="activityList.length > 0" class="goods-activity" @tap="showPromotionPopup">
           <view class="tags-container">
-            <view v-for="(item, index) in activityList" v-if="index < 4" :key="index" :data-promotion-id="item.promotionId">
+            <view v-for="(item, index) in visibleActivityList" :key="index" :data-promotion-id="item.promotionId">
               <view class="goods-activity-tag">
                 {{ item.tag }}
               </view>
@@ -502,7 +474,7 @@ definePageJson({
         </view>
         <view class="goods-title">
           <view class="goods-name">
-            {{ details.title }}
+            {{ detailTitle }}
           </view>
           <view class="goods-tag">
             <t-button open-type="share" t-class="shareBtn" variant="text">
@@ -547,7 +519,7 @@ definePageJson({
             <t-icon name="chevron-right" size="40rpx" color="#BBBBBB" />
           </view>
         </view>
-        <view v-for="(commentItem, index) in commentsList" :key="goodsSpu" class="comment-item-wrap [&_.comment-item-head]:[display:flex] [&_.comment-item-head]:[flex-direction:row] [&_.comment-item-head]:[align-items:center] [&_.comment-item-head]:[margin-top:32rpx] [&_.comment-item-head_.comment-item-avatar]:[width:64rpx] [&_.comment-item-head_.comment-item-avatar]:[height:64rpx] [&_.comment-item-head_.comment-item-avatar]:[border-radius:64rpx] [&_.comment-item-head_.comment-head-right]:[margin-left:24rpx] [&_.comment-item-content]:[margin-top:20rpx] [&_.comment-item-content]:[color:#333333] [&_.comment-item-content]:[line-height:40rpx] [&_.comment-item-content]:[font-size:28rpx] [&_.comment-item-content]:[font-weight:400]">
+        <view v-for="(commentItem, index) in commentsList" :key="commentItem.goodsSpu || index" class="comment-item-wrap [&_.comment-item-head]:[display:flex] [&_.comment-item-head]:[flex-direction:row] [&_.comment-item-head]:[align-items:center] [&_.comment-item-head]:[margin-top:32rpx] [&_.comment-item-head_.comment-item-avatar]:[width:64rpx] [&_.comment-item-head_.comment-item-avatar]:[height:64rpx] [&_.comment-item-head_.comment-item-avatar]:[border-radius:64rpx] [&_.comment-item-head_.comment-head-right]:[margin-left:24rpx] [&_.comment-item-content]:[margin-top:20rpx] [&_.comment-item-content]:[color:#333333] [&_.comment-item-content]:[line-height:40rpx] [&_.comment-item-content]:[font-size:28rpx] [&_.comment-item-content]:[font-weight:400]">
           <view class="comment-item-head">
             <t-image :src="commentItem.userHeadUrl" t-class="comment-item-avatar" />
             <view class="comment-head-right [&_.comment-username]:[font-size:26rpx] [&_.comment-username]:[color:#333333] [&_.comment-username]:[line-height:36rpx] [&_.comment-username]:[font-weight:400]">
@@ -570,12 +542,12 @@ definePageJson({
       </view>
     </view>
     <view class="desc-content">
-      <view v-if="details.desc.length > 0" class="desc-content__title">
+      <view v-if="detailDesc.length > 0" class="desc-content__title">
         <t-image t-class="img" :src="recLeftImg" />
-        <span class="desc-content__title--text">详情介绍</span>
+        <text class="desc-content__title--text">详情介绍</text>
         <t-image t-class="img" :src="recRightImg" />
       </view>
-      <view v-for="(item, index) in details.desc" v-if="details.desc.length > 0" :key="index">
+      <view v-for="(item, index) in detailDesc" v-if="detailDesc.length > 0" :key="index">
         <t-image t-class="desc-content__img" :src="item" mode="widthFix" />
       </view>
     </view>
@@ -595,11 +567,11 @@ definePageJson({
     <goods-specs-popup
       id="goodsSpecsPopup"
       :show="isSpuSelectPopupShow"
-      :title="details.title || ''"
-      :src="specImg ? specImg : primaryImage"
-      :specList="details.specList || []"
+      :title="detailTitle"
+      :src="specImg || primaryImage"
+      :specList="detailSpecList"
       :skuList="skuArray"
-      :limitBuyInfo="details.limitInfo[0].text || ''"
+      :limitBuyInfo="detailLimitBuyInfo"
       :isStock="isStock"
       :outOperateStatus="outOperateStatus"
       @closeSpecsPopup="handlePopupHide"
@@ -613,7 +585,6 @@ definePageJson({
         <view>
           <view class="popup-sku__price">
             <price
-              v-if="!isAllSelectedSku || (!promotionSubCode && isAllSelectedSku)"
               :price="selectSkuSellsPrice ? selectSkuSellsPrice : minSalePrice"
               wr-class="popup-sku__price-num"
               symbol-class="popup-sku__price-symbol"

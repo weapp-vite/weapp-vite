@@ -1,267 +1,264 @@
 <script setup lang="ts">
-// @ts-nocheck
+import { ref, toRefs, useNativeInstance, watch } from 'wevu'
+
+interface InputGoodsCardData {
+  id?: string
+  title?: string
+  desc?: string
+  thumb?: string
+  tags?: Array<string | { text?: string }>
+  specs?: string | string[]
+  hideKey?: Record<string, boolean>
+  originPrice?: number | string
+  price?: number | string
+  lineClamp?: number
+  num?: number
+  stockQuantity?: number
+  quantity?: number
+  [key: string]: any
+}
+
+interface GoodsCardData extends Omit<InputGoodsCardData, 'tags' | 'specs'> {
+  title: string
+  desc: string
+  thumb: string
+  tags: Array<string | { text?: string }>
+  specs: string
+  hideKey: Record<string, boolean>
+  originPrice: number | string
+  price: number | string
+  lineClamp: number
+  num: number
+  stockQuantity: number
+  quantity: number
+}
+
+type IntersectionObserverObserveResult = Parameters<WechatMiniprogram.IntersectionObserver['observe']>[1] extends (result: infer T) => void ? T : unknown
+
 defineOptions({
+  setupLifecycle: 'created',
   options: {
     multipleSlots: true,
-    // 在组件定义时的选项中启用多slot支持
     addGlobalClass: true,
   },
-  intersectionObserverContext: null,
   externalClasses: ['card-class', 'title-class', 'desc-class', 'num-class', 'thumb-class', 'specs-class', 'price-class', 'origin-price-class', 'price-prefix-class'],
-  relations: {
-    '../order-card/index': {
-      type: 'ancestor',
-      linked(target) {
-        this.parent = target
-      },
-    },
-  },
-  properties: {
-    hidden: {
-      // 设置为null代表不做类型转换
-      type: null,
-      value: false,
-      observer(hidden) {
-        // null就是代表没有设置，没有设置的话不setData，防止祖先组件触发的setHidden操作被覆盖
-        if (hidden !== null) {
-          this.setHidden(!!hidden)
-        }
-      },
-    },
-    id: {
-      type: String,
-      // `goods-card-88888888`
-      // 不能在这里写生成逻辑，如果在这里写，那么假设有多个goods-list时，他们将共享这个值
-      value: '',
-      observer: (id) => {
-        this.genIndependentID(id)
-        if (this.properties.thresholds?.length) {
-          this.createIntersectionObserverHandle()
-        }
-      },
-    },
-    data: {
-      type: Object,
-      observer(goods) {
-        // 有ID的商品才渲染
-        if (!goods) {
-          return
-        }
+})
 
-        /** 划线价是否有效 */
-        let isValidityLinePrice = true
-        // 判断一次划线价格是否合理
-        if (goods.originPrice && goods.price && goods.originPrice < goods.price) {
-          isValidityLinePrice = false
-        }
+const props = withDefaults(defineProps<{
+  hidden?: boolean | null
+  id?: string
+  data?: InputGoodsCardData | null
+  layout?: string
+  thumbMode?: string
+  thumbWidth?: number
+  thumbHeight?: number
+  priceFill?: boolean
+  currency?: string
+  lazyLoad?: boolean
+  centered?: boolean
+  showCart?: boolean
+  pricePrefix?: string
+  cartSize?: number
+  cartColor?: string
+  thresholds?: number[]
+  specsIconClassPrefix?: string
+  specsIcon?: string
+  addCartIconClassPrefix?: string
+  addCartIcon?: string
+}>(), {
+  hidden: false,
+  id: '',
+  data: () => ({ id: '' }),
+  layout: 'horizontal',
+  thumbMode: 'aspectFill',
+  thumbWidth: undefined,
+  thumbHeight: undefined,
+  priceFill: true,
+  currency: '¥',
+  lazyLoad: false,
+  centered: false,
+  showCart: false,
+  pricePrefix: '',
+  cartSize: 48,
+  cartColor: '#FA550F',
+  thresholds: () => [],
+  specsIconClassPrefix: 'wr',
+  specsIcon: 'expand_more',
+  addCartIconClassPrefix: 'wr',
+  addCartIcon: 'cart',
+})
 
-        // 敲定换行数量默认值
-        if (goods.lineClamp === undefined || goods.lineClamp <= 0) {
-          // tag数组长度 大于0 且 可见
-          // 指定换行为1行
-          if ((goods.tags?.length || 0) > 0 && !goods.hideKey?.tags) {
-            goods.lineClamp = 1
-          }
-          else {
-            goods.lineClamp = 2
-          }
-        }
-        this.setData({
-          goods,
-          isValidityLinePrice,
-        })
-      },
-    },
-    layout: {
-      type: String,
-      value: 'horizontal',
-    },
-    thumbMode: {
-      type: String,
-      value: 'aspectFill',
-    },
-    thumbWidth: Number,
-    thumbHeight: Number,
-    priceFill: {
-      type: Boolean,
-      value: true,
-    },
-    currency: {
-      type: String,
-      value: '¥',
-    },
-    lazyLoad: {
-      type: Boolean,
-      value: false,
-    },
-    centered: {
-      type: Boolean,
-      value: false,
-    },
-    showCart: {
-      type: Boolean,
-      value: false,
-    },
-    pricePrefix: {
-      type: String,
-      value: '',
-    },
-    cartSize: {
-      type: Number,
-      value: 48,
-    },
-    cartColor: {
-      type: String,
-      value: '#FA550F',
-    },
-    /** 元素可见监控阈值, 数组长度大于0就创建 */
-    thresholds: {
-      type: Array,
-      value: [],
-      observer(current) {
-        if (current && current.length) {
-          this.createIntersectionObserverHandle()
-        }
-        else {
-          this.clearIntersectionObserverHandle()
-        }
-      },
-    },
-    specsIconClassPrefix: {
-      type: String,
-      value: 'wr',
-    },
-    specsIcon: {
-      type: String,
-      value: 'expand_more',
-    },
-    addCartIconClassPrefix: {
-      type: String,
-      value: 'wr',
-    },
-    addCartIcon: {
-      type: String,
-      value: 'cart',
-    },
+const emit = defineEmits<{
+  'click': [payload: { goods: GoodsCardData }]
+  'thumb': [payload: { goods: GoodsCardData }]
+  'specs': [payload: { goods: GoodsCardData }]
+  'tag': [payload: { goods: GoodsCardData, index: number }]
+  'add-cart': [payload: Record<string, any>]
+  'ob': [payload: { goods: GoodsCardData, context: WechatMiniprogram.IntersectionObserver | null, ob: IntersectionObserverObserveResult }]
+}>()
+
+const nativeInstance = useNativeInstance()
+const goods = ref<GoodsCardData>({
+  id: '',
+  title: '',
+  desc: '',
+  thumb: '',
+  tags: [],
+  specs: '',
+  hideKey: {
+    title: false,
+    thumb: false,
+    desc: false,
+    specs: false,
+    price: false,
+    originPrice: false,
+    num: false,
+    tags: false,
   },
-  data() {
-    return {
-      hiddenInData: false,
-      independentID: '',
-      goods: {
-        id: '',
-      },
-      /** 保证划线价格不小于原价，否则不渲染划线价 */
-      isValidityLinePrice: false,
-    }
-  },
-  lifetimes: {
-    ready() {
-      this.init()
+  originPrice: 0,
+  price: 0,
+  lineClamp: 2,
+  num: 0,
+  stockQuantity: 0,
+  quantity: 0,
+})
+const hiddenInData = ref(false)
+const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}`)
+const isValidityLinePrice = ref(false)
+
+const { layout, centered, thumbMode, lazyLoad, pricePrefix, currency, priceFill } = toRefs(props)
+
+let intersectionObserverContext: WechatMiniprogram.IntersectionObserver | null = null
+
+function normalizeSpecs(specs: InputGoodsCardData['specs']) {
+  if (Array.isArray(specs)) {
+    return specs.join(' ')
+  }
+  return specs || ''
+}
+
+function applyGoodsState(currentGoods: InputGoodsCardData | null | undefined) {
+  if (!currentGoods) {
+    return
+  }
+  const nextGoods: GoodsCardData = {
+    ...goods.value,
+    ...currentGoods,
+    title: currentGoods.title ?? '',
+    desc: currentGoods.desc ?? '',
+    thumb: currentGoods.thumb ?? '',
+    tags: currentGoods.tags ?? [],
+    specs: normalizeSpecs(currentGoods.specs),
+    hideKey: {
+      ...goods.value.hideKey,
+      ...currentGoods.hideKey,
     },
-    detached() {
-      this.clear()
-    },
-  },
-  methods: {
-    clickHandle() {
-      this.triggerEvent('click', {
-        goods: this.data.goods,
-      })
-    },
-    clickThumbHandle() {
-      this.triggerEvent('thumb', {
-        goods: this.data.goods,
-      })
-    },
-    clickTagHandle(evt) {
-      const {
-        index,
-      } = evt.currentTarget.dataset
-      this.triggerEvent('tag', {
-        goods: this.data.goods,
-        index,
-      })
-    },
-    // 加入购物车
-    addCartHandle(e) {
-      const {
-        id,
-      } = e.currentTarget
-      const {
-        id: cardID,
-      } = e.currentTarget.dataset
-      this.triggerEvent('add-cart', {
-        ...e.detail,
-        id,
-        cardID,
-        goods: this.data.goods,
-      })
-    },
-    genIndependentID(id, cb) {
-      let independentID
-      if (id) {
-        independentID = id
-      }
-      else {
-        // `goods-card-88888888`
-        independentID = `goods-card-${~~(Math.random() * 10 ** 8)}`
-      }
-      this.setData({
-        independentID,
-      }, cb)
-    },
-    init() {
-      const {
-        thresholds,
-        id,
-        hidden,
-      } = this.properties
-      if (hidden !== null) {
-        this.setHidden(!!hidden)
-      }
-      this.genIndependentID(id || '', () => {
-        if (thresholds && thresholds.length) {
-          this.createIntersectionObserverHandle()
-        }
-      })
-    },
-    clear() {
-      this.clearIntersectionObserverHandle()
-    },
-    setHidden(hidden) {
-      this.setData({
-        hiddenInData: !!hidden,
-      })
-    },
-    createIntersectionObserverHandle() {
-      if (this.intersectionObserverContext || !this.data.independentID) {
-        return
-      }
-      this.intersectionObserverContext = wpi.createIntersectionObserver(this, {
-        thresholds: this.properties.thresholds,
-      }).relativeToViewport()
-      this.intersectionObserverContext.observe(`#${this.data.independentID}`, (res) => {
-        this.intersectionObserverCB(res)
-      })
-    },
-    intersectionObserverCB(ob) {
-      this.triggerEvent('ob', {
-        goods: this.data.goods,
-        context: this.intersectionObserverContext,
-        ob,
-      })
-    },
-    clearIntersectionObserverHandle() {
-      if (this.intersectionObserverContext) {
-        try {
-          this.intersectionObserverContext.disconnect()
-        }
-        catch (e) {}
-        this.intersectionObserverContext = null
-      }
-    },
-  },
+    originPrice: currentGoods.originPrice ?? 0,
+    price: currentGoods.price ?? 0,
+    lineClamp: currentGoods.lineClamp ?? 0,
+    num: currentGoods.num ?? 0,
+    stockQuantity: currentGoods.stockQuantity ?? 0,
+    quantity: currentGoods.quantity ?? 0,
+  }
+  let validLinePrice = true
+  if (Number(nextGoods.originPrice) && Number(nextGoods.price) && Number(nextGoods.originPrice) < Number(nextGoods.price)) {
+    validLinePrice = false
+  }
+  if (nextGoods.lineClamp <= 0) {
+    nextGoods.lineClamp = nextGoods.tags.length > 0 && !nextGoods.hideKey.tags ? 1 : 2
+  }
+  goods.value = nextGoods
+  isValidityLinePrice.value = validLinePrice
+}
+
+function clickHandle() {
+  emit('click', { goods: goods.value })
+}
+
+function clickThumbHandle() {
+  emit('thumb', { goods: goods.value })
+}
+
+function clickSpecsHandle() {
+  emit('specs', { goods: goods.value })
+}
+
+function genIndependentID(id = '') {
+  independentID.value = id || `goods-card-${~~(Math.random() * 10 ** 8)}`
+}
+
+function setHidden(hidden: boolean) {
+  hiddenInData.value = !!hidden
+}
+
+function intersectionObserverCB(ob: IntersectionObserverObserveResult) {
+  emit('ob', {
+    goods: goods.value,
+    context: intersectionObserverContext,
+    ob,
+  })
+}
+
+function clearIntersectionObserverHandle() {
+  if (!intersectionObserverContext) {
+    return
+  }
+  try {
+    intersectionObserverContext.disconnect()
+  }
+  catch {}
+  intersectionObserverContext = null
+}
+
+function createIntersectionObserverHandle() {
+  if (intersectionObserverContext || !independentID.value || !props.thresholds?.length) {
+    return
+  }
+  const observer = nativeInstance.createIntersectionObserver?.({
+    thresholds: props.thresholds,
+  })?.relativeToViewport?.()
+  if (!observer) {
+    return
+  }
+  intersectionObserverContext = observer
+  intersectionObserverContext.observe(`#${independentID.value}`, (ob: IntersectionObserverObserveResult) => {
+    intersectionObserverCB(ob)
+  })
+}
+
+watch(() => props.hidden, (hidden) => {
+  if (hidden !== null) {
+    setHidden(!!hidden)
+  }
+}, { immediate: true })
+
+watch(() => props.data, (currentGoods) => {
+  applyGoodsState(currentGoods)
+}, {
+  immediate: true,
+  deep: true,
+})
+
+watch(() => props.id, (id) => {
+  genIndependentID(id || '')
+  clearIntersectionObserverHandle()
+  createIntersectionObserverHandle()
+})
+
+watch(() => props.thresholds, () => {
+  clearIntersectionObserverHandle()
+  createIntersectionObserverHandle()
+}, { deep: true })
+
+watch(() => props.thumbWidth, () => {})
+watch(() => props.thumbHeight, () => {})
+
+genIndependentID(props.id || '')
+createIntersectionObserverHandle()
+
+defineExpose({
+  goods,
+  setHidden,
 })
 
 defineComponentJson({
@@ -284,7 +281,6 @@ defineComponentJson({
   >
     <view class="wr-goods-card__main [position:relative] [display:flex] [line-height:1] [flex-direction:row] [background:transparent] [padding:16rpx_0rpx]">
       <view class="wr-goods-card__thumb thumb-class [flex-shrink:0] [position:relative] [width:176rpx] [height:176rpx] [&:empty]:[display:none] [&:empty]:[margin:0]" @tap="clickThumbHandle">
-        <!-- data-src 是方便加购动画读取图片用的 -->
         <t-image
           v-if="!!goods.thumb && !goods.hideKey.thumb"
           t-class="wr-goods-card__thumb-com [width:176rpx] [height:176rpx] [border-radius:8rpx] [overflow:hidden]"
@@ -306,7 +302,7 @@ defineComponentJson({
             {{ goods.desc }}
           </view>
           <slot name="after-desc" />
-          <view v-if="goods.specs && goods.specs.length > 0 && !goods.hideKey.specs" class="wr-goods-card__specs__desc specs-class [font-size:24rpx] [height:32rpx] [line-height:32rpx] [color:#999999] [margin:8rpx_0] [display:flex] [align-self:flex-start] [flex-direction:row]" @tap="clickSpecsHandle">
+          <view v-if="goods.specs && !goods.hideKey.specs" class="wr-goods-card__specs__desc specs-class [font-size:24rpx] [height:32rpx] [line-height:32rpx] [color:#999999] [margin:8rpx_0] [display:flex] [align-self:flex-start] [flex-direction:row]" @tap="clickSpecsHandle">
             <view class="wr-goods-card__specs__desc-text [height:100%] [max-width:380rpx] [word-break:break-all] [overflow:hidden] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]">
               {{ goods.specs }}
             </view>

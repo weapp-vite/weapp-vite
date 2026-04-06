@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 import { onLoad, onReachBottom, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
@@ -286,7 +285,7 @@ definePageJson({
     't-input': 'tdesign-miniprogram/input/input',
     't-empty': 'tdesign-miniprogram/empty/empty',
     'goods-list': '/components/goods-list/index',
-    'filter': '/components/filter/index',
+    'goods-filter': '/components/filter/index',
     'filter-popup': '/components/filter-popup/index',
     'load-more': '/components/load-more/index',
     't-icon': 'tdesign-miniprogram/icon/icon',
@@ -311,7 +310,7 @@ definePageJson({
         <t-icon prefix="wr" name="search" size="40rpx" color="#bbb" />
       </template>
     </t-search>
-    <filter
+    <goods-filter
       wr-class="filter-container"
       :layout="layout"
       :sorts="sorts"
@@ -357,7 +356,7 @@ definePageJson({
           </template>
         </filter-popup>
       </template>
-    </filter>
+    </goods-filter>
     <view v-if="goodsList.length === 0 && hasLoaded" class="empty-wrap">
       <t-empty t-class="empty-tips" size="240rpx" description="暂无相关商品" />
     </view>

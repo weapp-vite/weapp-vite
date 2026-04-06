@@ -1,5 +1,4 @@
-// @ts-nocheck
-
+import type { OrderCommitResult } from '../../../model/order/orderConfirm'
 import { wpi } from '@wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
@@ -26,10 +25,15 @@ interface PayOrderInfo {
   groupId?: string
   promotionId?: string
   dialogOnCancel?: boolean
+  payInfo?: string
+  orderId?: string
+  orderAmt?: number | string
+  interactId?: string
+  transactionId?: string
 }
 
 // 真实的提交支付
-export function commitPay(params: CommitPayParams) {
+export function commitPay(params: CommitPayParams): Promise<OrderCommitResult> {
   return dispatchCommitPay({
     goodsRequestList: params.goodsRequestList, // 待结算的商品集合
     invoiceRequest: params.invoiceRequest, // 发票信息
@@ -54,7 +58,6 @@ export async function paySuccess(payOrderInfo: PayOrderInfo) {
   const { payAmt, tradeNo, groupId, promotionId } = payOrderInfo
   // 支付成功
   showToast({
-    context: this,
     message: '支付成功',
     duration: 2000,
     icon: 'check-circle',
@@ -77,7 +80,7 @@ export async function paySuccess(payOrderInfo: PayOrderInfo) {
   await wpi.redirectTo({ url: `/pages/order/pay-result/index?${paramsStr}` })
 }
 
-export function payFail(payOrderInfo, resultMsg) {
+export function payFail(payOrderInfo: PayOrderInfo, resultMsg: string) {
   if (resultMsg === 'requestPayment:fail cancel') {
     if (payOrderInfo.dialogOnCancel) {
       // 结算页，取消付款，dialog提示
@@ -93,7 +96,6 @@ export function payFail(payOrderInfo, resultMsg) {
     else {
       // 订单列表页，订单详情页，取消付款，toast提示
       showToast({
-        context: this,
         message: '支付取消',
         duration: 2000,
         icon: 'close-circle',
@@ -102,7 +104,6 @@ export function payFail(payOrderInfo, resultMsg) {
   }
   else {
     showToast({
-      context: this,
       message: `支付失败：${resultMsg}`,
       duration: 2000,
       icon: 'close-circle',
@@ -114,7 +115,7 @@ export function payFail(payOrderInfo, resultMsg) {
 }
 
 // 微信支付方式
-export function wechatPayOrder(payOrderInfo) {
+export function wechatPayOrder(payOrderInfo: PayOrderInfo) {
   // const payInfo = JSON.parse(payOrderInfo.payInfo);
   // const { timeStamp, nonceStr, signType, paySign } = payInfo;
   return new Promise<void>((resolve) => {

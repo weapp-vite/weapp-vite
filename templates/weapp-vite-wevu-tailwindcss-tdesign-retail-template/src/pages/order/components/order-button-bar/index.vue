@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
+import { computed } from 'wevu'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { OrderButtonTypes } from '../../config'
@@ -29,17 +29,16 @@ interface OrderGoods {
   logisticsNo?: string
   name?: string
   num?: number
-  price?: number
+  price?: number | string
   skuId?: string
-  specs?: string
+  specs?: string | string[]
   spuId?: string
   thumb?: string
   title?: string
 }
 
 interface OrderData {
-  amount?: number
-  buttonVOs?: OrderButton[] | null
+  amount?: number | string
   buttons?: OrderButton[] | null
   createTime?: string
   goodsList?: OrderGoods[] | null
@@ -53,273 +52,180 @@ interface OrderData {
   orderNo?: string
   status?: number
   storeId?: string | number
-  totalAmount?: number
+  totalAmount?: number | string
 }
 
-interface ButtonGroups {
-  left: OrderButton[]
-  right: OrderButton[]
-}
-
-interface OrderButtonTapEvent extends WechatMiniprogram.TouchEvent {
-  currentTarget: WechatMiniprogram.TouchEvent['currentTarget'] & {
-    dataset: WechatMiniprogram.IAnyObject & {
-      type?: number | string
-    }
-  }
-}
-
-interface OrderButtonBarData {
-  buttons: ButtonGroups
-}
-
-type OrderButtonBarProperties = Record<string, WechatMiniprogram.Component.AllProperty> & {
-  order: {
-    type: ObjectConstructor
-  }
-  goodsIndex: {
-    type: NumberConstructor
-    value: null
-  }
-  isBtnMax: {
-    type: BooleanConstructor
-    value: false
-  }
-}
-
-type OrderButtonBarMethods = Record<string, (...args: any[]) => any> & {
-  onOrderBtnTap: (this: OrderButtonBarInstance, e: OrderButtonTapEvent) => void
-  onDelete: (this: OrderButtonBarInstance) => void
-  onCancel: (this: OrderButtonBarInstance) => void
-  onConfirm: (this: OrderButtonBarInstance) => void
-  onPay: (this: OrderButtonBarInstance) => void
-  onBuyAgain: (this: OrderButtonBarInstance) => void
-  onApplyRefund: (this: OrderButtonBarInstance, order: OrderData) => void
-  onViewRefund: (this: OrderButtonBarInstance) => void
-  onAddComment: (this: OrderButtonBarInstance, order: OrderData) => void
-}
-
-type OrderButtonBarInstance = WechatMiniprogram.Component.Instance<
-  OrderButtonBarData,
-  OrderButtonBarProperties,
-  OrderButtonBarMethods,
-  []
->
-
-defineOptions({
-  options: {
-    addGlobalClass: true,
-  },
-  properties: {
-    order: {
-      type: Object,
-      observer(this: OrderButtonBarInstance, order: OrderData) {
-        if (!order) { return }
-
-        const goodsList = Array.isArray(order.goodsList) ? order.goodsList : []
-
-        // 判定有传goodsIndex ，则认为是商品button bar, 仅显示申请售后按钮
-        if (this.properties?.goodsIndex !== null) {
-          const goods = goodsList[Number(this.properties.goodsIndex)] || {}
-          this.setData({
-            buttons: {
-              left: [],
-              right: (goods.buttons || []).filter((b: OrderButton) => b.type === OrderButtonTypes.APPLY_REFUND),
-            },
-          })
-          return
-        }
-        // 订单的button bar 不显示申请售后按钮
-        const buttonsRight = (order.buttons || []
-        // .filter((b) => b.type !== OrderButtonTypes.APPLY_REFUND)
-        ).map((button: OrderButton) => {
-          // 邀请好友拼团按钮
-          if (button.type === OrderButtonTypes.INVITE_GROUPON && order.groupInfoVo) {
-            const {
-              groupInfoVo: {
-                groupId,
-                promotionId,
-                remainMember,
-                groupPrice,
-              },
-            } = order
-            const goodsImg = goodsList[0] && goodsList[0].imgUrl
-            const goodsName = goodsList[0] && goodsList[0].name
-            return {
-              ...button,
-              openType: 'share',
-              dataShare: {
-                goodsImg,
-                goodsName,
-                groupId,
-                promotionId,
-                remainMember,
-                groupPrice,
-                storeId: order.storeId,
-              },
-            }
-          }
-          return button
-        })
-        // 删除订单按钮单独挪到左侧
-        const deleteBtnIndex = buttonsRight.findIndex(b => b.type === OrderButtonTypes.DELETE)
-        let buttonsLeft: OrderButton[] = []
-        if (deleteBtnIndex > -1) {
-          buttonsLeft = buttonsRight.splice(deleteBtnIndex, 1)
-        }
-        this.setData({
-          buttons: {
-            left: buttonsLeft,
-            right: buttonsRight,
-          },
-        })
-      },
-    },
-    goodsIndex: {
-      type: Number,
-      value: null,
-    },
-    isBtnMax: {
-      type: Boolean,
-      value: false,
-    },
-  },
-  data() {
-    return {
-      buttons: {
-        left: [],
-        right: [],
-      } as ButtonGroups,
-    }
-  },
-  methods: {
-    // 点击【订单操作】按钮，根据按钮类型分发
-    onOrderBtnTap(this: OrderButtonBarInstance, e: OrderButtonTapEvent) {
-      const {
-        type,
-      } = e.currentTarget.dataset
-      switch (Number(type)) {
-        case OrderButtonTypes.DELETE:
-          this.onDelete()
-          break
-        case OrderButtonTypes.CANCEL:
-          this.onCancel()
-          break
-        case OrderButtonTypes.CONFIRM:
-          this.onConfirm()
-          break
-        case OrderButtonTypes.PAY:
-          this.onPay()
-          break
-        case OrderButtonTypes.APPLY_REFUND:
-          this.onApplyRefund(this.data.order)
-          break
-        case OrderButtonTypes.VIEW_REFUND:
-          this.onViewRefund()
-          break
-        case OrderButtonTypes.COMMENT:
-          this.onAddComment(this.data.order)
-          break
-        case OrderButtonTypes.INVITE_GROUPON:
-          // 分享邀请好友拼团
-          break
-        case OrderButtonTypes.REBUY:
-          this.onBuyAgain()
-          break
-      }
-    },
-    onDelete(this: OrderButtonBarInstance) {
-      showToast({
-        context: this,
-        message: '你点击了删除订单',
-        icon: 'check-circle',
-      })
-    },
-    onCancel(this: OrderButtonBarInstance) {
-      showToast({
-        context: this,
-        message: '你点击了取消订单',
-        icon: 'check-circle',
-      })
-    },
-    onConfirm(this: OrderButtonBarInstance) {
-      const task = confirmDialog({
-        title: '确认是否已经收到货？',
-        content: '',
-        confirmBtn: '确认收货',
-        cancelBtn: '取消',
-      })
-      if (!task) {
-        return
-      }
-      task.then(() => {
-        showToast({
-          context: this,
-          message: '你确认了确认收货',
-          icon: 'check-circle',
-        })
-      }).catch(() => {
-        showToast({
-          context: this,
-          message: '你取消了确认收货',
-          icon: 'check-circle',
-        })
-      })
-    },
-    onPay(this: OrderButtonBarInstance) {
-      showToast({
-        context: this,
-        message: '你点击了去支付',
-        icon: 'check-circle',
-      })
-    },
-    onBuyAgain(this: OrderButtonBarInstance) {
-      showToast({
-        context: this,
-        message: '你点击了再次购买',
-        icon: 'check-circle',
-      })
-    },
-    async onApplyRefund(this: OrderButtonBarInstance, order: OrderData) {
-      const goodsList = Array.isArray(order?.goodsList) ? order.goodsList : []
-      const goodsIndex = typeof this.properties.goodsIndex === 'number' ? this.properties.goodsIndex : 0
-      const goods = goodsList[goodsIndex]
-      const params: Record<string, string | number | boolean | undefined> = {
-        orderNo: order.orderNo,
-        skuId: goods?.skuId ?? '19384938948343',
-        spuId: goods?.spuId ?? '28373847384343',
-        orderStatus: order.status,
-        logisticsNo: order.logisticsNo,
-        price: goods?.price ?? 89,
-        num: goods?.num ?? 89,
-        createTime: order.createTime,
-        orderAmt: order.totalAmount,
-        payAmt: order.amount,
-        canApplyReturn: true,
-      }
-      const paramsStr = Object.entries(params).map(([key, value]) => `${key}=${value ?? ''}`).join('&')
-      await wpi.navigateTo({
-        url: `/pages/order/apply-service/index?${paramsStr}`,
-      })
-    },
-    onViewRefund(this: OrderButtonBarInstance) {
-      showToast({
-        context: this,
-        message: '你点击了查看退款',
-        icon: '',
-      })
-    },
-    /** 添加订单评论 */
-    async onAddComment(this: OrderButtonBarInstance, order: OrderData) {
-      const imgUrl = order?.goodsList?.[0]?.thumb || ''
-      const title = order?.goodsList?.[0]?.title || ''
-      const specs = order?.goodsList?.[0]?.specs || ''
-      await wpi.navigateTo({
-        url: `/pages/goods/comments/create/index?specs=${specs}&title=${title}&orderNo=${order?.orderNo}&imgUrl=${imgUrl}`,
-      })
-    },
-  },
+const props = withDefaults(defineProps<{
+  order?: OrderData | null
+  goodsIndex?: number | null
+  isBtnMax?: boolean
+}>(), {
+  order: () => ({}),
+  goodsIndex: null,
+  isBtnMax: false,
 })
+
+const buttons = computed(() => {
+  const order = props.order || {}
+  const goodsList = Array.isArray(order.goodsList) ? order.goodsList : []
+
+  if (props.goodsIndex !== null) {
+    const goods = goodsList[Number(props.goodsIndex)] || {}
+    return {
+      left: [] as OrderButton[],
+      right: (goods.buttons || []).filter(button => button.type === OrderButtonTypes.APPLY_REFUND),
+    }
+  }
+
+  const rightButtons = (order.buttons || []).map((button) => {
+    if (button.type === OrderButtonTypes.INVITE_GROUPON && order.groupInfoVo) {
+      return {
+        ...button,
+        openType: 'share',
+        dataShare: {
+          goodsImg: goodsList[0]?.imgUrl,
+          goodsName: goodsList[0]?.name,
+          groupId: order.groupInfoVo.groupId,
+          promotionId: order.groupInfoVo.promotionId,
+          remainMember: order.groupInfoVo.remainMember,
+          groupPrice: order.groupInfoVo.groupPrice,
+          storeId: order.storeId,
+        },
+      }
+    }
+    return button
+  })
+
+  const deleteBtnIndex = rightButtons.findIndex(button => button.type === OrderButtonTypes.DELETE)
+  const leftButtons = deleteBtnIndex > -1 ? rightButtons.splice(deleteBtnIndex, 1) : []
+
+  return {
+    left: leftButtons,
+    right: rightButtons,
+  }
+})
+
+function getCurrentGoods() {
+  const goodsList = Array.isArray(props.order?.goodsList) ? props.order.goodsList : []
+  return goodsList[typeof props.goodsIndex === 'number' ? props.goodsIndex : 0]
+}
+
+async function onDelete() {
+  showToast({
+    message: '你点击了删除订单',
+    icon: 'check-circle',
+  })
+}
+
+async function onCancel() {
+  showToast({
+    message: '你点击了取消订单',
+    icon: 'check-circle',
+  })
+}
+
+function onConfirm() {
+  const task = confirmDialog({
+    title: '确认是否已经收到货？',
+    content: '',
+    confirmBtn: '确认收货',
+    cancelBtn: '取消',
+  })
+  if (!task) {
+    return
+  }
+  task.then(() => {
+    showToast({
+      message: '你确认了确认收货',
+      icon: 'check-circle',
+    })
+  }).catch(() => {
+    showToast({
+      message: '你取消了确认收货',
+      icon: 'check-circle',
+    })
+  })
+}
+
+async function onPay() {
+  showToast({
+    message: '你点击了去支付',
+    icon: 'check-circle',
+  })
+}
+
+async function onBuyAgain() {
+  showToast({
+    message: '你点击了再次购买',
+    icon: 'check-circle',
+  })
+}
+
+async function onApplyRefund(order: OrderData) {
+  const goods = getCurrentGoods()
+  const params: Record<string, string | number | boolean | undefined> = {
+    orderNo: order.orderNo,
+    skuId: goods?.skuId ?? '19384938948343',
+    spuId: goods?.spuId ?? '28373847384343',
+    orderStatus: order.status,
+    logisticsNo: order.logisticsNo,
+    price: goods?.price ?? 89,
+    num: goods?.num ?? 89,
+    createTime: order.createTime,
+    orderAmt: order.totalAmount,
+    payAmt: order.amount,
+    canApplyReturn: true,
+  }
+  const paramsStr = Object.entries(params).map(([key, value]) => `${key}=${value ?? ''}`).join('&')
+  await wpi.navigateTo({
+    url: `/pages/order/apply-service/index?${paramsStr}`,
+  })
+}
+
+async function onViewRefund() {
+  showToast({
+    message: '你点击了查看退款',
+    icon: '',
+  })
+}
+
+async function onAddComment(order: OrderData) {
+  const firstGoods = order.goodsList?.[0]
+  const specs = Array.isArray(firstGoods?.specs) ? firstGoods.specs.join(' ') : (firstGoods?.specs || '')
+  await wpi.navigateTo({
+    url: `/pages/goods/comments/create/index?specs=${specs}&title=${firstGoods?.title || ''}&orderNo=${order?.orderNo || ''}&imgUrl=${firstGoods?.thumb || ''}`,
+  })
+}
+
+function onOrderBtnTap(e: { currentTarget?: { dataset?: { type?: number | string } } }) {
+  const type = Number(e.currentTarget?.dataset?.type)
+  switch (type) {
+    case OrderButtonTypes.DELETE:
+      void onDelete()
+      break
+    case OrderButtonTypes.CANCEL:
+      void onCancel()
+      break
+    case OrderButtonTypes.CONFIRM:
+      onConfirm()
+      break
+    case OrderButtonTypes.PAY:
+      void onPay()
+      break
+    case OrderButtonTypes.APPLY_REFUND:
+      void onApplyRefund(props.order || {})
+      break
+    case OrderButtonTypes.VIEW_REFUND:
+      void onViewRefund()
+      break
+    case OrderButtonTypes.COMMENT:
+      void onAddComment(props.order || {})
+      break
+    case OrderButtonTypes.REBUY:
+      void onBuyAgain()
+      break
+  }
+}
 
 defineComponentJson({
   component: true,

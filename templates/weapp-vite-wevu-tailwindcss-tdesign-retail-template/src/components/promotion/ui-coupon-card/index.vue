@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { computed, toRefs } from 'wevu'
 import { getBigValues, isBigValue } from './tools'
 
@@ -117,7 +116,7 @@ defineComponentJson({
           </text>
         </text>
         <text v-else class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]">
-          {{ value / 100 }}
+          {{ Number(value) / 100 }}
         </text>
         <text class="wr-coupon__left--unit [font-size:24rpx] [line-height:32rpx]">
           元

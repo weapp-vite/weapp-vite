@@ -18,3 +18,5 @@ export function getPromotion(baseID = 0, length = 10) {
     statusTag: 'running',
   }
 }
+
+export type Promotion = ReturnType<typeof getPromotion>

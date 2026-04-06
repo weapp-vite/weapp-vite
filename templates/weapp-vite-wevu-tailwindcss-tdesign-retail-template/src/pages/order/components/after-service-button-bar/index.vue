@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
+import { computed } from 'wevu'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { cancelRights } from '../../after-service-detail/api'
@@ -15,140 +15,85 @@ interface ServiceButton {
 }
 
 interface ServiceData {
-  buttonVOs?: ServiceButton[] | null
   buttons?: ServiceButton[] | null
+  buttonVOs?: ServiceButton[] | null
   id?: string
   logistics?: Record<string, unknown>
+  logisticsVO?: Record<string, unknown>
   logisticsCompanyCode?: string
   logisticsCompanyName?: string
   logisticsNo?: string
-  logisticsVO?: Record<string, unknown>
   remark?: string
 }
 
-interface ButtonGroups {
-  left: ServiceButton[]
-  right: ServiceButton[]
-}
-
-interface ServiceButtonTapEvent extends WechatMiniprogram.TouchEvent {
-  currentTarget: WechatMiniprogram.TouchEvent['currentTarget'] & {
-    dataset: WechatMiniprogram.IAnyObject & {
-      type?: number | string
-    }
-  }
-}
-
-interface AfterServiceButtonBarData {
-  service: ServiceData
-  buttons: ButtonGroups
-}
-
-type AfterServiceButtonBarProperties = Record<string, WechatMiniprogram.Component.AllProperty> & {
-  service: {
-    type: ObjectConstructor
-  }
-}
-
-type AfterServiceButtonBarMethods = Record<string, (...args: any[]) => any> & {
-  onServiceBtnTap: (this: AfterServiceButtonBarInstance, e: ServiceButtonTapEvent) => void
-  onFillTrackingNo: (this: AfterServiceButtonBarInstance, service: ServiceData) => void
-  viewDelivery: (this: AfterServiceButtonBarInstance, service: ServiceData) => void
-  onChangeTrackingNo: (this: AfterServiceButtonBarInstance, service: ServiceData) => void
-  onConfirm: (this: AfterServiceButtonBarInstance) => void
-}
-
-type AfterServiceButtonBarInstance = WechatMiniprogram.Component.Instance<
-  AfterServiceButtonBarData,
-  AfterServiceButtonBarProperties,
-  AfterServiceButtonBarMethods,
-  []
->
-
-defineOptions({
-  properties: {
-    service: {
-      type: Object,
-      observer(this: AfterServiceButtonBarInstance, service: ServiceData) {
-        const buttonsRight = service.buttons || service.buttonVOs || []
-        this.setData({
-          buttons: {
-            left: [],
-            right: buttonsRight,
-          },
-        })
-      },
-    },
-  },
-  data() {
-    return {
-      service: {} as ServiceData,
-      buttons: {
-        left: [],
-        right: [],
-      } as ButtonGroups,
-    }
-  },
-  methods: {
-    // 点击【订单操作】按钮，根据按钮类型分发
-    onServiceBtnTap(this: AfterServiceButtonBarInstance, e: ServiceButtonTapEvent) {
-      const {
-        type,
-      } = e.currentTarget.dataset
-      switch (Number(type)) {
-        case ServiceButtonTypes.REVOKE:
-          this.onConfirm()
-          break
-        case ServiceButtonTypes.FILL_TRACKING_NO:
-          this.onFillTrackingNo(this.data.service)
-          break
-        case ServiceButtonTypes.CHANGE_TRACKING_NO:
-          this.onChangeTrackingNo(this.data.service)
-          break
-        case ServiceButtonTypes.VIEW_DELIVERY:
-          this.viewDelivery(this.data.service)
-          break
-      }
-    },
-    async onFillTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
-      await wpi.navigateTo({
-        url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id}`,
-      })
-    },
-    async viewDelivery(this: AfterServiceButtonBarInstance, service: ServiceData) {
-      await wpi.navigateTo({
-        url: `/pages/order/delivery-detail/index?data=${JSON.stringify(service.logistics || service.logisticsVO)}&source=2`,
-      })
-    },
-    async onChangeTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
-      await wpi.navigateTo({
-        url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id}&logisticsNo=${service.logisticsNo}&logisticsCompanyName=${service.logisticsCompanyName}&logisticsCompanyCode=${service.logisticsCompanyCode}&remark=${service.remark || ''}`,
-      })
-    },
-    onConfirm(this: AfterServiceButtonBarInstance) {
-      const task = confirmDialog({
-        title: '是否撤销退货申请？',
-        content: '',
-        confirmBtn: '撤销申请',
-        cancelBtn: '不撤销',
-      })
-      if (!task) {
-        return
-      }
-      task.then(() => {
-        const params = {
-          rightsNo: this.data.service.id,
-        }
-        return cancelRights(params).then(() => {
-          showToast({
-            context: this,
-            message: '你确认撤销申请',
-          })
-        })
-      })
-    },
-  },
+const props = withDefaults(defineProps<{
+  service?: ServiceData | null
+}>(), {
+  service: () => ({}),
 })
+
+const buttons = computed(() => {
+  return {
+    left: [] as ServiceButton[],
+    right: props.service?.buttons || props.service?.buttonVOs || [],
+  }
+})
+
+async function onFillTrackingNo(service: ServiceData) {
+  await wpi.navigateTo({
+    url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id || ''}`,
+  })
+}
+
+async function viewDelivery(service: ServiceData) {
+  await wpi.navigateTo({
+    url: `/pages/order/delivery-detail/index?data=${JSON.stringify(service.logistics || service.logisticsVO || {})}&source=2`,
+  })
+}
+
+async function onChangeTrackingNo(service: ServiceData) {
+  await wpi.navigateTo({
+    url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id || ''}&logisticsNo=${service.logisticsNo || ''}&logisticsCompanyName=${service.logisticsCompanyName || ''}&logisticsCompanyCode=${service.logisticsCompanyCode || ''}&remark=${service.remark || ''}`,
+  })
+}
+
+function onConfirm() {
+  const task = confirmDialog({
+    title: '是否撤销退货申请？',
+    content: '',
+    confirmBtn: '撤销申请',
+    cancelBtn: '不撤销',
+  })
+  if (!task) {
+    return
+  }
+  task.then(async () => {
+    await cancelRights({
+      rightsNo: props.service?.id,
+    })
+    showToast({
+      message: '你确认撤销申请',
+    })
+  })
+}
+
+function onServiceBtnTap(e: { currentTarget?: { dataset?: { type?: number | string } } }) {
+  const type = Number(e.currentTarget?.dataset?.type)
+  switch (type) {
+    case ServiceButtonTypes.REVOKE:
+      onConfirm()
+      break
+    case ServiceButtonTypes.FILL_TRACKING_NO:
+      void onFillTrackingNo(props.service || {})
+      break
+    case ServiceButtonTypes.CHANGE_TRACKING_NO:
+      void onChangeTrackingNo(props.service || {})
+      break
+    case ServiceButtonTypes.VIEW_DELIVERY:
+      void viewDelivery(props.service || {})
+      break
+  }
+}
 
 defineComponentJson({
   component: true,

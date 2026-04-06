@@ -1,10 +1,9 @@
 <script setup lang="ts">
-// @ts-nocheck
 defineOptions({
   relations: {
     '../../c-sidebar/index': {
       type: 'ancestor',
-      linked(target) {
+      linked(this: any, target: any) {
         this.parent = target
       },
     },
@@ -21,12 +20,12 @@ defineOptions({
     }
   },
   methods: {
-    setActive(selected) {
+    setActive(this: any, selected: boolean) {
       return this.setData({
         selected,
       })
     },
-    onClick() {
+    onClick(this: any) {
       const {
         parent,
       } = this
@@ -41,18 +40,18 @@ defineOptions({
         })
       })
     },
-    setTopRightRadius(val) {
+    setTopRightRadius(this: any, val: boolean) {
       return this.setData({
         topRightRadius: val,
       })
     },
-    setBottomRightRadius(val) {
+    setBottomRightRadius(this: any, val: boolean) {
       return this.setData({
         bottomRightRadius: val,
       })
     },
   },
-})
+} as any)
 
 defineComponentJson({
   component: true,
@@ -65,7 +64,7 @@ defineComponentJson({
     <view
       :class="`c-sidebar-item ${selected ? 'active' : ''} ${disabled ? 'disabled' : ''} ${topRightRadius ? 'top-right-radius' : ''} ${bottomRightRadius ? 'bottom-right-radius' : ''} custom-class [display:flex] [justify-content:center] [text-align:center] [background-color:#f5f5f5] [color:#222427] [padding:20rpx_0] [font-size:26rpx] [&_.active]:[position:relative] [&_.active]:[background:white] [&_.active_.c-sidebar-item__text]:[background-color:white] [&_.active_.c-sidebar-item__text]:[border-radius:36rpx] [&_.active_.c-sidebar-item__text]:[color:#fa4126] [border-top-right-radius:16rpx] [border-bottom-right-radius:16rpx]`"
       hover-class="c-sidebar-item--hover"
-      hover-stay-time="70"
+      :hover-stay-time="70"
       @tap="onClick"
     >
       <view class="c-sidebar-item__text text-overflow [width:136rpx] [height:36rpx] [padding:8rpx_0] [line-height:36rpx] [text-align:center] [font-size:28rpx] [color:#666666] [overflow:hidden] [text-overflow:ellipsis] [white-space:nowrap]">

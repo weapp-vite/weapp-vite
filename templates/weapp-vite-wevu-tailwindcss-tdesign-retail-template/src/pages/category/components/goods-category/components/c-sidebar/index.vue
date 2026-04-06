@@ -1,10 +1,9 @@
 <script setup lang="ts">
-// @ts-nocheck
 defineOptions({
   relations: {
     './c-sidebar-item/index': {
       type: 'descendant',
-      linked(target) {
+      linked(this: any, target: any) {
         this.children ||= []
         this.topRightRadiusItemIndexs ||= []
         this.bottomRightRadiusItemIndexs ||= []
@@ -14,14 +13,14 @@ defineOptions({
         this.children.push(target)
         this.setActive(this.properties.activeKey, true)
       },
-      unlinked(target) {
+      unlinked(this: any, target: any) {
         this.children ||= []
         this.topRightRadiusItemIndexs ||= []
         this.bottomRightRadiusItemIndexs ||= []
         if (typeof this.currentActive !== 'number') {
           this.currentActive = -1
         }
-        this.children = this.children.filter(item => item !== target)
+        this.children = this.children.filter((item: any) => item !== target)
         this.setActive(this.properties.activeKey, true)
       },
     },
@@ -34,11 +33,11 @@ defineOptions({
     },
   },
   observers: {
-    activeKey(newVal) {
+    activeKey(this: any, newVal: number) {
       this.setActive(newVal)
     },
   },
-  created() {
+  created(this: any) {
     this.children ||= []
     this.topRightRadiusItemIndexs ||= []
     this.bottomRightRadiusItemIndexs ||= []
@@ -47,7 +46,7 @@ defineOptions({
     }
   },
   methods: {
-    setActive(activeKey, isChildrenChange) {
+    setActive(this: any, activeKey: number, isChildrenChange?: boolean) {
       this.children ||= []
       this.topRightRadiusItemIndexs ||= []
       this.bottomRightRadiusItemIndexs ||= []
@@ -70,7 +69,7 @@ defineOptions({
       this.topRightRadiusItemIndexs = this.getTopRightRadiusItemIndexs(activeKey, children)
       this.bottomRightRadiusItemIndexs = this.getBottomRightRadiusItemIndexs(activeKey, children)
       const stack = [] // 任务列表，存放调用子组件的setActive后返回的一堆promise
-      const pushChildTask = (itemIndex, method, value) => {
+      const pushChildTask = (itemIndex: number, method: string, value: boolean) => {
         const child = children[itemIndex]
         if (!child || typeof child[method] !== 'function') {
           return
@@ -87,21 +86,21 @@ defineOptions({
       if (children[activeKey]) {
         stack.push(children[activeKey].setActive(true))
       }
-      preTopRightRadiusItemIndexs.forEach((item) => {
+      preTopRightRadiusItemIndexs.forEach((item: number) => {
         pushChildTask(item, 'setTopRightRadius', false)
       })
-      preBottomRightRadiusItemIndexs.forEach((item) => {
+      preBottomRightRadiusItemIndexs.forEach((item: number) => {
         pushChildTask(item, 'setBottomRightRadius', false)
       })
-      this.topRightRadiusItemIndexs.forEach((item) => {
+      this.topRightRadiusItemIndexs.forEach((item: number) => {
         pushChildTask(item, 'setTopRightRadius', true)
       })
-      this.bottomRightRadiusItemIndexs.forEach((item) => {
+      this.bottomRightRadiusItemIndexs.forEach((item: number) => {
         pushChildTask(item, 'setBottomRightRadius', true)
       })
       return Promise.all(stack)
     },
-    getTopRightRadiusItemIndexs(activeKey, children) {
+    getTopRightRadiusItemIndexs(activeKey: number, children: any[]) {
       const {
         length,
       } = children
@@ -110,12 +109,12 @@ defineOptions({
       if (activeKey < length - 1) { return [activeKey + 1] }
       return []
     },
-    getBottomRightRadiusItemIndexs(activeKey) {
+    getBottomRightRadiusItemIndexs(activeKey: number) {
       if (activeKey !== 0) { return [activeKey - 1] }
       return []
     },
   },
-})
+} as any)
 
 defineComponentJson({
   component: true,

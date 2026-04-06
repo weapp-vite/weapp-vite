@@ -1,50 +1,35 @@
 <script setup lang="ts">
-// @ts-nocheck
-defineOptions({
-  options: {
-    addGlobalClass: true,
-    multipleSlots: true, // 在组件定义时的选项中启用多slot支持
-  },
-  relations: {
-    '../order-card/index': {
-      type: 'ancestor',
-      linked(target) {
-        this.parent = target
-      },
-    },
-  },
-  properties: {
-    goods: Object,
-    thumbWidth: Number,
-    thumbHeight: Number,
-    thumbWidthInPopup: Number,
-    thumbHeightInPopup: Number,
-    noTopLine: Boolean,
-    step: Boolean,
-    stepDisabled: Boolean,
-  },
-  data() {
-    return {
-      hidden: false,
-    }
-  },
-  methods: {
-    setHidden(hidden) {
-      if (this.data.hidden === hidden) { return }
-      this.setData({
-        hidden,
-      })
-    },
-    onNumChange(e) {
-      const {
-        value,
-      } = e.detail
-      this.triggerEvent('num-change', {
-        value,
-      })
-    },
-  },
+const props = withDefaults(defineProps<{
+  goods?: Record<string, any>
+  thumbWidth?: number
+  thumbHeight?: number
+  thumbWidthInPopup?: number
+  thumbHeightInPopup?: number
+  noTopLine?: boolean
+  step?: boolean
+  stepDisabled?: boolean
+  hidden?: boolean
+}>(), {
+  goods: () => ({}),
+  thumbWidth: undefined,
+  thumbHeight: undefined,
+  thumbWidthInPopup: undefined,
+  thumbHeightInPopup: undefined,
+  noTopLine: false,
+  step: false,
+  stepDisabled: false,
+  hidden: false,
 })
+
+const emit = defineEmits<{
+  'num-change': [payload: { value: number | string }]
+}>()
+
+function onNumChange(e: { detail?: { value?: number | string } }) {
+  emit('num-change', {
+    value: e.detail?.value ?? 0,
+  })
+}
 
 defineComponentJson({
   component: true,
@@ -68,7 +53,6 @@ defineComponentJson({
     <template #append-body>
       <t-stepper
         v-if="step"
-
         :disabled="step ? stepDisabled : ''"
         :value="goods.quantity"
         :min="1"
@@ -78,7 +62,6 @@ defineComponentJson({
         @blur="onNumChange"
       />
     </template>
-    <!-- 透传good-card组件的slot -->
     <slot name="thumb-cover" />
     <slot name="after-title" />
     <slot name="after-desc" />

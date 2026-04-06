@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 import { onLoad, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'

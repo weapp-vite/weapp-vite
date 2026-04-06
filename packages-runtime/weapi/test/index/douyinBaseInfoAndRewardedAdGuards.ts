@@ -171,7 +171,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
     api.createLivePlayerContext('tt-live-player')
 
     expect(createInterstitialAd).toHaveBeenNthCalledWith(1, expect.objectContaining({ adUnitId: 'tt-ad-1' }))
-    expect(createLivePlayerContext).toHaveBeenNthCalledWith(1, 'tt-live-player', expect.any(Object))
+    expect(createLivePlayerContext).toHaveBeenNthCalledWith(1, 'tt-live-player')
     expect(createVideoContext).not.toHaveBeenCalled()
 
     expect(api.resolveTarget('createLivePusherContext')).toMatchObject({

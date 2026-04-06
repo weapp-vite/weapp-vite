@@ -1,19 +1,29 @@
 import { mockIp, mockReqId } from '../../../utils/mock'
 
-export function create() {
-  const _resq = {
-    data: null,
-    code: 'Success',
-    msg: null,
-    requestId: mockReqId(),
-    clientIp: mockIp(),
-    rt: 79,
-    success: true,
-  }
-  return Promise.resolve(_resq)
+export interface TrackingCompany {
+  name: string
+  code: string
 }
 
-export function update() {
+export interface TrackingSubmitParams {
+  rightsNo: string
+  logisticsCompanyCode: string
+  logisticsCompanyName: string
+  logisticsNo: string
+  remark: string
+}
+
+interface BasicResponse<T> {
+  data: T
+  code: string
+  msg: string | null
+  requestId: string
+  clientIp: string
+  rt: number
+  success: boolean
+}
+
+export function create(_params?: TrackingSubmitParams) {
   const _resq = {
     data: null,
     code: 'Success',
@@ -23,7 +33,20 @@ export function update() {
     rt: 79,
     success: true,
   }
-  return Promise.resolve(_resq)
+  return Promise.resolve(_resq satisfies BasicResponse<null>)
+}
+
+export function update(_params?: TrackingSubmitParams) {
+  const _resq = {
+    data: null,
+    code: 'Success',
+    msg: null,
+    requestId: mockReqId(),
+    clientIp: mockIp(),
+    rt: 79,
+    success: true,
+  }
+  return Promise.resolve(_resq satisfies BasicResponse<null>)
 }
 
 export function getDeliverCompanyList() {
@@ -67,5 +90,5 @@ export function getDeliverCompanyList() {
       },
     ],
   }
-  return Promise.resolve(_resq)
+  return Promise.resolve(_resq satisfies { data: TrackingCompany[] })
 }

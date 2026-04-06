@@ -1,3 +1,5 @@
+import { isNonPromisifiedMethod } from './nonPromisifiedMethods'
+
 export interface CallbackOptions {
   success?: (res: any) => void
   fail?: (err: any) => void
@@ -31,14 +33,7 @@ export function isEventMethod(name: string) {
 export function shouldSkipPromise(name: string) {
   return isSyncMethod(name)
     || isEventMethod(name)
-    || name === 'createInterstitialAd'
-    || name === 'createRewardedVideoAd'
-    || name === 'createVKSession'
-    || name === 'createCameraContext'
-    || name === 'cancelIdleCallback'
-    || name === 'nextTick'
-    || name === 'getLogManager'
-    || name === 'reportAnalytics'
+    || isNonPromisifiedMethod(name)
 }
 
 export function createNotSupportedError(methodName: string, platform?: string) {

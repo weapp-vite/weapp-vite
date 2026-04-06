@@ -28,3 +28,6 @@ export function getGoodsDetailsCommentsCount(_spuId = 0) {
     uidCount: '0',
   }
 }
+
+export type GoodsDetailsComments = ReturnType<typeof getGoodsDetailsComments>
+export type GoodsDetailsCommentsCount = ReturnType<typeof getGoodsDetailsCommentsCount>

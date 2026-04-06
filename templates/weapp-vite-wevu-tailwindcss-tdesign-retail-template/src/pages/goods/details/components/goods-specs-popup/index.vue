@@ -1,403 +1,258 @@
 <script setup lang="ts">
-// @ts-nocheck
+import { computed, ref, useNativeInstance, watch } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 
-defineOptions({
-  options: {
-    multipleSlots: true,
-    addGlobalClass: true,
-  },
-  properties: {
-    src: {
-      type: String,
-    },
-    title: String,
-    show: {
-      type: Boolean,
-      value: false,
-    },
-    limitBuyInfo: {
-      type: String,
-      value: '',
-    },
-    isStock: {
-      type: Boolean,
-      value: true,
-    },
-    limitMaxCount: {
-      type: Number,
-      value: 999,
-    },
-    limitMinCount: {
-      type: Number,
-      value: 1,
-    },
-    skuList: {
-      type: Array,
-      value: [],
-      observer(skuList) {
-        if (Array.isArray(skuList) && skuList.length > 0) {
-          if (this?.initStatus && typeof this.initData === 'function') {
-            this.initData()
-          }
-        }
-      },
-    },
-    specList: {
-      type: Array,
-      value: [],
-      observer(specList) {
-        if (Array.isArray(specList) && specList.length > 0 && typeof this?.initData === 'function') {
-          this.initData()
-        }
-      },
-    },
-    outOperateStatus: {
-      type: Boolean,
-      value: false,
-    },
-    hasAuth: {
-      type: Boolean,
-      value: false,
-    },
-    count: {
-      type: Number,
-      value: 1,
-      observer(count) {
-        if (typeof this?.setData === 'function') {
-          this.setData({
-            buyNum: count,
-          })
-        }
-      },
-    },
-  },
-  initStatus: false,
-  selectedSku: {},
-  selectSpecObj: {},
-  data() {
-    return {
-      buyNum: 1,
-      isAllSelectedSku: false,
-    }
-  },
-  methods: {
-    initData() {
-      const props = this && typeof this.properties === 'object' && this.properties
-        ? this.properties
-        : {}
-      const skuList = Array.isArray(props.skuList) ? props.skuList : []
-      const specList = Array.isArray(props.specList) ? props.specList : []
-      if (specList.length === 0) {
-        this.selectSpecObj = {}
-        this.selectedSku = {}
-        return
-      }
-      specList.forEach((item) => {
-        if (Array.isArray(item?.specValueList) && item.specValueList.length > 0) {
-          item.specValueList.forEach((subItem) => {
-            const obj = this.checkSkuStockQuantity(subItem.specValueId, skuList)
-            subItem.hasStockObj = obj
-          })
-        }
-      })
-      const selectedSku = {}
-      specList.forEach((item) => {
-        if (item?.specId) {
-          selectedSku[item.specId] = ''
-        }
-      })
-      if (typeof this.setData === 'function') {
-        this.setData({
-          specList,
-        })
-      }
-      this.selectSpecObj = {}
-      this.selectedSku = {}
-      this.initStatus = true
-    },
-    checkSkuStockQuantity(specValueId, skuList) {
-      let hasStock = false
-      const array = []
-      const normalizedSkuList = Array.isArray(skuList) ? skuList : []
-      normalizedSkuList.forEach((item) => {
-        (item.specInfo || []).forEach((subItem) => {
-          if (subItem.specValueId === specValueId && item.quantity > 0) {
-            const subArray = [];
-            (item.specInfo || []).forEach((specItem) => {
-              subArray.push(specItem.specValueId)
-            })
-            array.push(subArray)
-            hasStock = true
-          }
-        })
-      })
-      return {
-        hasStock,
-        specsArray: array,
-      }
-    },
-    chooseSpecValueId(specValueId, specId) {
-      const {
-        selectSpecObj,
-      } = this
-      const props = this && typeof this.properties === 'object' && this.properties
-        ? this.properties
-        : {}
-      const skuList = Array.isArray(props.skuList) ? props.skuList : []
-      const specList = Array.isArray(props.specList) ? props.specList : []
-      if (specList.length === 0) {
-        return
-      }
-      if (selectSpecObj[specId]) {
-        selectSpecObj[specId] = []
-        this.selectSpecObj = selectSpecObj
-      }
-      else {
-        selectSpecObj[specId] = []
-      }
-      const itemAllSpecArray = []
-      const itemUnSelectArray = []
-      const itemSelectArray = []
-      specList.forEach((item) => {
-        if (item.specId === specId) {
-          const subSpecValueItem = item.specValueList.find(subItem => subItem.specValueId === specValueId)
-          let specSelectStatus = false
-          item.specValueList.forEach((n) => {
-            itemAllSpecArray.push(n.hasStockObj.specsArray)
-            if (n.isSelected) {
-              specSelectStatus = true
-            }
-            if (n.hasStockObj.hasStock) {
-              itemSelectArray.push(n.specValueId)
-            }
-            else {
-              itemUnSelectArray.push(n.specValueId)
-            }
-          })
-          if (specSelectStatus) {
-            selectSpecObj[specId] = this.flatten(subSpecValueItem?.hasStockObj.specsArray.concat(itemSelectArray))
-          }
-          else {
-            const subSet = function (arr1, arr2) {
-              const set2 = new Set(arr2)
-              const subset = []
-              arr1.forEach((val) => {
-                if (!set2.has(val)) {
-                  subset.push(val)
-                }
-              })
-              return subset
-            }
-            selectSpecObj[specId] = subSet(this.flatten(itemAllSpecArray), this.flatten(itemUnSelectArray))
-          }
-        }
-        else {
-          // 未点击规格的逻辑
-          const itemSelectArray = []
-          let specSelectStatus = false
-          item.specValueList.map(
-          // 找到有库存的规格数组
-            (n) => {
-              itemSelectArray.push(n.hasStockObj.specsArray)
-              if (n.isSelected) {
-                specSelectStatus = true
-              }
-              n.hasStockObj.hasStock = true
-              return n
-            },
-          )
-          if (specSelectStatus) {
-            selectSpecObj[item.specId] = this.flatten(itemSelectArray)
-          }
-          else {
-            delete selectSpecObj[item.specId]
-          }
-        }
-        this.selectSpecObj = selectSpecObj
-      })
-      const combatArray = Object.values(selectSpecObj)
-      if (combatArray.length > 0) {
-        const showArray = combatArray.reduce((x, y) => this.getIntersection(x, y))
-        const lastResult = Array.from(new Set(showArray))
-        specList.forEach((item) => {
-          item.specValueList.forEach((subItem) => {
-            if (lastResult.includes(subItem.specValueId)) {
-              subItem.hasStockObj.hasStock = true
-            }
-            else {
-              subItem.hasStockObj.hasStock = false
-            }
-          })
-        })
-      }
-      else {
-        specList.forEach((item) => {
-          if (item.specValueList.length > 0) {
-            item.specValueList.forEach((subItem) => {
-              const obj = this.checkSkuStockQuantity(subItem.specValueId, skuList)
-              subItem.hasStockObj = obj
-            })
-          }
-        })
-      }
-      if (typeof this.setData === 'function') {
-        this.setData({
-          specList,
-        })
-      }
-    },
-    flatten(input) {
-      if (!Array.isArray(input)) {
-        return []
-      }
-      const stack = [...input]
-      const res = []
-      while (stack.length) {
-        const next = stack.pop()
-        if (Array.isArray(next)) {
-          stack.push(...next)
-        }
-        else {
-          res.push(next)
-        }
-      }
-      return res.reverse()
-    },
-    getIntersection(array, nextArray) {
-      if (!Array.isArray(array) || !Array.isArray(nextArray)) {
-        return []
-      }
-      return array.filter(item => nextArray.includes(item))
-    },
-    toChooseItem(e) {
-      const props = this && typeof this.properties === 'object' && this.properties
-        ? this.properties
-        : {}
-      const isStock = props.isStock !== false
-      if (!isStock) { return }
-      const {
-        id,
-      } = e.currentTarget.dataset
-      const specId = e.currentTarget.dataset.specid
-      const hasStock = e.currentTarget.dataset.hasstock
-      if (!hasStock) {
-        showToast({
-          context: this,
-          message: '该规格已售罄',
-          icon: '',
-          duration: 1000,
-        })
-        return
-      }
-      let {
-        selectedSku,
-      } = this
-      const specList = Array.isArray(props.specList) ? props.specList : []
-      if (specList.length === 0) {
-        return
-      }
-      selectedSku = selectedSku[specId] === id
+type SpecValueId = string | number
+
+interface SkuSpecInfo {
+  specId: string
+  specValueId: SpecValueId
+  specValue?: string
+}
+
+interface SkuItem {
+  quantity?: number
+  price?: number
+  skuImage?: string
+  specInfo?: SkuSpecInfo[]
+}
+
+interface SpecValueItem {
+  specValueId: SpecValueId
+  specValue: string
+  isSelected?: boolean
+  hasStockObj?: {
+    hasStock: boolean
+    specsArray: SpecValueId[][]
+  }
+}
+
+interface SpecItem {
+  specId: string
+  title: string
+  specValueList: SpecValueItem[]
+}
+
+const props = withDefaults(defineProps<{
+  src?: string
+  title?: string
+  show?: boolean
+  limitBuyInfo?: string
+  isStock?: boolean
+  limitMaxCount?: number
+  limitMinCount?: number
+  skuList?: SkuItem[]
+  specList?: SpecItem[]
+  outOperateStatus?: boolean
+  hasAuth?: boolean
+  count?: number
+}>(), {
+  src: '',
+  title: '',
+  show: false,
+  limitBuyInfo: '',
+  isStock: true,
+  limitMaxCount: 999,
+  limitMinCount: 1,
+  skuList: () => [],
+  specList: () => [],
+  outOperateStatus: false,
+  hasAuth: false,
+  count: 1,
+})
+
+const emit = defineEmits<{
+  closeSpecsPopup: [payload: { show: false }]
+  change: [payload: { specList: SpecItem[], selectedSku: Record<string, SpecValueId | ''>, isAllSelectedSku: boolean }]
+  specsConfirm: []
+  addCart: []
+  buyNow: [payload: { isAllSelectedSku: boolean }]
+  changeNum: [payload: { buyNum: number }]
+}>()
+
+const nativeInstance = useNativeInstance()
+
+const buyNum = ref(1)
+const isAllSelectedSku = ref(false)
+const selectedSku = ref<Record<string, SpecValueId | ''>>({})
+const specListState = ref<SpecItem[]>([])
+
+function cloneSpecList(specList: SpecItem[]) {
+  return specList.map(spec => ({
+    ...spec,
+    specValueList: (spec.specValueList || []).map(valueItem => ({
+      ...valueItem,
+      hasStockObj: valueItem.hasStockObj
         ? {
-            ...this.selectedSku,
-            [specId]: '',
+            hasStock: valueItem.hasStockObj.hasStock,
+            specsArray: valueItem.hasStockObj.specsArray.map(item => [...item]),
           }
-        : {
-            ...this.selectedSku,
-            [specId]: id,
-          }
-      specList.forEach((item) => {
-        item.specValueList.forEach((valuesItem) => {
-          if (item.specId === specId) {
-            valuesItem.isSelected = valuesItem.specValueId === selectedSku[specId]
-          }
-        })
-      })
-      this.chooseSpecValueId(id, specId)
-      const isAllSelectedSku = this.isAllSelected(specList, selectedSku)
-      if (!isAllSelectedSku) {
-        if (typeof this.setData === 'function') {
-          this.setData({
-            selectSkuSellsPrice: 0,
-            selectSkuImg: '',
-          })
-        }
-      }
-      if (typeof this.setData === 'function') {
-        this.setData({
-          specList,
-          isAllSelectedSku,
-        })
-      }
-      this.selectedSku = selectedSku
-      this.triggerEvent('change', {
-        specList,
-        selectedSku,
-        isAllSelectedSku,
-      })
-    },
-    // 判断是否所有的sku都已经选中
-    isAllSelected(skuTree, selectedSku) {
-      if (!Array.isArray(skuTree) || !selectedSku || typeof selectedSku !== 'object') {
-        return false
-      }
-      const selected = Object.keys(selectedSku).filter(skuKeyStr => selectedSku[skuKeyStr] !== '')
-      return skuTree.length === selected.length
-    },
-    handlePopupHide() {
-      this.triggerEvent('closeSpecsPopup', {
-        show: false,
-      })
-    },
-    specsConfirm() {
-      const {
-        isStock,
-      } = this.properties
-      if (!isStock) { return }
-      this.triggerEvent('specsConfirm')
-    },
-    addCart() {
-      const {
-        isStock,
-      } = this.properties
-      if (!isStock) { return }
-      this.triggerEvent('addCart')
-    },
-    buyNow() {
-      const {
-        isAllSelectedSku,
-      } = this.data || {
-        isAllSelectedSku: false,
-      }
-      const props = this && typeof this.properties === 'object' && this.properties
-        ? this.properties
-        : {}
-      const isStock = props.isStock !== false
-      if (!isStock) { return }
-      this.triggerEvent('buyNow', {
-        isAllSelectedSku,
-      })
-    },
-    // 总处理
-    setBuyNum(buyNum) {
-      this.setData({
-        buyNum,
-      })
-      this.triggerEvent('changeNum', {
-        buyNum,
-      })
-    },
-    handleBuyNumChange(e) {
-      const {
-        value,
-      } = e.detail
-      if (typeof this.setData === 'function') {
-        this.setData({
-          buyNum: value,
-        })
-      }
-    },
+        : undefined,
+    })),
+  }))
+}
+
+function getSkuSpecsArray(skuItem: SkuItem) {
+  return (skuItem.specInfo || []).map(spec => spec.specValueId)
+}
+
+function getSelectedSpecMap() {
+  return { ...selectedSku.value }
+}
+
+function matchesSelection(
+  skuItem: SkuItem,
+  selection: Record<string, SpecValueId | ''>,
+  override?: { specId: string, specValueId: SpecValueId | '' },
+) {
+  const specInfo = skuItem.specInfo || []
+  return specInfo.every((spec) => {
+    const selectedValue = override && override.specId === spec.specId
+      ? override.specValueId
+      : selection[spec.specId]
+    if (selectedValue === '' || selectedValue === undefined) {
+      return true
+    }
+    return selectedValue === spec.specValueId
+  })
+}
+
+function getStockMeta(specValueId: SpecValueId, specId: string) {
+  const validSkuList = props.skuList.filter(sku => Number(sku.quantity || 0) > 0)
+  const specsArray = validSkuList
+    .filter(sku => matchesSelection(sku, getSelectedSpecMap(), { specId, specValueId }))
+    .map(getSkuSpecsArray)
+
+  return {
+    hasStock: specsArray.length > 0,
+    specsArray,
+  }
+}
+
+function refreshSpecState() {
+  const nextSpecList = cloneSpecList(props.specList)
+  nextSpecList.forEach((spec) => {
+    spec.specValueList.forEach((valueItem) => {
+      valueItem.isSelected = selectedSku.value[spec.specId] === valueItem.specValueId
+      valueItem.hasStockObj = getStockMeta(valueItem.specValueId, spec.specId)
+    })
+  })
+  specListState.value = nextSpecList
+  isAllSelectedSku.value = nextSpecList.length > 0 && nextSpecList.every(spec => selectedSku.value[spec.specId] !== '' && selectedSku.value[spec.specId] !== undefined)
+}
+
+function initData() {
+  selectedSku.value = Object.fromEntries((props.specList || []).map(spec => [spec.specId, '']))
+  specListState.value = cloneSpecList(props.specList)
+  refreshSpecState()
+}
+
+function getSelectedSpecValues() {
+  const selectedValueMap = selectedSku.value
+  return specListState.value.flatMap(spec => spec.specValueList.filter(valueItem => valueItem.specValueId === selectedValueMap[spec.specId]))
+}
+
+function toChooseItem(e: any) {
+  if (!props.isStock) {
+    return
+  }
+  const specId = e?.currentTarget?.dataset?.specid as string
+  const specValueId = e?.currentTarget?.dataset?.id as SpecValueId
+  const hasStock = !!e?.currentTarget?.dataset?.hasstock
+  if (!hasStock) {
+    showToast({
+      context: nativeInstance as any,
+      message: '该规格已售罄',
+      icon: '',
+      duration: 1000,
+    })
+    return
+  }
+
+  selectedSku.value = {
+    ...selectedSku.value,
+    [specId]: selectedSku.value[specId] === specValueId ? '' : specValueId,
+  }
+  refreshSpecState()
+  emit('change', {
+    specList: specListState.value,
+    selectedSku: selectedSku.value,
+    isAllSelectedSku: isAllSelectedSku.value,
+  })
+}
+
+function handlePopupHide() {
+  emit('closeSpecsPopup', {
+    show: false,
+  })
+}
+
+function specsConfirm() {
+  if (!props.isStock) {
+    return
+  }
+  emit('specsConfirm')
+}
+
+function addCart() {
+  if (!props.isStock) {
+    return
+  }
+  emit('addCart')
+}
+
+function buyNow() {
+  if (!props.isStock) {
+    return
+  }
+  emit('buyNow', {
+    isAllSelectedSku: isAllSelectedSku.value,
+  })
+}
+
+function handleBuyNumChange(e: any) {
+  const value = Number(e?.detail?.value ?? props.limitMinCount)
+  buyNum.value = value
+  emit('changeNum', {
+    buyNum: value,
+  })
+}
+
+const selectedSpecValues = computed(() => getSelectedSpecValues())
+
+watch(
+  () => props.specList,
+  () => {
+    initData()
   },
+  {
+    immediate: true,
+    deep: true,
+  },
+)
+
+watch(
+  () => props.count,
+  (count) => {
+    buyNum.value = count
+  },
+  {
+    immediate: true,
+  },
+)
+
+defineExpose({
+  buyNum,
+  isAllSelectedSku,
+  selectedSku,
+  specListState,
+  initData,
+  toChooseItem,
+  handlePopupHide,
+  specsConfirm,
+  addCart,
+  buyNow,
+  handleBuyNumChange,
 })
 
 defineComponentJson({
@@ -426,38 +281,27 @@ defineComponentJson({
           <view class="goods-price-container">
             <slot name="goods-price" />
           </view>
-          <!-- 已选规格 -->
           <view class="popup-sku__selected-spec">
             <view>选择：</view>
-            <view v-for="(item, index) in specList" :key="specId">
-              <view
-                v-for="(selectedItem, index) in item.specValueList"
-                v-if="selectedItem.isSelected"
-                :key="specValueId"
-                class="popup-sku__selected-item"
-              >
-                {{ selectedItem.specValue }}
-              </view>
+            <view v-for="selectedItem in selectedSpecValues" :key="selectedItem.specValueId" class="popup-sku__selected-item">
+              {{ selectedItem.specValue }}
             </view>
           </view>
         </view>
       </view>
-      <view class="popup-sku-body [margin:0_30rpx_40rpx] [max-height:600rpx] [overflow-y:scroll] [-webkit-overflow-scrolling:touch] [&_.popup-sku-group-container_.popup-sku-row]:[padding:32rpx_0] [&_.popup-sku-group-container_.popup-sku-row]:[border-bottom:1rpx_solid_#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__title]:[font-size:26rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__title]:[color:#333] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[font-size:24rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[color:#333] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[min-width:128rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[height:56rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[background-color:#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[border-radius:8rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[border:2rpx_solid_#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[margin:19rpx_26rpx_0_0] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[padding:0_16rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[display:inline-flex] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[align-items:center] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[justify-content:center] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item_.popup-sku-row__item--active]:[border:2rpx_solid_#fa4126] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item_.popup-sku-row__item--active]:[color:#fa4126] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item_.popup-sku-row__item--active]:[background:rgba(255,_95,_21,_0.04)] [&_.popup-sku-group-container_.popup-sku-row_.disabled-sku-selected]:[background:#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.disabled-sku-selected]:[color:#cccccc] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[align-items:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[justify-content:space-between] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[margin:40rpx_0] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title]:[font-size:26rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title]:[color:#333] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title_.limit-text]:[margin-left:10rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title_.limit-text]:[color:#999999] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper]:[flex-flow:row_nowrap] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper]:[align-items:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper]:[font-size:28px] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper]:[height:48rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper]:[line-height:62rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-btn]:[position:relative] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-btn]:[height:100%] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-btn]:[text-align:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-btn]:[background-color:#f5f5f5] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-btn]:[border-radius:4rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[position:relative] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[height:100%] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[text-align:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[background-color:#f5f5f5] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[border-radius:4rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[color:#282828] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[max-width:76rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[align-items:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap]:[justify-content:space-between] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap_.input-num]:[height:100%] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap_.input-num]:[width:auto] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap_.input-num]:[font-weight:600] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-num-wrap_.input-num]:[font-size:30rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.input-btn]:[width:48rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__minus]:[margin-right:4rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__minus]:[border-radius:4rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__minus]:[color:#9a979b] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__minus]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__minus]:[align-items:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__minus]:[justify-content:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__plus]:[margin-left:4rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__plus]:[border-radius:4rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__plus]:[color:#9a979b] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__plus]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__plus]:[align-items:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-stepper_.popup-stepper__plus]:[justify-content:center]">
+      <view class="popup-sku-body [margin:0_30rpx_40rpx] [max-height:600rpx] [overflow-y:scroll] [-webkit-overflow-scrolling:touch] [&_.popup-sku-group-container_.popup-sku-row]:[padding:32rpx_0] [&_.popup-sku-group-container_.popup-sku-row]:[border-bottom:1rpx_solid_#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__title]:[font-size:26rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__title]:[color:#333] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[font-size:24rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[color:#333] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[min-width:128rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[height:56rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[background-color:#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[border-radius:8rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[border:2rpx_solid_#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[margin:19rpx_26rpx_0_0] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[padding:0_16rpx] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[display:inline-flex] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[align-items:center] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item]:[justify-content:center] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item_.popup-sku-row__item--active]:[border:2rpx_solid_#fa4126] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item_.popup-sku-row__item--active]:[color:#fa4126] [&_.popup-sku-group-container_.popup-sku-row_.popup-sku-row__item_.popup-sku-row__item--active]:[background:rgba(255,_95,_21,_0.04)] [&_.popup-sku-group-container_.popup-sku-row_.disabled-sku-selected]:[background:#f5f5f5] [&_.popup-sku-group-container_.popup-sku-row_.disabled-sku-selected]:[color:#cccccc] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[align-items:center] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[justify-content:space-between] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container]:[margin:40rpx_0] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title]:[display:flex] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title]:[font-size:26rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title]:[color:#333] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title_.limit-text]:[margin-left:10rpx] [&_.popup-sku-stepper-stock_.popup-sku-stepper-container_.popup-sku__stepper-title_.limit-text]:[color:#999999]">
         <view class="popup-sku-group-container">
-          <view v-for="(item, index) in specList" :key="specId" class="popup-sku-row">
+          <view v-for="item in specListState" :key="item.specId" class="popup-sku-row">
             <view class="popup-sku-row__title">
               {{ item.title }}
             </view>
-            <block
-              v-for="(valuesItem, valuesIndex) in item.specValueList"
-              :key="specValueId"
-            >
+            <block v-for="valuesItem in item.specValueList" :key="valuesItem.specValueId">
               <view
-                :class="`popup-sku-row__item ${valuesItem.isSelected ? 'popup-sku-row__item--active' : ''} ${!valuesItem.hasStockObj.hasStock || !isStock ? 'disabled-sku-selected' : ''}`"
+                :class="`popup-sku-row__item ${valuesItem.isSelected ? 'popup-sku-row__item--active' : ''} ${!valuesItem.hasStockObj?.hasStock || !isStock ? 'disabled-sku-selected' : ''}`"
                 :data-specid="item.specId"
                 :data-id="valuesItem.specValueId"
                 :data-val="valuesItem.specValue"
-                :data-hasStock="valuesItem.hasStockObj.hasStock"
+                :data-hasStock="valuesItem.hasStockObj?.hasStock"
                 @tap="toChooseItem"
               >
                 {{ valuesItem.specValue }}
@@ -473,7 +317,7 @@ defineComponentJson({
                 ({{ limitBuyInfo }})
               </view>
             </view>
-            <t-stepper :value="buyNum" :min="1" :max="2" theme="filled" @change="handleBuyNumChange" />
+            <t-stepper :value="buyNum" :min="limitMinCount" :max="limitMaxCount" theme="filled" @change="handleBuyNumChange" />
           </view>
         </view>
       </view>
@@ -490,7 +334,7 @@ defineComponentJson({
           </view>
         </view>
         <view class="sku-operate">
-          <view :class="`selected-sku-btn sku-operate-buyNow  ${!isStock ? 'disabled' : ''}`" @tap="buyNow">
+          <view :class="`selected-sku-btn sku-operate-buyNow ${!isStock ? 'disabled' : ''}`" @tap="buyNow">
             立即购买
           </view>
         </view>

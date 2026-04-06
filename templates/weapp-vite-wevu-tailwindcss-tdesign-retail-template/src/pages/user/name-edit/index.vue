@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 
 defineOptions({
@@ -8,7 +7,7 @@ defineOptions({
       nameValue: '',
     }
   },
-  onLoad(options) {
+  onLoad(options: Record<string, any>) {
     const {
       name,
     } = options
@@ -19,14 +18,14 @@ defineOptions({
   async onSubmit() {
     await wpi.navigateBack({
       backRefresh: true,
-    })
+    } as any)
   },
   clearContent() {
     this.setData({
       nameValue: '',
     })
   },
-})
+} as any)
 
 definePageJson({
   navigationBarTitleText: '昵称',

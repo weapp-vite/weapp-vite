@@ -1,201 +1,178 @@
 <script setup lang="ts">
-// @ts-nocheck
+import type { TrackingCompany, TrackingSubmitParams } from './api'
 import { wpi } from '@wevu/api'
+import { computed, onLoad, ref } from 'wevu'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import reasonSheet from '../components/reason-sheet/reasonSheet'
 import { create, getDeliverCompanyList, update } from './api'
 
-defineOptions({
-  deliveryCompanyList: [],
-  data() {
-    return {
-      trackingNo: '',
-      remark: '',
-      deliveryCompany: null,
-      submitActived: false,
-      submitting: false,
+interface QueryOptions {
+  rightsNo?: string
+  logisticsNo?: string
+  logisticsCompanyName?: string
+  logisticsCompanyCode?: string
+  remark?: string
+}
+
+interface InputEvent {
+  currentTarget?: {
+    dataset?: {
+      key?: 'trackingNo' | 'remark'
     }
-  },
-  onLoad(query) {
-    const {
-      rightsNo = '',
-      logisticsNo = '',
-      logisticsCompanyName = '',
-      logisticsCompanyCode = '',
-      remark = '',
-    } = query
-    if (!rightsNo) {
-      confirmDialog({
-        title: '请选择售后单？',
-        content: '',
-        confirmBtn: '确认',
-      }).then(() => {
-        void wpi.navigateBack({
-          backRefresh: true,
-        })
-      })
-    }
-    this.rightsNo = rightsNo
-    if (logisticsNo) {
-      void wpi.setNavigationBarTitle({
-        title: '修改运单号',
-        fail() {},
-      })
-      this.isChange = true
-      this.setData({
-        deliveryCompany: {
-          name: logisticsCompanyName,
-          code: logisticsCompanyCode,
-        },
-        trackingNo: logisticsNo,
-        remark,
-        submitActived: true,
-      })
-    }
-    this.setWatcher('trackingNo', this.checkParams.bind(this))
-    this.setWatcher('deliveryCompany', this.checkParams.bind(this))
-  },
-  setWatcher(key, callback) {
-    let lastData = this.data
-    const keys = key.split('.')
-    keys.slice(0, -1).forEach((k) => {
-      lastData = lastData[k]
+  }
+  detail?: {
+    value?: string
+  }
+}
+
+const rightsNo = ref('')
+const isChange = ref(false)
+const trackingNo = ref('')
+const remark = ref('')
+const deliveryCompany = ref<TrackingCompany | null>(null)
+const submitting = ref(false)
+const deliveryCompanyList = ref<TrackingCompany[]>([])
+
+const submitActived = computed(() => !!trackingNo.value && !!deliveryCompany.value)
+const deliveryCompanyLabel = computed(() => deliveryCompany.value?.name || '请选择物流公司')
+
+async function ensureRightsNo(query: QueryOptions) {
+  if (query.rightsNo) {
+    return true
+  }
+  await confirmDialog({
+    title: '请选择售后单？',
+    content: '',
+    confirmBtn: '确认',
+  })
+  await wpi.navigateBack({
+    delta: 1,
+  })
+  return false
+}
+
+async function getDeliveryCompanyOptions() {
+  if (deliveryCompanyList.value.length) {
+    return deliveryCompanyList.value
+  }
+  const response = await getDeliverCompanyList()
+  deliveryCompanyList.value = response.data ?? []
+  return deliveryCompanyList.value
+}
+
+function onInput(event: InputEvent) {
+  const key = event.currentTarget?.dataset?.key
+  const value = event.detail?.value ?? ''
+  if (key === 'trackingNo') {
+    trackingNo.value = value
+    return
+  }
+  if (key === 'remark') {
+    remark.value = value
+  }
+}
+
+async function onCompanyTap() {
+  const companies = await getDeliveryCompanyOptions()
+  try {
+    const indexes = await reasonSheet({
+      show: true,
+      title: '选择物流公司',
+      options: companies.map(company => ({
+        title: company.name,
+        checked: company.code === deliveryCompany.value?.code,
+      })),
+      showConfirmButton: true,
+      showCancelButton: true,
+      emptyTip: '请选择物流公司',
     })
-    const lastKey = keys.at(-1)
-    this.observe(lastData, lastKey, callback)
-  },
-  observe(data, k, callback) {
-    let val = data[k]
-    Object.defineProperty(data, k, {
-      configurable: true,
-      enumerable: true,
-      set: (value) => {
-        val = value
-        callback()
-      },
-      get: () => {
-        return val
-      },
-    })
-  },
-  getDeliveryCompanyList() {
-    if (this.deliveryCompanyList.length > 0) {
-      return Promise.resolve(this.deliveryCompanyList)
-    }
-    return getDeliverCompanyList().then((res) => {
-      this.deliveryCompanyList = res.data || []
-      return this.deliveryCompanyList
-    })
-  },
-  onInput(e) {
-    const {
-      key,
-    } = e.currentTarget.dataset
-    const {
-      value,
-    } = e.detail
-    this.setData({
-      [key]: value,
-    })
-  },
-  onCompanyTap() {
-    this.getDeliveryCompanyList().then((deliveryCompanyList) => {
-      reasonSheet({
-        show: true,
-        title: '选择物流公司',
-        options: deliveryCompanyList.map(company => ({
-          title: company.name,
-          checked: this.data.deliveryCompany ? company.code === this.data.deliveryCompany.code : false,
-        })),
-        showConfirmButton: true,
-        showCancelButton: true,
-        emptyTip: '请选择物流公司',
-      }).then((indexes) => {
-        this.setData({
-          deliveryCompany: deliveryCompanyList[indexes[0]],
-        })
-      })
-    })
-  },
-  checkParams() {
-    const res = {
-      errMsg: '',
-      require: false,
-    }
-    if (!this.data.trackingNo) {
-      res.errMsg = '请填写运单号'
-      res.require = true
-    }
-    else if (!this.data.deliveryCompany) {
-      res.errMsg = '请选择物流公司'
-      res.require = true
-    }
-    this.setData({
-      submitActived: !res.require,
-    })
-    return res
-  },
-  onSubmit() {
-    const checkRes = this.checkParams()
-    if (checkRes.errMsg) {
-      showToast({
-        context: this,
-        message: checkRes.errMsg,
-        icon: '',
-      })
-      return
-    }
-    const {
-      trackingNo,
-      remark,
-      deliveryCompany: {
-        code,
-        name,
-      },
-    } = this.data
-    const params = {
-      rightsNo: this.rightsNo,
-      logisticsCompanyCode: code,
-      logisticsCompanyName: name,
-      logisticsNo: trackingNo,
-      remark,
-    }
-    const api = this.isChange ? create : update
-    this.setData({
-      submitting: true,
-    })
-    api(params).then(() => {
-      this.setData({
-        submitting: false,
-      })
-      showToast({
-        context: this,
-        message: '保存成功',
-        icon: '',
-      })
-      setTimeout(() => void wpi.navigateBack({
-        backRefresh: true,
-      }), 1000)
-    }).catch(() => {
-      this.setData({
-        submitting: false,
-      })
-    })
-  },
-  async onScanTap() {
-    const res = await wpi.scanCode({
-      scanType: ['barCode'],
-    })
+    deliveryCompany.value = companies[indexes[0]] ?? null
+  }
+  catch {}
+}
+
+function validateForm() {
+  if (!trackingNo.value) {
+    return '请填写运单号'
+  }
+  if (!deliveryCompany.value) {
+    return '请选择物流公司'
+  }
+  return ''
+}
+
+async function onSubmit() {
+  const errorMessage = validateForm()
+  if (errorMessage) {
     showToast({
-      context: this,
-      message: '扫码成功',
+      message: errorMessage,
       icon: '',
     })
-    this.setData({
-      trackingNo: res.result,
+    return
+  }
+  if (!deliveryCompany.value) {
+    return
+  }
+
+  const params: TrackingSubmitParams = {
+    rightsNo: rightsNo.value,
+    logisticsCompanyCode: deliveryCompany.value.code,
+    logisticsCompanyName: deliveryCompany.value.name,
+    logisticsNo: trackingNo.value,
+    remark: remark.value,
+  }
+
+  submitting.value = true
+  try {
+    const saveTrackingNo = isChange.value ? update : create
+    await saveTrackingNo(params)
+    showToast({
+      message: '保存成功',
+      icon: '',
     })
-  },
+    setTimeout(() => {
+      void wpi.navigateBack({
+        delta: 1,
+      })
+    }, 1000)
+  }
+  finally {
+    submitting.value = false
+  }
+}
+
+async function onScanTap() {
+  const response = await wpi.scanCode({
+    scanType: ['barCode'],
+  })
+  trackingNo.value = response.result
+  showToast({
+    message: '扫码成功',
+    icon: '',
+  })
+}
+
+onLoad((query: QueryOptions = {}) => {
+  void (async () => {
+    const valid = await ensureRightsNo(query)
+    if (!valid) {
+      return
+    }
+    rightsNo.value = query.rightsNo ?? ''
+    if (query.logisticsNo) {
+      isChange.value = true
+      trackingNo.value = query.logisticsNo
+      remark.value = query.remark ?? ''
+      deliveryCompany.value = {
+        name: query.logisticsCompanyName ?? '',
+        code: query.logisticsCompanyCode ?? '',
+      }
+      await wpi.setNavigationBarTitle({
+        title: '修改运单号',
+      })
+    }
+  })()
 })
 
 definePageJson({
@@ -222,7 +199,6 @@ definePageJson({
         <t-cell title="运单号" t-class-title="t-cell-title-width">
           <template #note>
             <t-input
-
               borderless
               t-class="t-cell__value"
               type="text"
@@ -240,9 +216,9 @@ definePageJson({
         </t-cell>
         <t-cell
           t-class-title="t-cell-title-width"
-          :t-class-note="deliveryCompany && deliveryCompany.name ? 't-cell__value' : 't-cell__placeholder'"
+          :t-class-note="deliveryCompany ? 't-cell__value' : 't-cell__placeholder'"
           title="物流公司"
-          :note="deliveryCompany && deliveryCompany.name || '请选择物流公司'"
+          :note="deliveryCompanyLabel"
           arrow
           @tap="onCompanyTap"
         />

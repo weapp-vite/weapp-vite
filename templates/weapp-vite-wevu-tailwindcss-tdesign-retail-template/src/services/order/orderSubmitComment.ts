@@ -1,10 +1,9 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { getGoods as getGoodsModel } from '../../model/submitComment'
 import { delay } from '../_utils/delay'
 
 /** 获取评价商品 */
-function mockGetGoods(parameter) {
+function mockGetGoods(parameter?: unknown) {
   const data = getGoodsModel(parameter)
 
   return delay().then(() => {
@@ -13,7 +12,7 @@ function mockGetGoods(parameter) {
 }
 
 /** 获取评价商品 */
-export function getGoods(parameter) {
+export function getGoods(parameter?: unknown) {
   if (config.useMock) {
     return mockGetGoods(parameter)
   }

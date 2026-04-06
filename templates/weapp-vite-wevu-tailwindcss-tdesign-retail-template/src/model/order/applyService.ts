@@ -1,7 +1,79 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
-const orderResps = [
+export interface RightsPreviewSpecInfo {
+  specId: string
+  specTitle: string
+  specValue: string
+}
+
+export interface RightsPreviewGoodsInfo {
+  goodsName: string
+  skuImage: string
+  specInfo: RightsPreviewSpecInfo[]
+}
+
+export interface RightsPreviewData {
+  saasId: string
+  uid: string
+  storeId: string
+  skuId: string
+  numOfSku: number
+  numOfSkuAvailable: number
+  refundableAmount: string
+  refundableDiscountAmount: string
+  shippingFeeIncluded: string
+  paidAmountEach: string
+  boughtQuantity: number
+  orderNo: string
+  goodsInfo: RightsPreviewGoodsInfo
+  spuId?: string
+}
+
+export interface RightsPreviewResponse {
+  data: RightsPreviewData
+  code: string
+  msg: string | null
+  requestId: string
+  clientIp: string
+  rt: number
+  success: boolean
+}
+
+export interface ApplyReasonOption {
+  id: string
+  desc: string
+}
+
+export interface ApplyReasonListResponse {
+  data: {
+    saasId: string
+    rightsReasonList: ApplyReasonOption[]
+  }
+  code: string
+  msg: string | null
+  requestId: string
+  clientIp: string
+  rt: number
+  success: boolean
+}
+
+export interface ApplyServiceResponse {
+  data: {
+    rightsNo: string
+    saasId: string
+    uid: string
+    storeId: string
+    result: unknown
+  }
+  code: string
+  msg: string | null
+  requestId: string
+  clientIp: string
+  rt: number
+  success: boolean
+}
+
+const orderResps: RightsPreviewResponse[] = [
   {
     data: {
       saasId: '88888888',
@@ -270,14 +342,14 @@ const orderResps = [
   },
 ]
 
-export function genRightsPreview(params) {
+export function genRightsPreview(params: Record<string, any> = {}): RightsPreviewResponse | undefined {
   const { orderNo, skuId } = params
   const resp = orderResps.find(r => r.data.orderNo === orderNo && r.data.skuId === skuId)
   return resp
 }
 
-export function genApplyReasonList(params) {
-  const resp = {
+export function genApplyReasonList(params: Record<string, any> = {}): ApplyReasonListResponse {
+  const resp: ApplyReasonListResponse = {
     data: {
       saasId: '70000001',
       rightsReasonList: [
@@ -310,8 +382,8 @@ export function genApplyReasonList(params) {
   return resp
 }
 
-export function applyService(_params?: unknown) {
-  const resp = {
+export function applyService(_params?: unknown): ApplyServiceResponse {
+  const resp: ApplyServiceResponse = {
     data: {
       rightsNo: '123123423',
       saasId: '70000001',

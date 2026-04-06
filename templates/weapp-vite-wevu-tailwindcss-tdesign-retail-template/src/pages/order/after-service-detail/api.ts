@@ -1,13 +1,15 @@
-// @ts-nocheck
+import type { RightsListResult } from '../after-service-list/api'
 import dayjs from 'dayjs'
 import { mockIp, mockReqId } from '../../../utils/mock'
 import { resp } from '../after-service-list/api'
 
-export const formatTime = (date, template) => dayjs(date).format(template)
+export function formatTime(date: string | number | Date, template: string) {
+  return dayjs(date).format(template)
+}
 
-export function getRightsDetail({ rightsNo }) {
+export function getRightsDetail({ rightsNo }: { rightsNo?: string }) {
   const _resq = {
-    data: {},
+    data: [] as RightsListResult['data']['dataList'],
     code: 'Success',
     msg: null,
     requestId: mockReqId(),
@@ -21,7 +23,9 @@ export function getRightsDetail({ rightsNo }) {
   return Promise.resolve(_resq)
 }
 
-export function cancelRights() {
+export type RightsDetailResult = Awaited<ReturnType<typeof getRightsDetail>>
+
+export function cancelRights(_params?: { rightsNo?: string }) {
   const _resq = {
     data: {},
     code: 'Success',

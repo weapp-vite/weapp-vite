@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
 import { onLoad, onPullDownRefresh, onShow, ref, useNativeInstance } from 'wevu'
 import { showToast } from '@/hooks/useToast'
@@ -296,7 +295,7 @@ definePageJson({
     <view class="order-group-wrapper [margin-bottom:16rpx]">
       <t-order-group :orderTagInfos="orderTagInfos" @onClickTop="jumpAllOrder" @onClickItem="jumpNav" />
     </view>
-    <view v-for="(item, index) in menuData" :key="item" class="cell-box [border-radius:10rpx] [overflow:hidden] [margin-bottom:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-padding]:[padding:24rpx_18rpx_24rpx_32rpx]">
+    <view v-for="item in menuData" :key="item[0]?.type || 'menu-group'" class="cell-box [border-radius:10rpx] [overflow:hidden] [margin-bottom:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-padding]:[padding:24rpx_18rpx_24rpx_32rpx]">
       <t-cell-group>
         <t-cell
           v-for="(xitem, xindex) in item"

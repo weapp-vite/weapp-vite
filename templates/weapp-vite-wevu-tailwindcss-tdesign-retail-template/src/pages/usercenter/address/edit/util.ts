@@ -1,10 +1,14 @@
-// @ts-nocheck
-let addressPromise = []
+interface DeferredAddress {
+  resolver: (address: unknown) => void
+  rejecter: (error: Error) => void
+}
+
+let addressPromise: DeferredAddress[] = []
 
 /** 地址编辑Promise */
 export function getAddressPromise() {
-  let resolver
-  let rejecter
+  let resolver!: (address: unknown) => void
+  let rejecter!: (error: Error) => void
   const nextPromise = new Promise((resolve, reject) => {
     resolver = resolve
     rejecter = reject
@@ -16,7 +20,7 @@ export function getAddressPromise() {
 }
 
 /** 用户保存了一个地址 */
-export function resolveAddress(address) {
+export function resolveAddress(address: unknown) {
   const allAddress = [...addressPromise]
   addressPromise = []
 

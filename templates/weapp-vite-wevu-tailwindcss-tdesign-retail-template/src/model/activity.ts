@@ -1,14 +1,14 @@
-// @ts-nocheck
 /**
  * @param {string|number} key 唯一值
  */
-export function getActivity(key) {
+export function getActivity(key: string | number) {
+  const activityKey = Number(key)
   return {
     promotionId: `${key}`,
     title: `满减满折回归${key}`,
     description: null,
     promotionCode: 'MERCHANT',
-    promotionSubCode: key % 2 === 0 ? 'MYJ' : 'MYG',
+    promotionSubCode: activityKey % 2 === 0 ? 'MYJ' : 'MYG',
     tag: '满减',
     timeType: 1,
     startTime: '1588737710000',
@@ -17,3 +17,5 @@ export function getActivity(key) {
     activityLadder: [{ label: '满100元减99.9元' }],
   }
 }
+
+export type Activity = ReturnType<typeof getActivity>

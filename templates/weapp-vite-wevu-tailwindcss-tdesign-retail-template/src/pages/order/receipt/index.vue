@@ -1,216 +1,257 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { wpi } from '@wevu/api'
+import { onLoad, ref } from 'wevu'
 import { alertDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { dispatchSupplementInvoice } from '../../../services/order/orderConfirm'
 
-defineOptions({
-  orderNo: '',
-  data() {
-    return {
-      receiptIndex: 0,
-      addressTagsIndex: 0,
-      goodsClassesIndex: 0,
-      dialogShow: false,
-      codeShow: false,
-      receipts: [{
-        title: '不开发票',
-        id: 0,
-        name: 'receipt',
-      }, {
-        title: '电子发票',
-        id: 1,
-        name: 'receipt',
-      }],
-      addressTags: [{
-        title: '个人',
-        id: 0,
-        name: 'addressTags',
-        type: 1,
-      }, {
-        title: '公司',
-        id: 1,
-        name: 'addressTags',
-        type: 2,
-      }],
-      goodsClasses: [{
-        title: '商品明细',
-        id: 0,
-        name: 'goodsClasses',
-      }, {
-        title: '商品类别',
-        id: 1,
-        name: 'goodsClasses',
-      }],
-      name: '',
-      componentName: '',
-      code: '',
-      phone: '',
-      email: '',
-      invoiceInfo: {
-        info: ['1.根据当地税务局的要求，开具有效的企业发票需填写税务局登记证号。开具个人发票不需要填写纳税人识别码。 ', '2.电子普通发票： 电子普通发票是税局认可的有效首付款凭证，其法律效力、基本用途及使用规定同纸质发票，如需纸质发票可自行下载打印。 ', '3.增值税专用发票： 增值税发票暂时不可开，可查看《开局增值税发票》或致电400-633-6868。'],
-        codeTitle: ['1.什么是纳税人识别号/统一社会信用代码？ 纳税人识别号，一律由15位、17位、18或者20位码（字符型）组成，其中：企业、事业单位等组织机构纳税人，以国家质量监督检验检疫总局编制的9位码（其中区分主码位与校检位之间的“—”符省略不打印）并在其“纳税人识别号”。国家税务总局下达的纳税人代码为15位，其中：1—2位为省、市代码，3—6位为地区代码，7—8位为经济性质代码，9—10位行业代码，11—15位为各地区自设的顺序码。', '2.入户获取/知晓纳税人识别号/统一社会信用代码？ 纳税人识别号是税务登记证上的号码，通常简称为“税号”，每个企业的纳税人识别号都是唯一的。这个属于每个人自己且终身不变的数字代码很可能成为我们的第二张“身份证”。  '],
-      },
+interface LabelItem {
+  title: string
+  id: number
+  name: 'receipt' | 'addressTags' | 'goodsClasses'
+  type?: number
+}
+
+interface InvoiceDraft {
+  invoiceType?: number
+  buyerName?: string
+  email?: string
+  buyerPhone?: string
+  titleType?: number
+  contentType?: number
+  buyerTaxNo?: string
+}
+
+interface QueryOptions {
+  orderNo?: string
+  invoiceData?: string
+}
+
+interface LabelEvent {
+  currentTarget?: {
+    dataset?: {
+      item?: LabelItem
     }
-  },
-  onLoad(query) {
-    const {
-      orderNo,
-      invoiceData,
-    } = query
-    const tempData = JSON.parse(invoiceData || '{}')
-    const invoice = {
-      receiptIndex: tempData.invoiceType === 5 ? 1 : 0,
-      name: tempData.buyerName || '',
-      email: tempData.email || '',
-      phone: tempData.buyerPhone || '',
-      addressTagsIndex: tempData.titleType === 2 ? 1 : 0,
-      goodsClassesIndex: tempData.contentType === 2 ? 1 : 0,
-      code: tempData.buyerTaxNo || '',
-      componentName: tempData.titleType === 2 ? tempData.buyerName : '',
+  }
+}
+
+interface InputEvent {
+  currentTarget?: {
+    dataset?: {
+      item?: 'name' | 'code' | 'email'
     }
-    this.orderNo = orderNo
-    this.setData({
-      ...invoice,
-    })
+  }
+  detail?: {
+    value?: string
+  }
+}
+
+const invoiceInfo = {
+  info: ['1.根据当地税务局的要求，开具有效的企业发票需填写税务局登记证号。开具个人发票不需要填写纳税人识别码。 ', '2.电子普通发票： 电子普通发票是税局认可的有效首付款凭证，其法律效力、基本用途及使用规定同纸质发票，如需纸质发票可自行下载打印。 ', '3.增值税专用发票： 增值税发票暂时不可开，可查看《开局增值税发票》或致电400-633-6868。'],
+  codeTitle: ['1.什么是纳税人识别号/统一社会信用代码？ 纳税人识别号，一律由15位、17位、18或者20位码（字符型）组成，其中：企业、事业单位等组织机构纳税人，以国家质量监督检验检疫总局编制的9位码（其中区分主码位与校检位之间的“—”符省略不打印）并在其“纳税人识别号”。国家税务总局下达的纳税人代码为15位，其中：1—2位为省、市代码，3—6位为地区代码，7—8位为经济性质代码，9—10位行业代码，11—15位为各地区自设的顺序码。', '2.入户获取/知晓纳税人识别号/统一社会信用代码？ 纳税人识别号是税务登记证上的号码，通常简称为“税号”，每个企业的纳税人识别号都是唯一的。这个属于每个人自己且终身不变的数字代码很可能成为我们的第二张“身份证”。  '],
+}
+
+const orderNo = ref('')
+const submitting = ref(false)
+const receiptIndex = ref(0)
+const addressTagsIndex = ref(0)
+const goodsClassesIndex = ref(0)
+const dialogShow = ref(false)
+const codeShow = ref(false)
+const receipts = ref<LabelItem[]>([
+  {
+    title: '不开发票',
+    id: 0,
+    name: 'receipt',
   },
-  onLabels(e) {
-    const {
-      item,
-    } = e.currentTarget.dataset
-    const nameIndex = `${item.name}Index`
-    this.setData({
-      [nameIndex]: item.id,
-    })
+  {
+    title: '电子发票',
+    id: 1,
+    name: 'receipt',
   },
-  onInput(e) {
-    const {
-      addressTagsIndex,
-    } = this.data
-    const {
-      item,
-    } = e.currentTarget.dataset
-    const {
-      value,
-    } = e.detail
-    const key = item === 'name' ? addressTagsIndex === 0 ? 'name' : 'componentName' : item === 'code' ? addressTagsIndex === 0 ? 'phone' : 'code' : 'email'
-    this.setData({
-      [key]: value,
-    })
+])
+const addressTags = ref<LabelItem[]>([
+  {
+    title: '个人',
+    id: 0,
+    name: 'addressTags',
+    type: 1,
   },
-  onSure() {
-    const result = this.checkSure()
-    if (!result) {
-      alertDialog({
-        title: '请填写发票信息',
-        content: '',
-        confirmBtn: '确认',
-      })
-      return
-    }
-    const {
-      receiptIndex,
-      addressTagsIndex,
-      receipts,
-      addressTags,
-      name,
-      componentName,
-      code,
-      phone,
-      email,
-      goodsClassesIndex,
-    } = this.data
-    const data = {
-      buyerName: addressTagsIndex === 0 ? name : componentName,
-      buyerTaxNo: code,
-      buyerPhone: phone,
-      email,
-      titleType: addressTags[addressTagsIndex].type,
-      contentType: goodsClassesIndex === 0 ? 1 : 2,
-      invoiceType: receiptIndex === 1 ? 5 : 0,
-    }
-    if (this.orderNo) {
-      if (this.submitting) { return }
-      const params = {
-        parameter: {
-          orderNo: this.orderNo,
-          invoiceVO: data,
-        },
-      }
-      this.submitting = true
-      dispatchSupplementInvoice(params).then(() => {
-        showToast({
-          context: this,
-          message: '保存成功',
-          duration: 2000,
-          icon: '',
-        })
-        setTimeout(() => {
-          this.submitting = false
-          void wpi.navigateBack({
-            delta: 1,
-          })
-        }, 1000)
-      }).catch((err) => {
-        this.submitting = false
-        console.error(err)
-      })
+  {
+    title: '公司',
+    id: 1,
+    name: 'addressTags',
+    type: 2,
+  },
+])
+const goodsClasses = ref<LabelItem[]>([
+  {
+    title: '商品明细',
+    id: 0,
+    name: 'goodsClasses',
+  },
+  {
+    title: '商品类别',
+    id: 1,
+    name: 'goodsClasses',
+  },
+])
+const name = ref('')
+const componentName = ref('')
+const code = ref('')
+const phone = ref('')
+const email = ref('')
+
+function parseInvoiceData(rawValue?: string) {
+  try {
+    return JSON.parse(rawValue || '{}') as InvoiceDraft
+  }
+  catch {
+    return {}
+  }
+}
+
+function onLabels(event: LabelEvent) {
+  const item = event.currentTarget?.dataset?.item
+  if (!item) {
+    return
+  }
+  if (item.name === 'receipt') {
+    receiptIndex.value = item.id
+    return
+  }
+  if (item.name === 'addressTags') {
+    addressTagsIndex.value = item.id
+    return
+  }
+  goodsClassesIndex.value = item.id
+}
+
+function onInput(event: InputEvent) {
+  const item = event.currentTarget?.dataset?.item
+  const value = event.detail?.value ?? ''
+  if (!item) {
+    return
+  }
+  if (item === 'name') {
+    if (addressTagsIndex.value === 0) {
+      name.value = value
     }
     else {
-      Object.assign(data, {
-        receipts: receipts[receiptIndex],
-        addressTags: addressTags[addressTagsIndex],
-      })
-      wpi.setStorageSync('invoiceData', data)
-      void wpi.navigateBack({
-        delta: 1,
-      })
+      componentName.value = value
     }
-  },
-  checkSure() {
-    const {
-      name,
-      componentName,
-      code,
-      phone,
-      email,
-      addressTagsIndex,
-      receiptIndex,
-    } = this.data
-    if (receiptIndex === 0) {
-      return true
+    return
+  }
+  if (item === 'code') {
+    if (addressTagsIndex.value === 0) {
+      phone.value = value
     }
-    if (addressTagsIndex === 0) {
-      if (!name.length || !phone.length) {
-        return false
-      }
+    else {
+      code.value = value
     }
-    else if (addressTagsIndex === 1) {
-      if (!componentName.length || !code.length) {
-        return false
-      }
-    }
-    if (!email.length) {
+    return
+  }
+  email.value = value
+}
+
+function checkSure() {
+  if (receiptIndex.value === 0) {
+    return true
+  }
+  if (addressTagsIndex.value === 0) {
+    if (!name.value.length || !phone.value.length) {
       return false
     }
-    return true
-  },
-  onDialogTap() {
-    const {
-      dialogShow,
-    } = this.data
-    this.setData({
-      dialogShow: !dialogShow,
-      codeShow: false,
+  }
+  else if (!componentName.value.length || !code.value.length) {
+    return false
+  }
+  return !!email.value.length
+}
+
+async function onSure() {
+  const result = checkSure()
+  if (!result) {
+    await alertDialog({
+      title: '请填写发票信息',
+      content: '',
+      confirmBtn: '确认',
     })
-  },
-  onKnowCode() {
-    this.setData({
-      dialogShow: !this.data.dialogShow,
-      codeShow: true,
-    })
-  },
+    return
+  }
+
+  const data = {
+    buyerName: addressTagsIndex.value === 0 ? name.value : componentName.value,
+    buyerTaxNo: code.value,
+    buyerPhone: phone.value,
+    email: email.value,
+    titleType: addressTags.value[addressTagsIndex.value]?.type ?? 1,
+    contentType: goodsClassesIndex.value === 0 ? 1 : 2,
+    invoiceType: receiptIndex.value === 1 ? 5 : 0,
+  }
+
+  if (orderNo.value) {
+    if (submitting.value) {
+      return
+    }
+    submitting.value = true
+    try {
+      await dispatchSupplementInvoice({
+        parameter: {
+          orderNo: orderNo.value,
+          invoiceVO: data,
+        },
+      } as any)
+      showToast({
+        message: '保存成功',
+        duration: 2000,
+        icon: '',
+      })
+      setTimeout(() => {
+        submitting.value = false
+        void wpi.navigateBack({
+          delta: 1,
+        })
+      }, 1000)
+    }
+    catch (error) {
+      submitting.value = false
+      console.error(error)
+    }
+    return
+  }
+
+  wpi.setStorageSync('invoiceData', {
+    ...data,
+    receipts: receipts.value[receiptIndex.value],
+    addressTags: addressTags.value[addressTagsIndex.value],
+  })
+  await wpi.navigateBack({
+    delta: 1,
+  })
+}
+
+function onDialogTap() {
+  dialogShow.value = !dialogShow.value
+  codeShow.value = false
+}
+
+function onKnowCode() {
+  dialogShow.value = !dialogShow.value
+  codeShow.value = true
+}
+
+onLoad((query: QueryOptions = {}) => {
+  const tempData = parseInvoiceData(query.invoiceData)
+  orderNo.value = query.orderNo ?? ''
+  receiptIndex.value = tempData.invoiceType === 5 ? 1 : 0
+  name.value = tempData.buyerName || ''
+  email.value = tempData.email || ''
+  phone.value = tempData.buyerPhone || ''
+  addressTagsIndex.value = tempData.titleType === 2 ? 1 : 0
+  goodsClassesIndex.value = tempData.contentType === 2 ? 1 : 0
+  code.value = tempData.buyerTaxNo || ''
+  componentName.value = tempData.titleType === 2 ? tempData.buyerName || '' : ''
 })
 
 definePageJson({
@@ -268,7 +309,6 @@ definePageJson({
       >
         <template #right-icon>
           <t-input
-
             borderless
             t-class="input-com [display:inline-block] [flex:1] [font-size:30rpx] [font-weight:400] [line-height:30rpx] ![padding:0] [color:#666]"
             :value="addressTagsIndex === 0 ? name : componentName"
@@ -309,7 +349,6 @@ definePageJson({
       >
         <template #right-icon>
           <t-input
-
             t-class="input-com [display:inline-block] [flex:1] [font-size:30rpx] [font-weight:400] [line-height:30rpx] ![padding:0] [color:#666]"
             borderless
             :value="email"

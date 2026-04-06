@@ -1,8 +1,7 @@
 <script setup lang="ts">
-// @ts-nocheck
 import { onMounted, onUnmounted, ref, toRefs, useNativeInstance, watch } from 'wevu'
 
-interface GoodsCardData {
+interface InputGoodsCardData {
   id?: string
   title?: string
   desc?: string
@@ -19,6 +18,23 @@ interface GoodsCardData {
   [key: string]: any
 }
 
+interface GoodsCardData extends InputGoodsCardData {
+  title: string
+  desc: string
+  thumb: string
+  tags: string[]
+  specs: string
+  hideKey: Record<string, boolean>
+  originPrice: number
+  price: number
+  lineClamp: number
+  num: number
+  stockQuantity: number
+  quantity: number
+}
+
+type IntersectionObserverObserveResult = Parameters<WechatMiniprogram.IntersectionObserver['observe']>[1] extends (result: infer T) => void ? T : unknown
+
 defineOptions({
   setupLifecycle: 'created',
   options: {
@@ -31,7 +47,7 @@ defineOptions({
 const props = withDefaults(defineProps<{
   hidden?: boolean | null
   id?: string
-  data?: GoodsCardData | null
+  data?: InputGoodsCardData | null
   layout?: string
   thumbMode?: string
   priceFill?: boolean
@@ -68,11 +84,34 @@ const emit = defineEmits<{
   'specs': [payload: { goods: GoodsCardData }]
   'tag': [payload: { goods: GoodsCardData, index: number }]
   'add-cart': [payload: Record<string, any>]
-  'ob': [payload: { goods: GoodsCardData, context: WechatMiniprogram.IntersectionObserver | null, ob: WechatMiniprogram.IntersectionObserverResult }]
+  'ob': [payload: { goods: GoodsCardData, context: WechatMiniprogram.IntersectionObserver | null, ob: IntersectionObserverObserveResult }]
 }>()
 
 const nativeInstance = useNativeInstance()
-const goods = ref<GoodsCardData>({ id: '' })
+const goods = ref<GoodsCardData>({
+  id: '',
+  title: '',
+  desc: '',
+  thumb: '',
+  tags: [],
+  specs: '',
+  hideKey: {
+    title: false,
+    thumb: false,
+    desc: false,
+    specs: false,
+    price: false,
+    originPrice: false,
+    num: false,
+    tags: false,
+  },
+  originPrice: 0,
+  price: 0,
+  lineClamp: 2,
+  num: 0,
+  stockQuantity: 0,
+  quantity: 0,
+})
 const hiddenInData = ref(false)
 const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}`)
 const isValidityLinePrice = ref(false)
@@ -82,23 +121,42 @@ const { layout, centered, thumbMode, lazyLoad, pricePrefix, currency, priceFill 
 let intersectionObserverContext: WechatMiniprogram.IntersectionObserver | null = null
 let mounted = false
 
-function applyGoodsState(currentGoods: GoodsCardData | null | undefined) {
+function applyGoodsState(currentGoods: InputGoodsCardData | null | undefined) {
   if (!currentGoods) {
     return
   }
+  const nextGoods: GoodsCardData = {
+    ...goods.value,
+    ...currentGoods,
+    title: currentGoods.title ?? '',
+    desc: currentGoods.desc ?? '',
+    thumb: currentGoods.thumb ?? '',
+    tags: currentGoods.tags ?? [],
+    specs: currentGoods.specs ?? '',
+    hideKey: {
+      ...goods.value.hideKey,
+      ...currentGoods.hideKey,
+    },
+    originPrice: currentGoods.originPrice ?? 0,
+    price: currentGoods.price ?? 0,
+    lineClamp: currentGoods.lineClamp ?? 0,
+    num: currentGoods.num ?? 0,
+    stockQuantity: currentGoods.stockQuantity ?? 0,
+    quantity: currentGoods.quantity ?? 0,
+  }
   let validLinePrice = true
-  if (currentGoods.originPrice && currentGoods.price && currentGoods.originPrice < currentGoods.price) {
+  if (nextGoods.originPrice && nextGoods.price && nextGoods.originPrice < nextGoods.price) {
     validLinePrice = false
   }
-  if (currentGoods.lineClamp === undefined || currentGoods.lineClamp <= 0) {
-    if ((currentGoods.tags?.length || 0) > 0 && !currentGoods.hideKey?.tags) {
-      currentGoods.lineClamp = 1
+  if (nextGoods.lineClamp <= 0) {
+    if (nextGoods.tags.length > 0 && !nextGoods.hideKey.tags) {
+      nextGoods.lineClamp = 1
     }
     else {
-      currentGoods.lineClamp = 2
+      nextGoods.lineClamp = 2
     }
   }
-  goods.value = currentGoods
+  goods.value = nextGoods
   isValidityLinePrice.value = validLinePrice
 }
 
@@ -151,7 +209,7 @@ function setHidden(hidden: boolean) {
   hiddenInData.value = !!hidden
 }
 
-function intersectionObserverCB(ob: WechatMiniprogram.IntersectionObserverResult) {
+function intersectionObserverCB(ob: IntersectionObserverObserveResult) {
   emit('ob', {
     goods: goods.value,
     context: intersectionObserverContext,
@@ -183,7 +241,7 @@ function createIntersectionObserverHandle() {
     return
   }
   intersectionObserverContext = observer
-  intersectionObserverContext.observe(`#${independentID.value}`, (ob: WechatMiniprogram.IntersectionObserverResult) => {
+  intersectionObserverContext.observe(`#${independentID.value}`, (ob: IntersectionObserverObserveResult) => {
     intersectionObserverCB(ob)
   })
 }
