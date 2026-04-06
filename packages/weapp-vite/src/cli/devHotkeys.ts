@@ -20,6 +20,12 @@ export interface DevHotkeysSession {
   close: () => void
 }
 
+interface DevHotkeyState {
+  lastAction?: string
+  mcpEnabled: boolean
+  mcpRunning: boolean
+}
+
 const DEV_SCREENSHOT_DIR = '.tmp/weapp-vite-dev-screenshots'
 const DEFAULT_SCREENSHOT_TIMEOUT = 30_000
 
@@ -32,9 +38,9 @@ function forwardSigint() {
 }
 
 /**
- * @description 生成开发态快捷键帮助文本。
+ * @description 生成带状态的开发态快捷键帮助文本。
  */
-export function formatDevHotkeyHelp() {
+export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
   const key = (value: string) => colors.bold(colors.green(value))
   const commandRows = [
     { key: key('s'), description: '截图当前页面并保存到本地' },
@@ -46,7 +52,16 @@ export function formatDevHotkeyHelp() {
   const formattedRows = commandRows.map(({ key, description }) =>
     `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
   )
+  const mcpStatus = !state.mcpEnabled
+    ? '已禁用'
+    : state.mcpRunning
+      ? '运行中'
+      : '未启动'
   return [
+    '',
+    '当前状态',
+    `MCP 服务  ${mcpStatus}`,
+    ...(state.lastAction ? [`最近动作  ${state.lastAction}`] : []),
     '',
     '快捷命令',
     ...formattedRows,
@@ -57,11 +72,37 @@ export function formatDevHotkeyHelp() {
 }
 
 /**
+ * @description 生成带状态的开发态快捷键简短提示。
+ */
+export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
+  const key = (value: string) => colors.bold(colors.green(value))
+  const mcpStatus = !state.mcpEnabled
+    ? 'MCP 已禁用'
+    : state.mcpRunning
+      ? 'MCP 运行中'
+      : 'MCP 未启动'
+  const lastAction = state.lastAction ? `，最近动作：${state.lastAction}` : ''
+  return `${mcpStatus}${lastAction}，按 ${key('h')} 查看帮助，按 ${key('q')} 退出`
+}
+
+/**
+ * @description 生成开发态快捷键帮助文本。
+ */
+export function formatDevHotkeyHelp() {
+  return formatDevHotkeyHelpWithState({
+    mcpEnabled: true,
+    mcpRunning: false,
+  })
+}
+
+/**
  * @description 生成开发态快捷键简短提示。
  */
 export function formatDevHotkeyHint() {
-  const key = (value: string) => colors.bold(colors.green(value))
-  return `按 ${key('h')} 查看帮助，按 ${key('q')} 退出`
+  return formatDevHotkeyHintWithState({
+    mcpEnabled: true,
+    mcpRunning: false,
+  })
 }
 
 /**
@@ -97,7 +138,9 @@ export async function runScreenshotAction(options: StartDevHotkeysOptions) {
     outputPath,
     timeout: DEFAULT_SCREENSHOT_TIMEOUT,
   })
-  logger.success(`[dev action] 当前页面截图完成：${colors.cyan(formatResolvedScreenshotPath(options.cwd, outputPath, result))}`)
+  const resolvedPath = formatResolvedScreenshotPath(options.cwd, outputPath, result)
+  logger.success(`[dev action] 当前页面截图完成：${colors.cyan(resolvedPath)}`)
+  return resolvedPath
 }
 
 /**
@@ -120,7 +163,13 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
   let onKeypress: (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => void
+  let lastAction: string | undefined
   const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
+  const getState = (): DevHotkeyState => ({
+    lastAction,
+    mcpEnabled: resolvedMcp.enabled,
+    mcpRunning: Boolean(mcpHandle?.close),
+  })
   const close = () => {
     if (closed) {
       return
@@ -139,17 +188,17 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   }
 
   const printHelp = () => {
-    logger.info(formatDevHotkeyHelp())
+    logger.info(formatDevHotkeyHelpWithState(getState()))
   }
 
   const printHint = () => {
-    logger.info(formatDevHotkeyHint())
+    logger.info(formatDevHotkeyHintWithState(getState()))
   }
 
   const toggleMcp = async () => {
     if (!resolvedMcp.enabled) {
       logger.warn('[dev action] MCP 已在配置中禁用，跳过切换。')
-      return
+      return 'MCP 已禁用'
     }
 
     if (mcpHandle?.close) {
@@ -158,7 +207,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       await mcpHandle.close()
       mcpHandle = undefined
       logger.success(`[dev action] MCP 服务已关闭：${colors.cyan(url)}`)
-      return
+      return `MCP 已关闭 (${url})`
     }
 
     const url = formatMcpUrl(resolvedMcp.host, resolvedMcp.port, resolvedMcp.endpoint)
@@ -172,9 +221,10 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       workspaceRoot: options.cwd,
     })
     logger.success(`[dev action] MCP 服务已启动：${colors.cyan(url)}`)
+    return `MCP 已启动 (${url})`
   }
 
-  const runAction = (label: string, action: () => Promise<void>) => {
+  const runAction = (label: string, action: () => Promise<string | undefined>) => {
     if (running) {
       logger.warn('[dev action] 当前已有命令在执行，请等待完成后再试。')
       return
@@ -182,6 +232,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
     running = true
     void action()
+      .then((summary) => {
+        if (summary) {
+          lastAction = summary
+        }
+      })
       .catch((error) => {
         logger.error(`[dev action] ${label}失败：${error instanceof Error ? error.message : String(error)}`)
       })
@@ -217,14 +272,15 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
     if (key.name === 's') {
       runAction('截图', async () => {
-        await runScreenshotAction(options)
+        const screenshotPath = await runScreenshotAction(options)
+        return `截图已保存到 ${screenshotPath}`
       })
       return
     }
 
     if (key.name === 'm') {
       runAction('MCP 切换', async () => {
-        await toggleMcp()
+        return await toggleMcp()
       })
     }
   }

@@ -120,6 +120,7 @@ describe('devHotkeys', () => {
 
     expect(session).toBeDefined()
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('MCP 未启动'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 查看帮助'))
 
     session?.close()
@@ -150,6 +151,7 @@ describe('devHotkeys', () => {
     loggerMock.info.mockClear()
     stdin.emit('keypress', 'h', { name: 'h' })
 
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('重新显示这份帮助'))
@@ -241,12 +243,44 @@ describe('devHotkeys', () => {
       unref: false,
       workspaceRoot: '/project',
     })
+    expect(loggerMock.info.mock.calls.some(args =>
+      String(args[0]).includes('MCP 运行中') && String(args[0]).includes('最近动作：MCP 已启动'),
+    )).toBe(true)
 
     stdin.emit('keypress', '', { name: 'm' })
     await flushMicrotasks()
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('MCP 未启动'))
     session?.close()
+  })
+
+  it('shows screenshot summary in hint after screenshot action', async () => {
+    vi.doMock('node:process', () => ({
+      default: {
+        kill: killMock,
+        pid: 1234,
+        stdin,
+      },
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('keypress', '', { name: 's' })
+    await flushMicrotasks(10)
+
+    expect(loggerMock.info.mock.calls.some(args =>
+      String(args[0]).includes('最近动作：截图已保存到'),
+    )).toBe(true)
   })
 
   it('restores terminal and forwards sigint on ctrl+c', async () => {
