@@ -77,8 +77,10 @@ vi.mock('../logger', () => ({
   },
 }))
 
-vi.mock('../constants', () => ({
-  VERSION: 'test-version',
+vi.mock('../../package.json', () => ({
+  default: {
+    version: 'test-version',
+  },
 }))
 
 describe('devHotkeys', () => {
@@ -117,10 +119,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     const session = startDevHotkeys({
       cwd: '/project',
@@ -145,10 +143,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     const session = startDevHotkeys({
       cwd: '/project',
@@ -166,14 +160,30 @@ describe('devHotkeys', () => {
     session?.close()
   })
 
+  it('does not print duplicate hint panels when restore is called repeatedly without state changes', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+      silentStartupHint: true,
+    })
+
+    session?.restore()
+    session?.restore()
+
+    expect(loggerMock.info).toHaveBeenCalledTimes(1)
+    session?.close()
+  })
+
   it('prints full help on h hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
@@ -183,7 +193,7 @@ describe('devHotkeys', () => {
     })
 
     loggerMock.info.mockClear()
-    stdin.emit('keypress', 'h', { name: 'h' })
+    stdin.emit('data', 'h')
 
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('就绪      等待操作...'))
@@ -198,10 +208,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { runScreenshotAction } = await import('./devHotkeys')
 
     await runScreenshotAction({
@@ -223,10 +229,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     const session = startDevHotkeys({
       cwd: '/project',
@@ -243,10 +245,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     const session = startDevHotkeys({
       cwd: '/project',
@@ -258,7 +256,7 @@ describe('devHotkeys', () => {
     })
 
     loggerMock.info.mockClear()
-    stdin.emit('keypress', '', { name: 'm' })
+    stdin.emit('data', 'm')
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在启动 MCP 服务'))
     await flushMicrotasks()
 
@@ -274,7 +272,7 @@ describe('devHotkeys', () => {
       String(args[0]).includes('MCP         运行中') && String(args[0]).includes('最近操作    MCP 已启动'),
     )).toBe(true)
 
-    stdin.emit('keypress', '', { name: 'm' })
+    stdin.emit('data', 'm')
     await flushMicrotasks()
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
@@ -286,10 +284,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
@@ -299,7 +293,7 @@ describe('devHotkeys', () => {
     })
 
     loggerMock.info.mockClear()
-    stdin.emit('keypress', '', { name: 's' })
+    stdin.emit('data', 's')
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在截图当前页面'))
     await flushMicrotasks(10)
 
@@ -311,9 +305,6 @@ describe('devHotkeys', () => {
   it('shows running action in full help when action is in progress', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
-    }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
     }))
     let resolveScreenshot: ((value: { path: string }) => void) | undefined
     takeScreenshotMock.mockImplementationOnce(() => new Promise((resolve) => {
@@ -329,8 +320,8 @@ describe('devHotkeys', () => {
     })
 
     loggerMock.info.mockClear()
-    stdin.emit('keypress', '', { name: 's' })
-    stdin.emit('keypress', 'h', { name: 'h' })
+    stdin.emit('data', 's')
+    stdin.emit('data', 'h')
 
     expect(loggerMock.info.mock.calls.some(args =>
       String(args[0]).includes('状态        正在截图当前页面'),
@@ -347,9 +338,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
     let resolveScreenshot: ((value: { path: string }) => void) | undefined
     takeScreenshotMock.mockImplementationOnce(() => new Promise((resolve) => {
       resolveScreenshot = resolve as (value: { path: string }) => void
@@ -363,8 +351,8 @@ describe('devHotkeys', () => {
       projectPath: '/project/dist',
     })
 
-    stdin.emit('keypress', '', { name: 's' })
-    stdin.emit('keypress', '', { name: 'm' })
+    stdin.emit('data', 's')
+    stdin.emit('data', 'm')
 
     expect(loggerMock.warn).toHaveBeenCalledWith('[dev action] 当前正在截图当前页面，请稍后再试。')
 
@@ -376,10 +364,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
@@ -388,7 +372,7 @@ describe('devHotkeys', () => {
       projectPath: '/project/dist',
     })
 
-    stdin.emit('keypress', '\u0003', { ctrl: true, name: 'c' })
+    stdin.emit('data', '\u0003')
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
     expect(stdin.pause).toHaveBeenCalled()
@@ -399,10 +383,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
@@ -416,7 +396,7 @@ describe('devHotkeys', () => {
     stdin.pause.mockClear()
     stdin.resume.mockClear()
 
-    stdin.emit('keypress', '\u001A', { ctrl: true, name: 'z' })
+    stdin.emit('data', '\u001A')
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
     expect(stdin.pause).toHaveBeenCalledTimes(1)
@@ -433,10 +413,6 @@ describe('devHotkeys', () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
-    vi.doMock('node:readline', () => ({
-      emitKeypressEvents: vi.fn(),
-    }))
-
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
@@ -445,7 +421,7 @@ describe('devHotkeys', () => {
       projectPath: '/project/dist',
     })
 
-    stdin.emit('keypress', 'q', { name: 'q' })
+    stdin.emit('data', 'q')
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
     expect(stdin.pause).toHaveBeenCalled()

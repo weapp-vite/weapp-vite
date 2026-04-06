@@ -1,12 +1,12 @@
 import type { ScreenshotResult } from 'weapp-ide-cli'
 import type { WeappViteMcpServerHandle } from '../mcp'
 import type { WeappMcpConfig } from '../types'
+import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import process from 'node:process'
-import { emitKeypressEvents } from 'node:readline'
 import path from 'pathe'
 import { takeScreenshot } from 'weapp-ide-cli'
-import { VERSION } from '../constants'
+import packageJson from '../../package.json'
 import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
 
@@ -54,7 +54,7 @@ function formatProjectLabel(cwd: string) {
 function formatSessionHeader(projectLabel?: string) {
   const parts = [
     colors.bold(colors.green('DEV')),
-    `weapp-vite v${VERSION}`,
+    `weapp-vite v${packageJson.version}`,
     projectLabel ?? 'weapp',
   ]
   return parts.join('  ')
@@ -101,10 +101,9 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
   ]
   const keyColumnWidth = Math.max(...[...actionRows, ...processRows, ...helpRows].map(row => row.key.length))
   const formatRows = (rows: { key: string, description: string }[]) => rows.map(({ key, description }) =>
-    `press ${key.padEnd(keyColumnWidth)}  ${description}`,
+    `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
   )
   return [
-    '',
     formatSessionHeader(state.projectLabel),
     '',
     ...formatStatusLines(state),
@@ -129,7 +128,6 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
 export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
   const key = (value: string) => colors.bold(colors.green(value))
   return [
-    '',
     formatSessionHeader(state.projectLabel),
     '',
     ...formatStatusLines(state),
@@ -207,8 +205,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     return
   }
 
-  emitKeypressEvents(process.stdin)
-
   const hasSetRawMode = typeof process.stdin.setRawMode === 'function'
   if (hasSetRawMode) {
     process.stdin.setRawMode(true)
@@ -218,10 +214,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let closed = false
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
-  let onKeypress: (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => void
+  let onData: ((chunk: string | Uint8Array) => void) | undefined
   let onSigcont: (() => void) | undefined
   let currentAction: string | undefined
   let lastAction: string | undefined
+  let lastRenderedPanel = ''
   const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
   const getState = (): DevHotkeyState => ({
     currentAction,
@@ -240,7 +237,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     if (closed) {
       return
     }
-    emitKeypressEvents(process.stdin)
     if (hasSetRawMode) {
       process.stdin.setRawMode(true)
     }
@@ -251,7 +247,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       return
     }
     closed = true
-    process.stdin.off('keypress', onKeypress)
+    if (onData) {
+      process.stdin.off('data', onData)
+    }
     if (onSigcont) {
       process.off('SIGCONT', onSigcont)
     }
@@ -263,24 +261,37 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
   }
 
+  const printPanel = (message: string) => {
+    if (message === lastRenderedPanel) {
+      return
+    }
+    lastRenderedPanel = message
+    logger.info(message)
+  }
+
   const printHelp = () => {
-    logger.info(formatDevHotkeyHelpWithState(getState()))
+    printPanel(formatDevHotkeyHelpWithState(getState()))
   }
 
   const printHint = () => {
-    logger.info(formatDevHotkeyHintWithState(getState()))
+    printPanel(formatDevHotkeyHintWithState(getState()))
   }
   const restore = () => {
     if (closed) {
       return
     }
-    process.stdin.off('keypress', onKeypress)
+    if (onData) {
+      process.stdin.off('data', onData)
+    }
     attachTerminal()
-    process.stdin.on('keypress', onKeypress)
+    if (onData) {
+      process.stdin.on('data', onData)
+    }
     printHint()
   }
 
   const suspend = () => {
+    lastRenderedPanel = ''
     detachTerminal()
     forwardSigtstp()
   }
@@ -342,42 +353,37 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       })
   }
 
-  onKeypress = (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => {
-    if (!key || closed) {
+  const handleInput = (input: string) => {
+    if (closed) {
       return
     }
-
-    if (key.ctrl && key.name === 'c') {
+    if (input === '\u0003') {
       close()
       forwardSigint()
       return
     }
-
-    if (key.ctrl && key.name === 'z') {
+    if (input === '\u001A') {
       suspend()
       return
     }
-
-    if (key.name === 'q') {
+    const normalized = input.toLowerCase()
+    if (normalized === 'q') {
       close()
       forwardSigint()
       return
     }
-
-    if (key.name === 'h') {
+    if (normalized === 'h') {
       printHelp()
       return
     }
-
-    if (key.name === 's') {
+    if (normalized === 's') {
       runAction('截图', '正在截图当前页面', async () => {
         const screenshotPath = await runScreenshotAction(options)
         return `截图已保存到 ${screenshotPath}`
       })
       return
     }
-
-    if (key.name === 'm') {
+    if (normalized === 'm') {
       const pendingLabel = mcpHandle?.close ? '正在关闭 MCP 服务' : '正在启动 MCP 服务'
       runAction('MCP 切换', pendingLabel, async () => {
         return await toggleMcp()
@@ -385,7 +391,13 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
   }
 
-  process.stdin.on('keypress', onKeypress)
+  onData = (chunk) => {
+    const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8')
+    for (const char of text) {
+      handleInput(char)
+    }
+  }
+  process.stdin.on('data', onData)
   onSigcont = () => {
     restore()
   }
