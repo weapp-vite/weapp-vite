@@ -34,6 +34,9 @@ interface DevHotkeyState {
 const DEV_SCREENSHOT_DIR = '.tmp/weapp-vite-dev-screenshots'
 const DEFAULT_SCREENSHOT_TIMEOUT = 30_000
 const REG_PENDING_PREFIX = /^正在/
+const FULLWIDTH_ASCII_START = 0xFF01
+const FULLWIDTH_ASCII_END = 0xFF5E
+const FULLWIDTH_ASCII_OFFSET = 0xFEE0
 
 function formatMcpUrl(host: string, port: number, endpoint: string) {
   return `http://${host}:${port}${endpoint}`
@@ -51,28 +54,11 @@ function formatProjectLabel(cwd: string) {
   return path.basename(cwd) || cwd
 }
 
-function formatSessionHeader(projectLabel?: string) {
-  const parts = [
-    colors.bold(colors.green('DEV')),
-    `weapp-vite v${packageJson.version}`,
-    projectLabel ?? 'weapp',
-  ]
-  return parts.join('  ')
-}
-
 function formatMcpStatus(state: DevHotkeyState) {
   if (!state.mcpEnabled) {
     return '已禁用'
   }
   return state.mcpRunning ? '运行中' : '未启动'
-}
-
-function formatStatusLines(state: DevHotkeyState) {
-  return [
-    `状态        ${state.currentAction ?? '等待操作'}`,
-    `MCP         ${formatMcpStatus(state)}`,
-    ...(state.lastAction ? [`最近操作    ${state.lastAction}`] : []),
-  ]
 }
 
 function formatFooterLine(state: DevHotkeyState) {
@@ -104,6 +90,8 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
   )
   return [
+    `${colors.bold(colors.green('DEV'))}  weapp-vite v${packageJson.version}  ${state.projectLabel ?? 'weapp'}`,
+    '',
     '快捷命令',
     ...formatRows(actionRows),
     '',
@@ -122,14 +110,10 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
  */
 export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
   const key = (value: string) => colors.bold(colors.green(value))
-  return [
-    formatSessionHeader(state.projectLabel),
-    '',
-    ...formatStatusLines(state),
-    '',
-    formatFooterLine(state),
-    `按 ${key('h')} 显示帮助，按 ${key('q')} 退出`,
-  ].join('\n')
+  if (state.currentAction) {
+    return `${formatFooterLine(state)}，按 ${key('h')} 显示帮助，按 ${key('q')} 退出`
+  }
+  return `开发快捷键已就绪，按 ${key('h')} 显示帮助，按 ${key('q')} 退出`
 }
 
 /**
@@ -172,6 +156,20 @@ function formatLogPath(cwd: string, targetPath: string) {
 
 function formatResolvedScreenshotPath(cwd: string, fallbackPath: string, result: ScreenshotResult) {
   return formatLogPath(cwd, result.path ?? fallbackPath)
+}
+
+function normalizeInputChar(input: string) {
+  if (input.length !== 1) {
+    return input
+  }
+  const codePoint = input.codePointAt(0)
+  if (!codePoint) {
+    return input
+  }
+  if (codePoint >= FULLWIDTH_ASCII_START && codePoint <= FULLWIDTH_ASCII_END) {
+    return String.fromCodePoint(codePoint - FULLWIDTH_ASCII_OFFSET)
+  }
+  return input
 }
 
 /**
@@ -363,16 +361,17 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     if (closed) {
       return
     }
-    if (input === '\u0003') {
+    const normalizedInput = normalizeInputChar(input)
+    if (normalizedInput === '\u0003') {
       close()
       forwardSigint()
       return
     }
-    if (input === '\u001A') {
+    if (normalizedInput === '\u001A') {
       suspend()
       return
     }
-    const normalized = input.toLowerCase()
+    const normalized = normalizedInput.toLowerCase()
     if (normalized === 'q') {
       close()
       forwardSigint()

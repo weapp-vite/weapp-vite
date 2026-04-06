@@ -129,10 +129,9 @@ describe('devHotkeys', () => {
 
     expect(session).toBeDefined()
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('状态        等待操作'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('就绪      等待操作...'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('状态        等待操作'))
 
     session?.close()
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
@@ -199,6 +198,24 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('进程控制'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态：等待操作 / MCP 未启动'))
+  })
+
+  it('supports fullwidth hotkeys such as ｈ under ime-style input', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.emit('data', 'ｈ')
+
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
   })
 
   it('prints help again when pressing h repeatedly', async () => {
@@ -284,15 +301,13 @@ describe('devHotkeys', () => {
       unref: false,
       workspaceRoot: '/project',
     })
-    expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('MCP         运行中') && String(args[0]).includes('最近操作    MCP 已启动'),
-    )).toBe(true)
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('开发快捷键已就绪'))
 
     stdin.emit('data', 'm')
     await flushMicrotasks()
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('MCP         未启动'))
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('开发快捷键已就绪'))
     session?.close()
   })
 
@@ -313,9 +328,7 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在截图当前页面'))
     await flushMicrotasks(10)
 
-    expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('最近操作    截图已保存到'),
-    )).toBe(true)
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('开发快捷键已就绪'))
   })
 
   it('shows running action in full help when action is in progress', async () => {
@@ -340,7 +353,7 @@ describe('devHotkeys', () => {
     stdin.emit('data', 'h')
 
     expect(loggerMock.info.mock.calls.some(args =>
-      String(args[0]).includes('状态        正在截图当前页面'),
+      String(args[0]).includes('当前状态：正在截图当前页面 / MCP 未启动'),
     )).toBe(true)
     expect(loggerMock.info.mock.calls.some(args =>
       String(args[0]).includes('执行中    正在截图当前页面'),
