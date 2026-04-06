@@ -133,8 +133,8 @@ describe('devHotkeys', () => {
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('状态        等待操作'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('READY  waiting for actions...'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('press h to show help, press q to quit'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('就绪      等待操作...'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
 
     session?.close()
     expect(stdin.setRawMode).toHaveBeenCalledWith(false)
@@ -158,11 +158,11 @@ describe('devHotkeys', () => {
       silentStartupHint: true,
     })
 
-    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('press h to show help, press q to quit'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
 
     session?.restore()
 
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('press h to show help, press q to quit'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
     session?.close()
   })
 
@@ -186,12 +186,12 @@ describe('devHotkeys', () => {
     stdin.emit('keypress', 'h', { name: 'h' })
 
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('READY  waiting for actions...'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('press h to show help, press q to quit'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Watch Usage'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Process'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('Help'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('press h'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('就绪      等待操作...'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('进程控制'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h'))
   })
 
   it('runs screenshot action and writes logs', async () => {
@@ -426,7 +426,7 @@ describe('devHotkeys', () => {
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
     expect(stdin.resume).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('press h to show help, press q to quit'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
   })
 
   it('quits dev on q hotkey', async () => {

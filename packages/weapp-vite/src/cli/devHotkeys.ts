@@ -79,7 +79,7 @@ function formatFooterLine(state: DevHotkeyState) {
   if (state.currentAction) {
     return `执行中    ${state.currentAction}`
   }
-  return 'READY  waiting for actions...'
+  return '就绪      等待操作...'
 }
 
 /**
@@ -110,15 +110,15 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     ...formatStatusLines(state),
     '',
     formatFooterLine(state),
-    'press h to show help, press q to quit',
+    `按 ${key('h')} 显示帮助，按 ${key('q')} 退出`,
     '',
-    'Watch Usage',
+    '快捷命令',
     ...formatRows(actionRows),
     '',
-    'Process',
+    '进程控制',
     ...formatRows(processRows),
     '',
-    'Help',
+    '帮助',
     ...formatRows(helpRows),
   ].join('\n')
 }
@@ -135,7 +135,7 @@ export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
     ...formatStatusLines(state),
     '',
     formatFooterLine(state),
-    `press ${key('h')} to show help, press ${key('q')} to quit`,
+    `按 ${key('h')} 显示帮助，按 ${key('q')} 退出`,
   ].join('\n')
 }
 
