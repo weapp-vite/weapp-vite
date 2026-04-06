@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
+const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
+const closeMcpMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -17,6 +19,12 @@ class FakeStdin extends EventEmitter {
   pause = vi.fn()
 }
 
+async function flushMicrotasks(times = 4) {
+  for (let index = 0; index < times; index++) {
+    await Promise.resolve()
+  }
+}
+
 vi.mock('weapp-ide-cli', () => ({
   takeScreenshot: takeScreenshotMock,
 }))
@@ -25,6 +33,28 @@ vi.mock('node:fs/promises', () => ({
   default: {
     mkdir: mkdirMock,
   },
+}))
+
+vi.mock('../mcp', () => ({
+  resolveWeappMcpConfig: vi.fn((input: any) => {
+    if (input === false) {
+      return {
+        autoStart: false,
+        enabled: false,
+        endpoint: '/mcp',
+        host: '127.0.0.1',
+        port: 3088,
+      }
+    }
+    return {
+      autoStart: Boolean(input?.autoStart),
+      enabled: input?.enabled !== false,
+      endpoint: input?.endpoint ?? '/mcp',
+      host: input?.host ?? '127.0.0.1',
+      port: input?.port ?? 3088,
+    }
+  }),
+  startWeappViteMcpServer: startWeappViteMcpServerMock,
 }))
 
 vi.mock('../logger', () => ({
@@ -46,6 +76,13 @@ describe('devHotkeys', () => {
     stdin = new FakeStdin()
     mkdirMock.mockReset()
     mkdirMock.mockResolvedValue(undefined)
+    closeMcpMock.mockReset()
+    closeMcpMock.mockResolvedValue(undefined)
+    startWeappViteMcpServerMock.mockReset()
+    startWeappViteMcpServerMock.mockResolvedValue({
+      close: closeMcpMock,
+      transport: 'streamable-http',
+    })
     takeScreenshotMock.mockReset()
     takeScreenshotMock.mockResolvedValue({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
     loggerMock.info.mockReset()
@@ -72,6 +109,7 @@ describe('devHotkeys', () => {
     const { startDevHotkeys } = await import('./devHotkeys')
     const session = startDevHotkeys({
       cwd: '/project',
+      mcpConfig: undefined,
       platform: 'weapp',
       projectPath: '/project/dist',
     })
@@ -99,6 +137,7 @@ describe('devHotkeys', () => {
 
     await runScreenshotAction({
       cwd: '/project',
+      mcpConfig: undefined,
       platform: 'weapp',
       projectPath: '/project/dist',
     })
@@ -124,11 +163,51 @@ describe('devHotkeys', () => {
     const { startDevHotkeys } = await import('./devHotkeys')
     const session = startDevHotkeys({
       cwd: '/project',
+      mcpConfig: undefined,
       platform: 'alipay',
       projectPath: '/project/dist',
     })
 
     expect(session).toBeUndefined()
     expect(takeScreenshotMock).not.toHaveBeenCalled()
+  })
+
+  it('toggles mcp service with hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: {
+        stdin,
+      },
+    }))
+    vi.doMock('node:readline', () => ({
+      emitKeypressEvents: vi.fn(),
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    const session = startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: {
+        autoStart: false,
+      },
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('keypress', '', { name: 'm' })
+    await flushMicrotasks()
+
+    expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
+      endpoint: '/mcp',
+      host: '127.0.0.1',
+      port: 3088,
+      transport: 'streamable-http',
+      unref: false,
+      workspaceRoot: '/project',
+    })
+
+    stdin.emit('keypress', '', { name: 'm' })
+    await flushMicrotasks()
+
+    expect(closeMcpMock).toHaveBeenCalledTimes(1)
+    session?.close()
   })
 })

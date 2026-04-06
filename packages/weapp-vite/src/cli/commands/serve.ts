@@ -229,6 +229,7 @@ export function registerServeCommand(cli: CAC) {
       const devHotkeysSession = targets.runMini
         ? startDevHotkeys({
             cwd: configService.cwd,
+            mcpConfig: configService.weappViteConfig?.weapp?.mcp,
             platform: configService.platform,
             projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
           })

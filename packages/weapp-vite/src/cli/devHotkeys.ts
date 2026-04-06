@@ -1,13 +1,17 @@
 import type { ScreenshotResult } from 'weapp-ide-cli'
+import type { WeappViteMcpServerHandle } from '../mcp'
+import type { WeappMcpConfig } from '../types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import { emitKeypressEvents } from 'node:readline'
 import path from 'pathe'
 import { takeScreenshot } from 'weapp-ide-cli'
 import logger, { colors } from '../logger'
+import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
 
 export interface StartDevHotkeysOptions {
   cwd: string
+  mcpConfig?: boolean | WeappMcpConfig
   platform?: string
   projectPath: string
 }
@@ -19,12 +23,16 @@ export interface DevHotkeysSession {
 const DEV_SCREENSHOT_DIR = '.tmp/weapp-vite-dev-screenshots'
 const DEFAULT_SCREENSHOT_TIMEOUT = 30_000
 
+function formatMcpUrl(host: string, port: number, endpoint: string) {
+  return `http://${host}:${port}${endpoint}`
+}
+
 /**
  * @description 生成开发态快捷键帮助文本。
  */
 export function formatDevHotkeyHelp() {
   const key = (value: string) => colors.bold(colors.green(value))
-  return `[dev shortcuts] 按 ${key('s')} 截图当前页面，按 ${key('h')} 重新显示帮助`
+  return `[dev shortcuts] 按 ${key('s')} 截图当前页面，按 ${key('m')} 开关 MCP 服务，按 ${key('h')} 重新显示帮助`
 }
 
 /**
@@ -81,9 +89,58 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   let closed = false
   let running = false
+  let mcpHandle: WeappViteMcpServerHandle | undefined
+  const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
 
   const printHelp = () => {
     logger.info(formatDevHotkeyHelp())
+  }
+
+  const toggleMcp = async () => {
+    if (!resolvedMcp.enabled) {
+      logger.warn('[dev action] MCP 已在配置中禁用，跳过切换。')
+      return
+    }
+
+    if (mcpHandle?.close) {
+      const url = formatMcpUrl(resolvedMcp.host, resolvedMcp.port, resolvedMcp.endpoint)
+      logger.info(`[dev action] 正在关闭 MCP 服务：${colors.cyan(url)}`)
+      await mcpHandle.close()
+      mcpHandle = undefined
+      logger.success(`[dev action] MCP 服务已关闭：${colors.cyan(url)}`)
+      return
+    }
+
+    const url = formatMcpUrl(resolvedMcp.host, resolvedMcp.port, resolvedMcp.endpoint)
+    logger.info(`[dev action] 正在启动 MCP 服务：${colors.cyan(url)}`)
+    mcpHandle = await startWeappViteMcpServer({
+      endpoint: resolvedMcp.endpoint,
+      host: resolvedMcp.host,
+      port: resolvedMcp.port,
+      transport: 'streamable-http',
+      unref: false,
+      workspaceRoot: options.cwd,
+    })
+    logger.success(`[dev action] MCP 服务已启动：${colors.cyan(url)}`)
+  }
+
+  const runAction = (label: string, action: () => Promise<void>) => {
+    if (running) {
+      logger.warn('[dev action] 当前已有命令在执行，请等待完成后再试。')
+      return
+    }
+
+    running = true
+    void action()
+      .catch((error) => {
+        logger.error(`[dev action] ${label}失败：${error instanceof Error ? error.message : String(error)}`)
+      })
+      .finally(() => {
+        running = false
+        if (!closed) {
+          printHelp()
+        }
+      })
   }
 
   const onKeypress = (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => {
@@ -100,30 +157,27 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       return
     }
 
-    if (key.name !== 's') {
+    if (key.name === 's') {
+      runAction('截图', async () => {
+        await runScreenshotAction(options)
+      })
       return
     }
 
-    if (running) {
-      logger.warn('[dev action] 当前已有命令在执行，请等待完成后再试。')
-      return
+    if (key.name === 'm') {
+      runAction('MCP 切换', async () => {
+        await toggleMcp()
+      })
     }
-
-    running = true
-    void runScreenshotAction(options)
-      .catch((error) => {
-        logger.error(`[dev action] 截图失败：${error instanceof Error ? error.message : String(error)}`)
-      })
-      .finally(() => {
-        running = false
-        if (!closed) {
-          printHelp()
-        }
-      })
   }
 
   process.stdin.on('keypress', onKeypress)
   printHelp()
+  if (resolvedMcp.enabled && resolvedMcp.autoStart) {
+    runAction('MCP 自动启动', async () => {
+      await toggleMcp()
+    })
+  }
 
   return {
     close() {
@@ -136,6 +190,11 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
         process.stdin.setRawMode(false)
       }
       process.stdin.pause()
+      if (mcpHandle?.close) {
+        void mcpHandle.close().catch((error) => {
+          logger.warn(`[dev action] MCP 服务关闭失败：${error instanceof Error ? error.message : String(error)}`)
+        })
+      }
     },
   }
 }

@@ -15,11 +15,7 @@ const SKIP_COMMANDS = new Set([
   'ide',
   'mcp',
 ])
-
-const DEV_COMMANDS = new Set([
-  'dev',
-  'serve',
-])
+const REG_EADDRINUSE = /EADDRINUSE/
 
 let started = false
 
@@ -30,9 +26,6 @@ export function shouldAutoStartMcp(argv: string[]) {
   }
   if (SKIP_COMMANDS.has(command)) {
     return false
-  }
-  if (DEV_COMMANDS.has(command)) {
-    return true
   }
   return command.includes('/') || command.includes('\\') || command.startsWith('.')
 }
@@ -80,7 +73,7 @@ export async function maybeAutoStartMcpServer(argv: string[], cliOptions: Global
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    if (/EADDRINUSE/.test(message)) {
+    if (REG_EADDRINUSE.test(message)) {
       logger.info(`[mcp] 端口 ${resolvedMcp.port} 已被占用，跳过自动启动。`)
       started = true
       return

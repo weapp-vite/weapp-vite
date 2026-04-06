@@ -56,10 +56,18 @@ describe('mcp auto start', () => {
     mod.__resetAutoStartMcpStateForTest()
   })
 
-  it('auto starts streamable-http mcp for native commands', async () => {
+  it('does not auto start for dev command because dev hotkeys manage mcp lifecycle', async () => {
     const { maybeAutoStartMcpServer } = await import('./mcpAutoStart')
 
     await maybeAutoStartMcpServer(['dev'], {})
+
+    expect(startWeappViteMcpServerMock).not.toHaveBeenCalled()
+  })
+
+  it('auto starts streamable-http mcp for native root commands', async () => {
+    const { maybeAutoStartMcpServer } = await import('./mcpAutoStart')
+
+    await maybeAutoStartMcpServer(['.'], {})
 
     expect(startWeappViteMcpServerMock).toHaveBeenCalledWith(expect.objectContaining({
       transport: 'streamable-http',

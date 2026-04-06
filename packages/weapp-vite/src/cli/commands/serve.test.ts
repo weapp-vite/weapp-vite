@@ -186,6 +186,7 @@ describe('serve cli command', () => {
     })
     expect(startDevHotkeysMock).toHaveBeenCalledWith({
       cwd: '/project',
+      mcpConfig: undefined,
       platform: 'weapp',
       projectPath: '/project/dist',
     })
