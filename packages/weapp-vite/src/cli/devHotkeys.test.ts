@@ -195,13 +195,29 @@ describe('devHotkeys', () => {
     loggerMock.info.mockClear()
     stdin.emit('data', 'h')
 
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DEV  weapp-vite vtest-version  project'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('就绪      等待操作...'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('进程控制'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态：等待操作 / MCP 未启动'))
+  })
+
+  it('prints help again when pressing h repeatedly', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.emit('data', 'h')
+    stdin.emit('data', 'h')
+
+    expect(loggerMock.info).toHaveBeenCalledTimes(2)
   })
 
   it('runs screenshot action and writes logs', async () => {
@@ -405,7 +421,7 @@ describe('devHotkeys', () => {
     fakeProcess.emit('SIGCONT')
 
     expect(stdin.setRawMode).toHaveBeenCalledWith(true)
-    expect(stdin.resume).toHaveBeenCalledTimes(1)
+    expect(stdin.resume).toHaveBeenCalledTimes(2)
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
   })
 

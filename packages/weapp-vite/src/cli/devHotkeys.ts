@@ -104,13 +104,6 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
   )
   return [
-    formatSessionHeader(state.projectLabel),
-    '',
-    ...formatStatusLines(state),
-    '',
-    formatFooterLine(state),
-    `按 ${key('h')} 显示帮助，按 ${key('q')} 退出`,
-    '',
     '快捷命令',
     ...formatRows(actionRows),
     '',
@@ -119,6 +112,8 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
     '',
     '帮助',
     ...formatRows(helpRows),
+    '',
+    `当前状态：${state.currentAction ?? '等待操作'} / MCP ${formatMcpStatus(state)}`,
   ].join('\n')
 }
 
@@ -242,6 +237,15 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
     process.stdin.resume()
   }
+  const ensureTerminalActive = () => {
+    if (closed) {
+      return
+    }
+    if (hasSetRawMode) {
+      process.stdin.setRawMode(true)
+    }
+    process.stdin.resume()
+  }
   const close = () => {
     if (closed) {
       return
@@ -261,8 +265,8 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
   }
 
-  const printPanel = (message: string) => {
-    if (message === lastRenderedPanel) {
+  const printPanel = (message: string, force = false) => {
+    if (!force && message === lastRenderedPanel) {
       return
     }
     lastRenderedPanel = message
@@ -270,11 +274,13 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   }
 
   const printHelp = () => {
-    printPanel(formatDevHotkeyHelpWithState(getState()))
+    printPanel(formatDevHotkeyHelpWithState(getState()), true)
+    ensureTerminalActive()
   }
 
   const printHint = () => {
     printPanel(formatDevHotkeyHintWithState(getState()))
+    ensureTerminalActive()
   }
   const restore = () => {
     if (closed) {
