@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 5.2.2
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-ide-cli --full-page` 整页长截图会改变当前页面滚动位置的问题。现在截图前会记录当前页面的 y 轴位置，完成从顶部到底部的拼接后自动恢复原位置，并在截图异常中断时同样执行滚动恢复，避免调试现场被截图流程打断。** [`0ea8493`](https://github.com/weapp-vite/weapp-vite/commit/0ea84934b344ea19607090bcda070452c6e41dbe) by @sonofmagic
+
 ## 5.2.1
 
 ### Patch Changes
