@@ -4,21 +4,21 @@ import path from 'node:path'
 import { it } from 'vitest'
 
 const extensionRoot = path.resolve(__dirname, '..')
-const vscodeIgnorePath = path.join(extensionRoot, '.vscodeignore')
+const packageJsonPath = path.join(extensionRoot, 'package.json')
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 
-it('.vscodeignore excludes test-only and publishing-only files from package output', () => {
-  const ignoreFile = fs.readFileSync(vscodeIgnorePath, 'utf8')
-  const rules = ignoreFile
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-
-  assert.ok(rules.includes('extension/*.test.ts'))
-  assert.ok(rules.includes('extension/**/*.test.ts'))
-  assert.ok(rules.includes('scripts/**'))
-  assert.ok(rules.includes('types/**'))
-  assert.ok(rules.includes('tsconfig.json'))
-  assert.ok(rules.includes('PUBLISHING.md'))
+it('package.json files whitelist is the only publish filter', () => {
+  assert.equal(fs.existsSync(path.join(extensionRoot, '.vscodeignore')), false)
+  assert.deepEqual([...packageJson.files].sort(), [
+    'assets/**',
+    'CHANGELOG.md',
+    'LICENSE',
+    'README.md',
+    'dist/**',
+    'package.json',
+    'snippets/**',
+    'syntaxes/**',
+  ].sort())
 })
 
 it('package output keeps runtime entry files on disk', () => {
@@ -32,13 +32,13 @@ it('package output keeps runtime entry files on disk', () => {
     'extension/workspace.ts',
     'tsconfig.json',
     'vitest.config.ts',
-    'types/vscode.d.ts',
-    'snippets/weapp-vite.code-snippets',
     'scripts/check-package.ts',
     'scripts/check-vsix.ts',
     'scripts/package-dry-run.ts',
     'scripts/release-vsce.ts',
     'scripts/smoke-test.ts',
+    'types/vscode.d.ts',
+    'snippets/weapp-vite.code-snippets',
     'syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
   ]
 
