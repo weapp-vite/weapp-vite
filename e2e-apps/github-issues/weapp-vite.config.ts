@@ -23,7 +23,7 @@ export default defineConfig({
         },
         'subpackages/item': {
           dependencies: [
-            'lodash',
+            'camelcase',
           ],
         },
         'subpackages/user': {
