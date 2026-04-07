@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import lodash from 'lodash'
+import camelCase from 'camelcase'
 import { ref } from 'wevu'
 import { useIssue317Toast } from '../../hooks/issue-317/useToast'
 
@@ -9,7 +9,7 @@ definePageJson({
 
 const { showToast } = useIssue317Toast('item')
 const message = ref(showToast('ready'))
-const npmMarker = lodash.camelCase('issue 317 item npm ready')
+const npmMarker = camelCase('issue 317 item npm ready')
 
 function _runE2E() {
   return {
