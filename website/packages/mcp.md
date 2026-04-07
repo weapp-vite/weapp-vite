@@ -19,10 +19,32 @@ keywords:
 ## 推荐使用方式
 
 ```bash
-wv mcp
+wv mcp init codex
+wv mcp init claude-code
+wv mcp init cursor
 ```
 
-如果你的 AI 客户端支持 `streamable-http`，也可以切换到 HTTP 传输：
+如果你只想预览配置，不直接写入：
+
+```bash
+wv mcp print codex
+```
+
+写入完成后，建议执行：
+
+```bash
+wv mcp doctor codex
+```
+
+如果你已经启动了 `streamable-http` MCP 服务，也可以直接生成 HTTP 配置：
+
+```bash
+wv mcp init codex --transport http
+wv mcp init claude-code --transport http
+wv mcp init cursor --transport http
+```
+
+仍然需要手动起服务时：
 
 ```bash
 wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
@@ -43,6 +65,12 @@ pnpm add @weapp-vite/mcp
 ## 启动方式
 
 不在仓库目录执行时，可选追加 `--workspace-root /path/to/weapp-vite`。
+
+当前默认写入位置：
+
+1. `Codex`: `~/.codex/config.toml`
+2. `Claude Code`: 项目根目录 `.mcp.json`
+3. `Cursor`: 项目根目录 `.cursor/mcp.json`
 
 如果你只想单独运行包本身：
 

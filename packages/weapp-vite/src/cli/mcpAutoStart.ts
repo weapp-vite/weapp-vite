@@ -4,6 +4,7 @@ import process from 'node:process'
 import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
 import { loadConfig } from './loadConfig'
+import { formatMcpQuickStart } from './mcpClient'
 import { resolveConfigFile } from './options'
 
 const SKIP_COMMANDS = new Set([
@@ -70,6 +71,12 @@ export async function maybeAutoStartMcpServer(argv: string[], cliOptions: Global
     const mcpUrl = `http://${resolvedMcp.host}:${resolvedMcp.port}${resolvedMcp.endpoint}`
     logger.success('MCP 服务已自动启动：')
     logger.info(`  ➜  ${colors.cyan(mcpUrl)}`)
+    for (const line of formatMcpQuickStart({
+      httpUrl: mcpUrl,
+      transport: 'http',
+    })) {
+      logger.info(line)
+    }
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
