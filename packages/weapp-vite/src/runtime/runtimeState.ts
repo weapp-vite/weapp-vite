@@ -88,6 +88,7 @@ export interface RuntimeState {
     resolvedResolverComponents: Map<string, string>
     matcher?: (input: string) => boolean
     matcherKey: string
+    version: number
   }
   build: {
     queue: PQueue
@@ -112,6 +113,8 @@ export interface RuntimeState {
     importerMap: Map<string, Set<string>>
     tokenMap: Map<string, ScanWxmlResult>
     componentsMap: Map<string, ComponentsMap>
+    aggregatedComponentsMap: Map<string, ComponentsMap>
+    templatePathMap: Map<string, string>
     cache: FileCache<ScanWxmlResult>
     emittedCode: Map<string, string>
   }
@@ -158,6 +161,7 @@ export function createRuntimeState(): RuntimeState {
       registry: new Map<string, LocalAutoImportMatch>(),
       resolvedResolverComponents: new Map<string, string>(),
       matcherKey: '',
+      version: 0,
     },
     build: {
       queue: new PQueue({ autoStart: false }),
@@ -182,6 +186,8 @@ export function createRuntimeState(): RuntimeState {
       importerMap: new Map<string, Set<string>>(),
       tokenMap: new Map<string, ScanWxmlResult>(),
       componentsMap: new Map<string, ComponentsMap>(),
+      aggregatedComponentsMap: new Map<string, ComponentsMap>(),
+      templatePathMap: new Map<string, string>(),
       cache: new FileCache<ScanWxmlResult>(),
       emittedCode: new Map<string, string>(),
     },
