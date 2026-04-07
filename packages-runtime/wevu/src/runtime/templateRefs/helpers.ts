@@ -102,7 +102,14 @@ function mergeComponentRefValue(
       if (Reflect.has(target, key)) {
         return Object.getOwnPropertyDescriptor(target, key)
       }
-      return Object.getOwnPropertyDescriptor(source, key)
+      const descriptor = Object.getOwnPropertyDescriptor(source, key)
+      if (!descriptor) {
+        return descriptor
+      }
+      return {
+        ...descriptor,
+        configurable: true,
+      }
     },
   })
   return markNoSetData(merged)

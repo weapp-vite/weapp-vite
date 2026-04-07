@@ -245,6 +245,34 @@ describe('runtime: template refs', () => {
     expect(onConfirm).toHaveBeenCalledWith('ok')
   })
 
+  it('keeps native component property descriptors proxy-safe', () => {
+    const componentInstance: any = {}
+    Object.defineProperty(componentInstance, '__data__', {
+      value: { text: 'hello' },
+      configurable: false,
+      enumerable: true,
+      writable: false,
+    })
+
+    const instance: any = {
+      __wevuReadyCalled: true,
+      __wevu: { state: {}, proxy: {} },
+      selectComponent: vi.fn(() => componentInstance),
+      __wevuTemplateRefs: [
+        { selector: '.native', inFor: false, name: 'native', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+
+    const refs = instance.__wevu.state.$refs
+    expect(() => Object.keys(refs.native)).not.toThrow()
+    const descriptor = Object.getOwnPropertyDescriptor(refs.native, '__data__')
+    expect(descriptor?.configurable).toBe(true)
+    expect(descriptor?.enumerable).toBe(true)
+    expect(descriptor?.value).toEqual({ text: 'hello' })
+  })
+
   it('scheduleTemplateRefUpdate batches updates', async () => {
     const resolver: QueryResolver = (selector) => {
       if (selector === '.batched') {

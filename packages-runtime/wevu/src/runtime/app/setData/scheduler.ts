@@ -130,7 +130,9 @@ export function createSetDataScheduler(options: {
       || !Object.hasOwn(right as object, 'raw')
     ) {
       if (
-        typeof left === 'object'
+        left
+        && right
+        && typeof left === 'object'
         && typeof right === 'object'
         && Object.hasOwn(left as object, 'snapshot')
         && Object.hasOwn(right as object, 'snapshot')
