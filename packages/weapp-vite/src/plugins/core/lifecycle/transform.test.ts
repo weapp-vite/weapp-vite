@@ -28,7 +28,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
     expect(code).toContain('export const value = 1')
   })
 
@@ -56,7 +56,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
     expect(code).toContain('export const value = 1')
   })
 

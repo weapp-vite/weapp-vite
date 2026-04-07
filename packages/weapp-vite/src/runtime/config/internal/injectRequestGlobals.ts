@@ -10,6 +10,7 @@ const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'AbortController',
   'AbortSignal',
   'XMLHttpRequest',
+  'WebSocket',
 ]
 
 const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
@@ -17,9 +18,11 @@ const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'AbortSignal',
 ]
 
-const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request']
+const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
-const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set([
+type WeappRequestGlobalFreeBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
+
+const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set<WeappRequestGlobalFreeBindingTarget>([
   ...FULL_REQUEST_GLOBAL_TARGETS,
   'URL',
   'URLSearchParams',
@@ -159,7 +162,7 @@ function resolveRequestGlobalsRuntimeModuleId() {
 }
 
 function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
-  const bindingTargets = [...targets]
+  const bindingTargets: WeappRequestGlobalFreeBindingTarget[] = [...targets]
   const needsUrlGlobals = targets.some(target => (
     target === 'fetch'
     || target === 'Request'
