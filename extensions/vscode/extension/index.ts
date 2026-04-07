@@ -1,6 +1,6 @@
-const vscode = require('vscode')
+import vscode from 'vscode'
 
-const {
+import {
   insertCommonScripts,
   insertDefineConfigTemplate,
   insertJsonBlockTemplate,
@@ -8,30 +8,30 @@ const {
   runWorkspaceCommand,
   showCommandPalette,
   showProjectOverview,
-} = require('./commands')
-const {
+} from './commands'
+import {
   isPackageJsonDiagnosticsEnabled,
   isStatusBarEnabled,
-} = require('./config')
-const {
+} from './config'
+import {
   OUTPUT_CHANNEL_NAME,
   STATUS_BAR_PRIORITY,
   VITE_CONFIG_FILE_PATTERN,
-} = require('./constants')
-const {
+} from './constants'
+import {
   buildPackageJsonDiagnostics,
-} = require('./content')
-const {
+} from './content'
+import {
   WeappViteCodeActionProvider,
   WeappViteConfigCompletionProvider,
   WeappViteHoverProvider,
   WeappVitePackageJsonCompletionProvider,
   WeappViteVueCompletionProvider,
-} = require('./providers')
-const {
+} from './providers'
+import {
   getProjectContext,
   isPackageJsonDocument,
-} = require('./workspace')
+} from './workspace'
 
 let outputChannel
 let statusBarItem
@@ -47,7 +47,7 @@ function getPackageJsonDiagnostics() {
   return packageJsonDiagnostics
 }
 
-function refreshPackageJsonDiagnostics(document) {
+function refreshPackageJsonDiagnostics(document: any) {
   if (!isPackageJsonDocument(document)) {
     return
   }
@@ -87,7 +87,7 @@ async function refreshStatusBar() {
   statusBarItem.show()
 }
 
-function activate(context) {
+export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
   const packageJsonCompletionProvider = new WeappVitePackageJsonCompletionProvider()
@@ -207,9 +207,4 @@ function activate(context) {
   })
 }
 
-function deactivate() {}
-
-module.exports = {
-  activate,
-  deactivate,
-}
+export function deactivate() {}

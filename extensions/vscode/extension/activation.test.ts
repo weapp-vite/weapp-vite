@@ -1,10 +1,10 @@
-const assert = require('node:assert/strict')
-const { Buffer } = require('node:buffer')
-const Module = require('node:module')
-const path = require('node:path')
-const test = require('node:test')
+import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { afterEach, it, vi } from 'vitest'
 
-const extensionEntryPath = path.resolve(__dirname, '..', 'extension.js')
+const extensionIndexUrl = pathToFileURL(path.resolve(__dirname, 'index.ts')).href
 
 function createMockVscode() {
   const registeredCommands = []
@@ -202,43 +202,41 @@ function createMockVscode() {
   }
 }
 
-function withMockedVscode(run) {
-  const originalLoad = Module._load
+async function withMockedVscode(run: (state: ReturnType<typeof createMockVscode>) => Promise<void> | void) {
   const state = createMockVscode()
 
-  Module._load = function patchedLoader(request, parent, isMain) {
-    if (request === 'vscode') {
-      return state.mockVscode
+  vi.doMock('vscode', () => {
+    return {
+      default: state.mockVscode,
     }
-
-    return originalLoad.call(this, request, parent, isMain)
-  }
-
-  delete require.cache[extensionEntryPath]
-  delete require.cache[path.resolve(__dirname, 'index.js')]
+  })
+  vi.resetModules()
 
   try {
-    return run(state)
+    await run(state)
   }
   finally {
-    delete require.cache[extensionEntryPath]
-    delete require.cache[path.resolve(__dirname, 'index.js')]
-    Module._load = originalLoad
+    vi.doUnmock('vscode')
+    vi.resetModules()
   }
 }
 
-test('extension entry exports activate and deactivate', () => {
-  withMockedVscode(() => {
-    const extension = require(extensionEntryPath)
+afterEach(() => {
+  vi.clearAllMocks()
+})
+
+it('extension index exports activate and deactivate', async () => {
+  await withMockedVscode(async () => {
+    const extension = await import(`${extensionIndexUrl}?t=${Date.now()}`)
 
     assert.equal(typeof extension.activate, 'function')
     assert.equal(typeof extension.deactivate, 'function')
   })
 })
 
-test('activate registers commands, providers, status bar and diagnostics', () => {
-  withMockedVscode((state) => {
-    const extension = require(extensionEntryPath)
+it('activate registers commands, providers, status bar and diagnostics', async () => {
+  await withMockedVscode(async (state) => {
+    const extension = await import(`${extensionIndexUrl}?t=${Date.now()}`)
     const subscriptions = []
 
     extension.activate({ subscriptions })

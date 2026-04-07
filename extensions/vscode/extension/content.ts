@@ -1,6 +1,6 @@
-const vscode = require('vscode')
+import vscode from 'vscode'
 
-const {
+import {
   COMMON_SCRIPT_NAMES,
   DOCS_GENERATE_URL,
   DOCS_GUIDE_URL,
@@ -10,12 +10,12 @@ const {
   VUE_JSON_BLOCK_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
   WEAPP_VITE_SCRIPT_PATTERN,
-} = require('./constants')
-const {
+} from './constants'
+import {
   getMissingCommonScripts,
-} = require('./logic')
+} from './logic'
 
-function getJsonBlockSnippet() {
+export function getJsonBlockSnippet() {
   return [
     '<json lang="jsonc">',
     '{',
@@ -25,7 +25,7 @@ function getJsonBlockSnippet() {
   ].join('\n')
 }
 
-function getDefineConfigTemplate() {
+export function getDefineConfigTemplate() {
   return [
     'import { defineConfig } from \'weapp-vite\'',
     '',
@@ -35,7 +35,7 @@ function getDefineConfigTemplate() {
   ].join('\n')
 }
 
-function buildPackageJsonDiagnostics(document) {
+export function buildPackageJsonDiagnostics(document: any) {
   const diagnostics = []
   let packageJson
 
@@ -83,7 +83,7 @@ function buildPackageJsonDiagnostics(document) {
   return diagnostics
 }
 
-function getDocItems() {
+export function getDocItems() {
   return [
     {
       label: '$(book) 打开 weapp-vite 指南',
@@ -103,7 +103,7 @@ function getDocItems() {
   ]
 }
 
-function getPackageJsonScriptHover(lineText) {
+export function getPackageJsonScriptHover(lineText: string) {
   for (const scriptName of COMMON_SCRIPT_NAMES) {
     if (lineText.includes(`"${scriptName}"`)) {
       return new vscode.MarkdownString([
@@ -129,7 +129,7 @@ function getPackageJsonScriptHover(lineText) {
   return null
 }
 
-function getViteConfigHover(wordRangeText, lineText) {
+export function getViteConfigHover(wordRangeText: string, lineText: string) {
   if (wordRangeText === 'defineConfig') {
     return new vscode.MarkdownString([
       '**weapp-vite defineConfig**',
@@ -163,7 +163,7 @@ function getViteConfigHover(wordRangeText, lineText) {
   return null
 }
 
-function getVueCustomBlockHover(lineText) {
+export function getVueCustomBlockHover(lineText: string) {
   if (!VUE_JSON_BLOCK_PATTERN.test(lineText)) {
     return null
   }
@@ -175,14 +175,4 @@ function getVueCustomBlockHover(lineText) {
     '',
     '建议使用 `lang="jsonc"` 以便保留注释。',
   ].join('\n'))
-}
-
-module.exports = {
-  buildPackageJsonDiagnostics,
-  getDefineConfigTemplate,
-  getDocItems,
-  getJsonBlockSnippet,
-  getPackageJsonScriptHover,
-  getViteConfigHover,
-  getVueCustomBlockHover,
 }

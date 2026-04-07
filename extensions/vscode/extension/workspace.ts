@@ -1,18 +1,18 @@
-const { Buffer } = require('node:buffer')
-const path = require('node:path')
-const vscode = require('vscode')
+import { Buffer } from 'node:buffer'
+import path from 'node:path'
+import vscode from 'vscode'
 
-const {
+import {
   PACKAGE_JSON_FILE_PATTERN,
   VITE_CONFIG_FILE_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
   WEAPP_VITE_SCRIPT_PATTERN,
-} = require('./constants')
-const {
+} from './constants'
+import {
   resolveCommandFromScripts,
-} = require('./logic')
+} from './logic'
 
-function getPrimaryWorkspaceFolder() {
+export function getPrimaryWorkspaceFolder() {
   const activeUri = vscode.window.activeTextEditor?.document.uri
 
   if (activeUri) {
@@ -26,19 +26,19 @@ function getPrimaryWorkspaceFolder() {
   return workspaceFolder
 }
 
-function isPackageJsonDocument(document) {
+export function isPackageJsonDocument(document: any) {
   return PACKAGE_JSON_FILE_PATTERN.test(document.uri.path)
 }
 
-function isViteConfigDocument(document) {
+export function isViteConfigDocument(document: any) {
   return VITE_CONFIG_FILE_PATTERN.test(document.fileName)
 }
 
-function isVueDocument(document) {
+export function isVueDocument(document: any) {
   return document.languageId === 'vue'
 }
 
-async function pathExists(filePath) {
+async function pathExists(filePath: string) {
   try {
     await vscode.workspace.fs.stat(vscode.Uri.file(filePath))
     return true
@@ -48,7 +48,7 @@ async function pathExists(filePath) {
   }
 }
 
-async function readJsonFile(filePath) {
+async function readJsonFile(filePath: string) {
   try {
     const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))
     return JSON.parse(Buffer.from(bytes).toString('utf8'))
@@ -58,7 +58,7 @@ async function readJsonFile(filePath) {
   }
 }
 
-async function readTextFile(filePath) {
+async function readTextFile(filePath: string) {
   try {
     const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))
     return Buffer.from(bytes).toString('utf8')
@@ -68,7 +68,7 @@ async function readTextFile(filePath) {
   }
 }
 
-function getEditor(documentOrEditor) {
+export function getEditor(documentOrEditor: any) {
   if (!documentOrEditor) {
     return null
   }
@@ -86,7 +86,7 @@ function getEditor(documentOrEditor) {
   return null
 }
 
-function getPackageManager(packageJson) {
+function getPackageManager(packageJson: Record<string, any>) {
   const packageManager = packageJson?.packageManager
 
   if (typeof packageManager === 'string') {
@@ -102,7 +102,7 @@ function getPackageManager(packageJson) {
   return 'pnpm'
 }
 
-async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFolder()) {
+export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFolder()) {
   if (!workspaceFolder) {
     return null
   }
@@ -186,21 +186,15 @@ async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFolder()) 
   }
 }
 
-function resolveCommand(context, commandDefinition, preferWvAlias = true) {
+export function resolveCommand(
+  context: { scripts: Record<string, string>, packageManager: string },
+  commandDefinition: { id: string, scriptCandidates: string[], fallbackCommand: string },
+  preferWvAlias = true,
+) {
   return resolveCommandFromScripts(
     context.scripts,
     context.packageManager,
     commandDefinition,
     preferWvAlias,
   )
-}
-
-module.exports = {
-  getEditor,
-  getPrimaryWorkspaceFolder,
-  getProjectContext,
-  isPackageJsonDocument,
-  isViteConfigDocument,
-  isVueDocument,
-  resolveCommand,
 }

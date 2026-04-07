@@ -1,14 +1,14 @@
-const assert = require('node:assert/strict')
-const test = require('node:test')
+import assert from 'node:assert/strict'
+import { it } from 'vitest'
 
-const {
+import {
   applySuggestedScripts,
   getMissingCommonScripts,
   getSuggestedScripts,
   resolveCommandFromScripts,
-} = require('./logic')
+} from './logic'
 
-test('returns wv suggestions by default', () => {
+it('returns wv suggestions by default', () => {
   assert.deepEqual(getSuggestedScripts(), {
     dev: 'wv dev',
     build: 'wv build',
@@ -17,7 +17,7 @@ test('returns wv suggestions by default', () => {
   })
 })
 
-test('returns long cli suggestions when alias is disabled', () => {
+it('returns long cli suggestions when alias is disabled', () => {
   assert.deepEqual(getSuggestedScripts(false), {
     dev: 'weapp-vite dev',
     build: 'weapp-vite build',
@@ -26,7 +26,7 @@ test('returns long cli suggestions when alias is disabled', () => {
   })
 })
 
-test('finds missing common scripts', () => {
+it('finds missing common scripts', () => {
   assert.deepEqual(getMissingCommonScripts({
     scripts: {
       dev: 'wv dev',
@@ -34,7 +34,7 @@ test('finds missing common scripts', () => {
   }), ['build', 'generate', 'open'])
 })
 
-test('applies only missing scripts', () => {
+it('applies only missing scripts', () => {
   const result = applySuggestedScripts({
     name: 'demo',
     scripts: {
@@ -51,7 +51,7 @@ test('applies only missing scripts', () => {
   })
 })
 
-test('prefers package scripts before fallback commands', () => {
+it('prefers package scripts before fallback commands', () => {
   const commandDefinition = {
     id: 'generate',
     scriptCandidates: ['generate', 'g'],
@@ -69,7 +69,7 @@ test('prefers package scripts before fallback commands', () => {
   })
 })
 
-test('uses configured fallback alias when no script is found', () => {
+it('uses configured fallback alias when no script is found', () => {
   const commandDefinition = {
     id: 'open',
     scriptCandidates: ['open'],

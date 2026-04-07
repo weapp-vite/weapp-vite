@@ -92,7 +92,8 @@ The extension manifest now includes:
 
 - a publish-safe `files` whitelist
 - `.vscodeignore` exclusions for tests and publishing-only docs
-- local `lint`, `test`, and `check` scripts
+- a TypeScript build that emits runtime files into `dist/`
+- local `lint`, `vitest`, and `check` scripts
 - a `check:publish` script for pre-package verification
 - a `check:package` script that validates runtime entry files and package exclusions
 - a `package:dry-run` script that builds a local `.vsix` artifact
@@ -100,6 +101,23 @@ The extension manifest now includes:
 - a simple walkthrough for first-run onboarding
 - command palette visibility rules to reduce irrelevant entries outside matching files or workspaces
 - a dedicated GitHub Actions workflow for extension-only CI
+
+## TypeScript
+
+The extension runtime and its unit tests are both written in TypeScript:
+
+- source entry: `extensions/vscode/extension.ts`
+- runtime modules: `extensions/vscode/extension/**/*.ts`
+- unit tests: `extensions/vscode/extension/**/*.test.ts`
+- package scripts: `extensions/vscode/scripts/*.ts`
+
+Useful local commands:
+
+```bash
+pnpm --dir extensions/vscode run build
+pnpm --dir extensions/vscode run test
+pnpm --dir extensions/vscode run check:package
+```
 
 ## Publish
 

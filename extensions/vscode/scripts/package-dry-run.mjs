@@ -1,1 +1,0 @@
-import './release-vsce.mjs'

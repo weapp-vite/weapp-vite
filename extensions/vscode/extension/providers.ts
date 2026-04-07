@@ -1,29 +1,29 @@
-const vscode = require('vscode')
+import vscode from 'vscode'
 
-const {
+import {
   isCompletionEnabled,
   isHoverEnabled,
-} = require('./config')
-const {
+} from './config'
+import {
   COMMON_SCRIPT_NAMES,
   DOCS_GENERATE_URL,
   PACKAGE_JSON_PROPERTY_PREFIX_PATTERN,
   SCRIPT_COMMAND_SUGGESTIONS,
   VUE_JSON_BLOCK_PATTERN,
-} = require('./constants')
-const {
+} from './constants'
+import {
   getPackageJsonScriptHover,
   getViteConfigHover,
   getVueCustomBlockHover,
-} = require('./content')
-const {
+} from './content'
+import {
   isPackageJsonDocument,
   isViteConfigDocument,
   isVueDocument,
-} = require('./workspace')
+} from './workspace'
 
-class WeappViteCodeActionProvider {
-  provideCodeActions(document, range) {
+export class WeappViteCodeActionProvider {
+  provideCodeActions(document: any, range: any) {
     /** @type {import('vscode').CodeAction[]} */
     const actions = []
 
@@ -72,8 +72,8 @@ class WeappViteCodeActionProvider {
   }
 }
 
-class WeappViteVueCompletionProvider {
-  provideCompletionItems(document, position) {
+export class WeappViteVueCompletionProvider {
+  provideCompletionItems(document: any, position: any) {
     if (!isCompletionEnabled()) {
       return []
     }
@@ -94,8 +94,8 @@ class WeappViteVueCompletionProvider {
   }
 }
 
-class WeappVitePackageJsonCompletionProvider {
-  provideCompletionItems(document, position) {
+export class WeappVitePackageJsonCompletionProvider {
+  provideCompletionItems(document: any, position: any) {
     if (!isCompletionEnabled()) {
       return []
     }
@@ -130,8 +130,8 @@ class WeappVitePackageJsonCompletionProvider {
   }
 }
 
-class WeappViteConfigCompletionProvider {
-  provideCompletionItems(document, position) {
+export class WeappViteConfigCompletionProvider {
+  provideCompletionItems(document: any, position: any) {
     if (!isCompletionEnabled()) {
       return []
     }
@@ -165,8 +165,8 @@ class WeappViteConfigCompletionProvider {
   }
 }
 
-class WeappViteHoverProvider {
-  provideHover(document, position) {
+export class WeappViteHoverProvider {
+  provideHover(document: any, position: any) {
     if (!isHoverEnabled()) {
       return null
     }
@@ -201,12 +201,4 @@ class WeappViteHoverProvider {
 
     return null
   }
-}
-
-module.exports = {
-  WeappViteCodeActionProvider,
-  WeappViteConfigCompletionProvider,
-  WeappViteHoverProvider,
-  WeappVitePackageJsonCompletionProvider,
-  WeappViteVueCompletionProvider,
 }

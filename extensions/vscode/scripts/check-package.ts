@@ -32,13 +32,15 @@ const vscodeIgnoreRules = fs.readFileSync(vscodeIgnorePath, 'utf8')
   .filter(Boolean)
 
 const requiredFiles = [
-  'extension.js',
-  'extension/index.js',
-  'extension/constants.js',
-  'extension/commands.js',
-  'extension/content.js',
-  'extension/providers.js',
-  'extension/workspace.js',
+  'extension.ts',
+  'extension/index.ts',
+  'extension/constants.ts',
+  'extension/commands.ts',
+  'extension/content.ts',
+  'extension/providers.ts',
+  'extension/workspace.ts',
+  'dist/extension.js',
+  'dist/extension/index.js',
   'README.md',
   'CHANGELOG.md',
   'LICENSE',
@@ -50,7 +52,7 @@ for (const relativePath of requiredFiles) {
   ensureFile(path.join(extensionRoot, relativePath))
 }
 
-for (const expectedRule of ['extension/*.test.js', 'extension/**/*.test.js', 'PUBLISHING.md']) {
+for (const expectedRule of ['extension/*.test.ts', 'extension/**/*.test.ts', 'scripts/**', 'types/**', 'tsconfig.json', 'PUBLISHING.md']) {
   ensureRule(vscodeIgnoreRules, expectedRule)
 }
 
@@ -58,11 +60,11 @@ if (!Array.isArray(packageJson.files) || packageJson.files.length === 0) {
   throw new Error('package.json files whitelist is empty')
 }
 
-if (packageJson.main !== './extension.js') {
+if (packageJson.main !== './dist/extension.js') {
   throw new Error(`unexpected main entry: ${packageJson.main}`)
 }
 
-if (packageJson.scripts?.check !== 'pnpm run lint && pnpm run test') {
+if (packageJson.scripts?.check !== 'pnpm run lint && pnpm run test && pnpm run build') {
   throw new Error('unexpected check script in package.json')
 }
 

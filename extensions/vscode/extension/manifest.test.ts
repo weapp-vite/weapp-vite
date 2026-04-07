@@ -1,12 +1,12 @@
-const assert = require('node:assert/strict')
-const fs = require('node:fs')
-const path = require('node:path')
-const test = require('node:test')
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import { it } from 'vitest'
 
 const packageJsonPath = path.resolve(__dirname, '..', 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 
-test('manifest exposes practical command set', () => {
+it('manifest exposes practical command set', () => {
   const commandIds = packageJson.contributes.commands.map(command => command.command)
 
   assert.deepEqual(commandIds, [
@@ -25,32 +25,31 @@ test('manifest exposes practical command set', () => {
   ])
 })
 
-test('manifest keeps publish-safe file whitelist', () => {
+it('manifest keeps publish-safe file whitelist', () => {
   assert.deepEqual(packageJson.files, [
     'assets/**',
-    'extension.js',
-    'extension/**',
+    'dist/**',
     'README.md',
     'CHANGELOG.md',
     'LICENSE',
     'package.json',
-    'scripts/**',
     'snippets/**',
     'syntaxes/**',
   ])
 })
 
-test('manifest exposes local verification scripts', () => {
-  assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.js extension/*.js')
-  assert.equal(packageJson.scripts.test, 'node --test extension/*.test.js')
-  assert.equal(packageJson.scripts.check, 'pnpm run lint && pnpm run test')
-  assert.equal(packageJson.scripts['check:package'], 'node scripts/check-package.mjs')
+it('manifest exposes local verification scripts', () => {
+  assert.equal(packageJson.scripts.build, 'pnpm exec tsc -p tsconfig.json')
+  assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts')
+  assert.equal(packageJson.scripts.test, 'pnpm vitest run -c vitest.config.ts')
+  assert.equal(packageJson.scripts.check, 'pnpm run lint && pnpm run test && pnpm run build')
+  assert.equal(packageJson.scripts['check:package'], 'node --import tsx scripts/check-package.ts')
   assert.equal(packageJson.scripts['check:publish'], 'pnpm run check && pnpm run check:package')
-  assert.equal(packageJson.scripts['package:dry-run'], 'node scripts/package-dry-run.mjs package')
-  assert.equal(packageJson.scripts['publish:vsce'], 'node scripts/release-vsce.mjs publish')
+  assert.equal(packageJson.scripts['package:dry-run'], 'pnpm run build && node --import tsx scripts/package-dry-run.ts package')
+  assert.equal(packageJson.scripts['publish:vsce'], 'pnpm run check:publish && node --import tsx scripts/release-vsce.ts publish')
 })
 
-test('manifest config defaults stay enabled for core ergonomics', () => {
+it('manifest config defaults stay enabled for core ergonomics', () => {
   const properties = packageJson.contributes.configuration.properties
 
   assert.equal(properties['weapp-vite.showStatusBar'].default, true)

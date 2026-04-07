@@ -1,6 +1,10 @@
 **/.DS_Store
 **/*.map
 **/node_modules/**
-extension/*.test.js
-extension/**/*.test.js
+dist/**/*.map
+extension/*.test.ts
+extension/**/*.test.ts
+scripts/**
+types/**
+tsconfig.json
 PUBLISHING.md

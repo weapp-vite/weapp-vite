@@ -30,17 +30,15 @@
     "Programming Languages",
     "Other"
   ],
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
   "icon": "assets/logo.png",
   "files": [
     "CHANGELOG.md",
     "LICENSE",
     "README.md",
     "assets/**",
-    "extension.js",
-    "extension/**",
+    "dist/**",
     "package.json",
-    "scripts/**",
     "snippets/**",
     "syntaxes/**"
   ],
@@ -318,13 +316,14 @@
     ]
   },
   "scripts": {
-    "lint": "pnpm eslint extension.js extension/*.js",
-    "test": "node --test extension/*.test.js",
-    "check": "pnpm run lint && pnpm run test",
-    "check:package": "node scripts/check-package.mjs",
+    "build": "pnpm exec tsc -p tsconfig.json",
+    "lint": "pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts",
+    "test": "pnpm vitest run -c vitest.config.ts",
+    "check": "pnpm run lint && pnpm run test && pnpm run build",
+    "check:package": "node --import tsx scripts/check-package.ts",
     "check:publish": "pnpm run check && pnpm run check:package",
-    "package:dry-run": "node scripts/package-dry-run.mjs package",
-    "publish:vsce": "node scripts/release-vsce.mjs publish"
+    "package:dry-run": "pnpm run build && node --import tsx scripts/package-dry-run.ts package",
+    "publish:vsce": "pnpm run check:publish && node --import tsx scripts/release-vsce.ts publish"
   },
   "capabilities": {
     "untrustedWorkspaces": {

@@ -1,22 +1,22 @@
-const vscode = require('vscode')
+import vscode from 'vscode'
 
-const {
+import {
   useWvAlias,
-} = require('./config')
-const {
+} from './config'
+import {
   COMMAND_DEFINITIONS,
   OUTPUT_CHANNEL_NAME,
   TERMINAL_NAME,
-} = require('./constants')
-const {
+} from './constants'
+import {
   getDefineConfigTemplate,
   getDocItems,
   getJsonBlockSnippet,
-} = require('./content')
-const {
+} from './content'
+import {
   applySuggestedScripts,
-} = require('./logic')
-const {
+} from './logic'
+import {
   getEditor,
   getPrimaryWorkspaceFolder,
   getProjectContext,
@@ -24,9 +24,9 @@ const {
   isViteConfigDocument,
   isVueDocument,
   resolveCommand,
-} = require('./workspace')
+} from './workspace'
 
-async function insertSnippetToActiveEditor(snippetText) {
+async function insertSnippetToActiveEditor(snippetText: string) {
   const editor = vscode.window.activeTextEditor
 
   if (!editor) {
@@ -37,7 +37,7 @@ async function insertSnippetToActiveEditor(snippetText) {
   await editor.insertSnippet(new vscode.SnippetString(snippetText), editor.selection.active)
 }
 
-async function insertJsonBlockTemplate() {
+export async function insertJsonBlockTemplate() {
   const editor = vscode.window.activeTextEditor
 
   if (!editor || !isVueDocument(editor.document)) {
@@ -48,7 +48,7 @@ async function insertJsonBlockTemplate() {
   await insertSnippetToActiveEditor(getJsonBlockSnippet())
 }
 
-async function insertDefineConfigTemplate() {
+export async function insertDefineConfigTemplate() {
   const editor = vscode.window.activeTextEditor
 
   if (!editor || !isViteConfigDocument(editor.document)) {
@@ -66,7 +66,7 @@ async function insertDefineConfigTemplate() {
   })
 }
 
-async function insertCommonScripts(editorOrDocument, refreshPackageJsonDiagnostics) {
+export async function insertCommonScripts(editorOrDocument: any, refreshPackageJsonDiagnostics: (document: any) => void) {
   const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
   const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
 
@@ -112,7 +112,7 @@ async function insertCommonScripts(editorOrDocument, refreshPackageJsonDiagnosti
   refreshPackageJsonDiagnostics(document)
 }
 
-function getTerminal(context, state, terminalName = TERMINAL_NAME) {
+function getTerminal(context: any, state: any, terminalName = TERMINAL_NAME) {
   const cachedTerminal = state.terminalCache?.terminal
 
   if (cachedTerminal && state.terminalCache.workspacePath === context.workspaceFolder.uri.fsPath && cachedTerminal.exitStatus == null) {
@@ -132,7 +132,7 @@ function getTerminal(context, state, terminalName = TERMINAL_NAME) {
   return terminal
 }
 
-async function ensureProjectContext(operationLabel) {
+async function ensureProjectContext(operationLabel: string) {
   const workspaceFolder = getPrimaryWorkspaceFolder()
 
   if (!workspaceFolder) {
@@ -150,7 +150,7 @@ async function ensureProjectContext(operationLabel) {
   return null
 }
 
-async function runWorkspaceCommand(commandId, state) {
+export async function runWorkspaceCommand(commandId: string, state: any) {
   const commandDefinition = COMMAND_DEFINITIONS[commandId]
 
   if (!commandDefinition) {
@@ -178,7 +178,7 @@ async function runWorkspaceCommand(commandId, state) {
   void vscode.window.setStatusBarMessage(`weapp-vite: 已执行 ${commandDefinition.label}`, 3000)
 }
 
-async function showProjectOverview(state) {
+export async function showProjectOverview(state: any) {
   const context = await ensureProjectContext('查看项目概览')
 
   if (!context) {
@@ -200,7 +200,7 @@ async function showProjectOverview(state) {
   channel.show(true)
 }
 
-async function openDocumentation() {
+export async function openDocumentation() {
   const selected = await vscode.window.showQuickPick(getDocItems(), {
     placeHolder: '选择要打开的 weapp-vite 文档',
   })
@@ -212,7 +212,7 @@ async function openDocumentation() {
   await vscode.env.openExternal(vscode.Uri.parse(selected.url))
 }
 
-async function showCommandPalette(state) {
+export async function showCommandPalette(state: any) {
   const context = await ensureProjectContext('打开命令面板')
 
   if (!context) {
@@ -275,14 +275,4 @@ async function showCommandPalette(state) {
   }
 
   await runWorkspaceCommand(selected.commandId, state)
-}
-
-module.exports = {
-  insertCommonScripts,
-  insertDefineConfigTemplate,
-  insertJsonBlockTemplate,
-  openDocumentation,
-  runWorkspaceCommand,
-  showCommandPalette,
-  showProjectOverview,
 }

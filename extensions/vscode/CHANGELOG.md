@@ -19,3 +19,4 @@
 - Add a dedicated GitHub Actions workflow for extension-only CI checks.
 - Add a reusable VSIX dry-run packaging script for local and CI validation.
 - Add a manual release workflow and publish script for VS Code Marketplace delivery.
+- Migrate the extension runtime, unit tests, and package scripts to TypeScript with a compiled `dist/` entry and Vitest-based test flow.

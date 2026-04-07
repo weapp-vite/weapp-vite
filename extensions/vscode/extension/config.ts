@@ -1,34 +1,25 @@
-const vscode = require('vscode')
+import vscode from 'vscode'
 
-function getExtensionConfiguration() {
+export function getExtensionConfiguration() {
   return vscode.workspace.getConfiguration('weapp-vite')
 }
 
-function isStatusBarEnabled() {
+export function isStatusBarEnabled() {
   return getExtensionConfiguration().get('showStatusBar', true)
 }
 
-function isPackageJsonDiagnosticsEnabled() {
+export function isPackageJsonDiagnosticsEnabled() {
   return getExtensionConfiguration().get('enablePackageJsonDiagnostics', true)
 }
 
-function isHoverEnabled() {
+export function isHoverEnabled() {
   return getExtensionConfiguration().get('enableHover', true)
 }
 
-function isCompletionEnabled() {
+export function isCompletionEnabled() {
   return getExtensionConfiguration().get('enableCompletion', true)
 }
 
-function useWvAlias() {
+export function useWvAlias() {
   return getExtensionConfiguration().get('preferWvAlias', true)
-}
-
-module.exports = {
-  getExtensionConfiguration,
-  isCompletionEnabled,
-  isHoverEnabled,
-  isPackageJsonDiagnosticsEnabled,
-  isStatusBarEnabled,
-  useWvAlias,
 }

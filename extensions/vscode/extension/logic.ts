@@ -1,9 +1,9 @@
-const {
+import {
   COMMON_SCRIPT_NAMES,
   SCRIPT_COMMAND_SUGGESTIONS,
-} = require('./constants')
+} from './constants'
 
-function getSuggestedScripts(preferWvAlias = true) {
+export function getSuggestedScripts(preferWvAlias = true) {
   if (preferWvAlias) {
     return { ...SCRIPT_COMMAND_SUGGESTIONS }
   }
@@ -16,7 +16,7 @@ function getSuggestedScripts(preferWvAlias = true) {
   }
 }
 
-function getMissingCommonScripts(packageJson) {
+export function getMissingCommonScripts(packageJson: Record<string, any>) {
   const scripts = typeof packageJson?.scripts === 'object' && packageJson.scripts
     ? packageJson.scripts
     : {}
@@ -26,7 +26,7 @@ function getMissingCommonScripts(packageJson) {
   })
 }
 
-function applySuggestedScripts(packageJson, preferWvAlias = true) {
+export function applySuggestedScripts(packageJson: Record<string, any>, preferWvAlias = true) {
   const nextPackageJson = {
     ...packageJson,
     scripts: {
@@ -49,7 +49,7 @@ function applySuggestedScripts(packageJson, preferWvAlias = true) {
   }
 }
 
-function getRunScriptCommand(packageManager, scriptName) {
+export function getRunScriptCommand(packageManager: string, scriptName: string) {
   switch (packageManager) {
     case 'npm':
       return `npm run ${scriptName}`
@@ -61,7 +61,12 @@ function getRunScriptCommand(packageManager, scriptName) {
   }
 }
 
-function resolveCommandFromScripts(scripts, packageManager, commandDefinition, preferWvAlias = true) {
+export function resolveCommandFromScripts(
+  scripts: Record<string, string>,
+  packageManager: string,
+  commandDefinition: { id: string, scriptCandidates: string[], fallbackCommand: string },
+  preferWvAlias = true,
+) {
   for (const scriptName of commandDefinition.scriptCandidates) {
     if (typeof scripts?.[scriptName] === 'string') {
       return {
@@ -77,12 +82,4 @@ function resolveCommandFromScripts(scripts, packageManager, commandDefinition, p
     command: suggestions[commandDefinition.id] ?? commandDefinition.fallbackCommand,
     source: 'CLI 回退命令',
   }
-}
-
-module.exports = {
-  applySuggestedScripts,
-  getMissingCommonScripts,
-  getRunScriptCommand,
-  getSuggestedScripts,
-  resolveCommandFromScripts,
 }

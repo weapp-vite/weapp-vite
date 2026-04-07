@@ -23,6 +23,9 @@ cd extensions/vscode
 # run local checks first
 pnpm run check:publish
 
+# compile TypeScript to dist/
+pnpm run build
+
 # build a local VSIX artifact
 pnpm run package:dry-run
 
@@ -39,6 +42,12 @@ For scripted local publish:
 ```bash
 VSCE_PAT=your_token pnpm run publish:vsce
 ```
+
+Notes:
+
+- `pnpm run build` compiles `extension.ts` and `extension/**/*.ts` into `dist/**`.
+- `pnpm run test` runs the TypeScript unit tests through Vitest.
+- `check:publish` already includes `lint`, `test`, and package validation, so it is the safest pre-release gate.
 
 ## Recommended CI Gate
 
