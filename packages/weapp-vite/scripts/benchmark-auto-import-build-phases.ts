@@ -3,18 +3,15 @@ import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, wr
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import path from 'pathe'
-import { startDevProcess } from '../../../e2e/utils/dev-process'
-import { createDevProcessEnv } from '../../../e2e/utils/dev-process-env'
-import { replaceFileByRename, waitForFileContains } from '../../../e2e/utils/hmr-helpers'
 import { VantResolver } from '../src/auto-import-components/resolvers'
+import { createCompilerContext } from '../src/createContext'
 
-const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
+const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '1', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
 const workspaceRootNodeModulesDir = await resolveWorkspaceNodeModulesDir()
 const workspaceWeappViteDir = path.resolve(import.meta.dirname, '..')
-const workspaceRootDir = path.dirname(path.dirname(workspaceRootNodeModulesDir))
-const reportDir = resolveReportDir('auto-import-hmr')
+const reportDir = resolveReportDir('auto-import-build-phases')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const allResolverTags = Object.keys(VantResolver().components ?? {}).sort((a, b) => a.localeCompare(b))
@@ -28,27 +25,26 @@ const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '        ]',
   '      }',
 ].join('\n')
-const CLI_PATH = path.resolve(import.meta.dirname, '../src/cli.ts')
-const DEV_TIMEOUT_MS = Number.parseInt(process.env.AUTO_IMPORT_HMR_TIMEOUT_MS ?? '90000', 10)
 
 if (!Number.isFinite(iterations) || iterations <= 0) {
   throw new Error(`Invalid BENCH_ITERATIONS value: ${iterations}`)
 }
 
-if (!Number.isFinite(DEV_TIMEOUT_MS) || DEV_TIMEOUT_MS <= 0) {
-  throw new Error(`Invalid AUTO_IMPORT_HMR_TIMEOUT_MS value: ${DEV_TIMEOUT_MS}`)
-}
-
 async function main() {
-  console.log(`[auto-import-hmr-bench] iterations=${iterations}`)
-  console.log(`[auto-import-hmr-bench] total resolver components=${allResolverTags.length}`)
-  console.log(`[auto-import-hmr-bench] scenarios=${scenarioValues.join(',')}`)
-
   const results = []
   for (const usedCount of scenarioValues) {
-    const result = await runScenario(usedCount)
-    results.push(result)
-    printScenario(result)
+    const usedTags = allResolverTags.slice(0, usedCount)
+    const baselineSamples = []
+    const currentSamples = []
+    for (let i = 0; i < iterations; i += 1) {
+      baselineSamples.push(await measureScenario({ usedTags, mode: 'baseline', iteration: i }))
+      currentSamples.push(await measureScenario({ usedTags, mode: 'current', iteration: i }))
+    }
+    results.push({
+      usedCount,
+      baseline: summarizePhaseSamples(baselineSamples),
+      current: summarizePhaseSamples(currentSamples),
+    })
   }
 
   await mkdir(reportDir, { recursive: true })
@@ -59,56 +55,11 @@ async function main() {
   }, null, 2))
   await writeFile(reportMdPath, renderMarkdown(results), 'utf8')
 
-  console.log(`[auto-import-hmr-bench] report.json -> ${reportJsonPath}`)
-  console.log(`[auto-import-hmr-bench] report.md -> ${reportMdPath}`)
+  console.log(`[auto-import-build-phases] report.json -> ${reportJsonPath}`)
+  console.log(`[auto-import-build-phases] report.md -> ${reportMdPath}`)
 }
 
-async function runScenario(usedCount: number) {
-  const usedTags = allResolverTags.slice(0, usedCount)
-  const baselineStartupSamples: number[] = []
-  const currentStartupSamples: number[] = []
-  const baselineUpdateSamples: number[] = []
-  const currentUpdateSamples: number[] = []
-
-  for (let i = 0; i < iterations; i += 1) {
-    const baseline = await measureHmr({ usedTags, mode: 'baseline', iteration: i })
-    baselineStartupSamples.push(baseline.startupMs)
-    baselineUpdateSamples.push(baseline.updateMs)
-
-    const current = await measureHmr({ usedTags, mode: 'current', iteration: i })
-    currentStartupSamples.push(current.startupMs)
-    currentUpdateSamples.push(current.updateMs)
-  }
-
-  const baselineStartup = summarizeNumbers(baselineStartupSamples)
-  const currentStartup = summarizeNumbers(currentStartupSamples)
-  const baselineUpdate = summarizeNumbers(baselineUpdateSamples)
-  const currentUpdate = summarizeNumbers(currentUpdateSamples)
-
-  return {
-    usedCount,
-    startup: {
-      baseline: baselineStartup,
-      current: currentStartup,
-      delta: {
-        extraMs: currentStartup.mean - baselineStartup.mean,
-        extraPercent: baselineStartup.mean > 0 ? ((currentStartup.mean - baselineStartup.mean) / baselineStartup.mean) * 100 : 0,
-        ratio: baselineStartup.mean > 0 ? currentStartup.mean / baselineStartup.mean : 0,
-      },
-    },
-    update: {
-      baseline: baselineUpdate,
-      current: currentUpdate,
-      delta: {
-        extraMs: currentUpdate.mean - baselineUpdate.mean,
-        extraPercent: baselineUpdate.mean > 0 ? ((currentUpdate.mean - baselineUpdate.mean) / baselineUpdate.mean) * 100 : 0,
-        ratio: baselineUpdate.mean > 0 ? currentUpdate.mean / baselineUpdate.mean : 0,
-      },
-    },
-  }
-}
-
-async function measureHmr(options: {
+async function measureScenario(options: {
   usedTags: string[]
   mode: 'baseline' | 'current'
   iteration: number
@@ -116,46 +67,47 @@ async function measureHmr(options: {
   const { usedTags, mode, iteration } = options
   const project = await createTempFixtureProject(
     fixtureSource,
-    `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`,
+    `auto-import-build-phases-${mode}-${usedTags.length}-${iteration}`,
   )
-  const pagePath = path.join(project.tempDir, 'src/pages/bench-hmr-auto-import/index.vue')
-  const distTemplatePath = path.join(project.tempDir, 'dist/pages/bench-hmr-auto-import/index.wxml')
 
   try {
-    const seededSource = await seedFixture(project.tempDir, usedTags, mode)
+    await seedFixture(project.tempDir, usedTags, mode)
     await rm(path.join(project.tempDir, 'dist'), { recursive: true, force: true })
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
-    const startupStart = performance.now()
-    const dev = startDevProcess(process.execPath, ['--import', 'tsx', CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
-      cwd: workspaceRootDir,
-      env: {
-        ...createDevProcessEnv(),
-        PATH: `${path.join(workspaceRootNodeModulesDir, '.bin')}:${process.env.PATH ?? ''}`,
+    const contextStart = performance.now()
+    const ctx = await createCompilerContext({
+      cwd: project.tempDir,
+      mode: 'production',
+      isDev: false,
+      cliPlatform: 'weapp',
+      syncSupportFiles: false,
+      preloadAppEntry: false,
+      inlineConfig: {
+        weapp: {
+          npm: {
+            cache: false,
+          },
+        },
       },
-      stdout: 'pipe',
-      stderr: 'pipe',
-      all: true,
     })
+    const createContextMs = performance.now() - contextStart
 
-    try {
-      await dev.waitFor(waitForFileContains(distTemplatePath, 'bench-hmr-auto-import', DEV_TIMEOUT_MS), `${mode} initial bench output`)
-      const startupMs = performance.now() - startupStart
+    const buildStart = performance.now()
+    await ctx.buildService.build({ skipNpm: true })
+    const buildMs = performance.now() - buildStart
 
-      const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`
-      const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
-      const updateStart = performance.now()
-      await replaceFileByRename(pagePath, updatedSource)
-      await dev.waitFor(waitForFileContains(distTemplatePath, marker, DEV_TIMEOUT_MS), `${mode} hmr marker`)
-      const updateMs = performance.now() - updateStart
+    const npmStart = performance.now()
+    await ctx.npmService?.build()
+    const npmMs = performance.now() - npmStart
 
-      return {
-        startupMs,
-        updateMs,
-      }
-    }
-    finally {
-      await dev.stop()
+    ctx.watcherService?.closeAll()
+
+    return {
+      createContextMs,
+      buildMs,
+      npmMs,
+      totalMs: createContextMs + buildMs + npmMs,
     }
   }
   finally {
@@ -164,49 +116,49 @@ async function measureHmr(options: {
 }
 
 async function seedFixture(projectRoot: string, usedTags: string[], mode: 'baseline' | 'current') {
-  const pageDir = path.join(projectRoot, 'src/pages/bench-hmr-auto-import')
+  const pageDir = path.join(projectRoot, 'src/pages/bench-build-auto-import')
   const pagePath = path.join(pageDir, 'index.vue')
   const appJsonPath = path.join(projectRoot, 'src/app.json')
   const packageJsonPath = path.join(projectRoot, 'package.json')
   const tags = usedTags
     .map(tag => `    <${tag} data-bench="${tag}" />`)
     .join('\n')
-  const source = [
-    '<template>',
-    '  <view class="bench-hmr-auto-import">',
-    tags,
-    '  </view>',
-    '</template>',
-    '',
-    '<json>',
-    JSON.stringify({
-      navigationBarTitleText: 'Auto Import HMR Bench',
-      ...(mode === 'baseline' ? { usingComponents: createUsingComponentsMap(usedTags) } : {}),
-    }, null, 2),
-    '</json>',
-    '',
-  ].join('\n')
 
   await patchViteConfig(projectRoot, mode)
   await ensureBenchmarkResolverPackage(projectRoot, usedTags)
   await mkdir(pageDir, { recursive: true })
-  await writeFile(pagePath, source, 'utf8')
+  await writeFile(
+    pagePath,
+    [
+      '<template>',
+      '  <view class="bench-build-auto-import">',
+      tags,
+      '  </view>',
+      '</template>',
+      '',
+      '<json>',
+      JSON.stringify({
+        navigationBarTitleText: 'Auto Import Build Bench',
+        ...(mode === 'baseline' ? { usingComponents: createUsingComponentsMap(usedTags) } : {}),
+      }, null, 2),
+      '</json>',
+      '',
+    ].join('\n'),
+    'utf8',
+  )
 
   const appJson = JSON.parse(await readFile(appJsonPath, 'utf8')) as { pages?: string[] }
-  appJson.pages = ['pages/bench-hmr-auto-import/index']
+  appJson.pages = ['pages/bench-build-auto-import/index']
   await writeFile(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`, 'utf8')
 
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as {
     dependencies?: Record<string, string>
-    devDependencies?: Record<string, string>
   }
   packageJson.dependencies = {
     ...(packageJson.dependencies ?? {}),
     '@vant/weapp': '1.0.0-benchmark',
   }
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8')
-
-  return source
 }
 
 async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current') {
@@ -227,7 +179,7 @@ async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current'
     if (mode === 'current' && viteConfig.includes(ORIGINAL_AUTO_IMPORT_BLOCK)) {
       return
     }
-    throw new Error(`Failed to patch vite config for hmr benchmark: ${viteConfigPath}`)
+    throw new Error(`Failed to patch vite config for build phase benchmark: ${viteConfigPath}`)
   }
 
   await writeFile(viteConfigPath, nextViteConfig, 'utf8')
@@ -338,7 +290,7 @@ async function resolveWorkspaceNodeModulesDir() {
     }
     currentDir = parentDir
   }
-  throw new Error('Unable to locate workspace node_modules directory for auto-import hmr benchmark.')
+  throw new Error('Unable to locate workspace node_modules directory for auto-import build phases benchmark.')
 }
 
 function resolveReportDir(reportName: string) {
@@ -353,7 +305,7 @@ function resolveReportDir(reportName: string) {
 }
 
 function parseScenarioValues(input: string | undefined) {
-  const parsed = (input ?? '1,5,20')
+  const parsed = (input ?? '1,20')
     .split(',')
     .map(value => Number.parseInt(value.trim(), 10))
     .filter(value => Number.isFinite(value) && value > 0)
@@ -361,15 +313,6 @@ function parseScenarioValues(input: string | undefined) {
     throw new Error(`Invalid BENCH_SCENARIOS value: ${input ?? ''}`)
   }
   return parsed
-}
-
-function insertMarkerBeforeClosingView(source: string, marker: string) {
-  const needle = '  </view>\n</template>'
-  const markerLine = `    <view data-bench-marker="${marker}">${marker}</view>\n`
-  if (!source.includes(needle)) {
-    throw new Error('Unexpected benchmark page structure while inserting hmr marker.')
-  }
-  return source.replace(needle, `${markerLine}${needle}`)
 }
 
 function summarizeNumbers(values: number[]) {
@@ -386,54 +329,39 @@ function summarizeNumbers(values: number[]) {
   }
 }
 
-function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
-  console.log(`\n[hmr-scenario] used resolver components=${result.usedCount}`)
-  console.log(`startup baseline | avg ${result.startup.baseline.mean.toFixed(2)}ms`)
-  console.log(`startup current  | avg ${result.startup.current.mean.toFixed(2)}ms`)
-  console.log(`startup delta    | extra ${result.startup.delta.extraMs.toFixed(2)}ms | extra ${result.startup.delta.extraPercent.toFixed(2)}%`)
-  console.log(`update baseline  | avg ${result.update.baseline.mean.toFixed(2)}ms`)
-  console.log(`update current   | avg ${result.update.current.mean.toFixed(2)}ms`)
-  console.log(`update delta     | extra ${result.update.delta.extraMs.toFixed(2)}ms | extra ${result.update.delta.extraPercent.toFixed(2)}%`)
+function summarizePhaseSamples(samples: Array<Awaited<ReturnType<typeof measureScenario>>>) {
+  return {
+    createContextMs: summarizeNumbers(samples.map(sample => sample.createContextMs)),
+    buildMs: summarizeNumbers(samples.map(sample => sample.buildMs)),
+    npmMs: summarizeNumbers(samples.map(sample => sample.npmMs)),
+    totalMs: summarizeNumbers(samples.map(sample => sample.totalMs)),
+  }
 }
 
-function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>) {
+function renderMarkdown(results: Array<{
+  usedCount: number
+  baseline: ReturnType<typeof summarizePhaseSamples>
+  current: ReturnType<typeof summarizePhaseSamples>
+}>) {
   const lines = [
-    '# autoImportComponents HMR benchmark',
+    '# autoImport build phase profile',
     '',
     `- iterations: \`${iterations}\``,
     '',
-    '## Startup',
-    '',
-    '| 场景 | baseline avg | current avg | 额外成本 | 比例 |',
-    '| --- | ---: | ---: | ---: | ---: |',
   ]
 
   for (const result of results) {
-    lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.startup.baseline.mean.toFixed(2)} ms | ${result.startup.current.mean.toFixed(2)} ms | ${result.startup.delta.extraMs.toFixed(2)} ms (${result.startup.delta.extraPercent.toFixed(2)}%) | ${result.startup.delta.ratio.toFixed(2)}x |`,
-    )
+    lines.push(`## ${result.usedCount} components`)
+    lines.push('')
+    lines.push('| phase | baseline avg | current avg | delta |')
+    lines.push('| --- | ---: | ---: | ---: |')
+    for (const phase of ['createContextMs', 'buildMs', 'npmMs', 'totalMs'] as const) {
+      const baseline = result.baseline[phase].mean
+      const current = result.current[phase].mean
+      lines.push(`| ${phase} | ${baseline.toFixed(2)} ms | ${current.toFixed(2)} ms | ${(current - baseline).toFixed(2)} ms |`)
+    }
+    lines.push('')
   }
-
-  lines.push('')
-  lines.push('## HMR Update')
-  lines.push('')
-  lines.push('| 场景 | baseline avg | current avg | 额外成本 | 比例 |')
-  lines.push('| --- | ---: | ---: | ---: | ---: |')
-
-  for (const result of results) {
-    lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${result.update.delta.ratio.toFixed(2)}x |`,
-    )
-  }
-
-  lines.push('')
-  lines.push('## 说明')
-  lines.push('')
-  lines.push('- `baseline`：关闭 `autoImportComponents`，并手动声明同一批 `usingComponents` 后启动 dev 并执行相同模板改动。')
-  lines.push('- `current`：开启当前自动导入实现后启动 dev 并执行相同模板改动。')
-  lines.push('- `startup` 表示从启动 dev 到首个 benchmark 页面产物可见的耗时。')
-  lines.push('- `update` 表示修改 benchmark 页面后，dist 模板产物出现新 marker 的耗时。')
-  lines.push('')
 
   return `${lines.join('\n')}\n`
 }

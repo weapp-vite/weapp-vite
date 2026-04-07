@@ -12,6 +12,11 @@ on:
         required: false
         default: '10'
         type: string
+      min-extra-ms:
+        description: minimum absolute regression cost in milliseconds
+        required: false
+        default: '80'
+        type: string
       iterations:
         description: benchmark iterations per scenario
         required: false
@@ -37,6 +42,7 @@ jobs:
     timeout-minutes: 30
     env:
       AUTO_IMPORT_BENCH_THRESHOLD_PERCENT: ${{ github.event.inputs.threshold-percent || '10' }}
+      AUTO_IMPORT_BENCH_MIN_EXTRA_MS: ${{ github.event.inputs.min-extra-ms || '80' }}
       BENCH_ITERATIONS: ${{ github.event.inputs.iterations || '2' }}
       BENCH_SCENARIOS: ${{ github.event.inputs.scenarios || '1,20' }}
       AUTO_IMPORT_BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-performance-report

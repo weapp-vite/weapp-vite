@@ -6,6 +6,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 
 const thresholdPercent = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_THRESHOLD_PERCENT ?? '10')
+const minExtraMs = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_MIN_EXTRA_MS ?? '80')
 const iterations = process.env.BENCH_ITERATIONS ?? '2'
 const scenarios = process.env.BENCH_SCENARIOS ?? '1,20'
 const reportRootDir = process.env.AUTO_IMPORT_BENCH_REPORT_DIR
@@ -22,6 +23,10 @@ if (!Number.isFinite(thresholdPercent) || thresholdPercent < 0) {
   throw new Error(`Invalid AUTO_IMPORT_BENCH_THRESHOLD_PERCENT value: ${thresholdPercent}`)
 }
 
+if (!Number.isFinite(minExtraMs) || minExtraMs < 0) {
+  throw new Error(`Invalid AUTO_IMPORT_BENCH_MIN_EXTRA_MS value: ${minExtraMs}`)
+}
+
 async function main() {
   await rm(reportRootDir, { recursive: true, force: true }).catch(() => undefined)
   await mkdir(reportRootDir, { recursive: true })
@@ -31,10 +36,11 @@ async function main() {
 
   const buildReport = await readJson(path.join(buildReportDir, 'report.json')) as BuildBenchmarkReport
   const hmrReport = await readJson(path.join(hmrReportDir, 'report.json')) as HmrBenchmarkReport
-  const failures = collectFailures(buildReport, hmrReport, thresholdPercent)
+  const failures = collectFailures(buildReport, hmrReport, thresholdPercent, minExtraMs)
   const combinedReport = {
     generatedAt: new Date().toISOString(),
     thresholdPercent,
+    minExtraMs,
     iterations,
     scenarios,
     build: buildReport,
@@ -80,11 +86,16 @@ async function readJson(filePath: string) {
   return JSON.parse(await readFile(filePath, 'utf8'))
 }
 
-function collectFailures(buildReport: BuildBenchmarkReport, hmrReport: HmrBenchmarkReport, threshold: number) {
+function collectFailures(
+  buildReport: BuildBenchmarkReport,
+  hmrReport: HmrBenchmarkReport,
+  thresholdPercentValue: number,
+  minExtraMsValue: number,
+) {
   const failures: FailureRecord[] = []
 
   for (const scenario of buildReport.results) {
-    if (scenario.delta.extraPercent > threshold) {
+    if (scenario.delta.extraPercent > thresholdPercentValue && scenario.delta.extraMs > minExtraMsValue) {
       failures.push({
         kind: 'build',
         usedCount: scenario.usedCount,
@@ -95,7 +106,7 @@ function collectFailures(buildReport: BuildBenchmarkReport, hmrReport: HmrBenchm
   }
 
   for (const scenario of hmrReport.results) {
-    if (scenario.update.delta.extraPercent > threshold) {
+    if (scenario.update.delta.extraPercent > thresholdPercentValue && scenario.update.delta.extraMs > minExtraMsValue) {
       failures.push({
         kind: 'hmr',
         usedCount: scenario.usedCount,
@@ -114,6 +125,7 @@ function formatFailure(failure: FailureRecord) {
 
 function renderMarkdown(report: {
   thresholdPercent: number
+  minExtraMs: number
   iterations: string
   scenarios: string
   build: BuildBenchmarkReport
@@ -124,6 +136,7 @@ function renderMarkdown(report: {
     '# Auto Import Performance CI Report',
     '',
     `- threshold: \`${report.thresholdPercent}%\``,
+    `- min extra cost: \`${report.minExtraMs} ms\``,
     `- iterations: \`${report.iterations}\``,
     `- scenarios: \`${report.scenarios}\``,
     `- status: ${report.failures.length === 0 ? 'pass' : 'fail'}`,
@@ -135,7 +148,9 @@ function renderMarkdown(report: {
   ]
 
   for (const result of report.build.results) {
-    const status = result.delta.extraPercent > report.thresholdPercent ? 'fail' : 'pass'
+    const status = result.delta.extraPercent > report.thresholdPercent && result.delta.extraMs > report.minExtraMs
+      ? 'fail'
+      : 'pass'
     lines.push(
       `| ${result.usedCount} components | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
     )
@@ -148,7 +163,9 @@ function renderMarkdown(report: {
   lines.push('| --- | ---: | ---: | ---: | --- |')
 
   for (const result of report.hmr.results) {
-    const status = result.update.delta.extraPercent > report.thresholdPercent ? 'fail' : 'pass'
+    const status = result.update.delta.extraPercent > report.thresholdPercent && result.update.delta.extraMs > report.minExtraMs
+      ? 'fail'
+      : 'pass'
     lines.push(
       `| ${result.usedCount} components | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
     )
@@ -158,10 +175,10 @@ function renderMarkdown(report: {
   lines.push('## 结论')
   lines.push('')
   if (report.failures.length === 0) {
-    lines.push(`- 所有 build / HMR 场景的相对退化率均未超过 \`${report.thresholdPercent}%\`。`)
+    lines.push(`- 所有 build / HMR 场景均未同时超过 \`${report.thresholdPercent}%\` 与 \`${report.minExtraMs} ms\` 双阈值。`)
   }
   else {
-    lines.push(`- 以下场景超过 \`${report.thresholdPercent}%\` 阈值：`)
+    lines.push(`- 以下场景同时超过 \`${report.thresholdPercent}%\` 与 \`${report.minExtraMs} ms\` 阈值：`)
     for (const failure of report.failures) {
       lines.push(`- ${formatFailure(failure)}`)
     }

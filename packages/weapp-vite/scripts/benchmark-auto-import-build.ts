@@ -138,9 +138,7 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'basel
   )
 
   const appJson = JSON.parse(await readFile(appJsonPath, 'utf8')) as { pages?: string[] }
-  const pages = new Set(appJson.pages ?? [])
-  pages.add('pages/bench-build-auto-import/index')
-  appJson.pages = Array.from(pages)
+  appJson.pages = ['pages/bench-build-auto-import/index']
   await writeFile(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`, 'utf8')
 
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as {

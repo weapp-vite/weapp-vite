@@ -7,6 +7,7 @@ import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
   key?: string
   syncSupportFiles?: boolean
+  preloadAppEntry?: boolean
 }
 
 /**
@@ -46,11 +47,13 @@ export async function createCompilerContext(options?: CreateCompilerContextOptio
     }
   }
   // 预检
-  try {
-    await scanService.loadAppEntry()
-  }
-  catch {
-    // 预检失败时忽略
+  if (options?.preloadAppEntry !== false) {
+    try {
+      await scanService.loadAppEntry()
+    }
+    catch {
+      // 预检失败时忽略
+    }
   }
 
   return ctx

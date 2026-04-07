@@ -145,6 +145,7 @@ describe('build cli command', () => {
     expect(createCompilerContext).toHaveBeenCalledWith(expect.objectContaining({
       cwd: '/project',
       syncSupportFiles: false,
+      preloadAppEntry: false,
     }))
     expect(analyzeSubpackages).toHaveBeenCalledTimes(1)
     expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
