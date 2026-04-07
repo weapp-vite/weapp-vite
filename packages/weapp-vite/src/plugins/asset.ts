@@ -1,3 +1,4 @@
+import type { OutputBundle } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
 import type { CopyGlobs } from '../types'
@@ -6,6 +7,7 @@ import { fs } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { defaultAssetExtensions, defaultExcluded } from '../defaults'
+import { normalizePath } from '../utils/path'
 
 interface AssetPluginState {
   ctx: CompilerContext
@@ -16,6 +18,47 @@ interface AssetPluginState {
 
 function normalizeCopyGlobs(globs?: CopyGlobs): string[] {
   return Array.isArray(globs) ? globs : []
+}
+
+function stripQueryAndHash(value: string) {
+  const queryIndex = value.indexOf('?')
+  const hashIndex = value.indexOf('#')
+  const endIndex = [queryIndex, hashIndex]
+    .filter(index => index >= 0)
+    .reduce((min, index) => Math.min(min, index), Number.POSITIVE_INFINITY)
+  return Number.isFinite(endIndex) ? value.slice(0, endIndex) : value
+}
+
+export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<string, any>) {
+  const sources = new Set<string>()
+
+  for (const output of Object.values(bundle)) {
+    if (!output || output.type !== 'asset') {
+      continue
+    }
+
+    for (const originalFile of output.originalFileNames ?? []) {
+      if (typeof originalFile === 'string' && originalFile) {
+        sources.add(normalizePath(originalFile))
+      }
+    }
+  }
+
+  return sources
+}
+
+export function collectAssetModuleSourcePaths(moduleIds: Iterable<string>) {
+  const sources = new Set<string>()
+
+  for (const moduleId of moduleIds) {
+    if (typeof moduleId !== 'string' || !moduleId) {
+      continue
+    }
+
+    sources.add(normalizePath(stripQueryAndHash(moduleId)))
+  }
+
+  return sources
 }
 
 function scanAssetFiles(configService: CompilerContext['configService'], config: ResolvedConfig, buildTarget: BuildTarget) {
@@ -129,9 +172,15 @@ function createAssetCollector(state: AssetPluginState): Plugin {
       state.pendingAssets = scanAssetFiles(configService, state.resolvedConfig, state.buildTarget)
     },
 
-    async buildEnd() {
+    async generateBundle(_options, bundle) {
       const files = await state.pendingAssets
-      await emitAssets(ctx, this, files ?? [], 8)
+      const bundledSources = collectBundledAssetSourcePaths(bundle as OutputBundle)
+      const moduleSources = collectAssetModuleSourcePaths(this.getModuleIds())
+      const pending = (files ?? []).filter((file) => {
+        const normalizedFile = normalizePath(file)
+        return !bundledSources.has(normalizedFile) && !moduleSources.has(normalizedFile)
+      })
+      await emitAssets(ctx, this, pending, 8)
     },
   }
 }

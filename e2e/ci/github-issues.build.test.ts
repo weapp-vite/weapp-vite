@@ -55,7 +55,7 @@ async function runIssue393Build() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
-  it('issue #424: reproduces duplicated output for imported src/assets images', async () => {
+  it('issue #424: avoids duplicated output for imported src/assets images', async () => {
     await runBuild()
 
     const files = await scanFiles(DIST_ROOT)
@@ -64,8 +64,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
 
-    expect(files).toContain('assets/images/home/goods-1.png')
-    expect(files).toContain('assets/images/home/banner-1.jpg')
+    expect(files).not.toContain('assets/images/home/goods-1.png')
+    expect(files).not.toContain('assets/images/home/banner-1.jpg')
     expect(files.some(file => /^goods-1-[a-z0-9]+\.png$/.test(file))).toBe(true)
     expect(files.some(file => /^banner-1-[a-z0-9]+\.jpg$/.test(file))).toBe(true)
     expect(issuePageWxml).toContain('issue-424 duplicated imported src asset output')
