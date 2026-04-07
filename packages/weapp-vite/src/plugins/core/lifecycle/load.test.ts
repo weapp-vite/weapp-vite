@@ -54,6 +54,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('"AbortController","AbortSignal"')
     expect(code).not.toContain('"XMLHttpRequest"')
     expect(code).not.toContain('"fetch"')
+    expect(code).not.toContain('"WebSocket"')
   })
 
   it('injects request globals into existing app vue script without creating a duplicate script block', async () => {
@@ -161,8 +162,39 @@ describe('core lifecycle load hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
     expect(code).toContain('Page({})')
+  })
+
+  it('injects websocket globals for socket.io-client projects during app load', async () => {
+    const loadEntry = vi.fn(async () => ({
+      code: 'App({})',
+    }))
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'socket.io-client': '^4.8.3',
+            },
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'app',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+    } as any)
+
+    const result = await load.call({}, '/project/src/app.ts')
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('"WebSocket"')
   })
 
   it('injects request globals into declared page entries even when loadedEntrySet is empty', async () => {

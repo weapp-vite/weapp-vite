@@ -1,17 +1,6 @@
+import type { MiniProgramLike, MiniProgramPage } from './automator-session'
 import { Buffer } from 'node:buffer'
 import { PNG } from 'pngjs'
-
-interface MiniProgramLike {
-  pageScrollTo: (scrollTop: number) => Promise<void>
-  screenshot: () => Promise<string | Buffer>
-  currentPage: () => Promise<PageLike>
-  systemInfo: () => Promise<Record<string, unknown>>
-}
-
-interface PageLike {
-  size: () => Promise<{ width: number, height: number }>
-  waitFor: (condition: number) => Promise<void>
-}
 
 interface FullPageCaptureOptions {
   miniProgram: MiniProgramLike
@@ -64,10 +53,15 @@ function cropPngRows(source: PNG, startRow: number, rowCount: number) {
   for (let row = 0; row < rowCount; row += 1) {
     const sourceStart = (startRow + row) * bytesPerRow
     const sourceEnd = sourceStart + bytesPerRow
-    source.data.copy(cropped.data, row * bytesPerRow, sourceStart, sourceEnd)
+    cropped.data.set(source.data.subarray(sourceStart, sourceEnd), row * bytesPerRow)
   }
 
   return cropped
+}
+
+async function restoreScrollPosition(miniProgram: MiniProgramLike, page: MiniProgramPage, scrollTop: number) {
+  await miniProgram.pageScrollTo(scrollTop)
+  await page.waitFor(150)
 }
 
 /**
@@ -78,6 +72,9 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
   const page = await miniProgram.currentPage()
   const pageSize = await page.size()
   const systemInfo = await miniProgram.systemInfo()
+  const initialScrollTop = typeof page.scrollTop === 'function'
+    ? await page.scrollTop()
+    : 0
   const pageHeight = toPositiveNumber(pageSize.height)
   const viewportHeight = toPositiveNumber(systemInfo.windowHeight)
 
@@ -96,38 +93,43 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
   let coveredUntil = 0
   let scale = 1
 
-  for (const scrollTop of positions) {
-    await miniProgram.pageScrollTo(scrollTop)
-    await page.waitFor(150)
+  try {
+    for (const scrollTop of positions) {
+      await miniProgram.pageScrollTo(scrollTop)
+      await page.waitFor(150)
 
-    const rawScreenshot = await runWithTimeout(
-      miniProgram.screenshot(),
-      timeoutMs,
-      screenshotTimeoutMessage,
-      'DEVTOOLS_SCREENSHOT_TIMEOUT',
-    )
-    const png = PNG.sync.read(decodeScreenshotBuffer(rawScreenshot))
+      const rawScreenshot = await runWithTimeout(
+        miniProgram.screenshot(),
+        timeoutMs,
+        screenshotTimeoutMessage,
+        'DEVTOOLS_SCREENSHOT_TIMEOUT',
+      )
+      const png = PNG.sync.read(decodeScreenshotBuffer(rawScreenshot))
 
-    if (viewportHeight > 0) {
-      scale = png.height / viewportHeight
+      if (viewportHeight > 0) {
+        scale = png.height / viewportHeight
+      }
+
+      const visibleEnd = Math.min(scrollTop + viewportHeight, pageHeight)
+      const cropTopCss = Math.max(coveredUntil - scrollTop, 0)
+      const segmentHeightCss = Math.max(visibleEnd - scrollTop - cropTopCss, 0)
+
+      if (segmentHeightCss <= 0) {
+        continue
+      }
+
+      const cropTopRows = Math.min(Math.max(Math.round(cropTopCss * scale), 0), png.height)
+      const segmentRows = Math.min(
+        Math.max(Math.round(segmentHeightCss * scale), 1),
+        png.height - cropTopRows,
+      )
+
+      segments.push(cropPngRows(png, cropTopRows, segmentRows))
+      coveredUntil = visibleEnd
     }
-
-    const visibleEnd = Math.min(scrollTop + viewportHeight, pageHeight)
-    const cropTopCss = Math.max(coveredUntil - scrollTop, 0)
-    const segmentHeightCss = Math.max(visibleEnd - scrollTop - cropTopCss, 0)
-
-    if (segmentHeightCss <= 0) {
-      continue
-    }
-
-    const cropTopRows = Math.min(Math.max(Math.round(cropTopCss * scale), 0), png.height)
-    const segmentRows = Math.min(
-      Math.max(Math.round(segmentHeightCss * scale), 1),
-      png.height - cropTopRows,
-    )
-
-    segments.push(cropPngRows(png, cropTopRows, segmentRows))
-    coveredUntil = visibleEnd
+  }
+  finally {
+    await restoreScrollPosition(miniProgram, page, initialScrollTop)
   }
 
   if (segments.length === 0) {
@@ -148,7 +150,7 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
     for (let row = 0; row < segment.height; row += 1) {
       const sourceStart = row * bytesPerRow
       const sourceEnd = sourceStart + bytesPerRow
-      segment.data.copy(merged.data, (offsetY + row) * bytesPerRow, sourceStart, sourceEnd)
+      merged.data.set(segment.data.subarray(sourceStart, sourceEnd), (offsetY + row) * bytesPerRow)
     }
     offsetY += segment.height
   }

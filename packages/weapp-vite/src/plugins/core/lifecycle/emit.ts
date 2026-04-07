@@ -38,7 +38,7 @@ const NPM_PROTOCOL_RE = /^npm:/
 const ABSOLUTE_NPM_PREFIX_RE = /^\/(?:miniprogram_npm|node_modules)\//
 const PRETTY_NODE_MODULES_RE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/
 const REQUEST_GLOBAL_EXPORT_RE = /Object\.defineProperty\(exports,\s*(?:`([^`]+)`|'([^']+)'|"([^"]+)"),\s*\{[\s\S]*?get:function\(\)\{return ([A-Za-z_$][\w$]*)\}\}\)/g
-const REQUEST_GLOBAL_INSTALLER_RE = /function\s+([A-Za-z_$][\w$]*)\([^)]*=\{\}\)\{[\s\S]{0,200}?targets\?\?\[[\s\S]{0,80}?fetch[\s\S]{0,80}?Headers[\s\S]{0,80}?Request[\s\S]{0,80}?Response[\s\S]{0,80}?AbortController[\s\S]{0,80}?AbortSignal[\s\S]{0,80}?XMLHttpRequest[\s\S]{0,240}?return [^}]+\}/
+const REQUEST_GLOBAL_INSTALLER_RE = /function\s+([A-Za-z_$][\w$]*)\([^)]*=\{\}\)\{[\s\S]{0,220}?targets\?\?\[[\s\S]{0,80}?fetch[\s\S]{0,80}?Headers[\s\S]{0,80}?Request[\s\S]{0,80}?Response[\s\S]{0,80}?AbortController[\s\S]{0,80}?AbortSignal[\s\S]{0,80}?XMLHttpRequest[\s\S]{0,80}?WebSocket[\s\S]{0,260}?return [^}]+\}/
 const REQUEST_GLOBAL_ENTRY_NAME_RE = /\.[^/.]+$/
 const REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE = /([A-Za-z_$][\w$]*)\s*=\s*require\((`([^`]+)`|'([^']+)'|"([^"]+)")\)/g
 const REQUEST_GLOBAL_TARGET_SIGNATURES = [
@@ -49,6 +49,7 @@ const REQUEST_GLOBAL_TARGET_SIGNATURES = [
   'AbortController',
   'AbortSignal',
   'XMLHttpRequest',
+  'WebSocket',
 ] as const
 const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set([
   ...REQUEST_GLOBAL_TARGET_SIGNATURES,
@@ -528,6 +529,9 @@ function createRequestGlobalsPassiveBindingsCode(bindingTargets: string[]) {
     }
     if (target === 'XMLHttpRequest') {
       return `var XMLHttpRequest = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory}`
+    }
+    if (target === 'WebSocket') {
+      return `var WebSocket = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["wss://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory}`
     }
     if (target === 'AbortController') {
       return `var AbortController = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory}`

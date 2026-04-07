@@ -55,6 +55,25 @@ async function runIssue393Build() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #420: injects WebSocket globals for socket.io-client entry pages', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-420/index.js')
+    const commonJsPath = path.join(DIST_ROOT, 'common.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-420/index.wxml')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const commonJs = await fs.readFile(commonJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-420 socket.io-client bootstrap')
+    expect(pageJs).toContain('transportName')
+    expect(pageJs).toContain('socket.invalid/github-issues')
+    expect(pageJs).toContain('__weappViteChunkRequestGlobalsHost__.WebSocket')
+    expect(commonJs).toContain('__weappViteRequestGlobalsPassiveBindings__')
+    expect(commonJs).toContain('"WebSocket"')
+    expect(commonJs).toContain('var WebSocket = __weappViteHasUsableRequestGlobalsConstructor__(')
+  })
+
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {
     await runIssue393Build()
 
@@ -691,11 +710,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const userNpmRoot = path.join(DIST_ROOT, 'subpackages/user/miniprogram_npm')
     const subpackageDayjsPath = path.join(issue327NpmRoot, 'dayjs/index.js')
     const subpackageTdesignPath = path.join(issue327NpmRoot, 'tdesign-miniprogram/button/button.js')
-    const itemLodashPath = path.join(itemNpmRoot, 'lodash/index.js')
+    const itemCamelCasePath = path.join(itemNpmRoot, 'camelcase/index.js')
     const userMergePath = path.join(userNpmRoot, 'merge/index.js')
     const mainDayjsPath = path.join(DIST_ROOT, 'miniprogram_npm/dayjs/index.js')
     const mainTdesignPath = path.join(DIST_ROOT, 'miniprogram_npm/tdesign-miniprogram/button/button.js')
-    const mainLodashPath = path.join(DIST_ROOT, 'miniprogram_npm/lodash/index.js')
+    const mainLodashPath = path.join(DIST_ROOT, 'miniprogram_npm/camelcase/index.js')
     const mainMergePath = path.join(DIST_ROOT, 'miniprogram_npm/merge/index.js')
     const issuePageJsPath = path.join(DIST_ROOT, 'subpackages/issue-327/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'subpackages/issue-327/index.json')
@@ -704,7 +723,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(await fs.pathExists(subpackageDayjsPath)).toBe(true)
     expect(await fs.pathExists(subpackageTdesignPath)).toBe(true)
-    expect(await fs.pathExists(itemLodashPath)).toBe(true)
+    expect(await fs.pathExists(itemCamelCasePath)).toBe(true)
     expect(await fs.pathExists(userMergePath)).toBe(true)
     expect(await fs.pathExists(mainDayjsPath)).toBe(false)
     expect(await fs.pathExists(mainTdesignPath)).toBe(false)
@@ -712,11 +731,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(mainMergePath)).toBe(false)
     expect(await fs.pathExists(path.join(DIST_ROOT, 'miniprogram_npm'))).toBe(false)
 
-    expect(await fs.pathExists(path.join(issue327NpmRoot, 'lodash/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(issue327NpmRoot, 'camelcase/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(issue327NpmRoot, 'merge/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(itemNpmRoot, 'merge/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(itemNpmRoot, 'dayjs/index.js'))).toBe(false)
-    expect(await fs.pathExists(path.join(userNpmRoot, 'lodash/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(userNpmRoot, 'camelcase/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(userNpmRoot, 'dayjs/index.js'))).toBe(false)
 
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
@@ -726,7 +745,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(issuePageJs).toContain('dayjs')
     expect(issuePageJson).toContain('"t-button": "tdesign-miniprogram/button/button"')
-    expect(itemPageJs).toContain('lodash')
+    expect(itemPageJs).toContain('camelcase')
     expect(itemPageJs).toContain('npmMarker')
     expect(userPageJs).toContain('merge')
     expect(userPageJs).toContain('npmMarker')
