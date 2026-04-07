@@ -9,6 +9,7 @@ const loggerMock = vi.hoisted(() => ({
   warn: vi.fn(),
 }))
 const invalidateEntryForSidecarMock = vi.hoisted(() => vi.fn(async () => {}))
+const scanMock = vi.hoisted(() => vi.fn(async () => null))
 const extractCssImportDependenciesMock = vi.hoisted(() => vi.fn())
 const cleanupCssImporterGraphMock = vi.hoisted(() => vi.fn())
 
@@ -60,6 +61,7 @@ function createContext() {
       },
     },
     wxmlService: {
+      scan: scanMock,
       getImporters: (value: string) => {
         if (value === '/project/src/shared/helper.wxs') {
           return new Set(['/project/src/pages/hmr/index.wxml'])
@@ -74,6 +76,7 @@ describe('invalidateEntry sidecar watcher', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    scanMock.mockResolvedValue(null)
   })
 
   afterEach(() => {
@@ -110,6 +113,7 @@ describe('invalidateEntry sidecar watcher', () => {
 
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledTimes(1)
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+    expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:rename->update] src/pages/hmr/index.wxml')
   })
 
@@ -162,5 +166,30 @@ describe('invalidateEntry sidecar watcher', () => {
 
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/shared/helper.wxs', 'update')
     expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/shared/helper.wxs')
+  })
+
+  it('scans and invalidates direct template change events without reverse importers', async () => {
+    vi.stubEnv('VITEST', '')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    const existsSpy = vi.spyOn(fs, 'existsSync')
+    const watcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(watcher)
+    existsSpy.mockImplementation((value) => {
+      const filePath = String(value)
+      return filePath === '/project/src' || filePath === '/project/src/pages/hmr/index.wxml'
+    })
+
+    const ctx = createContext()
+    ensureSidecarWatcher(ctx, '/project/src')
+
+    watcher.emit('ready')
+    watcher.emit('change', '/project/src/pages/hmr/index.wxml')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(scanMock).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+    expect(loggerMock.info).toHaveBeenCalledWith('[watch:update] src/pages/hmr/index.wxml')
   })
 })
