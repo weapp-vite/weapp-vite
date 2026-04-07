@@ -209,7 +209,21 @@ wv ide preview --project ./dist/build/mp-weixin
 `weapp-vite` 已集成 `@weapp-vite/mcp`：
 
 - 默认不自动启动 MCP 服务（可通过配置开启自动启动）
-- 也可以手动启动 MCP Server
+- 优先推荐直接生成客户端配置，而不是手写 MCP 地址
+
+```sh
+wv mcp init codex
+wv mcp init claude-code
+wv mcp init cursor
+```
+
+检查配置是否可用：
+
+```sh
+wv mcp doctor codex
+```
+
+仍然需要手动启动 MCP Server 时：
 
 ```sh
 weapp-vite mcp

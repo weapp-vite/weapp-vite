@@ -107,6 +107,34 @@ $playwright-cli
 1. `weapp-vite` 默认启用 MCP 能力。
 2. 默认不会自动启动 MCP 服务（`autoStart: false`）。
 
+推荐先走客户端接入命令，而不是先手动研究 MCP 地址：
+
+```bash
+wv mcp init codex
+wv mcp init claude-code
+wv mcp init cursor
+```
+
+如果你只想打印配置，不直接写入文件：
+
+```bash
+wv mcp print codex
+```
+
+写入后建议立刻做一次检查：
+
+```bash
+wv mcp doctor codex
+```
+
+如果你已经通过 `pnpm dev`、`wv dev` 或 `wv mcp --transport streamable-http` 起好了 HTTP MCP 服务，也可以直接生成 HTTP 配置：
+
+```bash
+wv mcp init codex --transport http
+wv mcp init claude-code --transport http
+wv mcp init cursor --transport http
+```
+
 如果你的 AI 客户端支持显式工具命名，建议优先直接调用：
 
 1. `take_weapp_screenshot`
@@ -120,7 +148,7 @@ $playwright-cli
 wv mcp
 ```
 
-需要 HTTP 连接时：
+需要手动显式启动 HTTP 服务时：
 
 ```bash
 wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
