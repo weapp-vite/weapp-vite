@@ -1,3 +1,6 @@
 **/.DS_Store
 **/*.map
 **/node_modules/**
+extension/*.test.js
+extension/**/*.test.js
+PUBLISHING.md

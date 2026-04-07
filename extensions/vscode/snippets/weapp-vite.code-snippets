@@ -1,0 +1,39 @@
+{
+  "weapp-vite json block": {
+    "scope": "vue",
+    "prefix": "wv-json",
+    "description": "Insert a weapp-vite <json> custom block",
+    "body": [
+      "<json lang=\"jsonc\">",
+      "{",
+      "  \"$1\": \"$2\"",
+      "}",
+      "</json>"
+    ]
+  },
+  "weapp-vite defineConfig": {
+    "scope": "typescript,javascript",
+    "prefix": "wv-config",
+    "description": "Insert a weapp-vite defineConfig skeleton",
+    "body": [
+      "import { defineConfig } from 'weapp-vite'",
+      "",
+      "export default defineConfig({",
+      "  $1",
+      "})"
+    ]
+  },
+  "weapp-vite package scripts": {
+    "scope": "json,jsonc",
+    "prefix": "wv-scripts",
+    "description": "Insert common weapp-vite package.json scripts",
+    "body": [
+      "\"scripts\": {",
+      "  \"dev\": \"wv dev\",",
+      "  \"build\": \"wv build\",",
+      "  \"open\": \"wv open\",",
+      "  \"generate\": \"wv generate\"",
+      "}"
+    ]
+  }
+}

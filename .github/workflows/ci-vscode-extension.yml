@@ -1,0 +1,55 @@
+name: VSCode Extension CI
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'extensions/vscode/**'
+      - .github/workflows/ci-vscode-extension.yml
+      - .github/workflows/release-vscode-extension.yml
+      - .github/workflows/reusable-node-command.yml
+      - '.github/actions/setup-node-pnpm/**'
+      - '.github/actions/refresh-workspace-deps/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  vscode-extension:
+    name: VSCode Extension Checks (Node 20)
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: '20'
+      timeout_minutes: 10
+      main_command: |
+        pnpm --dir extensions/vscode run check:publish
+    secrets: inherit
+
+  vscode-extension-package:
+    name: VSCode Extension Package Dry Run (Node 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: vscode-extension
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 20
+
+      - name: Build VSIX dry run
+        run: pnpm --dir extensions/vscode run package:dry-run
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: vscode-extension-vsix
+          path: extensions/vscode/.artifacts/*.vsix
+          if-no-files-found: error

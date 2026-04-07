@@ -20,6 +20,12 @@ From repo root:
 ```bash
 cd extensions/vscode
 
+# run local checks first
+pnpm run check:publish
+
+# build a local VSIX artifact
+pnpm run package:dry-run
+
 # package a .vsix for local verification
 npx @vscode/vsce package
 
@@ -27,3 +33,28 @@ npx @vscode/vsce package
 npx @vscode/vsce login weapp-vite
 npx @vscode/vsce publish
 ```
+
+For scripted local publish:
+
+```bash
+VSCE_PAT=your_token pnpm run publish:vsce
+```
+
+## Recommended CI Gate
+
+At minimum, CI should run:
+
+```bash
+pnpm --dir extensions/vscode run check:publish
+```
+
+To also validate real packaging in CI or local dry-run:
+
+```bash
+pnpm --dir extensions/vscode run package:dry-run
+```
+
+This repository also includes a dedicated workflow:
+
+- `.github/workflows/ci-vscode-extension.yml`
+- `.github/workflows/release-vscode-extension.yml`
