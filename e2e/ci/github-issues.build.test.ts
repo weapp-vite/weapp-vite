@@ -55,6 +55,25 @@ async function runIssue393Build() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #424: reproduces duplicated output for imported src/assets images', async () => {
+    await runBuild()
+
+    const files = await scanFiles(DIST_ROOT)
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-424/index.js')
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-424/index.wxml')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+
+    expect(files).toContain('assets/images/home/goods-1.png')
+    expect(files).toContain('assets/images/home/banner-1.jpg')
+    expect(files.some(file => /^goods-1-[a-z0-9]+\.png$/.test(file))).toBe(true)
+    expect(files.some(file => /^banner-1-[a-z0-9]+\.jpg$/.test(file))).toBe(true)
+    expect(issuePageWxml).toContain('issue-424 duplicated imported src asset output')
+    expect(issuePageJs).toContain('_runE2E')
+    expect(issuePageJs).toContain('goods-1-')
+    expect(issuePageJs).toContain('banner-1-')
+  })
+
   it('issue #420: injects WebSocket globals for socket.io-client entry pages', async () => {
     await runBuild()
 
