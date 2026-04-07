@@ -53,3 +53,4 @@ jobs:
           name: vscode-extension-vsix
           path: extensions/vscode/.artifacts/*.vsix
           if-no-files-found: error
+          include-hidden-files: true
