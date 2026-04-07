@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const wpiRequestMock = vi.hoisted(() => vi.fn())
+const wpiConnectSocketMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@wevu/api', () => ({
   wpi: {
+    getAdapter: () => ({
+      connectSocket: wpiConnectSocketMock,
+    }),
     request: wpiRequestMock,
+    resolveTarget: () => ({
+      supported: true,
+      target: 'connectSocket',
+    }),
   },
 }))
 
@@ -14,6 +22,48 @@ function setGlobalValue(key: string, value: unknown) {
     writable: true,
     value,
   })
+}
+
+function createMockSocketTask() {
+  let openListener: (() => void) | undefined
+  let messageListener: ((result: { data: string | ArrayBuffer }) => void) | undefined
+  let errorListener: ((result: { errMsg?: string }) => void) | undefined
+  let closeListener: ((result: { code: number, reason: string }) => void) | undefined
+  const sendMock = vi.fn()
+  const closeMock = vi.fn()
+
+  return {
+    closeMock,
+    emitClose(result: { code: number, reason: string }) {
+      closeListener?.(result)
+    },
+    emitError(result: { errMsg?: string }) {
+      errorListener?.(result)
+    },
+    emitMessage(result: { data: string | ArrayBuffer }) {
+      messageListener?.(result)
+    },
+    emitOpen() {
+      openListener?.()
+    },
+    task: {
+      close: closeMock,
+      onClose: (listener: (result: { code: number, reason: string }) => void) => {
+        closeListener = listener
+      },
+      onError: (listener: (result: { errMsg?: string }) => void) => {
+        errorListener = listener
+      },
+      onMessage: (listener: (result: { data: string | ArrayBuffer }) => void) => {
+        messageListener = listener
+      },
+      onOpen: (listener: () => void) => {
+        openListener = listener
+      },
+      send: sendMock,
+    },
+    sendMock,
+  }
 }
 
 describe('request globals runtime', () => {
@@ -26,9 +76,11 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).AbortController
     delete (globalThis as Record<string, any>).AbortSignal
     delete (globalThis as Record<string, any>).XMLHttpRequest
+    delete (globalThis as Record<string, any>).WebSocket
     delete (globalThis as Record<string, any>).Blob
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
+    wpiConnectSocketMock.mockReset()
   })
 
   it('installs missing globals without overwriting existing ones', async () => {
@@ -42,6 +94,7 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.XMLHttpRequest).toBe('function')
     expect(typeof globalThis.AbortController).toBe('function')
     expect(typeof globalThis.Headers).toBe('function')
+    expect(typeof globalThis.WebSocket).toBe('function')
   })
 
   it('supports fetch through @wevu/api request bridge without requiring wevu/fetch', async () => {
@@ -180,5 +233,186 @@ describe('request globals runtime', () => {
     const searchParams = new URLSearchParamsPolyfill()
     searchParams.append('variables', '{"ok":true}')
     expect(searchParams.toString()).toBe('variables=%7B%22ok%22%3Atrue%7D')
+  })
+
+  it('supports mini-program SocketTask through the injected WebSocket bridge', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/socket', ['chat'])
+    const openSpy = vi.fn()
+    const messageSpy = vi.fn()
+    const errorSpy = vi.fn()
+    const closeSpy = vi.fn()
+
+    socket.onopen = openSpy
+    socket.onmessage = messageSpy
+    socket.onerror = errorSpy
+    socket.onclose = closeSpy
+
+    expect(socket.readyState).toBe(socket.CONNECTING)
+    expect(wpiConnectSocketMock).toHaveBeenCalledWith(expect.objectContaining({
+      protocols: ['chat'],
+      url: 'wss://request-globals.invalid/socket',
+    }))
+
+    mockSocket.emitOpen()
+    expect(socket.readyState).toBe(socket.OPEN)
+    expect(openSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'open',
+    }))
+
+    socket.binaryType = 'arraybuffer'
+    mockSocket.emitMessage({
+      data: new Uint8Array([1, 2, 3]).buffer,
+    })
+    expect(messageSpy).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.any(ArrayBuffer),
+      origin: 'wss://request-globals.invalid',
+      type: 'message',
+    }))
+
+    socket.send('hello')
+    expect(mockSocket.sendMock).toHaveBeenCalledWith(expect.objectContaining({
+      data: 'hello',
+    }))
+
+    mockSocket.emitError({
+      errMsg: 'connectSocket:fail simulated',
+    })
+    expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'connectSocket:fail simulated',
+      type: 'error',
+    }))
+
+    socket.close(1000, 'done')
+    expect(socket.readyState).toBe(socket.CLOSING)
+    expect(mockSocket.closeMock).toHaveBeenCalledWith(expect.objectContaining({
+      code: 1000,
+      reason: 'done',
+    }))
+
+    mockSocket.emitClose({
+      code: 1000,
+      reason: 'done',
+    })
+    expect(socket.readyState).toBe(socket.CLOSED)
+    expect(closeSpy).toHaveBeenCalledWith(expect.objectContaining({
+      code: 1000,
+      reason: 'done',
+      type: 'close',
+      wasClean: true,
+    }))
+  })
+
+  it('rejects invalid websocket urls and invalid protocols', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+
+    expect(() => new globalThis.WebSocket('https://request-globals.invalid/socket')).toThrow(/invalid URL/u)
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/socket#hash')).toThrow(/contains fragment/u)
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/socket', ['chat', 'chat'])).toThrow(/duplicated subprotocol/u)
+    expect(() => new globalThis.WebSocket('wss://request-globals.invalid/socket', 'chat room')).toThrow(/invalid subprotocol/u)
+  })
+
+  it('throws on send before open and after close', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/socket')
+
+    expect(() => socket.send('early')).toThrow(/CONNECTING state/u)
+
+    mockSocket.emitOpen()
+    socket.close(1000, 'done')
+    mockSocket.emitClose({
+      code: 1000,
+      reason: 'done',
+    })
+
+    expect(() => socket.send('late')).toThrow(/not open/u)
+  })
+
+  it('emits blob-like message data by default for binary frames', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/socket')
+    const messageSpy = vi.fn()
+    socket.onmessage = messageSpy
+
+    mockSocket.emitOpen()
+    mockSocket.emitMessage({
+      data: new Uint8Array([4, 5, 6]).buffer,
+    })
+
+    expect(messageSpy).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        size: 3,
+      }),
+      type: 'message',
+    }))
+  })
+
+  it('validates close code and reason length before forwarding to SocketTask', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/socket')
+    mockSocket.emitOpen()
+
+    expect(() => socket.close(2000, 'bad-code')).toThrow(/invalid code/u)
+    expect(() => socket.close(3000, 'a'.repeat(124))).toThrow(/longer than 123 bytes/u)
+
+    socket.close(3000, 'normal-close')
+    expect(mockSocket.closeMock).toHaveBeenCalledWith(expect.objectContaining({
+      code: 3000,
+      reason: 'normal-close',
+    }))
+  })
+
+  it('supports sending Blob payloads through SocketTask', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket', 'fetch'],
+    })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/socket')
+    mockSocket.emitOpen()
+
+    socket.send(new globalThis.Blob(['hello']))
+    await vi.waitFor(() => {
+      expect(mockSocket.sendMock).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.any(ArrayBuffer),
+      }))
+    })
   })
 })

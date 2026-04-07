@@ -51,6 +51,10 @@
       "types": "./dist/web.d.mts",
       "import": "./dist/web.mjs"
     },
+    "./websocket": {
+      "types": "./dist/websocket.d.mts",
+      "import": "./dist/websocket.mjs"
+    },
     "./xhr": {
       "types": "./dist/xhr.d.mts",
       "import": "./dist/xhr.mjs"

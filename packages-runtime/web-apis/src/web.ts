@@ -2,12 +2,12 @@ import { cloneArrayBuffer, cloneArrayBufferView, decodeText, encodeText } from '
 
 type BlobPart = ArrayBuffer | ArrayBufferView | BlobPolyfill | string
 
-function normalizeBlobPart(part: BlobPart) {
+function normalizeBlobPart(part: BlobPart): Promise<ArrayBuffer> {
   if (typeof part === 'string') {
-    return encodeText(part)
+    return Promise.resolve(encodeText(part))
   }
   if (part && typeof part === 'object' && typeof (part as BlobPolyfill).arrayBuffer === 'function') {
-    return part.arrayBuffer()
+    return (part as BlobPolyfill).arrayBuffer()
   }
   if (part instanceof ArrayBuffer) {
     return Promise.resolve(cloneArrayBuffer(part))
@@ -43,9 +43,9 @@ export class BlobPolyfill {
     }, 0)
   }
 
-  async arrayBuffer() {
-    const buffers = await Promise.all(this.parts.map(part => normalizeBlobPart(part)))
-    const totalLength = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0)
+  async arrayBuffer(): Promise<ArrayBuffer> {
+    const buffers: ArrayBuffer[] = await Promise.all(this.parts.map(part => normalizeBlobPart(part)))
+    const totalLength: number = buffers.reduce((sum: number, buffer: ArrayBuffer) => sum + buffer.byteLength, 0)
     const merged = new Uint8Array(totalLength)
     let offset = 0
     for (const buffer of buffers) {
