@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -244,7 +245,7 @@ describe('automator helpers', () => {
   describe('connectOpenedAutomator', () => {
     it('prefers persisted websocket endpoint for current project', async () => {
       readFileMock.mockResolvedValueOnce(JSON.stringify({
-        projectPath: '/workspace/project',
+        projectPath: path.resolve('/workspace/project'),
         updatedAt: '2026-04-06T00:00:00.000Z',
         wsEndpoint: 'ws://127.0.0.1:19510',
       }))
@@ -263,7 +264,7 @@ describe('automator helpers', () => {
     it('removes stale persisted endpoint when connect fails', async () => {
       const error = new Error('connect failed')
       readFileMock.mockResolvedValueOnce(JSON.stringify({
-        projectPath: '/workspace/project',
+        projectPath: path.resolve('/workspace/project'),
         updatedAt: '2026-04-06T00:00:00.000Z',
         wsEndpoint: 'ws://127.0.0.1:19510',
       }))
