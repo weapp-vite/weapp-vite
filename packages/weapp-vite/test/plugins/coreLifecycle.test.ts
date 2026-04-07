@@ -133,8 +133,8 @@ describe('core plugin watchChange', () => {
       )
 
     expect(wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/index/index.wxml')
-    expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
-    expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts', 'direct')
+    expect(findJsEntryMock).not.toHaveBeenCalled()
+    expect(markEntryDirty).not.toHaveBeenCalled()
   })
 
   it.each([

@@ -37,7 +37,7 @@ function emitCssAssetIfChanged(
   source: string,
 ) {
   const normalizedFileName = toPosixPath(fileName)
-  const cache = ctx.runtimeState.css.emittedSource
+  const cache = ctx.runtimeState?.css.emittedSource
   const existing = bundle[fileName]
 
   if (existing?.type === 'asset') {
@@ -45,11 +45,11 @@ function emitCssAssetIfChanged(
     if (current !== source) {
       existing.source = source
     }
-    cache.set(normalizedFileName, source)
+    cache?.set(normalizedFileName, source)
     return true
   }
 
-  if (cache.get(normalizedFileName) === source) {
+  if (cache?.get(normalizedFileName) === source) {
     return false
   }
 
@@ -58,7 +58,7 @@ function emitCssAssetIfChanged(
     fileName,
     source,
   })
-  cache.set(normalizedFileName, source)
+  cache?.set(normalizedFileName, source)
   return true
 }
 
@@ -172,6 +172,7 @@ async function handleBundleEntry(
 
 async function emitSharedStyleEntries(
   this: any,
+  ctx: CompilerContext,
   sharedStyles: Map<string, SubPackageStyleEntry[]>,
   emitted: Set<string>,
   configService: CompilerContext['configService'],
@@ -221,6 +222,7 @@ async function emitSharedStyleEntries(
 
 async function emitSharedStyleImportsForChunks(
   this: any,
+  ctx: CompilerContext,
   sharedStyles: Map<string, SubPackageStyleEntry[]>,
   emitted: Set<string>,
   configService: CompilerContext['configService'],
@@ -294,8 +296,8 @@ async function generateBundleSharedCss(
   })
 
   await Promise.all(tasks)
-  await emitSharedStyleEntries.call(this, sharedStyles, emitted, configService, bundle, resolvedConfig)
-  await emitSharedStyleImportsForChunks.call(this, sharedStyles, emitted, configService, bundle)
+  await emitSharedStyleEntries.call(this, ctx, sharedStyles, emitted, configService, bundle, resolvedConfig)
+  await emitSharedStyleImportsForChunks.call(this, ctx, sharedStyles, emitted, configService, bundle)
 }
 
 export function css(ctx: CompilerContext): Plugin[] {

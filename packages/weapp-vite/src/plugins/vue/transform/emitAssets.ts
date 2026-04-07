@@ -8,6 +8,10 @@ interface Emitter {
 
 const emittedAssetSourceCache = new Map<string, string>()
 
+export function resetEmittedAssetSourceCacheForTest() {
+  emittedAssetSourceCache.clear()
+}
+
 /**
  * 统一拼接 SFC 相关产物文件名。
  */
