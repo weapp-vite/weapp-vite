@@ -130,27 +130,27 @@ function renderMarkdown(report: {
     '',
     '## Build',
     '',
-    '| 场景 | disabled avg | current avg | 额外成本 | 阈值结果 |',
+    '| 场景 | baseline avg | current avg | 额外成本 | 阈值结果 |',
     '| --- | ---: | ---: | ---: | --- |',
   ]
 
   for (const result of report.build.results) {
     const status = result.delta.extraPercent > report.thresholdPercent ? 'fail' : 'pass'
     lines.push(
-      `| ${result.usedCount} components | ${result.disabled.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      `| ${result.usedCount} components | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
     )
   }
 
   lines.push('')
   lines.push('## HMR')
   lines.push('')
-  lines.push('| 场景 | disabled avg | current avg | 额外成本 | 阈值结果 |')
+  lines.push('| 场景 | baseline avg | current avg | 额外成本 | 阈值结果 |')
   lines.push('| --- | ---: | ---: | ---: | --- |')
 
   for (const result of report.hmr.results) {
     const status = result.update.delta.extraPercent > report.thresholdPercent ? 'fail' : 'pass'
     lines.push(
-      `| ${result.usedCount} components | ${result.update.disabled.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      `| ${result.usedCount} components | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
     )
   }
 
@@ -212,7 +212,7 @@ interface BuildBenchmarkReport {
   generatedAt: string
   results: Array<{
     usedCount: number
-    disabled: SummaryStats
+    baseline: SummaryStats
     current: SummaryStats
     delta: {
       extraMs: number
@@ -228,7 +228,7 @@ interface HmrBenchmarkReport {
   results: Array<{
     usedCount: number
     startup: {
-      disabled: SummaryStats
+      baseline: SummaryStats
       current: SummaryStats
       delta: {
         extraMs: number
@@ -237,7 +237,7 @@ interface HmrBenchmarkReport {
       }
     }
     update: {
-      disabled: SummaryStats
+      baseline: SummaryStats
       current: SummaryStats
       delta: {
         extraMs: number

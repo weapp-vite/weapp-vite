@@ -83,6 +83,7 @@ export function registerBuildCommand(cli: CAC) {
         inlineConfig,
         cliPlatform: targets.rawPlatform,
         projectConfigPath: options.projectConfig,
+        syncSupportFiles: false,
       })
       const { buildService, configService, webService } = ctx
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })

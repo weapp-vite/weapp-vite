@@ -42,6 +42,8 @@ export type AutoImportMatch = LocalAutoImportMatch | ResolverAutoImportMatch
 
 export interface AutoImportService {
   reset: () => void
+  getVersion: () => number
+  runInBatch: <T>(task: () => T | Promise<T>) => Promise<T>
   registerPotentialComponent: (filePath: string) => Promise<void>
   removePotentialComponent: (filePath: string) => void
   resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined
@@ -64,6 +66,19 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   const resolverComponentNames = new Set<string>()
   const resolverComponentsMapRef = { value: {} as Record<string, string> }
   const pendingRegistrations = new Set<Promise<void>>()
+  const batchedWrites: {
+    depth: number
+    manifest?: boolean
+    typed?: boolean
+    html?: boolean
+    vue?: boolean
+  } = {
+    depth: 0,
+    manifest: undefined,
+    typed: undefined,
+    html: undefined,
+    vue: undefined,
+  }
   const outputsState: OutputsState = {
     pendingWrite: undefined,
     writeRequested: false,
@@ -122,6 +137,56 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     resolveNavigationImport: resolverHelpers.resolveNavigationImport,
   })
 
+  function bumpVersion() {
+    autoImportState.version += 1
+  }
+
+  function deferOrSchedule(kind: 'manifest' | 'typed' | 'html' | 'vue', shouldWrite: boolean) {
+    if (batchedWrites.depth > 0) {
+      const previous = batchedWrites[kind]
+      batchedWrites[kind] = previous === undefined ? shouldWrite : previous || shouldWrite
+      return
+    }
+
+    if (kind === 'manifest') {
+      outputsHelpers.scheduleManifestWrite(shouldWrite)
+      return
+    }
+    if (kind === 'typed') {
+      outputsHelpers.scheduleTypedComponentsWrite(shouldWrite)
+      return
+    }
+    if (kind === 'html') {
+      outputsHelpers.scheduleHtmlCustomDataWrite(shouldWrite)
+      return
+    }
+    outputsHelpers.scheduleVueComponentsWrite(shouldWrite)
+  }
+
+  function flushBatchedWrites() {
+    const manifest = batchedWrites.manifest
+    const typed = batchedWrites.typed
+    const html = batchedWrites.html
+    const vue = batchedWrites.vue
+    batchedWrites.manifest = undefined
+    batchedWrites.typed = undefined
+    batchedWrites.html = undefined
+    batchedWrites.vue = undefined
+
+    if (manifest !== undefined) {
+      outputsHelpers.scheduleManifestWrite(manifest)
+    }
+    if (typed !== undefined) {
+      outputsHelpers.scheduleTypedComponentsWrite(typed)
+    }
+    if (html !== undefined) {
+      outputsHelpers.scheduleHtmlCustomDataWrite(html)
+    }
+    if (vue !== undefined) {
+      outputsHelpers.scheduleVueComponentsWrite(vue)
+    }
+  }
+
   const registryHelpers = createRegistryHelpers({
     ctx,
     registry,
@@ -129,20 +194,21 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     resolverComponentNames,
     componentMetadataMap,
     logWarnOnce,
-    scheduleManifestWrite: outputsHelpers.scheduleManifestWrite,
-    scheduleTypedComponentsWrite: outputsHelpers.scheduleTypedComponentsWrite,
-    scheduleHtmlCustomDataWrite: outputsHelpers.scheduleHtmlCustomDataWrite,
-    scheduleVueComponentsWrite: outputsHelpers.scheduleVueComponentsWrite,
+    scheduleManifestWrite: shouldWrite => deferOrSchedule('manifest', shouldWrite),
+    scheduleTypedComponentsWrite: shouldWrite => deferOrSchedule('typed', shouldWrite),
+    scheduleHtmlCustomDataWrite: shouldWrite => deferOrSchedule('html', shouldWrite),
+    scheduleVueComponentsWrite: shouldWrite => deferOrSchedule('vue', shouldWrite),
   })
 
   return {
     reset() {
+      bumpVersion()
       registry.clear()
       autoImportState.matcher = undefined
       autoImportState.matcherKey = ''
       resolvedResolverComponents.clear()
       resolverHelpers.clearResolveCache()
-      outputsHelpers.scheduleManifestWrite(true)
+      deferOrSchedule('manifest', true)
       componentMetadataMap.clear()
       resolverComponentNames.clear()
       const typedSettings = getTypedComponentsSettings(ctx)
@@ -151,18 +217,36 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       if (typedSettings.enabled || htmlSettings.enabled) {
         resolverHelpers.syncResolverComponentProps()
       }
-      outputsHelpers.scheduleTypedComponentsWrite(true)
-      outputsHelpers.scheduleHtmlCustomDataWrite(true)
+      deferOrSchedule('typed', true)
+      deferOrSchedule('html', true)
       if (vueSettings.enabled) {
         resolverHelpers.syncResolverComponentProps()
       }
-      outputsHelpers.scheduleVueComponentsWrite(true)
+      deferOrSchedule('vue', true)
+    },
+
+    getVersion() {
+      return autoImportState.version
+    },
+
+    async runInBatch<T>(task: () => T | Promise<T>) {
+      batchedWrites.depth += 1
+      try {
+        return await task()
+      }
+      finally {
+        batchedWrites.depth -= 1
+        if (batchedWrites.depth === 0) {
+          flushBatchedWrites()
+        }
+      }
     },
 
     async registerPotentialComponent(filePath: string) {
       const task = Promise.resolve()
         .then(async () => {
           await registryHelpers.registerLocalComponent(filePath)
+          bumpVersion()
         })
         .finally(() => {
           pendingRegistrations.delete(task)
@@ -172,11 +256,12 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     },
 
     removePotentialComponent(filePath: string) {
+      bumpVersion()
       const { removed, removedNames } = registryHelpers.removeRegisteredComponent({
         baseName: removeExtensionDeep(filePath),
         templatePath: filePath,
       })
-      outputsHelpers.scheduleManifestWrite(removed)
+      deferOrSchedule('manifest', removed)
       for (const name of removedNames) {
         if (resolverComponentNames.has(name)) {
           componentMetadataMap.set(name, { types: new Map(), docs: new Map() })
@@ -185,14 +270,15 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
           componentMetadataMap.delete(name)
         }
       }
-      outputsHelpers.scheduleTypedComponentsWrite(removed || removedNames.length > 0)
-      outputsHelpers.scheduleHtmlCustomDataWrite(removed || removedNames.length > 0)
-      outputsHelpers.scheduleVueComponentsWrite(removed || removedNames.length > 0)
+      deferOrSchedule('typed', removed || removedNames.length > 0)
+      deferOrSchedule('html', removed || removedNames.length > 0)
+      deferOrSchedule('vue', removed || removedNames.length > 0)
     },
 
     setSupportFileResolverComponents(components: Record<string, string>) {
+      bumpVersion()
       resolverHelpers.setSupportFileResolverComponents(components)
-      outputsHelpers.scheduleManifestWrite(true)
+      deferOrSchedule('manifest', true)
       const typedSettings = getTypedComponentsSettings(ctx)
       const htmlSettings = getHtmlCustomDataSettings(ctx)
       const vueSettings = getVueComponentsSettings(ctx)
@@ -200,18 +286,19 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         resolverHelpers.syncResolverComponentProps()
       }
       if (typedSettings.enabled) {
-        outputsHelpers.scheduleTypedComponentsWrite(true)
+        deferOrSchedule('typed', true)
       }
       if (htmlSettings.enabled) {
-        outputsHelpers.scheduleHtmlCustomDataWrite(true)
+        deferOrSchedule('html', true)
       }
       if (vueSettings.enabled) {
         resolverHelpers.syncResolverComponentProps()
-        outputsHelpers.scheduleVueComponentsWrite(true)
+        deferOrSchedule('vue', true)
       }
     },
 
     clearSupportFileResolverComponents() {
+      bumpVersion()
       resolverHelpers.clearSupportFileResolverComponents()
       resolverHelpers.syncResolverComponentProps()
     },
@@ -231,6 +318,9 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
         const previousFrom = resolvedResolverComponents.get(resolvedValue.name)
         const resolverChanged = previousFrom !== resolvedValue.from
         resolvedResolverComponents.set(resolvedValue.name, resolvedValue.from)
+        if (resolverChanged) {
+          bumpVersion()
+        }
         const resolved: ResolverAutoImportMatch = {
           kind: 'resolver',
           value: resolvedValue,
@@ -244,20 +334,20 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
             componentMetadataMap.set(resolved.value.name, { types: new Map(), docs: new Map() })
           }
           if (typedSettings.enabled && (resolverChanged || metadataMissing)) {
-            outputsHelpers.scheduleTypedComponentsWrite(true)
+            deferOrSchedule('typed', true)
           }
           if (htmlSettings.enabled && (resolverChanged || metadataMissing)) {
-            outputsHelpers.scheduleHtmlCustomDataWrite(true)
+            deferOrSchedule('html', true)
           }
         }
         else {
           componentMetadataMap.delete(resolved.value.name)
         }
         if (vueSettings.enabled && resolverChanged) {
-          outputsHelpers.scheduleVueComponentsWrite(true)
+          deferOrSchedule('vue', true)
         }
         if (resolverChanged) {
-          outputsHelpers.scheduleManifestWrite(true)
+          deferOrSchedule('manifest', true)
         }
         return resolved
       }

@@ -88,6 +88,7 @@ export interface RuntimeState {
     resolvedResolverComponents: Map<string, string>
     matcher?: (input: string) => boolean
     matcherKey: string
+    version: number
   }
   build: {
     queue: PQueue
@@ -160,6 +161,7 @@ export function createRuntimeState(): RuntimeState {
       registry: new Map<string, LocalAutoImportMatch>(),
       resolvedResolverComponents: new Map<string, string>(),
       matcherKey: '',
+      version: 0,
     },
     build: {
       queue: new PQueue({ autoStart: false }),

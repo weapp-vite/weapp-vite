@@ -16,6 +16,8 @@ const reportDir = resolveReportDir('auto-import-build')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const allResolverTags = Object.keys(VantResolver().components ?? {}).sort((a, b) => a.localeCompare(b))
+const resolverComponents = VantResolver().components ?? {}
+const VANT_PACKAGE_PREFIX_RE = /^@vant\/weapp\/?/
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '      autoImportComponents: {',
   '        globs: [\'components/**/*\'],',
@@ -55,32 +57,32 @@ async function main() {
 
 async function runScenario(usedCount: number) {
   const usedTags = allResolverTags.slice(0, usedCount)
-  const disabledSamples = []
+  const baselineSamples = []
   const currentSamples = []
 
   for (let i = 0; i < iterations; i += 1) {
-    disabledSamples.push(await measureBuild({ usedTags, mode: 'disabled', iteration: i }))
+    baselineSamples.push(await measureBuild({ usedTags, mode: 'baseline', iteration: i }))
     currentSamples.push(await measureBuild({ usedTags, mode: 'current', iteration: i }))
   }
 
-  const disabled = summarizeNumbers(disabledSamples)
+  const baseline = summarizeNumbers(baselineSamples)
   const current = summarizeNumbers(currentSamples)
 
   return {
     usedCount,
-    disabled,
+    baseline,
     current,
     delta: {
-      extraMs: current.mean - disabled.mean,
-      extraPercent: disabled.mean > 0 ? ((current.mean - disabled.mean) / disabled.mean) * 100 : 0,
-      ratio: disabled.mean > 0 ? current.mean / disabled.mean : 0,
+      extraMs: current.mean - baseline.mean,
+      extraPercent: baseline.mean > 0 ? ((current.mean - baseline.mean) / baseline.mean) * 100 : 0,
+      ratio: baseline.mean > 0 ? current.mean / baseline.mean : 0,
     },
   }
 }
 
 async function measureBuild(options: {
   usedTags: string[]
-  mode: 'disabled' | 'current'
+  mode: 'baseline' | 'current'
   iteration: number
 }) {
   const { usedTags, mode, iteration } = options
@@ -103,15 +105,17 @@ async function measureBuild(options: {
   }
 }
 
-async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disabled' | 'current') {
+async function seedFixture(projectRoot: string, usedTags: string[], mode: 'baseline' | 'current') {
   const pageDir = path.join(projectRoot, 'src/pages/bench-build-auto-import')
   const pagePath = path.join(pageDir, 'index.vue')
   const appJsonPath = path.join(projectRoot, 'src/app.json')
+  const packageJsonPath = path.join(projectRoot, 'package.json')
   const tags = usedTags
     .map(tag => `    <${tag} data-bench="${tag}" />`)
     .join('\n')
 
   await patchViteConfig(projectRoot, mode)
+  await ensureBenchmarkResolverPackage(projectRoot, usedTags)
   await mkdir(pageDir, { recursive: true })
   await writeFile(
     pagePath,
@@ -123,9 +127,10 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disab
       '</template>',
       '',
       '<json>',
-      '{',
-      '  "navigationBarTitleText": "Auto Import Build Bench"',
-      '}',
+      JSON.stringify({
+        navigationBarTitleText: 'Auto Import Build Bench',
+        ...(mode === 'baseline' ? { usingComponents: createUsingComponentsMap(usedTags) } : {}),
+      }, null, 2),
       '</json>',
       '',
     ].join('\n'),
@@ -137,19 +142,25 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disab
   pages.add('pages/bench-build-auto-import/index')
   appJson.pages = Array.from(pages)
   await writeFile(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`, 'utf8')
+
+  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as {
+    dependencies?: Record<string, string>
+    devDependencies?: Record<string, string>
+  }
+  packageJson.dependencies = {
+    ...(packageJson.dependencies ?? {}),
+    '@vant/weapp': '1.0.0-benchmark',
+  }
+  await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8')
 }
 
-async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current') {
+async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current') {
   const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
   const viteConfig = await readFile(viteConfigPath, 'utf8')
-  const replacement = mode === 'disabled'
+  const replacement = mode === 'baseline'
     ? '      autoImportComponents: false,'
     : [
         '      autoImportComponents: {',
-        '        globs: [\'components/**/*\'],',
-        '        typedComponents: true,',
-        '        vueComponents: true,',
-        '        htmlCustomData: true,',
         '        resolvers: [',
         '          VantResolver()',
         '        ]',
@@ -158,10 +169,49 @@ async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current'
   const nextViteConfig = viteConfig.replace(ORIGINAL_AUTO_IMPORT_BLOCK, replacement)
 
   if (nextViteConfig === viteConfig) {
+    if (mode === 'current' && viteConfig.includes(ORIGINAL_AUTO_IMPORT_BLOCK)) {
+      return
+    }
     throw new Error(`Failed to patch vite config for build benchmark: ${viteConfigPath}`)
   }
 
   await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+}
+
+function createUsingComponentsMap(usedTags: string[]) {
+  return Object.fromEntries(
+    usedTags.map((tag) => {
+      const from = resolverComponents[tag]
+      if (!from) {
+        throw new Error(`Missing resolver mapping for benchmark tag: ${tag}`)
+      }
+      return [tag, from]
+    }),
+  )
+}
+
+async function ensureBenchmarkResolverPackage(projectRoot: string, usedTags: string[]) {
+  const tempRoot = path.dirname(projectRoot)
+  const packageRoot = path.join(tempRoot, 'node_modules/@vant/weapp')
+  await mkdir(packageRoot, { recursive: true })
+  await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({
+    name: '@vant/weapp',
+    version: '1.0.0-benchmark',
+  }, null, 2))
+
+  for (const tag of usedTags) {
+    const from = resolverComponents[tag]
+    if (!from) {
+      throw new Error(`Missing resolver mapping for benchmark tag: ${tag}`)
+    }
+    const relativeEntry = from.replace(VANT_PACKAGE_PREFIX_RE, '')
+    const componentDir = path.join(packageRoot, relativeEntry)
+    await mkdir(componentDir, { recursive: true })
+    await writeFile(path.join(componentDir, 'index.json'), `${JSON.stringify({ component: true }, null, 2)}\n`, 'utf8')
+    await writeFile(path.join(componentDir, 'index.js'), 'Component({})\n', 'utf8')
+    await writeFile(path.join(componentDir, 'index.wxml'), `<view data-bench="${tag}">${tag}</view>\n`, 'utf8')
+    await writeFile(path.join(componentDir, 'index.wxss'), '', 'utf8')
+  }
 }
 
 async function createTempFixtureProject(sourceRoot: string, prefix: string) {
@@ -189,6 +239,7 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
     tempDir,
     cleanup: async () => {
       await rm(tempDir, { recursive: true, force: true })
+      await rm(path.join(tempRoot, 'node_modules'), { recursive: true, force: true })
       const remaining = await readdir(tempRoot).catch(() => null)
       if (remaining && remaining.length === 0) {
         await rm(tempRoot, { recursive: true, force: true })
@@ -302,7 +353,7 @@ function summarizeNumbers(values: number[]) {
 
 function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
   console.log(`\n[build-scenario] used resolver components=${result.usedCount}`)
-  console.log(`disabled | avg ${result.disabled.mean.toFixed(2)}ms | median ${result.disabled.median.toFixed(2)}ms`)
+  console.log(`baseline | avg ${result.baseline.mean.toFixed(2)}ms | median ${result.baseline.median.toFixed(2)}ms`)
   console.log(`current  | avg ${result.current.mean.toFixed(2)}ms | median ${result.current.median.toFixed(2)}ms`)
   console.log(`delta    | extra ${result.delta.extraMs.toFixed(2)}ms | extra ${result.delta.extraPercent.toFixed(2)}% | ratio ${result.delta.ratio.toFixed(2)}x`)
 }
@@ -313,20 +364,20 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
     '',
     `- iterations: \`${iterations}\``,
     '',
-    '| 场景 | disabled avg | current avg | 额外成本 | 比例 |',
+    '| 场景 | baseline avg | current avg | 额外成本 | 比例 |',
     '| --- | ---: | ---: | ---: | ---: |',
   ]
 
   for (const result of results) {
     lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.disabled.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${result.delta.ratio.toFixed(2)}x |`,
+      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${result.delta.ratio.toFixed(2)}x |`,
     )
   }
 
   lines.push('')
   lines.push('## 说明')
   lines.push('')
-  lines.push('- `disabled`：关闭 `autoImportComponents` 后直接执行 `weapp-vite build`。')
+  lines.push('- `baseline`：关闭 `autoImportComponents`，并手动声明同一批 `usingComponents` 后执行 `weapp-vite build`。')
   lines.push('- `current`：开启当前自动导入实现后直接执行 `weapp-vite build`。')
   lines.push('- 该结果包含支持文件同步、配置加载和完整构建流程。')
   lines.push('')

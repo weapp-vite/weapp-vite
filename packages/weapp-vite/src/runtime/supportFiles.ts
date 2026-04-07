@@ -81,31 +81,33 @@ export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Prom
 
   const autoImportConfig = getAutoImportConfig(ctx.configService)
   if (autoImportConfig && ctx.autoImportService && ctx.configService) {
-    ctx.autoImportService.reset()
-    const globs = autoImportConfig.globs
-    if (Array.isArray(globs) && globs.length > 0) {
-      const files = await findAutoImportCandidates({
-        ctx,
-        resolvedConfig: {
-          build: {
-            outDir: ctx.configService.outDir,
-          },
-        } as ResolvedConfig,
-      }, globs)
-      await Promise.all(files.map(file => ctx.autoImportService!.registerPotentialComponent(file)))
-    }
-    else if (!shouldBootstrapAutoImportWithoutGlobs(autoImportConfig)) {
-      // noop
-    }
+    await ctx.autoImportService.runInBatch(async () => {
+      ctx.autoImportService!.reset()
+      const globs = autoImportConfig.globs
+      if (Array.isArray(globs) && globs.length > 0) {
+        const files = await findAutoImportCandidates({
+          ctx,
+          resolvedConfig: {
+            build: {
+              outDir: ctx.configService.outDir,
+            },
+          } as ResolvedConfig,
+        }, globs)
+        await Promise.all(files.map(file => ctx.autoImportService!.registerPotentialComponent(file)))
+      }
+      else if (!shouldBootstrapAutoImportWithoutGlobs(autoImportConfig)) {
+        // noop
+      }
 
-    const templateTags = await collectAutoImportTemplateTags(ctx)
-    for (const { tag, importerBaseName } of templateTags) {
-      ctx.autoImportService.resolve(tag, importerBaseName)
-    }
+      const templateTags = await collectAutoImportTemplateTags(ctx)
+      for (const { tag, importerBaseName } of templateTags) {
+        ctx.autoImportService!.resolve(tag, importerBaseName)
+      }
 
-    ctx.autoImportService.setSupportFileResolverComponents(
-      ctx.autoImportService.collectStaticResolverComponentsForSupportFiles(),
-    )
+      ctx.autoImportService!.setSupportFileResolverComponents(
+        ctx.autoImportService!.collectStaticResolverComponentsForSupportFiles(),
+      )
+    })
     try {
       await ctx.autoImportService.awaitManifestWrites()
     }

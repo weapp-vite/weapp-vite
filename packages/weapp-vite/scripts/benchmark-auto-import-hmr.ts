@@ -18,6 +18,8 @@ const reportDir = resolveReportDir('auto-import-hmr')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const allResolverTags = Object.keys(VantResolver().components ?? {}).sort((a, b) => a.localeCompare(b))
+const resolverComponents = VantResolver().components ?? {}
+const VANT_PACKAGE_PREFIX_RE = /^@vant\/weapp\/?/
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '      autoImportComponents: {',
   '        globs: [\'components/**/*\'],',
@@ -63,44 +65,44 @@ async function main() {
 
 async function runScenario(usedCount: number) {
   const usedTags = allResolverTags.slice(0, usedCount)
-  const disabledStartupSamples: number[] = []
+  const baselineStartupSamples: number[] = []
   const currentStartupSamples: number[] = []
-  const disabledUpdateSamples: number[] = []
+  const baselineUpdateSamples: number[] = []
   const currentUpdateSamples: number[] = []
 
   for (let i = 0; i < iterations; i += 1) {
-    const disabled = await measureHmr({ usedTags, mode: 'disabled', iteration: i })
-    disabledStartupSamples.push(disabled.startupMs)
-    disabledUpdateSamples.push(disabled.updateMs)
+    const baseline = await measureHmr({ usedTags, mode: 'baseline', iteration: i })
+    baselineStartupSamples.push(baseline.startupMs)
+    baselineUpdateSamples.push(baseline.updateMs)
 
     const current = await measureHmr({ usedTags, mode: 'current', iteration: i })
     currentStartupSamples.push(current.startupMs)
     currentUpdateSamples.push(current.updateMs)
   }
 
-  const disabledStartup = summarizeNumbers(disabledStartupSamples)
+  const baselineStartup = summarizeNumbers(baselineStartupSamples)
   const currentStartup = summarizeNumbers(currentStartupSamples)
-  const disabledUpdate = summarizeNumbers(disabledUpdateSamples)
+  const baselineUpdate = summarizeNumbers(baselineUpdateSamples)
   const currentUpdate = summarizeNumbers(currentUpdateSamples)
 
   return {
     usedCount,
     startup: {
-      disabled: disabledStartup,
+      baseline: baselineStartup,
       current: currentStartup,
       delta: {
-        extraMs: currentStartup.mean - disabledStartup.mean,
-        extraPercent: disabledStartup.mean > 0 ? ((currentStartup.mean - disabledStartup.mean) / disabledStartup.mean) * 100 : 0,
-        ratio: disabledStartup.mean > 0 ? currentStartup.mean / disabledStartup.mean : 0,
+        extraMs: currentStartup.mean - baselineStartup.mean,
+        extraPercent: baselineStartup.mean > 0 ? ((currentStartup.mean - baselineStartup.mean) / baselineStartup.mean) * 100 : 0,
+        ratio: baselineStartup.mean > 0 ? currentStartup.mean / baselineStartup.mean : 0,
       },
     },
     update: {
-      disabled: disabledUpdate,
+      baseline: baselineUpdate,
       current: currentUpdate,
       delta: {
-        extraMs: currentUpdate.mean - disabledUpdate.mean,
-        extraPercent: disabledUpdate.mean > 0 ? ((currentUpdate.mean - disabledUpdate.mean) / disabledUpdate.mean) * 100 : 0,
-        ratio: disabledUpdate.mean > 0 ? currentUpdate.mean / disabledUpdate.mean : 0,
+        extraMs: currentUpdate.mean - baselineUpdate.mean,
+        extraPercent: baselineUpdate.mean > 0 ? ((currentUpdate.mean - baselineUpdate.mean) / baselineUpdate.mean) * 100 : 0,
+        ratio: baselineUpdate.mean > 0 ? currentUpdate.mean / baselineUpdate.mean : 0,
       },
     },
   }
@@ -108,7 +110,7 @@ async function runScenario(usedCount: number) {
 
 async function measureHmr(options: {
   usedTags: string[]
-  mode: 'disabled' | 'current'
+  mode: 'baseline' | 'current'
   iteration: number
 }) {
   const { usedTags, mode, iteration } = options
@@ -161,10 +163,11 @@ async function measureHmr(options: {
   }
 }
 
-async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disabled' | 'current') {
+async function seedFixture(projectRoot: string, usedTags: string[], mode: 'baseline' | 'current') {
   const pageDir = path.join(projectRoot, 'src/pages/bench-hmr-auto-import')
   const pagePath = path.join(pageDir, 'index.vue')
   const appJsonPath = path.join(projectRoot, 'src/app.json')
+  const packageJsonPath = path.join(projectRoot, 'package.json')
   const tags = usedTags
     .map(tag => `    <${tag} data-bench="${tag}" />`)
     .join('\n')
@@ -176,14 +179,16 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disab
     '</template>',
     '',
     '<json>',
-    '{',
-    '  "navigationBarTitleText": "Auto Import HMR Bench"',
-    '}',
+    JSON.stringify({
+      navigationBarTitleText: 'Auto Import HMR Bench',
+      ...(mode === 'baseline' ? { usingComponents: createUsingComponentsMap(usedTags) } : {}),
+    }, null, 2),
     '</json>',
     '',
   ].join('\n')
 
   await patchViteConfig(projectRoot, mode)
+  await ensureBenchmarkResolverPackage(projectRoot, usedTags)
   await mkdir(pageDir, { recursive: true })
   await writeFile(pagePath, source, 'utf8')
 
@@ -193,20 +198,26 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disab
   appJson.pages = Array.from(pages)
   await writeFile(appJsonPath, `${JSON.stringify(appJson, null, 2)}\n`, 'utf8')
 
+  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as {
+    dependencies?: Record<string, string>
+    devDependencies?: Record<string, string>
+  }
+  packageJson.dependencies = {
+    ...(packageJson.dependencies ?? {}),
+    '@vant/weapp': '1.0.0-benchmark',
+  }
+  await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8')
+
   return source
 }
 
-async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current') {
+async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current') {
   const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
   const viteConfig = await readFile(viteConfigPath, 'utf8')
-  const replacement = mode === 'disabled'
+  const replacement = mode === 'baseline'
     ? '      autoImportComponents: false,'
     : [
         '      autoImportComponents: {',
-        '        globs: [\'components/**/*\'],',
-        '        typedComponents: true,',
-        '        vueComponents: true,',
-        '        htmlCustomData: true,',
         '        resolvers: [',
         '          VantResolver()',
         '        ]',
@@ -215,10 +226,49 @@ async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current'
   const nextViteConfig = viteConfig.replace(ORIGINAL_AUTO_IMPORT_BLOCK, replacement)
 
   if (nextViteConfig === viteConfig) {
+    if (mode === 'current' && viteConfig.includes(ORIGINAL_AUTO_IMPORT_BLOCK)) {
+      return
+    }
     throw new Error(`Failed to patch vite config for hmr benchmark: ${viteConfigPath}`)
   }
 
   await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+}
+
+function createUsingComponentsMap(usedTags: string[]) {
+  return Object.fromEntries(
+    usedTags.map((tag) => {
+      const from = resolverComponents[tag]
+      if (!from) {
+        throw new Error(`Missing resolver mapping for benchmark tag: ${tag}`)
+      }
+      return [tag, from]
+    }),
+  )
+}
+
+async function ensureBenchmarkResolverPackage(projectRoot: string, usedTags: string[]) {
+  const tempRoot = path.dirname(projectRoot)
+  const packageRoot = path.join(tempRoot, 'node_modules/@vant/weapp')
+  await mkdir(packageRoot, { recursive: true })
+  await writeFile(path.join(packageRoot, 'package.json'), JSON.stringify({
+    name: '@vant/weapp',
+    version: '1.0.0-benchmark',
+  }, null, 2))
+
+  for (const tag of usedTags) {
+    const from = resolverComponents[tag]
+    if (!from) {
+      throw new Error(`Missing resolver mapping for benchmark tag: ${tag}`)
+    }
+    const relativeEntry = from.replace(VANT_PACKAGE_PREFIX_RE, '')
+    const componentDir = path.join(packageRoot, relativeEntry)
+    await mkdir(componentDir, { recursive: true })
+    await writeFile(path.join(componentDir, 'index.json'), `${JSON.stringify({ component: true }, null, 2)}\n`, 'utf8')
+    await writeFile(path.join(componentDir, 'index.js'), 'Component({})\n', 'utf8')
+    await writeFile(path.join(componentDir, 'index.wxml'), `<view data-bench="${tag}">${tag}</view>\n`, 'utf8')
+    await writeFile(path.join(componentDir, 'index.wxss'), '', 'utf8')
+  }
 }
 
 async function createTempFixtureProject(sourceRoot: string, prefix: string) {
@@ -246,6 +296,7 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
     tempDir,
     cleanup: async () => {
       await rm(tempDir, { recursive: true, force: true })
+      await rm(path.join(tempRoot, 'node_modules'), { recursive: true, force: true })
       const remaining = await readdir(tempRoot).catch(() => null)
       if (remaining && remaining.length === 0) {
         await rm(tempRoot, { recursive: true, force: true })
@@ -339,10 +390,10 @@ function summarizeNumbers(values: number[]) {
 
 function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
   console.log(`\n[hmr-scenario] used resolver components=${result.usedCount}`)
-  console.log(`startup disabled | avg ${result.startup.disabled.mean.toFixed(2)}ms`)
+  console.log(`startup baseline | avg ${result.startup.baseline.mean.toFixed(2)}ms`)
   console.log(`startup current  | avg ${result.startup.current.mean.toFixed(2)}ms`)
   console.log(`startup delta    | extra ${result.startup.delta.extraMs.toFixed(2)}ms | extra ${result.startup.delta.extraPercent.toFixed(2)}%`)
-  console.log(`update disabled  | avg ${result.update.disabled.mean.toFixed(2)}ms`)
+  console.log(`update baseline  | avg ${result.update.baseline.mean.toFixed(2)}ms`)
   console.log(`update current   | avg ${result.update.current.mean.toFixed(2)}ms`)
   console.log(`update delta     | extra ${result.update.delta.extraMs.toFixed(2)}ms | extra ${result.update.delta.extraPercent.toFixed(2)}%`)
 }
@@ -355,32 +406,32 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
     '',
     '## Startup',
     '',
-    '| 场景 | disabled avg | current avg | 额外成本 | 比例 |',
+    '| 场景 | baseline avg | current avg | 额外成本 | 比例 |',
     '| --- | ---: | ---: | ---: | ---: |',
   ]
 
   for (const result of results) {
     lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.startup.disabled.mean.toFixed(2)} ms | ${result.startup.current.mean.toFixed(2)} ms | ${result.startup.delta.extraMs.toFixed(2)} ms (${result.startup.delta.extraPercent.toFixed(2)}%) | ${result.startup.delta.ratio.toFixed(2)}x |`,
+      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.startup.baseline.mean.toFixed(2)} ms | ${result.startup.current.mean.toFixed(2)} ms | ${result.startup.delta.extraMs.toFixed(2)} ms (${result.startup.delta.extraPercent.toFixed(2)}%) | ${result.startup.delta.ratio.toFixed(2)}x |`,
     )
   }
 
   lines.push('')
   lines.push('## HMR Update')
   lines.push('')
-  lines.push('| 场景 | disabled avg | current avg | 额外成本 | 比例 |')
+  lines.push('| 场景 | baseline avg | current avg | 额外成本 | 比例 |')
   lines.push('| --- | ---: | ---: | ---: | ---: |')
 
   for (const result of results) {
     lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.update.disabled.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${result.update.delta.ratio.toFixed(2)}x |`,
+      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${result.update.delta.ratio.toFixed(2)}x |`,
     )
   }
 
   lines.push('')
   lines.push('## 说明')
   lines.push('')
-  lines.push('- `disabled`：关闭 `autoImportComponents` 后启动 dev 并执行相同模板改动。')
+  lines.push('- `baseline`：关闭 `autoImportComponents`，并手动声明同一批 `usingComponents` 后启动 dev 并执行相同模板改动。')
   lines.push('- `current`：开启当前自动导入实现后启动 dev 并执行相同模板改动。')
   lines.push('- `startup` 表示从启动 dev 到首个 benchmark 页面产物可见的耗时。')
   lines.push('- `update` 表示修改 benchmark 页面后，dist 模板产物出现新 marker 的耗时。')
