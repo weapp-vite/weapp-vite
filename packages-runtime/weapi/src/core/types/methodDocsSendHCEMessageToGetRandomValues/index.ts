@@ -1,0 +1,6 @@
+import type { WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValuesSendHCEMessageToStopVoice } from './sendHCEMessageToStopVoice'
+import type { WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValuesSubscribeVoIPVideoMembersToGetRandomValues } from './subscribeVoIPVideoMembersToGetRandomValues'
+
+export type WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues
+  = WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValuesSendHCEMessageToStopVoice
+    & WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValuesSubscribeVoIPVideoMembersToGetRandomValues

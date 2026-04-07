@@ -4,6 +4,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
   /**
    * 创建视频解码器。
    *
+   * 分类：媒体
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/media/video-decoder/VideoDecoder.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createVideoDecoder` | ⚠️ |
@@ -14,6 +21,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
 
   /**
    * 加载内置字体。
+   *
+   * 分类：界面
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/ui/font/wx.loadBuiltInFontFace.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -26,6 +40,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
   /**
    * 通知群成员。
    *
+   * 分类：chattool
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/chattool/wx.notifyGroupMembers.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.notifyGroupMembers` | ⚠️ |
@@ -36,6 +57,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
 
   /**
    * 空闲时回调请求。
+   *
+   * 分类：基础
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/wx.requestIdleCallback.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -48,6 +76,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
   /**
    * 释放缓冲区 URL。
    *
+   * 分类：存储
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/storage/wx.revokeBufferURL.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.revokeBufferURL` | ⚠️ |
@@ -58,6 +93,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
 
   /**
    * 重写路由规则。
+   *
+   * 分类：路由
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/route/wx.rewriteRoute.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -70,6 +112,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
   /**
    * 调整后台音频播放进度。
    *
+   * 分类：媒体
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.seekBackgroundAudio.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.seekBackgroundAudio` | ⚠️ |
@@ -81,6 +130,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
   /**
    * 设置调试开关。
    *
+   * 分类：基础
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/base/debug/wx.setEnableDebug.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setEnableDebug` | ⚠️ |
@@ -91,6 +147,13 @@ export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOp
 
   /**
    * 设置内部音频选项。
+   *
+   * 分类：媒体
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/wx.setInnerAudioOption.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |

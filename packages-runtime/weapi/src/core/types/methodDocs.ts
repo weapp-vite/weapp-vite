@@ -3,6 +3,7 @@ import type { WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroup } from './
 import type { WeapiCrossPlatformMethodDocsChooseVideoToOpenDocument } from './methodDocsChooseVideoToOpenDocument'
 import type { WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOption } from './methodDocsCreateVideoDecoderToSetInnerAudioOption'
 import type { WeapiCrossPlatformMethodDocsGetRealtimeLogManagerToCreateUDPSocket } from './methodDocsGetRealtimeLogManagerToCreateUDPSocket'
+import type { WeapiCrossPlatformMethodDocsMissingMethods } from './methodDocsMissingMethods'
 import type { WeapiCrossPlatformMethodDocsOpenSystemBluetoothSettingToChooseLicensePlate } from './methodDocsOpenSystemBluetoothSettingToChooseLicensePlate'
 import type { WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfo } from './methodDocsPluginLoginToGetAppBaseInfo'
 import type { WeapiCrossPlatformMethodDocsSaveVideoToPhotosAlbumToCanAddSecureElementPass } from './methodDocsSaveVideoToPhotosAlbumToCanAddSecureElementPass'
@@ -22,3 +23,4 @@ export type WeapiCrossPlatformMethodDocs
     & WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues
     & WeapiCrossPlatformMethodDocsGetRealtimeLogManagerToCreateUDPSocket
     & WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOption
+    & WeapiCrossPlatformMethodDocsMissingMethods

@@ -1,0 +1,6 @@
+import type { WeapiCrossPlatformMethodDocsChooseVideoToOpenDocumentChooseVideoToGetLogManager } from './chooseVideoToGetLogManager'
+import type { WeapiCrossPlatformMethodDocsChooseVideoToOpenDocumentNextTickToOpenDocument } from './nextTickToOpenDocument'
+
+export type WeapiCrossPlatformMethodDocsChooseVideoToOpenDocument
+  = WeapiCrossPlatformMethodDocsChooseVideoToOpenDocumentChooseVideoToGetLogManager
+    & WeapiCrossPlatformMethodDocsChooseVideoToOpenDocumentNextTickToOpenDocument

@@ -1,0 +1,6 @@
+import type { WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfoPluginLoginToRequestPluginPayment } from './pluginLoginToRequestPluginPayment'
+import type { WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfoRequestVirtualPaymentToGetAppBaseInfo } from './requestVirtualPaymentToGetAppBaseInfo'
+
+export type WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfo
+  = WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfoPluginLoginToRequestPluginPayment
+    & WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfoRequestVirtualPaymentToGetAppBaseInfo

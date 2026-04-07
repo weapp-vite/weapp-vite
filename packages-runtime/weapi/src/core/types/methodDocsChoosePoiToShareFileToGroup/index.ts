@@ -1,0 +1,6 @@
+import type { WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroupChoosePoiToGetChannelsLiveNoticeInfo } from './choosePoiToGetChannelsLiveNoticeInfo'
+import type { WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroupGetChannelsShareKeyToShareFileToGroup } from './getChannelsShareKeyToShareFileToGroup'
+
+export type WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroup
+  = WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroupChoosePoiToGetChannelsLiveNoticeInfo
+    & WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroupGetChannelsShareKeyToShareFileToGroup

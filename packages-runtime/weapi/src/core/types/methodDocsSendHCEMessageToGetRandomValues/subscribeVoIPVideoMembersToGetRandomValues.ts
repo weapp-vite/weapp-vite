@@ -1,129 +1,15 @@
-import type { WeapiCrossPlatformAdapter } from '../types'
+import type { WeapiCrossPlatformAdapter } from '../../types'
 
-export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
-  /**
-   * 发送 HCE 消息。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.sendHCEMessage` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  sendHCEMessage: WeapiCrossPlatformAdapter['sendHCEMessage']
-
-  /**
-   * 发送短信。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.sendSms` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  sendSms: WeapiCrossPlatformAdapter['sendSms']
-
-  /**
-   * 设置后台拉取 token。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.setBackgroundFetchToken` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  setBackgroundFetchToken: WeapiCrossPlatformAdapter['setBackgroundFetchToken']
-
-  /**
-   * 设置 1v1 通话可用状态。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.setEnable1v1Chat` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  setEnable1v1Chat: WeapiCrossPlatformAdapter['setEnable1v1Chat']
-
-  /**
-   * 设置顶栏文本。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.setTopBarText` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  setTopBarText: WeapiCrossPlatformAdapter['setTopBarText']
-
-  /**
-   * 设置窗口尺寸。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.setWindowSize` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  setWindowSize: WeapiCrossPlatformAdapter['setWindowSize']
-
-  /**
-   * 停止 HCE 功能。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.stopHCE` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  stopHCE: WeapiCrossPlatformAdapter['stopHCE']
-
-  /**
-   * 停止本地服务发现。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.stopLocalServiceDiscovery` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  stopLocalServiceDiscovery: WeapiCrossPlatformAdapter['stopLocalServiceDiscovery']
-
-  /**
-   * 停止持续定位。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.stopLocationUpdate` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  stopLocationUpdate: WeapiCrossPlatformAdapter['stopLocationUpdate']
-
-  /**
-   * 停止录音。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.stopRecord` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  stopRecord: WeapiCrossPlatformAdapter['stopRecord']
-
-  /**
-   * 停止播放语音。
-   *
-   * | 平台 | 对齐策略 | 支持度 |
-   * | --- | --- | --- |
-   * | 微信 | 直连 `wx.stopVoice` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   */
-  stopVoice: WeapiCrossPlatformAdapter['stopVoice']
-
+export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValuesSubscribeVoIPVideoMembersToGetRandomValues {
   /**
    * 订阅 VoIP 视频成员变化。
+   *
+   * 分类：媒体
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.subscribeVoIPVideoMembers.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -136,6 +22,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
   /**
    * 更新 VoIP 静音配置。
    *
+   * 分类：媒体
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/media/voip/wx.updateVoIPChatMuteConfig.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.updateVoIPChatMuteConfig` | ⚠️ |
@@ -146,6 +39,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
 
   /**
    * 拉起微信升级流程。
+   *
+   * 分类：基础
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/base/update/wx.updateWeChatApp.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -158,6 +58,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
   /**
    * 获取后台音频播放状态。
    *
+   * 分类：媒体
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/media/background-audio/wx.getBackgroundAudioPlayerState.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getBackgroundAudioPlayerState` | ⚠️ |
@@ -168,6 +75,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
 
   /**
    * 获取设备性能评估信息。
+   *
+   * 分类：基础
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/base/system/wx.getDeviceBenchmarkInfo.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -180,6 +94,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
   /**
    * 获取设备 VoIP 列表。
    *
+   * 分类：开放接口
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/open-api/device-voip/wx.getDeviceVoIPList.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getDeviceVoIPList` | ⚠️ |
@@ -190,6 +111,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
 
   /**
    * 获取 HCE 状态。
+   *
+   * 分类：设备
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc-hce/wx.getHCEState.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -202,6 +130,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
   /**
    * 获取推理环境信息。
    *
+   * 分类：ai
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/ai/inference/wx.getInferenceEnvInfo.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getInferenceEnvInfo` | ⚠️ |
@@ -212,6 +147,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
 
   /**
    * 获取 NFC 适配器。
+   *
+   * 分类：设备
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/device/nfc/NFCAdapter.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
@@ -224,6 +166,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
   /**
    * 获取性能对象。
    *
+   * 分类：基础
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/base/performance/Performance.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
+   *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getPerformance` | ⚠️ |
@@ -234,6 +183,13 @@ export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
 
   /**
    * 获取随机值。
+   *
+   * 分类：设备
+   * 文档链接：https://developers.weixin.qq.com/miniprogram/dev/api/device/crypto/wx.getRandomValues.html
+   *
+   * 说明：
+   * - 这里保留微信命名与参数、返回类型。
+   * - 支持度与跨平台对齐策略见下表。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
