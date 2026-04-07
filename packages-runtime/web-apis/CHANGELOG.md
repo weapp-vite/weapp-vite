@@ -1,5 +1,12 @@
 # @wevu/web-apis
 
+## 1.1.1
+
+### Patch Changes
+
+- 📦 **Dependencies** [`e001dfe`](https://github.com/weapp-vite/weapp-vite/commit/e001dfe7f2ccc6db95668af627a9b7cfc6d4b6ad)
+  → `@wevu/api@0.2.3`
+
 ## 1.1.0
 
 ### Minor Changes

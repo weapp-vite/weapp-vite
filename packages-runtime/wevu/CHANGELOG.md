@@ -1,5 +1,15 @@
 # wevu
 
+## 6.14.0
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` App 全局事件在微信开发者工具中可能重复注册的问题，避免 `onError`、`onPageNotFound`、`onUnhandledRejection` 与 `onThemeChange` 在 `github-issues` 等 IDE 运行时场景下触发大量 listener 泄漏告警；同时清理 `issue-320` 复现页的路由初始化噪音，保持 IDE warning 报告聚焦真实异常。** [`f112199`](https://github.com/weapp-vite/weapp-vite/commit/f1121993ab02ed64862a43328ee1997c7d391ec5) by @sonofmagic
+
+- 🐛 **修复 `wevu` 组件事件在空 payload 场景下的模板参数契约不一致问题。此前父组件通过直接 handler 或显式 `$event` 监听 `emit('empty')` 时，可能拿到整个事件对象而不是 `undefined`；现在在启用 `detail` 解包标记的组件事件中，空 payload 会和普通 payload 一样统一按 `detail` 语义传递，同时补充了编译产物、单元测试与微信开发者工具运行时验证，覆盖 direct handler、显式 `$event`、内联 `$event.title`、原生事件透传、tuple payload 与带 options 的 `emit` 写法。** [#412](https://github.com/weapp-vite/weapp-vite/pull/412) by @sonofmagic
+- 📦 **Dependencies** [`e001dfe`](https://github.com/weapp-vite/weapp-vite/commit/e001dfe7f2ccc6db95668af627a9b7cfc6d4b6ad)
+  → `@wevu/api@0.2.3`, `@wevu/compiler@6.14.0`
+
 ## 6.13.4
 
 ### Patch Changes

@@ -1,5 +1,55 @@
 # weapp-vite
 
+## 6.14.0
+
+### Minor Changes
+
+- ✨ **为 `weapp-vite dev` 增加终端快捷键能力，开发态启动后会在命令行里提示可用热键。现在支持按 `s` 直接截取当前小程序页面截图并保存到本地 `.tmp/weapp-vite-dev-screenshots` 目录，同时输出执行日志与结果路径；也支持按 `m` 开关开发态内置的 MCP `streamable-http` 服务，让调试阶段可以在同一终端里直接控制 MCP 会话，而不再依赖命令执行前的自动后台启动。** [`2544e7a`](https://github.com/weapp-vite/weapp-vite/commit/2544e7a097226a80632cc78714690d3e4dd68b56) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复 `wv dev` 在未启用 UI 分析面板时提前结束命令主流程的问题。此前开发态热键会话会在首屏提示后立即被关闭，只剩下构建 watcher 持续运行，导致 `h`、`q` 等快捷键看起来存在但实际无效。现在 `serve` 会持续等待退出信号，并在退出时再统一清理热键与 watcher。** [`731109e`](https://github.com/weapp-vite/weapp-vite/commit/731109e6ee2d8fc6875daba1b3859cece7d37c4f) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite dev` 的开发态终端样式，使热键区域更接近交互式工具的分层布局。默认提示现在会展示 `DEV` 会话头、当前状态、MCP 状态与最近操作；按 `h` 时则输出完整的 `Dev Usage` 命令面板，提升开发态终端可读性与一致性。** [`48ebe1f`](https://github.com/weapp-vite/weapp-vite/commit/48ebe1f76dcdbe6855d28d60a6edd4c52f6ccdb0) by @sonofmagic
+
+- 🐛 **修复 dev 模式下自动导入新增 Vue 组件时的入口解析兜底逻辑。当解析器暂时无法返回新建组件的 resolved id，但组件文件已经实际落盘时，`weapp-vite` 现在会回退到该绝对路径继续发射组件产物，避免 `usingComponents` 已更新但组件 `wxml/json` 迟迟不生成，提升 macOS 等环境下新增 SFC 的热更新稳定性。** [#412](https://github.com/weapp-vite/weapp-vite/pull/412) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev` 开发态热键面板的多个可用性问题：热键监听改为更稳的终端输入数据流处理，解决 `h`、`s` 等单键在部分环境下无响应的问题；面板会避免重复输出相同内容；同时会话头中的版本号改为真实包版本，避免显示 `__VERSION__` 占位值。** [`9fc295e`](https://github.com/weapp-vite/weapp-vite/commit/9fc295ed7fe15a54b04426e280c3798f69b89d24) by @sonofmagic
+
+- 🐛 **修复 `wv dev` 开发快捷键在部分终端与 `pnpm` TTY 代理场景下按键无响应的问题。现在会同时监听 `keypress` 与原始 `data` 输入，并对同一按键的重复事件做最小范围去重，使 `h`、`s`、`m`、`q` 及 `Ctrl+C` / `Ctrl+Z` 在更多终端环境下都能稳定生效。** [`03d83b6`](https://github.com/weapp-vite/weapp-vite/commit/03d83b6a5570bc5769af990c3b20bb206dbada42) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev` 交互热键模式对终端默认控制的兼容性，在接管 TTY 后支持 `Ctrl+Z` 暂时挂起当前进程并恢复终端控制，且在前台恢复后重新启用快捷键提示，避免 dev 模式吞掉常见的 shell 挂起行为。** [`746d24f`](https://github.com/weapp-vite/weapp-vite/commit/746d24ff422b2333c17a2118ad18423ff5f1b5fa) by @sonofmagic
+
+- 🐛 **继续优化 `weapp-vite dev` 的开发态终端布局。默认热键提示现在会显示更接近交互式工具的 footer 结构，例如 `READY  waiting for actions...` 与 `press h to show help, press q to quit`，使开发态会话的状态感与操作提示更清晰。** [`3f18483`](https://github.com/weapp-vite/weapp-vite/commit/3f18483b5d4f4742c5bca97a55afebf021669ce2) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev` 在初次构建完成后开发态快捷键可能失效的问题。现在会在开发服务就绪时重新接管终端输入，恢复 `h` 帮助、`s` 截图、`m` 开关 MCP 与 `q` 退出等热键响应，避免构建过程临时改写终端状态后导致快捷键无效。** [`6390416`](https://github.com/weapp-vite/weapp-vite/commit/6390416696ff2767dc462bfc40fa4946fd4d9b99) by @sonofmagic
+
+- 🐛 **继续修复 `weapp-vite dev` 热键终端体验问题。现在按 `h` 展开的帮助面板会更短，不再重复输出整块状态头；重复按 `h` 也会重新打印帮助；同时在打印帮助或状态后会再次确认终端处于可交互状态，减少单键输入被直接回显到终端、后续热键失效的问题。** [`3bac0fd`](https://github.com/weapp-vite/weapp-vite/commit/3bac0fd075bef5ebd23d1a6977c9427387b37d1a) by @sonofmagic
+
+- 🐛 **修复 `wv open` 在同一小程序项目已经由微信开发者工具打开时仍重复关闭并重新打开窗口的问题。现在会优先复用当前可连接的项目会话，仅输出提示并跳过重复打开，避免打断正在进行的开发调试流程。** [`6a95296`](https://github.com/weapp-vite/weapp-vite/commit/6a952962698030dfda7c80c6b6c14bd2c0aef4c4) by @sonofmagic
+
+- 🐛 **在 `weapp-ide-cli` 底层新增按 `projectPath` 复用的共享 automator 会话能力，并将 `weapp-vite dev` 的截图热键切换为通过该共享会话执行。这样后续更多 DevTools 操作都可以基于底层统一的会话复用机制扩展，而不是继续在上层命令里各自维护连接状态。** [`257b037`](https://github.com/weapp-vite/weapp-vite/commit/257b0372857734a2ae5180862ab0a33aef974e4b) by @sonofmagic
+
+- 🐛 **调整 `weapp-vite dev` 的开发态热键提示输出顺序。现在启动时会先输出开发服务就绪、IDE 导入说明等提示，再显示 `按 h 查看帮助` 等交互热键信息，让终端文案顺序更符合“服务提示在前、快捷操作提示在后”的阅读习惯。** [`d876d0e`](https://github.com/weapp-vite/weapp-vite/commit/d876d0ed8b8057df06746c47f638ca6ca256057a) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev -o` 开发态截图热键每次都重新连接 DevTools 的问题。现在开发态会优先复用已建立的 automator 会话来执行截图，并默认生成整页长截图，减少重复连接导致的超时与卡顿；底层 `weapp-ide-cli` 截图命令也新增了复用现有 `miniProgram` 会话的能力。** [`2e1f557`](https://github.com/weapp-vite/weapp-vite/commit/2e1f557e2d09027116d807ad50f68e213f85fb87) by @sonofmagic
+
+- 🐛 **将 `weapp-vite dev` 开发态热键面板中的英文提示统一调整为中文表达，同时保留终端布局层次。默认 footer、帮助分组标题与交互提示现在都以中文输出，避免 CLI 中英文混用。** [`fe091dd`](https://github.com/weapp-vite/weapp-vite/commit/fe091dd4c2a3d4497a562f51d205642c8d682e08) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite dev` 的热键帮助面板分组结构。按 `h` 展开的完整帮助现在使用更接近交互式工具的 `Watch Usage`、`Process`、`Help` 分组展示方式，让命令分类更清晰，终端样式更统一。** [`d143314`](https://github.com/weapp-vite/weapp-vite/commit/d143314edbbf3577fb770a740cb0687e01238075) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev -o` 在打开 IDE 后开发态快捷键可能失效的问题。现在会在 `open` 流程结束后重新接管终端输入，恢复 `h` 帮助、截图等热键提示与交互能力，避免终端被第三方打开流程临时改写后无法继续响应。** [`5a055bf`](https://github.com/weapp-vite/weapp-vite/commit/5a055bf7197bb9800831aeb38f151d07bda071e4) by @sonofmagic
+
+- 🐛 **修复小程序截图链路在微信开发者工具无响应或自动化会话异常时的诊断行为，并为 `weapp-vite screenshot` / `wv screenshot` / `weapp-ide-cli screenshot` 新增 `--full-page` 整页长截图能力。现在截图命令会正确等待异步命令完成；当 DevTools websocket 连接失败、截图请求长时间不返回，或清理会话时 `App.exit` / `Tool.close` 无响应时，会显式抛出可排查的错误提示，而不再静默退出或表现为“成功但没有产物”；同时 `--page pages/...` 这类常见写法也会自动归一化为小程序路由所需的前导 `/`。** [`2a5882b`](https://github.com/weapp-vite/weapp-vite/commit/2a5882b016a6018ae5e5e73d48db11a3e0456676) by @sonofmagic
+
+- 🐛 **继续优化 `weapp-vite dev` 的热键终端体验。默认提示现在简化为单行“开发快捷键已就绪”提示，不再重复输出状态块；同时新增对全角字母热键的兼容处理，在中文输入法参与时也能更稳地识别 `ｈ`、`ｓ` 等输入；按 `h` 展开的帮助会保留短版命令面板，减少终端刷屏。** [`709544a`](https://github.com/weapp-vite/weapp-vite/commit/709544a817b4eea2e402bc2d561cfa42aa651b84) by @sonofmagic
+- 📦 Updated 6 dependencies [`f112199`](https://github.com/weapp-vite/weapp-vite/commit/f1121993ab02ed64862a43328ee1997c7d391ec5)
+  <details><summary>Details</summary>
+
+  `wevu@6.14.0`, `@wevu/api@0.2.3`, `@weapp-vite/miniprogram-automator@1.0.2`, `weapp-ide-cli@5.2.1`, `@wevu/web-apis@1.1.1`, `@weapp-vite/ast@6.14.0`
+
+  </details>
+
 ## 6.13.4
 
 ### Patch Changes

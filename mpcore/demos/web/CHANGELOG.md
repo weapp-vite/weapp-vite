@@ -1,5 +1,12 @@
 # @mpcore/simulator-web-demo
 
+## 0.0.7
+
+### Patch Changes
+
+- 📦 **Dependencies** [`3b995e7`](https://github.com/weapp-vite/weapp-vite/commit/3b995e7d455b542e56380aefec2d50123fef8d74)
+  → `@mpcore/simulator@0.1.3`
+
 ## 0.0.6
 
 ### Patch Changes

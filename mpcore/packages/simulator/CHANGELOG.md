@@ -1,5 +1,65 @@
 # @mpcore/simulator
 
+## 0.1.3
+
+### Patch Changes
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 loading 能力验证链路：为 `wx.showLoading` / `wx.hideLoading` 增加 demo、browser e2e 与 session/workbench 快照覆盖，让 Web 模拟器可以稳定观察 loading 显隐状态，并在类型测试中锁定对应 API 与快照契约。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 补齐 `wx.showShareMenu`、`wx.updateShareMenu`、`wx.hideShareMenu` 的 demo 与端到端验证链路。新增 component-lab fixture、headless 集成断言和 browser e2e 断言，确保 web 模拟器里的分享菜单状态快照可以被稳定触发、观察与回归验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.getFileInfo` 能力，支持读取临时文件与保存文件的稳定文件大小和摘要信息，并兼容 `md5`、`sha1` 两种摘要算法。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证文件摘要查询链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **补强了 `@mpcore/simulator` 对 `wx.createCanvasContext().drawImage(...)` 常见参数形态的覆盖，新增对 3 参数、5 参数与 9 参数调用形态的 headless runtime、browser runtime、类型契约与 Web demo 验证，方便在 Web 模拟器里稳定回归更接近微信小程序的图片绘制调用流程。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 `wx.createCanvasContext` 路径能力，新增 `quadraticCurveTo`、`bezierCurveTo`、`arcTo`，并同步覆盖 headless runtime、browser runtime、类型契约与 Web demo 场景，方便在 Web 模拟器里验证更接近微信小程序的曲线路径调用流程。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.saveImageToPhotosAlbum` 能力，用于消费 `canvasToTempFilePath` 产生的临时文件，并在文件缺失时返回与小程序风格一致的失败信息。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证导出画布后的保存链路可验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.createVideoContext`、`createIntersectionObserver`、`createMediaQueryObserver`、`wx.createAnimation` 与 `wx.createCanvasContext` 的基础能力，在 headless/runtime/browser 三层统一支持按页面或组件作用域定位目标节点，并补齐常见上下文方法、初始可见性/尺寸匹配计算、动画队列导出、Canvas 绘制命令快照与事件回调派发。同时修复组件实例选择器把后代组件误判为当前选择结果的问题，确保 `selectComponent` / `selectAllComponents` 在单段选择器与后代选择器场景下都更接近微信小程序行为。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 `wx.createCanvasContext` 文本布局能力，新增 `setTextAlign` 与 `setTextBaseline`，并把最终文本对齐状态同步暴露到 canvas snapshot 中，方便在 headless runtime、browser runtime 与 Web demo 中验证更接近微信小程序的文本绘制配置。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 canvas 导出链路，新增 `wx.canvasToTempFilePath` 支持：会把当前 canvas snapshot 导出到 headless 临时文件并返回 `tempFilePath`，同时覆盖 headless runtime、browser runtime、类型契约与 Web demo 场景，方便在 Web 模拟器里验证更接近微信小程序的绘制后导出流程。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **修复 `@mpcore/simulator` 在直接调用组件方法后触发 `triggerEvent` 时复用旧交互目标的问题。现在 browser runtime、headless runtime 与 Web demo bridge 在无显式事件上下文的直接组件方法调用下，都会回落到组件宿主节点作为事件目标，避免把上一次内部节点交互的 `target` 泄漏到新的组件事件里。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.chooseVideo` 能力，返回可预测的临时视频文件与基础元数据，并允许直接串联 `wx.saveVideoToPhotosAlbum` 做后续验证。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证视频选择与保存链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 `wx.createCanvasContext` 路径填充规则能力，支持 `fill(rule)` 与 `clip(rule)` 透传 `evenodd` 等填充规则参数，并同步覆盖 headless runtime、browser runtime、类型契约与 Web demo 场景，方便在 Web 模拟器里验证更接近微信小程序的路径填充行为。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.chooseMessageFile` 能力，支持按稳定顺序返回可预测的临时消息文件结果，并允许与 `wx.getImageInfo`、`wx.getVideoInfo` 串联验证图片与视频附件场景。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证消息文件选择链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 补齐了更多 `wx.createCanvasContext` 的路径与变换能力，包括 `arc`、`rect`、`closePath`、`save`、`restore`、`translate`、`rotate`、`scale`，并同步更新了 headless runtime、browser runtime、类型声明与 browser e2e 覆盖，方便在 Web 模拟器里还原更接近微信小程序的 canvas 交互流程。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.setClipboardData` 与 `wx.getClipboardData` 能力，支持在 headless/browser runtime 中稳定读写剪贴板字符串，并把当前剪贴板内容暴露给 session/workbench 快照。同步补齐 demo fixture、单元测试、browser e2e 与类型测试覆盖，保证剪贴板交互链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 `wx.createCanvasContext` 线条样式能力，新增 `setLineCap`、`setLineJoin`、`setMiterLimit`，并把最终样式状态同步暴露到 canvas snapshot 中，方便在 headless runtime、browser runtime 和 Web demo 里验证更接近微信小程序的描边行为。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.previewImage` 能力，并在 runtime 中暴露稳定的预览快照状态，便于 headless/browser 场景下验证当前预览图片与候选列表。同步补齐 demo fixture、单元测试、browser e2e 与类型测试覆盖，确保图片预览调用与调试桥快照保持一致。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.startPullDownRefresh` 能力，直接复用现有下拉刷新事件流与停止状态跟踪，让页面可以主动触发 `onPullDownRefresh` 并维持稳定的 `active/stopCalls` 快照结果。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证主动下拉刷新链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 `wx.createCanvasContext` 虚线状态观察能力，在 canvas snapshot 中新增 `lineDashOffset`，让 `setLineDash(pattern, offset)` 的偏移配置也能在 headless runtime、browser runtime 与 Web demo 中被稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 `wx.createCanvasContext` 绘制状态能力，新增 `clip`、`setGlobalAlpha`、`setLineDash`，并把最终透明度与虚线状态同步暴露到 canvas snapshot 中，方便在 headless runtime、browser runtime 与 Web demo 中验证更接近微信小程序的绘制流程。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **继续补齐 `@mpcore/simulator` 的 `wx.createCanvasContext` 文本与阴影能力，新增 `strokeText` 与 `setShadow`，并把最终阴影状态同步暴露到 canvas snapshot 中，方便在 headless runtime、browser runtime 与 Web demo 中验证更接近微信小程序的文本绘制流程。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.getVideoInfo` 能力，支持读取 `wx.chooseVideo` 与 `wx.chooseMedia` 生成的临时视频文件元数据，并返回稳定的时长、尺寸、码率、帧率与文件大小信息。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证视频元数据读取链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.chooseImage` 能力，返回可预测的临时图片文件与 `tempFilePaths` / `tempFiles` 结果，并让生成的图片元数据能够被 `wx.getImageInfo` 继续读取。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证图片选择与后续信息查询链路可稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.saveVideoToPhotosAlbum` 能力，允许基于 headless/browser runtime 中的临时文件完成视频保存调用，并在文件不存在时返回稳定的失败信息。同步补齐 demo fixture、单元测试、browser e2e 与类型测试覆盖，确保视频临时文件保存链路与图片保存能力保持一致。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.chooseMedia` 能力，支持按稳定顺序返回图片与视频混合的临时媒体文件结果，并允许与 `wx.getImageInfo`、`wx.saveVideoToPhotosAlbum` 串联验证。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证混合媒体选择链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.openDocument` 能力，支持校验临时文件与保存文件是否存在、推断或接收文档类型，并把最后一次打开的文档状态稳定暴露给 session/workbench 快照。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证文档打开链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.compressImage` 能力，支持基于已有临时图片文件生成新的压缩结果文件，并让压缩后的输出继续被 `wx.getImageInfo` 读取元数据。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证图片选择、压缩与信息读取链路可以稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 增加 `wx.getImageInfo` 能力，支持读取 `canvasToTempFilePath` 导出的临时图片元数据，并在普通文件场景下回退到基于路径扩展名的图片类型推断。同步补齐 headless runtime、browser runtime、demo fixture、单元测试、browser e2e 与类型测试覆盖，保证图片信息查询与导出链路可稳定验证。** [#403](https://github.com/weapp-vite/weapp-vite/pull/403) by @sonofmagic
+
 ## 0.1.2
 
 ### Patch Changes
