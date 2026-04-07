@@ -15,6 +15,7 @@ import { touch } from '../../utils/file'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { generateLibDts } from '../libDts'
+import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir } from './outputs'
@@ -311,6 +312,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         projectPrivateConfigPath: configService.projectPrivateConfigPath,
         enabled: isMultiPlatformEnabled,
       })
+    }
+    const shouldPreloadAppEntry = (
+      !configService.isDev
+      && !isLibMode
+      && !pluginOnly
+      && (
+        (options?.skipNpm !== true && hasLocalSubPackageNpmConfig(ctx))
+        || configService.weappViteConfig.worker?.entry !== undefined
+      )
+    )
+    if (shouldPreloadAppEntry) {
+      await scanService.loadAppEntry()
+      scanService.loadSubPackages()
     }
     debug?.('build start')
     const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
