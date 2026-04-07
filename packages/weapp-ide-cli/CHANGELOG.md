@@ -1,5 +1,19 @@
 # weapp-ide-cli
 
+## 5.2.1
+
+### Patch Changes
+
+- 🐛 **修复微信开发者工具自动化会话在启动抖动阶段容易误判为“HTTP 服务端口未开启”的问题。现在会在 `Extension context invalidated`、websocket 启动超时等可恢复场景下自动重试一次，并在仍然失败时输出更贴近真实状态的错误分类。同步修正 `weapp-vite-tailwindcss-vant-template` 的布局演示页操作区排版，避免 `@vant/weapp` 按钮以内联方式挤压换行导致页面错乱。** [`b4cfb7b`](https://github.com/weapp-vite/weapp-vite/commit/b4cfb7b6503ee4fc8758b9275aabd5f57372dd3e) by @sonofmagic
+
+- 🐛 **在 `weapp-ide-cli` 底层新增按 `projectPath` 复用的共享 automator 会话能力，并将 `weapp-vite dev` 的截图热键切换为通过该共享会话执行。这样后续更多 DevTools 操作都可以基于底层统一的会话复用机制扩展，而不是继续在上层命令里各自维护连接状态。** [`257b037`](https://github.com/weapp-vite/weapp-vite/commit/257b0372857734a2ae5180862ab0a33aef974e4b) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev -o` 开发态截图热键每次都重新连接 DevTools 的问题。现在开发态会优先复用已建立的 automator 会话来执行截图，并默认生成整页长截图，减少重复连接导致的超时与卡顿；底层 `weapp-ide-cli` 截图命令也新增了复用现有 `miniProgram` 会话的能力。** [`2e1f557`](https://github.com/weapp-vite/weapp-vite/commit/2e1f557e2d09027116d807ad50f68e213f85fb87) by @sonofmagic
+
+- 🐛 **修复小程序截图链路在微信开发者工具无响应或自动化会话异常时的诊断行为，并为 `weapp-vite screenshot` / `wv screenshot` / `weapp-ide-cli screenshot` 新增 `--full-page` 整页长截图能力。现在截图命令会正确等待异步命令完成；当 DevTools websocket 连接失败、截图请求长时间不返回，或清理会话时 `App.exit` / `Tool.close` 无响应时，会显式抛出可排查的错误提示，而不再静默退出或表现为“成功但没有产物”；同时 `--page pages/...` 这类常见写法也会自动归一化为小程序路由所需的前导 `/`。** [`2a5882b`](https://github.com/weapp-vite/weapp-vite/commit/2a5882b016a6018ae5e5e73d48db11a3e0456676) by @sonofmagic
+- 📦 **Dependencies** [`b4cfb7b`](https://github.com/weapp-vite/weapp-vite/commit/b4cfb7b6503ee4fc8758b9275aabd5f57372dd3e)
+  → `@weapp-vite/miniprogram-automator@1.0.2`
+
 ## 5.2.0
 
 ### Minor Changes

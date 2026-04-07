@@ -1,5 +1,67 @@
 # create-weapp-vite
 
+## 2.0.78
+
+### Patch Changes
+
+- 🐛 **修复 `wv dev` 在未启用 UI 分析面板时提前结束命令主流程的问题。此前开发态热键会话会在首屏提示后立即被关闭，只剩下构建 watcher 持续运行，导致 `h`、`q` 等快捷键看起来存在但实际无效。现在 `serve` 会持续等待退出信号，并在退出时再统一清理热键与 watcher。** [`731109e`](https://github.com/weapp-vite/weapp-vite/commit/731109e6ee2d8fc6875daba1b3859cece7d37c4f) by @sonofmagic
+
+- 🐛 **修复 `wevu` App 全局事件在微信开发者工具中可能重复注册的问题，避免 `onError`、`onPageNotFound`、`onUnhandledRejection` 与 `onThemeChange` 在 `github-issues` 等 IDE 运行时场景下触发大量 listener 泄漏告警；同时清理 `issue-320` 复现页的路由初始化噪音，保持 IDE warning 报告聚焦真实异常。** [`f112199`](https://github.com/weapp-vite/weapp-vite/commit/f1121993ab02ed64862a43328ee1997c7d391ec5) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite dev` 的开发态终端样式，使热键区域更接近交互式工具的分层布局。默认提示现在会展示 `DEV` 会话头、当前状态、MCP 状态与最近操作；按 `h` 时则输出完整的 `Dev Usage` 命令面板，提升开发态终端可读性与一致性。** [`48ebe1f`](https://github.com/weapp-vite/weapp-vite/commit/48ebe1f76dcdbe6855d28d60a6edd4c52f6ccdb0) by @sonofmagic
+
+- 🐛 **修复 dev 模式下自动导入新增 Vue 组件时的入口解析兜底逻辑。当解析器暂时无法返回新建组件的 resolved id，但组件文件已经实际落盘时，`weapp-vite` 现在会回退到该绝对路径继续发射组件产物，避免 `usingComponents` 已更新但组件 `wxml/json` 迟迟不生成，提升 macOS 等环境下新增 SFC 的热更新稳定性。** [#412](https://github.com/weapp-vite/weapp-vite/pull/412) by @sonofmagic
+
+- 🐛 **修复 `@wevu/api` 对非 Promise 化小程序 API 的类型推断，避免同步句柄与上下文能力被错误包装为异步返回；同时继续清理零售模板中的页面、服务与组件类型问题，收敛到可通过类型检查的状态。由于模板内容会随 `create-weapp-vite` 一起分发，因此同步补一个补丁版本。** [`e001dfe`](https://github.com/weapp-vite/weapp-vite/commit/e001dfe7f2ccc6db95668af627a9b7cfc6d4b6ad) by @sonofmagic
+
+- 🐛 **移除模板 `.vscode/settings.json` 中非必需的 Vue 扩展工作区偏好配置，减少新项目默认携带的编辑器个性化设置。** [`26549fc`](https://github.com/weapp-vite/weapp-vite/commit/26549fc4496ca287b8130edc47e1a7d25b52ea06) by @sonofmagic
+
+- 🐛 **修复 `wevu` 组件事件在空 payload 场景下的模板参数契约不一致问题。此前父组件通过直接 handler 或显式 `$event` 监听 `emit('empty')` 时，可能拿到整个事件对象而不是 `undefined`；现在在启用 `detail` 解包标记的组件事件中，空 payload 会和普通 payload 一样统一按 `detail` 语义传递，同时补充了编译产物、单元测试与微信开发者工具运行时验证，覆盖 direct handler、显式 `$event`、内联 `$event.title`、原生事件透传、tuple payload 与带 options 的 `emit` 写法。** [#412](https://github.com/weapp-vite/weapp-vite/pull/412) by @sonofmagic
+
+- 🐛 **同步所有模板的 `.vscode/settings.json` 编辑器配置，禁用 Prettier，并改为使用 ESLint 提示问题与执行保存修复，同时保留 Stylelint 校验能力。** [`801ec1c`](https://github.com/weapp-vite/weapp-vite/commit/801ec1cd88de0de1d81e4c479c9ad92e048e5ecb) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev` 开发态热键面板的多个可用性问题：热键监听改为更稳的终端输入数据流处理，解决 `h`、`s` 等单键在部分环境下无响应的问题；面板会避免重复输出相同内容；同时会话头中的版本号改为真实包版本，避免显示 `__VERSION__` 占位值。** [`9fc295e`](https://github.com/weapp-vite/weapp-vite/commit/9fc295ed7fe15a54b04426e280c3798f69b89d24) by @sonofmagic
+
+- 🐛 **为 `weapp-vite dev` 增加终端快捷键能力，开发态启动后会在命令行里提示可用热键。现在支持按 `s` 直接截取当前小程序页面截图并保存到本地 `.tmp/weapp-vite-dev-screenshots` 目录，同时输出执行日志与结果路径；也支持按 `m` 开关开发态内置的 MCP `streamable-http` 服务，让调试阶段可以在同一终端里直接控制 MCP 会话，而不再依赖命令执行前的自动后台启动。** [`2544e7a`](https://github.com/weapp-vite/weapp-vite/commit/2544e7a097226a80632cc78714690d3e4dd68b56) by @sonofmagic
+
+- 🐛 **修复微信开发者工具自动化会话在启动抖动阶段容易误判为“HTTP 服务端口未开启”的问题。现在会在 `Extension context invalidated`、websocket 启动超时等可恢复场景下自动重试一次，并在仍然失败时输出更贴近真实状态的错误分类。同步修正 `weapp-vite-tailwindcss-vant-template` 的布局演示页操作区排版，避免 `@vant/weapp` 按钮以内联方式挤压换行导致页面错乱。** [`b4cfb7b`](https://github.com/weapp-vite/weapp-vite/commit/b4cfb7b6503ee4fc8758b9275aabd5f57372dd3e) by @sonofmagic
+
+- 🐛 **修复 `wv dev` 开发快捷键在部分终端与 `pnpm` TTY 代理场景下按键无响应的问题。现在会同时监听 `keypress` 与原始 `data` 输入，并对同一按键的重复事件做最小范围去重，使 `h`、`s`、`m`、`q` 及 `Ctrl+C` / `Ctrl+Z` 在更多终端环境下都能稳定生效。** [`03d83b6`](https://github.com/weapp-vite/weapp-vite/commit/03d83b6a5570bc5769af990c3b20bb206dbada42) by @sonofmagic
+
+- 🐛 **继续统一 `create-weapp-vite` 产出的模板 API 调用方式：把模板中的 `wx` API 收口到 `@wevu/api` 导出的 `wpi`，并将可 Promise 化的调用改为 `async/await` 写法，同时保留同步 API 与上下文 API 的正确语义，减少跨端模板里直接依赖宿主全局对象的分散写法。** [`dd1976b`](https://github.com/weapp-vite/weapp-vite/commit/dd1976b703bfbc9feef6356dc4604ec4ebef7840) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev` 交互热键模式对终端默认控制的兼容性，在接管 TTY 后支持 `Ctrl+Z` 暂时挂起当前进程并恢复终端控制，且在前台恢复后重新启用快捷键提示，避免 dev 模式吞掉常见的 shell 挂起行为。** [`746d24f`](https://github.com/weapp-vite/weapp-vite/commit/746d24ff422b2333c17a2118ad18423ff5f1b5fa) by @sonofmagic
+
+- 🐛 **为 `weapp-vite-wevu-tailwindcss-tdesign-template` 模板新增统一的组件变更事件值解析工具，并将数据页、表单页、筛选栏、组件实验室等场景切换为共享实现。现在模板对 TDesign 与小程序运行时下的值直传、`detail` 直传、`detail.value` 三种常见事件形态都能稳定兼容，减少重复判断与运行时分支不一致问题。** [`f908a5b`](https://github.com/weapp-vite/weapp-vite/commit/f908a5be3b9a1be3ac6a65cf1063f5a696758d39) by @sonofmagic
+
+- 🐛 **继续优化 `weapp-vite dev` 的开发态终端布局。默认热键提示现在会显示更接近交互式工具的 footer 结构，例如 `READY  waiting for actions...` 与 `press h to show help, press q to quit`，使开发态会话的状态感与操作提示更清晰。** [`3f18483`](https://github.com/weapp-vite/weapp-vite/commit/3f18483b5d4f4742c5bca97a55afebf021669ce2) by @sonofmagic
+
+- 🐛 **移除模板 `.vscode/settings.json` 中已弃用的 TypeScript 编辑器配置，避免新项目默认继承过时设置提示。** [`f5c8169`](https://github.com/weapp-vite/weapp-vite/commit/f5c81693ce7931432ac1436cf55499485705a69a) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev` 在初次构建完成后开发态快捷键可能失效的问题。现在会在开发服务就绪时重新接管终端输入，恢复 `h` 帮助、`s` 截图、`m` 开关 MCP 与 `q` 退出等热键响应，避免构建过程临时改写终端状态后导致快捷键无效。** [`6390416`](https://github.com/weapp-vite/weapp-vite/commit/6390416696ff2767dc462bfc40fa4946fd4d9b99) by @sonofmagic
+
+- 🐛 **继续修复 `weapp-vite dev` 热键终端体验问题。现在按 `h` 展开的帮助面板会更短，不再重复输出整块状态头；重复按 `h` 也会重新打印帮助；同时在打印帮助或状态后会再次确认终端处于可交互状态，减少单键输入被直接回显到终端、后续热键失效的问题。** [`3bac0fd`](https://github.com/weapp-vite/weapp-vite/commit/3bac0fd075bef5ebd23d1a6977c9427387b37d1a) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-template` 模板中数据页与组件实验室页的 TDesign `Tabs` 切换事件兼容性问题。此前页面直接读取 `event.detail.value`，在当前运行时桥接下点击“今日”“本月”等标签可能拿到 `undefined` 并报错；现在已兼容值直传、`detail` 直传与 `detail.value` 三种事件形态。** [`fcefc04`](https://github.com/weapp-vite/weapp-vite/commit/fcefc04a4302f225ec9a23d4953c15258f128809) by @sonofmagic
+
+- 🐛 **修复 `wv open` 在同一小程序项目已经由微信开发者工具打开时仍重复关闭并重新打开窗口的问题。现在会优先复用当前可连接的项目会话，仅输出提示并跳过重复打开，避免打断正在进行的开发调试流程。** [`6a95296`](https://github.com/weapp-vite/weapp-vite/commit/6a952962698030dfda7c80c6b6c14bd2c0aef4c4) by @sonofmagic
+
+- 🐛 **在 `weapp-ide-cli` 底层新增按 `projectPath` 复用的共享 automator 会话能力，并将 `weapp-vite dev` 的截图热键切换为通过该共享会话执行。这样后续更多 DevTools 操作都可以基于底层统一的会话复用机制扩展，而不是继续在上层命令里各自维护连接状态。** [`257b037`](https://github.com/weapp-vite/weapp-vite/commit/257b0372857734a2ae5180862ab0a33aef974e4b) by @sonofmagic
+
+- 🐛 **调整 `weapp-vite dev` 的开发态热键提示输出顺序。现在启动时会先输出开发服务就绪、IDE 导入说明等提示，再显示 `按 h 查看帮助` 等交互热键信息，让终端文案顺序更符合“服务提示在前、快捷操作提示在后”的阅读习惯。** [`d876d0e`](https://github.com/weapp-vite/weapp-vite/commit/d876d0ed8b8057df06746c47f638ca6ca256057a) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev -o` 开发态截图热键每次都重新连接 DevTools 的问题。现在开发态会优先复用已建立的 automator 会话来执行截图，并默认生成整页长截图，减少重复连接导致的超时与卡顿；底层 `weapp-ide-cli` 截图命令也新增了复用现有 `miniProgram` 会话的能力。** [`2e1f557`](https://github.com/weapp-vite/weapp-vite/commit/2e1f557e2d09027116d807ad50f68e213f85fb87) by @sonofmagic
+
+- 🐛 **将 `weapp-vite dev` 开发态热键面板中的英文提示统一调整为中文表达，同时保留终端布局层次。默认 footer、帮助分组标题与交互提示现在都以中文输出，避免 CLI 中英文混用。** [`fe091dd`](https://github.com/weapp-vite/weapp-vite/commit/fe091dd4c2a3d4497a562f51d205642c8d682e08) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite dev` 的热键帮助面板分组结构。按 `h` 展开的完整帮助现在使用更接近交互式工具的 `Watch Usage`、`Process`、`Help` 分组展示方式，让命令分类更清晰，终端样式更统一。** [`d143314`](https://github.com/weapp-vite/weapp-vite/commit/d143314edbbf3577fb770a740cb0687e01238075) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev -o` 在打开 IDE 后开发态快捷键可能失效的问题。现在会在 `open` 流程结束后重新接管终端输入，恢复 `h` 帮助、截图等热键提示与交互能力，避免终端被第三方打开流程临时改写后无法继续响应。** [`5a055bf`](https://github.com/weapp-vite/weapp-vite/commit/5a055bf7197bb9800831aeb38f151d07bda071e4) by @sonofmagic
+
+- 🐛 **修复小程序截图链路在微信开发者工具无响应或自动化会话异常时的诊断行为，并为 `weapp-vite screenshot` / `wv screenshot` / `weapp-ide-cli screenshot` 新增 `--full-page` 整页长截图能力。现在截图命令会正确等待异步命令完成；当 DevTools websocket 连接失败、截图请求长时间不返回，或清理会话时 `App.exit` / `Tool.close` 无响应时，会显式抛出可排查的错误提示，而不再静默退出或表现为“成功但没有产物”；同时 `--page pages/...` 这类常见写法也会自动归一化为小程序路由所需的前导 `/`。** [`2a5882b`](https://github.com/weapp-vite/weapp-vite/commit/2a5882b016a6018ae5e5e73d48db11a3e0456676) by @sonofmagic
+
+- 🐛 **继续优化 `weapp-vite dev` 的热键终端体验。默认提示现在简化为单行“开发快捷键已就绪”提示，不再重复输出状态块；同时新增对全角字母热键的兼容处理，在中文输入法参与时也能更稳地识别 `ｈ`、`ｓ` 等输入；按 `h` 展开的帮助会保留短版命令面板，减少终端刷屏。** [`709544a`](https://github.com/weapp-vite/weapp-vite/commit/709544a817b4eea2e402bc2d561cfa42aa651b84) by @sonofmagic
+
 ## 2.0.77
 
 ### Patch Changes
