@@ -16,11 +16,13 @@ export interface WxmlService {
   importerMap: Map<string, Set<string>>
   tokenMap: Map<string, ScanWxmlResult>
   wxmlComponentsMap: Map<string, ComponentsMap>
+  aggregatedComponentsMap: Map<string, ComponentsMap>
   addDeps: (filepath: string, deps?: string[]) => Promise<void>
   setDeps: (filepath: string, deps?: string[]) => Promise<void>
   collectDepsFromToken: (filepath: string, deps?: ScanWxmlResult['deps']) => string[]
   getImporters: (filepath: string) => Set<string>
   getAllDeps: () => Set<string>
+  getAggregatedComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
   clearAll: () => void
   analyze: (wxml: string) => ScanWxmlResult
   scan: (filepath: string) => Promise<ScanWxmlResult | undefined>
@@ -28,7 +30,16 @@ export interface WxmlService {
 }
 
 function createWxmlService(ctx: MutableCompilerContext): WxmlService {
-  const { depsMap, importerMap, tokenMap, componentsMap, cache, emittedCode } = ctx.runtimeState.wxml
+  const {
+    depsMap,
+    importerMap,
+    tokenMap,
+    componentsMap,
+    aggregatedComponentsMap,
+    templatePathMap,
+    cache,
+    emittedCode,
+  } = ctx.runtimeState.wxml
 
   function linkImporter(dep: string, importer: string) {
     let importers = importerMap.get(dep)
@@ -50,9 +61,26 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
   }
 
+  function invalidateAggregatedComponents(filepath: string, visited = new Set<string>()) {
+    if (visited.has(filepath)) {
+      return
+    }
+    visited.add(filepath)
+    aggregatedComponentsMap.delete(removeExtensionDeep(filepath))
+    const importers = importerMap.get(filepath)
+    if (!importers) {
+      return
+    }
+    for (const importer of importers) {
+      invalidateAggregatedComponents(importer, visited)
+    }
+  }
+
   async function setDeps(filepath: string, deps: string[] = []) {
     const nextDeps = new Set<string>(deps)
     const previousDeps = depsMap.get(filepath) ?? new Set<string>()
+    const nextDepsKey = Array.from(nextDeps).sort().join('\0')
+    const previousDepsKey = Array.from(previousDeps).sort().join('\0')
 
     for (const previousDep of previousDeps) {
       if (!nextDeps.has(previousDep)) {
@@ -65,6 +93,9 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
 
     depsMap.set(filepath, nextDeps)
+    if (nextDepsKey !== previousDepsKey) {
+      invalidateAggregatedComponents(filepath)
+    }
     await Promise.all(
       Array.from(nextDeps)
         .filter(dep => isTemplate(dep))
@@ -118,6 +149,66 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     return set
   }
 
+  function resolveTemplatePath(filepathOrBaseName: string) {
+    if (depsMap.has(filepathOrBaseName) || tokenMap.has(filepathOrBaseName)) {
+      return filepathOrBaseName
+    }
+    if (templatePathMap.has(filepathOrBaseName)) {
+      return templatePathMap.get(filepathOrBaseName)
+    }
+    return undefined
+  }
+
+  function getAggregatedComponents(filepathOrBaseName: string) {
+    const templatePath = resolveTemplatePath(filepathOrBaseName)
+    if (!templatePath) {
+      return undefined
+    }
+
+    const baseName = removeExtensionDeep(templatePath)
+    const cached = aggregatedComponentsMap.get(baseName)
+    if (cached) {
+      return cached
+    }
+
+    const visited = new Set<string>()
+    const aggregate = (filepath: string): ComponentsMap => {
+      if (visited.has(filepath)) {
+        return {}
+      }
+      visited.add(filepath)
+
+      const currentBaseName = removeExtensionDeep(filepath)
+      const merged: ComponentsMap = {}
+      const own = componentsMap.get(currentBaseName)
+      if (own) {
+        for (const [name, ranges] of Object.entries(own)) {
+          merged[name] = ranges
+        }
+      }
+
+      const deps = depsMap.get(filepath)
+      if (deps) {
+        for (const dep of deps) {
+          if (!isTemplate(dep)) {
+            continue
+          }
+          const depComponents = aggregate(dep)
+          for (const [name, ranges] of Object.entries(depComponents)) {
+            if (!merged[name]) {
+              merged[name] = ranges
+            }
+          }
+        }
+      }
+
+      aggregatedComponentsMap.set(currentBaseName, merged)
+      return merged
+    }
+
+    return aggregate(templatePath)
+  }
+
   function clearAll() {
     const currentRoot = ctx.configService?.currentSubPackageRoot
     if (!currentRoot) {
@@ -125,6 +216,8 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       importerMap.clear()
       tokenMap.clear()
       componentsMap.clear()
+      aggregatedComponentsMap.clear()
+      templatePathMap.clear()
       cache.cache.clear()
       cache.mtimeMap.clear()
       cache.signatureMap.clear()
@@ -175,6 +268,18 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     for (const key of Array.from(componentsMap.keys())) {
       if (shouldClear(key)) {
         componentsMap.delete(key)
+      }
+    }
+
+    for (const key of Array.from(aggregatedComponentsMap.keys())) {
+      if (shouldClear(key)) {
+        aggregatedComponentsMap.delete(key)
+      }
+    }
+
+    for (const [key, value] of Array.from(templatePathMap.entries())) {
+      if (shouldClear(key) || shouldClear(value)) {
+        templatePathMap.delete(key)
       }
     }
 
@@ -244,9 +349,15 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
   }
 
   function setWxmlComponentsMap(absPath: string, components: ComponentsMap) {
-    if (!isEmptyObject(components)) {
-      componentsMap.set(removeExtensionDeep(absPath), components)
+    const baseName = removeExtensionDeep(absPath)
+    templatePathMap.set(baseName, absPath)
+    if (isEmptyObject(components)) {
+      componentsMap.delete(baseName)
     }
+    else {
+      componentsMap.set(baseName, components)
+    }
+    invalidateAggregatedComponents(absPath)
   }
 
   return {
@@ -254,11 +365,13 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     importerMap,
     tokenMap,
     wxmlComponentsMap: componentsMap,
+    aggregatedComponentsMap,
     addDeps,
     setDeps,
     collectDepsFromToken,
     getImporters,
     getAllDeps,
+    getAggregatedComponents,
     clearAll,
     analyze,
     scan,

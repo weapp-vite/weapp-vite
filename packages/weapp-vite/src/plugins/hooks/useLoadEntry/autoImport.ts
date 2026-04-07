@@ -6,7 +6,7 @@ export function createAutoImportAugmenter(
   wxmlService: CompilerContext['wxmlService'],
 ) {
   return function applyAutoImports(baseName: string, json: any) {
-    const hit = wxmlService.wxmlComponentsMap.get(baseName)
+    const hit = wxmlService.getAggregatedComponents(baseName)
     if (!hit) {
       return
     }

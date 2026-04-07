@@ -18,9 +18,7 @@ describe('createAutoImportAugmenter', () => {
     const applyAutoImports = createAutoImportAugmenter(
       { resolve } as any,
       {
-        wxmlComponentsMap: new Map([
-          ['/project/src/pages/index/index', { Navbar: [{ start: 0, end: 0 }] }],
-        ]),
+        getAggregatedComponents: vi.fn(() => ({ Navbar: [{ start: 0, end: 0 }] })),
       } as any,
     )
 
@@ -49,9 +47,7 @@ describe('createAutoImportAugmenter', () => {
     const applyAutoImports = createAutoImportAugmenter(
       { resolve } as any,
       {
-        wxmlComponentsMap: new Map([
-          ['/project/src/pages/index/index', { Navbar: [{ start: 0, end: 0 }] }],
-        ]),
+        getAggregatedComponents: vi.fn(() => ({ Navbar: [{ start: 0, end: 0 }] })),
       } as any,
     )
 
@@ -60,5 +56,34 @@ describe('createAutoImportAugmenter', () => {
 
     expect(resolve).toHaveBeenCalledWith('Navbar', '/project/src/pages/index/index')
     expect(json.usingComponents).toBeUndefined()
+  })
+
+  it('injects usingComponents from imported template components', () => {
+    const resolve = vi.fn((name: string) => {
+      if (name === 'van-button') {
+        return {
+          value: {
+            name: 'van-button',
+            from: '/miniprogram_npm/@vant/weapp/button/index',
+          },
+        }
+      }
+      return undefined
+    })
+
+    const applyAutoImports = createAutoImportAugmenter(
+      { resolve } as any,
+      {
+        getAggregatedComponents: vi.fn(() => ({ 'van-button': [{ start: 0, end: 0 }] })),
+      } as any,
+    )
+
+    const json: Record<string, any> = {}
+    applyAutoImports('/project/src/pages/index/index', json)
+
+    expect(resolve).toHaveBeenCalledWith('van-button', '/project/src/pages/index/index')
+    expect(json.usingComponents).toEqual({
+      'van-button': '/miniprogram_npm/@vant/weapp/button/index',
+    })
   })
 })
