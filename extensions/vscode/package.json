@@ -319,10 +319,12 @@
     "build": "pnpm exec tsdown --config tsdown.config.mts",
     "lint": "pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts",
     "test": "pnpm vitest run -c vitest.config.ts",
-    "check": "pnpm run lint && pnpm run test && pnpm run build",
+    "smoke:dist": "node --import tsx scripts/smoke-test.ts",
+    "check": "pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist",
     "check:package": "node --import tsx scripts/check-package.ts",
     "check:publish": "pnpm run check && pnpm run check:package",
     "package:dry-run": "pnpm run build && node --import tsx scripts/package-dry-run.ts package",
+    "check:vsix": "pnpm run package:dry-run && node --import tsx scripts/check-vsix.ts",
     "publish:vsce": "pnpm run check:publish && node --import tsx scripts/release-vsce.ts publish"
   },
   "capabilities": {

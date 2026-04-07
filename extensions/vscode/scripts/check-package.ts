@@ -63,7 +63,7 @@ if (packageJson.main !== './dist/extension.js') {
   throw new Error(`unexpected main entry: ${packageJson.main}`)
 }
 
-if (packageJson.scripts?.check !== 'pnpm run lint && pnpm run test && pnpm run build') {
+if (packageJson.scripts?.check !== 'pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist') {
   throw new Error('unexpected check script in package.json')
 }
 

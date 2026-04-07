@@ -47,6 +47,8 @@ Notes:
 
 - `pnpm run build` uses `tsdown` to bundle the TypeScript extension runtime into `dist/extension.js`.
 - `pnpm run test` runs the TypeScript unit tests through Vitest.
+- `pnpm run smoke:dist` loads the compiled `dist/extension.js` and verifies extension activation with a mocked VS Code host.
+- `pnpm run check:vsix` packages a local `.vsix` and validates the final file list inside the archive.
 - `check:publish` already includes `lint`, `test`, and package validation, so it is the safest pre-release gate.
 
 ## Recommended CI Gate

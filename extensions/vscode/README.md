@@ -116,10 +116,14 @@ Useful local commands:
 ```bash
 pnpm --dir extensions/vscode run build
 pnpm --dir extensions/vscode run test
+pnpm --dir extensions/vscode run smoke:dist
 pnpm --dir extensions/vscode run check:package
+pnpm --dir extensions/vscode run check:vsix
 ```
 
 The `build` step uses `tsdown` to bundle the extension runtime into a single CommonJS entry for VS Code, while tests continue to run directly from TypeScript source through Vitest.
+After build, `smoke:dist` loads the compiled `dist/extension.js` with a mocked VS Code API to confirm activation wiring still works.
+When you want to inspect the final Marketplace payload, `check:vsix` creates a local `.vsix` and verifies the packaged file list.
 
 ## Publish
 

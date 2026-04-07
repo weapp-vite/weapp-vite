@@ -42,10 +42,12 @@ it('manifest exposes local verification scripts', () => {
   assert.equal(packageJson.scripts.build, 'pnpm exec tsdown --config tsdown.config.mts')
   assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts')
   assert.equal(packageJson.scripts.test, 'pnpm vitest run -c vitest.config.ts')
-  assert.equal(packageJson.scripts.check, 'pnpm run lint && pnpm run test && pnpm run build')
+  assert.equal(packageJson.scripts['smoke:dist'], 'node --import tsx scripts/smoke-test.ts')
+  assert.equal(packageJson.scripts.check, 'pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist')
   assert.equal(packageJson.scripts['check:package'], 'node --import tsx scripts/check-package.ts')
   assert.equal(packageJson.scripts['check:publish'], 'pnpm run check && pnpm run check:package')
   assert.equal(packageJson.scripts['package:dry-run'], 'pnpm run build && node --import tsx scripts/package-dry-run.ts package')
+  assert.equal(packageJson.scripts['check:vsix'], 'pnpm run package:dry-run && node --import tsx scripts/check-vsix.ts')
   assert.equal(packageJson.scripts['publish:vsce'], 'pnpm run check:publish && node --import tsx scripts/release-vsce.ts publish')
 })
 
