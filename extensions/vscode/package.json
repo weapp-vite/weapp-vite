@@ -26,6 +26,7 @@
   "categories": [
     "Programming Languages"
   ],
+  "icon": "assets/logo.png",
   "engines": {
     "vscode": "^1.88.0"
   },
