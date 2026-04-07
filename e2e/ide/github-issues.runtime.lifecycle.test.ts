@@ -170,6 +170,34 @@ async function waitForIssue404ScrollRuntime(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function waitForIssue418419Runtime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (
+        runtime?.ok
+        && runtime?.mounted
+        && runtime?.nativeButtonReady
+        && runtime?.descriptorConfigurable === true
+        && runtime?.hasDataObject
+      ) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -436,6 +464,37 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(Array.isArray(runtimeResult?.scrollLogs)).toBe(true)
       expect(runtimeResult?.scrollLogs?.some((value: number) => value > 0)).toBe(true)
       expect(Number(runtimeResult?.latestScrollTop ?? -1)).toBeGreaterThan(0)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #418/#419: keeps third-party component template refs available in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-418-419/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-418-419/index.js')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-418-419/index.json')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-418-419 template ref native component')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('native ref ready')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('descriptorConfigurable')
+    expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('../../components/issue-418-419/NativeRefProbe/index')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-418-419/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-418-419 page')
+      }
+
+      const runtimeResult = await waitForIssue418419Runtime(issuePage)
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.mounted).toBe(true)
+      expect(runtimeResult?.nativeButtonReady).toBe(true)
+      expect(runtimeResult?.descriptorConfigurable).toBe(true)
+      expect(runtimeResult?.hasDataObject).toBe(true)
+      expect(runtimeResult?.runtimeError).toBeNull()
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
