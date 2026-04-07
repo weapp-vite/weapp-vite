@@ -6,6 +6,12 @@ interface Emitter {
   emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
 }
 
+const emittedAssetSourceCache = new Map<string, string>()
+
+export function resetEmittedAssetSourceCacheForTest() {
+  emittedAssetSourceCache.clear()
+}
+
 /**
  * 统一拼接 SFC 相关产物文件名。
  */
@@ -36,15 +42,21 @@ export function emitSfcTemplateIfMissing(
   extension = 'wxml',
 ) {
   const fileName = resolveSfcAssetFileName(relativeBase, extension)
+  const cacheKey = `asset:${fileName}`
   const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (current !== template) {
       existing.source = template
     }
+    emittedAssetSourceCache.set(cacheKey, template)
+    return
+  }
+  if (emittedAssetSourceCache.get(cacheKey) === template) {
     return
   }
   ctx.emitFile({ type: 'asset', fileName, source: template })
+  emittedAssetSourceCache.set(cacheKey, template)
 }
 
 export function emitSfcStyleIfMissing(
@@ -55,15 +67,21 @@ export function emitSfcStyleIfMissing(
   extension = 'wxss',
 ) {
   const fileName = resolveSfcAssetFileName(relativeBase, extension)
+  const cacheKey = `asset:${fileName}`
   const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (current !== style) {
       existing.source = style
     }
+    emittedAssetSourceCache.set(cacheKey, style)
+    return
+  }
+  if (emittedAssetSourceCache.get(cacheKey) === style) {
     return
   }
   ctx.emitFile({ type: 'asset', fileName, source: style })
+  emittedAssetSourceCache.set(cacheKey, style)
 }
 
 export function emitSfcJsonAsset(
@@ -82,6 +100,7 @@ export function emitSfcJsonAsset(
   },
 ) {
   const jsonFileName = resolveSfcAssetFileName(relativeBase, options.extension ?? 'json')
+  const cacheKey = `asset:${jsonFileName}`
   const existing = bundle[jsonFileName]
   const mergeJson = createJsonMerger(options.mergeStrategy, {
     filename: jsonFileName,
@@ -117,7 +136,11 @@ export function emitSfcJsonAsset(
 
   if (options.emitIfMissingOnly) {
     if (!bundle[jsonFileName]) {
-      ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: JSON.stringify(nextConfig, null, 2) })
+      const nextSource = JSON.stringify(nextConfig, null, 2)
+      if (emittedAssetSourceCache.get(cacheKey) !== nextSource) {
+        ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: nextSource })
+        emittedAssetSourceCache.set(cacheKey, nextSource)
+      }
     }
     return
   }
@@ -140,10 +163,16 @@ export function emitSfcJsonAsset(
     if (current !== nextSource) {
       existing.source = nextSource
     }
+    emittedAssetSourceCache.set(cacheKey, nextSource)
     return
   }
 
-  ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: JSON.stringify(nextConfig, null, 2) })
+  const nextSource = JSON.stringify(nextConfig, null, 2)
+  if (emittedAssetSourceCache.get(cacheKey) === nextSource) {
+    return
+  }
+  ctx.emitFile({ type: 'asset', fileName: jsonFileName, source: nextSource })
+  emittedAssetSourceCache.set(cacheKey, nextSource)
 }
 
 export function emitSfcScriptAssetReplacingBundleEntry(
@@ -167,12 +196,18 @@ export function emitClassStyleWxsAssetIfMissing(
   source: string,
 ) {
   const existing = bundle[fileName]
+  const cacheKey = `asset:${fileName}`
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (current !== source) {
       existing.source = source
     }
+    emittedAssetSourceCache.set(cacheKey, source)
+    return
+  }
+  if (emittedAssetSourceCache.get(cacheKey) === source) {
     return
   }
   ctx.emitFile({ type: 'asset', fileName, source })
+  emittedAssetSourceCache.set(cacheKey, source)
 }

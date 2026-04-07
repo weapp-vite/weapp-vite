@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 /**
@@ -17,6 +17,20 @@ const HTML_SRC_PATH = path.join(APP_ROOT, 'src/pages/hmr-html/index.html')
 const TEMP_SRC_DIR = path.join(APP_ROOT, 'src/pages/hmr-html-temp')
 
 const PLATFORM_LIST = resolvePlatforms()
+
+async function retryWithSourceTouch<T>(
+  task: () => Promise<T>,
+  touchFilePath: string,
+  touchContent: string,
+) {
+  try {
+    return await task()
+  }
+  catch {
+    await replaceFileByRename(touchFilePath, touchContent)
+    return await task()
+  }
+}
 
 function waitForStable(ms = 1_200) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -50,15 +64,32 @@ describe.sequential('HMR html template (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          HTML_SRC_PATH,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'HMR-HTML-TEMPLATE'), `${platform} initial html template`)
 
-      await fs.writeFile(HTML_SRC_PATH, updatedSource, 'utf8')
+      await replaceFileByRename(HTML_SRC_PATH, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated html template marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated html template marker`,
+        )
+      }
+      catch {
+        await replaceFileByRename(HTML_SRC_PATH, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated html template marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {

@@ -1,9 +1,10 @@
 import type { RolldownPluginOption } from 'rolldown'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, Logger } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
+import { createLogger } from 'vite'
 import { defaultExcluded } from '../../../../defaults'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { stripRollupOptions } from './inline'
@@ -72,6 +73,10 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
 
   applyRuntimePlatform('miniprogram')
 
+  const createMiniprogramCustomLogger = (): Logger => {
+    return createLogger('warn')
+  }
+
   const external: (string | RegExp)[] = []
   if (packageJson?.dependencies) {
     external.push(
@@ -105,6 +110,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       {
         root: cwd,
         mode: 'development',
+        customLogger: createMiniprogramCustomLogger(),
         define: miniprogramDefines,
         build: {
           modulePreload: false,

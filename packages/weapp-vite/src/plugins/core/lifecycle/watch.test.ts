@@ -94,6 +94,20 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
   })
 
+  it('marks html template updates as direct entry dirties', async () => {
+    isTemplateMock.mockReturnValue(true)
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/pages/hmr-html/index.ts',
+    })
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/pages/hmr-html/index.html', { event: 'update' })
+
+    expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr-html/index.html')
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr-html/index.ts', 'direct')
+  })
+
   it('marks loaded script updates as direct entry dirties', async () => {
     const entryId = '/project/src/pages/hmr/index.ts'
     const state = createState({
@@ -136,6 +150,19 @@ describe('core lifecycle watch hook', () => {
     const hook = createWatchChangeHook(state)
 
     await hook('/project/src/layouts/default/index.wxml', { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/layouts/default/index.ts', 'dependency')
+  })
+
+  it('marks html layout template sidecar updates as dependency dirties', async () => {
+    isTemplateMock.mockReturnValue(true)
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/layouts/default/index.ts',
+    })
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/layouts/default/index.html', { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/layouts/default/index.ts', 'dependency')
   })

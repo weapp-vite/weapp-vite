@@ -55,9 +55,14 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     }
 
     const isDeleteEvent = event === 'delete'
-    const shouldInvalidate = (event === 'create' && ready) || isDeleteEvent || (event === 'update' && hasReverseImporters)
+    const shouldInvalidate = (event === 'create' && ready)
+      || isDeleteEvent
+      || (event === 'update' && (hasReverseImporters || isTemplateFile))
     if (shouldInvalidate) {
       void (async () => {
+        if (isTemplateFile && event !== 'delete') {
+          await ctx.wxmlService?.scan(filePath)
+        }
         await invalidateEntryForSidecar(ctx, filePath, event)
         if (isCssFile && isDeleteEvent) {
           cleanupCssImporterGraph(ctx, filePath)
@@ -163,7 +168,6 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
       if (derivedEvent === 'update') {
         handleSidecarChange('update', resolved, true)
-        void invalidateEntryForSidecar(ctx, resolved, 'update')
         return
       }
 

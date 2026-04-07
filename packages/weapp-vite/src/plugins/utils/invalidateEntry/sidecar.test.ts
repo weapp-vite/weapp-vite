@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { invalidateEntryForSidecar } from './sidecar'
 
@@ -53,6 +53,30 @@ function createContext() {
 }
 
 describe('invalidateEntryForSidecar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    findJsEntryMock.mockResolvedValue({ path: undefined, predictions: [] })
+    findVueEntryMock.mockResolvedValue(undefined)
+    collectAffectedScriptsAndImportersMock.mockResolvedValue({
+      importers: new Set<string>(),
+      scripts: new Set<string>(),
+    })
+  })
+
+  it('skips touching direct script entries for template update sidecars', async () => {
+    const ctx = createContext()
+    findJsEntryMock.mockResolvedValueOnce({
+      path: '/project/src/pages/hmr/index.ts',
+      predictions: ['/project/src/pages/hmr/index.ts'],
+    })
+
+    await invalidateEntryForSidecar(ctx, '/project/src/pages/hmr/index.wxml', 'update')
+
+    expect(touchMock).not.toHaveBeenCalledWith('/project/src/pages/hmr/index.ts')
+    expect(loggerMock.info).not.toHaveBeenCalled()
+    expect(loggerMock.success).not.toHaveBeenCalled()
+  })
+
   it('touches all template importers for standalone imported wxml files', async () => {
     const ctx = createContext()
 

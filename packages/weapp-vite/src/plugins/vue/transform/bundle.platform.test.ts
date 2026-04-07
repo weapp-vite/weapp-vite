@@ -20,6 +20,7 @@ import {
   resolveVueBundlePlatformOptions,
   shouldEmitAlipayGenericPlaceholder,
 } from './bundle/platform'
+import { resetEmittedAssetSourceCacheForTest } from './emitAssets'
 
 const collectFallbackPageEntryIdsMock = vi.hoisted(() => vi.fn(async () => new Set<string>()))
 const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
@@ -56,6 +57,7 @@ vi.mock('wevu/compiler', async (importOriginal) => {
 
 describe('emitVueBundleAssets platform output', () => {
   beforeEach(() => {
+    resetEmittedAssetSourceCacheForTest()
     collectFallbackPageEntryIdsMock.mockResolvedValue(new Set<string>())
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: false,

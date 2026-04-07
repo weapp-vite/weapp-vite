@@ -1,4 +1,5 @@
 import type { Plugin as PluginJson } from '@weapp-core/schematics'
+import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
 import type { RolldownOutput } from 'rolldown'
 import type { AppEntry, ComponentsMap, SubPackageMetaValue } from '../types'
@@ -99,10 +100,15 @@ export interface RuntimeState {
   }
   json: {
     cache: FileCache<any>
+    emittedSource: Map<string, string>
+  }
+  asset: {
+    emittedBuffer: Map<string, Buffer>
   }
   css: {
     importerToDependencies: Map<string, Set<string>>
     dependencyToImporters: Map<string, Set<string>>
+    emittedSource: Map<string, string>
   }
   watcher: {
     rollupWatcherMap: Map<string, WatcherInstance>
@@ -172,10 +178,15 @@ export function createRuntimeState(): RuntimeState {
     },
     json: {
       cache: new FileCache<any>(),
+      emittedSource: new Map<string, string>(),
+    },
+    asset: {
+      emittedBuffer: new Map<string, Buffer>(),
     },
     css: {
       importerToDependencies: new Map<string, Set<string>>(),
       dependencyToImporters: new Map<string, Set<string>>(),
+      emittedSource: new Map<string, string>(),
     },
     watcher: {
       rollupWatcherMap: new Map<string, WatcherInstance>(),

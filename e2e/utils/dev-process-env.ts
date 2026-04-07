@@ -1,13 +1,20 @@
 import process from 'node:process'
 
-export function createDevProcessEnv(): NodeJS.ProcessEnv {
+interface DevProcessEnvOptions {
+  disableSidecarWatch?: boolean
+}
+
+export function createDevProcessEnv(options: DevProcessEnvOptions = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: 'development',
-    WEAPP_VITE_DISABLE_SIDECAR_WATCH: '1',
     CHOKIDAR_USEPOLLING: '1',
     CHOKIDAR_INTERVAL: '120',
   }
+  if (options.disableSidecarWatch) {
+    env.WEAPP_VITE_DISABLE_SIDECAR_WATCH = '1'
+  }
+  delete env.CI
   delete env.VITEST
   delete env.VITEST_MODE
   delete env.VITEST_POOL_ID

@@ -46,6 +46,7 @@ export function filterPluginBundleOutputs(
 export function emitJsonAssets(this: any, state: CorePluginState) {
   const { ctx } = state
   const { jsonService, configService } = ctx
+  const emittedSourceCache = ctx.runtimeState.json.emittedSource
 
   for (const jsonEmitFile of state.jsonEmitFilesMap.values()) {
     if (
@@ -55,6 +56,14 @@ export function emitJsonAssets(this: any, state: CorePluginState) {
     ) {
       const source = jsonService.resolve(jsonEmitFile.entry)
       if (source && jsonEmitFile.fileName) {
+        const normalizedFileName = changeFileExtension(
+          jsonEmitFile.fileName,
+          resolveCompilerOutputExtensions(configService?.outputExtensions).jsonExtension,
+        )
+        if (emittedSourceCache.get(normalizedFileName) === source) {
+          continue
+        }
+
         const { jsonExtension } = resolveCompilerOutputExtensions(configService?.outputExtensions)
         emitJsonAsset(
           {
@@ -66,6 +75,7 @@ export function emitJsonAssets(this: any, state: CorePluginState) {
           source,
           jsonExtension,
         )
+        emittedSourceCache.set(normalizedFileName, source)
       }
     }
   }
