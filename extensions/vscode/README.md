@@ -1,9 +1,16 @@
-# weapp-vite: Vue Custom Blocks Highlight
+# weapp-vite: Practical VS Code Support
 
 This VSCode extension adds:
 
 - syntax highlighting for weapp-vite `<json>` blocks in `.vue` files
-- a `weapp-vite: Generate` command that runs `weapp-vite generate` in the current workspace terminal
+- a status bar entry for detected weapp-vite workspaces
+- common workspace commands for `dev` / `build` / `generate` / `open` / `info`
+- snippets for `<json>` blocks and `defineConfig`
+- code actions for `package.json`, `vite.config.*`, and `.vue`
+- light package.json diagnostics for missing common scripts
+- hover, contextual completion, and doc shortcuts inside key weapp-vite files
+- user settings for status bar, diagnostics, hover, completion, and CLI alias style
+- an output channel with recent command execution logs
 
 ## Install (from this repo)
 
@@ -17,12 +24,106 @@ In a `.vue` file, run `Developer: Inspect Editor Tokens and Scopes` inside a `<j
 
 - Expected `textmate scopes` includes `source.json.comments` (for `<json>` / `lang="json"` / `lang="jsonc"` / `lang="json5"`).
 
-## Command
+## Project Detection
 
-Open the Command Palette and run `weapp-vite: Generate`.
+The extension treats a workspace as a weapp-vite project when it sees one or more of these signals:
 
-- The command runs `weapp-vite generate` in a VSCode terminal.
-- The terminal working directory is the first opened workspace folder.
+- `package.json` dependencies containing `weapp-vite` or `create-weapp-vite`
+- `package.json` scripts that call `wv` or `weapp-vite`
+- a local `vite.config.*` that references `weapp-vite`
+- `src/app.json` or `app.json` as supplemental project context
+
+If detection succeeds, a `weapp-vite` status bar button appears.
+
+## Commands
+
+Open the Command Palette and run:
+
+- `weapp-vite: Run Action`
+- `weapp-vite: Dev`
+- `weapp-vite: Build`
+- `weapp-vite: Generate`
+- `weapp-vite: Open DevTools`
+- `weapp-vite: Doctor / Info`
+- `weapp-vite: Show Project Info`
+- `weapp-vite: Show Output`
+- `weapp-vite: Open Docs`
+
+The extension resolves each command in this order:
+
+1. prefer matching `package.json` scripts such as `dev`, `build`, `open`, `generate`, `g`, `doctor`, `info`
+2. fall back to `wv <command>`
+
+The terminal working directory is the active editor's workspace folder when possible, otherwise the first opened workspace folder.
+
+## Snippets
+
+- `wv-json`: insert a `<json lang="jsonc">...</json>` custom block
+- `wv-config`: insert a `defineConfig` skeleton
+- `wv-scripts`: insert common `package.json` scripts for weapp-vite
+
+## Editor Actions
+
+The extension also adds practical editor actions:
+
+- in `.vue`, use code actions or completion to insert a `weapp-vite` `<json>` block
+- in `vite.config.*`, use `weapp-vite: Insert defineConfig Template`
+- in `package.json`, use `weapp-vite: Insert Common Scripts`
+- when a `package.json` already looks like a weapp-vite project but misses common scripts, the editor shows an informational diagnostic
+- hover over common script entries, `defineConfig`, `generate`, or `<json>` blocks to see lightweight guidance
+- in `package.json`, completion suggests common script keys and `wv` command values
+- in `vite.config.*`, completion suggests `defineConfig`, `generate`, and `plugins` skeletons
+
+## Settings
+
+The extension exposes a small set of practical settings:
+
+- `weapp-vite.showStatusBar`
+- `weapp-vite.enablePackageJsonDiagnostics`
+- `weapp-vite.enableHover`
+- `weapp-vite.enableCompletion`
+- `weapp-vite.preferWvAlias`
+
+If you prefer explicit CLI names over aliases, disable `weapp-vite.preferWvAlias` and the extension will generate `weapp-vite dev` style commands instead of `wv dev`.
+
+## Packaging
+
+The extension manifest now includes:
+
+- a publish-safe `files` whitelist
+- `.vscodeignore` exclusions for tests and publishing-only docs
+- a `tsdown` build that emits the runtime entry into `dist/extension.js`
+- local `lint`, `vitest`, and `check` scripts
+- a `check:publish` script for pre-package verification
+- a `check:package` script that validates runtime entry files and package exclusions
+- a `package:dry-run` script that builds a local `.vsix` artifact
+- a `publish:vsce` script for manual Marketplace publish flow
+- a simple walkthrough for first-run onboarding
+- command palette visibility rules to reduce irrelevant entries outside matching files or workspaces
+- a dedicated GitHub Actions workflow for extension-only CI
+
+## TypeScript
+
+The extension runtime and its unit tests are both written in TypeScript:
+
+- source entry: `extensions/vscode/extension.ts`
+- runtime modules: `extensions/vscode/extension/**/*.ts`
+- unit tests: `extensions/vscode/extension/**/*.test.ts`
+- package scripts: `extensions/vscode/scripts/*.ts`
+
+Useful local commands:
+
+```bash
+pnpm --dir extensions/vscode run build
+pnpm --dir extensions/vscode run test
+pnpm --dir extensions/vscode run smoke:dist
+pnpm --dir extensions/vscode run check:package
+pnpm --dir extensions/vscode run check:vsix
+```
+
+The `build` step uses `tsdown` to bundle the extension runtime into a single CommonJS entry for VS Code, while tests continue to run directly from TypeScript source through Vitest.
+After build, `smoke:dist` loads the compiled `dist/extension.js` with a mocked VS Code API to confirm activation wiring still works.
+When you want to inspect the final Marketplace payload, `check:vsix` creates a local `.vsix` and verifies the packaged file list.
 
 ## Publish
 

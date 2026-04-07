@@ -1,0 +1,25 @@
+import vscode from 'vscode'
+
+export function getExtensionConfiguration() {
+  return vscode.workspace.getConfiguration('weapp-vite')
+}
+
+export function isStatusBarEnabled() {
+  return getExtensionConfiguration().get('showStatusBar', true)
+}
+
+export function isPackageJsonDiagnosticsEnabled() {
+  return getExtensionConfiguration().get('enablePackageJsonDiagnostics', true)
+}
+
+export function isHoverEnabled() {
+  return getExtensionConfiguration().get('enableHover', true)
+}
+
+export function isCompletionEnabled() {
+  return getExtensionConfiguration().get('enableCompletion', true)
+}
+
+export function useWvAlias() {
+  return getExtensionConfiguration().get('preferWvAlias', true)
+}

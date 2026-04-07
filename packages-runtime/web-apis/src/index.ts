@@ -9,6 +9,7 @@ import {
 } from './shared'
 import { URLPolyfill, URLSearchParamsPolyfill } from './url'
 import { BlobPolyfill, FormDataPolyfill } from './web'
+import { WebSocketPolyfill } from './websocket'
 import { XMLHttpRequestPolyfill } from './xhr'
 
 export type WeappInjectRequestGlobalsTarget
@@ -19,6 +20,7 @@ export type WeappInjectRequestGlobalsTarget
     | 'AbortController'
     | 'AbortSignal'
     | 'XMLHttpRequest'
+    | 'WebSocket'
 
 export interface InstallRequestGlobalsOptions {
   targets?: WeappInjectRequestGlobalsTarget[]
@@ -81,6 +83,13 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectReque
     return
   }
 
+  if (target === 'WebSocket') {
+    if (typeof host.WebSocket !== 'function') {
+      host.WebSocket = WebSocketPolyfill
+    }
+    return
+  }
+
   if (target === 'XMLHttpRequest' && typeof host.XMLHttpRequest !== 'function') {
     host.XMLHttpRequest = XMLHttpRequestPolyfill
   }
@@ -122,6 +131,7 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
     'AbortController',
     'AbortSignal',
     'XMLHttpRequest',
+    'WebSocket',
   ]
   const hosts = resolveRequestGlobalsHosts()
   const primaryHost = resolveRequestGlobalsHost()
@@ -176,5 +186,6 @@ export {
   ResponsePolyfill,
   URLPolyfill,
   URLSearchParamsPolyfill,
+  WebSocketPolyfill,
   XMLHttpRequestPolyfill,
 }

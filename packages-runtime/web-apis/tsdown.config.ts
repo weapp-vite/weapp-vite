@@ -9,6 +9,7 @@ export default defineConfig({
     shared: './src/shared.ts',
     url: './src/url.ts',
     web: './src/web.ts',
+    websocket: './src/websocket.ts',
     xhr: './src/xhr.ts',
   },
   dts: true,

@@ -1,0 +1,54 @@
+name: Release VSCode Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Release mode
+        required: true
+        default: package
+        type: choice
+        options:
+          - package
+          - publish
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release-vscode-extension:
+    name: VSCode Extension ${{ inputs.mode == 'publish' && 'Publish' || 'Package' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 20
+
+      - name: Run publish gate
+        run: pnpm --dir extensions/vscode run check:publish
+
+      - name: Package VSIX
+        if: inputs.mode == 'package'
+        run: pnpm --dir extensions/vscode run package:dry-run
+
+      - name: Upload VSIX artifact
+        if: inputs.mode == 'package'
+        uses: actions/upload-artifact@v7
+        with:
+          name: vscode-extension-vsix
+          path: extensions/vscode/.artifacts/*.vsix
+          if-no-files-found: error
+
+      - name: Publish extension
+        if: inputs.mode == 'publish'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: pnpm --dir extensions/vscode run publish:vsce

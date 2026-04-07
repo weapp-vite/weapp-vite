@@ -10,6 +10,7 @@ import { closeSharedMiniProgram, takeScreenshot } from 'weapp-ide-cli'
 import packageJson from '../../package.json'
 import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
+import { formatMcpQuickStart } from './mcpClient'
 
 export interface StartDevHotkeysOptions {
   cwd: string
@@ -347,6 +348,12 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       workspaceRoot: options.cwd,
     })
     logger.success(`[dev action] MCP 服务已启动：${colors.cyan(url)}`)
+    for (const line of formatMcpQuickStart({
+      httpUrl: url,
+      transport: 'http',
+    })) {
+      logger.info(line)
+    }
     return `MCP 已启动 (${url})`
   }
 

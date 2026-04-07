@@ -2,7 +2,7 @@
 
 ## 1. 简介
 
-`@wevu/web-apis` 为小程序运行时提供一组 Web API 兼容层，重点解决第三方请求库在小程序环境中缺失 `fetch`、`Request`、`Response`、`AbortController`、`XMLHttpRequest`、`URL` 等全局对象的问题。
+`@wevu/web-apis` 为小程序运行时提供一组 Web API 兼容层，重点解决第三方请求库在小程序环境中缺失 `fetch`、`Request`、`Response`、`AbortController`、`XMLHttpRequest`、`URL`、`WebSocket` 等全局对象的问题。
 
 它主要服务于：
 
@@ -14,7 +14,7 @@
 
 - 按需安装 `fetch`、`Headers`、`Request`、`Response`
 - 提供 `AbortController` / `AbortSignal` 兼容层
-- 提供 `XMLHttpRequest`、`URL`、`URLSearchParams`、`Blob`、`FormData` 兼容层
+- 提供 `XMLHttpRequest`、`URL`、`URLSearchParams`、`Blob`、`FormData`、`WebSocket` 兼容层
 - 自动把能力安装到可用的小程序宿主全局对象
 - 默认基于 `@wevu/api` 的请求能力完成底层转发
 
@@ -58,24 +58,58 @@ installRequestGlobals({
 })
 ```
 
+### 4.4 安装并使用 WebSocket
+
+```ts
+import { installRequestGlobals } from '@wevu/web-apis'
+
+installRequestGlobals({
+  targets: ['WebSocket'],
+})
+
+const socket = new WebSocket('wss://example.com/socket', ['chat'])
+
+socket.onopen = () => {
+  socket.send(JSON.stringify({ type: 'ping' }))
+}
+
+socket.onmessage = (event) => {
+  console.log(event.data)
+}
+
+socket.onclose = (event) => {
+  console.log(event.code, event.reason)
+}
+```
+
 ## 5. 主要导出
 
-| 导出                                                       | 说明                                     |
-| ---------------------------------------------------------- | ---------------------------------------- |
-| `installRequestGlobals`                                    | 按需安装请求相关全局对象                 |
-| `installAbortGlobals`                                      | 仅安装 `AbortController` / `AbortSignal` |
-| `fetch`                                                    | 基于小程序请求能力适配的 `fetch` 实现    |
-| `HeadersPolyfill` / `RequestPolyfill` / `ResponsePolyfill` | HTTP 相关兼容类                          |
-| `URLPolyfill` / `URLSearchParamsPolyfill`                  | URL 相关兼容类                           |
-| `XMLHttpRequestPolyfill`                                   | XHR 兼容实现                             |
+| 导出                                                       | 说明                                            |
+| ---------------------------------------------------------- | ----------------------------------------------- |
+| `installRequestGlobals`                                    | 按需安装请求相关全局对象                        |
+| `installAbortGlobals`                                      | 仅安装 `AbortController` / `AbortSignal`        |
+| `fetch`                                                    | 基于小程序请求能力适配的 `fetch` 实现           |
+| `HeadersPolyfill` / `RequestPolyfill` / `ResponsePolyfill` | HTTP 相关兼容类                                 |
+| `URLPolyfill` / `URLSearchParamsPolyfill`                  | URL 相关兼容类                                  |
+| `WebSocketPolyfill`                                        | 基于小程序 `SocketTask` 的 `WebSocket` 兼容实现 |
+| `XMLHttpRequestPolyfill`                                   | XHR 兼容实现                                    |
 
 ## 6. 适用场景
 
 - 在小程序环境中运行 `axios` 的 `fetch` 适配器
 - 在小程序环境中运行 `graphql-request`
+- 在小程序环境中直接复用浏览器风格的 `WebSocket` 客户端代码
 - 给依赖 `URL` / `FormData` / `Blob` 的库补齐基础全局对象
 
-## 7. 本地开发
+## 7. WebSocket 兼容说明
+
+- 当前 `WebSocket` 兼容层底层桥接的是小程序 `SocketTask`
+- 支持 `new WebSocket(url, protocols?)`、`send`、`close`、`readyState`、`binaryType`
+- 支持 `onopen` / `onmessage` / `onerror` / `onclose` 以及 `addEventListener`
+- 当前不会模拟浏览器里完整的 `bufferedAmount`、协商后的 `protocol`、`extensions`
+- 如果运行时没有可用的 `connectSocket` 能力，构造时会直接抛错
+
+## 8. 本地开发
 
 ```bash
 pnpm --filter @wevu/web-apis build
@@ -83,7 +117,7 @@ pnpm --filter @wevu/web-apis test
 pnpm --filter @wevu/web-apis typecheck
 ```
 
-## 8. 相关链接
+## 9. 相关链接
 
 - `@wevu/api`：[../weapi/README.md](../weapi/README.md)
 - `wevu`：[../wevu/README.md](../wevu/README.md)
