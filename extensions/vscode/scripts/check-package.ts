@@ -40,7 +40,6 @@ const requiredFiles = [
   'extension/providers.ts',
   'extension/workspace.ts',
   'dist/extension.js',
-  'dist/extension/index.js',
   'README.md',
   'CHANGELOG.md',
   'LICENSE',

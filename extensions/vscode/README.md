@@ -92,7 +92,7 @@ The extension manifest now includes:
 
 - a publish-safe `files` whitelist
 - `.vscodeignore` exclusions for tests and publishing-only docs
-- a TypeScript build that emits runtime files into `dist/`
+- a `tsdown` build that emits the runtime entry into `dist/extension.js`
 - local `lint`, `vitest`, and `check` scripts
 - a `check:publish` script for pre-package verification
 - a `check:package` script that validates runtime entry files and package exclusions
@@ -118,6 +118,8 @@ pnpm --dir extensions/vscode run build
 pnpm --dir extensions/vscode run test
 pnpm --dir extensions/vscode run check:package
 ```
+
+The `build` step uses `tsdown` to bundle the extension runtime into a single CommonJS entry for VS Code, while tests continue to run directly from TypeScript source through Vitest.
 
 ## Publish
 

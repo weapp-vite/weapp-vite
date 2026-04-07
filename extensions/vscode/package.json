@@ -316,8 +316,8 @@
     ]
   },
   "scripts": {
-    "build": "pnpm exec tsc -p tsconfig.json",
-    "lint": "pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts",
+    "build": "pnpm exec tsdown --config tsdown.config.mts",
+    "lint": "pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts",
     "test": "pnpm vitest run -c vitest.config.ts",
     "check": "pnpm run lint && pnpm run test && pnpm run build",
     "check:package": "node --import tsx scripts/check-package.ts",
