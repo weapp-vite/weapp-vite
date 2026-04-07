@@ -26,11 +26,22 @@
   "categories": [
     "Programming Languages"
   ],
+  "main": "./extension.js",
   "icon": "assets/logo.png",
   "engines": {
     "vscode": "^1.88.0"
   },
+  "activationEvents": [
+    "onCommand:weapp-vite.generate"
+  ],
   "contributes": {
+    "commands": [
+      {
+        "command": "weapp-vite.generate",
+        "title": "Generate",
+        "category": "weapp-vite"
+      }
+    ],
     "grammars": [
       {
         "scopeName": "text.html.vue.weapp-vite-custom-blocks",
