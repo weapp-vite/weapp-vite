@@ -1,5 +1,4 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
-import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
 
@@ -26,10 +25,7 @@ export function createEntryResolver(configService?: { isDev?: boolean }) {
       }
     }
     const resolved = await pluginCtx.resolve(resolvedSource)
-    const resolvedId = resolved
-      ?? (path.isAbsolute(resolvedSource) && await fs.pathExists(resolvedSource)
-        ? { id: resolvedSource } as ResolvedId
-        : null)
+    const resolvedId = resolved ?? null
     entryResolutionCache.set(normalized, resolvedId)
     return resolvedId
   }
