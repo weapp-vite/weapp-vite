@@ -22,6 +22,7 @@ import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativ
 import { collectStyleImports } from './watch'
 
 const NON_VUE_PAGE_RE = /\.vue$|\.jsx$|\.tsx$/
+const nativeLayoutAssetSourceCache = new Map<string, string>()
 
 interface NormalizedEntryOptions {
   entries: string[]
@@ -208,12 +209,19 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         continue
       }
 
+      const cacheKey = `asset:${asset.fileName}`
+      if (nativeLayoutAssetSourceCache.get(cacheKey) === asset.source) {
+        emittedLayoutAssets.add(asset.fileName)
+        continue
+      }
+
       emittedLayoutAssets.add(asset.fileName)
       pluginCtx.emitFile({
         type: 'asset',
         fileName: asset.fileName,
         source: asset.source,
       })
+      nativeLayoutAssetSourceCache.set(cacheKey, asset.source)
     }
 
     emitNativeLayoutScriptChunkIfNeeded({

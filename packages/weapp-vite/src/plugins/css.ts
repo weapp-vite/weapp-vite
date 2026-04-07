@@ -29,8 +29,42 @@ function stripLeadingBlankLines(code: string) {
   return code.replace(LEADING_BLANK_LINES_RE, '')
 }
 
+function emitCssAssetIfChanged(
+  ctx: CompilerContext,
+  pluginCtx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  bundle: OutputBundle,
+  fileName: string,
+  source: string,
+) {
+  const normalizedFileName = toPosixPath(fileName)
+  const cache = ctx.runtimeState.css.emittedSource
+  const existing = bundle[fileName]
+
+  if (existing?.type === 'asset') {
+    const current = existing.source?.toString?.() ?? ''
+    if (current !== source) {
+      existing.source = source
+    }
+    cache.set(normalizedFileName, source)
+    return true
+  }
+
+  if (cache.get(normalizedFileName) === source) {
+    return false
+  }
+
+  pluginCtx.emitFile({
+    type: 'asset',
+    fileName,
+    source,
+  })
+  cache.set(normalizedFileName, source)
+  return true
+}
+
 async function handleBundleEntry(
   this: any,
+  ctx: CompilerContext,
   bundle: OutputBundle,
   bundleKey: string,
   asset: OutputAsset | OutputBundle[string],
@@ -82,11 +116,7 @@ async function handleBundleEntry(
     if (fileName && fileName !== bundleKey) {
       delete bundle[bundleKey]
       const css = await fs.readFile(absOriginal, 'utf8')
-      this.emitFile({
-        type: 'asset',
-        fileName,
-        source: css,
-      })
+      emitCssAssetIfChanged(ctx, this, bundle, fileName, css)
     }
 
     return
@@ -133,11 +163,7 @@ async function handleBundleEntry(
       configService,
     )
 
-    this.emitFile({
-      type: 'asset',
-      fileName,
-      source: cssWithImports,
-    })
+    emitCssAssetIfChanged(ctx, this, bundle, fileName, cssWithImports)
     emitted.add(normalizedFileName)
   }))
 
@@ -188,11 +214,7 @@ async function emitSharedStyleEntries(
         delete bundle[fileName]
       }
 
-      this.emitFile({
-        type: 'asset',
-        fileName,
-        source: css,
-      })
+      emitCssAssetIfChanged(ctx, this, bundle, fileName, css)
     }
   }
 }
@@ -251,11 +273,7 @@ async function emitSharedStyleImportsForChunks(
 
       const processedCss = await processCssWithCache(cssWithImports, configService)
 
-      this.emitFile({
-        type: 'asset',
-        fileName,
-        source: processedCss,
-      })
+      emitCssAssetIfChanged(ctx, this, bundle, fileName, processedCss)
 
       emitted.add(normalizedFileName)
     }),
@@ -272,7 +290,7 @@ async function generateBundleSharedCss(
   const sharedStyles = collectSharedStyleEntries(ctx, configService)
   const emitted = new Set<string>()
   const tasks = Object.entries(bundle).map(([bundleKey, asset]) => {
-    return handleBundleEntry.call(this, bundle, bundleKey, asset, configService, sharedStyles, emitted)
+    return handleBundleEntry.call(this, ctx, bundle, bundleKey, asset, configService, sharedStyles, emitted)
   })
 
   await Promise.all(tasks)

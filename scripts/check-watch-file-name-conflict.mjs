@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url'
 const READY_MARKER = '开发服务已就绪'
 const REBUILD_MARKER = '小程序已重新构建'
 const CONFLICT_MARKER = '[FILE_NAME_CONFLICT]'
-const CONFIG_IMPORT_RE = /from ['"]weapp-vite\/config['"]/g
+const CONFIG_IMPORT_RE = /from ['"]weapp-vite(?:\/config)?['"]/g
 const NODE_MODULES_RE = /[\\/]node_modules(?:[\\/]|$)/
 
 function wait(ms) {

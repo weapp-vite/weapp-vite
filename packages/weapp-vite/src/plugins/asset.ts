@@ -1,7 +1,7 @@
-import type { Buffer } from 'node:buffer'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
 import type { CopyGlobs } from '../types'
+import { Buffer } from 'node:buffer'
 import { fs } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
@@ -92,11 +92,17 @@ async function emitAssets(
       while (index < files.length) {
         const file = files[index++]
         const buffer = await fs.readFile(file)
+        const fileName = ctx.configService.relativeOutputPath(file)
+        const previous = ctx.runtimeState.asset.emittedBuffer.get(fileName)
+        if (previous && Buffer.compare(previous, buffer) === 0) {
+          continue
+        }
         pluginContext.emitFile({
           type: 'asset',
-          fileName: ctx.configService.relativeOutputPath(file),
+          fileName,
           source: buffer,
         })
+        ctx.runtimeState.asset.emittedBuffer.set(fileName, buffer)
       }
     }),
   )

@@ -6,6 +6,7 @@ import type {
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import path from 'pathe'
 import { build } from 'vite'
@@ -20,6 +21,42 @@ import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir } from './outputs'
 import { resolveTouchAppWxssEnabled } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
+
+const DEV_CSS_FILE_NAME_CONFLICT_RE = /\[FILE_NAME_CONFLICT\][\s\S]*?emitted file [^\n]*\.css overwrites a previously emitted file of the same name\./i
+
+let devCssConflictFilterInstalled = false
+
+function installDevCssConflictFilter() {
+  if (devCssConflictFilterInstalled) {
+    return
+  }
+  devCssConflictFilterInstalled = true
+
+  const wrapWrite = <T extends typeof process.stdout.write | typeof process.stderr.write>(write: T): T => {
+    const wrapped = function writeWithFilter(this: any, chunk: any, encoding?: any, cb?: any) {
+      const text = typeof chunk === 'string'
+        ? chunk
+        : Buffer.isBuffer(chunk)
+          ? chunk.toString(typeof encoding === 'string' ? encoding : 'utf8')
+          : undefined
+      if (typeof text === 'string' && DEV_CSS_FILE_NAME_CONFLICT_RE.test(text)) {
+        if (typeof encoding === 'function') {
+          encoding()
+        }
+        else if (typeof cb === 'function') {
+          cb()
+        }
+        return true
+      }
+      return write.call(this, chunk, encoding, cb)
+    }
+
+    return wrapped as T
+  }
+
+  process.stdout.write = wrapWrite(process.stdout.write.bind(process.stdout))
+  process.stderr.write = wrapWrite(process.stderr.write.bind(process.stderr))
+}
 
 export interface BuildOptions {
   skipNpm?: boolean
@@ -83,6 +120,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
+    installDevCssConflictFilter()
     debug?.(`[${target}] dev build watcher start`)
     const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
     // eslint-disable-next-line ts/no-use-before-define

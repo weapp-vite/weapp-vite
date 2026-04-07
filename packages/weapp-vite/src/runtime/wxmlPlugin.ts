@@ -118,7 +118,8 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     return set
   }
 
-  function clearAll() {
+  function clearAll(options?: { clearEmittedCode?: boolean }) {
+    const clearEmittedCode = options?.clearEmittedCode !== false
     const currentRoot = ctx.configService?.currentSubPackageRoot
     if (!currentRoot) {
       depsMap.clear()
@@ -128,7 +129,9 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       cache.cache.clear()
       cache.mtimeMap.clear()
       cache.signatureMap.clear()
-      emittedCode.clear()
+      if (clearEmittedCode) {
+        emittedCode.clear()
+      }
       return
     }
 
@@ -190,10 +193,12 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       }
     }
 
-    for (const key of Array.from(emittedCode.keys())) {
-      const normalized = toPosixPath(key)
-      if (normalized === currentRoot || normalized.startsWith(`${currentRoot}/`)) {
-        emittedCode.delete(key)
+    if (clearEmittedCode) {
+      for (const key of Array.from(emittedCode.keys())) {
+        const normalized = toPosixPath(key)
+        if (normalized === currentRoot || normalized.startsWith(`${currentRoot}/`)) {
+          emittedCode.delete(key)
+        }
       }
     }
   }
@@ -273,7 +278,9 @@ export function createWxmlServicePlugin(ctx: MutableCompilerContext): Plugin {
   return {
     name: 'weapp-runtime:wxml-service',
     buildStart() {
-      service.clearAll()
+      service.clearAll({
+        clearEmittedCode: !ctx.configService?.isDev,
+      })
     },
   }
 }

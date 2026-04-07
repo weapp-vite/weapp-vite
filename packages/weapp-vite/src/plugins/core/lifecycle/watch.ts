@@ -70,7 +70,7 @@ export function createWatchChangeHook(state: CorePluginState) {
         }
       }
 
-      if (isTemplateFile || configSuffix || isStyleFile) {
+      if (configSuffix || isStyleFile) {
         const basePath = configSuffix
           ? normalizedId.slice(0, -configSuffix.length)
           : (() => {

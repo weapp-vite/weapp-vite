@@ -1,15 +1,17 @@
 import type { RolldownPluginOption } from 'rolldown'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, Logger } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
+import { createLogger } from 'vite'
 import { defaultExcluded } from '../../../../defaults'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
 
 const PACKAGE_NAME_REGEX = /[-/\\^$*+?.()|[\]{}]/g
+const DEV_CSS_FILE_NAME_CONFLICT_RE = /\[FILE_NAME_CONFLICT\][\s\S]*?emitted file [^\n]*\.css overwrites a previously emitted file of the same name\./i
 
 interface MergeMiniprogramOptions {
   ctx: MutableCompilerContext
@@ -72,6 +74,20 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
 
   applyRuntimePlatform('miniprogram')
 
+  const createMiniprogramCustomLogger = (): Logger => {
+    const logger = createLogger('warn')
+    const baseWarn = logger.warn.bind(logger)
+
+    logger.warn = (msg, options) => {
+      if (typeof msg === 'string' && DEV_CSS_FILE_NAME_CONFLICT_RE.test(msg)) {
+        return
+      }
+      return baseWarn(msg, options)
+    }
+
+    return logger
+  }
+
   const external: (string | RegExp)[] = []
   if (packageJson?.dependencies) {
     external.push(
@@ -105,6 +121,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       {
         root: cwd,
         mode: 'development',
+        customLogger: createMiniprogramCustomLogger(),
         define: miniprogramDefines,
         build: {
           modulePreload: false,
