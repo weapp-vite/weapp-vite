@@ -22,6 +22,27 @@ describe('injectRequestGlobals helpers', () => {
         'AbortController',
         'AbortSignal',
         'XMLHttpRequest',
+        'WebSocket',
+      ],
+    })
+  })
+
+  it('enables auto injection for socket.io-client projects', () => {
+    expect(resolveInjectRequestGlobalsOptions(undefined, {
+      dependencies: {
+        'socket.io-client': '^4.8.3',
+      },
+    })).toEqual({
+      mode: 'auto',
+      targets: [
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
       ],
     })
   })
@@ -58,25 +79,27 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'explicit',
-      dependencyPatterns: ['axios', 'graphql-request'],
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
       targets: ['fetch', 'AbortController'],
     })
   })
 
   it('creates stable injection code', () => {
-    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('installRequestGlobals')
-    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('weapp-vite/web-apis')
-    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'])).toContain('"XMLHttpRequest"')
+    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('installRequestGlobals')
+    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('weapp-vite/web-apis')
+    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('"XMLHttpRequest"')
+    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('"WebSocket"')
   })
 
   it('can create local binding injection code for script modules', () => {
-    const code = createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest'], {
+    const code = createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'], {
       localBindings: true,
     })
 
     expect(code).toContain('__weappViteRequestGlobalsHost__')
     expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
     expect(code).toContain('var URL = __weappViteRequestGlobalsHost__.URL')
+    expect(code).toContain('var WebSocket = __weappViteRequestGlobalsHost__.WebSocket')
   })
 
   it('can create a valid sfc injection block', () => {

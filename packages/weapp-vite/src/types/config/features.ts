@@ -142,6 +142,7 @@ export type WeappInjectRequestGlobalsTarget
     | 'AbortController'
     | 'AbortSignal'
     | 'XMLHttpRequest'
+    | 'WebSocket'
 
 /**
  * @description 请求相关全局对象注入配置

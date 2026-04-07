@@ -905,7 +905,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return t}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -925,13 +925,16 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['common.js'].code).toContain('__weappViteRequestGlobalsBundleInstalled__')
     expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))')
     expect(bundle['common.js'].code).toContain('var XMLHttpRequest = __weappViteHasUsableRequestGlobalsConstructor__(__weappViteRequestGlobalsActuals__["XMLHttpRequest"],[])?__weappViteRequestGlobalsActuals__["XMLHttpRequest"]:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:__weappViteCreateLazyRequestGlobalsConstructor__("XMLHttpRequest")')
-    expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(bundle['common.js'].code).toContain('var WebSocket = __weappViteHasUsableRequestGlobalsConstructor__(__weappViteRequestGlobalsActuals__["WebSocket"],["wss://request-globals.invalid"])?__weappViteRequestGlobalsActuals__["WebSocket"]:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:__weappViteCreateLazyRequestGlobalsConstructor__("WebSocket")')
+    expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
     expect(bundle['common.js'].code).toContain('URL = __weappViteRequestGlobalsBundleHost__.URL')
+    expect(bundle['common.js'].code).toContain('WebSocket = __weappViteRequestGlobalsBundleHost__.WebSocket')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('__weappViteRequestGlobalsLocalBindings__')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsModule__ = require("../../common.js")')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __weappViteChunkRequestGlobalsHost__.URL')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var WebSocket = __weappViteChunkRequestGlobalsHost__.WebSocket')
   })
 
   it('still injects top-level local bindings when chunk already contains setup-scoped request globals host bindings', async () => {
@@ -964,7 +967,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'dist.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return t}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -989,7 +992,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('__weappViteRequestGlobalsLocalBindings__')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsModule__ = require("../../dist.js")')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteRequestGlobalsHost__ = t["At"]({ targets: ["fetch"] }) || globalThis;')
     expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
   })
@@ -1017,7 +1020,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'dist.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return t}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -1062,7 +1065,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'dist.js',
         code: [
           'const e=require("./common.js");',
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: ['common.js'],
@@ -1074,7 +1077,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     const code = bundle['dist.js'].code
     expect(code).toContain('__weappViteRequestGlobalsBundleInstalled__')
-    expect(code).toContain('const e=require("./common.js");const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis')
+    expect(code).toContain('const e=require("./common.js");const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
     expect(code.indexOf('const __weappViteRequestGlobalsBundleHost__ = vn')).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
 })
