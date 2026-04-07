@@ -125,6 +125,7 @@ describe('captureScreenshotBuffer', () => {
     const green = createSolidPng(8, 20, [0, 255, 0, 255])
     const blue = createSolidPng(8, 20, [0, 0, 255, 255])
     const pageScrollTo = vi.fn()
+    const scrollTop = vi.fn().mockResolvedValue(13)
     const waitFor = vi.fn().mockResolvedValue(undefined)
     const screenshot = vi.fn()
       .mockResolvedValueOnce(red.toString('base64'))
@@ -135,6 +136,7 @@ describe('captureScreenshotBuffer', () => {
       return await runner({
         currentPage: () => Promise.resolve({
           size: () => Promise.resolve({ width: 8, height: 45 }),
+          scrollTop,
           waitFor,
         }),
         systemInfo: () => Promise.resolve({ windowHeight: 20 }),
@@ -154,12 +156,44 @@ describe('captureScreenshotBuffer', () => {
     expect(pageScrollTo).toHaveBeenNthCalledWith(1, 0)
     expect(pageScrollTo).toHaveBeenNthCalledWith(2, 20)
     expect(pageScrollTo).toHaveBeenNthCalledWith(3, 25)
-    expect(waitFor).toHaveBeenCalledTimes(3)
+    expect(pageScrollTo).toHaveBeenNthCalledWith(4, 13)
+    expect(waitFor).toHaveBeenCalledTimes(4)
     expect(stitched.height).toBe(45)
     expect(stitched.width).toBe(8)
     expect(Array.from(stitched.data.slice(0, 4))).toEqual([255, 0, 0, 255])
     expect(Array.from(stitched.data.slice(20 * 8 * 4, 20 * 8 * 4 + 4))).toEqual([0, 255, 0, 255])
     expect(Array.from(stitched.data.slice(40 * 8 * 4, 40 * 8 * 4 + 4))).toEqual([0, 0, 255, 255])
+  })
+
+  it('restores the original scroll position when fullPage capture fails', async () => {
+    const pageScrollTo = vi.fn()
+    const scrollTop = vi.fn().mockResolvedValue(42)
+    const waitFor = vi.fn().mockResolvedValue(undefined)
+    const screenshot = vi.fn()
+      .mockResolvedValueOnce(Buffer.from('not-a-png').toString('base64'))
+
+    withMiniProgramMock.mockImplementation(async (_options, runner) => {
+      return await runner({
+        currentPage: () => Promise.resolve({
+          size: () => Promise.resolve({ width: 8, height: 45 }),
+          scrollTop,
+          waitFor,
+        }),
+        systemInfo: () => Promise.resolve({ windowHeight: 20 }),
+        pageScrollTo,
+        screenshot,
+      })
+    })
+
+    const { captureScreenshotBuffer } = await import('../src/cli/commands')
+
+    await expect(captureScreenshotBuffer({
+      projectPath: '/workspace/project',
+      fullPage: true,
+      timeout: 1234,
+    })).rejects.toThrow()
+
+    expect(pageScrollTo).toHaveBeenLastCalledWith(42)
   })
 
   it('retries once with a fresh session when shared-session screenshot times out', async () => {

@@ -10,6 +10,7 @@ interface MiniProgramLike {
 
 interface PageLike {
   size: () => Promise<{ width: number, height: number }>
+  scrollTop?: () => Promise<number>
   waitFor: (condition: number) => Promise<void>
 }
 
@@ -78,6 +79,9 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
   const page = await miniProgram.currentPage()
   const pageSize = await page.size()
   const systemInfo = await miniProgram.systemInfo()
+  const initialScrollTop = typeof page.scrollTop === 'function'
+    ? await page.scrollTop()
+    : 0
   const pageHeight = toPositiveNumber(pageSize.height)
   const viewportHeight = toPositiveNumber(systemInfo.windowHeight)
 
@@ -96,38 +100,44 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
   let coveredUntil = 0
   let scale = 1
 
-  for (const scrollTop of positions) {
-    await miniProgram.pageScrollTo(scrollTop)
+  try {
+    for (const scrollTop of positions) {
+      await miniProgram.pageScrollTo(scrollTop)
+      await page.waitFor(150)
+
+      const rawScreenshot = await runWithTimeout(
+        miniProgram.screenshot(),
+        timeoutMs,
+        screenshotTimeoutMessage,
+        'DEVTOOLS_SCREENSHOT_TIMEOUT',
+      )
+      const png = PNG.sync.read(decodeScreenshotBuffer(rawScreenshot))
+
+      if (viewportHeight > 0) {
+        scale = png.height / viewportHeight
+      }
+
+      const visibleEnd = Math.min(scrollTop + viewportHeight, pageHeight)
+      const cropTopCss = Math.max(coveredUntil - scrollTop, 0)
+      const segmentHeightCss = Math.max(visibleEnd - scrollTop - cropTopCss, 0)
+
+      if (segmentHeightCss <= 0) {
+        continue
+      }
+
+      const cropTopRows = Math.min(Math.max(Math.round(cropTopCss * scale), 0), png.height)
+      const segmentRows = Math.min(
+        Math.max(Math.round(segmentHeightCss * scale), 1),
+        png.height - cropTopRows,
+      )
+
+      segments.push(cropPngRows(png, cropTopRows, segmentRows))
+      coveredUntil = visibleEnd
+    }
+  }
+  finally {
+    await miniProgram.pageScrollTo(initialScrollTop)
     await page.waitFor(150)
-
-    const rawScreenshot = await runWithTimeout(
-      miniProgram.screenshot(),
-      timeoutMs,
-      screenshotTimeoutMessage,
-      'DEVTOOLS_SCREENSHOT_TIMEOUT',
-    )
-    const png = PNG.sync.read(decodeScreenshotBuffer(rawScreenshot))
-
-    if (viewportHeight > 0) {
-      scale = png.height / viewportHeight
-    }
-
-    const visibleEnd = Math.min(scrollTop + viewportHeight, pageHeight)
-    const cropTopCss = Math.max(coveredUntil - scrollTop, 0)
-    const segmentHeightCss = Math.max(visibleEnd - scrollTop - cropTopCss, 0)
-
-    if (segmentHeightCss <= 0) {
-      continue
-    }
-
-    const cropTopRows = Math.min(Math.max(Math.round(cropTopCss * scale), 0), png.height)
-    const segmentRows = Math.min(
-      Math.max(Math.round(segmentHeightCss * scale), 1),
-      png.height - cropTopRows,
-    )
-
-    segments.push(cropPngRows(png, cropTopRows, segmentRows))
-    coveredUntil = visibleEnd
   }
 
   if (segments.length === 0) {
