@@ -2,7 +2,7 @@ import { LRUCache } from 'lru-cache'
 import * as fs from '../../utils/fs'
 import { normalizeLineEndings } from '../../utils/text'
 
-export const mtimeCache = new Map<string, { mtimeMs: number, size: number }>()
+export const mtimeCache = new Map<string, { ctimeMs: number, ino: number, mtimeMs: number, size: number }>()
 
 export const loadCache = new LRUCache<string, string>({
   max: 1024,
@@ -23,25 +23,37 @@ export async function isInvalidate(id: string) {
   // 本次文件签名
   const stats = await fs.stat(id)
   const mtimeMs = typeof (stats as any)?.mtimeMs === 'number' ? (stats as any).mtimeMs : Number.NaN
+  const ctimeMs = typeof (stats as any)?.ctimeMs === 'number' ? (stats as any).ctimeMs : Number.NaN
   const size = typeof (stats as any)?.size === 'number' ? (stats as any).size : Number.NaN
+  const ino = typeof (stats as any)?.ino === 'number' ? (stats as any).ino : Number.NaN
   if (!Number.isFinite(mtimeMs)) {
+    return true
+  }
+  if (!Number.isFinite(ctimeMs)) {
     return true
   }
   if (!Number.isFinite(size)) {
     return true
   }
+  if (!Number.isFinite(ino)) {
+    return true
+  }
   if (cached === undefined) {
-    mtimeCache.set(id, { mtimeMs, size })
+    mtimeCache.set(id, { mtimeMs, ctimeMs, size, ino })
     return true
   }
 
-  // mtimeMs 在某些文件系统/编辑器保存策略下可能不递增（甚至相等），仅比较 mtime 会漏掉变更。
-  // 这里同时比较 size，优先保证正确性。
-  if (cached.mtimeMs === mtimeMs && cached.size === size) {
+  // 原子保存/rename 替换下，mtime 和 size 可能都保持不变；补充 ctime/ino 以识别同长度快速连续写入。
+  if (
+    cached.mtimeMs === mtimeMs
+    && cached.ctimeMs === ctimeMs
+    && cached.size === size
+    && cached.ino === ino
+  ) {
     return false
   }
 
-  mtimeCache.set(id, { mtimeMs, size })
+  mtimeCache.set(id, { mtimeMs, ctimeMs, size, ino })
   return true
 }
 

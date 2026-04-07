@@ -1,3 +1,4 @@
+import { rename, utimes } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -70,12 +71,44 @@ describe('file cache readFile line endings', () => {
     expect(await isInvalidate(filePath)).toBe(false)
   })
 
+  it('invalidates same-size content updates when replace-by-rename keeps mtime stable', async () => {
+    const filePath = path.join(tempDir, 'sample-rename-stable-mtime.vue')
+    await fs.writeFile(filePath, 'first-marker', 'utf8')
+    expect(await isInvalidate(filePath)).toBe(true)
+    expect(await isInvalidate(filePath)).toBe(false)
+
+    const firstStat = await fs.stat(filePath)
+    const backupPath = path.join(tempDir, '.sample-rename-stable-mtime.backup.vue')
+    await rename(filePath, backupPath)
+    await fs.writeFile(filePath, 'other-marker', 'utf8')
+    await utimes(filePath, firstStat.atime, firstStat.mtime)
+    await fs.remove(backupPath)
+
+    expect('first-marker').toHaveLength('other-marker'.length)
+    expect(await isInvalidate(filePath)).toBe(true)
+    expect(await isInvalidate(filePath)).toBe(false)
+  })
+
   it('returns true when fs.stat contains invalid mtime/size', async () => {
     const filePath = path.join(tempDir, 'sample-invalid-stat.vue')
     await fs.writeFile(filePath, 'x', 'utf8')
     const statSpy = vi.spyOn(fs, 'stat').mockResolvedValue({
       mtimeMs: Number.NaN,
       size: Number.NaN,
+    } as any)
+
+    await expect(isInvalidate(filePath)).resolves.toBe(true)
+    statSpy.mockRestore()
+  })
+
+  it('returns true when fs.stat contains invalid ctime/ino', async () => {
+    const filePath = path.join(tempDir, 'sample-invalid-extra-stat.vue')
+    await fs.writeFile(filePath, 'x', 'utf8')
+    const statSpy = vi.spyOn(fs, 'stat').mockResolvedValue({
+      mtimeMs: 1,
+      ctimeMs: Number.NaN,
+      ino: Number.NaN,
+      size: 1,
     } as any)
 
     await expect(isInvalidate(filePath)).resolves.toBe(true)
