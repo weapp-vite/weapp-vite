@@ -10,7 +10,7 @@
     "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
-    "camelcase": "^6.3.0",
+    "camelcase": "^9.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",
     "socket.io-client": "^4.8.3",

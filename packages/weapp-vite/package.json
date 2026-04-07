@@ -132,7 +132,7 @@
     "lru-cache": "catalog:",
     "magic-string": "catalog:",
     "merge": "catalog:",
-    "p-queue": "^9.1.1",
+    "p-queue": "^9.1.2",
     "package-manager-detector": "^1.6.0",
     "pathe": "catalog:",
     "picomatch": "^4.0.4",
