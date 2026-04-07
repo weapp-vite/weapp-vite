@@ -100,6 +100,7 @@
     "check:e2e-ide-shared-launch": "node --import tsx scripts/check-e2e-ide-shared-launch.ts",
     "check:watch:file-name-conflict": "node scripts/check-watch-file-name-conflict.mjs",
     "check:create-weapp-vite-changeset": "tsx scripts/check-create-weapp-vite-changeset.ts",
+    "check:changeset:frontmatter": "node scripts/check-changeset-frontmatter.mjs",
     "check:rolldown:report": "node scripts/print-rolldown-versions.mjs --mode report",
     "check:rolldown:single-version": "node scripts/print-rolldown-versions.mjs",
     "changeset:catalog:auto": "node --import tsx scripts/generate-catalog-changeset.ts",

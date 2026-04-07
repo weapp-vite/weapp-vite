@@ -24,6 +24,7 @@ jobs:
       node_version: '20'
       timeout_minutes: 10
       main_command: |
+        pnpm check:changeset:frontmatter
         pnpm check:create-weapp-vite-changeset
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
@@ -50,6 +51,7 @@ jobs:
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 10
       main_command: |
+        pnpm check:changeset:frontmatter
         pnpm check:create-weapp-vite-changeset
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
