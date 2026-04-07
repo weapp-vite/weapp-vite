@@ -71,7 +71,7 @@
     "bin": "./bin/create-weapp-vite.js"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.3.2",
+    "@inquirer/prompts": "^8.4.0",
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/shared": "workspace:^",
     "pathe": "catalog:",

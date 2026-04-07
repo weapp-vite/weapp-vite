@@ -28,7 +28,7 @@
     "@vue/shared": "^3.5.32",
     "echarts": "catalog:",
     "element-plus": "^2.13.6",
-    "gridstack": "^12.4.2",
+    "gridstack": "^12.5.0",
     "theme-transition": "^2.0.1",
     "vue": "catalog:",
     "vue-echarts": "^8.0.1"
