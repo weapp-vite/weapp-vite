@@ -95,9 +95,9 @@ function resolveInlineEventArg(event: any, dataset: Record<string, any>): any {
     return event
   }
   if (!event || typeof event !== 'object' || !('detail' in event)) {
-    return event
+    return undefined
   }
-  return (event as any).detail === undefined ? event : (event as any).detail
+  return (event as any).detail
 }
 
 function getByPath(target: any, path: string) {

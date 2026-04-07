@@ -99,7 +99,7 @@ async function tapById(page: any, id: string) {
   await page.waitFor(180)
 }
 
-async function reLaunchWithRetry(miniProgram: any, route: string, retries = 2) {
+async function reLaunchWithRetry(miniProgram: any, route: string, retries = 4) {
   let lastError: unknown
 
   for (let attempt = 1; attempt <= retries; attempt += 1) {
@@ -112,6 +112,7 @@ async function reLaunchWithRetry(miniProgram: any, route: string, retries = 2) {
       if (!message.includes('App.getCurrentPage') || attempt >= retries) {
         throw error
       }
+      await new Promise(resolve => setTimeout(resolve, 400))
     }
   }
 
@@ -247,19 +248,13 @@ describe.sequential('wevu-vue-demo script setup emit runtime', () => {
       await tapById(page, 'emit-direct-empty')
       await expectLatestRecord(page, {
         label: 'empty-direct',
-        payloadType: 'object',
-        detailType: 'undefined',
-        nativeType: expect.any(String),
-        timeStampType: 'number',
+        payloadType: 'undefined',
       })
 
       await tapById(page, 'emit-explicit-empty')
       await expectLatestRecord(page, {
         label: 'empty-explicit-$event',
-        payloadType: 'object',
-        detailType: 'undefined',
-        nativeType: expect.any(String),
-        timeStampType: 'number',
+        payloadType: 'undefined',
       })
 
       await tapById(page, 'emit-direct-options')
