@@ -1,0 +1,61 @@
+name: CI Performance
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '35 1 * * *'
+  workflow_dispatch:
+    inputs:
+      threshold-percent:
+        description: relative regression threshold percent
+        required: false
+        default: '10'
+        type: string
+      iterations:
+        description: benchmark iterations per scenario
+        required: false
+        default: '2'
+        type: string
+      scenarios:
+        description: comma-separated resolver component counts
+        required: false
+        default: '1,20'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  auto-import-performance:
+    name: Auto Import Performance (Ubuntu / Node 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AUTO_IMPORT_BENCH_THRESHOLD_PERCENT: ${{ github.event.inputs.threshold-percent || '10' }}
+      BENCH_ITERATIONS: ${{ github.event.inputs.iterations || '2' }}
+      BENCH_SCENARIOS: ${{ github.event.inputs.scenarios || '1,20' }}
+      AUTO_IMPORT_BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-performance-report
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '20'
+
+      - name: Run auto-import performance benchmark
+        run: pnpm --filter weapp-vite benchmark:auto-import:ci
+
+      - name: Upload performance report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: auto-import-performance-report
+          path: ${{ runner.temp }}/auto-import-performance-report
+          if-no-files-found: warn
