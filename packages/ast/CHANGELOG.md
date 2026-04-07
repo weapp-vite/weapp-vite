@@ -1,5 +1,11 @@
 # @weapp-vite/ast
 
+## 6.14.1
+
+### Patch Changes
+
+- 🐛 **同步升级构建链路与模板目录中的部分依赖版本，包括 `rolldown`、`vite`、`rolldown-plugin-dts`、`@inquirer/prompts` 及相关 lint 配置，并更新 `create-weapp-vite` 内置模板 catalog 的对应版本映射。** [`8bb15f2`](https://github.com/weapp-vite/weapp-vite/commit/8bb15f2f5db775bb2cec4b1d90e6c6ac746e50aa) by @sonofmagic
+
 ## 6.14.0
 
 ## 6.13.4

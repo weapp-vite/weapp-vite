@@ -1,5 +1,29 @@
 # weapp-vite
 
+## 6.14.1
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite` 在开发模式热更新时重复 emit 资源的问题，避免模板项目在修改 `.wxml` 等文件后出现大量 `[FILE_NAME_CONFLICT]` warning，并同步更新 `create-weapp-vite` 的版本联动发布。** [#417](https://github.com/weapp-vite/weapp-vite/pull/417) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 对 `src/assets` 下已被 `import` 等模块链路处理的图片重复执行静态资源扫描复制的问题，避免同一张图片同时输出原路径文件和哈希文件，并同步更新 `create-weapp-vite` 的版本联动发布。** [`5bfe9fb`](https://github.com/weapp-vite/weapp-vite/commit/5bfe9fb0096b94cd59a62e0be795ba95ebbe3308) by @sonofmagic
+
+- 🐛 **修复原生 WXML 模板通过 `<import>` 与 `<include>` 引入共享 template 时的自动组件导入行为。现在自动导入会基于模板依赖闭包聚合组件标签，并在共享 template 变更时按引用链增量失效缓存，避免遗漏 `usingComponents` 注册且保持较高性能。** [#414](https://github.com/weapp-vite/weapp-vite/pull/414) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` MCP 增加面向 Codex、Claude Code 与 Cursor 的接入引导能力，支持通过 `wv mcp init`、`wv mcp print`、`wv mcp doctor` 预览、写入和检查客户端配置；同时在 dev/MCP HTTP 服务启动后直接输出可执行的接入命令，降低首次使用门槛。** [#416](https://github.com/weapp-vite/weapp-vite/pull/416) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 在开发模式下处理 `.html` 模板热更新时未正确标记入口失效的问题，避免页面与 layout 的模板修改漏掉重编译，并保持 `#415` 的 `FILE_NAME_CONFLICT` 根因修复在更多 HMR 场景下稳定生效。** [#417](https://github.com/weapp-vite/weapp-vite/pull/417) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 的 request globals 自动注入链路补充 `WebSocket` 支持，并将 `socket.io-client` / `engine.io-client` 纳入默认依赖检测。现在小程序项目在依赖这些实时通信库时，构建产物会自动注入并绑定 `WebSocket`，降低 `socket.io-client` 在 shared chunk 与页面初始化阶段因缺失全局对象而启动失败的概率。** [#422](https://github.com/weapp-vite/weapp-vite/pull/422) by @sonofmagic
+
+- 🐛 **同步升级构建链路与模板目录中的部分依赖版本，包括 `rolldown`、`vite`、`rolldown-plugin-dts`、`@inquirer/prompts` 及相关 lint 配置，并更新 `create-weapp-vite` 内置模板 catalog 的对应版本映射。** [`8bb15f2`](https://github.com/weapp-vite/weapp-vite/commit/8bb15f2f5db775bb2cec4b1d90e6c6ac746e50aa) by @sonofmagic
+- 📦 Updated 4 dependencies [`bde6c23`](https://github.com/weapp-vite/weapp-vite/commit/bde6c239f5a31980a6db1b1500cd257ded6bba4c)
+  <details><summary>Details</summary>
+
+  `@wevu/web-apis@1.2.0`, `wevu@6.14.1`, `weapp-ide-cli@5.2.2`, `@weapp-vite/ast@6.14.1`
+
+  </details>
+
 ## 6.14.0
 
 ### Minor Changes
