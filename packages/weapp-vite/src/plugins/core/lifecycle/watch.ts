@@ -72,7 +72,7 @@ export function createWatchChangeHook(state: CorePluginState) {
 
       const isHtmlTemplateFile = normalizedId.endsWith('.html')
 
-      if (configSuffix || isStyleFile || isHtmlTemplateFile) {
+      if (isTemplateFile || configSuffix || isStyleFile || isHtmlTemplateFile) {
         const basePath = configSuffix
           ? normalizedId.slice(0, -configSuffix.length)
           : (() => {

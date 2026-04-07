@@ -41,12 +41,16 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
 
   if (scriptBasePath) {
     const primaryScript = await findJsEntry(scriptBasePath)
+    const shouldSkipPrimaryTemplateTouch = event === 'update' && Boolean(ext && watchedTemplateExts.has(ext))
+
     if (primaryScript.path) {
-      touchedScripts.add(primaryScript.path)
+      if (!shouldSkipPrimaryTemplateTouch) {
+        touchedScripts.add(primaryScript.path)
+      }
     }
     else if (ext && watchedTemplateExts.has(ext)) {
       const primaryVueEntry = await findVueEntry(scriptBasePath)
-      if (primaryVueEntry) {
+      if (primaryVueEntry && !shouldSkipPrimaryTemplateTouch) {
         touchedTargets.add(primaryVueEntry)
       }
     }

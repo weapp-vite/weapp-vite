@@ -91,7 +91,7 @@ describe('core lifecycle watch hook', () => {
     await hook('/project/src/pages/hmr/index.wxml', { event: 'update' })
 
     expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
-    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
   })
 
   it('marks html template updates as direct entry dirties', async () => {
@@ -151,7 +151,7 @@ describe('core lifecycle watch hook', () => {
 
     await hook('/project/src/layouts/default/index.wxml', { event: 'update' })
 
-    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/layouts/default/index.ts', 'dependency')
   })
 
   it('marks html layout template sidecar updates as dependency dirties', async () => {
