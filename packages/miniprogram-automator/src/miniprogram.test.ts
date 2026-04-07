@@ -123,6 +123,30 @@ describe('MiniProgram', () => {
     expect(page.path).toBe('/pages/after')
   })
 
+  it('retries currentPage when App.getCurrentPage times out transiently', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const connection = new FakeConnection()
+    connection.send
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce({ pageId: 7, path: '/pages/recovered', query: { ok: 1 } })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.currentPage()
+    await vi.advanceTimersByTimeAsync(400)
+    const page = await pending
+
+    expect(connection.send).toHaveBeenCalledTimes(2)
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'App.getCurrentPage', {})
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'App.getCurrentPage', {})
+    expect(page.path).toBe('/pages/recovered')
+  })
+
   it('renders remote debug qr code and resolves after connection event', async () => {
     const connection = new FakeConnection()
     connection.send.mockResolvedValueOnce({ qrCode: 'encoded-base64' })

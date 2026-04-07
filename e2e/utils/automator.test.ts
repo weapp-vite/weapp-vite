@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { terminateBridgeCliProcess } from './automator'
+import { isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -43,6 +43,12 @@ async function waitForProcessGone(pid: number, timeoutMs = 3_000) {
 }
 
 describe('automator', () => {
+  it('treats App.getCurrentPage protocol timeout as a retryable relaunch error', () => {
+    const error = new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms')
+
+    expect(isLikelyRelaunchRetryableError(error)).toBe(true)
+  })
+
   it('terminates detached bridge cli processes', async () => {
     const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 10_000)'], {
       detached: process.platform !== 'win32',

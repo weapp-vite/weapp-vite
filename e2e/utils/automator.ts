@@ -73,6 +73,8 @@ const RELAUNCH_RETRYABLE_PATTERNS = [
   /Failed to find page root/i,
   /Execution context was destroyed/i,
   /Target closed/i,
+  /DevTools did not respond to protocol method App\.getCurrentPage within \d+ms/i,
+  /\bDEVTOOLS_PROTOCOL_TIMEOUT\b/i,
   /ECONNRESET/i,
   /not connected/i,
 ]
@@ -445,7 +447,7 @@ async function runWithTimeout<T>(
   }
 }
 
-function isLikelyRelaunchRetryableError(error: unknown) {
+export function isLikelyRelaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
 }

@@ -19,6 +19,8 @@ interface IAuditsOptions {
 type AutomatorCallable = (...args: any[]) => any
 
 const CLOSE_STEP_TIMEOUT = 2000
+const CURRENT_PAGE_RETRIES = 3
+const CURRENT_PAGE_RETRY_DELAY = 400
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -47,6 +49,14 @@ function isFnStr(value: unknown) {
   }
   const trimmed = trim(value)
   return startWith(trimmed, 'function') || startWith(trimmed, '() =>')
+}
+
+function isCurrentPageProtocolTimeout(error: unknown) {
+  return error instanceof Error
+    && 'code' in error
+    && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+    && 'method' in error
+    && error.method === 'App.getCurrentPage'
 }
 /** MiniProgram 的实现。 */
 export default class MiniProgram extends EventEmitter {
@@ -96,8 +106,22 @@ export default class MiniProgram extends EventEmitter {
   }
 
   async currentPage() {
-    const { pageId, path, query } = await this.send('App.getCurrentPage')
-    return Page.create(this.connection, { id: pageId, path, query }, this.pageMap)
+    let lastError: unknown
+    for (let attempt = 1; attempt <= CURRENT_PAGE_RETRIES; attempt += 1) {
+      try {
+        const { pageId, path, query } = await this.send('App.getCurrentPage')
+        return Page.create(this.connection, { id: pageId, path, query }, this.pageMap)
+      }
+      catch (error) {
+        lastError = error
+        if (!isCurrentPageProtocolTimeout(error) || attempt >= CURRENT_PAGE_RETRIES) {
+          throw error
+        }
+        await sleep(CURRENT_PAGE_RETRY_DELAY)
+      }
+    }
+
+    throw lastError
   }
 
   async systemInfo() {
