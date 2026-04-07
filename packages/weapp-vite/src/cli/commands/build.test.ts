@@ -142,6 +142,11 @@ describe('build cli command', () => {
     })
 
     expect(createCompilerContext).toHaveBeenCalledTimes(1)
+    expect(createCompilerContext).toHaveBeenCalledWith(expect.objectContaining({
+      cwd: '/project',
+      syncSupportFiles: false,
+      preloadAppEntry: false,
+    }))
     expect(analyzeSubpackages).toHaveBeenCalledTimes(1)
     expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
     const handle = vi.mocked(startAnalyzeDashboard).mock.results[0]?.value

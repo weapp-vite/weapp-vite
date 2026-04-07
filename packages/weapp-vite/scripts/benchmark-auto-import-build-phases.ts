@@ -1,18 +1,17 @@
 /* eslint-disable ts/no-use-before-define */
-import { spawn } from 'node:child_process'
 import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import path from 'pathe'
 import { VantResolver } from '../src/auto-import-components/resolvers'
+import { createCompilerContext } from '../src/createContext'
 
-const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
+const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '1', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
 const workspaceRootNodeModulesDir = await resolveWorkspaceNodeModulesDir()
 const workspaceWeappViteDir = path.resolve(import.meta.dirname, '..')
-const workspaceRootDir = path.dirname(workspaceRootNodeModulesDir)
-const reportDir = resolveReportDir('auto-import-build')
+const reportDir = resolveReportDir('auto-import-build-phases')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const allResolverTags = Object.keys(VantResolver().components ?? {}).sort((a, b) => a.localeCompare(b))
@@ -32,15 +31,20 @@ if (!Number.isFinite(iterations) || iterations <= 0) {
 }
 
 async function main() {
-  console.log(`[auto-import-build-bench] iterations=${iterations}`)
-  console.log(`[auto-import-build-bench] total resolver components=${allResolverTags.length}`)
-  console.log(`[auto-import-build-bench] scenarios=${scenarioValues.join(',')}`)
-
   const results = []
   for (const usedCount of scenarioValues) {
-    const result = await runScenario(usedCount)
-    results.push(result)
-    printScenario(result)
+    const usedTags = allResolverTags.slice(0, usedCount)
+    const baselineSamples = []
+    const currentSamples = []
+    for (let i = 0; i < iterations; i += 1) {
+      baselineSamples.push(await measureScenario({ usedTags, mode: 'baseline', iteration: i }))
+      currentSamples.push(await measureScenario({ usedTags, mode: 'current', iteration: i }))
+    }
+    results.push({
+      usedCount,
+      baseline: summarizePhaseSamples(baselineSamples),
+      current: summarizePhaseSamples(currentSamples),
+    })
   }
 
   await mkdir(reportDir, { recursive: true })
@@ -51,36 +55,11 @@ async function main() {
   }, null, 2))
   await writeFile(reportMdPath, renderMarkdown(results), 'utf8')
 
-  console.log(`[auto-import-build-bench] report.json -> ${reportJsonPath}`)
-  console.log(`[auto-import-build-bench] report.md -> ${reportMdPath}`)
+  console.log(`[auto-import-build-phases] report.json -> ${reportJsonPath}`)
+  console.log(`[auto-import-build-phases] report.md -> ${reportMdPath}`)
 }
 
-async function runScenario(usedCount: number) {
-  const usedTags = allResolverTags.slice(0, usedCount)
-  const baselineSamples = []
-  const currentSamples = []
-
-  for (let i = 0; i < iterations; i += 1) {
-    baselineSamples.push(await measureBuild({ usedTags, mode: 'baseline', iteration: i }))
-    currentSamples.push(await measureBuild({ usedTags, mode: 'current', iteration: i }))
-  }
-
-  const baseline = summarizeNumbers(baselineSamples)
-  const current = summarizeNumbers(currentSamples)
-
-  return {
-    usedCount,
-    baseline,
-    current,
-    delta: {
-      extraMs: current.mean - baseline.mean,
-      extraPercent: baseline.mean > 0 ? ((current.mean - baseline.mean) / baseline.mean) * 100 : 0,
-      ratio: baseline.mean > 0 ? current.mean / baseline.mean : 0,
-    },
-  }
-}
-
-async function measureBuild(options: {
+async function measureScenario(options: {
   usedTags: string[]
   mode: 'baseline' | 'current'
   iteration: number
@@ -88,7 +67,7 @@ async function measureBuild(options: {
   const { usedTags, mode, iteration } = options
   const project = await createTempFixtureProject(
     fixtureSource,
-    `auto-import-build-${mode}-${usedTags.length}-${iteration}`,
+    `auto-import-build-phases-${mode}-${usedTags.length}-${iteration}`,
   )
 
   try {
@@ -96,9 +75,40 @@ async function measureBuild(options: {
     await rm(path.join(project.tempDir, 'dist'), { recursive: true, force: true })
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
-    const start = performance.now()
-    await runBuild(project.tempDir)
-    return performance.now() - start
+    const contextStart = performance.now()
+    const ctx = await createCompilerContext({
+      cwd: project.tempDir,
+      mode: 'production',
+      isDev: false,
+      cliPlatform: 'weapp',
+      syncSupportFiles: false,
+      preloadAppEntry: false,
+      inlineConfig: {
+        weapp: {
+          npm: {
+            cache: false,
+          },
+        },
+      },
+    })
+    const createContextMs = performance.now() - contextStart
+
+    const buildStart = performance.now()
+    await ctx.buildService.build({ skipNpm: true })
+    const buildMs = performance.now() - buildStart
+
+    const npmStart = performance.now()
+    await ctx.npmService?.build()
+    const npmMs = performance.now() - npmStart
+
+    ctx.watcherService?.closeAll()
+
+    return {
+      createContextMs,
+      buildMs,
+      npmMs,
+      totalMs: createContextMs + buildMs + npmMs,
+    }
   }
   finally {
     await project.cleanup()
@@ -143,7 +153,6 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'basel
 
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as {
     dependencies?: Record<string, string>
-    devDependencies?: Record<string, string>
   }
   packageJson.dependencies = {
     ...(packageJson.dependencies ?? {}),
@@ -170,7 +179,7 @@ async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current'
     if (mode === 'current' && viteConfig.includes(ORIGINAL_AUTO_IMPORT_BLOCK)) {
       return
     }
-    throw new Error(`Failed to patch vite config for build benchmark: ${viteConfigPath}`)
+    throw new Error(`Failed to patch vite config for build phase benchmark: ${viteConfigPath}`)
   }
 
   await writeFile(viteConfigPath, nextViteConfig, 'utf8')
@@ -268,35 +277,6 @@ async function linkWorkspaceNodeModules(projectRoot: string) {
   await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
 }
 
-async function runBuild(cwd: string) {
-  const cliPath = path.resolve(import.meta.dirname, '../src/cli.ts')
-  const workspaceBinDir = path.join(workspaceRootNodeModulesDir, '.bin')
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(process.execPath, ['--import', 'tsx', cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
-      cwd: workspaceRootDir,
-      env: {
-        ...process.env,
-        PATH: `${workspaceBinDir}:${process.env.PATH ?? ''}`,
-      },
-      stdio: 'pipe',
-    })
-
-    let stderr = ''
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString()
-    })
-
-    child.on('error', reject)
-    child.on('exit', (code) => {
-      if (code === 0) {
-        resolve()
-        return
-      }
-      reject(new Error(`build failed with code ${code}\n${stderr}`))
-    })
-  })
-}
-
 async function resolveWorkspaceNodeModulesDir() {
   let currentDir = path.resolve(import.meta.dirname, '../../..')
   while (true) {
@@ -310,7 +290,7 @@ async function resolveWorkspaceNodeModulesDir() {
     }
     currentDir = parentDir
   }
-  throw new Error('Unable to locate workspace node_modules directory for auto-import build benchmark.')
+  throw new Error('Unable to locate workspace node_modules directory for auto-import build phases benchmark.')
 }
 
 function resolveReportDir(reportName: string) {
@@ -325,7 +305,7 @@ function resolveReportDir(reportName: string) {
 }
 
 function parseScenarioValues(input: string | undefined) {
-  const parsed = (input ?? '1,5,20')
+  const parsed = (input ?? '1,20')
     .split(',')
     .map(value => Number.parseInt(value.trim(), 10))
     .filter(value => Number.isFinite(value) && value > 0)
@@ -349,36 +329,39 @@ function summarizeNumbers(values: number[]) {
   }
 }
 
-function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
-  console.log(`\n[build-scenario] used resolver components=${result.usedCount}`)
-  console.log(`baseline | avg ${result.baseline.mean.toFixed(2)}ms | median ${result.baseline.median.toFixed(2)}ms`)
-  console.log(`current  | avg ${result.current.mean.toFixed(2)}ms | median ${result.current.median.toFixed(2)}ms`)
-  console.log(`delta    | extra ${result.delta.extraMs.toFixed(2)}ms | extra ${result.delta.extraPercent.toFixed(2)}% | ratio ${result.delta.ratio.toFixed(2)}x`)
+function summarizePhaseSamples(samples: Array<Awaited<ReturnType<typeof measureScenario>>>) {
+  return {
+    createContextMs: summarizeNumbers(samples.map(sample => sample.createContextMs)),
+    buildMs: summarizeNumbers(samples.map(sample => sample.buildMs)),
+    npmMs: summarizeNumbers(samples.map(sample => sample.npmMs)),
+    totalMs: summarizeNumbers(samples.map(sample => sample.totalMs)),
+  }
 }
 
-function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>) {
+function renderMarkdown(results: Array<{
+  usedCount: number
+  baseline: ReturnType<typeof summarizePhaseSamples>
+  current: ReturnType<typeof summarizePhaseSamples>
+}>) {
   const lines = [
-    '# autoImportComponents full build benchmark',
+    '# autoImport build phase profile',
     '',
     `- iterations: \`${iterations}\``,
     '',
-    '| 场景 | baseline avg | current avg | 额外成本 | 比例 |',
-    '| --- | ---: | ---: | ---: | ---: |',
   ]
 
   for (const result of results) {
-    lines.push(
-      `| 使用 ${result.usedCount} 个 Vant 组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${result.delta.ratio.toFixed(2)}x |`,
-    )
+    lines.push(`## ${result.usedCount} components`)
+    lines.push('')
+    lines.push('| phase | baseline avg | current avg | delta |')
+    lines.push('| --- | ---: | ---: | ---: |')
+    for (const phase of ['createContextMs', 'buildMs', 'npmMs', 'totalMs'] as const) {
+      const baseline = result.baseline[phase].mean
+      const current = result.current[phase].mean
+      lines.push(`| ${phase} | ${baseline.toFixed(2)} ms | ${current.toFixed(2)} ms | ${(current - baseline).toFixed(2)} ms |`)
+    }
+    lines.push('')
   }
-
-  lines.push('')
-  lines.push('## 说明')
-  lines.push('')
-  lines.push('- `baseline`：关闭 `autoImportComponents`，并手动声明同一批 `usingComponents` 后执行 `weapp-vite build`。')
-  lines.push('- `current`：开启当前自动导入实现后直接执行 `weapp-vite build`。')
-  lines.push('- 该结果包含支持文件同步、配置加载和完整构建流程。')
-  lines.push('')
 
   return `${lines.join('\n')}\n`
 }

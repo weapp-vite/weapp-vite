@@ -189,9 +189,69 @@ describe('wxmlService', () => {
   })
 
   it('ignores empty component map', () => {
+    wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', {
+      componentA: [
+        { start: 0, end: 10 },
+      ],
+    })
     wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', {})
 
     expect(wxmlService.wxmlComponentsMap.has('/mock/project/file')).toBe(false)
+  })
+
+  it('aggregates component tags across imported templates', async () => {
+    await wxmlService.setDeps('/mock/project/file.wxml', ['/mock/project/header.wxml'])
+    wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', {
+      'card-shell': [{ start: 0, end: 0 }],
+    })
+    wxmlService.setWxmlComponentsMap('/mock/project/header.wxml', {
+      'van-button': [{ start: 1, end: 1 }],
+    })
+
+    expect(wxmlService.getAggregatedComponents('/mock/project/file')).toEqual({
+      'card-shell': [{ start: 0, end: 0 }],
+      'van-button': [{ start: 1, end: 1 }],
+    })
+  })
+
+  it('invalidates aggregated cache through importer chain when imported template changes', async () => {
+    await wxmlService.setDeps('/mock/project/file.wxml', ['/mock/project/header.wxml'])
+    wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', {
+      'card-shell': [{ start: 0, end: 0 }],
+    })
+    wxmlService.setWxmlComponentsMap('/mock/project/header.wxml', {
+      'van-button': [{ start: 1, end: 1 }],
+    })
+
+    expect(wxmlService.getAggregatedComponents('/mock/project/file')).toEqual({
+      'card-shell': [{ start: 0, end: 0 }],
+      'van-button': [{ start: 1, end: 1 }],
+    })
+
+    wxmlService.setWxmlComponentsMap('/mock/project/header.wxml', {
+      't-button': [{ start: 2, end: 2 }],
+    })
+
+    expect(wxmlService.getAggregatedComponents('/mock/project/file')).toEqual({
+      'card-shell': [{ start: 0, end: 0 }],
+      't-button': [{ start: 2, end: 2 }],
+    })
+  })
+
+  it('handles cyclic template dependencies when aggregating components', async () => {
+    await wxmlService.setDeps('/mock/project/file.wxml', ['/mock/project/header.wxml'])
+    await wxmlService.setDeps('/mock/project/header.wxml', ['/mock/project/file.wxml'])
+    wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', {
+      'card-shell': [{ start: 0, end: 0 }],
+    })
+    wxmlService.setWxmlComponentsMap('/mock/project/header.wxml', {
+      'van-button': [{ start: 1, end: 1 }],
+    })
+
+    expect(wxmlService.getAggregatedComponents('/mock/project/file')).toEqual({
+      'card-shell': [{ start: 0, end: 0 }],
+      'van-button': [{ start: 1, end: 1 }],
+    })
   })
 
   it('re-scans when template content changes with identical mtime', async () => {

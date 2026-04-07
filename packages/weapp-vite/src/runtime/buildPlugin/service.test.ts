@@ -135,6 +135,8 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
     },
     scanService: {
       workersDir: undefined,
+      loadAppEntry: vi.fn(async () => {}),
+      loadSubPackages: vi.fn(() => []),
     },
   } as any
 
@@ -360,6 +362,61 @@ describe('runtime buildPlugin service', () => {
       projectPrivateConfigPath: '/project/project.private.config.json',
       enabled: true,
     })
+  })
+
+  it('preloads app entry before concurrent prod npm build when local subpackage npm config exists', async () => {
+    process.env.NODE_ENV = 'production'
+    buildMock.mockResolvedValueOnce({ output: [] })
+
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        isDev: false,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            subPackages: {
+              packageA: {
+                dependencies: ['dayjs'],
+              },
+            },
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    await service.build()
+
+    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
+    expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
+  })
+
+  it('preloads app entry before prod build when worker entry config needs workersDir', async () => {
+    process.env.NODE_ENV = 'production'
+    buildMock.mockResolvedValueOnce({ output: [] })
+
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        isDev: false,
+        weappViteConfig: {
+          worker: {
+            entry: ['index'],
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    await service.build({ skipNpm: true })
+
+    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
+    expect(ctx.npmService.build).not.toHaveBeenCalled()
   })
 
   it('runs isolated plugin watcher in dev mode and registers it on main watcher service', async () => {

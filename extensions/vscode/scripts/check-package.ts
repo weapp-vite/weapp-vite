@@ -4,7 +4,6 @@ import process from 'node:process'
 
 const extensionRoot = path.resolve(process.cwd())
 const packageJsonPath = path.join(extensionRoot, 'package.json')
-const vscodeIgnorePath = path.join(extensionRoot, '.vscodeignore')
 
 /**
  * @param {string} filePath
@@ -15,21 +14,7 @@ function ensureFile(filePath) {
   }
 }
 
-/**
- * @param {string[]} rules
- * @param {string} expectedRule
- */
-function ensureRule(rules, expectedRule) {
-  if (!rules.includes(expectedRule)) {
-    throw new Error(`missing .vscodeignore rule: ${expectedRule}`)
-  }
-}
-
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
-const vscodeIgnoreRules = fs.readFileSync(vscodeIgnorePath, 'utf8')
-  .split('\n')
-  .map(line => line.trim())
-  .filter(Boolean)
 
 const requiredFiles = [
   'extension.ts',
@@ -51,8 +36,8 @@ for (const relativePath of requiredFiles) {
   ensureFile(path.join(extensionRoot, relativePath))
 }
 
-for (const expectedRule of ['extension/*.test.ts', 'extension/**/*.test.ts', 'scripts/**', 'types/**', 'tsconfig.json', 'PUBLISHING.md']) {
-  ensureRule(vscodeIgnoreRules, expectedRule)
+if (fs.existsSync(path.join(extensionRoot, '.vscodeignore'))) {
+  throw new Error('.vscodeignore should be removed when package.json files whitelist is present')
 }
 
 if (!Array.isArray(packageJson.files) || packageJson.files.length === 0) {

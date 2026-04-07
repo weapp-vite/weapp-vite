@@ -2,8 +2,6 @@ import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { JsonResolvableEntry } from '../utils'
 import type { FileCache } from '@/cache'
-import { createRequire } from 'node:module'
-import process from 'node:process'
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
@@ -22,7 +20,6 @@ export interface JsonService {
 
 function createJsonService(ctx: MutableCompilerContext): JsonService {
   const cache = ctx.runtimeState.json.cache
-  const nodeRequire = createRequire(import.meta.url)
 
   async function read(filepath: string) {
     const configService = requireConfigService(ctx, '读取 JSON 前必须初始化 configService。')
@@ -53,31 +50,6 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
         const tempFilepath = inlinedContent === scriptContent
           ? filepath
           : path.join(path.dirname(filepath), `.${path.basename(filepath, path.extname(filepath))}.auto-routes-inline${path.extname(filepath)}`)
-        const routesModule = {
-          routes: fallbackRoutes,
-          default: fallbackRoutes,
-          pages: fallbackRoutes.pages,
-          entries: fallbackRoutes.entries,
-          subPackages: fallbackRoutes.subPackages,
-        }
-        const customRequire = async (id: string, meta: { format: 'esm' | 'cjs' }) => {
-          if (process.env.__WEAPP_VITE_DEBUG_AUTO_ROUTES__) {
-            logger.debug('[auto-routes] bundleRequire import', id, meta.format)
-          }
-          if (id === 'weapp-vite/auto-routes' || id === 'weapp-vite/auto-routes.mjs' || id === 'weapp-vite/auto-routes.cjs') {
-            return routesModule
-          }
-          if (id.startsWith('file://')) {
-            if (id.endsWith('/auto-routes.mjs') || id.endsWith('/auto-routes.cjs')) {
-              return routesModule
-            }
-            return await import(id)
-          }
-          if (meta.format === 'esm') {
-            return await import(id)
-          }
-          return nodeRequire(id)
-        }
         try {
           if (tempFilepath !== filepath) {
             await fs.writeFile(tempFilepath, inlinedContent, 'utf8')
@@ -86,7 +58,6 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
             filepath: tempFilepath,
             cwd: configService.options.cwd,
             preserveTemporaryFile: true,
-            require: customRequire,
             rolldownOptions: {
               input: {
                 // @ts-ignore
