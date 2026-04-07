@@ -26,16 +26,16 @@ it('manifest exposes practical command set', () => {
 })
 
 it('manifest keeps publish-safe file whitelist', () => {
-  assert.deepEqual(packageJson.files, [
+  assert.deepEqual([...packageJson.files].sort(), [
     'assets/**',
-    'dist/**',
-    'README.md',
     'CHANGELOG.md',
     'LICENSE',
+    'README.md',
+    'dist/**',
     'package.json',
     'snippets/**',
     'syntaxes/**',
-  ])
+  ].sort())
 })
 
 it('manifest exposes local verification scripts', () => {
