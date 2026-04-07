@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- e2e dev 进程控制需要 execa 驱动子进程并清理残留 watcher。 */
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { execa } from 'execa'
@@ -44,6 +45,19 @@ function formatExitInfo(info: DevProcessExitInfo) {
     parts.push(`reason=${info.reason}`)
   }
   return parts.join(', ')
+}
+
+function appendRecentOutput(message: string, outputChunks: string[]) {
+  const output = outputChunks.join('')
+  if (!output.trim()) {
+    return message
+  }
+
+  const recentOutput = output.length > 4000
+    ? output.slice(-4000)
+    : output
+
+  return `${message}\n\nRecent dev output:\n${recentOutput}`
 }
 
 function sleep(ms: number) {
@@ -179,7 +193,11 @@ export function startDevProcess(
   args: readonly string[],
   options?: Parameters<typeof execa>[2],
 ): DevProcessController {
-  const child = execa(command, args, options)
+  const child = execa(command, args, {
+    ...options,
+    env: options?.env ?? process.env,
+    extendEnv: false,
+  })
   if (typeof child.pid === 'number') {
     TRACKED_DEV_PIDS.add(child.pid)
   }
@@ -229,7 +247,12 @@ export function startDevProcess(
 
   const waitFor = async <T>(task: Promise<T>, description: string) => {
     const winner = await Promise.race([
-      task.then(value => ({ type: 'task' as const, value })),
+      task
+        .then(value => ({ type: 'task' as const, value }))
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error)
+          throw new Error(appendRecentOutput(message, outputChunks))
+        }),
       settledExit.then(info => ({ type: 'exit' as const, info })),
     ])
     if (winner.type === 'task') {
@@ -256,7 +279,7 @@ export function startDevProcess(
         break
       }
     }
-    throw new Error(`Timed out waiting for dev output: ${description}`)
+    throw new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks))
   }
 
   const stop = async (forceKillDelayMs = 3_000) => {

@@ -8,6 +8,7 @@ export function createDevProcessEnv(): NodeJS.ProcessEnv {
     CHOKIDAR_USEPOLLING: '1',
     CHOKIDAR_INTERVAL: '120',
   }
+  delete env.CI
   delete env.VITEST
   delete env.VITEST_MODE
   delete env.VITEST_POOL_ID
