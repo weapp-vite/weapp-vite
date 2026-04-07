@@ -4,7 +4,7 @@
   "displayName": "weapp-vite",
   "version": "0.0.1",
   "private": true,
-  "description": "Syntax highlighting for weapp-vite <json> blocks in .vue (TextMate injection: JSONC/JSON5/TS/JS).",
+  "description": "Practical VS Code support for weapp-vite projects: commands, status bar, snippets, and custom block highlighting.",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite/tree/main/extensions/vscode",
   "repository": {
@@ -21,18 +21,48 @@
     "volar",
     "textmate",
     "syntax",
-    "jsonc"
+    "jsonc",
+    "miniprogram",
+    "wechat",
+    "vite"
   ],
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Other"
   ],
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
   "icon": "assets/logo.png",
+  "files": [
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+    "assets/**",
+    "dist/**",
+    "package.json",
+    "snippets/**",
+    "syntaxes/**"
+  ],
   "engines": {
     "vscode": "^1.88.0"
   },
   "activationEvents": [
-    "onCommand:weapp-vite.generate"
+    "workspaceContains:**/vite.config.ts",
+    "workspaceContains:**/vite.config.mts",
+    "workspaceContains:**/vite.config.js",
+    "workspaceContains:**/vite.config.mjs",
+    "workspaceContains:**/package.json",
+    "onCommand:weapp-vite.generate",
+    "onCommand:weapp-vite.dev",
+    "onCommand:weapp-vite.build",
+    "onCommand:weapp-vite.open",
+    "onCommand:weapp-vite.doctor",
+    "onCommand:weapp-vite.showProjectInfo",
+    "onCommand:weapp-vite.showOutput",
+    "onCommand:weapp-vite.runAction",
+    "onCommand:weapp-vite.insertJsonBlockTemplate",
+    "onCommand:weapp-vite.insertDefineConfigTemplate",
+    "onCommand:weapp-vite.insertCommonScripts",
+    "onCommand:weapp-vite.openDocs"
   ],
   "contributes": {
     "commands": [
@@ -40,6 +70,105 @@
         "command": "weapp-vite.generate",
         "title": "Generate",
         "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.dev",
+        "title": "Dev",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.build",
+        "title": "Build",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.open",
+        "title": "Open DevTools",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.doctor",
+        "title": "Doctor / Info",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.showProjectInfo",
+        "title": "Show Project Info",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.showOutput",
+        "title": "Show Output",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.runAction",
+        "title": "Run Action",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.insertJsonBlockTemplate",
+        "title": "Insert <json> Block Template",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.insertDefineConfigTemplate",
+        "title": "Insert defineConfig Template",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.insertCommonScripts",
+        "title": "Insert Common Scripts",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.openDocs",
+        "title": "Open Docs",
+        "category": "weapp-vite"
+      }
+    ],
+    "configuration": {
+      "title": "weapp-vite",
+      "properties": {
+        "weapp-vite.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在识别到 weapp-vite 工作区时显示状态栏入口。"
+        },
+        "weapp-vite.enablePackageJsonDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在 package.json 中提示缺失的常用 weapp-vite scripts。"
+        },
+        "weapp-vite.enableHover": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用 package.json、vite.config.*、.vue 中的轻量 Hover 提示。"
+        },
+        "weapp-vite.enableCompletion": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用 package.json、vite.config.*、.vue 中的上下文补全。"
+        },
+        "weapp-vite.preferWvAlias": {
+          "type": "boolean",
+          "default": true,
+          "description": "终端命令和脚本模板是否优先使用 wv 别名而不是 weapp-vite 全称。"
+        }
+      }
+    },
+    "snippets": [
+      {
+        "language": "vue",
+        "path": "./snippets/weapp-vite.code-snippets"
+      },
+      {
+        "language": "typescript",
+        "path": "./snippets/weapp-vite.code-snippets"
+      },
+      {
+        "language": "javascript",
+        "path": "./snippets/weapp-vite.code-snippets"
       }
     ],
     "grammars": [
@@ -57,6 +186,150 @@
           "source.ts": "typescript"
         }
       }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "weapp-vite.generate",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.dev",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.build",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.open",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.doctor",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.showProjectInfo",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.showOutput",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.runAction",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.insertJsonBlockTemplate",
+          "when": "editorLangId == vue"
+        },
+        {
+          "command": "weapp-vite.insertDefineConfigTemplate",
+          "when": "resourceFilename =~ /^vite\\.config\\./"
+        },
+        {
+          "command": "weapp-vite.insertCommonScripts",
+          "when": "resourceFilename == package.json"
+        },
+        {
+          "command": "weapp-vite.openDocs",
+          "when": "true"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "weapp-vite.runAction",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "weapp-vite.insertJsonBlockTemplate",
+          "group": "navigation",
+          "when": "editorLangId == vue"
+        },
+        {
+          "command": "weapp-vite.insertDefineConfigTemplate",
+          "group": "navigation",
+          "when": "resourceFilename =~ /^vite\\.config\\./"
+        },
+        {
+          "command": "weapp-vite.insertCommonScripts",
+          "group": "navigation",
+          "when": "resourceFilename == package.json"
+        },
+        {
+          "command": "weapp-vite.openDocs",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        }
+      ]
+    },
+    "walkthroughs": [
+      {
+        "id": "weapp-vite.getting-started",
+        "title": "weapp-vite 快速开始",
+        "description": "在 VS Code 中快速进入 weapp-vite 的常用工作流。",
+        "steps": [
+          {
+            "id": "weapp-vite.open-actions",
+            "title": "打开统一操作入口",
+            "description": "运行 `weapp-vite: Run Action`，从一个入口访问 `dev`、`build`、`generate`、`open`、项目概览和输出面板。",
+            "media": {
+              "image": "assets/logo.png",
+              "altText": "weapp-vite"
+            },
+            "completionEvents": [
+              "onCommand:weapp-vite.runAction"
+            ]
+          },
+          {
+            "id": "weapp-vite.insert-config",
+            "title": "插入配置模板",
+            "description": "在 `vite.config.*` 或 `.vue` 文件中使用上下文命令插入 `defineConfig` 模板和 `<json>` 自定义块。",
+            "media": {
+              "image": "assets/logo.png",
+              "altText": "weapp-vite"
+            },
+            "completionEvents": [
+              "onCommand:weapp-vite.insertDefineConfigTemplate",
+              "onCommand:weapp-vite.insertJsonBlockTemplate"
+            ]
+          },
+          {
+            "id": "weapp-vite.open-docs",
+            "title": "打开文档",
+            "description": "运行 `weapp-vite: Open Docs` 快速跳转到项目指南、generate 文档或扩展目录。",
+            "media": {
+              "image": "assets/logo.png",
+              "altText": "weapp-vite"
+            },
+            "completionEvents": [
+              "onCommand:weapp-vite.openDocs"
+            ]
+          }
+        ]
+      }
     ]
+  },
+  "scripts": {
+    "build": "pnpm exec tsdown --config tsdown.config.mts",
+    "lint": "pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts",
+    "test": "pnpm vitest run -c vitest.config.ts",
+    "smoke:dist": "node --import tsx scripts/smoke-test.ts",
+    "check": "pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist",
+    "check:package": "node --import tsx scripts/check-package.ts",
+    "check:publish": "pnpm run check && pnpm run check:package",
+    "package:dry-run": "pnpm run build && node --import tsx scripts/package-dry-run.ts package",
+    "check:vsix": "pnpm run package:dry-run && node --import tsx scripts/check-vsix.ts",
+    "publish:vsce": "pnpm run check:publish && node --import tsx scripts/release-vsce.ts publish"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
   }
 }
