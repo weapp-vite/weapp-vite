@@ -11,7 +11,6 @@ import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
 
 const PACKAGE_NAME_REGEX = /[-/\\^$*+?.()|[\]{}]/g
-const DEV_CSS_FILE_NAME_CONFLICT_RE = /\[FILE_NAME_CONFLICT\][\s\S]*?emitted file [^\n]*\.css overwrites a previously emitted file of the same name\./i
 
 interface MergeMiniprogramOptions {
   ctx: MutableCompilerContext
@@ -75,17 +74,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   applyRuntimePlatform('miniprogram')
 
   const createMiniprogramCustomLogger = (): Logger => {
-    const logger = createLogger('warn')
-    const baseWarn = logger.warn.bind(logger)
-
-    logger.warn = (msg, options) => {
-      if (typeof msg === 'string' && DEV_CSS_FILE_NAME_CONFLICT_RE.test(msg)) {
-        return
-      }
-      return baseWarn(msg, options)
-    }
-
-    return logger
+    return createLogger('warn')
   }
 
   const external: (string | RegExp)[] = []

@@ -10,6 +10,8 @@ import { pathToFileURL } from 'node:url'
 const READY_MARKER = '开发服务已就绪'
 const REBUILD_MARKER = '小程序已重新构建'
 const CONFLICT_MARKER = '[FILE_NAME_CONFLICT]'
+const DEV_READY_TIMEOUT_MS = 60_000
+const REBUILD_TIMEOUT_MS = 30_000
 const CONFIG_IMPORT_RE = /from ['"]weapp-vite(?:\/config)?['"]/g
 const NODE_MODULES_RE = /[\\/]node_modules(?:[\\/]|$)/
 
@@ -95,6 +97,45 @@ async function createTempProject() {
   return tempRoot
 }
 
+async function runCommand(cwd, command, args, options = {}) {
+  const timeoutMs = options.timeoutMs ?? 60_000
+
+  await new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      env: {
+        ...process.env,
+        FORCE_COLOR: '0',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    const output = []
+    const timer = setTimeout(() => {
+      child.kill('SIGINT')
+      reject(new Error(`${command} ${args.join(' ')} timed out\n\n${output.join('')}`))
+    }, timeoutMs)
+
+    const collect = (chunk) => {
+      output.push(chunk.toString('utf8'))
+    }
+
+    child.stdout.on('data', collect)
+    child.stderr.on('data', collect)
+    child.once('error', (error) => {
+      clearTimeout(timer)
+      reject(error)
+    })
+    child.once('close', (code, signal) => {
+      clearTimeout(timer)
+      if (code === 0) {
+        resolve(undefined)
+        return
+      }
+      reject(new Error(`${command} ${args.join(' ')} exited with code=${code} signal=${signal}\n\n${output.join('')}`))
+    })
+  })
+}
+
 async function updateFile(root, relativeFile, mode) {
   const filePath = path.join(root, relativeFile)
   if (mode === 'touch-existing') {
@@ -148,16 +189,38 @@ async function main() {
   })
 
   try {
+    await runCommand(tempRoot, 'pnpm', ['exec', 'wv', 'prepare'])
+
     await Promise.race([
-      waitForCondition(() => ready, 30_000, 'watch dev server did not become ready in time'),
+      waitForCondition(
+        () => ready,
+        DEV_READY_TIMEOUT_MS,
+        `watch dev server did not become ready in time\n\n${output.join('')}`,
+      ),
       closePromise,
     ])
 
     const changePlan = [
+      { relativeFile: 'src/app.json', mode: 'touch-existing' },
+      { relativeFile: 'src/theme.json', mode: 'touch-existing' },
+      { relativeFile: 'src/sitemap.json', mode: 'touch-existing' },
       { relativeFile: 'src/pages/index/index.wxml', mode: 'touch-existing' },
+      { relativeFile: 'src/pages/index/index.json', mode: 'touch-existing' },
       { relativeFile: 'src/pages/index/index.ts', mode: 'touch-existing' },
+      { relativeFile: 'src/pages/index/index.scss', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/default/index.wxml', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/default/index.json', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/default/index.ts', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/default/index.scss', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/admin/index.wxml', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/admin/index.json', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/admin/index.ts', mode: 'touch-existing' },
+      { relativeFile: 'src/layouts/admin/index.scss', mode: 'touch-existing' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.wxml', mode: 'touch-existing' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.json', mode: 'touch-existing' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.ts', mode: 'touch-existing' },
+      { relativeFile: 'src/components/HelloWorld/HelloWorld.scss', mode: 'touch-existing' },
       { relativeFile: 'src/app.scss', mode: 'touch-existing' },
-      { relativeFile: 'src/pages/index/index.wxml', mode: 'touch-existing' },
     ]
 
     for (const step of changePlan) {
@@ -166,8 +229,8 @@ async function main() {
       await Promise.race([
         waitForCondition(
           () => rebuildCount > previousRebuildCount,
-          30_000,
-          `watch rebuild did not complete after ${step.relativeFile}`,
+          REBUILD_TIMEOUT_MS,
+          `watch rebuild did not complete after ${step.relativeFile}\n\n${output.join('')}`,
         ),
         closePromise,
       ])
