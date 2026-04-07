@@ -32,7 +32,7 @@ describe.skip('hmr sharedChunks auto diagnostics (dev watch)', () => {
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       env: {
-        ...createDevProcessEnv(),
+        ...createDevProcessEnv({ disableSidecarWatch: true }),
         DEBUG: 'weapp-vite:load-entry',
       },
       all: true,
@@ -66,7 +66,7 @@ describe.skip('hmr sharedChunks auto diagnostics (dev watch)', () => {
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       env: {
-        ...createDevProcessEnv(),
+        ...createDevProcessEnv({ disableSidecarWatch: true }),
         DEBUG: 'weapp-vite:load-entry',
       },
       all: true,

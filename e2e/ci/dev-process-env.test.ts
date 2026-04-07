@@ -52,6 +52,14 @@ describe('dev process env isolation', () => {
     expect(env.VITEST_WORKER_ID).toBeUndefined()
     expect(env.NODE_OPTIONS).toBeUndefined()
     expect(env.NODE_ENV).toBe('development')
+    expect(env.WEAPP_VITE_DISABLE_SIDECAR_WATCH).toBeUndefined()
+  })
+
+  it('allows opting out of sidecar watch for targeted diagnostics', async () => {
+    const { createDevProcessEnv } = await import('../utils/dev-process-env')
+
+    const env = createDevProcessEnv({ disableSidecarWatch: true })
+
     expect(env.WEAPP_VITE_DISABLE_SIDECAR_WATCH).toBe('1')
   })
 
