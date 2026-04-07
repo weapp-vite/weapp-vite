@@ -11,25 +11,21 @@ on:
         description: relative regression threshold percent
         required: false
         default: '10'
-        type: string
       min-extra-ms:
         description: minimum absolute regression cost in milliseconds
         required: false
         default: '80'
-        type: string
       iterations:
         description: benchmark iterations per scenario
         required: false
         default: '2'
-        type: string
       scenarios:
         description: comma-separated resolver component counts
         required: false
         default: '1,20'
-        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -40,12 +36,6 @@ jobs:
     name: Auto Import Performance (Ubuntu / Node 20)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      AUTO_IMPORT_BENCH_THRESHOLD_PERCENT: ${{ github.event.inputs['threshold-percent'] || '10' }}
-      AUTO_IMPORT_BENCH_MIN_EXTRA_MS: ${{ github.event.inputs['min-extra-ms'] || '80' }}
-      BENCH_ITERATIONS: ${{ github.event.inputs.iterations || '2' }}
-      BENCH_SCENARIOS: ${{ github.event.inputs.scenarios || '1,20' }}
-      AUTO_IMPORT_BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-performance-report
 
     steps:
       - name: Check out code
@@ -54,6 +44,38 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: '20'
+
+      - name: Resolve benchmark inputs
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_THRESHOLD_PERCENT: ${{ github.event.inputs['threshold-percent'] || '' }}
+          INPUT_MIN_EXTRA_MS: ${{ github.event.inputs['min-extra-ms'] || '' }}
+          INPUT_ITERATIONS: ${{ github.event.inputs.iterations || '' }}
+          INPUT_SCENARIOS: ${{ github.event.inputs.scenarios || '' }}
+          AUTO_IMPORT_BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-performance-report
+        run: |
+          export AUTO_IMPORT_BENCH_THRESHOLD_PERCENT="${INPUT_THRESHOLD_PERCENT:-10}"
+          export AUTO_IMPORT_BENCH_MIN_EXTRA_MS="${INPUT_MIN_EXTRA_MS:-80}"
+          export BENCH_ITERATIONS="${INPUT_ITERATIONS:-2}"
+          export BENCH_SCENARIOS="${INPUT_SCENARIOS:-1,20}"
+
+          {
+            echo "AUTO_IMPORT_BENCH_THRESHOLD_PERCENT=${AUTO_IMPORT_BENCH_THRESHOLD_PERCENT}"
+            echo "AUTO_IMPORT_BENCH_MIN_EXTRA_MS=${AUTO_IMPORT_BENCH_MIN_EXTRA_MS}"
+            echo "BENCH_ITERATIONS=${BENCH_ITERATIONS}"
+            echo "BENCH_SCENARIOS=${BENCH_SCENARIOS}"
+            echo "AUTO_IMPORT_BENCH_REPORT_DIR=${AUTO_IMPORT_BENCH_REPORT_DIR}"
+          } >> "$GITHUB_ENV"
+
+          {
+            echo "### auto-import benchmark inputs"
+            echo "- event: \`${EVENT_NAME}\`"
+            echo "- threshold percent: \`${AUTO_IMPORT_BENCH_THRESHOLD_PERCENT}\`"
+            echo "- min extra ms: \`${AUTO_IMPORT_BENCH_MIN_EXTRA_MS}\`"
+            echo "- iterations: \`${BENCH_ITERATIONS}\`"
+            echo "- scenarios: \`${BENCH_SCENARIOS}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run auto-import performance benchmark
         run: pnpm --filter weapp-vite benchmark:auto-import:ci
