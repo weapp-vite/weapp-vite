@@ -1288,9 +1288,6 @@ importers:
       merge:
         specifier: 'catalog:'
         version: 2.1.1
-      socket.io-client:
-        specifier: ^4.8.3
-        version: 4.8.3(bufferutil@4.0.9)
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.13.1
@@ -1298,6 +1295,9 @@ importers:
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3(bufferutil@4.0.9)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite

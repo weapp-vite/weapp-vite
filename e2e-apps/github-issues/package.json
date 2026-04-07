@@ -13,11 +13,11 @@
     "camelcase": "^9.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",
-    "socket.io-client": "^4.8.3",
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",
+    "socket.io-client": "^4.8.3",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }
