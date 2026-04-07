@@ -1,0 +1,3 @@
+<view class="native-ref-probe">
+  <text class="native-ref-probe__label">{{label}}</text>
+</view>
