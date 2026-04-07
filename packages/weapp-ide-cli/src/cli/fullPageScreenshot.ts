@@ -1,18 +1,6 @@
+import type { MiniProgramLike, MiniProgramPage } from './automator-session'
 import { Buffer } from 'node:buffer'
 import { PNG } from 'pngjs'
-
-interface MiniProgramLike {
-  pageScrollTo: (scrollTop: number) => Promise<void>
-  screenshot: () => Promise<string | Buffer>
-  currentPage: () => Promise<PageLike>
-  systemInfo: () => Promise<Record<string, unknown>>
-}
-
-interface PageLike {
-  size: () => Promise<{ width: number, height: number }>
-  scrollTop?: () => Promise<number>
-  waitFor: (condition: number) => Promise<void>
-}
 
 interface FullPageCaptureOptions {
   miniProgram: MiniProgramLike
@@ -65,10 +53,15 @@ function cropPngRows(source: PNG, startRow: number, rowCount: number) {
   for (let row = 0; row < rowCount; row += 1) {
     const sourceStart = (startRow + row) * bytesPerRow
     const sourceEnd = sourceStart + bytesPerRow
-    source.data.copy(cropped.data, row * bytesPerRow, sourceStart, sourceEnd)
+    cropped.data.set(source.data.subarray(sourceStart, sourceEnd), row * bytesPerRow)
   }
 
   return cropped
+}
+
+async function restoreScrollPosition(miniProgram: MiniProgramLike, page: MiniProgramPage, scrollTop: number) {
+  await miniProgram.pageScrollTo(scrollTop)
+  await page.waitFor(150)
 }
 
 /**
@@ -136,8 +129,7 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
     }
   }
   finally {
-    await miniProgram.pageScrollTo(initialScrollTop)
-    await page.waitFor(150)
+    await restoreScrollPosition(miniProgram, page, initialScrollTop)
   }
 
   if (segments.length === 0) {
@@ -158,7 +150,7 @@ export async function captureFullPageScreenshotBuffer(options: FullPageCaptureOp
     for (let row = 0; row < segment.height; row += 1) {
       const sourceStart = row * bytesPerRow
       const sourceEnd = sourceStart + bytesPerRow
-      segment.data.copy(merged.data, (offsetY + row) * bytesPerRow, sourceStart, sourceEnd)
+      merged.data.set(segment.data.subarray(sourceStart, sourceEnd), (offsetY + row) * bytesPerRow)
     }
     offsetY += segment.height
   }

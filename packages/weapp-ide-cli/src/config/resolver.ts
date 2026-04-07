@@ -5,13 +5,23 @@ import { getDefaultCliPath } from '../runtime/platform'
 import { readCustomConfig } from './custom'
 import { defaultCustomConfigFilePath } from './paths'
 
+interface CustomConfigJson {
+  cliPath?: unknown
+  locale?: unknown
+}
+
+function isCustomConfigJson(value: unknown): value is CustomConfigJson {
+  return typeof value === 'object' && value !== null
+}
+
 /**
  * @description 读取并解析 CLI 配置（自定义优先）
  */
 export async function getConfig(): Promise<ResolvedConfig> {
   if (await fs.pathExists(defaultCustomConfigFilePath)) {
     try {
-      const config = await fs.readJSON(defaultCustomConfigFilePath)
+      const rawConfig = await fs.readJSON(defaultCustomConfigFilePath)
+      const config = isCustomConfigJson(rawConfig) ? rawConfig : {}
       const cliPath = typeof config.cliPath === 'string' ? config.cliPath.trim() : ''
       const locale = config.locale === 'zh' || config.locale === 'en' ? config.locale : undefined
 
