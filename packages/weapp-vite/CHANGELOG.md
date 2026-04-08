@@ -1,5 +1,35 @@
 # weapp-vite
 
+## 6.14.2
+
+### Patch Changes
+
+- 🐛 **修复 `autoImportComponents.globs = []` 会被默认扫描规则覆盖的问题。现在可以只保留 `autoImportComponents.resolvers`，同时通过手写 `import XXX from 'xxx.vue'` 明确控制组件导入，不再强制启用基于 `components/**` 的自动扫描。** [`5ff2517`](https://github.com/weapp-vite/weapp-vite/commit/5ff25172a4040f05d75c2f294ed083b05d1fb190) by @sonofmagic
+
+- 🐛 **修复原生小程序 `autoImportComponents` 遇到与微信内置组件同名的本地组件时缺少明确反馈的问题。现在像 `list-view` 这类与宿主内置标签重名的组件，会在扫描阶段输出明确 warning；自动导入仍会优先使用本地组件，同时提示用户该命名会遮蔽同名内置组件，并建议参考微信官方组件文档重新命名。** [#430](https://github.com/weapp-vite/weapp-vite/pull/430) by @sonofmagic
+
+- 🐛 **优化 auto-import 在大量组件场景下的解析与支持文件同步性能。为内置 resolver 增加静态组件索引命中，减少重复的运行时 resolver 扫描；同时在 support files 与 manifest 内容未变化时跳过版本递增、重复写盘和联动输出重建，降低大项目中的构建与补全生成开销。** [#433](https://github.com/weapp-vite/weapp-vite/pull/433) by @sonofmagic
+
+- 🐛 **修复手动调用 `installRequestGlobals()` / `installAbortGlobals()` 时的请求全局兼容链路。现在 `weapp-vite` 会为这类显式安装场景补充被动本地绑定，`@wevu/web-apis` 也会同步更新内部实际全局映射，使同模块里的 `fetch`、`URL`、`AbortController` 等自由变量在小程序产物中能够正确读取到已安装的 polyfill，而不会再出现手动安装后仍为 `undefined` 的情况。** [`feb5eaf`](https://github.com/weapp-vite/weapp-vite/commit/feb5eaf2dbbb232359b59fb4625bf626e047e415) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev` 里按 `s` 默认截图仍写入 `.tmp` 的路径约定不一致问题；现在会统一保存到项目根目录的 `.weapp-vite/dev-screenshots`，与仓库已有的本地支持文件和内部缓存目录保持一致。** [#433](https://github.com/weapp-vite/weapp-vite/pull/433) by @sonofmagic
+
+- 🐛 **修复小程序运行时中 `socket.io-client` 的 `polling` 与 `websocket` 两种传输模式兼容性。现在构建产物会提前把请求相关全局对象的惰性占位符暴露到 `globalThis`，并在真实运行时安装阶段正确替换这些占位符，避免第三方库在模块初始化阶段读取 `WebSocket` 等全局对象时失效或形成递归调用。** [`d89b50b`](https://github.com/weapp-vite/weapp-vite/commit/d89b50b573e461b91bf92e6febd279b72da95fed) by @sonofmagic
+
+- 🐛 **修复小程序产物里 `import.meta` 相关静态值没有被展开的问题。现在原生 `.wxml` 模板与源码脚本中的 `import.meta.env`、`import.meta.url`、`import.meta.dirname`，以及裸 `import.meta`，都会在输出阶段按当前模块的静态上下文展开，避免把这些表达式原样透传到最终产物。** [#432](https://github.com/weapp-vite/weapp-vite/pull/432) by @sonofmagic
+
+- 🐛 **修复生产构建默认生成 `.weapp-vite` 自动导入支持文件带来的额外开销；现在 `build` 默认跳过这些内部产物，仅在显式配置输出路径时继续生成。** [#430](https://github.com/weapp-vite/weapp-vite/pull/430) by @sonofmagic
+
+- 🐛 **默认将 wevu 配置缓存写入项目内的 `.weapp-vite/wevu-config`，并同步忽略该内部目录，避免临时文件再次参与监听、路由扫描与源码排除逻辑。** [#430](https://github.com/weapp-vite/weapp-vite/pull/430) by @sonofmagic
+
+- 🐛 **修复开发态 watch 在编辑器 rename-save/原子保存场景下把短暂的 `delete` 事件当成真实删除处理的问题。现在同路径文件在短时间内重新出现时会按 `update` 归一化处理，避免热更新基于暂时缺失或半写入的源码生成不完整的页面 chunk / `common.js`，从而减少原生小程序保存后偶发丢代码与共享导出错位。** [#428](https://github.com/weapp-vite/weapp-vite/pull/428) by @sonofmagic
+
+- 🐛 **修复两处 CI 回归相关问题：一是同步 `github-issues` 中 request globals 构建产物断言到新的被动绑定注入形式；二是移除 `auto-routes` 生成类型里分包项 `root/pages` 的 `readonly` 限制，避免 `routes.subPackages` 直接传给 `defineAppJson()` 时在 `vue-tsc` 下出现类型不兼容。** [#430](https://github.com/weapp-vite/weapp-vite/pull/430) by @sonofmagic
+
+- 🐛 **修复独立分包构建时 `import.meta.env` 分包内联定义未正确参与静态替换的问题，避免子包页面产物把预期常量编译成 `undefined`。同时修正相关 fixture 测试工程的工作区包链接方式，确保 `pnpm test` 可以稳定加载 `weapp-vite` 配置并通过回归测试。** [#433](https://github.com/weapp-vite/weapp-vite/pull/433) by @sonofmagic
+- 📦 **Dependencies** [`a7f2fa2`](https://github.com/weapp-vite/weapp-vite/commit/a7f2fa290ae48aa4719be64fd6b07c99e87795cb)
+  → `wevu@6.14.2`, `@wevu/web-apis@1.2.1`, `@weapp-vite/ast@6.14.2`
+
 ## 6.14.1
 
 ### Patch Changes
