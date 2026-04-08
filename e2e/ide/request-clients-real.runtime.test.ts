@@ -1,30 +1,13 @@
-import type { Buffer } from 'node:buffer'
-import type { IncomingMessage } from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { rm } from 'node:fs/promises'
-import { createServer } from 'node:http'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/request-clients-real')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
-
-interface SharedServerState {
-  axios: number
-  fetch: number
-  graphql: number
-  vueQuery: number
-}
-
-const requestCounts: SharedServerState = {
-  axios: 0,
-  fetch: 0,
-  graphql: 0,
-  vueQuery: 0,
-}
 
 const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
   /listen EPERM/i,
@@ -33,106 +16,10 @@ const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
 ]
 
 let baseUrl = ''
-let server: ReturnType<typeof createServer> | null = null
+let serverHandle: Awaited<ReturnType<typeof startRequestClientsRealServer>> | null = null
 let miniProgram: any = null
 let buildPrepared = false
 let sharedInfraUnavailableMessage = ''
-
-function readBody(req: IncomingMessage) {
-  return new Promise<string>((resolve, reject) => {
-    let buffer = ''
-    req.on('data', (chunk: Buffer) => {
-      buffer += chunk.toString('utf8')
-    })
-    req.on('end', () => resolve(buffer))
-    req.on('error', reject)
-  })
-}
-
-function writeJson(res: any, payload: unknown, statusCode = 200) {
-  res.statusCode = statusCode
-  res.setHeader('content-type', 'application/json')
-  res.end(JSON.stringify(payload))
-}
-
-async function startLocalServer() {
-  server = createServer(async (req, res) => {
-    const url = new URL(req.url ?? '/', 'http://127.0.0.1')
-
-    if (url.pathname === '/fetch') {
-      requestCounts.fetch += 1
-      const bodyText = await readBody(req)
-      const body = bodyText ? JSON.parse(bodyText) : {}
-      writeJson(res, {
-        body,
-        method: req.method,
-        path: url.pathname,
-        requestCount: requestCounts.fetch,
-        transport: 'fetch',
-      })
-      return
-    }
-
-    if (url.pathname === '/axios') {
-      requestCounts.axios += 1
-      const bodyText = await readBody(req)
-      const body = bodyText ? JSON.parse(bodyText) : {}
-      writeJson(res, {
-        body,
-        method: req.method,
-        path: url.pathname,
-        query: Object.fromEntries(url.searchParams.entries()),
-        requestCount: requestCounts.axios,
-        transport: 'axios',
-      })
-      return
-    }
-
-    if (url.pathname === '/graphql') {
-      requestCounts.graphql += 1
-      const bodyText = await readBody(req)
-      const body = bodyText ? JSON.parse(bodyText) : {}
-      writeJson(res, {
-        data: {
-          transport: {
-            client: 'graphql-request',
-            operationName: 'TransportProbe',
-            path: url.pathname,
-            requestCount: requestCounts.graphql,
-            run: body.variables?.run ?? null,
-          },
-        },
-      })
-      return
-    }
-
-    if (url.pathname === '/vue-query') {
-      requestCounts.vueQuery += 1
-      const tab = url.searchParams.get('tab') === 'detail' ? 'detail' : 'overview'
-      const seed = Number(url.searchParams.get('seed') ?? '0')
-      writeJson(res, {
-        generatedAt: new Date().toISOString(),
-        label: tab === 'overview' ? 'Overview Data' : 'Detail Data',
-        requestCount: requestCounts.vueQuery,
-        seed,
-        tab,
-      })
-      return
-    }
-
-    writeJson(res, { error: 'not found', path: url.pathname }, 404)
-  })
-
-  await new Promise<void>((resolve, reject) => {
-    const currentServer = server!
-    currentServer.once('error', reject)
-    currentServer.once('listening', resolve)
-    currentServer.listen(0, '127.0.0.1')
-  })
-
-  const address = server.address() as AddressInfo
-  baseUrl = `http://127.0.0.1:${address.port}`
-}
 
 function isLocalServerInfraError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -183,7 +70,8 @@ function withBaseUrl(route: string) {
 
 beforeAll(async () => {
   try {
-    await startLocalServer()
+    serverHandle = await startRequestClientsRealServer()
+    baseUrl = serverHandle.baseUrl
   }
   catch (error) {
     if (isLocalServerInfraError(error)) {
@@ -198,16 +86,8 @@ afterAll(async () => {
   if (miniProgram) {
     await miniProgram.close()
   }
-  if (server) {
-    await new Promise<void>((resolve, reject) => {
-      server!.close((error) => {
-        if (error) {
-          reject(error)
-          return
-        }
-        resolve()
-      })
-    })
+  if (serverHandle) {
+    await serverHandle.stop()
   }
 })
 
@@ -232,7 +112,7 @@ describe.sequential('e2e app: request-clients-real', () => {
       }
 
       const result = await page.callMethod('runE2E')
-      expect(result?.ok, JSON.stringify({ result, requestCounts })).toBe(true)
+      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
       expect(result?.snapshot?.requestPath).toBe(testCase.path)
       expect(result?.snapshot?.payload).toContain(testCase.payloadToken)
       expect(result?.snapshot?.pageStatus).toBe('全部通过')
@@ -250,7 +130,7 @@ describe.sequential('e2e app: request-clients-real', () => {
     }
 
     const result = await page.callMethod('runE2E')
-    expect(result?.ok, JSON.stringify({ result, requestCounts })).toBe(true)
+    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.snapshot?.requestPath).toBe('/axios')
     expect(result?.snapshot?.payload).toContain('"transport":"axios"')
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
@@ -267,7 +147,7 @@ describe.sequential('e2e app: request-clients-real', () => {
     }
 
     const result = await page.callMethod('runE2E')
-    expect(result?.ok, JSON.stringify({ result, requestCounts })).toBe(true)
+    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.snapshot?.requestPath).toBe('/graphql')
     expect(result?.snapshot?.payload).toContain('"client":"graphql-request"')
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
@@ -284,7 +164,7 @@ describe.sequential('e2e app: request-clients-real', () => {
     }
 
     const result = await page.callMethod('runE2E')
-    expect(result?.ok, JSON.stringify({ result, requestCounts })).toBe(true)
+    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.checks).toEqual({
       initialOverview: true,
       switchedDetail: true,
@@ -294,5 +174,23 @@ describe.sequential('e2e app: request-clients-real', () => {
     expect(result?.snapshots?.initial?.label).toBe('Overview Data')
     expect(result?.snapshots?.detail?.label).toBe('Detail Data')
     expect(result?.snapshots?.afterRotate?.seed).toBe(1)
+  })
+
+  it('covers socket.io-client against a local real realtime server', async (ctx) => {
+    if (sharedInfraUnavailableMessage) {
+      ctx.skip(sharedInfraUnavailableMessage)
+    }
+    const miniProgram = await getMiniProgram(ctx)
+    const page = await miniProgram.reLaunch(withBaseUrl('/pages/socket-io/index'))
+    if (!page) {
+      throw new Error('Failed to launch /pages/socket-io/index')
+    }
+
+    const result = await page.callMethod('runE2E')
+    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
+    expect(result?.snapshot?.requestPath).toBe('/socket.io')
+    expect(result?.snapshot?.payload).toContain('"client":"socket.io-client"')
+    expect(['polling', 'websocket']).toContain(result?.transportName)
+    expect(result?.snapshot?.pageStatus).toBe('全部通过')
   })
 })

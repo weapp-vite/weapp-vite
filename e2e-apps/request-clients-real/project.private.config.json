@@ -55,6 +55,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/socket-io/index",
+          "pathName": "pages/socket-io/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

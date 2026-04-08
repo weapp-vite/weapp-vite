@@ -14,6 +14,7 @@
     "@weapp-vite/dashboard": "workspace:*",
     "axios": "^1.14.0",
     "graphql-request": "^7.3.1",
+    "socket.io-client": "^4.8.3",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }
