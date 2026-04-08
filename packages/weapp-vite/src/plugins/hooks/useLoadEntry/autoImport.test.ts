@@ -18,7 +18,6 @@ describe('createAutoImportAugmenter', () => {
     const applyAutoImports = createAutoImportAugmenter(
       { resolve, getVersion: vi.fn(() => 0) } as any,
       {
-        getAggregatedAutoImportComponents: vi.fn(() => ({ Navbar: [{ start: 0, end: 0 }] })),
         getAggregatedComponents: vi.fn(() => ({ Navbar: [{ start: 0, end: 0 }] })),
       } as any,
     )
@@ -48,7 +47,6 @@ describe('createAutoImportAugmenter', () => {
     const applyAutoImports = createAutoImportAugmenter(
       { resolve, getVersion: vi.fn(() => 0) } as any,
       {
-        getAggregatedAutoImportComponents: vi.fn(() => ({ Navbar: [{ start: 0, end: 0 }] })),
         getAggregatedComponents: vi.fn(() => ({ Navbar: [{ start: 0, end: 0 }] })),
       } as any,
     )
@@ -76,7 +74,6 @@ describe('createAutoImportAugmenter', () => {
     const applyAutoImports = createAutoImportAugmenter(
       { resolve, getVersion: vi.fn(() => 0) } as any,
       {
-        getAggregatedAutoImportComponents: vi.fn(() => ({ 'van-button': [{ start: 0, end: 0 }] })),
         getAggregatedComponents: vi.fn(() => ({ 'van-button': [{ start: 0, end: 0 }] })),
       } as any,
     )
@@ -101,12 +98,11 @@ describe('createAutoImportAugmenter', () => {
       }
     })
     const getVersion = vi.fn(() => 0)
-    const getAggregatedAutoImportComponents = vi.fn(() => hit)
     const getAggregatedComponents = vi.fn(() => hit)
 
     const applyAutoImports = createAutoImportAugmenter(
       { resolve, getVersion } as any,
-      { getAggregatedAutoImportComponents, getAggregatedComponents } as any,
+      { getAggregatedComponents } as any,
     )
 
     const firstJson: Record<string, any> = {}
@@ -118,36 +114,6 @@ describe('createAutoImportAugmenter', () => {
     expect(resolve).toHaveBeenCalledTimes(1)
     expect(secondJson.usingComponents).toEqual({
       'van-button': '/miniprogram_npm/@vant/weapp/button/index',
-    })
-  })
-
-  it('prefers auto-import candidates that keep builtin-name custom components visible', () => {
-    const resolve = vi.fn((name: string) => {
-      if (name === 'list-view') {
-        return {
-          value: {
-            name,
-            from: '/components/list-view/index',
-          },
-        }
-      }
-      return undefined
-    })
-
-    const applyAutoImports = createAutoImportAugmenter(
-      { resolve, getVersion: vi.fn(() => 0) } as any,
-      {
-        getAggregatedAutoImportComponents: vi.fn(() => ({ 'list-view': [{ start: 0, end: 0 }] })),
-        getAggregatedComponents: vi.fn(() => ({})),
-      } as any,
-    )
-
-    const json: Record<string, any> = {}
-    applyAutoImports('/project/src/pages/index/index', json)
-
-    expect(resolve).toHaveBeenCalledWith('list-view', '/project/src/pages/index/index')
-    expect(json.usingComponents).toEqual({
-      'list-view': '/components/list-view/index',
     })
   })
 })

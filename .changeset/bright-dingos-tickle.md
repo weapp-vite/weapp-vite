@@ -3,4 +3,4 @@
 'create-weapp-vite': patch
 ---
 
-修复原生小程序 `autoImportComponents` 在组件标签名与微信内置组件重名时的自动导入行为。现在像 `list-view` 这类与宿主内置标签同名的本地组件，仍然可以在页面或模板里被正确识别并写入 `usingComponents`，避免构建产物遗漏自动导入声明。
+修复原生小程序 `autoImportComponents` 遇到与微信内置组件同名的本地组件时缺少明确反馈的问题。现在像 `list-view` 这类与宿主内置标签重名的组件，会在扫描阶段输出明确 warning，并跳过自动导入注册，提示用户参考微信官方组件文档重新命名，避免继续生成含糊或不可预期的 `usingComponents` 结果。

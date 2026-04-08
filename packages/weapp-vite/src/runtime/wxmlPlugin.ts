@@ -23,7 +23,6 @@ export interface WxmlService {
   getImporters: (filepath: string) => Set<string>
   getAllDeps: () => Set<string>
   getAggregatedComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
-  getAggregatedAutoImportComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
   clearAll: () => void
   analyze: (wxml: string) => ScanWxmlResult
   scan: (filepath: string) => Promise<ScanWxmlResult | undefined>
@@ -41,8 +40,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     cache,
     emittedCode,
   } = ctx.runtimeState.wxml
-  const autoImportComponentsMap = new Map<string, ComponentsMap>()
-  const aggregatedAutoImportComponentsMap = new Map<string, ComponentsMap>()
 
   function linkImporter(dep: string, importer: string) {
     let importers = importerMap.get(dep)
@@ -64,22 +61,18 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
   }
 
-  function invalidateAggregatedComponents(
-    filepath: string,
-    targetMap: Map<string, ComponentsMap>,
-    visited = new Set<string>(),
-  ) {
+  function invalidateAggregatedComponents(filepath: string, visited = new Set<string>()) {
     if (visited.has(filepath)) {
       return
     }
     visited.add(filepath)
-    targetMap.delete(removeExtensionDeep(filepath))
+    aggregatedComponentsMap.delete(removeExtensionDeep(filepath))
     const importers = importerMap.get(filepath)
     if (!importers) {
       return
     }
     for (const importer of importers) {
-      invalidateAggregatedComponents(importer, targetMap, visited)
+      invalidateAggregatedComponents(importer, visited)
     }
   }
 
@@ -101,8 +94,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
     depsMap.set(filepath, nextDeps)
     if (nextDepsKey !== previousDepsKey) {
-      invalidateAggregatedComponents(filepath, aggregatedComponentsMap)
-      invalidateAggregatedComponents(filepath, aggregatedAutoImportComponentsMap)
+      invalidateAggregatedComponents(filepath)
     }
     await Promise.all(
       Array.from(nextDeps)
@@ -217,56 +209,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     return aggregate(templatePath)
   }
 
-  function getAggregatedAutoImportComponents(filepathOrBaseName: string) {
-    const templatePath = resolveTemplatePath(filepathOrBaseName)
-    if (!templatePath) {
-      return undefined
-    }
-
-    const baseName = removeExtensionDeep(templatePath)
-    const cached = aggregatedAutoImportComponentsMap.get(baseName)
-    if (cached) {
-      return cached
-    }
-
-    const visited = new Set<string>()
-    const aggregate = (filepath: string): ComponentsMap => {
-      if (visited.has(filepath)) {
-        return {}
-      }
-      visited.add(filepath)
-
-      const currentBaseName = removeExtensionDeep(filepath)
-      const merged: ComponentsMap = {}
-      const own = autoImportComponentsMap.get(currentBaseName) ?? componentsMap.get(currentBaseName)
-      if (own) {
-        for (const [name, ranges] of Object.entries(own)) {
-          merged[name] = ranges
-        }
-      }
-
-      const deps = depsMap.get(filepath)
-      if (deps) {
-        for (const dep of deps) {
-          if (!isTemplate(dep)) {
-            continue
-          }
-          const depComponents = aggregate(dep)
-          for (const [name, ranges] of Object.entries(depComponents)) {
-            if (!merged[name]) {
-              merged[name] = ranges
-            }
-          }
-        }
-      }
-
-      aggregatedAutoImportComponentsMap.set(currentBaseName, merged)
-      return merged
-    }
-
-    return aggregate(templatePath)
-  }
-
   function clearAll(options?: { clearEmittedCode?: boolean }) {
     const clearEmittedCode = options?.clearEmittedCode !== false
     const currentRoot = ctx.configService?.currentSubPackageRoot
@@ -276,8 +218,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       tokenMap.clear()
       componentsMap.clear()
       aggregatedComponentsMap.clear()
-      autoImportComponentsMap.clear()
-      aggregatedAutoImportComponentsMap.clear()
       templatePathMap.clear()
       cache.cache.clear()
       cache.mtimeMap.clear()
@@ -340,18 +280,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       }
     }
 
-    for (const key of Array.from(autoImportComponentsMap.keys())) {
-      if (shouldClear(key)) {
-        autoImportComponentsMap.delete(key)
-      }
-    }
-
-    for (const key of Array.from(aggregatedAutoImportComponentsMap.keys())) {
-      if (shouldClear(key)) {
-        aggregatedAutoImportComponentsMap.delete(key)
-      }
-    }
-
     for (const [key, value] of Array.from(templatePathMap.entries())) {
       if (shouldClear(key) || shouldClear(value)) {
         templatePathMap.delete(key)
@@ -392,19 +320,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     })
   }
 
-  function analyzeAutoImportComponents(wxml: string) {
-    const configService = requireConfigService(ctx, '扫描 WXML 前必须初始化 configService。')
-    const wxmlConfig = configService.weappViteConfig?.wxml ?? configService.weappViteConfig?.enhance?.wxml
-    return scanWxml(wxml, {
-      platform: configService.platform,
-      ...(
-        wxmlConfig === true
-          ? {}
-          : wxmlConfig),
-      excludeComponent: () => false,
-    })
-  }
-
   async function scan(filepath: string) {
     const configService = requireConfigService(ctx, '扫描 WXML 前必须初始化 configService。')
 
@@ -432,18 +347,8 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
     const wxml = await fs.readFile(filepath, 'utf8')
     const res = analyze(wxml)
-    const autoImportComponents = analyzeAutoImportComponents(wxml)
     tokenMap.set(filepath, res)
     cache.set(filepath, res)
-    const baseName = removeExtensionDeep(filepath)
-    const autoImportComponentEntries = autoImportComponents.components ?? {}
-    if (isEmptyObject(autoImportComponentEntries)) {
-      autoImportComponentsMap.delete(baseName)
-    }
-    else {
-      autoImportComponentsMap.set(baseName, autoImportComponentEntries)
-    }
-    invalidateAggregatedComponents(filepath, aggregatedAutoImportComponentsMap)
     await setDeps(filepath, collectDepsFromToken(filepath, res.deps))
     return res
   }
@@ -457,7 +362,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     else {
       componentsMap.set(baseName, components)
     }
-    invalidateAggregatedComponents(absPath, aggregatedComponentsMap)
+    invalidateAggregatedComponents(absPath)
   }
 
   return {
@@ -472,7 +377,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     getImporters,
     getAllDeps,
     getAggregatedComponents,
-    getAggregatedAutoImportComponents,
     clearAll,
     analyze,
     scan,

@@ -55,7 +55,7 @@ async function runIssue393Build() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
-  it('issue #429: auto imports local components even when the tag name matches a builtin component', async () => {
+  it('issue #429: skips auto import when local component name collides with a builtin component tag', async () => {
     await runBuild()
 
     const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-429/index.json')
@@ -64,9 +64,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-429 builtin-name auto import')
-    expect(pageJson.usingComponents).toMatchObject({
-      'list-view': '/components/issue-429/list-view/index',
-    })
+    expect(pageJson.usingComponents ?? {}).not.toHaveProperty('list-view')
   })
 
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
