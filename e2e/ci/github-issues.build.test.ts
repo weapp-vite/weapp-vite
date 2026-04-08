@@ -55,6 +55,29 @@ async function runIssue393Build() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('issue #431: replaces import.meta.env expressions inside native wxml files', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-431/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-431/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('{{"issue-431 native wxml env replacement"}}')
+    expect(pageWxml).toContain('{{"https://static.example.com/issue-431"}}/logo.png')
+    expect(pageWxml).toContain('{{"/pages/issue-431/index.wxml"}}')
+    expect(pageWxml).toContain('{{"/pages/issue-431"}}')
+    expect(pageWxml).toContain('{{{"url":"/pages/issue-431/index.wxml","dirname":"/pages/issue-431","env":')
+    expect(pageWxml).not.toContain('import.meta.env')
+    expect(pageJs).toContain('/pages/issue-431/index.js')
+    expect(pageJs).toContain('/pages/issue-431')
+    expect(pageJs).toContain('importMetaSnapshot')
+    expect(pageJs).toContain('url:`/pages/issue-431/index.js`')
+    expect(pageJs).not.toContain('import.meta.url')
+    expect(pageJs).not.toContain('import.meta.dirname')
+    expect(pageJs).not.toContain('import.meta.env')
+  })
+
   it('issue #429: prefers local component auto import and warns when name collides with a builtin component tag', async () => {
     await runBuild()
 

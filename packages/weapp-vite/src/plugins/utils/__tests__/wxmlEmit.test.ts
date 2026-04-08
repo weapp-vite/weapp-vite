@@ -5,7 +5,7 @@ import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { emitJsonAsset, emitWxmlAssetFile, emitWxmlAssetsWithCache, resolveWxmlEmitContext, resolveWxmlEmitTargets } from '../wxmlEmit'
 
-function createMockCompiler(options?: { outputExtensions?: Record<string, string>, platform?: string }): MutableCompilerContext {
+function createMockCompiler(options?: { outputExtensions?: Record<string, string>, platform?: string, defineImportMetaEnv?: Record<string, any> }): MutableCompilerContext {
   const runtimeState = createRuntimeState()
   const ctx = {
     runtimeState,
@@ -23,6 +23,7 @@ function createMockCompiler(options?: { outputExtensions?: Record<string, string
       const relative = path.relative(absoluteSrcRoot, p)
       return relative || '.'
     },
+    defineImportMetaEnv: options?.defineImportMetaEnv ?? {},
   } as unknown as MutableCompilerContext['configService']
 
   ctx.scanService = {
@@ -140,6 +141,7 @@ describe('emitWxmlAssetsWithCache', () => {
       token,
       deps,
       emittedCodeCache,
+      defineImportMetaEnv: {},
       scriptModuleExtension: 'wxs',
       scriptModuleTag: 'wxs',
       templateExtension: 'wxml',
@@ -156,12 +158,60 @@ describe('emitWxmlAssetsWithCache', () => {
       token,
       deps,
       emittedCodeCache,
+      defineImportMetaEnv: {},
       scriptModuleExtension: 'wxs',
       scriptModuleTag: 'wxs',
       templateExtension: 'wxml',
     })).toBe(false)
 
     expect(emitFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('replaces import.meta.env expressions before emitting asset source', () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env': '{"VITE_CDN":"https://cdn.example.com"}',
+        'import.meta.env.VITE_CDN': '"https://cdn.example.com"',
+      },
+    })
+    const token = ctx.wxmlService!.analyze('<image src="{{import.meta.env.VITE_CDN}}/logo.png" />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('{{"https://cdn.example.com"}}/logo.png')
+  })
+
+  it('replaces import.meta.url, import.meta.dirname and bare import.meta before emitting asset source', () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env': '{"MODE":"production"}',
+      },
+    })
+    const token = ctx.wxmlService!.analyze('<view data-url="{{import.meta.url}}" data-dir="{{import.meta.dirname}}" data-meta="{{import.meta}}" />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('{{"/pages/index/index.wxml"}}')
+    expect(payload.source).toContain('{{"/pages/index"}}')
+    expect(payload.source).toContain('{{{"url":"/pages/index/index.wxml","dirname":"/pages/index","env":{"MODE":"production"}}}}')
   })
 
   it('emits platform template extension and rewrites script module tags', () => {
