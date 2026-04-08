@@ -6,6 +6,9 @@ import { getTemplateRefMap } from './templateRefs/helpers'
 type LayoutBridgeContext = Record<string, any>
 type LayoutBridgeComponentResolver = (selector: string) => any
 type LayoutHostMap = Record<string, unknown>
+export type LayoutBridgeInstance<T = LayoutBridgeContext> = T & {
+  selectComponent?: LayoutBridgeComponentResolver
+}
 export interface LayoutHostBinding {
   key: string
   refName?: string
@@ -234,7 +237,7 @@ export function resolveLayoutBridge<T = any>(
   const bridgeContext = resolvePageKeys(page)
     .map(pageKey => pageLayoutBridges.get(pageKey)?.get(selector))
     .find(Boolean)
-  return (bridgeContext ?? fallbackContext ?? getCurrentInstance()) as T | undefined
+  return (bridgeContext ?? fallbackContext ?? getCurrentInstance()) as LayoutBridgeInstance<T> | undefined
 }
 
 /**
@@ -245,7 +248,7 @@ export function resolveLayoutHost<T = any, C = any>(
   options: LayoutHostResolveOptions<C> = {},
 ) {
   const context = options.context ?? options.fallbackContext
-  const bridge = resolveLayoutBridge(key, context)
+  const bridge = resolveLayoutBridge<LayoutBridgeContext & C>(key, context as LayoutBridgeContext & C | undefined)
   const host = bridge?.selectComponent?.(key)
   return (host ?? null) as T | null
 }

@@ -5,9 +5,10 @@ import { parseJsLikeWithEngine } from '../engine'
 
 export const platformApiIdentifierList = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs'] as const
 export const platformApiIdentifiers = new Set(platformApiIdentifierList)
+type PlatformApiIdentifier = (typeof platformApiIdentifierList)[number]
 
 export function isPlatformApiIdentifier(name: string) {
-  return platformApiIdentifiers.has(name)
+  return platformApiIdentifiers.has(name as PlatformApiIdentifier)
 }
 
 export function mayContainPlatformApiIdentifierByText(code: string) {

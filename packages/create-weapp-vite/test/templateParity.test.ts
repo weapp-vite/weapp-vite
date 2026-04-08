@@ -11,6 +11,19 @@ import * as npm from '@/npm'
 const DIGIT_RE = /\d/
 const FIXED_OUTPUT_ENV_NAME = 'CREATE_WEAPP_VITE_TEST_OUTPUT_DIR'
 
+interface PackageJsonLike {
+  name?: string
+  version?: string
+  private?: boolean
+  type?: string
+  homepage?: string
+  scripts?: Record<string, string>
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
+  optionalDependencies?: Record<string, string>
+}
+
 function normalizeRelativePath(value: string) {
   return value.split(path.sep).join('/')
 }
@@ -105,6 +118,22 @@ function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
 }
 
+async function readJsonAs<T>(filePath: string) {
+  return await fs.readJSON(filePath) as T
+}
+
+async function readPackageJson(filePath: string) {
+  const pkgJson = await readJsonAs<PackageJsonLike>(filePath)
+  return {
+    dependencies: {},
+    devDependencies: {},
+    optionalDependencies: {},
+    peerDependencies: {},
+    scripts: {},
+    ...pkgJson,
+  } satisfies PackageJsonLike
+}
+
 function resolveCatalogSpec(packageName: string, spec: string) {
   if (!spec.startsWith('catalog:')) {
     return spec
@@ -171,26 +200,29 @@ function upsertDependencyVersion(pkgJson: Record<string, any>, packageName: stri
   }
 }
 
-async function buildExpectedPackageJson(templateName: TemplateName) {
+async function buildExpectedPackageJson(templateName: TemplateName): Promise<PackageJsonLike> {
   const { preferredTemplateDir } = await createProjectInternal.resolveTemplateDirs(templateName)
   const templatePackageJsonPath = path.join(preferredTemplateDir, 'package.json')
-  const templatePackageJson = await fs.pathExists(templatePackageJsonPath)
-    ? await fs.readJSON(templatePackageJsonPath)
+  const templatePackageJson: PackageJsonLike = await fs.pathExists(templatePackageJsonPath)
+    ? await readPackageJson(templatePackageJsonPath)
     : {
+        dependencies: {},
+        devDependencies: {},
         name: 'weapp-vite-app',
         homepage: 'https://vite.icebreaker.top/',
+        optionalDependencies: {},
+        peerDependencies: {},
         type: 'module',
         scripts: {},
-        devDependencies: {},
       }
-  const expectedPackageJson = cloneJson(templatePackageJson)
-  const { version: weappViteVersion } = await fs.readJSON(
+  const expectedPackageJson: PackageJsonLike = cloneJson(templatePackageJson)
+  const { version: weappViteVersion } = await readPackageJson(
     path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
   )
-  const { version: wevuVersion } = await fs.readJSON(
+  const { version: wevuVersion } = await readPackageJson(
     path.resolve(import.meta.dirname, '../../..', 'packages-runtime/wevu/package.json'),
   )
-  const { version: wevuApiVersion } = await fs.readJSON(
+  const { version: wevuApiVersion } = await readPackageJson(
     path.resolve(import.meta.dirname, '../../..', 'packages-runtime/weapi/package.json'),
   )
 
@@ -249,7 +281,7 @@ describe('template parity', () => {
       collectExpectedTemplateFiles(templateName),
       scanFiles(root),
       buildExpectedPackageJson(templateName),
-      fs.readJSON(path.join(root, 'package.json')),
+      readPackageJson(path.join(root, 'package.json')),
     ])
     const actualFileSet = new Set(actualFiles)
     const expectedFileSet = new Set(expectedFiles)

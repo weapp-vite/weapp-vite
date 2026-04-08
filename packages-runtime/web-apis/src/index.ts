@@ -29,7 +29,7 @@ export interface InstallRequestGlobalsOptions {
 type WeappRequestGlobalActualTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
 
 function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
-  const bindingTargets = [...targets]
+  const bindingTargets: WeappRequestGlobalActualTarget[] = [...targets]
   const needsUrlGlobals = targets.some(target => (
     target === 'fetch'
     || target === 'Request'

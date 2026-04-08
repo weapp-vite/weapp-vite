@@ -1,3 +1,4 @@
+import type { WevuPlugin } from '@/runtime/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive, ref, toRaw } from '@/reactivity'
 import { createBindModel } from '@/runtime/bindModel'
@@ -118,7 +119,7 @@ describe('provide/inject', () => {
       use: vi.fn(),
     }
     runtimeApp.use.mockReturnValue(runtimeApp)
-    const plugin = vi.fn()
+    const plugin = (() => {}) as WevuPlugin
 
     setCurrentInstance({
       __wevuIsAppInstance: true,
@@ -134,7 +135,7 @@ describe('provide/inject', () => {
       use: vi.fn(),
       provide: vi.fn(),
     }
-    const plugin = vi.fn()
+    const plugin = (() => {}) as WevuPlugin
 
     setCurrentInstance({
       __wevuIsAppInstance: true,
@@ -153,12 +154,12 @@ describe('provide/inject', () => {
   })
 
   it('throws when use helper is called outside app setup context', () => {
-    expect(() => use(vi.fn())).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
+    expect(() => use((() => {}) as WevuPlugin)).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
 
     setCurrentInstance({
       route: 'pages/index/index',
     } as any)
-    expect(() => use(vi.fn())).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
+    expect(() => use((() => {}) as WevuPlugin)).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
     expect(() => defineAppSetup(app => app)).toThrow('defineAppSetup() / use() 只能在 app setup 上下文中调用')
   })
 })

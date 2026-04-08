@@ -21,12 +21,15 @@ import { bindRuntimeEvents } from './events'
 import { cloneValue, coerceValue, toCamelCase } from './utils'
 
 export type { WeappComponentInstance } from './elementTypes'
+export type WeappComponentElementClass = typeof HTMLElement & {
+  new (): WeappComponentInstance
+}
 
 export function createComponentElementClass({
   BaseElement,
   runtimeState,
   instances,
-}: CreateComponentElementClassOptions) {
+}: CreateComponentElementClassOptions): WeappComponentElementClass {
   class WeappWebComponent extends BaseElement implements WeappComponentInstance {
     static observedAttributes = runtimeState.observedAttributes
 
@@ -305,5 +308,5 @@ export function createComponentElementClass({
     }
   }
 
-  return WeappWebComponent
+  return WeappWebComponent as WeappComponentElementClass
 }

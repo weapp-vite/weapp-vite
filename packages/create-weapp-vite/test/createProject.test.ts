@@ -10,8 +10,37 @@ import * as npm from '@/npm'
 import * as skills from '@/skills'
 import { logger } from '../vitest.setup'
 
+interface PackageJsonLike {
+  name?: string
+  version?: string
+  private?: boolean
+  type?: string
+  homepage?: string
+  scripts?: Record<string, string>
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
+  optionalDependencies?: Record<string, string>
+}
+
 function normalizeRelativePath(value: string) {
   return value.replaceAll('\\', '/')
+}
+
+async function readJsonAs<T>(filePath: string) {
+  return await fs.readJSON(filePath) as T
+}
+
+async function readPackageJson(filePath: string) {
+  const pkgJson = await readJsonAs<PackageJsonLike>(filePath)
+  return {
+    dependencies: {},
+    devDependencies: {},
+    optionalDependencies: {},
+    peerDependencies: {},
+    scripts: {},
+    ...pkgJson,
+  } satisfies PackageJsonLike
 }
 
 async function scanFiles(root: string) {
@@ -59,7 +88,7 @@ describe('createProject', () => {
 
   it('creates default template with resolved versions and gitignore rename', async () => {
     const root = await createTmpRoot('default')
-    const { version: weappViteVersion } = await fs.readJSON(
+    const { version: weappViteVersion } = await readPackageJson(
       path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
     )
 
@@ -67,7 +96,7 @@ describe('createProject', () => {
 
     await createProject(root, TemplateName.default)
 
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^9.9.9')
     expect(pkgJson.devDependencies['typescript']).toBe(TEMPLATE_CATALOG.typescript)
@@ -143,7 +172,7 @@ describe('createProject', () => {
 
     await createProject(root, TemplateName.tailwindcss)
 
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe(TEMPLATE_CATALOG['weapp-tailwindcss'])
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
     expect(gitignore).toContain('# existing entry')
@@ -177,7 +206,7 @@ describe('createProject', () => {
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
     await createProject(root, TemplateName.default)
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies).toBeDefined()
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^4.3.3')
   })
@@ -198,7 +227,7 @@ describe('createProject', () => {
     })
 
     await createProject(root, TemplateName.default)
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.name).toBe('weapp-vite-app')
   })
 
@@ -317,10 +346,10 @@ describe('createProject', () => {
     const templatePackagePath = await getTemplatePackagePath(TemplateName.default)
     const originalReadJSON = fs.readJSON.bind(fs)
 
-    const { version: weappViteVersion } = await fs.readJSON(
+    const { version: weappViteVersion } = await readPackageJson(
       path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
     )
-    const { version: wevuVersion } = await fs.readJSON(
+    const { version: wevuVersion } = await readPackageJson(
       path.resolve(import.meta.dirname, '../../..', 'packages-runtime/wevu/package.json'),
     )
 
@@ -346,7 +375,7 @@ describe('createProject', () => {
 
     await createProject(root, TemplateName.default)
 
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
     expect(pkgJson.dependencies.wevu).toBe(`^${wevuVersion}`)
     expect(pkgJson.devDependencies.wevu).toBe(`^${wevuVersion}`)
@@ -381,7 +410,7 @@ describe('createProject', () => {
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
     await createProject(root, TemplateName.default)
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
 
     expect(pkgJson.dependencies['@vant/weapp']).toBe(TEMPLATE_CATALOG['@vant/weapp'])
     expect(pkgJson.dependencies['tdesign-miniprogram']).toBe(
@@ -422,7 +451,7 @@ describe('createProject', () => {
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
     await createProject(root, TemplateName.lib)
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
 
     expect(pkgJson.peerDependencies.wevu).not.toContain('workspace:')
     expect(pkgJson.peerDependencies.wevu).not.toContain('catalog:')
@@ -452,7 +481,7 @@ describe('createProject', () => {
 
     await createProject(root, TemplateName.tailwindcss)
 
-    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['tailwindcss']).toBe(TEMPLATE_NAMED_CATALOG.tailwind3.tailwindcss)
   })
 

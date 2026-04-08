@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { mkdtemp, rm } from 'node:fs/promises'
 import http from 'node:http'
 import { tmpdir } from 'node:os'
@@ -8,6 +9,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 type RuntimeModule = typeof import('@/runtime')
 type RequestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => void | Promise<void>
+type CreateServer = typeof http.createServer
+
+interface MockServerResponse {
+  statusCode: number
+  headersSent: boolean
+  setHeader: (name: string, value: string) => void
+  end: (chunk?: string | Uint8Array) => MockServerResponse
+}
 
 interface MockHttpServer {
   __handler: RequestHandler
@@ -21,18 +30,14 @@ interface MockHttpServer {
 const mocks = vi.hoisted(() => {
   const transportInstances: any[] = []
   const mockConnect = vi.fn(async () => {})
-  const mockCreateWeappViteMcpServer = vi.fn(async () => ({
+  const mockCreateWeappViteMcpServer = vi.fn(async (_options?: unknown) => ({
     server: {
       connect: mockConnect,
     },
   }))
   const httpServers: MockHttpServer[] = []
   const stdioInstances: any[] = []
-  const mockHandleRequestImpl = vi.fn<[
-    http.IncomingMessage,
-    http.ServerResponse,
-    unknown,
-  ], Promise<void>>()
+  const mockHandleRequestImpl = vi.fn()
 
   class MockStreamableHTTPServerTransport {
     requests: Array<{ method?: string, url?: string, body: unknown }> = []
@@ -48,8 +53,13 @@ const mocks = vi.hoisted(() => {
         url: req.url,
         body,
       })
-      if (mocks.mockHandleRequestImpl.mock.calls.length > 0 || mocks.mockHandleRequestImpl.getMockImplementation()) {
-        await mocks.mockHandleRequestImpl(req, res, body)
+      const handleRequestImpl = mocks.mockHandleRequestImpl.getMockImplementation() as ((
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        body: unknown,
+      ) => Promise<void>) | undefined
+      if (handleRequestImpl) {
+        await handleRequestImpl(req, res, body)
         return
       }
       res.statusCode = 204
@@ -121,6 +131,14 @@ function createMockHttpServer(handler: RequestHandler): MockHttpServer {
   return server
 }
 
+function mockHttpCreateServer() {
+  return vi.spyOn(http, 'createServer').mockImplementation(((handler?: RequestHandler) => {
+    const server = createMockHttpServer(handler ?? (() => {}))
+    mocks.httpServers.push(server)
+    return server as unknown as http.Server
+  }) as CreateServer)
+}
+
 async function dispatchHttpRequest(
   server: MockHttpServer,
   options: {
@@ -142,7 +160,7 @@ async function dispatchHttpRequest(
 
   let text = ''
   const responseHeaders = new Map<string, string>()
-  const res = {
+  const res: MockServerResponse = {
     statusCode: 200,
     headersSent: false,
     setHeader(name: string, value: string) {
@@ -150,14 +168,14 @@ async function dispatchHttpRequest(
     },
     end(chunk?: string | Uint8Array) {
       if (chunk !== undefined) {
-        text += typeof chunk === 'string' ? chunk : chunk.toString('utf8')
+        text += typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8')
       }
       this.headersSent = true
       return this
     },
-  } as unknown as http.ServerResponse
+  }
 
-  await server.__handler(req, res)
+  await server.__handler(req, res as unknown as http.ServerResponse)
 
   return {
     statusCode: res.statusCode,
@@ -239,11 +257,7 @@ describe('startStreamableHttpServer', () => {
   it('starts streamable http transport and handles request paths', async () => {
     const { startWeappViteMcpServer } = await loadRuntimeModule()
     const port = 3188
-    const createServerSpy = vi.spyOn(http, 'createServer').mockImplementation((handler) => {
-      const server = createMockHttpServer(handler)
-      mocks.httpServers.push(server)
-      return server as unknown as http.Server
-    })
+    const createServerSpy = mockHttpCreateServer()
 
     const handle = await startWeappViteMcpServer({
       transport: 'streamable-http',
@@ -315,11 +329,7 @@ describe('startStreamableHttpServer', () => {
     const { startWeappViteMcpServer } = await loadRuntimeModule()
     const port = 4088
     const onReady = vi.fn()
-    vi.spyOn(http, 'createServer').mockImplementation((handler) => {
-      const server = createMockHttpServer(handler)
-      mocks.httpServers.push(server)
-      return server as unknown as http.Server
-    })
+    mockHttpCreateServer()
 
     const handle = await startWeappViteMcpServer({
       transport: 'streamable-http',
@@ -361,16 +371,12 @@ describe('startStreamableHttpServer', () => {
   it('does not rewrite response when transport throws after headers are sent', async () => {
     const { startWeappViteMcpServer } = await loadRuntimeModule()
     const port = 5088
-    mocks.mockHandleRequestImpl.mockImplementationOnce(async (_req, res) => {
+    mocks.mockHandleRequestImpl.mockImplementationOnce(async (_req: http.IncomingMessage, res: http.ServerResponse) => {
       res.statusCode = 204
       res.end()
       throw new Error('late boom')
     })
-    vi.spyOn(http, 'createServer').mockImplementation((handler) => {
-      const server = createMockHttpServer(handler)
-      mocks.httpServers.push(server)
-      return server as unknown as http.Server
-    })
+    mockHttpCreateServer()
 
     const handle = await startWeappViteMcpServer({
       transport: 'streamable-http',
@@ -394,15 +400,15 @@ describe('startStreamableHttpServer', () => {
   it('rejects close when the underlying http server close callback returns an error', async () => {
     const { startWeappViteMcpServer } = await loadRuntimeModule()
     const port = 6088
-    vi.spyOn(http, 'createServer').mockImplementation((handler) => {
-      const server = createMockHttpServer(handler)
+    vi.spyOn(http, 'createServer').mockImplementation((((handler?: RequestHandler) => {
+      const server = createMockHttpServer(handler ?? (() => {}))
       server.close.mockImplementation((callback?: (error?: Error) => void) => {
         callback?.(new Error('close boom'))
         return server
       })
       mocks.httpServers.push(server)
       return server as unknown as http.Server
-    })
+    }) as CreateServer))
 
     const handle = await startWeappViteMcpServer({
       transport: 'streamable-http',

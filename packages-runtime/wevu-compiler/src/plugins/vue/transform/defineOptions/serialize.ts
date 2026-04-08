@@ -150,6 +150,7 @@ function rewriteFunctionSourceWithScopeValues(source: string, scopeValues: Recor
       }
 
       try {
+        // eslint-disable-next-line ts/no-use-before-define
         const replacement = serializeStaticValueToExpression(scopeValues[path.node.name], new WeakSet<object>(), {})
         path.replaceWith(parseExpressionFromSource(replacement) as any)
       }
@@ -224,7 +225,7 @@ export function serializeStaticValueToExpression(
   }
 
   if (getObjectTag(value) === '[object Date]') {
-    return `new Date(${JSON.stringify(value.toISOString())})`
+    return `new Date(${JSON.stringify((value as Date).toISOString())})`
   }
   if (getObjectTag(value) === '[object RegExp]') {
     return value.toString()

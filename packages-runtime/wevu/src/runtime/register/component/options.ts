@@ -1,6 +1,6 @@
+import type { LayoutHostBinding } from '../../layoutBridge'
 import type { TemplateRefBinding } from '../../templateRefs'
 import type { InternalRuntimeState, MiniProgramComponentRawOptions, PageFeatures } from '../../types'
-import type { LayoutHostBinding } from '../layoutBridge'
 
 interface PreparedComponentOptions {
   userMethods: Record<string, (...args: any[]) => any>

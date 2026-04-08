@@ -10,6 +10,7 @@ const WEVU_FACTORY_NAMES = new Set([
   WE_VU_RUNTIME_APIS.defineComponent,
   WE_VU_RUNTIME_APIS.createWevuComponent,
 ])
+type WevuFactoryName = typeof WE_VU_RUNTIME_APIS.defineComponent | typeof WE_VU_RUNTIME_APIS.createWevuComponent
 const REGEXP_META_CHARS_RE = /[.*+?^${}()|[\]\\]/g
 
 function escapeRegExp(value: string) {
@@ -39,7 +40,7 @@ function mayCallWevuFactoryByText(code: string, module: ModuleAnalysis) {
     if (binding.source !== WE_VU_MODULE_ID) {
       continue
     }
-    if (binding.kind === 'named' && WEVU_FACTORY_NAMES.has(binding.importedName)) {
+    if (binding.kind === 'named' && WEVU_FACTORY_NAMES.has(binding.importedName as WevuFactoryName)) {
       if (mayContainNamedFactoryCall(code, localName)) {
         return true
       }

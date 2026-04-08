@@ -74,6 +74,8 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
+    "pretest:types": "pnpm build",
+    "test:types": "tsd",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

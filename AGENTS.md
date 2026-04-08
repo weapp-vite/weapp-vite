@@ -127,6 +127,12 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 - Co-locate tests with source and use `*.test.ts` or `*.spec.ts`.
 - Update snapshots/assertions together with behavior changes.
+- For package-level TypeScript work (`packages/*`, `packages-runtime/*`, `mpcore/packages/*`), verify the owning package first with the smallest package-scoped command:
+  - `pnpm --filter <package> typecheck`
+  - if the package ships public types or reusable type helpers, also run `pnpm --filter <package> test:types` when available
+- When a TypeScript regression is fixed in public exports, reusable helpers, config builders, runtime contracts, or other consumer-visible types, add or update `tsd` coverage in that package during the same change. Do not rely on source-only fixes without a type-contract regression test.
+- When reading JSON in tests or scripts under strict TS settings, treat `fs.readJSON()` and similar helpers as `unknown` by default. Narrow with a local typed helper or explicit cast at the boundary before property access; do not spread unchecked `unknown` through the test body.
+- When a broad root-level typecheck reports many errors, separate library/package failures from app/template/generated-output noise before editing. Prefer package-scoped diagnosis and verification over trying to make every auxiliary tsconfig participate in one giant build.
 - When fixing tests, do not hardcode repository-bound or machine-bound values into source files, fixtures, or assertions.
 - Forbidden examples include:
   - absolute filesystem paths

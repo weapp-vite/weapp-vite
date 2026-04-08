@@ -212,7 +212,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const runtimeMethods = runtime?.methods ?? Object.create(null)
   const runtimeWatch = (runtime as any)?.watch ?? (() => createNoopWatchStopHandle())
   const runtimeBindModel = (runtime as any)?.bindModel ?? (() => {})
-  const runtimeWithDefaults: RuntimeInstance<any, any, any> = {
+  const runtimeWithDefaults = {
     ...(runtime ?? {}),
     state: runtimeState,
     proxy: runtimeProxy,
@@ -222,9 +222,23 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     bindModel: runtimeBindModel,
     snapshot: (runtime as any)?.snapshot ?? (() => Object.create(null)),
     unmount: (runtime as any)?.unmount ?? (() => {}),
+  } satisfies RuntimeInstance<any, any, any>
+  const runtimeWithSyncFlush = runtimeWithDefaults as RuntimeInstanceWithSyncFlush<D, C, M>
+  const internalRuntimeFields = {
     __wevu_flushSetupSnapshotSync: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync,
     __wevu_touchSetupMethodsVersion: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_touchSetupMethodsVersion,
     __wevu_trackSetupReactiveKey: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_trackSetupReactiveKey,
+  }
+  for (const [key, value] of Object.entries(internalRuntimeFields)) {
+    if (!value) {
+      continue
+    }
+    Object.defineProperty(runtimeWithDefaults, key, {
+      configurable: true,
+      enumerable: false,
+      value,
+      writable: true,
+    })
   }
 
   Object.defineProperty(target, '$wevu', {
@@ -256,7 +270,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       syncRuntimeProps,
       attachRuntimeProxyProps,
     })
-    ;(runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync?.()
+    runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
   }
 
   // 将 runtime.methods 透传到原生实例，供小程序事件处理直接调用

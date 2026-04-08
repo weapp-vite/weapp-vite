@@ -14,7 +14,7 @@ import type {
   ShortEmits,
 } from './macros/shared'
 import type { Ref } from './reactivity'
-import type { ComponentPropsOptions, ComputedDefinitions, MethodDefinitions, RuntimeApp } from './runtime'
+import type { ComponentPropsOptions, ComputedDefinitions, MethodDefinitions } from './runtime'
 
 export type {
   ComponentTypeEmits,
@@ -89,13 +89,6 @@ export interface PageMeta {
   layout?: PageLayoutMeta
   [key: string]: unknown
 }
-
-/**
- * defineAppSetup 声明应用级 setup 宏（运行时辅助）。
- */
-export declare function defineAppSetup<T>(
-  setup: (app: RuntimeApp<any, any, any>) => T,
-): T
 
 /**
  * definePageMeta 声明页面级元信息（仅类型层）。

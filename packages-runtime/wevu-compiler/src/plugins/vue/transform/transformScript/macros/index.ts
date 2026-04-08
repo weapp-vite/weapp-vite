@@ -10,19 +10,21 @@ export function createMacroVisitors(program: t.Program, state: TransformState) {
   const setupExposeVisitors = createSetupExposeVisitors(state)
   const stripTypesVisitors = createStripTypesVisitors(state)
   const pageMetaVisitors = createPageMetaVisitors(state)
-
-  return {
+  const mergedVisitors: Record<string, any> = {
     ...appSetupVisitors,
     ...setupExposeVisitors,
     ...stripTypesVisitors,
     ...pageMetaVisitors,
-    CallExpression(path: any) {
-      appSetupVisitors.CallExpression?.(path)
-      setupExposeVisitors.CallExpression?.(path)
-      stripTypesVisitors.CallExpression?.(path)
-      if (!path.removed) {
-        pageMetaVisitors.CallExpression?.(path)
-      }
-    },
   }
+
+  mergedVisitors.CallExpression = (path: any) => {
+    appSetupVisitors.CallExpression?.(path)
+    ;(setupExposeVisitors as Record<string, any>).CallExpression?.(path)
+    ;(stripTypesVisitors as Record<string, any>).CallExpression?.(path)
+    if (!path.removed) {
+      ;(pageMetaVisitors as Record<string, any>).CallExpression?.(path)
+    }
+  }
+
+  return mergedVisitors
 }

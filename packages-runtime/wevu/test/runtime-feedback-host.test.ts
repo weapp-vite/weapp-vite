@@ -22,11 +22,11 @@ describe('layout bridge runtime api', () => {
 
     useLayoutBridge(['#t-toast', '#t-dialog'])
 
-    expect(resolveLayoutBridge('#t-toast', page)?.selectComponent('#t-toast')).toEqual({ selector: '#t-toast' })
+    expect(resolveLayoutBridge('#t-toast', page)?.selectComponent?.('#t-toast')).toEqual({ selector: '#t-toast' })
 
     callHookList(layoutInstance, 'onAttached')
-    expect(resolveLayoutBridge('#t-toast', page)?.selectComponent('#t-toast')).toEqual({ selector: '#t-toast' })
-    expect(resolveLayoutBridge('#t-dialog', page)?.selectComponent('#t-dialog')).toEqual({ selector: '#t-dialog' })
+    expect(resolveLayoutBridge('#t-toast', page)?.selectComponent?.('#t-toast')).toEqual({ selector: '#t-toast' })
+    expect(resolveLayoutBridge('#t-dialog', page)?.selectComponent?.('#t-dialog')).toEqual({ selector: '#t-dialog' })
 
     callHookList(layoutInstance, 'onDetached')
     expect(resolveLayoutBridge('#t-toast', page)).toBe(page)
@@ -65,7 +65,7 @@ describe('layout bridge runtime api', () => {
     useLayoutBridge('#t-toast')
     callHookList(layoutInstance, 'onAttached')
 
-    expect(resolveLayoutBridge('#t-toast', resolvedPage)?.selectComponent('#t-toast')).toEqual({ selector: '#t-toast' })
+    expect(resolveLayoutBridge('#t-toast', resolvedPage)?.selectComponent?.('#t-toast')).toEqual({ selector: '#t-toast' })
 
     callHookList(layoutInstance, 'onDetached')
     expect(resolveLayoutBridge('#t-toast', resolvedPage)).toBe(resolvedPage)
@@ -102,7 +102,7 @@ describe('layout bridge runtime api', () => {
     useLayoutBridge('#t-toast')
     callHookList(layoutInstance, 'onAttached')
 
-    expect(resolveLayoutBridge('#t-toast', resolvedPage)?.selectComponent('#t-toast')).toEqual({ selector: '#t-toast' })
+    expect(resolveLayoutBridge('#t-toast', resolvedPage)?.selectComponent?.('#t-toast')).toEqual({ selector: '#t-toast' })
 
     callHookList(layoutInstance, 'onDetached')
     expect(resolveLayoutBridge('#t-toast', resolvedPage)).toBe(resolvedPage)
@@ -134,7 +134,7 @@ describe('layout bridge runtime api', () => {
       },
     })
 
-    expect(resolveLayoutBridge('#t-toast', page)?.selectComponent('#t-toast')).toBe(toastInstance)
+    expect(resolveLayoutBridge('#t-toast', page)?.selectComponent?.('#t-toast')).toBe(toastInstance)
 
     setCurrentSetupContext(undefined)
     setCurrentInstance(undefined)
@@ -163,7 +163,7 @@ describe('layout bridge runtime api', () => {
       },
     })
 
-    expect(resolveLayoutBridge('layout-dialog', page)?.selectComponent('layout-dialog')).toBeNull()
+    expect(resolveLayoutBridge('layout-dialog', page)?.selectComponent?.('layout-dialog')).toBeNull()
     expect(nativeSelectComponent).not.toHaveBeenCalled()
 
     setCurrentSetupContext(undefined)
@@ -235,8 +235,8 @@ describe('layout bridge runtime api', () => {
     ], layoutInstance)
 
     expect(bridge).toBeTruthy()
-    expect(resolveLayoutBridge('layout-toast', page)?.selectComponent('layout-toast')).toBe(toastHost)
-    expect(resolveLayoutBridge('layout-dialog', page)?.selectComponent('layout-dialog')).toBe(dialogHost)
+    expect(resolveLayoutBridge('layout-toast', page)?.selectComponent?.('layout-toast')).toBe(toastHost)
+    expect(resolveLayoutBridge('layout-dialog', page)?.selectComponent?.('layout-dialog')).toBe(dialogHost)
     expect(selectComponentThis).toEqual([layoutInstance, layoutInstance])
 
     unregisterRuntimeLayoutHosts([

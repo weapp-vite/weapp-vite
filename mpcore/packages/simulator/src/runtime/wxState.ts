@@ -1,6 +1,7 @@
 import type {
   HeadlessWxAccessFileOption,
   HeadlessWxAppendFileOption,
+  HeadlessWxChooseMediaResult,
   HeadlessWxChooseMessageFileOption,
   HeadlessWxChooseMessageFileResult,
   HeadlessWxCopyFileOption,
@@ -576,9 +577,12 @@ function inferImageType(filePath: string, fileContent: string) {
 function inferImageSize(fileContent: string) {
   try {
     const payload = JSON.parse(fileContent) as HeadlessCanvasTempFilePayload | HeadlessChosenImageTempFilePayload
+    const config = payload?.config
+    const destHeight = config && 'destHeight' in config ? config.destHeight : undefined
+    const destWidth = config && 'destWidth' in config ? config.destWidth : undefined
     return {
-      height: payload?.config?.destHeight ?? payload?.config?.height ?? 0,
-      width: payload?.config?.destWidth ?? payload?.config?.width ?? 0,
+      height: destHeight ?? config?.height ?? 0,
+      width: destWidth ?? config?.width ?? 0,
     }
   }
   catch {
@@ -1648,10 +1652,11 @@ export function createHeadlessWxState() {
           width,
         }
       })
+      const type = (mediaTypes.length > 1 ? 'mix' : (mediaTypes[0] ?? 'image')) as HeadlessWxChooseMediaResult['type']
       return {
         errMsg: 'chooseMedia:ok',
         tempFiles,
-        type: mediaTypes.length > 1 ? 'mix' : mediaTypes[0],
+        type,
       }
     },
     chooseVideo(option: {

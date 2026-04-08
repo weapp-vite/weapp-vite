@@ -1,5 +1,6 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { startStdioServer } from './runtime'
 
 export * from './catalog'
 export * from './commandOps'

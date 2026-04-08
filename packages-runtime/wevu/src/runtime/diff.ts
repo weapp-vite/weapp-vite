@@ -44,14 +44,15 @@ function toPlainInternal(
   }
   const raw = isReactive(unwrapped) ? toRaw(unwrapped) : unwrapped
   const canUseCache = Boolean(cache) && (isReactive(unwrapped) || !hasTrackableSetupBinding(raw))
+  const cacheRef = canUseCache ? cache : undefined
 
   if (depth <= 0 || budget.keys <= 0) {
     return raw
   }
 
-  if (canUseCache) {
+  if (cacheRef) {
     const version = getReactiveVersion(raw as any)
-    const cached = cache.get(raw)
+    const cached = cacheRef.get(raw)
     if (cached && cached.version === version) {
       return cached.value
     }
@@ -116,8 +117,8 @@ function toPlainInternal(
       const next = toPlainInternal(raw[index], seen, cache, nextDepth, budget)
       arr[index] = next === undefined ? null : next
     }
-    if (canUseCache) {
-      cache.set(raw, { version: getReactiveVersion(raw as any), value: arr })
+    if (cacheRef) {
+      cacheRef.set(raw, { version: getReactiveVersion(raw as any), value: arr })
     }
     return arr
   }
@@ -134,8 +135,8 @@ function toPlainInternal(
       output[key] = next
     }
   }
-  if (canUseCache) {
-    cache.set(raw, { version: getReactiveVersion(raw as any), value: output })
+  if (cacheRef) {
+    cacheRef.set(raw, { version: getReactiveVersion(raw as any), value: output })
   }
   return output
 }

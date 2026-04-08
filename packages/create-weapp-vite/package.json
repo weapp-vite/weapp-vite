@@ -53,6 +53,8 @@
     "prepack": "node --import tsx scripts/prepublish.ts && pnpm build",
     "test": "vitest run",
     "test:dev": "vitest",
+    "pretest:types": "pnpm build",
+    "test:types": "tsd",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",

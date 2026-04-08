@@ -6,7 +6,7 @@ import { bindCurrentPageInstance, releaseCurrentPageInstance } from '@/runtime/r
 
 describe('page layout runtime api', () => {
   it('usePageLayout reads current runtime state and tracks setPageLayout updates', () => {
-    const runtimeState = reactive({
+    const runtimeState = reactive<Record<string, any>>({
       __wv_page_layout_name: 'admin',
       __wv_page_layout_props: {
         sidebar: true,
@@ -54,7 +54,7 @@ describe('page layout runtime api', () => {
   })
 
   it('falls back to the runtime tracked current page instance outside setup', () => {
-    const runtimeState = reactive({
+    const runtimeState = reactive<Record<string, any>>({
       __wv_page_layout_name: 'default',
       __wv_page_layout_props: {},
     })
