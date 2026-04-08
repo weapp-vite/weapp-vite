@@ -226,6 +226,41 @@ describe('autoImport service index', () => {
     expect(service.resolve('NotFound')).toBeUndefined()
   })
 
+  it('bumps version before local component registration schedules outputs', async () => {
+    const resolverHelpers = createResolverHelpers()
+    let getPreparedStateVersion: (() => number) | undefined
+    let observedVersionDuringRegistration: number | undefined
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockImplementation((args: any) => {
+      getPreparedStateVersion = args.getPreparedStateVersion
+      return {
+        scheduleManifestWrite: vi.fn(),
+        scheduleTypedComponentsWrite: vi.fn(),
+        scheduleHtmlCustomDataWrite: vi.fn(),
+        scheduleVueComponentsWrite: vi.fn(),
+      }
+    })
+    createRegistryHelpersMock.mockImplementation((args: any) => ({
+      registerLocalComponent: vi.fn(async () => {
+        args.bumpVersion()
+        observedVersionDuringRegistration = getPreparedStateVersion?.()
+      }),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    }))
+
+    const service = createAutoImportService(createContext())
+
+    await service.registerPotentialComponent('/project/src/components/Foo/index.vue')
+
+    expect(observedVersionDuringRegistration).toBe(1)
+    expect(service.getVersion()).toBe(1)
+  })
+
   it('removes potential component, filters by matcher and awaits pending writes', async () => {
     const pending = {
       typedResolved: false,

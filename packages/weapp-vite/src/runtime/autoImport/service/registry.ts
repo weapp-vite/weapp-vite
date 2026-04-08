@@ -33,6 +33,7 @@ interface RegistryState {
   resolverComponentNames: Set<string>
   componentMetadataMap: Map<string, ComponentMetadata>
   logWarnOnce: (message: string) => void
+  bumpVersion: () => void
   scheduleManifestWrite: (shouldWrite: boolean) => void
   scheduleTypedComponentsWrite: (shouldWrite: boolean) => void
   scheduleHtmlCustomDataWrite: (shouldWrite: boolean) => void
@@ -153,17 +154,26 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     }
 
     if (!resolvedJsEntry || !resolvedJsonPath || !resolvedTemplatePath) {
+      if (removed || removedNames.length > 0) {
+        state.bumpVersion()
+      }
       scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
 
     if (!json?.component) {
+      if (removed || removedNames.length > 0) {
+        state.bumpVersion()
+      }
       scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
 
     const { componentName, base } = resolvedComponentName(baseName)
     if (!componentName) {
+      if (removed || removedNames.length > 0) {
+        state.bumpVersion()
+      }
       scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
@@ -177,6 +187,9 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     if (hasComponent && base !== 'index') {
       const message = `发现 \`${componentName}\` 组件重名! 跳过组件 \`${state.ctx.configService.relativeCwd(baseName)}\` 的自动引入`
       state.logWarnOnce(message)
+      if (removed || removedNames.length > 0) {
+        state.bumpVersion()
+      }
       scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
     }
@@ -246,6 +259,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       state.componentMetadataMap.delete(componentName)
     }
 
+    state.bumpVersion()
     state.scheduleTypedComponentsWrite(typedSettings.enabled || removed || removedNames.length > 0)
     state.scheduleHtmlCustomDataWrite(htmlSettings.enabled || removed || removedNames.length > 0)
     state.scheduleVueComponentsWrite(vueSettings.enabled || removed || removedNames.length > 0)

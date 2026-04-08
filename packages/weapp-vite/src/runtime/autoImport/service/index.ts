@@ -215,6 +215,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     resolverComponentNames,
     componentMetadataMap,
     logWarnOnce,
+    bumpVersion,
     scheduleManifestWrite: shouldWrite => deferOrSchedule('manifest', shouldWrite),
     scheduleTypedComponentsWrite: shouldWrite => deferOrSchedule('typed', shouldWrite),
     scheduleHtmlCustomDataWrite: shouldWrite => deferOrSchedule('html', shouldWrite),
@@ -265,7 +266,6 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       const task = Promise.resolve()
         .then(async () => {
           await registryHelpers.registerLocalComponent(filePath)
-          bumpVersion()
         })
         .finally(() => {
           pendingRegistrations.delete(task)
