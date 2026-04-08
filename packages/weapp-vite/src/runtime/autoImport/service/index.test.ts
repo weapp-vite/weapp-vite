@@ -60,8 +60,8 @@ function createResolverHelpers(overrides: Record<string, any> = {}) {
     collectManifestResolverComponents: vi.fn(() => ({})),
     clearResolveCache: vi.fn(),
     syncResolverComponentProps: vi.fn(),
-    setSupportFileResolverComponents: vi.fn(),
-    clearSupportFileResolverComponents: vi.fn(),
+    setSupportFileResolverComponents: vi.fn(() => true),
+    clearSupportFileResolverComponents: vi.fn(() => true),
     collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({})),
     resolveWithResolvers: vi.fn(),
     resolveNavigationImport: vi.fn(),
@@ -224,6 +224,41 @@ describe('autoImport service index', () => {
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleHtmlCustomDataWrite).not.toHaveBeenCalled()
     expect(service.resolve('NotFound')).toBeUndefined()
+  })
+
+  it('bumps version before local component registration schedules outputs', async () => {
+    const resolverHelpers = createResolverHelpers()
+    let getPreparedStateVersion: (() => number) | undefined
+    let observedVersionDuringRegistration: number | undefined
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockImplementation((args: any) => {
+      getPreparedStateVersion = args.getPreparedStateVersion
+      return {
+        scheduleManifestWrite: vi.fn(),
+        scheduleTypedComponentsWrite: vi.fn(),
+        scheduleHtmlCustomDataWrite: vi.fn(),
+        scheduleVueComponentsWrite: vi.fn(),
+      }
+    })
+    createRegistryHelpersMock.mockImplementation((args: any) => ({
+      registerLocalComponent: vi.fn(async () => {
+        args.bumpVersion()
+        observedVersionDuringRegistration = getPreparedStateVersion?.()
+      }),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    }))
+
+    const service = createAutoImportService(createContext())
+
+    await service.registerPotentialComponent('/project/src/components/Foo/index.vue')
+
+    expect(observedVersionDuringRegistration).toBe(1)
+    expect(service.getVersion()).toBe(1)
   })
 
   it('removes potential component, filters by matcher and awaits pending writes', async () => {
@@ -470,6 +505,49 @@ describe('autoImport service index', () => {
     expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
   })
 
+  it('skips support-file output scheduling when support-file resolver entries are unchanged', () => {
+    const resolverHelpers = createResolverHelpers({
+      setSupportFileResolverComponents: vi.fn(() => false),
+      clearSupportFileResolverComponents: vi.fn(() => false),
+    })
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(() => undefined),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const ctx = createContext()
+    const startVersion = ctx.runtimeState.autoImport.version
+    const service = createAutoImportService(ctx)
+
+    service.setSupportFileResolverComponents({
+      'van-cell': '@vant/weapp/cell',
+    })
+    service.clearSupportFileResolverComponents()
+
+    expect(ctx.runtimeState.autoImport.version).toBe(startVersion)
+    expect(resolverHelpers.syncResolverComponentProps).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleManifestWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleTypedComponentsWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleVueComponentsWrite).not.toHaveBeenCalled()
+  })
+
   it('awaits pending local component registrations', async () => {
     let releaseRegistration: (() => void) | undefined
     const registerLocalComponent = vi.fn(() => new Promise<void>((resolve) => {
@@ -564,5 +642,39 @@ describe('autoImport service index', () => {
     expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledTimes(1)
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
+  })
+
+  it('reuses resolved output settings across repeated resolver lookups', () => {
+    const resolverHelpers = createResolverHelpers({
+      resolveWithResolvers: vi.fn(() => ({ name: 'TButton', from: 'tdesign-miniprogram/button/button' })),
+    })
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue({
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    })
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(() => undefined),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const service = createAutoImportService(createContext())
+
+    service.resolve('TButton')
+    service.resolve('TButton')
+
+    expect(getTypedComponentsSettingsMock).toHaveBeenCalledTimes(1)
+    expect(getHtmlCustomDataSettingsMock).toHaveBeenCalledTimes(1)
+    expect(getVueComponentsSettingsMock).toHaveBeenCalledTimes(1)
   })
 })

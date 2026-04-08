@@ -35,7 +35,7 @@ interface DevHotkeyState {
 
 type HotkeyInputSource = 'data' | 'keypress'
 
-const DEV_SCREENSHOT_DIR = '.tmp/weapp-vite-dev-screenshots'
+const DEV_SCREENSHOT_DIR = '.weapp-vite/dev-screenshots'
 const DEFAULT_SCREENSHOT_TIMEOUT = 30_000
 const REG_PENDING_PREFIX = /^正在/
 const FULLWIDTH_ASCII_START = 0xFF01

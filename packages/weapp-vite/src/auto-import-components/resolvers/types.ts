@@ -20,6 +20,12 @@ export interface ResolverMeta {
    */
   components?: Record<string, string>
   /**
+   * 组件命中策略。
+   * - `runtime`: 保持运行时 `resolve` / 函数调用语义
+   * - `static`: 允许基于 `components` 做静态命中，跳过运行时 `resolve`
+   */
+  componentLookupStrategy?: 'runtime' | 'static'
+  /**
    * `.weapp-vite` 支持文件生成策略。
    * - `used`: 仅为模板/源码实际命中的组件生成支持文件
    * - `full`: 为 resolver 静态可枚举的全部组件生成支持文件

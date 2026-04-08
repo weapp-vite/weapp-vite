@@ -23,6 +23,7 @@ export interface OutputsState {
   lastTypedComponentsOutput?: string
   lastVueComponentsEnabled: boolean
   lastVueComponentsOutput?: string
+  preparedSyncStateVersion?: number
   preparedSyncStatePromise?: Promise<PreparedSyncState>
 }
 

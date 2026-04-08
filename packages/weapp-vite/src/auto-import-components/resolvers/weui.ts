@@ -27,6 +27,7 @@ export const WeuiResolver: CreateResolver = (opts) => {
 
   const resolver: ResolverObject = {
     components: Object.freeze({ ...map }),
+    componentLookupStrategy: 'static',
     supportFilesStrategy,
     resolve(componentName) {
       const from = map[componentName]

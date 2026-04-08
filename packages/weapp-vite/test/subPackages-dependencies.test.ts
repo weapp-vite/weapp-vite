@@ -1,11 +1,9 @@
 import { fs } from '@weapp-core/shared'
 import CI from 'ci-info'
 import path from 'pathe'
-import { resetCompilerContext } from '@/context'
-import { createCompilerContext } from '@/createContext'
 import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
-import { getFixture, scanFiles } from './utils'
+import { createTestCompilerContext, getFixture, scanFiles } from './utils'
 
 describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
   const cwd = getFixture('subPackages-dependencies')
@@ -22,7 +20,7 @@ describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
   })
 
   it('scanFiles', async () => {
-    const ctx = await createCompilerContext({
+    const { ctx, dispose } = await createTestCompilerContext({
       cwd,
     })
     try {
@@ -50,8 +48,7 @@ describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
       expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/dayjs'))).toBe(false)
     }
     finally {
-      ctx.watcherService.closeAll()
-      resetCompilerContext()
+      await dispose()
     }
   })
 })

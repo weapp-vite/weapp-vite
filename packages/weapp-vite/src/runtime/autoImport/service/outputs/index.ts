@@ -20,6 +20,7 @@ interface OutputsOptions {
   manifestCache: Map<string, string>
   componentMetadataMap: Map<string, ComponentMetadata>
   outputsState: OutputsState
+  getPreparedStateVersion: () => number
   resolverComponentsMapRef: { value: Record<string, string> }
   collectResolverComponents: () => Record<string, string>
   collectManifestResolverComponents: () => Record<string, string>
@@ -37,6 +38,7 @@ export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
     manifestCache,
     componentMetadataMap,
     outputsState,
+    getPreparedStateVersion,
     resolverComponentsMapRef,
     collectResolverComponents,
     collectManifestResolverComponents,
@@ -49,6 +51,7 @@ export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
   const commonSyncOptions: CommonSyncOptions = {
     ctx,
     outputsState,
+    getPreparedStateVersion,
     collectResolverComponents,
     registry,
     componentMetadataMap,

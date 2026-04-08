@@ -175,6 +175,66 @@ describe('autoImport resolver helpers', () => {
     expect(noResolverHelpers.resolveWithResolvers('AnyComp')).toBeUndefined()
   })
 
+  it('uses static component lookup when resolver declares static strategy', () => {
+    const resolver = {
+      componentLookupStrategy: 'static' as const,
+      components: {
+        't-button': 'tdesign-miniprogram/button/button',
+      },
+      resolve: vi.fn(() => {
+        throw new Error('static resolver should not execute runtime resolve')
+      }),
+    } satisfies Resolver
+
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [resolver],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+
+    expect(helpers.resolveWithResolvers('TButton', '/project/src/pages/index/index')).toEqual({
+      name: 'TButton',
+      from: 'tdesign-miniprogram/button/button',
+    })
+    expect(resolver.resolve).not.toHaveBeenCalled()
+  })
+
+  it('preserves resolver order when dynamic resolver appears before static resolver', () => {
+    const dynamicResolver = {
+      resolve: vi.fn((componentName: string) => {
+        if (componentName === 't-button') {
+          return {
+            name: componentName,
+            from: 'dynamic-first/t-button',
+          }
+        }
+        return undefined
+      }),
+    } satisfies Resolver
+    const staticResolver = {
+      componentLookupStrategy: 'static' as const,
+      components: {
+        't-button': 'static-second/t-button',
+      },
+    } satisfies Resolver
+
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [dynamicResolver, staticResolver],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+
+    expect(helpers.resolveWithResolvers('TButton', '/project/src/pages/index/index')).toEqual({
+      name: 'TButton',
+      from: 'dynamic-first/t-button',
+    })
+    expect(dynamicResolver.resolve).toHaveBeenCalled()
+  })
+
   it('collects and syncs resolver component metadata', () => {
     const state = createState({
       autoImportComponents: {
@@ -382,5 +442,27 @@ describe('autoImport resolver helpers', () => {
     expect(helpers.resolveNavigationImport('plain-ui/button')).toBe('plain-ui/button')
     expect(helpers.resolveNavigationImport('plain-ui/button/index.js')).toBe('plain-ui/button/index.js')
     expect(helpers.resolveNavigationImport('missing-ui/button')).toBeUndefined()
+  })
+
+  it('keeps support-file resolver state stable when entries are unchanged', () => {
+    const state = createState()
+    const helpers = createResolverHelpers(state)
+
+    helpers.setSupportFileResolverComponents({
+      'van-button': '@vant/weapp/button',
+    })
+    const firstCollected = helpers.collectResolverComponents()
+
+    helpers.setSupportFileResolverComponents({
+      'van-button': '@vant/weapp/button',
+    })
+
+    expect(helpers.collectResolverComponents()).toEqual(firstCollected)
+
+    helpers.clearSupportFileResolverComponents()
+    expect(helpers.collectResolverComponents()).toEqual({})
+
+    helpers.clearSupportFileResolverComponents()
+    expect(helpers.collectResolverComponents()).toEqual({})
   })
 })

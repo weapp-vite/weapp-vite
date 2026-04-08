@@ -98,6 +98,7 @@ function createOutputsState() {
     lastTypedComponentsOutput: undefined,
     lastVueComponentsEnabled: false,
     lastVueComponentsOutput: undefined,
+    preparedSyncStateVersion: undefined,
     preparedSyncStatePromise: undefined,
   }
 }
@@ -112,6 +113,7 @@ function createCommonOptions(overrides: Record<string, any> = {}) {
     registry: new Map<string, any>(),
     componentMetadataMap: new Map<string, any>(),
     manifestCache: new Map<string, string>(),
+    getPreparedStateVersion: vi.fn(() => 1),
     syncResolverComponentProps: vi.fn(),
     preloadResolverComponentMetadata: vi.fn(),
     getComponentMetadata: vi.fn(() => ({
@@ -523,5 +525,45 @@ describe('autoImport outputs sync helpers', () => {
     expect(options.preloadResolverComponentMetadata).toHaveBeenCalledTimes(1)
     expect(collectAllComponentNamesMock).toHaveBeenCalledTimes(1)
     expect(getComponentMetadata).toHaveBeenCalledTimes(2)
+  })
+
+  it('rebuilds prepared sync state after prepared state version changes', async () => {
+    const preparedStateVersion = { value: 1 }
+    const outputsState = createOutputsState()
+    const getComponentMetadata = vi.fn(() => ({
+      types: new Map<string, string>(),
+      docs: new Map<string, string>(),
+    }))
+    const options = createCommonOptions({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          cwd: '/project',
+        },
+      },
+      outputsState,
+      getPreparedStateVersion: vi.fn(() => preparedStateVersion.value),
+      getComponentMetadata,
+      resolverComponentsMapRef: { value: {} },
+      resolveNavigationImport: vi.fn(),
+    })
+
+    await syncTypedComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/components.d.ts',
+    }, options as any)
+
+    preparedStateVersion.value = 2
+
+    await syncHtmlCustomData({
+      enabled: true,
+      outputPath: '/project/types/mini-program.html-data.json',
+    }, options as any)
+
+    expect(options.syncResolverComponentProps).toHaveBeenCalledTimes(2)
+    expect(options.preloadResolverComponentMetadata).toHaveBeenCalledTimes(2)
+    expect(collectAllComponentNamesMock).toHaveBeenCalledTimes(2)
+    expect(getComponentMetadata).toHaveBeenCalledTimes(4)
+    expect(outputsState.preparedSyncStateVersion).toBe(2)
   })
 })

@@ -78,4 +78,34 @@ describe('autoImport manifest outputs', () => {
     )
     expect(manifestCache.get('van-action-sheet')).toBe('@vant/weapp/action-sheet')
   })
+
+  it('skips manifest write and html sync when content is unchanged', async () => {
+    const { writeManifestFile } = await import('./manifest')
+    const manifestCache = new Map<string, string>([
+      ['local-card', '/components/local-card/index'],
+      ['van-button', '@vant/weapp/button'],
+    ])
+    const scheduleHtmlCustomDataWrite = vi.fn()
+
+    await writeManifestFile({
+      outputPath: '/project/.weapp-vite/components.manifest.json',
+      collectManifestResolverComponents: () => ({
+        'van-button': '@vant/weapp/button',
+      }),
+      registry: new Map<string, any>([
+        ['local-card', {
+          kind: 'local',
+          value: {
+            name: 'local-card',
+            from: '/components/local-card/index',
+          },
+        }],
+      ]),
+      manifestCache,
+      scheduleHtmlCustomDataWrite,
+    })
+
+    expect(outputJsonMock).not.toHaveBeenCalled()
+    expect(scheduleHtmlCustomDataWrite).not.toHaveBeenCalled()
+  })
 })

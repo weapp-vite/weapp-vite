@@ -56,6 +56,12 @@ export interface AutoImportService {
   awaitManifestWrites: () => Promise<void>
 }
 
+interface AutoImportOutputSettingsSnapshot {
+  typed: ReturnType<typeof getTypedComponentsSettings>
+  html: ReturnType<typeof getHtmlCustomDataSettings>
+  vue: ReturnType<typeof getVueComponentsSettings>
+}
+
 export function createAutoImportService(ctx: MutableCompilerContext): AutoImportService {
   const autoImportState = ctx.runtimeState.autoImport
   const registry = autoImportState.registry
@@ -79,6 +85,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     html: undefined,
     vue: undefined,
   }
+  let outputSettingsSnapshot: AutoImportOutputSettingsSnapshot | undefined
   const outputsState: OutputsState = {
     pendingWrite: undefined,
     writeRequested: false,
@@ -100,6 +107,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     lastTypedComponentsOutput: undefined,
     lastVueComponentsEnabled: false,
     lastVueComponentsOutput: undefined,
+    preparedSyncStateVersion: undefined,
     preparedSyncStatePromise: undefined,
   }
 
@@ -129,6 +137,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     manifestCache,
     componentMetadataMap,
     outputsState,
+    getPreparedStateVersion: () => autoImportState.version,
     resolverComponentsMapRef,
     collectResolverComponents: resolverHelpers.collectResolverComponents,
     collectManifestResolverComponents: resolverHelpers.collectManifestResolverComponents,
@@ -140,6 +149,17 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
 
   function bumpVersion() {
     autoImportState.version += 1
+  }
+
+  function getOutputSettingsSnapshot(): AutoImportOutputSettingsSnapshot {
+    if (!outputSettingsSnapshot) {
+      outputSettingsSnapshot = {
+        typed: getTypedComponentsSettings(ctx),
+        html: getHtmlCustomDataSettings(ctx),
+        vue: getVueComponentsSettings(ctx),
+      }
+    }
+    return outputSettingsSnapshot
   }
 
   function deferOrSchedule(kind: 'manifest' | 'typed' | 'html' | 'vue', shouldWrite: boolean) {
@@ -195,6 +215,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     resolverComponentNames,
     componentMetadataMap,
     logWarnOnce,
+    bumpVersion,
     scheduleManifestWrite: shouldWrite => deferOrSchedule('manifest', shouldWrite),
     scheduleTypedComponentsWrite: shouldWrite => deferOrSchedule('typed', shouldWrite),
     scheduleHtmlCustomDataWrite: shouldWrite => deferOrSchedule('html', shouldWrite),
@@ -212,9 +233,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       deferOrSchedule('manifest', true)
       componentMetadataMap.clear()
       resolverComponentNames.clear()
-      const typedSettings = getTypedComponentsSettings(ctx)
-      const htmlSettings = getHtmlCustomDataSettings(ctx)
-      const vueSettings = getVueComponentsSettings(ctx)
+      const { typed: typedSettings, html: htmlSettings, vue: vueSettings } = getOutputSettingsSnapshot()
       if (typedSettings.enabled || htmlSettings.enabled) {
         resolverHelpers.syncResolverComponentProps()
       }
@@ -247,7 +266,6 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       const task = Promise.resolve()
         .then(async () => {
           await registryHelpers.registerLocalComponent(filePath)
-          bumpVersion()
         })
         .finally(() => {
           pendingRegistrations.delete(task)
@@ -277,12 +295,13 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     },
 
     setSupportFileResolverComponents(components: Record<string, string>) {
+      const changed = resolverHelpers.setSupportFileResolverComponents(components)
+      if (!changed) {
+        return
+      }
       bumpVersion()
-      resolverHelpers.setSupportFileResolverComponents(components)
       deferOrSchedule('manifest', true)
-      const typedSettings = getTypedComponentsSettings(ctx)
-      const htmlSettings = getHtmlCustomDataSettings(ctx)
-      const vueSettings = getVueComponentsSettings(ctx)
+      const { typed: typedSettings, html: htmlSettings, vue: vueSettings } = getOutputSettingsSnapshot()
       if (typedSettings.enabled || htmlSettings.enabled) {
         resolverHelpers.syncResolverComponentProps()
       }
@@ -299,8 +318,11 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     },
 
     clearSupportFileResolverComponents() {
+      const changed = resolverHelpers.clearSupportFileResolverComponents()
+      if (!changed) {
+        return
+      }
       bumpVersion()
-      resolverHelpers.clearSupportFileResolverComponents()
       resolverHelpers.syncResolverComponentProps()
     },
 
@@ -326,9 +348,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
           kind: 'resolver',
           value: resolvedValue,
         }
-        const typedSettings = getTypedComponentsSettings(ctx)
-        const htmlSettings = getHtmlCustomDataSettings(ctx)
-        const vueSettings = getVueComponentsSettings(ctx)
+        const { typed: typedSettings, html: htmlSettings, vue: vueSettings } = getOutputSettingsSnapshot()
         if (typedSettings.enabled || htmlSettings.enabled) {
           const metadataMissing = !componentMetadataMap.has(resolved.value.name)
           if (metadataMissing) {

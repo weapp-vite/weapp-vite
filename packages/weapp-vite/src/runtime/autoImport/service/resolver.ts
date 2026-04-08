@@ -22,8 +22,8 @@ export interface ResolverHelpers {
   collectManifestResolverComponents: () => Record<string, string>
   clearResolveCache: () => void
   syncResolverComponentProps: () => void
-  setSupportFileResolverComponents: (components: Record<string, string>) => void
-  clearSupportFileResolverComponents: () => void
+  setSupportFileResolverComponents: (components: Record<string, string>) => boolean
+  clearSupportFileResolverComponents: () => boolean
   collectStaticResolverComponentsForSupportFiles: () => Record<string, string>
   resolveWithResolvers: (componentName: string, importerBaseName?: string) => ResolvedValue | undefined
   resolveNavigationImport: (from: string) => string | undefined
@@ -42,6 +42,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
   const miniprogramDirCache = new Map<string, string | undefined>()
   const resolveCache = new Map<string, ResolvedValue | null>()
   const supportFileResolverComponents = new Map<string, string>()
+  let compiledResolversCache: CompiledResolversCache | undefined
 
   function getResolveCacheKey(componentName: string, importerBaseName?: string) {
     return `${importerBaseName ?? ''}\0${componentName}`
@@ -53,11 +54,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
       : 'used'
   }
 
-  function resolveWithResolver(resolver: Resolver, componentName: string, baseName: string) {
-    if (!resolver) {
-      return undefined
-    }
-
+  function toComponentCandidates(componentName: string) {
     const candidates: string[] = [componentName]
     if (!componentName.includes('-') && COMPONENT_HAS_UPPER_RE.test(componentName)) {
       const kebab = componentName
@@ -68,6 +65,45 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
         candidates.push(kebab)
       }
     }
+    return candidates
+  }
+
+  function canUseStaticComponentLookup(resolver: Resolver) {
+    return (resolver as any)?.componentLookupStrategy === 'static'
+      && Boolean((resolver as any)?.components)
+  }
+
+  function getCompiledResolvers(resolvers: Resolver[]) {
+    if (compiledResolversCache?.source === resolvers) {
+      return compiledResolversCache.steps
+    }
+
+    const steps: CompiledResolverStep[] = resolvers.map((resolver) => {
+      if (canUseStaticComponentLookup(resolver)) {
+        return {
+          kind: 'static',
+          components: (resolver as any).components as Record<string, string>,
+        }
+      }
+      return {
+        kind: 'dynamic',
+        resolver,
+      }
+    })
+
+    compiledResolversCache = {
+      source: resolvers,
+      steps,
+    }
+    return steps
+  }
+
+  function resolveWithResolver(resolver: Resolver, componentName: string, baseName: string) {
+    if (!resolver) {
+      return undefined
+    }
+
+    const candidates = toComponentCandidates(componentName)
 
     // 优先按对象 resolver 处理（即使 resolver 本身是可调用函数，但额外挂了字段）。
     const resolverAny = resolver as any
@@ -195,17 +231,34 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
 
   function clearResolveCache() {
     resolveCache.clear()
+    compiledResolversCache = undefined
+  }
+
+  function hasSameEntries(target: Map<string, string>, source: Record<string, string>) {
+    const entries = Object.entries(source)
+    if (target.size !== entries.length) {
+      return false
+    }
+    return entries.every(([name, from]) => target.get(name) === from)
   }
 
   function setSupportFileResolverComponents(components: Record<string, string>) {
+    if (hasSameEntries(supportFileResolverComponents, components)) {
+      return false
+    }
     supportFileResolverComponents.clear()
     for (const [name, from] of Object.entries(components)) {
       supportFileResolverComponents.set(name, from)
     }
+    return true
   }
 
   function clearSupportFileResolverComponents() {
+    if (supportFileResolverComponents.size === 0) {
+      return false
+    }
     supportFileResolverComponents.clear()
+    return true
   }
 
   function collectStaticResolverComponentsForSupportFiles(): Record<string, string> {
@@ -262,8 +315,20 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
       return undefined
     }
 
-    for (const resolver of resolvers) {
-      const value = resolveWithResolver(resolver, componentName, importerBaseName ?? '')
+    for (const step of getCompiledResolvers(resolvers)) {
+      if (step.kind === 'static') {
+        for (const candidate of toComponentCandidates(componentName)) {
+          const from = step.components[candidate]
+          if (from) {
+            const value = { name: componentName, from }
+            resolveCache.set(cacheKey, value)
+            return value
+          }
+        }
+        continue
+      }
+
+      const value = resolveWithResolver(step.resolver, componentName, importerBaseName ?? '')
       if (value) {
         resolveCache.set(cacheKey, value)
         return value
@@ -286,4 +351,15 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     resolveWithResolvers,
     resolveNavigationImport,
   }
+}
+
+interface CompiledResolverStep {
+  kind: 'static' | 'dynamic'
+  components?: Record<string, string>
+  resolver?: Resolver
+}
+
+interface CompiledResolversCache {
+  source: Resolver[]
+  steps: CompiledResolverStep[]
 }
