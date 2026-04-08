@@ -104,7 +104,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('__weappViteChunkRequestGlobalsHost__.WebSocket')
     expect(commonJs).toContain('__weappViteRequestGlobalsPassiveBindings__')
     expect(commonJs).toContain('"WebSocket"')
-    expect(commonJs).toContain('var WebSocket = __weappViteHasUsableRequestGlobalsConstructor__(')
+    expect(commonJs).toContain('var WebSocket = __weappViteExposeRequestGlobal__("WebSocket"')
   })
 
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {

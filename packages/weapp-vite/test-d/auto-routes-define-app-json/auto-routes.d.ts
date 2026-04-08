@@ -11,8 +11,8 @@ export type AutoRoutesEntries = [
 
 export type AutoRoutesSubPackages = [
   {
-    readonly root: 'packageA'
-    readonly pages: ['pages/cat']
+    root: 'packageA'
+    pages: ['pages/cat']
   },
 ]
 
