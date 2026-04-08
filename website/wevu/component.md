@@ -55,6 +55,77 @@ keywords:
 
 > 小提示：如果你在 Wevu 里需要使用“原生 this”（例如访问 `this.setData`、`this.triggerEvent`、`selectComponent` 等），可以在 `setup(props, ctx)` 里通过 `ctx.instance` 访问小程序实例。
 
+## props 和 properties：相同点与区别
+
+两者本质上都在描述“组件对外暴露的输入契约”：
+
+- 父组件都可以通过属性把值传进来。
+- 子组件里都可以通过 `setup(props)` / `ctx.props` 读取。
+- 最终都会落到小程序组件实例的 `properties` 上参与更新。
+
+也就是说，`props` 和 `properties` 在“能不能接收入参”这件事上并不是两套独立机制，而是同一层能力的两种声明方式。
+
+### 相同点
+
+- 都用于声明组件可接收的输入参数。
+- 都会参与父传子更新，值变化后可在组件内拿到最新结果。
+- 都支持类型、默认值等入参约束能力。
+- 都能在 Wevu 组件中被 `setup(props)` 统一消费。
+
+### 不同点
+
+- `props` 是 Wevu / Vue 风格写法，适合新项目和 Vue SFC 心智。
+- `properties` 是小程序原生写法，适合迁移已有原生组件，或需要直接复用原生定义时使用。
+- `props` 更方便配合 `defineProps`、`withDefaults`、TypeScript 类型推导一起使用。
+- `properties` 更贴近原生小程序文档、原生组件库和历史代码结构。
+
+### 代码示例
+
+`props` 写法：
+
+```ts
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  props: {
+    title: String,
+    count: {
+      type: Number,
+      default: 0,
+    },
+  },
+  setup(props) {
+    console.log(props.title, props.count)
+  },
+})
+```
+
+`properties` 写法：
+
+```ts
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  properties: {
+    title: String,
+    count: {
+      type: Number,
+      value: 0,
+    },
+  },
+  setup(props) {
+    console.log(props.title, props.count)
+  },
+})
+```
+
+### 优先级与选择建议
+
+- 新写的 Wevu 组件，推荐优先使用 `props`。
+- `<script setup>` 场景，推荐直接使用 `defineProps`。
+- 从原生小程序迁移时，如果已有成熟的 `properties` 定义，可以先保留，逐步迁移到 `props`。
+- 不建议同时定义 `props` 和 `properties`；如果同时存在，以 `props` 归一化生成的结果为准。
+
 ## Behavior 迁移补充（SFC 场景）
 
 结论先说：
