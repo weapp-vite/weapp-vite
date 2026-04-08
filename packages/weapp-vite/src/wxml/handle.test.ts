@@ -380,4 +380,86 @@ describe('handleWxml', () => {
     handleWxml(createData('second'))
     expect(transformWxsCode).not.toHaveBeenCalled()
   })
+
+  it('replaces import.meta.env expressions in wxml output', () => {
+    const code = '<image src="{{import.meta.env.VITE_CDN}}/logo.png" data-env="{{import.meta.env}}" />'
+    const data = {
+      code,
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_CDN': '"https://static.example.com"',
+        'import.meta.env': '{"VITE_CDN":"https://static.example.com"}',
+      },
+    })
+
+    expect(result.code).toBe('<image src="{{"https://static.example.com"}}/logo.png" data-env="{{{"VITE_CDN":"https://static.example.com"}}}" />')
+  })
+
+  it('memoizes import.meta.env replacements with define values in cache key', () => {
+    const data = {
+      code: '<view>{{import.meta.env.VITE_NAME}}</view>',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const first = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_NAME': '"first"',
+      },
+    })
+    const second = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_NAME': '"second"',
+      },
+    })
+
+    expect(first.code).toBe('<view>{{"first"}}</view>')
+    expect(second.code).toBe('<view>{{"second"}}</view>')
+    expect(second).not.toBe(first)
+  })
+
+  it('does not recursively replace import.meta.env text that comes from replacement values', () => {
+    const data = {
+      code: '<view>{{import.meta.env.VITE_NAME}}</view>',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_NAME': '"contains import.meta.env literally"',
+        'import.meta.env': '{"VITE_NAME":"contains import.meta.env literally"}',
+      },
+    })
+
+    expect(result.code).toBe('<view>{{"contains import.meta.env literally"}}</view>')
+  })
 })

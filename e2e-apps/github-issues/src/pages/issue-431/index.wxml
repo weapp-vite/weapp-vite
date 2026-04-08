@@ -1,0 +1,4 @@
+<view class="issue-431-page">
+  <view>{{import.meta.env.VITE_ISSUE_431_LABEL}}</view>
+  <image src="{{import.meta.env.VITE_ISSUE_431_ASSET_BASE}}/logo.png" />
+</view>

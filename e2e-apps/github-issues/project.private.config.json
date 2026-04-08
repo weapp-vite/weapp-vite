@@ -36,6 +36,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-431/index",
+          "pathName": "pages/issue-431/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-420/index",
           "pathName": "pages/issue-420/index",
           "query": "",

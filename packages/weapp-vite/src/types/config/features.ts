@@ -64,6 +64,7 @@ export interface ScanWxmlOptions {
  * @description WXML 处理阶段配置
  */
 export interface HandleWxmlOptions {
+  defineImportMetaEnv?: Record<string, any>
   removeComment?: boolean
   transformEvent?: boolean
   scriptModuleExtension?: string

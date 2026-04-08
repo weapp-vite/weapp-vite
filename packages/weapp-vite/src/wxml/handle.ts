@@ -20,12 +20,67 @@ interface HandleWxmlReturn {
 const handleCache = new WeakMap<ScanResult, Map<string, HandleWxmlReturn>>()
 const inlineWxsTransformCache = new Map<string, ReturnType<typeof transformWxsCode>>()
 const INLINE_WXS_CACHE_LIMIT = 256
+const IDENTIFIER_CHAR_RE = /[\w$]/
+
+function escapeRegExp(source: string) {
+  return source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<string, any>) {
+  if (!defineImportMetaEnv || Object.keys(defineImportMetaEnv).length === 0) {
+    return code
+  }
+
+  const entries = Object.entries(defineImportMetaEnv)
+    .sort(([leftKey], [rightKey]) => rightKey.length - leftKey.length)
+  const replacementRanges: Array<{ start: number, end: number, value: string }> = []
+
+  for (const [key, value] of entries) {
+    if (!key.startsWith('import.meta.env')) {
+      continue
+    }
+    const pattern = new RegExp(escapeRegExp(key), 'g')
+    for (const match of code.matchAll(pattern)) {
+      const start = match.index ?? -1
+      if (start < 0) {
+        continue
+      }
+      const end = start + key.length
+      const previous = start > 0 ? code[start - 1] : ''
+      const next = end < code.length ? code[end] : ''
+      if ((previous && IDENTIFIER_CHAR_RE.test(previous)) || (next && IDENTIFIER_CHAR_RE.test(next))) {
+        continue
+      }
+      if (replacementRanges.some(range => !(end <= range.start || start >= range.end))) {
+        continue
+      }
+      replacementRanges.push({
+        start,
+        end,
+        value: String(value),
+      })
+    }
+  }
+
+  if (replacementRanges.length === 0) {
+    return code
+  }
+
+  const ms = new MagicString(code)
+  for (const range of replacementRanges.sort((left, right) => left.start - right.start)) {
+    ms.update(range.start, range.end, range.value)
+  }
+  return ms.toString()
+}
 
 function createCacheKey(options: Required<HandleWxmlOptions>) {
   const extension = options.scriptModuleExtension ?? ''
   const tag = options.scriptModuleTag ?? ''
   const templateExt = options.templateExtension ?? ''
-  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${extension}|${tag}|${templateExt}`
+  const defineKeys = options.defineImportMetaEnv
+    ? Object.keys(options.defineImportMetaEnv).sort().map(key => `${key}:${String(options.defineImportMetaEnv?.[key])}`).join(',')
+    : ''
+  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${extension}|${tag}|${templateExt}|${defineKeys}`
 }
 
 function getCachedResult(data: ScanResult, cacheKey: string) {
@@ -64,6 +119,7 @@ function getCachedInlineWxsTransform(code: string, extension: string) {
 
 export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
   const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {
+    defineImportMetaEnv: undefined,
     removeComment: true,
     transformEvent: true,
     scriptModuleExtension: undefined,
@@ -121,8 +177,9 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const shouldTransformScriptModuleTags = resolvedScriptTag !== 'wxs' && scriptModuleTagTokens.length > 0
   const shouldRemoveConditionals = removalRanges.length > 0
   const shouldRemoveComments = opts.removeComment && commentTokens.length > 0
+  const shouldReplaceDefineImportMetaEnv = !!opts.defineImportMetaEnv && Object.keys(opts.defineImportMetaEnv).length > 0
 
-  if (!shouldNormalizeImports && !shouldNormalizeTemplateImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldTransformDirectives && !shouldTransformTagNames && !shouldTransformScriptModuleTags && !shouldRemoveConditionals && !shouldRemoveComments) {
+  if (!shouldNormalizeImports && !shouldNormalizeTemplateImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldTransformDirectives && !shouldTransformTagNames && !shouldTransformScriptModuleTags && !shouldRemoveConditionals && !shouldRemoveComments && !shouldReplaceDefineImportMetaEnv) {
     return setCachedResult(data, cacheKey, {
       code,
       components,
@@ -210,9 +267,10 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const finalCode = shouldNormalizeScriptModuleAttributes(resolvedScriptTag)
     ? normalizeImportSjsAttributes(ms.toString())
     : ms.toString()
+  const codeWithDefine = replaceDefineImportMetaEnv(finalCode, opts.defineImportMetaEnv)
 
   return setCachedResult(data, cacheKey, {
-    code: finalCode,
+    code: codeWithDefine,
     components,
     deps,
   })

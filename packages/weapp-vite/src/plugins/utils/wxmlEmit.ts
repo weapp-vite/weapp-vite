@@ -89,11 +89,12 @@ export function emitWxmlAssetFile(options: {
   token: any
   deps?: Set<string>
   emittedCodeCache: Map<string, string>
+  defineImportMetaEnv?: Record<string, any>
   scriptModuleExtension?: string
   scriptModuleTag?: string
   templateExtension: string
 }) {
-  const { runtime, id, fileName, token, deps, emittedCodeCache, scriptModuleExtension, scriptModuleTag, templateExtension } = options
+  const { runtime, id, fileName, token, deps, emittedCodeCache, defineImportMetaEnv, scriptModuleExtension, scriptModuleTag, templateExtension } = options
 
   runtime.addWatchFile?.(normalizeWatchPath(id))
   if (deps) {
@@ -103,6 +104,7 @@ export function emitWxmlAssetFile(options: {
   }
 
   const result = handleWxml(token, {
+    defineImportMetaEnv,
     scriptModuleExtension,
     scriptModuleTag,
     templateExtension,
@@ -123,7 +125,7 @@ export function emitWxmlAssetFile(options: {
 
 export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
   const { runtime, compiler, subPackageMeta, emittedCodeCache, buildTarget = 'app' } = options
-  const { wxmlService, templateExtension, scriptModuleExtension, scriptModuleTag } = resolveWxmlEmitContext(compiler)
+  const { wxmlService, configService, templateExtension, scriptModuleExtension, scriptModuleTag } = resolveWxmlEmitContext(compiler)
   const currentPackageWxmls = resolveWxmlEmitTargets({
     compiler,
     subPackageMeta,
@@ -141,6 +143,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
       token,
       deps: wxmlService.depsMap.get(id),
       emittedCodeCache,
+      defineImportMetaEnv: configService.defineImportMetaEnv,
       scriptModuleExtension,
       scriptModuleTag,
       templateExtension,
