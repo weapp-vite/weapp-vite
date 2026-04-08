@@ -9,28 +9,10 @@ import {
   resolveBaseUrl,
 } from '../../shared/runtime'
 
-const HTTP_PROTOCOL_RE = /^http/u
-
-function decodeArrayBufferAsText(buffer: ArrayBuffer) {
-  if (typeof TextDecoder === 'function') {
-    return new TextDecoder().decode(buffer)
-  }
-  const view = new Uint8Array(buffer)
-  let text = ''
-  for (const byte of view) {
-    text += String.fromCharCode(byte)
-  }
-  return text
-}
-
 const baseUrl = ref('')
 const state = ref(createRequestCaseState())
 const defaultTransportName = ref('')
 const websocketOnlyTransportName = ref('')
-const directEngineIoWebSocketMessage = ref('')
-const directEngineIoWebSocketDataType = ref('')
-const directEngineIoWebSocketOpened = ref(false)
-const websocketOnlyManagerOpened = ref(false)
 
 interface SocketProbePayload {
   client: string
@@ -38,84 +20,6 @@ interface SocketProbePayload {
   path: string
   requestCount: number
   transport: string
-}
-
-interface DirectEngineIoProbeResult {
-  dataType: string
-  message: string
-  opened: boolean
-  url: string
-}
-
-async function probeDirectEngineIoWebSocket() {
-  const websocketUrl = `${baseUrl.value.replace(HTTP_PROTOCOL_RE, 'ws')}/socket.io/?EIO=4&transport=websocket`
-  return await new Promise<DirectEngineIoProbeResult>((resolve, reject) => {
-    const socket = new WebSocket(websocketUrl)
-    socket.binaryType = 'arraybuffer'
-    let settled = false
-    let openTimer: ReturnType<typeof setTimeout> | undefined
-
-    const cleanup = () => {
-      if (openTimer) {
-        clearTimeout(openTimer)
-      }
-      socket.onopen = null
-      socket.onmessage = null
-      socket.onerror = null
-      socket.onclose = null
-    }
-
-    const finalize = (handler: () => void) => {
-      if (settled) {
-        return
-      }
-      settled = true
-      cleanup()
-      handler()
-    }
-
-    socket.onopen = () => {
-      directEngineIoWebSocketOpened.value = true
-    }
-
-    socket.onmessage = (event) => {
-      const dataType = typeof event.data === 'string'
-        ? 'string'
-        : event.data instanceof ArrayBuffer
-          ? 'arraybuffer'
-          : typeof event.data
-      directEngineIoWebSocketDataType.value = dataType
-      const message = typeof event.data === 'string'
-        ? event.data
-        : event.data instanceof ArrayBuffer
-          ? decodeArrayBufferAsText(event.data)
-          : ''
-      directEngineIoWebSocketMessage.value = message
-      finalize(() => {
-        socket.close()
-        resolve({
-          dataType,
-          message,
-          opened: true,
-          url: websocketUrl,
-        })
-      })
-    }
-
-    socket.onerror = (error) => {
-      finalize(() => {
-        socket.close()
-        reject(error)
-      })
-    }
-
-    openTimer = setTimeout(() => {
-      finalize(() => {
-        socket.close()
-        reject(new Error('direct engine.io websocket timeout'))
-      })
-    }, 5_000)
-  })
 }
 
 async function connectProbe(
@@ -131,12 +35,6 @@ async function connectProbe(
       reconnection: false,
       timeout: 10_000,
       transports: options?.forceWebsocket ? ['websocket'] : undefined,
-    })
-
-    socket.io.on('open', () => {
-      if (options?.forceWebsocket) {
-        websocketOnlyManagerOpened.value = true
-      }
     })
 
     let settled = false
@@ -214,7 +112,6 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
-    const directEngineProbe = await probeDirectEngineIoWebSocket()
     const defaultProbe = await connectProbe()
     const websocketOnlyProbe = await connectProbe({
       forceWebsocket: true,
@@ -230,12 +127,10 @@ async function runCase() {
     state.value = createSuccessState(state.value, 101, {
       checks: {
         defaultTransportSupported: defaultProbe.transport === 'polling' || defaultProbe.transport === 'websocket',
-        directEngineIoWebSocketOpened: directEngineProbe.opened,
         websocketOnlyConnected: websocketOnlyProbe.transport === 'websocket',
       },
       client: defaultProbe.client,
       defaultProbe,
-      directEngineProbe,
       path: websocketOnlyProbe.path,
       requestCount: websocketOnlyProbe.requestCount,
       transport: websocketOnlyProbe.transport,
@@ -255,11 +150,7 @@ async function runE2E() {
     baseUrl: baseUrl.value,
     ok: snapshot.pageStatus === '全部通过',
     snapshot,
-    directEngineIoWebSocketMessage: directEngineIoWebSocketMessage.value,
-    directEngineIoWebSocketDataType: directEngineIoWebSocketDataType.value,
-    directEngineIoWebSocketOpened: directEngineIoWebSocketOpened.value,
     defaultTransportName: defaultTransportName.value,
-    websocketOnlyManagerOpened: websocketOnlyManagerOpened.value,
     websocketOnlyTransportName: websocketOnlyTransportName.value,
   }
 }
@@ -286,10 +177,7 @@ onLoad((query) => {
       <text id="socket-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="socket-request-count" class="line">requestCount = {{ state.requestCount }}</text>
       <text id="socket-request-path" class="line">requestPath = {{ state.requestPath }}</text>
-      <text id="socket-direct-engine-io-opened" class="line">directEngineIoWebSocketOpened = {{ directEngineIoWebSocketOpened }}</text>
-      <text id="socket-direct-engine-io-data-type" class="line">directEngineIoWebSocketDataType = {{ directEngineIoWebSocketDataType }}</text>
       <text id="socket-default-transport" class="line">defaultTransport = {{ defaultTransportName }}</text>
-      <text id="socket-websocket-manager-opened" class="line">websocketOnlyManagerOpened = {{ websocketOnlyManagerOpened }}</text>
       <text id="socket-websocket-transport" class="line">websocketOnlyTransport = {{ websocketOnlyTransportName }}</text>
       <button class="action" @tap="runCase">
         重新执行 socket.io 校验
