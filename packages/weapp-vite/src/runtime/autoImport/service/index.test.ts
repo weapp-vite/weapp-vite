@@ -60,8 +60,8 @@ function createResolverHelpers(overrides: Record<string, any> = {}) {
     collectManifestResolverComponents: vi.fn(() => ({})),
     clearResolveCache: vi.fn(),
     syncResolverComponentProps: vi.fn(),
-    setSupportFileResolverComponents: vi.fn(),
-    clearSupportFileResolverComponents: vi.fn(),
+    setSupportFileResolverComponents: vi.fn(() => true),
+    clearSupportFileResolverComponents: vi.fn(() => true),
     collectStaticResolverComponentsForSupportFiles: vi.fn(() => ({})),
     resolveWithResolvers: vi.fn(),
     resolveNavigationImport: vi.fn(),
@@ -468,6 +468,49 @@ describe('autoImport service index', () => {
 
     service.removePotentialComponent('/project/src/components/comp-a.vue')
     expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
+  })
+
+  it('skips support-file output scheduling when support-file resolver entries are unchanged', () => {
+    const resolverHelpers = createResolverHelpers({
+      setSupportFileResolverComponents: vi.fn(() => false),
+      clearSupportFileResolverComponents: vi.fn(() => false),
+    })
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(() => undefined),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const ctx = createContext()
+    const startVersion = ctx.runtimeState.autoImport.version
+    const service = createAutoImportService(ctx)
+
+    service.setSupportFileResolverComponents({
+      'van-cell': '@vant/weapp/cell',
+    })
+    service.clearSupportFileResolverComponents()
+
+    expect(ctx.runtimeState.autoImport.version).toBe(startVersion)
+    expect(resolverHelpers.syncResolverComponentProps).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleManifestWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleTypedComponentsWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).not.toHaveBeenCalled()
+    expect(outputsHelpers.scheduleVueComponentsWrite).not.toHaveBeenCalled()
   })
 
   it('awaits pending local component registrations', async () => {

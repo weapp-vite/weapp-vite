@@ -53,6 +53,13 @@ export async function writeManifestFile(options: {
     Array.from(manifestMap.entries()).sort(([a], [b]) => a.localeCompare(b)),
   )
 
+  const unchanged = manifestCache.size === manifestMap.size
+    && Array.from(manifestMap.entries()).every(([componentName, fromPath]) => manifestCache.get(componentName) === fromPath)
+
+  if (unchanged) {
+    return
+  }
+
   manifestCache.clear()
   for (const [componentName, fromPath] of manifestMap.entries()) {
     manifestCache.set(componentName, fromPath)

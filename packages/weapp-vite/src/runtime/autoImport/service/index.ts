@@ -277,8 +277,11 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     },
 
     setSupportFileResolverComponents(components: Record<string, string>) {
+      const changed = resolverHelpers.setSupportFileResolverComponents(components)
+      if (!changed) {
+        return
+      }
       bumpVersion()
-      resolverHelpers.setSupportFileResolverComponents(components)
       deferOrSchedule('manifest', true)
       const typedSettings = getTypedComponentsSettings(ctx)
       const htmlSettings = getHtmlCustomDataSettings(ctx)
@@ -299,8 +302,11 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     },
 
     clearSupportFileResolverComponents() {
+      const changed = resolverHelpers.clearSupportFileResolverComponents()
+      if (!changed) {
+        return
+      }
       bumpVersion()
-      resolverHelpers.clearSupportFileResolverComponents()
       resolverHelpers.syncResolverComponentProps()
     },
 
