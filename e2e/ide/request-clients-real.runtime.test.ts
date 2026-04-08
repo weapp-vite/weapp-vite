@@ -191,6 +191,26 @@ describe.sequential('e2e app: request-clients-real', () => {
     expect(result?.snapshot?.requestPath).toBe('/socket.io')
     expect(result?.snapshot?.payload).toContain('"client":"socket.io-client"')
     expect(['polling', 'websocket']).toContain(result?.transportName)
+    expect(serverHandle?.requestCounts.socketIo).toBeGreaterThan(0)
+    expect(result?.snapshot?.pageStatus).toBe('全部通过')
+  })
+
+  it('covers native WebSocket against a local real realtime server', async (ctx) => {
+    if (sharedInfraUnavailableMessage) {
+      ctx.skip(sharedInfraUnavailableMessage)
+    }
+    const miniProgram = await getMiniProgram(ctx)
+    const page = await miniProgram.reLaunch(withBaseUrl('/pages/websocket/index'))
+    if (!page) {
+      throw new Error('Failed to launch /pages/websocket/index')
+    }
+
+    const result = await page.callMethod('runE2E')
+    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
+    expect(result?.snapshot?.requestPath).toBe('/ws')
+    expect(result?.snapshot?.payload).toContain('"client":"native-websocket"')
+    expect(result?.snapshot?.payload).toContain('"transport":"websocket"')
+    expect(result?.connectedReadyState).toBe(1)
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
   })
 })

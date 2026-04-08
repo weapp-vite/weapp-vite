@@ -4,6 +4,7 @@ import { createServer } from 'node:http'
 import { Readable } from 'node:stream'
 import { Hono } from 'hono'
 import { Server as SocketIOServer } from 'socket.io'
+import { WebSocketServer } from 'ws'
 
 export interface RequestClientsRealServerState {
   axios: number
@@ -11,6 +12,7 @@ export interface RequestClientsRealServerState {
   graphql: number
   socketIo: number
   vueQuery: number
+  websocket: number
 }
 
 export interface RequestClientsRealServerHandle {
@@ -26,6 +28,7 @@ function createRequestCounts(): RequestClientsRealServerState {
     graphql: 0,
     socketIo: 0,
     vueQuery: 0,
+    websocket: 0,
   }
 }
 
@@ -152,6 +155,54 @@ export async function startRequestClientsRealServer(): Promise<RequestClientsRea
     })
   })
 
+  const websocketServer = new WebSocketServer({
+    noServer: true,
+  })
+
+  server.on('upgrade', (request, socket, head) => {
+    if (!(request.url ?? '').startsWith('/ws')) {
+      socket.destroy()
+      return
+    }
+
+    websocketServer.handleUpgrade(request, socket, head, (client) => {
+      websocketServer.emit('connection', client, request)
+    })
+  })
+
+  websocketServer.on('connection', (client, request) => {
+    requestCounts.websocket += 1
+    client.send(JSON.stringify({
+      client: 'native-websocket',
+      path: '/ws',
+      requestCount: requestCounts.websocket,
+      stage: 'connected',
+      url: request.url ?? '/ws',
+    }))
+
+    client.on('message', (message) => {
+      let body: Record<string, unknown> = {}
+      try {
+        body = JSON.parse(message.toString())
+      }
+      catch {
+        body = {
+          raw: message.toString(),
+        }
+      }
+
+      requestCounts.websocket += 1
+      client.send(JSON.stringify({
+        body,
+        client: 'native-websocket',
+        path: '/ws',
+        requestCount: requestCounts.websocket,
+        stage: 'echo',
+        transport: 'websocket',
+      }))
+    })
+  })
+
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
     server.once('listening', resolve)
@@ -165,6 +216,11 @@ export async function startRequestClientsRealServer(): Promise<RequestClientsRea
     baseUrl,
     requestCounts,
     async stop() {
+      await new Promise<void>((resolve) => {
+        websocketServer.close(() => {
+          resolve()
+        })
+      })
       await new Promise<void>((resolve) => {
         io.close(() => {
           resolve()

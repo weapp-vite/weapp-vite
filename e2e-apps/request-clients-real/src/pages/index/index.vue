@@ -23,7 +23,12 @@ const pages = [
   {
     title: 'socket.io-client',
     route: '/pages/socket-io/index',
-    desc: 'socket.io-client 通过真实 Socket.IO 服务端验证 websocket 链路',
+    desc: 'socket.io-client 通过真实 Socket.IO 服务端验证 polling / upgrade 链路',
+  },
+  {
+    title: 'native WebSocket',
+    route: '/pages/websocket/index',
+    desc: '原生 WebSocket 通过 weapp-vite 注入对象访问真实 ws 服务',
   },
 ]
 </script>
@@ -32,7 +37,7 @@ const pages = [
   <view class="page">
     <view class="hero">
       <text class="hero-title">Request Clients Real E2E</text>
-      <text class="hero-desc">本 app 用于验证 fetch / axios / graphql-request / vue-query / socket.io-client 的真实请求链路。</text>
+      <text class="hero-desc">本 app 用于验证 fetch / axios / graphql-request / vue-query / socket.io-client / WebSocket 的真实请求链路。</text>
     </view>
 
     <view v-for="item in pages" :key="item.route" class="card">

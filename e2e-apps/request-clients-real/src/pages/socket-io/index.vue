@@ -13,6 +13,84 @@ const baseUrl = ref('')
 const state = ref(createRequestCaseState())
 const transportName = ref('')
 
+interface SocketProbePayload {
+  client: string
+  namespace: string
+  path: string
+  requestCount: number
+  transport: string
+}
+
+async function connectProbe() {
+  return await new Promise<SocketProbePayload>((resolve, reject) => {
+    const socket = io(baseUrl.value, {
+      autoConnect: false,
+      forceNew: true,
+      path: '/socket.io',
+      reconnection: false,
+      timeout: 10_000,
+    })
+
+    let settled = false
+    let upgradeTimer: ReturnType<typeof setTimeout> | undefined
+
+    const cleanup = () => {
+      if (upgradeTimer) {
+        clearTimeout(upgradeTimer)
+      }
+      socket.off('connect')
+      socket.off('connect_error')
+      socket.off('error')
+      socket.io.engine?.off('upgrade')
+    }
+
+    const finalize = () => {
+      if (settled) {
+        return
+      }
+      settled = true
+      const currentTransportName = socket.io.engine?.transport.name ?? ''
+      transportName.value = currentTransportName
+      socket.emit('probe', {
+        client: 'socket.io-client',
+        run: state.value.runCount,
+      }, (ack: SocketProbePayload) => {
+        cleanup()
+        socket.disconnect()
+        resolve(ack)
+      })
+    }
+
+    socket.on('connect', () => {
+      if (socket.io.engine?.transport.name === 'websocket') {
+        finalize()
+        return
+      }
+
+      socket.io.engine?.on('upgrade', () => {
+        finalize()
+      })
+      upgradeTimer = setTimeout(() => {
+        finalize()
+      }, 3_000)
+    })
+
+    socket.on('connect_error', (error) => {
+      cleanup()
+      socket.disconnect()
+      reject(error)
+    })
+
+    socket.on('error', (error) => {
+      cleanup()
+      socket.disconnect()
+      reject(error)
+    })
+
+    socket.connect()
+  })
+}
+
 async function runCase() {
   if (!baseUrl.value) {
     state.value = createErrorState(createRunningState(state.value), new Error('missing baseUrl'))
@@ -22,53 +100,7 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
-    const payload = await new Promise<{
-      client: string
-      namespace: string
-      path: string
-      requestCount: number
-      transport: string
-    }>((resolve, reject) => {
-      const socket = io(baseUrl.value, {
-        autoConnect: false,
-        forceNew: true,
-        path: '/socket.io',
-        reconnection: false,
-        timeout: 10_000,
-      })
-
-      const cleanup = () => {
-        socket.off('connect')
-        socket.off('connect_error')
-        socket.off('error')
-      }
-
-      socket.on('connect', () => {
-        transportName.value = socket.io.engine?.transport.name ?? ''
-        socket.emit('probe', {
-          client: 'socket.io-client',
-          run: state.value.runCount,
-        }, (ack: any) => {
-          cleanup()
-          socket.disconnect()
-          resolve(ack)
-        })
-      })
-
-      socket.on('connect_error', (error) => {
-        cleanup()
-        socket.disconnect()
-        reject(error)
-      })
-
-      socket.on('error', (error) => {
-        cleanup()
-        socket.disconnect()
-        reject(error)
-      })
-
-      socket.connect()
-    })
+    const payload = await connectProbe()
 
     if (
       payload.client !== 'socket.io-client'
