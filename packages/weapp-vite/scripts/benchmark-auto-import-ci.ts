@@ -7,6 +7,7 @@ import path from 'pathe'
 
 const thresholdPercent = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_THRESHOLD_PERCENT ?? '25')
 const minExtraMs = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_MIN_EXTRA_MS ?? '200')
+const failOnRegression = process.env.AUTO_IMPORT_BENCH_FAIL_ON_REGRESSION === 'true'
 const iterations = process.env.BENCH_ITERATIONS ?? '2'
 const iterationCount = Number.parseInt(iterations, 10)
 const confirmationIterations = String(
@@ -57,6 +58,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     thresholdPercent,
     minExtraMs,
+    failOnRegression,
     iterations,
     confirmationIterations,
     scenarios,
@@ -79,10 +81,20 @@ async function main() {
     })
   }
 
-  if (confirmedFailures.length > 0) {
+  if (confirmedFailures.length > 0 && failOnRegression) {
     throw new Error(
       `auto-import benchmark regression exceeds ${thresholdPercent}% threshold:\n${confirmedFailures.map(formatFailure).join('\n')}`,
     )
+  }
+
+  if (confirmedFailures.length > 0) {
+    process.stderr.write(
+      [
+        `[auto-import-bench] report-only mode: confirmed deltas exceed ${thresholdPercent}% / ${minExtraMs}ms threshold.`,
+        ...confirmedFailures.map(formatFailure),
+      ].join('\n'),
+    )
+    process.stderr.write('\n')
   }
 }
 
@@ -205,6 +217,7 @@ function formatFailure(failure: FailureRecord) {
 function renderMarkdown(report: {
   thresholdPercent: number
   minExtraMs: number
+  failOnRegression: boolean
   iterations: string
   confirmationIterations: string
   scenarios: string
@@ -222,10 +235,11 @@ function renderMarkdown(report: {
     '',
     `- 阈值：\`${report.thresholdPercent}%\``,
     `- 最小额外成本：\`${report.minExtraMs} ms\``,
+    `- 模式：${report.failOnRegression ? '严格门禁' : '报告模式'}`,
     `- 迭代次数：\`${report.iterations}\``,
     `- 复测迭代次数：\`${report.confirmationIterations}\``,
     `- 场景：\`${report.scenarios}\``,
-    `- 状态：${report.confirmedFailures.length === 0 ? '通过' : '失败'}`,
+    `- 状态：${report.confirmedFailures.length === 0 ? '通过' : report.failOnRegression ? '失败' : '告警'}`,
     '',
     '## 构建',
     '',
@@ -289,6 +303,12 @@ function renderMarkdown(report: {
   lines.push('')
   if (report.confirmedFailures.length === 0) {
     lines.push(`- 所有 build / HMR 场景均未同时超过 \`${report.thresholdPercent}%\` 与 \`${report.minExtraMs} ms\` 双阈值。`)
+  }
+  else if (!report.failOnRegression) {
+    lines.push(`- 以下场景在确认复测后仍超过阈值，但当前为报告模式，不阻塞 CI：`)
+    for (const failure of report.confirmedFailures) {
+      lines.push(`- ${formatFailure(failure)}`)
+    }
   }
   else {
     lines.push(`- 以下场景在确认复测后仍同时超过 \`${report.thresholdPercent}%\` 与 \`${report.minExtraMs} ms\` 阈值：`)

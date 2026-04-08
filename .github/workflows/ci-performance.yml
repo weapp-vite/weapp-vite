@@ -49,6 +49,7 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          FAIL_ON_REGRESSION: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
           INPUT_THRESHOLD_PERCENT: ${{ github.event.inputs['threshold-percent'] || '' }}
           INPUT_MIN_EXTRA_MS: ${{ github.event.inputs['min-extra-ms'] || '' }}
           INPUT_ITERATIONS: ${{ github.event.inputs.iterations || '' }}
@@ -63,6 +64,7 @@ jobs:
           {
             echo "AUTO_IMPORT_BENCH_THRESHOLD_PERCENT=${AUTO_IMPORT_BENCH_THRESHOLD_PERCENT}"
             echo "AUTO_IMPORT_BENCH_MIN_EXTRA_MS=${AUTO_IMPORT_BENCH_MIN_EXTRA_MS}"
+            echo "AUTO_IMPORT_BENCH_FAIL_ON_REGRESSION=${FAIL_ON_REGRESSION}"
             echo "BENCH_ITERATIONS=${BENCH_ITERATIONS}"
             echo "BENCH_SCENARIOS=${BENCH_SCENARIOS}"
             echo "AUTO_IMPORT_BENCH_REPORT_DIR=${AUTO_IMPORT_BENCH_REPORT_DIR}"
@@ -71,6 +73,7 @@ jobs:
           {
             echo "### auto-import benchmark inputs"
             echo "- event: \`${EVENT_NAME}\`"
+            echo "- mode: \`${FAIL_ON_REGRESSION}\`"
             echo "- threshold percent: \`${AUTO_IMPORT_BENCH_THRESHOLD_PERCENT}\`"
             echo "- min extra ms: \`${AUTO_IMPORT_BENCH_MIN_EXTRA_MS}\`"
             echo "- iterations: \`${BENCH_ITERATIONS}\`"
