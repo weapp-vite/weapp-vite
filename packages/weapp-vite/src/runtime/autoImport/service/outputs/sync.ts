@@ -24,6 +24,7 @@ import { collectAllComponentNames } from './manifest'
 export interface CommonSyncOptions {
   ctx: MutableCompilerContext
   outputsState: OutputsState
+  getPreparedStateVersion: () => number
   collectResolverComponents: () => Record<string, string>
   registry: Map<string, any>
   componentMetadataMap: Map<string, ComponentMetadata>
@@ -40,7 +41,9 @@ const TRAILING_INDEX_SEGMENT_RE = /\/index$/
 
 async function getPreparedSyncState(options: CommonSyncOptions): Promise<PreparedSyncState> {
   const { outputsState } = options
-  if (!outputsState.preparedSyncStatePromise) {
+  const currentVersion = options.getPreparedStateVersion()
+  if (!outputsState.preparedSyncStatePromise || outputsState.preparedSyncStateVersion !== currentVersion) {
+    outputsState.preparedSyncStateVersion = currentVersion
     outputsState.preparedSyncStatePromise = Promise.resolve().then(() => {
       options.syncResolverComponentProps()
       options.preloadResolverComponentMetadata()

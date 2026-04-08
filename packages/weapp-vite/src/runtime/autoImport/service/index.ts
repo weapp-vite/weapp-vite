@@ -100,6 +100,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     lastTypedComponentsOutput: undefined,
     lastVueComponentsEnabled: false,
     lastVueComponentsOutput: undefined,
+    preparedSyncStateVersion: undefined,
     preparedSyncStatePromise: undefined,
   }
 
@@ -129,6 +130,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     manifestCache,
     componentMetadataMap,
     outputsState,
+    getPreparedStateVersion: () => autoImportState.version,
     resolverComponentsMapRef,
     collectResolverComponents: resolverHelpers.collectResolverComponents,
     collectManifestResolverComponents: resolverHelpers.collectManifestResolverComponents,
