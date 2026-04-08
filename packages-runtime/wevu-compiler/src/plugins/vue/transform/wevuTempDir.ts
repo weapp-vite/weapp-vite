@@ -4,6 +4,8 @@ import os from 'node:os'
 import process from 'node:process'
 import path from 'pathe'
 
+const PROJECT_WEVU_CONFIG_DIR = path.join('.weapp-vite', 'wevu-config')
+
 function getWevuConfigCacheRoot() {
   const env = process.env.WEAPP_VITE_WEVU_CONFIG_DIR?.trim()
   if (env) {
@@ -11,7 +13,7 @@ function getWevuConfigCacheRoot() {
   }
 
   const cwd = process.cwd()
-  const projectCacheDir = path.join(cwd, '.wevu-config')
+  const projectCacheDir = path.join(cwd, PROJECT_WEVU_CONFIG_DIR)
   if (fs.existsSync(projectCacheDir)) {
     return projectCacheDir
   }

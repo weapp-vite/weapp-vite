@@ -5,8 +5,8 @@ import { DEFAULT_MP_PLATFORM, getPlatformOutputExtensions } from './platform'
 export const defaultExcluded: string[] = [
   '**/node_modules/**',
   '**/miniprogram_npm/**',
-  '**/.wevu-config',
-  '**/.wevu-config/**',
+  '**/.weapp-vite',
+  '**/.weapp-vite/**',
 ]
 
 /**

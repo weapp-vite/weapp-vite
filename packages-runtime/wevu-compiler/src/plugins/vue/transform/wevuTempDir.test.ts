@@ -19,9 +19,9 @@ describe('resolveWevuConfigTempDir', () => {
     vi.restoreAllMocks()
   })
 
-  it('uses project cache dir when .wevu-config exists', () => {
+  it('uses project cache dir when .weapp-vite/wevu-config exists', () => {
     const cwd = '/project'
-    const projectCacheDir = path.join(cwd, '.wevu-config')
+    const projectCacheDir = path.join(cwd, '.weapp-vite', 'wevu-config')
     const fromDir = '/project/src/pages/index'
 
     vi.spyOn(process, 'cwd').mockReturnValue(cwd)
@@ -63,7 +63,7 @@ describe('resolveWevuConfigTempDir', () => {
     )
   })
 
-  it('falls back to tmp dir when .wevu-config does not exist', () => {
+  it('falls back to tmp dir when .weapp-vite/wevu-config does not exist', () => {
     const cwd = '/project'
     const fromDir = '/project/src/pages/index'
 
