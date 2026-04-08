@@ -9,10 +9,10 @@ export function cloneAutoImportComponents(config?: AutoImportComponentsOption | 
   }
 
   const cloned: AutoImportComponents = {}
-  if (config.globs?.length) {
+  if (Array.isArray(config.globs)) {
     cloned.globs = [...config.globs]
   }
-  if (config.resolvers?.length) {
+  if (Array.isArray(config.resolvers)) {
     cloned.resolvers = [...config.resolvers]
   }
   if (config.output !== undefined) {
@@ -56,6 +56,14 @@ function mergeGlobs(base?: string[], extra?: string[]) {
   return deduped
 }
 
+function normalizeGlobs(globs?: string[]) {
+  if (!Array.isArray(globs)) {
+    return undefined
+  }
+
+  return mergeGlobs(undefined, globs) ?? []
+}
+
 function mergeResolvers(
   base?: AutoImportComponents['resolvers'],
   extra?: AutoImportComponents['resolvers'],
@@ -83,8 +91,10 @@ export function mergeAutoImportComponents(
   }
 
   const merged: AutoImportComponents = {}
-  const globs = mergeGlobs(lower.globs, upper.globs)
-  if (globs) {
+  const globs = preferUpperScalars && Array.isArray(upper.globs)
+    ? normalizeGlobs(upper.globs)
+    : mergeGlobs(lower.globs, upper.globs)
+  if (globs !== undefined) {
     merged.globs = globs
   }
   const resolvers = mergeResolvers(lower.resolvers, upper.resolvers)

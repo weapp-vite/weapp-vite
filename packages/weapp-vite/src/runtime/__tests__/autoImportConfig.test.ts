@@ -243,6 +243,27 @@ describe('autoImport config helpers', () => {
       expect(config?.vueComponents).toBe(true)
     })
 
+    it('allows explicit empty globs to disable default component scanning while keeping resolvers', () => {
+      const resolver = { components: { 'van-button': '@vant/weapp/button' } }
+      const ctx = createContext({
+        autoImportComponents: {
+          globs: [],
+          resolvers: [resolver],
+        },
+        subPackages: {
+          'packages/order': {},
+        },
+      })
+      const config = getAutoImportConfig(ctx.configService)
+
+      expect(config?.globs).toEqual([])
+      expect(config?.resolvers).toEqual([resolver])
+      expect(config?.output).toBe(true)
+      expect(config?.typedComponents).toBe(true)
+      expect(config?.htmlCustomData).toBe(true)
+      expect(config?.vueComponents).toBe(true)
+    })
+
     it('allows object config to disable enhanced defaults explicitly', () => {
       const ctx = createContext({
         autoImportComponents: {
@@ -289,6 +310,29 @@ describe('autoImport config helpers', () => {
         currentSubPackageRoot: 'packages/order',
       })
       expect(getAutoImportConfig(ctx.configService)).toBeUndefined()
+    })
+
+    it('allows scoped subpackage config to clear inherited globs explicitly', () => {
+      const ctx = createContext({
+        autoImportComponents: true,
+        subPackages: {
+          'packages/order': {
+            autoImportComponents: {
+              globs: [],
+            },
+          },
+        },
+      }, {
+        currentSubPackageRoot: 'packages/order',
+        packageJson: {
+          name: 'test-project',
+          devDependencies: {
+            wevu: '^1.0.0',
+          },
+        } as any,
+      })
+
+      expect(getAutoImportConfig(ctx.configService)?.globs).toEqual([])
     })
 
     it('returns undefined when global auto import disabled via false', () => {
