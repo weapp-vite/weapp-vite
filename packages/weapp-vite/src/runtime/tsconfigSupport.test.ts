@@ -204,6 +204,15 @@ describe('tsconfig support', () => {
     await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(false)
   })
 
+  it('bootstraps managed tsconfig files without package.json', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-no-package-json-'))
+
+    await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(true)
+
+    const app = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.app.json'))
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
+  })
+
   it('does not overwrite richer managed tsconfig files during bootstrap', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-preserve-'))
     await fs.writeJson(path.join(root, 'package.json'), {

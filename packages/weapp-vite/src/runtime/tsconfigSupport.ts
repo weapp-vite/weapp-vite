@@ -443,7 +443,7 @@ export async function syncManagedTsconfigFiles(ctx: MutableCompilerContext) {
 
 export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
   const packageJsonPath = path.resolve(cwd, 'package.json')
-  const packageJson = await fs.readJson(packageJsonPath, { throws: false }) ?? {}
+  const packageJson = await fs.readJson(packageJsonPath, { throws: false }).catch(() => undefined) ?? {}
   const bootstrapCtx = {
     configService: {
       cwd,

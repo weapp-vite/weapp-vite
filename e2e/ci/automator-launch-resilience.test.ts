@@ -3,6 +3,10 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const DEFAULT_WECHAT_CLI_PATH = process.platform === 'win32'
+  ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
+  : '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
+
 const { connectMock, execaMock, launchMock, MockMiniProgram } = vi.hoisted(() => {
   class MockMiniProgramClass {
     send = vi.fn(async () => ({ SDKVersion: '3.13.2' }))
@@ -289,7 +293,7 @@ describe.sequential('automator launch resilience', () => {
       reject: false,
       timeout: 12_345,
     }))
-    expect(execaMock).toHaveBeenNthCalledWith(2, '/Applications/wechatwebdevtools.app/Contents/MacOS/cli', ['cache', '--clean', 'compile'], expect.objectContaining({
+    expect(execaMock).toHaveBeenNthCalledWith(2, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
       reject: false,
       timeout: 20_000,
     }))

@@ -8,6 +8,11 @@ import path from 'pathe'
 const thresholdPercent = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_THRESHOLD_PERCENT ?? '10')
 const minExtraMs = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_MIN_EXTRA_MS ?? '80')
 const iterations = process.env.BENCH_ITERATIONS ?? '2'
+const iterationCount = Number.parseInt(iterations, 10)
+const confirmationIterations = String(
+  Number.parseInt(process.env.AUTO_IMPORT_BENCH_CONFIRM_ITERATIONS ?? '', 10)
+  || Math.max(iterationCount + 2, 4),
+)
 const scenarios = process.env.BENCH_SCENARIOS ?? '1,20'
 const reportRootDir = process.env.AUTO_IMPORT_BENCH_REPORT_DIR
   ? path.resolve(process.env.AUTO_IMPORT_BENCH_REPORT_DIR)
@@ -31,21 +36,35 @@ async function main() {
   await rm(reportRootDir, { recursive: true, force: true }).catch(() => undefined)
   await mkdir(reportRootDir, { recursive: true })
 
-  await runBenchmarkScript('benchmark-auto-import-build.ts', buildReportDir)
-  await runBenchmarkScript('benchmark-auto-import-hmr.ts', hmrReportDir)
+  await ensureWorkspacePackagesBuilt()
+  await runBenchmarkScript('benchmark-auto-import-build.ts', buildReportDir, {
+    iterations,
+    scenarios,
+  })
+  await runBenchmarkScript('benchmark-auto-import-hmr.ts', hmrReportDir, {
+    iterations,
+    scenarios,
+  })
 
   const buildReport = await readJson(path.join(buildReportDir, 'report.json')) as BuildBenchmarkReport
   const hmrReport = await readJson(path.join(hmrReportDir, 'report.json')) as HmrBenchmarkReport
   const failures = collectFailures(buildReport, hmrReport, thresholdPercent, minExtraMs)
+  const confirmation = await confirmFailures(failures)
+  const confirmedFailures = confirmation
+    ? collectFailures(confirmation.build, confirmation.hmr, thresholdPercent, minExtraMs)
+    : failures
   const combinedReport = {
     generatedAt: new Date().toISOString(),
     thresholdPercent,
     minExtraMs,
     iterations,
+    confirmationIterations,
     scenarios,
     build: buildReport,
     hmr: hmrReport,
     failures,
+    confirmation,
+    confirmedFailures,
   }
 
   const markdown = renderMarkdown(combinedReport)
@@ -60,14 +79,21 @@ async function main() {
     })
   }
 
-  if (failures.length > 0) {
+  if (confirmedFailures.length > 0) {
     throw new Error(
-      `auto-import benchmark regression exceeds ${thresholdPercent}% threshold:\n${failures.map(formatFailure).join('\n')}`,
+      `auto-import benchmark regression exceeds ${thresholdPercent}% threshold:\n${confirmedFailures.map(formatFailure).join('\n')}`,
     )
   }
 }
 
-async function runBenchmarkScript(scriptName: string, reportDir: string) {
+async function runBenchmarkScript(
+  scriptName: string,
+  reportDir: string,
+  options: {
+    iterations: string
+    scenarios: string
+  },
+) {
   await mkdir(reportDir, { recursive: true })
   await execa(process.execPath, ['--import', 'tsx', path.resolve(import.meta.dirname, scriptName)], {
     cwd: workspaceRootDir,
@@ -75,9 +101,62 @@ async function runBenchmarkScript(scriptName: string, reportDir: string) {
     env: {
       ...process.env,
       PATH: `${path.join(workspaceRootNodeModulesDir, '.bin')}:${process.env.PATH ?? ''}`,
-      BENCH_ITERATIONS: iterations,
-      BENCH_SCENARIOS: scenarios,
+      BENCH_ITERATIONS: options.iterations,
+      BENCH_SCENARIOS: options.scenarios,
       BENCH_REPORT_DIR: reportDir,
+    },
+  })
+}
+
+async function confirmFailures(initialFailures: FailureRecord[]) {
+  if (initialFailures.length === 0 || Number.parseInt(confirmationIterations, 10) <= iterationCount) {
+    return null
+  }
+
+  const buildScenarioList = [...new Set(initialFailures.filter(failure => failure.kind === 'build').map(failure => failure.usedCount))].sort((a, b) => a - b)
+  const hmrScenarioList = [...new Set(initialFailures.filter(failure => failure.kind === 'hmr').map(failure => failure.usedCount))].sort((a, b) => a - b)
+
+  if (buildScenarioList.length === 0 && hmrScenarioList.length === 0) {
+    return null
+  }
+
+  const confirmationRootDir = path.join(reportRootDir, 'confirmation')
+  const confirmationBuildDir = path.join(confirmationRootDir, 'build')
+  const confirmationHmrDir = path.join(confirmationRootDir, 'hmr')
+
+  let build: BuildBenchmarkReport = {
+    ...emptyBuildBenchmarkReport(confirmationIterations),
+  }
+  let hmr: HmrBenchmarkReport = {
+    ...emptyHmrBenchmarkReport(confirmationIterations),
+  }
+
+  if (buildScenarioList.length > 0) {
+    await runBenchmarkScript('benchmark-auto-import-build.ts', confirmationBuildDir, {
+      iterations: confirmationIterations,
+      scenarios: buildScenarioList.join(','),
+    })
+    build = await readJson(path.join(confirmationBuildDir, 'report.json')) as BuildBenchmarkReport
+  }
+
+  if (hmrScenarioList.length > 0) {
+    await runBenchmarkScript('benchmark-auto-import-hmr.ts', confirmationHmrDir, {
+      iterations: confirmationIterations,
+      scenarios: hmrScenarioList.join(','),
+    })
+    hmr = await readJson(path.join(confirmationHmrDir, 'report.json')) as HmrBenchmarkReport
+  }
+
+  return { build, hmr }
+}
+
+async function ensureWorkspacePackagesBuilt() {
+  await execa('pnpm', ['build:pkgs'], {
+    cwd: workspaceRootDir,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      PATH: `${path.join(workspaceRootNodeModulesDir, '.bin')}:${process.env.PATH ?? ''}`,
     },
   })
 }
@@ -127,10 +206,16 @@ function renderMarkdown(report: {
   thresholdPercent: number
   minExtraMs: number
   iterations: string
+  confirmationIterations: string
   scenarios: string
   build: BuildBenchmarkReport
   hmr: HmrBenchmarkReport
   failures: FailureRecord[]
+  confirmation: {
+    build: BuildBenchmarkReport
+    hmr: HmrBenchmarkReport
+  } | null
+  confirmedFailures: FailureRecord[]
 }) {
   const lines = [
     '# Auto Import Performance CI Report',
@@ -138,8 +223,9 @@ function renderMarkdown(report: {
     `- threshold: \`${report.thresholdPercent}%\``,
     `- min extra cost: \`${report.minExtraMs} ms\``,
     `- iterations: \`${report.iterations}\``,
+    `- confirmation iterations: \`${report.confirmationIterations}\``,
     `- scenarios: \`${report.scenarios}\``,
-    `- status: ${report.failures.length === 0 ? 'pass' : 'fail'}`,
+    `- status: ${report.confirmedFailures.length === 0 ? 'pass' : 'fail'}`,
     '',
     '## Build',
     '',
@@ -172,19 +258,62 @@ function renderMarkdown(report: {
   }
 
   lines.push('')
+  if (report.confirmation) {
+    lines.push('## Confirmation')
+    lines.push('')
+    lines.push('| 场景 | baseline avg | current avg | 额外成本 | 阈值结果 |')
+    lines.push('| --- | ---: | ---: | ---: | --- |')
+
+    for (const result of report.confirmation.build.results) {
+      const status = result.delta.extraPercent > report.thresholdPercent && result.delta.extraMs > report.minExtraMs
+        ? 'fail'
+        : 'pass'
+      lines.push(
+        `| build / ${result.usedCount} components | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      )
+    }
+
+    for (const result of report.confirmation.hmr.results) {
+      const status = result.update.delta.extraPercent > report.thresholdPercent && result.update.delta.extraMs > report.minExtraMs
+        ? 'fail'
+        : 'pass'
+      lines.push(
+        `| hmr / ${result.usedCount} components | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      )
+    }
+
+    lines.push('')
+  }
+
   lines.push('## 结论')
   lines.push('')
-  if (report.failures.length === 0) {
+  if (report.confirmedFailures.length === 0) {
     lines.push(`- 所有 build / HMR 场景均未同时超过 \`${report.thresholdPercent}%\` 与 \`${report.minExtraMs} ms\` 双阈值。`)
   }
   else {
-    lines.push(`- 以下场景同时超过 \`${report.thresholdPercent}%\` 与 \`${report.minExtraMs} ms\` 阈值：`)
-    for (const failure of report.failures) {
+    lines.push(`- 以下场景在确认复测后仍同时超过 \`${report.thresholdPercent}%\` 与 \`${report.minExtraMs} ms\` 阈值：`)
+    for (const failure of report.confirmedFailures) {
       lines.push(`- ${formatFailure(failure)}`)
     }
   }
 
   return lines.join('\n')
+}
+
+function emptyBuildBenchmarkReport(iterationValue: string): BuildBenchmarkReport {
+  return {
+    iterations: Number.parseInt(iterationValue, 10),
+    generatedAt: new Date().toISOString(),
+    results: [],
+  }
+}
+
+function emptyHmrBenchmarkReport(iterationValue: string): HmrBenchmarkReport {
+  return {
+    iterations: Number.parseInt(iterationValue, 10),
+    generatedAt: new Date().toISOString(),
+    results: [],
+  }
 }
 
 async function resolveWorkspaceNodeModulesDir() {
