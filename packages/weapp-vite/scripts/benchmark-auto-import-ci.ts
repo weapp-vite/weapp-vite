@@ -31,6 +31,7 @@ async function main() {
   await rm(reportRootDir, { recursive: true, force: true }).catch(() => undefined)
   await mkdir(reportRootDir, { recursive: true })
 
+  await ensureWeappViteBuilt()
   await runBenchmarkScript('benchmark-auto-import-build.ts', buildReportDir)
   await runBenchmarkScript('benchmark-auto-import-hmr.ts', hmrReportDir)
 
@@ -78,6 +79,17 @@ async function runBenchmarkScript(scriptName: string, reportDir: string) {
       BENCH_ITERATIONS: iterations,
       BENCH_SCENARIOS: scenarios,
       BENCH_REPORT_DIR: reportDir,
+    },
+  })
+}
+
+async function ensureWeappViteBuilt() {
+  await execa('pnpm', ['--filter', 'weapp-vite', 'build'], {
+    cwd: workspaceRootDir,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      PATH: `${path.join(workspaceRootNodeModulesDir, '.bin')}:${process.env.PATH ?? ''}`,
     },
   })
 }
