@@ -137,6 +137,13 @@ function installGlobalBindingIfNeeded(host: Record<string, any>, target: string)
   installRequestGlobalBinding(target, value)
 }
 
+function ensureRuntimeHostAliases(host: Record<string, any>) {
+  for (const alias of ['global', 'self', 'window']) {
+    host[alias] ??= host
+    installRequestGlobalBinding(alias, host[alias])
+  }
+}
+
 function syncWeappViteRequestGlobalsActuals(
   host: Record<string, any>,
   targets: WeappInjectRequestGlobalsTarget[],
@@ -177,6 +184,8 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
     || target === 'Response'
     || target === 'XMLHttpRequest'
   ))
+
+  ensureRuntimeHostAliases(primaryHost)
 
   for (const host of hosts) {
     if (needsUrlGlobals) {

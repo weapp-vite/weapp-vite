@@ -80,6 +80,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).Blob
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
+    delete (globalThis as Record<string, any>).global
     delete (globalThis as Record<string, any>).__weappViteRequestGlobalsActuals__
     wpiConnectSocketMock.mockReset()
   })
@@ -186,6 +187,20 @@ describe('request globals runtime', () => {
     expect(typeof (globalThis as any).wx.URLSearchParams).toBe('function')
     expect(typeof globalThis.Blob).toBe('function')
     expect(typeof globalThis.FormData).toBe('function')
+  })
+
+  it('installs request globals onto global alias hosts used by websocket libraries', async () => {
+    ;(globalThis as Record<string, any>).global = {}
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+
+    expect(typeof globalThis.WebSocket).toBe('function')
+    expect(typeof (globalThis as any).global.WebSocket).toBe('function')
+    expect((globalThis as any).self).toBe(globalThis)
+    expect((globalThis as any).window).toBe(globalThis)
   })
 
   it('promotes installed request globals to free global bindings when possible', async () => {
