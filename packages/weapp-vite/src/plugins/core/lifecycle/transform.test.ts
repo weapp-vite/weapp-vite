@@ -127,7 +127,8 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('__weappViteRequestGlobalsPassiveBindings__')
-    expect(code).toContain('var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
+    expect(code).toContain('function __weappViteExposeRequestGlobal__(name,value)')
+    expect(code).toContain('var fetch = __weappViteExposeRequestGlobal__("fetch",typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
     expect(code).not.toContain('__weappViteInstallRequestGlobals')
   })
 

@@ -138,6 +138,8 @@ export async function startRequestClientsRealServer(): Promise<RequestClientsRea
     cors: {
       origin: '*',
     },
+    httpCompression: false,
+    perMessageDeflate: false,
     path: '/socket.io',
     serveClient: false,
   })
@@ -161,7 +163,6 @@ export async function startRequestClientsRealServer(): Promise<RequestClientsRea
 
   server.on('upgrade', (request, socket, head) => {
     if (!(request.url ?? '').startsWith('/ws')) {
-      socket.destroy()
       return
     }
 

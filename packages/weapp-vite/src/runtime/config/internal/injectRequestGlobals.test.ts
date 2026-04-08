@@ -109,8 +109,9 @@ describe('injectRequestGlobals helpers', () => {
     })
 
     expect(code).toContain('__weappViteRequestGlobalsPassiveBindings__')
-    expect(code).toContain('var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
-    expect(code).toContain('var URL = __weappViteHasUsableRequestGlobalsConstructor__')
+    expect(code).toContain('function __weappViteExposeRequestGlobal__(name,value)')
+    expect(code).toContain('var fetch = __weappViteExposeRequestGlobal__("fetch",typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
+    expect(code).toContain('var URL = __weappViteExposeRequestGlobal__("URL",__weappViteHasUsableRequestGlobalsConstructor__')
     expect(code).not.toContain('import { installRequestGlobals')
   })
 
