@@ -24,8 +24,16 @@ vi.mock('../independentError', () => ({
 }))
 
 function createConfigService() {
+  const defineEnv: Record<string, any> = {}
   return {
-    merge: vi.fn((_meta: unknown, _inlineConfig: unknown, inlineBuildConfig: any) => inlineBuildConfig),
+    defineEnv,
+    merge: vi.fn((_meta: unknown, inlineConfig: any, inlineBuildConfig: any) => ({
+      ...inlineBuildConfig,
+      define: inlineConfig?.define,
+    })),
+    setDefineEnv: vi.fn((key: string, value: any) => {
+      defineEnv[key] = value
+    }),
   } as any
 }
 
@@ -58,6 +66,32 @@ describe('runtime buildPlugin independent builder', () => {
     expect(builder.getIndependentOutput('packageA')).toBe(output)
     builder.invalidateIndependentOutput('packageA')
     expect(builder.getIndependentOutput('packageA')).toBeUndefined()
+  })
+
+  it('syncs subpackage import.meta.env defines during independent build and restores previous state', async () => {
+    const output = { output: [{ fileName: 'pkg/common.js' }] } as any
+    buildMock.mockResolvedValueOnce(output)
+    const runtimeState = createRuntimeState()
+    const configService = createConfigService()
+    configService.defineEnv.EXISTING = 'kept'
+    const builder = createIndependentBuilder(configService, runtimeState.build)
+    const meta = {
+      subPackage: {
+        root: 'packageA',
+        inlineConfig: {
+          define: {
+            'import.meta.env.VITE_SUB_PACKAGE_B': '"sub-package-b"',
+          },
+        },
+      },
+    } as any
+
+    await builder.buildIndependentBundle('packageA', meta)
+
+    expect(configService.setDefineEnv).toHaveBeenCalledWith('VITE_SUB_PACKAGE_B', 'sub-package-b')
+    expect(configService.defineEnv).toEqual({
+      EXISTING: 'kept',
+    })
   })
 
   it('dedupes concurrent independent builds and allows retry after task settles', async () => {

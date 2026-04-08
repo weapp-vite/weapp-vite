@@ -1,56 +1,36 @@
 import { fs } from '@weapp-core/shared'
 import CI from 'ci-info'
 import path from 'pathe'
-import { createCompilerContext } from '@/createContext'
 import { cssCodeCache } from '@/plugins/css'
 import { wxsCodeCache } from '@/plugins/wxs'
-import { getFixture, scanFiles } from './utils'
+import { createTempFixtureProject, createTestCompilerContext, getFixture, scanFiles } from './utils'
 
 describe.skipIf(CI.isCI)('auto-import', () => {
   const fixtureSource = getFixture('auto-import')
-  const tempRoot = path.resolve(fixtureSource, '..', '__temp__')
   let tempDir = ''
   let distDir = ''
+  let cleanup: (() => Promise<void>) | undefined
 
   beforeAll(async () => {
-    await fs.ensureDir(tempRoot)
-    tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-build-'))
-    await fs.copy(fixtureSource, tempDir, {
-      dereference: true,
-      filter: (src) => {
-        const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
-        if (!relative) {
-          return true
-        }
-        return !(
-          relative === 'node_modules'
-          || relative.startsWith('node_modules/')
-          || relative === 'dist'
-          || relative.startsWith('dist/')
-          || relative === '.weapp-vite'
-          || relative.startsWith('.weapp-vite/')
-        )
-      },
-    })
+    const tempProject = await createTempFixtureProject(fixtureSource, 'auto-import-build')
+    tempDir = tempProject.tempDir
+    cleanup = tempProject.cleanup
     distDir = path.resolve(tempDir, 'dist')
     await fs.remove(distDir)
-    const ctx = await createCompilerContext({
+    const { ctx, dispose } = await createTestCompilerContext({
       cwd: tempDir,
     })
-    await ctx.buildService.build()
-    expect(await fs.exists(distDir)).toBe(true)
+    try {
+      await ctx.buildService.build()
+      expect(await fs.exists(distDir)).toBe(true)
+    }
+    finally {
+      await dispose()
+    }
   })
 
   afterAll(async () => {
-    if (tempDir) {
-      await fs.remove(tempDir)
-      if (await fs.pathExists(tempRoot)) {
-        const remaining = await fs.readdir(tempRoot)
-        if (remaining.length === 0) {
-          await fs.remove(tempRoot)
-        }
-      }
-    }
+    await cleanup?.()
   })
 
   it('scanFiles', async () => {
