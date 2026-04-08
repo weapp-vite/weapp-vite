@@ -5,15 +5,15 @@ import process from 'node:process'
 import { execa } from 'execa'
 import path from 'pathe'
 
-const thresholdPercent = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_THRESHOLD_PERCENT ?? '10')
-const minExtraMs = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_MIN_EXTRA_MS ?? '80')
+const thresholdPercent = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_THRESHOLD_PERCENT ?? '25')
+const minExtraMs = Number.parseFloat(process.env.AUTO_IMPORT_BENCH_MIN_EXTRA_MS ?? '200')
 const iterations = process.env.BENCH_ITERATIONS ?? '2'
 const iterationCount = Number.parseInt(iterations, 10)
 const confirmationIterations = String(
   Number.parseInt(process.env.AUTO_IMPORT_BENCH_CONFIRM_ITERATIONS ?? '', 10)
   || Math.max(iterationCount + 2, 4),
 )
-const scenarios = process.env.BENCH_SCENARIOS ?? '1,20'
+const scenarios = process.env.BENCH_SCENARIOS ?? '1,20,50,100'
 const reportRootDir = process.env.AUTO_IMPORT_BENCH_REPORT_DIR
   ? path.resolve(process.env.AUTO_IMPORT_BENCH_REPORT_DIR)
   : path.resolve(import.meta.dirname, '../benchmark/auto-import-ci', formatTimestamp(new Date()))

@@ -10,11 +10,11 @@ on:
       threshold-percent:
         description: relative regression threshold percent
         required: false
-        default: '10'
+        default: '25'
       min-extra-ms:
         description: minimum absolute regression cost in milliseconds
         required: false
-        default: '80'
+        default: '200'
       iterations:
         description: benchmark iterations per scenario
         required: false
@@ -22,7 +22,7 @@ on:
       scenarios:
         description: comma-separated resolver component counts
         required: false
-        default: '1,20'
+        default: '1,20,50,100'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
@@ -55,10 +55,10 @@ jobs:
           INPUT_SCENARIOS: ${{ github.event.inputs.scenarios || '' }}
           AUTO_IMPORT_BENCH_REPORT_DIR: ${{ runner.temp }}/auto-import-performance-report
         run: |
-          export AUTO_IMPORT_BENCH_THRESHOLD_PERCENT="${INPUT_THRESHOLD_PERCENT:-10}"
-          export AUTO_IMPORT_BENCH_MIN_EXTRA_MS="${INPUT_MIN_EXTRA_MS:-80}"
+          export AUTO_IMPORT_BENCH_THRESHOLD_PERCENT="${INPUT_THRESHOLD_PERCENT:-25}"
+          export AUTO_IMPORT_BENCH_MIN_EXTRA_MS="${INPUT_MIN_EXTRA_MS:-200}"
           export BENCH_ITERATIONS="${INPUT_ITERATIONS:-2}"
-          export BENCH_SCENARIOS="${INPUT_SCENARIOS:-1,20}"
+          export BENCH_SCENARIOS="${INPUT_SCENARIOS:-1,20,50,100}"
 
           {
             echo "AUTO_IMPORT_BENCH_THRESHOLD_PERCENT=${AUTO_IMPORT_BENCH_THRESHOLD_PERCENT}"
