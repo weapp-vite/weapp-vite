@@ -608,4 +608,38 @@ describe('autoImport service index', () => {
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledTimes(1)
     expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
   })
+
+  it('reuses resolved output settings across repeated resolver lookups', () => {
+    const resolverHelpers = createResolverHelpers({
+      resolveWithResolvers: vi.fn(() => ({ name: 'TButton', from: 'tdesign-miniprogram/button/button' })),
+    })
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue({
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    })
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(() => undefined),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const service = createAutoImportService(createContext())
+
+    service.resolve('TButton')
+    service.resolve('TButton')
+
+    expect(getTypedComponentsSettingsMock).toHaveBeenCalledTimes(1)
+    expect(getHtmlCustomDataSettingsMock).toHaveBeenCalledTimes(1)
+    expect(getVueComponentsSettingsMock).toHaveBeenCalledTimes(1)
+  })
 })
