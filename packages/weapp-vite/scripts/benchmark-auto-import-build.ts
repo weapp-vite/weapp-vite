@@ -304,10 +304,10 @@ async function linkWorkspaceNodeModules(projectRoot: string) {
 }
 
 async function runBuild(cwd: string) {
-  const cliPath = path.resolve(import.meta.dirname, '../src/cli.ts')
+  const cliPath = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
   const workspaceBinDir = path.join(workspaceRootNodeModulesDir, '.bin')
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(process.execPath, ['--import', 'tsx', cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
+    const child = spawn(process.execPath, [cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
         ...process.env,

@@ -37,7 +37,7 @@ const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '        ]',
   '      }',
 ].join('\n')
-const CLI_PATH = path.resolve(import.meta.dirname, '../src/cli.ts')
+const CLI_PATH = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
 const DEV_TIMEOUT_MS = Number.parseInt(process.env.AUTO_IMPORT_HMR_TIMEOUT_MS ?? '90000', 10)
 const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
 const HMR_ACTIVITY_RE = /hmr emit dirty=\d+ resolved=\d+ emitAll=(true|false) pending=\d+|loadEntry src\/pages\/bench-hmr-auto-import\/index\.vue 耗时/
@@ -137,7 +137,7 @@ async function measureHmr(options: {
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
     const startupStart = performance.now()
-    const dev = startDevProcess(process.execPath, ['--import', 'tsx', CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
+    const dev = startDevProcess(process.execPath, [CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
         ...createDevProcessEnv(),
