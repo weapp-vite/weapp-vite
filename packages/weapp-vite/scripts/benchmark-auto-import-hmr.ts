@@ -2,23 +2,32 @@
 import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import path from 'pathe'
 import { startDevProcess } from '../../../e2e/utils/dev-process'
 import { createDevProcessEnv } from '../../../e2e/utils/dev-process-env'
-import { replaceFileByRename, waitForFileContains } from '../../../e2e/utils/hmr-helpers'
-import { VantResolver } from '../src/auto-import-components/resolvers'
+import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
+import { resolveRepoRoot, resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
-const workspaceRootNodeModulesDir = await resolveWorkspaceNodeModulesDir()
+const workspaceRootNodeModulesDir = resolveWorkspaceNodeModulesDir(import.meta.dirname)
+if (!workspaceRootNodeModulesDir) {
+  throw new Error('Unable to locate workspace node_modules directory for auto-import hmr benchmark.')
+}
 const workspaceWeappViteDir = path.resolve(import.meta.dirname, '..')
-const workspaceRootDir = path.dirname(path.dirname(workspaceRootNodeModulesDir))
+const workspaceRootDir = resolveRepoRoot(import.meta.dirname)
+if (!workspaceRootDir) {
+  throw new Error('Unable to locate repo root for auto-import hmr benchmark.')
+}
 const reportDir = resolveReportDir('auto-import-hmr')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
-const allResolverTags = Object.keys(VantResolver().components ?? {}).sort((a, b) => a.localeCompare(b))
-const resolverComponents = VantResolver().components ?? {}
+const resolverComponents = createVantResolverComponents()
+const allResolverTags = Object.keys(resolverComponents).sort((a, b) => a.localeCompare(b))
+const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'src/config.ts')).href
+const BENCHMARK_RESOLVER_PATH = './benchmark-vant-resolver'
 const VANT_PACKAGE_PREFIX_RE = /^@vant\/weapp\/?/
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '      autoImportComponents: {',
@@ -28,8 +37,10 @@ const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '        ]',
   '      }',
 ].join('\n')
-const CLI_PATH = path.resolve(import.meta.dirname, '../src/cli.ts')
+const CLI_PATH = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
 const DEV_TIMEOUT_MS = Number.parseInt(process.env.AUTO_IMPORT_HMR_TIMEOUT_MS ?? '90000', 10)
+const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
+const HMR_ACTIVITY_RE = /hmr emit dirty=\d+ resolved=\d+ emitAll=(true|false) pending=\d+|loadEntry src\/pages\/bench-hmr-auto-import\/index\.vue 耗时/
 
 if (!Number.isFinite(iterations) || iterations <= 0) {
   throw new Error(`Invalid BENCH_ITERATIONS value: ${iterations}`)
@@ -119,7 +130,6 @@ async function measureHmr(options: {
     `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`,
   )
   const pagePath = path.join(project.tempDir, 'src/pages/bench-hmr-auto-import/index.vue')
-  const distTemplatePath = path.join(project.tempDir, 'dist/pages/bench-hmr-auto-import/index.wxml')
 
   try {
     const seededSource = await seedFixture(project.tempDir, usedTags, mode)
@@ -127,10 +137,11 @@ async function measureHmr(options: {
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
     const startupStart = performance.now()
-    const dev = startDevProcess(process.execPath, ['--import', 'tsx', CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
+    const dev = startDevProcess(process.execPath, [CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
         ...createDevProcessEnv(),
+        DEBUG: 'weapp-vite:load-entry',
         PATH: `${path.join(workspaceRootNodeModulesDir, '.bin')}:${process.env.PATH ?? ''}`,
       },
       stdout: 'pipe',
@@ -139,14 +150,18 @@ async function measureHmr(options: {
     })
 
     try {
-      await dev.waitFor(waitForFileContains(distTemplatePath, 'bench-hmr-auto-import', DEV_TIMEOUT_MS), `${mode} initial bench output`)
+      await dev.waitForOutput(INITIAL_BUILD_READY_RE, `${mode} initial bench output`, DEV_TIMEOUT_MS)
       const startupMs = performance.now() - startupStart
 
       const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`
       const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
+      const outputLengthBeforeUpdate = dev.getOutput().length
       const updateStart = performance.now()
-      await replaceFileByRename(pagePath, updatedSource)
-      await dev.waitFor(waitForFileContains(distTemplatePath, marker, DEV_TIMEOUT_MS), `${mode} hmr marker`)
+      await writeFile(pagePath, updatedSource, 'utf8')
+      await dev.waitFor(
+        waitForNewOutputMatch(dev.getOutput, outputLengthBeforeUpdate, HMR_ACTIVITY_RE, DEV_TIMEOUT_MS),
+        `${mode} hmr marker`,
+      )
       const updateMs = performance.now() - updateStart
 
       return {
@@ -187,6 +202,8 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'basel
     '',
   ].join('\n')
 
+  await ensureProjectConfigFiles(projectRoot)
+  await patchBenchmarkConfigImports(projectRoot)
   await patchViteConfig(projectRoot, mode)
   await ensureBenchmarkResolverPackage(projectRoot, usedTags)
   await mkdir(pageDir, { recursive: true })
@@ -231,6 +248,29 @@ async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current'
   }
 
   await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+}
+
+async function patchBenchmarkConfigImports(projectRoot: string) {
+  const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
+  const viteConfig = await readFile(viteConfigPath, 'utf8')
+  const nextViteConfig = viteConfig
+    .replace(`import { defineConfig } from 'weapp-vite'`, `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`)
+    .replace(`import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'`, `import { VantResolver } from '${BENCHMARK_RESOLVER_PATH}'`)
+
+  if (nextViteConfig !== viteConfig) {
+    await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+  }
+
+  await writeFile(path.join(projectRoot, 'benchmark-vant-resolver.ts'), renderBenchmarkVantResolver(), 'utf8')
+}
+
+async function ensureProjectConfigFiles(projectRoot: string) {
+  for (const fileName of ['project.config.json', 'project.private.config.json']) {
+    const sourcePath = path.join(fixtureSource, fileName)
+    const targetPath = path.join(projectRoot, fileName)
+    const content = await readFile(sourcePath, 'utf8')
+    await writeFile(targetPath, content, 'utf8')
+  }
 }
 
 function createUsingComponentsMap(usedTags: string[]) {
@@ -325,20 +365,50 @@ async function linkWorkspaceNodeModules(projectRoot: string) {
   await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
 }
 
-async function resolveWorkspaceNodeModulesDir() {
-  let currentDir = path.resolve(import.meta.dirname, '../../..')
-  while (true) {
-    const candidate = path.join(currentDir, 'node_modules')
-    if (await lstat(candidate).catch(() => null)) {
-      return candidate
+function createVantResolverComponents() {
+  return Object.fromEntries(vantComponents.map(component => [toVantTag(component), `@vant/weapp/${component}`]))
+}
+
+function toVantTag(component: string) {
+  return `van-${component}`
+}
+
+async function waitForNewOutputMatch(
+  getOutput: () => string,
+  startOffset: number,
+  matcher: RegExp,
+  timeoutMs: number,
+) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const nextOutput = getOutput().slice(startOffset)
+    if (matcher.test(nextOutput)) {
+      return nextOutput
     }
-    const parentDir = path.dirname(currentDir)
-    if (parentDir === currentDir) {
-      break
-    }
-    currentDir = parentDir
+    await new Promise(resolve => setTimeout(resolve, 250))
   }
-  throw new Error('Unable to locate workspace node_modules directory for auto-import hmr benchmark.')
+  throw new Error(`Timed out waiting for dev output to match ${matcher}`)
+}
+
+function renderBenchmarkVantResolver() {
+  return [
+    `const components = Object.freeze(${JSON.stringify(resolverComponents, null, 2)} as const)`,
+    '',
+    'export function VantResolver() {',
+    '  return {',
+    '    components,',
+    '    supportFilesStrategy: \'full\',',
+    '    resolve(componentName: string) {',
+    '      const from = components[componentName as keyof typeof components]',
+    '      if (!from) {',
+    '        return undefined',
+    '      }',
+    '      return { name: componentName, from }',
+    '    },',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
 }
 
 function resolveReportDir(reportName: string) {

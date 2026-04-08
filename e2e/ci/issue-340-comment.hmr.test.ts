@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { waitForFile } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -18,6 +18,7 @@ const SHARED_CHUNK_PATH = path.join(DIST_ROOT, 'issue-340-shared.js')
 const RUNTIME_CHUNK_PATH = path.join(DIST_ROOT, 'rolldown-runtime.js')
 const ITEM_PAGE_JS_PATH = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
 const USER_PAGE_JS_PATH = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
+const PLATFORM_LIST = resolvePlatforms()
 
 const ORIGINAL_CHUNK_CONFIG = `    chunks: {
       sharedStrategy: 'hoist',
@@ -31,6 +32,14 @@ const COMMENT_CHUNK_CONFIG = `    chunks: {
       sharedPathRoot: 'src/shared',
       dynamicImports: 'preserve',
     },`
+
+function applyCommentChunkConfig(config: string) {
+  if (!config.includes(ORIGINAL_CHUNK_CONFIG)) {
+    throw new Error('Failed to find the original chunk config block for issue-340-hoist.')
+  }
+
+  return config.replace(ORIGINAL_CHUNK_CONFIG, COMMENT_CHUNK_CONFIG)
+}
 
 async function pathExists(filePath: string) {
   try {
@@ -51,18 +60,14 @@ afterEach(async () => {
 })
 
 describe.sequential('issue #340 comment regression (dev watch)', () => {
-  it('keeps app and cross-subpackage shared outputs stable after a shared-source edit', async () => {
+  it.each(PLATFORM_LIST)('keeps app and cross-subpackage shared outputs stable after a shared-source edit (%s)', async (platform) => {
     await rm(DIST_ROOT, { recursive: true, force: true })
 
     const originalConfig = await readFile(CONFIG_PATH, 'utf8')
     const originalSharedSource = await readFile(SHARED_SOURCE_PATH, 'utf8')
-    const marker = createHmrMarker('ISSUE-340-COMMENT', 'weapp')
+    const marker = createHmrMarker('ISSUE-340-COMMENT', platform)
 
-    if (!originalConfig.includes(ORIGINAL_CHUNK_CONFIG)) {
-      throw new Error('Failed to find the original chunk config block for issue-340-hoist.')
-    }
-
-    const updatedConfig = originalConfig.replace(ORIGINAL_CHUNK_CONFIG, COMMENT_CHUNK_CONFIG)
+    const updatedConfig = applyCommentChunkConfig(originalConfig)
     const updatedSharedSourceWithCjsImport = originalSharedSource
       .replace(
         `import { computed, ref } from 'wevu'`,
@@ -88,7 +93,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
 
     await writeFile(CONFIG_PATH, updatedConfig, 'utf8')
 
-    const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
+    const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: {
         ...createDevProcessEnv(),
         DEBUG: 'weapp-vite:load-entry',
@@ -97,17 +102,17 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(APP_JSON_PATH, 240_000), 'issue-340-hoist app.json generated')
-      await dev.waitFor(waitForFile(APP_JS_PATH, 240_000), 'initial app.js generated')
-      await dev.waitFor(waitForFile(SHARED_CHUNK_PATH, 240_000), 'initial shared chunk generated')
-      await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), 'initial item page script generated')
-      await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), 'initial user page script generated')
+      await dev.waitFor(waitForFile(APP_JSON_PATH, 240_000), `${platform} issue-340-hoist app.json generated`)
+      await dev.waitFor(waitForFile(APP_JS_PATH, 240_000), `${platform} initial app.js generated`)
+      await dev.waitFor(waitForFile(SHARED_CHUNK_PATH, 240_000), `${platform} initial shared chunk generated`)
+      await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), `${platform} initial item page script generated`)
+      await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), `${platform} initial user page script generated`)
 
       await replaceFileByRename(SHARED_SOURCE_PATH, updatedSharedSource)
 
       const sharedChunkContent = await dev.waitFor(
         waitForFileContains(SHARED_CHUNK_PATH, marker),
-        'updated shared chunk marker',
+        `${platform} updated shared chunk marker`,
       )
       expect(sharedChunkContent).toContain(marker)
 
@@ -131,6 +136,63 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       expect(runtimeChunkExists).toBe(true)
       const runtimeChunk = await readFile(RUNTIME_CHUNK_PATH, 'utf8')
       expect(runtimeChunk).toContain('__commonJSMin')
+    }
+    finally {
+      await dev.stop(5_000)
+      await writeFile(CONFIG_PATH, originalConfig, 'utf8')
+      await writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8')
+      await rm(DIST_ROOT, { recursive: true, force: true })
+    }
+  })
+
+  it.each(PLATFORM_LIST)('converges to the last cross-subpackage shared output after rapid shared-source edits (%s)', async (platform) => {
+    await rm(DIST_ROOT, { recursive: true, force: true })
+
+    const originalConfig = await readFile(CONFIG_PATH, 'utf8')
+    const originalSharedSource = await readFile(SHARED_SOURCE_PATH, 'utf8')
+    const firstMarker = createHmrMarker('ISSUE-340-FIRST', platform)
+    const secondMarker = createHmrMarker('ISSUE-340-SECOND', platform)
+    const firstUpdatedSource = originalSharedSource.replace(`ref('issue-340-hoist')`, `ref('${firstMarker}')`)
+    const secondUpdatedSource = originalSharedSource.replace(`ref('issue-340-hoist')`, `ref('${secondMarker}')`)
+    const updatedConfig = applyCommentChunkConfig(originalConfig)
+
+    if (firstUpdatedSource === originalSharedSource || secondUpdatedSource === originalSharedSource) {
+      throw new Error('Failed to inject rapid HMR markers into issue-340 shared source.')
+    }
+
+    await writeFile(CONFIG_PATH, updatedConfig, 'utf8')
+
+    const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
+      env: {
+        ...createDevProcessEnv(),
+        DEBUG: 'weapp-vite:load-entry',
+      },
+      all: true,
+    })
+
+    try {
+      await dev.waitFor(waitForFile(APP_JSON_PATH, 240_000), `${platform} issue-340-hoist app.json generated`)
+      await dev.waitFor(waitForFile(SHARED_CHUNK_PATH, 240_000), `${platform} initial shared chunk generated`)
+
+      await replaceFileByRename(SHARED_SOURCE_PATH, firstUpdatedSource)
+      await replaceFileByRename(SHARED_SOURCE_PATH, secondUpdatedSource)
+
+      const sharedChunkContent = await dev.waitFor(
+        waitForFileContains(SHARED_CHUNK_PATH, secondMarker),
+        `${platform} updated second shared chunk marker`,
+      )
+
+      expect(sharedChunkContent).toContain(secondMarker)
+      expect(sharedChunkContent).not.toContain(firstMarker)
+      expect(dev.getOutput()).not.toContain('Build failed')
+
+      const [itemPageJs, userPageJs] = await Promise.all([
+        readFile(ITEM_PAGE_JS_PATH, 'utf8'),
+        readFile(USER_PAGE_JS_PATH, 'utf8'),
+      ])
+
+      expect(itemPageJs).toContain('require("../../../issue-340-shared.js")')
+      expect(userPageJs).toContain('require("../../../issue-340-shared.js")')
     }
     finally {
       await dev.stop(5_000)

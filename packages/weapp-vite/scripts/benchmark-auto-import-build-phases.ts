@@ -2,20 +2,27 @@
 import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import path from 'pathe'
-import { VantResolver } from '../src/auto-import-components/resolvers'
+import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { createCompilerContext } from '../src/createContext'
+import { resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '1', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
-const workspaceRootNodeModulesDir = await resolveWorkspaceNodeModulesDir()
+const workspaceRootNodeModulesDir = resolveWorkspaceNodeModulesDir(import.meta.dirname)
+if (!workspaceRootNodeModulesDir) {
+  throw new Error('Unable to locate workspace node_modules directory for auto-import build phase benchmark.')
+}
 const workspaceWeappViteDir = path.resolve(import.meta.dirname, '..')
 const reportDir = resolveReportDir('auto-import-build-phases')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
-const allResolverTags = Object.keys(VantResolver().components ?? {}).sort((a, b) => a.localeCompare(b))
-const resolverComponents = VantResolver().components ?? {}
+const resolverComponents = createVantResolverComponents()
+const allResolverTags = Object.keys(resolverComponents).sort((a, b) => a.localeCompare(b))
+const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'src/config.ts')).href
+const BENCHMARK_RESOLVER_PATH = './benchmark-vant-resolver'
 const VANT_PACKAGE_PREFIX_RE = /^@vant\/weapp\/?/
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '      autoImportComponents: {',
@@ -124,6 +131,8 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'basel
     .map(tag => `    <${tag} data-bench="${tag}" />`)
     .join('\n')
 
+  await ensureProjectConfigFiles(projectRoot)
+  await patchBenchmarkConfigImports(projectRoot)
   await patchViteConfig(projectRoot, mode)
   await ensureBenchmarkResolverPackage(projectRoot, usedTags)
   await mkdir(pageDir, { recursive: true })
@@ -183,6 +192,29 @@ async function patchViteConfig(projectRoot: string, mode: 'baseline' | 'current'
   }
 
   await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+}
+
+async function patchBenchmarkConfigImports(projectRoot: string) {
+  const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
+  const viteConfig = await readFile(viteConfigPath, 'utf8')
+  const nextViteConfig = viteConfig
+    .replace(`import { defineConfig } from 'weapp-vite'`, `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`)
+    .replace(`import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'`, `import { VantResolver } from '${BENCHMARK_RESOLVER_PATH}'`)
+
+  if (nextViteConfig !== viteConfig) {
+    await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+  }
+
+  await writeFile(path.join(projectRoot, 'benchmark-vant-resolver.ts'), renderBenchmarkVantResolver(), 'utf8')
+}
+
+async function ensureProjectConfigFiles(projectRoot: string) {
+  for (const fileName of ['project.config.json', 'project.private.config.json']) {
+    const sourcePath = path.join(fixtureSource, fileName)
+    const targetPath = path.join(projectRoot, fileName)
+    const content = await readFile(sourcePath, 'utf8')
+    await writeFile(targetPath, content, 'utf8')
+  }
 }
 
 function createUsingComponentsMap(usedTags: string[]) {
@@ -277,20 +309,33 @@ async function linkWorkspaceNodeModules(projectRoot: string) {
   await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
 }
 
-async function resolveWorkspaceNodeModulesDir() {
-  let currentDir = path.resolve(import.meta.dirname, '../../..')
-  while (true) {
-    const candidate = path.join(currentDir, 'node_modules')
-    if (await lstat(candidate).catch(() => null)) {
-      return candidate
-    }
-    const parentDir = path.dirname(currentDir)
-    if (parentDir === currentDir) {
-      break
-    }
-    currentDir = parentDir
-  }
-  throw new Error('Unable to locate workspace node_modules directory for auto-import build phases benchmark.')
+function createVantResolverComponents() {
+  return Object.fromEntries(vantComponents.map(component => [toVantTag(component), `@vant/weapp/${component}`]))
+}
+
+function toVantTag(component: string) {
+  return `van-${component}`
+}
+
+function renderBenchmarkVantResolver() {
+  return [
+    `const components = Object.freeze(${JSON.stringify(resolverComponents, null, 2)} as const)`,
+    '',
+    'export function VantResolver() {',
+    '  return {',
+    '    components,',
+    '    supportFilesStrategy: \'full\',',
+    '    resolve(componentName: string) {',
+    '      const from = components[componentName as keyof typeof components]',
+    '      if (!from) {',
+    '        return undefined',
+    '      }',
+    '      return { name: componentName, from }',
+    '    },',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
 }
 
 function resolveReportDir(reportName: string) {

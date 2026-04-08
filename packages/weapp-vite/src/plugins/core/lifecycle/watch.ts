@@ -1,5 +1,6 @@
 import type { ChangeEvent, SubPackageMetaValue } from '../../../types'
 import type { CorePluginState } from '../helpers'
+import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
@@ -15,9 +16,25 @@ import { collectAffectedEntries } from '../helpers'
 
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
+const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
 
 function isLayoutSourcePath(relativeSrc: string) {
   return relativeSrc === 'layouts' || relativeSrc.startsWith('layouts/')
+}
+
+async function normalizeWatchEvent(id: string, event: ChangeEvent) {
+  if (event !== 'delete') {
+    return event
+  }
+
+  for (const delayMs of ATOMIC_SAVE_RECHECK_DELAYS_MS) {
+    if (await fs.pathExists(id)) {
+      return 'update' satisfies ChangeEvent
+    }
+    await new Promise(resolve => setTimeout(resolve, delayMs))
+  }
+
+  return await fs.pathExists(id) ? 'update' : event
 }
 
 export function createBuildStartHook(state: CorePluginState) {
@@ -56,9 +73,10 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (isSkippableResolvedId(normalizedId)) {
       return
     }
+    const event = await normalizeWatchEvent(normalizedId, change.event)
     const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
     invalidateFileCache(normalizedId)
-    if (change.event === 'update') {
+    if (event === 'update') {
       const isTemplateFile = isTemplate(normalizedId)
       const configSuffix = configSuffixes.find(suffix => normalizedId.endsWith(suffix))
       const isStyleFile = styleSuffixes.some(suffix => normalizedId.endsWith(suffix))
@@ -89,7 +107,7 @@ export function createWatchChangeHook(state: CorePluginState) {
         }
       }
     }
-    const shouldInvalidateAllResolvedEntries = change.event === 'update'
+    const shouldInvalidateAllResolvedEntries = event === 'update'
       && isLayoutSourcePath(relativeSrc)
       && resolvedEntryMap.size > 0
 
@@ -119,9 +137,9 @@ export function createWatchChangeHook(state: CorePluginState) {
     let handledByIndependentWatcher = false
     let independentMeta: SubPackageMetaValue | undefined
 
-    if (change.event === 'create' || change.event === 'delete') {
+    if (event === 'create' || event === 'delete') {
       ;(loadEntry as any)?.invalidateResolveCache?.()
-      await invalidateEntryForSidecar(ctx, normalizedId, change.event)
+      await invalidateEntryForSidecar(ctx, normalizedId, event)
     }
 
     if (!subPackageMeta && !configService.weappLibConfig?.enabled) {
@@ -166,10 +184,10 @@ export function createWatchChangeHook(state: CorePluginState) {
       if (subPackageMeta.watchSharedStyles !== false) {
         invalidateSharedStyleCache()
       }
-      logger.success(`[${change.event}] ${configService.relativeCwd(normalizedId)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
+      logger.success(`[${event}] ${configService.relativeCwd(normalizedId)} --[独立分包 ${subPackageMeta.subPackage.root}]`)
     }
     else if (!handledByIndependentWatcher) {
-      logger.success(`[${change.event}] ${configService.relativeCwd(normalizedId)}`)
+      logger.success(`[${event}] ${configService.relativeCwd(normalizedId)}`)
     }
   }
 }
