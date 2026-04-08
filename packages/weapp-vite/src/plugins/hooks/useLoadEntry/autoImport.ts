@@ -12,7 +12,8 @@ export function createAutoImportAugmenter(
   }>()
 
   return function applyAutoImports(baseName: string, json: any) {
-    const hit = wxmlService.getAggregatedComponents(baseName)
+    const hit = wxmlService.getAggregatedAutoImportComponents?.(baseName)
+      ?? wxmlService.getAggregatedComponents(baseName)
     if (!hit) {
       return
     }

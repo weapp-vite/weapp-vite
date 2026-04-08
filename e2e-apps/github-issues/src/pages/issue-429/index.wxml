@@ -1,0 +1,4 @@
+<view class="issue-429-page">
+  <view>issue-429 builtin-name auto import</view>
+  <list-view />
+</view>
