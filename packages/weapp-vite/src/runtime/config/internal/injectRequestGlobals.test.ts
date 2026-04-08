@@ -4,6 +4,7 @@ import {
   createInjectRequestGlobalsSfcCode,
   injectRequestGlobalsIntoSfc,
   resolveInjectRequestGlobalsOptions,
+  resolveManualRequestGlobalsTargets,
 } from './injectRequestGlobals'
 
 describe('injectRequestGlobals helpers', () => {
@@ -102,6 +103,17 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain('var WebSocket = __weappViteRequestGlobalsHost__.WebSocket')
   })
 
+  it('can create passive local binding injection code for manual installers', () => {
+    const code = createInjectRequestGlobalsCode(['fetch', 'AbortController'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).toContain('__weappViteRequestGlobalsPassiveBindings__')
+    expect(code).toContain('var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
+    expect(code).toContain('var URL = __weappViteHasUsableRequestGlobalsConstructor__')
+    expect(code).not.toContain('import { installRequestGlobals')
+  })
+
   it('can create a valid sfc injection block', () => {
     const code = createInjectRequestGlobalsSfcCode(['fetch'], {
       localBindings: true,
@@ -147,5 +159,31 @@ describe('injectRequestGlobals helpers', () => {
     expect(code.match(/<script\b/g)?.length).toBe(1)
     expect(code).toContain('<script setup lang="ts">import { installRequestGlobals')
     expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
+  })
+
+  it('detects manual installRequestGlobals usage from web-apis imports', () => {
+    expect(resolveManualRequestGlobalsTargets([
+      'import { installRequestGlobals } from "@wevu/web-apis"',
+      'installRequestGlobals()',
+    ].join('\n'))).toEqual([
+      'fetch',
+      'Headers',
+      'Request',
+      'Response',
+      'AbortController',
+      'AbortSignal',
+      'XMLHttpRequest',
+      'WebSocket',
+    ])
+  })
+
+  it('detects manual installAbortGlobals usage from compatibility imports', () => {
+    expect(resolveManualRequestGlobalsTargets([
+      'import { installAbortGlobals } from "weapp-vite/web-apis"',
+      'installAbortGlobals()',
+    ].join('\n'))).toEqual([
+      'AbortController',
+      'AbortSignal',
+    ])
   })
 })

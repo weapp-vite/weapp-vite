@@ -97,6 +97,42 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('export default {}')
   })
 
+  it('injects passive local bindings for manual installRequestGlobals usage without auto mode', async () => {
+    const sourceId = '/project/src/app.ts'
+    const loadEntry = vi.fn(async () => ({
+      code: [
+        'import { installRequestGlobals } from "@wevu/web-apis"',
+        'installRequestGlobals()',
+        'console.log(fetch, URL)',
+      ].join('\n'),
+    }))
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'app',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+    } as any)
+
+    const result = await load.call({}, sourceId)
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('__weappViteRequestGlobalsPassiveBindings__')
+    expect(code).toContain('var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
+    expect(code).toContain('installRequestGlobals()')
+    expect(code).not.toContain('__weappViteInstallRequestGlobals')
+  })
+
   it('injects request globals into lib entry components when enabled explicitly', async () => {
     const sourceId = '/project/src/components/lib-card.ts'
     const loadEntry = vi.fn(async () => ({ code: 'Component({})' }))

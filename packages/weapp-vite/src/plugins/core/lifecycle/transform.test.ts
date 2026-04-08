@@ -98,6 +98,39 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).toContain('export default {}')
   })
 
+  it('injects passive local bindings for manual installRequestGlobals usage without auto mode', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+      loadedEntrySet: new Set(['/project/src/shared/request-globals.ts']),
+      entriesMap: new Map(),
+    } as any)
+
+    const result = await transform(
+      [
+        'import { installRequestGlobals } from "@wevu/web-apis"',
+        'installRequestGlobals()',
+        'console.log(fetch, URL)',
+      ].join('\n'),
+      '/project/src/shared/request-globals.ts',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('__weappViteRequestGlobalsPassiveBindings__')
+    expect(code).toContain('var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
+    expect(code).not.toContain('__weappViteInstallRequestGlobals')
+  })
+
   it('rewrites wx/my member access to configured global api', async () => {
     const transform = createTransformHook({
       ctx: {

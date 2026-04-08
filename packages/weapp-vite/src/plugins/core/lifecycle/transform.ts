@@ -7,6 +7,7 @@ import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
   resolveInjectRequestGlobalsOptions,
+  resolveManualRequestGlobalsTargets,
 } from '../../../runtime/config/internal/injectRequestGlobals'
 import { isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
@@ -117,10 +118,17 @@ export function createTransformHook(state: CorePluginState) {
   )
 
   function resolveRequestGlobalsTransformCode(id: string, code: string) {
-    if (!injectRequestGlobalsOptions?.targets?.length) {
+    const requestGlobalsTargets = injectRequestGlobalsOptions?.targets?.length
+      ? injectRequestGlobalsOptions.targets
+      : resolveManualRequestGlobalsTargets(code)
+    if (requestGlobalsTargets.length === 0) {
       return null
     }
-    if (code.includes('__weappViteInstallRequestGlobals')) {
+    const passiveLocalBindings = !injectRequestGlobalsOptions?.targets?.length
+    if (
+      code.includes('__weappViteInstallRequestGlobals')
+      || code.includes('__weappViteRequestGlobalsPassiveBindings__')
+    ) {
       return null
     }
 
@@ -141,13 +149,15 @@ export function createTransformHook(state: CorePluginState) {
     }
 
     if (sourceId.endsWith('.vue') && code.includes('<')) {
-      return injectRequestGlobalsIntoSfc(code, injectRequestGlobalsOptions.targets as any, {
-        localBindings: true,
+      return injectRequestGlobalsIntoSfc(code, requestGlobalsTargets as any, {
+        localBindings: !passiveLocalBindings,
+        passiveLocalBindings,
       })
     }
 
-    return `${createInjectRequestGlobalsCode(injectRequestGlobalsOptions.targets as any, {
-      localBindings: true,
+    return `${createInjectRequestGlobalsCode(requestGlobalsTargets as any, {
+      localBindings: !passiveLocalBindings,
+      passiveLocalBindings,
     })}${code}`
   }
 

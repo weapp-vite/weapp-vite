@@ -80,6 +80,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).Blob
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
+    delete (globalThis as Record<string, any>).__weappViteRequestGlobalsActuals__
     wpiConnectSocketMock.mockReset()
   })
 

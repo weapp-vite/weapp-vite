@@ -26,6 +26,24 @@ export interface InstallRequestGlobalsOptions {
   targets?: WeappInjectRequestGlobalsTarget[]
 }
 
+type WeappRequestGlobalActualTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
+
+function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
+  const bindingTargets = [...targets]
+  const needsUrlGlobals = targets.some(target => (
+    target === 'fetch'
+    || target === 'Request'
+    || target === 'Response'
+    || target === 'XMLHttpRequest'
+  ))
+
+  if (needsUrlGlobals) {
+    bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
+  }
+
+  return [...new Set(bindingTargets)]
+}
+
 function hasUsableConstructor(value: unknown, args: unknown[] = []) {
   if (typeof value !== 'function') {
     return false
@@ -119,6 +137,24 @@ function installGlobalBindingIfNeeded(host: Record<string, any>, target: string)
   installRequestGlobalBinding(target, value)
 }
 
+function syncWeappViteRequestGlobalsActuals(
+  host: Record<string, any>,
+  targets: WeappInjectRequestGlobalsTarget[],
+) {
+  const globalObject = resolveRequestGlobalsHost()
+  const actuals = globalObject.__weappViteRequestGlobalsActuals
+    && typeof globalObject.__weappViteRequestGlobalsActuals === 'object'
+    ? globalObject.__weappViteRequestGlobalsActuals
+    : (globalObject.__weappViteRequestGlobalsActuals = Object.create(null))
+
+  for (const target of resolveActualBindingTargets(targets)) {
+    const value = host[target]
+    if (value != null) {
+      actuals[target] = value
+    }
+  }
+}
+
 /**
  * @description 按需向小程序全局环境注入缺失的请求相关对象。
  */
@@ -160,6 +196,7 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
   for (const target of targets) {
     installGlobalBindingIfNeeded(primaryHost, target)
   }
+  syncWeappViteRequestGlobalsActuals(primaryHost, targets)
 
   return hosts[0]
 }

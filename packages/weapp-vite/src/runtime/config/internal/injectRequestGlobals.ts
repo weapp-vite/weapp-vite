@@ -2,7 +2,7 @@ import type { PackageJson } from 'pkg-types'
 import type { WeappInjectRequestGlobalsConfig, WeappInjectRequestGlobalsTarget } from '../../../types'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 
-const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'fetch',
   'Headers',
   'Request',
@@ -13,7 +13,7 @@ const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'WebSocket',
 ]
 
-const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+export const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'AbortController',
   'AbortSignal',
 ]
@@ -161,7 +161,7 @@ function resolveRequestGlobalsRuntimeModuleId() {
   return 'weapp-vite/web-apis'
 }
 
-function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
+export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
   const bindingTargets: WeappRequestGlobalFreeBindingTarget[] = [...targets]
   const needsUrlGlobals = targets.some(target => (
     target === 'fetch'
@@ -177,6 +177,87 @@ function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsT
   return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
 }
 
+export function createRequestGlobalsPassiveBindingsCode(targets: WeappInjectRequestGlobalsTarget[]) {
+  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  if (bindingTargets.length === 0) {
+    return ''
+  }
+
+  const helperCode = [
+    'const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))',
+    'function __weappViteMarkRequestGlobalsPlaceholder__(value){try{Object.defineProperty(value,"__weappViteRequestGlobalsPlaceholder__",{value:true,configurable:true})}catch{value.__weappViteRequestGlobalsPlaceholder__=true}return value}',
+    'function __weappViteCreateLazyRequestGlobalsFunction__(name){const placeholder=function(...args){const actual=__weappViteRequestGlobalsActuals__[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return actual.apply(this,args)};return __weappViteMarkRequestGlobalsPlaceholder__(placeholder)}',
+    'function __weappViteCreateLazyRequestGlobalsConstructor__(name){const placeholder=function(...args){const actual=__weappViteRequestGlobalsActuals__[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return Reflect.construct(actual,args)};return __weappViteMarkRequestGlobalsPlaceholder__(placeholder)}',
+    'function __weappViteHasUsableRequestGlobalsConstructor__(value,args){if(typeof value!=="function"||value?.__weappViteRequestGlobalsPlaceholder__===true){return false}try{return Reflect.construct(value,args),true}catch{return false}}',
+  ].join(';')
+  const bindingCode = bindingTargets.map((target) => {
+    if (target === 'fetch') {
+      return 'var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"&&__weappViteRequestGlobalsActuals__["fetch"]?.__weappViteRequestGlobalsPlaceholder__!==true?__weappViteRequestGlobalsActuals__["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.fetch:__weappViteCreateLazyRequestGlobalsFunction__("fetch")'
+    }
+
+    const placeholderFactory = `__weappViteCreateLazyRequestGlobalsConstructor__(${JSON.stringify(target)})`
+    const actualRef = `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}]`
+    if (target === 'URL') {
+      return `var URL = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory}`
+    }
+    if (target === 'URLSearchParams') {
+      return `var URLSearchParams = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["client=graphql-request"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory}`
+    }
+    if (target === 'Blob') {
+      return `var Blob = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory}`
+    }
+    if (target === 'FormData') {
+      return `var FormData = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory}`
+    }
+    if (target === 'Headers') {
+      return `var Headers = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory}`
+    }
+    if (target === 'Request') {
+      return `var Request = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory}`
+    }
+    if (target === 'Response') {
+      return `var Response = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[null])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Response,[null])?globalThis.Response:${placeholderFactory}`
+    }
+    if (target === 'XMLHttpRequest') {
+      return `var XMLHttpRequest = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory}`
+    }
+    if (target === 'WebSocket') {
+      return `var WebSocket = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["wss://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory}`
+    }
+    if (target === 'AbortController') {
+      return `var AbortController = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory}`
+    }
+
+    return `var ${target} = typeof ${actualRef}==="function"&&${actualRef}?.__weappViteRequestGlobalsPlaceholder__!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.${target}:${placeholderFactory}`
+  }).join(';')
+
+  return `${helperCode};${bindingCode};`
+}
+
+const MANUAL_REQUEST_GLOBALS_IMPORT_RE = /from\s*['"](?:@wevu\/web-apis|weapp-vite\/web-apis)['"]/
+const MANUAL_INSTALL_REQUEST_GLOBALS_CALL_RE = /\binstallRequestGlobals\s*\(/
+const MANUAL_INSTALL_ABORT_GLOBALS_CALL_RE = /\binstallAbortGlobals\s*\(/
+
+export function resolveManualRequestGlobalsTargets(code: string): WeappInjectRequestGlobalsTarget[] {
+  if (!MANUAL_REQUEST_GLOBALS_IMPORT_RE.test(code)) {
+    return []
+  }
+
+  const targets = new Set<WeappInjectRequestGlobalsTarget>()
+  if (MANUAL_INSTALL_REQUEST_GLOBALS_CALL_RE.test(code)) {
+    for (const target of FULL_REQUEST_GLOBAL_TARGETS) {
+      targets.add(target)
+    }
+  }
+  if (MANUAL_INSTALL_ABORT_GLOBALS_CALL_RE.test(code)) {
+    for (const target of ABORT_REQUEST_GLOBAL_TARGETS) {
+      targets.add(target)
+    }
+  }
+
+  return [...targets]
+}
+
 /**
  * @description 生成入口文件用的请求全局对象注入代码。
  */
@@ -184,8 +265,16 @@ export function createInjectRequestGlobalsCode(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    passiveLocalBindings?: boolean
   },
 ) {
+  if (options?.passiveLocalBindings) {
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
+    return passiveBindingsCode
+      ? `/* __weappViteRequestGlobalsPassiveBindings__ */ ${passiveBindingsCode}\n`
+      : ''
+  }
+
   const runtimeModuleId = resolveRequestGlobalsRuntimeModuleId()
   const lines = [
     `import { installRequestGlobals as __weappViteInstallRequestGlobals } from ${JSON.stringify(runtimeModuleId)}`,
@@ -213,6 +302,7 @@ export function createInjectRequestGlobalsSfcCode(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    passiveLocalBindings?: boolean
     setup?: boolean
   },
 ) {
@@ -232,6 +322,7 @@ export function injectRequestGlobalsIntoSfc(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    passiveLocalBindings?: boolean
   },
 ) {
   if (targets.length === 0) {

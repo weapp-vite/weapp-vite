@@ -7,6 +7,7 @@ import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
   resolveInjectRequestGlobalsOptions,
+  resolveManualRequestGlobalsTargets,
 } from '../../../runtime/config/internal/injectRequestGlobals'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
 import { findJsEntry, findVueEntry, isCSSRequest } from '../../../utils'
@@ -306,12 +307,20 @@ export function createLoadHook(state: CorePluginState) {
     return injectRequestGlobalsOptions.targets
   }
 
+  function resolvePassiveRequestGlobalsTargets(code: string) {
+    if (resolveRequestGlobalsTargets().length > 0) {
+      return []
+    }
+    return resolveManualRequestGlobalsTargets(code)
+  }
+
   function injectRequestGlobalsIntoLoadResult(
     result: any,
     sourceId: string,
     targets: string[],
     options?: {
       localBindings?: boolean
+      passiveLocalBindings?: boolean
     },
   ) {
     if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string' || targets.length === 0) {
@@ -396,6 +405,14 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
       const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      const passiveRequestGlobalsTargets = result && typeof result === 'object' && 'code' in result
+        ? resolvePassiveRequestGlobalsTargets((result as any).code)
+        : []
+      if (requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, passiveRequestGlobalsTargets, {
+          passiveLocalBindings: true,
+        })
+      }
       if (!injectOptions || configService.weappLibConfig?.enabled) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets)
       }
@@ -427,6 +444,14 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, loadType)
       const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      const passiveRequestGlobalsTargets = result && typeof result === 'object' && 'code' in result
+        ? resolvePassiveRequestGlobalsTargets((result as any).code)
+        : []
+      if (requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, passiveRequestGlobalsTargets, {
+          passiveLocalBindings: true,
+        })
+      }
       if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
           localBindings: true,
