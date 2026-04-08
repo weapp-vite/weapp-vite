@@ -241,6 +241,33 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, '/project/src/pages/store/index.ts', 'dependency')
   })
 
+  it('normalizes transient delete events on shared dependencies back to dependency updates', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    const dependencyId = '/project/src/shared/store.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([
+      '/project/src/pages/hmr/index.ts',
+      '/project/src/pages/store/index.ts',
+    ]))
+    const state = createState({
+      moduleImporters: new Map([
+        [dependencyId, new Set(['/project/src/pages/hmr/index.ts'])],
+      ]),
+      entryModuleIds: new Set([
+        '/project/src/pages/hmr/index.ts',
+        '/project/src/pages/store/index.ts',
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'delete' })
+
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, '/project/src/pages/hmr/index.ts', 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, '/project/src/pages/store/index.ts', 'dependency')
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+    expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/shared/store.ts')
+  })
+
   it('invalidates resolve cache and sidecar entries on create', async () => {
     const state = createState()
     const hook = createWatchChangeHook(state)

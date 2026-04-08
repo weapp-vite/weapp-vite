@@ -9,6 +9,7 @@ export const HMR_GUARD_STABLE_TESTS = [
   'hmr-html-template.test.ts',
   'hmr-layouts.test.ts',
   'hmr-rename.test.ts',
+  'hmr-shared-runtime-deps.test.ts',
   'hmr-rapid.test.ts',
   'hmr-add.test.ts',
   'hmr-delete.test.ts',
