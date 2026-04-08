@@ -109,6 +109,7 @@ function createState() {
     resolverComponentNames: new Set<string>(),
     componentMetadataMap: new Map<string, any>(),
     logWarnOnce: vi.fn(),
+    bumpVersion: vi.fn(),
     scheduleManifestWrite: vi.fn(),
     scheduleTypedComponentsWrite: vi.fn(),
     scheduleHtmlCustomDataWrite: vi.fn(),
