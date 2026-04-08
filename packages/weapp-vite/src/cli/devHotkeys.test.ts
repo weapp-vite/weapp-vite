@@ -112,7 +112,7 @@ describe('devHotkeys', () => {
       transport: 'streamable-http',
     })
     takeScreenshotMock.mockReset()
-    takeScreenshotMock.mockResolvedValue({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
+    takeScreenshotMock.mockResolvedValue({ path: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
     emitKeypressEventsMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -281,7 +281,7 @@ describe('devHotkeys', () => {
 
     expect(takeScreenshotMock).toHaveBeenCalledWith({
       fullPage: true,
-      outputPath: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
+      outputPath: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png',
       projectPath: '/project/dist',
       sharedSession: true,
       timeout: 30000,
@@ -420,7 +420,7 @@ describe('devHotkeys', () => {
       String(args[0]).includes('执行中    正在截图当前页面'),
     )).toBe(true)
 
-    resolveScreenshot?.({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
+    resolveScreenshot?.({ path: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
     await flushMicrotasks(10)
   })
 
@@ -446,7 +446,7 @@ describe('devHotkeys', () => {
 
     expect(loggerMock.warn).toHaveBeenCalledWith('[dev action] 当前正在截图当前页面，请稍后再试。')
 
-    resolveScreenshot?.({ path: '/project/.tmp/weapp-vite-dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
+    resolveScreenshot?.({ path: '/project/.weapp-vite/dev-screenshots/screenshot-2026-04-06T10-11-12-345Z.png' })
     await flushMicrotasks(10)
   })
 
