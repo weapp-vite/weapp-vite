@@ -50,7 +50,7 @@ keywords:
 | `observers`        | 推荐用 `watch()`/`watchEffect()` 或 `defineComponent({ watch: { 'a.b': fn } })`；也可写 `defineComponent({ observers: { ... } })` | `observers` 是原生数据监听器（支持更复杂的表达式/通配），Wevu 不改写，直接透传；Wevu 的 `watch` 是基于运行时代理的路径监听（更像 Vue 的 `watch` 选项）。                                                                                 |
 | `options`          | `defineComponent({ options: { ... } })`                                                                                           | 原生 `ComponentOptions`（`multipleSlots/styleIsolation/pureDataPattern/virtualHost/...`）。注意：Wevu 默认会把 `options.multipleSlots` 置为 `true`（用户显式传入则以用户为准）。                                                         |
 | `pageLifetimes`    | 推荐用 `onShow/onHide/onResize/onRouteDone`；也可写 `defineComponent({ pageLifetimes: { ... } })`                                 | `show/hide/resize/routeDone` 会被 Wevu 包装以派发 hook；其他字段按原生透传执行。                                                                                                                                                         |
-| `properties`       | 推荐：`props`；也可：`defineComponent({ properties: { ... } })`                                                                   | `props` 会被 Wevu 规范化为原生 `properties`；如果同时传了 `props` 与 `properties`，以 `props` 生成的 `properties` 为准。                                                                                                                 |
+| `properties`       | 推荐：`props`；也可：`defineComponent({ properties: { ... } })`                                                                   | `props` 会被 Wevu 规范化为原生 `properties`；若显式传了 `properties`，则保留这份原生定义，不再使用 `props` 生成结果。                                                                                                                    |
 | `relations`        | `defineComponent({ relations: { ... } })`                                                                                         | 原样透传。                                                                                                                                                                                                                               |
 
 > 小提示：如果你在 Wevu 里需要使用“原生 this”（例如访问 `this.setData`、`this.triggerEvent`、`selectComponent` 等），可以在 `setup(props, ctx)` 里通过 `ctx.instance` 访问小程序实例。
@@ -78,6 +78,28 @@ keywords:
 - `properties` 是小程序原生写法，适合迁移已有原生组件，或需要直接复用原生定义时使用。
 - `props` 更方便配合 `defineProps`、`withDefaults`、TypeScript 类型推导一起使用。
 - `properties` 更贴近原生小程序文档、原生组件库和历史代码结构。
+- `props` 在组件注册前会被 Wevu 归一化，最终转换成原生 `properties` 再传给 `Component()`。
+- `properties` 本身就是原生字段，Wevu 会直接保留这份定义参与注册，不再按 Vue 风格 `props` 规则重新转换。
+
+### 最终注册到原生时会发生什么
+
+可以把它简单理解成两条路径：
+
+- 写 `props`：`props` -> Wevu `normalizeProps()` -> 原生 `properties` -> `Component()`
+- 写 `properties`：原生 `properties` -> Wevu 保留原定义 -> `Component()`
+
+其中 `props` 转换为原生 `properties` 时，主要会做这些归一化：
+
+- `default` 会被转换成原生 `value`
+- 多类型 `type: [String, Number]` 会收敛成主 `type` + `optionalTypes`
+- 非小程序原生支持的类型会被过滤，必要时降级为 `type: null`
+- `required` 这类 Vue runtime `props` 语义不会进入最终的原生 `properties`
+
+而 `properties` 则更接近“原样透传”：
+
+- 你写的 `type`、`value`、`optionalTypes`、`observer` 会直接作为原生组件属性定义使用
+- Wevu 不会再把它当成 Vue `props` 重新做一轮规范化
+- 如果同时写了 `props` 和 `properties`，会优先采用 `properties`
 
 ### 代码示例
 
@@ -124,7 +146,7 @@ export default defineComponent({
 - 新写的 Wevu 组件，推荐优先使用 `props`。
 - `<script setup>` 场景，推荐直接使用 `defineProps`。
 - 从原生小程序迁移时，如果已有成熟的 `properties` 定义，可以先保留，逐步迁移到 `props`。
-- 不建议同时定义 `props` 和 `properties`；如果同时存在，以 `props` 归一化生成的结果为准。
+- 不建议同时定义 `props` 和 `properties`；如果同时存在，当前实现会优先采用显式传入的 `properties`。
 
 ## Behavior 迁移补充（SFC 场景）
 

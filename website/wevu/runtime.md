@@ -72,6 +72,13 @@ Wevu 同时支持两种 props 定义方式：
 - 小程序原生 `properties`：完全按小程序规范书写，`setup(props, ctx)` 通过 `props`/`ctx.props` 读取。
 - Vue 风格 `props`：会被转换为小程序 `properties`（支持 `type`、`optionalTypes`、`observer` 与 `default` / `value`）。
 
+两者的处理路径可以简单理解为：
+
+- `props`：先由 Wevu 归一化，再生成最终注册给原生 `Component()` 的 `properties`
+- `properties`：作为原生字段直接保留参与注册，不再按 Vue 风格 `props` 规则重新转换
+
+如果同时声明了 `props` 和 `properties`，当前实现会优先保留显式传入的 `properties`。
+
 如果你使用 Weapp-vite 的 SFC 编译产物，通常会走 `createWevuComponent(options)`（见下节），并直接携带小程序 `properties`。
 
 #### defineProps 泛型到 properties 的映射
