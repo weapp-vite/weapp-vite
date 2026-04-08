@@ -1,3 +1,4 @@
+import { fs } from '@weapp-core/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWatchChangeHook } from './watch'
 
@@ -75,6 +76,7 @@ function createState(overrides: Record<string, any> = {}) {
 describe('core lifecycle watch hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
     findJsEntryMock.mockResolvedValue({ path: null })
     isTemplateMock.mockReturnValue(false)
     collectAffectedEntriesMock.mockReturnValue(new Set())
@@ -118,6 +120,40 @@ describe('core lifecycle watch hook', () => {
     await hook(entryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
+  it('normalizes transient delete events on loaded scripts back to updates', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    const entryId = '/project/src/pages/hmr/index.ts'
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'delete' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+    expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/pages/hmr/index.ts')
+  })
+
+  it('normalizes transient delete events on template sidecars back to updates', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+    isTemplateMock.mockReturnValue(true)
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/pages/hmr/index.ts',
+    })
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/pages/hmr/index.wxml', { event: 'delete' })
+
+    expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr/index.wxml')
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr/index.ts', 'direct')
+    expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
+    expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
+    expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/pages/hmr/index.wxml')
   })
 
   it('marks layout source updates as full dependency dirties across resolved entries', async () => {
