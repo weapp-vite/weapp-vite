@@ -56,6 +56,7 @@ function createContext() {
 function createResolverHelpers(overrides: Record<string, any> = {}) {
   return {
     collectResolverComponents: vi.fn(() => ({})),
+    collectRuntimeResolverComponents: vi.fn(() => ({})),
     clearResolveCache: vi.fn(),
     syncResolverComponentProps: vi.fn(),
     setSupportFileResolverComponents: vi.fn(),

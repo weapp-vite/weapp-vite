@@ -131,6 +131,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     outputsState,
     resolverComponentsMapRef,
     collectResolverComponents: resolverHelpers.collectResolverComponents,
+    collectRuntimeResolverComponents: resolverHelpers.collectRuntimeResolverComponents,
     syncResolverComponentProps: resolverHelpers.syncResolverComponentProps,
     preloadResolverComponentMetadata: metadataHelpers.preloadResolverComponentMetadata,
     getComponentMetadata: metadataHelpers.getComponentMetadata,
