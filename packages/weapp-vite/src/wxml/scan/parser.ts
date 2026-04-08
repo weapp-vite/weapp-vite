@@ -52,6 +52,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
   let importAttrs: undefined | string[]
   let attrs: Record<string, string> = {}
   const components: ComponentsMap = {}
+  const autoImportComponents: ComponentsMap = {}
   let tagStartIndex = 0
   // 事件处理转换（transformOn）
   // 参考：https://github.com/vuejs/core/blob/76c43c6040518c93b41f60a28b224f967c007fdf/packages/compiler-core/src/transforms/vOn.ts
@@ -175,21 +176,29 @@ export function parseWxml(options: ParserOptions): ParserResult {
       },
       onclosetag(name) {
         currentTagName = tagStack.pop()
-        if (currentTagName && !excludeComponent(currentTagName)) {
+        if (currentTagName) {
           const componentName = normalizeComponentTagName && shouldNormalizeTagName(currentTagName)
             ? toKebabCaseTagName(currentTagName)
             : currentTagName
-          if (Array.isArray(components[componentName])) {
-            components[componentName].push({
-              start: tagStartIndex,
-              end: parser.endIndex + 1,
-            })
+          const range = {
+            start: tagStartIndex,
+            end: parser.endIndex + 1,
+          }
+
+          if (Array.isArray(autoImportComponents[componentName])) {
+            autoImportComponents[componentName].push(range)
           }
           else {
-            components[componentName] = [{
-              start: tagStartIndex,
-              end: parser.endIndex + 1,
-            }]
+            autoImportComponents[componentName] = [range]
+          }
+
+          if (!excludeComponent(currentTagName)) {
+            if (Array.isArray(components[componentName])) {
+              components[componentName].push(range)
+            }
+            else {
+              components[componentName] = [range]
+            }
           }
         }
 
@@ -273,6 +282,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
 
   const token: WxmlToken = {
     components,
+    autoImportComponents,
     deps,
     removalRanges,
     commentTokens,

@@ -392,19 +392,6 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     })
   }
 
-  function analyzeAutoImportComponents(wxml: string) {
-    const configService = requireConfigService(ctx, '扫描 WXML 前必须初始化 configService。')
-    const wxmlConfig = configService.weappViteConfig?.wxml ?? configService.weappViteConfig?.enhance?.wxml
-    return scanWxml(wxml, {
-      platform: configService.platform,
-      ...(
-        wxmlConfig === true
-          ? {}
-          : wxmlConfig),
-      excludeComponent: () => false,
-    })
-  }
-
   async function scan(filepath: string) {
     const configService = requireConfigService(ctx, '扫描 WXML 前必须初始化 configService。')
 
@@ -432,11 +419,10 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
     const wxml = await fs.readFile(filepath, 'utf8')
     const res = analyze(wxml)
-    const autoImportComponents = analyzeAutoImportComponents(wxml)
     tokenMap.set(filepath, res)
     cache.set(filepath, res)
     const baseName = removeExtensionDeep(filepath)
-    const autoImportComponentEntries = autoImportComponents.components ?? {}
+    const autoImportComponentEntries = res.autoImportComponents ?? res.components ?? {}
     if (isEmptyObject(autoImportComponentEntries)) {
       autoImportComponentsMap.delete(baseName)
     }

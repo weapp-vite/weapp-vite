@@ -31,6 +31,34 @@ describe('scanWxml', () => {
     ])
   })
 
+  it('should keep builtin components in auto import component map', () => {
+    const wxml = '<scroll-view><custom-component /></scroll-view>'
+    const result = scanWxml(wxml)
+
+    expect(result.components).toEqual({
+      'custom-component': [
+        {
+          start: 13,
+          end: 33,
+        },
+      ],
+    })
+    expect(result.autoImportComponents).toEqual({
+      'scroll-view': [
+        {
+          start: 0,
+          end: 47,
+        },
+      ],
+      'custom-component': [
+        {
+          start: 13,
+          end: 33,
+        },
+      ],
+    })
+  })
+
   it('should collect dependencies for src attributes', () => {
     const wxml = '<wxs src="./file.wxs"/>'
     const result = scanWxml(wxml)

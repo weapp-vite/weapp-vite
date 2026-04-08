@@ -8,6 +8,7 @@ export interface RemovalRange {
 
 export interface WxmlToken {
   components: ComponentsMap
+  autoImportComponents?: ComponentsMap
   deps: WxmlDep[]
   removalRanges: RemovalRange[]
   commentTokens: Token[]

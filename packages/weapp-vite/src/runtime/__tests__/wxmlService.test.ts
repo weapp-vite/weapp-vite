@@ -55,20 +55,20 @@ vi.mock('@weapp-core/shared', async (importOriginal) => {
 
 vi.mock('@/wxml', () => ({
   scanWxml: vi.fn((content, options?: { excludeComponent?: (tagName: string) => boolean }) => {
+    const excludeComponent = options?.excludeComponent ?? ((tagName: string) => tagName === 'list-view' || tagName === 'scroll-view')
     if (content.includes('<import src="./header.wxml" />')) {
-      const shouldIncludeListView = options?.excludeComponent
-        ? !options.excludeComponent('list-view')
-        : false
-      const components = shouldIncludeListView
-        ? {
-            'list-view': [{ start: 6, end: 17 }],
-          }
-        : undefined
       return {
         deps: [
           { tagName: 'import', value: './header.wxml' },
         ],
-        components,
+        components: excludeComponent('list-view')
+          ? undefined
+          : {
+              'list-view': [{ start: 6, end: 17 }],
+            },
+        autoImportComponents: {
+          'list-view': [{ start: 6, end: 17 }],
+        },
       }
     }
     if (content.includes('<include src="./footer.wxml" />')) {
@@ -86,23 +86,25 @@ vi.mock('@/wxml', () => ({
       }
     }
     if (content.includes('<scroll-view />')) {
-      const shouldIncludeScrollView = options?.excludeComponent
-        ? !options.excludeComponent('scroll-view')
-        : false
       return {
         deps: [],
-        components: shouldIncludeScrollView
+        components: excludeComponent('scroll-view')
           ? {
-              'scroll-view': [{ start: 6, end: 19 }],
               'custom-card': [{ start: 21, end: 34 }],
             }
           : {
+              'scroll-view': [{ start: 6, end: 19 }],
               'custom-card': [{ start: 21, end: 34 }],
             },
+        autoImportComponents: {
+          'scroll-view': [{ start: 6, end: 19 }],
+          'custom-card': [{ start: 21, end: 34 }],
+        },
       }
     }
     return {
       deps: [],
+      autoImportComponents: {},
     }
   }),
   isTemplateImportTag: vi.fn(tagName => tagName === 'import' || tagName === 'include'),
