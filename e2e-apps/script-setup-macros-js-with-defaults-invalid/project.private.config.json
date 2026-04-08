@@ -2,7 +2,7 @@
   "libVersion": "3.15.0",
   "projectname": "script-setup-macros-js-with-defaults-invalid",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "coverView": false,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,

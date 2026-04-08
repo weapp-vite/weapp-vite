@@ -2,7 +2,7 @@
   "libVersion": "3.15.0",
   "projectname": "auto-routes-define-app-json",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "coverView": false,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,

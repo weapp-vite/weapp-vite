@@ -2,7 +2,7 @@
   "libVersion": "3.15.0",
   "projectname": "issue-340-hoist",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "coverView": false,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,

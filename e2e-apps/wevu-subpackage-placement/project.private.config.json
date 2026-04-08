@@ -1,7 +1,7 @@
 {
   "projectname": "wevu-subpackage-placement",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "compileHotReLoad": true,
     "checkInvalidKey": true,
     "ignoreDevUnusedFiles": true
