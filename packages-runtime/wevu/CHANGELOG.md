@@ -1,5 +1,13 @@
 # wevu
 
+## 6.14.2
+
+### Patch Changes
+
+- 🐛 **修复 `defineOptions({ externalClasses: [...] })` 在 wevu `<script setup>` 宏中的类型提示缺失问题，并为 `weapp-vite-wevu-tailwindcss-tdesign-template` 增加 `virtualHost` 与外部样式类透传实验页，方便验证 `externalClasses`、`custom-class` 与 `rootStyle` 的推荐写法。** [`a7f2fa2`](https://github.com/weapp-vite/weapp-vite/commit/a7f2fa290ae48aa4719be64fd6b07c99e87795cb) by @sonofmagic
+- 📦 **Dependencies** [`a9a725d`](https://github.com/weapp-vite/weapp-vite/commit/a9a725dd5115c141e95f10a112ce0e92de923f5c)
+  → `@wevu/compiler@6.14.2`
+
 ## 6.14.1
 
 ### Patch Changes

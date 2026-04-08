@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.14.2
+
+### Patch Changes
+
+- 🐛 **默认将 wevu 配置缓存写入项目内的 `.weapp-vite/wevu-config`，并同步忽略该内部目录，避免临时文件再次参与监听、路由扫描与源码排除逻辑。** [#430](https://github.com/weapp-vite/weapp-vite/pull/430) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.14.2`
+
 ## 6.14.1
 
 ### Patch Changes
