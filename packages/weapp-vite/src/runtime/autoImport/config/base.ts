@@ -12,6 +12,12 @@ export function resolveBaseDir(configService: NonNullable<MutableCompilerContext
   return configService.cwd
 }
 
+export function isProductionBuildWithInternalSupportFiles(
+  configService: NonNullable<MutableCompilerContext['configService']>,
+) {
+  return configService.emitDefaultAutoImportOutputs === false
+}
+
 export function resolveTypedComponentsDefaultPath(configService: NonNullable<MutableCompilerContext['configService']>) {
   return path.resolve(resolveBaseDir(configService), WEAPP_VITE_INTERNAL_DIRNAME, 'typed-components.d.ts')
 }

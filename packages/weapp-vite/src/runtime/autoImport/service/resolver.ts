@@ -18,6 +18,8 @@ const SCRIPT_OR_DTS_EXTENSION_RE = /\.(?:[cm]?js|tsx?|jsx|d\.ts)$/
 
 export interface ResolverHelpers {
   collectResolverComponents: () => Record<string, string>
+  collectRuntimeResolverComponents: () => Record<string, string>
+  collectManifestResolverComponents: () => Record<string, string>
   clearResolveCache: () => void
   syncResolverComponentProps: () => void
   setSupportFileResolverComponents: (components: Record<string, string>) => void
@@ -181,6 +183,16 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     ])
   }
 
+  function collectRuntimeResolverComponents(): Record<string, string> {
+    return Object.fromEntries(state.resolvedResolverComponents)
+  }
+
+  function collectManifestResolverComponents(): Record<string, string> {
+    return supportFileResolverComponents.size > 0
+      ? collectResolverComponents()
+      : collectRuntimeResolverComponents()
+  }
+
   function clearResolveCache() {
     resolveCache.clear()
   }
@@ -264,6 +276,8 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
 
   return {
     collectResolverComponents,
+    collectRuntimeResolverComponents,
+    collectManifestResolverComponents,
     clearResolveCache,
     syncResolverComponentProps,
     setSupportFileResolverComponents,

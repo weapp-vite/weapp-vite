@@ -468,13 +468,13 @@ function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
 
 function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>) {
   const lines = [
-    '# autoImportComponents HMR benchmark',
+    '# autoImportComponents HMR 基准报告',
     '',
-    `- iterations: \`${iterations}\``,
+    `- 迭代次数：\`${iterations}\``,
     '',
-    '## Startup',
+    '## 启动阶段',
     '',
-    '| 场景 | baseline avg | current avg | 额外成本 | 比例 |',
+    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 比例 |',
     '| --- | ---: | ---: | ---: | ---: |',
   ]
 
@@ -485,9 +485,9 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
   }
 
   lines.push('')
-  lines.push('## HMR Update')
+  lines.push('## HMR 更新阶段')
   lines.push('')
-  lines.push('| 场景 | baseline avg | current avg | 额外成本 | 比例 |')
+  lines.push('| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 比例 |')
   lines.push('| --- | ---: | ---: | ---: | ---: |')
 
   for (const result of results) {
@@ -502,7 +502,7 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
   lines.push('- `baseline`：关闭 `autoImportComponents`，并手动声明同一批 `usingComponents` 后启动 dev 并执行相同模板改动。')
   lines.push('- `current`：开启当前自动导入实现后启动 dev 并执行相同模板改动。')
   lines.push('- `startup` 表示从启动 dev 到首个 benchmark 页面产物可见的耗时。')
-  lines.push('- `update` 表示修改 benchmark 页面后，dist 模板产物出现新 marker 的耗时。')
+  lines.push('- `update` 表示修改 benchmark 页面后，dist 模板产物出现新标记的耗时。')
   lines.push('')
 
   return `${lines.join('\n')}\n`

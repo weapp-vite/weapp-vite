@@ -5,6 +5,7 @@ import type { LocalAutoImportMatch } from '../types'
 import { fs, removeExtensionDeep } from '@weapp-core/shared'
 import pm from 'picomatch'
 import { resolveAstEngine } from '../../../ast'
+import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { logger, resolvedComponentName } from '../../../context/shared'
 import { extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { extractComponentProps } from '../../componentProps'
@@ -165,6 +166,11 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     if (!componentName) {
       scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
       return
+    }
+
+    if (isBuiltinComponent(componentName)) {
+      const message = `检测到本地组件 \`${state.ctx.configService.relativeCwd(baseName)}\` 与微信内置组件 \`${componentName}\` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。`
+      state.logWarnOnce(message)
     }
 
     const hasComponent = state.registry.has(componentName)

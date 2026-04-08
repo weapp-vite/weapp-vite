@@ -559,32 +559,32 @@ function printScenarioResult(result: Awaited<ReturnType<typeof runScenario>>) {
   )
   console.log(
     [
-      'current-vs-disabled',
-      `extra ${result.currentVsDisabled.extraMs.toFixed(2)}ms`,
-      `extra ${result.currentVsDisabled.extraPercent.toFixed(2)}%`,
-      `ratio ${result.currentVsDisabled.ratio.toFixed(2)}x`,
+      '当前实现对比关闭自动导入',
+      `额外 ${result.currentVsDisabled.extraMs.toFixed(2)}ms`,
+      `额外 ${result.currentVsDisabled.extraPercent.toFixed(2)}%`,
+      `比例 ${result.currentVsDisabled.ratio.toFixed(2)}x`,
     ].join(' | '),
   )
   console.log(
     [
-      'current-vs-legacy',
-      `saved ${result.currentVsLegacy.savedMs.toFixed(2)}ms`,
-      `saved ${result.currentVsLegacy.savedPercent.toFixed(2)}%`,
-      `speedup ${result.currentVsLegacy.ratio.toFixed(2)}x`,
+      '当前实现对比旧实现',
+      `节省 ${result.currentVsLegacy.savedMs.toFixed(2)}ms`,
+      `节省 ${result.currentVsLegacy.savedPercent.toFixed(2)}%`,
+      `提速 ${result.currentVsLegacy.ratio.toFixed(2)}x`,
     ].join(' | '),
   )
-  printPhaseBreakdown('current phases', result.current.phases)
-  printPhaseBreakdown('legacy phases', result.legacy.phases)
+  printPhaseBreakdown('当前实现阶段耗时', result.current.phases)
+  printPhaseBreakdown('旧实现阶段耗时', result.legacy.phases)
 }
 
 function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>) {
   const lines = [
-    '# autoImportComponents + VantResolver benchmark',
+    '# autoImportComponents + VantResolver 基准报告',
     '',
-    `- iterations: \`${iterations}\``,
-    `- total resolver components: \`${allResolverEntries.length}\``,
+    `- 迭代次数：\`${iterations}\``,
+    `- resolver 组件总数：\`${allResolverEntries.length}\``,
     '',
-    '| 场景 | disabled avg | current avg | legacy avg | 开启自动导入额外成本 | 相对旧行为节省 | disabled manifest | current manifest | legacy manifest |',
+    '| 场景 | 关闭自动导入平均耗时 | 当前实现平均耗时 | 旧实现平均耗时 | 开启自动导入额外成本 | 相对旧行为节省 | 关闭自动导入 manifest 数 | 当前实现 manifest 数 | 旧实现 manifest 数 |',
     '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   ]
 
@@ -602,13 +602,13 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
   lines.push('- `legacy`：模拟旧行为，在支持文件同步阶段预热全部 resolver 组件。')
   lines.push('- 三种模式都基于同一份临时 fixture、同一组模板标签与相同的页面内容。')
   lines.push('')
-  lines.push('## Profiling（mean）')
+  lines.push('## 阶段剖析（平均值）')
   lines.push('')
 
   for (const result of results) {
     lines.push(`### 使用 ${result.usedCount} 个 Vant 组件`)
     lines.push('')
-    lines.push('| 模式 | tsconfig | register local | scan template | resolve tags/all | flush outputs |')
+    lines.push('| 模式 | tsconfig 同步 | 注册本地组件 | 扫描模板标签 | 解析标签/全量解析 | 刷新输出 |')
     lines.push('| --- | ---: | ---: | ---: | ---: | ---: |')
     lines.push(`| current | ${formatPhaseMean(result.current.phases.tsconfigSyncMs)} | ${formatPhaseMean(result.current.phases.registerLocalComponentsMs)} | ${formatPhaseMean(result.current.phases.scanTemplateTagsMs)} | ${formatPhaseMean(result.current.phases.resolveTemplateTagsMs)} | ${formatPhaseMean(result.current.phases.flushOutputsMs)} |`)
     lines.push(`| legacy | ${formatPhaseMean(result.legacy.phases.tsconfigSyncMs)} | ${formatPhaseMean(result.legacy.phases.registerLocalComponentsMs)} | - | ${formatPhaseMean(result.legacy.phases.resolveAllResolverComponentsMs)} | ${formatPhaseMean(result.legacy.phases.flushOutputsMs)} |`)
@@ -624,11 +624,22 @@ function printPhaseBreakdown(
 ) {
   const entries = Object.entries(phases)
     .sort((a, b) => b[1].mean - a[1].mean)
-    .map(([key, value]) => `${key} ${value.mean.toFixed(2)}ms`)
+    .map(([key, value]) => `${formatPhaseKey(key)} ${value.mean.toFixed(2)}ms`)
   if (entries.length === 0) {
     return
   }
   console.log(`${label} | ${entries.join(' | ')}`)
+}
+
+function formatPhaseKey(key: string) {
+  return ({
+    tsconfigSyncMs: 'tsconfig 同步',
+    registerLocalComponentsMs: '注册本地组件',
+    scanTemplateTagsMs: '扫描模板标签',
+    resolveTemplateTagsMs: '解析模板标签',
+    resolveAllResolverComponentsMs: '全量解析 resolver 组件',
+    flushOutputsMs: '刷新输出',
+  })[key] ?? key
 }
 
 function formatPhaseMean(phase?: { mean: number }) {

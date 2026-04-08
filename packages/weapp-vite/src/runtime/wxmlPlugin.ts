@@ -15,7 +15,15 @@ export interface WxmlService {
   depsMap: Map<string, Set<string>>
   importerMap: Map<string, Set<string>>
   tokenMap: Map<string, ScanWxmlResult>
+  /**
+   * @description 常规组件索引缓存。
+   * 这里沿用历史行为，只保留“应参与 usingComponents 推断”的组件标签。
+   */
   wxmlComponentsMap: Map<string, ComponentsMap>
+  /**
+   * @description 常规组件聚合缓存。
+   * 会递归合并 import/include 进来的模板组件，但仍遵循内置组件过滤规则。
+   */
   aggregatedComponentsMap: Map<string, ComponentsMap>
   addDeps: (filepath: string, deps?: string[]) => Promise<void>
   setDeps: (filepath: string, deps?: string[]) => Promise<void>
@@ -23,6 +31,7 @@ export interface WxmlService {
   getImporters: (filepath: string) => Set<string>
   getAllDeps: () => Set<string>
   getAggregatedComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
+  getAggregatedAutoImportComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
   clearAll: () => void
   analyze: (wxml: string) => ScanWxmlResult
   scan: (filepath: string) => Promise<ScanWxmlResult | undefined>
@@ -40,6 +49,12 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     cache,
     emittedCode,
   } = ctx.runtimeState.wxml
+  // 自动导入专用组件索引缓存。
+  // 这里会保留被内置组件过滤逻辑排除掉的标签，供 auto-import resolver 继续判断。
+  const autoImportComponentsMap = new Map<string, ComponentsMap>()
+  // 自动导入专用聚合缓存。
+  // 与 aggregatedComponentsMap 分离，避免改动普通组件分析语义。
+  const aggregatedAutoImportComponentsMap = new Map<string, ComponentsMap>()
 
   function linkImporter(dep: string, importer: string) {
     let importers = importerMap.get(dep)
@@ -61,18 +76,22 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     }
   }
 
-  function invalidateAggregatedComponents(filepath: string, visited = new Set<string>()) {
+  function invalidateAggregatedComponents(
+    filepath: string,
+    targetMap: Map<string, ComponentsMap>,
+    visited = new Set<string>(),
+  ) {
     if (visited.has(filepath)) {
       return
     }
     visited.add(filepath)
-    aggregatedComponentsMap.delete(removeExtensionDeep(filepath))
+    targetMap.delete(removeExtensionDeep(filepath))
     const importers = importerMap.get(filepath)
     if (!importers) {
       return
     }
     for (const importer of importers) {
-      invalidateAggregatedComponents(importer, visited)
+      invalidateAggregatedComponents(importer, targetMap, visited)
     }
   }
 
@@ -94,7 +113,8 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
     depsMap.set(filepath, nextDeps)
     if (nextDepsKey !== previousDepsKey) {
-      invalidateAggregatedComponents(filepath)
+      invalidateAggregatedComponents(filepath, aggregatedComponentsMap)
+      invalidateAggregatedComponents(filepath, aggregatedAutoImportComponentsMap)
     }
     await Promise.all(
       Array.from(nextDeps)
@@ -180,6 +200,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
       const currentBaseName = removeExtensionDeep(filepath)
       const merged: ComponentsMap = {}
+      // 常规聚合只读取普通组件索引，因此不会把宿主内置标签带进 usingComponents 推断结果。
       const own = componentsMap.get(currentBaseName)
       if (own) {
         for (const [name, ranges] of Object.entries(own)) {
@@ -209,6 +230,58 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     return aggregate(templatePath)
   }
 
+  function getAggregatedAutoImportComponents(filepathOrBaseName: string) {
+    const templatePath = resolveTemplatePath(filepathOrBaseName)
+    if (!templatePath) {
+      return undefined
+    }
+
+    const baseName = removeExtensionDeep(templatePath)
+    const cached = aggregatedAutoImportComponentsMap.get(baseName)
+    if (cached) {
+      return cached
+    }
+
+    const visited = new Set<string>()
+    const aggregate = (filepath: string): ComponentsMap => {
+      if (visited.has(filepath)) {
+        return {}
+      }
+      visited.add(filepath)
+
+      const currentBaseName = removeExtensionDeep(filepath)
+      const merged: ComponentsMap = {}
+      // 自动导入优先读取完整标签索引。
+      // 老缓存场景下如果还没有 autoImportComponentsMap，则回退到普通组件索引，保证兼容性。
+      const own = autoImportComponentsMap.get(currentBaseName) ?? componentsMap.get(currentBaseName)
+      if (own) {
+        for (const [name, ranges] of Object.entries(own)) {
+          merged[name] = ranges
+        }
+      }
+
+      const deps = depsMap.get(filepath)
+      if (deps) {
+        for (const dep of deps) {
+          if (!isTemplate(dep)) {
+            continue
+          }
+          const depComponents = aggregate(dep)
+          for (const [name, ranges] of Object.entries(depComponents)) {
+            if (!merged[name]) {
+              merged[name] = ranges
+            }
+          }
+        }
+      }
+
+      aggregatedAutoImportComponentsMap.set(currentBaseName, merged)
+      return merged
+    }
+
+    return aggregate(templatePath)
+  }
+
   function clearAll(options?: { clearEmittedCode?: boolean }) {
     const clearEmittedCode = options?.clearEmittedCode !== false
     const currentRoot = ctx.configService?.currentSubPackageRoot
@@ -218,6 +291,8 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
       tokenMap.clear()
       componentsMap.clear()
       aggregatedComponentsMap.clear()
+      autoImportComponentsMap.clear()
+      aggregatedAutoImportComponentsMap.clear()
       templatePathMap.clear()
       cache.cache.clear()
       cache.mtimeMap.clear()
@@ -277,6 +352,18 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     for (const key of Array.from(aggregatedComponentsMap.keys())) {
       if (shouldClear(key)) {
         aggregatedComponentsMap.delete(key)
+      }
+    }
+
+    for (const key of Array.from(autoImportComponentsMap.keys())) {
+      if (shouldClear(key)) {
+        autoImportComponentsMap.delete(key)
+      }
+    }
+
+    for (const key of Array.from(aggregatedAutoImportComponentsMap.keys())) {
+      if (shouldClear(key)) {
+        aggregatedAutoImportComponentsMap.delete(key)
       }
     }
 
@@ -349,6 +436,16 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     const res = analyze(wxml)
     tokenMap.set(filepath, res)
     cache.set(filepath, res)
+    const baseName = removeExtensionDeep(filepath)
+    // `autoImportComponents` 由单次 parse 同步产出，避免为自动导入单独再扫描一次 WXML。
+    const autoImportComponentEntries = res.autoImportComponents ?? res.components ?? {}
+    if (isEmptyObject(autoImportComponentEntries)) {
+      autoImportComponentsMap.delete(baseName)
+    }
+    else {
+      autoImportComponentsMap.set(baseName, autoImportComponentEntries)
+    }
+    invalidateAggregatedComponents(filepath, aggregatedAutoImportComponentsMap)
     await setDeps(filepath, collectDepsFromToken(filepath, res.deps))
     return res
   }
@@ -362,7 +459,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     else {
       componentsMap.set(baseName, components)
     }
-    invalidateAggregatedComponents(absPath)
+    invalidateAggregatedComponents(absPath, aggregatedComponentsMap)
   }
 
   return {
@@ -377,6 +474,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     getImporters,
     getAllDeps,
     getAggregatedComponents,
+    getAggregatedAutoImportComponents,
     clearAll,
     analyze,
     scan,

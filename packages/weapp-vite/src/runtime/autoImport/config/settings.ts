@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../../context'
 import path from 'pathe'
 import {
+  isProductionBuildWithInternalSupportFiles,
   resolveBaseDir,
   resolveHtmlCustomDataDefaultPath,
   resolveTypedComponentsDefaultPath,
@@ -23,6 +24,9 @@ export function getTypedComponentsSettings(ctx: MutableCompilerContext): TypedCo
   const option = autoImportConfig?.typedComponents
 
   if (option === true) {
+    if (isProductionBuildWithInternalSupportFiles(configService)) {
+      return { enabled: false }
+    }
     return {
       enabled: true,
       outputPath: resolveTypedComponentsDefaultPath(configService),
@@ -62,6 +66,9 @@ export function getHtmlCustomDataSettings(ctx: MutableCompilerContext): HtmlCust
   const option = autoImportConfig?.htmlCustomData
 
   if (option === true) {
+    if (isProductionBuildWithInternalSupportFiles(configService)) {
+      return { enabled: false }
+    }
     return {
       enabled: true,
       outputPath: resolveHtmlCustomDataDefaultPath(configService),
@@ -104,6 +111,9 @@ export function getVueComponentsSettings(ctx: MutableCompilerContext): VueCompon
   const moduleName = rawModuleName || undefined
 
   if (option === true) {
+    if (isProductionBuildWithInternalSupportFiles(configService)) {
+      return { enabled: false }
+    }
     return {
       enabled: true,
       outputPath: resolveVueComponentsDefaultPath(configService),

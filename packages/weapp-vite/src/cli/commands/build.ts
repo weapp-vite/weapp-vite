@@ -83,6 +83,7 @@ export function registerBuildCommand(cli: CAC) {
         inlineConfig,
         cliPlatform: targets.rawPlatform,
         projectConfigPath: options.projectConfig,
+        emitDefaultAutoImportOutputs: false,
         syncSupportFiles: false,
         preloadAppEntry: false,
       })

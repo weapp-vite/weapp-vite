@@ -6,7 +6,7 @@ export const watchedTemplateExts = new Set(templateExtensions.map(ext => `.${ext
 export const watchedScriptModuleExts = new Set(['.wxs', '.sjs', '.wxs.ts', '.wxs.js', '.sjs.ts', '.sjs.js'])
 export const configSuffixes = configExtensions.map(ext => `.${ext}`)
 export const sidecarSuffixes = [...configSuffixes, ...watchedCssExts, ...watchedTemplateExts, ...watchedScriptModuleExts]
-export const defaultIgnoredDirNames = new Set(['node_modules', 'miniprogram_npm', '.git', '.hg', '.svn', '.turbo', '.wevu-config'])
+export const defaultIgnoredDirNames = new Set(['node_modules', 'miniprogram_npm', '.git', '.hg', '.svn', '.turbo', '.weapp-vite'])
 
 const watchLimitErrorCodes = new Set(['EMFILE', 'ENOSPC'])
 

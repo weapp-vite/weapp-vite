@@ -166,6 +166,7 @@ describe('createConfigService', () => {
 
     expect(loadConfigImplMock).toHaveBeenCalledWith({
       cwd: '/work',
+      emitDefaultAutoImportOutputs: true,
       isDev: true,
       mode: 'production',
     })

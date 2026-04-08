@@ -20,6 +20,7 @@ const getHtmlCustomDataSettingsMock = vi.hoisted(() => vi.fn())
 const getVueComponentsSettingsMock = vi.hoisted(() => vi.fn())
 const extractJsonPropMetadataMock = vi.hoisted(() => vi.fn())
 const mergePropMapsMock = vi.hoisted(() => vi.fn())
+const isBuiltinComponentMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@weapp-core/shared', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@weapp-core/shared')>()
@@ -75,6 +76,10 @@ vi.mock('../config', () => ({
 vi.mock('../metadata', () => ({
   extractJsonPropMetadata: extractJsonPropMetadataMock,
   mergePropMaps: mergePropMapsMock,
+}))
+
+vi.mock('../../../auto-import-components/builtin', () => ({
+  isBuiltinComponent: isBuiltinComponentMock,
 }))
 
 function createState() {
@@ -164,6 +169,7 @@ describe('autoImport registry helpers', () => {
     getTypedComponentsSettingsMock.mockReturnValue({ enabled: false })
     getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: false })
     getVueComponentsSettingsMock.mockReturnValue({ enabled: false })
+    isBuiltinComponentMock.mockReturnValue(false)
   })
 
   it('removes registered local component by template/js/json/baseName', () => {
@@ -315,6 +321,36 @@ describe('autoImport registry helpers', () => {
     expect(state.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(false)
     expect(state.scheduleVueComponentsWrite).toHaveBeenCalledWith(false)
     expect(state.registry.size).toBe(0)
+  })
+
+  it('warns and skips builtin component name collisions', async () => {
+    const state = createState()
+    resolvedComponentNameMock.mockReturnValue({
+      componentName: 'list-view',
+      base: 'index',
+    })
+    isBuiltinComponentMock.mockReturnValue(true)
+
+    const helpers = createRegistryHelpers(state)
+    await helpers.registerLocalComponent('/project/src/components/list-view/index.wxml')
+
+    expect(state.logWarnOnce).toHaveBeenCalledWith(
+      expect.stringContaining('与微信内置组件 `list-view` 重名'),
+    )
+    expect(state.logWarnOnce).toHaveBeenCalledWith(
+      expect.stringContaining('https://developers.weixin.qq.com/miniprogram/dev/component/'),
+    )
+    expect(state.logWarnOnce).toHaveBeenCalledWith(
+      expect.stringContaining('自动导入将优先使用本地组件'),
+    )
+    expect(state.registry.get('list-view')).toMatchObject({
+      kind: 'local',
+      value: {
+        name: 'list-view',
+        from: '/components/list-view/index',
+      },
+    })
+    expect(state.scheduleManifestWrite).toHaveBeenCalledWith(true)
   })
 
   it('registers component with metadata merge and extraction fallback', async () => {

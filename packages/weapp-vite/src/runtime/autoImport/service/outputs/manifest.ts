@@ -25,19 +25,19 @@ export function collectAllComponentNames(options: {
 
 export async function writeManifestFile(options: {
   outputPath: string
-  collectResolverComponents: () => Record<string, string>
+  collectManifestResolverComponents: () => Record<string, string>
   registry: Map<string, LocalAutoImportMatch>
   manifestCache: Map<string, string>
   scheduleHtmlCustomDataWrite: (shouldWrite: boolean) => void
 }) {
   const {
     outputPath,
-    collectResolverComponents,
+    collectManifestResolverComponents,
     registry,
     manifestCache,
     scheduleHtmlCustomDataWrite,
   } = options
-  const resolverEntries = Object.entries(collectResolverComponents())
+  const resolverEntries = Object.entries(collectManifestResolverComponents())
   const localEntries = Array.from(registry.entries())
     .filter((entry): entry is [string, LocalAutoImportMatch] => entry[1].kind === 'local')
 
