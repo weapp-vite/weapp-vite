@@ -176,7 +176,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
   if (projectPath) {
     argv.push(projectPath)
   }
-  if (shouldPassPlatformArgToIdeOpen(platform)) {
+  if (platform && shouldPassPlatformArgToIdeOpen(platform)) {
     argv.push('--platform', platform)
   }
 

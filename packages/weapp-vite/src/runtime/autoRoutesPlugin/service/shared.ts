@@ -1,5 +1,5 @@
-import type { AutoRoutes } from '../../types/routes'
-import type { RuntimeState } from '../runtimeState'
+import type { AutoRoutes } from '../../../types/routes'
+import type { RuntimeState } from '../../runtimeState'
 import path from 'pathe'
 import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } from '../../../utils/miniProgramGlobals'
 import { cloneRoutes, createTypedRouterDefinition, updateRoutesReference } from '../routes'
@@ -98,14 +98,14 @@ export function resetAutoRoutesState(state: RuntimeState['autoRoutes']) {
   state.needsFullRescan = true
 }
 
-export function resolveTypedRouterOutputPath(configService: RuntimeState['config']['options']) {
+export function resolveTypedRouterOutputPath(configService: Pick<RuntimeState['config']['options'], 'configFilePath' | 'cwd'>) {
   const baseDir = typeof configService.configFilePath === 'string'
     ? path.dirname(configService.configFilePath)
     : configService.cwd
   return path.resolve(baseDir, TYPED_ROUTER_OUTPUT_FILE)
 }
 
-export function resolvePersistentCacheBaseDir(configService: RuntimeState['config']['options']) {
+export function resolvePersistentCacheBaseDir(configService: Pick<RuntimeState['config']['options'], 'configFilePath' | 'cwd'>) {
   const baseDir = typeof configService.configFilePath === 'string'
     ? path.dirname(configService.configFilePath)
     : configService.cwd

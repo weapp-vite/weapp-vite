@@ -102,7 +102,7 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd",
+    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../internal-src-types && tsd",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"

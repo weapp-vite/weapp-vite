@@ -222,10 +222,10 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
 
     if (shouldCollectProps) {
       const astEngine = resolveAstEngine(state.ctx.configService.weappViteConfig)
-      let metadataSource: Record<string, any> | undefined = json
+      let metadataSource: Record<string, any> | undefined = json ?? undefined
       try {
         if (!metadataSource && JSON_LIKE_FILE_RE.test(resolvedJsonPath)) {
-          metadataSource = await fs.readJson(resolvedJsonPath)
+          metadataSource = (await fs.readJson(resolvedJsonPath)) as Record<string, any>
         }
       }
       catch {
@@ -277,9 +277,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     const nextKey = globs.join('\0')
     if (!state.autoImportState.matcher || state.autoImportState.matcherKey !== nextKey) {
       state.autoImportState.matcher = pm(globs, {
-        cwd: configService.cwd,
         windows: true,
-        posixSlashes: true,
       })
       state.autoImportState.matcherKey = nextKey
     }

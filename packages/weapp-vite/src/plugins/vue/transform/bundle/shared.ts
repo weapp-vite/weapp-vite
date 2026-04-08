@@ -1,6 +1,7 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { JsonMergeStrategy } from '../../../../types'
+import type { ResolvedPageLayout } from '../pageLayout'
 import { fs } from '@weapp-core/shared'
 import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import { normalizeWatchPath } from '../../../../utils/path'
@@ -645,7 +646,7 @@ export async function handleFallbackPageLayouts(options: {
   source: string
   entryFilePath: string
   configService: NonNullable<CompilerContext['configService']>
-  emitLayouts: (layouts: Awaited<ReturnType<typeof resolvePageLayoutPlan>>['layouts'] | undefined) => Promise<void>
+  emitLayouts: (layouts: ResolvedPageLayout[] | undefined) => Promise<void>
 }) {
   const resolvedLayoutPlan = await resolvePageLayoutPlan(
     options.source,
@@ -660,7 +661,7 @@ export async function handleCompiledEntryPageLayouts(options: {
   filename: string
   result: VueTransformResult
   configService: NonNullable<CompilerContext['configService']>
-  emitLayouts: (layouts: Awaited<ReturnType<typeof resolvePageLayoutPlan>>['layouts'] | undefined) => Promise<void>
+  emitLayouts: (layouts: ResolvedPageLayout[] | undefined) => Promise<void>
 }) {
   const resolvedLayoutPlan = await resolvePageLayoutPlan(
     options.source,

@@ -36,6 +36,8 @@ export function resolveVueBundlePlatformOptions(options: {
 }) {
   const jsonOptions = resolveVueTransformJsonPlatformOptions({
     platform: options.platform as any,
+    weappViteConfig: {},
+    packageJson: {},
   })
 
   return {

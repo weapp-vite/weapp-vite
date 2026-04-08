@@ -1,4 +1,4 @@
-import type { ConfigEnv, ConfigLoader, ConfigRunner, UserConfigExport } from 'vite'
+import type { ConfigEnv, UserConfigExport } from 'vite'
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
@@ -32,18 +32,18 @@ export async function loadViteConfigFile(
   configRoot: string,
   configFileDependencies?: string[],
   configFileExport?: UserConfigExport,
-  configLoader?: ConfigLoader,
-  runner?: ConfigRunner,
+  configLoader?: 'bundle' | 'runner' | 'native',
 ) {
+  void configFileDependencies
+  void configFileExport
   const resolvedConfigFile = configFile ?? await resolveImplicitConfigFile(configRoot)
   const resolvedConfigLoader = configLoader ?? 'bundle'
   return loadConfigFromFile(
     configEnv,
     resolvedConfigFile,
     configRoot,
-    configFileDependencies,
-    configFileExport,
+    undefined,
+    undefined,
     resolvedConfigLoader,
-    runner,
   )
 }

@@ -1,4 +1,4 @@
-import type { ResolvedWeappLibEntry } from './lib'
+import type { ResolvedWeappLibEntry } from '../lib'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { fs, removeExtensionDeep } from '@weapp-core/shared'
@@ -139,7 +139,7 @@ export async function tsconfigHasProjectReferences(tsconfigPath: string | false 
     return false
   }
   try {
-    const config = await fs.readJson(tsconfigPath)
+    const config = await fs.readJson(tsconfigPath) as { references?: unknown }
     return Array.isArray(config?.references) && config.references.length > 0
   }
   catch {

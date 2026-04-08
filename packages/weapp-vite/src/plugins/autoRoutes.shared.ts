@@ -1,4 +1,4 @@
-import type { ConfigService } from '../config/types'
+import type { ConfigService } from '../runtime/config/types'
 import path from 'pathe'
 import { normalizeWatchPath } from '../utils/path'
 

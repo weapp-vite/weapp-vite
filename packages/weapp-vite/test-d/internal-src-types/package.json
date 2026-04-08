@@ -1,0 +1,24 @@
+{
+  "name": "internal-src-types-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "baseUrl": "../..",
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "rootDir": "../..",
+      "target": "ES2023",
+      "strict": true,
+      "paths": {
+        "@/*": [
+          "src/*"
+        ]
+      },
+      "types": [
+        "node",
+        "miniprogram-api-typings"
+      ]
+    }
+  }
+}

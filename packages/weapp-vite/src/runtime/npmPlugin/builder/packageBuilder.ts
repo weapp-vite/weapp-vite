@@ -215,7 +215,7 @@ export function createPackageBuilder(
       if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
         const platformNpmDistDirName = getPlatformNpmDistDirName(ctx.configService.platform, {
           alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
-        })
+        }) as 'miniprogram_npm' | 'node_modules'
         const shouldRebuildPackage = shouldRebuildCachedMiniprogramPackage(ctx.configService.platform)
           ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, outDir, rootPath, platformNpmDistDirName)
           : false

@@ -16,6 +16,9 @@ const SCRIPT_MODULE_IMPORT_ATTRS = Object.freeze({
   'import-sjs': ['from'],
 } satisfies Readonly<Record<string, readonly string[]>>)
 
+type ScriptModuleExtensionKey = keyof typeof DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION
+type ScriptModuleImportTagName = keyof typeof SCRIPT_MODULE_IMPORT_ATTRS
+
 export function resolveScriptModuleTagByPlatform(platform?: MpPlatform, scriptModuleExtension?: string) {
   return getPlatformScriptModuleTag(platform, scriptModuleExtension)
 }
@@ -34,7 +37,10 @@ export function getDefaultScriptModuleTagByExtension(scriptModuleExtension?: str
     return 'wxs'
   }
   const normalizedExtension = normalizeScriptModuleExtension(scriptModuleExtension)
-  return DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION[normalizedExtension] ?? 'wxs'
+  if (!normalizedExtension || !(normalizedExtension in DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION)) {
+    return 'wxs'
+  }
+  return DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION[normalizedExtension as ScriptModuleExtensionKey]
 }
 
 export function resolveScriptModuleTagName(options?: {
@@ -67,7 +73,10 @@ export function getScriptModuleImportAttrs(tagName?: string) {
   if (!tagName) {
     return undefined
   }
-  return SCRIPT_MODULE_IMPORT_ATTRS[tagName]
+  if (!(tagName in SCRIPT_MODULE_IMPORT_ATTRS)) {
+    return undefined
+  }
+  return SCRIPT_MODULE_IMPORT_ATTRS[tagName as ScriptModuleImportTagName]
 }
 
 export function isScriptModuleImportAttr(tagName: string | undefined, attrName: string) {

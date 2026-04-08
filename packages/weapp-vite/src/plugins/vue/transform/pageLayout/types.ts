@@ -1,4 +1,4 @@
-import type { ConfigService } from '../../../runtime/config/types'
+import type { ConfigService } from '../../../../runtime/config/types'
 
 export interface ResolvedPageLayout {
   file: string

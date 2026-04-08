@@ -272,7 +272,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       return
     }
 
-    const watcher = chokidar.watch([...watchTargets], createSidecarWatchOptions(configService, {
+    const watcher = chokidar.watch(Array.from(watchTargets, target => String(target)), createSidecarWatchOptions(configService, {
       ignoreInitial: true,
       persistent: true,
       awaitWriteFinish: {

@@ -171,7 +171,7 @@ async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
       let propMap: ComponentPropMap = new Map()
       if (ext === '.wxml') {
         try {
-          const json = await fs.readJson(`${base}.json`)
+          const json = await fs.readJson(`${base}.json`) as Record<string, any>
           const scriptSource = await fs.readFile(`${base}.js`, 'utf8').catch(() => '')
           const jsonProps = extractJsonPropMetadata(json).props
           const scriptProps = scriptSource

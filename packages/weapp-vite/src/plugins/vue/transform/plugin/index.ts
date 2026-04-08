@@ -37,7 +37,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         ctx,
         configService: ctx.configService,
         scanService: ctx.scanService,
-        collectFallbackPageEntryIds,
+        collectFallbackPageEntryIds: async (configService, scanService) => {
+          return Array.from(await collectFallbackPageEntryIds(configService, scanService))
+        },
         findFirstResolvedVueLikeEntry,
         pathExists: fs.pathExists,
         readFile: fs.readFile,
@@ -54,9 +56,12 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         pluginCtx: this,
         configService: ctx.configService,
         styleBlocksCache,
-        loadScopedSlotModule,
+        loadScopedSlotModule: (id) => {
+          const loaded = loadScopedSlotModule(id, scopedSlotModules)
+          return loaded?.code ?? null
+        },
         scopedSlotModules,
-        parseWeappVueStyleRequest,
+        parseWeappVueStyleRequest: id => parseWeappVueStyleRequest(id) ?? null,
         readAndParseSfc,
         createReadAndParseSfcOptions,
       })

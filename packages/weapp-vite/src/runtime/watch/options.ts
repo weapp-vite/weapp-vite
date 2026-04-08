@@ -1,9 +1,12 @@
+import type chokidar from 'chokidar'
 import type { ConfigService } from '../config/types'
+
+type ChokidarWatchOptions = NonNullable<Parameters<typeof chokidar.watch>[1]>
 
 interface SidecarWatchOptionsInput {
   persistent?: boolean
   ignoreInitial?: boolean
-  ignored?: unknown
+  ignored?: ChokidarWatchOptions['ignored']
   awaitWriteFinish?: {
     stabilityThreshold?: number
     pollInterval?: number
@@ -17,14 +20,14 @@ function resolvePollingWatchConfig(configService: Pick<ConfigService, 'inlineCon
     : undefined
   const serverWatch = configService.inlineConfig?.server?.watch
 
-  const usePolling = chokidar?.usePolling ?? serverWatch?.usePolling
-  const interval = chokidar?.interval ?? serverWatch?.interval
-  const binaryInterval = chokidar?.binaryInterval ?? serverWatch?.binaryInterval
+  const usePollingCandidate = chokidar?.usePolling ?? serverWatch?.usePolling
+  const intervalCandidate = chokidar?.interval ?? serverWatch?.interval
+  const binaryIntervalCandidate = chokidar?.binaryInterval ?? serverWatch?.binaryInterval
 
   return {
-    usePolling,
-    interval,
-    binaryInterval,
+    usePolling: typeof usePollingCandidate === 'boolean' ? usePollingCandidate : undefined,
+    interval: typeof intervalCandidate === 'number' ? intervalCandidate : undefined,
+    binaryInterval: typeof binaryIntervalCandidate === 'number' ? binaryIntervalCandidate : undefined,
   }
 }
 
@@ -39,5 +42,5 @@ export function createSidecarWatchOptions(
     ...(polling.usePolling !== undefined ? { usePolling: polling.usePolling } : {}),
     ...(typeof polling.interval === 'number' ? { interval: polling.interval } : {}),
     ...(typeof polling.binaryInterval === 'number' ? { binaryInterval: polling.binaryInterval } : {}),
-  }
+  } as ChokidarWatchOptions
 }

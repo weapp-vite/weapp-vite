@@ -1,6 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../runtime/chunkStrategy'
-import type { MpPlatform, SubPackageMetaValue } from '../../../types'
+import type { MpPlatform, SubPackageMetaValue, WeappInjectRequestGlobalsTarget } from '../../../types'
 import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
 import type { CorePluginState } from '../helpers'
 import path from 'pathe'
@@ -12,6 +12,7 @@ import {
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import {
   createRequestGlobalsPassiveBindingsCode,
+  FULL_REQUEST_GLOBAL_TARGETS,
   resolveInjectRequestGlobalsOptions,
   resolveRequestGlobalsBindingTargets,
 } from '../../../runtime/config/internal/injectRequestGlobals'
@@ -361,7 +362,9 @@ function resolveRequestGlobalsInstallerName(code: string) {
         return false
       }
       const functionCode = generate(node).code
-      return REQUEST_GLOBAL_TARGET_SIGNATURES.every(target => functionCode.includes(target))
+      return FULL_REQUEST_GLOBAL_TARGETS.every((target) => {
+        return functionCode.includes(target)
+      })
     }
 
     traverse(ast as any, {
@@ -488,7 +491,7 @@ function normalizeRelativeChunkImport(fileName: string, importee: string) {
 
 function injectRequestGlobalsBundleRuntime(
   bundle: OutputBundle,
-  targets: string[],
+  targets: WeappInjectRequestGlobalsTarget[],
 ) {
   const installerChunks = new Map<string, string>()
   if (targets.length === 0) {
@@ -513,7 +516,7 @@ function injectRequestGlobalsBundleRuntime(
     }
 
     installerChunks.set(toPosixPath(chunk.fileName), exportName)
-    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets as any)
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
     const runtimeBindingCode = [
       `const __weappViteRequestGlobalsBundleHost__ = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
       ...bindingTargets.map(target => `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappViteRequestGlobalsBundleHost__.${target}`),
@@ -535,7 +538,7 @@ function injectRequestGlobalsBundleRuntime(
 function injectRequestGlobalsPassiveBindings(
   bundle: OutputBundle,
   installerChunks: Map<string, string>,
-  targets: string[],
+  targets: WeappInjectRequestGlobalsTarget[],
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
 ) {
   if (installerChunks.size === 0 || targets.length === 0) {
@@ -547,7 +550,7 @@ function injectRequestGlobalsPassiveBindings(
     return
   }
 
-  const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets as any)
+  const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -578,7 +581,7 @@ function injectRequestGlobalsPassiveBindings(
 function injectRequestGlobalsLocalBindings(
   bundle: OutputBundle,
   installerChunks: Map<string, string>,
-  targets: string[],
+  targets: WeappInjectRequestGlobalsTarget[],
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
 ) {
   if (installerChunks.size === 0 || targets.length === 0) {

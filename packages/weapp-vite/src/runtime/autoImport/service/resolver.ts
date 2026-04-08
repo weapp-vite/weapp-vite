@@ -274,7 +274,9 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
       }
 
       for (const [name, from] of Object.entries((resolver as any)?.components ?? {})) {
-        allComponents.set(name, from)
+        if (typeof from === 'string') {
+          allComponents.set(name, from)
+        }
       }
     }
 
@@ -317,8 +319,9 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
 
     for (const step of getCompiledResolvers(resolvers)) {
       if (step.kind === 'static') {
+        const components = step.components ?? {}
         for (const candidate of toComponentCandidates(componentName)) {
-          const from = step.components[candidate]
+          const from = components[candidate]
           if (from) {
             const value = { name: componentName, from }
             resolveCache.set(cacheKey, value)
@@ -328,6 +331,9 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
         continue
       }
 
+      if (!step.resolver) {
+        continue
+      }
       const value = resolveWithResolver(step.resolver, componentName, importerBaseName ?? '')
       if (value) {
         resolveCache.set(cacheKey, value)

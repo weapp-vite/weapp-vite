@@ -90,6 +90,9 @@ async function resolveUsingComponentPath(
   importerFilename: string,
   info: Parameters<NonNullable<AutoUsingComponentsOptions['resolveUsingComponentPath']>>[2],
 ) {
+  if (!info) {
+    return undefined
+  }
   const resolved = await resolveUsingComponentReference(
     ctx,
     configService,

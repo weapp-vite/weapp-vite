@@ -221,7 +221,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
   let currentAction: string | undefined
   let lastAction: string | undefined
   let lastRenderedPanel = ''
-  const recentInputs = new Map<string, number>()
+  const recentInputs = new Map<string, string>()
   const resolvedMcp = resolveWeappMcpConfig(options.mcpConfig)
   const getState = (): DevHotkeyState => ({
     currentAction,
@@ -429,7 +429,8 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     const now = Date.now()
 
     for (const [token, timestamp] of recentInputs) {
-      if (now - timestamp > HOTKEY_DEDUP_WINDOW_MS) {
+      const parsedTimestamp = Number(timestamp.split(':')[1] ?? 0)
+      if (now - parsedTimestamp > HOTKEY_DEDUP_WINDOW_MS) {
         recentInputs.delete(token)
       }
     }

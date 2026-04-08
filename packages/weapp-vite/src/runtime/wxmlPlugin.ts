@@ -32,7 +32,7 @@ export interface WxmlService {
   getAllDeps: () => Set<string>
   getAggregatedComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
   getAggregatedAutoImportComponents: (filepathOrBaseName: string) => ComponentsMap | undefined
-  clearAll: () => void
+  clearAll: (options?: { clearEmittedCode?: boolean }) => void
   analyze: (wxml: string) => ScanWxmlResult
   scan: (filepath: string) => Promise<ScanWxmlResult | undefined>
   setWxmlComponentsMap: (absPath: string, components: ComponentsMap) => void

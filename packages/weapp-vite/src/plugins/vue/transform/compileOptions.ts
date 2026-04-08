@@ -1,4 +1,5 @@
 import type { CompilerContext } from '../../../context'
+import type { MpPlatform } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
@@ -35,7 +36,7 @@ export function resolveVueTemplatePlatformOptions(options: {
   }
 
   return {
-    templatePlatform: getMiniProgramTemplatePlatform(options.platform),
+    templatePlatform: getMiniProgramTemplatePlatform(options.platform as MpPlatform),
     supportsWxs,
     wxsExtension: resolvedWxsExtension,
     classStyleRuntime,

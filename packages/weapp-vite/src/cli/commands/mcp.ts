@@ -152,7 +152,11 @@ async function handleDoctor(clientName: string, options: McpCommandOptions) {
 }
 
 async function handleServer(options: McpCommandOptions) {
-  const resolvedTransport = options.transport === 'http' ? 'streamable-http' : options.transport
+  const resolvedTransport: 'stdio' | 'streamable-http' | undefined = options.transport === 'http'
+    ? 'streamable-http'
+    : options.transport === 'command'
+      ? undefined
+      : options.transport
   await startWeappViteMcpServer({
     endpoint: options.endpoint,
     host: options.host,

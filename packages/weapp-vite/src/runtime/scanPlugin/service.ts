@@ -167,7 +167,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
       ctx.runtimeState.autoRoutes.loadingAppConfig = false
     }
     const routes = autoRoutesService.getReference()
-    config.pages = mergeAutoRoutePages(config.pages, routes.pages)
+    config.pages = mergeAutoRoutePages(config.pages, routes.pages) ?? []
 
     const mergedSubPackages = mergeAutoRouteSubPackages(
       config.subPackages ?? config.subpackages,
@@ -177,7 +177,11 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
       })),
     )
     if (mergedSubPackages) {
-      config.subPackages = mergedSubPackages
+      const normalizedSubPackages = mergedSubPackages.map(subPackage => ({
+        ...subPackage,
+        pages: Array.isArray(subPackage.pages) ? subPackage.pages : [],
+      })) as SubPackage[]
+      ;(config as any).subPackages = normalizedSubPackages
     }
 
     return config

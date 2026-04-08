@@ -100,6 +100,7 @@ export async function applyScriptSetupUsingComponents(options: {
               importSource,
               vueEntryPath,
               {
+                localName,
                 kind,
                 importedName,
                 fallbackRelativeImporterDir: true,

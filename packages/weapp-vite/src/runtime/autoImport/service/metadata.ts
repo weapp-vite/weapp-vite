@@ -92,7 +92,7 @@ export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
         for (const candidate of candidatePaths) {
           try {
             const raw = fs.readJsonSync(candidate)
-            metadata = extractJsonPropMetadata(raw)
+            metadata = extractJsonPropMetadata(raw as Record<string, any>)
             if (metadata.props.size > 0 || metadata.docs.size > 0) {
               logger.debug?.(`[auto-import] loaded metadata for ${name} from ${candidate}`)
               break

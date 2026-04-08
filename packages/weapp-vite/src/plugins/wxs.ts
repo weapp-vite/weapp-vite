@@ -75,7 +75,7 @@ async function transformWxsFile(
   const outputFileName = resolveRelativeOutputFileNameWithExtension(
     configService,
     isRaw ? wxsPath : removeExtension(wxsPath),
-    scriptModuleExtension,
+    scriptModuleExtension ?? 'wxs',
   )
   state.wxsMap.set(wxsPath, {
     emittedFile: {

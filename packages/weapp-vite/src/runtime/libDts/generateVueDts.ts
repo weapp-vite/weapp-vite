@@ -1,6 +1,6 @@
 import type { VueCompilerOptions } from '@vue/language-core'
-import type { ConfigService } from './config/types'
-import type { ResolvedWeappLibEntry } from './lib'
+import type { ConfigService } from '../config/types'
+import type { ResolvedWeappLibEntry } from '../lib'
 import os from 'node:os'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared'

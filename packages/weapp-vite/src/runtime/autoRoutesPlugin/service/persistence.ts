@@ -1,5 +1,5 @@
-import type { MutableCompilerContext } from '../../context'
-import type { RuntimeState } from '../runtimeState'
+import type { MutableCompilerContext } from '../../../context'
+import type { RuntimeState } from '../../runtimeState'
 import type { AutoRoutesPersistentCache } from './shared'
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'

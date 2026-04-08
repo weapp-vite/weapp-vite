@@ -1,6 +1,6 @@
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
-import type { LoadConfigResult } from '../types'
+import type { LoadConfigResult } from '../../types'
 import logger from '../../../../logger'
 import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform } from '../../../../platform'
 import { createLibEntryFileNameResolver } from '../../../lib'

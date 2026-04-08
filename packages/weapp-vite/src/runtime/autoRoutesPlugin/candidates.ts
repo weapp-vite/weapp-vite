@@ -83,7 +83,9 @@ async function discoverPagesRoots(root: string) {
       }
 
       if ('pageRoot' in classified) {
-        pagesRoots.add(classified.pageRoot)
+        if (classified.pageRoot) {
+          pagesRoots.add(classified.pageRoot)
+        }
         continue
       }
 
@@ -209,11 +211,11 @@ async function shouldCollectTargetRoot(targetRoot: string) {
 }
 
 async function safeCrawlCandidateFiles(
-  crawler: ReturnType<ReturnType<typeof Fdir>['withFullPaths']>,
+  crawler: ReturnType<InstanceType<typeof Fdir>['withFullPaths']>,
   targetRoot: string,
-) {
+): Promise<string[]> {
   try {
-    return await crawler.crawl(targetRoot).withPromise()
+    return await crawler.crawl(targetRoot).withPromise() as string[]
   }
   catch {
     return []
@@ -319,7 +321,9 @@ export async function collectCandidates(
         continue
       }
 
-      applyCandidateEntryToMap(candidates, entryPath, resolvedEntryPath)
+      if (resolvedEntryPath) {
+        applyCandidateEntryToMap(candidates, entryPath, resolvedEntryPath)
+      }
     }
   }
 

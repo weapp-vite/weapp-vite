@@ -130,6 +130,9 @@ export function normalizeNpmImportPathByPlatform(
   if (!shouldNormalizeNpmImportByPlatform(trimmed, options)) {
     return importee
   }
+  if (!options.platform) {
+    return importee
+  }
 
   const normalized = trimmed.replace(NPM_PROTOCOL_RE, '')
   return normalizePlatformNpmImportPath(options.platform, normalized, {

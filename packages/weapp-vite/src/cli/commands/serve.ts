@@ -193,25 +193,14 @@ export function registerServeCommand(cli: CAC) {
           }
         }
         if (targets.runMini) {
-          const buildWatch = typeof inlineConfig?.build?.watch === 'object' && inlineConfig.build.watch
-            ? inlineConfig.build.watch
-            : {}
-          const buildChokidar = 'chokidar' in buildWatch
-            ? (buildWatch as { chokidar?: Record<string, unknown> }).chokidar
-            : undefined
           const existingServer = inlineConfig?.server ?? {}
           inlineConfig = {
             ...inlineConfig,
             build: {
               ...(inlineConfig?.build ?? {}),
-              watch: {
-                ...buildWatch,
-                chokidar: {
-                  ...(buildChokidar ?? {}),
-                  usePolling: true,
-                  interval: 100,
-                },
-              },
+              watch: typeof inlineConfig?.build?.watch === 'object' && inlineConfig.build.watch
+                ? { ...inlineConfig.build.watch }
+                : {},
             },
             server: {
               ...existingServer,
@@ -242,9 +231,9 @@ export function registerServeCommand(cli: CAC) {
       const devHotkeysSession = targets.runMini
         ? startDevHotkeys({
             cwd: configService.cwd,
-            mcpConfig: configService.weappViteConfig?.weapp?.mcp,
+            mcpConfig: configService.weappViteConfig?.mcp,
             platform: configService.platform,
-            projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
+            projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd) ?? configService.cwd,
             silentStartupHint: true,
           })
         : undefined

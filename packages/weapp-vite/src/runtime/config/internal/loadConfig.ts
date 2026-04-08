@@ -354,6 +354,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
       isDev,
       mode,
+      emitDefaultAutoImportOutputs: opts.emitDefaultAutoImportOutputs ?? true,
       chunksConfigured,
       projectConfig,
       projectConfigPath: projectConfigPathResolved,

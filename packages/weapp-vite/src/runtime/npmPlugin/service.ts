@@ -168,7 +168,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
     const [mainRelation, ...subRelations] = packNpmRelationList
     const packageJsonPath = path.resolve(ctx.configService.cwd, mainRelation.packageJsonPath)
     if (await fs.pathExists(packageJsonPath)) {
-      const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
+      const pkgJson = ((await fs.readJson(packageJsonPath)) ?? {}) as PackageJson
       const npmDistDirName = resolveNpmDistDirName(ctx.configService)
       const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
       const cachedSourceOutDir = resolveNpmSourceCacheOutDir(ctx.configService.cwd, npmDistDirName)

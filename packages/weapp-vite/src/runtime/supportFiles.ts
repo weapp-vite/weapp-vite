@@ -1,5 +1,5 @@
 import type { ResolvedConfig } from 'vite'
-import type { MutableCompilerContext } from '../context'
+import type { CompilerContext, MutableCompilerContext } from '../context'
 import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
@@ -9,6 +9,7 @@ import { collectVueTemplateAutoImportTags } from '../plugins/hooks/useLoadEntry/
 import { scanWxml } from '../wxml'
 import { getAutoImportConfig } from './autoImport/config'
 import { createManagedTsconfigFiles, syncManagedTsconfigFiles } from './tsconfigSupport'
+import { requireConfigService } from './utils/requireConfigService'
 
 export interface SyncSupportFilesResult {
   managedTsconfigChanged: boolean
@@ -71,6 +72,7 @@ async function collectAutoImportTemplateTags(ctx: MutableCompilerContext) {
 }
 
 export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Promise<SyncSupportFilesResult> {
+  const configService = requireConfigService(ctx, '同步 support files 前必须初始化 configService。')
   const managedTsconfigChanged = await hasManagedTsconfigChanges(ctx)
 
   await syncManagedTsconfigFiles(ctx)
@@ -85,11 +87,15 @@ export async function syncProjectSupportFiles(ctx: MutableCompilerContext): Prom
       ctx.autoImportService!.reset()
       const globs = autoImportConfig.globs
       if (Array.isArray(globs) && globs.length > 0) {
+        const autoImportCtx = {
+          ...ctx,
+          configService,
+        } as CompilerContext
         const files = await findAutoImportCandidates({
-          ctx,
+          ctx: autoImportCtx,
           resolvedConfig: {
             build: {
-              outDir: ctx.configService.outDir,
+              outDir: configService.outDir,
             },
           } as ResolvedConfig,
         }, globs)

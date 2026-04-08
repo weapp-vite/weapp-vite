@@ -271,7 +271,9 @@ function replaceImportMetaAccessInSfc(source: string, options: {
     return source
   }
 
-  const blocks = [descriptor.script, descriptor.scriptSetup].filter(block => block && !block.src)
+  const blocks = [descriptor.script, descriptor.scriptSetup].filter((block): block is NonNullable<typeof descriptor.script> => {
+    return Boolean(block && !block.src)
+  })
   if (blocks.length === 0) {
     return source
   }

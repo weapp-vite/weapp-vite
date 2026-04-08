@@ -5,19 +5,24 @@ const TEMPLATE_IMPORT_ATTRS = Object.freeze({
   include: ['src'],
 } satisfies Readonly<Record<string, readonly string[]>>)
 
+type TemplateImportTagName = keyof typeof TEMPLATE_IMPORT_ATTRS
+
 export function getTemplateImportTagNames() {
   return [...TEMPLATE_IMPORT_TAG_NAMES]
 }
 
 export function isTemplateImportTag(tagName?: string) {
-  return typeof tagName === 'string' && getTemplateImportTagNames().includes(tagName)
+  return typeof tagName === 'string' && TEMPLATE_IMPORT_TAG_NAMES.includes(tagName as TemplateImportTagName)
 }
 
 export function getTemplateImportAttrs(tagName?: string) {
   if (!tagName) {
     return undefined
   }
-  return TEMPLATE_IMPORT_ATTRS[tagName]
+  if (!(tagName in TEMPLATE_IMPORT_ATTRS)) {
+    return undefined
+  }
+  return TEMPLATE_IMPORT_ATTRS[tagName as TemplateImportTagName]
 }
 
 export function isTemplateImportAttr(tagName: string | undefined, attrName: string) {

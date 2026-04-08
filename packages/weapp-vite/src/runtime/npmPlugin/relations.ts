@@ -16,6 +16,9 @@ export function normalizeRelativeDir(value: string) {
 }
 
 export function resolvePlatformProjectRoot(configService: MutableCompilerContext['configService']) {
+  if (!configService) {
+    return 'dist'
+  }
   const projectRoot = resolveProjectConfigRoot(
     configService.projectConfig as ProjectConfig,
     configService.platform as MpPlatform,
