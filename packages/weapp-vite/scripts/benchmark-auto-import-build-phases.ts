@@ -389,21 +389,27 @@ function renderMarkdown(results: Array<{
   current: ReturnType<typeof summarizePhaseSamples>
 }>) {
   const lines = [
-    '# autoImport build phase profile',
+    '# autoImport 构建阶段剖析报告',
     '',
-    `- iterations: \`${iterations}\``,
+    `- 迭代次数：\`${iterations}\``,
     '',
   ]
 
   for (const result of results) {
-    lines.push(`## ${result.usedCount} components`)
+    lines.push(`## ${result.usedCount} 个组件`)
     lines.push('')
-    lines.push('| phase | baseline avg | current avg | delta |')
+    lines.push('| 阶段 | 基线平均耗时 | 当前平均耗时 | 差值 |')
     lines.push('| --- | ---: | ---: | ---: |')
     for (const phase of ['createContextMs', 'buildMs', 'npmMs', 'totalMs'] as const) {
       const baseline = result.baseline[phase].mean
       const current = result.current[phase].mean
-      lines.push(`| ${phase} | ${baseline.toFixed(2)} ms | ${current.toFixed(2)} ms | ${(current - baseline).toFixed(2)} ms |`)
+      const phaseLabel = ({
+        createContextMs: '创建上下文',
+        buildMs: '构建阶段',
+        npmMs: 'npm 依赖处理',
+        totalMs: '总耗时',
+      })[phase]
+      lines.push(`| ${phaseLabel} | ${baseline.toFixed(2)} ms | ${current.toFixed(2)} ms | ${(current - baseline).toFixed(2)} ms |`)
     }
     lines.push('')
   }

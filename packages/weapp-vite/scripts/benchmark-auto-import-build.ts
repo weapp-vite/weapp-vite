@@ -406,11 +406,11 @@ function printScenario(result: Awaited<ReturnType<typeof runScenario>>) {
 
 function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>) {
   const lines = [
-    '# autoImportComponents full build benchmark',
+    '# autoImportComponents 完整构建基准报告',
     '',
-    `- iterations: \`${iterations}\``,
+    `- 迭代次数：\`${iterations}\``,
     '',
-    '| 场景 | baseline avg | current avg | 额外成本 | 比例 |',
+    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 比例 |',
     '| --- | ---: | ---: | ---: | ---: |',
   ]
 

@@ -218,67 +218,67 @@ function renderMarkdown(report: {
   confirmedFailures: FailureRecord[]
 }) {
   const lines = [
-    '# Auto Import Performance CI Report',
+    '# 自动导入性能 CI 报告',
     '',
-    `- threshold: \`${report.thresholdPercent}%\``,
-    `- min extra cost: \`${report.minExtraMs} ms\``,
-    `- iterations: \`${report.iterations}\``,
-    `- confirmation iterations: \`${report.confirmationIterations}\``,
-    `- scenarios: \`${report.scenarios}\``,
-    `- status: ${report.confirmedFailures.length === 0 ? 'pass' : 'fail'}`,
+    `- 阈值：\`${report.thresholdPercent}%\``,
+    `- 最小额外成本：\`${report.minExtraMs} ms\``,
+    `- 迭代次数：\`${report.iterations}\``,
+    `- 复测迭代次数：\`${report.confirmationIterations}\``,
+    `- 场景：\`${report.scenarios}\``,
+    `- 状态：${report.confirmedFailures.length === 0 ? '通过' : '失败'}`,
     '',
-    '## Build',
+    '## 构建',
     '',
-    '| 场景 | baseline avg | current avg | 额外成本 | 阈值结果 |',
+    '| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 阈值结果 |',
     '| --- | ---: | ---: | ---: | --- |',
   ]
 
   for (const result of report.build.results) {
     const status = result.delta.extraPercent > report.thresholdPercent && result.delta.extraMs > report.minExtraMs
-      ? 'fail'
-      : 'pass'
+      ? '失败'
+      : '通过'
     lines.push(
-      `| ${result.usedCount} components | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      `| ${result.usedCount} 个组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
     )
   }
 
   lines.push('')
   lines.push('## HMR')
   lines.push('')
-  lines.push('| 场景 | baseline avg | current avg | 额外成本 | 阈值结果 |')
+  lines.push('| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 阈值结果 |')
   lines.push('| --- | ---: | ---: | ---: | --- |')
 
   for (const result of report.hmr.results) {
     const status = result.update.delta.extraPercent > report.thresholdPercent && result.update.delta.extraMs > report.minExtraMs
-      ? 'fail'
-      : 'pass'
+      ? '失败'
+      : '通过'
     lines.push(
-      `| ${result.usedCount} components | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+      `| ${result.usedCount} 个组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
     )
   }
 
   lines.push('')
   if (report.confirmation) {
-    lines.push('## Confirmation')
+    lines.push('## 复测确认')
     lines.push('')
-    lines.push('| 场景 | baseline avg | current avg | 额外成本 | 阈值结果 |')
+    lines.push('| 场景 | 基线平均耗时 | 当前平均耗时 | 额外成本 | 阈值结果 |')
     lines.push('| --- | ---: | ---: | ---: | --- |')
 
     for (const result of report.confirmation.build.results) {
       const status = result.delta.extraPercent > report.thresholdPercent && result.delta.extraMs > report.minExtraMs
-        ? 'fail'
-        : 'pass'
+        ? '失败'
+        : '通过'
       lines.push(
-        `| build / ${result.usedCount} components | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+        `| 构建 / ${result.usedCount} 个组件 | ${result.baseline.mean.toFixed(2)} ms | ${result.current.mean.toFixed(2)} ms | ${result.delta.extraMs.toFixed(2)} ms (${result.delta.extraPercent.toFixed(2)}%) | ${status} |`,
       )
     }
 
     for (const result of report.confirmation.hmr.results) {
       const status = result.update.delta.extraPercent > report.thresholdPercent && result.update.delta.extraMs > report.minExtraMs
-        ? 'fail'
-        : 'pass'
+        ? '失败'
+        : '通过'
       lines.push(
-        `| hmr / ${result.usedCount} components | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
+        `| HMR / ${result.usedCount} 个组件 | ${result.update.baseline.mean.toFixed(2)} ms | ${result.update.current.mean.toFixed(2)} ms | ${result.update.delta.extraMs.toFixed(2)} ms (${result.update.delta.extraPercent.toFixed(2)}%) | ${status} |`,
       )
     }
 
