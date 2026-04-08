@@ -169,10 +169,8 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     }
 
     if (isBuiltinComponent(componentName)) {
-      const message = `检测到本地组件 \`${state.ctx.configService.relativeCwd(baseName)}\` 与微信内置组件 \`${componentName}\` 重名，已跳过自动导入。组件名称不能与微信官方组件文档中的内置组件重名，请参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。`
+      const message = `检测到本地组件 \`${state.ctx.configService.relativeCwd(baseName)}\` 与微信内置组件 \`${componentName}\` 重名。自动导入将优先使用本地组件，但这会遮蔽同名内置组件；建议参考 https://developers.weixin.qq.com/miniprogram/dev/component/ 后重新命名。`
       state.logWarnOnce(message)
-      scheduleOutputs(removed || removedNames.length > 0, vueSettings.enabled)
-      return
     }
 
     const hasComponent = state.registry.has(componentName)

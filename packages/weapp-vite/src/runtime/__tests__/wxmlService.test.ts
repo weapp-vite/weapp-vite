@@ -54,12 +54,21 @@ vi.mock('@weapp-core/shared', async (importOriginal) => {
 })
 
 vi.mock('@/wxml', () => ({
-  scanWxml: vi.fn((content) => {
+  scanWxml: vi.fn((content, options?: { excludeComponent?: (tagName: string) => boolean }) => {
     if (content.includes('<import src="./header.wxml" />')) {
+      const shouldIncludeListView = options?.excludeComponent
+        ? !options.excludeComponent('list-view')
+        : false
+      const components = shouldIncludeListView
+        ? {
+            'list-view': [{ start: 6, end: 17 }],
+          }
+        : undefined
       return {
         deps: [
           { tagName: 'import', value: './header.wxml' },
         ],
+        components,
       }
     }
     if (content.includes('<include src="./footer.wxml" />')) {
@@ -77,12 +86,19 @@ vi.mock('@/wxml', () => ({
       }
     }
     if (content.includes('<scroll-view />')) {
+      const shouldIncludeScrollView = options?.excludeComponent
+        ? !options.excludeComponent('scroll-view')
+        : false
       return {
         deps: [],
-        components: {
-          'scroll-view': [{ start: 6, end: 19 }],
-          'custom-card': [{ start: 21, end: 34 }],
-        },
+        components: shouldIncludeScrollView
+          ? {
+              'scroll-view': [{ start: 6, end: 19 }],
+              'custom-card': [{ start: 21, end: 34 }],
+            }
+          : {
+              'custom-card': [{ start: 21, end: 34 }],
+            },
       }
     }
     return {
@@ -220,6 +236,25 @@ describe('wxmlService', () => {
     expect(wxmlService.getAggregatedComponents('/mock/project/file')).toEqual({
       'card-shell': [{ start: 0, end: 0 }],
       'van-button': [{ start: 1, end: 1 }],
+    })
+  })
+
+  it('keeps builtin-name tags visible for auto import aggregation after scanning raw wxml', async () => {
+    mockFileSystem['/mock/project/file.wxml'] = `<view><list-view /><import src="./header.wxml" /></view>`
+    mockFileSystem['/mock/project/header.wxml'] = `<view><scroll-view /><custom-card /></view>`
+
+    const fileToken = await wxmlService.scan('/mock/project/file.wxml')
+    const headerToken = await wxmlService.scan('/mock/project/header.wxml')
+    wxmlService.setWxmlComponentsMap('/mock/project/file.wxml', fileToken?.components ?? {})
+    wxmlService.setWxmlComponentsMap('/mock/project/header.wxml', headerToken?.components ?? {})
+
+    expect(wxmlService.getAggregatedComponents('/mock/project/file')).toEqual({
+      'custom-card': [{ start: 21, end: 34 }],
+    })
+    expect(wxmlService.getAggregatedAutoImportComponents('/mock/project/file')).toEqual({
+      'list-view': [{ start: 6, end: 17 }],
+      'scroll-view': [{ start: 6, end: 19 }],
+      'custom-card': [{ start: 21, end: 34 }],
     })
   })
 

@@ -340,8 +340,17 @@ describe('autoImport registry helpers', () => {
     expect(state.logWarnOnce).toHaveBeenCalledWith(
       expect.stringContaining('https://developers.weixin.qq.com/miniprogram/dev/component/'),
     )
-    expect(state.registry.size).toBe(0)
-    expect(state.scheduleManifestWrite).toHaveBeenCalledWith(false)
+    expect(state.logWarnOnce).toHaveBeenCalledWith(
+      expect.stringContaining('自动导入将优先使用本地组件'),
+    )
+    expect(state.registry.get('list-view')).toMatchObject({
+      kind: 'local',
+      value: {
+        name: 'list-view',
+        from: '/components/list-view/index',
+      },
+    })
+    expect(state.scheduleManifestWrite).toHaveBeenCalledWith(true)
   })
 
   it('registers component with metadata merge and extraction fallback', async () => {
