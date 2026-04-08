@@ -39,6 +39,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     cwd: process.cwd(),
     isDev: false,
     mode: 'development',
+    emitDefaultAutoImportOutputs: true,
     projectConfig: {},
     projectConfigPath: undefined,
     projectPrivateConfigPath: undefined,

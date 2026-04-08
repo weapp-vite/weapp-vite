@@ -88,6 +88,7 @@ async function measureScenario(options: {
       mode: 'production',
       isDev: false,
       cliPlatform: 'weapp',
+      emitDefaultAutoImportOutputs: false,
       syncSupportFiles: false,
       preloadAppEntry: false,
       inlineConfig: {

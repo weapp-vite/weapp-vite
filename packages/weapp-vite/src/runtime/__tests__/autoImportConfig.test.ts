@@ -60,6 +60,16 @@ describe('autoImport config helpers', () => {
       expect(resolveManifestOutputPath(ctx.configService)).toBe(expected)
     })
 
+    it('skips default internal manifest output during production build', () => {
+      const ctx = createContext({
+        autoImportComponents: {},
+      }, {
+        emitDefaultAutoImportOutputs: false,
+        isDev: false,
+      })
+      expect(resolveManifestOutputPath(ctx.configService)).toBeUndefined()
+    })
+
     it('resolves relative output paths against the config directory', () => {
       const ctx = createContext({
         autoImportComponents: {
@@ -371,6 +381,18 @@ describe('autoImport config helpers', () => {
       expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'typed-components.d.ts'))
     })
 
+    it('skips default internal typed components output during production build', () => {
+      const ctx = createContext({
+        autoImportComponents: {
+          typedComponents: true,
+        },
+      }, {
+        emitDefaultAutoImportOutputs: false,
+        isDev: false,
+      })
+      expect(getTypedComponentsSettings(ctx)).toEqual({ enabled: false })
+    })
+
     it('resolves relative output paths for typed components', () => {
       const ctx = createContext({
         autoImportComponents: {
@@ -451,6 +473,18 @@ describe('autoImport config helpers', () => {
       const result = getHtmlCustomDataSettings(ctx)
       expect(result.enabled).toBe(true)
       expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'mini-program.html-data.json'))
+    })
+
+    it('skips default internal html custom data output during production build', () => {
+      const ctx = createContext({
+        autoImportComponents: {
+          htmlCustomData: true,
+        },
+      }, {
+        emitDefaultAutoImportOutputs: false,
+        isDev: false,
+      })
+      expect(getHtmlCustomDataSettings(ctx)).toEqual({ enabled: false })
     })
 
     it('resolves relative html custom data paths', () => {

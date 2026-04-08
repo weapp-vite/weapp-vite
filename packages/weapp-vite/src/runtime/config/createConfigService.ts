@@ -178,12 +178,14 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       cwd: defaultCwd,
       isDev: false,
       mode: 'development',
+      emitDefaultAutoImportOutputs: true,
     })
 
     const rawConfig = await loadConfigImpl(input)
     const resolvedConfig = defu<Required<LoadConfigResult>, Partial<LoadConfigResult>[]>(rawConfig, {
       cwd: input.cwd ?? defaultCwd,
       isDev: false,
+      emitDefaultAutoImportOutputs: true,
       projectConfig: {},
       config: {},
       packageJson: {},
@@ -251,6 +253,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     get isDev() {
       return options.isDev
+    },
+    get emitDefaultAutoImportOutputs() {
+      return options.emitDefaultAutoImportOutputs
     },
     get mpDistRoot() {
       return options.mpDistRoot

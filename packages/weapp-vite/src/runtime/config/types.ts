@@ -9,6 +9,7 @@ export interface LoadConfigOptions {
   cwd: string
   isDev: boolean
   mode: string
+  emitDefaultAutoImportOutputs?: boolean
   pluginOnly?: boolean
   inlineConfig?: InlineConfig
   configFile?: string
@@ -25,6 +26,7 @@ export interface LoadConfigResult {
   cwd: string
   isDev: boolean
   mode: string
+  emitDefaultAutoImportOutputs: boolean
   chunksConfigured?: boolean
   projectConfig: Record<string, any>
   projectConfigPath?: string
@@ -76,6 +78,7 @@ export interface ConfigService {
   readonly defineImportMetaEnv: Record<string, any>
   readonly cwd: string
   readonly isDev: boolean
+  readonly emitDefaultAutoImportOutputs: boolean
   readonly mpDistRoot: string
   readonly outDir: string
   readonly inlineConfig: InlineConfig

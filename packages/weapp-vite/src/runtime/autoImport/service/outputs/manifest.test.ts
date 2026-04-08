@@ -30,7 +30,7 @@ describe('autoImport manifest outputs', () => {
 
     await writeManifestFile({
       outputPath: '/project/.weapp-vite/components.manifest.json',
-      collectRuntimeResolverComponents: () => ({
+      collectManifestResolverComponents: () => ({
         'van-button': '@vant/weapp/button',
       }),
       registry,
@@ -51,5 +51,31 @@ describe('autoImport manifest outputs', () => {
       ['local-card', '/components/local-card/index'],
     ]))
     expect(scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
+  })
+
+  it('includes support-file resolver components when support-file manifest is being synced', async () => {
+    const { writeManifestFile } = await import('./manifest')
+    const manifestCache = new Map<string, string>()
+
+    await writeManifestFile({
+      outputPath: '/project/.weapp-vite/components.manifest.json',
+      collectManifestResolverComponents: () => ({
+        'van-button': '@vant/weapp/button',
+        'van-action-sheet': '@vant/weapp/action-sheet',
+      }),
+      registry: new Map(),
+      manifestCache,
+      scheduleHtmlCustomDataWrite: vi.fn(),
+    })
+
+    expect(outputJsonMock).toHaveBeenCalledWith(
+      '/project/.weapp-vite/components.manifest.json',
+      {
+        'van-action-sheet': '@vant/weapp/action-sheet',
+        'van-button': '@vant/weapp/button',
+      },
+      { spaces: 2 },
+    )
+    expect(manifestCache.get('van-action-sheet')).toBe('@vant/weapp/action-sheet')
   })
 })

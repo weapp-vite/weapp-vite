@@ -22,7 +22,7 @@ interface OutputsOptions {
   outputsState: OutputsState
   resolverComponentsMapRef: { value: Record<string, string> }
   collectResolverComponents: () => Record<string, string>
-  collectRuntimeResolverComponents: () => Record<string, string>
+  collectManifestResolverComponents: () => Record<string, string>
   syncResolverComponentProps: () => void
   preloadResolverComponentMetadata: () => void
   getComponentMetadata: (name: string) => ComponentMetadata
@@ -39,7 +39,7 @@ export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
     outputsState,
     resolverComponentsMapRef,
     collectResolverComponents,
-    collectRuntimeResolverComponents,
+    collectManifestResolverComponents,
     syncResolverComponentProps,
     preloadResolverComponentMetadata,
     getComponentMetadata,
@@ -65,7 +65,7 @@ export function createOutputsHelpers(options: OutputsOptions): OutputsHelpers {
     writeManifest: async (outputPath) => {
       await writeManifestFile({
         outputPath,
-        collectRuntimeResolverComponents,
+        collectManifestResolverComponents,
         registry,
         manifestCache,
         scheduleHtmlCustomDataWrite: scheduleHelpers.scheduleHtmlCustomDataWrite,
