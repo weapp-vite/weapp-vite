@@ -30,6 +30,10 @@ interface ParserResult {
 interface ParserOptions {
   source: string
   platform: MpPlatform
+  /**
+   * @description 判断某个标签是否应从常规组件分析结果中排除。
+   * 这里通常会过滤微信内置组件，避免把它们误当成用户组件写入 `usingComponents`。
+   */
   excludeComponent: (tagName: string) => boolean
 }
 
@@ -51,7 +55,9 @@ export function parseWxml(options: ParserOptions): ParserResult {
   let currentTagName: string | undefined
   let importAttrs: undefined | string[]
   let attrs: Record<string, string> = {}
+  // 常规组件索引：会排除内置组件，供现有组件聚合与 usingComponents 推断使用。
   const components: ComponentsMap = {}
+  // 自动导入组件索引：保留所有标签，供 auto-import 在重名场景下优先匹配用户组件。
   const autoImportComponents: ComponentsMap = {}
   let tagStartIndex = 0
   // 事件处理转换（transformOn）
@@ -180,11 +186,13 @@ export function parseWxml(options: ParserOptions): ParserResult {
           const componentName = normalizeComponentTagName && shouldNormalizeTagName(currentTagName)
             ? toKebabCaseTagName(currentTagName)
             : currentTagName
+          // 同一份位置信息会同时写入两套索引，避免为 auto-import 再额外扫描一遍 WXML。
           const range = {
             start: tagStartIndex,
             end: parser.endIndex + 1,
           }
 
+          // 自动导入索引保留完整标签集，这样即便标签名与内置组件重名，也还能交给 resolver 判断是否存在用户组件。
           if (Array.isArray(autoImportComponents[componentName])) {
             autoImportComponents[componentName].push(range)
           }
@@ -192,6 +200,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
             autoImportComponents[componentName] = [range]
           }
 
+          // 常规索引继续沿用历史行为，过滤掉内置组件，避免污染普通 usingComponents 推断。
           if (!excludeComponent(currentTagName)) {
             if (Array.isArray(components[componentName])) {
               components[componentName].push(range)

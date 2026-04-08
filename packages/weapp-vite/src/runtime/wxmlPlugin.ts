@@ -15,7 +15,15 @@ export interface WxmlService {
   depsMap: Map<string, Set<string>>
   importerMap: Map<string, Set<string>>
   tokenMap: Map<string, ScanWxmlResult>
+  /**
+   * @description 常规组件索引缓存。
+   * 这里沿用历史行为，只保留“应参与 usingComponents 推断”的组件标签。
+   */
   wxmlComponentsMap: Map<string, ComponentsMap>
+  /**
+   * @description 常规组件聚合缓存。
+   * 会递归合并 import/include 进来的模板组件，但仍遵循内置组件过滤规则。
+   */
   aggregatedComponentsMap: Map<string, ComponentsMap>
   addDeps: (filepath: string, deps?: string[]) => Promise<void>
   setDeps: (filepath: string, deps?: string[]) => Promise<void>
@@ -41,7 +49,11 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     cache,
     emittedCode,
   } = ctx.runtimeState.wxml
+  // 自动导入专用组件索引缓存。
+  // 这里会保留被内置组件过滤逻辑排除掉的标签，供 auto-import resolver 继续判断。
   const autoImportComponentsMap = new Map<string, ComponentsMap>()
+  // 自动导入专用聚合缓存。
+  // 与 aggregatedComponentsMap 分离，避免改动普通组件分析语义。
   const aggregatedAutoImportComponentsMap = new Map<string, ComponentsMap>()
 
   function linkImporter(dep: string, importer: string) {
@@ -188,6 +200,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
       const currentBaseName = removeExtensionDeep(filepath)
       const merged: ComponentsMap = {}
+      // 常规聚合只读取普通组件索引，因此不会把宿主内置标签带进 usingComponents 推断结果。
       const own = componentsMap.get(currentBaseName)
       if (own) {
         for (const [name, ranges] of Object.entries(own)) {
@@ -238,6 +251,8 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
 
       const currentBaseName = removeExtensionDeep(filepath)
       const merged: ComponentsMap = {}
+      // 自动导入优先读取完整标签索引。
+      // 老缓存场景下如果还没有 autoImportComponentsMap，则回退到普通组件索引，保证兼容性。
       const own = autoImportComponentsMap.get(currentBaseName) ?? componentsMap.get(currentBaseName)
       if (own) {
         for (const [name, ranges] of Object.entries(own)) {
@@ -422,6 +437,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     tokenMap.set(filepath, res)
     cache.set(filepath, res)
     const baseName = removeExtensionDeep(filepath)
+    // `autoImportComponents` 由单次 parse 同步产出，避免为自动导入单独再扫描一次 WXML。
     const autoImportComponentEntries = res.autoImportComponents ?? res.components ?? {}
     if (isEmptyObject(autoImportComponentEntries)) {
       autoImportComponentsMap.delete(baseName)
