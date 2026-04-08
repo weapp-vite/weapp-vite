@@ -3,22 +3,30 @@ import type { ResolvedConfig } from 'vite'
 import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'
-import { VantResolver } from '../src/auto-import-components/resolvers'
+import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { resetCompilerContext } from '../src/context/getInstance'
 import { createCompilerContext } from '../src/createContext'
 import { findAutoImportCandidates } from '../src/plugins/autoImport'
 import { collectVueTemplateAutoImportTags } from '../src/plugins/hooks/useLoadEntry/loadEntry/template'
 import { getAutoImportConfig } from '../src/runtime/autoImport/config'
 import { syncManagedTsconfigFiles } from '../src/runtime/tsconfigSupport'
+import { resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { scanWxml } from '../src/wxml'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '5', 10)
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
 const workspaceWeappViteDir = path.resolve(import.meta.dirname, '..')
+const workspaceRootNodeModulesDir = resolveWorkspaceNodeModulesDir(import.meta.dirname)
+if (!workspaceRootNodeModulesDir) {
+  throw new Error('Unable to locate workspace node_modules directory for auto-import resolver benchmark.')
+}
+const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'src/config.ts')).href
+const BENCHMARK_RESOLVER_PATH = './benchmark-vant-resolver'
 const reportDir = path.resolve(
   import.meta.dirname,
   '../benchmark/auto-import-resolver',
@@ -27,7 +35,7 @@ const reportDir = path.resolve(
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const scenarios = [1, 5, 20] as const
-const allResolverEntries = Object.entries(VantResolver().components ?? {}).sort(([a], [b]) => a.localeCompare(b))
+const allResolverEntries = Object.entries(createVantResolverComponents()).sort(([a], [b]) => a.localeCompare(b))
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '      autoImportComponents: {',
   '        globs: [\'components/**/*\'],',
@@ -177,6 +185,8 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disab
     .join('\n')
 
   await mkdir(pageDir, { recursive: true })
+  await ensureProjectConfigFiles(projectRoot)
+  await patchBenchmarkConfigImports(projectRoot)
   await patchViteConfig(projectRoot, mode)
   await writeFile(
     pagePath,
@@ -223,6 +233,29 @@ async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current'
   }
 
   await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+}
+
+async function patchBenchmarkConfigImports(projectRoot: string) {
+  const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
+  const viteConfig = await readFile(viteConfigPath, 'utf8')
+  const nextViteConfig = viteConfig
+    .replace(`import { defineConfig } from 'weapp-vite'`, `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`)
+    .replace(`import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'`, `import { VantResolver } from '${BENCHMARK_RESOLVER_PATH}'`)
+
+  if (nextViteConfig !== viteConfig) {
+    await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+  }
+
+  await writeFile(path.join(projectRoot, 'benchmark-vant-resolver.ts'), renderBenchmarkVantResolver(), 'utf8')
+}
+
+async function ensureProjectConfigFiles(projectRoot: string) {
+  for (const fileName of ['project.config.json', 'project.private.config.json']) {
+    const sourcePath = path.join(fixtureSource, fileName)
+    const targetPath = path.join(projectRoot, fileName)
+    const content = await readFile(sourcePath, 'utf8')
+    await writeFile(targetPath, content, 'utf8')
+  }
 }
 
 async function ensureWorkspacePackageLink(projectRoot: string) {
@@ -610,6 +643,35 @@ function formatTimestamp(date: Date) {
   const minutes = `${date.getMinutes()}`.padStart(2, '0')
   const seconds = `${date.getSeconds()}`.padStart(2, '0')
   return `${year}${month}${day}${hours}${minutes}${seconds}`
+}
+
+function createVantResolverComponents() {
+  return Object.fromEntries(vantComponents.map(component => [toVantTag(component), `@vant/weapp/${component}`]))
+}
+
+function toVantTag(component: string) {
+  return `van-${component}`
+}
+
+function renderBenchmarkVantResolver() {
+  return [
+    `const components = Object.freeze(${JSON.stringify(createVantResolverComponents(), null, 2)} as const)`,
+    '',
+    'export function VantResolver() {',
+    '  return {',
+    '    components,',
+    '    supportFilesStrategy: \'full\',',
+    '    resolve(componentName: string) {',
+    '      const from = components[componentName as keyof typeof components]',
+    '      if (!from) {',
+    '        return undefined',
+    '      }',
+    '      return { name: componentName, from }',
+    '    },',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
 }
 
 void main().catch(async (error) => {
