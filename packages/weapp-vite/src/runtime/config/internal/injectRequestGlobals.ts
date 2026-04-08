@@ -189,46 +189,47 @@ export function createRequestGlobalsPassiveBindingsCode(targets: WeappInjectRequ
     'function __weappViteCreateLazyRequestGlobalsFunction__(name){const placeholder=function(...args){const actual=__weappViteRequestGlobalsActuals__[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return actual.apply(this,args)};return __weappViteMarkRequestGlobalsPlaceholder__(placeholder)}',
     'function __weappViteCreateLazyRequestGlobalsConstructor__(name){const placeholder=function(...args){const actual=__weappViteRequestGlobalsActuals__[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return Reflect.construct(actual,args)};return __weappViteMarkRequestGlobalsPlaceholder__(placeholder)}',
     'function __weappViteHasUsableRequestGlobalsConstructor__(value,args){if(typeof value!=="function"||value?.__weappViteRequestGlobalsPlaceholder__===true){return false}try{return Reflect.construct(value,args),true}catch{return false}}',
+    'function __weappViteExposeRequestGlobal__(name,value){if(value==null){return value}const current=globalThis[name];if(current===value){return value}if(typeof current!=="function"||current?.__weappViteRequestGlobalsPlaceholder__===true){try{globalThis[name]=value}catch{}}return value}',
   ].join(';')
   const bindingCode = bindingTargets.map((target) => {
     if (target === 'fetch') {
-      return 'var fetch = typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"&&__weappViteRequestGlobalsActuals__["fetch"]?.__weappViteRequestGlobalsPlaceholder__!==true?__weappViteRequestGlobalsActuals__["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.fetch:__weappViteCreateLazyRequestGlobalsFunction__("fetch")'
+      return 'var fetch = __weappViteExposeRequestGlobal__("fetch",typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"&&__weappViteRequestGlobalsActuals__["fetch"]?.__weappViteRequestGlobalsPlaceholder__!==true?__weappViteRequestGlobalsActuals__["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.fetch:__weappViteCreateLazyRequestGlobalsFunction__("fetch"))'
     }
 
     const placeholderFactory = `__weappViteCreateLazyRequestGlobalsConstructor__(${JSON.stringify(target)})`
     const actualRef = `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}]`
     if (target === 'URL') {
-      return `var URL = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory}`
+      return `var URL = __weappViteExposeRequestGlobal__("URL",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory})`
     }
     if (target === 'URLSearchParams') {
-      return `var URLSearchParams = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["client=graphql-request"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory}`
+      return `var URLSearchParams = __weappViteExposeRequestGlobal__("URLSearchParams",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["client=graphql-request"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory})`
     }
     if (target === 'Blob') {
-      return `var Blob = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory}`
+      return `var Blob = __weappViteExposeRequestGlobal__("Blob",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory})`
     }
     if (target === 'FormData') {
-      return `var FormData = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory}`
+      return `var FormData = __weappViteExposeRequestGlobal__("FormData",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory})`
     }
     if (target === 'Headers') {
-      return `var Headers = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory}`
+      return `var Headers = __weappViteExposeRequestGlobal__("Headers",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory})`
     }
     if (target === 'Request') {
-      return `var Request = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory}`
+      return `var Request = __weappViteExposeRequestGlobal__("Request",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["https://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory})`
     }
     if (target === 'Response') {
-      return `var Response = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[null])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Response,[null])?globalThis.Response:${placeholderFactory}`
+      return `var Response = __weappViteExposeRequestGlobal__("Response",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[null])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.Response,[null])?globalThis.Response:${placeholderFactory})`
     }
     if (target === 'XMLHttpRequest') {
-      return `var XMLHttpRequest = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory}`
+      return `var XMLHttpRequest = __weappViteExposeRequestGlobal__("XMLHttpRequest",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory})`
     }
     if (target === 'WebSocket') {
-      return `var WebSocket = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["wss://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory}`
+      return `var WebSocket = __weappViteExposeRequestGlobal__("WebSocket",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},["wss://request-globals.invalid"])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory})`
     }
     if (target === 'AbortController') {
-      return `var AbortController = __weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory}`
+      return `var AbortController = __weappViteExposeRequestGlobal__("AbortController",__weappViteHasUsableRequestGlobalsConstructor__(${actualRef},[])?${actualRef}:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory})`
     }
 
-    return `var ${target} = typeof ${actualRef}==="function"&&${actualRef}?.__weappViteRequestGlobalsPlaceholder__!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.${target}:${placeholderFactory}`
+    return `var ${target} = __weappViteExposeRequestGlobal__(${JSON.stringify(target)},typeof ${actualRef}==="function"&&${actualRef}?.__weappViteRequestGlobalsPlaceholder__!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.__weappViteRequestGlobalsPlaceholder__!==true?globalThis.${target}:${placeholderFactory})`
   }).join(';')
 
   return `${helperCode};${bindingCode};`

@@ -53,16 +53,33 @@ export function resolveRequestGlobalsHost() {
   return {} as Record<string, any>
 }
 
+function isRequestGlobalsHostCandidate(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' || typeof value === 'function'
+}
+
+function pushRequestGlobalsHost(
+  hosts: Array<Record<string, any>>,
+  candidate: unknown,
+) {
+  if (!isRequestGlobalsHostCandidate(candidate)) {
+    return
+  }
+  if (!hosts.includes(candidate)) {
+    hosts.push(candidate)
+  }
+}
+
 export function resolveRequestGlobalsHosts() {
   const hosts: Array<Record<string, any>> = []
   const primaryHost = resolveRequestGlobalsHost()
-  hosts.push(primaryHost)
+  pushRequestGlobalsHost(hosts, primaryHost)
+
+  for (const name of ['global', 'self', 'window']) {
+    pushRequestGlobalsHost(hosts, primaryHost[name])
+  }
 
   for (const key of ['wx', 'my', 'tt']) {
-    const candidate = primaryHost[key]
-    if (candidate && typeof candidate === 'object' && !hosts.includes(candidate)) {
-      hosts.push(candidate as Record<string, any>)
-    }
+    pushRequestGlobalsHost(hosts, primaryHost[key])
   }
 
   return hosts

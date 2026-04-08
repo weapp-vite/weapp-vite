@@ -45,6 +45,8 @@ const REQUEST_GLOBAL_EXPORT_RE = /Object\.defineProperty\(exports,\s*(?:`([^`]+)
 const REQUEST_GLOBAL_INSTALLER_RE = /function\s+([A-Za-z_$][\w$]*)\([^)]*=\{\}\)\{[\s\S]{0,220}?targets\?\?\[[\s\S]{0,80}?fetch[\s\S]{0,80}?Headers[\s\S]{0,80}?Request[\s\S]{0,80}?Response[\s\S]{0,80}?AbortController[\s\S]{0,80}?AbortSignal[\s\S]{0,80}?XMLHttpRequest[\s\S]{0,80}?WebSocket[\s\S]{0,260}?return [^}]+\}/
 const REQUEST_GLOBAL_ENTRY_NAME_RE = /\.[^/.]+$/
 const REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE = /([A-Za-z_$][\w$]*)\s*=\s*require\((`([^`]+)`|'([^']+)'|"([^"]+)")\)/g
+const DYNAMIC_GLOBAL_RESOLUTION_RE = /Function\(\s*(?:`return this`|'return this'|"return this")\s*\)\(\)/g
+const BROWSER_GLOBAL_HOST_TERNARY_RE = /typeof self<[`'"]u[`'"]\?self:typeof window<[`'"]u[`'"]\?window:globalThis/g
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -252,6 +254,28 @@ function rewriteBundlePlatformApi(
       continue
     }
     chunk.code = nextCode
+  }
+}
+
+function rewriteBundleDynamicGlobalResolution(bundle: OutputBundle) {
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const hasDynamicGlobalResolution = DYNAMIC_GLOBAL_RESOLUTION_RE.test(chunk.code)
+    DYNAMIC_GLOBAL_RESOLUTION_RE.lastIndex = 0
+    const hasBrowserGlobalHostTernary = BROWSER_GLOBAL_HOST_TERNARY_RE.test(chunk.code)
+    BROWSER_GLOBAL_HOST_TERNARY_RE.lastIndex = 0
+
+    if (!hasDynamicGlobalResolution && !hasBrowserGlobalHostTernary) {
+      continue
+    }
+
+    chunk.code = chunk.code
+      .replaceAll(DYNAMIC_GLOBAL_RESOLUTION_RE, 'globalThis')
+      .replaceAll(BROWSER_GLOBAL_HOST_TERNARY_RE, 'globalThis')
   }
 }
 
@@ -1008,6 +1032,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         astEngine,
       })
     }
+
+    rewriteBundleDynamicGlobalResolution(rolldownBundle)
 
     if (injectRequestGlobalsOptions?.targets?.length) {
       const installerChunks = injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets)

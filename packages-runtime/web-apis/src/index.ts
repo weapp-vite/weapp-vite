@@ -44,8 +44,16 @@ function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[])
   return [...new Set(bindingTargets)]
 }
 
+function isPlaceholderRequestGlobal(value: unknown) {
+  return Boolean(
+    value
+    && typeof value === 'function'
+    && (value as { __weappViteRequestGlobalsPlaceholder__?: boolean }).__weappViteRequestGlobalsPlaceholder__ === true,
+  )
+}
+
 function hasUsableConstructor(value: unknown, args: unknown[] = []) {
-  if (typeof value !== 'function') {
+  if (typeof value !== 'function' || isPlaceholderRequestGlobal(value)) {
     return false
   }
 
@@ -60,55 +68,55 @@ function hasUsableConstructor(value: unknown, args: unknown[] = []) {
 
 function installSingleTarget(host: Record<string, any>, target: WeappInjectRequestGlobalsTarget) {
   if (target === 'fetch') {
-    if (typeof host.fetch !== 'function') {
+    if (typeof host.fetch !== 'function' || isPlaceholderRequestGlobal(host.fetch)) {
       host.fetch = requestGlobalsFetch
     }
     return
   }
 
   if (target === 'Headers') {
-    if (typeof host.Headers !== 'function') {
+    if (typeof host.Headers !== 'function' || isPlaceholderRequestGlobal(host.Headers)) {
       host.Headers = HeadersPolyfill
     }
     return
   }
 
   if (target === 'Request') {
-    if (typeof host.Request !== 'function') {
+    if (typeof host.Request !== 'function' || isPlaceholderRequestGlobal(host.Request)) {
       host.Request = RequestPolyfill
     }
     return
   }
 
   if (target === 'Response') {
-    if (typeof host.Response !== 'function') {
+    if (typeof host.Response !== 'function' || isPlaceholderRequestGlobal(host.Response)) {
       host.Response = ResponsePolyfill
     }
     return
   }
 
   if (target === 'AbortController') {
-    if (typeof host.AbortController !== 'function') {
+    if (typeof host.AbortController !== 'function' || isPlaceholderRequestGlobal(host.AbortController)) {
       host.AbortController = AbortControllerPolyfill
     }
     return
   }
 
   if (target === 'AbortSignal') {
-    if (typeof host.AbortSignal !== 'function') {
+    if (typeof host.AbortSignal !== 'function' || isPlaceholderRequestGlobal(host.AbortSignal)) {
       host.AbortSignal = AbortSignalPolyfill
     }
     return
   }
 
   if (target === 'WebSocket') {
-    if (typeof host.WebSocket !== 'function') {
+    if (typeof host.WebSocket !== 'function' || isPlaceholderRequestGlobal(host.WebSocket)) {
       host.WebSocket = WebSocketPolyfill
     }
     return
   }
 
-  if (target === 'XMLHttpRequest' && typeof host.XMLHttpRequest !== 'function') {
+  if (target === 'XMLHttpRequest' && (typeof host.XMLHttpRequest !== 'function' || isPlaceholderRequestGlobal(host.XMLHttpRequest))) {
     host.XMLHttpRequest = XMLHttpRequestPolyfill
   }
 }
@@ -135,6 +143,17 @@ function installGlobalBindingIfNeeded(host: Record<string, any>, target: string)
   }
 
   installRequestGlobalBinding(target, value)
+}
+
+function ensureRuntimeHostAliases(host: Record<string, any>) {
+  for (const alias of ['global', 'self', 'window']) {
+    try {
+      host[alias] = host
+    }
+    catch {
+    }
+    installRequestGlobalBinding(alias, host)
+  }
 }
 
 function syncWeappViteRequestGlobalsActuals(
@@ -177,6 +196,8 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
     || target === 'Response'
     || target === 'XMLHttpRequest'
   ))
+
+  ensureRuntimeHostAliases(primaryHost)
 
   for (const host of hosts) {
     if (needsUrlGlobals) {

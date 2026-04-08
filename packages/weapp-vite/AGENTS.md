@@ -46,10 +46,12 @@ Run full monorepo `pnpm test` only when cross-package impact is likely or explic
 ## 5. Mini-Program Runtime Debug Heuristics
 
 - When a third-party request library fails in WeChat DevTools with messages like `fetch is not a function`, `URL is not a constructor`, adapter detection failure, or `instanceof` right-hand-side errors, do not stop at `globalThis` injection. Check the final emitted `common.js` and page chunks under `apps/*/dist/**` first.
+- 小程序运行时不能把 `eval`、`new Function`、`Function("return this")()` 视为可用能力。只要某条兼容链路依赖这些动态执行入口，就应先当作运行时不兼容风险，而不是正常方案。
 - Treat mini-program runtime compatibility as a final-bundle problem, not only a source-transform problem. `load` / `transform` can succeed while the final page wrapper still loses the injected code.
 - If request globals are bundled into `common.js`, verify two separate requirements:
   - the runtime installer is actually executed in the final shared chunk
   - page/component chunks get local bindings for free variables such as `fetch`, `AbortController`, `XMLHttpRequest`, `URL`, `URLSearchParams`, `Blob`, and `FormData`
+- 对依赖宿主全局对象探测的第三方库，除了检查 `globalThis` 外，还要检查最终 bundle 是否残留 `Function("return this")()`、`self || window || global` 这类分支；若存在，优先让产物命中静态可控分支，不要再追加新的动态求值兜底。
 - Third-party libraries may probe environment support during module initialization, before later installer code runs. For shared chunks, prefer a two-phase strategy:
   - prepend safe placeholder bindings to avoid early `instanceof` / adapter-detection crashes
   - run the real installer and then replace those bindings with actual polyfills

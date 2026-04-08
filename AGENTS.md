@@ -219,6 +219,8 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Node.js 20+ with compatible pnpm.
 - For `weapp-ide-cli` operations (`open`, `preview`, `upload`), ensure WeChat DevTools service port is enabled.
 - Never commit secrets; use `.env.local` or environment variables.
+- 对小程序运行时代码、会进入小程序产物的兼容层代码、以及依赖微信/支付宝/抖音等宿主执行的 bundle 代码，一律不要依赖 `eval`、`new Function`、`Function("return this")()`、字符串定时代码，或任何需要动态求值的能力。
+- 处理小程序运行时全局对象兼容时，优先使用静态宿主解析、显式别名同步、编译期注入和可测试的直接引用；不要把“动态执行可用”当作默认前提。
 
 ## 7. Project Skills (Codex + Claude Code)
 

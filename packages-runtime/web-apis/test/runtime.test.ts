@@ -80,6 +80,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).Blob
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
+    delete (globalThis as Record<string, any>).global
     delete (globalThis as Record<string, any>).__weappViteRequestGlobalsActuals__
     wpiConnectSocketMock.mockReset()
   })
@@ -186,6 +187,42 @@ describe('request globals runtime', () => {
     expect(typeof (globalThis as any).wx.URLSearchParams).toBe('function')
     expect(typeof globalThis.Blob).toBe('function')
     expect(typeof globalThis.FormData).toBe('function')
+  })
+
+  it('installs request globals onto global alias hosts used by websocket libraries', async () => {
+    ;(globalThis as Record<string, any>).global = {}
+    ;(globalThis as Record<string, any>).self = {}
+    ;(globalThis as Record<string, any>).window = {}
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+
+    expect(typeof globalThis.WebSocket).toBe('function')
+    expect(typeof (globalThis as any).global.WebSocket).toBe('function')
+    expect((globalThis as any).self).toBe(globalThis)
+    expect((globalThis as any).window).toBe(globalThis)
+  })
+
+  it('replaces lazy placeholder globals with real runtime implementations', async () => {
+    const placeholderFetch = vi.fn()
+    ;(placeholderFetch as any).__weappViteRequestGlobalsPlaceholder__ = true
+    const placeholderWebSocket = vi.fn()
+    ;(placeholderWebSocket as any).__weappViteRequestGlobalsPlaceholder__ = true
+
+    setGlobalValue('fetch', placeholderFetch)
+    setGlobalValue('WebSocket', placeholderWebSocket)
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch', 'WebSocket'],
+    })
+
+    expect(globalThis.fetch).not.toBe(placeholderFetch)
+    expect(globalThis.WebSocket).not.toBe(placeholderWebSocket)
+    expect(typeof globalThis.fetch).toBe('function')
+    expect(typeof globalThis.WebSocket).toBe('function')
   })
 
   it('promotes installed request globals to free global bindings when possible', async () => {

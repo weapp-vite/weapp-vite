@@ -104,6 +104,52 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['components/HelloWorld.js'].code).not.toContain('typeof globalThis')
   })
 
+  it('rewrites unsafe dynamic global resolution in bundle chunks to globalThis', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          weappViteConfig: {},
+        },
+      },
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const host = typeof self<"u"?self:typeof window<"u"?window:Function("return this")()',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain('globalThis')
+    expect(bundle['common.js'].code).not.toContain('Function("return this")()')
+    expect(bundle['common.js'].code).not.toContain('typeof self<"u"?self:typeof window<"u"?window:globalThis')
+  })
+
   it('rewrites alipay npm requires to node_modules by default', async () => {
     const state = {
       ctx: {
