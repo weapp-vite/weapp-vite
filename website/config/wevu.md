@@ -66,6 +66,150 @@ export default defineConfig({
 - 当 `app.vue`/组件导出为对象字面量时，Weapp-vite 会把默认值直接合并进编译产物，方便排查与调试；若导出是变量或函数，仍会回落到运行时合并。
 - 若设置了 `component.options.virtualHost = true`，Weapp-vite 会在 **页面** 入口自动补上 `virtualHost: false`，避免页面虚拟节点导致的渲染层错误；需要为页面开启时请在页面内显式配置。
 
+### 全局默认开启 `virtualHost: true`
+
+微信官方文档里的 `virtualHost: true`，在 `weapp-vite` + `wevu` 里推荐通过 `weapp.wevu.defaults.component.options.virtualHost` 统一配置。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wevu: {
+      defaults: {
+        component: {
+          options: {
+            virtualHost: true,
+          },
+        },
+      },
+    },
+  },
+})
+```
+
+这样做之后：
+
+- 所有通过 Wevu 编译的**组件**默认都会带上 `options.virtualHost = true`
+- **页面**不会继承这个默认值；Weapp-vite 会自动补成 `virtualHost: false`
+- 某个组件如果显式写了自己的 `options.virtualHost`，以组件内声明为准
+
+适合场景：
+
+- 你希望项目里的大多数业务组件都走虚拟节点
+- 你不想在每个组件里重复手写 `options: { virtualHost: true }`
+- 你仍然希望页面保持安全默认值，避免误把页面也变成虚拟节点
+
+### `virtualHost` 的覆盖规则
+
+可以把优先级理解成：
+
+1. 组件/页面文件里的显式配置
+2. `weapp.wevu.defaults.component.options`
+3. Wevu / Weapp-vite 内建默认值
+
+最常见的结果是：
+
+- 全局设了 `component.options.virtualHost = true` 后，组件默认开启
+- 页面即使命中了同一套默认项，也会被编译器改写为 `virtualHost: false`
+- 如果你真的要给某个页面开启，必须在页面内手动显式声明
+
+## 手动开启 `virtualHost` 的几种方式 {#manual-virtualhost}
+
+如果你不想全局开启，或者只想给少数组件/页面单独配置，可以直接在文件里手动声明。
+
+### 方式 1：`<script setup>` + `defineComponentJson`
+
+适合新增的 Wevu Vue SFC 组件：
+
+```vue
+<script setup lang="ts">
+defineComponentJson(() => ({
+  component: true,
+  options: {
+    virtualHost: true,
+  },
+}))
+</script>
+```
+
+### 方式 2：`<script setup>` + `defineOptions`
+
+适合你已经在组件里使用 `defineOptions()` 管原生组件选项：
+
+```vue
+<script setup lang="ts">
+defineOptions({
+  options: {
+    virtualHost: true,
+  },
+})
+</script>
+```
+
+### 方式 3：`defineComponent({ options })`
+
+适合非 `<script setup>` 写法：
+
+```ts
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  options: {
+    virtualHost: true,
+  },
+  setup() {
+    return {}
+  },
+})
+```
+
+### 方式 4：`<json>` 配置块
+
+适合历史 SFC 或仍在用 `<json>` 的项目：
+
+```vue
+<json lang="jsonc">
+{
+  "component": true,
+  "options": {
+    "virtualHost": true
+  }
+}
+</json>
+```
+
+### 方式 5：原生组件 `component.json`
+
+适合不是 Wevu SFC、而是原生小程序组件目录：
+
+```json
+{
+  "component": true,
+  "options": {
+    "virtualHost": true
+  }
+}
+```
+
+## FAQ
+
+### Q: 能不能让全局组件默认都开启 `virtualHost: true`？
+
+可以。直接配置 `weapp.wevu.defaults.component.options.virtualHost = true` 即可。
+
+### Q: 全局开启后，会不会把页面也一起改成 `virtualHost: true`？
+
+不会。Weapp-vite 会对页面自动回退成 `virtualHost: false`，避免页面误用虚拟节点。
+
+### Q: 页面如果也想开启怎么办？
+
+在页面文件里显式声明 `options.virtualHost = true`。页面内的手动配置优先级高于全局默认值。
+
+### Q: 手动配置和全局默认同时存在时，谁生效？
+
+以文件内显式配置为准；全局默认只负责“补默认值”，不会覆盖你在页面或组件里手写的 `options.virtualHost`。
+
 > [!TIP]
 > 如果你不通过 Weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 [/wevu/runtime](/wevu/runtime)）。
 

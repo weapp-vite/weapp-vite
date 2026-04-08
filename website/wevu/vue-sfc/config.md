@@ -120,6 +120,32 @@ defineComponentJson(() => ({
 </script>
 ```
 
+如果你想把组件宿主节点虚拟化，这就是最直接的写法。若项目里大多数组件都需要 `virtualHost: true`，更推荐在 [/config/wevu](/config/wevu) 里统一配置：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wevu: {
+      defaults: {
+        component: {
+          options: {
+            virtualHost: true,
+          },
+        },
+      },
+    },
+  },
+})
+```
+
+补充说明：
+
+- 这个全局默认值只会作用于组件，不会把页面默认改成 `virtualHost: true`
+- 页面若确实需要开启，请在页面内显式声明 `options.virtualHost`
+- 局部组件自己写的 `options.virtualHost` 优先级高于全局默认值
+
 页面示例：
 
 ```vue
