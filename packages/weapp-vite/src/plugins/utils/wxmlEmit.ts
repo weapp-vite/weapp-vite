@@ -2,6 +2,7 @@ import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import { isTemplate } from '../../utils'
 import { changeFileExtension } from '../../utils/file'
+import { createStaticImportMetaReplacementMap } from '../../utils/importMeta'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../utils/path'
 import { resolveScriptModuleTagName } from '../../utils/wxmlScriptModule'
@@ -104,7 +105,11 @@ export function emitWxmlAssetFile(options: {
   }
 
   const result = handleWxml(token, {
-    defineImportMetaEnv,
+    defineImportMetaEnv: createStaticImportMetaReplacementMap({
+      defineImportMetaEnv,
+      extension: templateExtension,
+      relativePath: fileName,
+    }),
     scriptModuleExtension,
     scriptModuleTag,
     templateExtension,

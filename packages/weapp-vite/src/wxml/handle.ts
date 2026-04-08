@@ -36,7 +36,7 @@ function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<s
   const replacementRanges: Array<{ start: number, end: number, value: string }> = []
 
   for (const [key, value] of entries) {
-    if (!key.startsWith('import.meta.env')) {
+    if (!key.startsWith('import.meta')) {
       continue
     }
     const pattern = new RegExp(escapeRegExp(key), 'g')

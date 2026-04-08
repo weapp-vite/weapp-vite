@@ -3,4 +3,4 @@
 'create-weapp-vite': patch
 ---
 
-修复原生小程序 `.wxml` 模板中的 `import.meta.env` 没有被替换的问题。现在像 `{{import.meta.env.VITE_FOO}}` 这样的表达式会在输出模板阶段按当前环境变量定义展开，不再把 `import.meta.env.*` 原样透传到最终产物。
+修复小程序产物里 `import.meta` 相关静态值没有被展开的问题。现在原生 `.wxml` 模板与源码脚本中的 `import.meta.env`、`import.meta.url`、`import.meta.dirname`，以及裸 `import.meta`，都会在输出阶段按当前模块的静态上下文展开，避免把这些表达式原样透传到最终产物。

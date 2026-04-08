@@ -3,11 +3,86 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTransformHook } from './transform'
 
 describe('core lifecycle transform hook injectWeapi', () => {
+  it('replaces import.meta.url, import.meta.dirname and bare import.meta in script files', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {
+            'import.meta.env': '{"MODE":"production","FEATURE_FLAG":"on"}',
+          },
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+          relativeOutputPath(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+    } as any)
+
+    const result = await transform(
+      'export const url = import.meta.url; export const dirname = import.meta.dirname; export const flag = import.meta.env.FEATURE_FLAG; export const meta = import.meta',
+      '/project/src/pages/import-meta/index.ts',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('"/pages/import-meta/index.js"')
+    expect(code).toContain('"/pages/import-meta"')
+    expect(code).toContain('"on"')
+    expect(code).toContain('url: "/pages/import-meta/index.js"')
+    expect(code).not.toContain('import.meta')
+  })
+
+  it('replaces import.meta access in raw vue sfc script blocks', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {
+            'import.meta.env': '{"MODE":"production","FEATURE_FLAG":"on"}',
+          },
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+          relativeOutputPath(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+    } as any)
+
+    const result = await transform(
+      [
+        '<script setup lang="ts">',
+        'const metaUrl = import.meta.url',
+        'const featureFlag = import.meta.env.FEATURE_FLAG',
+        '</script>',
+        '<template><view /></template>',
+      ].join('\n'),
+      '/project/src/pages/import-meta/index.vue',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('const metaUrl = "/pages/import-meta/index.js"')
+    expect(code).toContain('const featureFlag = "on"')
+    expect(code).not.toContain('import.meta.url')
+  })
+
   it('injects request globals for declared page entries as transform fallback', async () => {
     const transform = createTransformHook({
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
@@ -37,6 +112,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
@@ -65,6 +141,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
@@ -103,6 +180,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           packageJson: {
             dependencies: {},
           },
@@ -137,6 +215,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
@@ -162,6 +241,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
@@ -180,6 +260,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
@@ -199,6 +280,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
@@ -224,6 +306,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
@@ -243,6 +326,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
@@ -267,6 +351,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: {
           absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
           weappViteConfig: {
             ast: {
               engine: 'oxc',

@@ -170,6 +170,7 @@ describe('emitWxmlAssetsWithCache', () => {
   it('replaces import.meta.env expressions before emitting asset source', () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
+        'import.meta.env': '{"VITE_CDN":"https://cdn.example.com"}',
         'import.meta.env.VITE_CDN': '"https://cdn.example.com"',
       },
     })
@@ -187,6 +188,30 @@ describe('emitWxmlAssetsWithCache', () => {
 
     const payload = emitFile.mock.calls[0]?.[0]
     expect(payload.source).toContain('{{"https://cdn.example.com"}}/logo.png')
+  })
+
+  it('replaces import.meta.url, import.meta.dirname and bare import.meta before emitting asset source', () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env': '{"MODE":"production"}',
+      },
+    })
+    const token = ctx.wxmlService!.analyze('<view data-url="{{import.meta.url}}" data-dir="{{import.meta.dirname}}" data-meta="{{import.meta}}" />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('{{"/pages/index/index.wxml"}}')
+    expect(payload.source).toContain('{{"/pages/index"}}')
+    expect(payload.source).toContain('{{{"url":"/pages/index/index.wxml","dirname":"/pages/index","env":{"MODE":"production"}}}}')
   })
 
   it('emits platform template extension and rewrites script module tags', () => {

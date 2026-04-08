@@ -462,4 +462,30 @@ describe('handleWxml', () => {
 
     expect(result.code).toBe('<view>{{"contains import.meta.env literally"}}</view>')
   })
+
+  it('replaces import.meta.url, import.meta.dirname and bare import.meta in wxml output', () => {
+    const data = {
+      code: '<view data-url="{{import.meta.url}}" data-dir="{{import.meta.dirname}}" data-meta="{{import.meta}}" />',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.url': '"/pages/issue-431/index.wxml"',
+        'import.meta.dirname': '"/pages/issue-431"',
+        'import.meta': '{"url":"/pages/issue-431/index.wxml","dirname":"/pages/issue-431","env":{"MODE":"production"}}',
+      },
+    })
+
+    expect(result.code).toBe('<view data-url="{{"/pages/issue-431/index.wxml"}}" data-dir="{{"/pages/issue-431"}}" data-meta="{{{"url":"/pages/issue-431/index.wxml","dirname":"/pages/issue-431","env":{"MODE":"production"}}}}" />')
+  })
 })
