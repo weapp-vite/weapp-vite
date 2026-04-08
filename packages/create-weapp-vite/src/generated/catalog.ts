@@ -50,13 +50,13 @@ export const TEMPLATE_CATALOG = {
   lodash: '^4.18.1',
   merge: '^2.1.1',
   pathe: '^2.0.3',
-  postcss: '^8.5.8',
+  postcss: '^8.5.9',
   rolldown: '1.0.0-rc.13',
   sass: '^1.99.0',
   tailwindcss: '^4.2.2',
   tslib: '^2.8.1',
   typescript: '^6.0.2',
-  vite: '8.0.6',
+  vite: '8.0.7',
   vue: '^3.5.32',
   zod: '^4.3.6'
 } as const
