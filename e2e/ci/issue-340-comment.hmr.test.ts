@@ -33,6 +33,14 @@ const COMMENT_CHUNK_CONFIG = `    chunks: {
       dynamicImports: 'preserve',
     },`
 
+function applyCommentChunkConfig(config: string) {
+  if (!config.includes(ORIGINAL_CHUNK_CONFIG)) {
+    throw new Error('Failed to find the original chunk config block for issue-340-hoist.')
+  }
+
+  return config.replace(ORIGINAL_CHUNK_CONFIG, COMMENT_CHUNK_CONFIG)
+}
+
 async function pathExists(filePath: string) {
   try {
     await access(filePath)
@@ -59,11 +67,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     const originalSharedSource = await readFile(SHARED_SOURCE_PATH, 'utf8')
     const marker = createHmrMarker('ISSUE-340-COMMENT', platform)
 
-    if (!originalConfig.includes(ORIGINAL_CHUNK_CONFIG)) {
-      throw new Error('Failed to find the original chunk config block for issue-340-hoist.')
-    }
-
-    const updatedConfig = originalConfig.replace(ORIGINAL_CHUNK_CONFIG, COMMENT_CHUNK_CONFIG)
+    const updatedConfig = applyCommentChunkConfig(originalConfig)
     const updatedSharedSourceWithCjsImport = originalSharedSource
       .replace(
         `import { computed, ref } from 'wevu'`,
@@ -144,15 +148,19 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
   it.each(PLATFORM_LIST)('converges to the last cross-subpackage shared output after rapid shared-source edits (%s)', async (platform) => {
     await rm(DIST_ROOT, { recursive: true, force: true })
 
+    const originalConfig = await readFile(CONFIG_PATH, 'utf8')
     const originalSharedSource = await readFile(SHARED_SOURCE_PATH, 'utf8')
     const firstMarker = createHmrMarker('ISSUE-340-FIRST', platform)
     const secondMarker = createHmrMarker('ISSUE-340-SECOND', platform)
     const firstUpdatedSource = originalSharedSource.replace(`ref('issue-340-hoist')`, `ref('${firstMarker}')`)
     const secondUpdatedSource = originalSharedSource.replace(`ref('issue-340-hoist')`, `ref('${secondMarker}')`)
+    const updatedConfig = applyCommentChunkConfig(originalConfig)
 
     if (firstUpdatedSource === originalSharedSource || secondUpdatedSource === originalSharedSource) {
       throw new Error('Failed to inject rapid HMR markers into issue-340 shared source.')
     }
+
+    await writeFile(CONFIG_PATH, updatedConfig, 'utf8')
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: {
@@ -176,7 +184,6 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
 
       expect(sharedChunkContent).toContain(secondMarker)
       expect(sharedChunkContent).not.toContain(firstMarker)
-      expect(sharedChunkContent).toContain('require("./rolldown-runtime.js")')
       expect(dev.getOutput()).not.toContain('Build failed')
 
       const [itemPageJs, userPageJs] = await Promise.all([
@@ -189,6 +196,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     }
     finally {
       await dev.stop(5_000)
+      await writeFile(CONFIG_PATH, originalConfig, 'utf8')
       await writeFile(SHARED_SOURCE_PATH, originalSharedSource, 'utf8')
       await rm(DIST_ROOT, { recursive: true, force: true })
     }

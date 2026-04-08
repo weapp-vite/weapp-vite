@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable vue/define-macros-order */
 import type { AutoRoutesAppGlobalData, AutoRoutesAppInstance } from './types/auto-routes'
 import routes from 'weapp-vite/auto-routes'
 import { getCurrentInstance, onLaunch } from 'wevu'
@@ -27,12 +26,6 @@ syncAutoRoutesToAppInstance()
 onLaunch(() => {
   syncAutoRoutesToAppInstance()
 })
-
-defineOptions({
-  // eslint-disable-next-line vue/valid-define-options
-  globalData,
-})
-
 defineAppJson({
   pages: routes.pages,
   subPackages: routes.subPackages,
