@@ -52,6 +52,8 @@ const DEFAULT_LAUNCH_RETRIES = 3
 const DEFAULT_LAUNCH_RETRY_DELAY = 1_200
 const DEFAULT_LAUNCH_ATTEMPT_TIMEOUT = 24_000
 const DEFAULT_APP_CONFIG_READY_TIMEOUT = 12_000
+const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
+const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
@@ -91,6 +93,13 @@ const BRIDGE_CONNECT_TIMEOUT_PATTERN = /Timeout in connect automator bridge/i
 const BRIDGE_CONNECT_FAILURE_PATTERN = /Failed connecting to /
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
 const LAUNCH_TIMEOUT_PATTERN = /Timeout in launch automator#/i
+const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
+  /TypeError\s*\[ERR_INVALID_ARG_TYPE\]/i,
+  /The ["']path["'] argument must be of type string\. Received undefined/i,
+  /SummerCompiler\._getPackageFiles/i,
+  /miniprogram-builder\/modules\/corecompiler\/summerCompiler/i,
+] as const
+const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile', 'all'] as const
 
 function normalizePathForMatch(value: string) {
   const normalized = path.normalize(path.resolve(value))
@@ -167,6 +176,7 @@ let versionPatched = false
 let miniProgramOnPatched = false
 let loginPreflightPassed = false
 let localhostListenPatched = false
+const completedDevtoolsCacheRecoverySteps = new Set<string>()
 const automator = new Automator()
 
 interface RuntimeLogStats {
@@ -394,6 +404,85 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
 function isLikelyDevtoolsInfraErrorMessage(message: string) {
   return message.includes(DEVTOOLS_HTTP_PORT_ERROR)
     || DEVTOOLS_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
+}
+
+function isLikelyDevtoolsCompileCacheCorruptionMessage(message: string) {
+  return DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS.some(pattern => pattern.test(message))
+}
+
+function resolveWechatCliPath(cliPath?: string) {
+  if (typeof cliPath === 'string' && cliPath.trim()) {
+    return cliPath.trim()
+  }
+  if (process.platform === 'win32') {
+    return DEFAULT_WECHAT_CLI_WINDOWS_PATH
+  }
+  return DEFAULT_WECHAT_CLI_MACOS_PATH
+}
+
+async function recoverDevtoolsCompileCache(options: {
+  cliPath?: string
+  cwd?: string
+  error: unknown
+  project: string
+}) {
+  const message = options.error instanceof Error ? options.error.message : String(options.error)
+  if (!isLikelyDevtoolsCompileCacheCorruptionMessage(message)) {
+    return false
+  }
+
+  const resolvedCliPath = resolveWechatCliPath(options.cliPath)
+  for (const cleanType of DEVTOOLS_CACHE_RECOVERY_STEPS) {
+    const recoveryKey = `${resolvedCliPath}::${cleanType}`
+    if (completedDevtoolsCacheRecoverySteps.has(recoveryKey)) {
+      continue
+    }
+
+    process.stdout.write(`[warn] [runtime:launch-recover] clean=${cleanType} project=${options.project}\n`)
+    appendIdeReportEvent({
+      source: 'runtime',
+      kind: 'message',
+      project: options.project,
+      level: 'warn',
+      channel: 'launch-recover',
+      text: `clean=${cleanType}`,
+    })
+
+    const result = await execa(resolvedCliPath, ['cache', '--clean', cleanType], {
+      cwd: options.cwd,
+      reject: false,
+      timeout: 20_000,
+    })
+
+    if ((result.exitCode ?? 1) === 0) {
+      completedDevtoolsCacheRecoverySteps.add(recoveryKey)
+      process.stdout.write(`[info] [runtime:launch-recover] cleaned=${cleanType} project=${options.project}\n`)
+      appendIdeReportEvent({
+        source: 'runtime',
+        kind: 'message',
+        project: options.project,
+        level: 'info',
+        channel: 'launch-recover',
+        text: `cleaned=${cleanType}`,
+      })
+      return true
+    }
+
+    const stderr = typeof result.stderr === 'string' ? result.stderr.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
+    const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
+    const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
+    process.stdout.write(`[warn] [runtime:launch-recover] clean-failed=${cleanType} project=${options.project} reason=${details}\n`)
+    appendIdeReportEvent({
+      source: 'runtime',
+      kind: 'message',
+      project: options.project,
+      level: 'warn',
+      channel: 'launch-recover',
+      text: `clean-failed=${cleanType} reason=${details}`,
+    })
+  }
+
+  return false
 }
 
 function sleep(ms: number) {
@@ -1119,6 +1208,19 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
             await miniProgram.close()
           }
           catch {
+          }
+        }
+
+        if (attempt < LAUNCH_RETRIES) {
+          const recovered = await recoverDevtoolsCompileCache({
+            cliPath: rest.cliPath,
+            cwd: rest.cwd,
+            error,
+            project,
+          })
+          if (recovered) {
+            await sleep(LAUNCH_RETRY_DELAY)
+            continue
           }
         }
 

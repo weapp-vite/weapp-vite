@@ -254,4 +254,52 @@ describe.sequential('automator launch resilience', () => {
     })
     expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
   })
+
+  it('cleans devtools compile cache and retries when cli bridge exits with path undefined error', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const connectedMiniProgram = createMockMiniProgram()
+    execaMock
+      .mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined\n    at SummerCompiler._getPackageFiles (...)',
+      })
+      .mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '',
+        stderr: '',
+      })
+      .mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9527' }),
+        stderr: '',
+      })
+    connectMock.mockResolvedValueOnce(connectedMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
+
+    expect(execaMock).toHaveBeenNthCalledWith(1, 'node', expect.any(Array), expect.objectContaining({
+      reject: false,
+      timeout: 12_345,
+    }))
+    expect(execaMock).toHaveBeenNthCalledWith(2, '/Applications/wechatwebdevtools.app/Contents/MacOS/cli', ['cache', '--clean', 'compile'], expect.objectContaining({
+      reject: false,
+      timeout: 20_000,
+    }))
+    expect(execaMock).toHaveBeenNthCalledWith(3, 'node', expect.any(Array), expect.objectContaining({
+      reject: false,
+      timeout: 12_345,
+    }))
+    expect(connectMock).toHaveBeenCalledWith({
+      wsEndpoint: 'ws://127.0.0.1:9527',
+    })
+    expect(connectedMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
 })
