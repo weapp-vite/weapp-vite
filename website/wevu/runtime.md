@@ -85,6 +85,18 @@ Wevu 同时支持两种 props 定义方式：
 
 `<script setup>` 的 `defineProps<T>()` 会先被 Vue 编译器推导成 runtime `props`，再由 Wevu 归一化为小程序 `properties`。
 
+完整链路可以这样理解：
+
+1. 你在 SFC 中写 `defineProps<T>()`
+2. Vue 编译器先把它变成运行时可识别的 `props` 选项
+3. Weapp-vite / Wevu 编译产物调用 `createWevuComponent(options)`
+4. `createWevuComponent()` 再把 `props` 归一化成原生 `properties`
+5. 最终调用原生 `Component()` 完成组件注册
+
+也就是说，SFC 场景下你写的是 Vue 风格 `defineProps`，但真正落到小程序运行时的仍然是原生 `properties`。
+
+如果编译产物里已经显式带了 `properties`，那么会直接保留这份 `properties` 去注册，不再回退到 `props` 归一化结果。
+
 归一化规则（对齐小程序 `properties` 约束）：
 
 - `type` 只保留一个主类型（`String/Number/Boolean/Object/Array` 或 `null`）
