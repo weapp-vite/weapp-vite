@@ -120,6 +120,37 @@ defineComponentJson(() => ({
 </script>
 ```
 
+这里要注意字段分层：
+
+- `virtualHost`、`multipleSlots`、`styleIsolation` 这类原生 `ComponentOptions` 字段，放在 `options`
+- `externalClasses`、`behaviors`、`relations` 这类组件顶层字段，不要塞进 `options`
+
+错误示例：
+
+```vue
+<script setup lang="ts">
+defineOptions({
+  options: {
+    externalClasses: ['class'],
+  },
+})
+</script>
+```
+
+正确示例：
+
+```vue
+<script setup lang="ts">
+defineOptions({
+  externalClasses: ['class'],
+  options: {
+    virtualHost: true,
+    styleIsolation: 'apply-shared',
+  },
+})
+</script>
+```
+
 如果你想把组件宿主节点虚拟化，这就是最直接的写法。若项目里大多数组件都需要 `virtualHost: true`，更推荐在 [/config/wevu](/config/wevu) 里统一配置：
 
 ```ts
@@ -145,6 +176,78 @@ export default defineConfig({
 - 这个全局默认值只会作用于组件，不会把页面默认改成 `virtualHost: true`
 - 页面若确实需要开启，请在页面内显式声明 `options.virtualHost`
 - 局部组件自己写的 `options.virtualHost` 优先级高于全局默认值
+
+## `virtualHost` 与样式透传边界
+
+`virtualHost: true` 经常和 `styleIsolation: 'apply-shared'` 一起使用，但这两个配置解决的问题并不一样：
+
+- `virtualHost: true`：隐藏组件宿主节点
+- `styleIsolation: 'apply-shared'`：允许页面样式影响组件内部
+
+它们**不会**自动提供 Vue Web 里的“根节点 `class/style` fallthrough”。
+
+也就是说，下面这种写法并不意味着组件内部根节点一定会变红：
+
+```vue
+<MyCard class="text-red-500" />
+```
+
+如果组件没有显式把外部类名或样式绑定到内部根节点，那么：
+
+- 组件标签上的 `class` 仍然只是挂在组件标签上
+- `virtualHost: true` 时宿主节点不可见，这个 `class` 没有可见挂载点
+- `styleIsolation: 'apply-shared'` 也不会帮你自动把这个 `class` 合并进内部根节点
+
+### 推荐写法
+
+如果你希望组件支持外部样式，推荐显式设计 API，而不是依赖隐式透传。
+
+写法 1：外部类名
+
+```vue
+<script setup lang="ts">
+defineOptions({
+  externalClasses: ['custom-class'],
+})
+</script>
+
+<template>
+  <view class="card custom-class">
+    <slot />
+  </view>
+</template>
+```
+
+父组件：
+
+```vue
+<MyCard custom-class="text-red-500 border border-red-500" />
+```
+
+写法 2：显式样式 prop
+
+```vue
+<script setup lang="ts">
+const props = defineProps<{
+  rootStyle?: string
+}>()
+</script>
+
+<template>
+  <view class="card" :style="props.rootStyle">
+    <slot />
+  </view>
+</template>
+```
+
+父组件：
+
+```vue
+<MyCard root-style="color:#2563eb;background:#dbeafe;" />
+```
+
+> [!TIP]
+> 如果你确实想沿用组件标签上的 `class`，也可以声明 `externalClasses: ['class']`，但仍然要在内部根节点显式写出 `class` 占位。
 
 页面示例：
 

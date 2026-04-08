@@ -210,6 +210,22 @@ export default defineComponent({
 
 以文件内显式配置为准；全局默认只负责“补默认值”，不会覆盖你在页面或组件里手写的 `options.virtualHost`。
 
+### Q: 我全局开了 `virtualHost: true`，为什么 `<MyCard class="text-red-500" />` 还不能把组件内部文字变红？
+
+因为这里涉及两个不同层面的能力：
+
+- `virtualHost: true` 只决定“组件宿主节点是否可见”
+- `styleIsolation: 'apply-shared'` 只决定“页面样式是否允许影响组件内部”
+
+它们都**不会**自动把组件标签上的 `class/style` 透传到组件内部根节点。
+
+如果你需要外部样式真正落到组件内部，推荐：
+
+- 用 `externalClasses` 显式接收外部类名
+- 或者提供 `rootStyle` / `customStyle` 这类显式 prop
+
+更多写法见 [/wevu/vue-sfc/config](/wevu/vue-sfc/config)。
+
 > [!TIP]
 > 如果你不通过 Weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 [/wevu/runtime](/wevu/runtime)）。
 

@@ -68,6 +68,23 @@ keywords:
 - 类型入口：`MiniProgramComponentOptions`
 - 用途：在 `<script setup>` 中定义组件配置项。
 - Behavior 说明：可直接声明 `behaviors`。当条目来自原生 `Behavior()` 返回值时，编译阶段会保留该表达式并继续后续转换。
+- 字段分层：
+  - 放进 `options` 的是原生 `ComponentOptions` 字段，例如 `multipleSlots`、`styleIsolation`、`virtualHost`
+  - 组件顶层字段例如 `externalClasses`、`behaviors`、`relations`，直接写在 `defineOptions({ ... })` 顶层
+
+示例：
+
+```vue
+<script setup lang="ts">
+defineOptions({
+  externalClasses: ['custom-class'],
+  options: {
+    virtualHost: true,
+    styleIsolation: 'apply-shared',
+  },
+})
+</script>
+```
 
 ### `mergeModels()` {#mergemodels}
 
