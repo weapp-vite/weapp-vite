@@ -60,7 +60,7 @@ defineAppJson({
   subPackages: [
     {
       root: 'subpackages/lab',
-      pages: ['index', 'class-binding/index'],
+      pages: ['index', 'class-binding/index', 'virtual-host-class/index'],
     },
     {
       root: 'subpackages/ability',

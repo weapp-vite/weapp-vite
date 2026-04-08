@@ -68,6 +68,12 @@
           "scene": null
         },
         {
+          "name": "virtualHost class 透传实验",
+          "pathName": "subpackages/lab/virtual-host-class/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "系统能力页",
           "pathName": "subpackages/ability/index",
           "query": "",

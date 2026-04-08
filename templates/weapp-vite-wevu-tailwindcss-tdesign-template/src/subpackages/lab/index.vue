@@ -98,6 +98,7 @@ async function navigateTo(url: string) {
           <view class="mt-[8rpx]">
             <t-cell-group>
               <t-cell title="Class 绑定实验室" note="子包：/subpackages/lab/class-binding" arrow @tap="navigateTo('/subpackages/lab/class-binding/index')" />
+              <t-cell title="virtualHost class 透传实验" note="子包：/subpackages/lab/virtual-host-class" arrow @tap="navigateTo('/subpackages/lab/virtual-host-class/index')" />
             </t-cell-group>
           </view>
         </view>

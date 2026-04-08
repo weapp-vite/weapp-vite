@@ -188,6 +188,13 @@ defineOptions(() => ({
   },
 }))
 
+defineOptions({
+  externalClasses: ['plain-class'],
+  options: {
+    multipleSlots: true,
+  },
+})
+
 defineOptions(async () => ({
   options: {
     styleIsolation: 'shared',

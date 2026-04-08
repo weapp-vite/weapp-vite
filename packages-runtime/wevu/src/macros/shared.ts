@@ -130,12 +130,22 @@ type ScriptSetupNativeMethods<
   M extends ScriptSetupNativeMethodOption,
 > = M & ThisType<ScriptSetupNativeInstance<D, P, M>>
 
+type RemoveIndexSignature<T> = {
+  [K in keyof T as string extends K
+    ? never
+    : number extends K
+      ? never
+      : symbol extends K
+        ? never
+        : K]: T[K]
+}
+
 export type ScriptSetupDefineOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
   P extends ScriptSetupNativePropertyOption = ScriptSetupNativePropertyOption,
-> = Omit<DefineComponentOptions<ComponentPropsOptions, D, C, M>, 'props' | 'options' | 'data' | 'methods'> & {
+> = Omit<RemoveIndexSignature<DefineComponentOptions<ComponentPropsOptions, D, C, M>>, 'props' | 'options' | 'data' | 'methods'> & {
   /**
    * props 必须通过 defineProps() 声明。
    */
