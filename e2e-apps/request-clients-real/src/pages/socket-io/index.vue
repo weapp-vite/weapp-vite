@@ -12,6 +12,9 @@ import {
 const baseUrl = ref('')
 const state = ref(createRequestCaseState())
 const defaultTransportName = ref('')
+const latestRandomMessage = ref('')
+const latestRandomSentAt = ref('')
+const randomPushCount = ref(0)
 const websocketOnlyTransportName = ref('')
 
 interface SocketProbePayload {
@@ -22,12 +25,25 @@ interface SocketProbePayload {
   transport: string
 }
 
+interface SocketServerRandomPayload {
+  event: string
+  message: string
+  path: string
+  requestCount: number
+  sentAt: string
+}
+
+interface SocketProbeResult {
+  ack: SocketProbePayload
+  randomPayload: SocketServerRandomPayload
+}
+
 async function connectProbe(
   options?: {
     forceWebsocket?: boolean
   },
 ) {
-  return await new Promise<SocketProbePayload>((resolve, reject) => {
+  return await new Promise<SocketProbeResult>((resolve, reject) => {
     const socket = io(baseUrl.value, {
       autoConnect: false,
       forceNew: true,
@@ -37,6 +53,8 @@ async function connectProbe(
       transports: options?.forceWebsocket ? ['websocket'] : undefined,
     })
 
+    let ackPayload: SocketProbePayload | null = null
+    let randomPayload: SocketServerRandomPayload | null = null
     let settled = false
     let upgradeTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -47,7 +65,20 @@ async function connectProbe(
       socket.off('connect')
       socket.off('connect_error')
       socket.off('error')
+      socket.off('server-random')
       socket.io.engine?.off('upgrade')
+    }
+
+    const resolveIfReady = () => {
+      if (!ackPayload || !randomPayload) {
+        return
+      }
+      cleanup()
+      socket.disconnect()
+      resolve({
+        ack: ackPayload,
+        randomPayload,
+      })
     }
 
     const finalize = () => {
@@ -67,11 +98,18 @@ async function connectProbe(
         forceWebsocket: options?.forceWebsocket === true,
         run: state.value.runCount,
       }, (ack: SocketProbePayload) => {
-        cleanup()
-        socket.disconnect()
-        resolve(ack)
+        ackPayload = ack
+        resolveIfReady()
       })
     }
+
+    socket.on('server-random', (payload: SocketServerRandomPayload) => {
+      randomPayload = payload
+      latestRandomMessage.value = payload.message
+      latestRandomSentAt.value = payload.sentAt
+      randomPushCount.value = payload.requestCount
+      resolveIfReady()
+    })
 
     socket.on('connect', () => {
       if (options?.forceWebsocket || socket.io.engine?.transport.name === 'websocket') {
@@ -109,6 +147,9 @@ async function runCase() {
     return state.value
   }
 
+  latestRandomMessage.value = ''
+  latestRandomSentAt.value = ''
+  randomPushCount.value = 0
   state.value = createRunningState(state.value)
 
   try {
@@ -117,23 +158,27 @@ async function runCase() {
       forceWebsocket: true,
     })
 
-    if (defaultProbe.client !== 'socket.io-client') {
+    if (defaultProbe.ack.client !== 'socket.io-client') {
       throw new Error(`unexpected default socket.io payload: ${JSON.stringify(defaultProbe)}`)
     }
-    if (websocketOnlyProbe.client !== 'socket.io-client' || websocketOnlyProbe.transport !== 'websocket') {
+    if (websocketOnlyProbe.ack.client !== 'socket.io-client' || websocketOnlyProbe.ack.transport !== 'websocket') {
       throw new Error(`unexpected websocket-only payload: ${JSON.stringify(websocketOnlyProbe)}`)
     }
 
     state.value = createSuccessState(state.value, 101, {
       checks: {
-        defaultTransportSupported: defaultProbe.transport === 'polling' || defaultProbe.transport === 'websocket',
-        websocketOnlyConnected: websocketOnlyProbe.transport === 'websocket',
+        defaultTransportSupported: defaultProbe.ack.transport === 'polling' || defaultProbe.ack.transport === 'websocket',
+        serverRandomReceived: defaultProbe.randomPayload.event === 'server-random'
+          && websocketOnlyProbe.randomPayload.event === 'server-random',
+        websocketOnlyConnected: websocketOnlyProbe.ack.transport === 'websocket',
       },
-      client: defaultProbe.client,
+      client: defaultProbe.ack.client,
       defaultProbe,
-      path: websocketOnlyProbe.path,
-      requestCount: websocketOnlyProbe.requestCount,
-      transport: websocketOnlyProbe.transport,
+      latestRandomMessage: websocketOnlyProbe.randomPayload.message,
+      latestRandomSentAt: websocketOnlyProbe.randomPayload.sentAt,
+      path: websocketOnlyProbe.randomPayload.path,
+      requestCount: websocketOnlyProbe.randomPayload.requestCount,
+      transport: websocketOnlyProbe.ack.transport,
       websocketOnlyProbe,
     })
   }
@@ -151,6 +196,8 @@ async function runE2E() {
     ok: snapshot.pageStatus === '全部通过',
     snapshot,
     defaultTransportName: defaultTransportName.value,
+    latestRandomMessage: latestRandomMessage.value,
+    randomPushCount: randomPushCount.value,
     websocketOnlyTransportName: websocketOnlyTransportName.value,
   }
 }
@@ -179,6 +226,9 @@ onLoad((query) => {
       <text id="socket-request-path" class="line">requestPath = {{ state.requestPath }}</text>
       <text id="socket-default-transport" class="line">defaultTransport = {{ defaultTransportName }}</text>
       <text id="socket-websocket-transport" class="line">websocketOnlyTransport = {{ websocketOnlyTransportName }}</text>
+      <text class="line">randomPushCount = {{ randomPushCount }}</text>
+      <text class="line">latestRandomMessage = {{ latestRandomMessage }}</text>
+      <text class="line">latestRandomSentAt = {{ latestRandomSentAt }}</text>
       <button class="action" @tap="runCase">
         重新执行 socket.io 校验
       </button>

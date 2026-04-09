@@ -15,12 +15,18 @@ const state = ref(createRequestCaseState())
 const websocketUrl = ref('')
 const connectedReadyState = ref(-1)
 const finalReadyState = ref(-1)
+const latestRandomMessage = ref('')
+const latestRandomSentAt = ref('')
+const randomPushCount = ref(0)
 
 interface NativeWebSocketPayload {
   body?: Record<string, unknown>
   client: string
+  event?: string
+  message?: string
   path: string
   requestCount: number
+  sentAt?: string
   stage: string
   transport?: string
   url?: string
@@ -36,9 +42,13 @@ async function runCase() {
 
   try {
     websocketUrl.value = `${baseUrl.value.replace(HTTP_PROTOCOL_RE, 'ws')}/ws`
+    latestRandomMessage.value = ''
+    latestRandomSentAt.value = ''
+    randomPushCount.value = 0
 
-    const payload = await new Promise<NativeWebSocketPayload>((resolve, reject) => {
+    const payload = await new Promise<{ echoPayload: NativeWebSocketPayload, tickPayload: NativeWebSocketPayload }>((resolve, reject) => {
       const socket = new WebSocket(websocketUrl.value)
+      let echoPayload: NativeWebSocketPayload | null = null
       let settled = false
       let welcomeReceived = false
 
@@ -74,10 +84,25 @@ async function runCase() {
           return
         }
 
+        if (parsed.stage === 'echo') {
+          echoPayload = parsed
+          return
+        }
+
+        if (parsed.stage !== 'tick') {
+          return
+        }
+
         finalReadyState.value = socket.readyState
+        latestRandomMessage.value = parsed.message ?? ''
+        latestRandomSentAt.value = parsed.sentAt ?? ''
+        randomPushCount.value = parsed.requestCount
         finalize(() => {
           socket.close()
-          resolve(parsed)
+          resolve({
+            echoPayload: echoPayload ?? parsed,
+            tickPayload: parsed,
+          })
         })
       }
 
@@ -93,11 +118,19 @@ async function runCase() {
       }
     })
 
-    if (payload.client !== 'native-websocket' || payload.transport !== 'websocket') {
+    if (payload.echoPayload.client !== 'native-websocket' || payload.echoPayload.transport !== 'websocket') {
       throw new Error(`unexpected websocket payload: ${JSON.stringify(payload)}`)
     }
 
-    state.value = createSuccessState(state.value, 101, payload)
+    state.value = createSuccessState(state.value, 101, {
+      ...payload.echoPayload,
+      latestRandomMessage: payload.tickPayload.message ?? '',
+      latestRandomSentAt: payload.tickPayload.sentAt ?? '',
+      path: payload.tickPayload.path,
+      requestCount: payload.tickPayload.requestCount,
+      serverRandomEvent: payload.tickPayload.event ?? '',
+      tickPayload: payload.tickPayload,
+    })
   }
   catch (error) {
     state.value = createErrorState(state.value, error)
@@ -111,7 +144,9 @@ async function runE2E() {
   return {
     connectedReadyState: connectedReadyState.value,
     finalReadyState: finalReadyState.value,
+    latestRandomMessage: latestRandomMessage.value,
     ok: snapshot.pageStatus === '全部通过',
+    randomPushCount: randomPushCount.value,
     snapshot,
     websocketUrl: websocketUrl.value,
   }
@@ -141,6 +176,9 @@ onLoad((query) => {
       <text id="websocket-request-path" class="line">requestPath = {{ state.requestPath }}</text>
       <text id="websocket-connected-ready-state" class="line">connectedReadyState = {{ connectedReadyState }}</text>
       <text id="websocket-final-ready-state" class="line">finalReadyState = {{ finalReadyState }}</text>
+      <text class="line">randomPushCount = {{ randomPushCount }}</text>
+      <text class="line">latestRandomMessage = {{ latestRandomMessage }}</text>
+      <text class="line">latestRandomSentAt = {{ latestRandomSentAt }}</text>
       <text id="websocket-url" class="line">websocketUrl = {{ websocketUrl }}</text>
       <button class="action" @tap="runCase">
         重新执行 websocket 校验

@@ -13,6 +13,9 @@
     <text class="line">requestPath = {{state.requestPath}}</text>
     <text class="line">defaultTransport = {{defaultTransportName}}</text>
     <text class="line">websocketOnlyTransport = {{websocketOnlyTransportName}}</text>
+    <text class="line">randomPushCount = {{randomPushCount}}</text>
+    <text class="line">latestRandomMessage = {{latestRandomMessage}}</text>
+    <text class="line">latestRandomSentAt = {{latestRandomSentAt}}</text>
     <button class="action" bindtap="runCase">重新执行 socket.io 校验</button>
   </view>
 

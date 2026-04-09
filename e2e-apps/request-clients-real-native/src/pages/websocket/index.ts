@@ -11,8 +11,11 @@ const HTTP_PROTOCOL_RE = /^http/u
 interface NativeWebSocketPayload {
   body?: Record<string, unknown>
   client: string
+  event?: string
+  message?: string
   path: string
   requestCount: number
+  sentAt?: string
   stage: string
   transport?: string
   url?: string
@@ -23,6 +26,9 @@ Page({
     baseUrl: '',
     connectedReadyState: -1,
     finalReadyState: -1,
+    latestRandomMessage: '',
+    latestRandomSentAt: '',
+    randomPushCount: 0,
     state: createRequestCaseState(),
     websocketUrl: '',
   },
@@ -44,13 +50,17 @@ Page({
     this.setData({
       connectedReadyState: -1,
       finalReadyState: -1,
+      latestRandomMessage: '',
+      latestRandomSentAt: '',
+      randomPushCount: 0,
       state: nextState,
       websocketUrl,
     })
 
     try {
-      const payload = await new Promise<NativeWebSocketPayload>((resolve, reject) => {
+      const payload = await new Promise<{ echoPayload: NativeWebSocketPayload, tickPayload: NativeWebSocketPayload }>((resolve, reject) => {
         const socket = new WebSocket(websocketUrl)
+        let echoPayload: NativeWebSocketPayload | null = null
         let settled = false
         let welcomeReceived = false
 
@@ -88,12 +98,27 @@ Page({
             return
           }
 
+          if (parsed.stage === 'echo') {
+            echoPayload = parsed
+            return
+          }
+
+          if (parsed.stage !== 'tick') {
+            return
+          }
+
           this.setData({
             finalReadyState: socket.readyState,
+            latestRandomMessage: parsed.message ?? '',
+            latestRandomSentAt: parsed.sentAt ?? '',
+            randomPushCount: parsed.requestCount,
           })
           finalize(() => {
             socket.close()
-            resolve(parsed)
+            resolve({
+              echoPayload: echoPayload ?? parsed,
+              tickPayload: parsed,
+            })
           })
         }
 
@@ -111,11 +136,19 @@ Page({
         }
       })
 
-      if (payload.client !== 'native-websocket' || payload.transport !== 'websocket') {
+      if (payload.echoPayload.client !== 'native-websocket' || payload.echoPayload.transport !== 'websocket') {
         throw new Error(`unexpected websocket payload: ${JSON.stringify(payload)}`)
       }
 
-      const snapshot = createSuccessState(nextState, 101, payload)
+      const snapshot = createSuccessState(nextState, 101, {
+        ...payload.echoPayload,
+        latestRandomMessage: payload.tickPayload.message ?? '',
+        latestRandomSentAt: payload.tickPayload.sentAt ?? '',
+        path: payload.tickPayload.path,
+        requestCount: payload.tickPayload.requestCount,
+        serverRandomEvent: payload.tickPayload.event ?? '',
+        tickPayload: payload.tickPayload,
+      })
       this.setData({ state: snapshot })
       return snapshot
     }
@@ -130,7 +163,9 @@ Page({
     return {
       connectedReadyState: this.data.connectedReadyState,
       finalReadyState: this.data.finalReadyState,
+      latestRandomMessage: this.data.latestRandomMessage,
       ok: snapshot.pageStatus === '全部通过',
+      randomPushCount: this.data.randomPushCount,
       snapshot,
       websocketUrl: this.data.websocketUrl,
     }

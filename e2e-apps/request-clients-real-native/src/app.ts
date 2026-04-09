@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { REQUEST_CLIENTS_REAL_DEV_BASE_URL } from './shared/requestClientsRealDevBaseUrl'
 
 function hasFunction(value: unknown) {
@@ -37,6 +38,8 @@ const requestGlobalsProbe = {
   webSocketAvailable: hasPrototypeMethods(WebSocket, ['close', 'send']),
   xmlHttpRequestAvailable: hasPrototypeMethods(XMLHttpRequest, ['open', 'send']),
 }
+
+axios.defaults.adapter = 'fetch'
 
 App({
   globalData: {

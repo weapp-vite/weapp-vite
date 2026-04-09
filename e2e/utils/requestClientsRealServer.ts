@@ -6,6 +6,8 @@ import { Hono } from 'hono'
 import { Server as SocketIOServer } from 'socket.io'
 import { WebSocketServer } from 'ws'
 
+const REALTIME_RANDOM_PUSH_INTERVAL_MS = 5_000
+
 export interface RequestClientsRealServerState {
   axios: number
   fetch: number
@@ -23,6 +25,16 @@ export interface RequestClientsRealServerHandle {
 
 export interface StartRequestClientsRealServerOptions {
   port?: number
+}
+
+function createRealtimeRandomPayload(path: '/socket.io' | '/ws', sequence: number) {
+  return {
+    event: 'server-random',
+    message: Math.random().toString(36).slice(2, 10),
+    path,
+    requestCount: sequence,
+    sentAt: new Date().toISOString(),
+  }
 }
 
 function createRequestCounts(): RequestClientsRealServerState {
@@ -151,6 +163,15 @@ export async function startRequestClientsRealServer(
   })
 
   io.on('connection', (socket) => {
+    const pushTimer = setInterval(() => {
+      requestCounts.socketIo += 1
+      socket.emit('server-random', createRealtimeRandomPayload('/socket.io', requestCounts.socketIo))
+    }, REALTIME_RANDOM_PUSH_INTERVAL_MS)
+
+    socket.on('disconnect', () => {
+      clearInterval(pushTimer)
+    })
+
     socket.on('probe', (payload, ack) => {
       requestCounts.socketIo += 1
       ack?.({
@@ -186,6 +207,24 @@ export async function startRequestClientsRealServer(
       stage: 'connected',
       url: request.url ?? '/ws',
     }))
+
+    const pushTimer = setInterval(() => {
+      requestCounts.websocket += 1
+      client.send(JSON.stringify({
+        ...createRealtimeRandomPayload('/ws', requestCounts.websocket),
+        client: 'native-websocket',
+        stage: 'tick',
+        transport: 'websocket',
+      }))
+    }, REALTIME_RANDOM_PUSH_INTERVAL_MS)
+
+    client.on('close', () => {
+      clearInterval(pushTimer)
+    })
+
+    client.on('error', () => {
+      clearInterval(pushTimer)
+    })
 
     client.on('message', (message) => {
       let body: Record<string, unknown> = {}

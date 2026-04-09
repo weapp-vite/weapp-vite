@@ -13,6 +13,9 @@
     <text class="line">requestPath = {{state.requestPath}}</text>
     <text class="line">connectedReadyState = {{connectedReadyState}}</text>
     <text class="line">finalReadyState = {{finalReadyState}}</text>
+    <text class="line">randomPushCount = {{randomPushCount}}</text>
+    <text class="line">latestRandomMessage = {{latestRandomMessage}}</text>
+    <text class="line">latestRandomSentAt = {{latestRandomSentAt}}</text>
     <text class="line">websocketUrl = {{websocketUrl}}</text>
     <button class="action" bindtap="runCase">重新执行 websocket 校验</button>
   </view>
