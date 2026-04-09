@@ -77,7 +77,7 @@ describe('openIde', () => {
     })
     formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
-    waitForRetryKeypressMock.mockResolvedValue(false)
+    waitForRetryKeypressMock.mockResolvedValue('cancel')
     execFileMock.mockImplementation((_file: string, _args: string[], callback: (error: any, stdout?: string, stderr?: string) => void) => {
       callback(null, '', '')
       return {} as any
@@ -132,9 +132,33 @@ describe('openIde', () => {
       timeout: 3000,
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，跳过重复打开。')
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，跳过重复打开，可以按 r 键关闭之前的再次打开。')
     expect(launchAutomatorMock).not.toHaveBeenCalled()
     expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('closes current devtools window and reopens when user presses r for an opened weapp project', async () => {
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
+    })
+    waitForRetryKeypressMock.mockResolvedValueOnce('retry')
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'dist/dev/mp-weixin')
+
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 3000,
+    })
+    expect(parseMock).toHaveBeenCalledWith([
+      'close',
+    ])
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，跳过重复打开，可以按 r 键关闭之前的再次打开。')
+    expect(loggerMock.info).toHaveBeenCalledWith('正在关闭当前已打开项目，并重新拉起微信开发者工具...')
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      trustProject: true,
+    })
   })
 
   it('does not append trust-project when explicitly disabled', async () => {
@@ -300,7 +324,7 @@ describe('openIde', () => {
       .mockRejectedValueOnce(loginRequiredError)
       .mockResolvedValueOnce(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    waitForRetryKeypressMock.mockResolvedValue(true)
+    waitForRetryKeypressMock.mockResolvedValue('retry')
 
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
@@ -318,7 +342,7 @@ describe('openIde', () => {
 
     parseMock.mockRejectedValueOnce(loginRequiredError)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    waitForRetryKeypressMock.mockResolvedValue(false)
+    waitForRetryKeypressMock.mockResolvedValue('cancel')
 
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 

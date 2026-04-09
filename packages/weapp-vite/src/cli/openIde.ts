@@ -52,24 +52,6 @@ async function openWechatIdeByAutomator(projectPath: string) {
 }
 
 /**
- * @description 若当前项目已在微信开发者工具中打开且自动化可连通，则直接复用现有会话，避免重复拉起 IDE。
- */
-async function tryReuseOpenedWechatIde(projectPath: string) {
-  try {
-    const miniProgram = await connectOpenedAutomator({
-      projectPath,
-      timeout: 3_000,
-    })
-    miniProgram.disconnect()
-    logger.info('目标项目已在微信开发者工具中打开，跳过重复打开。')
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-/**
  * @description 执行 IDE 打开流程，并在登录失效时允许按键重试。
  */
 async function runWechatIdeOpenWithRetry(argv: string[]) {
@@ -90,9 +72,9 @@ async function runWechatIdeOpenWithRetry(argv: string[]) {
       logger.warn(formatWechatIdeLoginRequiredError(error))
 
       logger.info(formatRetryHotkeyPrompt())
-      const shouldRetry = await waitForRetryKeypress()
+      const action = await waitForRetryKeypress()
 
-      if (!shouldRetry) {
+      if (action !== 'retry') {
         logger.warn('已取消重试。完成登录后请重新执行当前命令。')
         retrying = false
         continue
@@ -157,32 +139,6 @@ export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
   return resolveIdeProjectPath(mpDistRoot) ?? cwd
 }
 
-export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
-  if (platform === 'weapp' && projectPath && options.trustProject !== false) {
-    try {
-      if (await tryReuseOpenedWechatIde(projectPath)) {
-        return
-      }
-      await openWechatIdeByAutomator(projectPath)
-      return
-    }
-    catch (error) {
-      logger.warn('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
-      logger.error(error)
-    }
-  }
-
-  const argv = ['open', '-p']
-  if (projectPath) {
-    argv.push(projectPath)
-  }
-  if (platform && shouldPassPlatformArgToIdeOpen(platform)) {
-    argv.push('--platform', platform)
-  }
-
-  await runWechatIdeOpenWithRetry(argv)
-}
-
 export async function closeIde() {
   const config = await getConfig()
   const cliPath = config.cliPath?.trim() ? config.cliPath : null
@@ -218,6 +174,76 @@ export async function closeIde() {
 
     return false
   }
+}
+
+function formatReuseOpenedWechatIdePrompt() {
+  return '目标项目已在微信开发者工具中打开，跳过重复打开，可以按 r 键关闭之前的再次打开。'
+}
+
+/**
+ * @description 若当前项目已在微信开发者工具中打开且自动化可连通，则直接复用现有会话，避免重复拉起 IDE。
+ */
+async function tryReuseOpenedWechatIde(projectPath: string) {
+  let miniProgram: Awaited<ReturnType<typeof connectOpenedAutomator>> | undefined
+  try {
+    miniProgram = await connectOpenedAutomator({
+      projectPath,
+      timeout: 3_000,
+    })
+  }
+  catch {
+    return null
+  }
+
+  miniProgram.disconnect()
+  logger.info(formatReuseOpenedWechatIdePrompt())
+
+  const action = await waitForRetryKeypress()
+  if (action !== 'retry') {
+    return {
+      reopened: false,
+      reused: true,
+    } as const
+  }
+
+  logger.info(colors.bold(colors.green('正在关闭当前已打开项目，并重新拉起微信开发者工具...')))
+  const closed = await closeIde()
+  if (!closed) {
+    logger.warn('关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
+  }
+
+  await openWechatIdeByAutomator(projectPath)
+  return {
+    reopened: true,
+    reused: false,
+  } as const
+}
+
+export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
+  if (platform === 'weapp' && projectPath && options.trustProject !== false) {
+    try {
+      const reuseResult = await tryReuseOpenedWechatIde(projectPath)
+      if (reuseResult?.reused || reuseResult?.reopened) {
+        return
+      }
+      await openWechatIdeByAutomator(projectPath)
+      return
+    }
+    catch (error) {
+      logger.warn('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
+      logger.error(error)
+    }
+  }
+
+  const argv = ['open', '-p']
+  if (projectPath) {
+    argv.push(projectPath)
+  }
+  if (platform && shouldPassPlatformArgToIdeOpen(platform)) {
+    argv.push('--platform', platform)
+  }
+
+  await runWechatIdeOpenWithRetry(argv)
 }
 
 /**
