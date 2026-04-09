@@ -31,7 +31,6 @@ export interface CorePluginState {
     hasBuiltOnce: boolean
     lastEmittedEntryIds?: Set<string>
   }
-  preludeChunkRefId?: string
   hmrSharedChunksMode: 'full' | 'auto' | 'off'
   hmrSharedChunkImporters: Map<string, Set<string>>
 }
