@@ -58,6 +58,59 @@ const handle = (value: string) => value
     expect(result.script).toContain('ctx.handle')
   })
 
+  it('applies htmlTagToWxml mapping in final compiled vue template output', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <div class="card">
+    <span>{{ title }}</span>
+    <img :src="cover" />
+    <a url="/pages/detail/index">详情</a>
+  </div>
+</template>
+<script setup lang="ts">
+const title = 'demo'
+const cover = '/cover.png'
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+      {
+        template: {
+          htmlTagToWxml: true,
+        },
+      },
+    )
+
+    expect(result.template).toContain('<view class="card">')
+    expect(result.template).toContain('<text>{{title}}</text>')
+    expect(result.template).toContain('<image src="{{cover}}" />')
+    expect(result.template).toContain('<navigator url="/pages/detail/index">详情</navigator>')
+    expect(result.template).not.toContain('<div')
+    expect(result.template).not.toContain('<span')
+    expect(result.template).not.toContain('<img')
+  })
+
+  it('allows disabling htmlTagToWxml in compileVueFile options', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <div><span>hello</span></div>
+</template>
+<script setup lang="ts">
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+      {
+        template: {
+          htmlTagToWxml: false,
+        },
+      },
+    )
+
+    expect(result.template).toContain('<div><span>hello</span></div>')
+    expect(result.template).not.toContain('<view><text>hello</text></view>')
+  })
+
   it('merges inline map with defineOptions methods for component simple handlers', async () => {
     const result = await compileVueFile(
       `

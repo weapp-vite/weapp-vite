@@ -31,6 +31,7 @@ keywords:
   {
     removeComments?: boolean
     simplifyWhitespace?: boolean
+    htmlTagToWxml?: boolean | Record<string, string>
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
     scopedSlotsRequireProps?: boolean
     slotMultipleInstance?: boolean
@@ -50,6 +51,7 @@ export default defineConfig({
   weapp: {
     vue: {
       template: {
+        htmlTagToWxml: true,
         scopedSlotsCompiler: 'auto',
         scopedSlotsRequireProps: true,
         slotMultipleInstance: true,
@@ -64,6 +66,10 @@ export default defineConfig({
 ```
 
 字段说明：
+- `htmlTagToWxml`：是否将 `.vue` 模板中的常见 HTML 标签映射为小程序内置标签。
+  - `true` 或省略：启用默认映射表（例如 `div -> view`、`span -> text`、`img -> image`、`a -> navigator`）。
+  - `false`：关闭该能力，保留模板中的原始标签名。
+  - `Record<string, string>`：在默认映射表基础上追加或覆盖自定义映射。
 - `scopedSlotsCompiler`：作用域插槽编译策略。
   - `auto`：自动选择最小可用方案（默认）。
   - `augmented`：强制使用增强方案。
@@ -82,7 +88,45 @@ export default defineConfig({
   - `spaced`：输出 `{{ expr }}`，更便于调试阅读。
 - `classStyleWxsShared`：是否复用 class/style 的 WXS helper（主包与非独立分包共享，独立分包各自生成）。
 
+示例：关闭默认映射
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        htmlTagToWxml: false,
+      },
+    },
+  },
+})
+```
+
+示例：覆盖部分标签映射
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        htmlTagToWxml: {
+          section: 'view',
+          article: 'view',
+          a: 'navigator',
+        },
+      },
+    },
+  },
+})
+```
+
 > [!NOTE]
+> `htmlTagToWxml` 只作用于 Vue SFC 模板编译，不影响原生 `.wxml` 文件。
+>
 > `removeComments` / `simplifyWhitespace` 当前仍是兼容性预留位，尚未接入实际编译流程；其余字段已经参与模板编译输出。
 
 ## `weapp.vue.autoImport` {#weapp-vue-autoimport}
