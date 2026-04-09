@@ -284,6 +284,25 @@ const getRows = () => [{ id: 'a', label: 'Alpha' }]
     expect(result.script).toContain('__wv_bind_')
   })
 
+  it('keeps import.meta.env expressions in vue template output for downstream wxml replacement', async () => {
+    const source = [
+      '<template>',
+      '  <image :src="import.meta.env.VITE_CDN + \'/logo.png\'" />',
+      '  <view>{{ import.meta.env.VITE_NAME }}</view>',
+      '</template>',
+      '<script setup lang="ts">',
+      '</script>',
+    ].join('\n')
+
+    const result = await compileVueFile(
+      source,
+      '/project/src/pages/import-meta-env/index.vue',
+    )
+
+    expect(result.template).toContain('src="{{import.meta.env.VITE_CDN + \'/logo.png\'}}"')
+    expect(result.template).toContain('{{import.meta.env.VITE_NAME}}')
+  })
+
   it('keeps runtime binding for call interpolation with sibling text and component nodes', async () => {
     const result = await compileVueFile(
       `

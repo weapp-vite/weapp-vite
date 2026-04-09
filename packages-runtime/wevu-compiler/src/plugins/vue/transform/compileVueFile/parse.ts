@@ -14,6 +14,9 @@ import { createJsonMerger } from '../jsonMerge'
 const SETUP_CALL_RE = /\bsetup\s*\(/
 const DEFINE_OPTIONS_CALL_RE = /\bdefineOptions\s*\(/
 const APP_VUE_FILE_RE = /[\\/]app\.vue$/
+const TEMPLATE_BLOCK_RE = /<template\b[\s\S]*?<\/template>/g
+const TEMPLATE_IMPORT_META_RE = /\bimport\.meta\b/g
+const TEMPLATE_IMPORT_META_PLACEHOLDER = '__im_meta__'
 
 export interface ParsedVueFile {
   descriptor: ReturnType<typeof parse>['descriptor']
@@ -89,6 +92,47 @@ function extractDefineOptionsHash(content: string) {
     .slice(0, 12)
 }
 
+function preprocessTemplateImportMeta(source: string) {
+  return source.replace(TEMPLATE_BLOCK_RE, block => block.replace(TEMPLATE_IMPORT_META_RE, TEMPLATE_IMPORT_META_PLACEHOLDER))
+}
+
+function restoreTemplateImportMeta(content: string) {
+  return content.replace(new RegExp(TEMPLATE_IMPORT_META_PLACEHOLDER, 'g'), 'import.meta')
+}
+
+function restoreTemplateImportMetaInDescriptor(
+  descriptor: ReturnType<typeof parse>['descriptor'],
+) {
+  if (!descriptor.template?.content?.includes(TEMPLATE_IMPORT_META_PLACEHOLDER)) {
+    return descriptor
+  }
+
+  return {
+    ...descriptor,
+    template: {
+      ...descriptor.template,
+      content: restoreTemplateImportMeta(descriptor.template.content),
+    },
+  }
+}
+
+function parseSfc(
+  source: string,
+  filename: string,
+  ignoreEmpty: boolean,
+) {
+  const preprocessedSource = preprocessTemplateImportMeta(source)
+  const parsed = parse(preprocessedSource, {
+    filename,
+    ignoreEmpty,
+  })
+
+  return {
+    ...parsed,
+    descriptor: restoreTemplateImportMetaInDescriptor(parsed.descriptor),
+  }
+}
+
 export async function parseVueFile(
   source: string,
   filename: string,
@@ -97,10 +141,7 @@ export async function parseVueFile(
   const normalizedInputSource = normalizeLineEndings(source)
   const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(normalizedInputSource))
   let descriptorForCompileSource = normalizedSource
-  const { descriptor, errors } = parse(normalizedSource, {
-    filename,
-    ignoreEmpty: normalizedSource === normalizedInputSource,
-  })
+  const { descriptor, errors } = parseSfc(normalizedSource, filename, normalizedSource === normalizedInputSource)
   restoreScriptSetupSrc(descriptor)
   restoreScriptSrc(descriptor)
 
@@ -162,10 +203,7 @@ export async function parseVueFile(
         const startOffset = setupLoc.start.offset
         const endOffset = setupLoc.end.offset
         const nextSource = descriptorForCompileSource.slice(0, startOffset) + extracted.stripped + descriptorForCompileSource.slice(endOffset)
-        const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
-          filename,
-          ignoreEmpty: false,
-        })
+        const { descriptor: nextDescriptor, errors: nextErrors } = parseSfc(nextSource, filename, false)
         restoreScriptSetupSrc(nextDescriptor)
         restoreScriptSrc(nextDescriptor)
 
@@ -217,10 +255,7 @@ export async function parseVueFile(
         const startOffset = setupLoc.start.offset
         const endOffset = setupLoc.end.offset
         const nextSource = descriptorForCompileSource.slice(0, startOffset) + inlined.code + descriptorForCompileSource.slice(endOffset)
-        const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
-          filename,
-          ignoreEmpty: false,
-        })
+        const { descriptor: nextDescriptor, errors: nextErrors } = parseSfc(nextSource, filename, false)
         restoreScriptSetupSrc(nextDescriptor)
         restoreScriptSrc(nextDescriptor)
 

@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../../context'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { compileVueFile } from 'wevu/compiler'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { emitJsonAsset, emitWxmlAssetFile, emitWxmlAssetsWithCache, resolveWxmlEmitContext, resolveWxmlEmitTargets } from '../wxmlEmit'
@@ -187,6 +188,28 @@ describe('emitWxmlAssetsWithCache', () => {
     })
 
     const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('{{\'https://cdn.example.com\'}}/logo.png')
+  })
+
+  it('chooses inner double quotes when outer attribute uses single quotes before emitting asset source', () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_CDN': '"https://cdn.example.com"',
+      },
+    })
+    const token = ctx.wxmlService!.analyze('<image src=\'{{import.meta.env.VITE_CDN}}/logo.png\' />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
     expect(payload.source).toContain('{{"https://cdn.example.com"}}/logo.png')
   })
 
@@ -209,9 +232,79 @@ describe('emitWxmlAssetsWithCache', () => {
     })
 
     const payload = emitFile.mock.calls[0]?.[0]
-    expect(payload.source).toContain('{{"/pages/index/index.wxml"}}')
-    expect(payload.source).toContain('{{"/pages/index"}}')
+    expect(payload.source).toContain('{{\'/pages/index/index.wxml\'}}')
+    expect(payload.source).toContain('{{\'/pages/index\'}}')
     expect(payload.source).toContain('{{{"url":"/pages/index/index.wxml","dirname":"/pages/index","env":{"MODE":"production"}}}}')
+  })
+
+  it('emits compiled vue template with safe import.meta.env quoting in final wxml', async () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env': '{"VITE_CDN":"https://cdn.example.com"}',
+        'import.meta.env.VITE_CDN': '"https://cdn.example.com"',
+      },
+    })
+    const result = await compileVueFile(
+      `
+<template>
+  <image src="{{import.meta.env.VITE_CDN}}/logo.png" />
+</template>
+<script setup lang="ts">
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+    const token = ctx.wxmlService!.analyze(result.template!)
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(result.template).toContain('src="{{import.meta.env.VITE_CDN}}/logo.png"')
+    expect(payload.source).toContain('src="{{\'https://cdn.example.com\'}}/logo.png"')
+  })
+
+  it('emits compiled vue bound attributes with import.meta.env replacements in final wxml', async () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_CDN': '"https://cdn.example.com"',
+        'import.meta.env.VITE_NAME': '"banner"',
+      },
+    })
+    const result = await compileVueFile(
+      `
+<template>
+  <image :src="import.meta.env.VITE_CDN + '/logo.png'" />
+  <view>{{ import.meta.env.VITE_NAME }}</view>
+</template>
+<script setup lang="ts">
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+    const token = ctx.wxmlService!.analyze(result.template!)
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(result.template).toContain('src="{{import.meta.env.VITE_CDN + \'/logo.png\'}}"')
+    expect(payload.source).toContain('src="{{\'https://cdn.example.com\' + \'/logo.png\'}}"')
+    expect(payload.source).toContain('<view>{{\'banner\'}}</view>')
   })
 
   it('emits platform template extension and rewrites script module tags', () => {
