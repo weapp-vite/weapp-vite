@@ -1,5 +1,17 @@
 # create-weapp-vite
 
+## 2.0.81
+
+### Patch Changes
+
+- 🐛 **修复多个发布包在严格 TypeScript 校验下的类型问题，补齐 `tsd` 类型回归测试，并同步收敛 `wevu`、`@weapp-vite/mcp`、`@wevu/web-apis` 与 `create-weapp-vite` 的类型契约，减少后续重构时的类型回退风险。** [`b9a3e5b`](https://github.com/weapp-vite/weapp-vite/commit/b9a3e5b8fc6259ae5d77eba359aca3632d083b75) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite dev -o` / `weapp-vite open` 在目标项目已被微信开发者工具打开时的交互提示。现在会明确提示可按 `r` 关闭当前已打开项目并重新拉起，避免只能被动跳过重复打开；同时修复登录失效重试流程对按键结果判断不准确的问题，确保取消或超时不会被误判为继续重试。** [`b5aaabc`](https://github.com/weapp-vite/weapp-vite/commit/b5aaabc93a592eec4776a8510375b94c01c7ecca) by @sonofmagic
+
+- 🐛 **修复未显式配置 `autoImportComponents` 的 wevu 项目默认不会生成 `.weapp-vite/components.d.ts`、`typed-components.d.ts` 与 `mini-program.html-data.json` 的问题。现在 wevu 应用在默认配置下也会自动产出组件类型支持文件，补齐 Vue SFC 全局组件的模板智能提示基础能力。** [`2117be3`](https://github.com/weapp-vite/weapp-vite/commit/2117be3768a4762a543bd3114fce3eb73e2d73a1) by @sonofmagic
+
+- 🐛 **修复 `wxml` 中 `import.meta.env` 字符串替换的引号生成策略。现在会根据属性外层引号自动选择相反的内层引号，避免在 `src="{{...}}"` 等场景下产出重复双引号导致模板语法报错，同时保留对象字面量等非字符串替换值的原有行为。** [`98d16f8`](https://github.com/weapp-vite/weapp-vite/commit/98d16f8a88bf718566faa4d5e621832333e6be0e) by @sonofmagic
+
 ## 2.0.80
 
 ### Patch Changes
