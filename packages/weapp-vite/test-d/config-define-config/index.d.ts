@@ -6,7 +6,7 @@ export interface WeappViteConfig {
   srcRoot?: string
   appPrelude?: boolean | {
     enabled?: boolean
-    mode?: 'inline' | 'entry'
+    mode?: 'inline' | 'entry' | 'require'
   }
   autoImportComponents?: boolean | AutoImportComponentsConfig
   vue?: {

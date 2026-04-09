@@ -154,7 +154,7 @@ export interface WeappInjectRequestGlobalsConfig {
   dependencies?: (string | RegExp)[]
 }
 
-export type WeappAppPreludeMode = 'inline' | 'entry'
+export type WeappAppPreludeMode = 'inline' | 'entry' | 'require'
 
 /**
  * @description `app.prelude` 前置注入配置

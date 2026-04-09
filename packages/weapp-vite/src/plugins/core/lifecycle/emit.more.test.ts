@@ -1324,6 +1324,79 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pkg-indep/common.js'].code).toContain('globalThis.__probe =')
   })
 
+  it('emits scoped app prelude modules and injects require calls when mode is require', async () => {
+    const state = createState({
+      subPackageMeta: undefined,
+      ctx: {
+        configService: {
+          weappViteConfig: {
+            appPrelude: {
+              mode: 'require',
+            },
+          },
+        },
+        scanService: {
+          subPackageMap: new Map([
+            ['subpackages/normal', {
+              entries: [],
+              subPackage: {
+                root: 'subpackages/normal',
+                pages: [],
+              },
+            }],
+          ]),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'subpackages/normal/pages/home/index.js': {
+        type: 'chunk',
+        fileName: 'subpackages/normal/pages/home/index.js',
+        code: 'Page({})',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    const emitFile = vi.fn((asset: any) => {
+      bundle[asset.fileName] = {
+        type: 'asset',
+        fileName: asset.fileName,
+        source: asset.source,
+      }
+    })
+
+    await hook.call({ emitFile }, {}, bundle)
+
+    expect(bundle['app.js'].code).toContain('__weappViteAppPreludeRequire__')
+    expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
+    expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('__weappViteAppPreludeRequire__')
+    expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
+
+    expect(bundle['app.prelude.js']).toMatchObject({
+      type: 'asset',
+      fileName: 'app.prelude.js',
+    })
+    expect(String(bundle['app.prelude.js'].source)).toContain('__weappViteAppPreludeRuntime__')
+    expect(String(bundle['app.prelude.js'].source)).toContain('__weappViteAppPreludeInstalled__')
+    expect(bundle['subpackages/normal/app.prelude.js']).toMatchObject({
+      type: 'asset',
+      fileName: 'subpackages/normal/app.prelude.js',
+    })
+    expect(emitFile).toHaveBeenCalledTimes(2)
+  })
+
   it('skips app prelude injection when disabled explicitly', async () => {
     const state = createState({
       ctx: {

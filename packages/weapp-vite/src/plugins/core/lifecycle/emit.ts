@@ -54,6 +54,8 @@ const BROWSER_GLOBAL_HOST_TERNARY_RE = /typeof self<[`'"]u[`'"]\?self:typeof win
 const AXIOS_MODULE_ID_RE = /[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?axios[/\\]/u
 const APP_PRELUDE_CHUNK_MARKER = '__weappViteAppPreludeRuntime__'
 const APP_PRELUDE_GUARD_KEY = '__weappViteAppPreludeInstalled__'
+const APP_PRELUDE_REQUIRE_MARKER = '__weappViteAppPreludeRequire__'
+const APP_PRELUDE_REQUIRE_FILE_BASENAME = 'app.prelude.js'
 const DIRECTIVE_PROLOGUE_RE = /^(?:(['"])(?:\\.|(?!\1)[^\\])*\1;?\s*)+/u
 const USE_STRICT_PREFIX_RE = /^(?:['"]use strict['"];\s*)+/u
 
@@ -854,7 +856,7 @@ function collectAppPreludeEntryChunkFileNames(state: CorePluginState) {
   return entryChunkFileNames
 }
 
-async function resolveAppPreludeInlineCode(preludePath: string | undefined) {
+async function resolveAppPreludeCode(preludePath: string | undefined) {
   if (!preludePath) {
     return undefined
   }
@@ -919,11 +921,81 @@ async function resolveAppPreludeInlineCode(preludePath: string | undefined) {
   ].join('\n')
 }
 
+function resolveAppPreludeRequireFileName(fileName: string, state: CorePluginState) {
+  const matchedIndependentRoot = state.subPackageMeta?.subPackage.root
+  if (matchedIndependentRoot) {
+    return `${matchedIndependentRoot}/${APP_PRELUDE_REQUIRE_FILE_BASENAME}`
+  }
+
+  const roots = [...(state.ctx.scanService.subPackageMap?.keys() ?? [])]
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length)
+  const matchedRoot = roots.find(root => fileName === root || fileName.startsWith(`${root}/`))
+  if (!matchedRoot) {
+    return APP_PRELUDE_REQUIRE_FILE_BASENAME
+  }
+  return `${matchedRoot}/${APP_PRELUDE_REQUIRE_FILE_BASENAME}`
+}
+
+function createAppPreludeRequireStatement(chunkFileName: string, preludeFileName: string) {
+  const relativePath = toPosixPath(path.relative(path.dirname(chunkFileName), preludeFileName))
+  const requestPath = relativePath.startsWith('.')
+    ? relativePath
+    : `./${relativePath}`
+  return `/* ${APP_PRELUDE_REQUIRE_MARKER} */require(${JSON.stringify(requestPath)})`
+}
+
+function emitAppPreludeRequireAssets(
+  bundle: OutputBundle,
+  appPreludeCode: string | undefined,
+  state: CorePluginState,
+  emitFile?: (asset: {
+    type: 'asset'
+    fileName: string
+    source: string
+  }) => void,
+) {
+  if (!appPreludeCode) {
+    return
+  }
+
+  const preludeFileNames = new Set<string>()
+
+  if (state.subPackageMeta?.subPackage.root) {
+    preludeFileNames.add(`${state.subPackageMeta.subPackage.root}/${APP_PRELUDE_REQUIRE_FILE_BASENAME}`)
+  }
+  else {
+    preludeFileNames.add(APP_PRELUDE_REQUIRE_FILE_BASENAME)
+    for (const root of state.ctx.scanService.subPackageMap.keys()) {
+      if (!root) {
+        continue
+      }
+      preludeFileNames.add(`${root}/${APP_PRELUDE_REQUIRE_FILE_BASENAME}`)
+    }
+  }
+
+  for (const fileName of preludeFileNames) {
+    if (bundle[fileName]) {
+      continue
+    }
+    emitFile?.({
+      type: 'asset',
+      fileName,
+      source: `${appPreludeCode}\n`,
+    })
+  }
+}
+
 function injectAppPreludeCode(
   bundle: OutputBundle,
   appPreludeCode: string | undefined,
   options: ResolvedAppPreludeOptions,
   state: CorePluginState,
+  emitFile?: (asset: {
+    type: 'asset'
+    fileName: string
+    source: string
+  }) => void,
 ) {
   if (!appPreludeCode || !options.enabled) {
     return
@@ -932,6 +1004,9 @@ function injectAppPreludeCode(
   const entryChunkFileNames = options.mode === 'entry'
     ? collectAppPreludeEntryChunkFileNames(state)
     : undefined
+  if (options.mode === 'require') {
+    emitAppPreludeRequireAssets(bundle, appPreludeCode, state, emitFile)
+  }
 
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -939,13 +1014,21 @@ function injectAppPreludeCode(
     }
 
     const chunk = output as OutputChunk
-    if (chunk.code.includes(APP_PRELUDE_CHUNK_MARKER)) {
+    if (chunk.code.includes(APP_PRELUDE_CHUNK_MARKER) || chunk.code.includes(APP_PRELUDE_REQUIRE_MARKER)) {
       continue
     }
-    if (entryChunkFileNames && !entryChunkFileNames.has(chunk.fileName)) {
+    const isTargetEntryChunk = chunk.isEntry === true || entryChunkFileNames?.has(chunk.fileName) === true
+    if (entryChunkFileNames && !isTargetEntryChunk) {
       continue
     }
-    chunk.code = prependChunkCodePreservingDirectives(chunk.code, appPreludeCode)
+
+    const injectedCode = options.mode === 'require'
+      ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
+      : appPreludeCode
+    if (!injectedCode) {
+      continue
+    }
+    chunk.code = prependChunkCodePreservingDirectives(chunk.code, injectedCode)
   }
 }
 
@@ -1245,8 +1328,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     }
 
     const appPreludeOptions = resolveAppPreludeOptions(state)
-    const appPreludeCode = await resolveAppPreludeInlineCode(scanService.appEntry?.preludePath)
-    injectAppPreludeCode(rolldownBundle, appPreludeCode, appPreludeOptions, state)
+    const appPreludeCode = await resolveAppPreludeCode(scanService.appEntry?.preludePath)
+    injectAppPreludeCode(rolldownBundle, appPreludeCode, appPreludeOptions, state, asset => this.emitFile(asset))
 
     refreshModuleGraph(this, state)
 

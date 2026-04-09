@@ -24,6 +24,7 @@ interface BuildCommandOptions {
   cwd?: string
   label?: string
   skipNpm?: boolean
+  env?: Record<string, string | undefined>
 }
 
 interface DependencyMeta {
@@ -175,6 +176,7 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     cwd,
     label = projectRoot,
     skipNpm = false,
+    env,
   } = options
 
   const stats: BuildLogStats = {
@@ -207,7 +209,10 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
       cwd,
       all: true,
       extendEnv: false,
-      env: sanitizeBuildCommandEnv(),
+      env: {
+        ...sanitizeBuildCommandEnv(),
+        ...env,
+      },
       reject: false,
     })
 

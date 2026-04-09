@@ -117,7 +117,7 @@ export default defineConfig({
 
 ## `weapp.appPrelude` {#weapp-appprelude}
 
-- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' }`
+- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require' }`
 
 用于控制 `src/app.prelude.ts` / `src/app.prelude.js` 这类前置脚本的注入方式。
 
@@ -137,6 +137,7 @@ export default defineConfig({
 - `enabled`：是否启用 `app.prelude` 注入；设为 `false` 时即使文件存在也不会注入
 - `mode: 'inline'`：默认模式，把 prelude 代码内联到每个 JS chunk 顶部，执行时机最稳
 - `mode: 'entry'`：只注入到 `app/page/component` 入口 chunk，适合希望减少重复代码的场景
+- `mode: 'require'`：按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
 
 适用场景：
 
