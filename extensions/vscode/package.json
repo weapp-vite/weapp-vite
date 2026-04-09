@@ -1,6 +1,6 @@
 {
   "publisher": "weapp-vite",
-  "name": "vscode",
+  "name": "@weapp-vite/vscode",
   "displayName": "weapp-vite",
   "version": "0.0.2",
   "private": true,
@@ -14,6 +14,10 @@
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "x-vsce": {
+    "name": "weapp-vite",
+    "displayName": "weapp-vite Tools"
   },
   "keywords": [
     "weapp-vite",

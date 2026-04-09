@@ -7,6 +7,10 @@ const packageJsonPath = path.resolve(__dirname, '..', 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 
 it('manifest exposes practical command set', () => {
+  assert.equal(packageJson.name, '@weapp-vite/vscode')
+  assert.equal(packageJson['x-vsce'].name, 'weapp-vite')
+  assert.equal(packageJson['x-vsce'].displayName, 'weapp-vite Tools')
+
   const commandIds = packageJson.contributes.commands.map(command => command.command)
 
   assert.deepEqual(commandIds, [

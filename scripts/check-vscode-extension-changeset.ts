@@ -143,8 +143,8 @@ async function main() {
     }
   }
 
-  if (!changesetPackages.has('vscode')) {
-    console.error('Missing changeset for vscode. Add a changeset when releasable files under extensions/vscode change.')
+  if (!changesetPackages.has('@weapp-vite/vscode')) {
+    console.error('Missing changeset for @weapp-vite/vscode. Add a changeset when releasable files under extensions/vscode change.')
     process.exitCode = 1
   }
 }

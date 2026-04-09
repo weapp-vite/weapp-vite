@@ -16,11 +16,12 @@ if (!fs.existsSync(vsixPath)) {
 
 const zip = new AdmZip(vsixPath)
 const entries = zip.getEntries().map((entry: { entryName: string }) => entry.entryName).sort()
+const packageJsonEntry = zip.getEntry('extension/package.json')
 
 const requiredEntries = [
-  'extension/CHANGELOG.md',
-  'extension/LICENSE',
-  'extension/README.md',
+  'extension/LICENSE.txt',
+  'extension/changelog.md',
+  'extension/readme.md',
   'extension/assets/logo.png',
   'extension/dist/extension.js',
   'extension/package.json',
@@ -47,5 +48,11 @@ for (const entry of requiredEntries) {
 for (const entry of forbiddenEntries) {
   assert.ok(!entries.includes(entry), `unexpected vsix entry: ${entry}`)
 }
+
+assert.ok(packageJsonEntry, 'missing packaged extension/package.json')
+
+const packagedManifest = JSON.parse(zip.readAsText(packageJsonEntry))
+assert.equal(packagedManifest.name, 'weapp-vite')
+assert.equal(packagedManifest.displayName, 'weapp-vite Tools')
 
 console.log('extensions/vscode vsix check ok')
