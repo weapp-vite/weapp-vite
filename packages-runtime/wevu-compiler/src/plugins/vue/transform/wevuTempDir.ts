@@ -6,6 +6,9 @@ import path from 'pathe'
 
 const PROJECT_WEVU_CONFIG_DIR = path.join('.weapp-vite', 'wevu-config')
 
+/**
+ * 优先把临时配置缓存放到项目内，避免宏求值时脱离项目根目录导致包名导入解析异常。
+ */
 function getWevuConfigCacheRoot() {
   const env = process.env.WEAPP_VITE_WEVU_CONFIG_DIR?.trim()
   if (env) {
