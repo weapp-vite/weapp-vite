@@ -65,7 +65,7 @@ VSCE_PAT=your_token pnpm run publish:vsce
 
 - 源 `package.json` 使用 workspace 包名 `@weapp-vite/vscode`
 - `publish:vsce` / `package:dry-run` 会复制到临时目录，并把最终提交给 Marketplace 的 manifest 重写为 `name = weapp-vite`
-- 发布时同时会覆盖 `displayName = weapp-vite Tools`，避免 Marketplace 显示名冲突
+- 发布时同时会覆盖 `displayName = Weapp-vite`，避免 Marketplace 显示名冲突
 - `pnpm run build` 使用 `tsdown` 将扩展运行时代码打包到 `dist/extension.js`
 - `pnpm run test` 通过 Vitest 执行 TypeScript 单元测试
 - `pnpm run smoke:dist` 会加载编译后的 `dist/extension.js`，并用模拟的 VS Code Host 验证扩展激活

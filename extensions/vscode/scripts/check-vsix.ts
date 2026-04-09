@@ -53,6 +53,6 @@ assert.ok(packageJsonEntry, 'missing packaged extension/package.json')
 
 const packagedManifest = JSON.parse(zip.readAsText(packageJsonEntry))
 assert.equal(packagedManifest.name, 'weapp-vite')
-assert.equal(packagedManifest.displayName, 'weapp-vite Tools')
+assert.equal(packagedManifest.displayName, 'Weapp-vite')
 
 console.log('extensions/vscode vsix check ok')
