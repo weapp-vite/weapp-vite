@@ -362,6 +362,51 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('src=\'{{"https://cdn.example.com"}}/logo.png\'')
   })
 
+  it('emits final wxml assets with htmlTagToWxml mapping applied from compiled vue templates', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <div class="card">
+    <span>{{ title }}</span>
+    <img :src="cover" />
+    <a url="/pages/detail/index">详情</a>
+  </div>
+</template>
+<script setup lang="ts">
+const title = 'demo'
+const cover = '/cover.png'
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+      {
+        template: {
+          htmlTagToWxml: true,
+        },
+      },
+    )
+    const token = ctx.wxmlService!.analyze(result.template!)
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(result.template).toContain('<view class="card">')
+    expect(payload.source).toContain('<view class="card">')
+    expect(payload.source).toContain('<text>{{title}}</text>')
+    expect(payload.source).toContain('<image src="{{cover}}" />')
+    expect(payload.source).toContain('<navigator url="/pages/detail/index">详情</navigator>')
+    expect(payload.source).not.toContain('<div')
+    expect(payload.source).not.toContain('<span')
+    expect(payload.source).not.toContain('<img')
+  })
+
   it('emits platform template extension and rewrites script module tags', () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'axml', wxs: 'sjs' },
