@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 收紧项目识别条件，不再把 `create-weapp-vite` 依赖视为 weapp-vite 项目信号。
 - 优化 VS Code Marketplace 详情页信息，补充中文简介、官方入口与更完整的扩展说明。
 - 新增工作区识别、状态栏入口、输出面板和统一动作选择器。
 - 新增 `dev`、`build`、`generate`、`open`、`doctor/info` 等实用命令。

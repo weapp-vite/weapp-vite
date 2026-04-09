@@ -55,7 +55,7 @@ export function buildPackageJsonDiagnostics(document: any) {
     ? packageJson.scripts
     : {}
   const hasWeappViteDependency = dependencyBuckets.some((dependencies) => {
-    return Boolean(dependencies?.['weapp-vite'] || dependencies?.['create-weapp-vite'])
+    return Boolean(dependencies?.['weapp-vite'])
   })
   const hasWeappViteScript = Object.values(scripts).some((value) => {
     return typeof value === 'string' && WEAPP_VITE_SCRIPT_PATTERN.test(value)

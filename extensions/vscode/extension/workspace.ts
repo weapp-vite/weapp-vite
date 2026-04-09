@@ -138,10 +138,6 @@ export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFol
       if (dependencies['weapp-vite']) {
         packageSignals.push('依赖包含 weapp-vite')
       }
-
-      if (dependencies['create-weapp-vite']) {
-        packageSignals.push('依赖包含 create-weapp-vite')
-      }
     }
   }
 

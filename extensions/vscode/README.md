@@ -54,7 +54,7 @@
 
 扩展会在工作区中检测以下一种或多种信号，并将其识别为 weapp-vite 项目：
 
-- `package.json` 依赖中包含 `weapp-vite` 或 `create-weapp-vite`
+- `package.json` 依赖中包含 `weapp-vite`
 - `package.json` scripts 中调用了 `wv` 或 `weapp-vite`
 - 本地 `vite.config.*` 中引用了 `weapp-vite`
 - `src/app.json` 或 `app.json` 作为补充上下文存在
