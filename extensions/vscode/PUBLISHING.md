@@ -1,6 +1,6 @@
 # 发布说明（VSCode Marketplace）
 
-这个扩展现在已经支持通过 GitHub Actions 自动补版本号并自动发布到 Marketplace。
+这个扩展现在通过仓库统一的 changeset release 流程发布到 VS Code Marketplace，不再使用独立的版本自动递增工作流。
 
 ## 1）设置 publisher
 
@@ -13,18 +13,16 @@
 - 在 https://marketplace.visualstudio.com/ 创建 publisher
 - 创建带有 Marketplace 发布权限的 Azure DevOps Personal Access Token（PAT）
 
-## 3）`main` 分支自动发布
+## 3）通过 changeset 自动发布
 
 在仓库 secrets 配置完成后：
 
-- 合并到 `main` 且包含 `extensions/vscode` 可发布变更的提交，会触发 `.github/workflows/release-vscode-extension.yml`
-- 工作流会读取本次 push 范围内的 Conventional Commits，并按以下规则计算版本号：
-  - `major`：提交标题包含 `!`，或提交正文包含 `BREAKING CHANGE:`
-  - `minor`：至少存在一条 `feat(...)` 提交
-  - `patch`：其他任意可发布扩展变更
-- 工作流会自动更新 `extensions/vscode/package.json` 和 `extensions/vscode/CHANGELOG.md`
-- 随后执行 `pnpm --dir extensions/vscode run publish:vsce`
-- 发布成功后，会把新的版本元数据提交回 `main`，并创建类似 `vscode-extension-v0.1.0` 的 git tag
+- 当 `extensions/vscode` 有需要发布的改动时，新增一条指向 `weapp-vite-vscode` 的 changeset
+- release PR 由仓库统一的 changeset 流程生成，扩展版本号与 `CHANGELOG.md` 也由该流程统一写入
+- release PR 合并到 `main` 后，会触发 `.github/workflows/release.yml`
+- `release.yml` 会先执行现有 npm release 流程，再检查 `extensions/vscode/package.json` 是否在本次 release 中发生版本变化
+- 如果扩展版本有变化且对应 tag 尚不存在，则执行 `pnpm --dir extensions/vscode run publish:vsce`
+- 发布成功后，会创建类似 `vscode-extension-v0.1.0` 的 git tag，但不会发布到 npm
 
 必须配置的仓库 secret：
 
@@ -40,11 +38,8 @@ cd extensions/vscode
 # 先跑本地发布前校验
 pnpm run check:publish
 
-# 只预览下一次自动发布的版本号，不改文件
-pnpm run release:plan
-
-# 在本地写入下一次版本号和 changelog
-pnpm run release:apply
+# 查看当前提交是否会在 release 流程里触发 Marketplace 发布
+pnpm run release:marketplace:plan
 
 # 编译 TypeScript 到 dist/
 pnpm run build
@@ -73,8 +68,7 @@ VSCE_PAT=your_token pnpm run publish:vsce
 - `pnpm run smoke:dist` 会加载编译后的 `dist/extension.js`，并用模拟的 VS Code Host 验证扩展激活
 - `pnpm run check:vsix` 会打出本地 `.vsix`，并校验最终归档里的文件列表
 - `check:publish` 已经包含 `lint`、`test` 和打包校验，是最稳妥的发布前关卡
-- `release:plan` 会计算下一次发布级别，并在 CI 中写入 GitHub Actions 输出变量
-- `release:apply` 会更新 `package.json`，并将 `## Unreleased` 下的内容消费为本次发布说明
+- `release:marketplace:plan` 会检测当前版本是否在本次 release 中变化，并在 CI 中写入 GitHub Actions 输出变量
 
 ## 推荐 CI 校验
 
@@ -93,4 +87,4 @@ pnpm --dir extensions/vscode run package:dry-run
 这个仓库目前包含以下相关工作流：
 
 - `.github/workflows/ci-vscode-extension.yml`
-- `.github/workflows/release-vscode-extension.yml`
+- `.github/workflows/release.yml`

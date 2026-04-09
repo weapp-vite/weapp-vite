@@ -6,7 +6,7 @@ on:
     paths:
       - 'extensions/vscode/**'
       - .github/workflows/ci-vscode-extension.yml
-      - .github/workflows/release-vscode-extension.yml
+      - .github/workflows/release.yml
       - .github/workflows/reusable-node-command.yml
       - '.github/actions/setup-node-pnpm/**'
       - '.github/actions/refresh-workspace-deps/**'

@@ -94,7 +94,7 @@
 - 输出到 `dist/extension.js` 的 `tsdown` 构建配置
 - 本地 `lint`、`vitest` 与 `check` 脚本
 - 用于发布前校验的 `check:publish`
-- 用于自动版本管理的 `release:plan` / `release:apply`
+- 用于在 release 流程中判断是否需要发布 Marketplace 的 `release:marketplace:plan`
 - 用于校验运行时入口和打包排除项的 `check:package`
 - 用于本地生成 `.vsix` 产物的 `package:dry-run`
 - 面向 Marketplace 手动发布的 `publish:vsce`
@@ -116,7 +116,7 @@
 ```bash
 pnpm --dir extensions/vscode run build
 pnpm --dir extensions/vscode run test
-pnpm --dir extensions/vscode run release:plan
+pnpm --dir extensions/vscode run release:marketplace:plan
 pnpm --dir extensions/vscode run smoke:dist
 pnpm --dir extensions/vscode run check:package
 pnpm --dir extensions/vscode run check:vsix
@@ -128,5 +128,5 @@ pnpm --dir extensions/vscode run check:vsix
 
 ## 发布
 
-合并到 `main` 的可发布变更现在可以自动补版本并自动发布扩展。
+扩展版本现在通过 changeset 驱动，合并 release PR 后会在仓库统一的 `release.yml` 中自动发布到 VS Code Marketplace。
 详见 `extensions/vscode/PUBLISHING.md`。

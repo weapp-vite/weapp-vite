@@ -37,6 +37,7 @@ it('package output keeps runtime entry files on disk', () => {
     'scripts/check-package.ts',
     'scripts/check-vsix.ts',
     'scripts/package-dry-run.ts',
+    'scripts/plan-marketplace-release.ts',
     'scripts/release-vsce.ts',
     'scripts/smoke-test.ts',
     'syntaxes/weapp-vite-custom-blocks.tmLanguage.json',

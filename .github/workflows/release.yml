@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v5
 
@@ -53,6 +55,22 @@ jobs:
           npm_config_registry: https://registry.npmjs.org
           # https://github.com/changesets/changesets/pull/1659
           NPM_CONFIG_PROVENANCE: true
+
+      - name: Plan VS Code Marketplace release
+        id: vscode_marketplace
+        run: pnpm --dir extensions/vscode run release:marketplace:plan
+
+      - name: Publish VS Code extension to Marketplace
+        if: steps.vscode_marketplace.outputs.should_publish == 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: pnpm --dir extensions/vscode run publish:vsce
+
+      - name: Tag VS Code Marketplace release
+        if: steps.vscode_marketplace.outputs.should_publish == 'true'
+        run: |
+          git tag "${{ steps.vscode_marketplace.outputs.release_tag }}"
+          git push origin "${{ steps.vscode_marketplace.outputs.release_tag }}"
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v6
