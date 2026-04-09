@@ -25,7 +25,7 @@ export const TEMPLATE_CATALOG = {
   'comment-json': '^4.6.2',
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
-  'lru-cache': '^11.3.2',
+  'lru-cache': '^11.3.3',
   'magic-string': '^0.30.21',
   'miniprogram-api-typings': '^5.1.2',
   'oxc-parser': '^0.124.0',
@@ -51,12 +51,12 @@ export const TEMPLATE_CATALOG = {
   merge: '^2.1.1',
   pathe: '^2.0.3',
   postcss: '^8.5.9',
-  rolldown: '1.0.0-rc.13',
+  rolldown: '1.0.0-rc.15',
   sass: '^1.99.0',
   tailwindcss: '^4.2.2',
   tslib: '^2.8.1',
   typescript: '^6.0.2',
-  vite: '8.0.7',
+  vite: '8.0.8',
   vue: '^3.5.32',
   zod: '^4.3.6'
 } as const
