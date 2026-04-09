@@ -16,12 +16,19 @@ async function runBuild(root: string) {
   })
 }
 
+async function runPrepare(root: string) {
+  await execa('node', ['--import', 'tsx', CLI_PATH, 'prepare', root], {
+    stdio: 'inherit',
+  })
+}
+
 describe.sequential('template e2e: weapp-vite-wevu-template auto-import dts', () => {
   it('emits source-navigation friendly components.d.ts and typed props', async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(COMPONENTS_DTS)
     await fs.remove(TYPED_COMPONENTS_DTS)
 
+    await runPrepare(TEMPLATE_ROOT)
     await runBuild(TEMPLATE_ROOT)
 
     const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
