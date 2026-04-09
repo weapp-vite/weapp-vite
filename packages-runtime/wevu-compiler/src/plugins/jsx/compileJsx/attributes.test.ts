@@ -70,7 +70,7 @@ describe('compileJsx attributes helpers', () => {
     expect(attrs).toContain('title="{{item.name}}"')
     expect(attrs).toContain('bindtap="handleTap"')
     expect(attrs).toContain('bindlongpress="__weapp_vite_inline"')
-    expect(attrs).toContain('data-wv-inline-id="__wv_inline_0"')
+    expect(attrs).toContain('data-wv-inline-id-longpress="__wv_inline_0"')
     expect(attrs).toContain('data-wv-s0="{{item}}"')
   })
 
@@ -168,5 +168,23 @@ describe('compileJsx attributes helpers', () => {
     expect(compileJsxAttributes(openingElement.attributes as any, context)).toEqual([
       'bindlongpress="handleLongPress"',
     ])
+  })
+
+  it('emits event-scoped inline dataset keys for jsx inline handlers', () => {
+    const context = createJsxCompileContext()
+    const openingElement = parseOpeningElement(`
+<view
+  onTap={() => handleTap()}
+  onLongPress={() => handleLongPress()}
+/>
+    `)
+
+    const attrs = compileJsxAttributes(openingElement.attributes, context)
+
+    expect(attrs).toContain('bindtap="__weapp_vite_inline"')
+    expect(attrs).toContain('bindlongpress="__weapp_vite_inline"')
+    expect(attrs).toContain('data-wv-inline-id-tap="__wv_inline_0"')
+    expect(attrs).toContain('data-wv-inline-id-longpress="__wv_inline_1"')
+    expect(attrs).not.toContain('data-wv-inline-id="__wv_inline_0"')
   })
 })

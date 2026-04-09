@@ -30,6 +30,8 @@ function isEventBinding(name: string) {
 
 const LEADING_UPPER_RE = /^[A-Z]/
 const UPPER_CHAR_RE = /[A-Z]/g
+const NON_ALNUM_RE = /[^a-z0-9]+/gi
+const LEADING_TRAILING_DASH_RE = /^-+|-+$/g
 
 function lowerEventName(name: string) {
   if (!name) {
@@ -40,27 +42,50 @@ function lowerEventName(name: string) {
     .replace(UPPER_CHAR_RE, s => s.toLowerCase())
 }
 
-function toEventBindingName(rawName: string, context: JsxCompileContext) {
+function normalizeEventDatasetSuffix(eventName: string): string {
+  const normalized = eventName
+    .trim()
+    .replace(NON_ALNUM_RE, '-')
+    .replace(LEADING_TRAILING_DASH_RE, '')
+    .toLowerCase()
+  return normalized || 'event'
+}
+
+function resolveMappedEventName(rawName: string, context: JsxCompileContext) {
   const resolveEvent = (name: string) => context.platform.mapEventName(lowerEventName(name))
 
   if (CAPTURE_BIND_EVENT_RE.test(rawName)) {
-    const eventName = resolveEvent(rawName.slice('captureBind'.length))
+    return resolveEvent(rawName.slice('captureBind'.length))
+  }
+  if (CAPTURE_CATCH_EVENT_RE.test(rawName)) {
+    return resolveEvent(rawName.slice('captureCatch'.length))
+  }
+  if (MUT_BIND_EVENT_RE.test(rawName)) {
+    return resolveEvent(rawName.slice('mutBind'.length))
+  }
+  if (CATCH_EVENT_RE.test(rawName)) {
+    return resolveEvent(rawName.slice('catch'.length))
+  }
+
+  return resolveEvent(rawName.slice('on'.length))
+}
+
+function toEventBindingName(rawName: string, context: JsxCompileContext) {
+  const eventName = resolveMappedEventName(rawName, context)
+
+  if (CAPTURE_BIND_EVENT_RE.test(rawName)) {
     return context.platform.eventBindingAttr(`capture-bind:${eventName}`)
   }
   if (CAPTURE_CATCH_EVENT_RE.test(rawName)) {
-    const eventName = resolveEvent(rawName.slice('captureCatch'.length))
     return context.platform.eventBindingAttr(`capture-catch:${eventName}`)
   }
   if (MUT_BIND_EVENT_RE.test(rawName)) {
-    const eventName = resolveEvent(rawName.slice('mutBind'.length))
     return context.platform.eventBindingAttr(`mut-bind:${eventName}`)
   }
   if (CATCH_EVENT_RE.test(rawName)) {
-    const eventName = resolveEvent(rawName.slice('catch'.length))
     return context.platform.eventBindingAttr(`catch:${eventName}`)
   }
 
-  const eventName = resolveEvent(rawName.slice('on'.length))
   return context.platform.eventBindingAttr(`bind:${eventName}`)
 }
 
@@ -106,6 +131,8 @@ function compileEventAttribute(
   context: JsxCompileContext,
 ): string[] {
   const bindAttr = toEventBindingName(name, context)
+  const eventName = resolveMappedEventName(name, context)
+  const eventSuffix = normalizeEventDatasetSuffix(eventName)
   const exp = readJsxAttributeExpression(value)
   if (!exp) {
     return []
@@ -129,7 +156,7 @@ function compileEventAttribute(
   }
 
   const inline = registerInlineExpression(exp, context)
-  const attrs = [`data-wv-inline-id="${inline.id}"`, `${bindAttr}="__weapp_vite_inline"`]
+  const attrs = [`data-wv-inline-id-${eventSuffix}="${inline.id}"`, `${bindAttr}="__weapp_vite_inline"`]
   inline.scopeKeys.forEach((scopeKey, index) => {
     attrs.push(`data-wv-s${index}="${renderMustache(scopeKey, context)}"`)
   })
