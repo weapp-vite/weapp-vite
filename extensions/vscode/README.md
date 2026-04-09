@@ -1,6 +1,23 @@
-# weapp-vite：面向实战的 VS Code 支持
+# Weapp Vite
 
-这个 VS Code 扩展提供了：
+面向 `weapp-vite` 项目的 VS Code 官方扩展。
+
+它把日常高频动作直接放进编辑器里：识别项目、展示状态栏入口、执行 `dev/build/generate/open`、补齐常用脚本、增强 `vite.config.*` / `package.json` / `.vue` 的编辑体验，并为 weapp-vite 的 `<json>` 自定义块提供语法高亮与代码片段。
+
+## 官方入口
+
+- 官方仓库：https://github.com/weapp-vite/weapp-vite
+- 插件目录：https://github.com/weapp-vite/weapp-vite/tree/main/extensions/vscode
+- 使用文档：https://github.com/weapp-vite/weapp-vite/tree/main/website
+- 问题反馈：https://github.com/weapp-vite/weapp-vite/issues
+
+## 适合谁
+
+- 正在使用 `weapp-vite` 开发微信小程序或多端小程序项目的开发者
+- 希望在 VS Code 里直接触发 `weapp-vite` 常用命令的团队
+- 需要更顺手地编写 `.vue`、`vite.config.*`、`package.json` 的项目成员
+
+## 核心能力
 
 - `.vue` 文件中 weapp-vite `<json>` 自定义块的语法高亮
 - 识别到 weapp-vite 工作区后的状态栏入口
@@ -11,6 +28,15 @@
 - 在关键 weapp-vite 文件中的悬浮信息、上下文补全和文档快捷入口
 - 状态栏、诊断、悬浮、补全和 CLI 别名偏好的用户配置
 - 最近命令执行日志输出面板
+
+## 快速开始
+
+1. 在 VS Code 中安装 `Weapp Vite` 扩展。
+2. 打开一个 `weapp-vite` 项目。
+3. 看到状态栏出现 `weapp-vite` 入口后，打开命令面板执行 `weapp-vite: Run Action`。
+4. 按需执行 `Dev`、`Build`、`Generate`、`Open DevTools` 等常用动作。
+
+如果你正在从仓库本地调试，也可以直接使用下面的方式安装：
 
 ## 从仓库安装
 
@@ -34,6 +60,12 @@
 - `src/app.json` 或 `app.json` 作为补充上下文存在
 
 识别成功后，状态栏会显示 `weapp-vite` 入口按钮。
+
+## 为什么推荐安装
+
+- 把常用 CLI 动作前移到编辑器内，减少反复切换终端
+- 对 `weapp-vite` 项目的关键文件提供更贴近场景的补全与提示
+- 新成员进入项目时，可以更快找到命令入口、文档入口和基础配置骨架
 
 ## 命令
 

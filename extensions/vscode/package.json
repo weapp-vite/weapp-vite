@@ -4,7 +4,7 @@
   "displayName": "weapp-vite",
   "version": "0.0.4",
   "private": true,
-  "description": "Practical VS Code support for weapp-vite projects: commands, status bar, snippets, and custom block highlighting.",
+  "description": "为 weapp-vite 项目提供命令入口、状态栏、代码片段、自定义块高亮与轻量编辑器增强的 VS Code 扩展。",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite/tree/main/extensions/vscode",
   "repository": {
