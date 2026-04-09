@@ -26,6 +26,58 @@ function escapeRegExp(source: string) {
   return source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function isInsideMustache(code: string, start: number, end: number) {
+  const open = code.lastIndexOf('{{', start)
+  if (open < 0) {
+    return false
+  }
+
+  const close = code.indexOf('}}', open + 2)
+  return close >= end
+}
+
+function getMustacheOuterQuote(code: string, start: number) {
+  const open = code.lastIndexOf('{{', start)
+  if (open <= 0) {
+    return null
+  }
+
+  for (let index = open - 1; index >= 0; index--) {
+    const char = code[index]
+    if (char === '"' || char === '\'') {
+      return char
+    }
+    if (char === '<' || char === '>' || char === '\n' || char === '\r') {
+      break
+    }
+  }
+
+  return null
+}
+
+function toQuotedLiteral(value: string, quote: '\'' | '"') {
+  try {
+    const parsed = JSON.parse(value)
+    if (typeof parsed !== 'string') {
+      return value
+    }
+
+    const escaped = parsed
+      .replace(/\\/g, '\\\\')
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029')
+
+    return quote === '\''
+      ? `'${escaped.replace(/'/g, '\\\'')}'`
+      : `"${escaped.replace(/"/g, '\\"')}"`
+  }
+  catch {
+    return value
+  }
+}
+
 function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<string, any>) {
   if (!defineImportMetaEnv || Object.keys(defineImportMetaEnv).length === 0) {
     return code
@@ -57,7 +109,9 @@ function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<s
       replacementRanges.push({
         start,
         end,
-        value: String(value),
+        value: isInsideMustache(code, start, end)
+          ? toQuotedLiteral(String(value), getMustacheOuterQuote(code, start) === '\'' ? '"' : '\'')
+          : String(value),
       })
     }
   }

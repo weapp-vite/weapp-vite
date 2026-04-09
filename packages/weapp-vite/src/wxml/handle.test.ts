@@ -404,7 +404,32 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(result.code).toBe('<image src="{{"https://static.example.com"}}/logo.png" data-env="{{{"VITE_CDN":"https://static.example.com"}}}" />')
+    expect(result.code).toBe('<image src="{{\'https://static.example.com\'}}/logo.png" data-env="{{{"VITE_CDN":"https://static.example.com"}}}" />')
+  })
+
+  it('uses double quotes inside mustache when outer attribute uses single quotes', () => {
+    const code = '<image src=\'{{import.meta.env.VITE_CDN}}/logo.png\' />'
+    const data = {
+      code,
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_CDN': '"https://static.example.com"',
+      },
+    })
+
+    expect(result.code).toBe('<image src=\'{{"https://static.example.com"}}/logo.png\' />')
   })
 
   it('memoizes import.meta.env replacements with define values in cache key', () => {
@@ -433,8 +458,8 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(first.code).toBe('<view>{{"first"}}</view>')
-    expect(second.code).toBe('<view>{{"second"}}</view>')
+    expect(first.code).toBe('<view>{{\'first\'}}</view>')
+    expect(second.code).toBe('<view>{{\'second\'}}</view>')
     expect(second).not.toBe(first)
   })
 
@@ -460,7 +485,7 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(result.code).toBe('<view>{{"contains import.meta.env literally"}}</view>')
+    expect(result.code).toBe('<view>{{\'contains import.meta.env literally\'}}</view>')
   })
 
   it('replaces import.meta.url, import.meta.dirname and bare import.meta in wxml output', () => {
@@ -486,6 +511,54 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(result.code).toBe('<view data-url="{{"/pages/issue-431/index.wxml"}}" data-dir="{{"/pages/issue-431"}}" data-meta="{{{"url":"/pages/issue-431/index.wxml","dirname":"/pages/issue-431","env":{"MODE":"production"}}}}" />')
+    expect(result.code).toBe('<view data-url="{{\'/pages/issue-431/index.wxml\'}}" data-dir="{{\'/pages/issue-431\'}}" data-meta="{{{"url":"/pages/issue-431/index.wxml","dirname":"/pages/issue-431","env":{"MODE":"production"}}}}" />')
+  })
+
+  it('escapes single quotes in import.meta.env string replacements inside mustache', () => {
+    const data = {
+      code: '<view data-title="{{import.meta.env.VITE_TITLE}}" />',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_TITLE': '"Bob\'s banner"',
+      },
+    })
+
+    expect(result.code).toBe('<view data-title="{{\'Bob\\\'s banner\'}}" />')
+  })
+
+  it('escapes double quotes when outer attribute uses single quotes', () => {
+    const data = {
+      code: '<view data-title=\'{{import.meta.env.VITE_TITLE}}\' />',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_TITLE': '"banner \\"double\\""',
+      },
+    })
+
+    expect(result.code).toBe('<view data-title=\'{{"banner \\"double\\""}}\' />')
   })
 })
