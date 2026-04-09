@@ -1,3 +1,4 @@
+import { fs } from '@weapp-core/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const findJsonEntryMock = vi.hoisted(() => vi.fn<(id: string) => Promise<{ path?: string }>>())
@@ -96,6 +97,7 @@ function createCtx(overrides: Record<string, any> = {}) {
 describe('scanPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
   })
 
   it('resolves scan basenames for app, plugin and optional json files', async () => {
@@ -142,12 +144,8 @@ describe('scanPlugin service', () => {
       }
       return { path: undefined }
     })
-    findJsEntryMock.mockImplementation(async (id: string) => {
-      if (id.endsWith('/project/src/app.prelude')) {
-        return { path: '/project/src/app.prelude.ts' }
-      }
-      return { path: '/project/src/app.ts' }
-    })
+    vi.spyOn(fs, 'pathExists').mockImplementation(async (id: string) => id === '/project/src/app.prelude.ts')
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
     findVueEntryMock.mockResolvedValue(undefined)
 
     const readMock = vi.fn(async (file: string) => {
@@ -192,7 +190,7 @@ describe('scanPlugin service', () => {
     expect(service.pluginJsonPath).toBe('/project/plugin-root/plugin.json')
     expect(service.workersDir).toBe('workers')
     expect(second).toStrictEqual(first)
-    expect(findJsEntryMock).toHaveBeenCalledTimes(2)
+    expect(findJsEntryMock).toHaveBeenCalledTimes(1)
   })
 
   it('warns when app.ts and app.vue both exist but app.ts wins', async () => {

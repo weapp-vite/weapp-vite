@@ -1,0 +1,33 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/normal/pages/entry/index",
+          "pathName": "subpackages/normal/pages/entry/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/independent/pages/entry/index",
+          "pathName": "subpackages/independent/pages/entry/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": true
+  },
+  "libVersion": "3.15.0"
+}

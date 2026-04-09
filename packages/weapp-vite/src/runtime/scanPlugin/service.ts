@@ -5,8 +5,9 @@ import type {
   SubPackage,
   SubPackageMetaValue,
 } from '../../types'
-import { isObject } from '@weapp-core/shared'
+import { fs, isObject } from '@weapp-core/shared'
 import path from 'pathe'
+import { jsExtensions } from '../../constants'
 import logger from '../../logger'
 import { findJsEntry, findJsonEntry, findVueEntry } from '../../utils'
 import { normalizeRoot, toPosixPath } from '../../utils/path'
@@ -36,6 +37,16 @@ export function resolveScanAppBasename(absoluteSrcRoot: string) {
 
 export function resolveScanAppPreludeBasename(absoluteSrcRoot: string) {
   return path.resolve(absoluteSrcRoot, 'app.prelude')
+}
+
+async function resolveScanAppPreludePath(absoluteSrcRoot: string) {
+  const basename = resolveScanAppPreludeBasename(absoluteSrcRoot)
+  for (const extension of jsExtensions) {
+    const candidate = `${basename}.${extension}`
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
 }
 
 export function resolveScanPluginBasename(absolutePluginRoot?: string) {
@@ -202,11 +213,10 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
 
     const appDirname = ctx.configService.absoluteSrcRoot
     const appBasename = resolveScanAppBasename(appDirname)
-    const appPreludeBasename = resolveScanAppPreludeBasename(appDirname)
     let { path: appConfigFile } = await findJsonEntry(appBasename)
     const discoveredAppConfigFile = appConfigFile
     const { path: appEntryPath } = await findJsEntry(appBasename)
-    const { path: appPreludePath } = await findJsEntry(appPreludeBasename)
+    const appPreludePath = await resolveScanAppPreludePath(appDirname)
     const vueAppPath = await findVueEntry(appBasename)
 
     // 如果找不到 app.json，尝试从 app.vue 提取配置；并在缺少 app.ts/js 时使用 app.vue 作为入口。

@@ -1,0 +1,20 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "subPackages": [
+    {
+      "root": "subpackages/normal",
+      "pages": [
+        "pages/entry/index"
+      ]
+    },
+    {
+      "root": "subpackages/independent",
+      "pages": [
+        "pages/entry/index"
+      ],
+      "independent": true
+    }
+  ]
+}

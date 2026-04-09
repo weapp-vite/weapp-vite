@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 
+const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
+const transformWithEsbuildMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
 const applySharedChunkStrategyMock = vi.hoisted(() => vi.fn())
 const applyRuntimeChunkLocalizationMock = vi.hoisted(() => vi.fn())
 const emitWxmlAssetsWithCacheMock = vi.hoisted(() => vi.fn())
@@ -20,6 +22,14 @@ vi.mock('../../../runtime/chunkStrategy', () => ({
   DEFAULT_SHARED_CHUNK_STRATEGY: 'copy',
   applySharedChunkStrategy: applySharedChunkStrategyMock,
   applyRuntimeChunkLocalization: applyRuntimeChunkLocalizationMock,
+}))
+
+vi.mock('node:fs/promises', () => ({
+  readFile: readFileMock,
+}))
+
+vi.mock('vite', () => ({
+  transformWithEsbuild: transformWithEsbuildMock,
 }))
 
 vi.mock('../../utils/wxmlEmit', () => ({
@@ -82,7 +92,6 @@ function createState(overrides: Record<string, any> = {}) {
       didEmitAllEntries: false,
       hasBuiltOnce: false,
     },
-    preludeChunkRefId: undefined,
     hmrSharedChunksMode: 'auto',
     hmrSharedChunkImporters: new Map(),
     jsonEmitFilesMap: new Map(),
@@ -145,32 +154,6 @@ describe('core lifecycle emit hook extra branches', () => {
       source: '<view />',
     })
     expect(state.watchFilesSnapshot).toEqual(['cached/watch/a.wxml'])
-  })
-
-  it('emits app prelude chunk during renderStart when app.prelude exists', () => {
-    const state = createState({
-      ctx: {
-        scanService: {
-          appEntry: {
-            preludePath: '/project/src/app.prelude.ts',
-          },
-        },
-      },
-    })
-    const emitFile = vi.fn(() => 'prelude-ref')
-    const hook = createRenderStartHook(state)
-
-    hook.call({
-      addWatchFile: vi.fn(),
-      emitFile,
-    })
-
-    expect(emitFile).toHaveBeenCalledWith({
-      type: 'chunk',
-      id: '/project/src/app.prelude.ts',
-      name: 'weapp-vite-prelude',
-    })
-    expect(state.preludeChunkRefId).toBe('prelude-ref')
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {
@@ -1205,17 +1188,17 @@ describe('core lifecycle emit hook extra branches', () => {
 
   it('injects app prelude require ahead of main and subpackage chunks while preserving directives', async () => {
     const state = createState({
-      preludeChunkRefId: 'prelude-ref',
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
     })
     const hook = createGenerateBundleHook(state, false)
     const bundle = {
-      'weapp-vite-prelude.js': {
-        type: 'chunk',
-        fileName: 'weapp-vite-prelude.js',
-        code: '"use strict";exports.__esModule=true;',
-        imports: [],
-        dynamicImports: [],
-      },
       'common.js': {
         type: 'chunk',
         fileName: 'common.js',
@@ -1232,35 +1215,27 @@ describe('core lifecycle emit hook extra branches', () => {
       },
     } as any
 
-    await hook.call({
-      getFileName: vi.fn(() => 'weapp-vite-prelude.js'),
-    }, {}, bundle)
+    await hook.call({}, {}, bundle)
 
-    expect(bundle['common.js'].code).toContain('/* __weappViteAppPreludeRuntime__ */ require("./weapp-vite-prelude.js");')
-    expect(bundle['common.js'].code.startsWith('"use strict";/* __weappViteAppPreludeRuntime__ */ require("./weapp-vite-prelude.js");')).toBe(true)
-    expect(bundle['pkg/pages/home.js'].code).toContain('require("../../weapp-vite-prelude.js");')
-    expect(bundle['weapp-vite-prelude.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['common.js'].code.startsWith('"use strict";/* __weappViteAppPreludeRuntime__ */')).toBe(true)
+    expect(bundle['common.js'].code).toContain('__weappViteAppPreludeInstalled__')
+    expect(bundle['common.js'].code).toContain('globalThis.__probe =')
+    expect(bundle['pkg/pages/home.js'].code).toContain('__weappViteAppPreludeInstalled__')
   })
 
-  it('injects app prelude require into independent subpackage chunks with relative paths', async () => {
+  it('injects app prelude code into independent subpackage chunks', async () => {
     const state = createState({
-      subPackageMeta: {
-        subPackage: {
-          root: 'pkg-indep',
-          independent: true,
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
         },
       },
-      preludeChunkRefId: 'prelude-ref',
     })
     const hook = createGenerateBundleHook(state, false)
     const bundle = {
-      'weapp-vite-prelude.js': {
-        type: 'chunk',
-        fileName: 'weapp-vite-prelude.js',
-        code: 'const boot = 1;',
-        imports: [],
-        dynamicImports: [],
-      },
       'pkg-indep/common.js': {
         type: 'chunk',
         fileName: 'pkg-indep/common.js',
@@ -1270,10 +1245,9 @@ describe('core lifecycle emit hook extra branches', () => {
       },
     } as any
 
-    await hook.call({
-      getFileName: vi.fn(() => 'weapp-vite-prelude.js'),
-    }, {}, bundle)
+    await hook.call({}, {}, bundle)
 
-    expect(bundle['pkg-indep/common.js'].code.startsWith('/* __weappViteAppPreludeRuntime__ */ require("../weapp-vite-prelude.js");')).toBe(true)
+    expect(bundle['pkg-indep/common.js'].code.startsWith('/* __weappViteAppPreludeRuntime__ */')).toBe(true)
+    expect(bundle['pkg-indep/common.js'].code).toContain('globalThis.__probe =')
   })
 })

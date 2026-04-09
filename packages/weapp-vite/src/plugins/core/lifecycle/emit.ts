@@ -3,7 +3,9 @@ import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '
 import type { MpPlatform, SubPackageMetaValue, WeappInjectRequestGlobalsTarget } from '../../../types'
 import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
 import type { CorePluginState } from '../helpers'
+import { readFile } from 'node:fs/promises'
 import path from 'pathe'
+import { transformWithOxc } from 'vite'
 import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral, resolveAstEngine } from '../../../ast'
 import logger from '../../../logger'
 import {
@@ -50,7 +52,9 @@ const DYNAMIC_GLOBAL_RESOLUTION_RE = /Function\(\s*(?:`return this`|'return this
 const BROWSER_GLOBAL_HOST_TERNARY_RE = /typeof self<[`'"]u[`'"]\?self:typeof window<[`'"]u[`'"]\?window:globalThis/g
 const AXIOS_MODULE_ID_RE = /[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?axios[/\\]/u
 const APP_PRELUDE_CHUNK_MARKER = '__weappViteAppPreludeRuntime__'
+const APP_PRELUDE_GUARD_KEY = '__weappViteAppPreludeInstalled__'
 const DIRECTIVE_PROLOGUE_RE = /^(?:(['"])(?:\\.|(?!\1)[^\\])*\1;?\s*)+/u
+const USE_STRICT_PREFIX_RE = /^(?:['"]use strict['"];\s*)+/u
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -809,35 +813,89 @@ function prependChunkCodePreservingDirectives(code: string, injectedCode: string
   return `${directivePrologue}${injectedCode}\n${code.slice(directivePrologue.length)}`
 }
 
-function injectAppPreludeRequire(
+async function resolveAppPreludeInlineCode(preludePath: string | undefined) {
+  if (!preludePath) {
+    return undefined
+  }
+
+  const source = await readFile(preludePath, 'utf8')
+  if (!source.trim()) {
+    return undefined
+  }
+
+  const ast = parseJsLike(source)
+  let hasModuleSyntax = false
+  traverse(ast as any, {
+    ImportDeclaration() {
+      hasModuleSyntax = true
+    },
+    ExportAllDeclaration() {
+      hasModuleSyntax = true
+    },
+    ExportDefaultDeclaration() {
+      hasModuleSyntax = true
+    },
+    ExportNamedDeclaration() {
+      hasModuleSyntax = true
+    },
+  })
+
+  if (hasModuleSyntax) {
+    throw new Error('[app.prelude] 当前仅支持无 import/export 的自包含脚本。')
+  }
+
+  const extension = path.extname(preludePath).toLowerCase()
+  const loader = extension === '.ts' || extension === '.mts' || extension === '.cts'
+    ? 'ts'
+    : extension === '.jsx'
+      ? 'jsx'
+      : extension === '.tsx'
+        ? 'tsx'
+        : 'js'
+  const transformed = await transformWithOxc(source, preludePath, {
+    charset: 'utf8',
+    format: 'cjs',
+    loader,
+    minify: false,
+    sourcemap: false,
+    target: 'es2020',
+    treeShaking: false,
+  })
+  const normalizedCode = transformed.code.replace(USE_STRICT_PREFIX_RE, '').trim()
+  if (!normalizedCode) {
+    return undefined
+  }
+
+  return [
+    `/* ${APP_PRELUDE_CHUNK_MARKER} */`,
+    `(() => {`,
+    `  if (globalThis[${JSON.stringify(APP_PRELUDE_GUARD_KEY)}]) {`,
+    `    return`,
+    `  }`,
+    `  globalThis[${JSON.stringify(APP_PRELUDE_GUARD_KEY)}] = true`,
+    normalizedCode,
+    `})();`,
+  ].join('\n')
+}
+
+function injectAppPreludeCode(
   bundle: OutputBundle,
-  preludeFileName: string | undefined,
+  appPreludeCode: string | undefined,
 ) {
-  if (!preludeFileName) {
+  if (!appPreludeCode) {
     return
   }
 
-  const normalizedPreludeFileName = toPosixPath(preludeFileName)
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
 
     const chunk = output as OutputChunk
-    const normalizedChunkFileName = toPosixPath(chunk.fileName)
-    if (normalizedChunkFileName === normalizedPreludeFileName) {
-      continue
-    }
     if (chunk.code.includes(APP_PRELUDE_CHUNK_MARKER)) {
       continue
     }
-
-    const relativePreludeImport = toPosixPath(path.relative(path.dirname(normalizedChunkFileName), normalizedPreludeFileName))
-    const preludeImport = relativePreludeImport.startsWith('.')
-      ? relativePreludeImport
-      : `./${relativePreludeImport}`
-    const injectionCode = `/* ${APP_PRELUDE_CHUNK_MARKER} */ require(${JSON.stringify(preludeImport)});`
-    chunk.code = prependChunkCodePreservingDirectives(chunk.code, injectionCode)
+    chunk.code = prependChunkCodePreservingDirectives(chunk.code, appPreludeCode)
   }
 }
 
@@ -861,15 +919,6 @@ export function createRenderStartHook(state: CorePluginState) {
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
       buildTarget,
     })
-
-    const appPreludePath = ctx.scanService?.appEntry?.preludePath
-    if (appPreludePath && typeof this.emitFile === 'function' && !state.preludeChunkRefId) {
-      state.preludeChunkRefId = this.emitFile({
-        type: 'chunk',
-        id: appPreludePath,
-        name: 'weapp-vite-prelude',
-      })
-    }
   }
 }
 
@@ -1145,10 +1194,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       injectAxiosFetchAdapterEnv(rolldownBundle)
     }
 
-    const preludeFileName = state.preludeChunkRefId && typeof this.getFileName === 'function'
-      ? this.getFileName(state.preludeChunkRefId)
-      : undefined
-    injectAppPreludeRequire(rolldownBundle, preludeFileName)
+    const appPreludeCode = await resolveAppPreludeInlineCode(scanService.appEntry?.preludePath)
+    injectAppPreludeCode(rolldownBundle, appPreludeCode)
 
     refreshModuleGraph(this, state)
 
