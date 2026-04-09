@@ -1,5 +1,12 @@
 # wevu
 
+## 6.14.4
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.14.4`
+
 ## 6.14.3
 
 ### Patch Changes

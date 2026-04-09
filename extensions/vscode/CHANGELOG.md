@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.0.3
+
+### Patch Changes
+
+- 🐛 **将 VS Code 扩展发布流程合并到仓库统一的 changeset release 流程中：扩展版本由 changeset 驱动更新，合并 release PR 后自动发布到 VS Code Marketplace，但不会发布到 npm。** [`e025c8a`](https://github.com/weapp-vite/weapp-vite/commit/e025c8adcdbd5056fa31c38c05648b957b243f12) by @sonofmagic
+
 ## Unreleased
 
 - 新增工作区识别、状态栏入口、输出面板和统一动作选择器。
