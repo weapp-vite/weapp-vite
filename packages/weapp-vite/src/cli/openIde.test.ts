@@ -132,7 +132,9 @@ describe('openIde', () => {
       timeout: 3000,
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，跳过重复打开，可以按 r 键关闭之前的再次打开。')
+    expect(colorsMock.green).toHaveBeenCalledWith('r')
+    expect(colorsMock.bold).toHaveBeenCalledWith('r')
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 r 关闭当前窗口后重新打开。')
     expect(launchAutomatorMock).not.toHaveBeenCalled()
     expect(parseMock).not.toHaveBeenCalled()
   })
@@ -153,7 +155,9 @@ describe('openIde', () => {
     expect(parseMock).toHaveBeenCalledWith([
       'close',
     ])
-    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，跳过重复打开，可以按 r 键关闭之前的再次打开。')
+    expect(colorsMock.green).toHaveBeenCalledWith('r')
+    expect(colorsMock.bold).toHaveBeenCalledWith('r')
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 r 关闭当前窗口后重新打开。')
     expect(loggerMock.info).toHaveBeenCalledWith('正在关闭当前已打开项目，并重新拉起微信开发者工具...')
     expect(launchAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',

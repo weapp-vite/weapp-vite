@@ -177,7 +177,8 @@ export async function closeIde() {
 }
 
 function formatReuseOpenedWechatIdePrompt() {
-  return '目标项目已在微信开发者工具中打开，跳过重复打开，可以按 r 键关闭之前的再次打开。'
+  const highlightedRetryKey = colors.bold(colors.green('r'))
+  return `目标项目已在微信开发者工具中打开，已跳过重复打开。按 ${highlightedRetryKey} 关闭当前窗口后重新打开。`
 }
 
 /**
