@@ -14,6 +14,7 @@ export type Entry = AppEntry | PageEntry | ComponentEntry
  */
 export interface AppEntry extends BaseEntry {
   type: 'app'
+  preludePath?: string
   themeJsonPath?: string
   themeJson?: Theme
   sitemapJsonPath?: string

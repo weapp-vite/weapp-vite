@@ -34,6 +34,10 @@ export function resolveScanAppBasename(absoluteSrcRoot: string) {
   return path.resolve(absoluteSrcRoot, 'app')
 }
 
+export function resolveScanAppPreludeBasename(absoluteSrcRoot: string) {
+  return path.resolve(absoluteSrcRoot, 'app.prelude')
+}
+
 export function resolveScanPluginBasename(absolutePluginRoot?: string) {
   return absolutePluginRoot ? path.resolve(absolutePluginRoot, 'plugin') : undefined
 }
@@ -198,9 +202,11 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
 
     const appDirname = ctx.configService.absoluteSrcRoot
     const appBasename = resolveScanAppBasename(appDirname)
+    const appPreludeBasename = resolveScanAppPreludeBasename(appDirname)
     let { path: appConfigFile } = await findJsonEntry(appBasename)
     const discoveredAppConfigFile = appConfigFile
     const { path: appEntryPath } = await findJsEntry(appBasename)
+    const { path: appPreludePath } = await findJsEntry(appPreludeBasename)
     const vueAppPath = await findVueEntry(appBasename)
 
     // 如果找不到 app.json，尝试从 app.vue 提取配置；并在缺少 app.ts/js 时使用 app.vue 作为入口。
@@ -256,6 +262,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
         const finalEntryPath = appEntryPath || vueAppPath!
         const resolvedAppEntry: AppEntry = {
           path: finalEntryPath,
+          preludePath: appPreludePath,
           json: config,
           jsonPath: appConfigFile,
           type: 'app',

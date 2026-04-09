@@ -49,6 +49,8 @@ const REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE = /([A-Za-z_$][\w$]*)\s*=\s*require\(
 const DYNAMIC_GLOBAL_RESOLUTION_RE = /Function\(\s*(?:`return this`|'return this'|"return this")\s*\)\(\)/g
 const BROWSER_GLOBAL_HOST_TERNARY_RE = /typeof self<[`'"]u[`'"]\?self:typeof window<[`'"]u[`'"]\?window:globalThis/g
 const AXIOS_MODULE_ID_RE = /[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?axios[/\\]/u
+const APP_PRELUDE_CHUNK_MARKER = '__weappViteAppPreludeRuntime__'
+const DIRECTIVE_PROLOGUE_RE = /^(?:(['"])(?:\\.|(?!\1)[^\\])*\1;?\s*)+/u
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -797,6 +799,48 @@ function rewriteJsonNpmImportsToLocalRoot(
   }
 }
 
+function prependChunkCodePreservingDirectives(code: string, injectedCode: string) {
+  const directiveMatch = code.match(DIRECTIVE_PROLOGUE_RE)
+  if (!directiveMatch?.[0]) {
+    return `${injectedCode}\n${code}`
+  }
+
+  const directivePrologue = directiveMatch[0]
+  return `${directivePrologue}${injectedCode}\n${code.slice(directivePrologue.length)}`
+}
+
+function injectAppPreludeRequire(
+  bundle: OutputBundle,
+  preludeFileName: string | undefined,
+) {
+  if (!preludeFileName) {
+    return
+  }
+
+  const normalizedPreludeFileName = toPosixPath(preludeFileName)
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const normalizedChunkFileName = toPosixPath(chunk.fileName)
+    if (normalizedChunkFileName === normalizedPreludeFileName) {
+      continue
+    }
+    if (chunk.code.includes(APP_PRELUDE_CHUNK_MARKER)) {
+      continue
+    }
+
+    const relativePreludeImport = toPosixPath(path.relative(path.dirname(normalizedChunkFileName), normalizedPreludeFileName))
+    const preludeImport = relativePreludeImport.startsWith('.')
+      ? relativePreludeImport
+      : `./${relativePreludeImport}`
+    const injectionCode = `/* ${APP_PRELUDE_CHUNK_MARKER} */ require(${JSON.stringify(preludeImport)});`
+    chunk.code = prependChunkCodePreservingDirectives(chunk.code, injectionCode)
+  }
+}
+
 export function createRenderStartHook(state: CorePluginState) {
   const { ctx, subPackageMeta, buildTarget } = state
 
@@ -817,6 +861,15 @@ export function createRenderStartHook(state: CorePluginState) {
       emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
       buildTarget,
     })
+
+    const appPreludePath = ctx.scanService?.appEntry?.preludePath
+    if (appPreludePath && typeof this.emitFile === 'function' && !state.preludeChunkRefId) {
+      state.preludeChunkRefId = this.emitFile({
+        type: 'chunk',
+        id: appPreludePath,
+        name: 'weapp-vite-prelude',
+      })
+    }
   }
 }
 
@@ -1091,6 +1144,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       injectRequestGlobalsLocalBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
       injectAxiosFetchAdapterEnv(rolldownBundle)
     }
+
+    const preludeFileName = state.preludeChunkRefId && typeof this.getFileName === 'function'
+      ? this.getFileName(state.preludeChunkRefId)
+      : undefined
+    injectAppPreludeRequire(rolldownBundle, preludeFileName)
 
     refreshModuleGraph(this, state)
 
