@@ -36,6 +36,7 @@ exports[`scan > compilerContext  1`] = `
       "t-divider": "tdesign-miniprogram/divider/divider",
     },
   },
+  "preludePath": undefined,
   "type": "app",
 }
 `;
@@ -74,6 +75,7 @@ exports[`scan > loadAppEntry  1`] = `
     ],
     "window": {},
   },
+  "preludePath": undefined,
   "sitemapJson": {
     "$schema": "https://vite.icebreaker.top/sitemap.json",
     "desc": "关于本文件的更多信息，请参考文档 https://developers.weixin.qq.com/miniprogram/dev/framework/sitemap.html",
