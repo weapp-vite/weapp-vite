@@ -19,13 +19,13 @@ describe('resolveWevuConfigTempDir', () => {
     vi.restoreAllMocks()
   })
 
-  it('uses project cache dir when .weapp-vite/wevu-config exists', () => {
+  it('uses project cache dir by default when cwd exists', () => {
     const cwd = '/project'
     const projectCacheDir = path.join(cwd, '.weapp-vite', 'wevu-config')
     const fromDir = '/project/src/pages/index'
 
     vi.spyOn(process, 'cwd').mockReturnValue(cwd)
-    vi.spyOn(fs, 'existsSync').mockImplementation(target => target === projectCacheDir)
+    vi.spyOn(fs, 'existsSync').mockImplementation(target => target === cwd)
 
     expect(resolveWevuConfigTempDir(fromDir)).toBe(
       path.join(projectCacheDir, getTempDirKey(fromDir)),
@@ -63,12 +63,12 @@ describe('resolveWevuConfigTempDir', () => {
     )
   })
 
-  it('falls back to tmp dir when .weapp-vite/wevu-config does not exist', () => {
+  it('falls back to tmp dir when cwd does not exist', () => {
     const cwd = '/project'
     const fromDir = '/project/src/pages/index'
 
     vi.spyOn(process, 'cwd').mockReturnValue(cwd)
-    vi.spyOn(fs, 'existsSync').mockImplementation(target => target === cwd)
+    vi.spyOn(fs, 'existsSync').mockReturnValue(false)
 
     expect(resolveWevuConfigTempDir(fromDir)).toBe(
       path.join(os.tmpdir(), 'weapp-vite', 'wevu-config', getTempDirKey(fromDir)),

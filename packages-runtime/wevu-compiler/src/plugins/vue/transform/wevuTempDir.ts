@@ -13,9 +13,9 @@ function getWevuConfigCacheRoot() {
   }
 
   const cwd = process.cwd()
-  const projectCacheDir = path.join(cwd, PROJECT_WEVU_CONFIG_DIR)
-  if (fs.existsSync(projectCacheDir)) {
-    return projectCacheDir
+  const projectRoot = cwd
+  if (fs.existsSync(projectRoot)) {
+    return path.join(projectRoot, PROJECT_WEVU_CONFIG_DIR)
   }
 
   return path.join(os.tmpdir(), 'weapp-vite', 'wevu-config')
