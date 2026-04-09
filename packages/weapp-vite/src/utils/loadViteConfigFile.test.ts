@@ -55,7 +55,6 @@ export default {
       undefined,
       undefined,
       'bundle',
-      undefined,
     )
   })
 
@@ -85,7 +84,6 @@ export default {
       undefined,
       undefined,
       'bundle',
-      undefined,
     )
   })
 
@@ -118,7 +116,6 @@ export default {
       undefined,
       undefined,
       'runner',
-      undefined,
     )
   })
 })

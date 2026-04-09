@@ -747,13 +747,10 @@ onPageScroll(() => {
 
     const virtualId = '\0weapp-vite:scoped-slot:page.__scoped-slot-default-0'
     const loaded = await plugin.load!.call({}, virtualId)
-    expect(loaded).toEqual({
-      code: expect.stringContaining('createWevuScopedSlotComponent'),
-      map: null,
-    })
-    expect((loaded as any).code).toContain('from \'wevu\'')
-    expect((loaded as any).code).toContain('unref as __wevuUnref')
-    expect((loaded as any).code).toContain('__wevuUnref(')
+    expect(loaded).toEqual(expect.stringContaining('createWevuScopedSlotComponent'))
+    expect(loaded).toContain('from \'wevu\'')
+    expect(loaded).toContain('unref as __wevuUnref')
+    expect(loaded).toContain('__wevuUnref(')
   })
 
   it('buildStart() pre-registers native layout chunks for fallback vue pages', async () => {
