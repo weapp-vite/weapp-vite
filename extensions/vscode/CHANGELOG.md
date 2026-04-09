@@ -1,9 +1,5 @@
 # Changelog
 
-## 0.0.1
-
-- Initial release: highlight `.vue` `<json>` blocks as JSONC by default.
-
 ## Unreleased
 
 - Add workspace detection, status bar entry, output channel, and a unified action picker.
@@ -22,3 +18,7 @@
 - Migrate the extension runtime, unit tests, and package scripts to TypeScript with a compiled `dist/` entry and Vitest-based test flow.
 - Switch the extension runtime build from `tsc` emit to `tsdown` bundling while keeping the TypeScript test flow unchanged.
 - Add a compiled-runtime smoke test and a dedicated VSIX archive inspection script for safer extension packaging checks.
+
+## 0.0.1
+
+- Initial release: highlight `.vue` `<json>` blocks as JSONC by default.

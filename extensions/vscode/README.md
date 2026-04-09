@@ -95,6 +95,7 @@ The extension manifest now includes:
 - a `tsdown` build that emits the runtime entry into `dist/extension.js`
 - local `lint`, `vitest`, and `check` scripts
 - a `check:publish` script for pre-package verification
+- `release:plan` / `release:apply` scripts for automatic versioning
 - a `check:package` script that validates runtime entry files and package exclusions
 - a `package:dry-run` script that builds a local `.vsix` artifact
 - a `publish:vsce` script for manual Marketplace publish flow
@@ -116,6 +117,7 @@ Useful local commands:
 ```bash
 pnpm --dir extensions/vscode run build
 pnpm --dir extensions/vscode run test
+pnpm --dir extensions/vscode run release:plan
 pnpm --dir extensions/vscode run smoke:dist
 pnpm --dir extensions/vscode run check:package
 pnpm --dir extensions/vscode run check:vsix
@@ -127,4 +129,5 @@ When you want to inspect the final Marketplace payload, `check:vsix` creates a l
 
 ## Publish
 
+Merges into `main` can now auto-bump and auto-publish the extension when releasable runtime or manifest files change.
 See `extensions/vscode/PUBLISHING.md`.

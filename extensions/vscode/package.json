@@ -323,6 +323,8 @@
     "check": "pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist",
     "check:package": "node --import tsx scripts/check-package.ts",
     "check:publish": "pnpm run check && pnpm run check:package",
+    "release:plan": "node --import tsx scripts/prepare-release.ts plan",
+    "release:apply": "node --import tsx scripts/prepare-release.ts apply",
     "package:dry-run": "pnpm run build && node --import tsx scripts/package-dry-run.ts package",
     "check:vsix": "pnpm run package:dry-run && node --import tsx scripts/check-vsix.ts",
     "publish:vsce": "pnpm run check:publish && node --import tsx scripts/release-vsce.ts publish"
