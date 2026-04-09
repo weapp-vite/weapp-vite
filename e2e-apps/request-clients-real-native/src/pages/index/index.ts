@@ -1,8 +1,8 @@
 interface RequestGlobalsProbe {
   fetchType: string
-  urlName: string
-  xmlHttpRequestName: string
-  webSocketName: string
+  urlAvailable: boolean
+  webSocketAvailable: boolean
+  xmlHttpRequestAvailable: boolean
 }
 
 interface IndexCard {
@@ -43,9 +43,9 @@ Page({
   data: {
     appProbe: {
       fetchType: '',
-      urlName: '',
-      xmlHttpRequestName: '',
-      webSocketName: '',
+      urlAvailable: false,
+      webSocketAvailable: false,
+      xmlHttpRequestAvailable: false,
     } as RequestGlobalsProbe,
     pages,
   },
@@ -64,9 +64,9 @@ Page({
     return {
       appProbe,
       ok: appProbe.fetchType === 'function'
-        && appProbe.urlName === 'URL'
-        && appProbe.xmlHttpRequestName === 'XMLHttpRequest'
-        && appProbe.webSocketName === 'WebSocket',
+        && appProbe.urlAvailable === true
+        && appProbe.xmlHttpRequestAvailable === true
+        && appProbe.webSocketAvailable === true,
     }
   },
 })

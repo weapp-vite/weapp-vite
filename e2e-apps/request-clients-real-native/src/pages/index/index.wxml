@@ -7,9 +7,9 @@
   <view class="card">
     <text class="card-title">App request globals probe</text>
     <text class="card-desc">fetchType = {{appProbe.fetchType}}</text>
-    <text class="card-desc">urlName = {{appProbe.urlName}}</text>
-    <text class="card-desc">xmlHttpRequestName = {{appProbe.xmlHttpRequestName}}</text>
-    <text class="card-desc">webSocketName = {{appProbe.webSocketName}}</text>
+    <text class="card-desc">urlAvailable = {{appProbe.urlAvailable}}</text>
+    <text class="card-desc">xmlHttpRequestAvailable = {{appProbe.xmlHttpRequestAvailable}}</text>
+    <text class="card-desc">webSocketAvailable = {{appProbe.webSocketAvailable}}</text>
   </view>
 
   <block wx:for="{{pages}}" wx:key="route">

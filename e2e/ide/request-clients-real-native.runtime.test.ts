@@ -102,13 +102,15 @@ describe.sequential('e2e app: request-clients-real-native', () => {
       throw new Error('Failed to launch /pages/index/index')
     }
 
-    const result = await page.callMethod('runE2E')
-    expect(result?.ok, JSON.stringify(result)).toBe(true)
-    expect(result?.appProbe).toEqual({
+    const appProbe = await miniProgram.evaluate(() => {
+      return getApp<{ globalData?: { requestGlobalsProbe?: Record<string, unknown> } }>()?.globalData?.requestGlobalsProbe ?? null
+    })
+
+    expect(appProbe, JSON.stringify(appProbe)).toEqual({
       fetchType: 'function',
-      urlName: 'URL',
-      xmlHttpRequestName: 'XMLHttpRequest',
-      webSocketName: 'WebSocket',
+      urlAvailable: true,
+      xmlHttpRequestAvailable: true,
+      webSocketAvailable: true,
     })
   })
 
