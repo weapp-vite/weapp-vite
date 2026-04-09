@@ -39,6 +39,21 @@ async function runBuild(mode: 'inline' | 'entry' | 'require') {
   })
 }
 
+async function runBuildWithRequestGlobalsPrelude(mode: 'inline' | 'entry' | 'require') {
+  await fs.remove(DIST_ROOT)
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
+    cwd: APP_ROOT,
+    label: `ci:app-prelude-native:request-globals:${mode}`,
+    env: {
+      APP_PRELUDE_MODE: mode,
+      APP_PRELUDE_REQUEST_GLOBALS: '1',
+    },
+  })
+}
+
 describe.sequential('e2e app: app-prelude-native (build)', () => {
   it('injects inline app prelude before every main-package, subpackage, and independent-subpackage chunk', async () => {
     await runBuild('inline')
@@ -138,5 +153,17 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(rootPreludeJs).toContain('__weappViteAppPreludeRuntime__')
     expect(normalPreludeJs).toContain('__weappViteAppPreludeRuntime__')
     expect(independentPreludeJs).toContain('__weappViteAppPreludeRuntime__')
+  })
+
+  it('installs request globals through prelude before user app prelude when enabled', async () => {
+    await runBuildWithRequestGlobalsPrelude('entry')
+
+    const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
+    const mainPageJs = await fs.readFile(path.join(DIST_ROOT, 'pages/index/index.js'), 'utf8')
+
+    expect(appJs).toContain('__weappViteRequestGlobalsPrelude__')
+    expect(mainPageJs).toContain('__weappViteRequestGlobalsPrelude__')
+    expect(appJs.indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(appJs.indexOf('__weappViteAppPreludeRuntime__'))
+    expect(mainPageJs.indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(mainPageJs.indexOf('__weappViteAppPreludeRuntime__'))
   })
 })

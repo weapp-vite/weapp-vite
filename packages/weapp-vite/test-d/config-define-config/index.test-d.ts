@@ -8,6 +8,10 @@ const objectConfig = defineConfig({
     appPrelude: {
       mode: 'entry',
     },
+    injectRequestGlobals: {
+      enabled: true,
+      prelude: true,
+    },
     vue: {
       template: {
         htmlTagToWxml: {
@@ -25,6 +29,12 @@ expectType<boolean | {
   enabled?: boolean
   mode?: 'inline' | 'entry' | 'require'
 } | undefined>(objectConfig.weapp?.appPrelude)
+expectType<boolean | {
+  enabled?: boolean
+  targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+  dependencies?: (string | RegExp)[]
+  prelude?: boolean
+} | undefined>(objectConfig.weapp?.injectRequestGlobals)
 expectType<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 
 const promiseConfig = defineConfig(Promise.resolve({

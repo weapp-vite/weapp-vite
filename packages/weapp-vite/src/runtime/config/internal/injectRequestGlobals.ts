@@ -39,6 +39,7 @@ export interface ResolvedInjectRequestGlobalsOptions {
   mode: 'auto' | 'explicit'
   targets: WeappInjectRequestGlobalsTarget[]
   dependencyPatterns?: (string | RegExp)[]
+  prelude: boolean
 }
 
 function hasMatchedDependency(
@@ -133,6 +134,7 @@ export function resolveInjectRequestGlobalsOptions(
       mode: 'explicit',
       targets: resolveTargets(config),
       dependencyPatterns: resolveDependencyPatterns(config),
+      prelude: config && typeof config === 'object' ? config.prelude === true : false,
     }
   }
 
@@ -154,6 +156,7 @@ export function resolveInjectRequestGlobalsOptions(
   return {
     mode: 'auto',
     targets: [...matchedTargets],
+    prelude: config && typeof config === 'object' ? config.prelude === true : false,
   }
 }
 

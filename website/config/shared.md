@@ -247,7 +247,7 @@ export default defineConfig({
 
 ## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
 
-- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] }`
+- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
 
 用于为请求相关全局对象做注入，例如：
 
@@ -264,6 +264,7 @@ export default defineConfig({
   weapp: {
     injectRequestGlobals: {
       enabled: true,
+      prelude: true,
       targets: ['fetch', 'Headers', 'Request', 'Response'],
       dependencies: [/^axios$/, /^graphql-request$/],
     },
@@ -278,6 +279,8 @@ export default defineConfig({
 
 > [!NOTE]
 > 这里解决的是“运行时请求相关全局对象注入”，不是 Vite 顶层的 `define` 替换，也不是 polyfill 插件的通用替代品。
+>
+> 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装请求相关全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
 
 ## `weapp.mcp` {#weapp-mcp}
 

@@ -56,6 +56,8 @@ const APP_PRELUDE_CHUNK_MARKER = '__weappViteAppPreludeRuntime__'
 const APP_PRELUDE_GUARD_KEY = '__weappViteAppPreludeInstalled__'
 const APP_PRELUDE_REQUIRE_MARKER = '__weappViteAppPreludeRequire__'
 const APP_PRELUDE_REQUIRE_FILE_BASENAME = 'app.prelude.js'
+const REQUEST_GLOBAL_PRELUDE_MARKER = '__weappViteRequestGlobalsPrelude__'
+const REQUEST_GLOBAL_PRELUDE_GUARD_KEY = '__weappViteRequestGlobalsPreludeInstalled__'
 const DIRECTIVE_PROLOGUE_RE = /^(?:(['"])(?:\\.|(?!\1)[^\\])*\1;?\s*)+/u
 const USE_STRICT_PREFIX_RE = /^(?:['"]use strict['"];\s*)+/u
 
@@ -657,6 +659,75 @@ function injectRequestGlobalsLocalBindings(
   }
 }
 
+function resolveRequestGlobalsInstallerImport(
+  chunk: OutputChunk,
+  installerChunks: Map<string, string>,
+) {
+  for (const requireMatch of chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)) {
+    const importee = requireMatch[3] ?? requireMatch[4] ?? requireMatch[5]
+    if (!importee) {
+      continue
+    }
+
+    const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, importee)
+    const exportName = installerChunks.get(installerChunkFileName)
+    if (!exportName) {
+      continue
+    }
+
+    return {
+      exportName,
+      requireImportLiteral: requireMatch[2] ?? null,
+    }
+  }
+
+  return null
+}
+
+function createRequestGlobalsPreludeCode(
+  chunk: OutputChunk,
+  installerChunks: Map<string, string>,
+  targets: WeappInjectRequestGlobalsTarget[],
+) {
+  if (targets.length === 0 || chunk.code.includes(REQUEST_GLOBAL_PRELUDE_MARKER)) {
+    return undefined
+  }
+
+  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  if (bindingTargets.length === 0) {
+    return undefined
+  }
+
+  const installerName = resolveRequestGlobalsInstallerName(chunk.code)
+  const exportName = resolveRequestGlobalsExportName(chunk.code)
+  let installerHostCode: string | undefined
+
+  if (installerName && exportName) {
+    installerHostCode = `${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`
+  }
+  else {
+    const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
+    if (!installerImport?.requireImportLiteral || !installerImport.exportName) {
+      return undefined
+    }
+
+    installerHostCode = `require(${installerImport.requireImportLiteral})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`
+  }
+
+  return [
+    `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,
+    `(() => {`,
+    `  if (globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}]) {`,
+    `    return`,
+    `  }`,
+    `  globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}] = true`,
+    `  const __weappVitePreludeRequestGlobalsHost__ = ${installerHostCode}`,
+    `  const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))`,
+    ...bindingTargets.map(target => `  __weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappVitePreludeRequestGlobalsHost__.${target}`),
+    `})();`,
+  ].join('\n')
+}
+
 function injectAxiosFetchAdapterEnv(bundle: OutputBundle) {
   const axiosEnvPatchCode = [
     '/* __weappViteAxiosFetchAdapterEnv__ */',
@@ -991,20 +1062,25 @@ function injectAppPreludeCode(
   appPreludeCode: string | undefined,
   options: ResolvedAppPreludeOptions,
   state: CorePluginState,
+  requestGlobalsPreludeOptions: {
+    enabled: boolean
+    installerChunks: Map<string, string>
+    targets: WeappInjectRequestGlobalsTarget[]
+  },
   emitFile?: (asset: {
     type: 'asset'
     fileName: string
     source: string
   }) => void,
 ) {
-  if (!appPreludeCode || !options.enabled) {
+  if (!options.enabled) {
     return
   }
 
   const entryChunkFileNames = options.mode === 'entry'
     ? collectAppPreludeEntryChunkFileNames(state)
     : undefined
-  if (options.mode === 'require') {
+  if (options.mode === 'require' && appPreludeCode) {
     emitAppPreludeRequireAssets(bundle, appPreludeCode, state, emitFile)
   }
 
@@ -1022,9 +1098,17 @@ function injectAppPreludeCode(
       continue
     }
 
-    const injectedCode = options.mode === 'require'
-      ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
-      : appPreludeCode
+    const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled
+      ? createRequestGlobalsPreludeCode(chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets)
+      : undefined
+    const injectedCode = [
+      requestGlobalsPreludeCode,
+      options.mode === 'require'
+        ? appPreludeCode
+          ? createAppPreludeRequireStatement(chunk.fileName, resolveAppPreludeRequireFileName(chunk.fileName, state))
+          : undefined
+        : appPreludeCode,
+    ].filter(Boolean).join('\n')
     if (!injectedCode) {
       continue
     }
@@ -1320,8 +1404,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     rewriteBundleDynamicGlobalResolution(rolldownBundle)
 
+    const installerChunks = injectRequestGlobalsOptions?.targets?.length
+      ? injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets)
+      : new Map<string, string>()
     if (injectRequestGlobalsOptions?.targets?.length) {
-      const installerChunks = injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets)
       injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
       injectRequestGlobalsLocalBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
       injectAxiosFetchAdapterEnv(rolldownBundle)
@@ -1329,7 +1415,21 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     const appPreludeOptions = resolveAppPreludeOptions(state)
     const appPreludeCode = await resolveAppPreludeCode(scanService.appEntry?.preludePath)
-    injectAppPreludeCode(rolldownBundle, appPreludeCode, appPreludeOptions, state, asset => this.emitFile(asset))
+    injectAppPreludeCode(
+      rolldownBundle,
+      appPreludeCode,
+      {
+        ...appPreludeOptions,
+        enabled: appPreludeOptions.enabled || injectRequestGlobalsOptions?.prelude === true,
+      },
+      state,
+      {
+        enabled: injectRequestGlobalsOptions?.prelude === true,
+        installerChunks,
+        targets: injectRequestGlobalsOptions?.targets ?? [],
+      },
+      asset => this.emitFile(asset),
+    )
 
     refreshModuleGraph(this, state)
 

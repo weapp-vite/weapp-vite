@@ -1141,6 +1141,129 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code.indexOf('const __weappViteRequestGlobalsBundleHost__ = vn')).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
 
+  it('runs request globals installer through app prelude before entry execution when enabled', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {
+            injectRequestGlobals: {
+              enabled: true,
+              prelude: true,
+            },
+            appPrelude: {
+              mode: 'entry',
+            },
+          },
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(''),
+        imports: [],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'const e=require("./common.js");App({})',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const appCode = bundle['app.js'].code
+    expect(appCode).toContain('__weappViteRequestGlobalsPrelude__')
+    expect(appCode).toContain('require("./common.js")["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(appCode.indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(appCode.indexOf('__weappViteAppPreludeRuntime__'))
+  })
+
+  it('injects synthetic request globals prelude even without user app.prelude file', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {
+            injectRequestGlobals: {
+              enabled: true,
+              prelude: true,
+            },
+            appPrelude: {
+              mode: 'entry',
+            },
+          },
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: undefined,
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(''),
+        imports: [],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'const e=require("./common.js");App({})',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const appCode = bundle['app.js'].code
+    expect(appCode).toContain('__weappViteRequestGlobalsPrelude__')
+    expect(appCode).not.toContain('__weappViteAppPreludeRuntime__')
+  })
+
   it('patches axios chunk defaults env through emit injection', async () => {
     const state = createState({
       ctx: {
