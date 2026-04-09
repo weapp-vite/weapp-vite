@@ -11,6 +11,7 @@ const outputDir = path.resolve(__dirname, '../src/weappIntrinsicElements')
 const elementsDir = path.resolve(outputDir, 'elements')
 const baseOutputPath = path.resolve(outputDir, 'base.ts')
 const indexOutputPath = path.resolve(__dirname, '../src/weappIntrinsicElements.ts')
+const GENERATED_FILE_HEADER = '// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。'
 
 const components = await fs.readJson(componentsPath)
 
@@ -44,6 +45,43 @@ const BASE_ATTRIBUTE_TYPES = {
 }
 
 const BASE_ATTRIBUTE_KEYS = new Set(Object.keys(BASE_ATTRIBUTE_TYPES))
+const HTML_ALIAS_TAG_MAPPINGS = [
+  ['a', 'navigator'],
+  ['article', 'view'],
+  ['aside', 'view'],
+  ['b', 'text'],
+  ['blockquote', 'view'],
+  ['code', 'text'],
+  ['dd', 'view'],
+  ['div', 'view'],
+  ['dl', 'view'],
+  ['dt', 'view'],
+  ['em', 'text'],
+  ['figcaption', 'view'],
+  ['figure', 'view'],
+  ['footer', 'view'],
+  ['h1', 'view'],
+  ['h2', 'view'],
+  ['h3', 'view'],
+  ['h4', 'view'],
+  ['h5', 'view'],
+  ['h6', 'view'],
+  ['header', 'view'],
+  ['i', 'text'],
+  ['img', 'image'],
+  ['li', 'view'],
+  ['main', 'view'],
+  ['nav', 'view'],
+  ['ol', 'view'],
+  ['p', 'view'],
+  ['pre', 'view'],
+  ['section', 'view'],
+  ['small', 'text'],
+  ['span', 'text'],
+  ['strong', 'text'],
+  ['u', 'text'],
+  ['ul', 'view'],
+]
 
 function normalizeTypeName(raw) {
   if (!raw || typeof raw !== 'string') {
@@ -170,6 +208,10 @@ const sortedComponents = Array.isArray(components)
       .sort((a, b) => a.name.localeCompare(b.name))
   : []
 
+const componentTypeNameByTag = new Map(
+  sortedComponents.map(component => [component.name, toElementTypeName(component.name)]),
+)
+
 function buildElementFile(component) {
   const name = component?.name
   if (!name) {
@@ -215,7 +257,7 @@ function buildElementFile(component) {
   if (usesEventHandler) {
     importNames.push(EVENT_HANDLER_TYPE)
   }
-  const lines = ['// 此文件由 components.json 自动生成，请勿直接修改。']
+  const lines = [GENERATED_FILE_HEADER]
   if (usesQuotedProps && usesUnquotedProps) {
     lines.push('/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */')
   }
@@ -243,7 +285,7 @@ await fs.ensureDir(outputDir)
 await fs.ensureDir(elementsDir)
 
 const baseLines = [
-  '// 此文件由 components.json 自动生成，请勿直接修改。',
+  GENERATED_FILE_HEADER,
   '',
   `export type ${EVENT_HANDLER_TYPE}<TReturn = void> = (...args: unknown[]) => TReturn`,
   '',
@@ -281,7 +323,7 @@ for (const component of sortedComponents) {
 }
 
 const indexLines = [
-  '// 此文件由 components.json 自动生成，请勿直接修改。',
+  GENERATED_FILE_HEADER,
   '/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */',
   '',
   ...elementFiles.map(file => `import type { ${file.typeName} } from './weappIntrinsicElements/elements/${file.fileName.replace(TS_EXT_RE, '')}'`),
@@ -293,7 +335,26 @@ if (elementFiles.length === 0) {
   indexLines.push('', 'export interface WeappIntrinsicElements extends Record<string, never> {}')
 }
 else {
+  const htmlAliasLines = HTML_ALIAS_TAG_MAPPINGS
+    .map(([htmlTag, weappTag]) => {
+      const typeName = componentTypeNameByTag.get(weappTag)
+      if (!typeName) {
+        return undefined
+      }
+      return `  ${formatPropertyKey(htmlTag)}: ${typeName}`
+    })
+    .filter(Boolean)
+
+  if (htmlAliasLines.length > 0) {
+    indexLines.push('', 'export interface WeappHtmlAliasIntrinsicElements {')
+    indexLines.push(...htmlAliasLines)
+    indexLines.push('}')
+  }
+
   indexLines.push('', 'export interface WeappIntrinsicElements {')
+  if (htmlAliasLines.length > 0) {
+    indexLines[indexLines.length - 1] = 'export interface WeappIntrinsicElements extends WeappHtmlAliasIntrinsicElements {'
+  }
   for (const file of elementFiles) {
     const tagName = file.fileName.replace(TS_EXT_RE, '')
     indexLines.push(`  ${formatPropertyKey(tagName)}: ${file.typeName}`)
