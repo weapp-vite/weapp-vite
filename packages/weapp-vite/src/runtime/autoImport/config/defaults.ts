@@ -82,6 +82,12 @@ export function getAutoImportConfig(configService?: MutableCompilerContext['conf
 
   const userConfigured = weappConfig.autoImportComponents ?? weappConfig.enhance?.autoImportComponents
   const enabledDefaults = createEnabledAutoImportComponents(configService)
+  const hasMergeableSubPackageAutoImportConfig = Boolean(
+    Object.values(weappConfig.subPackages ?? {}).some((subConfig) => {
+      const scoped = subConfig?.autoImportComponents
+      return scoped !== undefined && scoped !== false
+    }),
+  )
   if (userConfigured === false) {
     return undefined
   }
@@ -91,7 +97,8 @@ export function getAutoImportConfig(configService?: MutableCompilerContext['conf
       ? mergeAutoImportComponents(enabledDefaults, cloneAutoImportComponents(userConfigured), true)
       : undefined
   const fallbackConfig = normalizedConfig === undefined
-    ? createDefaultAutoImportComponents(configService)
+    && !hasMergeableSubPackageAutoImportConfig
+    ? enabledDefaults
     : undefined
   const baseConfig = cloneAutoImportComponents(normalizedConfig ?? fallbackConfig)
   const subPackageConfigs = weappConfig.subPackages

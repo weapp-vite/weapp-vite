@@ -7,6 +7,7 @@ import {
   getAutoImportConfig,
   getHtmlCustomDataSettings,
   getTypedComponentsSettings,
+  getVueComponentsSettings,
   resolveManifestOutputPath,
   WEAPP_VITE_INTERNAL_DIRNAME,
 } from '../autoImport/config'
@@ -46,10 +47,30 @@ describe('autoImport config helpers', () => {
       expect(resolveManifestOutputPath()).toBeUndefined()
     })
 
-    it('falls back to default config when auto import is not configured', () => {
-      const ctx = createContext()
+    it('falls back to enhanced config when auto import is not configured', () => {
+      const ctx = createContext({}, {
+        packageJson: {
+          name: 'test-project',
+          devDependencies: {
+            wevu: '^1.0.0',
+          },
+        } as any,
+      })
       const expected = path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
       expect(resolveManifestOutputPath(ctx.configService)).toBe(expected)
+      expect(getAutoImportConfig(ctx.configService)).toEqual(expect.objectContaining({
+        output: true,
+        typedComponents: true,
+        htmlCustomData: true,
+        vueComponents: true,
+        vueComponentsModule: 'wevu',
+      }))
+      expect(getAutoImportConfig(ctx.configService)?.globs).toEqual(
+        expect.arrayContaining([
+          'components/**/*.wxml',
+          'components/**/*.vue',
+        ]),
+      )
     })
 
     it('uses the config directory and default filename when enabled without output override', () => {
@@ -354,9 +375,12 @@ describe('autoImport config helpers', () => {
   })
 
   describe('getTypedComponentsSettings', () => {
-    it('disables typed components when not configured', () => {
+    it('enables typed components by default when auto import is not configured', () => {
       const ctx = createContext()
-      expect(getTypedComponentsSettings(ctx)).toEqual({ enabled: false })
+      expect(getTypedComponentsSettings(ctx)).toEqual({
+        enabled: true,
+        outputPath: path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'typed-components.d.ts'),
+      })
     })
 
     it('enables typed components for object auto import config by default', () => {
@@ -448,9 +472,28 @@ describe('autoImport config helpers', () => {
   })
 
   describe('getHtmlCustomDataSettings', () => {
-    it('disables html custom data when not configured', () => {
+    it('enables html custom data by default when auto import is not configured', () => {
       const ctx = createContext()
-      expect(getHtmlCustomDataSettings(ctx)).toEqual({ enabled: false })
+      expect(getHtmlCustomDataSettings(ctx)).toEqual({
+        enabled: true,
+        outputPath: path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'mini-program.html-data.json'),
+      })
+    })
+
+    it('enables vue components by default when auto import is not configured', () => {
+      const ctx = createContext({}, {
+        packageJson: {
+          name: 'test-project',
+          devDependencies: {
+            wevu: '^1.0.0',
+          },
+        } as any,
+      })
+      expect(getVueComponentsSettings(ctx)).toEqual({
+        enabled: true,
+        outputPath: path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'components.d.ts'),
+        moduleName: 'wevu',
+      })
     })
 
     it('enables html custom data for object auto import config by default', () => {
