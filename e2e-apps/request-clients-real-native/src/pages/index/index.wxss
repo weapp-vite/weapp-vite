@@ -31,6 +31,21 @@
   color: #334155;
 }
 
+.nav-card {
+  display: block;
+}
+
 .card-route {
   font-family: Monaco, monospace;
+}
+
+.card-link {
+  display: inline-flex;
+  margin-top: 18rpx;
+  padding: 10rpx 18rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #0f172a;
+  background: #dbeafe;
+  border-radius: 999rpx;
 }

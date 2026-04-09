@@ -5,6 +5,7 @@ export default defineConfig(async (env) => {
   const devSetup = env.command === 'serve'
     ? await requestClientsRealDevPlugin({
         projectRoot: import.meta.dirname,
+        serverPort: 60322,
       })
     : null
 

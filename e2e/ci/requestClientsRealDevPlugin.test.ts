@@ -3,6 +3,7 @@ import {
   injectBaseUrlIntoProjectPrivateConfig,
   mergeRequestClientsRealQuery,
 } from '../utils/requestClientsRealDevPlugin'
+import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
 
 describe('requestClientsRealDevPlugin helpers', () => {
   it('injects baseUrl into empty query strings', () => {
@@ -49,5 +50,18 @@ describe('requestClientsRealDevPlugin helpers', () => {
     })
 
     expect(injectBaseUrlIntoProjectPrivateConfig(source, 'http://127.0.0.1:3003')).toBe(source)
+  })
+
+  it('supports binding the real request server to a fixed local port', async () => {
+    const handle = await startRequestClientsRealServer({
+      port: 60324,
+    })
+
+    try {
+      expect(handle.baseUrl).toBe('http://127.0.0.1:60324')
+    }
+    finally {
+      await handle.stop()
+    }
   })
 })

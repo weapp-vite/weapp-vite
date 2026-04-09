@@ -21,6 +21,10 @@ export interface RequestClientsRealServerHandle {
   stop: () => Promise<void>
 }
 
+export interface StartRequestClientsRealServerOptions {
+  port?: number
+}
+
 function createRequestCounts(): RequestClientsRealServerState {
   return {
     axios: 0,
@@ -65,7 +69,9 @@ async function writeNodeResponse(response: Response, res: ServerResponse) {
   })
 }
 
-export async function startRequestClientsRealServer(): Promise<RequestClientsRealServerHandle> {
+export async function startRequestClientsRealServer(
+  options: StartRequestClientsRealServerOptions = {},
+): Promise<RequestClientsRealServerHandle> {
   const requestCounts = createRequestCounts()
   const app = new Hono()
 
@@ -207,7 +213,7 @@ export async function startRequestClientsRealServer(): Promise<RequestClientsRea
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
     server.once('listening', resolve)
-    server.listen(0, '127.0.0.1')
+    server.listen(options.port ?? 0, '127.0.0.1')
   })
 
   const address = server.address() as AddressInfo

@@ -23,6 +23,7 @@ interface ProjectPrivateConfigShape {
 
 export interface RequestClientsRealDevPluginOptions {
   projectRoot: string
+  serverPort?: number
 }
 
 export interface RequestClientsRealDevSetupResult {
@@ -196,7 +197,9 @@ export async function requestClientsRealDevPlugin(
     }
     registerCleanup()
 
-    state.devServerHandle = await startRequestClientsRealServer()
+    state.devServerHandle = await startRequestClientsRealServer({
+      port: options.serverPort,
+    })
     state.projectPrivateConfigSnapshot = await patchProjectPrivateConfig(options.projectRoot, state.devServerHandle.baseUrl)
     state.generatedBaseUrlModuleSnapshot = await patchGeneratedBaseUrlModule(options.projectRoot, state.devServerHandle.baseUrl)
     state.initialized = true

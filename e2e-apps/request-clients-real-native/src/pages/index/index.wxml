@@ -12,11 +12,15 @@
     <text class="card-desc">webSocketAvailable = {{appProbe.webSocketAvailable}}</text>
   </view>
 
-  <block wx:for="{{pages}}" wx:key="route">
-    <view class="card">
+  <navigator
+    wx:for="{{pages}}"
+    wx:key="route"
+    class="card nav-card"
+    url="{{item.route}}"
+  >
       <text class="card-title">{{item.title}}</text>
       <text class="card-desc">{{item.desc}}</text>
       <text class="card-route">{{item.route}}</text>
-    </view>
-  </block>
+      <text class="card-link">点击进入</text>
+  </navigator>
 </view>

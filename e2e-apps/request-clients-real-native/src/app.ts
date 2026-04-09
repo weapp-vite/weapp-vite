@@ -1,13 +1,30 @@
 import { REQUEST_CLIENTS_REAL_DEV_BASE_URL } from './shared/requestClientsRealDevBaseUrl'
 
-function hasUsableConstructor(value: unknown, args: unknown[]) {
-  if (typeof value !== 'function') {
+function hasFunction(value: unknown) {
+  return typeof value === 'function'
+}
+
+function hasPrototypeMethods(value: unknown, methods: string[]) {
+  if (!hasFunction(value)) {
+    return false
+  }
+
+  const prototype = Reflect.get(value, 'prototype')
+  if (!prototype || typeof prototype !== 'object') {
+    return false
+  }
+
+  return methods.every(method => typeof Reflect.get(prototype, method) === 'function')
+}
+
+function hasUsableUrl(value: unknown) {
+  if (!hasFunction(value)) {
     return false
   }
 
   try {
-    Reflect.construct(value, args)
-    return true
+    const instance = new URL('https://request-globals.invalid')
+    return instance.protocol === 'https:'
   }
   catch {
     return false
@@ -16,9 +33,9 @@ function hasUsableConstructor(value: unknown, args: unknown[]) {
 
 const requestGlobalsProbe = {
   fetchType: typeof fetch,
-  urlAvailable: hasUsableConstructor(URL, ['https://request-globals.invalid']),
-  webSocketAvailable: hasUsableConstructor(WebSocket, ['wss://request-globals.invalid']),
-  xmlHttpRequestAvailable: hasUsableConstructor(XMLHttpRequest, []),
+  urlAvailable: hasUsableUrl(URL),
+  webSocketAvailable: hasPrototypeMethods(WebSocket, ['close', 'send']),
+  xmlHttpRequestAvailable: hasPrototypeMethods(XMLHttpRequest, ['open', 'send']),
 }
 
 App({
