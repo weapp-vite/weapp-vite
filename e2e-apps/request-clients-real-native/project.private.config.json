@@ -24,42 +24,42 @@
         {
           "name": "pages/index/index",
           "pathName": "pages/index/index",
-          "query": "",
+          "query": "baseUrl=http%3A%2F%2F127.0.0.1%3A60323",
           "scene": null,
           "launchMode": "default"
         },
         {
           "name": "pages/fetch/index",
           "pathName": "pages/fetch/index",
-          "query": "",
+          "query": "baseUrl=http%3A%2F%2F127.0.0.1%3A60323",
           "scene": null,
           "launchMode": "default"
         },
         {
           "name": "pages/axios/index",
           "pathName": "pages/axios/index",
-          "query": "",
+          "query": "baseUrl=http%3A%2F%2F127.0.0.1%3A60323",
           "scene": null,
           "launchMode": "default"
         },
         {
           "name": "pages/graphql-request/index",
           "pathName": "pages/graphql-request/index",
-          "query": "",
+          "query": "baseUrl=http%3A%2F%2F127.0.0.1%3A60323",
           "scene": null,
           "launchMode": "default"
         },
         {
           "name": "pages/socket-io/index",
           "pathName": "pages/socket-io/index",
-          "query": "",
+          "query": "baseUrl=http%3A%2F%2F127.0.0.1%3A60323",
           "scene": null,
           "launchMode": "default"
         },
         {
           "name": "pages/websocket/index",
           "pathName": "pages/websocket/index",
-          "query": "",
+          "query": "baseUrl=http%3A%2F%2F127.0.0.1%3A60323",
           "scene": null,
           "launchMode": "default"
         }

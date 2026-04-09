@@ -1,11 +1,8 @@
-import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
 import { requestClientsRealDevPlugin } from '../../e2e/utils/requestClientsRealDevPlugin'
 
-const shouldEnableRequestClientsRealDevPlugin = process.argv.includes('dev')
-
-export default defineConfig(async () => ({
-  plugins: shouldEnableRequestClientsRealDevPlugin
+export default defineConfig(async env => ({
+  plugins: env.command === 'serve'
     ? [
         await requestClientsRealDevPlugin({
           projectRoot: import.meta.dirname,
