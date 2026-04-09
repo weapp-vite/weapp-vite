@@ -322,6 +322,7 @@
   "scripts": {
     "build": "pnpm exec tsdown --config tsdown.config.mts",
     "lint": "pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts",
+    "typecheck": "pnpm exec tsc -p tsconfig.json --noEmit",
     "test": "pnpm vitest run -c vitest.config.ts",
     "smoke:dist": "node --import tsx scripts/smoke-test.ts",
     "check": "pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist",
@@ -336,5 +337,10 @@
     "untrustedWorkspaces": {
       "supported": true
     }
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "catalog:",
+    "@types/vscode": "^1.88.0"
   }
 }

@@ -4,6 +4,10 @@ import Module from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
+type ModuleWithLoad = typeof Module & {
+  _load: (request: string, parent: NodeModule | null | undefined, isMain: boolean) => unknown
+}
+
 function createMockVscode() {
   const registeredCommands: Array<{ command: string, handler: unknown }> = []
   const registeredProviders: Array<{ type: string, selector: unknown }> = []
@@ -212,9 +216,10 @@ async function main() {
   const extensionRoot = process.cwd()
   const distEntryPath = path.join(extensionRoot, 'dist', 'extension.js')
   const state = createMockVscode()
-  const originalLoad = Module._load
+  const moduleWithLoad = Module as ModuleWithLoad
+  const originalLoad = moduleWithLoad._load
 
-  Module._load = function patchedLoad(request, parent, isMain) {
+  moduleWithLoad._load = function patchedLoad(request, parent, isMain) {
     if (request === 'vscode') {
       return state.mockVscode
     }
@@ -259,7 +264,7 @@ async function main() {
     console.log('extensions/vscode smoke test ok')
   }
   finally {
-    Module._load = originalLoad
+    moduleWithLoad._load = originalLoad
   }
 }
 

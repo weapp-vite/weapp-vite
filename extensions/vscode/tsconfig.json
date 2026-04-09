@@ -6,7 +6,8 @@
     "moduleResolution": "Node16",
     "resolveJsonModule": true,
     "types": [
-      "node"
+      "node",
+      "vscode"
     ],
     "strict": false,
     "declaration": false,
@@ -19,11 +20,10 @@
   "include": [
     "extension.ts",
     "extension/**/*.ts",
-    "types/**/*.d.ts"
+    "scripts/**/*.ts"
   ],
   "exclude": [
     "dist",
-    "extension/**/*.test.ts",
-    "scripts/**/*.ts"
+    "extension/**/*.test.ts"
   ]
 }

@@ -45,6 +45,7 @@ it('manifest keeps publish-safe file whitelist', () => {
 it('manifest exposes local verification scripts', () => {
   assert.equal(packageJson.scripts.build, 'pnpm exec tsdown --config tsdown.config.mts')
   assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts')
+  assert.equal(packageJson.scripts.typecheck, 'pnpm exec tsc -p tsconfig.json --noEmit')
   assert.equal(packageJson.scripts.test, 'pnpm vitest run -c vitest.config.ts')
   assert.equal(packageJson.scripts['smoke:dist'], 'node --import tsx scripts/smoke-test.ts')
   assert.equal(packageJson.scripts.check, 'pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist')

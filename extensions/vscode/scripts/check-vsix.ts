@@ -4,7 +4,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 
-const require = createRequire(import.meta.url)
+const require = createRequire(path.join(process.cwd(), 'package.json'))
 const AdmZip = require('adm-zip')
 
 const extensionRoot = process.cwd()
@@ -37,7 +37,6 @@ const forbiddenEntries = [
   'extension/scripts/check-vsix.ts',
   'extension/scripts/package-dry-run.ts',
   'extension/tsconfig.json',
-  'extension/types/vscode.d.ts',
   'extension/PUBLISHING.md',
 ]
 

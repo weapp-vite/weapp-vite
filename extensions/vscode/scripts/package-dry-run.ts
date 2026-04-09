@@ -1,1 +1,1 @@
-import './release-vsce.ts'
+import './release-vsce'
