@@ -2,7 +2,7 @@
   "publisher": "weapp-vite",
   "name": "weapp-vite-vscode",
   "displayName": "weapp-vite",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Practical VS Code support for weapp-vite projects: commands, status bar, snippets, and custom block highlighting.",
   "license": "MIT",
