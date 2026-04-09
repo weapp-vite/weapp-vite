@@ -12,7 +12,7 @@
   "devDependencies": {
     "@tanstack/vue-query": "^5.96.2",
     "@weapp-vite/dashboard": "workspace:*",
-    "axios": "^1.14.0",
+    "axios": "^1.15.0",
     "graphql-request": "^7.3.1",
     "socket.io-client": "^4.8.3",
     "weapp-vite": "workspace:*",
