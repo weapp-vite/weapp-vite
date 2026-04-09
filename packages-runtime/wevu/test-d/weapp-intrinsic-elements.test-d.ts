@@ -38,9 +38,17 @@ expectError<ButtonAttrs>({
 })
 
 type MapAttrs = WeappIntrinsicElements['map']
+type DivAttrs = WeappIntrinsicElements['div']
+type SpanAttrs = WeappIntrinsicElements['span']
+type ImageAliasAttrs = WeappIntrinsicElements['img']
+type AnchorAliasAttrs = WeappIntrinsicElements['a']
 
 declare const mapAttrs: MapAttrs
 expectType<string | number | undefined>(mapAttrs.id)
+expectType<WeappIntrinsicElements['view']>({} as DivAttrs)
+expectType<WeappIntrinsicElements['text']>({} as SpanAttrs)
+expectType<WeappIntrinsicElements['image']>({} as ImageAliasAttrs)
+expectType<WeappIntrinsicElements['navigator']>({} as AnchorAliasAttrs)
 
 expectType<MapAttrs>({
   id: 'map-1',
@@ -52,4 +60,25 @@ expectType<MapAttrs>({
 
 expectError<MapAttrs>({
   id: true,
+})
+
+expectType<DivAttrs>({
+  class: 'page',
+  hidden: false,
+})
+
+expectType<SpanAttrs>({
+  selectable: true,
+})
+
+expectType<ImageAliasAttrs>({
+  src: '/static/banner.png',
+})
+
+expectType<AnchorAliasAttrs>({
+  url: '/pages/home/index',
+})
+
+expectError<SpanAttrs>({
+  src: '/static/banner.png',
 })

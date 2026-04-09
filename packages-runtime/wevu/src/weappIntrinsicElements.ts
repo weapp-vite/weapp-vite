@@ -58,7 +58,45 @@ import type { WeappIntrinsicElementWebView } from './weappIntrinsicElements/elem
 
 export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from './weappIntrinsicElements/base'
 
-export interface WeappIntrinsicElements {
+export interface WeappHtmlAliasIntrinsicElements {
+  a: WeappIntrinsicElementNavigator
+  article: WeappIntrinsicElementView
+  aside: WeappIntrinsicElementView
+  b: WeappIntrinsicElementText
+  blockquote: WeappIntrinsicElementView
+  code: WeappIntrinsicElementText
+  dd: WeappIntrinsicElementView
+  div: WeappIntrinsicElementView
+  dl: WeappIntrinsicElementView
+  dt: WeappIntrinsicElementView
+  em: WeappIntrinsicElementText
+  figcaption: WeappIntrinsicElementView
+  figure: WeappIntrinsicElementView
+  footer: WeappIntrinsicElementView
+  h1: WeappIntrinsicElementView
+  h2: WeappIntrinsicElementView
+  h3: WeappIntrinsicElementView
+  h4: WeappIntrinsicElementView
+  h5: WeappIntrinsicElementView
+  h6: WeappIntrinsicElementView
+  header: WeappIntrinsicElementView
+  i: WeappIntrinsicElementText
+  img: WeappIntrinsicElementImage
+  li: WeappIntrinsicElementView
+  main: WeappIntrinsicElementView
+  nav: WeappIntrinsicElementView
+  ol: WeappIntrinsicElementView
+  p: WeappIntrinsicElementView
+  pre: WeappIntrinsicElementView
+  section: WeappIntrinsicElementView
+  small: WeappIntrinsicElementText
+  span: WeappIntrinsicElementText
+  strong: WeappIntrinsicElementText
+  u: WeappIntrinsicElementText
+  ul: WeappIntrinsicElementView
+}
+
+export interface WeappIntrinsicElements extends WeappHtmlAliasIntrinsicElements {
   ad: WeappIntrinsicElementAd
   'ad-custom': WeappIntrinsicElementAdCustom
   audio: WeappIntrinsicElementAudio
