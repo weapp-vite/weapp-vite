@@ -9,7 +9,7 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 it('manifest exposes practical command set', () => {
   assert.equal(packageJson.name, '@weapp-vite/vscode')
   assert.equal(packageJson['x-vsce'].name, 'weapp-vite')
-  assert.equal(packageJson['x-vsce'].displayName, 'Weapp-vite')
+  assert.equal(packageJson['x-vsce'].displayName, 'Weapp Vite')
 
   const commandIds = packageJson.contributes.commands.map(command => command.command)
 

@@ -17,7 +17,7 @@
   },
   "x-vsce": {
     "name": "weapp-vite",
-    "displayName": "Weapp-vite"
+    "displayName": "Weapp Vite"
   },
   "keywords": [
     "weapp-vite",
