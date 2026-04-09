@@ -1,24 +1,24 @@
-# Changelog
+# 更新日志
 
 ## Unreleased
 
-- Add workspace detection, status bar entry, output channel, and a unified action picker.
-- Add practical commands for `dev`, `build`, `generate`, `open`, and `doctor/info`.
-- Add snippets for `<json>` blocks and `defineConfig`.
-- Add editor code actions, Vue completion for `<json>` custom blocks, and package.json script diagnostics.
-- Add lightweight hover help, contextual completions, and docs shortcuts for package.json, vite.config, and Vue custom blocks.
-- Add extension settings for status bar, diagnostics, hover, completion, and preferred CLI alias style.
-- Add pure logic tests for script suggestion and command resolution behavior.
-- Add manifest validation tests, publish-safe packaging files, command palette visibility rules, and a getting-started walkthrough.
-- Exclude test files from VSIX packaging and add pre-publish package checks.
-- Add a dedicated package verification script for local CI and release gating.
-- Add a dedicated GitHub Actions workflow for extension-only CI checks.
-- Add a reusable VSIX dry-run packaging script for local and CI validation.
-- Add a manual release workflow and publish script for VS Code Marketplace delivery.
-- Migrate the extension runtime, unit tests, and package scripts to TypeScript with a compiled `dist/` entry and Vitest-based test flow.
-- Switch the extension runtime build from `tsc` emit to `tsdown` bundling while keeping the TypeScript test flow unchanged.
-- Add a compiled-runtime smoke test and a dedicated VSIX archive inspection script for safer extension packaging checks.
+- 新增工作区识别、状态栏入口、输出面板和统一动作选择器。
+- 新增 `dev`、`build`、`generate`、`open`、`doctor/info` 等实用命令。
+- 新增 `<json>` 自定义块和 `defineConfig` 代码片段。
+- 新增编辑器代码操作、Vue `<json>` 自定义块补全，以及 `package.json` 脚本诊断。
+- 新增面向 `package.json`、`vite.config` 和 Vue 自定义块的轻量悬浮提示、上下文补全和文档快捷入口。
+- 新增状态栏、诊断、悬浮、补全和 CLI 别名偏好的扩展配置项。
+- 新增针对脚本建议与命令解析行为的纯逻辑测试。
+- 新增 manifest 校验测试、面向发布的打包文件清单、命令面板可见性规则，以及首次使用说明。
+- 从 VSIX 打包中排除测试文件，并新增发布前打包检查。
+- 新增用于本地 CI 与发版门禁的独立包校验脚本。
+- 新增扩展专用的 GitHub Actions CI 工作流。
+- 新增可在本地和 CI 复用的 VSIX dry-run 打包脚本。
+- 新增面向 VS Code Marketplace 的手动发布工作流和发布脚本。
+- 将扩展运行时、单元测试和包脚本迁移到 TypeScript，并使用编译后的 `dist/` 作为入口。
+- 将扩展运行时构建从 `tsc` 输出切换为 `tsdown` 打包，同时保持 TypeScript 测试流程不变。
+- 新增编译产物 smoke test，以及独立的 VSIX 归档校验脚本，以提升打包安全性。
 
 ## 0.0.1
 
-- Initial release: highlight `.vue` `<json>` blocks as JSONC by default.
+- 初始版本：默认将 `.vue` 中的 `<json>` 自定义块按 JSONC 高亮。

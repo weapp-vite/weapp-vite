@@ -1,43 +1,43 @@
-# weapp-vite: Practical VS Code Support
+# weapp-vite：面向实战的 VS Code 支持
 
-This VSCode extension adds:
+这个 VS Code 扩展提供了：
 
-- syntax highlighting for weapp-vite `<json>` blocks in `.vue` files
-- a status bar entry for detected weapp-vite workspaces
-- common workspace commands for `dev` / `build` / `generate` / `open` / `info`
-- snippets for `<json>` blocks and `defineConfig`
-- code actions for `package.json`, `vite.config.*`, and `.vue`
-- light package.json diagnostics for missing common scripts
-- hover, contextual completion, and doc shortcuts inside key weapp-vite files
-- user settings for status bar, diagnostics, hover, completion, and CLI alias style
-- an output channel with recent command execution logs
+- `.vue` 文件中 weapp-vite `<json>` 自定义块的语法高亮
+- 识别到 weapp-vite 工作区后的状态栏入口
+- `dev` / `build` / `generate` / `open` / `info` 等常用工作区命令
+- `<json>` 块和 `defineConfig` 的代码片段
+- 面向 `package.json`、`vite.config.*`、`.vue` 的代码操作
+- 对常用脚本缺失情况的轻量 `package.json` 诊断
+- 在关键 weapp-vite 文件中的悬浮信息、上下文补全和文档快捷入口
+- 状态栏、诊断、悬浮、补全和 CLI 别名偏好的用户配置
+- 最近命令执行日志输出面板
 
-## Install (from this repo)
+## 从仓库安装
 
-1. VSCode Command Palette → `Developer: Install Extension from Location...`
-2. Select: `extensions/vscode`
-3. Reload window
+1. 打开 VS Code 命令面板，执行 `Developer: Install Extension from Location...`
+2. 选择 `extensions/vscode`
+3. 重新加载窗口
 
-## Verify
+## 验证
 
-In a `.vue` file, run `Developer: Inspect Editor Tokens and Scopes` inside a `<json>` block.
+在 `.vue` 文件的 `<json>` 块内执行 `Developer: Inspect Editor Tokens and Scopes`。
 
-- Expected `textmate scopes` includes `source.json.comments` (for `<json>` / `lang="json"` / `lang="jsonc"` / `lang="json5"`).
+- 预期 `textmate scopes` 中包含 `source.json.comments`（适用于 `<json>`、`lang="json"`、`lang="jsonc"`、`lang="json5"`）。
 
-## Project Detection
+## 项目识别
 
-The extension treats a workspace as a weapp-vite project when it sees one or more of these signals:
+扩展会在工作区中检测以下一种或多种信号，并将其识别为 weapp-vite 项目：
 
-- `package.json` dependencies containing `weapp-vite` or `create-weapp-vite`
-- `package.json` scripts that call `wv` or `weapp-vite`
-- a local `vite.config.*` that references `weapp-vite`
-- `src/app.json` or `app.json` as supplemental project context
+- `package.json` 依赖中包含 `weapp-vite` 或 `create-weapp-vite`
+- `package.json` scripts 中调用了 `wv` 或 `weapp-vite`
+- 本地 `vite.config.*` 中引用了 `weapp-vite`
+- `src/app.json` 或 `app.json` 作为补充上下文存在
 
-If detection succeeds, a `weapp-vite` status bar button appears.
+识别成功后，状态栏会显示 `weapp-vite` 入口按钮。
 
-## Commands
+## 命令
 
-Open the Command Palette and run:
+打开命令面板后可以执行：
 
 - `weapp-vite: Run Action`
 - `weapp-vite: Dev`
@@ -49,34 +49,34 @@ Open the Command Palette and run:
 - `weapp-vite: Show Output`
 - `weapp-vite: Open Docs`
 
-The extension resolves each command in this order:
+扩展会按以下顺序解析命令：
 
-1. prefer matching `package.json` scripts such as `dev`, `build`, `open`, `generate`, `g`, `doctor`, `info`
-2. fall back to `wv <command>`
+1. 优先使用匹配的 `package.json` scripts，例如 `dev`、`build`、`open`、`generate`、`g`、`doctor`、`info`
+2. 如果未命中，则回退到 `wv <command>`
 
-The terminal working directory is the active editor's workspace folder when possible, otherwise the first opened workspace folder.
+终端工作目录会优先取当前活动编辑器所在的工作区目录，否则取第一个打开的工作区目录。
 
-## Snippets
+## 代码片段
 
-- `wv-json`: insert a `<json lang="jsonc">...</json>` custom block
-- `wv-config`: insert a `defineConfig` skeleton
-- `wv-scripts`: insert common `package.json` scripts for weapp-vite
+- `wv-json`：插入 `<json lang="jsonc">...</json>` 自定义块
+- `wv-config`：插入 `defineConfig` 基础骨架
+- `wv-scripts`：向 `package.json` 插入 weapp-vite 常用脚本
 
-## Editor Actions
+## 编辑器能力
 
-The extension also adds practical editor actions:
+扩展还提供了以下实用编辑器能力：
 
-- in `.vue`, use code actions or completion to insert a `weapp-vite` `<json>` block
-- in `vite.config.*`, use `weapp-vite: Insert defineConfig Template`
-- in `package.json`, use `weapp-vite: Insert Common Scripts`
-- when a `package.json` already looks like a weapp-vite project but misses common scripts, the editor shows an informational diagnostic
-- hover over common script entries, `defineConfig`, `generate`, or `<json>` blocks to see lightweight guidance
-- in `package.json`, completion suggests common script keys and `wv` command values
-- in `vite.config.*`, completion suggests `defineConfig`, `generate`, and `plugins` skeletons
+- 在 `.vue` 中通过代码操作或补全插入 `weapp-vite` `<json>` 块
+- 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
+- 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
+- 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断
+- 悬浮到常用脚本项、`defineConfig`、`generate` 或 `<json>` 块时，可看到轻量提示
+- 在 `package.json` 中，补全会建议常用 script key 和 `wv` 命令值
+- 在 `vite.config.*` 中，补全会建议 `defineConfig`、`generate` 和 `plugins` 骨架
 
-## Settings
+## 配置项
 
-The extension exposes a small set of practical settings:
+扩展暴露了一组简洁的配置：
 
 - `weapp-vite.showStatusBar`
 - `weapp-vite.enablePackageJsonDiagnostics`
@@ -84,35 +84,34 @@ The extension exposes a small set of practical settings:
 - `weapp-vite.enableCompletion`
 - `weapp-vite.preferWvAlias`
 
-If you prefer explicit CLI names over aliases, disable `weapp-vite.preferWvAlias` and the extension will generate `weapp-vite dev` style commands instead of `wv dev`.
+如果你更偏好显式 CLI 名称而不是别名，可以关闭 `weapp-vite.preferWvAlias`，此时扩展会生成 `weapp-vite dev` 风格的命令，而不是 `wv dev`。
 
-## Packaging
+## 打包
 
-The extension manifest now includes:
+扩展清单目前包含：
 
-- a publish-safe `files` whitelist
-- `.vscodeignore` exclusions for tests and publishing-only docs
-- a `tsdown` build that emits the runtime entry into `dist/extension.js`
-- local `lint`, `vitest`, and `check` scripts
-- a `check:publish` script for pre-package verification
-- `release:plan` / `release:apply` scripts for automatic versioning
-- a `check:package` script that validates runtime entry files and package exclusions
-- a `package:dry-run` script that builds a local `.vsix` artifact
-- a `publish:vsce` script for manual Marketplace publish flow
-- a simple walkthrough for first-run onboarding
-- command palette visibility rules to reduce irrelevant entries outside matching files or workspaces
-- a dedicated GitHub Actions workflow for extension-only CI
+- 面向发布的 `files` 白名单
+- 输出到 `dist/extension.js` 的 `tsdown` 构建配置
+- 本地 `lint`、`vitest` 与 `check` 脚本
+- 用于发布前校验的 `check:publish`
+- 用于自动版本管理的 `release:plan` / `release:apply`
+- 用于校验运行时入口和打包排除项的 `check:package`
+- 用于本地生成 `.vsix` 产物的 `package:dry-run`
+- 面向 Marketplace 手动发布的 `publish:vsce`
+- 首次使用的简洁上手说明
+- 用于减少无关命令暴露的命令面板可见性规则
+- 独立的 VS Code 扩展 GitHub Actions 工作流
 
 ## TypeScript
 
-The extension runtime and its unit tests are both written in TypeScript:
+扩展运行时代码与单元测试都使用 TypeScript：
 
-- source entry: `extensions/vscode/extension.ts`
-- runtime modules: `extensions/vscode/extension/**/*.ts`
-- unit tests: `extensions/vscode/extension/**/*.test.ts`
-- package scripts: `extensions/vscode/scripts/*.ts`
+- 源码入口：`extensions/vscode/extension.ts`
+- 运行时模块：`extensions/vscode/extension/**/*.ts`
+- 单元测试：`extensions/vscode/extension/**/*.test.ts`
+- 脚本文件：`extensions/vscode/scripts/*.ts`
 
-Useful local commands:
+常用本地命令：
 
 ```bash
 pnpm --dir extensions/vscode run build
@@ -123,11 +122,11 @@ pnpm --dir extensions/vscode run check:package
 pnpm --dir extensions/vscode run check:vsix
 ```
 
-The `build` step uses `tsdown` to bundle the extension runtime into a single CommonJS entry for VS Code, while tests continue to run directly from TypeScript source through Vitest.
-After build, `smoke:dist` loads the compiled `dist/extension.js` with a mocked VS Code API to confirm activation wiring still works.
-When you want to inspect the final Marketplace payload, `check:vsix` creates a local `.vsix` and verifies the packaged file list.
+`build` 会通过 `tsdown` 将扩展运行时打成单个 CommonJS 入口，测试则继续通过 Vitest 直接执行 TypeScript 源码。
+构建完成后，`smoke:dist` 会使用模拟的 VS Code API 加载编译产物 `dist/extension.js`，确认激活链路仍然正常。
+如果要检查最终 Marketplace 产物内容，可执行 `check:vsix`，它会生成本地 `.vsix` 并校验归档文件列表。
 
-## Publish
+## 发布
 
-Merges into `main` can now auto-bump and auto-publish the extension when releasable runtime or manifest files change.
-See `extensions/vscode/PUBLISHING.md`.
+合并到 `main` 的可发布变更现在可以自动补版本并自动发布扩展。
+详见 `extensions/vscode/PUBLISHING.md`。
