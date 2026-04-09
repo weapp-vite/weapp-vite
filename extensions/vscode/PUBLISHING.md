@@ -17,7 +17,7 @@
 
 在仓库 secrets 配置完成后：
 
-- 当 `extensions/vscode` 有需要发布的改动时，新增一条指向 `weapp-vite-vscode` 的 changeset
+- 当 `extensions/vscode` 有需要发布的改动时，新增一条指向 `vscode` 的 changeset
 - release PR 由仓库统一的 changeset 流程生成，扩展版本号与 `CHANGELOG.md` 也由该流程统一写入
 - release PR 合并到 `main` 后，会触发 `.github/workflows/release.yml`
 - `release.yml` 会先执行现有 npm release 流程，再检查 `extensions/vscode/package.json` 是否在本次 release 中发生版本变化
