@@ -4,6 +4,10 @@ export interface AutoImportComponentsConfig {
 
 export interface WeappViteConfig {
   srcRoot?: string
+  appPrelude?: boolean | {
+    enabled?: boolean
+    mode?: 'inline' | 'entry'
+  }
   autoImportComponents?: boolean | AutoImportComponentsConfig
   vue?: {
     template?: {

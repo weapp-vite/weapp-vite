@@ -5,6 +5,9 @@ import { defineConfig } from '.'
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    appPrelude: {
+      mode: 'entry',
+    },
     vue: {
       template: {
         htmlTagToWxml: {
@@ -18,6 +21,10 @@ const objectConfig = defineConfig({
   },
 })
 expectType<string | undefined>(objectConfig.weapp?.srcRoot)
+expectType<boolean | {
+  enabled?: boolean
+  mode?: 'inline' | 'entry'
+} | undefined>(objectConfig.weapp?.appPrelude)
 expectType<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 
 const promiseConfig = defineConfig(Promise.resolve({

@@ -1,6 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../runtime/chunkStrategy'
-import type { MpPlatform, SubPackageMetaValue, WeappInjectRequestGlobalsTarget } from '../../../types'
+import type { MpPlatform, SubPackageMetaValue, WeappAppPreludeMode, WeappInjectRequestGlobalsTarget } from '../../../types'
 import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
 import type { CorePluginState } from '../helpers'
 import { readFile } from 'node:fs/promises'
@@ -20,6 +20,7 @@ import {
 } from '../../../runtime/config/internal/injectRequestGlobals'
 import { toPosixPath } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
+import { changeFileExtension } from '../../../utils/file'
 import {
   hasNpmDependencyPrefix,
   normalizeNpmImportLookupPath,
@@ -55,6 +56,11 @@ const APP_PRELUDE_CHUNK_MARKER = '__weappViteAppPreludeRuntime__'
 const APP_PRELUDE_GUARD_KEY = '__weappViteAppPreludeInstalled__'
 const DIRECTIVE_PROLOGUE_RE = /^(?:(['"])(?:\\.|(?!\1)[^\\])*\1;?\s*)+/u
 const USE_STRICT_PREFIX_RE = /^(?:['"]use strict['"];\s*)+/u
+
+interface ResolvedAppPreludeOptions {
+  enabled: boolean
+  mode: WeappAppPreludeMode
+}
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -813,6 +819,41 @@ function prependChunkCodePreservingDirectives(code: string, injectedCode: string
   return `${directivePrologue}${injectedCode}\n${code.slice(directivePrologue.length)}`
 }
 
+function resolveAppPreludeOptions(state: CorePluginState): ResolvedAppPreludeOptions {
+  const option = state.ctx.configService.weappViteConfig?.appPrelude
+  if (option === false) {
+    return {
+      enabled: false,
+      mode: 'inline',
+    }
+  }
+  if (option === true || option == null) {
+    return {
+      enabled: true,
+      mode: 'inline',
+    }
+  }
+
+  return {
+    enabled: option.enabled !== false,
+    mode: option.mode ?? 'inline',
+  }
+}
+
+function collectAppPreludeEntryChunkFileNames(state: CorePluginState) {
+  const entryChunkFileNames = new Set<string>()
+
+  for (const entry of state.entriesMap.values()) {
+    if (!entry || (entry.type !== 'app' && entry.type !== 'page' && entry.type !== 'component')) {
+      continue
+    }
+    const relative = state.ctx.configService.relativeAbsoluteSrcRoot(entry.path)
+    entryChunkFileNames.add(changeFileExtension(relative, '.js'))
+  }
+
+  return entryChunkFileNames
+}
+
 async function resolveAppPreludeInlineCode(preludePath: string | undefined) {
   if (!preludePath) {
     return undefined
@@ -881,10 +922,16 @@ async function resolveAppPreludeInlineCode(preludePath: string | undefined) {
 function injectAppPreludeCode(
   bundle: OutputBundle,
   appPreludeCode: string | undefined,
+  options: ResolvedAppPreludeOptions,
+  state: CorePluginState,
 ) {
-  if (!appPreludeCode) {
+  if (!appPreludeCode || !options.enabled) {
     return
   }
+
+  const entryChunkFileNames = options.mode === 'entry'
+    ? collectAppPreludeEntryChunkFileNames(state)
+    : undefined
 
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -893,6 +940,9 @@ function injectAppPreludeCode(
 
     const chunk = output as OutputChunk
     if (chunk.code.includes(APP_PRELUDE_CHUNK_MARKER)) {
+      continue
+    }
+    if (entryChunkFileNames && !entryChunkFileNames.has(chunk.fileName)) {
       continue
     }
     chunk.code = prependChunkCodePreservingDirectives(chunk.code, appPreludeCode)
@@ -1194,8 +1244,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       injectAxiosFetchAdapterEnv(rolldownBundle)
     }
 
+    const appPreludeOptions = resolveAppPreludeOptions(state)
     const appPreludeCode = await resolveAppPreludeInlineCode(scanService.appEntry?.preludePath)
-    injectAppPreludeCode(rolldownBundle, appPreludeCode)
+    injectAppPreludeCode(rolldownBundle, appPreludeCode, appPreludeOptions, state)
 
     refreshModuleGraph(this, state)
 

@@ -1186,7 +1186,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).toContain('fetch,')
   })
 
-  it('injects app prelude require ahead of main and subpackage chunks while preserving directives', async () => {
+  it('injects app prelude code into every chunk by default while preserving directives', async () => {
     const state = createState({
       ctx: {
         scanService: {
@@ -1223,6 +1223,79 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pkg/pages/home.js'].code).toContain('__weappViteAppPreludeInstalled__')
   })
 
+  it('injects app prelude code into entry chunks only when mode is entry', async () => {
+    const state = createState({
+      entriesMap: new Map([
+        ['/project/src/app.ts', {
+          path: '/project/src/app.ts',
+          type: 'app',
+        }],
+        ['/project/src/pages/home/index.ts', {
+          path: '/project/src/pages/home/index.ts',
+          type: 'page',
+        }],
+        ['/project/src/components/card/index.ts', {
+          path: '/project/src/components/card/index.ts',
+          type: 'component',
+        }],
+      ]),
+      ctx: {
+        configService: {
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+          weappViteConfig: {
+            appPrelude: {
+              mode: 'entry',
+            },
+          },
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/home/index.js': {
+        type: 'chunk',
+        fileName: 'pages/home/index.js',
+        code: 'Page({})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'components/card/index.js': {
+        type: 'chunk',
+        fileName: 'components/card/index.js',
+        code: 'Component({})',
+        imports: [],
+        dynamicImports: [],
+      },
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const shared = 1;',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['app.js'].code).toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['pages/home/index.js'].code).toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['components/card/index.js'].code).toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['common.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
+  })
+
   it('injects app prelude code into independent subpackage chunks', async () => {
     const state = createState({
       ctx: {
@@ -1249,5 +1322,37 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['pkg-indep/common.js'].code.startsWith('/* __weappViteAppPreludeRuntime__ */')).toBe(true)
     expect(bundle['pkg-indep/common.js'].code).toContain('globalThis.__probe =')
+  })
+
+  it('skips app prelude injection when disabled explicitly', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          weappViteConfig: {
+            appPrelude: false,
+          },
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['app.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
   })
 })
