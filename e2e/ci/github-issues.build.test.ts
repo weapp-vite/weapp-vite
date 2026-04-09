@@ -55,6 +55,25 @@ async function runIssue393Build() {
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
+  it('discussion #338: emits mapped wxml tags from vue html-style templates', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-338/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('<block wx:if="{{true}}"><view class="issue338-page">')
+    expect(pageWxml).toContain('<text class="issue338-title">{{title}}</text>')
+    expect(pageWxml).toContain('<image class="issue338-cover" src="{{cover}}" mode="aspectFit" />')
+    expect(pageWxml).toContain('<view class="issue338-links">')
+    expect(pageWxml).toContain('<navigator class="issue338-link" wx:for="{{links}}"')
+    expect(pageWxml).toContain('url="{{\'/pages/\'+link+\'/index\'}}"')
+    expect(pageWxml).not.toContain('<div')
+    expect(pageWxml).not.toContain('<span')
+    expect(pageWxml).not.toContain('<img')
+    expect(pageWxml).not.toContain('<section')
+    expect(pageWxml).not.toContain('<a ')
+  })
+
   it('issue #431: replaces import.meta.env expressions inside native wxml files', async () => {
     await runBuild()
 
