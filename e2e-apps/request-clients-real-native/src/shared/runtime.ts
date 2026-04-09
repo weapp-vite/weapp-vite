@@ -1,3 +1,5 @@
+import { REQUEST_CLIENTS_REAL_DEV_BASE_URL } from './requestClientsRealDevBaseUrl'
+
 const TRAILING_SLASH_RE = /\/+$/
 
 export interface RequestCaseState {
@@ -31,7 +33,9 @@ export function createRequestCaseState(): RequestCaseState {
 }
 
 export function resolveBaseUrl(query: Record<string, unknown> | undefined) {
-  const raw = typeof query?.baseUrl === 'string' ? query.baseUrl : ''
+  const queryBaseUrl = typeof query?.baseUrl === 'string' ? query.baseUrl : ''
+  const fallbackBaseUrl = REQUEST_CLIENTS_REAL_DEV_BASE_URL
+  const raw = queryBaseUrl || fallbackBaseUrl
   return decodeURIComponent(raw).trim().replace(TRAILING_SLASH_RE, '')
 }
 

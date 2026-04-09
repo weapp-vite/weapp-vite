@@ -25,10 +25,16 @@ export interface RequestClientsRealDevPluginOptions {
   projectRoot: string
 }
 
+export interface RequestClientsRealDevSetupResult {
+  baseUrl: string
+  plugin: Plugin
+}
+
 interface RequestClientsRealDevRuntimeState {
   cleanupRegistered: boolean
   cleanupRunning: boolean
   devServerHandle: Awaited<ReturnType<typeof startRequestClientsRealServer>> | null
+  generatedBaseUrlModuleSnapshot: { filePath: string, original: string } | null
   initialized: boolean
   initializing: Promise<void> | null
   projectPrivateConfigSnapshot: { configPath: string, original: string } | null
@@ -82,14 +88,47 @@ async function restoreProjectPrivateConfig(snapshot: { configPath: string, origi
   await writeFile(snapshot.configPath, snapshot.original, 'utf8')
 }
 
+function createBaseUrlModuleSource(baseUrl: string) {
+  return [
+    '/**',
+    ' * @description dev 启动时由插件写入的真实请求服务地址。',
+    ' */',
+    `export const REQUEST_CLIENTS_REAL_DEV_BASE_URL = ${JSON.stringify(baseUrl)}`,
+    '',
+  ].join('\n')
+}
+
+async function patchGeneratedBaseUrlModule(projectRoot: string, baseUrl: string) {
+  const filePath = path.resolve(projectRoot, 'src/shared/requestClientsRealDevBaseUrl.ts')
+  const original = await readFile(filePath, 'utf8')
+  const next = createBaseUrlModuleSource(baseUrl)
+  if (next !== original) {
+    await writeFile(filePath, next, 'utf8')
+  }
+  return {
+    filePath,
+    original,
+  }
+}
+
+async function restoreGeneratedBaseUrlModule(snapshot: { filePath: string, original: string } | null) {
+  if (!snapshot) {
+    return
+  }
+  await writeFile(snapshot.filePath, snapshot.original, 'utf8')
+}
+
 /**
  * @description 在 dev 启动时拉起真实请求服务，并自动改写项目启动 query。
  */
-export async function requestClientsRealDevPlugin(options: RequestClientsRealDevPluginOptions): Promise<Plugin> {
+export async function requestClientsRealDevPlugin(
+  options: RequestClientsRealDevPluginOptions,
+): Promise<RequestClientsRealDevSetupResult> {
   const state = requestClientsRealDevRuntimeStateMap.get(options.projectRoot) ?? {
     cleanupRegistered: false,
     cleanupRunning: false,
     devServerHandle: null,
+    generatedBaseUrlModuleSnapshot: null,
     initialized: false,
     initializing: null,
     projectPrivateConfigSnapshot: null,
@@ -104,6 +143,8 @@ export async function requestClientsRealDevPlugin(options: RequestClientsRealDev
 
     await restoreProjectPrivateConfig(state.projectPrivateConfigSnapshot)
     state.projectPrivateConfigSnapshot = null
+    await restoreGeneratedBaseUrlModule(state.generatedBaseUrlModuleSnapshot)
+    state.generatedBaseUrlModuleSnapshot = null
 
     if (!state.devServerHandle) {
       return
@@ -115,12 +156,18 @@ export async function requestClientsRealDevPlugin(options: RequestClientsRealDev
   }
 
   function cleanupSync() {
-    if (state.cleanupRunning || !state.projectPrivateConfigSnapshot) {
+    if (state.cleanupRunning) {
       return
     }
     state.cleanupRunning = true
-    writeFileSync(state.projectPrivateConfigSnapshot.configPath, state.projectPrivateConfigSnapshot.original, 'utf8')
-    state.projectPrivateConfigSnapshot = null
+    if (state.projectPrivateConfigSnapshot) {
+      writeFileSync(state.projectPrivateConfigSnapshot.configPath, state.projectPrivateConfigSnapshot.original, 'utf8')
+      state.projectPrivateConfigSnapshot = null
+    }
+    if (state.generatedBaseUrlModuleSnapshot) {
+      writeFileSync(state.generatedBaseUrlModuleSnapshot.filePath, state.generatedBaseUrlModuleSnapshot.original, 'utf8')
+      state.generatedBaseUrlModuleSnapshot = null
+    }
   }
 
   function registerCleanup() {
@@ -151,6 +198,7 @@ export async function requestClientsRealDevPlugin(options: RequestClientsRealDev
 
     state.devServerHandle = await startRequestClientsRealServer()
     state.projectPrivateConfigSnapshot = await patchProjectPrivateConfig(options.projectRoot, state.devServerHandle.baseUrl)
+    state.generatedBaseUrlModuleSnapshot = await patchGeneratedBaseUrlModule(options.projectRoot, state.devServerHandle.baseUrl)
     state.initialized = true
   }
 
@@ -162,6 +210,9 @@ export async function requestClientsRealDevPlugin(options: RequestClientsRealDev
   }
 
   return {
-    name: 'request-clients-real-dev-plugin',
+    baseUrl: state.devServerHandle?.baseUrl ?? '',
+    plugin: {
+      name: 'request-clients-real-dev-plugin',
+    },
   }
 }

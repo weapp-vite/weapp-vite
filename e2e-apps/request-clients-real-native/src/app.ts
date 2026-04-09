@@ -1,3 +1,5 @@
+import { REQUEST_CLIENTS_REAL_DEV_BASE_URL } from './shared/requestClientsRealDevBaseUrl'
+
 function hasUsableConstructor(value: unknown, args: unknown[]) {
   if (typeof value !== 'function') {
     return false
@@ -21,6 +23,7 @@ const requestGlobalsProbe = {
 
 App({
   globalData: {
+    requestClientsRealBaseUrl: REQUEST_CLIENTS_REAL_DEV_BASE_URL,
     requestGlobalsProbe,
   },
 })
