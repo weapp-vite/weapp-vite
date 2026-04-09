@@ -1,0 +1,43 @@
+.page {
+  min-height: 100vh;
+  padding: 28rpx;
+  background: linear-gradient(180deg, #ecfeff 0%, #f8fafc 100%);
+}
+
+.hero,
+.panel {
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  background: rgb(255 255 255 / 92%);
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 40rpx rgb(15 23 42 / 8%);
+}
+
+.hero-title,
+.panel-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.hero-desc,
+.line,
+.payload {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #0f766e;
+  word-break: break-all;
+}
+
+.action {
+  margin-top: 20rpx;
+  color: #fff;
+  background: #0284c7;
+}
+
+.error {
+  border: 2rpx solid rgb(220 38 38 / 16%);
+}

@@ -1042,6 +1042,55 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code.indexOf('const __weappViteChunkRequestGlobalsModule__ = require("../../dist.js")')).toBeLessThan(code.indexOf('const e=require("../../common.js")'))
   })
 
+  it('injects local bindings into app chunks and skips passive app bindings', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'const e=require("./common.js");App({})',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const appCode = bundle['app.js'].code
+    expect(appCode).toContain('__weappViteRequestGlobalsLocalBindings__')
+    expect(appCode).toContain('const __weappViteChunkRequestGlobalsModule__ = require("./common.js")')
+    expect(appCode).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
+    expect(appCode).toContain('var URL = __weappViteChunkRequestGlobalsHost__.URL')
+    expect(appCode).toContain('var WebSocket = __weappViteChunkRequestGlobalsHost__.WebSocket')
+    expect(appCode).not.toContain('__weappViteRequestGlobalsPassiveBindings__')
+  })
+
   it('injects bundled runtime installation right after the first require when installer chunk has imports', async () => {
     const state = createState({
       subPackageMeta: null,

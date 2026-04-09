@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title">Request Clients Real Native E2E</text>
+    <text class="hero-desc">这个 app 只用原生 App 与原生 Page，验证 request globals 在纯原生入口与请求库中的兼容性。</text>
+  </view>
+
+  <view class="card">
+    <text class="card-title">App request globals probe</text>
+    <text class="card-desc">fetchType = {{appProbe.fetchType}}</text>
+    <text class="card-desc">urlName = {{appProbe.urlName}}</text>
+    <text class="card-desc">xmlHttpRequestName = {{appProbe.xmlHttpRequestName}}</text>
+    <text class="card-desc">webSocketName = {{appProbe.webSocketName}}</text>
+  </view>
+
+  <block wx:for="{{pages}}" wx:key="route">
+    <view class="card">
+      <text class="card-title">{{item.title}}</text>
+      <text class="card-desc">{{item.desc}}</text>
+      <text class="card-route">{{item.route}}</text>
+    </view>
+  </block>
+</view>

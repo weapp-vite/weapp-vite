@@ -1,0 +1,19 @@
+{
+  "name": "e2e-app-request-clients-real-native",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
+  },
+  "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
+    "axios": "^1.14.0",
+    "graphql-request": "^7.3.1",
+    "socket.io-client": "^4.8.3",
+    "weapp-vite": "workspace:*"
+  }
+}

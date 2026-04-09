@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title">graphql-request transport</text>
+    <text class="hero-desc">真实请求到本地 GraphQL 服务，验证 URL / fetch / body 传递链路。</text>
+  </view>
+
+  <view class="panel">
+    <text class="line">pageStatus = {{state.pageStatus}}</text>
+    <text class="line">status = {{state.status}}</text>
+    <text class="line">runCount = {{state.runCount}}</text>
+    <text class="line">httpStatus = {{state.httpStatus}}</text>
+    <text class="line">requestCount = {{state.requestCount}}</text>
+    <text class="line">requestPath = {{state.requestPath}}</text>
+    <button class="action" bindtap="runCase">重新执行 GraphQL 校验</button>
+  </view>
+
+  <view class="panel">
+    <text class="panel-title">payload</text>
+    <text class="payload">{{state.payload}}</text>
+  </view>
+
+  <view wx:if="{{state.errorMessage}}" class="panel error">
+    <text class="panel-title">error</text>
+    <text class="payload">{{state.errorMessage}}</text>
+  </view>
+</view>

@@ -1,0 +1,36 @@
+.page {
+  min-height: 100vh;
+  padding: 28rpx;
+  background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 100%);
+}
+
+.hero,
+.card {
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  background: rgb(255 255 255 / 92%);
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 40rpx rgb(15 23 42 / 8%);
+}
+
+.hero-title,
+.card-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.hero-desc,
+.card-desc,
+.card-route {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.card-route {
+  font-family: Monaco, monospace;
+}

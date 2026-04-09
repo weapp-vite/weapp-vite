@@ -570,7 +570,7 @@ function injectRequestGlobalsPassiveBindings(
 
     const entryName = chunk.fileName.replace(REQUEST_GLOBAL_ENTRY_NAME_RE, '')
     const entryType = entriesMap?.get(entryName)?.type
-    if (entryType === 'page' || entryType === 'component') {
+    if (entryType === 'page' || entryType === 'component' || entryType === 'app') {
       continue
     }
 
@@ -601,7 +601,7 @@ function injectRequestGlobalsLocalBindings(
     const chunk = output as OutputChunk
     const entryName = chunk.fileName.replace(REQUEST_GLOBAL_ENTRY_NAME_RE, '')
     const entryType = entriesMap?.get(entryName)?.type
-    if (entryType !== 'page' && entryType !== 'component') {
+    if (entryType !== 'page' && entryType !== 'component' && entryType !== 'app') {
       continue
     }
 

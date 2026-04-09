@@ -414,14 +414,20 @@ export function createLoadHook(state: CorePluginState) {
         })
       }
       if (!injectOptions || configService.weappLibConfig?.enabled) {
-        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets)
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
+          localBindings: true,
+        })
       }
       const available = await ensureWeapiAvailable(this, sourceId)
       if (!available) {
-        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets)
+        return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
+          localBindings: true,
+        })
       }
       if (result && typeof result === 'object' && 'code' in result) {
-        const requestGlobalsInjectedResult = injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets)
+        const requestGlobalsInjectedResult = injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
+          localBindings: true,
+        })
         const platform = getMiniProgramPlatformGlobalKey(configService.platform) ?? ''
         const injectedCode = createWeapiInjectionCode({
           globalName: injectOptions.globalName,

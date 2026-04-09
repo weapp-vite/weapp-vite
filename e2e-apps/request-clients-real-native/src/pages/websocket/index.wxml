@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero-title">native WebSocket transport</text>
+    <text class="hero-desc">连接真实 WebSocket 服务端，验证注入后的 WebSocket 对象。</text>
+  </view>
+
+  <view class="panel">
+    <text class="line">pageStatus = {{state.pageStatus}}</text>
+    <text class="line">status = {{state.status}}</text>
+    <text class="line">runCount = {{state.runCount}}</text>
+    <text class="line">httpStatus = {{state.httpStatus}}</text>
+    <text class="line">requestCount = {{state.requestCount}}</text>
+    <text class="line">requestPath = {{state.requestPath}}</text>
+    <text class="line">connectedReadyState = {{connectedReadyState}}</text>
+    <text class="line">finalReadyState = {{finalReadyState}}</text>
+    <text class="line">websocketUrl = {{websocketUrl}}</text>
+    <button class="action" bindtap="runCase">重新执行 websocket 校验</button>
+  </view>
+
+  <view class="panel">
+    <text class="panel-title">payload</text>
+    <text class="payload">{{state.payload}}</text>
+  </view>
+
+  <view wx:if="{{state.errorMessage}}" class="panel error">
+    <text class="panel-title">error</text>
+    <text class="payload">{{state.errorMessage}}</text>
+  </view>
+</view>

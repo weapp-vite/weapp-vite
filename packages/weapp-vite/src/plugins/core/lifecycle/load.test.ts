@@ -232,6 +232,9 @@ describe('core lifecycle load hook injectWeapi', () => {
 
     expect(code).toContain('installRequestGlobals')
     expect(code).toContain('"WebSocket"')
+    expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
+    expect(code).toContain('var URL = __weappViteRequestGlobalsHost__.URL')
+    expect(code).toContain('var WebSocket = __weappViteRequestGlobalsHost__.WebSocket')
   })
 
   it('injects request globals into declared page entries even when loadedEntrySet is empty', async () => {
