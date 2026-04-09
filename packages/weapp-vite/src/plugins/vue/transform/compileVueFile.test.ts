@@ -303,6 +303,23 @@ const getRows = () => [{ id: 'a', label: 'Alpha' }]
     expect(result.template).toContain('{{import.meta.env.VITE_NAME}}')
   })
 
+  it('keeps import.meta.env expressions when vue template attribute uses single quotes', async () => {
+    const source = [
+      '<template>',
+      '  <image src=\'{{import.meta.env.VITE_CDN}}/logo.png\' />',
+      '</template>',
+      '<script setup lang="ts">',
+      '</script>',
+    ].join('\n')
+
+    const result = await compileVueFile(
+      source,
+      '/project/src/pages/import-meta-env-single-quote/index.vue',
+    )
+
+    expect(result.template).toContain('src="{{import.meta.env.VITE_CDN}}/logo.png"')
+  })
+
   it('keeps runtime binding for call interpolation with sibling text and component nodes', async () => {
     const result = await compileVueFile(
       `
