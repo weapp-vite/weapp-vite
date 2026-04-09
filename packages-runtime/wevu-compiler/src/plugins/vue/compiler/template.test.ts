@@ -164,6 +164,79 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<scroll-view><view>hello</view></scroll-view>')
   })
 
+  it('allows disabling html tag mapping explicitly', () => {
+    const template = `
+<div><span>hello</span></div>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue', {
+      htmlTagToWxml: false,
+    })
+
+    expect(code).toContain('<div><span>hello</span></div>')
+    expect(code).not.toContain('<view><text>hello</text></view>')
+  })
+
+  it('keeps PascalCase and kebab-case component tags untouched when html mapping is enabled', () => {
+    const template = `
+<div>
+  <HelloCard />
+  <hello-card />
+</div>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<view>')
+    expect(code).toContain('<HelloCard />')
+    expect(code).toContain('<hello-card />')
+    expect(code).not.toContain('<textCard')
+  })
+
+  it('treats mapped html tags as builtin elements rather than component nodes', () => {
+    const template = `
+<span @tap="onTap">text</span>
+<div layout-host="dialog-host" />
+    `.trim()
+
+    const { code, warnings, layoutHosts } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<text bindtap="onTap">text</text>')
+    expect(code).not.toContain('data-wv-event-detail-tap')
+    expect(layoutHosts).toBeUndefined()
+    expect(warnings).toContain('layout-host 仅支持声明在组件节点上，当前节点已忽略。')
+  })
+
+  it('applies html tag mapping inside structural directives', () => {
+    const template = `
+<div v-if="ok">
+  <span v-for="item in list" :key="item">{{ item }}</span>
+</div>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<block wx:if="{{ok}}"><view>')
+    expect(code).toContain('<text wx:for="{{list}}" wx:for-item="item"')
+    expect(code).toContain('{{item}}</text>')
+    expect(code).not.toContain('<div ')
+    expect(code).not.toContain('<span ')
+  })
+
+  it('merges partial html tag overrides with the default mapping table', () => {
+    const template = `
+<div><span>hello</span><img src="/cover.png" /></div>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue', {
+      htmlTagToWxml: {
+        span: 'view',
+      },
+    })
+
+    expect(code).toContain('<view><view>hello</view><image src="/cover.png" /></view>')
+  })
+
   it('falls back interpolation call expression to runtime binding', () => {
     const template = `
 <text>{{ sayHello() }}</text>

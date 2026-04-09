@@ -207,4 +207,32 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(state.value).toBe(true)
     expect(loggerWarnMock).toHaveBeenCalled()
   })
+
+  it('preserves boolean htmlTagToWxml config when resolving compile options', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {
+          vue: {
+            template: {
+              htmlTagToWxml: false,
+            },
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.template.htmlTagToWxml).toBe(false)
+  })
 })
