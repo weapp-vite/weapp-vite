@@ -3,7 +3,7 @@ import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => 'globalThis.__probe = (globalThis.__probe || 0) + 1'))
-const transformWithEsbuildMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
+const transformWithOxcMock = vi.hoisted(() => vi.fn(async (code: string) => ({ code })))
 const applySharedChunkStrategyMock = vi.hoisted(() => vi.fn())
 const applyRuntimeChunkLocalizationMock = vi.hoisted(() => vi.fn())
 const emitWxmlAssetsWithCacheMock = vi.hoisted(() => vi.fn())
@@ -29,7 +29,7 @@ vi.mock('node:fs/promises', () => ({
 }))
 
 vi.mock('vite', () => ({
-  transformWithEsbuild: transformWithEsbuildMock,
+  transformWithOxc: transformWithOxcMock,
 }))
 
 vi.mock('../../utils/wxmlEmit', () => ({
