@@ -177,6 +177,15 @@ export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestG
   return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
 }
 
+/**
+ * @description 生成“被动局部绑定”代码。
+ * @description 这层能力不能退化成只在 app.js 顶部安装全局对象。
+ * @description 原因是 axios / graphql-request / socket.io-client 一类依赖经常会：
+ * @description 1. 在模块初始化阶段直接读取自由变量；
+ * @description 2. 在各自 chunk 作用域里执行 `typeof XMLHttpRequest` / `typeof fetch` / `new URL()`;
+ * @description 3. 在全局对象完成安装前就完成环境探测并缓存结果。
+ * @description 因此这里必须把 fetch / XMLHttpRequest / WebSocket / URL 等名字绑定到实际使用它们的产物作用域内。
+ */
 export function createRequestGlobalsPassiveBindingsCode(targets: WeappInjectRequestGlobalsTarget[]) {
   const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
   if (bindingTargets.length === 0) {

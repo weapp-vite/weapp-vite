@@ -40,6 +40,12 @@ const requestGlobalsProbe = {
 }
 
 axios.defaults.adapter = 'fetch'
+axios.defaults.env = {
+  ...axios.defaults.env,
+  Request,
+  Response,
+  fetch,
+}
 
 App({
   globalData: {

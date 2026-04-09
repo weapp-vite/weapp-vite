@@ -115,6 +115,18 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).not.toContain('import { installRequestGlobals')
   })
 
+  it('keeps free-variable bindings for request libraries instead of relying on app-level globals only', () => {
+    const code = createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).toContain('var fetch = __weappViteExposeRequestGlobal__("fetch"')
+    expect(code).toContain('var XMLHttpRequest = __weappViteExposeRequestGlobal__("XMLHttpRequest"')
+    expect(code).toContain('var WebSocket = __weappViteExposeRequestGlobal__("WebSocket"')
+    expect(code).toContain('var URL = __weappViteExposeRequestGlobal__("URL"')
+    expect(code).not.toContain('__weappViteRequestGlobalsHost__.fetch')
+  })
+
   it('can create a valid sfc injection block', () => {
     const code = createInjectRequestGlobalsSfcCode(['fetch'], {
       localBindings: true,
