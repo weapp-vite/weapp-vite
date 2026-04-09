@@ -7,6 +7,7 @@ const sections = [
   { title: '插槽进阶', desc: 'v-slot/# 动态插槽名', url: '/pages/vue-slots-advanced/index' },
   { title: '动态组件', desc: 'component :is / keep-alive / transition 等', url: '/pages/vue-dynamic/index' },
   { title: 'Script Setup', desc: 'defineProps/defineEmits/useAttrs 等', url: '/pages/vue-script-setup/index' },
+  { title: 'Script Import', desc: 'script setup 显式 import .vue 组件', url: '/pages/vue-script-import/index' },
   { title: 'Render 函数', desc: 'render() + h() 写法', url: '/pages/vue-render/index' },
   { title: '样式写法', desc: 'scoped + CSS modules', url: '/pages/vue-style/index' },
   { title: 'Vue Query', desc: '@tanstack/vue-query 实际接入示例', url: '/pages/vue-query/index' },

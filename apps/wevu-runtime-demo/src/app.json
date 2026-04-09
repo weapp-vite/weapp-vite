@@ -9,6 +9,7 @@
     "pages/vue-slots-advanced/index",
     "pages/vue-dynamic/index",
     "pages/vue-script-setup/index",
+    "pages/vue-script-import/index",
     "pages/vue-render/index",
     "pages/vue-style/index",
     "pages/vue-query/index",
