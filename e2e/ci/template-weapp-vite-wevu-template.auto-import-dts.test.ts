@@ -17,7 +17,7 @@ async function runBuild(root: string) {
 }
 
 describe.sequential('template e2e: weapp-vite-wevu-template auto-import dts', () => {
-  it('emits source-navigation friendly components.d.ts and typed props', async () => {
+  it('does not emit default support dts files during production build', async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(COMPONENTS_DTS)
     await fs.remove(TYPED_COMPONENTS_DTS)
@@ -33,21 +33,7 @@ describe.sequential('template e2e: weapp-vite-wevu-template auto-import dts', ()
       StatusPill: '/components/StatusPill/index',
     })
 
-    expect(await fs.pathExists(COMPONENTS_DTS)).toBe(true)
-    expect(await fs.pathExists(TYPED_COMPONENTS_DTS)).toBe(true)
-
-    const componentsDts = await fs.readFile(COMPONENTS_DTS, 'utf8')
-    expect(componentsDts).toContain('declare module \'wevu\'')
-    expect(componentsDts).toContain('InfoPanel: typeof import("../src/components/InfoPanel/index.vue")[\'default\'];')
-    expect(componentsDts).toContain('StatusPill: typeof import("../src/components/StatusPill/index.vue")[\'default\'];')
-    expect(componentsDts).not.toContain('ComponentProp<"InfoPanel">')
-
-    const typedDts = await fs.readFile(TYPED_COMPONENTS_DTS, 'utf8')
-    expect(typedDts).toContain('declare module \'weapp-vite/typed-components\'')
-    expect(typedDts).toContain('InfoPanel: {')
-    expect(typedDts).toContain('readonly title?: string;')
-    expect(typedDts).toContain('readonly description?: string;')
-    expect(typedDts).toContain('StatusPill: {')
-    expect(typedDts).toContain('readonly label?: string;')
+    expect(await fs.pathExists(COMPONENTS_DTS)).toBe(false)
+    expect(await fs.pathExists(TYPED_COMPONENTS_DTS)).toBe(false)
   })
 })
