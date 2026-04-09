@@ -3,6 +3,7 @@ import {
   parse,
 } from '@vue/compiler-dom'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
+import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
 import { wechatPlatform } from './template/platforms'
 
@@ -49,6 +50,7 @@ export function compileVueTemplateToWxml(
   const wxsExtension = options?.wxsExtension
   const scopedSlotsRequireProps = options?.scopedSlotsRequireProps
     ?? (options?.scopedSlotsCompiler !== 'augmented')
+  const htmlTagToWxmlMap = resolveHtmlTagToWxmlMap(options?.htmlTagToWxml)
 
   try {
     // 使用 compiler-dom 解析模板，确保浏览器环境自带 decodeEntities 解析能力。
@@ -64,6 +66,7 @@ export function compileVueTemplateToWxml(
       filename,
       warnings,
       platform: options?.platform ?? wechatPlatform,
+      htmlTagToWxmlMap,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
       scopedSlotsRequireProps,
       slotMultipleInstance: options?.slotMultipleInstance ?? true,

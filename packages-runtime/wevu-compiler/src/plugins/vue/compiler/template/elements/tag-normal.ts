@@ -1,13 +1,14 @@
 import type { ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { findSlotDirective } from './helpers'
 import { transformComponentWithSlots } from './tag-component'
 
 export function transformNormalElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  const { tag } = node
+  const tag = resolveTemplateTagName(node.tag, context)
 
   const slotDirective = findSlotDirective(node)
   const templateSlotChildren = node.children.filter(
@@ -17,7 +18,9 @@ export function transformNormalElement(node: ElementNode, context: TransformCont
     return transformComponentWithSlots(node, context, transformNode)
   }
 
-  const { attrs, vTextExp } = collectElementAttributes(node, context)
+  const { attrs, vTextExp } = collectElementAttributes(node, context, {
+    resolvedTag: tag,
+  })
 
   let children = ''
   if (node.children.length > 0) {

@@ -128,6 +128,9 @@ describe('resolveVueTemplatePlatformOptions', () => {
           },
           vue: {
             template: {
+              htmlTagToWxml: {
+                div: 'view',
+              },
               scopedSlotsCompiler: 'augmented',
               classStyleRuntime: 'auto',
             },
@@ -142,6 +145,9 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(options.template.platform.name).toBe('alipay')
+    expect(options.template.htmlTagToWxml).toEqual({
+      div: 'view',
+    })
     expect(options.template.classStyleRuntime).toBe('wxs')
     expect(options.template.wxsExtension).toBe('sjs')
     expect(options.template.classStyleWxsSrc).toBe('/virtual/__class_style__.wxs')

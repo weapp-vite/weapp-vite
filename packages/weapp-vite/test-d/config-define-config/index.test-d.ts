@@ -5,12 +5,20 @@ import { defineConfig } from '.'
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    vue: {
+      template: {
+        htmlTagToWxml: {
+          div: 'view',
+        },
+      },
+    },
     autoImportComponents: {
       vueComponents: true,
     },
   },
 })
 expectType<string | undefined>(objectConfig.weapp?.srcRoot)
+expectType<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 
 const promiseConfig = defineConfig(Promise.resolve({
   weapp: {

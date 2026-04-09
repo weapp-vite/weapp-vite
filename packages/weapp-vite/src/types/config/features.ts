@@ -199,6 +199,7 @@ export interface WeappWorkerConfig {
 export interface WeappVueTemplateConfig {
   removeComments?: boolean
   simplifyWhitespace?: boolean
+  htmlTagToWxml?: boolean | Record<string, string>
   scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
   scopedSlotsRequireProps?: boolean
   slotMultipleInstance?: boolean

@@ -5,6 +5,11 @@ export interface AutoImportComponentsConfig {
 export interface WeappViteConfig {
   srcRoot?: string
   autoImportComponents?: boolean | AutoImportComponentsConfig
+  vue?: {
+    template?: {
+      htmlTagToWxml?: boolean | Record<string, string>
+    }
+  }
 }
 
 export interface UserConfig {

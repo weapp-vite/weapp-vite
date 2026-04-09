@@ -127,6 +127,43 @@ describe('compileVueTemplateToWxml', () => {
     expect(warnings).not.toContainEqual(expect.stringContaining('decodeEntities'))
   })
 
+  it('maps common html tags to builtin wxml tags in vue templates', () => {
+    const template = `
+<div class="card" @tap="onTap">
+  <span>{{ title }}</span>
+  <img :src="cover" />
+  <a url="/pages/detail/index">详情</a>
+</div>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<view class="card" bindtap="onTap">')
+    expect(code).toContain('<text>{{title}}</text>')
+    expect(code).toContain('<image src="{{cover}}" />')
+    expect(code).toContain('<navigator url="/pages/detail/index">详情</navigator>')
+    expect(code).not.toContain('data-wv-event-detail-tap')
+    expect(code).not.toContain('<div')
+    expect(code).not.toContain('<span')
+    expect(code).not.toContain('<img')
+    expect(code).not.toContain('<a ')
+  })
+
+  it('supports overriding html tag mapping per compile option', () => {
+    const template = `
+<section><span>hello</span></section>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue', {
+      htmlTagToWxml: {
+        section: 'scroll-view',
+        span: 'view',
+      },
+    })
+
+    expect(code).toContain('<scroll-view><view>hello</view></scroll-view>')
+  })
+
   it('falls back interpolation call expression to runtime binding', () => {
     const template = `
 <text>{{ sayHello() }}</text>

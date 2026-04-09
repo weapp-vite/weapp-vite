@@ -3,6 +3,7 @@ import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
+import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
 import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, withForScope, withScope } from './helpers'
@@ -124,6 +125,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
     const { attrs, vTextExp } = collectElementAttributes(elementWithoutFor, context, {
       forInfo,
       extraAttrs,
+      resolvedTag: resolveTemplateTagName(elementWithoutFor.tag, context),
     })
 
     let children = ''
@@ -136,7 +138,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
       children = renderMustache(vTextExp, context)
     }
 
-    const { tag } = elementWithoutFor
+    const tag = resolveTemplateTagName(elementWithoutFor.tag, context)
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
 
     return children

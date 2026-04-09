@@ -7,6 +7,7 @@ import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '
 import { transformDirective } from '../directives'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
+import { resolveTemplateTagName } from '../htmlTagMapping'
 
 const builtinTagSet = new Set(builtinComponents.map(tag => tag.toLowerCase()))
 
@@ -22,10 +23,12 @@ export function collectElementAttributes(
     skipSlotDirective?: boolean
     extraAttrs?: string[]
     isComponent?: boolean
+    resolvedTag?: string
   },
 ) {
   const { props } = node
-  const isComponentElement = options?.isComponent ?? !isBuiltinTag(node.tag)
+  const resolvedTag = options?.resolvedTag ?? resolveTemplateTagName(node.tag, context)
+  const isComponentElement = options?.isComponent ?? !isBuiltinTag(resolvedTag)
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
   let staticClass: string | undefined
   let staticId: string | undefined
