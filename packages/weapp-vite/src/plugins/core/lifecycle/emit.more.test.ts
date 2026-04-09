@@ -1130,4 +1130,49 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).toContain('const e=require("./common.js");const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
     expect(code.indexOf('const __weappViteRequestGlobalsBundleHost__ = vn')).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
+
+  it('patches axios chunk defaults env through emit injection', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {
+            injectRequestGlobals: true,
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'axios.js': {
+        type: 'chunk',
+        fileName: 'axios.js',
+        moduleIds: [
+          '/project/node_modules/.pnpm/axios@1.15.0/node_modules/axios/index.js',
+        ],
+        code: [
+          '/* __weappViteRequestGlobalsPassiveBindings__ */ var fetch = globalThis.fetch; var Request = globalThis.Request; var Response = globalThis.Response;',
+          'function axios(){}',
+          'axios.Axios = function Axios(){}',
+          'axios.defaults = { env: {} }',
+          'Object.defineProperty(exports,`t`,{enumerable:true,get:function(){return axios}})',
+        ].join('\n'),
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const code = bundle['axios.js'].code
+    expect(code).toContain('__weappViteAxiosFetchAdapterEnv__')
+    expect(code).toContain('__weappViteAxiosExport__.defaults.env = {')
+    expect(code).toContain('Request,')
+    expect(code).toContain('Response,')
+    expect(code).toContain('fetch,')
+  })
 })

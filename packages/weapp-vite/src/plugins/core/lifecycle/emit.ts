@@ -48,6 +48,7 @@ const REQUEST_GLOBAL_ENTRY_NAME_RE = /\.[^/.]+$/
 const REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE = /([A-Za-z_$][\w$]*)\s*=\s*require\((`([^`]+)`|'([^']+)'|"([^"]+)")\)/g
 const DYNAMIC_GLOBAL_RESOLUTION_RE = /Function\(\s*(?:`return this`|'return this'|"return this")\s*\)\(\)/g
 const BROWSER_GLOBAL_HOST_TERNARY_RE = /typeof self<[`'"]u[`'"]\?self:typeof window<[`'"]u[`'"]\?window:globalThis/g
+const AXIOS_MODULE_ID_RE = /[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?axios[/\\]/u
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -642,6 +643,52 @@ function injectRequestGlobalsLocalBindings(
   }
 }
 
+function injectAxiosFetchAdapterEnv(bundle: OutputBundle) {
+  const axiosEnvPatchCode = [
+    '/* __weappViteAxiosFetchAdapterEnv__ */',
+    'let __weappViteAxiosExport__ = null',
+    'for (const __weappViteAxiosKey__ in exports) {',
+    '  const __weappViteAxiosCandidate__ = exports[__weappViteAxiosKey__]',
+    '  if (__weappViteAxiosCandidate__ && typeof __weappViteAxiosCandidate__ === "function" && __weappViteAxiosCandidate__.Axios && __weappViteAxiosCandidate__.defaults) {',
+    '    __weappViteAxiosExport__ = __weappViteAxiosCandidate__',
+    '    break',
+    '  }',
+    '}',
+    'if (__weappViteAxiosExport__) {',
+    '  __weappViteAxiosExport__.defaults.env = {',
+    '    ...(__weappViteAxiosExport__.defaults.env ?? {}),',
+    '    Request,',
+    '    Response,',
+    '    fetch,',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
+
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    if (chunk.code.includes('__weappViteAxiosFetchAdapterEnv__')) {
+      continue
+    }
+
+    const moduleIds = Array.isArray(chunk.moduleIds) ? chunk.moduleIds : []
+    const normalizedFileName = toPosixPath(chunk.fileName)
+    const isAxiosChunk = moduleIds.some(id => AXIOS_MODULE_ID_RE.test(id))
+      || normalizedFileName === 'axios.js'
+      || normalizedFileName.endsWith('/axios.js')
+
+    if (!isAxiosChunk) {
+      continue
+    }
+
+    chunk.code = `${chunk.code}\n${axiosEnvPatchCode}`
+  }
+}
+
 function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string) {
   const normalized = normalizeWeappLocalNpmImport(importee)
   const target = root
@@ -1042,6 +1089,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       const installerChunks = injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets)
       injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
       injectRequestGlobalsLocalBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
+      injectAxiosFetchAdapterEnv(rolldownBundle)
     }
 
     refreshModuleGraph(this, state)
