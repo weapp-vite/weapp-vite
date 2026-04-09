@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.14.3
+
+### Patch Changes
+
+- 🐛 **修复多个发布包在严格 TypeScript 校验下的类型问题，补齐 `tsd` 类型回归测试，并同步收敛 `wevu`、`@weapp-vite/mcp`、`@wevu/web-apis` 与 `create-weapp-vite` 的类型契约，减少后续重构时的类型回退风险。** [`b9a3e5b`](https://github.com/weapp-vite/weapp-vite/commit/b9a3e5b8fc6259ae5d77eba359aca3632d083b75) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 模板中 `import.meta.env` 无法通过模板解析的问题。现在 `<template>` 里的 `import.meta.env` 表达式会保留到后续 WXML 产物阶段继续做静态替换，不再在 `compileVueFile` 阶段提前报错，并能与 WXML 侧的引号修正策略协同生效。** [`1a15998`](https://github.com/weapp-vite/weapp-vite/commit/1a159986e5df4fcdf3b9ff86ab5e1f7af5475b42) by @sonofmagic
+
+- 🐛 **修复 JSON 宏临时文件默认落到系统临时目录时对项目内包名导入的解析问题。现在在常规项目目录下会默认使用项目内的 `.weapp-vite/wevu-config` 作为缓存根目录，避免 `defineAppJson()` 等宏在求值 `weapp-vite/auto-routes` 这类包名导入时出现未解析警告。** [`f2fba2c`](https://github.com/weapp-vite/weapp-vite/commit/f2fba2cb594ebde2109053bab2bec5010b00ba8b) by @sonofmagic
+- 📦 **Dependencies** [`b9a3e5b`](https://github.com/weapp-vite/weapp-vite/commit/b9a3e5b8fc6259ae5d77eba359aca3632d083b75)
+  → `@weapp-vite/ast@6.14.3`
+
 ## 6.14.2
 
 ### Patch Changes
