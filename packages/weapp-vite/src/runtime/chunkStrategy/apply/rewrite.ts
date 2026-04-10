@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-use-before-define */
 import { posix as path } from 'pathe'
 import { SHARED_CHUNK_VIRTUAL_PREFIX } from '../constants'
 
@@ -40,16 +41,17 @@ export function rewriteChunkImportSpecifiersInCode(
     imports: string[]
     dynamicImports: string[]
     runtimeFileName: string
+    resolveImportTarget?: (specifier: string) => string | undefined
   },
 ) {
-  const { sourceFileName, sourceFileNames, targetFileName, imports, dynamicImports, runtimeFileName } = options
+  const { sourceFileName, sourceFileNames, targetFileName, imports, dynamicImports, runtimeFileName, resolveImportTarget } = options
   const sourceFileNameCandidates = (sourceFileNames ?? [sourceFileName ?? '']).filter(Boolean)
   const specifiers = new Set([...imports, ...dynamicImports].filter(Boolean))
   let rewrittenCode = sourceCode
   for (const specifier of specifiers) {
     const resolvedTargetSpecifier = path.basename(specifier) === ROLLDOWN_RUNTIME_FILE_NAME
       ? runtimeFileName
-      : specifier
+      : resolveImportTarget?.(specifier) ?? specifier
     const targetImportPath = createRelativeImportPath(targetFileName, resolvedTargetSpecifier)
     if (!targetImportPath) {
       continue

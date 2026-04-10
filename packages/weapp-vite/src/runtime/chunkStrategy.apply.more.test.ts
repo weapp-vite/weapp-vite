@@ -1,6 +1,6 @@
 import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import { describe, expect, it } from 'vitest'
-import { applyRuntimeChunkLocalization, applySharedChunkStrategy, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
+import { applyRuntimeChunkLocalization, applySharedChunkStrategy, SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from './chunkStrategy'
 
 function createChunk(fileName: string, code: string, imports: string[] = []): OutputChunk {
   return {
@@ -564,5 +564,49 @@ describe('chunkStrategy apply helpers more branches', () => {
       expect(retainedSubpackageEntry.code).toContain('require("../../../issue-340-shared.js")')
       expect(retainedSubpackageEntry.code).not.toContain('rolldown-runtime.js')
     }
+  })
+
+  it('localizes nested cross-subpackage imports inside duplicated shared assets', () => {
+    const sharedVirtualChunk = createChunk(
+      `${SHARED_CHUNK_VIRTUAL_PREFIX}/pages_user/common.js`,
+      'const orderShared = require("../../order/common.js"); exports.format = orderShared.b();',
+      ['pages/order/common.js'],
+    )
+    sharedVirtualChunk.isEntry = false
+
+    const orderCommonChunk = createChunk(
+      'pages/order/common.js',
+      'const root = require("../../common.js"); exports.b = () => root;',
+      ['common.js'],
+    )
+    orderCommonChunk.isEntry = false
+
+    const userImporter = createChunk(
+      'pages/user/person-info/index.js',
+      'const shared = require("../weapp-shared/common.js");',
+      [`${SHARED_CHUNK_VIRTUAL_PREFIX}/pages_user/common.js`],
+    )
+
+    const bundle: OutputBundle = {
+      [sharedVirtualChunk.fileName]: sharedVirtualChunk,
+      [orderCommonChunk.fileName]: orderCommonChunk,
+      [userImporter.fileName]: userImporter,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+
+    applySharedChunkStrategy.call(createPluginContext(emitted), bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['pages/order', 'pages/user'],
+    })
+
+    expect(emitted).toContainEqual({
+      fileName: 'pages/user/weapp-shared/common.js',
+      source: 'const orderShared = require("./pages_order.common.js"); exports.format = orderShared.b();',
+    })
+    expect(emitted).toContainEqual({
+      fileName: 'pages/user/weapp-shared/pages_order.common.js',
+      source: 'const root = require("../../../common.js"); exports.b = () => root;',
+    })
   })
 })

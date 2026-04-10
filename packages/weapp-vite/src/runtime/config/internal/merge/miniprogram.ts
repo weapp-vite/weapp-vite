@@ -7,6 +7,7 @@ import path from 'pathe'
 import { createLogger } from 'vite'
 import { defaultExcluded } from '../../../../defaults'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
+import { resolveNpmBuildCandidateDependenciesSync } from '../../../npmPlugin/service'
 import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
 
@@ -78,9 +79,12 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   }
 
   const external: (string | RegExp)[] = []
-  if (packageJson?.dependencies) {
+  const npmBuildCandidates = packageJson
+    ? resolveNpmBuildCandidateDependenciesSync(ctx, packageJson)
+    : []
+  if (npmBuildCandidates.length > 0) {
     external.push(
-      ...Object.keys(packageJson.dependencies).map((pkg) => {
+      ...npmBuildCandidates.map((pkg) => {
         return new RegExp(`^${pkg.replace(PACKAGE_NAME_REGEX, '\\$&')}(\\/|$)`)
       }),
     )

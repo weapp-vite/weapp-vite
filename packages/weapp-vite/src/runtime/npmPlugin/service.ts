@@ -5,7 +5,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { NpmBuildOptions } from '../../types'
 import { win32 as pathWin32, relative as relativeNative } from 'node:path'
 import { fs } from '@weapp-core/shared'
-import { getPackageInfo } from 'local-pkg'
+import { getPackageInfo, getPackageInfoSync } from 'local-pkg'
 import path from 'pathe'
 import { debug } from '../../context/shared'
 import { getPlatformNpmDistDirName } from '../../platform'
@@ -133,6 +133,48 @@ function resolveDeclaredDependencies(pkgJson: PackageJson) {
   ])
 }
 
+function isMiniprogramPackage(pkg: PackageJson) {
+  return Reflect.has(pkg, 'miniprogram') && typeof pkg.miniprogram === 'string'
+}
+
+function resolveMiniprogramCandidateDependenciesSync(
+  allDependencies: string[],
+  cwd?: string,
+) {
+  return allDependencies.filter((dep) => {
+    let packageInfo: ReturnType<typeof getPackageInfoSync> | null = null
+    try {
+      packageInfo = getPackageInfoSync(dep, cwd ? { paths: [cwd] } : undefined)
+    }
+    catch {
+      packageInfo = null
+    }
+    return !!packageInfo && isMiniprogramPackage(packageInfo.packageJson)
+  })
+}
+
+export function resolveNpmBuildCandidateDependenciesSync(
+  ctx: MutableCompilerContext,
+  pkgJson: PackageJson,
+) {
+  if (resolveNpmStrategy(ctx) === 'legacy') {
+    return Object.keys(pkgJson.dependencies ?? {})
+  }
+
+  const declaredDependencies = resolveDeclaredDependencies(pkgJson)
+  const configuredPatterns = resolveConfiguredDependencyPatterns(ctx)
+  const explicitlyIncludedDependencies = resolveTargetDependencies(declaredDependencies, configuredPatterns)
+  const miniprogramDependencies = resolveMiniprogramCandidateDependenciesSync(
+    declaredDependencies,
+    ctx.configService?.cwd,
+  )
+
+  return dedupeDependencies([
+    ...miniprogramDependencies,
+    ...explicitlyIncludedDependencies,
+  ])
+}
+
 function hasSameDependencySet(source: string[], target: string[]) {
   if (source.length !== target.length) {
     return false
@@ -191,12 +233,12 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
   const cache = createDependenciesCache(ctx)
   const builder = createPackageBuilder(ctx, oxcVitePlugin as Plugin | undefined)
 
-  async function resolveMiniprogramCandidateDependencies(allDependencies: string[]) {
+  async function resolveMiniprogramCandidateDependencies(allDependencies: string[], cwd?: string) {
     const miniprogramDependencies = await Promise.all(
       allDependencies.map(async (dep) => {
         let packageInfo: Awaited<ReturnType<typeof getPackageInfo>> | null = null
         try {
-          packageInfo = await getPackageInfo(dep)
+          packageInfo = await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
         }
         catch {
           packageInfo = null
@@ -212,14 +254,15 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
   }
 
   async function resolveBuildCandidateDependencies(pkgJson: PackageJson) {
+    const syncCandidates = resolveNpmBuildCandidateDependenciesSync(ctx, pkgJson)
     if (resolveNpmStrategy(ctx) === 'legacy') {
-      return Object.keys(pkgJson.dependencies ?? {})
+      return syncCandidates
     }
 
     const declaredDependencies = resolveDeclaredDependencies(pkgJson)
+    const miniprogramDependencies = await resolveMiniprogramCandidateDependencies(declaredDependencies, ctx.configService?.cwd)
     const configuredPatterns = resolveConfiguredDependencyPatterns(ctx)
     const explicitlyIncludedDependencies = resolveTargetDependencies(declaredDependencies, configuredPatterns)
-    const miniprogramDependencies = await resolveMiniprogramCandidateDependencies(declaredDependencies)
 
     return dedupeDependencies([
       ...miniprogramDependencies,

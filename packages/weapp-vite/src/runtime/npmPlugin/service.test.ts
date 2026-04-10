@@ -7,6 +7,7 @@ import {
   createNpmService,
   hasLocalSubPackageNpmConfig,
   resolveCopyFilterRelativePath,
+  resolveNpmBuildCandidateDependenciesSync,
   resolveNpmDistDirName,
   resolveNpmSourceCacheOutDir,
   resolveTargetDependencies,
@@ -17,6 +18,7 @@ const checkDependenciesCacheOutdateMock = vi.hoisted(() => vi.fn(async () => tru
 const writeDependenciesCacheMock = vi.hoisted(() => vi.fn(async () => {}))
 const getPackNpmRelationListMock = vi.hoisted(() => vi.fn())
 const getPackageInfoMock = vi.hoisted(() => vi.fn(async () => null))
+const getPackageInfoSyncMock = vi.hoisted(() => vi.fn(() => null))
 
 vi.mock('./builder', () => ({
   createPackageBuilder: () => ({
@@ -49,6 +51,7 @@ vi.mock('local-pkg', async (importOriginal) => {
   return {
     ...actual,
     getPackageInfo: getPackageInfoMock,
+    getPackageInfoSync: getPackageInfoSyncMock,
   }
 })
 
@@ -65,6 +68,16 @@ describe('runtime npm service', () => {
     vi.clearAllMocks()
     buildPackageMock.mockImplementation(async () => {})
     getPackageInfoMock.mockImplementation(async (dep: string) => {
+      if (dep === 'tdesign-miniprogram' || dep === '@vant/weapp') {
+        return {
+          packageJson: {
+            miniprogram: 'miniprogram_dist',
+          },
+        }
+      }
+      return null
+    })
+    getPackageInfoSyncMock.mockImplementation((dep: string) => {
       if (dep === 'tdesign-miniprogram' || dep === '@vant/weapp') {
         return {
           packageJson: {
@@ -92,6 +105,30 @@ describe('runtime npm service', () => {
     expect(resolveTargetDependencies(['dayjs', 'lodash'], false)).toEqual([])
     expect(resolveTargetDependencies(['dayjs', 'lodash'], ['dayjs', /^lod/])).toEqual(['dayjs', 'lodash'])
     expect(resolveTargetDependencies(['dayjs'], ['custom-only'])).toEqual(['custom-only'])
+  })
+
+  it('resolves explicit npm build candidates without forcing ordinary dependencies into external', () => {
+    const pkgJson = {
+      dependencies: {
+        'dayjs': '^1.11.13',
+        'tdesign-miniprogram': '^1.12.3',
+      },
+      devDependencies: {
+        '@vant/weapp': '^1.11.6',
+        'lodash': '^4.17.21',
+      },
+    }
+
+    expect(resolveNpmBuildCandidateDependenciesSync({
+      configService: {
+        cwd: '/project',
+        weappViteConfig: {
+          npm: {
+            include: ['dayjs'],
+          },
+        },
+      },
+    } as any, pkgJson as any)).toEqual(['tdesign-miniprogram', '@vant/weapp', 'dayjs'])
   })
 
   it('detects whether local subpackages define npm dependency lists', () => {
