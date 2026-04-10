@@ -511,7 +511,7 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(result.code).toBe('<view data-url="{{\'/pages/issue-431/index.wxml\'}}" data-dir="{{\'/pages/issue-431\'}}" data-meta="{{ {\"url\":\"/pages/issue-431/index.wxml\",\"dirname\":\"/pages/issue-431\",\"env\":{\"MODE\":\"production\"}} }}" />')
+    expect(result.code).toBe('<view data-url="{{\'/pages/issue-431/index.wxml\'}}" data-dir="{{\'/pages/issue-431\'}}" data-meta="{{\'{&quot;url&quot;:&quot;/pages/issue-431/index.wxml&quot;,&quot;dirname&quot;:&quot;/pages/issue-431&quot;,&quot;env&quot;:{&quot;MODE&quot;:&quot;production&quot;}}\'}}" />')
   })
 
   it('escapes single quotes in import.meta.env string replacements inside mustache', () => {

@@ -115,8 +115,8 @@ function toQuotedLiteral(value: string, quote: '\'' | '"', outerQuote: '"' | '\'
 function toMustacheReplacementValue(code: string, start: number, end: number, expression: string, value: string) {
   try {
     const parsed = JSON.parse(value)
+    const outerQuote = getMustacheOuterQuote(code, start)
     if (typeof parsed === 'string') {
-      const outerQuote = getMustacheOuterQuote(code, start)
       return toQuotedLiteral(
         value,
         outerQuote === '\'' ? '"' : '\'',
@@ -125,6 +125,14 @@ function toMustacheReplacementValue(code: string, start: number, end: number, ex
     }
 
     if (isWholeMustacheExpression(code, start, end, expression)) {
+      if (outerQuote) {
+        return toQuotedLiteral(
+          JSON.stringify(parsed),
+          outerQuote === '\'' ? '"' : '\'',
+          outerQuote,
+        )
+      }
+
       // 小程序 mustache 中直接输出对象/数组等字面量时，需要保留 `{{ { ... } }}` 这类带空格写法，
       // 避免 `{{{` / `}}}` 被宿主当成非法模板内容。
       return ` ${JSON.stringify(parsed)} `
