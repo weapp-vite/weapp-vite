@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
-import process from 'node:process'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '../../createContext'
 
 const tempRoots: string[] = []
 const DEFINE_CONFIG_IMPORT = path.resolve(import.meta.dirname, '../../config.ts').replace(/\\/g, '/')
+const WEAPP_VITE_PACKAGE_ROOT = path.resolve(import.meta.dirname, '../../..')
 
 async function createTempRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-layout-build-'))
@@ -16,6 +16,16 @@ async function createTempRoot() {
 
 async function writeJson(file: string, value: unknown) {
   await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+}
+
+async function linkWorkspaceWeappVitePackage(root: string) {
+  const nodeModulesRoot = path.join(root, 'node_modules')
+  await fs.mkdir(nodeModulesRoot, { recursive: true })
+  await fs.symlink(
+    WEAPP_VITE_PACKAGE_ROOT,
+    path.join(nodeModulesRoot, 'weapp-vite'),
+    'dir',
+  )
 }
 
 async function writeProjectFiles(root: string) {
@@ -30,7 +40,7 @@ async function writeProjectFiles(root: string) {
     version: '0.0.0',
   })
 
-  await fs.symlink(path.join(process.cwd(), 'node_modules'), path.join(root, 'node_modules'), 'dir')
+  await linkWorkspaceWeappVitePackage(root)
 
   await writeJson(path.join(root, 'project.config.json'), {
     appid: 'wx1234567890abcd',
@@ -111,7 +121,7 @@ async function writeScriptlessLayoutProjectFiles(root: string) {
     version: '0.0.0',
   })
 
-  await fs.symlink(path.join(process.cwd(), 'node_modules'), path.join(root, 'node_modules'), 'dir')
+  await linkWorkspaceWeappVitePackage(root)
 
   await writeJson(path.join(root, 'project.config.json'), {
     appid: 'wx1234567890abce',

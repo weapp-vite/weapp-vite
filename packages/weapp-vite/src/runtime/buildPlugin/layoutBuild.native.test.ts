@@ -1,5 +1,4 @@
 import os from 'node:os'
-import process from 'node:process'
 
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
@@ -13,6 +12,7 @@ const DEFINE_CONFIG_IMPORT = path
 const RUNTIME_ENTRY_IMPORT = path
   .resolve(import.meta.dirname, '../../plugins/vue/runtime.ts')
   .replace(/\\/g, '/')
+const WEAPP_VITE_PACKAGE_ROOT = path.resolve(import.meta.dirname, '../../..')
 
 async function createTempRoot() {
   const root = await fs.mkdtemp(
@@ -20,6 +20,15 @@ async function createTempRoot() {
   )
   tempRoots.push(root)
   return root
+}
+
+async function linkWorkspaceWeappVitePackage(root: string) {
+  const nodeModulesRoot = path.join(root, 'node_modules')
+  await fs.ensureDir(nodeModulesRoot)
+  await fs.ensureSymlink(
+    WEAPP_VITE_PACKAGE_ROOT,
+    path.join(nodeModulesRoot, 'weapp-vite'),
+  )
 }
 
 async function writeNativeDynamicLayoutProjectFiles(root: string) {
@@ -38,10 +47,7 @@ async function writeNativeDynamicLayoutProjectFiles(root: string) {
     { spaces: 2 },
   )
 
-  await fs.ensureSymlink(
-    path.join(process.cwd(), 'node_modules'),
-    path.join(root, 'node_modules'),
-  )
+  await linkWorkspaceWeappVitePackage(root)
 
   await fs.writeJson(
     path.join(root, 'project.config.json'),
