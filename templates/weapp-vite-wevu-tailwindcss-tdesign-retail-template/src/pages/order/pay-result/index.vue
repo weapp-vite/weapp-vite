@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onLoad, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 
 const totalPaid = ref<number | string>(0)
 const orderNo = ref('')

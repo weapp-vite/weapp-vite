@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { ref } from 'wevu'
+import { wpi } from 'wevu/api'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
 import { useDialog } from '@/hooks/useDialog'

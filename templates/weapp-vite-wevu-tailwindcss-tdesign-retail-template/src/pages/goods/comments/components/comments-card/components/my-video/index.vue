@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onMounted, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 
 const props = withDefaults(defineProps<{
   videoSrc?: string

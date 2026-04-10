@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TrackingCompany, TrackingSubmitParams } from './api'
-import { wpi } from '@wevu/api'
 import { computed, onLoad, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import reasonSheet from '../components/reason-sheet/reasonSheet'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onLoad, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 import { alertDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { dispatchSupplementInvoice } from '../../../services/order/orderConfirm'

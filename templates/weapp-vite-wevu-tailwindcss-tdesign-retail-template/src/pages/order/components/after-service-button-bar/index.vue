@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { computed } from 'wevu'
+import { wpi } from 'wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { cancelRights } from '../../after-service-detail/api'

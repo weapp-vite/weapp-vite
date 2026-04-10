@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onShow, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 import { getSearchHistory, getSearchPopular } from '../../../services/good/fetchSearchHistory'
 
 const historyWords = ref<string[]>([])

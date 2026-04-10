@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HomeResponse } from '../../services/home/home'
-import { wpi } from '@wevu/api'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { fetchGoodsList } from '../../services/good/fetchGoods'
 import { fetchHome } from '../../services/home/home'

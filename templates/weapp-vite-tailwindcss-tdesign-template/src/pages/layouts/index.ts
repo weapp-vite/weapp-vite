@@ -1,6 +1,6 @@
-import { wpi } from '@wevu/api'
 import Toast from 'tdesign-miniprogram/toast/index'
 import { setPageLayout } from 'weapp-vite/runtime'
+import { wpi } from 'wevu/api'
 
 Page({
   data: {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onLoad, onShow, reactive, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { fetchCartGroupData } from '../../services/cart/cart'

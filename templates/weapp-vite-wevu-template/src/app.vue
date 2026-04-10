@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import autoRoutes from 'weapp-vite/auto-routes'
 import { onHide, onLaunch, onShow } from 'wevu'
+import { wpi } from 'wevu/api'
 import { createRouter } from 'wevu/router'
 
 defineAppJson({

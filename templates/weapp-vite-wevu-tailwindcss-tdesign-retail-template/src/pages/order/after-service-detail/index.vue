@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RightsDetailResult } from './api'
-import { wpi } from '@wevu/api'
 import { onLoad, onShow, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 import { ServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { formatTime, getRightsDetail } from './api'
 

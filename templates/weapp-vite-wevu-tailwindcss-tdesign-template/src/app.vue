@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onHide, onLaunch, onShow } from 'wevu'
+import { wpi } from 'wevu/api'
 
 defineAppJson({
   pages: [

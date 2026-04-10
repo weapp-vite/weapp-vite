@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Address } from '../../../../model/address'
-import { wpi } from '@wevu/api'
 import { onLoad, onUnload, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { areaData } from '../../../../config/index'
 import { fetchDeliveryAddress } from '../../../../services/address/fetchAddress'

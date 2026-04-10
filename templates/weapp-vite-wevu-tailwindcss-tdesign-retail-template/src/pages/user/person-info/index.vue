@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onLoad, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { fetchPerson } from '../../../services/usercenter/fetchPerson'
 import { phoneEncryption } from '../../../utils/util'

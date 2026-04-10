@@ -1,5 +1,5 @@
 import type { OrderCommitResult } from '../../../model/order/orderConfirm'
-import { wpi } from '@wevu/api'
+import { wpi } from 'wevu/api'
 import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { dispatchCommitPay } from '../../../services/order/orderConfirm'

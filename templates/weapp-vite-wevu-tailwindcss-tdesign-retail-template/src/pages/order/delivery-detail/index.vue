@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onLoad, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 
 interface LogisticsNode {
   title: string

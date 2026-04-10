@@ -1,5 +1,5 @@
-import { wpi } from '@wevu/api'
 import ActionSheet, { ActionSheetTheme } from 'tdesign-miniprogram/action-sheet/index'
+import { wpi } from 'wevu/api'
 import { hello } from '@/utils/util'
 
 const firstGrid = [

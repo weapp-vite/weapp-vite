@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onMounted, ref, toRefs, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { getSrc } from './utils'
 
 defineOptions({

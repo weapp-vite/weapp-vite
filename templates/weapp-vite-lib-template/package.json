@@ -29,13 +29,11 @@
     "postinstall": "wv prepare"
   },
   "peerDependencies": {
-    "@wevu/api": "workspace:*",
     "wevu": "workspace:*"
   },
   "devDependencies": {
     "@icebreakers/eslint-config": "^4.0.3",
     "@icebreakers/stylelint-config": "^3.0.3",
-    "@wevu/api": "workspace:*",
     "eslint": "^10.2.0",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",

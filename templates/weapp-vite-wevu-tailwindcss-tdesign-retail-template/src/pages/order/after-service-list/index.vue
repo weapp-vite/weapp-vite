@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RightsListParams, RightsListResult } from './api'
-import { wpi } from '@wevu/api'
 import { onLoad, onPageScroll, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { AfterServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { getRightsList } from './api'
 

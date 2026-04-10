@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
+import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
 import { addressParse } from '../../../../utils/addressParse'

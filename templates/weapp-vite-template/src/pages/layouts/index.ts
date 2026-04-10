@@ -1,5 +1,5 @@
-import { wpi } from '@wevu/api'
 import { setPageLayout } from 'weapp-vite/runtime'
+import { wpi } from 'wevu/api'
 
 Page({
   data: {

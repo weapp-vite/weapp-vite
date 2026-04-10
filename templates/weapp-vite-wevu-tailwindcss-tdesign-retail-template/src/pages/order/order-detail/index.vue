@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { BusinessTimeResult, OrderDetailData } from '../../../model/order/orderDetail'
 import type { SelectableAddress } from '../../../services/address/list'
-import { wpi } from '@wevu/api'
 import { onLoad, onPageScroll, onShow, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../services/address/list'
 import { fetchBusinessTime, fetchOrderDetail } from '../../../services/order/orderDetail'

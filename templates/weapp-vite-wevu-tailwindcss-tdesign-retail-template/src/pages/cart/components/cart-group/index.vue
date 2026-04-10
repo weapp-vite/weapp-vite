@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { ref, toRefs, useNativeInstance, watch } from 'wevu'
+import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { hasPromotion, imgCut } from './helpers'
 

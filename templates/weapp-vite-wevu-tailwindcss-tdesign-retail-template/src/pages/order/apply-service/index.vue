@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { RightsPreviewResponse } from '../../../model/order/applyService'
 import type { DispatchApplyServicePayload } from '../../../services/order/applyService'
-import { wpi } from '@wevu/api'
 import { computed, onLoad, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 import { alertDialog, confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import {

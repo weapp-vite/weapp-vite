@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Coupon, CouponCardStatus } from '../../../../model/coupon'
-import { wpi } from '@wevu/api'
 import { computed } from 'wevu'
+import { wpi } from 'wevu/api'
 
 defineOptions({
   options: {

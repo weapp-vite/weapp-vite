@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onLoad, ref } from 'wevu'
+import { wpi } from 'wevu/api'
 import { fetchCouponDetail } from '../../../services/coupon/index'
 
 const id = ref(0)

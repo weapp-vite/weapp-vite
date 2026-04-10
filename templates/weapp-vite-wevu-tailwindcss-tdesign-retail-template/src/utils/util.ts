@@ -1,5 +1,5 @@
-import { wpi } from '@wevu/api'
 import dayjs from 'dayjs'
+import { wpi } from 'wevu/api'
 
 const formatTime = (date: dayjs.ConfigType, template: string) => dayjs(date).format(template)
 const LEFT_BRACKET_RE = /\[/g

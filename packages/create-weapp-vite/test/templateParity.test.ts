@@ -114,6 +114,31 @@ async function collectExpectedTemplateFiles(templateName: TemplateName) {
   return files.sort((a, b) => a.localeCompare(b))
 }
 
+async function collectTemplateFilesBySuffix(root: string, suffixes: string[]) {
+  const out: string[] = []
+
+  async function walk(dir: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name)
+      if (shouldSkipTemplateFile(full, root)) {
+        continue
+      }
+      if (entry.isDirectory()) {
+        await walk(full)
+        continue
+      }
+      if (suffixes.some(suffix => entry.name.endsWith(suffix))) {
+        out.push(full)
+      }
+    }
+  }
+
+  await walk(root)
+
+  return out.sort((a, b) => a.localeCompare(b))
+}
+
 function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
 }
@@ -222,15 +247,10 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
   const { version: wevuVersion } = await readPackageJson(
     path.resolve(import.meta.dirname, '../../..', 'packages-runtime/wevu/package.json'),
   )
-  const { version: wevuApiVersion } = await readPackageJson(
-    path.resolve(import.meta.dirname, '../../..', 'packages-runtime/weapi/package.json'),
-  )
-
   normalizeDependencySpecs(expectedPackageJson)
   expectedPackageJson.devDependencies ??= {}
   upsertDependencyVersion(expectedPackageJson, 'weapp-vite', `^${weappViteVersion}`)
   upsertDependencyVersion(expectedPackageJson, 'wevu', `^${wevuVersion}`)
-  upsertDependencyVersion(expectedPackageJson, '@wevu/api', `^${wevuApiVersion}`)
 
   if (!expectedPackageJson.devDependencies['weapp-tailwindcss']) {
     expectedPackageJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
@@ -303,5 +323,15 @@ describe('template parity', () => {
     expect(actualPackageJson.peerDependencies).toEqual(expectedPackageJson.peerDependencies)
     expect(actualPackageJson.optionalDependencies).toEqual(expectedPackageJson.optionalDependencies)
     expectNoUnresolvedDependencySpec(actualPackageJson)
+  })
+
+  it.each(Object.values(TemplateName))('does not keep legacy @wevu/api imports in template sources %s', async (templateName) => {
+    const { preferredTemplateDir } = await createProjectInternal.resolveTemplateDirs(templateName)
+    const sourceFiles = await collectTemplateFilesBySuffix(preferredTemplateDir, ['.ts', '.vue'])
+
+    for (const sourceFile of sourceFiles) {
+      const content = await fs.readFile(sourceFile, 'utf8')
+      expect(content).not.toContain(`from '@wevu/api'`)
+    }
   })
 })

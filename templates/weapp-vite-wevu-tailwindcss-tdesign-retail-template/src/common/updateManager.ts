@@ -1,4 +1,4 @@
-import { wpi } from '@wevu/api'
+import { wpi } from 'wevu/api'
 
 export default () => {
   if (!wpi.canIUse('getUpdateManager')) {

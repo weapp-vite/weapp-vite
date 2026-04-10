@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { OrdersResult } from '../../../model/order/orderList'
-import { wpi } from '@wevu/api'
 import { onLoad, onPageScroll, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { fetchOrders, fetchOrdersCount } from '../../../services/order/orderList'
 import { cosThumb } from '../../../utils/util'
 import { OrderStatus } from '../config'

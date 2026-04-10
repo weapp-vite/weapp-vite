@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { onLoad, ref, useNativeInstance } from 'wevu'
+import { wpi } from 'wevu/api'
 import { showToast } from '@/hooks/useToast'
 import { fetchCouponDetail } from '../../../services/coupon/index'
 import { fetchGoodsList } from '../../../services/good/fetchGoods'

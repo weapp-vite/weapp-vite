@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { ref, setPageLayout } from 'wevu'
+import { wpi } from 'wevu/api'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
 import { useToast } from '@/hooks/useToast'

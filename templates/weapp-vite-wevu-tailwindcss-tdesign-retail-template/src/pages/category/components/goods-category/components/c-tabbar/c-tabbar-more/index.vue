@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
+import { wpi } from 'wevu/api'
 
 defineOptions({
   externalClasses: ['custom-class'],

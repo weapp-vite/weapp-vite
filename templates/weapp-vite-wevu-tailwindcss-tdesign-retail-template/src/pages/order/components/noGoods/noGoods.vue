@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { wpi } from '@wevu/api'
 import { computed } from 'wevu'
+import { wpi } from 'wevu/api'
 
 interface RawGoodsItem {
   id?: number | string

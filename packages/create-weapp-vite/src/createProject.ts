@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
-import { version as wevuApiVersion } from '../../../packages-runtime/weapi/package.json'
 import { version as wevuVersion } from '../../../packages-runtime/wevu/package.json'
 import { version } from '../../weapp-vite/package.json'
 import { createAgentsGuidelines } from './agents'
@@ -299,8 +298,6 @@ export async function createProject(
 
   upsertExistingDependencyVersion(pkgJson, 'weapp-vite', toCaretVersion(version))
   upsertExistingDependencyVersion(pkgJson, 'wevu', toCaretVersion(wevuVersion))
-  upsertExistingDependencyVersion(pkgJson, '@wevu/api', toCaretVersion(wevuApiVersion))
-
   await upsertTailwindcssVersion(pkgJson)
 
   await writeJsonFile(packageJsonPath, pkgJson)

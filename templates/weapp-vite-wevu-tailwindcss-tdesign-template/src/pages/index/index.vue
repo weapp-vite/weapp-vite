@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { QuickActionItem } from '@/types/action'
 
-import { wpi } from '@wevu/api'
 import { computed, getCurrentInstance, ref, resolveLayoutBridge, resolveLayoutHost, watch } from 'wevu'
+import { wpi } from 'wevu/api'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
 import { LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
