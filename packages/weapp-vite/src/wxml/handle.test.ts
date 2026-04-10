@@ -514,6 +514,80 @@ describe('handleWxml', () => {
     expect(result.code).toBe('<view data-url="{{\'/pages/issue-431/index.wxml\'}}" data-dir="{{\'/pages/issue-431\'}}" data-meta="{{import.meta}}" />')
   })
 
+  it('keeps bare import.meta.env untouched in wxml output', () => {
+    const data = {
+      code: '<view data-env="{{import.meta.env}}" />',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env': '{"MODE":"production"}',
+      },
+    })
+
+    expect(result.code).toBe('<view data-env="{{import.meta.env}}" />')
+  })
+
+  it('replaces import.meta.url and import.meta.dirname inside single-quoted attributes', () => {
+    const data = {
+      code: '<view data-url=\'{{import.meta.url}}\' data-dir=\'{{import.meta.dirname}}\' />',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.url': '"/pages/issue-431/index.wxml"',
+        'import.meta.dirname': '"/pages/issue-431"',
+      },
+    })
+
+    expect(result.code).toBe('<view data-url=\'{{"/pages/issue-431/index.wxml"}}\' data-dir=\'{{"/pages/issue-431"}}\' />')
+  })
+
+  it('replaces numeric and boolean import.meta.env.xxx values in whole mustache output', () => {
+    const data = {
+      code: '<view data-num="{{import.meta.env.VITE_PORT}}" data-prod="{{import.meta.env.PROD}}" />',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      defineImportMetaEnv: {
+        'import.meta.env.VITE_PORT': '3000',
+        'import.meta.env.PROD': 'true',
+      },
+    })
+
+    expect(result.code).toBe('<view data-num="{{3000}}" data-prod="{{true}}" />')
+  })
+
   it('escapes single quotes in import.meta.env string replacements inside mustache', () => {
     const data = {
       code: '<view data-title="{{import.meta.env.VITE_TITLE}}" />',

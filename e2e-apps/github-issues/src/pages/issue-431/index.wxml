@@ -1,6 +1,20 @@
 <view class="issue-431-page">
   <view>{{import.meta.env.VITE_ISSUE_431_LABEL}}</view>
   <image src="{{import.meta.env.VITE_ISSUE_431_ASSET_BASE}}/logo.png" />
+  <view
+    data-case="double"
+    data-template-url="{{import.meta.url}}"
+    data-template-dir="{{import.meta.dirname}}"
+    data-env-label="{{import.meta.env.VITE_ISSUE_431_LABEL}}"
+    data-env-base="{{import.meta.env.VITE_ISSUE_431_ASSET_BASE}}"
+  />
+  <view
+    data-case='single'
+    data-template-url='{{import.meta.url}}'
+    data-template-dir='{{import.meta.dirname}}'
+    data-env-label='{{import.meta.env.VITE_ISSUE_431_LABEL}}'
+    data-env-base='{{import.meta.env.VITE_ISSUE_431_ASSET_BASE}}'
+  />
   <view>{{importMetaUrl}}</view>
   <view>{{importMetaDirname}}</view>
   <view>{{importMetaSnapshot}}</view>

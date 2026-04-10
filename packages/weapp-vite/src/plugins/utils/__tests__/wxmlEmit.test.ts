@@ -237,6 +237,51 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('{{import.meta}}')
   })
 
+  it('keeps bare import.meta.env untouched before emitting asset source', () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env': '{"MODE":"production"}',
+      },
+    })
+    const token = ctx.wxmlService!.analyze('<view data-env="{{import.meta.env}}" />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('{{import.meta.env}}')
+  })
+
+  it('replaces import.meta.url and import.meta.dirname inside single-quoted attributes before emitting asset source', () => {
+    ctx = createMockCompiler({
+      defineImportMetaEnv: {
+        'import.meta.env': '{"MODE":"production"}',
+      },
+    })
+    const token = ctx.wxmlService!.analyze('<view data-url=\'{{import.meta.url}}\' data-dir=\'{{import.meta.dirname}}\' />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.source).toContain('data-url=\'{{"/pages/index/index.wxml"}}\'')
+    expect(payload.source).toContain('data-dir=\'{{"/pages/index"}}\'')
+  })
+
   it('emits compiled vue template with safe import.meta.env quoting in final wxml', async () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
