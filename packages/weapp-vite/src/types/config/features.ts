@@ -152,6 +152,17 @@ export interface WeappInjectRequestGlobalsConfig {
   enabled?: boolean
   targets?: WeappInjectRequestGlobalsTarget[]
   dependencies?: (string | RegExp)[]
+  prelude?: boolean
+}
+
+export type WeappAppPreludeMode = 'inline' | 'entry' | 'require'
+
+/**
+ * @description `app.prelude` 前置注入配置
+ */
+export interface WeappAppPreludeConfig {
+  enabled?: boolean
+  mode?: WeappAppPreludeMode
 }
 
 /**

@@ -1,3 +1,4 @@
+import { fs } from '@weapp-core/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const findJsonEntryMock = vi.hoisted(() => vi.fn<(id: string) => Promise<{ path?: string }>>())
@@ -96,16 +97,19 @@ function createCtx(overrides: Record<string, any> = {}) {
 describe('scanPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
   })
 
   it('resolves scan basenames for app, plugin and optional json files', async () => {
     const {
       resolveScanAppBasename,
+      resolveScanAppPreludeBasename,
       resolveScanJsonEntryBasename,
       resolveScanPluginBasename,
     } = await import('./service')
 
     expect(resolveScanAppBasename('/project/src')).toBe('/project/src/app')
+    expect(resolveScanAppPreludeBasename('/project/src')).toBe('/project/src/app.prelude')
     expect(resolveScanPluginBasename('/project/plugin-root')).toBe('/project/plugin-root/plugin')
     expect(resolveScanPluginBasename(undefined)).toBeUndefined()
 
@@ -140,6 +144,7 @@ describe('scanPlugin service', () => {
       }
       return { path: undefined }
     })
+    vi.spyOn(fs, 'pathExists').mockImplementation(async (id: string) => id === '/project/src/app.prelude.ts')
     findJsEntryMock.mockResolvedValue({ path: '/project/src/app.ts' })
     findVueEntryMock.mockResolvedValue(undefined)
 
@@ -178,6 +183,7 @@ describe('scanPlugin service', () => {
     const second = await service.loadAppEntry()
 
     expect(first.path).toBe('/project/src/app.ts')
+    expect(first.preludePath).toBe('/project/src/app.prelude.ts')
     expect(first.jsonPath).toBe('/project/src/app.json')
     expect(first.sitemapJsonPath).toBe('/project/src/sitemap.json')
     expect(first.themeJsonPath).toBe('/project/src/theme.json')

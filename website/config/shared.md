@@ -1,11 +1,12 @@
 ---
 title: 共享配置
-description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、forwardConsole、injectWeapi、injectRequestGlobals 与 MCP 等能力。
+description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、app.prelude 前置注入、forwardConsole、injectWeapi、injectRequestGlobals 与 MCP 等能力。
 keywords:
   - 配置
   - config
   - shared
   - autoRoutes
+  - appPrelude
   - mcp
   - forwardConsole
   - injectWeapi
@@ -18,6 +19,7 @@ keywords:
 - 自动路由
 - 调试钩子
 - 构建日志控制
+- `app.prelude` 前置注入
 - DevTools 控制台日志桥接
 - 运行时全局注入
 - 本地 MCP 服务
@@ -112,6 +114,39 @@ export default defineConfig({
 - 构建卡顿定位
 - 分包边界和监听文件排查
 - Vue SFC 编译耗时定位
+
+## `weapp.appPrelude` {#weapp-appprelude}
+
+- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require' }`
+
+用于控制 `src/app.prelude.ts` / `src/app.prelude.js` 这类前置脚本的注入方式。
+
+```ts
+export default defineConfig({
+  weapp: {
+    appPrelude: {
+      enabled: true,
+      mode: 'inline',
+    },
+  },
+})
+```
+
+字段说明：
+
+- `enabled`：是否启用 `app.prelude` 注入；设为 `false` 时即使文件存在也不会注入
+- `mode: 'inline'`：默认模式，把 prelude 代码内联到每个 JS chunk 顶部，执行时机最稳
+- `mode: 'entry'`：只注入到 `app/page/component` 入口 chunk，适合希望减少重复代码的场景
+- `mode: 'require'`：按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
+
+适用场景：
+
+- 需要在任何业务入口之前先安装运行时全局
+- 原生小程序项目里做 fetch / websocket / SDK 初始化
+- 需要兼顾主包、普通分包与独立分包的前置执行
+
+> [!NOTE]
+> 当前 `app.prelude` 仅支持无 `import` / `export` 的自包含脚本。
 
 ## `weapp.logger` {#weapp-logger}
 
@@ -212,7 +247,7 @@ export default defineConfig({
 
 ## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
 
-- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] }`
+- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
 
 用于为请求相关全局对象做注入，例如：
 
@@ -229,6 +264,7 @@ export default defineConfig({
   weapp: {
     injectRequestGlobals: {
       enabled: true,
+      prelude: true,
       targets: ['fetch', 'Headers', 'Request', 'Response'],
       dependencies: [/^axios$/, /^graphql-request$/],
     },
@@ -243,6 +279,8 @@ export default defineConfig({
 
 > [!NOTE]
 > 这里解决的是“运行时请求相关全局对象注入”，不是 Vite 顶层的 `define` 替换，也不是 polyfill 插件的通用替代品。
+>
+> 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装请求相关全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
 
 ## `weapp.mcp` {#weapp-mcp}
 

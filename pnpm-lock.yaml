@@ -1241,6 +1241,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  e2e-apps/app-prelude-native:
+    devDependencies:
+      '@weapp-vite/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   e2e-apps/auto-import-vue-sfc:
     devDependencies:
       '@weapp-vite/dashboard':
@@ -21194,8 +21203,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.58.1(typescript@6.0.2)
+      '@typescript-eslint/types': 8.58.1
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:

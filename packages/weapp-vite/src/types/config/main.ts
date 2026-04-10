@@ -5,6 +5,7 @@ import type {
   AutoImportComponentsOption,
   EnhanceOptions,
   MultiPlatformConfig,
+  WeappAppPreludeConfig,
   WeappAutoRoutesConfig,
   WeappHmrConfig,
   WeappInjectRequestGlobalsConfig,
@@ -149,6 +150,7 @@ export interface WeappViteConfig {
   vue?: WeappVueConfig
   wevu?: WeappWevuConfig
   routeRules?: WeappRouteRules
+  appPrelude?: boolean | WeappAppPreludeConfig
   injectWeapi?: boolean | WeappInjectWeapiConfig
   injectRequestGlobals?: boolean | WeappInjectRequestGlobalsConfig
   mcp?: boolean | WeappMcpConfig

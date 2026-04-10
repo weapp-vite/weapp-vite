@@ -4,6 +4,16 @@ export interface AutoImportComponentsConfig {
 
 export interface WeappViteConfig {
   srcRoot?: string
+  appPrelude?: boolean | {
+    enabled?: boolean
+    mode?: 'inline' | 'entry' | 'require'
+  }
+  injectRequestGlobals?: boolean | {
+    enabled?: boolean
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+    dependencies?: (string | RegExp)[]
+    prelude?: boolean
+  }
   autoImportComponents?: boolean | AutoImportComponentsConfig
   vue?: {
     template?: {

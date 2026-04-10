@@ -15,6 +15,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'auto',
+      prelude: false,
       targets: [
         'fetch',
         'Headers',
@@ -35,6 +36,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'auto',
+      prelude: false,
       targets: [
         'fetch',
         'Headers',
@@ -55,6 +57,7 @@ describe('injectRequestGlobals helpers', () => {
       },
     })).toEqual({
       mode: 'auto',
+      prelude: false,
       targets: [
         'AbortController',
         'AbortSignal',
@@ -81,6 +84,7 @@ describe('injectRequestGlobals helpers', () => {
     })).toEqual({
       mode: 'explicit',
       dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      prelude: false,
       targets: ['fetch', 'AbortController'],
     })
   })
