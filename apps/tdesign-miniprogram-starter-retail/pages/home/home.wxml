@@ -41,7 +41,7 @@
         wx:for="{{tabList}}"
         wx:for-index="index"
         wx:key="index"
-        label="{{item.text}}"
+        label="{{item.text || ''}}"
         value="{{item.key}}"
       />
     </t-tabs>

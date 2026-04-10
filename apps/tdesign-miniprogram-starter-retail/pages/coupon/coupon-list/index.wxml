@@ -12,7 +12,7 @@
 	  wx:for-index="index"
 	  wx:for-item="tab"
 	  wx:key="key"
-	  label="{{tab.text}}"
+	  label="{{tab.text || ''}}"
 	  value="{{tab.key}}"
 	/>
 </t-tabs>
@@ -39,4 +39,3 @@
 		</view>
 	</view>
 </view>
-

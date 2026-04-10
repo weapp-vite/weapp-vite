@@ -101,7 +101,7 @@ definePageJson({
     <t-tab-panel
       v-for="tab in list"
       :key="tab.key"
-      :label="tab.text"
+      :label="tab.text || ''"
       :value="tab.key"
     />
   </t-tabs>
