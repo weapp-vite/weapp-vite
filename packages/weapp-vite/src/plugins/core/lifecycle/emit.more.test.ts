@@ -371,6 +371,9 @@ describe('core lifecycle emit hook extra branches', () => {
             },
           },
           weappViteConfig: {
+            npm: {
+              include: ['foo'],
+            },
             injectWeapi: {
               enabled: true,
               replaceWx: true,
@@ -766,6 +769,9 @@ describe('core lifecycle emit hook extra branches', () => {
             },
           },
           weappViteConfig: {
+            npm: {
+              include: ['foo'],
+            },
             injectWeapi: {
               enabled: true,
               replaceWx: true,
