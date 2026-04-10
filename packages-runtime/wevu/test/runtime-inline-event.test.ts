@@ -247,6 +247,53 @@ describe('runtime: inline event handler', () => {
     expect(result).toEqual({ first: 'alpha', second: 'beta', marker: 7 })
   })
 
+  it('resolves tap-scoped inline ids from vue click bindings', () => {
+    const handleClick = vi.fn((marker: number) => marker)
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: [],
+        fn: (ctx: any, _scope: Record<string, any>, evt: any) => ctx.handleClick(evt.marker),
+      },
+    }
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        handleClick,
+        __weapp_vite_inline_map: inlineMap,
+      } as any,
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      __wevu: {
+        proxy: {
+          handleClick,
+        },
+        methods: {
+          __weapp_vite_inline_map: inlineMap,
+        },
+      },
+    }
+    const event = {
+      type: 'tap',
+      marker: 9,
+      currentTarget: {
+        dataset: {
+          wvInlineIdTap: '__wv_inline_0',
+        },
+      },
+    }
+
+    const result = opts.methods.__weapp_vite_inline.call(inst, event)
+    expect(handleClick).toHaveBeenCalledWith(9)
+    expect(result).toBe(9)
+  })
+
   it('passes event.detail to inline map when component event marker is set', () => {
     const handle = vi.fn((title: string) => title)
     const inlineMap = {
