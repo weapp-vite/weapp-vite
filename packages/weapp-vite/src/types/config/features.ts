@@ -5,8 +5,10 @@ import type {
   BuildNpmPackageMeta,
   MpPlatform,
   NpmBuildOptions,
+  NpmDependencyPattern,
   NpmMainPackageConfig,
   NpmPluginPackageConfig,
+  NpmStrategy,
   NpmSubPackageConfig,
   SubPackageStyleConfigEntry,
 } from './foundation'
@@ -171,6 +173,8 @@ export interface WeappAppPreludeConfig {
 export interface WeappNpmConfig {
   enable?: boolean
   cache?: boolean
+  strategy?: NpmStrategy
+  include?: NpmDependencyPattern[]
   mainPackage?: NpmMainPackageConfig
   pluginPackage?: NpmPluginPackageConfig
   subPackages?: Record<string, NpmSubPackageConfig>

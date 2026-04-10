@@ -27,13 +27,18 @@ keywords:
 1. **把依赖构建到 `miniprogram_npm`**（适合保留 `require('xxx')` 的形式）
 2. **把依赖内联进页面/组件脚本**（适合减少 npm 目录或处理非运行时依赖）
 
-### 1. 构建到 `miniprogram_npm`（来自 `dependencies`）
+### 1. 构建到 `miniprogram_npm`（明确的小程序包 / 显式指定的包）
 
-你在 `package.json.dependencies` 里声明的依赖，会在构建时被打包成小程序可用的格式，并输出到 `project.config.json` 的 `miniprogramNpmDistDir` 目录下（也就是 `miniprogram_npm/`）。
+以下依赖会优先进入 npm 构建：
 
-### 2. 内联到脚本产物（不在 `dependencies` 的依赖）
+- 包自身就是小程序包，例如 `tdesign-miniprogram`、`@vant/weapp`
+- 你在 `weapp.npm.include`、`mainPackage.dependencies`、`pluginPackage.dependencies`、`subPackages.<root>.dependencies` 里显式指定的包
 
-没有出现在 `package.json.dependencies` 里的依赖（例如写在 `devDependencies`、或来自 monorepo 更上层的依赖），在被 `import`/`require` 后会被构建器打包并**内联**到对应的页面/组件脚本里。
+这些依赖会输出到 `project.config.json` 的 `miniprogramNpmDistDir` 目录下（也就是 `miniprogram_npm/`）。
+
+### 2. 内联到脚本产物（默认行为）
+
+没有命中 npm 构建规则的依赖，不管它写在 `dependencies` 还是 `devDependencies`，在被 `import`/`require` 后都会被构建器打包并**内联**到对应的页面/组件脚本里。
 
 ### 详细解释
 
@@ -42,43 +47,50 @@ keywords:
 ```json
 {
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "tdesign-miniprogram": "^1.12.3"
   },
   "devDependencies": {
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "@vant/weapp": "^1.11.6"
   }
 }
 ```
 
-其中 `lodash` 在 `dependencies`，`lodash-es` 在 `devDependencies`。在页面里分别引入它们时，Weapp-vite 的处理方式不同：
+其中：
 
-- **`dependencies` → 构建 `miniprogram_npm`**：产物保留 `require('lodash')`，依赖会被同步到 `miniprogram_npm`，保持最小化的页面代码。
+- `lodash`、`lodash-es` 都会默认内联进页面脚本
+- `tdesign-miniprogram`、`@vant/weapp` 会默认进入 `miniprogram_npm`
+
+在页面里分别引入它们时，Weapp-vite 的处理方式大致如下：
+
+- **普通依赖 → 内联到页面脚本**：构建期会转成普通 JavaScript，并直接合并进页面入口，避免额外的 npm 目录。
   ```js
-  const lodash = require('lodash')
+  var add = /* lodash add 的实现主体 */
   Page({
     data: {
-      num0: lodash.add(1, 1),
+      num0: add(1, 1),
     },
   })
   ```
-- **`devDependencies` → 内联到页面脚本**：开发依赖会在构建时转成普通 JavaScript，并直接合并进页面入口，避免额外的 npm 目录。
+- **小程序包 → 构建 `miniprogram_npm`**：产物保留包路径引用，依赖会被同步到 `miniprogram_npm`。
   ```js
-  var add = /* lodash-es add 的实现主体 */
+  const button = require('tdesign-miniprogram/button/button')
   Page({
-    data: {
-      num1: add(2, 2),
-    },
+    components: { button },
   })
   ```
 
 > [!TIP]
-> 实际内联出来的代码会比示例长得多（可能包含工具函数等），但你不需要手动维护。只要把依赖放在合适的字段里，Weapp-vite 会自动选择“进 `miniprogram_npm`”还是“直接内联”。
+> 实际内联出来的代码会比示例长得多（可能包含工具函数等），但你不需要手动维护。默认情况下，Weapp-vite 会优先把依赖当普通包处理；只有明确的小程序包或你显式指定的包，才会进 `miniprogram_npm`。
 
 ### 怎么选（建议）
 
-- **运行时确实要用、并且希望复用的库**：放进 `dependencies`，让它进 `miniprogram_npm`。
+- **普通运行时库**：照常放进 `dependencies` 或 `devDependencies`，默认都会被 Vite 内联。
+- **明确的小程序组件库**：直接安装即可，默认会进 `miniprogram_npm`。
+- **想让普通依赖也进入 `miniprogram_npm`**：用 `weapp.npm.include` 或包级 `dependencies` 配置显式声明。
 - **仅开发/构建期使用的工具**：放进 `devDependencies`。
-- **想减少 `miniprogram_npm`，接受包体变大**：也可以把运行时依赖放到非 `dependencies`，让它被内联（不推荐作为默认策略）。
+- **想恢复旧规则**：把 `weapp.npm.strategy` 设成 `'legacy'`。
 
 ## 手动构建
 

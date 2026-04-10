@@ -55,7 +55,7 @@ describe('build-npm', () => {
       await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/es-toolkit/index.js'),
       ),
-    ).toBe(true)
+    ).toBe(false)
 
     expect(
       await pathExists(
@@ -67,12 +67,12 @@ describe('build-npm', () => {
       await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/gm-crypto/index.js'),
       ),
-    ).toBe(true)
+    ).toBe(false)
     expect(
       await pathExists(
         path.resolve(targetDir, 'dist/miniprogram_npm/buffer/index.js'),
       ),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('dedupes concurrent buildPackage tasks for the same dependency output', async () => {

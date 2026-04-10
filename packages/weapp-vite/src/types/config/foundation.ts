@@ -266,16 +266,20 @@ export interface BuildNpmPackageMeta {
   entry: InputOption
 }
 
+export type NpmDependencyPattern = string | RegExp
+
+export type NpmStrategy = 'explicit' | 'legacy'
+
 export interface NpmSubPackageConfig {
-  dependencies?: (string | RegExp)[]
+  dependencies?: NpmDependencyPattern[]
 }
 
 export interface NpmMainPackageConfig {
-  dependencies?: false | (string | RegExp)[]
+  dependencies?: false | NpmDependencyPattern[]
 }
 
 export interface NpmPluginPackageConfig {
-  dependencies?: false | (string | RegExp)[]
+  dependencies?: false | NpmDependencyPattern[]
 }
 
 export type JsFormat = 'cjs' | 'esm'
