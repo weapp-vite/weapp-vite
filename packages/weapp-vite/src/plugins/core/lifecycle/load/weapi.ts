@@ -55,10 +55,6 @@ export function createWeapiInjectionCode(options: {
         `  if (__weappPlatformKey) {`,
         `    __weappGlobal[__weappPlatformKey] = __weappInstance`,
         `  }`,
-        `  try {`,
-        `    Function('__weappApi', 'wx = __weappApi; my = __weappApi;')(__weappInstance)`,
-        `  }`,
-        `  catch {}`,
       ]
     : []
   return [

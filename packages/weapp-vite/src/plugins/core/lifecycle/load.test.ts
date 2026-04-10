@@ -311,7 +311,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('__weappGlobal.my = __weappInstance')
     expect(code).toContain('__weappGlobal[__weappPlatformKey] = __weappInstance')
     expect(code).toContain('const __weappRawApi = ((typeof my !== \'undefined\' && my)')
-    expect(code).toContain('Function(\'__weappApi\', \'wx = __weappApi; my = __weappApi;\')(__weappInstance)')
+    expect(code).not.toContain('Function(')
   })
 
   it('does not replace wx/my globals when replaceWx is omitted', async () => {
