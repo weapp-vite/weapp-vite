@@ -168,11 +168,17 @@ function stripAutomatorOverlay(wxml: string) {
 }
 
 export async function readPageWxml(page: any) {
-  const element = await page.$('page')
-  if (!element) {
-    throw new Error('Failed to find page element')
-  }
-  return stripAutomatorOverlay(await element.wxml())
+  return await runAutomatorOp('read page wxml', async () => {
+    const element = await page.$('page')
+    if (!element) {
+      throw new Error('Failed to find page element')
+    }
+    return stripAutomatorOverlay(await element.wxml())
+  }, {
+    timeoutMs: 5_000,
+    retries: 2,
+    retryDelayMs: 180,
+  })
 }
 
 async function waitForPageWxml(page: any, readyText?: string, timeoutMs = 15_000) {
@@ -207,14 +213,20 @@ async function waitForPageWxml(page: any, readyText?: string, timeoutMs = 15_000
 }
 
 export async function readClassName(page: any, selector: string) {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(`Failed to find element: ${selector}`)
-  }
+  return await runAutomatorOp(`read class ${selector}`, async () => {
+    const element = await page.$(selector)
+    if (!element) {
+      throw new Error(`Failed to find element: ${selector}`)
+    }
 
-  return (await element.attribute('class') ?? '')
-    .trim()
-    .replace(WHITESPACE_RE, ' ')
+    return (await element.attribute('class') ?? '')
+      .trim()
+      .replace(WHITESPACE_RE, ' ')
+  }, {
+    timeoutMs: 5_000,
+    retries: 2,
+    retryDelayMs: 180,
+  })
 }
 
 function escapeRegExp(value: string) {
@@ -363,46 +375,52 @@ export function readFirstClassFromWxmlByToken(wxml: string, token: string) {
 }
 
 export async function tapControlAndReadClass(page: any, tapSelector: string, classSelector = tapSelector) {
-  const controlElement = await page.$(tapSelector)
-  if (!controlElement) {
-    throw new Error(`Failed to find tap element: ${tapSelector}`)
-  }
-
-  const beforeClass = await readClassName(page, classSelector)
-
-  async function fireTapLikeEvent(mode: 'tap' | 'trigger' | 'touch' | 'dispatch') {
-    if (mode === 'tap') {
-      await controlElement.tap()
-      return
+  return await runAutomatorOp(`tap and read class ${tapSelector}`, async () => {
+    const controlElement = await page.$(tapSelector)
+    if (!controlElement) {
+      throw new Error(`Failed to find tap element: ${tapSelector}`)
     }
-    if (mode === 'trigger') {
-      await controlElement.trigger('tap')
-      return
-    }
-    if (mode === 'touch') {
-      await controlElement.touchstart()
-      await controlElement.touchend()
-      return
-    }
-    await controlElement.dispatchEvent({ eventName: 'tap' })
-  }
 
-  for (const mode of ['tap', 'trigger', 'touch', 'dispatch'] as const) {
-    for (let index = 0; index < 2; index += 1) {
-      try {
-        await fireTapLikeEvent(mode)
+    const beforeClass = await readClassName(page, classSelector)
+
+    async function fireTapLikeEvent(mode: 'tap' | 'trigger' | 'touch' | 'dispatch') {
+      if (mode === 'tap') {
+        await controlElement.tap()
+        return
       }
-      catch {
+      if (mode === 'trigger') {
+        await controlElement.trigger('tap')
+        return
       }
-      await page.waitFor(220)
-      const currentClass = await readClassName(page, classSelector)
-      if (currentClass !== beforeClass) {
-        return currentClass
+      if (mode === 'touch') {
+        await controlElement.touchstart()
+        await controlElement.touchend()
+        return
+      }
+      await controlElement.dispatchEvent({ eventName: 'tap' })
+    }
+
+    for (const mode of ['tap', 'trigger', 'touch', 'dispatch'] as const) {
+      for (let index = 0; index < 2; index += 1) {
+        try {
+          await fireTapLikeEvent(mode)
+        }
+        catch {
+        }
+        await page.waitFor(220)
+        const currentClass = await readClassName(page, classSelector)
+        if (currentClass !== beforeClass) {
+          return currentClass
+        }
       }
     }
-  }
 
-  return readClassName(page, classSelector)
+    return await readClassName(page, classSelector)
+  }, {
+    timeoutMs: 8_000,
+    retries: 2,
+    retryDelayMs: 180,
+  })
 }
 
 export async function tapElement(page: any, selector: string) {

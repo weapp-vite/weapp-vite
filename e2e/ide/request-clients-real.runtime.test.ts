@@ -52,7 +52,6 @@ async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
   try {
     miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
-      timeout: 120_000,
     })
     return miniProgram
   }

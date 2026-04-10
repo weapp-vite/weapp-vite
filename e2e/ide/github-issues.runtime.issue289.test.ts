@@ -10,6 +10,17 @@ import {
   tapControlAndReadClass,
 } from './github-issues.runtime.shared'
 
+async function runIssue289Step<T>(label: string, task: () => Promise<T>, timeoutMs = 10_000) {
+  return await Promise.race([
+    task(),
+    new Promise<T>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`issue289 step timed out: ${label} (${timeoutMs}ms)`))
+      }, timeoutMs)
+    }),
+  ])
+}
+
 describe.sequential('e2e app: github-issues / issue-289', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -28,7 +39,7 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
       expect(objectInitialWxml).toContain('object-list-loose')
       expect(objectInitialWxml).not.toContain('object list hidden')
 
-      const objectResult = await objectPage.callMethod('runE2E')
+      const objectResult = await runIssue289Step('object-literal runE2E', () => objectPage.callMethod('runE2E'))
       await objectPage.waitFor(400)
       expect(objectResult?.ok).toBe(true)
       expect(objectResult?.checks?.compactChanged).toBe(true)
@@ -122,7 +133,7 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
       const rootInitialWxml = await readPageWxml(rootPage)
       expect(rootInitialWxml).toContain('root class: aaaa')
 
-      const rootResult = await rootPage.callMethod('runE2E')
+      const rootResult = await runIssue289Step('root-class runE2E', () => rootPage.callMethod('runE2E'))
       await rootPage.waitFor(400)
       expect(rootResult?.ok).toBe(true)
       expect(rootResult?.checks?.selectedIndexChanged).toBe(true)

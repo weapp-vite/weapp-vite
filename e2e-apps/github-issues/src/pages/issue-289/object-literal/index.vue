@@ -83,17 +83,17 @@ const _runE2E = runE2E
     <ObjectLiteralExample
       :show-list="controlState.showList"
       :compact-mode="controlState.compactMode"
-      :active-id="activeId"
+      :active-id="activeId || ''"
     />
   </view>
 </template>
 
 <style scoped>
 .issue289-sub-page {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 24rpx;
   background: #f8fafc;
-  box-sizing: border-box;
 }
 
 .issue289-sub-title {
@@ -103,19 +103,19 @@ const _runE2E = runE2E
 }
 
 .issue289-sub-toolbar {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 12rpx;
 }
 
 .issue289-sub-btn {
-  margin: 6rpx;
   min-height: 56rpx;
-  line-height: 56rpx;
   padding: 0 16rpx;
-  border-radius: 9999rpx;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 56rpx;
   color: #1f2937;
   background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 </style>
