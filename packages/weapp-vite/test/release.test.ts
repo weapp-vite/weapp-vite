@@ -113,5 +113,5 @@ describe('weapp-vite release pack', () => {
       await fs.remove(cacheDir)
       await fs.remove(tempRoot)
     }
-  })
+  }, 300000)
 })

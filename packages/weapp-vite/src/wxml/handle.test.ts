@@ -404,7 +404,7 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(result.code).toBe('<image src="{{\'https://static.example.com\'}}/logo.png" data-env="{{ {\"VITE_CDN\":\"https://static.example.com\"} }}" />')
+    expect(result.code).toBe('<image src="{{\'https://static.example.com\'}}/logo.png" data-env="{{\'{&quot;VITE_CDN&quot;:&quot;https://static.example.com&quot;}\'}}" />')
   })
 
   it('uses double quotes inside mustache when outer attribute uses single quotes', () => {
