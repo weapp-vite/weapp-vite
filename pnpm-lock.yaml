@@ -359,8 +359,8 @@ importers:
         specifier: ^10.2.0
         version: 10.2.0(jiti@2.6.1)
       esrap:
-        specifier: ^2.2.4
-        version: 2.2.4
+        specifier: ^2.2.5
+        version: 2.2.5(@typescript-eslint/types@8.58.1)
       estree-walker:
         specifier: 'catalog:'
         version: 3.0.3
@@ -515,8 +515,8 @@ importers:
         specifier: ^4.21.0
         version: 4.21.0
       turbo:
-        specifier: ^2.9.5
-        version: 2.9.5
+        specifier: ^2.9.6
+        version: 2.9.6
       type-fest:
         specifier: ^5.5.0
         version: 5.5.0
@@ -1959,8 +1959,8 @@ importers:
   packages/weapp-vite:
     dependencies:
       '@vercel/detect-agent':
-        specifier: ^1.2.1
-        version: 1.2.1
+        specifier: ^1.2.2
+        version: 1.2.2
       '@volar/typescript':
         specifier: ^2.4.28
         version: 2.4.28
@@ -2865,8 +2865,8 @@ importers:
         specifier: 'catalog:'
         version: 6.0.0
       element-plus:
-        specifier: ^2.13.6
-        version: 2.13.6(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))
+        specifier: ^2.13.7
+        version: 2.13.7(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))
       gridstack:
         specifier: ^12.6.0
         version: 12.6.0
@@ -7295,33 +7295,33 @@ packages:
     resolution: {integrity: sha512-mSMM0QtEPdMd+rdMDd17yCUYD4yI3pKHap89+jEZrZ3KIO5PhDofBjER0OtgHdvOXF74KMLO3fyD6k3Hz0v03A==}
     engines: {node: '>=14.17'}
 
-  '@turbo/darwin-64@2.9.5':
-    resolution: {integrity: sha512-qPxhKsLMQP+9+dsmPgAGidi5uNifD4AoAOnEnljab3Qgn0QZRR31Hp+/CgW3Ia5AanWj6JuLLTBYvuQj4mqTWg==}
+  '@turbo/darwin-64@2.9.6':
+    resolution: {integrity: sha512-X/56SnVXIQZBLKwniGTwEQTGmtE5brSACnKMBWpY3YafuxVYefrC2acamfjgxP7BG5w3I+6jf0UrLoSzgPcSJg==}
     cpu: [x64]
     os: [darwin]
 
-  '@turbo/darwin-arm64@2.9.5':
-    resolution: {integrity: sha512-vkF/9F/l3aWd4bHxTui5Hh0F5xrTZ4e3rbBsc57zA6O8gNbmHN3B6eZ5psAIP2CnJRZ8ZxRjV3WZHeNXMXkPBw==}
+  '@turbo/darwin-arm64@2.9.6':
+    resolution: {integrity: sha512-aalBeSl4agT/QtYGDyf/XLajedWzUC9Vg/pm/YO6QQ93vkQ91Vz5uK1ta5RbVRDozQSz4njxUNqRNmOXDzW+qw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@turbo/linux-64@2.9.5':
-    resolution: {integrity: sha512-z/Get5NUaUxm5HSGFqVMICDRjFNsCUhSc4wnFa/PP1QD0NXCjr7bu9a2EM6md/KMCBW0Qe393Ac+UM7/ryDDTw==}
+  '@turbo/linux-64@2.9.6':
+    resolution: {integrity: sha512-YKi05jnNHaD7vevgYwahpzGwbsNNTwzU2c7VZdmdFm7+cGDP4oREUWSsainiMfRqjRuolQxBwRn8wf1jmu+YZA==}
     cpu: [x64]
     os: [linux]
 
-  '@turbo/linux-arm64@2.9.5':
-    resolution: {integrity: sha512-jyBifaNoI5/NheyswomiZXJvjdAdvT7hDRYzQ4meP0DKGvpXUjnqsD+4/J2YSDQ34OHxFkL30FnSCUIVOh2PHw==}
+  '@turbo/linux-arm64@2.9.6':
+    resolution: {integrity: sha512-02o/ZS69cOYEDczXvOB2xmyrtzjQ2hVFtWZK1iqxXUfzMmTjZK4UumrfNnjckSg+gqeBfnPRHa0NstA173Ik3g==}
     cpu: [arm64]
     os: [linux]
 
-  '@turbo/windows-64@2.9.5':
-    resolution: {integrity: sha512-ph24K5uPtvo7UfuyDXnBiB/8XvrO+RQWbbw5zkA/bVNoy9HDiNoIJJj3s62MxT9tjEb6DnPje5PXSz1UR7QAyg==}
+  '@turbo/windows-64@2.9.6':
+    resolution: {integrity: sha512-wVdQjvnBI15wB6JrA+43CtUtagjIMmX6XYO758oZHAsCNSxqRlJtdyujih0D8OCnwCRWiGWGI63zAxR0hO6s9g==}
     cpu: [x64]
     os: [win32]
 
-  '@turbo/windows-arm64@2.9.5':
-    resolution: {integrity: sha512-6c5RccT/+iR39SdT1G5HyZaD2n57W77o+l0TTfxG/cVlhV94Acyg2gTQW7zUOhW1BeQpBjHzu9x8yVBZwrHh7g==}
+  '@turbo/windows-arm64@2.9.6':
+    resolution: {integrity: sha512-1XUUyWW0W6FTSqGEhU8RHVqb2wP1SPkr7hIvBlMEwH9jr+sJQK5kqeosLJ/QaUv4ecSAd1ZhIrLoW7qslAzT4A==}
     cpu: [arm64]
     os: [win32]
 
@@ -7709,10 +7709,6 @@ packages:
     resolution: {integrity: sha512-dbMkdIUkIkchgGDIv7KLUpa0Mda4IYjo4IAMJUZ+3xNoUXxMsk9YtKpTHSChRS85o+H9ftm51gsK1dZReY9CVw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typescript-eslint/types@8.57.0':
-    resolution: {integrity: sha512-dTLI8PEXhjUC7B9Kre+u0XznO696BhXcTlOn0/6kf1fHaQW8+VjJAVHJ3eTI14ZapTxdkOmc80HblPQLaEeJdg==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
   '@typescript-eslint/types@8.58.1':
     resolution: {integrity: sha512-io/dV5Aw5ezwzfPBBWLoT+5QfVtP8O7q4Kftjn5azJ88bYyp/ZMCsyW1lpKK46EXJcaYMZ1JtYj+s/7TdzmQMw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -7785,8 +7781,8 @@ packages:
   '@vant/weapp@1.11.7':
     resolution: {integrity: sha512-Rwn9BBnb4kHSV4XmvBicwtd42J+amEUfnFDcXJsGNPNX4a9c/DoT6YLsm4X1wB2+sQbdiQsbFBLAvGRBxCkD8g==}
 
-  '@vercel/detect-agent@1.2.1':
-    resolution: {integrity: sha512-U/BJCltQSTFTHwaiCQQTQG3GonTbRoEewjV+OU2mMjcHLAoPOh6CP1SXA2XNmqiqI3c82nkRNJ7piZ14RqmTXw==}
+  '@vercel/detect-agent@1.2.2':
+    resolution: {integrity: sha512-bKhhKKPuI37oMUlMA90eplt+QSp8T/t2WDfF+CP9PBA/YTkCADI8D/dECB5sJa9BWxq3+jxO52UsDy0F7Gl51g==}
     engines: {node: '>=14'}
 
   '@vitejs/plugin-vue@6.0.5':
@@ -9558,8 +9554,8 @@ packages:
   electron-to-chromium@1.5.330:
     resolution: {integrity: sha512-jFNydB5kFtYUobh4IkWUnXeyDbjf/r9gcUEXe1xcrcUxIGfTdzPXA+ld6zBRbwvgIGVzDll/LTIiDztEtckSnA==}
 
-  element-plus@2.13.6:
-    resolution: {integrity: sha512-XHgwXr8Fjz6i+6BaqFhAbae/dJbG7bBAAlHrY3pWL7dpj+JcqcOyKYt4Oy5KP86FQwS1k4uIZDjCx2FyUR5lDg==}
+  element-plus@2.13.7:
+    resolution: {integrity: sha512-XdHATFZOyzVFL1DaHQ90IOJQSg9UnSAV+bhDW+YB5UoZ0Hxs50mwqjqfwXkuwpSag+VXXizVcErBR6Movo5daw==}
     peerDependencies:
       vue: ^3.3.0
 
@@ -10049,8 +10045,13 @@ packages:
     resolution: {integrity: sha512-Ap6G0WQwcU/LHsvLwON1fAQX9Zp0A2Y6Y/cJBl9r/JbW90Zyg4/zbG6zzKa2OTALELarYHmKu0GhpM5EO+7T0g==}
     engines: {node: '>=0.10'}
 
-  esrap@2.2.4:
-    resolution: {integrity: sha512-suICpxAmZ9A8bzJjEl/+rLJiDKC0X4gYWUxT6URAWBLvlXmtbZd5ySMu/N2ZGEtMCAmflUDPSehrP9BQcsGcSg==}
+  esrap@2.2.5:
+    resolution: {integrity: sha512-/yLB1538mag+dn0wsePTe8C0rDIjUOaJpMs2McodSzmM2msWcZsBSdRtg6HOBt0A/r82BN+Md3pgwSc/uWt2Ig==}
+    peerDependencies:
+      '@typescript-eslint/types': ^8.2.0
+    peerDependenciesMeta:
+      '@typescript-eslint/types':
+        optional: true
 
   esrecurse@4.3.0:
     resolution: {integrity: sha512-KmfKL3b6G+RXvP8N1vr3Tq1kL/oCFgn2NYXEtqP8/L3pKapUA4G8cFVaoF3SU323CD4XypR/ffioHmkti6/Tag==}
@@ -14976,8 +14977,8 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
-  turbo@2.9.5:
-    resolution: {integrity: sha512-JXNkRe6H6MjSlk5UQRTjyoKX5YN2zlc2632xcSlSFBao5yvbMWTpv9SNolOZlZmUlcDOHuszPLItbKrvcXnnZA==}
+  turbo@2.9.6:
+    resolution: {integrity: sha512-+v2QJey7ZUeUiuigkU+uFfklvNUyPI2VO2vBpMYJA+a1hKFLFiKtUYlRHdb3P9CrAvMzi0upbjI4WT+zKtqkBg==}
     hasBin: true
 
   tweetnacl@0.14.5:
@@ -20764,22 +20765,22 @@ snapshots:
 
   '@tsd/typescript@5.9.2': {}
 
-  '@turbo/darwin-64@2.9.5':
+  '@turbo/darwin-64@2.9.6':
     optional: true
 
-  '@turbo/darwin-arm64@2.9.5':
+  '@turbo/darwin-arm64@2.9.6':
     optional: true
 
-  '@turbo/linux-64@2.9.5':
+  '@turbo/linux-64@2.9.6':
     optional: true
 
-  '@turbo/linux-arm64@2.9.5':
+  '@turbo/linux-arm64@2.9.6':
     optional: true
 
-  '@turbo/windows-64@2.9.5':
+  '@turbo/windows-64@2.9.6':
     optional: true
 
-  '@turbo/windows-arm64@2.9.5':
+  '@turbo/windows-arm64@2.9.6':
     optional: true
 
   '@tybys/wasm-util@0.10.1':
@@ -21185,8 +21186,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.58.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.58.1
+      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
+      '@typescript-eslint/types': 8.56.1
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:
@@ -21246,8 +21247,6 @@ snapshots:
       - supports-color
 
   '@typescript-eslint/types@8.56.1': {}
-
-  '@typescript-eslint/types@8.57.0': {}
 
   '@typescript-eslint/types@8.58.1': {}
 
@@ -21364,7 +21363,7 @@ snapshots:
 
   '@vant/weapp@1.11.7': {}
 
-  '@vercel/detect-agent@1.2.1': {}
+  '@vercel/detect-agent@1.2.2': {}
 
   '@vitejs/plugin-vue@6.0.5(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.32(typescript@6.0.2))':
     dependencies:
@@ -23370,7 +23369,7 @@ snapshots:
 
   electron-to-chromium@1.5.330: {}
 
-  element-plus@2.13.6(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2)):
+  element-plus@2.13.7(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2)):
     dependencies:
       '@ctrl/tinycolor': 4.2.0
       '@element-plus/icons-vue': 2.3.2(vue@3.5.32(typescript@6.0.2))
@@ -23382,8 +23381,8 @@ snapshots:
       async-validator: 4.2.5
       dayjs: 1.11.20
       lodash: 4.18.1
-      lodash-es: 4.17.23
-      lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.23)(lodash@4.18.1)
+      lodash-es: 4.18.1
+      lodash-unified: 1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.18.1)(lodash@4.18.1)
       memoize-one: 6.0.0
       normalize-wheel-es: 1.2.0
       vue: 3.5.32(typescript@6.0.2)
@@ -24215,10 +24214,11 @@ snapshots:
     dependencies:
       estraverse: 5.3.0
 
-  esrap@2.2.4:
+  esrap@2.2.5(@typescript-eslint/types@8.58.1):
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
-      '@typescript-eslint/types': 8.57.0
+    optionalDependencies:
+      '@typescript-eslint/types': 8.58.1
 
   esrecurse@4.3.0:
     dependencies:
@@ -25878,11 +25878,11 @@ snapshots:
 
   lodash-es@4.18.1: {}
 
-  lodash-unified@1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.17.23)(lodash@4.18.1):
+  lodash-unified@1.0.3(@types/lodash-es@4.17.12)(lodash-es@4.18.1)(lodash@4.18.1):
     dependencies:
       '@types/lodash-es': 4.17.12
       lodash: 4.18.1
-      lodash-es: 4.17.23
+      lodash-es: 4.18.1
 
   lodash.camelcase@4.3.0: {}
 
@@ -29945,14 +29945,14 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  turbo@2.9.5:
+  turbo@2.9.6:
     optionalDependencies:
-      '@turbo/darwin-64': 2.9.5
-      '@turbo/darwin-arm64': 2.9.5
-      '@turbo/linux-64': 2.9.5
-      '@turbo/linux-arm64': 2.9.5
-      '@turbo/windows-64': 2.9.5
-      '@turbo/windows-arm64': 2.9.5
+      '@turbo/darwin-64': 2.9.6
+      '@turbo/darwin-arm64': 2.9.6
+      '@turbo/linux-64': 2.9.6
+      '@turbo/linux-arm64': 2.9.6
+      '@turbo/windows-64': 2.9.6
+      '@turbo/windows-arm64': 2.9.6
 
   tweetnacl@0.14.5: {}
 
