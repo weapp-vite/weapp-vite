@@ -5,10 +5,17 @@ import {
 } from './miniprogram'
 
 const arrangePluginsMock = vi.hoisted(() => vi.fn())
+const resolveBuiltinPackageAliasesMock = vi.hoisted(() => vi.fn(() => []))
 
 vi.mock('./plugins', () => {
   return {
     arrangePlugins: arrangePluginsMock,
+  }
+})
+
+vi.mock('../../../packageAliases', () => {
+  return {
+    resolveBuiltinPackageAliases: resolveBuiltinPackageAliasesMock,
   }
 })
 
@@ -197,6 +204,90 @@ describe('runtime config merge miniprogram', () => {
     expect(setOptions).toHaveBeenCalledWith({
       currentSubPackageRoot: 'packageA',
     })
+  })
+
+  it('externalizes runtime dependencies and matching builtin alias paths only', () => {
+    resolveBuiltinPackageAliasesMock.mockReturnValue([
+      {
+        find: 'wevu',
+        replacement: '/project/node_modules/wevu/dist/index.mjs',
+      },
+      {
+        find: 'wevu/router',
+        replacement: '/project/node_modules/wevu/dist/router.mjs',
+      },
+      {
+        find: '@vant/weapp',
+        replacement: '/project/node_modules/@vant/weapp/dist/index.js',
+      },
+    ])
+
+    const result = mergeMiniprogram(
+      {
+        ctx: {} as any,
+        subPackageMeta: undefined,
+        config: {} as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: {
+          dependencies: {
+            wevu: '^1.0.0',
+          },
+          devDependencies: {
+            '@vant/weapp': '^1.11.6',
+          },
+        } as any,
+        isDev: false,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    const external = ((result.build as any)?.rolldownOptions?.external ?? []) as RegExp[]
+
+    expect(external.some(pattern => pattern.test('wevu'))).toBe(true)
+    expect(external.some(pattern => pattern.test('wevu/router'))).toBe(true)
+    expect(external.some(pattern => pattern.test('/project/node_modules/wevu/dist/index.mjs'))).toBe(true)
+    expect(external.some(pattern => pattern.test('/project/node_modules/wevu/dist/router.mjs'))).toBe(true)
+    expect(external.some(pattern => pattern.test('@vant/weapp'))).toBe(false)
+    expect(external.some(pattern => pattern.test('/project/node_modules/@vant/weapp/dist/index.js'))).toBe(false)
+  })
+
+  it('does not externalize packages that only exist in devDependencies', () => {
+    resolveBuiltinPackageAliasesMock.mockReturnValue([
+      {
+        find: 'wevu',
+        replacement: '/project/node_modules/wevu/dist/index.mjs',
+      },
+    ])
+
+    const result = mergeMiniprogram(
+      {
+        ctx: {} as any,
+        subPackageMeta: undefined,
+        config: {} as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: {
+          devDependencies: {
+            wevu: '^1.0.0',
+          },
+        } as any,
+        isDev: false,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect(((result.build as any)?.rolldownOptions?.external ?? [])).toEqual([])
   })
 
   it('keeps user-defined modulePreload when explicitly configured', () => {

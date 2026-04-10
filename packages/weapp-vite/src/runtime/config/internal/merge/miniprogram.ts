@@ -7,11 +7,23 @@ import path from 'pathe'
 import { createLogger } from 'vite'
 import { defaultExcluded } from '../../../../defaults'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
-import { resolveNpmBuildCandidateDependenciesSync } from '../../../npmPlugin/service'
+import { resolveBuiltinPackageAliases } from '../../../packageAliases'
 import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
 
 const PACKAGE_NAME_REGEX = /[-/\\^$*+?.()|[\]{}]/g
+const PATH_SEPARATOR_SPLIT_REGEX = /[/\\]+/
+
+function escapeRegex(value: string) {
+  return value.replace(PACKAGE_NAME_REGEX, '\\$&')
+}
+
+function createAbsolutePathPattern(value: string) {
+  return value
+    .split(PATH_SEPARATOR_SPLIT_REGEX)
+    .map(segment => escapeRegex(segment))
+    .join('[/\\\\]+')
+}
 
 interface MergeMiniprogramOptions {
   ctx: MutableCompilerContext
@@ -79,14 +91,20 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   }
 
   const external: (string | RegExp)[] = []
-  const npmBuildCandidates = packageJson
-    ? resolveNpmBuildCandidateDependenciesSync(ctx, packageJson)
-    : []
-  if (npmBuildCandidates.length > 0) {
+  const runtimeDependencies = Object.keys(packageJson?.dependencies ?? {})
+  if (runtimeDependencies.length > 0) {
+    const builtinAliases = resolveBuiltinPackageAliases()
     external.push(
-      ...npmBuildCandidates.map((pkg) => {
-        return new RegExp(`^${pkg.replace(PACKAGE_NAME_REGEX, '\\$&')}(\\/|$)`)
+      ...runtimeDependencies.map((pkg) => {
+        return new RegExp(`^${escapeRegex(pkg)}(\\/|$)`)
       }),
+      ...builtinAliases
+        .filter(({ find }) => {
+          return runtimeDependencies.some(dep => find === dep || find.startsWith(`${dep}/`))
+        })
+        .map(({ replacement }) => {
+          return new RegExp(`^${createAbsolutePathPattern(replacement)}(?:\\?.*)?$`)
+        }),
     )
   }
 
