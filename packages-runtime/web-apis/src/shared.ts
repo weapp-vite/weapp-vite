@@ -91,10 +91,8 @@ export function installRequestGlobalBinding(name: string, value: unknown) {
   }
 
   try {
-    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
-    Function('__weappRequestGlobalValue__', `${name} = __weappRequestGlobalValue__`)(
-      value,
-    )
+    const host = resolveRequestGlobalsHost()
+    host[name] = value
   }
   catch {
   }

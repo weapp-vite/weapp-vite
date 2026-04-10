@@ -82,6 +82,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).wx
     delete (globalThis as Record<string, any>).global
     delete (globalThis as Record<string, any>).__weappViteRequestGlobalsActuals__
+    delete (globalThis as Record<string, any>).__weappViteRequestGlobalsActuals
     wpiConnectSocketMock.mockReset()
   })
 
@@ -225,18 +226,18 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.WebSocket).toBe('function')
   })
 
-  it('promotes installed request globals to free global bindings when possible', async () => {
+  it('syncs installed request globals to the runtime host and actuals registry', async () => {
     const { installRequestGlobals } = await import('../src')
     installRequestGlobals({
       targets: ['fetch', 'AbortController', 'AbortSignal'],
     })
 
-    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
-    expect(Function('return typeof fetch')()).toBe('function')
-    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
-    expect(Function('return typeof AbortController')()).toBe('function')
-    // eslint-disable-next-line no-new-func, unicorn/new-for-builtins
-    expect(Function('return typeof AbortSignal')()).toBe('function')
+    expect(typeof globalThis.fetch).toBe('function')
+    expect(typeof globalThis.AbortController).toBe('function')
+    expect(typeof globalThis.AbortSignal).toBe('function')
+    expect(typeof (globalThis as any).__weappViteRequestGlobalsActuals.fetch).toBe('function')
+    expect(typeof (globalThis as any).__weappViteRequestGlobalsActuals.AbortController).toBe('function')
+    expect(typeof (globalThis as any).__weappViteRequestGlobalsActuals.AbortSignal).toBe('function')
   })
 
   it('replaces broken URL constructors exposed by the runtime host', async () => {
