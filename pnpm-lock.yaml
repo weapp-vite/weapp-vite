@@ -842,9 +842,6 @@ importers:
       '@vant/weapp':
         specifier: 'catalog:'
         version: 1.11.7
-      '@vue-mini/core':
-        specifier: ^1.2.9
-        version: 1.2.9
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -7885,9 +7882,6 @@ packages:
       vue:
         optional: true
 
-  '@vue-mini/core@1.2.9':
-    resolution: {integrity: sha512-y7b2uOGTuGT5e2cydNAhk4gapuMfWBxXaUyuMcaUG1GWUht7oWwI8TsrFWwFWEwr8bgF+uMDiv36qbL1kaqAig==}
-
   '@vue/compiler-core@3.5.31':
     resolution: {integrity: sha512-k/ueL14aNIEy5Onf0OVzR8kiqF/WThgLdFhxwa4e/KF/0qe38IwIdofoSWBTvvxQOesaz6riAFAUaYjoF9fLLQ==}
 
@@ -7930,9 +7924,6 @@ packages:
   '@vue/language-plugin-pug@3.2.6':
     resolution: {integrity: sha512-lYspwAkAYRvydsxm+2bRMfb88amjsCi0TAYpqgZprRT7V5O0vGc4bNbV9Zm4WzSPbcsUMXCSntxyDfj6CSEj3A==}
 
-  '@vue/reactivity@3.5.29':
-    resolution: {integrity: sha512-zcrANcrRdcLtmGZETBxWqIkoQei8HaFpZWx/GHKxx79JZsiZ8j1du0VUJtu4eJjgFvU/iKL5lRXFXksVmI+5DA==}
-
   '@vue/reactivity@3.5.32':
     resolution: {integrity: sha512-/ORasxSGvZ6MN5gc+uE364SxFdJ0+WqVG0CENXaGW58TOCdrAW76WWaplDtECeS1qphvtBZtR+3/o1g1zL4xPQ==}
 
@@ -7949,9 +7940,6 @@ packages:
     resolution: {integrity: sha512-IOjm2+JQwRFS7W28HNuJeXQle9KdZbODFY7hFGVtnnghF51ta20EWAZJHX+zLGtsHhaU6uC9BGPV52KVpYryMQ==}
     peerDependencies:
       vue: 3.5.32
-
-  '@vue/shared@3.5.29':
-    resolution: {integrity: sha512-w7SR0A5zyRByL9XUkCfdLs7t9XOHUyJ67qPGQjOou3p6GvBeBW+AVjUUmlxtZ4PIYaRvE+1LmK44O4uajlZwcg==}
 
   '@vue/shared@3.5.30':
     resolution: {integrity: sha512-YXgQ7JjaO18NeK2K9VTbDHaFy62WrObMa6XERNfNOkAhD1F1oDSf3ZJ7K6GqabZ0BvSDHajp8qfS5Sa2I9n8uQ==}
@@ -12233,9 +12221,6 @@ packages:
 
   miniprogram-api-typings@3.12.3:
     resolution: {integrity: sha512-o7bOfrU28MEMCBWo83nXv0ROQSBFxJcfCl4f2wTYqah64ipC5RGqLJfvWJTWhlQt2ECVwspSzM8LgvnfMo7TEQ==}
-
-  miniprogram-api-typings@4.0.8:
-    resolution: {integrity: sha512-q3MHCd/r0EsCFsq+nebbBbpwhsQbJg2d8lvRdRBV4KXgp+S1OzzNFpjFoy1X46NA01OD0fbCnxo7tJRSE2pqSw==}
 
   miniprogram-api-typings@5.0.0:
     resolution: {integrity: sha512-KQ1ZDk0cK3JrAaZtlFNlC/De/HwqhtToPZTzIYvFzi4FaW0Z8raIBN/qpjZ5QMiBaBNl/hJwTWwD+tfp8BwCZw==}
@@ -21517,11 +21502,6 @@ snapshots:
     optionalDependencies:
       vue: 3.5.32(typescript@6.0.2)
 
-  '@vue-mini/core@1.2.9':
-    dependencies:
-      '@vue/reactivity': 3.5.29
-      miniprogram-api-typings: 4.0.8
-
   '@vue/compiler-core@3.5.31':
     dependencies:
       '@babel/parser': 7.29.2
@@ -21615,10 +21595,6 @@ snapshots:
       pug-parser: 6.0.0
       vscode-languageserver-textdocument: 1.0.12
 
-  '@vue/reactivity@3.5.29':
-    dependencies:
-      '@vue/shared': 3.5.29
-
   '@vue/reactivity@3.5.32':
     dependencies:
       '@vue/shared': 3.5.32
@@ -21642,8 +21618,6 @@ snapshots:
       '@vue/compiler-ssr': 3.5.32
       '@vue/shared': 3.5.32
       vue: 3.5.32(typescript@6.0.2)
-
-  '@vue/shared@3.5.29': {}
 
   '@vue/shared@3.5.30': {}
 
@@ -26797,8 +26771,6 @@ snapshots:
   minipass@7.1.3: {}
 
   miniprogram-api-typings@3.12.3: {}
-
-  miniprogram-api-typings@4.0.8: {}
 
   miniprogram-api-typings@5.0.0: {}
 

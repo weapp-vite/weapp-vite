@@ -45,7 +45,6 @@
   },
   "dependencies": {
     "@vant/weapp": "catalog:",
-    "@vue-mini/core": "^1.2.9",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "lodash": "catalog:",
