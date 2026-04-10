@@ -36,6 +36,29 @@ function isInsideMustache(code: string, start: number, end: number) {
   return close >= end
 }
 
+function getMustacheBounds(code: string, start: number, end: number) {
+  const open = code.lastIndexOf('{{', start)
+  if (open < 0) {
+    return null
+  }
+
+  const close = code.indexOf('}}', end)
+  if (close < 0) {
+    return null
+  }
+
+  return { open, close }
+}
+
+function isWholeMustacheExpression(code: string, start: number, end: number, expression: string) {
+  const bounds = getMustacheBounds(code, start, end)
+  if (!bounds) {
+    return false
+  }
+
+  return code.slice(bounds.open + 2, bounds.close).trim() === expression
+}
+
 function getMustacheOuterQuote(code: string, start: number) {
   const open = code.lastIndexOf('{{', start)
   if (open <= 0) {
@@ -89,6 +112,31 @@ function toQuotedLiteral(value: string, quote: '\'' | '"', outerQuote: '"' | '\'
   }
 }
 
+function toMustacheReplacementValue(code: string, start: number, end: number, expression: string, value: string) {
+  try {
+    const parsed = JSON.parse(value)
+    if (typeof parsed === 'string') {
+      const outerQuote = getMustacheOuterQuote(code, start)
+      return toQuotedLiteral(
+        value,
+        outerQuote === '\'' ? '"' : '\'',
+        outerQuote,
+      )
+    }
+
+    if (isWholeMustacheExpression(code, start, end, expression)) {
+      // 小程序 mustache 中直接输出对象/数组等字面量时，需要保留 `{{ { ... } }}` 这类带空格写法，
+      // 避免 `{{{` / `}}}` 被宿主当成非法模板内容。
+      return ` ${JSON.stringify(parsed)} `
+    }
+
+    return String(value)
+  }
+  catch {
+    return value
+  }
+}
+
 function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<string, any>) {
   if (!defineImportMetaEnv || Object.keys(defineImportMetaEnv).length === 0) {
     return code
@@ -121,11 +169,7 @@ function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<s
         start,
         end,
         value: isInsideMustache(code, start, end)
-          ? toQuotedLiteral(
-              String(value),
-              getMustacheOuterQuote(code, start) === '\'' ? '"' : '\'',
-              getMustacheOuterQuote(code, start),
-            )
+          ? toMustacheReplacementValue(code, start, end, key, String(value))
           : String(value),
       })
     }

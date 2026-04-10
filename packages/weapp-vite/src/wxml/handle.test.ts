@@ -404,7 +404,7 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(result.code).toBe('<image src="{{\'https://static.example.com\'}}/logo.png" data-env="{{\'{&quot;VITE_CDN&quot;:&quot;https://static.example.com&quot;}\'}}" />')
+    expect(result.code).toBe('<image src="{{\'https://static.example.com\'}}/logo.png" data-env="{{ {\"VITE_CDN\":\"https://static.example.com\"} }}" />')
   })
 
   it('uses double quotes inside mustache when outer attribute uses single quotes', () => {
@@ -511,7 +511,7 @@ describe('handleWxml', () => {
       },
     })
 
-    expect(result.code).toBe('<view data-url="{{\'/pages/issue-431/index.wxml\'}}" data-dir="{{\'/pages/issue-431\'}}" data-meta="{{\'{&quot;url&quot;:&quot;/pages/issue-431/index.wxml&quot;,&quot;dirname&quot;:&quot;/pages/issue-431&quot;,&quot;env&quot;:{&quot;MODE&quot;:&quot;production&quot;}}\'}}" />')
+    expect(result.code).toBe('<view data-url="{{\'/pages/issue-431/index.wxml\'}}" data-dir="{{\'/pages/issue-431\'}}" data-meta="{{ {\"url\":\"/pages/issue-431/index.wxml\",\"dirname\":\"/pages/issue-431\",\"env\":{\"MODE\":\"production\"}} }}" />')
   })
 
   it('escapes single quotes in import.meta.env string replacements inside mustache', () => {

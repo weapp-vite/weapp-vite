@@ -234,7 +234,7 @@ describe('emitWxmlAssetsWithCache', () => {
     const payload = emitFile.mock.calls[0]?.[0]
     expect(payload.source).toContain('{{\'/pages/index/index.wxml\'}}')
     expect(payload.source).toContain('{{\'/pages/index\'}}')
-    expect(payload.source).toContain('{{\'{&quot;url&quot;:&quot;/pages/index/index.wxml&quot;,&quot;dirname&quot;:&quot;/pages/index&quot;,&quot;env&quot;:{&quot;MODE&quot;:&quot;production&quot;}}\'}}')
+    expect(payload.source).toContain('{{ {"url":"/pages/index/index.wxml","dirname":"/pages/index","env":{"MODE":"production"}} }}')
   })
 
   it('emits compiled vue template with safe import.meta.env quoting in final wxml', async () => {
