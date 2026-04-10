@@ -1,5 +1,15 @@
 # wevu
 
+## 6.15.0
+
+### Patch Changes
+
+- 🐛 **为 Vue 模板编译新增 HTML 标签到 WXML 内置标签的映射能力：`.vue` 模板中的常见 HTML 标签现在会默认转换为对应的小程序标签，并支持通过 `vue.template.htmlTagToWxml` 自定义或关闭映射表。与此同时，`wevu` 的内置标签类型也补齐了这些 HTML 风格别名，避免在编辑器中为 `div`、`span`、`img`、`a` 等标签报出 `IntrinsicElements` 缺失错误，减少从 Web/Vue 项目迁移到 weapp-vite / wevu 时的模板改造成本。** [`87fcdd7`](https://github.com/weapp-vite/weapp-vite/commit/87fcdd78615b1d9b1ecdecda4946af4b75193bdd) by @sonofmagic
+
+- 🐛 **压缩内联事件编译产物中的 dataset 属性名与 inline id：将 `data-wv-inline-id-*` / `data-wv-handler-*` / `data-wv-event-detail-*` 分别缩短为 `data-wi-*` / `data-wh-*` / `data-wd-*`，并把 `__wv_inline_*` 形式的内联表达式 id 缩短为更短的稳定 id。运行时同步支持新旧 dataset key 的兼容读取，以减少大型小程序项目的 WXML 包体积，同时避免历史产物在升级后直接失效。** [#442](https://github.com/weapp-vite/weapp-vite/pull/442) by @sonofmagic
+- 📦 **Dependencies** [`87fcdd7`](https://github.com/weapp-vite/weapp-vite/commit/87fcdd78615b1d9b1ecdecda4946af4b75193bdd)
+  → `@wevu/compiler@6.15.0`
+
 ## 6.14.3
 
 ### Patch Changes
