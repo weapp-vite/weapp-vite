@@ -1,13 +1,15 @@
 /* eslint-disable ts/no-use-before-define */
 import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
-import type { SharedChunkStrategy } from '../../../types'
-import { Buffer } from 'node:buffer'
+import type {
+  ApplySharedChunkStrategyOptions,
+  SharedChunkDuplicateDetail,
+  SharedChunkRuntimeContext,
+} from './shared/types'
 import { posix as path } from 'pathe'
 import { findChunkImporters, updateImporters } from '../bundle'
 import { resolveSubPackagePrefix } from '../collector'
 import { SHARED_CHUNK_VIRTUAL_PREFIX, SUB_PACKAGE_SHARED_DIR } from '../constants'
 import {
-  cloneSourceLike,
   collectSourceMapKeys,
   emitSourceMapAsset,
   findSourceMapAsset,
@@ -15,41 +17,12 @@ import {
 } from '../sourcemap'
 import { consumeSharedChunkDiagnostics, hasForceDuplicateSharedChunks, isForceDuplicateSharedChunk } from '../state'
 import { createChunkSourceFileNameCandidates, reserveUniqueFileName, rewriteChunkImportSpecifiersInCode } from './rewrite'
-import { chunkReferencesRuntime } from './runtime'
-
-const ROLLDOWN_RUNTIME_FILE_NAME = 'rolldown-runtime.js'
-const SLASHES_PATTERN = /[\\/]+/g
-
-export interface SharedChunkDuplicateDetail {
-  fileName: string
-  importers: string[]
-}
-
-export interface SharedChunkDuplicatePayload {
-  sharedFileName: string
-  duplicates: SharedChunkDuplicateDetail[]
-  ignoredMainImporters?: string[]
-  requiresRuntimeLocalization?: boolean
-  chunkBytes?: number
-  redundantBytes?: number
-  retainedInMain?: boolean
-}
-
-export type SharedChunkFallbackReason = 'main-package' | 'no-subpackage'
-
-export interface SharedChunkFallbackPayload {
-  sharedFileName: string
-  finalFileName: string
-  reason: SharedChunkFallbackReason
-  importers: string[]
-}
-
-export interface ApplySharedChunkStrategyOptions {
-  strategy: SharedChunkStrategy
-  subPackageRoots: Iterable<string>
-  onDuplicate?: (payload: SharedChunkDuplicatePayload) => void
-  onFallback?: (payload: SharedChunkFallbackPayload) => void
-}
+import { localizeCrossSubPackageChunkLeaks } from './shared/leaks'
+import {
+  buildDuplicateDiagnostics,
+  emitDuplicatedChunkAsset,
+  ROLLDOWN_RUNTIME_FILE_NAME,
+} from './shared/runtime'
 
 export function applySharedChunkStrategy(
   this: PluginContext | undefined,
@@ -67,6 +40,13 @@ export function applySharedChunkStrategy(
   const subPackageRoots = Array.from(options.subPackageRoots).filter(Boolean)
   const reservedFileNames = new Set(Object.keys(bundle))
   const localizedDuplicateFileMap = new Map<string, string>()
+  const runtimeContext: SharedChunkRuntimeContext = {
+    pluginContext: this,
+    bundle,
+    subPackageRoots,
+    reservedFileNames,
+    localizedDuplicateFileMap,
+  }
   const pendingLocalizedDuplicates: Array<{
     root: string
     sourceFileName: string
@@ -74,110 +54,6 @@ export function applySharedChunkStrategy(
     chunk: OutputChunk
   }> = []
   const emittedLocalizedDuplicateFiles = new Set<string>()
-
-  const ensureLocalizedDuplicate = (root: string, sourceFileName: string) => {
-    const sourceRoot = resolveSubPackagePrefix(sourceFileName, subPackageRoots)
-    if (!sourceRoot || sourceRoot === root) {
-      return sourceFileName
-    }
-
-    const key = `${root}::${sourceFileName}`
-    const existing = localizedDuplicateFileMap.get(key)
-    if (existing) {
-      return existing
-    }
-
-    const sourceOutput = bundle[sourceFileName]
-    if (sourceOutput?.type !== 'chunk') {
-      return sourceFileName
-    }
-
-    const duplicateBaseName = createCrossSubPackageDuplicateBaseName(sourceRoot, sourceFileName)
-    const targetFileName = reserveUniqueFileName(reservedFileNames, path.join(root, SUB_PACKAGE_SHARED_DIR, duplicateBaseName))
-    localizedDuplicateFileMap.set(key, targetFileName)
-    pendingLocalizedDuplicates.push({
-      root,
-      sourceFileName,
-      targetFileName,
-      chunk: sourceOutput as OutputChunk,
-    })
-    return targetFileName
-  }
-
-  const rewriteDuplicatedChunkSource = (args: {
-    root: string
-    sourceFileName: string
-    targetFileName: string
-    chunk: OutputChunk
-    runtimeFileName: string
-  }) => {
-    let rewrittenSource = rewriteChunkImportSpecifiersInCode(args.chunk.code ?? '', {
-      sourceFileNames: createChunkSourceFileNameCandidates(args.sourceFileName),
-      targetFileName: args.targetFileName,
-      imports: args.chunk.imports,
-      dynamicImports: args.chunk.dynamicImports,
-      runtimeFileName: args.runtimeFileName,
-      resolveImportTarget: (specifier) => {
-        return ensureLocalizedDuplicate(args.root, specifier)
-      },
-    })
-
-    for (const specifier of [...args.chunk.imports, ...args.chunk.dynamicImports]) {
-      const localizedSpecifier = ensureLocalizedDuplicate(args.root, specifier)
-      if (!localizedSpecifier || localizedSpecifier === specifier) {
-        continue
-      }
-      rewrittenSource = rewriteChunkImportSpecifiersInCode(rewrittenSource, {
-        sourceFileName: args.targetFileName,
-        targetFileName: args.targetFileName,
-        imports: [specifier],
-        dynamicImports: [],
-        runtimeFileName: args.runtimeFileName,
-        resolveImportTarget: () => localizedSpecifier,
-      })
-    }
-
-    return rewrittenSource
-  }
-
-  const emitDuplicatedChunkAsset = (args: {
-    root: string
-    sourceFileName: string
-    targetFileName: string
-    chunk: OutputChunk
-  }) => {
-    if (emittedLocalizedDuplicateFiles.has(args.targetFileName)) {
-      return
-    }
-
-    const runtimeFileName = path.join(args.root, ROLLDOWN_RUNTIME_FILE_NAME)
-    const duplicatedSource = rewriteDuplicatedChunkSource({
-      root: args.root,
-      sourceFileName: args.sourceFileName,
-      targetFileName: args.targetFileName,
-      chunk: args.chunk,
-      runtimeFileName,
-    })
-    this.emitFile({
-      type: 'asset',
-      fileName: args.targetFileName,
-      source: duplicatedSource,
-    })
-
-    const sourceMapKeys = collectSourceMapKeys(args.sourceFileName, args.chunk)
-    const sourceMapAssetInfo = findSourceMapAsset(bundle, sourceMapKeys)
-    const resolvedSourceMap = resolveSourceMapSource(args.chunk.map, sourceMapAssetInfo?.asset.source)
-    if (resolvedSourceMap) {
-      const sourceMapFileName = reserveUniqueFileName(reservedFileNames, `${args.targetFileName}.map`)
-      this.emitFile({
-        type: 'asset',
-        fileName: sourceMapFileName,
-        source: cloneSourceLike(resolvedSourceMap),
-      })
-    }
-
-    emittedLocalizedDuplicateFiles.add(args.targetFileName)
-  }
 
   const entries = Object.entries(bundle)
   for (const [fileName, output] of entries) {
@@ -187,7 +63,6 @@ export function applySharedChunkStrategy(
 
     const originalSharedFileName = fileName
     const chunk = output as OutputChunk
-    const originalCode = chunk.code
     const originalMap = chunk.map
     const importers = findChunkImporters(bundle, fileName)
     if (importers.length === 0) {
@@ -312,6 +187,9 @@ export function applySharedChunkStrategy(
     }
     for (const [root, { newFileName, importers: importerFiles }] of importerMap.entries()) {
       emitDuplicatedChunkAsset({
+        runtimeContext,
+        pendingLocalizedDuplicates,
+        emittedLocalizedDuplicateFiles,
         root,
         sourceFileName: fileName,
         targetFileName: newFileName,
@@ -338,23 +216,19 @@ export function applySharedChunkStrategy(
       }
     }
 
-    const chunkBytes = typeof originalCode === 'string' ? Buffer.byteLength(originalCode, 'utf8') : undefined
-    const redundantBytes = typeof chunkBytes === 'number'
-      ? chunkBytes * Math.max(duplicates.length - 1, 0)
-      : undefined
-    const requiresRuntimeLocalization = chunkReferencesRuntime(
+    const duplicateDiagnostics = buildDuplicateDiagnostics({
       chunk,
-      ROLLDOWN_RUNTIME_FILE_NAME,
-      new Set([ROLLDOWN_RUNTIME_FILE_NAME]),
-    )
+      duplicates,
+      redundantDuplicateCount: Math.max(duplicates.length - 1, 0),
+    })
 
     options.onDuplicate?.({
       sharedFileName: originalSharedFileName,
       duplicates,
       ignoredMainImporters: diagnostics?.ignoredMainImporters,
-      requiresRuntimeLocalization,
-      chunkBytes,
-      redundantBytes,
+      requiresRuntimeLocalization: duplicateDiagnostics.requiresRuntimeLocalization,
+      chunkBytes: duplicateDiagnostics.chunkBytes,
+      redundantBytes: duplicateDiagnostics.redundantBytes,
       retainedInMain: shouldRetainOriginalChunk,
     })
   }
@@ -367,7 +241,12 @@ export function applySharedChunkStrategy(
   })
 
   for (const task of pendingLocalizedDuplicates) {
-    emitDuplicatedChunkAsset(task)
+    emitDuplicatedChunkAsset({
+      runtimeContext,
+      pendingLocalizedDuplicates,
+      emittedLocalizedDuplicateFiles,
+      ...task,
+    })
   }
 }
 
@@ -375,135 +254,10 @@ function isSharedVirtualChunk(fileName: string, output: OutputBundle[string]) {
   return output?.type === 'chunk' && fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)
 }
 
-function localizeCrossSubPackageChunkLeaks(
-  this: PluginContext,
-  bundle: OutputBundle,
-  options: {
-    subPackageRoots: string[]
-    reservedFileNames: Set<string>
-    localizedDuplicateFileMap: Map<string, string>
-    onDuplicate?: (payload: SharedChunkDuplicatePayload) => void
-  },
-) {
-  const { subPackageRoots, reservedFileNames, localizedDuplicateFileMap, onDuplicate } = options
-  if (subPackageRoots.length === 0) {
-    return
-  }
-
-  const entries = Object.entries(bundle)
-  for (const [fileName, output] of entries) {
-    if (output?.type !== 'chunk') {
-      continue
-    }
-    if (isSharedVirtualChunk(fileName, output)) {
-      continue
-    }
-    if (path.basename(fileName) === ROLLDOWN_RUNTIME_FILE_NAME) {
-      continue
-    }
-
-    const sourceRoot = resolveSubPackagePrefix(fileName, subPackageRoots)
-    if (!sourceRoot) {
-      continue
-    }
-
-    const importers = findChunkImporters(bundle, fileName)
-    if (importers.length === 0) {
-      continue
-    }
-
-    const crossRootImporters = new Map<string, string[]>()
-    for (const importerFile of importers) {
-      const importerRoot = resolveSubPackagePrefix(importerFile, subPackageRoots)
-      if (!importerRoot || importerRoot === sourceRoot) {
-        continue
-      }
-      const list = crossRootImporters.get(importerRoot)
-      if (list) {
-        list.push(importerFile)
-      }
-      else {
-        crossRootImporters.set(importerRoot, [importerFile])
-      }
-    }
-
-    if (crossRootImporters.size === 0) {
-      continue
-    }
-    const chunk = output as OutputChunk
-    const sourceMapKeys = collectSourceMapKeys(fileName, chunk)
-    const sourceMapAssetInfo = findSourceMapAsset(bundle, sourceMapKeys)
-    const resolvedSourceMap = resolveSourceMapSource(chunk.map, sourceMapAssetInfo?.asset.source)
-    const importerToChunk = new Map<string, string>()
-    const duplicates: SharedChunkDuplicateDetail[] = []
-
-    for (const [targetRoot, importerFiles] of crossRootImporters.entries()) {
-      const duplicateKey = `${targetRoot}::${fileName}`
-      const existingDuplicateFileName = localizedDuplicateFileMap.get(duplicateKey)
-      const uniqueFileName = existingDuplicateFileName ?? (() => {
-        const duplicateBaseName = createCrossSubPackageDuplicateBaseName(sourceRoot, fileName)
-        const intendedFileName = path.join(targetRoot, SUB_PACKAGE_SHARED_DIR, duplicateBaseName)
-        const createdFileName = reserveUniqueFileName(reservedFileNames, intendedFileName)
-        localizedDuplicateFileMap.set(duplicateKey, createdFileName)
-        return createdFileName
-      })()
-      const runtimeFileName = path.join(targetRoot, ROLLDOWN_RUNTIME_FILE_NAME)
-      if (!existingDuplicateFileName) {
-        const duplicatedSource = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
-          sourceFileName: fileName,
-          targetFileName: uniqueFileName,
-          imports: chunk.imports,
-          dynamicImports: chunk.dynamicImports,
-          runtimeFileName,
-        })
-        this.emitFile({
-          type: 'asset',
-          fileName: uniqueFileName,
-          source: duplicatedSource,
-        })
-
-        if (resolvedSourceMap) {
-          const sourceMapFileName = reserveUniqueFileName(reservedFileNames, `${uniqueFileName}.map`)
-          this.emitFile({
-            type: 'asset',
-            fileName: sourceMapFileName,
-            source: cloneSourceLike(resolvedSourceMap),
-          })
-        }
-      }
-
-      for (const importerFile of importerFiles) {
-        importerToChunk.set(importerFile, uniqueFileName)
-      }
-      duplicates.push({
-        fileName: uniqueFileName,
-        importers: [...importerFiles],
-      })
-    }
-
-    updateImporters(bundle, importerToChunk, fileName)
-    const chunkBytes = typeof chunk.code === 'string' ? Buffer.byteLength(chunk.code, 'utf8') : undefined
-    const redundantBytes = typeof chunkBytes === 'number'
-      ? chunkBytes * duplicates.length
-      : undefined
-    const requiresRuntimeLocalization = chunkReferencesRuntime(
-      chunk,
-      ROLLDOWN_RUNTIME_FILE_NAME,
-      new Set([path.join(sourceRoot, ROLLDOWN_RUNTIME_FILE_NAME), ROLLDOWN_RUNTIME_FILE_NAME]),
-    )
-
-    onDuplicate?.({
-      sharedFileName: fileName,
-      duplicates,
-      requiresRuntimeLocalization,
-      chunkBytes,
-      redundantBytes,
-      retainedInMain: true,
-    })
-  }
-}
-
-function createCrossSubPackageDuplicateBaseName(sourceRoot: string, fileName: string) {
-  const rootTag = sourceRoot.replace(SLASHES_PATTERN, '_')
-  return `${rootTag}.${path.basename(fileName)}`
-}
+export type {
+  ApplySharedChunkStrategyOptions,
+  SharedChunkDuplicateDetail,
+  SharedChunkDuplicatePayload,
+  SharedChunkFallbackPayload,
+  SharedChunkFallbackReason,
+} from './shared/types'
