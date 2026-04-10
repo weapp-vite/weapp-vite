@@ -53,6 +53,16 @@ function dedupeDependencies(dependencies: string[]) {
   return [...new Set(dependencies)]
 }
 
+function createDependencyRecord(dependencies: string[]) {
+  if (dependencies.length === 0) {
+    return undefined
+  }
+
+  return Object.fromEntries(
+    dependencies.map(dep => [dep, '*']),
+  ) as Record<string, string>
+}
+
 export function resolveCopyFilterRelativePath(sourceRoot: string, sourcePath: string) {
   const normalizedRoot = normalizePath(sourceRoot).replace(TRAILING_SLASHES_RE, '')
   const normalizedPath = normalizePath(sourcePath)
@@ -173,6 +183,16 @@ export function resolveNpmBuildCandidateDependenciesSync(
     ...miniprogramDependencies,
     ...explicitlyIncludedDependencies,
   ])
+}
+
+export function resolveNpmBuildCandidateDependencyRecordSync(
+  ctx: MutableCompilerContext,
+  pkgJson?: PackageJson,
+) {
+  if (!pkgJson) {
+    return undefined
+  }
+  return createDependencyRecord(resolveNpmBuildCandidateDependenciesSync(ctx, pkgJson))
 }
 
 function hasSameDependencySet(source: string[], target: string[]) {

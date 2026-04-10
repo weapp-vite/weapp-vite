@@ -206,7 +206,7 @@ describe('runtime config merge miniprogram', () => {
     })
   })
 
-  it('externalizes runtime dependencies and matching builtin alias paths only', () => {
+  it('externalizes explicit npm build candidates and matching builtin alias paths', () => {
     resolveBuiltinPackageAliasesMock.mockReturnValue([
       {
         find: 'wevu',
@@ -224,16 +224,26 @@ describe('runtime config merge miniprogram', () => {
 
     const result = mergeMiniprogram(
       {
-        ctx: {} as any,
+        ctx: {
+          configService: {
+            cwd: '/project',
+            weappViteConfig: {
+              npm: {
+                include: ['wevu'],
+              },
+            },
+          },
+        } as any,
         subPackageMeta: undefined,
         config: {} as any,
         cwd: '/project',
         srcRoot: 'src',
         packageJson: {
           dependencies: {
-            wevu: '^1.0.0',
+            dayjs: '^1.0.0',
           },
           devDependencies: {
+            'wevu': '^1.0.0',
             '@vant/weapp': '^1.11.6',
           },
         } as any,
@@ -257,7 +267,7 @@ describe('runtime config merge miniprogram', () => {
     expect(external.some(pattern => pattern.test('/project/node_modules/@vant/weapp/dist/index.js'))).toBe(false)
   })
 
-  it('does not externalize packages that only exist in devDependencies', () => {
+  it('does not externalize ordinary dependencies in explicit mode when they are not npm build candidates', () => {
     resolveBuiltinPackageAliasesMock.mockReturnValue([
       {
         find: 'wevu',
@@ -267,14 +277,22 @@ describe('runtime config merge miniprogram', () => {
 
     const result = mergeMiniprogram(
       {
-        ctx: {} as any,
+        ctx: {
+          configService: {
+            cwd: '/project',
+            weappViteConfig: {},
+          },
+        } as any,
         subPackageMeta: undefined,
         config: {} as any,
         cwd: '/project',
         srcRoot: 'src',
         packageJson: {
-          devDependencies: {
+          dependencies: {
             wevu: '^1.0.0',
+          },
+          devDependencies: {
+            dayjs: '^1.0.0',
           },
         } as any,
         isDev: false,
@@ -288,6 +306,50 @@ describe('runtime config merge miniprogram', () => {
     )
 
     expect(((result.build as any)?.rolldownOptions?.external ?? [])).toEqual([])
+  })
+
+  it('externalizes root dependencies in legacy mode', () => {
+    resolveBuiltinPackageAliasesMock.mockReturnValue([
+      {
+        find: 'wevu',
+        replacement: '/project/node_modules/wevu/dist/index.mjs',
+      },
+    ])
+
+    const result = mergeMiniprogram(
+      {
+        ctx: {
+          configService: {
+            cwd: '/project',
+            weappViteConfig: {
+              npm: {
+                strategy: 'legacy',
+              },
+            },
+          },
+        } as any,
+        subPackageMeta: undefined,
+        config: {} as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: {
+          dependencies: {
+            wevu: '^1.0.0',
+          },
+        } as any,
+        isDev: false,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    const external = ((result.build as any)?.rolldownOptions?.external ?? []) as RegExp[]
+    expect(external.some(pattern => pattern.test('wevu'))).toBe(true)
+    expect(external.some(pattern => pattern.test('/project/node_modules/wevu/dist/index.mjs'))).toBe(true)
   })
 
   it('keeps user-defined modulePreload when explicitly configured', () => {

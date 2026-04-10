@@ -7,6 +7,7 @@ import path from 'pathe'
 import { createLogger } from 'vite'
 import { defaultExcluded } from '../../../../defaults'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
+import { resolveNpmBuildCandidateDependenciesSync } from '../../../npmPlugin/service'
 import { resolveBuiltinPackageAliases } from '../../../packageAliases'
 import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
@@ -91,16 +92,18 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   }
 
   const external: (string | RegExp)[] = []
-  const runtimeDependencies = Object.keys(packageJson?.dependencies ?? {})
-  if (runtimeDependencies.length > 0) {
+  const npmBuildCandidates = packageJson
+    ? resolveNpmBuildCandidateDependenciesSync(ctx, packageJson)
+    : []
+  if (npmBuildCandidates.length > 0) {
     const builtinAliases = resolveBuiltinPackageAliases()
     external.push(
-      ...runtimeDependencies.map((pkg) => {
+      ...npmBuildCandidates.map((pkg) => {
         return new RegExp(`^${escapeRegex(pkg)}(\\/|$)`)
       }),
       ...builtinAliases
         .filter(({ find }) => {
-          return runtimeDependencies.some(dep => find === dep || find.startsWith(`${dep}/`))
+          return npmBuildCandidates.some(dep => find === dep || find.startsWith(`${dep}/`))
         })
         .map(({ replacement }) => {
           return new RegExp(`^${createAbsolutePathPattern(replacement)}(?:\\?.*)?$`)

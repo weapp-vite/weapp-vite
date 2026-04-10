@@ -87,21 +87,15 @@ describe.sequential('wevu runtime dependency modes (platform tree-shaking)', () 
     await Promise.all(tempRoots.map(root => fs.remove(root)))
   })
 
-  it('works when wevu is in devDependencies', async () => {
-    const appRoot = await createFixtureWithWevu('devDependencies')
-    for (const platform of PLATFORM_LIST) {
-      const commonScript = await runBuild(appRoot, platform)
-      expect(commonScript).not.toMatch(/require\([`'"]wevu[`'"]\)/)
-      assertPlatformTreeShaking(commonScript, platform)
-    }
-  })
-
-  it('works when wevu is in dependencies', async () => {
-    const appRoot = await createFixtureWithWevu('dependencies')
-    for (const platform of PLATFORM_LIST) {
-      const commonScript = await runBuild(appRoot, platform)
-      expect(commonScript).toMatch(/require\([`'"](?:\/node_modules\/)?wevu[`'"]\)/)
-      expect(commonScript).not.toContain('未安装 wevu')
-    }
-  })
+  it.each<DependencyMode>(['devDependencies', 'dependencies'])(
+    'inlines wevu runtime when it is declared in %s',
+    async (mode) => {
+      const appRoot = await createFixtureWithWevu(mode)
+      for (const platform of PLATFORM_LIST) {
+        const commonScript = await runBuild(appRoot, platform)
+        expect(commonScript).not.toMatch(/require\([`'"](?:\/node_modules\/)?wevu[`'"]\)/)
+        assertPlatformTreeShaking(commonScript, platform)
+      }
+    },
+  )
 })

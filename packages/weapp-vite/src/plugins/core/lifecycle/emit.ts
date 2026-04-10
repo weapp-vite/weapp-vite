@@ -18,6 +18,7 @@ import {
   resolveInjectRequestGlobalsOptions,
   resolveRequestGlobalsBindingTargets,
 } from '../../../runtime/config/internal/injectRequestGlobals'
+import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../runtime/npmPlugin/service'
 import { toPosixPath } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { changeFileExtension } from '../../../utils/file'
@@ -1147,6 +1148,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     configService.weappViteConfig?.injectRequestGlobals,
     configService.packageJson,
   )
+  const npmBuildCandidateDependencies = resolveNpmBuildCandidateDependencyRecordSync(ctx, configService.packageJson)
 
   return async function generateBundle(this: any, _options: any, bundle: any) {
     const rolldownBundle = bundle as unknown as OutputBundle
@@ -1160,12 +1162,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             continue
           }
 
-          rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, configService.packageJson.dependencies, {
+          rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
             astEngine,
           })
         }
 
-        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, configService.packageJson.dependencies)
+        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies)
       }
       return
     }
@@ -1366,7 +1368,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       rewriteBundleNpmImportsByPlatform(
         configService.platform,
         rolldownBundle,
-        configService.packageJson.dependencies,
+        npmBuildCandidateDependencies,
         configService.weappViteConfig?.npm?.alipayNpmMode,
         { astEngine },
       )
@@ -1386,12 +1388,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           if (chunk.fileName === meta.subPackage.root || !chunk.fileName.startsWith(`${meta.subPackage.root}/`)) {
             continue
           }
-          rewriteChunkNpmImportsToLocalRoot(chunk, meta.subPackage.root, meta.subPackage.dependencies, configService.packageJson.dependencies, {
+          rewriteChunkNpmImportsToLocalRoot(chunk, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies, {
             astEngine,
           })
         }
 
-        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, meta.subPackage.root, meta.subPackage.dependencies, configService.packageJson.dependencies)
+        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies)
       }
     }
 

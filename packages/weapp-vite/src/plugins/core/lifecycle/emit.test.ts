@@ -254,6 +254,60 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['common.js'].code).toContain('/miniprogram_npm/tdesign-miniprogram/toast/index')
   })
 
+  it('rewrites alipay npm requires for explicit include from devDependencies', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          platform: 'alipay',
+          packageJson: {
+            devDependencies: {
+              dayjs: '^1.11.13',
+            },
+          },
+          weappViteConfig: {
+            npm: {
+              include: ['dayjs'],
+            },
+          },
+        },
+      },
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const dayjs = require("dayjs")',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain('/node_modules/dayjs')
+  })
+
   it('rewrites template literal requires for platform npm imports and ignores plugin imports', async () => {
     const state = {
       ctx: {
@@ -305,7 +359,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['common.js'].code).toContain('plugin://demo/card')
   })
 
-  it('localizes plugin build npm imports to plugin-local miniprogram_npm', async () => {
+  it('only localizes plugin build npm imports for explicit npm candidates', async () => {
     const state = {
       ctx: {
         scanService: {
@@ -365,10 +419,70 @@ describe('core lifecycle emit hook injectWeapi', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['common.js'].code).toContain('./miniprogram_npm/dayjs/index')
+    expect(bundle['common.js'].code).toContain('require("dayjs")')
     expect(bundle['common.js'].code).toContain('./miniprogram_npm/tdesign-miniprogram/toast/index')
-    expect(bundle['pages/demo/index.js'].code).toContain('../../miniprogram_npm/dayjs/index')
+    expect(bundle['pages/demo/index.js'].code).toContain('require("dayjs")')
     expect(bundle['pages/demo/index.json'].source).toContain('"t-button": "../../miniprogram_npm/tdesign-miniprogram/button/button"')
+  })
+
+  it('localizes plugin build npm imports for explicit plugin dependencies from devDependencies', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          pluginOnly: true,
+          platform: 'weapp',
+          packageJson: {
+            devDependencies: {
+              dayjs: '^1.11.13',
+            },
+          },
+          weappViteConfig: {
+            npm: {
+              pluginPackage: {
+                dependencies: ['dayjs'],
+              },
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, true)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const dayjs = require("dayjs")',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/demo/index.js': {
+        type: 'chunk',
+        fileName: 'pages/demo/index.js',
+        code: 'const dayjs = require("dayjs")',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain('./miniprogram_npm/dayjs/index')
+    expect(bundle['pages/demo/index.js'].code).toContain('../../miniprogram_npm/dayjs/index')
   })
 
   it('localizes npm imports to subpackage-local miniprogram_npm when npm subpackage dependencies are declared', async () => {
