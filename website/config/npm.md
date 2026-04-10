@@ -25,13 +25,15 @@ keywords:
 
 默认情况下：
 
-- `dependencies` 被视为运行时依赖
-- `devDependencies` 被视为构建期依赖
+- `dependencies` 与 `devDependencies` 都优先进入 Vite 的正常打包流程
+- 只有“明确的小程序包”或你显式指定的包，才会进入小程序 npm 构建
 
-也就是说：
+这里的“明确的小程序包”通常指包自身带有 `miniprogram` 字段，例如：
 
-- `dependencies` 中的包倾向于被保留为小程序 npm 依赖
-- `devDependencies` 中的包倾向于被直接打进业务产物
+- `tdesign-miniprogram`
+- `@vant/weapp`
+
+如果你仍想沿用旧规则，也可以切回 `legacy` 模式，让根 `package.json.dependencies` 默认进入 `miniprogram_npm`。
 
 ## `weapp.npm` {#weapp-npm}
 
@@ -40,6 +42,8 @@ keywords:
   {
     enable?: boolean
     cache?: boolean
+    strategy?: 'explicit' | 'legacy'
+    include?: (string | RegExp)[]
     mainPackage?: {
       dependencies?: false | (string | RegExp)[]
     }
@@ -62,6 +66,8 @@ export default defineConfig({
     npm: {
       enable: true,
       cache: true,
+      strategy: 'explicit',
+      include: ['dayjs'],
       mainPackage: {
         dependencies: false,
       },
@@ -120,6 +126,29 @@ export default defineConfig({
 - 日常开发保留 `true`
 - 如果怀疑 npm 构建结果陈旧，再临时设 `false` 或手动清缓存
 
+### `strategy`
+
+- **类型**：`'explicit' | 'legacy'`
+
+控制 npm 构建候选集的默认分类方式。
+
+行为：
+
+- `explicit`：默认值。`dependencies` / `devDependencies` 都先按普通依赖走 Vite 打包；只有小程序包或显式命中的包才进入 npm 构建
+- `legacy`：兼容旧行为。根 `package.json.dependencies` 默认作为 npm 构建候选
+
+### `include`
+
+- **类型**：`(string | RegExp)[] | undefined`
+
+额外指定哪些包要进入 npm 构建候选集。
+
+说明：
+
+- 字符串命中包名时，也会覆盖其子路径导入
+- `include` 只决定“哪些包进入 npm 构建”
+- 最终落到主包 / 插件 / 分包，仍由下面的 `mainPackage.dependencies`、`pluginPackage.dependencies`、`subPackages` 决定
+
 ### `mainPackage.dependencies`
 
 - **类型**：`false | (string | RegExp)[] | undefined`
@@ -128,7 +157,7 @@ export default defineConfig({
 
 行为：
 
-- `undefined`：默认按根 `dependencies` 处理
+- `undefined`：默认按当前 npm 候选集处理
 - `false`：不输出主包 npm 目录
 - 数组：只输出命中的依赖
 
@@ -206,6 +235,25 @@ export default defineConfig({
 
 适合把明确只在分包用到的依赖下沉出去。
 
+### 默认内联，仅指定包进入 npm 构建
+
+```ts
+export default defineConfig({
+  weapp: {
+    npm: {
+      include: ['dayjs'],
+      subPackages: {
+        'packages/order': {
+          dependencies: ['dayjs'],
+        },
+      },
+    },
+  },
+})
+```
+
+适合让普通依赖默认内联，只有指定包进入 `miniprogram_npm`。
+
 ### 插件单独携带 npm
 
 ```ts
@@ -257,6 +305,25 @@ export default defineConfig({
 
 - `mainPackage.dependencies`
 - `subPackages.<root>.dependencies`
+
+### 为什么 `dependencies` 里的包没有自动进入 `miniprogram_npm`？
+
+因为默认 `strategy` 是 `explicit`：
+
+- 普通依赖会优先被 Vite 内联打包
+- 只有小程序包或 `npm.include` / `mainPackage.dependencies` / `pluginPackage.dependencies` / `subPackages.<root>.dependencies` 显式命中的包，才会进入 npm 构建
+
+如果你要恢复旧行为，请改成：
+
+```ts
+export default defineConfig({
+  weapp: {
+    npm: {
+      strategy: 'legacy',
+    },
+  },
+})
+```
 
 ### 支付宝平台目录不符合预期
 

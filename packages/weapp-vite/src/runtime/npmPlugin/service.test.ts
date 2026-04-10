@@ -16,10 +16,13 @@ const buildPackageMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkDependenciesCacheOutdateMock = vi.hoisted(() => vi.fn(async () => true))
 const writeDependenciesCacheMock = vi.hoisted(() => vi.fn(async () => {}))
 const getPackNpmRelationListMock = vi.hoisted(() => vi.fn())
+const getPackageInfoMock = vi.hoisted(() => vi.fn(async () => null))
 
 vi.mock('./builder', () => ({
   createPackageBuilder: () => ({
-    isMiniprogramPackage: vi.fn(),
+    isMiniprogramPackage: vi.fn((pkg) => {
+      return typeof pkg?.miniprogram === 'string'
+    }),
     shouldSkipBuild: vi.fn(),
     bundleBuild: vi.fn(),
     copyBuild: vi.fn(),
@@ -41,6 +44,14 @@ vi.mock('./relations', () => ({
   getPackNpmRelationList: getPackNpmRelationListMock,
 }))
 
+vi.mock('local-pkg', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('local-pkg')>()
+  return {
+    ...actual,
+    getPackageInfo: getPackageInfoMock,
+  }
+})
+
 const tempDirs: string[] = []
 
 async function createTempDir() {
@@ -53,6 +64,16 @@ describe('runtime npm service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     buildPackageMock.mockImplementation(async () => {})
+    getPackageInfoMock.mockImplementation(async (dep: string) => {
+      if (dep === 'tdesign-miniprogram' || dep === '@vant/weapp') {
+        return {
+          packageJson: {
+            miniprogram: 'miniprogram_dist',
+          },
+        }
+      }
+      return null
+    })
     getPackNpmRelationListMock.mockReturnValue([
       {
         packageJsonPath: './package.json',
@@ -146,6 +167,114 @@ describe('runtime npm service', () => {
     ).toBe('dayjs/index.js')
   })
 
+  it('defaults to explicit npm candidates from miniprogram packages and include patterns', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'dayjs': '^1.11.13',
+        'tdesign-miniprogram': '^1.12.3',
+      },
+      devDependencies: {
+        '@vant/weapp': '^1.11.6',
+        'lodash': '^4.17.21',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    buildPackageMock.mockImplementation(async ({ dep, outDir }) => {
+      await fs.outputFile(path.resolve(outDir, dep, 'index.js'), `module.exports = "${dep}"`)
+    })
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            include: ['dayjs'],
+          },
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await service.build()
+
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/dayjs/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/tdesign-miniprogram/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/@vant/weapp/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/lodash/index.js'))).toBe(false)
+
+    const buildCalls = buildPackageMock.mock.calls.map(([args]) => args.dep)
+    expect(buildCalls).toEqual(['tdesign-miniprogram', '@vant/weapp', 'dayjs'])
+  })
+
+  it('allows explicit subpackage patterns to build npm packages from devDependencies', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      devDependencies: {
+        dayjs: '^1.11.13',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    buildPackageMock.mockImplementation(async ({ dep, outDir }) => {
+      await fs.outputFile(path.resolve(outDir, dep, 'index.js'), `module.exports = "${dep}"`)
+    })
+    checkDependenciesCacheOutdateMock.mockResolvedValue(true)
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['dayjs'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['dayjs'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await service.build()
+
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/dayjs/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/dayjs/index.js'))).toBe(true)
+    expect(buildPackageMock).toHaveBeenCalledTimes(1)
+    expect(buildPackageMock).toHaveBeenCalledWith(expect.objectContaining({
+      dep: 'dayjs',
+      outDir: path.resolve(cwd, '.weapp-vite/npm-source/miniprogram_npm'),
+    }))
+  })
+
   it('builds cached npm source and removes main output when main output is disabled', async () => {
     const cwd = await createTempDir()
     const packageJson = {
@@ -174,6 +303,7 @@ describe('runtime npm service', () => {
         weappViteConfig: {
           npm: {
             enable: true,
+            strategy: 'legacy',
             mainPackage: {
               dependencies: false,
             },
@@ -268,6 +398,7 @@ describe('runtime npm service', () => {
         weappViteConfig: {
           npm: {
             enable: true,
+            strategy: 'legacy',
             mainPackage: {
               dependencies: false,
             },
@@ -365,6 +496,7 @@ describe('runtime npm service', () => {
         weappViteConfig: {
           npm: {
             enable: true,
+            strategy: 'legacy',
             mainPackage: {
               dependencies: false,
             },
@@ -462,6 +594,7 @@ describe('runtime npm service', () => {
         weappViteConfig: {
           npm: {
             enable: true,
+            strategy: 'legacy',
             pluginPackage: {
               dependencies: ['dayjs'],
             },
