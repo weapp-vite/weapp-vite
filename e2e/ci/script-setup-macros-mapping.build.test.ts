@@ -79,9 +79,9 @@ describe.sequential('e2e app: script-setup-macros-mapping (build)', () => {
     expect(pageWxml).toContain('bindtoggle="__weapp_vite_inline"')
     expect(pageWxml).toContain('bindsubmit="__weapp_vite_inline"')
     expect(pageWxml).toContain('bindchange="__weapp_vite_inline"')
-    expect(pageWxml).toContain('data-wv-event-detail-save="1"')
-    expect(pageWxml).toContain('data-wv-event-detail-pick="1"')
-    expect(pageWxml).toContain('data-wv-event-detail-change="1"')
+    expect(pageWxml).toContain('data-wd-save="1"')
+    expect(pageWxml).toContain('data-wd-pick="1"')
+    expect(pageWxml).toContain('data-wd-change="1"')
 
     expect(pageJs).toContain('__weappViteUsingComponent:!0')
     expect(pageJs).toContain('name:`NativeBadge`,from:`/native/native-badge/index`')

@@ -52,8 +52,8 @@ describe.sequential('e2e app: wevu-vue-demo (script setup macros mapping)', () =
     expect(pageWxml).toContain('<CompatAltPanel')
     expect(pageWxml).toContain('bindrun="__weapp_vite_inline"')
     expect(pageWxml).toContain('bindrunevent="__weapp_vite_inline"')
-    expect(pageWxml).toContain('data-wv-event-detail-run="1"')
-    expect(pageWxml).toContain('data-wv-event-detail-runevent="1"')
+    expect(pageWxml).toContain('data-wd-run="1"')
+    expect(pageWxml).toContain('data-wd-runevent="1"')
 
     expect(pageJs).toContain('__weappViteUsingComponent:!0')
     expect(pageJs).toContain('name:`NativeBadge`,from:`/native/native-badge/index`')
