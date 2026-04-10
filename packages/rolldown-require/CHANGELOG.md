@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 2.0.13
+
+### Patch Changes
+
+- 🐛 **同步 `create-weapp-vite` 内置模板的依赖版本，升级 ESLint/Stylelint 配置与部分示例请求依赖；同时更新 `rolldown-require` 的 `rolldown` 兼容版本声明，跟进最新 `rolldown` 版本。** [`0cc4a6e`](https://github.com/weapp-vite/weapp-vite/commit/0cc4a6e8a604f160a14ce1a7868b079cad166522) by @sonofmagic
+
 ## 2.0.12
 
 ### Patch Changes

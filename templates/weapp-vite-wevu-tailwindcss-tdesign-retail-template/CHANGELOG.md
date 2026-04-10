@@ -1,5 +1,13 @@
 # weapp-vite-wevu-tailwindcss-tdesign-retail-template
 
+## 1.0.49
+
+### Patch Changes
+
+- 🐛 **修复 retail tabs 场景下 `t-tab-panel` 的 `label` 可能传入空值导致宿主运行时 warning 的问题，为标签文案补齐空字符串兜底，减少模板与示例应用在微信开发者工具中的无意义告警。** [`9ed4fda`](https://github.com/weapp-vite/weapp-vite/commit/9ed4fda384ab9c6a716807705c33067bc86f1578) by @sonofmagic
+- 📦 **Dependencies** [`87fcdd7`](https://github.com/weapp-vite/weapp-vite/commit/87fcdd78615b1d9b1ecdecda4946af4b75193bdd)
+  → `wevu@6.15.0`
+
 ## 1.0.48
 
 ### Patch Changes

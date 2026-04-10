@@ -1,5 +1,41 @@
 # weapp-vite
 
+## 6.15.0
+
+### Minor Changes
+
+- ✨ **调整 `weapp.npm` 的默认依赖分类策略：`dependencies` 与 `devDependencies` 现在都会优先进入 Vite 打包流程，只有明确的小程序包或显式命中的包才进入 npm 构建。新增 `weapp.npm.strategy` 用于在新默认的 `explicit` 模式与旧的 `legacy` 模式之间切换，并支持通过 `weapp.npm.include` 显式补充 npm 构建候选集。** [`06d0868`](https://github.com/weapp-vite/weapp-vite/commit/06d086834af172a3de9f7d1fb4c6e2d3456e0483) by @sonofmagic
+
+- ✨ **为 `weapp.appPrelude` 新增 `mode: 'require'` 模式，按主包/分包作用域输出 `app.prelude.js` 并在对应 chunk 顶部注入静态 `require(...)`，以在保留前置执行时机的同时减少重复内联代码。** [#437](https://github.com/weapp-vite/weapp-vite/pull/437) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复原生 WXML 中 `import.meta` 整体对象替换到属性插值时的转义策略：当 `import.meta`、对象或数组字面量位于带引号属性的完整 mustache 表达式中时，产物现在会生成带内层字符串字面量且完成属性引号转义的安全形式，避免输出未转义的 JSON 双引号，导致微信开发者工具在编译 `wxml` 时出现语法错误。** [`fbe876e`](https://github.com/weapp-vite/weapp-vite/commit/fbe876e6ecb99caa461466510792cd1b7a8e96fb) by @sonofmagic
+
+- 🐛 **修复 `injectRequestGlobals` 场景下 `axios` fetch adapter 的运行时注入，构建产物会自动为 axios chunk 补齐 `Request`、`Response`、`fetch` 所需环境，不再需要业务代码手动修改 `axios.defaults.adapter` 或 `axios.defaults.env`。** [`f652edb`](https://github.com/weapp-vite/weapp-vite/commit/f652edb5ba6c90e1e8c477af69300929d38c4010) by @sonofmagic
+
+- 🐛 **为 Vue 模板编译新增 HTML 标签到 WXML 内置标签的映射能力：`.vue` 模板中的常见 HTML 标签现在会默认转换为对应的小程序标签，并支持通过 `vue.template.htmlTagToWxml` 自定义或关闭映射表。与此同时，`wevu` 的内置标签类型也补齐了这些 HTML 风格别名，避免在编辑器中为 `div`、`span`、`img`、`a` 等标签报出 `IntrinsicElements` 缺失错误，减少从 Web/Vue 项目迁移到 weapp-vite / wevu 时的模板改造成本。** [`87fcdd7`](https://github.com/weapp-vite/weapp-vite/commit/87fcdd78615b1d9b1ecdecda4946af4b75193bdd) by @sonofmagic
+
+- 🐛 **修复小程序 npm 显式分类链路中的旧语义残留：miniprogram 构建的 external 判定与产物中的 npm 路径重写，统一改为基于 `npm.strategy = 'explicit'` 下的真实 npm 构建候选集，而不是继续把根 `dependencies` 当作默认运行时 npm 依赖。这样普通依赖无论写在 `dependencies` 还是 `devDependencies`，默认都会继续走 Vite 内联；只有小程序包或显式 `include` 的依赖才会进入 npm 构建与路径改写流程，同时 `legacy` 模式仍保持兼容。** [`5995b36`](https://github.com/weapp-vite/weapp-vite/commit/5995b367b647fc002c523168f3b1eba5e6aa8c0a) by @sonofmagic
+
+- 🐛 **修复 `npm.strategy = 'explicit'` 模式下普通依赖仍被错误 external 到小程序运行时的问题，让 `dayjs` 这类普通 npm 包默认继续交给 Vite 内联打包。同时补齐共享 chunk 复制后的跨分包依赖本地化，避免复制产物继续引用其他分包 `common.js`，并去掉 wevu 路由示例中的重复路由注册 warning。** [`02992ca`](https://github.com/weapp-vite/weapp-vite/commit/02992cac683c814c10ec65c2d493ead64f61a058) by @sonofmagic
+
+- 🐛 **修复纯原生小程序入口对 request globals 的局部绑定注入，确保 `app` 入口与原生页面一样能稳定拿到 `fetch`、`URL`、`XMLHttpRequest`、`WebSocket` 等能力，并补充纯原生 `axios`、`graphql-request`、`socket.io-client` 真实请求 e2e 示例。** [`c2cba40`](https://github.com/weapp-vite/weapp-vite/commit/c2cba403e799007cc6e18bea838bcc045cc01f41) by @sonofmagic
+
+- 🐛 **压缩内联事件编译产物中的 dataset 属性名与 inline id：将 `data-wv-inline-id-*` / `data-wv-handler-*` / `data-wv-event-detail-*` 分别缩短为 `data-wi-*` / `data-wh-*` / `data-wd-*`，并把 `__wv_inline_*` 形式的内联表达式 id 缩短为更短的稳定 id。运行时同步支持新旧 dataset key 的兼容读取，以减少大型小程序项目的 WXML 包体积，同时避免历史产物在升级后直接失效。** [#442](https://github.com/weapp-vite/weapp-vite/pull/442) by @sonofmagic
+
+- 🐛 **收紧原生 WXML 中 `import.meta` 的替换边界：仅保留 `import.meta.env.xxx`、`import.meta.url` 与 `import.meta.dirname` 这类标量值替换，不再支持 `import.meta.env` 或裸 `import.meta` 的对象级替换，避免为低收益场景引入额外注入链路与不稳定产物。** [`48c0ba1`](https://github.com/weapp-vite/weapp-vite/commit/48c0ba1e4393155f184a3c245aec9e070e0c9400) by @sonofmagic
+
+- 🐛 **修复原生 WXML 中 `import.meta.url`、`import.meta.dirname` 与 `import.meta.env` 替换到属性插值时的生成规则：字符串值继续输出为带引号的字符串字面量；对象、数组、布尔值等完整 mustache 表达式现在统一输出为 `{{ { ... } }}` / `{{ true }}` 这类合法字面量形式，避免生成 `{{{` / `}}}` 或未转义引号后在微信开发者工具中编译失败。** [#442](https://github.com/weapp-vite/weapp-vite/pull/442) by @sonofmagic
+
+- 🐛 **新增 `app.prelude` 约定文件支持，并提供 `weapp.appPrelude` 配置项。默认 `mode: 'inline'` 会把 `src/app.prelude.ts` 等脚本内联注入到每个 JS chunk 最前面执行；也支持 `mode: 'entry'` 只注入到 `app/page/component` 入口 chunk，用于在执行时机与产物体积之间做取舍。** [#437](https://github.com/weapp-vite/weapp-vite/pull/437) by @sonofmagic
+- 📦 Updated 4 dependencies [`87fcdd7`](https://github.com/weapp-vite/weapp-vite/commit/87fcdd78615b1d9b1ecdecda4946af4b75193bdd)
+  <details><summary>Details</summary>
+
+  `wevu@6.15.0`, `rolldown-require@2.0.13`, `@weapp-vite/web@1.3.13`, `@weapp-vite/ast@6.15.0`
+
+  </details>
+
 ## 6.14.3
 
 ### Patch Changes

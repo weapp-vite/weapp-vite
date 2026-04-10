@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/ast",
   "type": "module",
-  "version": "6.14.3",
+  "version": "6.15.0",
   "description": "weapp-vite 共享 AST 分析工具包，统一 Babel/Oxc 解析与常用分析操作",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
