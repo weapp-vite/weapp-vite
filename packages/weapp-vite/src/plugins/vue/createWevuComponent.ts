@@ -11,6 +11,7 @@ export interface WevuComponentOptions<D extends object = Record<string, any>, C 
   watch?: any
   setup?: (...args: any[]) => any
   setupLifecycle?: 'created' | 'attached'
+  allowNullPropInput?: boolean
   properties?: Record<string, any>
   [key: string]: any
 }
@@ -34,6 +35,7 @@ export function createWevuComponent(options: WevuComponentOptions) {
   }
 
   defineComponent({
+    allowNullPropInput: options.allowNullPropInput ?? true,
     ...restOptions,
     ...mpOptions,
   } as any)

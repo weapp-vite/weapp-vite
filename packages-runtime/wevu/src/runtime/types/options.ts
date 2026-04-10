@@ -28,6 +28,12 @@ export interface DefineComponentOptions<
    * 类 Vue 的 props 定义（会被规范化为小程序 `properties`）
    */
   props?: P
+  /**
+   * 允许将运行时传入的 `undefined` props 兼容为 `null` 输入，避免小程序对已声明类型 props 报告 `null` 类型告警。
+   *
+   * 适合迁移 Vue 组件或需要兼容 `undefined -> null` 传参链路的场景；默认关闭，避免影响原生 `properties` 的严格类型语义。
+   */
+  allowNullPropInput?: boolean
   watch?: Record<string, any>
   setup?: SetupFunction<P, D, C, M, S>
   /**

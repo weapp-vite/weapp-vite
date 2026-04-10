@@ -231,6 +231,7 @@ export function createWevuComponent<
 
   const baseOptions = {
     ...restOptions,
+    allowNullPropInput: (restOptions as any).allowNullPropInput ?? true,
     __wevu_allowNullPropInput: true,
   }
 

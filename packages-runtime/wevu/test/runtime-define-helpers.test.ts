@@ -85,6 +85,25 @@ describe('runtime: define helpers', () => {
     expect(result.properties.anyValue.optionalTypes).toBeUndefined()
   })
 
+  it('allows null as an optional native input for explicit properties', () => {
+    const result = normalizeProps({
+      data: () => ({}),
+      allowNullPropInput: true,
+    }, undefined, {
+      name: String,
+      count: { type: Number, value: 2 },
+      anyValue: null,
+    })
+
+    expect(result.properties.name.type).toBe(String)
+    expect(result.properties.name.optionalTypes).toEqual([null])
+    expect(result.properties.count.type).toBe(Number)
+    expect(result.properties.count.value).toBe(2)
+    expect(result.properties.count.optionalTypes).toEqual([null])
+    expect(result.properties.anyValue.type).toBeNull()
+    expect(result.properties.anyValue.optionalTypes).toBeUndefined()
+  })
+
   it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {
     const result = normalizeProps({ data: () => ({}) }, {
       mixed: { type: [Number, String] },

@@ -87,6 +87,7 @@ defineComponent({
 })
 
 defineComponent({
+  allowNullPropInput: true,
   behaviors: [],
   externalClasses: ['custom-class'],
   options: {

@@ -1,6 +1,7 @@
 import type { ComponentPropsOptions } from '../types'
 
 const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
+const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
 
 const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, WechatMiniprogram.Component.ShortProperty | null>([
   [String, String],
@@ -81,14 +82,104 @@ function appendOptionalType(target: Record<string, any>, candidate: unknown) {
   target.optionalTypes = optionalTypes
 }
 
+function normalizeOptionalTypeCandidates(raw: unknown) {
+  if (!Array.isArray(raw)) {
+    return []
+  }
+  const normalized: WechatMiniprogram.Component.ShortProperty[] = []
+  raw.forEach((item) => {
+    const mapped = toNativePropertyType(item)
+    if (mapped === undefined || mapped === null || normalized.includes(mapped)) {
+      return
+    }
+    normalized.push(mapped)
+  })
+  return normalized
+}
+
+function normalizeExplicitPropertyDefinition(
+  definition: unknown,
+  allowNullPropInput: boolean,
+) {
+  if (definition === undefined) {
+    return undefined
+  }
+  if (definition === null) {
+    return { type: null }
+  }
+  if (Array.isArray(definition) || typeof definition === 'function') {
+    const propOptions: Record<string, any> = {}
+    applyTypeOptions(propOptions, definition)
+    if (allowNullPropInput && propOptions.type !== null) {
+      appendOptionalType(propOptions, null)
+    }
+    if (!Object.hasOwn(propOptions, 'type')) {
+      propOptions.type = null
+    }
+    return propOptions
+  }
+  if (typeof definition !== 'object') {
+    return definition
+  }
+
+  const propOptions: Record<string, any> = {
+    ...(definition as Record<string, any>),
+  }
+
+  if ('type' in propOptions) {
+    const normalizedTypes = normalizeTypeCandidates(propOptions.type)
+    propOptions.type = normalizedTypes[0] ?? null
+    const existingOptionalTypes = normalizeOptionalTypeCandidates(propOptions.optionalTypes)
+    for (const candidate of normalizedTypes.slice(1)) {
+      if (candidate !== null && !existingOptionalTypes.includes(candidate)) {
+        existingOptionalTypes.push(candidate)
+      }
+    }
+    if (existingOptionalTypes.length > 0) {
+      propOptions.optionalTypes = existingOptionalTypes
+    }
+    else {
+      delete propOptions.optionalTypes
+    }
+  }
+
+  if (!Object.hasOwn(propOptions, 'type')) {
+    propOptions.type = null
+  }
+
+  if (allowNullPropInput && propOptions.type !== null) {
+    appendOptionalType(propOptions, null)
+  }
+
+  return propOptions
+}
+
+function normalizeExplicitProperties(
+  properties: WechatMiniprogram.Component.PropertyOption,
+  allowNullPropInput: boolean,
+) {
+  const normalizedProperties: Record<string, any> = {}
+  Object.entries(properties).forEach(([key, definition]) => {
+    const normalizedDefinition = normalizeExplicitPropertyDefinition(definition, allowNullPropInput)
+    if (normalizedDefinition !== undefined) {
+      normalizedProperties[key] = normalizedDefinition
+    }
+  })
+  return normalizedProperties
+}
+
 export function normalizeProps(
   baseOptions: Record<string, any>,
   props?: ComponentPropsOptions,
   explicitProperties?: WechatMiniprogram.Component.PropertyOption,
 ) {
-  const allowNullPropInput = Boolean((baseOptions as any)[ALLOW_NULL_PROP_INPUT_KEY])
+  const allowNullPropInput = Boolean(
+    (baseOptions as any)[ALLOW_NULL_PROP_INPUT_KEY]
+    ?? (baseOptions as any)[PUBLIC_ALLOW_NULL_PROP_INPUT_KEY],
+  )
   const {
     [ALLOW_NULL_PROP_INPUT_KEY]: _ignoredAllowNullPropInput,
+    [PUBLIC_ALLOW_NULL_PROP_INPUT_KEY]: _ignoredPublicAllowNullPropInput,
     ...normalizedBaseOptions
   } = baseOptions
   const baseProperties = (baseOptions as any).properties
@@ -112,7 +203,11 @@ export function normalizeProps(
     } = normalizedBaseOptions
     return {
       ...rest,
-      properties: attachInternalProps(resolvedExplicit as any),
+      properties: attachInternalProps(
+        allowNullPropInput
+          ? normalizeExplicitProperties(resolvedExplicit as any, allowNullPropInput)
+          : (resolvedExplicit as any),
+      ),
     }
   }
 

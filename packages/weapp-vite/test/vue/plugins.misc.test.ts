@@ -127,7 +127,14 @@ describe('vue plugin misc coverage', () => {
     })
     expect(defineComponent).toHaveBeenCalled()
     const passed = defineComponent.mock.calls[0][0]
+    expect(passed.allowNullPropInput).toBe(true)
     expect(passed.properties).toEqual({ foo: String })
+
+    runtime.createWevuComponent({
+      allowNullPropInput: false,
+      properties: { bar: Number },
+    })
+    expect(defineComponent.mock.calls[1][0].allowNullPropInput).toBe(false)
 
     const props = runtime.defineProps({ foo: 'bar' })
     expect(props).toEqual({ foo: 'bar' })
