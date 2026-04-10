@@ -28,9 +28,7 @@ interface SwcTransformModule {
 type SwcModuleImporter = () => Promise<unknown>
 
 function importSwcCore() {
-  // 通过间接动态导入规避构建期对 @swc/core 原生绑定的静态解析。
-  // eslint-disable-next-line no-new-func
-  return new Function('specifier', 'return import(specifier)')('@swc/core') as Promise<unknown>
+  return import('@swc/core') as Promise<unknown>
 }
 
 export async function loadSwcTransformModule(importer: SwcModuleImporter = importSwcCore): Promise<SwcTransformModule> {
