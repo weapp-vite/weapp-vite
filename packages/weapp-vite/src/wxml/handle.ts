@@ -55,14 +55,25 @@ function getMustacheOuterQuote(code: string, start: number) {
   return null
 }
 
-function toQuotedLiteral(value: string, quote: '\'' | '"') {
+function escapeOuterAttributeChars(value: string, outerQuote: '"' | '\'' | null) {
+  let nextValue = value.replace(/&/g, '&amp;')
+  if (outerQuote === '"') {
+    nextValue = nextValue.replace(/"/g, '&quot;')
+  }
+  else if (outerQuote === '\'') {
+    nextValue = nextValue.replace(/'/g, '&apos;')
+  }
+  return nextValue
+}
+
+function toQuotedLiteral(value: string, quote: '\'' | '"', outerQuote: '"' | '\'' | null = null) {
   try {
     const parsed = JSON.parse(value)
-    if (typeof parsed !== 'string') {
-      return value
-    }
+    const literalValue = typeof parsed === 'string'
+      ? parsed
+      : JSON.stringify(parsed)
 
-    const escaped = parsed
+    const escaped = escapeOuterAttributeChars(literalValue, outerQuote)
       .replace(/\\/g, '\\\\')
       .replace(/\r/g, '\\r')
       .replace(/\n/g, '\\n')
@@ -110,7 +121,11 @@ function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<s
         start,
         end,
         value: isInsideMustache(code, start, end)
-          ? toQuotedLiteral(String(value), getMustacheOuterQuote(code, start) === '\'' ? '"' : '\'')
+          ? toQuotedLiteral(
+              String(value),
+              getMustacheOuterQuote(code, start) === '\'' ? '"' : '\'',
+              getMustacheOuterQuote(code, start),
+            )
           : String(value),
       })
     }
