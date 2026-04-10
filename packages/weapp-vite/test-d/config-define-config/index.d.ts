@@ -4,6 +4,13 @@ export interface AutoImportComponentsConfig {
 
 export interface WeappViteConfig {
   srcRoot?: string
+  wevu?: {
+    defaults?: {
+      component?: {
+        allowNullPropInput?: boolean
+      }
+    }
+  }
   appPrelude?: boolean | {
     enabled?: boolean
     mode?: 'inline' | 'entry' | 'require'

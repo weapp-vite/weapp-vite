@@ -235,4 +235,53 @@ describe('resolveVueTemplatePlatformOptions', () => {
 
     expect(options.template.htmlTagToWxml).toBe(false)
   })
+
+  it('reads component allowNullPropInput from weapp.wevu.defaults', () => {
+    resolveWevuDefaultsWithPresetMock.mockReturnValueOnce({
+      component: {
+        allowNullPropInput: true,
+      },
+    })
+
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {
+          wevu: {
+            defaults: {
+              component: {
+                allowNullPropInput: true,
+              },
+            },
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.wevuDefaults).toEqual({
+      component: {
+        allowNullPropInput: true,
+      },
+    })
+    expect(resolveWevuDefaultsWithPresetMock).toHaveBeenCalledWith({
+      wevu: {
+        defaults: {
+          component: {
+            allowNullPropInput: true,
+          },
+        },
+      },
+    })
+  })
 })

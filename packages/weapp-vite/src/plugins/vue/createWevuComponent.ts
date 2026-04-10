@@ -35,7 +35,6 @@ export function createWevuComponent(options: WevuComponentOptions) {
   }
 
   defineComponent({
-    allowNullPropInput: options.allowNullPropInput ?? true,
     ...restOptions,
     ...mpOptions,
   } as any)

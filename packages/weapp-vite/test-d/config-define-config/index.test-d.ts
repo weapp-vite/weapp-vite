@@ -5,6 +5,13 @@ import { defineConfig } from '.'
 const objectConfig = defineConfig({
   weapp: {
     srcRoot: 'src',
+    wevu: {
+      defaults: {
+        component: {
+          allowNullPropInput: false,
+        },
+      },
+    },
     appPrelude: {
       mode: 'entry',
     },
@@ -25,6 +32,7 @@ const objectConfig = defineConfig({
   },
 })
 expectType<string | undefined>(objectConfig.weapp?.srcRoot)
+expectType<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
 expectType<boolean | {
   enabled?: boolean
   mode?: 'inline' | 'entry' | 'require'

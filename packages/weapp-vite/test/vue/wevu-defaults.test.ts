@@ -49,6 +49,7 @@ describe('wevu defaults compile-time merge', () => {
         wevu: {
           defaults: {
             component: {
+              allowNullPropInput: true,
               options: {
                 virtualHost: true,
                 styleIsolation: 'apply-shared',
@@ -75,6 +76,41 @@ const count = 0
       expect(transformed?.code).toContain('virtualHost')
       expect(transformed?.code).toContain('apply-shared')
       expect(transformed?.code).toContain('includeComputed')
+      expect(transformed?.code).toContain('allowNullPropInput')
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('allows overriding default allowNullPropInput from weapp config', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wevu-defaults-null-props-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, {
+        wevu: {
+          defaults: {
+            component: {
+              allowNullPropInput: false,
+            },
+          },
+        },
+      }))
+      const file = path.join(srcRoot, 'components', 'demo', 'index.vue')
+
+      const transformed = await plugin.transform!(
+        `
+<template><view>{{ title }}</view></template>
+<script setup lang="ts">
+const props = defineProps<{ title?: string }>()
+</script>
+        `.trim(),
+        file,
+      )
+
+      expect(transformed?.code).not.toContain('allowNullPropInput: true')
+      expect(transformed?.code).toContain('allowNullPropInput: false')
     }
     finally {
       await fs.remove(root)

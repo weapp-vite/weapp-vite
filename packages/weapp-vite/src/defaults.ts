@@ -79,6 +79,13 @@ export function getWeappViteConfig(): WeappViteConfig {
     },
     appPrelude: {},
     injectRequestGlobals: {},
+    wevu: {
+      defaults: {
+        component: {
+          allowNullPropInput: true,
+        },
+      },
+    },
     chunks: {
       sharedStrategy: 'duplicate',
       sharedMode: 'common',
