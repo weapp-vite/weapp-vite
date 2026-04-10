@@ -226,7 +226,7 @@
     "playwright": "^1.59.1",
     "postcss": "catalog:",
     "postcss-load-config": "^6.0.1",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.2",
     "rolldown": "1.0.0-rc.15",
     "rollup": "^4.60.1",
     "rollup-plugin-dts": "^6.4.1",

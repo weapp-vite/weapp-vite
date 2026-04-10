@@ -12,7 +12,7 @@ export const TEMPLATE_CATALOG = {
   '@mini-types/alipay': '^3.0.14',
   '@tailwindcss/postcss': '^4.2.2',
   '@tailwindcss/vite': '^4.2.2',
-  '@types/node': '^25.5.2',
+  '@types/node': '^25.6.0',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.5',
@@ -34,7 +34,7 @@ export const TEMPLATE_CATALOG = {
   'sass-embedded': '^1.99.0',
   'tailwind-merge': '^3.5.0',
   'tailwind-variants': '^3.2.2',
-  'tdesign-miniprogram': '^1.13.1',
+  'tdesign-miniprogram': '^1.13.2',
   'ts-morph': '^27.0.2',
   'vite-plugin-inspect': '^11.3.3',
   'vue-tsc': '^3.2.6',
@@ -63,7 +63,7 @@ export const TEMPLATE_CATALOG = {
 
 export const TEMPLATE_NAMED_CATALOG = {
   'tdesign-miniprogram-fixed': {
-    'tdesign-miniprogram': '1.13.1'
+    'tdesign-miniprogram': '1.13.2'
   },
   'weapp-tailwindcss-fixed': {
     'weapp-tailwindcss': '4.11.2'
