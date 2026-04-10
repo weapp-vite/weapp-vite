@@ -70,7 +70,7 @@ describe('compileJsx attributes helpers', () => {
     expect(attrs).toContain('title="{{item.name}}"')
     expect(attrs).toContain('bindtap="handleTap"')
     expect(attrs).toContain('bindlongpress="__weapp_vite_inline"')
-    expect(attrs).toContain('data-wv-inline-id-longpress="__wv_inline_0"')
+    expect(attrs).toContain('data-wi-longpress="i0"')
     expect(attrs).toContain('data-wv-s0="{{item}}"')
   })
 
@@ -183,8 +183,8 @@ describe('compileJsx attributes helpers', () => {
 
     expect(attrs).toContain('bindtap="__weapp_vite_inline"')
     expect(attrs).toContain('bindlongpress="__weapp_vite_inline"')
-    expect(attrs).toContain('data-wv-inline-id-tap="__wv_inline_0"')
-    expect(attrs).toContain('data-wv-inline-id-longpress="__wv_inline_1"')
-    expect(attrs).not.toContain('data-wv-inline-id="__wv_inline_0"')
+    expect(attrs).toContain('data-wi-tap="i0"')
+    expect(attrs).toContain('data-wi-longpress="i1"')
+    expect(attrs).not.toContain('data-wv-inline-id="i0"')
   })
 })

@@ -11,6 +11,7 @@ import {
   unwrapTypeScriptExpression,
 } from '@weapp-vite/ast'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { createInlineExpressionId } from '../../../inlineDataset'
 import { generate, traverse } from '../../../utils/babel'
 import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/wxml'
 
@@ -114,7 +115,7 @@ function collectExpressionScopeBindings(exp: Expression, context: JsxCompileCont
 
 export function registerInlineExpression(exp: Expression, context: JsxCompileContext) {
   const scopeKeys = collectExpressionScopeBindings(exp, context)
-  const id = `__wv_inline_${context.inlineExpressionSeed++}`
+  const id = createInlineExpressionId(context.inlineExpressionSeed++)
   context.inlineExpressions.push({
     id,
     expression: printExpression(exp),

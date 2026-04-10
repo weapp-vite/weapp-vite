@@ -7,6 +7,10 @@ import type {
 import type { JsxCompileContext } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import {
+  INLINE_DATASET_KEY,
+  normalizeEventDatasetSuffix,
+} from '../../../inlineDataset'
+import {
   escapeAttr,
   normalizeInterpolationExpression,
   registerInlineExpression,
@@ -30,9 +34,6 @@ function isEventBinding(name: string) {
 
 const LEADING_UPPER_RE = /^[A-Z]/
 const UPPER_CHAR_RE = /[A-Z]/g
-const NON_ALNUM_RE = /[^a-z0-9]+/gi
-const LEADING_TRAILING_DASH_RE = /^-+|-+$/g
-
 function lowerEventName(name: string) {
   if (!name) {
     return name
@@ -40,15 +41,6 @@ function lowerEventName(name: string) {
   return name
     .replace(LEADING_UPPER_RE, s => s.toLowerCase())
     .replace(UPPER_CHAR_RE, s => s.toLowerCase())
-}
-
-function normalizeEventDatasetSuffix(eventName: string): string {
-  const normalized = eventName
-    .trim()
-    .replace(NON_ALNUM_RE, '-')
-    .replace(LEADING_TRAILING_DASH_RE, '')
-    .toLowerCase()
-  return normalized || 'event'
 }
 
 function resolveMappedEventName(rawName: string, context: JsxCompileContext) {
@@ -156,7 +148,7 @@ function compileEventAttribute(
   }
 
   const inline = registerInlineExpression(exp, context)
-  const attrs = [`data-wv-inline-id-${eventSuffix}="${inline.id}"`, `${bindAttr}="__weapp_vite_inline"`]
+  const attrs = [`data-${INLINE_DATASET_KEY}-${eventSuffix}="${inline.id}"`, `${bindAttr}="__weapp_vite_inline"`]
   inline.scopeKeys.forEach((scopeKey, index) => {
     attrs.push(`data-wv-s${index}="${renderMustache(scopeKey, context)}"`)
   })

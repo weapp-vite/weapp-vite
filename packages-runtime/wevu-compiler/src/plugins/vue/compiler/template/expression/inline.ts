@@ -5,6 +5,7 @@ import type {
   TransformContext,
 } from '../types'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { createInlineExpressionId } from '../../../../../inlineDataset'
 import { traverse } from '../../../../../utils/babel'
 import { generateExpression, parseBabelExpressionFile } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'
@@ -247,7 +248,7 @@ export function registerInlineExpression(exp: string, context: TransformContext)
   const scopeResolvers = buildScopeResolvers(usedLocals, context, slotProps, indexBindings)
 
   const asset: InlineExpressionAsset = {
-    id: `__wv_inline_${context.inlineExpressionSeed++}`,
+    id: createInlineExpressionId(context.inlineExpressionSeed++),
     expression: updatedExpression,
     scopeKeys: usedLocals,
   }
