@@ -142,7 +142,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('<text>{{title}}</text>')
     expect(code).toContain('<image src="{{cover}}" />')
     expect(code).toContain('<navigator url="/pages/detail/index">详情</navigator>')
-    expect(code).not.toContain('data-wv-event-detail-tap')
+    expect(code).not.toContain('data-wd-tap')
     expect(code).not.toContain('<div')
     expect(code).not.toContain('<span')
     expect(code).not.toContain('<img')
@@ -202,7 +202,7 @@ describe('compileVueTemplateToWxml', () => {
     const { code, warnings, layoutHosts } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('<text bindtap="onTap">text</text>')
-    expect(code).not.toContain('data-wv-event-detail-tap')
+    expect(code).not.toContain('data-wd-tap')
     expect(layoutHosts).toBeUndefined()
     expect(warnings).toContain('layout-host 仅支持声明在组件节点上，当前节点已忽略。')
   })
@@ -418,8 +418,8 @@ describe('compileVueTemplateToWxml', () => {
     const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('bindrun="__weapp_vite_inline"')
-    expect(code).toContain('data-wv-event-detail-run="1"')
-    expect(code).toContain('data-wv-inline-id-run="__wv_inline_0"')
+    expect(code).toContain('data-wd-run="1"')
+    expect(code).toContain('data-wi-run="i0"')
     expect(code).not.toContain('bindrun="onPanelRun"')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
   })
@@ -432,8 +432,8 @@ describe('compileVueTemplateToWxml', () => {
     const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('bindrun="__weapp_vite_inline"')
-    expect(code).toContain('data-wv-event-detail-run="1"')
-    expect(code).toContain('data-wv-inline-id-run="__wv_inline_0"')
+    expect(code).toContain('data-wd-run="1"')
+    expect(code).toContain('data-wi-run="i0"')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
   })
 
@@ -446,10 +446,10 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain('bindrun="__weapp_vite_inline"')
     expect(code).toContain('bindrunevent="__weapp_vite_inline"')
-    expect(code).toContain('data-wv-inline-id-run="__wv_inline_0"')
-    expect(code).toContain('data-wv-inline-id-runevent="__wv_inline_1"')
-    expect(code).toContain('data-wv-event-detail-run="1"')
-    expect(code).toContain('data-wv-event-detail-runevent="1"')
+    expect(code).toContain('data-wi-run="i0"')
+    expect(code).toContain('data-wi-runevent="i1"')
+    expect(code).toContain('data-wd-run="1"')
+    expect(code).toContain('data-wd-runevent="1"')
     expect(code).not.toContain('data-wv-inline-id="')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
     expect(inlineExpressions?.[1]?.expression).toContain('ctx.onPanelRunEvent($event)')
@@ -463,8 +463,8 @@ describe('compileVueTemplateToWxml', () => {
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('bind:overlay-click="__weapp_vite_inline"')
-    expect(code).toContain('data-wv-event-detail-overlay-click="1"')
-    expect(code).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
+    expect(code).toContain('data-wd-overlay-click="1"')
+    expect(code).toContain('data-wi-overlay-click="i0"')
     expect(code).not.toContain('bindoverlay-click=')
   })
 

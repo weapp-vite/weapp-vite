@@ -1,6 +1,12 @@
 import type { DirectiveNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import {
+  INLINE_DATASET_KEY,
+  INLINE_EVENT_DETAIL_KEY,
+  INLINE_HANDLER_KEY,
+  normalizeEventDatasetSuffix,
+} from '../../../../../inlineDataset'
 import { normalizeWxmlExpressionWithContext, registerInlineExpression } from '../expression'
 import { renderMustache } from '../mustache'
 
@@ -10,18 +16,6 @@ const isSimpleHandler = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
 
 function shouldUseDetailPayload(options?: { isComponent?: boolean }) {
   return options?.isComponent === true
-}
-
-const NON_ALNUM_RE = /[^a-z0-9]+/gi
-const LEADING_TRAILING_DASH_RE = /^-+|-+$/g
-
-function normalizeEventDatasetSuffix(eventName: string): string {
-  const normalized = eventName
-    .trim()
-    .replace(NON_ALNUM_RE, '-')
-    .replace(LEADING_TRAILING_DASH_RE, '')
-    .toLowerCase()
-  return normalized || 'event'
 }
 
 const QUOTE_RE = /"/g
@@ -89,21 +83,21 @@ export function transformOnDirective(
   const eventSuffix = normalizeEventDatasetSuffix(mappedEvent)
   const eventPrefix = resolveEventPrefix(node.modifiers)
   const bindAttr = context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
-  const detailAttr = useDetailPayload ? `data-wv-event-detail-${eventSuffix}="1"` : ''
+  const detailAttr = useDetailPayload ? `data-${INLINE_EVENT_DETAIL_KEY}-${eventSuffix}="1"` : ''
   if (context.rewriteScopedSlot) {
     if (inlineExpression) {
       const scopeAttrs = buildInlineScopeAttrs(inlineExpression.scopeBindings, context)
       const indexAttrs = buildInlineIndexAttrs(inlineExpression.indexBindings, context)
       return [
         detailAttr,
-        `data-wv-inline-id-${eventSuffix}="${inlineExpression.id}"`,
+        `data-${INLINE_DATASET_KEY}-${eventSuffix}="${inlineExpression.id}"`,
         ...scopeAttrs,
         ...indexAttrs,
         `${bindAttr}="__weapp_vite_owner"`,
       ].filter(Boolean).join(' ')
     }
     if (!isInlineExpression && rawExpValue) {
-      return [detailAttr, `data-wv-handler-${eventSuffix}="${rawExpValue}"`, `${bindAttr}="__weapp_vite_owner"`].filter(Boolean).join(' ')
+      return [detailAttr, `data-${INLINE_HANDLER_KEY}-${eventSuffix}="${rawExpValue}"`, `${bindAttr}="__weapp_vite_owner"`].filter(Boolean).join(' ')
     }
     if (isInlineExpression) {
       context.warnings.push('作用域插槽的事件处理解析失败，请使用简单的方法引用。')
@@ -116,7 +110,7 @@ export function transformOnDirective(
     const indexAttrs = buildInlineIndexAttrs(inlineExpression.indexBindings, context)
     return [
       detailAttr,
-      `data-wv-inline-id-${eventSuffix}="${inlineExpression.id}"`,
+      `data-${INLINE_DATASET_KEY}-${eventSuffix}="${inlineExpression.id}"`,
       ...scopeAttrs,
       ...indexAttrs,
       `${bindAttr}="__weapp_vite_inline"`,

@@ -72,7 +72,7 @@ export default defineComponent({
     })
 
     expect(result.template).toContain('wx:for=')
-    expect(result.template).toContain('data-wv-inline-id-tap=')
+    expect(result.template).toContain('data-wi-tap=')
     expect(result.script).toContain('__weapp_vite_inline_map')
     expect(result.script).not.toContain('<view')
   })

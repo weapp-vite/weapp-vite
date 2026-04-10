@@ -73,16 +73,38 @@ function resolveEventDatasetKey(baseKey: string, event: any): string | undefined
   return `${baseKey}${camelToken[0].toUpperCase()}${camelToken.slice(1)}`
 }
 
+const DATASET_KEY_ALIASES: Record<string, string[]> = {
+  wvEventDetail: ['wd', 'wvEventDetail'],
+  wvHandler: ['wh', 'wvHandler'],
+  wvInlineId: ['wi', 'wvInlineId'],
+}
+
+function resolveDatasetValueByBaseKey(
+  dataset: Record<string, any>,
+  baseKey: string,
+  event: any,
+) {
+  const aliasKeys = DATASET_KEY_ALIASES[baseKey] ?? [baseKey]
+  for (const aliasKey of aliasKeys) {
+    const specificKey = resolveEventDatasetKey(aliasKey, event)
+    if (specificKey && dataset?.[specificKey] !== undefined) {
+      return dataset[specificKey]
+    }
+  }
+  for (const aliasKey of aliasKeys) {
+    if (dataset?.[aliasKey] !== undefined) {
+      return dataset[aliasKey]
+    }
+  }
+  return undefined
+}
+
 export function resolveDatasetEventValue(
   dataset: Record<string, any>,
   baseKey: string,
   event: any,
 ): any {
-  const specificKey = resolveEventDatasetKey(baseKey, event)
-  if (specificKey && dataset?.[specificKey] !== undefined) {
-    return dataset[specificKey]
-  }
-  return dataset?.[baseKey]
+  return resolveDatasetValueByBaseKey(dataset, baseKey, event)
 }
 
 function shouldUseDetailPayload(dataset: Record<string, any>, event: any): boolean {

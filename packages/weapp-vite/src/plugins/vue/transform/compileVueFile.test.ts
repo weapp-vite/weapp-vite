@@ -54,7 +54,7 @@ const handle = (value: string) => value
     )
 
     expect(result.script).toContain('__weapp_vite_inline_map')
-    expect(result.script).toContain('__wv_inline_0')
+    expect(result.script).toContain('i0')
     expect(result.script).toContain('ctx.handle')
   })
 
@@ -229,8 +229,8 @@ function onOverlayClick(event: unknown) {
     )
 
     expect(result.template).toContain('bind:overlay-click="__weapp_vite_inline"')
-    expect(result.template).toContain('data-wv-event-detail-overlay-click="1"')
-    expect(result.template).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
+    expect(result.template).toContain('data-wd-overlay-click="1"')
+    expect(result.template).toContain('data-wi-overlay-click="i0"')
     expect(result.template).not.toContain('bindoverlay-click=')
   })
 
@@ -250,8 +250,8 @@ function onOverlayClick(event: unknown) {
     )
 
     expect(result.template).toContain('bindoverlay_click="__weapp_vite_inline"')
-    expect(result.template).toContain('data-wv-event-detail-overlay-click="1"')
-    expect(result.template).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
+    expect(result.template).toContain('data-wd-overlay-click="1"')
+    expect(result.template).toContain('data-wi-overlay-click="i0"')
     expect(result.template).not.toContain('bind:overlay_click=')
   })
 

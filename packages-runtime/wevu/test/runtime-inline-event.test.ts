@@ -36,7 +36,7 @@ describe('runtime: inline event handler', () => {
       marker: 42,
       currentTarget: {
         dataset: {
-          wvHandler: 'handle',
+          wh: 'handle',
           wvArgs: '["ok","$event"]',
         },
       },
@@ -73,7 +73,7 @@ describe('runtime: inline event handler', () => {
       marker: 42,
       currentTarget: {
         dataset: {
-          wvHandler: 'handle',
+          wh: 'handle',
           wvArgs: ['ok', '$event'],
         },
       },
@@ -110,9 +110,9 @@ describe('runtime: inline event handler', () => {
       detail: { title: 'Alt Script Setup 面板' },
       currentTarget: {
         dataset: {
-          wvHandler: 'handle',
+          wh: 'handle',
           wvArgs: ['$event'],
-          wvEventDetail: '1',
+          wd: '1',
         },
       },
     }
@@ -150,9 +150,9 @@ describe('runtime: inline event handler', () => {
       detail: undefined,
       currentTarget: {
         dataset: {
-          wvHandler: 'handle',
+          wh: 'handle',
           wvArgs: ['$event'],
-          wvEventDetail: '1',
+          wd: '1',
         },
       },
     }
@@ -202,7 +202,7 @@ describe('runtime: inline event handler', () => {
   it('executes inline map with scope bindings', () => {
     const handle = vi.fn((first: string, second: string, marker: number) => ({ first, second, marker }))
     const inlineMap = {
-      __wv_inline_0: {
+      i0: {
         keys: ['first', 'second'],
         fn: (ctx: any, scope: Record<string, any>, evt: any) => ctx.handle(scope.first, scope.second, evt.marker),
       },
@@ -235,7 +235,7 @@ describe('runtime: inline event handler', () => {
       marker: 7,
       currentTarget: {
         dataset: {
-          wvInlineId: '__wv_inline_0',
+          wi: 'i0',
           wvS0: 'alpha',
           wvS1: 'beta',
         },
@@ -250,7 +250,7 @@ describe('runtime: inline event handler', () => {
   it('resolves tap-scoped inline ids from vue click bindings', () => {
     const handleClick = vi.fn((marker: number) => marker)
     const inlineMap = {
-      __wv_inline_0: {
+      i0: {
         keys: [],
         fn: (ctx: any, _scope: Record<string, any>, evt: any) => ctx.handleClick(evt.marker),
       },
@@ -284,7 +284,7 @@ describe('runtime: inline event handler', () => {
       marker: 9,
       currentTarget: {
         dataset: {
-          wvInlineIdTap: '__wv_inline_0',
+          wiTap: 'i0',
         },
       },
     }
