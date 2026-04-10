@@ -78,17 +78,6 @@ function getMustacheOuterQuote(code: string, start: number) {
   return null
 }
 
-function escapeOuterAttributeChars(value: string, outerQuote: '"' | '\'' | null) {
-  let nextValue = value.replace(/&/g, '&amp;')
-  if (outerQuote === '"') {
-    nextValue = nextValue.replace(/"/g, '&quot;')
-  }
-  else if (outerQuote === '\'') {
-    nextValue = nextValue.replace(/'/g, '&apos;')
-  }
-  return nextValue
-}
-
 function toQuotedLiteral(value: string, quote: '\'' | '"', outerQuote: '"' | '\'' | null = null) {
   try {
     const parsed = JSON.parse(value)
@@ -96,12 +85,19 @@ function toQuotedLiteral(value: string, quote: '\'' | '"', outerQuote: '"' | '\'
       ? parsed
       : JSON.stringify(parsed)
 
-    const escaped = escapeOuterAttributeChars(literalValue, outerQuote)
+    let escaped = literalValue
       .replace(/\\/g, '\\\\')
       .replace(/\r/g, '\\r')
       .replace(/\n/g, '\\n')
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029')
+
+    if (outerQuote === '"') {
+      escaped = escaped.replace(/"/g, '&quot;')
+    }
+    else if (outerQuote === '\'') {
+      escaped = escaped.replace(/'/g, '&apos;')
+    }
 
     return quote === '\''
       ? `'${escaped.replace(/'/g, '\\\'')}'`
@@ -125,17 +121,15 @@ function toMustacheReplacementValue(code: string, start: number, end: number, ex
     }
 
     if (isWholeMustacheExpression(code, start, end, expression)) {
-      if (outerQuote) {
-        return toQuotedLiteral(
-          JSON.stringify(parsed),
-          outerQuote === '\'' ? '"' : '\'',
-          outerQuote,
-        )
+      if (typeof parsed === 'number') {
+        return Number.isFinite(parsed) ? String(parsed) : value
       }
-
-      // 小程序 mustache 中直接输出对象/数组等字面量时，需要保留 `{{ { ... } }}` 这类带空格写法，
-      // 避免 `{{{` / `}}}` 被宿主当成非法模板内容。
-      return ` ${JSON.stringify(parsed)} `
+      if (typeof parsed === 'boolean') {
+        return parsed ? 'true' : 'false'
+      }
+      if (parsed == null) {
+        return 'null'
+      }
     }
 
     return String(value)
@@ -155,7 +149,10 @@ function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<s
   const replacementRanges: Array<{ start: number, end: number, value: string }> = []
 
   for (const [key, value] of entries) {
-    if (!key.startsWith('import.meta')) {
+    const isSupportedImportMetaKey = key === 'import.meta.url'
+      || key === 'import.meta.dirname'
+      || key.startsWith('import.meta.env.')
+    if (!isSupportedImportMetaKey || key === 'import.meta.env') {
       continue
     }
     const pattern = new RegExp(escapeRegExp(key), 'g')

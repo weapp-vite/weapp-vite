@@ -213,7 +213,7 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('{{"https://cdn.example.com"}}/logo.png')
   })
 
-  it('replaces import.meta.url, import.meta.dirname and bare import.meta before emitting asset source', () => {
+  it('replaces import.meta.url and import.meta.dirname but keeps bare import.meta untouched before emitting asset source', () => {
     ctx = createMockCompiler({
       defineImportMetaEnv: {
         'import.meta.env': '{"MODE":"production"}',
@@ -234,7 +234,7 @@ describe('emitWxmlAssetsWithCache', () => {
     const payload = emitFile.mock.calls[0]?.[0]
     expect(payload.source).toContain('{{\'/pages/index/index.wxml\'}}')
     expect(payload.source).toContain('{{\'/pages/index\'}}')
-    expect(payload.source).toContain('{{\'{&quot;url&quot;:&quot;/pages/index/index.wxml&quot;,&quot;dirname&quot;:&quot;/pages/index&quot;,&quot;env&quot;:{&quot;MODE&quot;:&quot;production&quot;}}\'}}')
+    expect(payload.source).toContain('{{import.meta}}')
   })
 
   it('emits compiled vue template with safe import.meta.env quoting in final wxml', async () => {

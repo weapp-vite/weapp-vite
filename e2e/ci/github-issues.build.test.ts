@@ -84,9 +84,6 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(pageWxml).toContain('{{\'issue-431 native wxml env replacement\'}}')
     expect(pageWxml).toContain('{{\'https://static.example.com/issue-431\'}}/logo.png')
-    expect(pageWxml).toContain('data-template-url="{{\'/pages/issue-431/index.wxml\'}}"')
-    expect(pageWxml).toContain('data-template-dir="{{\'/pages/issue-431\'}}"')
-    expect(pageWxml).toContain('data-template-meta="{{\'{&quot;url&quot;:&quot;/pages/issue-431/index.wxml&quot;,&quot;dirname&quot;:&quot;/pages/issue-431&quot;,&quot;env&quot;:{')
     expect(pageWxml).not.toContain('import.meta.env')
     expect(pageJs).toContain('/pages/issue-431/index.js')
     expect(pageJs).toContain('/pages/issue-431')
