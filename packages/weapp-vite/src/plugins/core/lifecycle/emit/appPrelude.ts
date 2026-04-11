@@ -15,7 +15,10 @@ import {
   APP_PRELUDE_REQUIRE_MARKER,
   USE_STRICT_PREFIX_RE,
 } from './constants'
-import { createRequestGlobalsPreludeCode } from './requestGlobals'
+import {
+  createRequestGlobalsPreludeAssetCode,
+  createRequestGlobalsPreludeCode,
+} from './requestGlobals'
 import { prependChunkCodePreservingDirectives } from './rewrite'
 
 interface ResolvedAppPreludeOptions {
@@ -124,6 +127,11 @@ export function emitAppPreludeRequireAssets(
   bundle: OutputBundle,
   appPreludeCode: string | undefined,
   state: CorePluginState,
+  requestGlobalsPreludeOptions: {
+    enabled: boolean
+    installerChunks: Map<string, string>
+    targets: WeappInjectRequestGlobalsTarget[]
+  },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
 ) {
   if (!appPreludeCode) {
@@ -145,7 +153,16 @@ export function emitAppPreludeRequireAssets(
     if (bundle[fileName]) {
       continue
     }
-    emitFile?.({ type: 'asset', fileName, source: `${appPreludeCode}\n` })
+    const scopeChunks = Object.values(bundle).filter((output): output is OutputChunk => {
+      return output?.type === 'chunk' && resolveAppPreludeRequireFileName(output.fileName, state) === fileName
+    })
+    const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled
+      ? scopeChunks
+          .map(chunk => createRequestGlobalsPreludeAssetCode(fileName, chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets))
+          .find(Boolean)
+      : undefined
+    const source = [requestGlobalsPreludeCode, appPreludeCode].filter(Boolean).join('\n')
+    emitFile?.({ type: 'asset', fileName, source: `${source}\n` })
   }
 }
 
@@ -166,7 +183,7 @@ export function injectAppPreludeCode(
   }
   const entryChunkFileNames = options.mode === 'entry' ? collectAppPreludeEntryChunkFileNames(state) : undefined
   if (options.mode === 'require' && appPreludeCode) {
-    emitAppPreludeRequireAssets(bundle, appPreludeCode, state, emitFile)
+    emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile)
   }
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -180,7 +197,7 @@ export function injectAppPreludeCode(
     if (entryChunkFileNames && !isTargetEntryChunk) {
       continue
     }
-    const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled
+    const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled && options.mode !== 'require'
       ? createRequestGlobalsPreludeCode(chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets)
       : undefined
     const injectedCode = [

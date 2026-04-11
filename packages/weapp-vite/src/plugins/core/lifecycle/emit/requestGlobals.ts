@@ -1,5 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { WeappInjectRequestGlobalsTarget } from '../../../../types'
+import path from 'pathe'
 import {
   createRequestGlobalsPassiveBindingsCode,
   FULL_REQUEST_GLOBAL_TARGETS,
@@ -287,11 +288,17 @@ export function resolveRequestGlobalsInstallerImport(chunk: OutputChunk, install
 
     return {
       exportName,
+      installerChunkFileName,
       requireImportLiteral: requireMatch[2] ?? null,
     }
   }
 
   return null
+}
+
+function toRequireRequestPath(fromFileName: string, toFileName: string) {
+  const relativePath = toPosixPath(path.relative(path.dirname(fromFileName), toFileName))
+  return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
 }
 
 export function createRequestGlobalsPreludeCode(
@@ -321,6 +328,41 @@ export function createRequestGlobalsPreludeCode(
     }
     installerHostCode = `require(${installerImport.requireImportLiteral})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`
   }
+
+  return [
+    `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,
+    `(() => {`,
+    `  if (globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}]) {`,
+    `    return`,
+    `  }`,
+    `  globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}] = true`,
+    `  const __weappVitePreludeRequestGlobalsHost__ = ${installerHostCode}`,
+    `  const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))`,
+    ...bindingTargets.map(target => `  __weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappVitePreludeRequestGlobalsHost__.${target}`),
+    `})();`,
+  ].join('\n')
+}
+
+export function createRequestGlobalsPreludeAssetCode(
+  preludeFileName: string,
+  chunk: OutputChunk,
+  installerChunks: Map<string, string>,
+  targets: WeappInjectRequestGlobalsTarget[],
+) {
+  if (targets.length === 0) {
+    return undefined
+  }
+  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  if (bindingTargets.length === 0) {
+    return undefined
+  }
+
+  const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
+  if (!installerImport?.installerChunkFileName || !installerImport.exportName) {
+    return undefined
+  }
+
+  const installerHostCode = `require(${JSON.stringify(toRequireRequestPath(preludeFileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`
 
   return [
     `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,

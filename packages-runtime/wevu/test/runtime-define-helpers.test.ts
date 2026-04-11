@@ -104,6 +104,17 @@ describe('runtime: define helpers', () => {
     expect(result.properties.anyValue.optionalTypes).toBeUndefined()
   })
 
+  it('keeps page-style options without explicit props stable when allowNullPropInput is enabled', () => {
+    const result = normalizeProps({
+      data: () => ({}),
+      allowNullPropInput: true,
+      __wevu_isPage: true,
+    })
+
+    expect(result.properties.__wvSlotOwnerId).toBeTruthy()
+    expect(result.properties.__wvSlotScope).toBeTruthy()
+  })
+
   it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {
     const result = normalizeProps({ data: () => ({}) }, {
       mixed: { type: [Number, String] },

@@ -201,13 +201,14 @@ export function normalizeProps(
       properties: _ignored,
       ...rest
     } = normalizedBaseOptions
+    const normalizedExplicitProperties = resolvedExplicit
+      ? allowNullPropInput
+        ? normalizeExplicitProperties(resolvedExplicit as any, allowNullPropInput)
+        : (resolvedExplicit as any)
+      : undefined
     return {
       ...rest,
-      properties: attachInternalProps(
-        allowNullPropInput
-          ? normalizeExplicitProperties(resolvedExplicit as any, allowNullPropInput)
-          : (resolvedExplicit as any),
-      ),
+      properties: attachInternalProps(normalizedExplicitProperties),
     }
   }
 

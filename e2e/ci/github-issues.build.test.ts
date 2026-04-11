@@ -362,7 +362,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(objectPageWxml).toContain('<ObjectLiteralExample')
     expect(objectPageWxml).toContain('show-list="{{controlState.showList}}"')
     expect(objectPageWxml).toContain('compact-mode="{{controlState.compactMode}}"')
-    expect(objectPageWxml).toContain('active-id="{{activeId}}"')
+    expect(objectPageWxml).toContain('active-id="{{activeId || \'\'}}"')
     expect(objectPageWxml).toContain('bindtap="toggleShowList"')
     expect(objectPageWxml).toContain('bindtap="toggleCompactMode"')
     expect(objectPageWxml).toContain('bindtap="cycleActive"')
@@ -383,7 +383,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(rootPageWxml).toContain('<RootClassExample')
     expect(rootPageWxml).toContain('show-options="{{controlState.showOptions}}"')
-    expect(rootPageWxml).toContain('selected-option-id="{{selectedOptionId}}"')
+    expect(rootPageWxml).toContain('selected-option-id="{{selectedOptionId || \'\'}}"')
     expect(rootPageWxml).toContain('bindtap="toggleShowOptions"')
     expect(rootPageWxml).toContain('bindtap="cycleOption"')
     expect(rootPageJs).toContain('controlState')

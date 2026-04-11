@@ -8,7 +8,12 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
-async function runBuild(mode?: 'inline') {
+async function runBuild(
+  mode?: 'inline',
+  options?: {
+    requestRuntime?: boolean
+  },
+) {
   await fs.remove(DIST_ROOT)
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -17,20 +22,25 @@ async function runBuild(mode?: 'inline') {
     cwd: APP_ROOT,
     label: `ide:app-prelude-native:${mode ?? 'default'}`,
     skipNpm: true,
-    env: mode
-      ? {
-          APP_PRELUDE_MODE: mode,
-        }
-      : undefined,
+    env: {
+      ...(mode ? { APP_PRELUDE_MODE: mode } : {}),
+      ...(options?.requestRuntime ? { APP_PRELUDE_REQUEST_GLOBALS: '1' } : {}),
+    },
   })
 }
 
 const sharedMiniProgramByMode = new Map<string, any>()
 const sharedBuildPreparedModes = new Set<string>()
 
-async function getSharedMiniProgram(ctx: { skip: (message?: string) => void }, mode: 'default' | 'inline') {
+async function getSharedMiniProgram(
+  ctx: { skip: (message?: string) => void },
+  mode: 'default' | 'inline' | 'default-request-runtime',
+) {
   if (!sharedBuildPreparedModes.has(mode)) {
-    await runBuild(mode === 'inline' ? 'inline' : undefined)
+    await runBuild(
+      mode === 'inline' ? 'inline' : undefined,
+      { requestRuntime: mode === 'default-request-runtime' },
+    )
     sharedBuildPreparedModes.add(mode)
   }
 
@@ -62,7 +72,7 @@ async function closeSharedMiniProgram() {
 async function collectPreludeLogs(
   ctx: { skip: (message?: string) => void },
   route: string,
-  mode: 'default' | 'inline',
+  mode: 'default' | 'inline' | 'default-request-runtime',
 ) {
   const miniProgram = await getSharedMiniProgram(ctx, mode)
   const page = await miniProgram.reLaunch(route)
@@ -72,6 +82,31 @@ async function collectPreludeLogs(
   await page.waitFor(500)
   return await miniProgram.evaluate(() => {
     return getApp<{ getPreludeLog?: () => string[] }>()?.getPreludeLog?.() ?? []
+  })
+}
+
+async function collectRequestRuntimeState(
+  ctx: { skip: (message?: string) => void },
+  route: string,
+  mode: 'default-request-runtime',
+) {
+  const miniProgram = await getSharedMiniProgram(ctx, mode)
+  const page = await miniProgram.reLaunch(route)
+  if (!page) {
+    throw new Error(`Failed to launch ${route}`)
+  }
+  await page.waitFor(500)
+  return await miniProgram.evaluate(() => {
+    return {
+      fetch: typeof fetch,
+      headers: typeof Headers,
+      request: typeof Request,
+      response: typeof Response,
+      url: typeof URL,
+      urlSearchParams: typeof URLSearchParams,
+      blob: typeof Blob,
+      formData: typeof FormData,
+    }
   })
 }
 
@@ -98,5 +133,20 @@ describe.sequential('e2e app: app-prelude-native runtime', () => {
     expect(mainLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
     expect(normalLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
     expect(independentLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
+  })
+
+  it('installs request runtime globals through app.prelude.js under default require mode', async (ctx) => {
+    const runtimeState = await collectRequestRuntimeState(ctx, '/pages/index/index', 'default-request-runtime')
+
+    expect(runtimeState).toEqual({
+      fetch: 'function',
+      headers: 'function',
+      request: 'function',
+      response: 'function',
+      url: 'function',
+      urlSearchParams: 'function',
+      blob: 'function',
+      formData: 'function',
+    })
   })
 })

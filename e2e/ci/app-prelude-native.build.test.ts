@@ -211,4 +211,17 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(appJs.indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(appJs.indexOf('__weappViteAppPreludeRuntime__'))
     expect(mainPageJs.indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(mainPageJs.indexOf('__weappViteAppPreludeRuntime__'))
   })
+
+  it('emits request globals installer into app.prelude.js when mode is require', async () => {
+    await runBuildWithRequestGlobalsPrelude('require')
+
+    const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
+    const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
+
+    expect(appJs).toContain('require("./app.prelude.js")')
+    expect(appJs).not.toContain('__weappViteRequestGlobalsPrelude__')
+    expect(rootPreludeJs).toContain('__weappViteRequestGlobalsPrelude__')
+    expect(rootPreludeJs).toContain('__weappViteAppPreludeRuntime__')
+    expect(rootPreludeJs.indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(rootPreludeJs.indexOf('__weappViteAppPreludeRuntime__'))
+  })
 })

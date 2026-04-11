@@ -13,14 +13,13 @@ export default defineConfig({
     srcRoot: 'src',
     appPrelude: {
       mode: appPreludeMode,
+      requestRuntime: requestGlobalsPreludeEnabled
+        ? {
+            enabled: true,
+            targets: ['fetch', 'Headers', 'Request', 'Response'],
+          }
+        : undefined,
     },
-    injectRequestGlobals: requestGlobalsPreludeEnabled
-      ? {
-          enabled: true,
-          prelude: true,
-          targets: ['fetch', 'Headers', 'Request', 'Response'],
-        }
-      : undefined,
     chunks: {
       sharedStrategy: 'common',
     },
