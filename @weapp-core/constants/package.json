@@ -1,0 +1,76 @@
+{
+  "name": "@weapp-core/constants",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "Shared runtime-safe constants for weapp-vite and related packages",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "@weapp-core/constants"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "miniprogram",
+    "constants",
+    "runtime",
+    "weapp"
+  ],
+  "sideEffects": false,
+  "weapp-vite-dev": {
+    "exports": {
+      ".": {
+        "types": "./src/index.ts",
+        "default": "./src/index.ts"
+      }
+    },
+    "main": "./src/index.ts",
+    "module": "./src/index.ts",
+    "types": "./src/index.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsdown -w --sourcemap",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:dev": "vitest",
+    "typecheck": "tsc --noEmit",
+    "release": "pnpm publish",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "sync": "cnpm sync @weapp-core/constants"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

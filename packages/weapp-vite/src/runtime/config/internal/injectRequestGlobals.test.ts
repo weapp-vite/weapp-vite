@@ -1,3 +1,10 @@
+import {
+  REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_EXPOSE_HELPER,
+  REQUEST_GLOBAL_INSTALLER_HOST_REF,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+  REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
+} from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createInjectRequestGlobalsCode,
@@ -201,10 +208,10 @@ describe('injectRequestGlobals helpers', () => {
       localBindings: true,
     })
 
-    expect(code).toContain('__rh')
-    expect(code).toContain('var fetch = __rh.fetch')
-    expect(code).toContain('var URL = __rh.URL')
-    expect(code).toContain('var WebSocket = __rh.WebSocket')
+    expect(code).toContain(REQUEST_GLOBAL_INSTALLER_HOST_REF)
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
+    expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
   })
 
   it('can create passive local binding injection code for manual installers', () => {
@@ -212,10 +219,10 @@ describe('injectRequestGlobals helpers', () => {
       passiveLocalBindings: true,
     })
 
-    expect(code).toContain('__wvRGL__')
-    expect(code).toContain('function __rE(name,value)')
-    expect(code).toContain('var fetch = __rE("fetch",typeof __ra["fetch"]==="function"')
-    expect(code).toContain('var URL = __rE("URL",__rU(')
+    expect(code).toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+    expect(code).toContain(`function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value)`)
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
     expect(code).not.toContain('import { installRequestGlobals')
   })
 
@@ -224,11 +231,11 @@ describe('injectRequestGlobals helpers', () => {
       passiveLocalBindings: true,
     })
 
-    expect(code).toContain('var fetch = __rE("fetch"')
-    expect(code).toContain('var XMLHttpRequest = __rE("XMLHttpRequest"')
-    expect(code).toContain('var WebSocket = __rE("WebSocket"')
-    expect(code).toContain('var URL = __rE("URL"')
-    expect(code).not.toContain('__rh.fetch')
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch"`)
+    expect(code).toContain(`var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest"`)
+    expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket"`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL"`)
+    expect(code).not.toContain(`${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
   it('can create a valid sfc injection block', () => {
@@ -238,7 +245,7 @@ describe('injectRequestGlobals helpers', () => {
 
     expect(code).toContain('<script lang="ts">')
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('var fetch = __rh.fetch')
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
     expect(code).toContain('</script>')
   })
 
@@ -275,7 +282,7 @@ describe('injectRequestGlobals helpers', () => {
 
     expect(code.match(/<script\b/g)?.length).toBe(1)
     expect(code).toContain('<script setup lang="ts">import { installRequestGlobals')
-    expect(code).toContain('var fetch = __rh.fetch')
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
   it('detects manual installRequestGlobals usage from web-apis imports', () => {

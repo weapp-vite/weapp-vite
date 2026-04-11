@@ -1,5 +1,17 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { WeappInjectRequestGlobalsTarget } from '../../../../types'
+import {
+  REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_BUNDLE_HOST_REF,
+  REQUEST_GLOBAL_BUNDLE_MARKER,
+  REQUEST_GLOBAL_CHUNK_HOST_REF,
+  REQUEST_GLOBAL_CHUNK_MODULE_REF,
+  REQUEST_GLOBAL_INSTALLER_HOST_REF,
+  REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
+  REQUEST_GLOBAL_PRELUDE_MARKER,
+} from '@weapp-core/constants'
 import path from 'pathe'
 import {
   createRequestGlobalsPassiveBindingsCode,
@@ -10,15 +22,9 @@ import { toPosixPath } from '../../../../utils'
 import { generate, parseJsLike, traverse } from '../../../../utils/babel'
 import {
   AXIOS_MODULE_ID_RE,
-  REQUEST_GLOBAL_ACTUALS_KEY,
-  REQUEST_GLOBAL_BUNDLE_MARKER,
   REQUEST_GLOBAL_ENTRY_NAME_RE,
   REQUEST_GLOBAL_EXPORT_RE,
   REQUEST_GLOBAL_INSTALLER_RE,
-  REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
-  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
-  REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
-  REQUEST_GLOBAL_PRELUDE_MARKER,
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
 } from './constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
@@ -168,9 +174,9 @@ export function injectRequestGlobalsBundleRuntime(bundle: OutputBundle, targets:
     installerChunks.set(toPosixPath(chunk.fileName), exportName)
     const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
     const runtimeBindingCode = [
-      `const __rb = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
-      ...bindingTargets.map(target => `__ra[${JSON.stringify(target)}] = __rb.${target}`),
-      ...bindingTargets.map(target => `${target} = __rb.${target}`),
+      `const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
+      ...bindingTargets.map(target => `${target} = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
     ].join(';')
     const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode}\n`
     const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
@@ -268,11 +274,11 @@ export function injectRequestGlobalsLocalBindings(
       continue
     }
     const injectionCode = [
-      `const __rm = require(${requireImportLiteral})`,
-      `const __rc = __rm[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
-      `const __ra = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
-      ...bindingTargets.map(target => `__ra[${JSON.stringify(target)}] = __rc.${target}`),
-      ...bindingTargets.map(target => `var ${target} = __rc.${target}`),
+      `const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require(${requireImportLiteral})`,
+      `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+      ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
+      ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
     ].join(';')
     chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${injectionCode};\n${chunk.code}`
   }
@@ -340,9 +346,9 @@ export function createRequestGlobalsPreludeCode(
     `    return`,
     `  }`,
     `  globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}] = true`,
-    `  const __rh = ${installerHostCode}`,
-    `  const __ra = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
-    ...bindingTargets.map(target => `  __ra[${JSON.stringify(target)}] = __rh.${target}`),
+    `  const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = ${installerHostCode}`,
+    `  const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+    ...bindingTargets.map(target => `  ${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target}`),
     `})();`,
   ].join('\n')
 }
@@ -375,9 +381,9 @@ export function createRequestGlobalsPreludeAssetCode(
     `    return`,
     `  }`,
     `  globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}] = true`,
-    `  const __rh = ${installerHostCode}`,
-    `  const __ra = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
-    ...bindingTargets.map(target => `  __ra[${JSON.stringify(target)}] = __rh.${target}`),
+    `  const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = ${installerHostCode}`,
+    `  const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+    ...bindingTargets.map(target => `  ${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target}`),
     `})();`,
   ].join('\n')
 }

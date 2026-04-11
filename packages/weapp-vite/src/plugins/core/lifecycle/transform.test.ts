@@ -1,3 +1,8 @@
+import {
+  REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_EXPOSE_HELPER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+} from '@weapp-core/constants'
 import { parseSync } from 'oxc-parser'
 import { describe, expect, it, vi } from 'vitest'
 import { createTransformHook } from './transform'
@@ -206,9 +211,9 @@ describe('core lifecycle transform hook injectWeapi', () => {
     )
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('__wvRGL__')
-    expect(code).toContain('function __rE(name,value)')
-    expect(code).toContain('var fetch = __rE("fetch",typeof __ra["fetch"]==="function"')
+    expect(code).toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+    expect(code).toContain(`function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value)`)
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"`)
     expect(code).not.toContain('__weappViteInstallRequestGlobals')
   })
 

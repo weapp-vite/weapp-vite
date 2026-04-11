@@ -1,3 +1,16 @@
+export {
+  APP_PRELUDE_CHUNK_MARKER,
+  APP_PRELUDE_GUARD_KEY,
+  APP_PRELUDE_REQUIRE_MARKER,
+  REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_BUNDLE_MARKER,
+  REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PLACEHOLDER_KEY,
+  REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
+  REQUEST_GLOBAL_PRELUDE_MARKER,
+} from '@weapp-core/constants'
+
 export const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
 export const NPM_PROTOCOL_RE = /^npm:/
 export const ABSOLUTE_NPM_PREFIX_RE = /^\/(?:miniprogram_npm|node_modules)\//
@@ -9,16 +22,6 @@ export const REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE = /([A-Za-z_$][\w$]*)\s*=\s*re
 export const DYNAMIC_GLOBAL_RESOLUTION_RE = /Function\(\s*(?:`return this`|'return this'|"return this")\s*\)\(\)/g
 export const BROWSER_GLOBAL_HOST_TERNARY_RE = /typeof self<[`'"]u[`'"]\?self:typeof window<[`'"]u[`'"]\?window:globalThis/g
 export const AXIOS_MODULE_ID_RE = /[/\\](?:\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?axios[/\\]/u
-export const APP_PRELUDE_CHUNK_MARKER = '__wvAPR__'
-export const APP_PRELUDE_GUARD_KEY = '__ai'
-export const APP_PRELUDE_REQUIRE_MARKER = '__wvAPQ__'
 export const APP_PRELUDE_REQUIRE_FILE_BASENAME = 'app.prelude.js'
-export const REQUEST_GLOBAL_PRELUDE_MARKER = '__wvRGP__'
-export const REQUEST_GLOBAL_PRELUDE_GUARD_KEY = '__ri'
-export const REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER = '__wvRGL__'
-export const REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER = '__wvRGC__'
-export const REQUEST_GLOBAL_BUNDLE_MARKER = '__wvRGB__'
-export const REQUEST_GLOBAL_ACTUALS_KEY = '__ra'
-export const REQUEST_GLOBAL_PLACEHOLDER_KEY = '__rp'
 export const DIRECTIVE_PROLOGUE_RE = /^(?:(['"])(?:\\.|(?!\1)[^\\])*\1;?\s*)+/u
 export const USE_STRICT_PREFIX_RE = /^(?:['"]use strict['"];\s*)+/u

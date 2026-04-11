@@ -1,3 +1,4 @@
+import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
@@ -27,9 +28,6 @@ export interface InstallRequestGlobalsOptions {
 }
 
 type WeappRequestGlobalActualTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
-
-const REQUEST_GLOBAL_ACTUALS_KEY = '__ra'
-const REQUEST_GLOBAL_PLACEHOLDER_KEY = '__rp'
 
 function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
   const bindingTargets: WeappRequestGlobalActualTarget[] = [...targets]

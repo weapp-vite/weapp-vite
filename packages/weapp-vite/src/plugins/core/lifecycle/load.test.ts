@@ -1,5 +1,11 @@
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
+import {
+  REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_EXPOSE_HELPER,
+  REQUEST_GLOBAL_INSTALLER_HOST_REF,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+} from '@weapp-core/constants'
 import { parseSync } from 'oxc-parser'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
@@ -127,9 +133,9 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call({}, sourceId)
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('__wvRGL__')
-    expect(code).toContain('function __rE(name,value)')
-    expect(code).toContain('var fetch = __rE("fetch",typeof __ra["fetch"]==="function"')
+    expect(code).toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+    expect(code).toContain(`function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value)`)
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"`)
     expect(code).toContain('installRequestGlobals()')
     expect(code).not.toContain('__weappViteInstallRequestGlobals')
   })
@@ -232,9 +238,9 @@ describe('core lifecycle load hook injectWeapi', () => {
 
     expect(code).toContain('installRequestGlobals')
     expect(code).toContain('"WebSocket"')
-    expect(code).toContain('var fetch = __rh.fetch')
-    expect(code).toContain('var URL = __rh.URL')
-    expect(code).toContain('var WebSocket = __rh.WebSocket')
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
+    expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
   })
 
   it('injects request globals into declared page entries even when loadedEntrySet is empty', async () => {

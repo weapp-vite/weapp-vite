@@ -1,3 +1,8 @@
+import {
+  APP_PRELUDE_CHUNK_MARKER,
+  APP_PRELUDE_GUARD_KEY,
+  REQUEST_GLOBAL_PRELUDE_MARKER,
+} from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -81,13 +86,13 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(mainPageJs).toContain('require("../../app.prelude.js")')
     expect(normalPageJs).toContain('require("../../app.prelude.js")')
     expect(independentPageJs).toContain('require("../../app.prelude.js")')
-    expect(appJs).not.toContain('__wvAPR__')
-    expect(mainPageJs).not.toContain('__wvAPR__')
-    expect(normalPageJs).not.toContain('__wvAPR__')
-    expect(independentPageJs).not.toContain('__wvAPR__')
-    expect(rootPreludeJs).toContain('__wvAPR__')
-    expect(normalPreludeJs).toContain('__wvAPR__')
-    expect(independentPreludeJs).toContain('__wvAPR__')
+    expect(appJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(mainPageJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(normalPageJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(independentPageJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(rootPreludeJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(normalPreludeJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(independentPreludeJs).toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 
   it('injects inline app prelude before every main-package, subpackage, and independent-subpackage chunk', async () => {
@@ -120,8 +125,8 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     ]) {
       const absolutePath = path.join(DIST_ROOT, relativeFile)
       const content = await fs.readFile(absolutePath, 'utf8')
-      expect(content).toContain('__wvAPR__')
-      expect(content).toContain('__ai')
+      expect(content).toContain(APP_PRELUDE_CHUNK_MARKER)
+      expect(content).toContain(APP_PRELUDE_GUARD_KEY)
       expect(content).toContain('__appPreludeLog__')
       expect(content).toContain('app.prelude')
       expect(content).not.toContain('import.meta.filename')
@@ -132,10 +137,10 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     const normalPageJs = await fs.readFile(normalPageJsPath, 'utf8')
     const independentPageJs = await fs.readFile(independentPageJsPath, 'utf8')
 
-    expect(appJs.indexOf('__wvAPR__')).toBeLessThan(appJs.indexOf('App('))
-    expect(mainPageJs.indexOf('__wvAPR__')).toBeLessThan(mainPageJs.indexOf('Page('))
-    expect(normalPageJs.indexOf('__wvAPR__')).toBeLessThan(normalPageJs.indexOf('Page('))
-    expect(independentPageJs.indexOf('__wvAPR__')).toBeLessThan(independentPageJs.indexOf('Page('))
+    expect(appJs.indexOf(APP_PRELUDE_CHUNK_MARKER)).toBeLessThan(appJs.indexOf('App('))
+    expect(mainPageJs.indexOf(APP_PRELUDE_CHUNK_MARKER)).toBeLessThan(mainPageJs.indexOf('Page('))
+    expect(normalPageJs.indexOf(APP_PRELUDE_CHUNK_MARKER)).toBeLessThan(normalPageJs.indexOf('Page('))
+    expect(independentPageJs.indexOf(APP_PRELUDE_CHUNK_MARKER)).toBeLessThan(independentPageJs.indexOf('Page('))
     expect(appJs).toContain('app.prelude.ts:')
     expect(appJs).toContain('"/app.prelude.ts"')
     expect(mainPageJs).toContain('app.prelude.ts:')
@@ -156,11 +161,11 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(nonEntryJsFile).toBeTruthy()
     const nonEntryJs = await fs.readFile(path.join(DIST_ROOT, nonEntryJsFile!), 'utf8')
 
-    expect(appJs).toContain('__wvAPR__')
-    expect(mainPageJs).toContain('__wvAPR__')
-    expect(normalPageJs).toContain('__wvAPR__')
-    expect(independentPageJs).toContain('__wvAPR__')
-    expect(nonEntryJs).not.toContain('__wvAPR__')
+    expect(appJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(mainPageJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(normalPageJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(independentPageJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(nonEntryJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 
   it('emits scoped prelude modules and injects require calls when mode is require', async () => {
@@ -192,12 +197,12 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(normalPageJs).toContain('require("../../app.prelude.js")')
     expect(independentPageJs).toContain('require("../../app.prelude.js")')
     expect(nonEntryJs).toContain('app.prelude.js')
-    expect(appJs).not.toContain('__wvAPR__')
-    expect(nonEntryJs).not.toContain('__wvAPR__')
+    expect(appJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(nonEntryJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
 
-    expect(rootPreludeJs).toContain('__wvAPR__')
-    expect(normalPreludeJs).toContain('__wvAPR__')
-    expect(independentPreludeJs).toContain('__wvAPR__')
+    expect(rootPreludeJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(normalPreludeJs).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(independentPreludeJs).toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 
   it('installs request globals through prelude before user app prelude when enabled', async () => {
@@ -206,10 +211,10 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     const mainPageJs = await fs.readFile(path.join(DIST_ROOT, 'pages/index/index.js'), 'utf8')
 
-    expect(appJs).toContain('/* __wvRGP__ */')
-    expect(mainPageJs).toContain('/* __wvRGP__ */')
-    expect(appJs.indexOf('/* __wvRGP__ */')).toBeLessThan(appJs.indexOf('/* __wvAPR__ */'))
-    expect(mainPageJs.indexOf('/* __wvRGP__ */')).toBeLessThan(mainPageJs.indexOf('/* __wvAPR__ */'))
+    expect(appJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(mainPageJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(appJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(appJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
+    expect(mainPageJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(mainPageJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 
   it('emits request globals installer into app.prelude.js when mode is require', async () => {
@@ -219,9 +224,9 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
 
     expect(appJs).toContain('require("./app.prelude.js")')
-    expect(appJs).not.toContain('/* __wvRGP__ */')
-    expect(rootPreludeJs).toContain('/* __wvRGP__ */')
-    expect(rootPreludeJs).toContain('/* __wvAPR__ */')
-    expect(rootPreludeJs.indexOf('/* __wvRGP__ */')).toBeLessThan(rootPreludeJs.indexOf('/* __wvAPR__ */'))
+    expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(rootPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(rootPreludeJs).toContain(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)
+    expect(rootPreludeJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(rootPreludeJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 })

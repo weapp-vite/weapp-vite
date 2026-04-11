@@ -111,6 +111,7 @@
     "@vercel/detect-agent": "^1.2.2",
     "@volar/typescript": "^2.4.28",
     "@vue/language-core": "catalog:",
+    "@weapp-core/constants": "workspace:*",
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/schematics": "workspace:*",

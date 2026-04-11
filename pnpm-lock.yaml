@@ -316,6 +316,9 @@ importers:
       '@vue/runtime-core':
         specifier: ^3.5.32
         version: 3.5.32
+      '@weapp-core/constants':
+        specifier: workspace:^
+        version: link:@weapp-core/constants
       '@weapp-vite/miniprogram-automator':
         specifier: workspace:*
         version: link:packages/miniprogram-automator
@@ -550,6 +553,8 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.3.6
+
+  '@weapp-core/constants': {}
 
   '@weapp-core/init':
     dependencies:
@@ -1731,6 +1736,9 @@ importers:
 
   packages-runtime/web-apis:
     dependencies:
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi
@@ -1967,6 +1975,9 @@ importers:
       '@vue/language-core':
         specifier: 'catalog:'
         version: 3.2.6
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
       '@weapp-core/init':
         specifier: workspace:*
         version: link:../../@weapp-core/init
@@ -21186,8 +21197,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.58.1(typescript@6.0.2)
+      '@typescript-eslint/types': 8.58.1
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:

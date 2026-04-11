@@ -177,6 +177,7 @@
     "@vue/language-core": "catalog:",
     "@vue/reactivity": "^3.5.32",
     "@vue/runtime-core": "^3.5.32",
+    "@weapp-core/constants": "workspace:^",
     "@weapp-vite/miniprogram-automator": "workspace:*",
     "axios": "^1.15.0",
     "bundle-require": "catalog:",

@@ -5,12 +5,18 @@ import type {
   WeappInjectRequestGlobalsTarget,
   WeappRequestRuntimeConfig,
 } from '../../../types'
-import { parse as parseSfc } from 'vue/compiler-sfc'
 import {
   REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_EXPOSE_HELPER,
+  REQUEST_GLOBAL_INSTALLER_HOST_REF,
+  REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER,
+  REQUEST_GLOBAL_LAZY_FUNCTION_HELPER,
+  REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_PLACEHOLDER_KEY,
-} from '../../../plugins/core/lifecycle/emit/constants'
+  REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
+} from '@weapp-core/constants'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 
 export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'fetch',
@@ -255,52 +261,52 @@ export function createRequestGlobalsPassiveBindingsCode(targets: WeappInjectRequ
   }
 
   const helperCode = [
-    `const __ra = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
-    `function __rM(value){try{Object.defineProperty(value,${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)},{value:true,configurable:true})}catch{value[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]=true}return value}`,
-    'function __rF(name){const placeholder=function(...args){const actual=__ra[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return actual.apply(this,args)};return __rM(placeholder)}',
-    'function __rC(name){const placeholder=function(...args){const actual=__ra[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return Reflect.construct(actual,args)};return __rM(placeholder)}',
-    `function __rU(value,args){if(typeof value!=="function"||value?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]===true){return false}try{return Reflect.construct(value,args),true}catch{return false}}`,
-    `function __rE(name,value){if(value==null){return value}const current=globalThis[name];if(current===value){return value}if(typeof current!=="function"||current?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]===true){try{globalThis[name]=value}catch{}}return value}`,
+    `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+    `function ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(value){try{Object.defineProperty(value,${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)},{value:true,configurable:true})}catch{value[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]=true}return value}`,
+    `function ${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}(name){const placeholder=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return actual.apply(this,args)};return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
+    `function ${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}(name){const placeholder=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return Reflect.construct(actual,args)};return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
+    `function ${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(value,args){if(typeof value!=="function"||value?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]===true){return false}try{return Reflect.construct(value,args),true}catch{return false}}`,
+    `function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value){if(value==null){return value}const current=globalThis[name];if(current===value){return value}if(typeof current!=="function"||current?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]===true){try{globalThis[name]=value}catch{}}return value}`,
   ].join(';')
   const bindingCode = bindingTargets.map((target) => {
     if (target === 'fetch') {
-      return `var fetch = __rE("fetch",typeof __ra["fetch"]==="function"&&__ra["fetch"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?__ra["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.fetch:__rF("fetch"))`
+      return `var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.fetch:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("fetch"))`
     }
 
-    const placeholderFactory = `__rC(${JSON.stringify(target)})`
-    const actualRef = `__ra[${JSON.stringify(target)}]`
+    const placeholderFactory = `${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}(${JSON.stringify(target)})`
+    const actualRef = `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}]`
     if (target === 'URL') {
-      return `var URL = __rE("URL",__rU(${actualRef},["https://request-globals.invalid"])?${actualRef}:__rU(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory})`
+      return `var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["https://request-globals.invalid"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory})`
     }
     if (target === 'URLSearchParams') {
-      return `var URLSearchParams = __rE("URLSearchParams",__rU(${actualRef},["client=graphql-request"])?${actualRef}:__rU(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory})`
+      return `var URLSearchParams = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URLSearchParams",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["client=graphql-request"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.URLSearchParams,["client=graphql-request"])?globalThis.URLSearchParams:${placeholderFactory})`
     }
     if (target === 'Blob') {
-      return `var Blob = __rE("Blob",__rU(${actualRef},[])?${actualRef}:__rU(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory})`
+      return `var Blob = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Blob",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Blob,[])?globalThis.Blob:${placeholderFactory})`
     }
     if (target === 'FormData') {
-      return `var FormData = __rE("FormData",__rU(${actualRef},[])?${actualRef}:__rU(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory})`
+      return `var FormData = ${REQUEST_GLOBAL_EXPOSE_HELPER}("FormData",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.FormData,[])?globalThis.FormData:${placeholderFactory})`
     }
     if (target === 'Headers') {
-      return `var Headers = __rE("Headers",__rU(${actualRef},[])?${actualRef}:__rU(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory})`
+      return `var Headers = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Headers",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Headers,[])?globalThis.Headers:${placeholderFactory})`
     }
     if (target === 'Request') {
-      return `var Request = __rE("Request",__rU(${actualRef},["https://request-globals.invalid"])?${actualRef}:__rU(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory})`
+      return `var Request = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Request",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["https://request-globals.invalid"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Request,["https://request-globals.invalid"])?globalThis.Request:${placeholderFactory})`
     }
     if (target === 'Response') {
-      return `var Response = __rE("Response",__rU(${actualRef},[null])?${actualRef}:__rU(globalThis.Response,[null])?globalThis.Response:${placeholderFactory})`
+      return `var Response = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Response",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[null])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Response,[null])?globalThis.Response:${placeholderFactory})`
     }
     if (target === 'XMLHttpRequest') {
-      return `var XMLHttpRequest = __rE("XMLHttpRequest",__rU(${actualRef},[])?${actualRef}:__rU(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory})`
+      return `var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory})`
     }
     if (target === 'WebSocket') {
-      return `var WebSocket = __rE("WebSocket",__rU(${actualRef},["wss://request-globals.invalid"])?${actualRef}:__rU(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory})`
+      return `var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["wss://request-globals.invalid"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${placeholderFactory})`
     }
     if (target === 'AbortController') {
-      return `var AbortController = __rE("AbortController",__rU(${actualRef},[])?${actualRef}:__rU(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory})`
+      return `var AbortController = ${REQUEST_GLOBAL_EXPOSE_HELPER}("AbortController",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.AbortController,[])?globalThis.AbortController:${placeholderFactory})`
     }
 
-    return `var ${target} = __rE(${JSON.stringify(target)},typeof ${actualRef}==="function"&&${actualRef}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.${target}:${placeholderFactory})`
+    return `var ${target} = ${REQUEST_GLOBAL_EXPOSE_HELPER}(${JSON.stringify(target)},typeof ${actualRef}==="function"&&${actualRef}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${actualRef}:typeof globalThis.${target}==="function"&&globalThis.${target}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.${target}:${placeholderFactory})`
   }).join(';')
 
   return `${helperCode};${bindingCode};`
@@ -355,8 +361,8 @@ export function createInjectRequestGlobalsCode(
   if (options?.localBindings) {
     const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
     lines.push(
-      `const __rh = __weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} }) || globalThis`,
-      ...bindingTargets.map(target => `var ${target} = __rh.${target}`),
+      `const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = __weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target}`),
     )
   }
   else {

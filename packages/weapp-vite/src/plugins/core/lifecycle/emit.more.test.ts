@@ -1,3 +1,20 @@
+import {
+  APP_PRELUDE_CHUNK_MARKER,
+  APP_PRELUDE_GUARD_KEY,
+  APP_PRELUDE_REQUIRE_MARKER,
+  REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_BUNDLE_HOST_REF,
+  REQUEST_GLOBAL_BUNDLE_MARKER,
+  REQUEST_GLOBAL_CHUNK_HOST_REF,
+  REQUEST_GLOBAL_CHUNK_MODULE_REF,
+  REQUEST_GLOBAL_EXPOSE_HELPER,
+  REQUEST_GLOBAL_INSTALLER_HOST_REF,
+  REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER,
+  REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PRELUDE_MARKER,
+  REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
+} from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
@@ -938,20 +955,20 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['common.js'].code).toContain('__wvRGB__')
-    expect(bundle['common.js'].code).toContain('const __ra = globalThis["__ra"] || (globalThis["__ra"] = Object.create(null))')
-    expect(bundle['common.js'].code).toContain('function __rE(name,value)')
-    expect(bundle['common.js'].code).toContain('var XMLHttpRequest = __rE("XMLHttpRequest",__rU(__ra["XMLHttpRequest"],[])?__ra["XMLHttpRequest"]:__rU(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:__rC("XMLHttpRequest"))')
-    expect(bundle['common.js'].code).toContain('var WebSocket = __rE("WebSocket",__rU(__ra["WebSocket"],["wss://request-globals.invalid"])?__ra["WebSocket"]:__rU(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:__rC("WebSocket"))')
-    expect(bundle['common.js'].code).toContain('const __rb = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(bundle['common.js'].code).toContain('URL = __rb.URL')
-    expect(bundle['common.js'].code).toContain('WebSocket = __rb.WebSocket')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__wvRGC__')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rm = require("../../common.js")')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rc = __rm["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __rc.fetch')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __rc.URL')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var WebSocket = __rc.WebSocket')
+    expect(bundle['common.js'].code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
+    expect(bundle['common.js'].code).toContain(`const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis["${REQUEST_GLOBAL_ACTUALS_KEY}"] || (globalThis["${REQUEST_GLOBAL_ACTUALS_KEY}"] = Object.create(null))`)
+    expect(bundle['common.js'].code).toContain(`function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value)`)
+    expect(bundle['common.js'].code).toContain(`var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"],[])?${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"]:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}("XMLHttpRequest"))`)
+    expect(bundle['common.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"],["wss://request-globals.invalid"])?${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"]:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}("WebSocket"))`)
+    expect(bundle['common.js'].code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(bundle['common.js'].code).toContain(`URL = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.URL`)
+    expect(bundle['common.js'].code).toContain(`WebSocket = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
   })
 
   it('still injects top-level local bindings when chunk already contains setup-scoped request globals host bindings', async () => {
@@ -996,8 +1013,8 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const e=require("../../common.js"),t=require("../../dist.js");',
           'Page({ setup(){',
-          'const __rh = t["At"]({ targets: ["fetch"] }) || globalThis;',
-          'var fetch = __rh.fetch;',
+          `const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`,
+          `var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch;`,
           '} })',
         ].join(''),
         imports: ['common.js', 'dist.js'],
@@ -1007,11 +1024,11 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__wvRGC__')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rm = require("../../dist.js")')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rc = __rm["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rh = t["At"]({ targets: ["fetch"] }) || globalThis;')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __rc.fetch')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../dist.js")`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
   })
 
   it('prepends installer require before earlier shared chunk requires in page chunks', async () => {
@@ -1055,7 +1072,7 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const code = bundle['pages/request-globals/fetch.js'].code
-    expect(code.indexOf('const __rm = require("../../dist.js")')).toBeLessThan(code.indexOf('const e=require("../../common.js")'))
+    expect(code.indexOf(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../dist.js")`)).toBeLessThan(code.indexOf('const e=require("../../common.js")'))
   })
 
   it('injects local bindings into app chunks and skips passive app bindings', async () => {
@@ -1099,12 +1116,12 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const appCode = bundle['app.js'].code
-    expect(appCode).toContain('__wvRGC__')
-    expect(appCode).toContain('const __rm = require("./common.js")')
-    expect(appCode).toContain('var fetch = __rc.fetch')
-    expect(appCode).toContain('var URL = __rc.URL')
-    expect(appCode).toContain('var WebSocket = __rc.WebSocket')
-    expect(appCode).not.toContain('__wvRGL__')
+    expect(appCode).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+    expect(appCode).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("./common.js")`)
+    expect(appCode).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
+    expect(appCode).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
+    expect(appCode).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
+    expect(appCode).not.toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
   })
 
   it('injects bundled runtime installation right after the first require when installer chunk has imports', async () => {
@@ -1142,9 +1159,9 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const code = bundle['dist.js'].code
-    expect(code).toContain('__wvRGB__')
-    expect(code).toContain('const e=require("./common.js");const __rb = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(code.indexOf('const __rb = vn')).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
+    expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
+    expect(code).toContain(`const e=require("./common.js");const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
 
   it('runs request globals installer through app prelude before entry execution when enabled', async () => {
@@ -1203,9 +1220,9 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const appCode = bundle['app.js'].code
-    expect(appCode).toContain('/* __wvRGP__ */')
+    expect(appCode).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(appCode).toContain('require("./common.js")["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(appCode.indexOf('/* __wvRGP__ */')).toBeLessThan(appCode.indexOf('/* __wvAPR__ */'))
+    expect(appCode.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(appCode.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 
   it('emits request globals prelude into app.prelude.js when mode is require', async () => {
@@ -1272,10 +1289,10 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({ emitFile }, {}, bundle)
 
     expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
-    expect(bundle['app.js'].code).not.toContain('/* __wvRGP__ */')
-    expect(String(bundle['app.prelude.js'].source)).toContain('/* __wvRGP__ */')
+    expect(bundle['app.js'].code).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(String(bundle['app.prelude.js'].source)).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(String(bundle['app.prelude.js'].source)).toContain('require("./common.js")["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(String(bundle['app.prelude.js'].source).indexOf('/* __wvRGP__ */')).toBeLessThan(String(bundle['app.prelude.js'].source).indexOf('/* __wvAPR__ */'))
+    expect(String(bundle['app.prelude.js'].source).indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(String(bundle['app.prelude.js'].source).indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 
   it('injects synthetic request globals prelude even without user app.prelude file', async () => {
@@ -1335,8 +1352,8 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const appCode = bundle['app.js'].code
-    expect(appCode).toContain('/* __wvRGP__ */')
-    expect(appCode).not.toContain('__wvAPR__')
+    expect(appCode).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
+    expect(appCode).not.toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 
   it('patches axios chunk defaults env through emit injection', async () => {
@@ -1363,7 +1380,7 @@ describe('core lifecycle emit hook extra branches', () => {
           '/project/node_modules/.pnpm/axios@1.15.0/node_modules/axios/index.js',
         ],
         code: [
-          '/* __wvRGL__ */ var fetch = globalThis.fetch; var Request = globalThis.Request; var Response = globalThis.Response;',
+          `/* ${REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER} */ var fetch = globalThis.fetch; var Request = globalThis.Request; var Response = globalThis.Response;`,
           'function axios(){}',
           'axios.Axios = function Axios(){}',
           'axios.defaults = { env: {} }',
@@ -1440,7 +1457,7 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({ emitFile }, {}, bundle)
 
     expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
-    expect(bundle['app.js'].code).not.toContain('__wvAPR__')
+    expect(bundle['app.js'].code).not.toContain(APP_PRELUDE_CHUNK_MARKER)
     expect(bundle['pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
     expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
     expect(bundle['app.prelude.js']).toMatchObject({
@@ -1451,8 +1468,8 @@ describe('core lifecycle emit hook extra branches', () => {
       type: 'asset',
       fileName: 'subpackages/normal/app.prelude.js',
     })
-    expect(String(bundle['app.prelude.js'].source)).toContain('__wvAPR__')
-    expect(String(bundle['subpackages/normal/app.prelude.js'].source)).toContain('__wvAPR__')
+    expect(String(bundle['app.prelude.js'].source)).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(String(bundle['subpackages/normal/app.prelude.js'].source)).toContain(APP_PRELUDE_CHUNK_MARKER)
     expect(emitFile).toHaveBeenCalledTimes(2)
   })
 
@@ -1494,10 +1511,10 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['common.js'].code.startsWith('"use strict";/* __wvAPR__ */')).toBe(true)
-    expect(bundle['common.js'].code).toContain('__ai')
+    expect(bundle['common.js'].code.startsWith(`"use strict";/* ${APP_PRELUDE_CHUNK_MARKER} */`)).toBe(true)
+    expect(bundle['common.js'].code).toContain(APP_PRELUDE_GUARD_KEY)
     expect(bundle['common.js'].code).toContain('globalThis.__probe =')
-    expect(bundle['pkg/pages/home.js'].code).toContain('__ai')
+    expect(bundle['pkg/pages/home.js'].code).toContain(APP_PRELUDE_GUARD_KEY)
   })
 
   it('injects app prelude code into entry chunks only when mode is entry', async () => {
@@ -1567,10 +1584,10 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['app.js'].code).toContain('__wvAPR__')
-    expect(bundle['pages/home/index.js'].code).toContain('__wvAPR__')
-    expect(bundle['components/card/index.js'].code).toContain('__wvAPR__')
-    expect(bundle['common.js'].code).not.toContain('__wvAPR__')
+    expect(bundle['app.js'].code).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(bundle['pages/home/index.js'].code).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(bundle['components/card/index.js'].code).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(bundle['common.js'].code).not.toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 
   it('injects app prelude code into independent subpackage chunks', async () => {
@@ -1604,7 +1621,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['pkg-indep/common.js'].code.startsWith('/* __wvAPR__ */')).toBe(true)
+    expect(bundle['pkg-indep/common.js'].code.startsWith(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)).toBe(true)
     expect(bundle['pkg-indep/common.js'].code).toContain('globalThis.__probe =')
   })
 
@@ -1647,7 +1664,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['app.js'].code).toContain('"/app.prelude.ts"')
     expect(bundle['app.js'].code).not.toContain('import.meta.filename')
-    expect(bundle['app.js'].code).toContain('__ai')
+    expect(bundle['app.js'].code).toContain(APP_PRELUDE_GUARD_KEY)
   })
 
   it('emits scoped app prelude modules and injects require calls when mode is require', async () => {
@@ -1705,17 +1722,17 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({ emitFile }, {}, bundle)
 
-    expect(bundle['app.js'].code).toContain('__wvAPQ__')
+    expect(bundle['app.js'].code).toContain(APP_PRELUDE_REQUIRE_MARKER)
     expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
-    expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('__wvAPQ__')
+    expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain(APP_PRELUDE_REQUIRE_MARKER)
     expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
 
     expect(bundle['app.prelude.js']).toMatchObject({
       type: 'asset',
       fileName: 'app.prelude.js',
     })
-    expect(String(bundle['app.prelude.js'].source)).toContain('__wvAPR__')
-    expect(String(bundle['app.prelude.js'].source)).toContain('__ai')
+    expect(String(bundle['app.prelude.js'].source)).toContain(APP_PRELUDE_CHUNK_MARKER)
+    expect(String(bundle['app.prelude.js'].source)).toContain(APP_PRELUDE_GUARD_KEY)
     expect(bundle['subpackages/normal/app.prelude.js']).toMatchObject({
       type: 'asset',
       fileName: 'subpackages/normal/app.prelude.js',
@@ -1752,6 +1769,6 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['app.js'].code).not.toContain('__wvAPR__')
+    expect(bundle['app.js'].code).not.toContain(APP_PRELUDE_CHUNK_MARKER)
   })
 })

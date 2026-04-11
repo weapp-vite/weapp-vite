@@ -1,3 +1,4 @@
+import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const wpiRequestMock = vi.hoisted(() => vi.fn())
@@ -81,7 +82,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
     delete (globalThis as Record<string, any>).global
-    delete (globalThis as Record<string, any>).__ra
+    delete (globalThis as Record<string, any>)[REQUEST_GLOBAL_ACTUALS_KEY]
     wpiConnectSocketMock.mockReset()
   })
 
@@ -207,9 +208,9 @@ describe('request globals runtime', () => {
 
   it('replaces lazy placeholder globals with real runtime implementations', async () => {
     const placeholderFetch = vi.fn()
-    ;(placeholderFetch as any).__rp = true
+    ;(placeholderFetch as any)[REQUEST_GLOBAL_PLACEHOLDER_KEY] = true
     const placeholderWebSocket = vi.fn()
-    ;(placeholderWebSocket as any).__rp = true
+    ;(placeholderWebSocket as any)[REQUEST_GLOBAL_PLACEHOLDER_KEY] = true
 
     setGlobalValue('fetch', placeholderFetch)
     setGlobalValue('WebSocket', placeholderWebSocket)
@@ -234,9 +235,9 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.fetch).toBe('function')
     expect(typeof globalThis.AbortController).toBe('function')
     expect(typeof globalThis.AbortSignal).toBe('function')
-    expect(typeof (globalThis as any).__ra.fetch).toBe('function')
-    expect(typeof (globalThis as any).__ra.AbortController).toBe('function')
-    expect(typeof (globalThis as any).__ra.AbortSignal).toBe('function')
+    expect(typeof (globalThis as any)[REQUEST_GLOBAL_ACTUALS_KEY].fetch).toBe('function')
+    expect(typeof (globalThis as any)[REQUEST_GLOBAL_ACTUALS_KEY].AbortController).toBe('function')
+    expect(typeof (globalThis as any)[REQUEST_GLOBAL_ACTUALS_KEY].AbortSignal).toBe('function')
   })
 
   it('replaces broken URL constructors exposed by the runtime host', async () => {
