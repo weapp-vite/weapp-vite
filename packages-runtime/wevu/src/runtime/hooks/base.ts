@@ -1,4 +1,5 @@
 import type { InternalRuntimeState } from '../types'
+import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { getMiniProgramGlobalObject } from '../platform'
 
 // 仅供同步 setup() 调用期间使用的当前实例引用
@@ -37,10 +38,10 @@ export function assertInSetup(name: string): InternalRuntimeState {
 }
 
 function ensureHookBucket(target: InternalRuntimeState): Record<string, any> {
-  if (!target.__wevuHooks) {
-    target.__wevuHooks = Object.create(null)
+  if (!target[WEVU_HOOKS_KEY]) {
+    target[WEVU_HOOKS_KEY] = Object.create(null)
   }
-  return target.__wevuHooks as Record<string, any>
+  return target[WEVU_HOOKS_KEY] as Record<string, any>
 }
 
 export function pushHook(
@@ -67,7 +68,7 @@ export function ensureSinglePageHookOnInstance(target: InternalRuntimeState, nam
 
   const original = (target as any)[name]
   const bridge = function onWevuShareHookBridge(this: InternalRuntimeState, ...args: any[]) {
-    const hooks = this.__wevuHooks as Record<string, any> | undefined
+    const hooks = this[WEVU_HOOKS_KEY] as Record<string, any> | undefined
     const entry = hooks?.[name]
     const runtime = this.__wevu
     const ctx = runtime?.proxy ?? this
@@ -111,7 +112,7 @@ export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
     return
   }
 
-  const hooks = (target.__wevuHooks ?? {}) as Record<string, any>
+  const hooks = (target[WEVU_HOOKS_KEY] ?? {}) as Record<string, any>
   const hasShareAppMessage = typeof hooks.onShareAppMessage === 'function'
   const hasShareTimeline = typeof hooks.onShareTimeline === 'function'
 
@@ -140,7 +141,7 @@ export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
  * @internal
  */
 export function callHookList(target: InternalRuntimeState, name: string, args: any[] = []) {
-  const hooks = target.__wevuHooks
+  const hooks = target[WEVU_HOOKS_KEY]
   if (!hooks) {
     return
   }
@@ -194,7 +195,7 @@ export function ensurePageHookOnInstance(target: InternalRuntimeState, name: 'on
  * @internal
  */
 export function callHookReturn(target: InternalRuntimeState, name: string, args: any[] = []) {
-  const hooks = target.__wevuHooks
+  const hooks = target[WEVU_HOOKS_KEY]
   if (!hooks) {
     return undefined
   }

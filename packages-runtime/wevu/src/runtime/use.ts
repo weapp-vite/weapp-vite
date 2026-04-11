@@ -1,14 +1,18 @@
 import type { RuntimeApp, WevuPlugin } from './types'
+import {
+  WEVU_IS_APP_INSTANCE_KEY,
+  WEVU_RUNTIME_APP_KEY,
+} from '@weapp-core/constants'
 import { getCurrentInstance } from './hooks'
 
 function resolveCurrentRuntimeApp(): RuntimeApp<any, any, any> {
   const instance = getCurrentInstance() as {
-    __wevuIsAppInstance?: boolean
-    __wevuRuntimeApp?: RuntimeApp<any, any, any>
+    [WEVU_IS_APP_INSTANCE_KEY]?: boolean
+    [WEVU_RUNTIME_APP_KEY]?: RuntimeApp<any, any, any>
   } | undefined
 
-  if (instance?.__wevuIsAppInstance && instance.__wevuRuntimeApp) {
-    return instance.__wevuRuntimeApp
+  if (instance?.[WEVU_IS_APP_INSTANCE_KEY] && instance[WEVU_RUNTIME_APP_KEY]) {
+    return instance[WEVU_RUNTIME_APP_KEY]
   }
 
   throw new Error('defineAppSetup() / use() 只能在 app setup 上下文中调用')

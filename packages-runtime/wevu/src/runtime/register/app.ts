@@ -1,8 +1,10 @@
 import type { ComputedDefinitions, DefineAppOptions, InternalRuntimeState, MethodDefinitions, MiniProgramAppOptions, RuntimeApp } from '../types'
 import type { WatchMap } from './watch'
 import {
+  WEVU_HOOKS_KEY,
   WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
+  WEVU_IS_APP_INSTANCE_KEY,
 } from '@weapp-core/constants'
 import { callHookList } from '../hooks'
 import { getMiniProgramGlobalObject } from '../platform'
@@ -13,7 +15,7 @@ const APP_GLOBAL_LISTENER_STORE_KEY = '__wevuAppGlobalListeners'
 const MEMORY_WARNING_LISTENER_KEY = '__wevuOnMemoryWarningListener'
 
 function bindMemoryWarningListener(target: InternalRuntimeState) {
-  const hooks = target.__wevuHooks as Record<string, any> | undefined
+  const hooks = target[WEVU_HOOKS_KEY] as Record<string, any> | undefined
   const hasMemoryWarningHook = Boolean(hooks?.onMemoryWarning)
   const wxGlobal = getMiniProgramGlobalObject()
   const onMemoryWarning = wxGlobal?.onMemoryWarning
@@ -51,7 +53,7 @@ function bindAppGlobalListener(target: InternalRuntimeState, options: {
   userHandler?: ((...args: any[]) => any) | undefined
 }) {
   const { hookName, onApiName, offApiName, userHandler } = options
-  const hooks = target.__wevuHooks as Record<string, any> | undefined
+  const hooks = target[WEVU_HOOKS_KEY] as Record<string, any> | undefined
   const hasHook = Boolean(hooks?.[hookName])
   const wxGlobal = getMiniProgramGlobalObject()
   const onApi = wxGlobal?.[onApiName]
@@ -160,7 +162,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   const userOnUnhandledRejection = (appOptions as any).onUnhandledRejection
   const userOnThemeChange = (appOptions as any).onThemeChange
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
-    this.__wevuIsAppInstance = true
+    this[WEVU_IS_APP_INSTANCE_KEY] = true
     mountRuntimeInstance(this, runtimeApp, watch, setup)
     bindMemoryWarningListener(this)
     bindAppGlobalListeners(this, {

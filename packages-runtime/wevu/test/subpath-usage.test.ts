@@ -1,3 +1,4 @@
+import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createWeapi, wpi } from '@/api'
 import { fetch as wevuFetch } from '@/fetch'
@@ -22,7 +23,7 @@ function createRouterContext() {
 
   const instance = {
     __wevu: {},
-    __wevuHooks: {},
+    [WEVU_HOOKS_KEY]: {},
     router: {
       switchTab: vi.fn(),
       reLaunch: vi.fn(),

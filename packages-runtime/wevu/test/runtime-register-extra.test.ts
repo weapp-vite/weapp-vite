@@ -1,4 +1,10 @@
 import type { RuntimeApp } from '@/runtime/types'
+import {
+  WEVU_EXPOSED_KEY,
+  WEVU_HOOKS_KEY,
+  WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_WATCH_STOPS_KEY,
+} from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getCurrentScope, nextTick, onScopeDispose, ref, setPageLayout, watch, watchEffect } from '@/index'
 import { createApp } from '@/runtime/app'
@@ -121,7 +127,7 @@ describe('mountRuntimeInstance and teardown', () => {
     mountRuntimeInstance(target, app as any, watchMap, undefined, { deferSetData: true })
 
     expect(target.__wevu).toBeTruthy()
-    expect(typeof target.$wevu).toBe('object')
+    expect(typeof target[WEVU_PUBLIC_RUNTIME_KEY]).toBe('object')
 
     target.__wevu.adapter.setData({ a: 1 })
     target.__wevu.adapter.__wevu_enableSetData()
@@ -163,8 +169,8 @@ describe('mountRuntimeInstance and teardown', () => {
     expect(typeof target.greet).toBe('function')
     expect(target.greet()).toBe('hi')
 
-    target.__wevuHooks = { onUnload: [vi.fn()] }
-    target.__wevuWatchStops = [
+    target[WEVU_HOOKS_KEY] = { onUnload: [vi.fn()] }
+    target[WEVU_WATCH_STOPS_KEY] = [
       () => {
         throw new Error('stop error')
       },
@@ -207,7 +213,7 @@ describe('mountRuntimeInstance and teardown', () => {
     await nextTick()
 
     expect(target.setData).toHaveBeenCalledTimes(1)
-    expect(target.$wevu.state.value1.value).toBe('111')
+    expect(target[WEVU_PUBLIC_RUNTIME_KEY].state.value1.value).toBe('111')
 
     teardownRuntimeInstance(target)
   })
@@ -236,7 +242,7 @@ describe('mountRuntimeInstance and teardown', () => {
     mountRuntimeInstance(target, app as any, undefined, undefined)
     getterCalls = 0
 
-    target.$wevu.state.a.x = 2
+    target[WEVU_PUBLIC_RUNTIME_KEY].state.a.x = 2
     await nextTick()
 
     expect(getterCalls).toBe(0)
@@ -274,7 +280,7 @@ describe('mountRuntimeInstance and teardown', () => {
     getterCalls = 0
     target.setData.mockClear()
 
-    target.$wevu.state.nested.count = 2
+    target[WEVU_PUBLIC_RUNTIME_KEY].state.nested.count = 2
     await nextTick()
 
     expect(getterCalls).toBe(0)
@@ -309,7 +315,7 @@ describe('mountRuntimeInstance and teardown', () => {
     getterCalls = 0
     target.setData.mockClear()
 
-    target.$wevu.state.active.value = false
+    target[WEVU_PUBLIC_RUNTIME_KEY].state.active.value = false
     await nextTick()
 
     expect(getterCalls).toBe(0)
@@ -375,7 +381,7 @@ describe('mountRuntimeInstance and teardown', () => {
 
     expect(target.__wevu?.state.__wv_page_layout_name).toBe('default')
 
-    target.$wevu.state.layoutName.value = 'admin'
+    target[WEVU_PUBLIC_RUNTIME_KEY].state.layoutName.value = 'admin'
     await nextTick()
     expect(target.__wevu?.state.__wv_page_layout_name).toBe('admin')
     expect(target.__wevu?.state.__wv_page_layout_props).toEqual({
@@ -472,7 +478,7 @@ describe('registerComponent', () => {
       properties: { foo: 1 },
       setData: vi.fn(),
       triggerEvent: vi.fn(),
-      __wevuHooks: {
+      [WEVU_HOOKS_KEY]: {
         onShareAppMessage: () => ({ title: 'hook' }),
       },
     }
@@ -481,7 +487,7 @@ describe('registerComponent', () => {
     options.lifetimes.attached.call(instance)
     options.pageLifetimes.show.call(instance)
 
-    const exportValue = options.export.call({ __wevuExposed: { bar: 1 } })
+    const exportValue = options.export.call({ [WEVU_EXPOSED_KEY]: { bar: 1 } })
     expect(exportValue).toEqual({ bar: 1, from: 'user' })
 
     const shareResult = options.onShareAppMessage.call(instance)
@@ -526,10 +532,10 @@ describe('registerComponent', () => {
     options.lifetimes.ready.call(instance)
     options.lifetimes.detached.call(instance)
 
-    const exported = options.export.call({ __wevuExposed: { ok: true } })
+    const exported = options.export.call({ [WEVU_EXPOSED_KEY]: { ok: true } })
     expect(exported).toBe('invalid')
 
-    const save = options.onSaveExitState.call({ __wevuHooks: {} })
+    const save = options.onSaveExitState.call({ [WEVU_HOOKS_KEY]: {} })
     expect(save).toEqual({ data: undefined })
   })
 
@@ -546,11 +552,11 @@ describe('registerComponent', () => {
     const options = componentCalls.pop()!
     expect(options.onShareAppMessage).toBeUndefined()
 
-    const instance: any = { __wevuHooks: {}, setData: vi.fn() }
+    const instance: any = { [WEVU_HOOKS_KEY]: {}, setData: vi.fn() }
     const result = options.onShareTimeline.call(instance)
     expect(result).toEqual({ title: 'user' })
 
-    instance.__wevuHooks = { onShareTimeline: () => ({ title: 'hook' }) }
+    instance[WEVU_HOOKS_KEY] = { onShareTimeline: () => ({ title: 'hook' }) }
     expect(callHookReturn(instance, 'onShareTimeline', [])).toEqual({ title: 'hook' })
   })
 })

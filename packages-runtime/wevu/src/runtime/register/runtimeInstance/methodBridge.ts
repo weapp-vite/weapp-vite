@@ -1,5 +1,6 @@
 import type { InternalRuntimeState, RuntimeInstance } from '../../types'
 import type { SetupInstanceMethodName } from './setupContext'
+import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { setupInstanceMethodNames } from './setupContext'
 
 export function bridgeRuntimeMethodsToTarget(
@@ -14,9 +15,10 @@ export function bridgeRuntimeMethodsToTarget(
       }
       if (typeof (target as any)[name] !== 'function') {
         ;(target as any)[name] = function bridged(this: any, ...args: any[]) {
-          const bound = (this.$wevu?.methods as any)?.[name]
+          const runtime = this[WEVU_PUBLIC_RUNTIME_KEY]
+          const bound = (runtime?.methods as any)?.[name]
           if (typeof bound === 'function') {
-            return bound.apply(this.$wevu.proxy, args)
+            return bound.apply(runtime.proxy, args)
           }
         }
       }

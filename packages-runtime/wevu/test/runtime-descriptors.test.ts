@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY, WEVU_WATCH_STOPS_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from '@/index'
 
@@ -81,7 +82,7 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
     const inst: any = { setData() {} }
     componentOptions.lifetimes.attached.call(inst)
     const r = componentOptions.methods.inc.call(inst)
-    expect(inst.$wevu!.state.n).toBe(1)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]!.state.n).toBe(1)
     expect(calls).toEqual(['runtime'])
     // 当 options 上没有同名方法时，使用 runtime method 的返回值
     expect(r).toBe(2)
@@ -106,6 +107,6 @@ describe('runtime: page method collision/priority and invalid watch skips', () =
     const inst: any = { setData() {} }
     componentOptions.lifetimes.attached.call(inst)
     // 不应创建 __wevuWatchStops
-    expect(inst.__wevuWatchStops).toBeUndefined()
+    expect(inst[WEVU_WATCH_STOPS_KEY]).toBeUndefined()
   })
 })

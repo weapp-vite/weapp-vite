@@ -10,6 +10,7 @@ import type {
 } from '../../types'
 import type { WatchMap } from '../watch'
 import {
+  WEVU_LAYOUT_HOST_BRIDGE_KEY,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
@@ -70,12 +71,12 @@ export function registerComponentDefinition<D extends object, C extends Computed
     if (!Array.isArray(layoutHosts) || !layoutHosts.length) {
       return
     }
-    if ((instance as any).__wevuLayoutHostBridge) {
+    if ((instance as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]) {
       return
     }
     const bridge = registerRuntimeLayoutHosts(layoutHosts, instance)
     if (bridge) {
-      instance.__wevuLayoutHostBridge = bridge
+      instance[WEVU_LAYOUT_HOST_BRIDGE_KEY] = bridge
     }
   }
   const attachPageLayoutSetter = (instance: InternalRuntimeState) => {
@@ -215,9 +216,9 @@ export function registerComponentDefinition<D extends object, C extends Computed
           return
         }
         clearTemplateRefs(this)
-        if (Array.isArray(layoutHosts) && layoutHosts.length && (this as any).__wevuLayoutHostBridge) {
-          unregisterRuntimeLayoutHosts(layoutHosts, (this as any).__wevuLayoutHostBridge)
-          delete (this as any).__wevuLayoutHostBridge
+        if (Array.isArray(layoutHosts) && layoutHosts.length && (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]) {
+          unregisterRuntimeLayoutHosts(layoutHosts, (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY])
+          delete (this as any)[WEVU_LAYOUT_HOST_BRIDGE_KEY]
         }
         teardownRuntimeInstance(this)
         if (typeof (userLifetimes as any).detached === 'function') {

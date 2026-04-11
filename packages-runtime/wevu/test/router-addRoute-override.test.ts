@@ -1,3 +1,4 @@
+import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRouter } from '@/router'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
@@ -12,7 +13,7 @@ describe('addRoute name override with alias and redirect (issue #320)', () => {
   function setupRouterEnv() {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),

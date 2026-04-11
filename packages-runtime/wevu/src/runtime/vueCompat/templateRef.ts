@@ -1,18 +1,19 @@
 import type { Ref, ShallowRef } from '../../reactivity'
 import type { InternalRuntimeState, TemplateRefs } from '../types'
+import { WEVU_TEMPLATE_REF_MAP_KEY } from '@weapp-core/constants'
 import { shallowRef } from '../../reactivity'
 import { getCurrentInstance } from '../hooks'
 
 type TemplateRefMap = Map<string, Ref<any>>
 
 function ensureTemplateRefMap(target: InternalRuntimeState): TemplateRefMap {
-  const existing = (target as any).__wevuTemplateRefMap as TemplateRefMap | undefined
+  const existing = (target as any)[WEVU_TEMPLATE_REF_MAP_KEY] as TemplateRefMap | undefined
   if (existing) {
     return existing
   }
   const next = new Map<string, Ref<any>>()
   try {
-    Object.defineProperty(target, '__wevuTemplateRefMap', {
+    Object.defineProperty(target, WEVU_TEMPLATE_REF_MAP_KEY, {
       value: next,
       configurable: true,
       enumerable: false,
@@ -20,7 +21,7 @@ function ensureTemplateRefMap(target: InternalRuntimeState): TemplateRefMap {
     })
   }
   catch {
-    ;(target as any).__wevuTemplateRefMap = next
+    ;(target as any)[WEVU_TEMPLATE_REF_MAP_KEY] = next
   }
   return next
 }

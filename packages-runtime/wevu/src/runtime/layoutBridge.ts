@@ -1,5 +1,9 @@
 import type { Ref } from '../reactivity'
-import { WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
+import {
+  WEVU_LAYOUT_BRIDGE_PAGE_KEYS,
+  WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_PUBLIC_RUNTIME_KEY,
+} from '@weapp-core/constants'
 import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
 import { getTemplateRefMap } from './templateRefs/helpers'
@@ -24,7 +28,6 @@ interface LayoutHostResolveOptions<T = any> {
 }
 
 const pageLayoutBridges = new Map<string, Map<string, LayoutBridgeContext>>()
-const layoutBridgePageKeys = '__wevuLayoutBridgePageKeys'
 const LEADING_SLASH_RE = /^\/+/
 
 function resolveCurrentPageInstance() {
@@ -77,7 +80,7 @@ function resolveNativeLayoutContext(context?: LayoutBridgeContext) {
     return undefined
   }
 
-  const runtimeNativeInstance = context.__wevu?.state?.[WEVU_NATIVE_INSTANCE_KEY]
+  const runtimeNativeInstance = context[WEVU_PUBLIC_RUNTIME_KEY]?.state?.[WEVU_NATIVE_INSTANCE_KEY]
   if (runtimeNativeInstance && typeof runtimeNativeInstance === 'object') {
     return runtimeNativeInstance as LayoutBridgeContext
   }
@@ -129,7 +132,7 @@ function resolveDeclaredLayoutHostFromRefs(
     return null
   }
   const refMap = getTemplateRefMap(context as any)
-  const stateRefs = context.__wevu?.state?.$refs
+  const stateRefs = context[WEVU_PUBLIC_RUNTIME_KEY]?.state?.$refs
     ?? context.$state?.$refs
     ?? context.$refs
   const refValue = refMap?.get(binding.refName)?.value
@@ -186,7 +189,7 @@ export function registerPageLayoutBridge(
     }
     pageLayoutBridges.set(pageKey, registry)
   }
-  bridgeContext[layoutBridgePageKeys] = pageKeys
+  bridgeContext[WEVU_LAYOUT_BRIDGE_PAGE_KEYS] = pageKeys
   return true
 }
 
@@ -199,7 +202,7 @@ export function unregisterPageLayoutBridge(
 ) {
   const bridgeContext = context ?? getCurrentInstance<LayoutBridgeContext>()
   const page = resolvePageFromContext(bridgeContext)
-  const pageKeys = bridgeContext?.[layoutBridgePageKeys] ?? resolvePageKeys(page)
+  const pageKeys = bridgeContext?.[WEVU_LAYOUT_BRIDGE_PAGE_KEYS] ?? resolvePageKeys(page)
   if (!bridgeContext || !Array.isArray(pageKeys) || pageKeys.length === 0) {
     return false
   }
@@ -223,7 +226,7 @@ export function unregisterPageLayoutBridge(
     }
   }
 
-  delete bridgeContext[layoutBridgePageKeys]
+  delete bridgeContext[WEVU_LAYOUT_BRIDGE_PAGE_KEYS]
   return removed
 }
 

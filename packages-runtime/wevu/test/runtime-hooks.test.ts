@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-this-alias, test/no-identical-title */
 import type { InternalRuntimeState } from '@/runtime/types'
+import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   callHookList,
@@ -73,7 +74,7 @@ describe('hooks - lifecycle registration', () => {
   let instance: InternalRuntimeState
 
   beforeEach(() => {
-    instance = { __wevu: {}, __wevuHooks: {} } as any
+    instance = { __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any
     setCurrentInstance(instance)
   })
 
@@ -86,7 +87,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onShow(handler)
 
-      expect(instance.__wevuHooks?.onShow).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onShow).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -102,7 +103,7 @@ describe('hooks - lifecycle registration', () => {
       onShow(handler1)
       onShow(handler2)
 
-      expect(instance.__wevuHooks?.onShow).toEqual([handler1, handler2])
+      expect(instance[WEVU_HOOKS_KEY]?.onShow).toEqual([handler1, handler2])
     })
   })
 
@@ -111,7 +112,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onHide(handler)
 
-      expect(instance.__wevuHooks?.onHide).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onHide).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -126,7 +127,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onReady(handler)
 
-      expect(instance.__wevuHooks?.onReady).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onReady).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -141,7 +142,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onUnload(handler)
 
-      expect(instance.__wevuHooks?.onUnload).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onUnload).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -156,7 +157,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onPageScroll(handler)
 
-      expect(instance.__wevuHooks?.onPageScroll).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onPageScroll).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -171,7 +172,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onRouteDone(handler)
 
-      expect(instance.__wevuHooks?.onRouteDone).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onRouteDone).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -186,7 +187,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onTabItemTap(handler)
 
-      expect(instance.__wevuHooks?.onTabItemTap).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onTabItemTap).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -201,14 +202,14 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onAttached(handler)
 
-      expect(instance.__wevuHooks?.onAttached).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onAttached).toContain(handler)
     })
 
     it('should register onDetached hook', () => {
       const handler = vi.fn()
       onDetached(handler)
 
-      expect(instance.__wevuHooks?.onDetached).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onDetached).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -224,42 +225,42 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onLaunch(handler)
 
-      expect(instance.__wevuHooks?.onLaunch).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onLaunch).toContain(handler)
     })
 
     it('should register onPageNotFound hook', () => {
       const handler = vi.fn()
       onPageNotFound(handler)
 
-      expect(instance.__wevuHooks?.onPageNotFound).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onPageNotFound).toContain(handler)
     })
 
     it('should register onUnhandledRejection hook', () => {
       const handler = vi.fn()
       onUnhandledRejection(handler as any)
 
-      expect(instance.__wevuHooks?.onUnhandledRejection).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onUnhandledRejection).toContain(handler)
     })
 
     it('should register onThemeChange hook', () => {
       const handler = vi.fn()
       onThemeChange(handler as any)
 
-      expect(instance.__wevuHooks?.onThemeChange).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onThemeChange).toContain(handler)
     })
 
     it('should register onMemoryWarning hook', () => {
       const handler = vi.fn()
       onMemoryWarning(handler as any)
 
-      expect(instance.__wevuHooks?.onMemoryWarning).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onMemoryWarning).toContain(handler)
     })
 
     it('should register onError hook', () => {
       const handler = vi.fn()
       onError(handler)
 
-      expect(instance.__wevuHooks?.onError).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onError).toContain(handler)
     })
 
     it('should throw when onLaunch called outside setup', () => {
@@ -279,7 +280,7 @@ describe('hooks - lifecycle registration', () => {
       onSaveExitState(handler2)
 
       // 应替换，而不是追加
-      expect(instance.__wevuHooks?.onSaveExitState).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onSaveExitState).toBe(handler2)
     })
 
     it('should register onShareAppMessage as single handler', () => {
@@ -289,7 +290,7 @@ describe('hooks - lifecycle registration', () => {
       onShareAppMessage(handler1)
       onShareAppMessage(handler2)
 
-      expect(instance.__wevuHooks?.onShareAppMessage).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onShareAppMessage).toBe(handler2)
     })
 
     it('should register onShareTimeline as single handler', () => {
@@ -299,7 +300,7 @@ describe('hooks - lifecycle registration', () => {
       onShareTimeline(handler1)
       onShareTimeline(handler2)
 
-      expect(instance.__wevuHooks?.onShareTimeline).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onShareTimeline).toBe(handler2)
     })
 
     it('should register onAddToFavorites as single handler', () => {
@@ -309,7 +310,7 @@ describe('hooks - lifecycle registration', () => {
       onAddToFavorites(handler1)
       onAddToFavorites(handler2)
 
-      expect(instance.__wevuHooks?.onAddToFavorites).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onAddToFavorites).toBe(handler2)
     })
 
     it('should throw when single-handler hooks called outside setup', () => {
@@ -331,7 +332,7 @@ describe('hooks - callHookList', () => {
       __wevu: {
         proxy: { proxyContext: true },
       },
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
     } as any
   })
 
@@ -340,7 +341,7 @@ describe('hooks - callHookList', () => {
     const handler2 = vi.fn()
     const handler3 = vi.fn()
 
-    instance.__wevuHooks!.onShow = [handler1, handler2, handler3]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler1, handler2, handler3]
 
     callHookList(instance, 'onShow')
 
@@ -351,7 +352,7 @@ describe('hooks - callHookList', () => {
 
   it('should call hook with arguments', () => {
     const handler = vi.fn()
-    instance.__wevuHooks!.onPageScroll = [handler]
+    instance[WEVU_HOOKS_KEY]!.onPageScroll = [handler]
 
     callHookList(instance, 'onPageScroll', [{ scrollTop: 100 }])
 
@@ -364,7 +365,7 @@ describe('hooks - callHookList', () => {
       capturedThis = this
     }
 
-    instance.__wevuHooks!.onShow = [handler]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler]
 
     callHookList(instance, 'onShow')
 
@@ -378,7 +379,7 @@ describe('hooks - callHookList', () => {
       capturedThis = this
     }
 
-    instance.__wevuHooks!.onShow = [handler]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler]
 
     callHookList(instance, 'onShow')
 
@@ -391,7 +392,7 @@ describe('hooks - callHookList', () => {
     })
     const handler2 = vi.fn()
 
-    instance.__wevuHooks!.onShow = [handler1, handler2]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler1, handler2]
 
     // 不应抛错
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
@@ -401,20 +402,20 @@ describe('hooks - callHookList', () => {
   })
 
   it('should do nothing when hooks not defined', () => {
-    delete instance.__wevuHooks
+    delete instance[WEVU_HOOKS_KEY]
 
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
   })
 
   it('should do nothing when hook name not found', () => {
-    instance.__wevuHooks = {}
+    instance[WEVU_HOOKS_KEY] = {}
 
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
   })
 
   it('should call single function hook', () => {
     const handler = vi.fn()
-    instance.__wevuHooks!.onSaveExitState = handler
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = handler
 
     callHookList(instance, 'onSaveExitState')
 
@@ -425,13 +426,13 @@ describe('hooks - callHookList', () => {
     const handler = vi.fn(() => {
       throw new Error('Hook error')
     })
-    instance.__wevuHooks!.onSaveExitState = handler
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = handler
 
     expect(() => callHookList(instance, 'onSaveExitState')).not.toThrow()
   })
 
   it('should handle empty hook array', () => {
-    instance.__wevuHooks!.onShow = []
+    instance[WEVU_HOOKS_KEY]!.onShow = []
 
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
   })
@@ -445,13 +446,13 @@ describe('hooks - callHookReturn', () => {
       __wevu: {
         proxy: { proxyContext: true },
       },
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
     } as any
   })
 
   it('should return value from single function hook', () => {
     const handler = vi.fn(() => ({ title: 'Shared' }))
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -464,7 +465,7 @@ describe('hooks - callHookReturn', () => {
     const handler2 = vi.fn(() => 'second')
     const handler3 = vi.fn(() => 'third')
 
-    instance.__wevuHooks!.onSaveExitState = [handler1, handler2, handler3]
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = [handler1, handler2, handler3]
 
     const result = callHookReturn(instance, 'onSaveExitState')
 
@@ -476,7 +477,7 @@ describe('hooks - callHookReturn', () => {
 
   it('should pass arguments to hook', () => {
     const handler = vi.fn((arg: any) => arg.data)
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     const result = callHookReturn(instance, 'onShareAppMessage', [{ data: 'test' }])
 
@@ -491,7 +492,7 @@ describe('hooks - callHookReturn', () => {
       return 'result'
     }
 
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     callHookReturn(instance, 'onShareAppMessage')
 
@@ -506,7 +507,7 @@ describe('hooks - callHookReturn', () => {
       return 'result'
     }
 
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     callHookReturn(instance, 'onShareAppMessage')
 
@@ -517,7 +518,7 @@ describe('hooks - callHookReturn', () => {
     const handler = vi.fn(() => {
       throw new Error('Hook error')
     })
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -525,7 +526,7 @@ describe('hooks - callHookReturn', () => {
   })
 
   it('should return undefined when hooks not defined', () => {
-    delete instance.__wevuHooks
+    delete instance[WEVU_HOOKS_KEY]
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -533,7 +534,7 @@ describe('hooks - callHookReturn', () => {
   })
 
   it('should return undefined when hook name not found', () => {
-    instance.__wevuHooks = {}
+    instance[WEVU_HOOKS_KEY] = {}
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -549,7 +550,7 @@ describe('hooks - callHookReturn', () => {
     })
     const handler3 = vi.fn(() => 'success')
 
-    instance.__wevuHooks!.onSaveExitState = [handler1, handler2, handler3]
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = [handler1, handler2, handler3]
 
     const result = callHookReturn(instance, 'onSaveExitState')
 
@@ -558,37 +559,37 @@ describe('hooks - callHookReturn', () => {
 
   it('should handle null/undefined return values', () => {
     const handler1 = vi.fn(() => null)
-    instance.__wevuHooks!.onShareAppMessage = handler1
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler1
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBeNull()
 
     const handler2 = vi.fn(() => undefined)
-    instance.__wevuHooks!.onShareAppMessage = handler2
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler2
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBeUndefined()
   })
 
   it('should handle 0 and false return values', () => {
     const handler1 = vi.fn(() => 0)
-    instance.__wevuHooks!.onShareAppMessage = handler1
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler1
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBe(0)
 
     const handler2 = vi.fn(() => false)
-    instance.__wevuHooks!.onShareAppMessage = handler2
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler2
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBe(false)
   })
 
   it('should handle empty string return value', () => {
     const handler = vi.fn(() => '')
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBe('')
   })
 
   it('should return undefined for non-function/array hooks', () => {
-    instance.__wevuHooks!.onShareAppMessage = 'invalid' as any
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = 'invalid' as any
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -642,7 +643,7 @@ describe('hooks - lifecycle registration', () => {
   let instance: InternalRuntimeState
 
   beforeEach(() => {
-    instance = { __wevu: {}, __wevuHooks: {} } as any
+    instance = { __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any
     setCurrentInstance(instance)
   })
 
@@ -655,7 +656,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onShow(handler)
 
-      expect(instance.__wevuHooks?.onShow).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onShow).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -671,7 +672,7 @@ describe('hooks - lifecycle registration', () => {
       onShow(handler1)
       onShow(handler2)
 
-      expect(instance.__wevuHooks?.onShow).toEqual([handler1, handler2])
+      expect(instance[WEVU_HOOKS_KEY]?.onShow).toEqual([handler1, handler2])
     })
   })
 
@@ -680,7 +681,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onHide(handler)
 
-      expect(instance.__wevuHooks?.onHide).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onHide).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -695,7 +696,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onReady(handler)
 
-      expect(instance.__wevuHooks?.onReady).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onReady).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -710,7 +711,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onUnload(handler)
 
-      expect(instance.__wevuHooks?.onUnload).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onUnload).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -725,7 +726,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onPageScroll(handler)
 
-      expect(instance.__wevuHooks?.onPageScroll).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onPageScroll).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -740,7 +741,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onRouteDone(handler)
 
-      expect(instance.__wevuHooks?.onRouteDone).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onRouteDone).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -755,7 +756,7 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onTabItemTap(handler)
 
-      expect(instance.__wevuHooks?.onTabItemTap).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onTabItemTap).toContain(handler)
     })
 
     it('should throw when called outside setup', () => {
@@ -770,42 +771,42 @@ describe('hooks - lifecycle registration', () => {
       const handler = vi.fn()
       onLaunch(handler)
 
-      expect(instance.__wevuHooks?.onLaunch).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onLaunch).toContain(handler)
     })
 
     it('should register onPageNotFound hook', () => {
       const handler = vi.fn()
       onPageNotFound(handler)
 
-      expect(instance.__wevuHooks?.onPageNotFound).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onPageNotFound).toContain(handler)
     })
 
     it('should register onUnhandledRejection hook', () => {
       const handler = vi.fn()
       onUnhandledRejection(handler as any)
 
-      expect(instance.__wevuHooks?.onUnhandledRejection).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onUnhandledRejection).toContain(handler)
     })
 
     it('should register onThemeChange hook', () => {
       const handler = vi.fn()
       onThemeChange(handler as any)
 
-      expect(instance.__wevuHooks?.onThemeChange).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onThemeChange).toContain(handler)
     })
 
     it('should register onMemoryWarning hook', () => {
       const handler = vi.fn()
       onMemoryWarning(handler as any)
 
-      expect(instance.__wevuHooks?.onMemoryWarning).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onMemoryWarning).toContain(handler)
     })
 
     it('should register onError hook', () => {
       const handler = vi.fn()
       onError(handler)
 
-      expect(instance.__wevuHooks?.onError).toContain(handler)
+      expect(instance[WEVU_HOOKS_KEY]?.onError).toContain(handler)
     })
 
     it('should throw when onLaunch called outside setup', () => {
@@ -825,7 +826,7 @@ describe('hooks - lifecycle registration', () => {
       onSaveExitState(handler2)
 
       // 应替换，而不是追加
-      expect(instance.__wevuHooks?.onSaveExitState).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onSaveExitState).toBe(handler2)
     })
 
     it('should register onShareAppMessage as single handler', () => {
@@ -835,7 +836,7 @@ describe('hooks - lifecycle registration', () => {
       onShareAppMessage(handler1)
       onShareAppMessage(handler2)
 
-      expect(instance.__wevuHooks?.onShareAppMessage).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onShareAppMessage).toBe(handler2)
     })
 
     it('should register onShareTimeline as single handler', () => {
@@ -845,7 +846,7 @@ describe('hooks - lifecycle registration', () => {
       onShareTimeline(handler1)
       onShareTimeline(handler2)
 
-      expect(instance.__wevuHooks?.onShareTimeline).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onShareTimeline).toBe(handler2)
     })
 
     it('should register onAddToFavorites as single handler', () => {
@@ -855,7 +856,7 @@ describe('hooks - lifecycle registration', () => {
       onAddToFavorites(handler1)
       onAddToFavorites(handler2)
 
-      expect(instance.__wevuHooks?.onAddToFavorites).toBe(handler2)
+      expect(instance[WEVU_HOOKS_KEY]?.onAddToFavorites).toBe(handler2)
     })
 
     it('should throw when single-handler hooks called outside setup', () => {
@@ -877,7 +878,7 @@ describe('hooks - callHookList', () => {
       __wevu: {
         proxy: { proxyContext: true },
       },
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
     } as any
   })
 
@@ -886,7 +887,7 @@ describe('hooks - callHookList', () => {
     const handler2 = vi.fn()
     const handler3 = vi.fn()
 
-    instance.__wevuHooks!.onShow = [handler1, handler2, handler3]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler1, handler2, handler3]
 
     callHookList(instance, 'onShow')
 
@@ -897,7 +898,7 @@ describe('hooks - callHookList', () => {
 
   it('should call hook with arguments', () => {
     const handler = vi.fn()
-    instance.__wevuHooks!.onPageScroll = [handler]
+    instance[WEVU_HOOKS_KEY]!.onPageScroll = [handler]
 
     callHookList(instance, 'onPageScroll', [{ scrollTop: 100 }])
 
@@ -910,7 +911,7 @@ describe('hooks - callHookList', () => {
       capturedThis = this
     }
 
-    instance.__wevuHooks!.onShow = [handler]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler]
 
     callHookList(instance, 'onShow')
 
@@ -924,7 +925,7 @@ describe('hooks - callHookList', () => {
       capturedThis = this
     }
 
-    instance.__wevuHooks!.onShow = [handler]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler]
 
     callHookList(instance, 'onShow')
 
@@ -937,7 +938,7 @@ describe('hooks - callHookList', () => {
     })
     const handler2 = vi.fn()
 
-    instance.__wevuHooks!.onShow = [handler1, handler2]
+    instance[WEVU_HOOKS_KEY]!.onShow = [handler1, handler2]
 
     // 不应抛错
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
@@ -947,20 +948,20 @@ describe('hooks - callHookList', () => {
   })
 
   it('should do nothing when hooks not defined', () => {
-    delete instance.__wevuHooks
+    delete instance[WEVU_HOOKS_KEY]
 
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
   })
 
   it('should do nothing when hook name not found', () => {
-    instance.__wevuHooks = {}
+    instance[WEVU_HOOKS_KEY] = {}
 
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
   })
 
   it('should call single function hook', () => {
     const handler = vi.fn()
-    instance.__wevuHooks!.onSaveExitState = handler
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = handler
 
     callHookList(instance, 'onSaveExitState')
 
@@ -971,13 +972,13 @@ describe('hooks - callHookList', () => {
     const handler = vi.fn(() => {
       throw new Error('Hook error')
     })
-    instance.__wevuHooks!.onSaveExitState = handler
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = handler
 
     expect(() => callHookList(instance, 'onSaveExitState')).not.toThrow()
   })
 
   it('should handle empty hook array', () => {
-    instance.__wevuHooks!.onShow = []
+    instance[WEVU_HOOKS_KEY]!.onShow = []
 
     expect(() => callHookList(instance, 'onShow')).not.toThrow()
   })
@@ -991,13 +992,13 @@ describe('hooks - callHookReturn', () => {
       __wevu: {
         proxy: { proxyContext: true },
       },
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
     } as any
   })
 
   it('should return value from single function hook', () => {
     const handler = vi.fn(() => ({ title: 'Shared' }))
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -1010,7 +1011,7 @@ describe('hooks - callHookReturn', () => {
     const handler2 = vi.fn(() => 'second')
     const handler3 = vi.fn(() => 'third')
 
-    instance.__wevuHooks!.onSaveExitState = [handler1, handler2, handler3]
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = [handler1, handler2, handler3]
 
     const result = callHookReturn(instance, 'onSaveExitState')
 
@@ -1022,7 +1023,7 @@ describe('hooks - callHookReturn', () => {
 
   it('should pass arguments to hook', () => {
     const handler = vi.fn((arg: any) => arg.data)
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     const result = callHookReturn(instance, 'onShareAppMessage', [{ data: 'test' }])
 
@@ -1037,7 +1038,7 @@ describe('hooks - callHookReturn', () => {
       return 'result'
     }
 
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     callHookReturn(instance, 'onShareAppMessage')
 
@@ -1052,7 +1053,7 @@ describe('hooks - callHookReturn', () => {
       return 'result'
     }
 
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     callHookReturn(instance, 'onShareAppMessage')
 
@@ -1063,7 +1064,7 @@ describe('hooks - callHookReturn', () => {
     const handler = vi.fn(() => {
       throw new Error('Hook error')
     })
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -1071,7 +1072,7 @@ describe('hooks - callHookReturn', () => {
   })
 
   it('should return undefined when hooks not defined', () => {
-    delete instance.__wevuHooks
+    delete instance[WEVU_HOOKS_KEY]
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -1079,7 +1080,7 @@ describe('hooks - callHookReturn', () => {
   })
 
   it('should return undefined when hook name not found', () => {
-    instance.__wevuHooks = {}
+    instance[WEVU_HOOKS_KEY] = {}
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 
@@ -1095,7 +1096,7 @@ describe('hooks - callHookReturn', () => {
     })
     const handler3 = vi.fn(() => 'success')
 
-    instance.__wevuHooks!.onSaveExitState = [handler1, handler2, handler3]
+    instance[WEVU_HOOKS_KEY]!.onSaveExitState = [handler1, handler2, handler3]
 
     const result = callHookReturn(instance, 'onSaveExitState')
 
@@ -1104,37 +1105,37 @@ describe('hooks - callHookReturn', () => {
 
   it('should handle null/undefined return values', () => {
     const handler1 = vi.fn(() => null)
-    instance.__wevuHooks!.onShareAppMessage = handler1
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler1
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBeNull()
 
     const handler2 = vi.fn(() => undefined)
-    instance.__wevuHooks!.onShareAppMessage = handler2
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler2
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBeUndefined()
   })
 
   it('should handle 0 and false return values', () => {
     const handler1 = vi.fn(() => 0)
-    instance.__wevuHooks!.onShareAppMessage = handler1
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler1
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBe(0)
 
     const handler2 = vi.fn(() => false)
-    instance.__wevuHooks!.onShareAppMessage = handler2
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler2
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBe(false)
   })
 
   it('should handle empty string return value', () => {
     const handler = vi.fn(() => '')
-    instance.__wevuHooks!.onShareAppMessage = handler
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = handler
 
     expect(callHookReturn(instance, 'onShareAppMessage')).toBe('')
   })
 
   it('should return undefined for non-function/array hooks', () => {
-    instance.__wevuHooks!.onShareAppMessage = 'invalid' as any
+    instance[WEVU_HOOKS_KEY]!.onShareAppMessage = 'invalid' as any
 
     const result = callHookReturn(instance, 'onShareAppMessage')
 

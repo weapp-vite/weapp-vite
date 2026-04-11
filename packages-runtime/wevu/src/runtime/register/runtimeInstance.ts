@@ -11,12 +11,17 @@ import type {
 import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import {
+  WEVU_EFFECT_SCOPE_KEY,
+  WEVU_HOOKS_KEY,
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
   WEVU_PROPS_KEY,
+  WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_RUNTIME_APP_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
@@ -90,7 +95,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
-  target.__wevuRuntimeApp = runtimeApp as RuntimeApp<any, any, any>
+  target[WEVU_RUNTIME_APP_KEY] = runtimeApp as RuntimeApp<any, any, any>
   safeMarkNoSetData(target)
   const ownerId = allocateOwnerId()
   const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
@@ -249,7 +254,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     })
   }
 
-  Object.defineProperty(target, '$wevu', {
+  Object.defineProperty(target, WEVU_PUBLIC_RUNTIME_KEY, {
     value: runtimeWithDefaults,
     configurable: true,
     enumerable: false,
@@ -263,7 +268,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (watchMap) {
     const stops = registerWatches(runtimeWithDefaults, watchMap, target)
     if (stops.length) {
-      target.__wevuWatchStops = stops
+      target[WEVU_WATCH_STOPS_KEY] = stops
     }
   }
 
@@ -313,14 +318,14 @@ export function teardownRuntimeInstance(target: InternalRuntimeState) {
   }
   clearTemplateRefs(target)
   // 触发卸载钩子（仅在 teardown 首次执行时触发）
-  if (runtime && target.__wevuHooks) {
+  if (runtime && target[WEVU_HOOKS_KEY]) {
     callHookList(target, 'onUnload', [])
   }
   // 清理注册的生命周期钩子
-  if (target.__wevuHooks) {
-    target.__wevuHooks = undefined
+  if (target[WEVU_HOOKS_KEY]) {
+    target[WEVU_HOOKS_KEY] = undefined
   }
-  const stops = target.__wevuWatchStops
+  const stops = target[WEVU_WATCH_STOPS_KEY]
   if (Array.isArray(stops)) {
     for (const stop of stops) {
       try {
@@ -331,14 +336,14 @@ export function teardownRuntimeInstance(target: InternalRuntimeState) {
       }
     }
   }
-  target.__wevuWatchStops = undefined
-  target.__wevuEffectScope?.stop()
-  target.__wevuEffectScope = undefined
+  target[WEVU_WATCH_STOPS_KEY] = undefined
+  target[WEVU_EFFECT_SCOPE_KEY]?.stop()
+  target[WEVU_EFFECT_SCOPE_KEY] = undefined
   if (runtime) {
     runtime.unmount()
   }
   delete target.__wevu
-  if ('$wevu' in target) {
-    delete (target as any).$wevu
+  if (WEVU_PUBLIC_RUNTIME_KEY in target) {
+    delete (target as any)[WEVU_PUBLIC_RUNTIME_KEY]
   }
 }

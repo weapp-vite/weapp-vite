@@ -1,3 +1,4 @@
+import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRouter, parseQuery, resolveRouteLocation, stringifyQuery, useRoute, useRouter } from '@/router'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
@@ -88,13 +89,13 @@ describe('router api', () => {
   })
 
   it('useRoute requires setup context', () => {
-    setCurrentInstance({ __wevu: {}, __wevuHooks: {} } as any)
+    setCurrentInstance({ __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any)
     setCurrentSetupContext(undefined)
     expect(() => useRoute()).toThrow('useRoute() 必须在 setup() 的同步阶段调用')
   })
 
   it('useRouter requires an existing router instance when called without options', () => {
-    const instance = { __wevu: {}, __wevuHooks: {} } as any
+    const instance = { __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any
     setCurrentInstance(instance)
     setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
 
@@ -104,7 +105,7 @@ describe('router api', () => {
   it('createRouter registers the active router instance for useRouter()', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -131,7 +132,7 @@ describe('router api', () => {
   it('createRouter install registers router on app globalProperties', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -159,7 +160,7 @@ describe('router api', () => {
   })
 
   it('useRoute syncs with onLoad, onShow, and onRouteDone hooks', () => {
-    const instance = { __wevu: {}, __wevuHooks: {} } as any
+    const instance = { __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any
     setCurrentInstance(instance)
     setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
 

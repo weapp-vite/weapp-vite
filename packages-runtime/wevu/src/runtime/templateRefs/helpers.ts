@@ -1,6 +1,11 @@
 import type { Ref } from '../../reactivity'
 import type { TemplateRefBinding } from '../templateRefs'
 import type { InternalRuntimeState } from '../types'
+import {
+  WEVU_EXPOSED_KEY,
+  WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_TEMPLATE_REF_MAP_KEY,
+} from '@weapp-core/constants'
 import { isRef } from '../../reactivity'
 import { markNoSetData } from '../noSetData'
 import { getMiniProgramGlobalObject } from '../platform'
@@ -120,18 +125,18 @@ function resolveComponentPublicInstance(value: any) {
     return value ?? null
   }
   const instance = value as any
-  const exposed = instance.__wevuExposed
+  const exposed = instance[WEVU_EXPOSED_KEY]
   if (exposed && typeof exposed === 'object') {
     return getExposeProxy(instance, exposed as Record<string, any>)
   }
-  if (instance.__wevu?.proxy) {
-    return instance.__wevu.proxy
+  if (instance[WEVU_PUBLIC_RUNTIME_KEY]?.proxy) {
+    return instance[WEVU_PUBLIC_RUNTIME_KEY].proxy
   }
   return value
 }
 
 export function getTemplateRefMap(target: InternalRuntimeState): TemplateRefMap | undefined {
-  return (target as any).__wevuTemplateRefMap as TemplateRefMap | undefined
+  return (target as any)[WEVU_TEMPLATE_REF_MAP_KEY] as TemplateRefMap | undefined
 }
 
 export function updateTemplateRefMapValue(

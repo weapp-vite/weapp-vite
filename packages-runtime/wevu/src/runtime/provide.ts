@@ -1,3 +1,4 @@
+import { WEVU_IS_APP_INSTANCE_KEY } from '@weapp-core/constants'
 import { getCurrentInstance } from './hooks'
 
 // ============================================================================
@@ -15,7 +16,7 @@ function isAppInstance(instance: unknown): boolean {
   return Boolean(
     instance
     && typeof instance === 'object'
-    && (instance as { __wevuIsAppInstance?: boolean }).__wevuIsAppInstance === true,
+    && (instance as { [WEVU_IS_APP_INSTANCE_KEY]?: boolean })[WEVU_IS_APP_INSTANCE_KEY] === true,
   )
 }
 

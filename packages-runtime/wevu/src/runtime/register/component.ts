@@ -1,5 +1,6 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, MiniProgramComponentRawOptions, RuntimeApp } from '../types'
 import type { WatchMap } from './watch'
+import { WEVU_EXPOSED_KEY, WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { resolveComponentFeatures } from './component/features'
 import { createPageLifecycleHooks } from './component/lifecycle'
 import { createComponentMethods } from './component/methods'
@@ -87,7 +88,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   })
 
   const hasHook = (target: InternalRuntimeState, name: string) => {
-    const hooks = target.__wevuHooks
+    const hooks = target[WEVU_HOOKS_KEY]
     if (!hooks) {
       return false
     }
@@ -107,7 +108,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
   {
     const userExport = (restOptions as any).export
     ;(restOptions as any).export = function __wevu_export(this: InternalRuntimeState) {
-      const exposed = (this as any).__wevuExposed ?? {}
+      const exposed = (this as any)[WEVU_EXPOSED_KEY] ?? {}
       const base = typeof userExport === 'function' ? userExport.call(this) : {}
 
       if (base && typeof base === 'object' && !Array.isArray(base)) {

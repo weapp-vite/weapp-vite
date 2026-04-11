@@ -9,6 +9,8 @@ import type {
 } from '../../types'
 import {
   WEVU_ATTRS_KEY,
+  WEVU_EFFECT_SCOPE_KEY,
+  WEVU_EXPOSED_KEY,
   WEVU_PROP_KEYS_KEY,
   WEVU_PROPS_KEY,
 } from '@weapp-core/constants'
@@ -152,7 +154,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
     // 与 Vue 3 对齐的 expose
     expose: (exposed: Record<string, any>) => {
-      target.__wevuExposed = exposed
+      target[WEVU_EXPOSED_KEY] = exposed
     },
 
     // 与 Vue 3 对齐的 attrs（小程序中为非 props 属性集合）
@@ -164,7 +166,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
   // 仅在同步 setup 执行期间暴露 current instance
   const instanceScope = effectScope(true)
-  target.__wevuEffectScope = instanceScope
+  target[WEVU_EFFECT_SCOPE_KEY] = instanceScope
   setCurrentInstance(target)
   setCurrentSetupContext(context)
   try {
@@ -227,7 +229,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   }
   catch (error) {
     instanceScope.stop()
-    target.__wevuEffectScope = undefined
+    target[WEVU_EFFECT_SCOPE_KEY] = undefined
     throw error
   }
   finally {
