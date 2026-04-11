@@ -1,4 +1,8 @@
 import type { InternalRuntimeState } from '../types'
+import {
+  WEVU_ON_BEFORE_UPDATE_HOOK,
+  WEVU_ON_UPDATED_HOOK,
+} from '@weapp-core/constants'
 import { assertInSetup, callHookList, pushHook } from './base'
 
 // ============================================================================
@@ -18,7 +22,7 @@ export function onMounted(handler: () => void) {
  * 小程序没有专用 update 生命周期，这里在每次 setData 完成后调用。
  */
 export function onUpdated(handler: () => void) {
-  pushHook(assertInSetup('onUpdated'), '__wevuOnUpdated', handler)
+  pushHook(assertInSetup('onUpdated'), WEVU_ON_UPDATED_HOOK, handler)
 }
 
 /**
@@ -51,7 +55,7 @@ export function onBeforeMount(handler: () => void) {
  * Vue 3 对齐：更新前；在每次 setData 前触发
  */
 export function onBeforeUpdate(handler: () => void) {
-  pushHook(assertInSetup('onBeforeUpdate'), '__wevuOnBeforeUpdate', handler)
+  pushHook(assertInSetup('onBeforeUpdate'), WEVU_ON_BEFORE_UPDATE_HOOK, handler)
 }
 
 /**
@@ -91,6 +95,6 @@ export function onServerPrefetch(_handler: () => void) {
  * @internal
  */
 export function callUpdateHooks(target: InternalRuntimeState, phase: 'before' | 'after') {
-  const hookName = phase === 'before' ? '__wevuOnBeforeUpdate' : '__wevuOnUpdated'
+  const hookName = phase === 'before' ? WEVU_ON_BEFORE_UPDATE_HOOK : WEVU_ON_UPDATED_HOOK
   callHookList(target, hookName)
 }

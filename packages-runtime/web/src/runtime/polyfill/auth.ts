@@ -1,3 +1,13 @@
+import {
+  WEAPP_VITE_WEB_AUTHORIZE_DECISION_KEY,
+  WEAPP_VITE_WEB_CHECK_SESSION_KEY,
+  WEAPP_VITE_WEB_GET_USER_PROFILE_DECISION_KEY,
+  WEAPP_VITE_WEB_OPEN_APP_AUTHORIZE_SETTING_KEY,
+  WEAPP_VITE_WEB_OPEN_SETTING_AUTH_KEY,
+  WEAPP_VITE_WEB_USER_INFO_KEY,
+  WEAPP_VITE_WEB_USER_PROFILE_KEY,
+} from '@weapp-core/constants'
+
 export type AppAuthorizeStatusLike = 'authorized' | 'denied' | 'not determined'
 
 type UserLanguageLike = 'en' | 'zh_CN' | 'zh_TW'
@@ -42,7 +52,7 @@ export function normalizeAuthorizeDecision(decision: unknown): AppAuthorizeStatu
 
 export function resolveAuthorizeDecision(scope: string): AppAuthorizeStatusLike {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const decisionSource = runtimeGlobal.__weappViteWebAuthorizeDecision
+  const decisionSource = runtimeGlobal[WEAPP_VITE_WEB_AUTHORIZE_DECISION_KEY]
   if (typeof decisionSource === 'function') {
     try {
       return normalizeAuthorizeDecision((decisionSource as (value: string) => unknown)(scope))
@@ -62,7 +72,7 @@ export function syncOpenSettingPreset(
   supportedAuthScopes: Set<string>,
 ) {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebOpenSettingAuth
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_OPEN_SETTING_AUTH_KEY]
   if (!preset || typeof preset !== 'object') {
     return
   }
@@ -92,7 +102,7 @@ export function syncOpenAppAuthorizeSettingPreset(
   scopeMap: Partial<Record<string, string>>,
 ) {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebOpenAppAuthorizeSetting
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_OPEN_APP_AUTHORIZE_SETTING_KEY]
   if (!preset || typeof preset !== 'object') {
     return
   }
@@ -149,7 +159,10 @@ function normalizeUserInfoValue(value: unknown, lang: UserLanguageLike) {
   } satisfies UserInfoLike
 }
 
-function resolveUserInfoPreset(source: '__weappViteWebUserInfo' | '__weappViteWebUserProfile', lang: UserLanguageLike) {
+function resolveUserInfoPreset(
+  source: typeof WEAPP_VITE_WEB_USER_INFO_KEY | typeof WEAPP_VITE_WEB_USER_PROFILE_KEY,
+  lang: UserLanguageLike,
+) {
   const runtimeGlobal = globalThis as Record<string, unknown>
   const preset = runtimeGlobal[source]
   if (typeof preset === 'function') {
@@ -160,8 +173,8 @@ function resolveUserInfoPreset(source: '__weappViteWebUserInfo' | '__weappViteWe
 
 export function buildUserProfilePayload(errMsg: 'getUserInfo:ok' | 'getUserProfile:ok', optionsLang?: unknown) {
   const language = normalizeUserLanguage(optionsLang)
-  const userInfo = resolveUserInfoPreset('__weappViteWebUserProfile', language)
-    ?? resolveUserInfoPreset('__weappViteWebUserInfo', language)
+  const userInfo = resolveUserInfoPreset(WEAPP_VITE_WEB_USER_PROFILE_KEY, language)
+    ?? resolveUserInfoPreset(WEAPP_VITE_WEB_USER_INFO_KEY, language)
     ?? {
       nickName: 'Web User',
       avatarUrl: '',
@@ -184,7 +197,7 @@ export function buildUserProfilePayload(errMsg: 'getUserInfo:ok' | 'getUserProfi
 
 export function resolveCheckSessionState() {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebCheckSession
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_CHECK_SESSION_KEY]
   if (typeof preset === 'boolean') {
     return preset
   }
@@ -199,7 +212,7 @@ export function resolveCheckSessionState() {
 
 export function resolveUserProfileDecision(): AppAuthorizeStatusLike {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebGetUserProfileDecision
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_GET_USER_PROFILE_DECISION_KEY]
   if (typeof preset === 'function') {
     return normalizeAuthorizeDecision((preset as () => unknown)())
   }

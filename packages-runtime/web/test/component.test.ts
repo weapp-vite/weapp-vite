@@ -1,3 +1,12 @@
+import {
+  WEAPP_VITE_WEB_AUTHORIZE_DECISION_KEY,
+  WEAPP_VITE_WEB_CHECK_SESSION_KEY,
+  WEAPP_VITE_WEB_GET_USER_PROFILE_DECISION_KEY,
+  WEAPP_VITE_WEB_OPEN_APP_AUTHORIZE_SETTING_KEY,
+  WEAPP_VITE_WEB_OPEN_SETTING_AUTH_KEY,
+  WEAPP_VITE_WEB_USER_INFO_KEY,
+  WEAPP_VITE_WEB_USER_PROFILE_KEY,
+} from '@weapp-core/constants'
 import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '../src/runtime/component'
@@ -1485,7 +1494,7 @@ describe('web runtime wx utility APIs', () => {
     expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'checkSession:ok' }))
     expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'checkSession:ok' }))
 
-    const restorePreset = overrideGlobalProperty('__weappViteWebCheckSession', false)
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_CHECK_SESSION_KEY, false)
     try {
       await expect(checkSession()).rejects.toMatchObject({
         errMsg: expect.stringContaining('checkSession:fail'),
@@ -1497,7 +1506,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports getUserInfo and getUserProfile bridges', async () => {
-    const restoreUserInfo = overrideGlobalProperty('__weappViteWebUserInfo', {
+    const restoreUserInfo = overrideGlobalProperty(WEAPP_VITE_WEB_USER_INFO_KEY, {
       nickName: 'Web 调试用户',
       avatarUrl: 'https://example.com/avatar.png',
       gender: 1,
@@ -1530,8 +1539,8 @@ describe('web runtime wx utility APIs', () => {
       restoreUserInfo()
     }
 
-    const restoreProfileDecision = overrideGlobalProperty('__weappViteWebGetUserProfileDecision', true)
-    const restoreUserProfile = overrideGlobalProperty('__weappViteWebUserProfile', {
+    const restoreProfileDecision = overrideGlobalProperty(WEAPP_VITE_WEB_GET_USER_PROFILE_DECISION_KEY, true)
+    const restoreUserProfile = overrideGlobalProperty(WEAPP_VITE_WEB_USER_PROFILE_KEY, {
       nickName: 'Profile 用户',
       avatarUrl: 'https://example.com/profile.png',
       gender: 2,
@@ -1561,7 +1570,7 @@ describe('web runtime wx utility APIs', () => {
       errMsg: expect.stringContaining('getUserProfile:fail'),
     })
 
-    const restoreProfileDeny = overrideGlobalProperty('__weappViteWebGetUserProfileDecision', false)
+    const restoreProfileDeny = overrideGlobalProperty(WEAPP_VITE_WEB_GET_USER_PROFILE_DECISION_KEY, false)
     try {
       await expect(getUserProfile({ desc: '拒绝场景' })).rejects.toMatchObject({
         errMsg: expect.stringContaining('getUserProfile:fail'),
@@ -1574,7 +1583,7 @@ describe('web runtime wx utility APIs', () => {
       restoreProfileDeny()
     }
 
-    const restoreOpenSettingPreset = overrideGlobalProperty('__weappViteWebOpenSettingAuth', {
+    const restoreOpenSettingPreset = overrideGlobalProperty(WEAPP_VITE_WEB_OPEN_SETTING_AUTH_KEY, {
       'scope.userInfo': true,
     })
     try {
@@ -4017,7 +4026,7 @@ describe('web runtime wx utility APIs', () => {
     const afterAuthorize = await getSetting()
     expect(afterAuthorize.authSetting['scope.camera']).toBe(true)
 
-    const restoreAuthorizeDecision = overrideGlobalProperty('__weappViteWebAuthorizeDecision', {
+    const restoreAuthorizeDecision = overrideGlobalProperty(WEAPP_VITE_WEB_AUTHORIZE_DECISION_KEY, {
       'scope.userLocation': false,
     })
     try {
@@ -4029,7 +4038,7 @@ describe('web runtime wx utility APIs', () => {
       restoreAuthorizeDecision()
     }
 
-    const restoreOpenSettingPreset = overrideGlobalProperty('__weappViteWebOpenSettingAuth', {
+    const restoreOpenSettingPreset = overrideGlobalProperty(WEAPP_VITE_WEB_OPEN_SETTING_AUTH_KEY, {
       'scope.userLocation': true,
     })
     try {
@@ -4054,7 +4063,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports openAppAuthorizeSetting with preset bridge', async () => {
-    const restorePreset = overrideGlobalProperty('__weappViteWebOpenAppAuthorizeSetting', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_OPEN_APP_AUTHORIZE_SETTING_KEY, {
       cameraAuthorized: 'authorized',
       locationAuthorized: 'denied',
       microphoneAuthorized: true,

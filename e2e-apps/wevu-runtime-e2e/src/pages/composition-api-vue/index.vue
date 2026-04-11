@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import {
+  WEVU_ON_BEFORE_UPDATE_HOOK,
+  WEVU_ON_UPDATED_HOOK,
+} from '@weapp-core/constants'
+import {
   batch,
   callHookList,
   callHookReturn,
@@ -409,8 +413,8 @@ async function runE2E() {
   callHookList(target, 'onUnhandledRejection', [{ reason: 'e2e-vue' }])
   callHookList(target, 'onActivated', [])
   callHookList(target, 'onDeactivated', [])
-  callHookList(target, '__wevuOnBeforeUpdate', [])
-  callHookList(target, '__wevuOnUpdated', [])
+  callHookList(target, WEVU_ON_BEFORE_UPDATE_HOOK, [])
+  callHookList(target, WEVU_ON_UPDATED_HOOK, [])
   callHookList(target, 'onError', [new Error('api-matrix-error-vue')])
 
   const shareResult = callHookReturn(target, 'onShareAppMessage', [{}])
