@@ -8,35 +8,39 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
-async function runBuild() {
+async function runBuild(mode?: 'inline') {
   await fs.remove(DIST_ROOT)
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
     projectRoot: APP_ROOT,
     platform: 'weapp',
     cwd: APP_ROOT,
-    label: 'ide:app-prelude-native:inline',
+    label: `ide:app-prelude-native:${mode ?? 'default'}`,
     skipNpm: true,
-    env: {
-      APP_PRELUDE_MODE: 'inline',
-    },
+    env: mode
+      ? {
+          APP_PRELUDE_MODE: mode,
+        }
+      : undefined,
   })
 }
 
-let sharedMiniProgram: any = null
-let sharedBuildPrepared = false
+const sharedMiniProgramByMode = new Map<string, any>()
+const sharedBuildPreparedModes = new Set<string>()
 
-async function getSharedMiniProgram(ctx: { skip: (message?: string) => void }) {
-  if (!sharedBuildPrepared) {
-    await runBuild()
-    sharedBuildPrepared = true
+async function getSharedMiniProgram(ctx: { skip: (message?: string) => void }, mode: 'default' | 'inline') {
+  if (!sharedBuildPreparedModes.has(mode)) {
+    await runBuild(mode === 'inline' ? 'inline' : undefined)
+    sharedBuildPreparedModes.add(mode)
   }
 
+  let sharedMiniProgram = sharedMiniProgramByMode.get(mode)
   if (!sharedMiniProgram) {
     try {
       sharedMiniProgram = await launchAutomator({
         projectPath: APP_ROOT,
       })
+      sharedMiniProgramByMode.set(mode, sharedMiniProgram)
     }
     catch (error) {
       if (isDevtoolsHttpPortError(error)) {
@@ -50,16 +54,17 @@ async function getSharedMiniProgram(ctx: { skip: (message?: string) => void }) {
 }
 
 async function closeSharedMiniProgram() {
-  if (!sharedMiniProgram) {
-    return
-  }
-  const miniProgram = sharedMiniProgram
-  sharedMiniProgram = null
-  await miniProgram.close()
+  const miniPrograms = [...sharedMiniProgramByMode.values()]
+  sharedMiniProgramByMode.clear()
+  await Promise.allSettled(miniPrograms.map((miniProgram: any) => miniProgram.close()))
 }
 
-async function collectPreludeLogs(ctx: { skip: (message?: string) => void }, route: string) {
-  const miniProgram = await getSharedMiniProgram(ctx)
+async function collectPreludeLogs(
+  ctx: { skip: (message?: string) => void },
+  route: string,
+  mode: 'default' | 'inline',
+) {
+  const miniProgram = await getSharedMiniProgram(ctx, mode)
   const page = await miniProgram.reLaunch(route)
   if (!page) {
     throw new Error(`Failed to launch ${route}`)
@@ -76,9 +81,19 @@ describe.sequential('e2e app: app-prelude-native runtime', () => {
   })
 
   it('executes inline app prelude once even after relaunching main and subpackage pages', async (ctx) => {
-    const mainLogs = await collectPreludeLogs(ctx, '/pages/index/index')
-    const normalLogs = await collectPreludeLogs(ctx, '/subpackages/normal/pages/entry/index')
-    const independentLogs = await collectPreludeLogs(ctx, '/subpackages/independent/pages/entry/index')
+    const mainLogs = await collectPreludeLogs(ctx, '/pages/index/index', 'inline')
+    const normalLogs = await collectPreludeLogs(ctx, '/subpackages/normal/pages/entry/index', 'inline')
+    const independentLogs = await collectPreludeLogs(ctx, '/subpackages/independent/pages/entry/index', 'inline')
+
+    expect(mainLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(normalLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(independentLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
+  })
+
+  it('keeps one prelude side effect per package scope under default require mode', async (ctx) => {
+    const mainLogs = await collectPreludeLogs(ctx, '/pages/index/index', 'default')
+    const normalLogs = await collectPreludeLogs(ctx, '/subpackages/normal/pages/entry/index', 'default')
+    const independentLogs = await collectPreludeLogs(ctx, '/subpackages/independent/pages/entry/index', 'default')
 
     expect(mainLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
     expect(normalLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
