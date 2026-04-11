@@ -6,7 +6,7 @@ import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { shouldRewriteBundleNpmImports } from '../../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../../runtime/chunkStrategy'
-import { resolveInjectRequestGlobalsOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
+import { resolveRequestRuntimeOptions } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../../../../runtime/npmPlugin/service'
 import { toPosixPath } from '../../../../utils'
 import {
@@ -50,10 +50,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
   const { ctx, subPackageMeta } = state
   const { scanService, configService } = ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
-  const injectRequestGlobalsOptions = resolveInjectRequestGlobalsOptions(
-    configService.weappViteConfig?.injectRequestGlobals,
-    configService.packageJson,
-  )
+  const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
+    appPrelude: configService.weappViteConfig?.appPrelude,
+    injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
+  }, configService.packageJson, message => logger.warn(message))
   const npmBuildCandidateDependencies = resolveNpmBuildCandidateDependencyRecordSync(ctx, configService.packageJson)
 
   return async function generateBundle(this: any, _options: any, bundle: any) {

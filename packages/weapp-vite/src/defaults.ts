@@ -78,7 +78,6 @@ export function getWeappViteConfig(): WeappViteConfig {
       unhandledErrors: true,
     },
     appPrelude: {},
-    injectRequestGlobals: {},
     wevu: {
       defaults: {
         component: {

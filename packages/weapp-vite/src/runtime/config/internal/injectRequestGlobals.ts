@@ -1,5 +1,10 @@
 import type { PackageJson } from 'pkg-types'
-import type { WeappInjectRequestGlobalsConfig, WeappInjectRequestGlobalsTarget } from '../../../types'
+import type {
+  WeappAppPreludeConfig,
+  WeappInjectRequestGlobalsConfig,
+  WeappInjectRequestGlobalsTarget,
+  WeappRequestRuntimeConfig,
+} from '../../../types'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 
 export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
@@ -40,6 +45,33 @@ export interface ResolvedInjectRequestGlobalsOptions {
   targets: WeappInjectRequestGlobalsTarget[]
   dependencyPatterns?: (string | RegExp)[]
   prelude: boolean
+}
+
+export interface ResolveRequestRuntimeOptionsInput {
+  appPrelude?: boolean | WeappAppPreludeConfig
+  injectRequestGlobals?: boolean | WeappInjectRequestGlobalsConfig
+}
+
+function resolveAppPreludeRequestRuntimeConfig(
+  appPrelude?: boolean | WeappAppPreludeConfig,
+): boolean | WeappInjectRequestGlobalsConfig | undefined {
+  if (!appPrelude || typeof appPrelude !== 'object' || !('requestRuntime' in appPrelude)) {
+    return undefined
+  }
+
+  const requestRuntime = appPrelude.requestRuntime as boolean | WeappRequestRuntimeConfig | undefined
+  if (requestRuntime === undefined) {
+    return undefined
+  }
+  if (typeof requestRuntime === 'boolean') {
+    return requestRuntime
+      ? { enabled: true, prelude: true }
+      : false
+  }
+  return {
+    ...requestRuntime,
+    prelude: true,
+  }
 }
 
 function hasMatchedDependency(
@@ -158,6 +190,28 @@ export function resolveInjectRequestGlobalsOptions(
     targets: [...matchedTargets],
     prelude: config && typeof config === 'object' ? config.prelude === true : false,
   }
+}
+
+export function resolveRequestRuntimeOptions(
+  input: ResolveRequestRuntimeOptionsInput,
+  packageJson: PackageJson | undefined,
+  warn?: (message: string) => void,
+): ResolvedInjectRequestGlobalsOptions | null {
+  const nestedConfig = resolveAppPreludeRequestRuntimeConfig(input.appPrelude)
+  const legacyConfig = input.injectRequestGlobals
+
+  if (nestedConfig !== undefined) {
+    if (legacyConfig !== undefined) {
+      warn?.('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.appPrelude.requestRuntime` 覆盖。请迁移到 `weapp.appPrelude.requestRuntime`。')
+    }
+    return resolveInjectRequestGlobalsOptions(nestedConfig, packageJson)
+  }
+
+  if (legacyConfig !== undefined) {
+    warn?.('`weapp.injectRequestGlobals` 已废弃，请迁移到 `weapp.appPrelude.requestRuntime`。')
+  }
+
+  return resolveInjectRequestGlobalsOptions(legacyConfig, packageJson)
 }
 
 function resolveRequestGlobalsRuntimeModuleId() {

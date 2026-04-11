@@ -3,7 +3,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import {
-  resolveInjectRequestGlobalsOptions,
+  resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { isCSSRequest } from '../../../../utils'
 import { getMiniProgramPlatformGlobalKey } from '../../../../utils/miniProgramGlobals'
@@ -26,10 +26,10 @@ export function createLoadHook(state: CorePluginState) {
   const { configService } = ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
   const weapiResolution = { checked: false, available: false }
-  const injectRequestGlobalsOptions = resolveInjectRequestGlobalsOptions(
-    configService.weappViteConfig?.injectRequestGlobals,
-    configService.packageJson,
-  )
+  const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
+    appPrelude: configService.weappViteConfig?.appPrelude,
+    injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
+  }, configService.packageJson, message => logger.warn(message))
 
   function resolveRequestGlobalsTargets() {
     if (!injectRequestGlobalsOptions) {

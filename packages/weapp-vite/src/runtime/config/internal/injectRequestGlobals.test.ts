@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createInjectRequestGlobalsCode,
   createInjectRequestGlobalsSfcCode,
   injectRequestGlobalsIntoSfc,
   resolveInjectRequestGlobalsOptions,
   resolveManualRequestGlobalsTargets,
+  resolveRequestRuntimeOptions,
 } from './injectRequestGlobals'
 
 describe('injectRequestGlobals helpers', () => {
@@ -87,6 +88,105 @@ describe('injectRequestGlobals helpers', () => {
       prelude: false,
       targets: ['fetch', 'AbortController'],
     })
+  })
+
+  it('supports appPrelude.requestRuntime with implicit prelude timing', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        requestRuntime: {},
+      },
+    }, {
+      dependencies: {
+        axios: '^1.0.0',
+      },
+    })).toEqual({
+      mode: 'auto',
+      prelude: true,
+      targets: [
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
+      ],
+    })
+  })
+
+  it('supports appPrelude.requestRuntime boolean shorthand', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        requestRuntime: true,
+      },
+    }, {
+      dependencies: {
+        dayjs: '^1.0.0',
+      },
+    })).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      prelude: true,
+      targets: [
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
+      ],
+    })
+  })
+
+  it('prefers appPrelude.requestRuntime over legacy injectRequestGlobals and warns', () => {
+    const warn = vi.fn()
+
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        requestRuntime: {
+          enabled: true,
+          targets: ['fetch'],
+        },
+      },
+      injectRequestGlobals: {
+        enabled: true,
+        targets: ['XMLHttpRequest'],
+      },
+    }, {
+      dependencies: {
+        axios: '^1.0.0',
+      },
+    }, warn)).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      prelude: true,
+      targets: ['fetch'],
+    })
+    expect(warn).toHaveBeenCalledWith('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.appPrelude.requestRuntime` 覆盖。请迁移到 `weapp.appPrelude.requestRuntime`。')
+  })
+
+  it('keeps legacy injectRequestGlobals behavior during compatibility window and warns once', () => {
+    const warn = vi.fn()
+
+    expect(resolveRequestRuntimeOptions({
+      injectRequestGlobals: {
+        enabled: true,
+        targets: ['fetch'],
+      },
+    }, {
+      dependencies: {
+        dayjs: '^1.0.0',
+      },
+    }, warn)).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      prelude: false,
+      targets: ['fetch'],
+    })
+    expect(warn).toHaveBeenCalledWith('`weapp.injectRequestGlobals` 已废弃，请迁移到 `weapp.appPrelude.requestRuntime`。')
   })
 
   it('creates stable injection code', () => {

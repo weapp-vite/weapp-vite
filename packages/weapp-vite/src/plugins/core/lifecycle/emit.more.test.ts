@@ -1161,12 +1161,11 @@ describe('core lifecycle emit hook extra branches', () => {
             },
           },
           weappViteConfig: {
-            injectRequestGlobals: {
-              enabled: true,
-              prelude: true,
-            },
             appPrelude: {
               mode: 'entry',
+              requestRuntime: {
+                enabled: true,
+              },
             },
           },
           relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),

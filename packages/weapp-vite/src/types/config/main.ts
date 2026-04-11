@@ -152,6 +152,9 @@ export interface WeappViteConfig {
   routeRules?: WeappRouteRules
   appPrelude?: boolean | WeappAppPreludeConfig
   injectWeapi?: boolean | WeappInjectWeapiConfig
+  /**
+   * @deprecated 已废弃，请迁移到 `weapp.appPrelude.requestRuntime`。
+   */
   injectRequestGlobals?: boolean | WeappInjectRequestGlobalsConfig
   mcp?: boolean | WeappMcpConfig
   forwardConsole?: boolean | WeappForwardConsoleConfig

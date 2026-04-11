@@ -3,11 +3,12 @@ import type { AstParserLike } from '../../../../ast'
 import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { resolveAstEngine } from '../../../../ast'
+import logger from '../../../../logger'
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
-  resolveInjectRequestGlobalsOptions,
   resolveManualRequestGlobalsTargets,
+  resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
@@ -17,10 +18,10 @@ import { resolveInjectWeapiOptions, shouldTransformId } from './shared'
 export function createTransformHook(state: CorePluginState) {
   const { configService } = state.ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
-  const injectRequestGlobalsOptions = resolveInjectRequestGlobalsOptions(
-    configService.weappViteConfig?.injectRequestGlobals,
-    configService.packageJson,
-  )
+  const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
+    appPrelude: configService.weappViteConfig?.appPrelude,
+    injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
+  }, configService.packageJson, message => logger.warn(message))
 
   function resolveRequestGlobalsTransformCode(id: string, code: string) {
     const requestGlobalsTargets = injectRequestGlobalsOptions?.targets?.length

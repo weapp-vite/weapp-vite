@@ -157,6 +157,11 @@ export interface WeappInjectRequestGlobalsConfig {
   prelude?: boolean
 }
 
+/**
+ * @description `app.prelude` 中的请求运行时安装配置
+ */
+export interface WeappRequestRuntimeConfig extends Omit<WeappInjectRequestGlobalsConfig, 'prelude'> {}
+
 export type WeappAppPreludeMode = 'inline' | 'entry' | 'require'
 
 /**
@@ -165,6 +170,7 @@ export type WeappAppPreludeMode = 'inline' | 'entry' | 'require'
 export interface WeappAppPreludeConfig {
   enabled?: boolean
   mode?: WeappAppPreludeMode
+  requestRuntime?: boolean | WeappRequestRuntimeConfig
 }
 
 /**

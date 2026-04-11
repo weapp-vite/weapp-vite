@@ -138,6 +138,22 @@ export default defineConfig({
 - `mode: 'inline'`：默认模式，把 prelude 代码内联到每个 JS chunk 顶部，执行时机最稳
 - `mode: 'entry'`：只注入到 `app/page/component` 入口 chunk，适合希望减少重复代码的场景
 - `mode: 'require'`：按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
+- `requestRuntime`：在 `appPrelude` 时机安装请求相关运行时全局，并保留 chunk 级局部绑定兜底，适合 `axios`、`graphql-request`、`socket.io-client` 等依赖
+
+```ts
+export default defineConfig({
+  weapp: {
+    appPrelude: {
+      mode: 'entry',
+      requestRuntime: {
+        enabled: true,
+        targets: ['fetch', 'Headers', 'Request', 'Response'],
+        dependencies: [/^axios$/, /^graphql-request$/],
+      },
+    },
+  },
+})
+```
 
 适用场景：
 
@@ -248,6 +264,7 @@ export default defineConfig({
 ## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
 
 - **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
+- **状态**：已废弃，建议迁移到 `weapp.appPrelude.requestRuntime`
 
 用于为请求相关全局对象做注入，例如：
 
@@ -279,6 +296,8 @@ export default defineConfig({
 
 > [!NOTE]
 > 这里解决的是“运行时请求相关全局对象注入”，不是 Vite 顶层的 `define` 替换，也不是 polyfill 插件的通用替代品。
+>
+> 新项目建议直接使用 `weapp.appPrelude.requestRuntime`。`injectRequestGlobals` 目前仍兼容 1-2 个小版本，后续会移除。
 >
 > 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装请求相关全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
 
