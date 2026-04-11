@@ -38,10 +38,10 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 25
-      build_command: pnpm --filter weapp-vite... build
+      build_command: pnpm build:pkgs:ci
       main_command: |
         pnpm lint
-        pnpm build
+        pnpm build:ci
         pnpm test:coverage
       upload_codecov: true
     secrets: inherit
@@ -60,10 +60,10 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 25
-      build_command: pnpm --filter weapp-vite... build
+      build_command: pnpm build:pkgs:ci
       main_command: |
         pnpm lint
-        pnpm build
+        pnpm build:ci
         pnpm test:coverage
       upload_codecov: true
     secrets: inherit

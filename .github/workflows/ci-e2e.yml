@@ -40,7 +40,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 35
-      build_command: pnpm build:pkgs
+      build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:ci
       e2e_platform: ${{ matrix.platform }}
       increase_ulimit: true
@@ -86,7 +86,7 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 35
-      build_command: pnpm build:pkgs
+      build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:ci
       e2e_platform: ${{ matrix.platform }}
       increase_ulimit: true
@@ -100,7 +100,7 @@ jobs:
       runs_on: ubuntu-latest
       node_version: '20'
       timeout_minutes: 20
-      build_command: pnpm build:pkgs
+      build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web
       install_playwright: true
     secrets: inherit
@@ -118,7 +118,7 @@ jobs:
       runs_on: ubuntu-latest
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: 20
-      build_command: pnpm build:pkgs
+      build_command: pnpm build:pkgs:ci
       main_command: pnpm e2e:web
       install_playwright: true
     secrets: inherit
