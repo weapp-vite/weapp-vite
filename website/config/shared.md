@@ -126,7 +126,7 @@ export default defineConfig({
   weapp: {
     appPrelude: {
       enabled: true,
-      mode: 'inline',
+      mode: 'require',
     },
   },
 })
@@ -135,9 +135,9 @@ export default defineConfig({
 字段说明：
 
 - `enabled`：是否启用 `app.prelude` 注入；设为 `false` 时即使文件存在也不会注入
-- `mode: 'inline'`：默认模式，把 prelude 代码内联到每个 JS chunk 顶部，执行时机最稳
+- `mode: 'inline'`：把 prelude 代码内联到每个目标 JS chunk 顶部，执行时机最稳
 - `mode: 'entry'`：只注入到 `app/page/component` 入口 chunk，适合希望减少重复代码的场景
-- `mode: 'require'`：按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
+- `mode: 'require'`：默认模式。按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
 - `requestRuntime`：在 `appPrelude` 时机安装请求相关运行时全局，并保留 chunk 级局部绑定兜底，适合 `axios`、`graphql-request`、`socket.io-client` 等依赖
 
 ```ts
