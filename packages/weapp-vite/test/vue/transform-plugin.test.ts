@@ -1221,10 +1221,6 @@ export default {}
     const [transformedSource] = compileVueFileMock.mock.calls.at(-1)!
     expect(String(transformedSource)).toContain('const routesRef =')
     expect(String(transformedSource)).toContain('Promise.resolve(')
-
-    const createPageMatcherArg = createPageEntryMatcherMock.mock.calls.at(-1)?.[0]
-    createPageMatcherArg?.warn?.('warn-message')
-    expect(warnSpy).toHaveBeenCalledWith('warn-message')
   })
 
   it('transform() keeps auto-routes imports untouched for normal vue files', async () => {

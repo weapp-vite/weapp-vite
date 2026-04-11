@@ -12,6 +12,7 @@ import {
   findJsonEntry,
   findTemplateEntry,
   findVueEntry,
+  getAutoRoutesMacroImportCandidates,
   isJsOrTs,
   isTemplate,
   isTemplateRequest,
@@ -349,6 +350,12 @@ defineAppJson({
       finally {
         await fs.remove(root)
       }
+    })
+
+    it('includes dist-local auto-routes fallback for bundled runtime extraction', () => {
+      const candidates = getAutoRoutesMacroImportCandidates('/project/packages/weapp-vite/dist')
+      expect(candidates[0]).toBe('/project/packages/weapp-vite/dist/auto-routes.mjs')
+      expect(candidates).toContain('/project/packages/weapp-vite/dist/auto-routes.mjs')
     })
 
     it('supports auto-routes named import replacement in macro extraction', async () => {

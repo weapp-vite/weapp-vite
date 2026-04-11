@@ -51,13 +51,18 @@ function resolveInlineAutoRoutesImport(line: string, inlineRoutes: AutoRoutesInl
   return `const ${clause} = ${inlineLiteral};`
 }
 
-function resolveAutoRoutesMacroImportPath() {
-  const fallbackCandidates = [
-    path.resolve(import.meta.dirname, '../auto-routes.mjs'),
-    path.resolve(import.meta.dirname, '../../dist/auto-routes.mjs'),
-    path.resolve(import.meta.dirname, '../../src/auto-routes.ts'),
-    path.resolve(import.meta.dirname, '../../auto-routes.ts'),
+export function getAutoRoutesMacroImportCandidates(baseDir: string = import.meta.dirname) {
+  return [
+    path.resolve(baseDir, './auto-routes.mjs'),
+    path.resolve(baseDir, '../auto-routes.mjs'),
+    path.resolve(baseDir, '../../dist/auto-routes.mjs'),
+    path.resolve(baseDir, '../../src/auto-routes.ts'),
+    path.resolve(baseDir, '../../auto-routes.ts'),
   ]
+}
+
+function resolveAutoRoutesMacroImportPath() {
+  const fallbackCandidates = getAutoRoutesMacroImportCandidates()
   try {
     const resolved = nodeRequire.resolve('weapp-vite/auto-routes')
     if (fs.existsSync(resolved)) {
