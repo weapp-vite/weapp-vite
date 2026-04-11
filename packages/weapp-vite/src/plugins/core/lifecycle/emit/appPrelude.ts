@@ -7,6 +7,7 @@ import { transformWithOxc } from 'vite'
 import { toPosixPath } from '../../../../utils'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { changeFileExtension } from '../../../../utils/file'
+import { replaceImportMetaAccess } from '../transform/importMeta'
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
@@ -48,7 +49,13 @@ export function collectAppPreludeEntryChunkFileNames(state: CorePluginState) {
   return entryChunkFileNames
 }
 
-export async function resolveAppPreludeCode(preludePath: string | undefined) {
+export async function resolveAppPreludeCode(
+  preludePath: string | undefined,
+  options?: {
+    defineImportMetaEnv?: Record<string, any>
+    relativePath?: string
+  },
+) {
   if (!preludePath) {
     return undefined
   }
@@ -70,7 +77,14 @@ export async function resolveAppPreludeCode(preludePath: string | undefined) {
   }
 
   const transformed = await transformWithOxc(source, preludePath)
-  const normalizedCode = transformed.code.replace(USE_STRICT_PREFIX_RE, '').trim()
+  const importMetaCode = options?.relativePath
+    ? replaceImportMetaAccess(transformed.code, {
+        defineImportMetaEnv: options.defineImportMetaEnv,
+        extension: path.extname(preludePath),
+        relativePath: options.relativePath,
+      })
+    : transformed.code
+  const normalizedCode = importMetaCode.replace(USE_STRICT_PREFIX_RE, '').trim()
   if (!normalizedCode) {
     return undefined
   }

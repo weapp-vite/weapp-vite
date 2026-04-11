@@ -1452,6 +1452,43 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pkg-indep/common.js'].code).toContain('globalThis.__probe =')
   })
 
+  it('replaces import.meta.filename inside app prelude before injecting runtime guard', async () => {
+    readFileMock.mockResolvedValueOnce([
+      'const entry = import.meta.filename',
+      'globalThis.__probe = entry',
+    ].join('\n'))
+
+    const state = createState({
+      ctx: {
+        configService: {
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'App({})',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['app.js'].code).toContain('"/app.prelude.ts"')
+    expect(bundle['app.js'].code).not.toContain('import.meta.filename')
+    expect(bundle['app.js'].code).toContain('__weappViteAppPreludeInstalled__')
+  })
+
   it('emits scoped app prelude modules and injects require calls when mode is require', async () => {
     const state = createState({
       subPackageMeta: undefined,

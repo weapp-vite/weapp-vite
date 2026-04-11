@@ -1,8 +1,8 @@
-import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { normalizeRelativePath } from './path'
 
 export interface StaticImportMetaValues {
+  filename: string
   dirname: string
   env: Record<string, any>
   url: string
@@ -28,7 +28,11 @@ export function createStaticImportMetaValues(options: {
   extension: string
   relativePath: string
 }): StaticImportMetaValues {
-  const normalizedRelativePath = normalizeRelativePath(removeExtensionDeep(options.relativePath))
+  const normalizedRelativePath = normalizeRelativePath(
+    path.extname(options.relativePath)
+      ? options.relativePath.slice(0, -path.extname(options.relativePath).length)
+      : options.relativePath,
+  )
   const normalizedExtension = options.extension.startsWith('.')
     ? options.extension.slice(1)
     : options.extension
@@ -36,6 +40,7 @@ export function createStaticImportMetaValues(options: {
   const dirname = normalizeRelativePath(path.dirname(url)) || '/'
 
   return {
+    filename: url,
     url,
     dirname: dirname === '.' ? '/' : dirname,
     env: resolveImportMetaEnvObject(options.defineImportMetaEnv),
@@ -54,8 +59,9 @@ export function createStaticImportMetaReplacementMap(options: {
 
   return {
     ...(options.defineImportMetaEnv ?? {}),
+    'import.meta.filename': JSON.stringify(values.filename),
     'import.meta.url': JSON.stringify(values.url),
     'import.meta.dirname': JSON.stringify(values.dirname),
-    'import.meta': `{"url":${JSON.stringify(values.url)},"dirname":${JSON.stringify(values.dirname)},"env":${envJson}}`,
+    'import.meta': `{"filename":${JSON.stringify(values.filename)},"url":${JSON.stringify(values.url)},"dirname":${JSON.stringify(values.dirname)},"env":${envJson}}`,
   }
 }

@@ -58,6 +58,7 @@ export function replaceImportMetaAccess(code: string, options: {
   const ast = parseJsLike(code)
   let mutated = false
   const importMetaObjectNode = t.objectExpression([
+    t.objectProperty(t.identifier('filename'), t.stringLiteral(values.filename)),
     t.objectProperty(t.identifier('url'), t.stringLiteral(values.url)),
     t.objectProperty(t.identifier('dirname'), t.stringLiteral(values.dirname)),
     t.objectProperty(t.identifier('env'), t.valueToNode(values.env)),
@@ -87,6 +88,12 @@ export function replaceImportMetaAccess(code: string, options: {
         return
       }
 
+      if (isImportMetaMemberAccess(path.node, 'filename')) {
+        path.replaceWith(t.stringLiteral(values.filename))
+        mutated = true
+        return
+      }
+
       if (isImportMetaMemberAccess(path.node, 'dirname')) {
         path.replaceWith(t.stringLiteral(values.dirname))
         mutated = true
@@ -111,6 +118,12 @@ export function replaceImportMetaAccess(code: string, options: {
 
       if (isImportMetaMemberAccess(path.node, 'url')) {
         path.replaceWith(t.stringLiteral(values.url))
+        mutated = true
+        return
+      }
+
+      if (isImportMetaMemberAccess(path.node, 'filename')) {
+        path.replaceWith(t.stringLiteral(values.filename))
         mutated = true
         return
       }

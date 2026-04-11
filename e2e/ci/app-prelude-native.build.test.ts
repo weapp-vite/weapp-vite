@@ -84,6 +84,7 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
       expect(content).toContain('__weappViteAppPreludeInstalled__')
       expect(content).toContain('__appPreludeLog__')
       expect(content).toContain('app.prelude')
+      expect(content).not.toContain('import.meta.filename')
     }
 
     const appJs = await fs.readFile(appJsPath, 'utf8')
@@ -95,6 +96,10 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(mainPageJs.indexOf('__weappViteAppPreludeRuntime__')).toBeLessThan(mainPageJs.indexOf('Page('))
     expect(normalPageJs.indexOf('__weappViteAppPreludeRuntime__')).toBeLessThan(normalPageJs.indexOf('Page('))
     expect(independentPageJs.indexOf('__weappViteAppPreludeRuntime__')).toBeLessThan(independentPageJs.indexOf('Page('))
+    expect(appJs).toContain('app.prelude.ts:')
+    expect(appJs).toContain('"/app.prelude.ts"')
+    expect(mainPageJs).toContain('app.prelude.ts:')
+    expect(mainPageJs).toContain('"/app.prelude.ts"')
   })
 
   it('injects app prelude into entry chunks only when mode is entry', async () => {

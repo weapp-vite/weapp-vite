@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTransformHook } from './transform'
 
 describe('core lifecycle transform hook injectWeapi', () => {
-  it('replaces import.meta.url, import.meta.dirname and bare import.meta in script files', async () => {
+  it('replaces import.meta.filename, import.meta.url, import.meta.dirname and bare import.meta in script files', async () => {
     const transform = createTransformHook({
       ctx: {
         configService: {
@@ -26,14 +26,16 @@ describe('core lifecycle transform hook injectWeapi', () => {
     } as any)
 
     const result = await transform(
-      'export const url = import.meta.url; export const dirname = import.meta.dirname; export const flag = import.meta.env.FEATURE_FLAG; export const meta = import.meta',
+      'export const filename = import.meta.filename; export const url = import.meta.url; export const dirname = import.meta.dirname; export const flag = import.meta.env.FEATURE_FLAG; export const meta = import.meta',
       '/project/src/pages/import-meta/index.ts',
     )
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('"/pages/import-meta/index.js"')
+    expect(code).toContain('"/pages/import-meta/index.js"')
     expect(code).toContain('"/pages/import-meta"')
     expect(code).toContain('"on"')
+    expect(code).toContain('filename: "/pages/import-meta/index.js"')
     expect(code).toContain('url: "/pages/import-meta/index.js"')
     expect(code).not.toContain('import.meta')
   })

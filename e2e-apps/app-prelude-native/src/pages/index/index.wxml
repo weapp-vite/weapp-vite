@@ -1,1 +1,9 @@
 <view id="route">{{route}}</view>
+<view id="prelude-log-count">{{preludeLog.length}}</view>
+<view
+  wx:for="{{preludeLog}}"
+  wx:key="*this"
+  class="prelude-log-item"
+>
+  {{item}}
+</view>
