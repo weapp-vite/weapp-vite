@@ -1,3 +1,4 @@
+import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createNavigationFailure,
@@ -31,7 +32,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -69,7 +70,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -107,7 +108,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -151,7 +152,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -196,7 +197,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -270,7 +271,7 @@ describe('router navigation helpers', () => {
   it('infers route name when resolving static named route paths', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -305,7 +306,7 @@ describe('router navigation helpers', () => {
   it('resolves route meta from matched route records', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -360,7 +361,7 @@ describe('router navigation helpers', () => {
   it('infers name and params for dynamic route path resolution', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -402,7 +403,7 @@ describe('router navigation helpers', () => {
   it('infers route name from alias path and keeps canonical matched record', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -454,7 +455,7 @@ describe('router navigation helpers', () => {
   it('matches nested child route records through inherited parent alias paths', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -523,7 +524,7 @@ describe('router navigation helpers', () => {
   it('supports nested route records by flattening children paths', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -646,7 +647,7 @@ describe('router navigation helpers', () => {
   it('returns unknown navigation failure for invalid named route targets', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -694,7 +695,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -736,7 +737,7 @@ describe('router navigation helpers', () => {
   it('strict params mode rejects unexpected named-route params', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -778,7 +779,7 @@ describe('router navigation helpers', () => {
   it('provides hasRoute and getRoutes for named route introspection', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -823,7 +824,7 @@ describe('router navigation helpers', () => {
   it('supports Vue Router style routes option for route introspection', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -885,7 +886,7 @@ describe('router navigation helpers', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -934,7 +935,7 @@ describe('router navigation helpers', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -978,7 +979,7 @@ describe('router navigation helpers', () => {
   it('allows routes records without explicit names and derives names from normalized paths', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1030,7 +1031,7 @@ describe('router navigation helpers', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1087,7 +1088,7 @@ describe('router navigation helpers', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1139,7 +1140,7 @@ describe('router navigation helpers', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1193,7 +1194,7 @@ describe('router navigation helpers', () => {
     const namedRoutesBeforeEnter = vi.fn(() => '/pages/login/index?from=named-routes')
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1251,7 +1252,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1303,7 +1304,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1352,7 +1353,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1399,7 +1400,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1450,7 +1451,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1516,7 +1517,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1574,7 +1575,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1635,7 +1636,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1691,7 +1692,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1746,7 +1747,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1792,7 +1793,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1842,7 +1843,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1920,7 +1921,7 @@ describe('router navigation helpers', () => {
   it('supports adding and removing nested routes at runtime', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -1964,7 +1965,7 @@ describe('router navigation helpers', () => {
   it('addRoute throws for missing route name or path', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2010,7 +2011,7 @@ describe('router navigation helpers', () => {
   it('addRoute throws for circular children references', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2045,7 +2046,7 @@ describe('router navigation helpers', () => {
   it('supports addRoute(parentName, route) with relative child path', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2101,7 +2102,7 @@ describe('router navigation helpers', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2156,7 +2157,7 @@ describe('router navigation helpers', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2206,7 +2207,7 @@ describe('router navigation helpers', () => {
     const beforeEnterNew = vi.fn(() => '/pages/login/index?from=new')
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2277,7 +2278,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2328,7 +2329,7 @@ describe('router navigation helpers', () => {
   it('inherits parent alias paths for addRoute(parentName, route) children', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2396,7 +2397,7 @@ describe('router navigation helpers', () => {
   it('removeRoute removes nested child route records together', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2445,7 +2446,7 @@ describe('router navigation helpers', () => {
   it('supports clearing all named routes at runtime', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2497,7 +2498,7 @@ describe('router navigation helpers', () => {
     const redirectTo = vi.fn()
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2533,7 +2534,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2568,7 +2569,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2598,7 +2599,7 @@ describe('router navigation helpers', () => {
     const navigateBack = vi.fn()
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2628,7 +2629,7 @@ describe('router navigation helpers', () => {
     const navigateBack = vi.fn()
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2658,7 +2659,7 @@ describe('router navigation helpers', () => {
   it('exposes currentRoute on router and keeps it reactive with route hooks', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2702,7 +2703,7 @@ describe('router navigation helpers', () => {
   it('isReady resolves immediately for mini-program router', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2729,7 +2730,7 @@ describe('router navigation helpers', () => {
   it('install is a no-op compatibility method', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2756,7 +2757,7 @@ describe('router navigation helpers', () => {
   it('exposes normalized options snapshot', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2842,7 +2843,7 @@ describe('router navigation helpers', () => {
     const navigateTo = vi.fn()
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab,
         reLaunch: vi.fn(),
@@ -2877,7 +2878,7 @@ describe('router navigation helpers', () => {
   it('returns aborted failure when tabBar navigation contains query', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2912,7 +2913,7 @@ describe('router navigation helpers', () => {
     const guard = vi.fn(() => false)
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2953,7 +2954,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -2989,7 +2990,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab,
         reLaunch: vi.fn(),
@@ -3028,7 +3029,7 @@ describe('router navigation helpers', () => {
     })
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -3065,7 +3066,7 @@ describe('router navigation helpers', () => {
   it('returns aborted failure when guard redirects exceed maxRedirects', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -3103,7 +3104,7 @@ describe('router navigation helpers', () => {
     const calls: any[] = []
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -3156,7 +3157,7 @@ describe('router navigation helpers', () => {
     const errors: any[] = []
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -3213,7 +3214,7 @@ describe('router navigation helpers', () => {
   it('can resolve unexpected failures when rejectOnError is disabled', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -3247,7 +3248,7 @@ describe('router navigation helpers', () => {
   it('onError ignores expected navigation failures', async () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
@@ -3279,7 +3280,7 @@ describe('router navigation helpers', () => {
   it('resolve uses latest route state after route hooks update', () => {
     const instance = {
       __wevu: {},
-      __wevuHooks: {},
+      [WEVU_HOOKS_KEY]: {},
       router: {
         switchTab: vi.fn(),
         reLaunch: vi.fn(),
