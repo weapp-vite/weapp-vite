@@ -1,3 +1,4 @@
+---
 '@weapp-core/constants': minor
 'weapp-vite': patch
 'create-weapp-vite': patch
