@@ -1,3 +1,8 @@
+import {
+  WEAPP_VITE_WEB_COMPRESS_VIDEO_KEY,
+  WEAPP_VITE_WEB_VIDEO_INFO_KEY,
+} from '@weapp-core/constants'
+
 export function inferImageTypeFromPath(path: string) {
   const lower = path.toLowerCase()
   if (lower.includes('.png')) {
@@ -73,7 +78,7 @@ function normalizeVideoInfoPreset(value: unknown, src: string) {
 
 export function readPresetVideoInfo(src: string) {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebVideoInfo
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_VIDEO_INFO_KEY]
   if (typeof preset === 'function') {
     return normalizeVideoInfoPreset((preset as (value: string) => unknown)(src), src)
   }
@@ -108,7 +113,7 @@ function normalizeCompressVideoResult(value: unknown, src: string) {
 
 export function readPresetCompressVideo(src: string) {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebCompressVideo
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_COMPRESS_VIDEO_KEY]
   if (typeof preset === 'function') {
     return normalizeCompressVideoResult((preset as (value: string) => unknown)(src), src)
   }
@@ -166,7 +171,9 @@ export async function readVideoInfoFromSource(src: string) {
   return new Promise<{ duration: number, width: number, height: number }>((resolve, reject) => {
     const cleanup = () => {
       if (typeof video.removeEventListener === 'function') {
+        // eslint-disable-next-line ts/no-use-before-define
         video.removeEventListener('loadedmetadata', onLoadedMetadata)
+        // eslint-disable-next-line ts/no-use-before-define
         video.removeEventListener('error', onError)
       }
     }

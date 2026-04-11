@@ -1,3 +1,9 @@
+import {
+  WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY,
+  WEAPP_VITE_WEB_EXT_CONFIG_KEY,
+  WEAPP_VITE_WEB_UPDATE_MANAGER_KEY,
+} from '@weapp-core/constants'
+
 interface UpdatePresetSnapshot {
   hasUpdate: boolean
   ready: boolean
@@ -78,7 +84,7 @@ function normalizeUpdateManagerPreset(value: unknown): UpdatePresetSnapshot {
 
 export function resolveUpdateManagerPreset() {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebUpdateManager
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_UPDATE_MANAGER_KEY]
   if (typeof preset === 'function') {
     return normalizeUpdateManagerPreset((preset as () => unknown)())
   }
@@ -92,7 +98,7 @@ export function readRuntimeConsole() {
 
 export function readExtConfigValue() {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const value = runtimeGlobal.__weappViteWebExtConfig
+  const value = runtimeGlobal[WEAPP_VITE_WEB_EXT_CONFIG_KEY]
   if (value && typeof value === 'object') {
     return { ...(value as Record<string, unknown>) }
   }
@@ -163,14 +169,14 @@ export function createLogManagerBridge(level: 0 | 1, runtimeConsole: RuntimeCons
 
 export function reportAnalyticsEvent(eventName: string, data?: Record<string, unknown>) {
   const runtimeGlobal = globalThis as {
-    __weappViteWebAnalyticsEvents?: Array<{
+    [WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY]?: Array<{
       eventName: string
       data: Record<string, unknown>
       timestamp: number
     }>
   }
-  runtimeGlobal.__weappViteWebAnalyticsEvents ??= []
-  runtimeGlobal.__weappViteWebAnalyticsEvents.push({
+  runtimeGlobal[WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY] ??= []
+  runtimeGlobal[WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY].push({
     eventName: String(eventName ?? ''),
     data: { ...(data ?? {}) },
     timestamp: Date.now(),

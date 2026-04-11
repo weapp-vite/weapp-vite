@@ -1,3 +1,11 @@
+import {
+  WEAPP_VITE_WEB_CHOOSE_ADDRESS_KEY,
+  WEAPP_VITE_WEB_CHOOSE_LOCATION_KEY,
+  WEAPP_VITE_WEB_FUZZY_LOCATION_KEY,
+} from '@weapp-core/constants'
+
+const ADDRESS_PROMPT_SPLIT_RE = /[，,]/
+
 export function normalizeGeoNumber(value: unknown, fallback = 0) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return fallback
@@ -82,7 +90,7 @@ export function normalizeFuzzyCoordinate(value: number) {
 
 export function readPresetFuzzyLocation() {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebFuzzyLocation
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_FUZZY_LOCATION_KEY]
   if (!preset || typeof preset !== 'object') {
     return null
   }
@@ -101,7 +109,7 @@ export function readPresetFuzzyLocation() {
 
 export function readPresetChooseLocation() {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebChooseLocation
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_CHOOSE_LOCATION_KEY]
   if (!preset || typeof preset !== 'object') {
     return null
   }
@@ -121,7 +129,7 @@ export function readPresetChooseLocation() {
 
 export function readPresetChooseAddress() {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebChooseAddress
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_CHOOSE_ADDRESS_KEY]
   if (!preset || typeof preset !== 'object') {
     return null
   }
@@ -140,7 +148,7 @@ export function readPresetChooseAddress() {
 
 export function parseChooseAddressPromptInput(input: unknown) {
   const [provinceName = '', cityName = '', countyName = '', detailInfo = '', userName = '', telNumber = '']
-    = String(input).split(/[，,]/).map(item => item.trim())
+    = String(input).split(ADDRESS_PROMPT_SPLIT_RE).map(item => item.trim())
   if (!provinceName || !cityName || !countyName || !detailInfo) {
     return null
   }

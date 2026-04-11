@@ -1,3 +1,5 @@
+import { WEAPP_VITE_WEB_OPEN_VIDEO_EDITOR_KEY } from '@weapp-core/constants'
+
 interface PreviewMediaSourceRecord {
   url: string
   type: 'image' | 'video'
@@ -41,7 +43,7 @@ export function normalizePreviewMediaSources(sources: unknown): PreviewMediaSour
 
 export function readOpenVideoEditorPreset(src: string) {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebOpenVideoEditor
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_OPEN_VIDEO_EDITOR_KEY]
   if (typeof preset === 'function') {
     const value = (preset as (value: string) => unknown)(src)
     return typeof value === 'string' && value.trim() ? value.trim() : ''

@@ -1,11 +1,21 @@
 import {
+  WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY,
   WEAPP_VITE_WEB_AUTHORIZE_DECISION_KEY,
   WEAPP_VITE_WEB_CHECK_SESSION_KEY,
+  WEAPP_VITE_WEB_CHOOSE_ADDRESS_KEY,
+  WEAPP_VITE_WEB_CHOOSE_LOCATION_KEY,
+  WEAPP_VITE_WEB_COMPRESS_VIDEO_KEY,
+  WEAPP_VITE_WEB_EXT_CONFIG_KEY,
+  WEAPP_VITE_WEB_FUZZY_LOCATION_KEY,
   WEAPP_VITE_WEB_GET_USER_PROFILE_DECISION_KEY,
   WEAPP_VITE_WEB_OPEN_APP_AUTHORIZE_SETTING_KEY,
   WEAPP_VITE_WEB_OPEN_SETTING_AUTH_KEY,
+  WEAPP_VITE_WEB_OPEN_VIDEO_EDITOR_KEY,
+  WEAPP_VITE_WEB_REQUEST_SUBSCRIBE_MESSAGE_KEY,
+  WEAPP_VITE_WEB_UPDATE_MANAGER_KEY,
   WEAPP_VITE_WEB_USER_INFO_KEY,
   WEAPP_VITE_WEB_USER_PROFILE_KEY,
+  WEAPP_VITE_WEB_VIDEO_INFO_KEY,
 } from '@weapp-core/constants'
 import { parseDocument } from 'htmlparser2'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
@@ -1730,7 +1740,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports getFuzzyLocation with preset and geolocation fallback', async () => {
-    const restorePreset = overrideGlobalProperty('__weappViteWebFuzzyLocation', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_FUZZY_LOCATION_KEY, {
       latitude: 31.2304,
       longitude: 121.4737,
       accuracy: 1200,
@@ -2056,7 +2066,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports requestSubscribeMessage with preset decisions', async () => {
-    const restorePreset = overrideGlobalProperty('__weappViteWebRequestSubscribeMessage', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_REQUEST_SUBSCRIBE_MESSAGE_KEY, {
       tmplA: 'accept',
       tmplB: 'reject',
     })
@@ -2133,7 +2143,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports chooseLocation with preset and prompt fallback', async () => {
-    const restorePreset = overrideGlobalProperty('__weappViteWebChooseLocation', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_CHOOSE_LOCATION_KEY, {
       name: '人民广场',
       address: '上海市黄浦区人民大道',
       latitude: 31.2304,
@@ -2226,7 +2236,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports chooseAddress with preset and prompt fallback', async () => {
-    const restorePreset = overrideGlobalProperty('__weappViteWebChooseAddress', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_CHOOSE_ADDRESS_KEY, {
       userName: '张三',
       provinceName: '上海市',
       cityName: '上海市',
@@ -2281,7 +2291,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports getVideoInfo with preset bridge', async () => {
-    const restorePreset = overrideGlobalProperty('__weappViteWebVideoInfo', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_VIDEO_INFO_KEY, {
       'https://example.com/a.mp4': {
         size: 1024,
         duration: 8.6,
@@ -2491,7 +2501,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports getExtConfigSync/getExtConfig', async () => {
-    const restoreExtConfig = overrideGlobalProperty('__weappViteWebExtConfig', {
+    const restoreExtConfig = overrideGlobalProperty(WEAPP_VITE_WEB_EXT_CONFIG_KEY, {
       mode: 'demo',
       channel: 'web',
     })
@@ -2519,7 +2529,7 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports getUpdateManager/getLogManager bridges', async () => {
-    const restorePreset = overrideGlobalProperty('__weappViteWebUpdateManager', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_UPDATE_MANAGER_KEY, {
       hasUpdate: true,
       ready: true,
     })
@@ -2549,7 +2559,7 @@ describe('web runtime wx utility APIs', () => {
       expect(onUpdateFailed).not.toHaveBeenCalled()
       expect(() => manager.applyUpdate()).not.toThrow()
 
-      const restoreFailPreset = overrideGlobalProperty('__weappViteWebUpdateManager', 'fail')
+      const restoreFailPreset = overrideGlobalProperty(WEAPP_VITE_WEB_UPDATE_MANAGER_KEY, 'fail')
       try {
         const managerFail = getUpdateManager()
         const onFailed = vi.fn()
@@ -2578,13 +2588,13 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports reportAnalytics in runtime memory', () => {
-    const restoreAnalyticsEvents = overrideGlobalProperty('__weappViteWebAnalyticsEvents', [])
+    const restoreAnalyticsEvents = overrideGlobalProperty(WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY, [])
     try {
       reportAnalytics('wevu_demo', {
         action: 'tap',
         time: 123,
       })
-      const events = (globalThis as any).__weappViteWebAnalyticsEvents as Array<{
+      const events = (globalThis as any)[WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY] as Array<{
         eventName: string
         data: Record<string, unknown>
       }>
@@ -3372,7 +3382,7 @@ describe('web runtime wx utility APIs', () => {
     expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'compressVideo:ok' }))
     expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'compressVideo:ok' }))
 
-    const restorePreset = overrideGlobalProperty('__weappViteWebCompressVideo', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_COMPRESS_VIDEO_KEY, {
       'https://example.com/a.mp4': {
         tempFilePath: 'https://example.com/a.compressed.mp4',
         duration: 6.5,
@@ -3543,7 +3553,7 @@ describe('web runtime wx utility APIs', () => {
     expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'openVideoEditor:ok' }))
     expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'openVideoEditor:ok' }))
 
-    const restorePreset = overrideGlobalProperty('__weappViteWebOpenVideoEditor', {
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_OPEN_VIDEO_EDITOR_KEY, {
       'https://example.com/a.mp4': 'https://example.com/a.edited.mp4',
     })
     try {
