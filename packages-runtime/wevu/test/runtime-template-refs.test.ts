@@ -1,4 +1,5 @@
 import {
+  WEVU_EXPOSED_KEY,
   WEVU_READY_CALLED_KEY,
   WEVU_TEMPLATE_REFS_PENDING_KEY,
 } from '@weapp-core/constants'
@@ -176,7 +177,7 @@ describe('runtime: template refs', () => {
     const headerKey = ref('hello')
     const setHeaderKey = vi.fn()
     const componentInstance = {
-      __wevuExposed: { headerKey, setHeaderKey },
+      [WEVU_EXPOSED_KEY]: { headerKey, setHeaderKey },
       __wevu: { proxy: {} },
     }
 

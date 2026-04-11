@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from '@/index'
 
@@ -33,13 +34,13 @@ describe('runtime: props sync', () => {
     await nextTick()
     inst.setData.mockClear()
 
-    expect(inst.$wevu.state.props.title).toBe('')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('')
 
     inst.properties.title = 'Hello'
     opts.observers.title.call(inst, 'Hello', '')
     await nextTick()
 
-    expect(inst.$wevu.state.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
     expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
   })
 
@@ -60,15 +61,15 @@ describe('runtime: props sync', () => {
     await nextTick()
     inst.setData.mockClear()
 
-    const initialRef = inst.$wevu.state.newProps
+    const initialRef = inst[WEVU_PUBLIC_RUNTIME_KEY].state.newProps
     expect(initialRef).toBeDefined()
 
     inst.properties.title = 'Hello'
     opts.observers.title.call(inst, 'Hello', '')
     await nextTick()
 
-    expect(inst.$wevu.state.newProps).toBe(initialRef)
-    expect(inst.$wevu.state.newProps.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.newProps).toBe(initialRef)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.newProps.title).toBe('Hello')
     expect(inst.setData).toHaveBeenCalledWith({ 'newProps.title': 'Hello' })
   })
 
@@ -92,7 +93,7 @@ describe('runtime: props sync', () => {
     opts.observers.title.call(inst, 'Hello', '')
     await nextTick()
 
-    expect(inst.$wevu.state.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
     expect(inst.setData).toHaveBeenCalledWith({ 'props.title': 'Hello' })
   })
 
@@ -119,8 +120,8 @@ describe('runtime: props sync', () => {
     opts.lifetimes.ready.call(inst)
     await nextTick()
 
-    expect(inst.$wevu.state.props.title).toBe('Hello')
-    expect(inst.$wevu.state.props.subtitle).toBe('Sub')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.subtitle).toBe('Sub')
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ 'props.title': 'Hello', 'props.subtitle': 'Sub' }))
   })
 
@@ -142,7 +143,7 @@ describe('runtime: props sync', () => {
     opts.lifetimes.attached.call(inst)
     await nextTick()
 
-    expect(inst.$wevu.state.props.title).toBe('Hello')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.title).toBe('Hello')
   })
 
   it('exposes __wevuProps on runtime proxy for compiled fallback expressions', async () => {
@@ -167,13 +168,13 @@ describe('runtime: props sync', () => {
     await nextTick()
     inst.setData.mockClear()
 
-    expect(inst.$wevu.computed.boolText).toBe('false')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.boolText).toBe('false')
 
     inst.properties.bool = true
     opts.observers.bool.call(inst, true, false)
     await nextTick()
 
-    expect(inst.$wevu.computed.boolText).toBe('true')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].computed.boolText).toBe('true')
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({ boolText: 'true' }))
   })
 
@@ -195,15 +196,15 @@ describe('runtime: props sync', () => {
     await nextTick()
     inst.setData.mockClear()
 
-    expect(inst.$wevu.state.bool).toBe(true)
-    expect(inst.$wevu.state.props.bool).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.bool).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.bool).toBe(true)
 
     inst.properties.bool = false
     opts.observers.bool.call(inst, false, true)
     await nextTick()
 
-    expect(inst.$wevu.state.bool).toBe(false)
-    expect(inst.$wevu.state.props.bool).toBe(false)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.bool).toBe(false)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].state.props.bool).toBe(false)
 
     const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
     expect(payloads.some((payload: any) => Object.hasOwn(payload, 'bool'))).toBe(false)

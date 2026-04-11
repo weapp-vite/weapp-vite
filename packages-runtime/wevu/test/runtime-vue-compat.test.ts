@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, mergeModels, useAttrs, useBindModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
 
@@ -62,15 +63,15 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.attached.call(inst)
 
     expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next', undefined)
-    expect(inst.$wevu?.state?.attrs).toMatchObject({ extra: 'alpha' })
-    expect(inst.$wevu?.state?.attrs?.modelValue).toBeUndefined()
-    expect(inst.$wevu?.state?.slots).toEqual({})
-    expect(Object.getPrototypeOf(inst.$wevu?.state?.slots)).toBeNull()
-    expect(Object.isFrozen(inst.$wevu?.state?.slots)).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs).toMatchObject({ extra: 'alpha' })
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs?.modelValue).toBeUndefined()
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.slots).toEqual({})
+    expect(Object.getPrototypeOf(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.slots)).toBeNull()
+    expect(Object.isFrozen(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.slots)).toBe(true)
 
     inst.properties.extra = 'beta'
     opts.observers['**'].call(inst)
-    expect(inst.$wevu?.state?.attrs).toMatchObject({ extra: 'beta' })
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.attrs).toMatchObject({ extra: 'beta' })
   })
 
   it('useModel supports tuple destructuring, modifiers, and get/set transforms', () => {
@@ -120,7 +121,7 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.attached.call(inst)
 
     expect(triggerEvent).toHaveBeenCalledWith('update:modelValue', 'next value', undefined)
-    expect(inst.$wevu?.state?.modifiers?.trim).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.modifiers?.trim).toBe(true)
   })
 
   it('useBindModel applies default event for value+change bindings', () => {
@@ -138,10 +139,10 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    const model = inst.$wevu?.state?.enabledModel
+    const model = inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.enabledModel
     model.onChange({ detail: { value: true } })
 
-    expect(inst.$wevu?.state?.enabled).toBe(true)
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.enabled).toBe(true)
   })
 
   it('ctx.emit supports Vue style variadic args and normalizes triggerEvent payload', () => {

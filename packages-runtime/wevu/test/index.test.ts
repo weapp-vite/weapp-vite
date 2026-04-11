@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick, ref, watch } from '@/index'
 
@@ -261,11 +262,11 @@ describe('createApp', () => {
         )
       },
       onLaunch(this: any) {
-        this.$wevu?.methods.markReady()
+        this[WEVU_PUBLIC_RUNTIME_KEY]?.methods.markReady()
         this.globalData.ready = true
       },
       onShow(this: any) {
-        this.$wevu?.methods.appendLog('show')
+        this[WEVU_PUBLIC_RUNTIME_KEY]?.methods.appendLog('show')
       },
     })
 
@@ -279,7 +280,7 @@ describe('createApp', () => {
     }
 
     appOptions.onLaunch.call(appInstance)
-    const runtime = appInstance.$wevu
+    const runtime = appInstance[WEVU_PUBLIC_RUNTIME_KEY]
     expect(runtime).toBeDefined()
     expect(appInstance.globalData.ready).toBe(true)
     await flushJobs()
@@ -312,7 +313,7 @@ describe('createApp', () => {
 
     const appInstance: Record<string, any> = {}
     appOptions.onLaunch.call(appInstance)
-    const runtime = appInstance.$wevu
+    const runtime = appInstance[WEVU_PUBLIC_RUNTIME_KEY]
     expect(runtime).toBeDefined()
     expect(runtime!.state.ready).toBe(false)
 
@@ -347,7 +348,7 @@ describe('defineComponent', () => {
     const componentInstance: Record<string, any> = { setData }
 
     componentOptions.lifetimes.attached.call(componentInstance)
-    expect(componentInstance.$wevu).toBeDefined()
+    expect(componentInstance[WEVU_PUBLIC_RUNTIME_KEY]).toBeDefined()
     expect(setData).toHaveBeenCalledTimes(1)
     expect(setData.mock.calls[0][0]).toMatchObject({ count: 1 })
 
@@ -356,7 +357,7 @@ describe('defineComponent', () => {
     expect(setData.mock.calls.at(-1)?.[0]).toMatchObject({ count: 2 })
 
     componentOptions.lifetimes.detached.call(componentInstance)
-    expect(componentInstance.$wevu).toBeUndefined()
+    expect(componentInstance[WEVU_PUBLIC_RUNTIME_KEY]).toBeUndefined()
   })
 
   it('supports calling top-level page functions from onLoad via this', () => {
@@ -431,8 +432,8 @@ describe('defineComponent', () => {
 
     componentOptions.lifetimes.created.call(componentInstance)
     componentOptions.lifetimes.attached.call(componentInstance)
-    expect(componentInstance.$wevu?.proxy.pagination).toEqual({ size: 2 })
-    expect(componentInstance.$wevu?.proxy.privateData).toEqual({ offset: 1 })
+    expect(componentInstance[WEVU_PUBLIC_RUNTIME_KEY]?.proxy.pagination).toEqual({ size: 2 })
+    expect(componentInstance[WEVU_PUBLIC_RUNTIME_KEY]?.proxy.privateData).toEqual({ offset: 1 })
     componentOptions.pageLifetimes.show.call(componentInstance)
     await flushJobs()
 

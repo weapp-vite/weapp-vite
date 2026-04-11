@@ -1,4 +1,9 @@
 import type { WevuPlugin } from '@/runtime/types'
+import {
+  WEVU_HOOKS_KEY,
+  WEVU_IS_APP_INSTANCE_KEY,
+  WEVU_RUNTIME_APP_KEY,
+} from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive, ref, toRaw } from '@/reactivity'
 import { createBindModel } from '@/runtime/bindModel'
@@ -85,7 +90,7 @@ describe('provide/inject', () => {
     const key = Symbol('app-provide')
 
     setCurrentInstance({
-      __wevuIsAppInstance: true,
+      [WEVU_IS_APP_INSTANCE_KEY]: true,
     } as any)
     provide(key, 'from-app')
     expect(inject(key)).toBe('from-app')
@@ -122,8 +127,8 @@ describe('provide/inject', () => {
     const plugin = (() => {}) as WevuPlugin
 
     setCurrentInstance({
-      __wevuIsAppInstance: true,
-      __wevuRuntimeApp: runtimeApp,
+      [WEVU_IS_APP_INSTANCE_KEY]: true,
+      [WEVU_RUNTIME_APP_KEY]: runtimeApp,
     } as any)
 
     expect(use(plugin)).toBe(runtimeApp)
@@ -138,8 +143,8 @@ describe('provide/inject', () => {
     const plugin = (() => {}) as WevuPlugin
 
     setCurrentInstance({
-      __wevuIsAppInstance: true,
-      __wevuRuntimeApp: runtimeApp,
+      [WEVU_IS_APP_INSTANCE_KEY]: true,
+      [WEVU_RUNTIME_APP_KEY]: runtimeApp,
     } as any)
 
     const result = defineAppSetup((app) => {
@@ -270,7 +275,7 @@ describe('bindModel helpers', () => {
 
 describe('hook aliases', () => {
   it('registers vue-compatible lifecycle aliases', () => {
-    const instance: any = { __wevuHooks: {} }
+    const instance: any = { [WEVU_HOOKS_KEY]: {} }
     setCurrentInstance(instance)
 
     const beforeMount = vi.fn()

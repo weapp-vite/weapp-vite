@@ -1,4 +1,7 @@
-import { WEVU_ON_LOAD_CALLED_KEY } from '@weapp-core/constants'
+import {
+  WEVU_ON_LOAD_CALLED_KEY,
+  WEVU_PUBLIC_RUNTIME_KEY,
+} from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createApp,
@@ -364,7 +367,7 @@ describe('runtime: features & hooks', () => {
     const componentOptions = registeredComponents[0]
     const inst: any = { setData() {} }
     componentOptions.lifetimes.attached.call(inst)
-    inst.$wevu!.methods.inc()
+    inst[WEVU_PUBLIC_RUNTIME_KEY]!.methods.inc()
     await nextTick()
     expect(calls.at(-1)).toBe(1)
   })
@@ -388,7 +391,7 @@ describe('runtime: features & hooks', () => {
     const inst: any = { setData() {} }
     componentOptions.lifetimes.attached.call(inst)
     // 通过 runtime method 更新 setData 路径来触发 watch
-    inst.$wevu!.state.n = 5
+    inst[WEVU_PUBLIC_RUNTIME_KEY]!.state.n = 5
     await nextTick()
     expect(calls).toContain(6)
     expect(calls).toContain(999)

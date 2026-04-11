@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, createWevuComponent, defineComponent } from '@/index'
 
@@ -126,7 +127,7 @@ describe('runtime (setup signature alignment)', () => {
     const inst: any = { setData() {}, properties: { foo: 'bar' } }
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
-    expect(inst.$wevu?.state?.value).toBe('bar')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY]?.state?.value).toBe('bar')
   })
 
   it('provides ctx as second argument for app setup', () => {

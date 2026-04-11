@@ -1,3 +1,4 @@
+import { WEVU_PUBLIC_RUNTIME_KEY } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from '@/index'
 
@@ -40,7 +41,7 @@ describe('runtime: setup method used by computed binding', () => {
     opts.lifetimes.attached.call(inst)
     await flushJobs()
 
-    expect(inst.$wevu.proxy.__wv_bind_0).toBe('123')
+    expect(inst[WEVU_PUBLIC_RUNTIME_KEY].proxy.__wv_bind_0).toBe('123')
     const hasExpectedPayload = setData.mock.calls
       .map(call => call?.[0] ?? {})
       .some(payload => payload.__wv_bind_0 === '123')
