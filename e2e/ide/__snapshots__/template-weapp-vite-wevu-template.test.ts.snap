@@ -122,7 +122,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
         entrance-path=""
         need-show-entrance=""
         class="action-btn"
-        data-wv-inline-id-tap="__wv_inline_0"
+        data-wi-tap="i0"
         role="button"
         aria-disabled="false">
         查看运营概览
@@ -199,8 +199,8 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
             entrance-path=""
             need-show-entrance=""
             class="action-btn"
+            data-wi-tap="i0"
             data-wv-i0="0"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]"
             role="button"
             aria-disabled="false">
@@ -220,8 +220,8 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
             entrance-path=""
             need-show-entrance=""
             class="action-btn"
+            data-wi-tap="i0"
             data-wv-i0="1"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]"
             role="button"
             aria-disabled="false">
@@ -241,8 +241,8 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
             entrance-path=""
             need-show-entrance=""
             class="action-btn"
+            data-wi-tap="i0"
             data-wv-i0="2"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]"
             role="button"
             aria-disabled="false">
@@ -264,8 +264,8 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
             entrance-path=""
             need-show-entrance=""
             class="action-btn"
+            data-wi-tap="i0"
             data-wv-i0="3"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]"
             role="button"
             aria-disabled="false">
@@ -419,7 +419,7 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           entrance-path=""
           need-show-entrance=""
           class="action-btn"
-          data-wv-inline-id-tap="__wv_inline_0"
+          data-wi-tap="i0"
           role="button"
           aria-disabled="false">
           进入项目工作台

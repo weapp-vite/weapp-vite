@@ -9,6 +9,7 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
+const LAUNCH_RETRYABLE_PATTERN = /Timeout in launch automator|startsWith|WeChat DevTools CLI exited before automator socket was ready/i
 
 async function runBuild() {
   await rm(DIST_ROOT, { recursive: true, force: true })
@@ -24,15 +25,41 @@ async function runBuild() {
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function launchRetailTemplateAutomator() {
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await launchAutomator({
+        projectPath: TEMPLATE_ROOT,
+      })
+    }
+    catch (error) {
+      lastError = error
+      const message = error instanceof Error ? error.message : String(error)
+      if (attempt === 1 || !LAUNCH_RETRYABLE_PATTERN.test(message)) {
+        throw error
+      }
+      await sleep(1_500)
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Failed to launch retail feedback automator')
+}
+
 async function getSharedMiniProgram() {
   if (!sharedBuildPrepared) {
     await runBuild()
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: TEMPLATE_ROOT,
-    })
+    sharedMiniProgram = await launchRetailTemplateAutomator()
   }
   return sharedMiniProgram
 }

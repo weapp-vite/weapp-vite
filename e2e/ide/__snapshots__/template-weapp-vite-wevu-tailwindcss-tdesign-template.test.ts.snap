@@ -225,9 +225,21 @@ text,
   --tw-border-opacity: 1;
   border-color: rgba(226, 232, 240, var(--tw-border-opacity, 1));
 }
+.border-emerald-500 {
+  --tw-border-opacity: 1;
+  border-color: rgba(16, 185, 129, var(--tw-border-opacity, 1));
+}
+.border-red-500 {
+  --tw-border-opacity: 1;
+  border-color: rgba(239, 68, 68, var(--tw-border-opacity, 1));
+}
 .bg-_b_h111827_B {
   --tw-bg-opacity: 1;
   background-color: rgba(17, 24, 39, var(--tw-bg-opacity, 1));
+}
+.bg-_b_h1f1a3f_B {
+  --tw-bg-opacity: 1;
+  background-color: rgba(31, 26, 63, var(--tw-bg-opacity, 1));
 }
 .bg-_b_h22c55e_B {
   --tw-bg-opacity: 1;
@@ -308,6 +320,14 @@ text,
 .bg-_b_hfff7ed_B {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 247, 237, var(--tw-bg-opacity, 1));
+}
+.bg-emerald-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(236, 253, 245, var(--tw-bg-opacity, 1));
+}
+.bg-red-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(254, 242, 242, var(--tw-bg-opacity, 1));
 }
 .bg-white {
   --tw-bg-opacity: 1;
@@ -450,6 +470,10 @@ text,
   padding-left: 18rpx;
   padding-right: 18rpx;
 }
+.px-_b20rpx_B {
+  padding-left: 20rpx;
+  padding-right: 20rpx;
+}
 .px-_b28rpx_B {
   padding-left: 28rpx;
   padding-right: 28rpx;
@@ -544,6 +568,9 @@ text,
 .leading-_b1_d7_B {
   line-height: 1.7;
 }
+.leading-_b1_d8_B {
+  line-height: 1.8;
+}
 .text-_b_h0f766e_B {
   --tw-text-opacity: 1;
   color: rgba(15, 118, 110, var(--tw-text-opacity, 1));
@@ -627,6 +654,14 @@ text,
 .text-_b_hb42318_B {
   --tw-text-opacity: 1;
   color: rgba(180, 35, 24, var(--tw-text-opacity, 1));
+}
+.text-emerald-600 {
+  --tw-text-opacity: 1;
+  color: rgba(5, 150, 105, var(--tw-text-opacity, 1));
+}
+.text-red-500 {
+  --tw-text-opacity: 1;
+  color: rgba(239, 68, 68, var(--tw-text-opacity, 1));
 }
 .text-slate-300 {
   --tw-text-opacity: 1;
@@ -759,8 +794,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         class="mt-_b12rpx_B ability-index--mt-_b12rpx_B grid ability-index--grid grid-cols-2 ability-index--grid-cols-2 gap-_b12rpx_B ability-index--gap-_b12rpx_B">
         <view
           class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+          data-wi-tap="i0"
           data-wv-i0="0"
-          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <text
             class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -769,8 +804,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+          data-wi-tap="i0"
           data-wv-i0="1"
-          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <text
             class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -779,8 +814,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+          data-wi-tap="i0"
           data-wv-i0="2"
-          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <text
             class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -789,8 +824,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+          data-wi-tap="i0"
           data-wv-i0="3"
-          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <text
             class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -799,8 +834,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view
           class="rounded-_b18rpx_B ability-index--rounded-_b18rpx_B bg-_b_hf0f9ff_B ability-index--bg-_b_hf0f9ff_B p-_b16rpx_B ability-index--p-_b16rpx_B"
+          data-wi-tap="i0"
           data-wv-i0="4"
-          data-wv-inline-id-tap="__wv_inline_0"
           data-wv-s0="[object Object]">
           <text
             class="text-_b24rpx_B ability-index--text-_b24rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
@@ -1971,8 +2006,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           class="mt-_b16rpx_B index--mt-_b16rpx_B grid index--grid grid-cols-2 index--grid-cols-2 gap-_b12rpx_B index--gap-_b12rpx_B">
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="0"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2004,8 +2039,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="1"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2037,8 +2072,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="2"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2070,8 +2105,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="3"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2103,8 +2138,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="4"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2136,8 +2171,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="5"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2169,8 +2204,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="6"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2202,8 +2237,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="7"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2235,8 +2270,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="8"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -2268,8 +2303,8 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           </view>
           <view
             class="rounded-_b18rpx_B index--rounded-_b18rpx_B bg-_b_hf7f7fb_B index--bg-_b_hf7f7fb_B p-_b16rpx_B index--p-_b16rpx_B opacity-100 index--opacity-100"
+            data-wi-tap="i0"
             data-wv-i0="9"
-            data-wv-inline-id-tap="__wv_inline_0"
             data-wv-s0="[object Object]">
             <view
               class="flex index--flex items-center index--items-center justify-between index--justify-between">
@@ -3487,7 +3522,29 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
       <view
-        class="mt-_b12rpx_B ability-index--mt-_b12rpx_B space-y-_b10rpx_B ability-index--space-y-_b10rpx_B"></view>
+        class="mt-_b12rpx_B ability-index--mt-_b12rpx_B space-y-_b10rpx_B ability-index--space-y-_b10rpx_B">
+        <view
+          class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+          <text
+            class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+          <text
+            class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        </view>
+        <view
+          class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+          <text
+            class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+          <text
+            class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        </view>
+        <view
+          class="flex ability-index--flex items-center ability-index--items-center justify-between ability-index--justify-between">
+          <text
+            class="text-_b22rpx_B ability-index--text-_b22rpx_B text-_b_h6f6b8a_B ability-index--text-_b_h6f6b8a_B"></text>
+          <text
+            class="text-_b22rpx_B ability-index--text-_b22rpx_B font-semibold ability-index--font-semibold text-_b_h1f1a3f_B ability-index--text-_b_h1f1a3f_B"></text>
+        </view>
+      </view>
     </view>
     <view
       class="mt-_b18rpx_B ability-index--mt-_b18rpx_B rounded-_b24rpx_B ability-index--rounded-_b24rpx_B bg-white ability-index--bg-white p-_b20rpx_B ability-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B ability-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
@@ -4416,7 +4473,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               style="">
               <view
                 aria-role="button"
-                class="t-cell cell--t-cell"
+                class="t-cell cell--t-cell t-cell--bordered cell--t-cell--bordered"
                 hover-class=""
                 hover-stay-time="70"
                 style=""
@@ -4439,10 +4496,119 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                   </view>
                 </view>
               </view>
+              <view
+                aria-role="button"
+                class="t-cell cell--t-cell"
+                hover-class=""
+                hover-stay-time="70"
+                style=""
+                role="button">
+                <view class="t-cell__left cell--t-cell__left"></view>
+                <view class="t-cell__title cell--t-cell__title">
+                  <view class="t-cell__title-text cell--t-cell__title-text">
+                    virtualHost class 透传实验
+                  </view>
+                  <view class="t-cell__description cell--t-cell__description"></view>
+                </view>
+                <view class="t-cell__note cell--t-cell__note"><text></text></view>
+                <view
+                  class="t-cell__right cell--t-cell__right t-cell__right--middle cell--t-cell__right--middle">
+                  <view
+                    aria-hidden="false"
+                    aria-role=""
+                    class="t-icon icon--t-icon t-cell__right-icon cell--t-cell__right-icon"
+                    style="">
+                    <label
+                      class="t-icon-chevron-right icon--t-icon-chevron-right t-icon-base icon--t-icon-base"></label>
+                  </view>
+                </view>
+              </view>
             </view>
           </view>
         </view>
       </view>
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config > weapp-vite-wevu-tailwindcss-tdesign-template::subpackages/lab/virtual-host-class/index 1`] = `
+"<view class="layout-default default--layout-default">
+  <view
+    class="min-h-screen index--min-h-screen bg-_b_hf6f7fb_B index--bg-_b_hf6f7fb_B px-_b28rpx_B index--px-_b28rpx_B pb-_b88rpx_B index--pb-_b88rpx_B pt-_b24rpx_B index--pt-_b24rpx_B text-_b_h1c1c3c_B index--text-_b_h1c1c3c_B">
+    <view
+      class="rounded-_b28rpx_B index--rounded-_b28rpx_B bg-gradient-to-br index--bg-gradient-to-br from-_b_hf5f3ff_B index--from-_b_hf5f3ff_B via-_b_hffffff_B index--via-_b_hffffff_B to-_b_heef2ff_B index--to-_b_heef2ff_B p-_b20rpx_B index--p-_b20rpx_B">
+      <text
+        class="text-_b32rpx_B index--text-_b32rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+      <text
+        class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B leading-_b1_d7_B index--leading-_b1_d7_B text-_b_h5b5b7b_B index--text-_b_h5b5b7b_B"></text>
+    </view>
+    <view
+      class="mt-_b18rpx_B index--mt-_b18rpx_B rounded-_b24rpx_B index--rounded-_b24rpx_B bg-white index--bg-white p-_b20rpx_B index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <text
+        class="text-_b28rpx_B index--text-_b28rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+      <text
+        class="mt-_b8rpx_B index--mt-_b8rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B leading-_b1_d7_B index--leading-_b1_d7_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      <view
+        class="mt-_b14rpx_B index--mt-_b14rpx_B flex index--flex flex-col index--flex-col gap-_b14rpx_B index--gap-_b14rpx_B">
+        <view class="demo-card BrokenCard--demo-card">
+          <text class="demo-title BrokenCard--demo-title"></text>
+          <text class="demo-subtitle BrokenCard--demo-subtitle"></text>
+        </view>
+        <view class="demo-card BrokenCard--demo-card">
+          <text class="demo-title BrokenCard--demo-title"></text>
+          <text class="demo-subtitle BrokenCard--demo-subtitle"></text>
+        </view>
+      </view>
+    </view>
+    <view
+      class="mt-_b18rpx_B index--mt-_b18rpx_B rounded-_b24rpx_B index--rounded-_b24rpx_B bg-white index--bg-white p-_b20rpx_B index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <text
+        class="text-_b28rpx_B index--text-_b28rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+      <text
+        class="mt-_b8rpx_B index--mt-_b8rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B leading-_b1_d7_B index--leading-_b1_d7_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      <view class="mt-_b14rpx_B index--mt-_b14rpx_B">
+        <view
+          class="demo-card FixedExternalClassCard--demo-card rounded-_b20rpx_B index--rounded-_b20rpx_B border index--border border-red-500 index--border-red-500 bg-red-50 index--bg-red-50 px-_b20rpx_B index--px-_b20rpx_B py-_b16rpx_B index--py-_b16rpx_B text-red-500 index--text-red-500">
+          <text class="demo-title FixedExternalClassCard--demo-title"></text>
+          <text class="demo-subtitle FixedExternalClassCard--demo-subtitle"></text>
+        </view>
+      </view>
+    </view>
+    <view
+      class="mt-_b18rpx_B index--mt-_b18rpx_B rounded-_b24rpx_B index--rounded-_b24rpx_B bg-white index--bg-white p-_b20rpx_B index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <text
+        class="text-_b28rpx_B index--text-_b28rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+      <text
+        class="mt-_b8rpx_B index--mt-_b8rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B leading-_b1_d7_B index--leading-_b1_d7_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+      <view
+        class="mt-_b14rpx_B index--mt-_b14rpx_B flex index--flex flex-col index--flex-col gap-_b14rpx_B index--gap-_b14rpx_B">
+        <view
+          class="demo-card RecommendedCard--demo-card rounded- index--rounded- 20rpx index--20rpx border index--border border-emerald-500 index--border-emerald-500 bg-emerald-50 index--bg-emerald-50 px- index--px- 20rpx index--20rpx py- index--py- 16rpx index--16rpx text-emerald-600 index--text-emerald-600"
+          style="">
+          <text class="demo-title RecommendedCard--demo-title"></text>
+          <text class="demo-subtitle RecommendedCard--demo-subtitle"></text>
+        </view>
+        <view
+          class="demo-card RecommendedCard--demo-card"
+          style="
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid #60a5fa;
+          ">
+          <text class="demo-title RecommendedCard--demo-title"></text>
+          <text class="demo-subtitle RecommendedCard--demo-subtitle"></text>
+        </view>
+      </view>
+    </view>
+    <view
+      class="mt-_b18rpx_B index--mt-_b18rpx_B rounded-_b24rpx_B index--rounded-_b24rpx_B bg-_b_h1f1a3f_B index--bg-_b_h1f1a3f_B p-_b20rpx_B index--p-_b20rpx_B text-white index--text-white">
+      <text class="text-_b26rpx_B index--text-_b26rpx_B font-semibold index--font-semibold"></text>
+      <text
+        class="mt-_b10rpx_B index--mt-_b10rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B leading-_b1_d8_B index--leading-_b1_d8_B text-white_f80 index--text-white_f80"></text>
     </view>
   </view>
 </view>

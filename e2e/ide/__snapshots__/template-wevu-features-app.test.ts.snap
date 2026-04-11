@@ -167,8 +167,8 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <view class="router-coverage-page__actions">
       <view
         class="router-coverage-page__btn"
+        data-wi-tap="i0"
         data-wv-i0="0"
-        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         push 到当前页
       </view>
@@ -180,8 +180,8 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <view class="router-coverage-page__actions">
       <view
         class="router-coverage-page__btn"
+        data-wi-tap="i0"
         data-wv-i0="1"
-        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         push 到当前页
       </view>
@@ -193,15 +193,15 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <view class="router-coverage-page__actions">
       <view
         class="router-coverage-page__btn"
+        data-wi-tap="i0"
         data-wv-i0="2"
-        data-wv-inline-id-tap="__wv_inline_0"
         data-wv-s0="[object Object]">
         push 到当前页
       </view>
       <view
         class="router-coverage-page__btn router-coverage-page__btn--secondary"
+        data-wi-tap="i1"
         data-wv-i0="2"
-        data-wv-inline-id-tap="__wv_inline_1"
         data-wv-s0="[object Object]">
         replace 到当前页
       </view>
@@ -454,24 +454,18 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view class="use-model-page__value" id="model-log-size">emit logs = 0</view>
   <usemodelfeature
     is="components/use-model-feature/index"
-    data-wv-event-detail-update-modelvalue="1"
-    data-wv-inline-id-update-modelvalue="__wv_inline_0">
+    data-wd-update-modelvalue="1"
+    data-wi-update-modelvalue="i0">
     <view class="index--use-model-feature">
       <view class="index--use-model-feature__title">组件内 useModel()</view>
       <view class="index--use-model-feature__value" id="model-inner-value">
         inner model = seed-model
       </view>
       <view class="index--use-model-feature__actions">
-        <view
-          class="index--use-model-feature__btn"
-          data-wv-inline-id-tap="__wv_inline_0"
-          id="model-inner-alpha">
+        <view class="index--use-model-feature__btn" data-wi-tap="i0" id="model-inner-alpha">
           child -&amp;gt; alpha
         </view>
-        <view
-          class="index--use-model-feature__btn"
-          data-wv-inline-id-tap="__wv_inline_1"
-          id="model-inner-beta">
+        <view class="index--use-model-feature__btn" data-wi-tap="i1" id="model-inner-beta">
           child -&amp;gt; beta
         </view>
       </view>

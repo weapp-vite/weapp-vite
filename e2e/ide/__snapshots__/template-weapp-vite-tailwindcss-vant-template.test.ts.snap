@@ -101,6 +101,9 @@ text,
 .mt-4 {
   margin-top: 32rpx;
 }
+.block {
+  display: block;
+}
 .flex {
   display: flex;
 }
@@ -538,125 +541,139 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
         <view class="mt-3 text-sm leading-7 text-slate-600">当前状态：default</view>
       </view>
       <view class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-        <van-button is="miniprogram_npm/@vant/weapp/button/index">
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            app-parameter=""
-            business-id="0"
-            class="van-button weapp-button-index--van-button van-button--primary weapp-button-index--van-button--primary van-button--normal weapp-button-index--van-button--normal"
-            data-detail="null"
-            form-type=""
-            hover-class="van-button--active hover-class"
-            lang=""
-            open-type=""
-            send-message-img=""
-            send-message-path=""
-            send-message-title=""
-            session-from=""
-            style=""
-            role="button"
-            aria-disabled="false">
-            <view class="van-button__text weapp-button-index--van-button__text">
-              使用 default 布局
-            </view>
-          </button>
-        </van-button>
-        <van-button is="miniprogram_npm/@vant/weapp/button/index">
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            app-parameter=""
-            business-id="0"
-            class="layout-btn van-button weapp-button-index--van-button van-button--danger weapp-button-index--van-button--danger van-button--normal weapp-button-index--van-button--normal van-button--plain weapp-button-index--van-button--plain"
-            data-detail="null"
-            form-type=""
-            hover-class="van-button--active hover-class"
-            lang=""
-            open-type=""
-            send-message-img=""
-            send-message-path=""
-            send-message-title=""
-            session-from=""
-            style=""
-            role="button"
-            aria-disabled="false">
-            <view class="van-button__text weapp-button-index--van-button__text">
-              切到 admin 布局
-            </view>
-          </button>
-        </van-button>
-        <van-button is="miniprogram_npm/@vant/weapp/button/index">
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            app-parameter=""
-            business-id="0"
-            class="layout-btn van-button weapp-button-index--van-button van-button--default weapp-button-index--van-button--default van-button--normal weapp-button-index--van-button--normal van-button--plain weapp-button-index--van-button--plain"
-            data-detail="null"
-            form-type=""
-            hover-class="van-button--active hover-class"
-            lang=""
-            open-type=""
-            send-message-img=""
-            send-message-path=""
-            send-message-title=""
-            session-from=""
-            style=""
-            role="button"
-            aria-disabled="false">
-            <view class="van-button__text weapp-button-index--van-button__text">关闭布局</view>
-          </button>
-        </van-button>
-        <van-button is="miniprogram_npm/@vant/weapp/button/index">
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            app-parameter=""
-            business-id="0"
-            class="layout-btn van-button weapp-button-index--van-button van-button--success weapp-button-index--van-button--success van-button--normal weapp-button-index--van-button--normal van-button--plain weapp-button-index--van-button--plain"
-            data-detail="null"
-            form-type=""
-            hover-class="van-button--active hover-class"
-            lang=""
-            open-type=""
-            send-message-img=""
-            send-message-path=""
-            send-message-title=""
-            session-from=""
-            style=""
-            role="button"
-            aria-disabled="false">
-            <view class="van-button__text weapp-button-index--van-button__text">查看当前状态</view>
-          </button>
-        </van-button>
-        <van-button is="miniprogram_npm/@vant/weapp/button/index">
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            app-parameter=""
-            business-id="0"
-            class="layout-btn van-button weapp-button-index--van-button van-button--default weapp-button-index--van-button--default van-button--normal weapp-button-index--van-button--normal"
-            data-detail="null"
-            form-type=""
-            hover-class="van-button--active hover-class"
-            lang=""
-            open-type=""
-            send-message-img=""
-            send-message-path=""
-            send-message-title=""
-            session-from=""
-            style=""
-            role="button"
-            aria-disabled="false">
-            <view class="van-button__text weapp-button-index--van-button__text">返回首页</view>
-          </button>
-        </van-button>
+        <view class="layout-actions">
+          <view class="layout-actions__item">
+            <van-button is="miniprogram_npm/@vant/weapp/button/index">
+              <button
+                activity-type="0"
+                entrance-path=""
+                need-show-entrance=""
+                app-parameter=""
+                business-id="0"
+                class="van-button weapp-button-index--van-button van-button--primary weapp-button-index--van-button--primary van-button--normal weapp-button-index--van-button--normal van-button--block weapp-button-index--van-button--block"
+                data-detail="null"
+                form-type=""
+                hover-class="van-button--active hover-class"
+                lang=""
+                open-type=""
+                send-message-img=""
+                send-message-path=""
+                send-message-title=""
+                session-from=""
+                style=""
+                role="button"
+                aria-disabled="false">
+                <view class="van-button__text weapp-button-index--van-button__text">
+                  使用 default 布局
+                </view>
+              </button>
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button is="miniprogram_npm/@vant/weapp/button/index">
+              <button
+                activity-type="0"
+                entrance-path=""
+                need-show-entrance=""
+                app-parameter=""
+                business-id="0"
+                class="van-button weapp-button-index--van-button van-button--danger weapp-button-index--van-button--danger van-button--normal weapp-button-index--van-button--normal van-button--block weapp-button-index--van-button--block van-button--plain weapp-button-index--van-button--plain"
+                data-detail="null"
+                form-type=""
+                hover-class="van-button--active hover-class"
+                lang=""
+                open-type=""
+                send-message-img=""
+                send-message-path=""
+                send-message-title=""
+                session-from=""
+                style=""
+                role="button"
+                aria-disabled="false">
+                <view class="van-button__text weapp-button-index--van-button__text">
+                  切到 admin 布局
+                </view>
+              </button>
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button is="miniprogram_npm/@vant/weapp/button/index">
+              <button
+                activity-type="0"
+                entrance-path=""
+                need-show-entrance=""
+                app-parameter=""
+                business-id="0"
+                class="van-button weapp-button-index--van-button van-button--default weapp-button-index--van-button--default van-button--normal weapp-button-index--van-button--normal van-button--block weapp-button-index--van-button--block van-button--plain weapp-button-index--van-button--plain"
+                data-detail="null"
+                form-type=""
+                hover-class="van-button--active hover-class"
+                lang=""
+                open-type=""
+                send-message-img=""
+                send-message-path=""
+                send-message-title=""
+                session-from=""
+                style=""
+                role="button"
+                aria-disabled="false">
+                <view class="van-button__text weapp-button-index--van-button__text">关闭布局</view>
+              </button>
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button is="miniprogram_npm/@vant/weapp/button/index">
+              <button
+                activity-type="0"
+                entrance-path=""
+                need-show-entrance=""
+                app-parameter=""
+                business-id="0"
+                class="van-button weapp-button-index--van-button van-button--success weapp-button-index--van-button--success van-button--normal weapp-button-index--van-button--normal van-button--block weapp-button-index--van-button--block van-button--plain weapp-button-index--van-button--plain"
+                data-detail="null"
+                form-type=""
+                hover-class="van-button--active hover-class"
+                lang=""
+                open-type=""
+                send-message-img=""
+                send-message-path=""
+                send-message-title=""
+                session-from=""
+                style=""
+                role="button"
+                aria-disabled="false">
+                <view class="van-button__text weapp-button-index--van-button__text">
+                  查看当前状态
+                </view>
+              </button>
+            </van-button>
+          </view>
+          <view class="layout-actions__item">
+            <van-button is="miniprogram_npm/@vant/weapp/button/index">
+              <button
+                activity-type="0"
+                entrance-path=""
+                need-show-entrance=""
+                app-parameter=""
+                business-id="0"
+                class="van-button weapp-button-index--van-button van-button--default weapp-button-index--van-button--default van-button--normal weapp-button-index--van-button--normal van-button--block weapp-button-index--van-button--block"
+                data-detail="null"
+                form-type=""
+                hover-class="van-button--active hover-class"
+                lang=""
+                open-type=""
+                send-message-img=""
+                send-message-path=""
+                send-message-title=""
+                session-from=""
+                style=""
+                role="button"
+                aria-disabled="false">
+                <view class="van-button__text weapp-button-index--van-button__text">返回首页</view>
+              </button>
+            </van-button>
+          </view>
+        </view>
       </view>
       <van-dialog is="miniprogram_npm/@vant/weapp/dialog/index" id="van-dialog">
         <van-popup is="miniprogram_npm/@vant/weapp/popup/index">

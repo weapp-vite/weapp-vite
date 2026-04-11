@@ -34,7 +34,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
         longitude="116.4"
         markers='[{"id":1,"latitude":39.908823,"longitude":116.39747,"width":18,"height":18},{"id":2,"latitude":39.914889,"longitude":116.403873,"width":18,"height":18}]'
         scale="13">
-        ©2026 Tencent - GS粤(2023)1171号地图
+        ©TENCENT-MAP-LICENSE
         <view>
           <cover-view
             class="relative h- 64rpx flex items-center rounded-full p- 8rpx shadow-lg w- 164rpx bg-highlight-dark"
@@ -274,7 +274,7 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
       <x-model is="components/x-model/index" id="model">
         <view class="model-index--model">
           <view class="model-index--row">label: model</view>
-          <view class="model-index--row">model: hello</view>
+          <view class="model-index--row">model: changed</view>
           <view class="model-index--row">emitLogs: 1</view>
         </view>
       </x-model>
@@ -306,9 +306,9 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
         "onUnhandledRejection", "onShareAppMessage", "onShareTimeline", "onAddToFavorites",
         "onSaveExitState" ], "shareResult": { "title": "share" }, "timelineResult": { "title":
         "timeline" }, "favoritesResult": { "title": "favorites" }, "exitStateResult": { "data": {
-        "key": "value" } }, "modelBefore": { "value": "hello", "logs": [] }, "modelAfter": {
-        "value": "hello", "logs": [ "update:modelValue:\\"model-next\\"" ] }, "childAttrs": "[]",
-        "childSlots": "[]", "currentFormTitle": "hello", "runtimeFormTitle": "changed" }}
+        "key": "value" } }, "modelBefore": { "value": "changed", "logs": [] }, "modelAfter": {
+        "value": "changed", "logs": [ "update:modelValue:\\"model-next\\"" ] }, "childAttrs": "[]",
+        "childSlots": "[]", "currentFormTitle": "changed", "runtimeFormTitle": "changed" }}
       </text>
     </view>
   </view>
