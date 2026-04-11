@@ -105,3 +105,5 @@ export const WEAPP_VITE_WEB_OPEN_VIDEO_EDITOR_KEY = '__weappViteWebOpenVideoEdit
 export const WEAPP_VITE_WEB_EXT_CONFIG_KEY = '__weappViteWebExtConfig'
 export const WEAPP_VITE_WEB_UPDATE_MANAGER_KEY = '__weappViteWebUpdateManager'
 export const WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY = '__weappViteWebAnalyticsEvents'
+export const WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY = '__weappViteWebScanCodeResult'
+export const WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY = '__weappViteWebActionSheetSelectIndex'

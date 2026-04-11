@@ -1,6 +1,8 @@
+import { WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY } from '@weapp-core/constants'
+
 export function resolveScanCodeResult(prompt?: (message: string, defaultValue: string) => unknown) {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  let rawResult: unknown = runtimeGlobal.__weappViteWebScanCodeResult
+  let rawResult: unknown = runtimeGlobal[WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY]
   if (rawResult == null && typeof prompt === 'function') {
     rawResult = prompt('请输入二维码/条码内容', '')
   }

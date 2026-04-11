@@ -1712,6 +1712,9 @@ importers:
       '@babel/types':
         specifier: 'catalog:'
         version: 7.29.0
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
       '@weapp-core/shared':
         specifier: workspace:^
         version: link:../../@weapp-core/shared

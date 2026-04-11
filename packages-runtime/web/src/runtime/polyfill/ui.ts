@@ -1,3 +1,5 @@
+import { WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY } from '@weapp-core/constants'
+
 const TOAST_ID = '__weapp_vite_web_toast__'
 const TOAST_SELECTOR = `#${TOAST_ID}`
 const LOADING_ID = '__weapp_vite_web_loading__'
@@ -134,7 +136,7 @@ export function setLoadingVisible(
 
 export function resolveActionSheetSelection(itemList: string[]) {
   const runtimeGlobal = globalThis as Record<string, unknown>
-  const preset = runtimeGlobal.__weappViteWebActionSheetSelectIndex
+  const preset = runtimeGlobal[WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY]
   if (typeof preset === 'function') {
     const result = preset(itemList)
     if (Number.isInteger(result) && result >= 0 && result < itemList.length) {

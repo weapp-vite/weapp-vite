@@ -1,4 +1,5 @@
 import {
+  WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY,
   WEAPP_VITE_WEB_ANALYTICS_EVENTS_KEY,
   WEAPP_VITE_WEB_AUTHORIZE_DECISION_KEY,
   WEAPP_VITE_WEB_CHECK_SESSION_KEY,
@@ -12,6 +13,7 @@ import {
   WEAPP_VITE_WEB_OPEN_SETTING_AUTH_KEY,
   WEAPP_VITE_WEB_OPEN_VIDEO_EDITOR_KEY,
   WEAPP_VITE_WEB_REQUEST_SUBSCRIBE_MESSAGE_KEY,
+  WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY,
   WEAPP_VITE_WEB_UPDATE_MANAGER_KEY,
   WEAPP_VITE_WEB_USER_INFO_KEY,
   WEAPP_VITE_WEB_USER_PROFILE_KEY,
@@ -2435,6 +2437,7 @@ describe('web runtime wx utility APIs', () => {
       .mockReturnValueOnce('1')
       .mockReturnValueOnce(null)
     const restorePrompt = overrideGlobalProperty('prompt', prompt)
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_ACTION_SHEET_SELECT_INDEX_KEY, 1)
     try {
       const success = vi.fn()
       const complete = vi.fn()
@@ -2449,6 +2452,8 @@ describe('web runtime wx utility APIs', () => {
       })
       expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showActionSheet:ok' }))
       expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'showActionSheet:ok' }))
+      restorePreset()
+      prompt.mockReset().mockReturnValue(null)
 
       await expect(showActionSheet({
         itemList: ['A', 'B'],
@@ -2463,6 +2468,7 @@ describe('web runtime wx utility APIs', () => {
       })
     }
     finally {
+      restorePreset()
       restorePrompt()
     }
   })
@@ -3666,6 +3672,7 @@ describe('web runtime wx utility APIs', () => {
       .mockReturnValueOnce('https://example.com/qrcode')
       .mockReturnValueOnce(null)
     const restorePrompt = overrideGlobalProperty('prompt', promptSpy)
+    const restorePreset = overrideGlobalProperty(WEAPP_VITE_WEB_SCAN_CODE_RESULT_KEY, 'https://example.com/qrcode')
     try {
       const success = vi.fn()
       const complete = vi.fn()
@@ -3680,12 +3687,15 @@ describe('web runtime wx utility APIs', () => {
       })
       expect(success).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'scanCode:ok' }))
       expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'scanCode:ok' }))
+      restorePreset()
+      promptSpy.mockReset().mockReturnValue(null)
 
       await expect(scanCode()).rejects.toMatchObject({
         errMsg: expect.stringContaining('scanCode:fail'),
       })
     }
     finally {
+      restorePreset()
       restorePrompt()
     }
   })
