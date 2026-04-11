@@ -1,6 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import type { NpmBuildOptions } from '../../../types'
 import type { NpmBuildServiceOptions } from './types'
+import { copyFile } from 'node:fs/promises'
 import { fs } from '@weapp-core/shared'
 import { getPackageInfo } from 'local-pkg'
 import path from 'pathe'
@@ -25,6 +26,31 @@ function hasSameDependencySet(source: string[], target: string[]) {
   }
 
   return source.every(dep => target.includes(dep))
+}
+
+async function copyDirectoryWithFilter(
+  sourceDir: string,
+  targetDir: string,
+  filter: (sourcePath: string) => boolean,
+) {
+  await fs.ensureDir(targetDir)
+  const entries = await fs.readdir(sourceDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const sourcePath = path.resolve(sourceDir, entry.name)
+    if (!filter(sourcePath)) {
+      continue
+    }
+
+    const targetPath = path.resolve(targetDir, entry.name)
+    if (entry.isDirectory()) {
+      await copyDirectoryWithFilter(sourcePath, targetPath, filter)
+      continue
+    }
+
+    await fs.ensureDir(path.dirname(targetPath))
+    await copyFile(sourcePath, targetPath)
+  }
 }
 
 export function createNpmBuildService(options: NpmBuildServiceOptions) {
@@ -164,18 +190,15 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
         const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
         if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {
           await fs.remove(targetDir)
-          await fs.copy(sourceOutDir, targetDir, {
-            overwrite: true,
-            filter: (src) => {
-              if (Array.isArray(meta.subPackage.dependencies)) {
-                const relPath = resolveCopyFilterRelativePath(sourceOutDir, String(src))
-                if (relPath === '') {
-                  return true
-                }
-                return matchDependencyCopyPath(meta.subPackage.dependencies, relPath)
+          await copyDirectoryWithFilter(sourceOutDir, targetDir, (sourcePath) => {
+            if (Array.isArray(meta.subPackage.dependencies)) {
+              const relPath = resolveCopyFilterRelativePath(sourceOutDir, sourcePath)
+              if (relPath === '') {
+                return true
               }
-              return true
-            },
+              return matchDependencyCopyPath(meta.subPackage.dependencies, relPath)
+            }
+            return true
           })
         }
         await cache.writeDependenciesCache(meta.subPackage.root)

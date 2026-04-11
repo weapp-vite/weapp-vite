@@ -519,6 +519,8 @@ describe('runtime npm service', () => {
     const cachedSourceOutDir = resolveNpmSourceCacheOutDir(cwd, 'miniprogram_npm')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'dayjs/index.js'), 'module.exports = "dayjs"')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/drawer/drawer.js'), 'module.exports = "drawer"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/transition/props.js'), 'module.exports = "props"')
+    await fs.outputFile(path.resolve(cachedSourceOutDir, 'tdesign-miniprogram/transition/type.d.ts'), 'export type TransitionType = "fade"')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'class-variance-authority/index.js'), 'module.exports = "cva"')
     await fs.outputFile(path.resolve(cachedSourceOutDir, 'clsx/index.js'), 'module.exports = "clsx"')
 
@@ -596,6 +598,10 @@ describe('runtime npm service', () => {
 
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/drawer/drawer.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/transition/props.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/tdesign-miniprogram/transition/type.d.ts'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/transition/props.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/tdesign-miniprogram/transition/type.d.ts'))).toBe(true)
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
   })
