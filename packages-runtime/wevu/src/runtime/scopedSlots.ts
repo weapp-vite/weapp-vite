@@ -1,4 +1,8 @@
 import type { ComponentPublicInstance, InternalRuntimeState, RuntimeInstance } from './types'
+import {
+  WEVU_PROPS_KEY,
+  WEVU_SLOT_OWNER_ID_KEY,
+} from '@weapp-core/constants'
 
 type OwnerSubscriber = (snapshot: Record<string, any>, proxy: ComponentPublicInstance<any, any, any> | undefined) => void
 
@@ -80,19 +84,19 @@ export function attachOwnerSnapshot(
   ownerId: string,
 ) {
   try {
-    ;(runtime.state as any).__wvOwnerId = ownerId
+    ;(runtime.state as any)[WEVU_SLOT_OWNER_ID_KEY] = ownerId
   }
   catch {
     // 忽略写入异常
   }
   try {
-    ;(target as any).__wvOwnerId = ownerId
+    ;(target as any)[WEVU_SLOT_OWNER_ID_KEY] = ownerId
   }
   catch {
     // 忽略写入异常
   }
   const snapshot = resolveOwnerSnapshot(runtime)
-  const propsSource = (target as any).__wevuProps ?? (target as any).properties
+  const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
   if (propsSource && typeof propsSource === 'object') {
     for (const [key, value] of Object.entries(propsSource)) {
       snapshot[key] = value

@@ -1,6 +1,5 @@
 import type { WevuPageLayoutMap } from 'wevu'
-
-const PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
+import { WEVU_PAGE_LAYOUT_SETTER_KEY } from '@weapp-core/constants'
 
 type PageLayoutSetter = (layout: string | false, props?: Record<string, any>) => void
 
@@ -30,7 +29,7 @@ export function setPageLayout<Name extends ResolveTypedPageLayoutName>(layout: N
  */
 export function setPageLayout(layout: string | false, props?: Record<string, any>): void {
   const currentPage = resolveCurrentPageInstance()
-  const pageSetter = currentPage?.[PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
+  const pageSetter = currentPage?.[WEVU_PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
 
   if (typeof pageSetter === 'function') {
     pageSetter(layout, props)

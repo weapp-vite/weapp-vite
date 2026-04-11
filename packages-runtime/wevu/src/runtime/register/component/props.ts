@@ -1,4 +1,10 @@
 import type { InternalRuntimeState } from '../../types'
+import {
+  WEVU_ATTRS_KEY,
+  WEVU_PENDING_PROP_VALUES_KEY,
+  WEVU_PROP_KEYS_KEY,
+  WEVU_PROPS_KEY,
+} from '@weapp-core/constants'
 import { refreshOwnerSnapshotFromInstance } from '../snapshot'
 
 export function createPropsSync(options: {
@@ -6,7 +12,6 @@ export function createPropsSync(options: {
   userObservers?: Record<string, any>
 }) {
   const { restOptions, userObservers } = options
-  const PENDING_PROP_VALUES_KEY = '__wevuPendingPropValues'
   const propKeys = restOptions.properties && typeof restOptions.properties === 'object'
     ? Object.keys(restOptions.properties as any)
     : []
@@ -14,7 +19,7 @@ export function createPropsSync(options: {
 
   const attachWevuPropKeys = (instance: InternalRuntimeState) => {
     try {
-      Object.defineProperty(instance, '__wevuPropKeys', {
+      Object.defineProperty(instance, WEVU_PROP_KEYS_KEY, {
         value: propKeys,
         configurable: true,
         enumerable: false,
@@ -22,12 +27,12 @@ export function createPropsSync(options: {
       })
     }
     catch {
-      ;(instance as any).__wevuPropKeys = propKeys
+      ;(instance as any)[WEVU_PROP_KEYS_KEY] = propKeys
     }
   }
 
   const syncWevuAttrsFromInstance = (instance: InternalRuntimeState) => {
-    const attrsProxy = (instance as any).__wevuAttrs
+    const attrsProxy = (instance as any)[WEVU_ATTRS_KEY]
     if (!attrsProxy || typeof attrsProxy !== 'object') {
       return
     }
@@ -81,9 +86,9 @@ export function createPropsSync(options: {
   }
 
   const syncWevuPropsFromInstance = (instance: InternalRuntimeState) => {
-    const propsProxy = (instance as any).__wevuProps
+    const propsProxy = (instance as any)[WEVU_PROPS_KEY]
     const properties = (instance as any).properties
-    const pendingPropValues = (instance as any)[PENDING_PROP_VALUES_KEY] as Record<string, unknown> | undefined
+    const pendingPropValues = (instance as any)[WEVU_PENDING_PROP_VALUES_KEY] as Record<string, unknown> | undefined
 
     if (propsProxy && typeof propsProxy === 'object' && properties && typeof properties === 'object') {
       const next = properties as any
@@ -124,14 +129,14 @@ export function createPropsSync(options: {
       refreshOwnerSnapshotFromInstance(instance)
     }
     if (pendingPropValues) {
-      delete (instance as any)[PENDING_PROP_VALUES_KEY]
+      delete (instance as any)[WEVU_PENDING_PROP_VALUES_KEY]
     }
 
     syncWevuAttrsFromInstance(instance)
   }
 
   const syncWevuPropValue = (instance: InternalRuntimeState, key: string, value: unknown) => {
-    const propsProxy = (instance as any).__wevuProps
+    const propsProxy = (instance as any)[WEVU_PROPS_KEY]
     if (!propsProxy || typeof propsProxy !== 'object') {
       return
     }
@@ -141,7 +146,7 @@ export function createPropsSync(options: {
     catch {
       // 忽略异常
     }
-    const pendingPropValues = ((instance as any)[PENDING_PROP_VALUES_KEY] ??= Object.create(null)) as Record<string, unknown>
+    const pendingPropValues = ((instance as any)[WEVU_PENDING_PROP_VALUES_KEY] ??= Object.create(null)) as Record<string, unknown>
     pendingPropValues[key] = value
     refreshOwnerSnapshotFromInstance(instance)
     syncWevuAttrsFromInstance(instance)

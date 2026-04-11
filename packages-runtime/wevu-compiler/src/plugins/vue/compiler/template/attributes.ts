@@ -1,6 +1,7 @@
 import type { AttributeNode } from '@vue/compiler-core'
 import type { ClassStyleBinding, TransformContext } from './types'
 import { NodeTypes } from '@vue/compiler-core'
+import { WEVU_CLASS_STYLE_RUNTIME_MODULE } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { generate } from '../../../../utils/babel'
 import {
@@ -203,7 +204,7 @@ export function renderClassAttribute(
     const mergedExp = parts.length > 1 ? `[${parts.join(',')}]` : parts[0]
 
     context.classStyleWxs = true
-    return `class="${renderMustache(`__weapp_vite.cls(${mergedExp})`, context)}"`
+    return `class="${renderMustache(`${WEVU_CLASS_STYLE_RUNTIME_MODULE}.cls(${mergedExp})`, context)}"`
   }
 
   const jsParts: t.Expression[] = []
@@ -257,7 +258,7 @@ export function renderStyleAttribute(
     const mergedExp = parts.length > 1 ? `[${parts.join(',')}]` : (parts[0] || '\'\'')
 
     context.classStyleWxs = true
-    return `style="${renderMustache(`__weapp_vite.style(${mergedExp})`, context)}"`
+    return `style="${renderMustache(`${WEVU_CLASS_STYLE_RUNTIME_MODULE}.style(${mergedExp})`, context)}"`
   }
 
   const jsParts: t.Expression[] = []

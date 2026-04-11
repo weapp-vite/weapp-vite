@@ -1,9 +1,12 @@
+import {
+  WEVU_PAGE_LAYOUT_NAME_KEY,
+  WEVU_PAGE_LAYOUT_NONE,
+  WEVU_PAGE_LAYOUT_PROPS_KEY,
+  WEVU_PAGE_LAYOUT_SETTER_KEY,
+} from '@weapp-core/constants'
 import { reactive, readonly } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext } from './hooks'
 import { getCurrentPageInstance } from './register/component/lifecycle/platform'
-
-const PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
-const NO_LAYOUT_RUNTIME_KEY = '__wv_no_layout'
 
 type PageLayoutSetter = (layout: string | false, props?: Record<string, any>) => void
 
@@ -55,7 +58,7 @@ function resolveCurrentPageInstance() {
 }
 
 function normalizeRuntimePageLayoutName(layout: string | undefined) {
-  return layout === NO_LAYOUT_RUNTIME_KEY ? false : layout
+  return layout === WEVU_PAGE_LAYOUT_NONE ? false : layout
 }
 
 /**
@@ -69,8 +72,8 @@ export function usePageLayout(): Readonly<PageLayoutState> {
   const currentInstance = getCurrentInstance() as Record<string, any> | undefined
   const runtimeState = currentInstance?.__wevu?.state as Record<string, any> | undefined
   const pageLayoutState = reactive<MutablePageLayoutState>({
-    name: normalizeRuntimePageLayoutName(runtimeState?.__wv_page_layout_name) as string | false | undefined,
-    props: { ...(runtimeState?.__wv_page_layout_props ?? {}) },
+    name: normalizeRuntimePageLayoutName(runtimeState?.[WEVU_PAGE_LAYOUT_NAME_KEY]) as string | false | undefined,
+    props: { ...(runtimeState?.[WEVU_PAGE_LAYOUT_PROPS_KEY] ?? {}) },
   })
 
   if (currentInstance) {
@@ -95,8 +98,8 @@ export function syncRuntimePageLayoutStateFromRuntime(target: Record<string, any
   if (!state || !runtimeState) {
     return
   }
-  state.name = normalizeRuntimePageLayoutName(runtimeState.__wv_page_layout_name) as string | false | undefined
-  state.props = { ...(runtimeState.__wv_page_layout_props ?? {}) }
+  state.name = normalizeRuntimePageLayoutName(runtimeState[WEVU_PAGE_LAYOUT_NAME_KEY]) as string | false | undefined
+  state.props = { ...(runtimeState[WEVU_PAGE_LAYOUT_PROPS_KEY] ?? {}) }
 }
 
 export function setPageLayout(layout: false): void
@@ -107,14 +110,14 @@ export function setPageLayout<Name extends ResolveTypedPageLayoutName>(layout: N
  */
 export function setPageLayout(layout: string | false, props?: Record<string, any>): void {
   const currentInstance = getCurrentInstance() as Record<string, any> | undefined
-  const directSetter = currentInstance?.[PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
+  const directSetter = currentInstance?.[WEVU_PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
   if (typeof directSetter === 'function') {
     directSetter(layout, props)
     return
   }
 
   const currentPage = resolveCurrentPageInstance()
-  const pageSetter = currentPage?.[PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
+  const pageSetter = currentPage?.[WEVU_PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
   if (typeof pageSetter === 'function') {
     pageSetter(layout, props)
     return

@@ -113,6 +113,7 @@
     "miniprogram-api-typings": "^5.0.0"
   },
   "dependencies": {
+    "@weapp-core/constants": "workspace:*",
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
     "vue": "catalog:"

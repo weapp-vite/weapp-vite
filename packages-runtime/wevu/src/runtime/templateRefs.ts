@@ -1,4 +1,10 @@
 import type { InternalRuntimeState } from './types'
+import {
+  WEVU_READY_CALLED_KEY,
+  WEVU_TEMPLATE_REFS_CALLBACKS_KEY,
+  WEVU_TEMPLATE_REFS_KEY,
+  WEVU_TEMPLATE_REFS_PENDING_KEY,
+} from '@weapp-core/constants'
 import { nextTick } from '../scheduler'
 import { markNoSetData } from './noSetData'
 import {
@@ -23,12 +29,12 @@ export interface TemplateRefBinding {
 type TemplateRefUpdateCallback = () => void
 
 export function updateTemplateRefs(target: InternalRuntimeState, onResolved?: TemplateRefUpdateCallback) {
-  const bindings = (target as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
+  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     onResolved?.()
     return
   }
-  if (!(target as any).__wevuReadyCalled) {
+  if (!(target as any)[WEVU_READY_CALLED_KEY]) {
     onResolved?.()
     return
   }
@@ -147,16 +153,16 @@ export function updateTemplateRefs(target: InternalRuntimeState, onResolved?: Te
 }
 
 export function scheduleTemplateRefUpdate(target: InternalRuntimeState, onResolved?: TemplateRefUpdateCallback) {
-  const bindings = (target as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
+  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     onResolved?.()
     return
   }
   if (onResolved) {
-    const callbacks = ((target as any).__wevuTemplateRefsCallbacks ?? []) as TemplateRefUpdateCallback[]
+    const callbacks = ((target as any)[WEVU_TEMPLATE_REFS_CALLBACKS_KEY] ?? []) as TemplateRefUpdateCallback[]
     callbacks.push(onResolved)
-    if (!(target as any).__wevuTemplateRefsCallbacks) {
-      Object.defineProperty(target, '__wevuTemplateRefsCallbacks', {
+    if (!(target as any)[WEVU_TEMPLATE_REFS_CALLBACKS_KEY]) {
+      Object.defineProperty(target, WEVU_TEMPLATE_REFS_CALLBACKS_KEY, {
         value: callbacks,
         configurable: true,
         enumerable: false,
@@ -164,14 +170,14 @@ export function scheduleTemplateRefUpdate(target: InternalRuntimeState, onResolv
       })
     }
   }
-  if ((target as any).__wevuTemplateRefsPending) {
+  if ((target as any)[WEVU_TEMPLATE_REFS_PENDING_KEY]) {
     return
   }
-  ;(target as any).__wevuTemplateRefsPending = true
+  ;(target as any)[WEVU_TEMPLATE_REFS_PENDING_KEY] = true
   nextTick(() => {
-    ;(target as any).__wevuTemplateRefsPending = false
+    ;(target as any)[WEVU_TEMPLATE_REFS_PENDING_KEY] = false
     const flushCallbacks = () => {
-      const callbacks = (target as any).__wevuTemplateRefsCallbacks as TemplateRefUpdateCallback[] | undefined
+      const callbacks = (target as any)[WEVU_TEMPLATE_REFS_CALLBACKS_KEY] as TemplateRefUpdateCallback[] | undefined
       if (!callbacks || !callbacks.length) {
         return
       }
@@ -189,7 +195,7 @@ export function scheduleTemplateRefUpdate(target: InternalRuntimeState, onResolv
 }
 
 export function clearTemplateRefs(target: InternalRuntimeState) {
-  const bindings = (target as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
+  const bindings = (target as any)[WEVU_TEMPLATE_REFS_KEY] as TemplateRefBinding[] | undefined
   if (!bindings || !bindings.length) {
     return
   }

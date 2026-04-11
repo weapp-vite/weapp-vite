@@ -9,6 +9,13 @@ import type {
   RuntimeApp,
 } from '../../types'
 import type { WatchMap } from '../watch'
+import {
+  WEVU_PAGE_LAYOUT_NAME_KEY,
+  WEVU_PAGE_LAYOUT_PROPS_KEY,
+  WEVU_PAGE_LAYOUT_SETTER_KEY,
+  WEVU_READY_CALLED_KEY,
+  WEVU_TEMPLATE_REFS_KEY,
+} from '@weapp-core/constants'
 import { callHookList } from '../../hooks'
 import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../layoutBridge'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
@@ -75,14 +82,14 @@ export function registerComponentDefinition<D extends object, C extends Computed
     if (!isPage) {
       return
     }
-    instance.__wevuSetPageLayout = (layout: string | false, props?: Record<string, any>) => {
+    instance[WEVU_PAGE_LAYOUT_SETTER_KEY] = (layout: string | false, props?: Record<string, any>) => {
       const runtimeState = instance.__wevu?.state as Record<string, any> | undefined
       if (!runtimeState || typeof runtimeState !== 'object') {
         return
       }
-      runtimeState.__wv_page_layout_name = resolveRuntimePageLayoutName(layout)
+      runtimeState[WEVU_PAGE_LAYOUT_NAME_KEY] = resolveRuntimePageLayoutName(layout)
       const nextProps = layout === false ? {} : (props ?? {})
-      runtimeState.__wv_page_layout_props = nextProps
+      runtimeState[WEVU_PAGE_LAYOUT_PROPS_KEY] = nextProps
       syncRuntimePageLayoutState(instance as Record<string, any>, layout, nextProps)
     }
   }
@@ -111,7 +118,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
       created: function created(this: InternalRuntimeState, ...args: any[]) {
         applyExtraInstanceFields(this)
         if (Array.isArray(templateRefs) && templateRefs.length) {
-          Object.defineProperty(this, '__wevuTemplateRefs', {
+          Object.defineProperty(this, WEVU_TEMPLATE_REFS_KEY, {
             value: templateRefs,
             configurable: true,
             enumerable: false,
@@ -146,8 +153,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
       },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
         applyExtraInstanceFields(this)
-        if (Array.isArray(templateRefs) && templateRefs.length && !(this as any).__wevuTemplateRefs) {
-          Object.defineProperty(this, '__wevuTemplateRefs', {
+        if (Array.isArray(templateRefs) && templateRefs.length && !(this as any)[WEVU_TEMPLATE_REFS_KEY]) {
+          Object.defineProperty(this, WEVU_TEMPLATE_REFS_KEY, {
             value: templateRefs,
             configurable: true,
             enumerable: false,
@@ -183,8 +190,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
           }
           return
         }
-        if (!(this as any).__wevuReadyCalled) {
-          ;(this as any).__wevuReadyCalled = true
+        if (!(this as any)[WEVU_READY_CALLED_KEY]) {
+          ;(this as any)[WEVU_READY_CALLED_KEY] = true
           syncWevuPropsFromInstance(this)
           scheduleTemplateRefUpdate(this, () => {
             callHookList(this, 'onReady', args)

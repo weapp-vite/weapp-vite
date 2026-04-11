@@ -2,6 +2,10 @@ import type { ElementNode } from '@vue/compiler-core'
 import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import {
+  WEVU_LAYOUT_HOST_ID_PREFIX,
+  WEVU_LAYOUT_HOST_REF_PREFIX,
+} from '@weapp-core/constants'
 import { components as builtinComponents } from '../../../../../auto-import-components/builtin.auto'
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
@@ -172,8 +176,8 @@ export function collectElementAttributes(
     }
     else {
       const hostIndex = context.layoutHostIndexSeed++
-      const hostId = staticId || `__wv-layout-host-${hostIndex}`
-      const hostRefName = `__wevu_layout_host_${hostIndex}`
+      const hostId = staticId || `${WEVU_LAYOUT_HOST_ID_PREFIX}${hostIndex}`
+      const hostRefName = `${WEVU_LAYOUT_HOST_REF_PREFIX}${hostIndex}`
       staticId = hostId
       context.templateRefs.push({
         selector: `#${hostId}`,

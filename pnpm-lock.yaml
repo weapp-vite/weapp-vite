@@ -1745,6 +1745,9 @@ importers:
 
   packages-runtime/wevu:
     dependencies:
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi
@@ -1766,6 +1769,9 @@ importers:
       '@vue/compiler-dom':
         specifier: 'catalog:'
         version: 3.5.32
+      '@weapp-core/constants':
+        specifier: workspace:*
+        version: link:../../@weapp-core/constants
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared

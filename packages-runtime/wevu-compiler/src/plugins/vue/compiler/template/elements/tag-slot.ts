@@ -1,6 +1,13 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import {
+  WEVU_SLOT_OWNER_ATTR,
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_PROPS_ATTR,
+  WEVU_SLOT_SCOPE_ATTR,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
@@ -167,6 +174,7 @@ export function renderSlotFallback(
 
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   if (isScopedSlotsDisabled(context)) {
+    // eslint-disable-next-line ts/no-use-before-define
     return transformSlotElementPlain(node, context, transformNode)
   }
   const slotNameInfo = resolveSlotNameFromSlotElement(node)
@@ -204,11 +212,11 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
 
   slotPropsExp = slotPropsExp ?? '[]'
   const scopedAttrs = [
-    `__wv-owner-id="${renderMustache('__wvSlotOwnerId', context)}"`,
-    `__wv-slot-props="${renderMustache(slotPropsExp, context)}"`,
+    `${WEVU_SLOT_OWNER_ATTR}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
+    `${WEVU_SLOT_PROPS_ATTR}="${renderMustache(slotPropsExp, context)}"`,
   ]
   if (context.slotMultipleInstance) {
-    scopedAttrs.push(`__wv-slot-scope="${renderMustache('__wvSlotScope', context)}"`)
+    scopedAttrs.push(`${WEVU_SLOT_SCOPE_ATTR}="${renderMustache(WEVU_SLOT_SCOPE_KEY, context)}"`)
   }
   const scopedAttrString = scopedAttrs.length ? ` ${scopedAttrs.join(' ')}` : ''
   const scopedTag = `<${genericKey}${scopedAttrString} />`

@@ -1,4 +1,10 @@
 import type { TransformContext } from '../types'
+import {
+  WEVU_CLASS_STYLE_RUNTIME_MODULE,
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
+  WEVU_SLOT_PROPS_KEY,
+} from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { generateExpression, parseBabelExpression, parseBabelExpressionFile } from './parse'
@@ -31,10 +37,10 @@ const SCOPED_SLOT_GLOBALS = new Set([
   'encodeURIComponent',
   'require',
   'arguments',
-  '__wvOwner',
-  '__wvSlotProps',
-  '__wvSlotPropsData',
-  '__weapp_vite',
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_PROPS_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
+  WEVU_CLASS_STYLE_RUNTIME_MODULE,
 ])
 
 export function collectScopedSlotLocals(context: TransformContext): Set<string> {
@@ -121,11 +127,11 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
         return
       }
       if (Object.hasOwn(slotProps, name)) {
-        const member = createMemberAccess('__wvSlotPropsData', slotProps[name])
+        const member = createMemberAccess(WEVU_SLOT_PROPS_DATA_KEY, slotProps[name])
         replaceIdentifierWithExpression(path, member)
         return
       }
-      const member = createMemberAccess('__wvOwner', name)
+      const member = createMemberAccess(WEVU_SLOT_OWNER_KEY, name)
       replaceIdentifierWithExpression(path, member)
     },
   })

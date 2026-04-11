@@ -1,4 +1,11 @@
 import type { TransformContext } from '../types'
+import {
+  WEVU_PROPS_KEY,
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
+  WEVU_SLOT_PROPS_KEY,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import { parseBabelExpression } from './parse'
@@ -92,7 +99,7 @@ function createHasOwnPropertyCall(target: t.Expression, key: string): t.Expressi
 
 function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
   if (name === 'props') {
-    const propsObject = createThisMemberAccess('__wevuProps')
+    const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
     return t.conditionalExpression(
       t.binaryExpression('!=', propsObject, t.nullLiteral()),
       propsObject,
@@ -100,8 +107,8 @@ function createIdentifierAccessWithPropsFallback(name: string): t.Expression {
     )
   }
   const thisAccess = createThisMemberAccess(name)
-  const propsAccess = createMemberAccess(createThisMemberAccess('__wevuProps'), name)
-  const propsObject = createThisMemberAccess('__wevuProps')
+  const propsAccess = createMemberAccess(createThisMemberAccess(WEVU_PROPS_KEY), name)
+  const propsObject = createThisMemberAccess(WEVU_PROPS_KEY)
   const stateObject = createThisMemberAccess('$state')
   const hasPropsObject = t.binaryExpression('!=', propsObject, t.nullLiteral())
   const hasDefinedPropsValue = t.binaryExpression('!==', propsAccess, t.identifier('undefined'))
@@ -198,19 +205,19 @@ export function normalizeJsExpressionWithContext(
       if (context.rewriteScopedSlot) {
         if (Object.hasOwn(slotProps, name)) {
           const prop = slotProps[name]
-          const base = createThisMemberAccess('__wvSlotPropsData')
+          const base = createThisMemberAccess(WEVU_SLOT_PROPS_DATA_KEY)
           replacement = createUnrefCall(prop ? createMemberAccess(base, prop) : base)
         }
         else if (
-          name === '__wvOwner'
-          || name === '__wvSlotPropsData'
-          || name === '__wvSlotProps'
-          || name === '__wvSlotScope'
+          name === WEVU_SLOT_OWNER_KEY
+          || name === WEVU_SLOT_PROPS_DATA_KEY
+          || name === WEVU_SLOT_PROPS_KEY
+          || name === WEVU_SLOT_SCOPE_KEY
         ) {
           replacement = createUnrefCall(createThisMemberAccess(name))
         }
         else {
-          const base = createThisMemberAccess('__wvOwner')
+          const base = createThisMemberAccess(WEVU_SLOT_OWNER_KEY)
           replacement = createUnrefCall(createMemberAccess(base, name))
         }
       }

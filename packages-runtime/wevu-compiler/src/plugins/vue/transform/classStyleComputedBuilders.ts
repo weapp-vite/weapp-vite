@@ -1,5 +1,6 @@
 import type { ClassStyleBinding, ForParseResult } from '../compiler/template/types'
 import type { ClassStyleHelperIds } from './classStyleComputed'
+import { WEVU_EXPRESSION_ERROR_IDENTIFIER } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 
 export function createStaticObjectKey(key: string) {
@@ -26,7 +27,7 @@ function buildNormalizedExpression(
           t.tryStatement(
             t.blockStatement([t.returnStatement(exp)]),
             t.catchClause(
-              t.identifier('__wv_expr_err'),
+              t.identifier(WEVU_EXPRESSION_ERROR_IDENTIFIER),
               t.blockStatement([t.returnStatement(t.identifier('undefined'))]),
             ),
             null,
@@ -50,7 +51,7 @@ function buildNormalizedExpression(
         t.tryStatement(
           t.blockStatement([t.returnStatement(normalizedCall)]),
           t.catchClause(
-            t.identifier('__wv_expr_err'),
+            t.identifier(WEVU_EXPRESSION_ERROR_IDENTIFIER),
             t.blockStatement([t.returnStatement(t.stringLiteral(errorFallback))]),
           ),
           null,
@@ -79,6 +80,7 @@ function buildArrayMapExpression(
     ]))
   }
 
+  // eslint-disable-next-line ts/no-use-before-define
   const inner = buildForExpression(binding, forStack, level + 1, helpers)
   body.push(t.returnStatement(inner))
 
@@ -137,6 +139,7 @@ function buildObjectMapExpression(
     }
   }
 
+  // eslint-disable-next-line ts/no-use-before-define
   const inner = buildForExpression(binding, forStack, level + 1, helpers)
   loopBody.push(t.expressionStatement(
     t.assignmentExpression(

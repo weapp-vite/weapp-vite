@@ -9,6 +9,7 @@ import type {
   MiniProgramComponentRawOptions,
   ShallowUnwrapRef,
 } from './types'
+import { WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import { createApp } from './app'
 import { applyWevuComponentDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { normalizeProps } from './define/props'
@@ -25,8 +26,8 @@ function ensureScopedSlotComponentGlobal() {
     return
   }
   const globalRecord = globalObject as Record<string, any>
-  if (!globalRecord.__weapp_vite_createScopedSlotComponent && scopedSlotCreator) {
-    globalRecord.__weapp_vite_createScopedSlotComponent = scopedSlotCreator
+  if (!globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] && scopedSlotCreator) {
+    globalRecord[WEVU_SCOPED_SLOT_CREATOR_KEY] = scopedSlotCreator
   }
 }
 

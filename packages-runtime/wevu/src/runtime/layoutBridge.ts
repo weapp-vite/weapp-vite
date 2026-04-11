@@ -1,4 +1,5 @@
 import type { Ref } from '../reactivity'
+import { WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
 import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
 import { getTemplateRefMap } from './templateRefs/helpers'
@@ -76,18 +77,18 @@ function resolveNativeLayoutContext(context?: LayoutBridgeContext) {
     return undefined
   }
 
-  const runtimeNativeInstance = context.__wevu?.state?.__wevuNativeInstance
+  const runtimeNativeInstance = context.__wevu?.state?.[WEVU_NATIVE_INSTANCE_KEY]
   if (runtimeNativeInstance && typeof runtimeNativeInstance === 'object') {
     return runtimeNativeInstance as LayoutBridgeContext
   }
 
-  const stateNativeInstance = context.$state?.__wevuNativeInstance
+  const stateNativeInstance = context.$state?.[WEVU_NATIVE_INSTANCE_KEY]
   if (stateNativeInstance && typeof stateNativeInstance === 'object') {
     return stateNativeInstance as LayoutBridgeContext
   }
 
-  if (context.__wevuNativeInstance && typeof context.__wevuNativeInstance === 'object') {
-    return context.__wevuNativeInstance as LayoutBridgeContext
+  if (context[WEVU_NATIVE_INSTANCE_KEY] && typeof context[WEVU_NATIVE_INSTANCE_KEY] === 'object') {
+    return context[WEVU_NATIVE_INSTANCE_KEY] as LayoutBridgeContext
   }
 
   return context

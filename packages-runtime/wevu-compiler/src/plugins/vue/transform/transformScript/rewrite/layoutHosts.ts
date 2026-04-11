@@ -1,4 +1,5 @@
 import type { LayoutHostBinding } from '../../../compiler/template/types'
+import { WEVU_LAYOUT_HOSTS_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
@@ -32,8 +33,8 @@ export function injectLayoutHosts(
   const warnHandler = resolveWarnHandler(warn)
   const entries = bindings.map(binding => buildLayoutHostEntry(binding))
   const hostsArray = t.arrayExpression(entries)
-  const key = createStaticObjectKey('__wevuLayoutHosts')
-  const existing = getObjectPropertyByKey(optionsObject, '__wevuLayoutHosts')
+  const key = createStaticObjectKey(WEVU_LAYOUT_HOSTS_KEY)
+  const existing = getObjectPropertyByKey(optionsObject, WEVU_LAYOUT_HOSTS_KEY)
 
   if (!existing) {
     optionsObject.properties.push(t.objectProperty(key, hostsArray))
@@ -53,6 +54,6 @@ export function injectLayoutHosts(
     return true
   }
 
-  warnHandler('无法自动注入 layout host 元数据，请手动合并 __wevuLayoutHosts。')
+  warnHandler(`无法自动注入 layout host 元数据，请手动合并 ${WEVU_LAYOUT_HOSTS_KEY}。`)
   return false
 }

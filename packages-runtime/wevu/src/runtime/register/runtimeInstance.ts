@@ -10,6 +10,13 @@ import type {
 } from '../types'
 import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
+import {
+  WEVU_PAGE_LAYOUT_NAME_KEY,
+  WEVU_PAGE_LAYOUT_PROPS_KEY,
+  WEVU_PAGE_LAYOUT_SETTER_KEY,
+  WEVU_PROPS_KEY,
+  WEVU_SLOT_OWNER_ID_KEY,
+} from '@weapp-core/constants'
 import { callHookList } from '../hooks'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
@@ -55,15 +62,15 @@ function attachPageLayoutSetter(target: InternalRuntimeState) {
     return
   }
 
-  target.__wevuSetPageLayout = (layout: string | false, props?: Record<string, any>) => {
+  target[WEVU_PAGE_LAYOUT_SETTER_KEY] = (layout: string | false, props?: Record<string, any>) => {
     const runtimeState = target.__wevu?.state as Record<string, any> | undefined
     if (!runtimeState || typeof runtimeState !== 'object') {
       return
     }
 
-    runtimeState.__wv_page_layout_name = resolveRuntimePageLayoutName(layout)
+    runtimeState[WEVU_PAGE_LAYOUT_NAME_KEY] = resolveRuntimePageLayoutName(layout)
     const nextProps = layout === false ? {} : (props ?? {})
-    runtimeState.__wv_page_layout_props = nextProps
+    runtimeState[WEVU_PAGE_LAYOUT_PROPS_KEY] = nextProps
     syncRuntimePageLayoutState(target as Record<string, any>, layout, nextProps)
   }
 }
@@ -151,7 +158,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       return
     }
     const snapshot = resolveOwnerSnapshot(runtimeRef)
-    const propsSource = (target as any).__wevuProps ?? (target as any).properties
+    const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
     if (propsSource && typeof propsSource === 'object') {
       for (const [key, value] of Object.entries(propsSource)) {
         snapshot[key] = value
@@ -299,7 +306,7 @@ export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visibl
  */
 export function teardownRuntimeInstance(target: InternalRuntimeState) {
   const runtime = target.__wevu
-  const ownerId = (target as any).__wvOwnerId
+  const ownerId = (target as any)[WEVU_SLOT_OWNER_ID_KEY]
   if (ownerId) {
     removeOwner(ownerId)
   }

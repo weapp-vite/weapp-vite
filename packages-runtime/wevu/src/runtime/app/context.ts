@@ -1,5 +1,10 @@
 import type { WritableComputedOptions } from '../../reactivity'
 import type { AppConfig, ComponentPublicInstance, ComputedDefinitions, ExtractMethods, MethodDefinitions } from '../types'
+import {
+  WEVU_INLINE_MAP_KEY,
+  WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_RUNTIME_KEY,
+} from '@weapp-core/constants'
 import { ref, toRaw } from '../../reactivity'
 import { setComputedValue } from '../internal'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
@@ -34,7 +39,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
 
   const resolveNativeInstance = (target: object, receiver: object) => {
     const rawTarget = toRaw(target as any) as Record<string, any>
-    const runtimeRef = rawTarget.__wevuRuntime
+    const runtimeRef = rawTarget[WEVU_RUNTIME_KEY]
     const runtimeProxy = runtimeRef?.proxy as Record<string, any> | undefined
     const isBridgeMethod = (
       candidate: object,
@@ -60,7 +65,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       }
       return true
     }
-    const directNative = rawTarget.__wevuNativeInstance
+    const directNative = rawTarget[WEVU_NATIVE_INSTANCE_KEY]
     if (isValidNativeCandidate(directNative)) {
       return directNative as object
     }
@@ -206,7 +211,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       ;(boundMethods as any)[key] = (...args: any[]) => handler.apply(publicInstance, args)
       return
     }
-    if (key === '__weapp_vite_inline_map' && handler && typeof handler === 'object') {
+    if (key === WEVU_INLINE_MAP_KEY && handler && typeof handler === 'object') {
       ;(boundMethods as any)[key] = handler
     }
   })

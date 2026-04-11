@@ -2,6 +2,7 @@ import type { File as BabelFile, ObjectExpression, Program } from '@weapp-vite/a
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../../wevu/pageFeatures'
 import type { TransformScriptOptions, TransformState } from '../utils'
+import { WEVU_IS_PAGE_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
@@ -213,14 +214,14 @@ export function rewriteDefaultExport(
   const componentOptionsObject = resolveComponentOptionsObject(componentExpr)
 
   const hasPageMarker = componentExpr
-    ? hasStaticPropertyInComponentExpression(componentExpr, '__wevu_isPage', ast.program)
+    ? hasStaticPropertyInComponentExpression(componentExpr, WEVU_IS_PAGE_KEY, ast.program)
     : false
 
   if (componentOptionsObject && options?.isPage && !options?.isApp && !hasPageMarker) {
     componentOptionsObject.properties.splice(
       0,
       0,
-      t.objectProperty(t.identifier('__wevu_isPage'), t.booleanLiteral(true)),
+      t.objectProperty(t.identifier(WEVU_IS_PAGE_KEY), t.booleanLiteral(true)),
     )
     transformed = true
   }

@@ -1,14 +1,18 @@
+import {
+  WEVU_CLASS_STYLE_RUNTIME_FILE,
+  WEVU_CLASS_STYLE_RUNTIME_MODULE,
+} from '@weapp-core/constants'
 import path from 'pathe'
 import { normalizeRoot, toPosixPath } from '../../../../utils/path'
 
 /**
  * class/style WXS 模块名。
  */
-export const CLASS_STYLE_WXS_MODULE = '__weapp_vite'
+export const CLASS_STYLE_WXS_MODULE = WEVU_CLASS_STYLE_RUNTIME_MODULE
 /**
  * class/style WXS 文件名（不含扩展名）。
  */
-export const CLASS_STYLE_WXS_FILE = '__weapp_vite_class_style'
+export const CLASS_STYLE_WXS_FILE = WEVU_CLASS_STYLE_RUNTIME_FILE
 
 export interface ClassStyleWxsSourceOptions {
   extension?: string

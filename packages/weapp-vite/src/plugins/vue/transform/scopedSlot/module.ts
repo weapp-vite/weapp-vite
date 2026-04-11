@@ -1,4 +1,5 @@
 import type { InlineExpressionAsset } from 'wevu/compiler'
+import { WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import { buildClassStyleComputedCode, getClassStyleWxsSource, WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -26,7 +27,7 @@ function buildScopedSlotComponentModule(options?: { computedCode?: string, inlin
   const lines = [
     `import { ${importSpecifiers} } from '${WE_VU_MODULE_ID}';`,
     'const globalObject = typeof globalThis !== \'undefined\' ? globalThis : undefined;',
-    'const createWevuScopedSlotComponent = globalObject?.__weapp_vite_createScopedSlotComponent',
+    `const createWevuScopedSlotComponent = globalObject?.${WEVU_SCOPED_SLOT_CREATOR_KEY}`,
     '  ?? _createWevuScopedSlotComponent;',
   ]
 

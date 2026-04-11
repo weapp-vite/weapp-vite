@@ -1,5 +1,6 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { LayoutTransformLikeResult, ResolvedPageLayout, ResolvedPageLayoutPlan } from '../types'
+import { WEVU_PAGE_LAYOUT_NAME_KEY } from '@weapp-core/constants'
 import { getLayoutConditionalDirective, getLayoutElseDirective } from '../shared'
 import { buildDynamicLayoutTemplate, collapseNestedLayoutWrapper, hasDynamicExpressionLayoutProps, serializeLayoutProps } from '../template'
 import { mergeLayoutUsingComponents, mergeSingleLayoutUsingComponent } from './config'
@@ -16,8 +17,8 @@ function hasDynamicLayoutTemplateWrapper(
 
   return plan.layouts.every((layout, index) => {
     const condition = plan.currentLayout?.layoutName === layout.layoutName
-      ? `{{!__wv_page_layout_name || __wv_page_layout_name === '${layout.layoutName}'}}`
-      : `{{__wv_page_layout_name === '${layout.layoutName}'}}`
+      ? `{{!${WEVU_PAGE_LAYOUT_NAME_KEY} || ${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`
+      : `{{${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`
     const directive = getLayoutConditionalDirective(index)
 
     return template.includes(`<block ${directive}="${condition}"><${layout.tagName}`)

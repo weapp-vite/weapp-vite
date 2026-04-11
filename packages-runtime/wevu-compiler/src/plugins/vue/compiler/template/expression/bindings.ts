@@ -1,4 +1,5 @@
 import type { TransformContext } from '../types'
+import { WEVU_CLASS_STYLE_RUNTIME_MODULE } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { generateExpression, parseBabelExpression } from './parse'
 import { normalizeWxmlExpressionWithContext } from './scopedSlot'
@@ -112,7 +113,7 @@ export function normalizeStyleBindingExpression(exp: string, context: TransformC
 
   const buildStylePair = (keyExpr: t.Expression, valueExpr: t.Expression) => {
     return t.callExpression(
-      t.memberExpression(t.identifier('__weapp_vite'), t.identifier('stylePair')),
+      t.memberExpression(t.identifier(WEVU_CLASS_STYLE_RUNTIME_MODULE), t.identifier('stylePair')),
       [keyExpr, valueExpr],
     )
   }

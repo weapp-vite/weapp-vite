@@ -1,5 +1,9 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { LayoutPropValue } from '../types'
+import {
+  WEVU_EXPRESSION_ERROR_IDENTIFIER,
+  WEVU_LAYOUT_BIND_PREFIX,
+} from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate } from '../../../../../utils/babel'
 import { createStaticObjectKey, findWevuOptionsObject, getObjectPropertyByKey, parseExpressionAst } from '../ast'
@@ -25,7 +29,7 @@ export function injectLayoutBindingComputed(script: string | undefined, props: R
   const computedEntries = runtimeEntries.map(([key, value]) => {
     const expressionAst = parseExpressionAst(value.expression) ?? t.identifier('undefined')
     return t.objectProperty(
-      createStaticObjectKey(`__wv_layout_bind_${key}`),
+      createStaticObjectKey(`${WEVU_LAYOUT_BIND_PREFIX}${key}`),
       t.functionExpression(
         null,
         [],
@@ -35,7 +39,7 @@ export function injectLayoutBindingComputed(script: string | undefined, props: R
               t.returnStatement(expressionAst),
             ]),
             t.catchClause(
-              t.identifier('__wv_expr_err'),
+              t.identifier(WEVU_EXPRESSION_ERROR_IDENTIFIER),
               t.blockStatement([
                 t.returnStatement(t.identifier('undefined')),
               ]),

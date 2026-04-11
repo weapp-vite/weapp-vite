@@ -2,6 +2,10 @@ import fsNative from 'node:fs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 
+import {
+  WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER,
+  WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER,
+} from '@weapp-core/constants'
 import { fs as fsExtra } from '@weapp-core/shared'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -761,8 +765,8 @@ Page({
 
     expect(result).toMatch(/__wv_page_layout_name:\s*["']default["']/)
     expect(result).toMatch(/__wv_page_layout_props:\s*\{\}/)
-    expect(result).toContain('Object.keys(__wv_current_layout_props).every')
-    expect(result).toContain('Object.keys(__wv_next_layout_props).length')
+    expect(result).toContain(`Object.keys(${WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER}).every`)
+    expect(result).toContain(`Object.keys(${WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER}).length`)
     expect(result).toContain('return;')
   })
 

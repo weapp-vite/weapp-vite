@@ -1,4 +1,8 @@
 import type { ComponentPropsOptions } from '../types'
+import {
+  WEVU_SLOT_OWNER_ID_PROP,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 
 const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
 const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
@@ -187,11 +191,11 @@ export function normalizeProps(
     ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
-    if (!Object.hasOwn(next, '__wvSlotOwnerId')) {
-      next.__wvSlotOwnerId = { type: String, value: '' }
+    if (!Object.hasOwn(next, WEVU_SLOT_OWNER_ID_PROP)) {
+      next[WEVU_SLOT_OWNER_ID_PROP] = { type: String, value: '' }
     }
-    if (!Object.hasOwn(next, '__wvSlotScope')) {
-      next.__wvSlotScope = { type: null, value: null }
+    if (!Object.hasOwn(next, WEVU_SLOT_SCOPE_KEY)) {
+      next[WEVU_SLOT_SCOPE_KEY] = { type: null, value: null }
     }
     return next
   }

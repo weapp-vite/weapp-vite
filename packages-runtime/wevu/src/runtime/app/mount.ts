@@ -9,6 +9,10 @@ import type {
   RuntimeInstance,
   SetDataDebugInfo,
 } from '../types'
+import {
+  WEVU_ATTRS_KEY,
+  WEVU_PROPS_KEY,
+} from '@weapp-core/constants'
 import { addMutationRecorder, effect, isReactive, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../../reactivity'
 import { clearPatchIndices } from '../../reactivity/reactive'
 import { queueJob } from '../../scheduler'
@@ -70,9 +74,9 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const rawState = resolveDataOption(data)
     // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
     // 在 computed 首次求值阶段即可建立响应式依赖。
-    if (rawState && typeof rawState === 'object' && !Object.hasOwn(rawState as object, '__wevuProps')) {
+    if (rawState && typeof rawState === 'object' && !Object.hasOwn(rawState as object, WEVU_PROPS_KEY)) {
       try {
-        Object.defineProperty(rawState as object, '__wevuProps', {
+        Object.defineProperty(rawState as object, WEVU_PROPS_KEY, {
           value: shallowReactive(Object.create(null)),
           configurable: true,
           enumerable: false,
@@ -188,11 +192,11 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
         touchReactive(state as any)
         // __wevuProps / __wevuAttrs 是非枚举属性，需显式跟踪，
         // 否则 props/attrs 更新不会触发 setData 调度。
-        const runtimeProps = (state as any).__wevuProps
+        const runtimeProps = (state as any)[WEVU_PROPS_KEY]
         if (isReactive(runtimeProps)) {
           touchReactive(runtimeProps as any)
         }
-        const runtimeAttrs = (state as any).__wevuAttrs
+        const runtimeAttrs = (state as any)[WEVU_ATTRS_KEY]
         if (isReactive(runtimeAttrs)) {
           touchReactive(runtimeAttrs as any)
         }

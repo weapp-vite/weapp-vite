@@ -1,6 +1,7 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { WEVU_MODEL_HANDLER } from '@weapp-core/constants'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 
@@ -29,7 +30,7 @@ function transformVModel(
   const escapedModel = expValue.replace(QUOTE_RE, '&quot;')
   const bindModel = (event: string) => {
     const bindAttr = context.platform.eventBindingAttr(event)
-    return `${bindAttr}="__weapp_vite_model" data-wv-model="${escapedModel}"`
+    return `${bindAttr}="${WEVU_MODEL_HANDLER}" data-wv-model="${escapedModel}"`
   }
 
   if (!element) {

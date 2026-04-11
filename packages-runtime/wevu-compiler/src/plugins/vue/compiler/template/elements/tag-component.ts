@@ -2,6 +2,11 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import type { ScopedSlotDeclaration } from './tag-slot'
 import { NodeTypes } from '@vue/compiler-core'
+import {
+  WEVU_SLOT_OWNER_ID_ATTR,
+  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_SCOPE_ATTR,
+} from '@weapp-core/constants'
 import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { renderMustache } from '../mustache'
@@ -25,6 +30,7 @@ export function transformComponentWithSlots(
   options?: { extraAttrs?: string[], forInfo?: ForParseResult },
 ): string {
   if (isScopedSlotsDisabled(context)) {
+    // eslint-disable-next-line ts/no-use-before-define
     return transformComponentWithSlotsFallback(node, context, transformNode, options)
   }
   const extraAttrs = options?.extraAttrs ?? []
@@ -127,9 +133,9 @@ export function transformComponentWithSlots(
   if (scopedSlotDeclarations.length) {
     const scopePropsExp = buildScopePropsExpression(context)
     if (scopePropsExp) {
-      mergedAttrs.push(`__wv-slot-scope="${renderMustache(scopePropsExp, context)}"`)
+      mergedAttrs.push(`${WEVU_SLOT_SCOPE_ATTR}="${renderMustache(scopePropsExp, context)}"`)
     }
-    mergedAttrs.push(`__wv-slot-owner-id="${renderMustache(`__wvOwnerId || ''`, context)}"`)
+    mergedAttrs.push(`${WEVU_SLOT_OWNER_ID_ATTR}="${renderMustache(`${WEVU_SLOT_OWNER_ID_KEY} || ''`, context)}"`)
   }
 
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''

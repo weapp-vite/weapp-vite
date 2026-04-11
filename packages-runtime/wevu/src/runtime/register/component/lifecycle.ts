@@ -1,5 +1,8 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
+import {
+  WEVU_READY_CALLED_KEY,
+} from '@weapp-core/constants'
 import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
@@ -141,8 +144,8 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         })
       }
       // 兼容：部分平台/模式可能触发 Page.onReady，而非 Component lifetimes.ready
-      if (!(this as any).__wevuReadyCalled) {
-        ;(this as any).__wevuReadyCalled = true
+      if (!(this as any)[WEVU_READY_CALLED_KEY]) {
+        ;(this as any)[WEVU_READY_CALLED_KEY] = true
         // 部分 IDE/基础库在首屏场景可能不派发 routeDone，这里做一次延迟兜底。
         // 若平台随后派发了真实 routeDone，会因为 __wevuRouteDoneCalled 判定而跳过补发。
         if (isPage && enableOnRouteDone && enableOnRouteDoneFallback) {

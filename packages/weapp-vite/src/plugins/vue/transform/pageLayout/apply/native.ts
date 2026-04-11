@@ -1,11 +1,22 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { LayoutPropValue, ResolvedPageLayout, ResolvedPageLayoutPlan } from '../types'
+import {
+  WEVU_INTERNAL_KEY_IDENTIFIER,
+  WEVU_PAGE_LAYOUT_CURRENT_NAME_IDENTIFIER,
+  WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER,
+  WEVU_PAGE_LAYOUT_NAME_KEY,
+  WEVU_PAGE_LAYOUT_NEXT_NAME_IDENTIFIER,
+  WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER,
+  WEVU_PAGE_LAYOUT_NONE,
+  WEVU_PAGE_LAYOUT_PROPS_KEY,
+  WEVU_PAGE_LAYOUT_SETTER_KEY,
+} from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate } from '../../../../../utils/babel'
 import { createStaticObjectKey, findNativePageOptionsObject, getObjectPropertyByKey, stripDefinePageMetaCalls, stripTypeSyntaxFromAst } from '../ast'
 
 function injectNativePageLayoutSetter(pageOptions: t.ObjectExpression) {
-  const existing = getObjectPropertyByKey(pageOptions, '__wevuSetPageLayout')
+  const existing = getObjectPropertyByKey(pageOptions, WEVU_PAGE_LAYOUT_SETTER_KEY)
   if (existing) {
     return
   }
@@ -13,22 +24,22 @@ function injectNativePageLayoutSetter(pageOptions: t.ObjectExpression) {
   pageOptions.properties.push(
     t.objectMethod(
       'method',
-      createStaticObjectKey('__wevuSetPageLayout'),
+      createStaticObjectKey(WEVU_PAGE_LAYOUT_SETTER_KEY),
       [t.identifier('layout'), t.identifier('props')],
       t.blockStatement([
         t.variableDeclaration('const', [
           t.variableDeclarator(
-            t.identifier('__wv_next_layout_name'),
+            t.identifier(WEVU_PAGE_LAYOUT_NEXT_NAME_IDENTIFIER),
             t.conditionalExpression(
               t.binaryExpression('===', t.identifier('layout'), t.booleanLiteral(false)),
-              t.stringLiteral('__wv_no_layout'),
+              t.stringLiteral(WEVU_PAGE_LAYOUT_NONE),
               t.identifier('layout'),
             ),
           ),
         ]),
         t.variableDeclaration('const', [
           t.variableDeclarator(
-            t.identifier('__wv_next_layout_props'),
+            t.identifier(WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER),
             t.conditionalExpression(
               t.binaryExpression('===', t.identifier('layout'), t.booleanLiteral(false)),
               t.objectExpression([]),
@@ -38,21 +49,21 @@ function injectNativePageLayoutSetter(pageOptions: t.ObjectExpression) {
         ]),
         t.variableDeclaration('const', [
           t.variableDeclarator(
-            t.identifier('__wv_current_layout_name'),
+            t.identifier(WEVU_PAGE_LAYOUT_CURRENT_NAME_IDENTIFIER),
             t.memberExpression(
               t.memberExpression(t.thisExpression(), t.identifier('data')),
-              t.identifier('__wv_page_layout_name'),
+              t.identifier(WEVU_PAGE_LAYOUT_NAME_KEY),
             ),
           ),
         ]),
         t.variableDeclaration('const', [
           t.variableDeclarator(
-            t.identifier('__wv_current_layout_props'),
+            t.identifier(WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER),
             t.logicalExpression(
               '||',
               t.memberExpression(
                 t.memberExpression(t.thisExpression(), t.identifier('data')),
-                t.identifier('__wv_page_layout_props'),
+                t.identifier(WEVU_PAGE_LAYOUT_PROPS_KEY),
               ),
               t.objectExpression([]),
             ),
@@ -63,20 +74,20 @@ function injectNativePageLayoutSetter(pageOptions: t.ObjectExpression) {
             '&&',
             t.binaryExpression(
               '===',
-              t.identifier('__wv_current_layout_name'),
-              t.identifier('__wv_next_layout_name'),
+              t.identifier(WEVU_PAGE_LAYOUT_CURRENT_NAME_IDENTIFIER),
+              t.identifier(WEVU_PAGE_LAYOUT_NEXT_NAME_IDENTIFIER),
             ),
             t.callExpression(
               t.memberExpression(
                 t.callExpression(
                   t.memberExpression(t.identifier('Object'), t.identifier('keys')),
-                  [t.identifier('__wv_current_layout_props')],
+                  [t.identifier(WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER)],
                 ),
                 t.identifier('every'),
               ),
               [
                 t.arrowFunctionExpression(
-                  [t.identifier('__wv_key')],
+                  [t.identifier(WEVU_INTERNAL_KEY_IDENTIFIER)],
                   t.logicalExpression(
                     '&&',
                     t.callExpression(
@@ -87,13 +98,13 @@ function injectNativePageLayoutSetter(pageOptions: t.ObjectExpression) {
                         ),
                         t.identifier('call'),
                       ),
-                      [t.identifier('__wv_next_layout_props'), t.identifier('__wv_key')],
+                      [t.identifier(WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER), t.identifier(WEVU_INTERNAL_KEY_IDENTIFIER)],
                     ),
                     t.callExpression(
                       t.memberExpression(t.identifier('Object'), t.identifier('is')),
                       [
-                        t.memberExpression(t.identifier('__wv_current_layout_props'), t.identifier('__wv_key'), true),
-                        t.memberExpression(t.identifier('__wv_next_layout_props'), t.identifier('__wv_key'), true),
+                        t.memberExpression(t.identifier(WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER), t.identifier(WEVU_INTERNAL_KEY_IDENTIFIER), true),
+                        t.memberExpression(t.identifier(WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER), t.identifier(WEVU_INTERNAL_KEY_IDENTIFIER), true),
                       ],
                     ),
                   ),
@@ -108,14 +119,14 @@ function injectNativePageLayoutSetter(pageOptions: t.ObjectExpression) {
                 t.memberExpression(
                   t.callExpression(
                     t.memberExpression(t.identifier('Object'), t.identifier('keys')),
-                    [t.identifier('__wv_current_layout_props')],
+                    [t.identifier(WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER)],
                   ),
                   t.identifier('length'),
                 ),
                 t.memberExpression(
                   t.callExpression(
                     t.memberExpression(t.identifier('Object'), t.identifier('keys')),
-                    [t.identifier('__wv_next_layout_props')],
+                    [t.identifier(WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER)],
                   ),
                   t.identifier('length'),
                 ),
@@ -131,8 +142,8 @@ function injectNativePageLayoutSetter(pageOptions: t.ObjectExpression) {
             t.memberExpression(t.thisExpression(), t.identifier('setData')),
             [
               t.objectExpression([
-                t.objectProperty(t.identifier('__wv_page_layout_name'), t.identifier('__wv_next_layout_name')),
-                t.objectProperty(t.identifier('__wv_page_layout_props'), t.identifier('__wv_next_layout_props')),
+                t.objectProperty(t.identifier(WEVU_PAGE_LAYOUT_NAME_KEY), t.identifier(WEVU_PAGE_LAYOUT_NEXT_NAME_IDENTIFIER)),
+                t.objectProperty(t.identifier(WEVU_PAGE_LAYOUT_PROPS_KEY), t.identifier(WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER)),
               ]),
             ],
           ),
@@ -164,11 +175,11 @@ function buildInitialNativePageLayoutState(currentLayout: ResolvedPageLayout | u
 
   return t.objectExpression([
     t.objectProperty(
-      t.identifier('__wv_page_layout_name'),
+      t.identifier(WEVU_PAGE_LAYOUT_NAME_KEY),
       layoutName ? t.stringLiteral(layoutName) : t.identifier('undefined'),
     ),
     t.objectProperty(
-      t.identifier('__wv_page_layout_props'),
+      t.identifier(WEVU_PAGE_LAYOUT_PROPS_KEY),
       t.objectExpression(
         Object.entries(layoutProps)
           .filter(([, value]) => !(typeof value === 'object' && value && 'kind' in value && value.kind === 'expression'))
@@ -207,12 +218,12 @@ function injectNativePageLayoutState(
 
   if (t.isObjectExpression(existingData.value)) {
     const dataObject = existingData.value
-    const layoutNameProp = getObjectPropertyByKey(dataObject, '__wv_page_layout_name')
-    const layoutPropsProp = getObjectPropertyByKey(dataObject, '__wv_page_layout_props')
+    const layoutNameProp = getObjectPropertyByKey(dataObject, WEVU_PAGE_LAYOUT_NAME_KEY)
+    const layoutPropsProp = getObjectPropertyByKey(dataObject, WEVU_PAGE_LAYOUT_PROPS_KEY)
     if (!layoutNameProp) {
       dataObject.properties.unshift(
         t.objectProperty(
-          t.identifier('__wv_page_layout_name'),
+          t.identifier(WEVU_PAGE_LAYOUT_NAME_KEY),
           buildInitialNativePageLayoutNameExpression(currentLayout),
         ),
       )
@@ -220,7 +231,7 @@ function injectNativePageLayoutState(
     if (!layoutPropsProp) {
       dataObject.properties.push(
         t.objectProperty(
-          t.identifier('__wv_page_layout_props'),
+          t.identifier(WEVU_PAGE_LAYOUT_PROPS_KEY),
           buildInitialNativePageLayoutPropsExpression(currentLayout),
         ),
       )

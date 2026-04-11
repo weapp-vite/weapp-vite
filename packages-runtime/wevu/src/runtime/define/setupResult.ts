@@ -1,3 +1,7 @@
+import {
+  WEVU_PROP_KEYS_KEY,
+  WEVU_PROPS_KEY,
+} from '@weapp-core/constants'
 import { isReactive, isRef, toRaw } from '../../reactivity'
 import { hasTrackableSetupBinding } from '../setupTracking'
 
@@ -27,7 +31,7 @@ export function shouldExposeInSnapshot(value: unknown): boolean {
 
 export function applySetupResult(runtime: any, target: any, result: any) {
   const declaredPropKeys = new Set<string>(
-    Array.isArray(target?.__wevuPropKeys) ? target.__wevuPropKeys : [],
+    Array.isArray(target?.[WEVU_PROP_KEYS_KEY]) ? target[WEVU_PROP_KEYS_KEY] : [],
   )
   const methods = runtime?.methods ?? Object.create(null)
   const state = runtime?.state ?? Object.create(null)
@@ -66,7 +70,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
             configurable: true,
             enumerable: false,
             get() {
-              const propsSource = (rawState as any).__wevuProps
+              const propsSource = (rawState as any)[WEVU_PROPS_KEY]
               if (propsSource && typeof propsSource === 'object' && Object.hasOwn(propsSource, key)) {
                 return (propsSource as any)[key]
               }
@@ -74,7 +78,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
             },
             set(next: unknown) {
               fallbackValue = next
-              const propsSource = (rawState as any).__wevuProps
+              const propsSource = (rawState as any)[WEVU_PROPS_KEY]
               if (!propsSource || typeof propsSource !== 'object') {
                 return
               }

@@ -2,6 +2,10 @@ import type { DirectiveNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import {
+  WEVU_INLINE_HANDLER,
+  WEVU_OWNER_HANDLER,
+} from '@weapp-core/constants'
+import {
   INLINE_DATASET_KEY,
   INLINE_EVENT_DETAIL_KEY,
   INLINE_HANDLER_KEY,
@@ -93,15 +97,15 @@ export function transformOnDirective(
         `data-${INLINE_DATASET_KEY}-${eventSuffix}="${inlineExpression.id}"`,
         ...scopeAttrs,
         ...indexAttrs,
-        `${bindAttr}="__weapp_vite_owner"`,
+        `${bindAttr}="${WEVU_OWNER_HANDLER}"`,
       ].filter(Boolean).join(' ')
     }
     if (!isInlineExpression && rawExpValue) {
-      return [detailAttr, `data-${INLINE_HANDLER_KEY}-${eventSuffix}="${rawExpValue}"`, `${bindAttr}="__weapp_vite_owner"`].filter(Boolean).join(' ')
+      return [detailAttr, `data-${INLINE_HANDLER_KEY}-${eventSuffix}="${rawExpValue}"`, `${bindAttr}="${WEVU_OWNER_HANDLER}"`].filter(Boolean).join(' ')
     }
     if (isInlineExpression) {
       context.warnings.push('作用域插槽的事件处理解析失败，请使用简单的方法引用。')
-      return [detailAttr, `${bindAttr}="__weapp_vite_owner"`].filter(Boolean).join(' ')
+      return [detailAttr, `${bindAttr}="${WEVU_OWNER_HANDLER}"`].filter(Boolean).join(' ')
     }
   }
   const expValue = normalizeWxmlExpressionWithContext(rawExpValue, context)
@@ -113,12 +117,12 @@ export function transformOnDirective(
       `data-${INLINE_DATASET_KEY}-${eventSuffix}="${inlineExpression.id}"`,
       ...scopeAttrs,
       ...indexAttrs,
-      `${bindAttr}="__weapp_vite_inline"`,
+      `${bindAttr}="${WEVU_INLINE_HANDLER}"`,
     ].filter(Boolean).join(' ')
   }
   if (isInlineExpression) {
     const escaped = inlineSource.replace(QUOTE_RE, '&quot;')
-    return [detailAttr, `data-wv-inline-${eventSuffix}="${escaped}"`, `${bindAttr}="__weapp_vite_inline"`].filter(Boolean).join(' ')
+    return [detailAttr, `data-wv-inline-${eventSuffix}="${escaped}"`, `${bindAttr}="${WEVU_INLINE_HANDLER}"`].filter(Boolean).join(' ')
   }
   return [detailAttr, `${bindAttr}="${expValue}"`].filter(Boolean).join(' ')
 }

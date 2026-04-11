@@ -1,4 +1,13 @@
 import type { InternalRuntimeState, MethodDefinitions } from '../../types'
+import {
+  WEVU_INLINE_HANDLER,
+  WEVU_INLINE_MAP_KEY,
+  WEVU_MODEL_HANDLER,
+  WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_OWNER_HANDLER,
+  WEVU_RESERVED_METHOD_PREFIX,
+  WEVU_RUNTIME_KEY,
+} from '@weapp-core/constants'
 import { parseModelEventValue } from '../../internal'
 import { runInlineExpression } from '../inline'
 
@@ -11,17 +20,17 @@ export function createComponentMethods(options: {
     ...userMethods,
   }
 
-  if (!finalMethods.__weapp_vite_inline) {
-    finalMethods.__weapp_vite_inline = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
+  if (!finalMethods[WEVU_INLINE_HANDLER]) {
+    finalMethods[WEVU_INLINE_HANDLER] = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
       const runtime = (this as any).__wevu
       const ctx = runtime?.proxy ?? this
-      const inlineMap = runtime?.methods?.__weapp_vite_inline_map
+      const inlineMap = runtime?.methods?.[WEVU_INLINE_MAP_KEY]
       return runInlineExpression(ctx, undefined, event, inlineMap)
     }
   }
 
-  if (!finalMethods.__weapp_vite_model) {
-    finalMethods.__weapp_vite_model = function __weapp_vite_model(this: InternalRuntimeState, event: any) {
+  if (!finalMethods[WEVU_MODEL_HANDLER]) {
+    finalMethods[WEVU_MODEL_HANDLER] = function __weapp_vite_model(this: InternalRuntimeState, event: any) {
       const path = event?.currentTarget?.dataset?.wvModel ?? event?.target?.dataset?.wvModel
       if (typeof path !== 'string' || !path) {
         return undefined
@@ -41,8 +50,8 @@ export function createComponentMethods(options: {
     }
   }
 
-  if (!finalMethods.__weapp_vite_owner && typeof (runtimeMethods as any)?.__weapp_vite_owner === 'function') {
-    finalMethods.__weapp_vite_owner = (runtimeMethods as any).__weapp_vite_owner
+  if (!finalMethods[WEVU_OWNER_HANDLER] && typeof (runtimeMethods as any)?.[WEVU_OWNER_HANDLER] === 'function') {
+    finalMethods[WEVU_OWNER_HANDLER] = (runtimeMethods as any)[WEVU_OWNER_HANDLER]
   }
 
   const methodNames = Object.keys(runtimeMethods ?? {})
@@ -54,7 +63,7 @@ export function createComponentMethods(options: {
     }
     const runtimeState = (instance as any).$state
     if (runtimeState && typeof runtimeState === 'object') {
-      return (runtimeState as any).__wevuRuntime
+      return (runtimeState as any)[WEVU_RUNTIME_KEY]
     }
     return undefined
   }
@@ -97,7 +106,7 @@ export function createComponentMethods(options: {
       return
     }
     try {
-      Object.defineProperty(runtimeState, '__wevuNativeInstance', {
+      Object.defineProperty(runtimeState, WEVU_NATIVE_INSTANCE_KEY, {
         value: instance,
         configurable: true,
         enumerable: false,
@@ -105,12 +114,15 @@ export function createComponentMethods(options: {
       })
     }
     catch {
-      ;(runtimeState as any).__wevuNativeInstance = instance
+      ;(runtimeState as any)[WEVU_NATIVE_INSTANCE_KEY] = instance
     }
   }
 
   for (const methodName of methodNames) {
-    if (methodName.startsWith('__weapp_vite_')) {
+    if (
+      methodName === WEVU_INLINE_MAP_KEY
+      || methodName.startsWith(WEVU_RESERVED_METHOD_PREFIX)
+    ) {
       continue
     }
     const userMethod = finalMethods[methodName]

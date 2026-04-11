@@ -1,5 +1,10 @@
 import type { LayoutPropValue, ResolvedPageLayout } from './types'
 import {
+  WEVU_LAYOUT_BIND_PREFIX,
+  WEVU_PAGE_LAYOUT_NAME_KEY,
+  WEVU_PAGE_LAYOUT_PROPS_KEY,
+} from '@weapp-core/constants'
+import {
   escapeDoubleQuotedAttr,
   getLayoutConditionalDirective,
   getLayoutElseDirective,
@@ -28,7 +33,7 @@ export function serializeLayoutProps(props: Record<string, LayoutPropValue> | un
       return `${attrName}="${escapeDoubleQuotedAttr(value)}"`
     }
     if (typeof value === 'object' && value && 'kind' in value && value.kind === 'expression') {
-      return `${attrName}="{{__wv_layout_bind_${key}}}"`
+      return `${attrName}="{{${WEVU_LAYOUT_BIND_PREFIX}${key}}}"`
     }
     if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
       return `${attrName}="{{${String(value)}}}"`
@@ -60,12 +65,12 @@ export function collapseNestedLayoutWrapper(template: string, tagName: string) {
 
 function serializeFallbackLayoutValue(value: LayoutPropValue | undefined, keyName: string) {
   if (value === undefined) {
-    return `(__wv_page_layout_props&&__wv_page_layout_props.${keyName})`
+    return `(${WEVU_PAGE_LAYOUT_PROPS_KEY}&&${WEVU_PAGE_LAYOUT_PROPS_KEY}.${keyName})`
   }
   if (typeof value === 'object' && value && 'kind' in value && value.kind === 'expression') {
-    return `(__wv_page_layout_props&&__wv_page_layout_props.${keyName})!==undefined?__wv_page_layout_props.${keyName}:__wv_layout_bind_${keyName}`
+    return `(${WEVU_PAGE_LAYOUT_PROPS_KEY}&&${WEVU_PAGE_LAYOUT_PROPS_KEY}.${keyName})!==undefined?${WEVU_PAGE_LAYOUT_PROPS_KEY}.${keyName}:${WEVU_LAYOUT_BIND_PREFIX}${keyName}`
   }
-  return `(__wv_page_layout_props&&__wv_page_layout_props.${keyName})!==undefined?__wv_page_layout_props.${keyName}:${JSON.stringify(value)}`
+  return `(${WEVU_PAGE_LAYOUT_PROPS_KEY}&&${WEVU_PAGE_LAYOUT_PROPS_KEY}.${keyName})!==undefined?${WEVU_PAGE_LAYOUT_PROPS_KEY}.${keyName}:${JSON.stringify(value)}`
 }
 
 function buildDynamicLayoutAttrs(
@@ -91,8 +96,8 @@ export function buildDynamicLayoutTemplate(
   const blocks = layouts.map((layout, index) => {
     const attrs = buildDynamicLayoutAttrs(propKeys, currentLayout)
     const condition = currentLayout?.layoutName === layout.layoutName
-      ? `{{!__wv_page_layout_name || __wv_page_layout_name === '${layout.layoutName}'}}`
-      : `{{__wv_page_layout_name === '${layout.layoutName}'}}`
+      ? `{{!${WEVU_PAGE_LAYOUT_NAME_KEY} || ${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`
+      : `{{${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`
     const directive = getLayoutConditionalDirective(index)
     return `<block ${directive}="${condition}"><${layout.tagName}${attrs}>${innerTemplate}</${layout.tagName}></block>`
   })

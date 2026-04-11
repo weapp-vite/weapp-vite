@@ -5,6 +5,7 @@ import type {
   JSXSpreadAttribute,
 } from '@weapp-vite/ast/babelTypes'
 import type { JsxCompileContext } from './types'
+import { WEVU_INLINE_HANDLER } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import {
   INLINE_DATASET_KEY,
@@ -148,7 +149,7 @@ function compileEventAttribute(
   }
 
   const inline = registerInlineExpression(exp, context)
-  const attrs = [`data-${INLINE_DATASET_KEY}-${eventSuffix}="${inline.id}"`, `${bindAttr}="__weapp_vite_inline"`]
+  const attrs = [`data-${INLINE_DATASET_KEY}-${eventSuffix}="${inline.id}"`, `${bindAttr}="${WEVU_INLINE_HANDLER}"`]
   inline.scopeKeys.forEach((scopeKey, index) => {
     attrs.push(`data-wv-s${index}="${renderMustache(scopeKey, context)}"`)
   })

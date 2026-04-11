@@ -1,3 +1,7 @@
+import {
+  WEVU_READY_CALLED_KEY,
+  WEVU_TEMPLATE_REFS_PENDING_KEY,
+} from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from '@/reactivity'
 import { setCurrentInstance } from '@/runtime/hooks'
@@ -58,7 +62,7 @@ describe('runtime: template refs', () => {
     }
 
     const instance: any = {
-      __wevuReadyCalled: true,
+      [WEVU_READY_CALLED_KEY]: true,
       __wevu: { state: {}, proxy: {} },
       createSelectorQuery: createSelectorQueryFactory(resolver),
       __wevuTemplateRefs: [
@@ -125,7 +129,7 @@ describe('runtime: template refs', () => {
     }
 
     const instance: any = {
-      __wevuReadyCalled: true,
+      [WEVU_READY_CALLED_KEY]: true,
       __wevu: { state: { $refs: { stale: 'value' } }, proxy: {} },
       createSelectorQuery: createSelectorQueryFactory(resolver),
       __wevuTemplateRefs: [
@@ -293,10 +297,10 @@ describe('runtime: template refs', () => {
     scheduleTemplateRefUpdate(instance)
     scheduleTemplateRefUpdate(instance)
 
-    expect(instance.__wevuTemplateRefsPending).toBe(true)
+    expect(instance[WEVU_TEMPLATE_REFS_PENDING_KEY]).toBe(true)
     await nextTick()
 
-    expect(instance.__wevuTemplateRefsPending).toBe(false)
+    expect(instance[WEVU_TEMPLATE_REFS_PENDING_KEY]).toBe(false)
     expect(instance.__wevu.state.$refs.batched).toBeTruthy()
   })
 
@@ -313,7 +317,7 @@ describe('runtime: template refs', () => {
     ;(globalThis as any).wx = wx
 
     const instance: any = {
-      __wevuReadyCalled: true,
+      [WEVU_READY_CALLED_KEY]: true,
       __wevu: { state: {}, proxy: {} },
       __wevuTemplateRefs: [
         { selector: '.wx', inFor: false, name: 'wx' },

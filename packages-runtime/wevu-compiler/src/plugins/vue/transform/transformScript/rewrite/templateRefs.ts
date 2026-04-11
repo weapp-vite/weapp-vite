@@ -1,4 +1,5 @@
 import type { TemplateRefBinding } from '../../../compiler/template/types'
+import { WEVU_TEMPLATE_REFS_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
@@ -37,8 +38,8 @@ export function injectTemplateRefs(
 
   const entries = bindings.map(binding => buildTemplateRefEntry(binding))
   const refsArray = t.arrayExpression(entries)
-  const key = createStaticObjectKey('__wevuTemplateRefs')
-  const existing = getObjectPropertyByKey(optionsObject, '__wevuTemplateRefs')
+  const key = createStaticObjectKey(WEVU_TEMPLATE_REFS_KEY)
+  const existing = getObjectPropertyByKey(optionsObject, WEVU_TEMPLATE_REFS_KEY)
 
   if (!existing) {
     optionsObject.properties.push(t.objectProperty(key, refsArray))
@@ -58,6 +59,6 @@ export function injectTemplateRefs(
     return true
   }
 
-  warnHandler('无法自动注入 template ref 元数据，请手动合并 __wevuTemplateRefs。')
+  warnHandler(`无法自动注入 template ref 元数据，请手动合并 ${WEVU_TEMPLATE_REFS_KEY}。`)
   return false
 }

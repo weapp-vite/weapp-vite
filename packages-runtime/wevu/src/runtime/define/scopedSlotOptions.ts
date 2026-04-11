@@ -1,5 +1,14 @@
 import type { InlineExpressionMap } from '../register/inline'
 import type { ComputedDefinitions } from '../types'
+import {
+  WEVU_INLINE_MAP_KEY,
+  WEVU_OWNER_HANDLER,
+  WEVU_SLOT_OWNER_ID_KEY,
+  WEVU_SLOT_OWNER_KEY,
+  WEVU_SLOT_PROPS_DATA_KEY,
+  WEVU_SLOT_PROPS_KEY,
+  WEVU_SLOT_SCOPE_KEY,
+} from '@weapp-core/constants'
 import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from '../scopedSlots'
 
@@ -67,19 +76,19 @@ function normalizeSlotBindings(value: unknown): Record<string, any> {
 
 function mergeSlotProps(
   instance: any,
-  override?: { __wvSlotScope?: unknown, __wvSlotProps?: unknown },
+  override?: { [WEVU_SLOT_SCOPE_KEY]?: unknown, [WEVU_SLOT_PROPS_KEY]?: unknown },
 ) {
-  const scopeSource = Object.hasOwn(override ?? {}, '__wvSlotScope')
-    ? (override as any).__wvSlotScope
-    : instance?.properties?.__wvSlotScope
-  const propsSource = Object.hasOwn(override ?? {}, '__wvSlotProps')
-    ? (override as any).__wvSlotProps
-    : instance?.properties?.__wvSlotProps
+  const scopeSource = Object.hasOwn(override ?? {}, WEVU_SLOT_SCOPE_KEY)
+    ? (override as any)[WEVU_SLOT_SCOPE_KEY]
+    : instance?.properties?.[WEVU_SLOT_SCOPE_KEY]
+  const propsSource = Object.hasOwn(override ?? {}, WEVU_SLOT_PROPS_KEY)
+    ? (override as any)[WEVU_SLOT_PROPS_KEY]
+    : instance?.properties?.[WEVU_SLOT_PROPS_KEY]
   const scope = normalizeSlotBindings(scopeSource)
   const slotProps = normalizeSlotBindings(propsSource)
   const merged = { ...scope, ...slotProps }
   if (typeof instance?.setData === 'function') {
-    instance.setData({ __wvSlotPropsData: merged })
+    instance.setData({ [WEVU_SLOT_PROPS_DATA_KEY]: merged })
   }
 }
 
@@ -88,29 +97,29 @@ export function createScopedSlotOptions(
 ) {
   const baseOptions = {
     properties: {
-      __wvOwnerId: { type: String, value: '' },
-      __wvSlotProps: {
+      [WEVU_SLOT_OWNER_ID_KEY]: { type: String, value: '' },
+      [WEVU_SLOT_PROPS_KEY]: {
         type: null,
         value: null,
         observer(this: any, next: unknown) {
-          mergeSlotProps(this, { __wvSlotProps: next })
+          mergeSlotProps(this, { [WEVU_SLOT_PROPS_KEY]: next })
         },
       },
-      __wvSlotScope: {
+      [WEVU_SLOT_SCOPE_KEY]: {
         type: null,
         value: null,
         observer(this: any, next: unknown) {
-          mergeSlotProps(this, { __wvSlotScope: next })
+          mergeSlotProps(this, { [WEVU_SLOT_SCOPE_KEY]: next })
         },
       },
     },
     data: () => ({
-      __wvOwner: {},
-      __wvSlotPropsData: {},
+      [WEVU_SLOT_OWNER_KEY]: {},
+      [WEVU_SLOT_PROPS_DATA_KEY]: {},
     }),
     lifetimes: {
       attached(this: any) {
-        const ownerId = this.properties?.__wvOwnerId ?? ''
+        const ownerId = this.properties?.[WEVU_SLOT_OWNER_ID_KEY] ?? ''
         mergeSlotProps(this)
         if (!ownerId) {
           return
@@ -118,7 +127,7 @@ export function createScopedSlotOptions(
         const updateOwner = (snapshot: Record<string, any>, proxy: any) => {
           this.__wvOwnerProxy = proxy
           if (typeof this.setData === 'function') {
-            this.setData({ __wvOwner: snapshot || {} })
+            this.setData({ [WEVU_SLOT_OWNER_KEY]: snapshot || {} })
           }
         }
         this.__wvOwnerUnsub = subscribeOwner(ownerId, updateOwner)
@@ -136,9 +145,9 @@ export function createScopedSlotOptions(
       },
     },
     methods: {
-      __weapp_vite_owner(this: any, event: any) {
+      [WEVU_OWNER_HANDLER](this: any, event: any) {
         const owner = this.__wvOwnerProxy
-        const inlineMap = (this as any).__wevu?.methods?.__weapp_vite_inline_map
+        const inlineMap = (this as any).__wevu?.methods?.[WEVU_INLINE_MAP_KEY]
         const result = runInlineExpression(owner, undefined, event, inlineMap)
         if (result !== undefined) {
           return result
@@ -167,7 +176,7 @@ export function createScopedSlotOptions(
   if (overrides?.inlineMap && Object.keys(overrides.inlineMap).length > 0) {
     ;(baseOptions as any).methods = {
       ...(baseOptions as any).methods,
-      __weapp_vite_inline_map: overrides.inlineMap,
+      [WEVU_INLINE_MAP_KEY]: overrides.inlineMap,
     }
   }
 

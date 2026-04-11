@@ -1,9 +1,10 @@
 import type { AstParserLike } from '../../../../ast'
+import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../utils/babel'
 import { createWeapiAccessExpression } from '../../../../utils/weapi'
 
-const injectedApiIdentifier = '__weappViteInjectedApi__'
+const injectedApiIdentifier = WEAPP_VITE_INJECTED_API_IDENTIFIER
 
 export function replacePlatformApiAccess(
   code: string,

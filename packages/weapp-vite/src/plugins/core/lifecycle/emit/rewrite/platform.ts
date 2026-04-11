@@ -1,5 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { MpPlatform } from '../../../../../types'
+import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral } from '../../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import {
@@ -23,7 +24,7 @@ export function replacePlatformApiAccess(
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  const injectedApiIdentifier = '__weappViteInjectedApi__'
+  const injectedApiIdentifier = WEAPP_VITE_INJECTED_API_IDENTIFIER
 
   if (!mayContainPlatformApiAccess(code, { engine: options?.astEngine })) {
     return code

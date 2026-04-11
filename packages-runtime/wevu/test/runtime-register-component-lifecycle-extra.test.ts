@@ -1,3 +1,4 @@
+import { WEVU_READY_CALLED_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createPageLifecycleHooks } from '@/runtime/register/component/lifecycle'
@@ -249,7 +250,7 @@ describe('runtime: component page lifecycle extra', () => {
 
     const instance: any = {}
     expect(hooks.onReady.call(instance, 'first')).toBeUndefined()
-    expect(instance.__wevuReadyCalled).toBe(true)
+    expect(instance[WEVU_READY_CALLED_KEY]).toBe(true)
     expect(mocks.scheduleTemplateRefUpdate).toHaveBeenCalledTimes(1)
     expect(mocks.callHookList).toHaveBeenCalledWith(instance, 'onReady', ['first'])
     expect(userOnReady).toHaveBeenCalledWith('first')

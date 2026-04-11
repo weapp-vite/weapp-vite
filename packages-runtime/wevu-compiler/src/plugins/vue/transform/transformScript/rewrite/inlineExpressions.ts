@@ -1,4 +1,5 @@
 import type { InlineExpressionAsset } from '../../../compiler/template/types'
+import { WEVU_INLINE_MAP_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parseBabelExpression } from '../../../compiler/template/expression/parse'
 import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
@@ -73,7 +74,7 @@ function buildMethodsMergeFromSpreadSources(
       t.objectExpression([]),
       ...spreadSources,
       t.objectExpression([
-        t.objectProperty(createStaticObjectKey('__weapp_vite_inline_map'), inlineMapExpr),
+        t.objectProperty(createStaticObjectKey(WEVU_INLINE_MAP_KEY), inlineMapExpr),
       ]),
     ],
   )
@@ -103,7 +104,7 @@ export function injectInlineExpressions(
       t.objectProperty(
         createStaticObjectKey('methods'),
         t.objectExpression([
-          t.objectProperty(createStaticObjectKey('__weapp_vite_inline_map'), inlineMapExpr),
+          t.objectProperty(createStaticObjectKey(WEVU_INLINE_MAP_KEY), inlineMapExpr),
         ]),
       ),
     )
@@ -112,10 +113,10 @@ export function injectInlineExpressions(
   if (!t.isObjectExpression(methodsProp.value)) {
     return false
   }
-  const mapProp = getObjectPropertyByKey(methodsProp.value, '__weapp_vite_inline_map')
+  const mapProp = getObjectPropertyByKey(methodsProp.value, WEVU_INLINE_MAP_KEY)
   if (!mapProp) {
     methodsProp.value.properties.push(
-      t.objectProperty(createStaticObjectKey('__weapp_vite_inline_map'), inlineMapExpr),
+      t.objectProperty(createStaticObjectKey(WEVU_INLINE_MAP_KEY), inlineMapExpr),
     )
     return true
   }

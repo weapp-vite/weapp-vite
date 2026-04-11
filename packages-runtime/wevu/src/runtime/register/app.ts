@@ -1,5 +1,9 @@
 import type { ComputedDefinitions, DefineAppOptions, InternalRuntimeState, MethodDefinitions, MiniProgramAppOptions, RuntimeApp } from '../types'
 import type { WatchMap } from './watch'
+import {
+  WEVU_INLINE_HANDLER,
+  WEVU_INLINE_MAP_KEY,
+} from '@weapp-core/constants'
 import { callHookList } from '../hooks'
 import { getMiniProgramGlobalObject } from '../platform'
 import { runInlineExpression } from './inline'
@@ -141,11 +145,11 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
 
   appOptions.globalData = appOptions.globalData ?? {}
 
-  if (!appOptions.__weapp_vite_inline) {
-    appOptions.__weapp_vite_inline = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
+  if (!appOptions[WEVU_INLINE_HANDLER]) {
+    appOptions[WEVU_INLINE_HANDLER] = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
       const runtime = (this as any).__wevu
       const ctx = runtime?.proxy ?? this
-      const inlineMap = runtime?.methods?.__weapp_vite_inline_map
+      const inlineMap = runtime?.methods?.[WEVU_INLINE_MAP_KEY]
       return runInlineExpression(ctx, undefined, event, inlineMap)
     }
   }

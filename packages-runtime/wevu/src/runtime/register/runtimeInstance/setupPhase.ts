@@ -7,6 +7,11 @@ import type {
   MethodDefinitions,
   RuntimeInstance,
 } from '../../types'
+import {
+  WEVU_ATTRS_KEY,
+  WEVU_PROP_KEYS_KEY,
+  WEVU_PROPS_KEY,
+} from '@weapp-core/constants'
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
@@ -50,7 +55,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   // 避免 computed 首次求值早于 setup 时丢失依赖。
   const mpProperties = ((target as any).properties || {}) as Record<string, any>
   const runtimeProps = runtimeState && typeof runtimeState === 'object'
-    ? ((runtimeState as any).__wevuProps as Record<string, any> | undefined)
+    ? ((runtimeState as any)[WEVU_PROPS_KEY] as Record<string, any> | undefined)
     : undefined
   const props = runtimeProps && typeof runtimeProps === 'object'
     ? runtimeProps
@@ -60,7 +65,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     attachRuntimeProxyProps(runtimeState as Record<string, any>, props)
   }
   try {
-    Object.defineProperty(target, '__wevuProps', {
+    Object.defineProperty(target, WEVU_PROPS_KEY, {
       value: props,
       configurable: true,
       enumerable: false,
@@ -68,15 +73,15 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     })
   }
   catch {
-    ;(target as any).__wevuProps = props
+    ;(target as any)[WEVU_PROPS_KEY] = props
   }
 
   // 与 Vue 3 对齐：attrs = 非 props 的 attributes。
   // 在小程序场景中，attrs 来源于 instance.properties 中“未声明在 props/properties 的字段”。
   const attrs = shallowReactive(Object.create(null)) as Record<string, any>
   const declaredPropKeys = new Set(
-    Array.isArray((target as any).__wevuPropKeys)
-      ? ((target as any).__wevuPropKeys as string[])
+    Array.isArray((target as any)[WEVU_PROP_KEYS_KEY])
+      ? ((target as any)[WEVU_PROP_KEYS_KEY] as string[])
       : [],
   )
   const hasRuntimeStateKey = (key: string) => {
@@ -114,7 +119,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   syncAttrsFromProperties()
 
   try {
-    Object.defineProperty(target, '__wevuAttrs', {
+    Object.defineProperty(target, WEVU_ATTRS_KEY, {
       value: attrs,
       configurable: true,
       enumerable: false,
@@ -122,7 +127,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     })
   }
   catch {
-    ;(target as any).__wevuAttrs = attrs
+    ;(target as any)[WEVU_ATTRS_KEY] = attrs
   }
 
   const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
@@ -186,7 +191,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
                 configurable: true,
                 enumerable: false,
                 get() {
-                  const propsSource = (runtimeRawState as any).__wevuProps
+                  const propsSource = (runtimeRawState as any)[WEVU_PROPS_KEY]
                   if (propsSource && typeof propsSource === 'object' && Object.hasOwn(propsSource, key)) {
                     return (propsSource as any)[key]
                   }
@@ -194,7 +199,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
                 },
                 set(next: unknown) {
                   fallbackValue = next
-                  const propsSource = (runtimeRawState as any).__wevuProps
+                  const propsSource = (runtimeRawState as any)[WEVU_PROPS_KEY]
                   if (!propsSource || typeof propsSource !== 'object') {
                     return
                   }

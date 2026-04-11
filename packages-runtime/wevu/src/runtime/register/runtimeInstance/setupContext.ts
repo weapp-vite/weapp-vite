@@ -6,6 +6,10 @@ import type {
   SetupContextNativeInstance,
   TriggerEventOptions,
 } from '../../types'
+import {
+  WEVU_NATIVE_INSTANCE_KEY,
+  WEVU_SETUP_CONTEXT_INSTANCE_KEY,
+} from '@weapp-core/constants'
 import { toRaw } from '../../../reactivity'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge'
 import { markNoSetData } from '../../noSetData'
@@ -25,8 +29,6 @@ export const setupInstanceMethodNames: SetupInstanceMethodName[] = [
   'setData',
   'setUpdatePerformanceListener',
 ]
-
-const SETUP_CONTEXT_INSTANCE_KEY = '__wevuSetupContextInstance'
 
 export function createSetupSlotsFallback() {
   return Object.freeze(Object.create(null)) as Record<string, never>
@@ -123,7 +125,7 @@ function resolveRuntimeNativeMethodOwner(
     }
     return typeof (candidate as any)[methodName] === 'function'
   }
-  const nativeFromState = runtimeRawState ? (runtimeRawState as any).__wevuNativeInstance : undefined
+  const nativeFromState = runtimeRawState ? (runtimeRawState as any)[WEVU_NATIVE_INSTANCE_KEY] : undefined
   if (isValidNativeCandidate(nativeFromState)) {
     return nativeFromState as InternalRuntimeState
   }
@@ -158,7 +160,7 @@ export function ensureSetupContextInstance(
   target: InternalRuntimeState,
   runtime: RuntimeInstance<any, any, any>,
 ) {
-  const maybeCached = (target as any)[SETUP_CONTEXT_INSTANCE_KEY]
+  const maybeCached = (target as any)[WEVU_SETUP_CONTEXT_INSTANCE_KEY]
   if (maybeCached && typeof maybeCached === 'object') {
     return maybeCached as SetupContextNativeInstance
   }
@@ -282,7 +284,7 @@ export function ensureSetupContextInstance(
   }) as SetupContextNativeInstance)
 
   try {
-    Object.defineProperty(target as Record<string, any>, SETUP_CONTEXT_INSTANCE_KEY, {
+    Object.defineProperty(target as Record<string, any>, WEVU_SETUP_CONTEXT_INSTANCE_KEY, {
       value: setupInstance,
       configurable: true,
       enumerable: false,
@@ -290,7 +292,7 @@ export function ensureSetupContextInstance(
     })
   }
   catch {
-    ;(target as any)[SETUP_CONTEXT_INSTANCE_KEY] = setupInstance
+    ;(target as any)[WEVU_SETUP_CONTEXT_INSTANCE_KEY] = setupInstance
   }
 
   return setupInstance

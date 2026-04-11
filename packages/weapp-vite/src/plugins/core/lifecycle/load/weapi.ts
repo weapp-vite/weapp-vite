@@ -1,3 +1,4 @@
+import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../utils/babel'
@@ -85,7 +86,7 @@ function replacePlatformApiAccess(
     parserLike?: { parse?: (input: string, options?: unknown) => unknown }
   },
 ) {
-  const injectedApiIdentifier = '__weappViteInjectedApi__'
+  const injectedApiIdentifier = WEAPP_VITE_INJECTED_API_IDENTIFIER
 
   if (!mayContainPlatformApiAccess(code, options)) {
     return code

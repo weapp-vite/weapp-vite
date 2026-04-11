@@ -4,6 +4,10 @@ import type {
   InlineExpressionScopeResolverAsset,
   TransformContext,
 } from '../types'
+import {
+  WEVU_CLASS_STYLE_RUNTIME_MODULE,
+  WEVU_SLOT_PROPS_DATA_KEY,
+} from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../../../inlineDataset'
 import { traverse } from '../../../../../utils/babel'
@@ -38,7 +42,7 @@ const INLINE_GLOBALS = new Set([
   'encodeURIComponent',
   'require',
   'arguments',
-  '__weapp_vite',
+  WEVU_CLASS_STYLE_RUNTIME_MODULE,
   '__wevuUnref',
   'globalThis',
   'setTimeout',
@@ -73,9 +77,9 @@ function resolveSlotPropBinding(slotProps: Record<string, string>, name: string)
   }
   const prop = slotProps[name]
   if (!prop) {
-    return '__wvSlotPropsData'
+    return WEVU_SLOT_PROPS_DATA_KEY
   }
-  return generateExpression(createMemberAccess('__wvSlotPropsData', prop) as any)
+  return generateExpression(createMemberAccess(WEVU_SLOT_PROPS_DATA_KEY, prop) as any)
 }
 
 function rewriteExpressionAst(
