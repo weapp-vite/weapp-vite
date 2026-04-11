@@ -22,8 +22,8 @@ const buildReportDir = path.join(reportRootDir, 'build')
 const hmrReportDir = path.join(reportRootDir, 'hmr')
 const combinedReportJsonPath = path.join(reportRootDir, 'report.json')
 const combinedReportMdPath = path.join(reportRootDir, 'report.md')
-const workspaceRootNodeModulesDir = await resolveWorkspaceNodeModulesDir()
-const workspaceRootDir = path.dirname(workspaceRootNodeModulesDir)
+const workspaceRootDir = await resolveWorkspaceRootDir()
+const workspaceRootNodeModulesDir = await resolveWorkspaceNodeModulesDir(workspaceRootDir)
 
 if (!Number.isFinite(thresholdPercent) || thresholdPercent < 0) {
   throw new Error(`Invalid AUTO_IMPORT_BENCH_THRESHOLD_PERCENT value: ${thresholdPercent}`)
@@ -163,7 +163,7 @@ async function confirmFailures(initialFailures: FailureRecord[]) {
 }
 
 async function ensureWorkspacePackagesBuilt() {
-  await execa('pnpm', ['build:pkgs'], {
+  await execa('pnpm', ['build:pkgs:ci'], {
     cwd: workspaceRootDir,
     stdio: 'inherit',
     env: {
@@ -336,8 +336,27 @@ function emptyHmrBenchmarkReport(iterationValue: string): HmrBenchmarkReport {
   }
 }
 
-async function resolveWorkspaceNodeModulesDir() {
+async function resolveWorkspaceRootDir() {
   let currentDir = path.resolve(import.meta.dirname, '../../..')
+  while (true) {
+    try {
+      await readFile(path.join(currentDir, 'pnpm-workspace.yaml'))
+      return currentDir
+    }
+    catch {
+      // ignore
+    }
+    const parentDir = path.dirname(currentDir)
+    if (parentDir === currentDir) {
+      break
+    }
+    currentDir = parentDir
+  }
+  throw new Error('Unable to locate workspace root directory for auto-import benchmark CI.')
+}
+
+async function resolveWorkspaceNodeModulesDir(startDir: string) {
+  let currentDir = startDir
   while (true) {
     const candidate = path.join(currentDir, 'node_modules')
     try {
