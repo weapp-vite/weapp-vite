@@ -26,14 +26,14 @@ interface ResolvedAppPreludeOptions {
 export function resolveAppPreludeOptions(state: CorePluginState): ResolvedAppPreludeOptions {
   const option = state.ctx.configService.weappViteConfig?.appPrelude
   if (option === false) {
-    return { enabled: false, mode: 'entry' }
+    return { enabled: false, mode: 'require' }
   }
   if (option === true || option == null) {
-    return { enabled: true, mode: 'entry' }
+    return { enabled: true, mode: 'require' }
   }
   return {
     enabled: option.enabled !== false,
-    mode: option.mode ?? 'entry',
+    mode: option.mode ?? 'require',
   }
 }
 

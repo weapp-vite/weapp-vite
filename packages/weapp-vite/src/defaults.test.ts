@@ -39,7 +39,7 @@ describe('getWeappViteConfig', () => {
     const config = getWeappViteConfig()
     expect(config.isAdditionalWxml?.()).toBe(false)
     expect(config.npm?.alipayNpmMode).toBe('node_modules')
-    expect(config.appPrelude?.mode).toBe('entry')
+    expect(config.appPrelude?.mode).toBe('require')
     expect(config.chunks?.sharedStrategy).toBe('duplicate')
   })
 })

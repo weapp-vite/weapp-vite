@@ -1314,18 +1314,20 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).toContain('fetch,')
   })
 
-  it('injects app prelude code into entry chunks by default', async () => {
+  it('emits scoped app prelude modules and injects require calls by default', async () => {
     const state = createState({
-      entriesMap: new Map([
-        ['app', { type: 'app', path: 'app' }],
-        ['pkg/pages/home', { type: 'page', path: 'pkg/pages/home' }],
-      ]),
+      subPackageMeta: undefined,
       ctx: {
-        configService: {
-          relativeAbsoluteSrcRoot: (id: string) => id,
-        },
         scanService: {
-          subPackageMap: new Map(),
+          subPackageMap: new Map([
+            ['subpackages/normal', {
+              entries: [],
+              subPackage: {
+                root: 'subpackages/normal',
+                pages: [],
+              },
+            }],
+          ]),
           appEntry: {
             preludePath: '/project/src/app.prelude.ts',
           },
@@ -1337,34 +1339,51 @@ describe('core lifecycle emit hook extra branches', () => {
       'app.js': {
         type: 'chunk',
         fileName: 'app.js',
-        isEntry: true,
-        code: '"use strict";App({})',
+        code: 'App({})',
         imports: [],
         dynamicImports: [],
       },
-      'pkg/pages/home.js': {
+      'pages/home/index.js': {
         type: 'chunk',
-        fileName: 'pkg/pages/home.js',
-        code: '"use strict";Page({})',
+        fileName: 'pages/home/index.js',
+        code: 'Page({})',
         imports: [],
         dynamicImports: [],
       },
-      'common.js': {
+      'subpackages/normal/pages/home/index.js': {
         type: 'chunk',
-        fileName: 'common.js',
-        code: '"use strict";const common = 1;',
+        fileName: 'subpackages/normal/pages/home/index.js',
+        code: 'Page({})',
         imports: [],
         dynamicImports: [],
       },
     } as any
 
-    await hook.call({}, {}, bundle)
+    const emitFile = vi.fn((asset: any) => {
+      bundle[asset.fileName] = {
+        type: 'asset',
+        fileName: asset.fileName,
+        source: asset.source,
+      }
+    })
 
-    expect(bundle['app.js'].code.startsWith('"use strict";/* __weappViteAppPreludeRuntime__ */')).toBe(true)
-    expect(bundle['app.js'].code).toContain('__weappViteAppPreludeInstalled__')
-    expect(bundle['app.js'].code).toContain('globalThis.__probe =')
-    expect(bundle['pkg/pages/home.js'].code).toContain('__weappViteAppPreludeInstalled__')
-    expect(bundle['common.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
+    await hook.call({ emitFile }, {}, bundle)
+
+    expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
+    expect(bundle['app.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
+    expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
+    expect(bundle['app.prelude.js']).toMatchObject({
+      type: 'asset',
+      fileName: 'app.prelude.js',
+    })
+    expect(bundle['subpackages/normal/app.prelude.js']).toMatchObject({
+      type: 'asset',
+      fileName: 'subpackages/normal/app.prelude.js',
+    })
+    expect(String(bundle['app.prelude.js'].source)).toContain('__weappViteAppPreludeRuntime__')
+    expect(String(bundle['subpackages/normal/app.prelude.js'].source)).toContain('__weappViteAppPreludeRuntime__')
+    expect(emitFile).toHaveBeenCalledTimes(2)
   })
 
   it('injects app prelude code into every chunk when mode is inline while preserving directives', async () => {

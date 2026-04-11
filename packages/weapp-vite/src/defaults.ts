@@ -78,7 +78,7 @@ export function getWeappViteConfig(): WeappViteConfig {
       unhandledErrors: true,
     },
     appPrelude: {
-      mode: 'entry',
+      mode: 'require',
     },
     wevu: {
       defaults: {
