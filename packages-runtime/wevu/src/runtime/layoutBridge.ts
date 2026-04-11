@@ -133,6 +133,7 @@ function resolveDeclaredLayoutHostFromRefs(
   }
   const refMap = getTemplateRefMap(context as any)
   const stateRefs = context[WEVU_PUBLIC_RUNTIME_KEY]?.state?.$refs
+    ?? context.__wevu?.state?.$refs
     ?? context.$state?.$refs
     ?? context.$refs
   const refValue = refMap?.get(binding.refName)?.value
