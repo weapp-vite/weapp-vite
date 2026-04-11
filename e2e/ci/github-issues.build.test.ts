@@ -152,11 +152,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('issue-420 socket.io-client bootstrap')
     expect(pageJs).toContain('transportName')
     expect(pageJs).toContain('socket.invalid/github-issues')
-    expect(pageJs).toContain('__weappViteChunkRequestGlobalsHost__.WebSocket')
-    expect(commonJs).toContain('__weappViteRequestGlobalsPassiveBindings__')
+    expect(pageJs).toContain('__rc.WebSocket')
+    expect(commonJs).toContain('__wvRGL__')
     expect(commonJs).toContain('"WebSocket"')
-    expect(commonJs).toContain('var WebSocket = __weappViteExposeRequestGlobal__("WebSocket",')
-    expect(commonJs).toContain('__weappViteHasUsableRequestGlobalsConstructor__(__weappViteRequestGlobalsActuals__["WebSocket"],["wss://request-globals.invalid"])')
+    expect(commonJs).toContain('var WebSocket = __rE("WebSocket",')
+    expect(commonJs).toContain('__rU(__ra["WebSocket"],["wss://request-globals.invalid"])')
   })
 
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {

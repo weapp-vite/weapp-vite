@@ -11,6 +11,7 @@ import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
 import { replacePlatformApiAccess } from './platform'
 import { resolveInjectWeapiOptions, shouldTransformId } from './shared'
@@ -33,7 +34,7 @@ export function createTransformHook(state: CorePluginState) {
     const passiveLocalBindings = !injectRequestGlobalsOptions?.targets?.length
     if (
       code.includes('__weappViteInstallRequestGlobals')
-      || code.includes('__weappViteRequestGlobalsPassiveBindings__')
+      || code.includes(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
     ) {
       return null
     }

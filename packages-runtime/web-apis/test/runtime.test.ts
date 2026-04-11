@@ -81,8 +81,7 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
     delete (globalThis as Record<string, any>).global
-    delete (globalThis as Record<string, any>).__weappViteRequestGlobalsActuals__
-    delete (globalThis as Record<string, any>).__weappViteRequestGlobalsActuals
+    delete (globalThis as Record<string, any>).__ra
     wpiConnectSocketMock.mockReset()
   })
 
@@ -208,9 +207,9 @@ describe('request globals runtime', () => {
 
   it('replaces lazy placeholder globals with real runtime implementations', async () => {
     const placeholderFetch = vi.fn()
-    ;(placeholderFetch as any).__weappViteRequestGlobalsPlaceholder__ = true
+    ;(placeholderFetch as any).__rp = true
     const placeholderWebSocket = vi.fn()
-    ;(placeholderWebSocket as any).__weappViteRequestGlobalsPlaceholder__ = true
+    ;(placeholderWebSocket as any).__rp = true
 
     setGlobalValue('fetch', placeholderFetch)
     setGlobalValue('WebSocket', placeholderWebSocket)
@@ -235,9 +234,9 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.fetch).toBe('function')
     expect(typeof globalThis.AbortController).toBe('function')
     expect(typeof globalThis.AbortSignal).toBe('function')
-    expect(typeof (globalThis as any).__weappViteRequestGlobalsActuals.fetch).toBe('function')
-    expect(typeof (globalThis as any).__weappViteRequestGlobalsActuals.AbortController).toBe('function')
-    expect(typeof (globalThis as any).__weappViteRequestGlobalsActuals.AbortSignal).toBe('function')
+    expect(typeof (globalThis as any).__ra.fetch).toBe('function')
+    expect(typeof (globalThis as any).__ra.AbortController).toBe('function')
+    expect(typeof (globalThis as any).__ra.AbortSignal).toBe('function')
   })
 
   it('replaces broken URL constructors exposed by the runtime host', async () => {

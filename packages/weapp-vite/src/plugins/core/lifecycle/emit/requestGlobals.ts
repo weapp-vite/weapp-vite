@@ -10,9 +10,13 @@ import { toPosixPath } from '../../../../utils'
 import { generate, parseJsLike, traverse } from '../../../../utils/babel'
 import {
   AXIOS_MODULE_ID_RE,
+  REQUEST_GLOBAL_ACTUALS_KEY,
+  REQUEST_GLOBAL_BUNDLE_MARKER,
   REQUEST_GLOBAL_ENTRY_NAME_RE,
   REQUEST_GLOBAL_EXPORT_RE,
   REQUEST_GLOBAL_INSTALLER_RE,
+  REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
   REQUEST_GLOBAL_PRELUDE_MARKER,
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
@@ -152,7 +156,7 @@ export function injectRequestGlobalsBundleRuntime(bundle: OutputBundle, targets:
       continue
     }
     const chunk = output as OutputChunk
-    if (chunk.code.includes('__weappViteRequestGlobalsBundleInstalled__')) {
+    if (chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)) {
       continue
     }
     const installerName = resolveRequestGlobalsInstallerName(chunk.code)
@@ -164,11 +168,11 @@ export function injectRequestGlobalsBundleRuntime(bundle: OutputBundle, targets:
     installerChunks.set(toPosixPath(chunk.fileName), exportName)
     const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
     const runtimeBindingCode = [
-      `const __weappViteRequestGlobalsBundleHost__ = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
-      ...bindingTargets.map(target => `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappViteRequestGlobalsBundleHost__.${target}`),
-      ...bindingTargets.map(target => `${target} = __weappViteRequestGlobalsBundleHost__.${target}`),
+      `const __rb = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      ...bindingTargets.map(target => `__ra[${JSON.stringify(target)}] = __rb.${target}`),
+      ...bindingTargets.map(target => `${target} = __rb.${target}`),
     ].join(';')
-    const bundlePrelude = `/* __weappViteRequestGlobalsBundleInstalled__ */ ${passiveBindingsCode}\n`
+    const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode}\n`
     const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
     if (firstRequireMatch?.[0]) {
       chunk.code = `${bundlePrelude}${chunk.code.replace(firstRequireMatch[0], match => `${match};${runtimeBindingCode}`)}\n`
@@ -204,9 +208,9 @@ export function injectRequestGlobalsPassiveBindings(
       continue
     }
     if (
-      chunk.code.includes('__weappViteRequestGlobalsPassiveBindings__')
-      || chunk.code.includes('__weappViteRequestGlobalsLocalBindings__')
-      || chunk.code.includes('__weappViteRequestGlobalsBundleInstalled__')
+      chunk.code.includes(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
+      || chunk.code.includes(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+      || chunk.code.includes(REQUEST_GLOBAL_BUNDLE_MARKER)
     ) {
       continue
     }
@@ -215,7 +219,7 @@ export function injectRequestGlobalsPassiveBindings(
     if (entryType === 'page' || entryType === 'component' || entryType === 'app') {
       continue
     }
-    chunk.code = `/* __weappViteRequestGlobalsPassiveBindings__ */ ${passiveBindingsCode}\n${chunk.code}`
+    chunk.code = `/* ${REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER} */ ${passiveBindingsCode}\n${chunk.code}`
   }
 }
 
@@ -242,7 +246,7 @@ export function injectRequestGlobalsLocalBindings(
     if (entryType !== 'page' && entryType !== 'component' && entryType !== 'app') {
       continue
     }
-    if (chunk.code.includes('__weappViteRequestGlobalsLocalBindings__')) {
+    if (chunk.code.includes(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)) {
       continue
     }
     let requireImportLiteral: string | null = null
@@ -264,13 +268,13 @@ export function injectRequestGlobalsLocalBindings(
       continue
     }
     const injectionCode = [
-      `const __weappViteChunkRequestGlobalsModule__ = require(${requireImportLiteral})`,
-      `const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
-      'const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))',
-      ...bindingTargets.map(target => `__weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappViteChunkRequestGlobalsHost__.${target}`),
-      ...bindingTargets.map(target => `var ${target} = __weappViteChunkRequestGlobalsHost__.${target}`),
+      `const __rm = require(${requireImportLiteral})`,
+      `const __rc = __rm[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      `const __ra = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+      ...bindingTargets.map(target => `__ra[${JSON.stringify(target)}] = __rc.${target}`),
+      ...bindingTargets.map(target => `var ${target} = __rc.${target}`),
     ].join(';')
-    chunk.code = `/* __weappViteRequestGlobalsLocalBindings__ */ ${injectionCode};\n${chunk.code}`
+    chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${injectionCode};\n${chunk.code}`
   }
 }
 
@@ -336,9 +340,9 @@ export function createRequestGlobalsPreludeCode(
     `    return`,
     `  }`,
     `  globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}] = true`,
-    `  const __weappVitePreludeRequestGlobalsHost__ = ${installerHostCode}`,
-    `  const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))`,
-    ...bindingTargets.map(target => `  __weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappVitePreludeRequestGlobalsHost__.${target}`),
+    `  const __rh = ${installerHostCode}`,
+    `  const __ra = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+    ...bindingTargets.map(target => `  __ra[${JSON.stringify(target)}] = __rh.${target}`),
     `})();`,
   ].join('\n')
 }
@@ -371,27 +375,27 @@ export function createRequestGlobalsPreludeAssetCode(
     `    return`,
     `  }`,
     `  globalThis[${JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY)}] = true`,
-    `  const __weappVitePreludeRequestGlobalsHost__ = ${installerHostCode}`,
-    `  const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))`,
-    ...bindingTargets.map(target => `  __weappViteRequestGlobalsActuals__[${JSON.stringify(target)}] = __weappVitePreludeRequestGlobalsHost__.${target}`),
+    `  const __rh = ${installerHostCode}`,
+    `  const __ra = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+    ...bindingTargets.map(target => `  __ra[${JSON.stringify(target)}] = __rh.${target}`),
     `})();`,
   ].join('\n')
 }
 
 export function injectAxiosFetchAdapterEnv(bundle: OutputBundle) {
   const axiosEnvPatchCode = [
-    '/* __weappViteAxiosFetchAdapterEnv__ */',
-    'let __weappViteAxiosExport__ = null',
-    'for (const __weappViteAxiosKey__ in exports) {',
-    '  const __weappViteAxiosCandidate__ = exports[__weappViteAxiosKey__]',
-    '  if (__weappViteAxiosCandidate__ && typeof __weappViteAxiosCandidate__ === "function" && __weappViteAxiosCandidate__.Axios && __weappViteAxiosCandidate__.defaults) {',
-    '    __weappViteAxiosExport__ = __weappViteAxiosCandidate__',
+    '/* __wvAXFE__ */',
+    'let __wvAX__ = null',
+    'for (const __wvAXK__ in exports) {',
+    '  const __wvAXC__ = exports[__wvAXK__]',
+    '  if (__wvAXC__ && typeof __wvAXC__ === "function" && __wvAXC__.Axios && __wvAXC__.defaults) {',
+    '    __wvAX__ = __wvAXC__',
     '    break',
     '  }',
     '}',
-    'if (__weappViteAxiosExport__) {',
-    '  __weappViteAxiosExport__.defaults.env = {',
-    '    ...(__weappViteAxiosExport__.defaults.env ?? {}),',
+    'if (__wvAX__) {',
+    '  __wvAX__.defaults.env = {',
+    '    ...(__wvAX__.defaults.env ?? {}),',
     '    Request,',
     '    Response,',
     '    fetch,',
@@ -405,7 +409,7 @@ export function injectAxiosFetchAdapterEnv(bundle: OutputBundle) {
       continue
     }
     const chunk = output as OutputChunk
-    if (chunk.code.includes('__weappViteAxiosFetchAdapterEnv__')) {
+    if (chunk.code.includes('__wvAXFE__')) {
       continue
     }
     const moduleIds = Array.isArray(chunk.moduleIds) ? chunk.moduleIds : []

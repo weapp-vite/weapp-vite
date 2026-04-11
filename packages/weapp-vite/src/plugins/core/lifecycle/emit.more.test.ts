@@ -938,20 +938,20 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['common.js'].code).toContain('__weappViteRequestGlobalsBundleInstalled__')
-    expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsActuals__ = globalThis.__weappViteRequestGlobalsActuals__ || (globalThis.__weappViteRequestGlobalsActuals__ = Object.create(null))')
-    expect(bundle['common.js'].code).toContain('function __weappViteExposeRequestGlobal__(name,value)')
-    expect(bundle['common.js'].code).toContain('var XMLHttpRequest = __weappViteExposeRequestGlobal__("XMLHttpRequest",__weappViteHasUsableRequestGlobalsConstructor__(__weappViteRequestGlobalsActuals__["XMLHttpRequest"],[])?__weappViteRequestGlobalsActuals__["XMLHttpRequest"]:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:__weappViteCreateLazyRequestGlobalsConstructor__("XMLHttpRequest"))')
-    expect(bundle['common.js'].code).toContain('var WebSocket = __weappViteExposeRequestGlobal__("WebSocket",__weappViteHasUsableRequestGlobalsConstructor__(__weappViteRequestGlobalsActuals__["WebSocket"],["wss://request-globals.invalid"])?__weappViteRequestGlobalsActuals__["WebSocket"]:__weappViteHasUsableRequestGlobalsConstructor__(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:__weappViteCreateLazyRequestGlobalsConstructor__("WebSocket"))')
-    expect(bundle['common.js'].code).toContain('const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(bundle['common.js'].code).toContain('URL = __weappViteRequestGlobalsBundleHost__.URL')
-    expect(bundle['common.js'].code).toContain('WebSocket = __weappViteRequestGlobalsBundleHost__.WebSocket')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__weappViteRequestGlobalsLocalBindings__')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsModule__ = require("../../common.js")')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __weappViteChunkRequestGlobalsHost__.URL')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var WebSocket = __weappViteChunkRequestGlobalsHost__.WebSocket')
+    expect(bundle['common.js'].code).toContain('__wvRGB__')
+    expect(bundle['common.js'].code).toContain('const __ra = globalThis["__ra"] || (globalThis["__ra"] = Object.create(null))')
+    expect(bundle['common.js'].code).toContain('function __rE(name,value)')
+    expect(bundle['common.js'].code).toContain('var XMLHttpRequest = __rE("XMLHttpRequest",__rU(__ra["XMLHttpRequest"],[])?__ra["XMLHttpRequest"]:__rU(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:__rC("XMLHttpRequest"))')
+    expect(bundle['common.js'].code).toContain('var WebSocket = __rE("WebSocket",__rU(__ra["WebSocket"],["wss://request-globals.invalid"])?__ra["WebSocket"]:__rU(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:__rC("WebSocket"))')
+    expect(bundle['common.js'].code).toContain('const __rb = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(bundle['common.js'].code).toContain('URL = __rb.URL')
+    expect(bundle['common.js'].code).toContain('WebSocket = __rb.WebSocket')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__wvRGC__')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rm = require("../../common.js")')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rc = __rm["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __rc.fetch')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var URL = __rc.URL')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var WebSocket = __rc.WebSocket')
   })
 
   it('still injects top-level local bindings when chunk already contains setup-scoped request globals host bindings', async () => {
@@ -996,8 +996,8 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const e=require("../../common.js"),t=require("../../dist.js");',
           'Page({ setup(){',
-          'const __weappViteRequestGlobalsHost__ = t["At"]({ targets: ["fetch"] }) || globalThis;',
-          'var fetch = __weappViteRequestGlobalsHost__.fetch;',
+          'const __rh = t["At"]({ targets: ["fetch"] }) || globalThis;',
+          'var fetch = __rh.fetch;',
           '} })',
         ].join(''),
         imports: ['common.js', 'dist.js'],
@@ -1007,11 +1007,11 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__weappViteRequestGlobalsLocalBindings__')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsModule__ = require("../../dist.js")')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteChunkRequestGlobalsHost__ = __weappViteChunkRequestGlobalsModule__["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __weappViteRequestGlobalsHost__ = t["At"]({ targets: ["fetch"] }) || globalThis;')
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('__wvRGC__')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rm = require("../../dist.js")')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rc = __rm["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('const __rh = t["At"]({ targets: ["fetch"] }) || globalThis;')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain('var fetch = __rc.fetch')
   })
 
   it('prepends installer require before earlier shared chunk requires in page chunks', async () => {
@@ -1055,7 +1055,7 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const code = bundle['pages/request-globals/fetch.js'].code
-    expect(code.indexOf('const __weappViteChunkRequestGlobalsModule__ = require("../../dist.js")')).toBeLessThan(code.indexOf('const e=require("../../common.js")'))
+    expect(code.indexOf('const __rm = require("../../dist.js")')).toBeLessThan(code.indexOf('const e=require("../../common.js")'))
   })
 
   it('injects local bindings into app chunks and skips passive app bindings', async () => {
@@ -1099,12 +1099,12 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const appCode = bundle['app.js'].code
-    expect(appCode).toContain('__weappViteRequestGlobalsLocalBindings__')
-    expect(appCode).toContain('const __weappViteChunkRequestGlobalsModule__ = require("./common.js")')
-    expect(appCode).toContain('var fetch = __weappViteChunkRequestGlobalsHost__.fetch')
-    expect(appCode).toContain('var URL = __weappViteChunkRequestGlobalsHost__.URL')
-    expect(appCode).toContain('var WebSocket = __weappViteChunkRequestGlobalsHost__.WebSocket')
-    expect(appCode).not.toContain('__weappViteRequestGlobalsPassiveBindings__')
+    expect(appCode).toContain('__wvRGC__')
+    expect(appCode).toContain('const __rm = require("./common.js")')
+    expect(appCode).toContain('var fetch = __rc.fetch')
+    expect(appCode).toContain('var URL = __rc.URL')
+    expect(appCode).toContain('var WebSocket = __rc.WebSocket')
+    expect(appCode).not.toContain('__wvRGL__')
   })
 
   it('injects bundled runtime installation right after the first require when installer chunk has imports', async () => {
@@ -1142,9 +1142,9 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const code = bundle['dist.js'].code
-    expect(code).toContain('__weappViteRequestGlobalsBundleInstalled__')
-    expect(code).toContain('const e=require("./common.js");const __weappViteRequestGlobalsBundleHost__ = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(code.indexOf('const __weappViteRequestGlobalsBundleHost__ = vn')).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
+    expect(code).toContain('__wvRGB__')
+    expect(code).toContain('const e=require("./common.js");const __rb = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(code.indexOf('const __rb = vn')).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
   })
 
   it('runs request globals installer through app prelude before entry execution when enabled', async () => {
@@ -1203,9 +1203,9 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const appCode = bundle['app.js'].code
-    expect(appCode).toContain('__weappViteRequestGlobalsPrelude__')
+    expect(appCode).toContain('/* __wvRGP__ */')
     expect(appCode).toContain('require("./common.js")["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(appCode.indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(appCode.indexOf('__weappViteAppPreludeRuntime__'))
+    expect(appCode.indexOf('/* __wvRGP__ */')).toBeLessThan(appCode.indexOf('/* __wvAPR__ */'))
   })
 
   it('emits request globals prelude into app.prelude.js when mode is require', async () => {
@@ -1272,10 +1272,10 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({ emitFile }, {}, bundle)
 
     expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
-    expect(bundle['app.js'].code).not.toContain('__weappViteRequestGlobalsPrelude__')
-    expect(String(bundle['app.prelude.js'].source)).toContain('__weappViteRequestGlobalsPrelude__')
+    expect(bundle['app.js'].code).not.toContain('/* __wvRGP__ */')
+    expect(String(bundle['app.prelude.js'].source)).toContain('/* __wvRGP__ */')
     expect(String(bundle['app.prelude.js'].source)).toContain('require("./common.js")["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
-    expect(String(bundle['app.prelude.js'].source).indexOf('__weappViteRequestGlobalsPrelude__')).toBeLessThan(String(bundle['app.prelude.js'].source).indexOf('__weappViteAppPreludeRuntime__'))
+    expect(String(bundle['app.prelude.js'].source).indexOf('/* __wvRGP__ */')).toBeLessThan(String(bundle['app.prelude.js'].source).indexOf('/* __wvAPR__ */'))
   })
 
   it('injects synthetic request globals prelude even without user app.prelude file', async () => {
@@ -1335,8 +1335,8 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const appCode = bundle['app.js'].code
-    expect(appCode).toContain('__weappViteRequestGlobalsPrelude__')
-    expect(appCode).not.toContain('__weappViteAppPreludeRuntime__')
+    expect(appCode).toContain('/* __wvRGP__ */')
+    expect(appCode).not.toContain('__wvAPR__')
   })
 
   it('patches axios chunk defaults env through emit injection', async () => {
@@ -1363,7 +1363,7 @@ describe('core lifecycle emit hook extra branches', () => {
           '/project/node_modules/.pnpm/axios@1.15.0/node_modules/axios/index.js',
         ],
         code: [
-          '/* __weappViteRequestGlobalsPassiveBindings__ */ var fetch = globalThis.fetch; var Request = globalThis.Request; var Response = globalThis.Response;',
+          '/* __wvRGL__ */ var fetch = globalThis.fetch; var Request = globalThis.Request; var Response = globalThis.Response;',
           'function axios(){}',
           'axios.Axios = function Axios(){}',
           'axios.defaults = { env: {} }',
@@ -1377,8 +1377,8 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     const code = bundle['axios.js'].code
-    expect(code).toContain('__weappViteAxiosFetchAdapterEnv__')
-    expect(code).toContain('__weappViteAxiosExport__.defaults.env = {')
+    expect(code).toContain('__wvAXFE__')
+    expect(code).toContain('__wvAX__.defaults.env = {')
     expect(code).toContain('Request,')
     expect(code).toContain('Response,')
     expect(code).toContain('fetch,')
@@ -1440,7 +1440,7 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({ emitFile }, {}, bundle)
 
     expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
-    expect(bundle['app.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['app.js'].code).not.toContain('__wvAPR__')
     expect(bundle['pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
     expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
     expect(bundle['app.prelude.js']).toMatchObject({
@@ -1451,8 +1451,8 @@ describe('core lifecycle emit hook extra branches', () => {
       type: 'asset',
       fileName: 'subpackages/normal/app.prelude.js',
     })
-    expect(String(bundle['app.prelude.js'].source)).toContain('__weappViteAppPreludeRuntime__')
-    expect(String(bundle['subpackages/normal/app.prelude.js'].source)).toContain('__weappViteAppPreludeRuntime__')
+    expect(String(bundle['app.prelude.js'].source)).toContain('__wvAPR__')
+    expect(String(bundle['subpackages/normal/app.prelude.js'].source)).toContain('__wvAPR__')
     expect(emitFile).toHaveBeenCalledTimes(2)
   })
 
@@ -1494,10 +1494,10 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['common.js'].code.startsWith('"use strict";/* __weappViteAppPreludeRuntime__ */')).toBe(true)
-    expect(bundle['common.js'].code).toContain('__weappViteAppPreludeInstalled__')
+    expect(bundle['common.js'].code.startsWith('"use strict";/* __wvAPR__ */')).toBe(true)
+    expect(bundle['common.js'].code).toContain('__ai')
     expect(bundle['common.js'].code).toContain('globalThis.__probe =')
-    expect(bundle['pkg/pages/home.js'].code).toContain('__weappViteAppPreludeInstalled__')
+    expect(bundle['pkg/pages/home.js'].code).toContain('__ai')
   })
 
   it('injects app prelude code into entry chunks only when mode is entry', async () => {
@@ -1567,10 +1567,10 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['app.js'].code).toContain('__weappViteAppPreludeRuntime__')
-    expect(bundle['pages/home/index.js'].code).toContain('__weappViteAppPreludeRuntime__')
-    expect(bundle['components/card/index.js'].code).toContain('__weappViteAppPreludeRuntime__')
-    expect(bundle['common.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['app.js'].code).toContain('__wvAPR__')
+    expect(bundle['pages/home/index.js'].code).toContain('__wvAPR__')
+    expect(bundle['components/card/index.js'].code).toContain('__wvAPR__')
+    expect(bundle['common.js'].code).not.toContain('__wvAPR__')
   })
 
   it('injects app prelude code into independent subpackage chunks', async () => {
@@ -1604,7 +1604,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['pkg-indep/common.js'].code.startsWith('/* __weappViteAppPreludeRuntime__ */')).toBe(true)
+    expect(bundle['pkg-indep/common.js'].code.startsWith('/* __wvAPR__ */')).toBe(true)
     expect(bundle['pkg-indep/common.js'].code).toContain('globalThis.__probe =')
   })
 
@@ -1647,7 +1647,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['app.js'].code).toContain('"/app.prelude.ts"')
     expect(bundle['app.js'].code).not.toContain('import.meta.filename')
-    expect(bundle['app.js'].code).toContain('__weappViteAppPreludeInstalled__')
+    expect(bundle['app.js'].code).toContain('__ai')
   })
 
   it('emits scoped app prelude modules and injects require calls when mode is require', async () => {
@@ -1705,17 +1705,17 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({ emitFile }, {}, bundle)
 
-    expect(bundle['app.js'].code).toContain('__weappViteAppPreludeRequire__')
+    expect(bundle['app.js'].code).toContain('__wvAPQ__')
     expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
-    expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('__weappViteAppPreludeRequire__')
+    expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('__wvAPQ__')
     expect(bundle['subpackages/normal/pages/home/index.js'].code).toContain('require("../../app.prelude.js")')
 
     expect(bundle['app.prelude.js']).toMatchObject({
       type: 'asset',
       fileName: 'app.prelude.js',
     })
-    expect(String(bundle['app.prelude.js'].source)).toContain('__weappViteAppPreludeRuntime__')
-    expect(String(bundle['app.prelude.js'].source)).toContain('__weappViteAppPreludeInstalled__')
+    expect(String(bundle['app.prelude.js'].source)).toContain('__wvAPR__')
+    expect(String(bundle['app.prelude.js'].source)).toContain('__ai')
     expect(bundle['subpackages/normal/app.prelude.js']).toMatchObject({
       type: 'asset',
       fileName: 'subpackages/normal/app.prelude.js',
@@ -1752,6 +1752,6 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['app.js'].code).not.toContain('__weappViteAppPreludeRuntime__')
+    expect(bundle['app.js'].code).not.toContain('__wvAPR__')
   })
 })

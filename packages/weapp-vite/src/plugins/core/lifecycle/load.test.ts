@@ -127,9 +127,9 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call({}, sourceId)
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('__weappViteRequestGlobalsPassiveBindings__')
-    expect(code).toContain('function __weappViteExposeRequestGlobal__(name,value)')
-    expect(code).toContain('var fetch = __weappViteExposeRequestGlobal__("fetch",typeof __weappViteRequestGlobalsActuals__["fetch"]==="function"')
+    expect(code).toContain('__wvRGL__')
+    expect(code).toContain('function __rE(name,value)')
+    expect(code).toContain('var fetch = __rE("fetch",typeof __ra["fetch"]==="function"')
     expect(code).toContain('installRequestGlobals()')
     expect(code).not.toContain('__weappViteInstallRequestGlobals')
   })
@@ -232,9 +232,9 @@ describe('core lifecycle load hook injectWeapi', () => {
 
     expect(code).toContain('installRequestGlobals')
     expect(code).toContain('"WebSocket"')
-    expect(code).toContain('var fetch = __weappViteRequestGlobalsHost__.fetch')
-    expect(code).toContain('var URL = __weappViteRequestGlobalsHost__.URL')
-    expect(code).toContain('var WebSocket = __weappViteRequestGlobalsHost__.WebSocket')
+    expect(code).toContain('var fetch = __rh.fetch')
+    expect(code).toContain('var URL = __rh.URL')
+    expect(code).toContain('var WebSocket = __rh.WebSocket')
   })
 
   it('injects request globals into declared page entries even when loadedEntrySet is empty', async () => {

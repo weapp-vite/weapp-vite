@@ -28,6 +28,9 @@ export interface InstallRequestGlobalsOptions {
 
 type WeappRequestGlobalActualTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
 
+const REQUEST_GLOBAL_ACTUALS_KEY = '__ra'
+const REQUEST_GLOBAL_PLACEHOLDER_KEY = '__rp'
+
 function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
   const bindingTargets: WeappRequestGlobalActualTarget[] = [...targets]
   const needsUrlGlobals = targets.some(target => (
@@ -48,7 +51,7 @@ function isPlaceholderRequestGlobal(value: unknown) {
   return Boolean(
     value
     && typeof value === 'function'
-    && (value as { __weappViteRequestGlobalsPlaceholder__?: boolean }).__weappViteRequestGlobalsPlaceholder__ === true,
+    && (value as Record<string, any>)[REQUEST_GLOBAL_PLACEHOLDER_KEY] === true,
   )
 }
 
@@ -161,10 +164,10 @@ function syncWeappViteRequestGlobalsActuals(
   targets: WeappInjectRequestGlobalsTarget[],
 ) {
   const globalObject = resolveRequestGlobalsHost()
-  const actuals = globalObject.__weappViteRequestGlobalsActuals
-    && typeof globalObject.__weappViteRequestGlobalsActuals === 'object'
-    ? globalObject.__weappViteRequestGlobalsActuals
-    : (globalObject.__weappViteRequestGlobalsActuals = Object.create(null))
+  const actuals = globalObject[REQUEST_GLOBAL_ACTUALS_KEY]
+    && typeof globalObject[REQUEST_GLOBAL_ACTUALS_KEY] === 'object'
+    ? globalObject[REQUEST_GLOBAL_ACTUALS_KEY]
+    : (globalObject[REQUEST_GLOBAL_ACTUALS_KEY] = Object.create(null))
 
   for (const target of resolveActualBindingTargets(targets)) {
     const value = host[target]
