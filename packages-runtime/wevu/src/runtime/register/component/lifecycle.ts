@@ -1,7 +1,9 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
 import {
+  WEVU_ON_LOAD_CALLED_KEY,
   WEVU_READY_CALLED_KEY,
+  WEVU_ROUTE_DONE_CALLED_KEY,
 } from '@weapp-core/constants'
 import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
@@ -78,10 +80,10 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
 
   const pageLifecycleHooks: Record<string, any> = {
     onLoad(this: InternalRuntimeState, ...args: any[]) {
-      if ((this as any).__wevuOnLoadCalled) {
+      if ((this as any)[WEVU_ON_LOAD_CALLED_KEY]) {
         return
       }
-      ;(this as any).__wevuOnLoadCalled = true
+      ;(this as any)[WEVU_ON_LOAD_CALLED_KEY] = true
       mountRuntimeInstance(this, runtimeApp, watch, setup)
       enableDeferredSetData(this)
       if (isPage) {
@@ -108,14 +110,14 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       if (isPage) {
         ensureWxPatched()
         bindCurrentPageInstance(this)
-        if (!(this as any).__wevuOnLoadCalled) {
+        if (!(this as any)[WEVU_ON_LOAD_CALLED_KEY]) {
           pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
         }
         ensurePageShareMenus({
           enableOnShareAppMessage,
           enableOnShareTimeline,
         })
-        ;(this as any).__wevuRouteDoneCalled = false
+        ;(this as any)[WEVU_ROUTE_DONE_CALLED_KEY] = false
       }
       setRuntimeSetDataVisibility(this, true)
       callHookList(this, 'onShow', args)
@@ -135,7 +137,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     },
     onReady(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {
-        if (!(this as any).__wevuOnLoadCalled) {
+        if (!(this as any)[WEVU_ON_LOAD_CALLED_KEY]) {
           pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
         }
         ensurePageShareMenus({
@@ -152,7 +154,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
           // eslint-disable-next-line ts/no-this-alias
           const current = this
           setTimeout(() => {
-            if (!(current as any).__wevuRouteDoneCalled) {
+            if (!(current as any)[WEVU_ROUTE_DONE_CALLED_KEY]) {
               pageLifecycleHooks.onRouteDone?.call(current)
             }
           }, 0)

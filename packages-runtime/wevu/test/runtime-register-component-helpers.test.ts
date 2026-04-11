@@ -1,3 +1,4 @@
+import { WEVU_ON_LOAD_CALLED_KEY } from '@weapp-core/constants'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveComponentFeatures } from '@/runtime/register/component/features'
 import { createPageLifecycleHooks } from '@/runtime/register/component/lifecycle'
@@ -203,6 +204,6 @@ describe('runtime: register component helpers', () => {
     expect(enableDeferredSetData).toHaveBeenCalledTimes(1)
     expect(userOnLoad).toHaveBeenCalledTimes(1)
     expect(userOnLoad).toHaveBeenCalledWith({ from: 'route-options' })
-    expect(instance.__wevuOnLoadCalled).toBe(true)
+    expect(instance[WEVU_ON_LOAD_CALLED_KEY]).toBe(true)
   })
 })

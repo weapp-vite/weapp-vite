@@ -1,4 +1,8 @@
 import type { InternalRuntimeState } from '../../../types'
+import {
+  WEVU_ROUTE_DONE_CALLED_KEY,
+  WEVU_ROUTE_DONE_IN_TICK_KEY,
+} from '@weapp-core/constants'
 import { callHookList, callHookReturn } from '../../../hooks'
 import { runInPageScrollHook } from './platform'
 
@@ -91,14 +95,14 @@ export function attachOptionalPageLifecycleHooks(
   }
   if (enableOnRouteDone) {
     pageLifecycleHooks.onRouteDone = function onRouteDone(this: InternalRuntimeState, ...args: any[]) {
-      if ((this as any).__wevuRouteDoneInTick) {
+      if ((this as any)[WEVU_ROUTE_DONE_IN_TICK_KEY]) {
         return
       }
-      ;(this as any).__wevuRouteDoneInTick = true
+      ;(this as any)[WEVU_ROUTE_DONE_IN_TICK_KEY] = true
       Promise.resolve().then(() => {
-        ;(this as any).__wevuRouteDoneInTick = false
+        ;(this as any)[WEVU_ROUTE_DONE_IN_TICK_KEY] = false
       })
-      ;(this as any).__wevuRouteDoneCalled = true
+      ;(this as any)[WEVU_ROUTE_DONE_CALLED_KEY] = true
       callHookList(this, 'onRouteDone', args)
       if (!hasHook(this, 'onRouteDone')) {
         return effectiveOnRouteDone.apply(this, args)

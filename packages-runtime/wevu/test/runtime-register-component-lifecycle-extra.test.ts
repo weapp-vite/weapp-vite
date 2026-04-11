@@ -1,4 +1,8 @@
-import { WEVU_READY_CALLED_KEY } from '@weapp-core/constants'
+import {
+  WEVU_ON_LOAD_CALLED_KEY,
+  WEVU_READY_CALLED_KEY,
+  WEVU_ROUTE_DONE_CALLED_KEY,
+} from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createPageLifecycleHooks } from '@/runtime/register/component/lifecycle'
@@ -153,7 +157,7 @@ describe('runtime: component page lifecycle extra', () => {
     expect(hooks.onLoad.call(instance, { from: 'args' })).toBe('load-result')
     expect(hooks.onLoad.call(instance, { from: 'args-again' })).toBeUndefined()
 
-    expect(instance.__wevuOnLoadCalled).toBe(true)
+    expect(instance[WEVU_ON_LOAD_CALLED_KEY]).toBe(true)
     expect(mocks.mountRuntimeInstance).toHaveBeenCalledTimes(1)
     expect(mocks.enableDeferredSetData).toHaveBeenCalledTimes(1)
     expect(mocks.ensurePageShareMenus).toHaveBeenCalledWith({
@@ -201,8 +205,8 @@ describe('runtime: component page lifecycle extra', () => {
 
     const instance: any = {}
     expect(hooks.onShow.call(instance, 'show')).toBe('show-result')
-    expect(instance.__wevuOnLoadCalled).toBe(true)
-    expect(instance.__wevuRouteDoneCalled).toBe(false)
+    expect(instance[WEVU_ON_LOAD_CALLED_KEY]).toBe(true)
+    expect(instance[WEVU_ROUTE_DONE_CALLED_KEY]).toBe(false)
     expect(mocks.ensureWxPatched).toHaveBeenCalledTimes(1)
     expect(mocks.bindCurrentPageInstance).toHaveBeenCalledWith(instance)
     expect(mocks.resolvePageOptions).toHaveBeenCalledWith(instance)
@@ -255,7 +259,7 @@ describe('runtime: component page lifecycle extra', () => {
     expect(mocks.callHookList).toHaveBeenCalledWith(instance, 'onReady', ['first'])
     expect(userOnReady).toHaveBeenCalledWith('first')
 
-    instance.__wevuRouteDoneCalled = true
+    instance[WEVU_ROUTE_DONE_CALLED_KEY] = true
     vi.runAllTimers()
     expect((hooks as any).onRouteDone).toBeDefined()
 

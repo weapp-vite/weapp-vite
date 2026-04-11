@@ -1,11 +1,10 @@
 import type { InternalRuntimeState } from '../../../types'
+import { WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY } from '@weapp-core/constants'
 import { callHookList } from '../../../hooks'
 import { getMiniProgramGlobalObject } from '../../../platform'
 
 let wxPatched = false
 let currentPageInstance: InternalRuntimeState | undefined
-const PAGE_SCROLL_HOOK_DEPTH_KEY = '__wevuPageScrollHookDepth'
-
 export function getCurrentPageInstance() {
   return currentPageInstance
 }
@@ -24,18 +23,18 @@ export function runInPageScrollHook<T>(
   target: InternalRuntimeState,
   task: () => T,
 ): T {
-  const currentDepth = Number((target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0)
-  ;(target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] = currentDepth + 1
+  const currentDepth = Number((target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0)
+  ;(target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] = currentDepth + 1
   try {
     return task()
   }
   finally {
-    const nextDepth = Number((target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 1) - 1
+    const nextDepth = Number((target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 1) - 1
     if (nextDepth <= 0) {
-      delete (target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY]
+      delete (target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY]
     }
     else {
-      ;(target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] = nextDepth
+      ;(target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] = nextDepth
     }
   }
 }

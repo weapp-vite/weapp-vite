@@ -1,3 +1,4 @@
+import { WEVU_ON_LOAD_CALLED_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createApp,
@@ -217,7 +218,7 @@ describe('runtime: features & hooks', () => {
 
     showShareMenu.mockClear()
     const pageInstOnReadyOnly: any = {
-      __wevuOnLoadCalled: true,
+      [WEVU_ON_LOAD_CALLED_KEY]: true,
     }
     componentOptions.lifetimes.attached.call(pageInstOnReadyOnly)
     componentOptions.onReady.call(pageInstOnReadyOnly)

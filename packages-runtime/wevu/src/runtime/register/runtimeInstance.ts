@@ -14,6 +14,7 @@ import {
   WEVU_PAGE_LAYOUT_NAME_KEY,
   WEVU_PAGE_LAYOUT_PROPS_KEY,
   WEVU_PAGE_LAYOUT_SETTER_KEY,
+  WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
   WEVU_PROPS_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
 } from '@weapp-core/constants'
@@ -101,7 +102,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const highFrequencyWarning = createSetDataHighFrequencyWarningMonitor({
     option: (runtimeApp as any)?.__wevuSetDataOptions?.highFrequencyWarning,
     targetLabel,
-    isInPageScrollHook: () => Number((target as any).__wevuPageScrollHookDepth ?? 0) > 0,
+    isInPageScrollHook: () => Number((target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0) > 0,
   })
   const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined
