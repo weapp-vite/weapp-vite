@@ -77,7 +77,12 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(jsFiles).toContain('subpackages/normal/pages/entry/index.js')
     expect(jsFiles).toContain('subpackages/independent/pages/entry/index.js')
 
-    for (const relativeFile of jsFiles) {
+    for (const relativeFile of [
+      'app.js',
+      'pages/index/index.js',
+      'subpackages/normal/pages/entry/index.js',
+      'subpackages/independent/pages/entry/index.js',
+    ]) {
       const absolutePath = path.join(DIST_ROOT, relativeFile)
       const content = await fs.readFile(absolutePath, 'utf8')
       expect(content).toContain('__weappViteAppPreludeRuntime__')

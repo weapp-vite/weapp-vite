@@ -77,7 +77,9 @@ export function getWeappViteConfig(): WeappViteConfig {
       logLevels: ['log', 'info', 'warn', 'error'],
       unhandledErrors: true,
     },
-    appPrelude: {},
+    appPrelude: {
+      mode: 'entry',
+    },
     wevu: {
       defaults: {
         component: {
