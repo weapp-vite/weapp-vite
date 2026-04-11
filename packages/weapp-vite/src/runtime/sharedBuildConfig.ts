@@ -5,6 +5,7 @@ import type { ScanService } from './scanPlugin'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { logger } from '../context/shared'
+import { REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME } from '../plugins/core/lifecycle/emit/constants'
 import { normalizeNpmImportLookupPath } from '../utils/npmImport'
 import { isPathInside, normalizeRelativePath } from '../utils/path'
 import { isRegexp } from '../utils/regexp'
@@ -14,6 +15,7 @@ import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
+const REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID = /(?:^|[/\\])(?:@wevu[/\\]web-apis|web-apis[/\\]dist[/\\]index\.(?:m?js|cjs)|weapp-vite[/\\](?:dist[/\\]web-apis\.mjs|src[/\\](?:webApis\.ts|runtime[/\\]webApis[/\\]index\.ts)))(?:$|[?#])/
 
 function resolveSharedPathRoot(
   configService: ConfigService,
@@ -163,6 +165,22 @@ function resolveSharedBuildChunksOptions(configService: ConfigService) {
   }
 }
 
+function isRequestGlobalsRuntimeChunk(chunk: { name: string, moduleIds?: string[] | readonly string[], facadeModuleId?: string | null }) {
+  if (chunk.name !== 'dist') {
+    return false
+  }
+
+  const candidateIds = [
+    chunk.facadeModuleId,
+    ...(chunk.moduleIds ?? []),
+  ].filter((id): id is string => typeof id === 'string')
+
+  return candidateIds.some((id) => {
+    REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.lastIndex = 0
+    return REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.test(id)
+  })
+}
+
 function createSharedBuildResolver(
   configService: ConfigService,
   getSubPackageRoots: () => Iterable<string>,
@@ -214,7 +232,12 @@ export function createSharedBuildOutput(
         },
       ],
     },
-    chunkFileNames: '[name].js',
+    chunkFileNames: (chunk: { name: string, moduleIds?: string[] | readonly string[], facadeModuleId?: string | null }) => {
+      if (isRequestGlobalsRuntimeChunk(chunk)) {
+        return REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
+      }
+      return '[name].js'
+    },
   }
 
   // `codeSplitting` is always enabled for shared chunk naming. Rolldown ignores
@@ -242,6 +265,7 @@ export {
   createSharedModeResolver,
   createSharedPathResolver,
   createStringOrRegExpMatcher,
+  isRequestGlobalsRuntimeChunk,
   normalizeSharedPathCandidate,
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,

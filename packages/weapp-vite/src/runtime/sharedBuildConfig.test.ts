@@ -1,6 +1,7 @@
 import type { ConfigService } from './config/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '../context/shared'
+import { REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME } from '../plugins/core/lifecycle/emit/constants'
 import { __clearSharedChunkDiagnosticsForTest } from './chunkStrategy'
 import {
   createForceDuplicateTester,
@@ -9,6 +10,7 @@ import {
   createSharedModeResolver,
   createSharedPathResolver,
   createStringOrRegExpMatcher,
+  isRequestGlobalsRuntimeChunk,
   normalizeSharedPathCandidate,
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,
@@ -121,6 +123,19 @@ describe('sharedBuildConfig', () => {
       sharedOverrides: [{ test: 'shared/**', mode: 'inline' }],
       sharedPathRoot: 'src/shared',
     })
+  })
+
+  it('renames request globals runtime chunk to a semantic file name', () => {
+    expect(isRequestGlobalsRuntimeChunk({
+      name: 'dist',
+      facadeModuleId: '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/index.mjs',
+    })).toBe(true)
+
+    const output = createSharedBuildOutput(createConfigService(), () => [])
+    expect(output.chunkFileNames({
+      name: 'dist',
+      facadeModuleId: '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/index.mjs',
+    })).toBe(REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME)
   })
 
   it('returns undefined for path mode when there is only one importer', () => {
