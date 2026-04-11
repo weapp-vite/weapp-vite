@@ -181,7 +181,8 @@ describe('autoImport metadata helpers', () => {
       expect(definition).toContain('const NativeCard: __WeappComponentImport<typeof import("./src/components/native-card/index"), WeappComponent<{')
       expect(definition).toContain('readonly \'custom-prop\'?: string;')
       expect(definition).toContain('const AutoCard: typeof import("./src/components/AutoCard/index.vue")[\'default\']')
-      expect(definition).toContain('type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component & Fallback : Fallback')
+      expect(definition).toContain('type __WeappComponentProps<TComponent> = TComponent extends new (...args: any[]) => { $props: infer Props } ? Props : Record<string, any>')
+      expect(definition).toContain('type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fallback : TModule extends { default: infer Component } ? Component extends new (...args: infer Args) => infer Instance ? new (...args: Args) => Omit<Instance, \'$props\'> & { $props: __WeappComponentProps<Component> & __WeappComponentProps<Fallback> } : Fallback : Fallback')
     })
 
     it('uses typed component references and custom module name', () => {
