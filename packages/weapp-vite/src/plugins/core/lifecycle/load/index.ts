@@ -80,7 +80,7 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'component')
       const requestGlobalsTargets = result && typeof result === 'object' && 'code' in result
-        ? resolveRequestGlobalsTargetsForCode((result as any).code, injectRequestGlobalsOptions)
+        ? resolveRequestGlobalsTargetsForCode((result as any).code, sourceId, injectRequestGlobalsOptions)
         : injectRequestGlobalsOptions?.targets ?? []
       if (requestGlobalsTargets.length === 0) {
         return result
@@ -95,7 +95,7 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
       const requestGlobalsTargets = result && typeof result === 'object' && 'code' in result
-        ? resolveRequestGlobalsTargetsForCode((result as any).code, injectRequestGlobalsOptions)
+        ? resolveRequestGlobalsTargetsForCode((result as any).code, sourceId, injectRequestGlobalsOptions)
         : injectRequestGlobalsOptions?.targets ?? []
       const passiveRequestGlobalsTargets = result && typeof result === 'object' && 'code' in result
         ? resolvePassiveRequestGlobalsTargets((result as any).code, requestGlobalsTargets)
@@ -142,7 +142,7 @@ export function createLoadHook(state: CorePluginState) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, loadType)
       const requestGlobalsTargets = result && typeof result === 'object' && 'code' in result
-        ? resolveRequestGlobalsTargetsForCode((result as any).code, injectRequestGlobalsOptions)
+        ? resolveRequestGlobalsTargetsForCode((result as any).code, sourceId, injectRequestGlobalsOptions)
         : injectRequestGlobalsOptions?.targets ?? []
       const passiveRequestGlobalsTargets = result && typeof result === 'object' && 'code' in result
         ? resolvePassiveRequestGlobalsTargets((result as any).code, requestGlobalsTargets)

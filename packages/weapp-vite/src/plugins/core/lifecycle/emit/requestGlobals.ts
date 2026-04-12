@@ -296,23 +296,23 @@ export function injectRequestGlobalsLocalBindings(
         continue
       }
       const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, importee)
-      exportName = installerChunks.get(installerChunkFileName)
-      if (!exportName) {
-        continue
-      }
       requireImportLiteral = requireMatch[2] ?? null
+      exportName = installerChunks.get(installerChunkFileName)
       break
     }
+    const runtimeInstallerResolverExpression = requireImportLiteral
+      && `(() => { const installer = Object.values(${REQUEST_GLOBAL_CHUNK_MODULE_REF}).find(value => typeof value === "function" && ${JSON.stringify(FULL_REQUEST_GLOBAL_TARGETS)}.every(target => String(value).includes(target))); return typeof installer === "function" ? installer({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis : globalThis })()`
     const installerHostExpression = inlineInstallerName
       ? `${inlineInstallerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
       : requireImportLiteral && exportName
         ? `${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
-        : null
+        : runtimeInstallerResolverExpression
+          ?? null
     if (!installerHostExpression) {
       continue
     }
     const injectionCode = [
-      ...(!inlineInstallerName && requireImportLiteral && exportName
+      ...(!inlineInstallerName && requireImportLiteral
         ? [`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require(${requireImportLiteral})`]
         : []),
       `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${installerHostExpression}`,

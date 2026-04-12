@@ -34,6 +34,6 @@ describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => 
     expect(pageJs).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
     expect(pageJs).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
     expect(pageJs.indexOf('require(`../../common.js`)')).toBeLessThan(pageJs.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = `))
-    expect(pageJs.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = `)).toBeLessThan(pageJs.indexOf('function c(){return typeof URL=='))
+    expect(pageJs.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = `)).toBeLessThan(pageJs.indexOf('await fetch(`https://request-globals.invalid/fetch`'))
   })
 })

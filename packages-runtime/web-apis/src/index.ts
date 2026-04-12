@@ -36,6 +36,7 @@ function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[])
     || target === 'Request'
     || target === 'Response'
     || target === 'XMLHttpRequest'
+    || target === 'WebSocket'
   ))
 
   if (needsUrlGlobals) {
@@ -211,6 +212,7 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
     || target === 'Request'
     || target === 'Response'
     || target === 'XMLHttpRequest'
+    || target === 'WebSocket'
   ))
 
   ensureRuntimeHostAliases(primaryHost)

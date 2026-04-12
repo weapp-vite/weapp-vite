@@ -241,8 +241,41 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('installRequestGlobals')
     expect(code).toContain('"WebSocket"')
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
     expect(code).not.toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
-    expect(code).not.toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
+  })
+
+  it('injects request globals for socket.io-client imports even without direct WebSocket references', async () => {
+    const loadEntry = vi.fn(async () => ({
+      code: 'import { io } from "socket.io-client"; const socket = io("wss://request-globals.invalid/socket"); App({ socket })',
+    }))
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'socket.io-client': '^4.8.3',
+            },
+          },
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'app',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+    } as any)
+
+    const result = await load.call({}, '/project/src/app.ts')
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
+    expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
   })
 
   it('injects request globals into declared page entries even when loadedEntrySet is empty', async () => {

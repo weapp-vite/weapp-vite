@@ -55,6 +55,7 @@ const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectRequestGlobalsTarg
 
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
+const WEBSOCKET_USAGE_HINT_RE = /\bwebsocket\b/iu
 type WeappRequestGlobalFreeBindingTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
 
 const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set<WeappRequestGlobalFreeBindingTarget>([
@@ -81,6 +82,21 @@ export interface ResolveRequestRuntimeOptionsInput {
   appPrelude?: boolean | WeappAppPreludeConfig
   injectRequestGlobals?: boolean | WeappInjectRequestGlobalsConfig
 }
+
+const CODE_USAGE_AUTO_RULES: InjectRequestGlobalsAutoRule[] = [
+  {
+    dependencyPatterns: ['axios', 'graphql-request'],
+    targets: [...REQUEST_RUNTIME_REQUEST_TARGETS],
+  },
+  {
+    dependencyPatterns: ['socket.io-client', 'engine.io-client'],
+    targets: [...FULL_REQUEST_GLOBAL_TARGETS],
+  },
+  {
+    dependencyPatterns: [...DEFAULT_ABORT_GLOBAL_DEPENDENCIES],
+    targets: [...ABORT_REQUEST_GLOBAL_TARGETS],
+  },
+]
 
 function resolveAppPreludeRequestRuntimeConfig(
   appPrelude?: boolean | WeappAppPreludeConfig,
@@ -255,6 +271,7 @@ export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestG
     || target === 'Request'
     || target === 'Response'
     || target === 'XMLHttpRequest'
+    || target === 'WebSocket'
   ))
 
   if (needsUrlGlobals) {
@@ -410,6 +427,104 @@ function resolveReferencedRequestGlobalsTargets(
   }
 }
 
+export function hasReferencedRequestGlobalsUsage(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+) {
+  return resolveReferencedRequestGlobalsTargets(code, allowedTargets).length > 0
+}
+
+function matchesRequestGlobalDependencyPattern(specifier: string, pattern: string | RegExp) {
+  if (typeof pattern === 'string') {
+    return specifier === pattern
+  }
+  pattern.lastIndex = 0
+  return pattern.test(specifier)
+}
+
+function resolveImportedRequestGlobalsTargets(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+) {
+  if (allowedTargets.length === 0) {
+    return []
+  }
+
+  const matchedSpecifiers = new Set<string>()
+  const knownDependencyLiterals = [
+    'axios',
+    'graphql-request',
+    'socket.io-client',
+    'engine.io-client',
+    '@tanstack/query-core',
+    '@tanstack/vue-query',
+  ]
+  if (!knownDependencyLiterals.some(specifier => code.includes(specifier))) {
+    return []
+  }
+
+  const addSpecifier = (specifier: unknown) => {
+    if (typeof specifier === 'string' && specifier.length > 0) {
+      matchedSpecifiers.add(specifier)
+    }
+  }
+
+  try {
+    const ast = parseJsLike(extractRequestGlobalsUsageSource(code))
+
+    traverse(ast as any, {
+      ImportDeclaration(path: any) {
+        addSpecifier(path.node?.source?.value)
+      },
+      ExportNamedDeclaration(path: any) {
+        addSpecifier(path.node?.source?.value)
+      },
+      ExportAllDeclaration(path: any) {
+        addSpecifier(path.node?.source?.value)
+      },
+      CallExpression(path: any) {
+        if (path.node?.callee?.type === 'Import') {
+          addSpecifier(path.node.arguments?.[0]?.value)
+          return
+        }
+        if (
+          path.node?.callee?.type === 'Identifier'
+          && path.node.callee.name === 'require'
+        ) {
+          addSpecifier(path.node.arguments?.[0]?.value)
+        }
+      },
+    })
+  }
+  catch {
+    for (const specifier of knownDependencyLiterals) {
+      if (code.includes(specifier)) {
+        matchedSpecifiers.add(specifier)
+      }
+    }
+  }
+
+  if (matchedSpecifiers.size === 0) {
+    return []
+  }
+
+  const resolvedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  for (const specifier of matchedSpecifiers) {
+    for (const rule of CODE_USAGE_AUTO_RULES) {
+      if (!rule.dependencyPatterns.some(pattern => matchesRequestGlobalDependencyPattern(specifier, pattern))) {
+        continue
+      }
+      for (const target of rule.targets) {
+        if (allowedTargets.includes(target)) {
+          resolvedTargets.add(target)
+        }
+      }
+    }
+  }
+
+  return normalizeResolvedRequestGlobalTargets(resolvedTargets, allowedTargets)
+}
+
 export function resolveManualRequestGlobalsTargets(code: string): WeappInjectRequestGlobalsTarget[] {
   if (!MANUAL_REQUEST_GLOBALS_IMPORT_RE.test(code)) {
     return []
@@ -437,12 +552,17 @@ export function resolveAutoRequestGlobalsTargets(
   code: string,
   allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
 ): WeappInjectRequestGlobalsTarget[] {
+  const importedTargets = resolveImportedRequestGlobalsTargets(code, allowedTargets)
   const referencedTargets = resolveReferencedRequestGlobalsTargets(code, allowedTargets)
-  if (referencedTargets.length === 0) {
+  const hasWebSocketUsageHint = allowedTargets.includes('WebSocket') && WEBSOCKET_USAGE_HINT_RE.test(code)
+  if (referencedTargets.length === 0 && importedTargets.length === 0 && !hasWebSocketUsageHint) {
     return []
   }
 
   const resolvedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  for (const target of importedTargets) {
+    resolvedTargets.add(target)
+  }
   const referencedTargetSet = new Set(referencedTargets)
 
   if (referencedTargets.some(target => REQUEST_RUNTIME_CORE_USAGE_TARGETS.has(target))) {
@@ -460,7 +580,14 @@ export function resolveAutoRequestGlobalsTargets(
     }
   }
 
-  if (referencedTargetSet.has('WebSocket') && allowedTargets.includes('WebSocket')) {
+  if (
+    allowedTargets.includes('WebSocket')
+    && (
+      referencedTargetSet.has('WebSocket')
+      || importedTargets.includes('WebSocket')
+      || hasWebSocketUsageHint
+    )
+  ) {
     resolvedTargets.add('WebSocket')
   }
 
@@ -559,7 +686,7 @@ export function injectRequestGlobalsIntoSfc(
     ? descriptor.scriptSetup
     : undefined
   if (inlineScriptSetup) {
-    return injectCodeIntoSfcBlock(source, inlineScriptSetup.loc.start.offset, injection)
+    return `${createInjectRequestGlobalsSfcCode(targets, options)}${source}`
   }
 
   if (!descriptor.script) {

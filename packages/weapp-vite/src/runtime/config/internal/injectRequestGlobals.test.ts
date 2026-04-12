@@ -215,6 +215,15 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
   })
 
+  it('keeps URL bindings available for websocket-only local bindings', () => {
+    const code = createInjectRequestGlobalsCode(['WebSocket'], {
+      localBindings: true,
+    })
+
+    expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
+  })
+
   it('can create passive local binding injection code for manual installers', () => {
     const code = createInjectRequestGlobalsCode(['fetch', 'AbortController'], {
       passiveLocalBindings: true,
@@ -268,7 +277,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain('export default {}')
   })
 
-  it('injects into existing script setup when no normal script exists', () => {
+  it('prepends a normal script block when only script setup exists', () => {
     const code = injectRequestGlobalsIntoSfc(
       [
         '<script setup lang="ts">',
@@ -281,8 +290,9 @@ describe('injectRequestGlobals helpers', () => {
       },
     )
 
-    expect(code.match(/<script\b/g)?.length).toBe(1)
-    expect(code).toContain('<script setup lang="ts">import { installRequestGlobals')
+    expect(code.match(/<script\b/g)?.length).toBe(2)
+    expect(code).toContain('<script lang="ts">')
+    expect(code).toContain('<script setup lang="ts">\nconst value = 1')
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
@@ -350,6 +360,31 @@ describe('injectRequestGlobals helpers', () => {
         'WebSocket',
       ],
     )).toEqual([
+      'WebSocket',
+    ])
+  })
+
+  it('resolves socket.io-client imports to the full request runtime target set', () => {
+    expect(resolveAutoRequestGlobalsTargets(
+      'import { io } from "socket.io-client"\nexport const socket = io("wss://request-globals.invalid/socket")',
+      [
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
+      ],
+    )).toEqual([
+      'fetch',
+      'Headers',
+      'Request',
+      'Response',
+      'AbortController',
+      'AbortSignal',
+      'XMLHttpRequest',
       'WebSocket',
     ])
   })

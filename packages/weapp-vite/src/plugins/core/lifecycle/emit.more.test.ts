@@ -1027,8 +1027,8 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../dist.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`Object.values(${REQUEST_GLOBAL_CHUNK_MODULE_REF}).find(`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
   })
@@ -1071,7 +1071,7 @@ describe('core lifecycle emit hook extra branches', () => {
     const code = bundle['pages/request-globals/fetch.js'].code
     expect(code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(code.indexOf('const e=require("../../common.js");')).toBeLessThan(code.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn(`))
-    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
   })

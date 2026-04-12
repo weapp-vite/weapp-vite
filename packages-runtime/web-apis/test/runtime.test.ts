@@ -203,7 +203,9 @@ describe('request globals runtime', () => {
     })
 
     expect(typeof globalThis.WebSocket).toBe('function')
+    expect(typeof globalThis.URL).toBe('function')
     expect(typeof (globalThis as any).global.WebSocket).toBe('function')
+    expect(typeof (globalThis as any).global.URL).toBe('function')
     expect((globalThis as any).self).toBe(globalThis)
     expect((globalThis as any).window).toBe(globalThis)
   })

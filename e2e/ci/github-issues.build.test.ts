@@ -1,7 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
 import {
   REQUEST_GLOBAL_ACTUALS_KEY,
-  REQUEST_GLOBAL_CHUNK_HOST_REF,
   REQUEST_GLOBAL_EXPOSE_HELPER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
@@ -159,11 +158,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('issue-420 socket.io-client bootstrap')
     expect(pageJs).toContain('transportName')
     expect(pageJs).toContain('socket.invalid/github-issues')
-    expect(pageJs).toContain(`${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
     expect(commonJs).toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
-    expect(commonJs).toContain('"WebSocket"')
     expect(commonJs).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",`)
+    expect(commonJs).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",`)
     expect(commonJs).toContain(`${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"],["wss://request-globals.invalid"])`)
+    expect(commonJs).toContain(`${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["URL"],["https://request-globals.invalid"])`)
   })
 
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {

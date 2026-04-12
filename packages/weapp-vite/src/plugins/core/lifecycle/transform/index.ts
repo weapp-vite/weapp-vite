@@ -17,6 +17,8 @@ import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importM
 import { replacePlatformApiAccess } from './platform'
 import { resolveInjectWeapiOptions, shouldTransformId } from './shared'
 
+const NORMAL_SFC_SCRIPT_RE = /<script(?![^>]*setup)[^>]*>/u
+
 export function createTransformHook(state: CorePluginState) {
   const { configService } = state.ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
@@ -26,9 +28,14 @@ export function createTransformHook(state: CorePluginState) {
   }, configService.packageJson, message => logger.warn(message))
 
   function resolveRequestGlobalsTransformCode(id: string, code: string) {
+    const isScriptSetupOnlyVue = id.endsWith('.vue') && code.includes('<script setup') && !NORMAL_SFC_SCRIPT_RE.test(code)
     const requestGlobalsTargets = injectRequestGlobalsOptions?.targets?.length
       ? injectRequestGlobalsOptions.mode === 'auto'
-        ? resolveAutoRequestGlobalsTargets(code, injectRequestGlobalsOptions.targets)
+        ? (
+            isScriptSetupOnlyVue
+              ? []
+              : resolveAutoRequestGlobalsTargets(code, injectRequestGlobalsOptions.targets)
+          )
         : injectRequestGlobalsOptions.targets
       : resolveManualRequestGlobalsTargets(code)
     if (requestGlobalsTargets.length === 0) {
