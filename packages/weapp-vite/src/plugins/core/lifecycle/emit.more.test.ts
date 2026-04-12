@@ -972,6 +972,56 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
   })
 
+  it('creates a private installer export for bundled runtime chunks when the installer is not publicly exported', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'const __keep__ = [XMLHttpRequest, WebSocket];',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, URLSearchParams: Map, Blob: Array, FormData: Map, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object }}',
+          'Object.defineProperty(exports,`noop`,{enumerable:!0,get:function(){return __keep__}})',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: 'const e=require("../../common.js");const response = fetch("/api");Page({ response })',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
+    expect(bundle['common.js'].code).toContain('Object.defineProperty(exports,"__wvRGI__",{enumerable:false,get:function(){return vn}});')
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["__wvRGI__"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
+  })
+
   it('still injects top-level local bindings when chunk already contains setup-scoped request globals host bindings', async () => {
     const state = createState({
       subPackageMeta: null,
@@ -1027,8 +1077,8 @@ describe('core lifecycle emit hook extra branches', () => {
     await hook.call({}, {}, bundle)
 
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`Object.values(${REQUEST_GLOBAL_CHUNK_MODULE_REF}).find(`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../dist.js")`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
   })
@@ -1071,9 +1121,10 @@ describe('core lifecycle emit hook extra branches', () => {
     const code = bundle['pages/request-globals/fetch.js'].code
     expect(code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(code.indexOf('const e=require("../../common.js");')).toBeLessThan(code.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn(`))
-    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
-    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
-    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
+    expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
+    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["WebSocket"] }) || globalThis`)
+    expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.WebSocket`)
+    expect(code).toContain('console.log(fetch, URL);')
   })
 
   it('prepends installer require before earlier shared chunk requires in page chunks', async () => {

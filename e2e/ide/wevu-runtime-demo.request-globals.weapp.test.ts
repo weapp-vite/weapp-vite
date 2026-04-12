@@ -117,6 +117,56 @@ describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
     await miniProgram.close()
   })
 
+  it('exposes request globals from the app runtime and request-globals index page', async (ctx) => {
+    const miniProgram = await getMiniProgram(ctx)
+    const page = await miniProgram.reLaunch('/pages/request-globals/index')
+    if (!page) {
+      throw new Error('Failed to launch /pages/request-globals/index')
+    }
+
+    const appProbe = await miniProgram.evaluate(() => {
+      return {
+        fetchType: typeof fetch,
+        urlAvailable: (() => {
+          try {
+            return new URL('https://request-globals.invalid').protocol === 'https:'
+          }
+          catch {
+            return false
+          }
+        })(),
+        webSocketAvailable: typeof WebSocket === 'function',
+        xmlHttpRequestAvailable: typeof XMLHttpRequest === 'function',
+      }
+    })
+
+    const entries = await page.data('entries')
+
+    expect(appProbe, JSON.stringify(appProbe)).toEqual({
+      fetchType: 'function',
+      urlAvailable: true,
+      webSocketAvailable: true,
+      xmlHttpRequestAvailable: true,
+    })
+    expect(entries).toEqual([
+      {
+        desc: '验证 request globals 注入后的 fetch 能力',
+        route: '/pages/request-globals/fetch',
+        title: 'fetch',
+      },
+      {
+        desc: '验证 graphql-request 对 URL / fetch 的依赖链路',
+        route: '/pages/request-globals/graphql-request',
+        title: 'graphql-request',
+      },
+      {
+        desc: '验证 axios 在小程序中的请求适配能力',
+        route: '/pages/request-globals/axios',
+        title: 'axios',
+      },
+    ])
+  })
+
   it('supports fetch, graphql-request and axios in simulator runtime', async (ctx) => {
     const miniProgram = await getMiniProgram(ctx)
 

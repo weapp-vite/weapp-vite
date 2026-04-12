@@ -30,6 +30,8 @@ import {
 } from './constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
 
+const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
+
 function resolveChunkRequestGlobalsTargets(
   code: string,
   targets: WeappInjectRequestGlobalsTarget[],
@@ -180,11 +182,12 @@ export function injectRequestGlobalsBundleRuntime(
     }
     const installerName = resolveRequestGlobalsInstallerName(chunk.code)
     const exportName = resolveRequestGlobalsExportName(chunk.code)
-    if (!installerName || !exportName) {
+    if (!installerName) {
       continue
     }
+    const resolvedExportName = exportName ?? REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME
 
-    installerChunks.set(toPosixPath(chunk.fileName), exportName)
+    installerChunks.set(toPosixPath(chunk.fileName), resolvedExportName)
     const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
     if (chunkTargets.length === 0) {
       continue
@@ -195,19 +198,23 @@ export function injectRequestGlobalsBundleRuntime(
       continue
     }
     const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
+    const syntheticExportCode = exportName
+      ? ''
+      : `Object.defineProperty(exports,${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)},{enumerable:false,get:function(){return ${installerName}}});`
     const runtimeBindingCode = [
       `const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = ${installerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`,
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
+      ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}}catch{}`),
       ...bindingTargets.map(target => `${target} = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
     ].join(';')
     const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode}\n`
     const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
     if (firstRequireMatch?.[0]) {
-      chunk.code = `${bundlePrelude}${chunk.code.replace(firstRequireMatch[0], match => `${match};${runtimeBindingCode}`)}\n`
+      chunk.code = `${bundlePrelude}${chunk.code.replace(firstRequireMatch[0], match => `${match};${syntheticExportCode}${runtimeBindingCode}`)}\n`
       continue
     }
 
-    chunk.code = `${bundlePrelude}${chunk.code}\n;${runtimeBindingCode};\n`
+    chunk.code = `${bundlePrelude}${syntheticExportCode}${chunk.code}\n;${runtimeBindingCode};\n`
   }
 
   return installerChunks
@@ -296,19 +303,24 @@ export function injectRequestGlobalsLocalBindings(
         continue
       }
       const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, importee)
-      requireImportLiteral = requireMatch[2] ?? null
       exportName = installerChunks.get(installerChunkFileName)
+      if (!exportName) {
+        continue
+      }
+      requireImportLiteral = requireMatch[2] ?? null
       break
     }
-    const runtimeInstallerResolverExpression = requireImportLiteral
-      && `(() => { const installer = Object.values(${REQUEST_GLOBAL_CHUNK_MODULE_REF}).find(value => typeof value === "function" && ${JSON.stringify(FULL_REQUEST_GLOBAL_TARGETS)}.every(target => String(value).includes(target))); return typeof installer === "function" ? installer({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis : globalThis })()`
     const installerHostExpression = inlineInstallerName
       ? `${inlineInstallerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
       : requireImportLiteral && exportName
         ? `${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
-        : runtimeInstallerResolverExpression
-          ?? null
+        : null
     if (!installerHostExpression) {
+      const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
+      if (!passiveBindingsCode) {
+        continue
+      }
+      chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${passiveBindingsCode}\n${chunk.code}`
       continue
     }
     const injectionCode = [
@@ -318,6 +330,7 @@ export function injectRequestGlobalsLocalBindings(
       `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${installerHostExpression}`,
       `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
+      ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}}catch{}`),
       ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
     ].join(';')
     if (inlineInstallerName && firstRequireMatch?.[0]) {
@@ -395,6 +408,7 @@ export function createRequestGlobalsPreludeCode(
     `  const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = ${installerHostCode}`,
     `  const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
     ...bindingTargets.map(target => `  ${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target}`),
+    ...bindingTargets.map(target => `  try { globalThis[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target} } catch {}`),
     `})();`,
   ].join('\n')
 }
@@ -432,6 +446,7 @@ export function createRequestGlobalsPreludeAssetCode(
     `  const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = ${installerHostCode}`,
     `  const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
     ...bindingTargets.map(target => `  ${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target}`),
+    ...bindingTargets.map(target => `  try { globalThis[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target} } catch {}`),
     `})();`,
   ].join('\n')
 }

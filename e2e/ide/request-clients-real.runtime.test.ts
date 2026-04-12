@@ -91,6 +91,40 @@ afterAll(async () => {
 })
 
 describe.sequential('e2e app: request-clients-real', () => {
+  it('exposes request globals from the Vue app runtime entry', async (ctx) => {
+    if (sharedInfraUnavailableMessage) {
+      ctx.skip(sharedInfraUnavailableMessage)
+    }
+    const miniProgram = await getMiniProgram(ctx)
+    const page = await miniProgram.reLaunch('/pages/index/index')
+    if (!page) {
+      throw new Error('Failed to launch /pages/index/index')
+    }
+
+    const appProbe = await miniProgram.evaluate(() => {
+      return {
+        fetchType: typeof fetch,
+        urlAvailable: (() => {
+          try {
+            return new URL('https://request-globals.invalid').protocol === 'https:'
+          }
+          catch {
+            return false
+          }
+        })(),
+        webSocketAvailable: typeof WebSocket === 'function',
+        xmlHttpRequestAvailable: typeof XMLHttpRequest === 'function',
+      }
+    })
+
+    expect(appProbe, JSON.stringify(appProbe)).toEqual({
+      fetchType: 'function',
+      urlAvailable: true,
+      webSocketAvailable: true,
+      xmlHttpRequestAvailable: true,
+    })
+  })
+
   it('covers fetch against a local real server', async (ctx) => {
     if (sharedInfraUnavailableMessage) {
       ctx.skip(sharedInfraUnavailableMessage)

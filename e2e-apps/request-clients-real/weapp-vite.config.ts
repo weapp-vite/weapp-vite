@@ -12,9 +12,11 @@ export default defineConfig(async (env) => {
   return {
     plugins: devSetup ? [devSetup.plugin] : [],
     weapp: {
+      appPrelude: {
+        requestRuntime: true,
+      },
       srcRoot: 'src',
       autoRoutes: true,
-      injectRequestGlobals: true,
     },
   }
 })

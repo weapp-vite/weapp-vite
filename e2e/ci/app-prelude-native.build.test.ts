@@ -222,11 +222,18 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
 
     const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
+    const runtimeJs = await fs.readFile(path.join(DIST_ROOT, 'request-globals-runtime.js'), 'utf8')
 
     expect(appJs).toContain('require("./app.prelude.js")')
     expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)
+    expect(rootPreludeJs).toContain('require("./request-globals-runtime.js")')
+    expect(rootPreludeJs).toContain('"fetch","Headers","Request","Response"')
+    expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')
+    expect(rootPreludeJs).not.toContain('"WebSocket"')
+    expect(runtimeJs).toContain('Object.defineProperty(exports,`t`,{enumerable:!0,get:function(){return')
+    expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
     expect(rootPreludeJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(rootPreludeJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 })
