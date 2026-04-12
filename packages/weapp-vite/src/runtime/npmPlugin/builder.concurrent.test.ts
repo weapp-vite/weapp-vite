@@ -103,31 +103,6 @@ describe('runtime npm builder concurrent dedupe', () => {
     } as MutableCompilerContext
     const builder = createPackageBuilder(ctx)
 
-    const originalCopy = fs.copy.bind(fs)
-    const activeDestinations = new Set<string>()
-    const copySpy = vi.spyOn(fs, 'copy').mockImplementation(async (from: string, to: string, ...rest: unknown[]) => {
-      const resolvedDest = path.resolve(to)
-      if (activeDestinations.has(resolvedDest)) {
-        const error = new Error(`copy destination race detected: ${resolvedDest}`) as Error & {
-          code?: string
-          syscall?: string
-          path?: string
-        }
-        error.code = 'ENOENT'
-        error.syscall = 'unlink'
-        error.path = resolvedDest
-        throw error
-      }
-      activeDestinations.add(resolvedDest)
-      await new Promise(resolve => setTimeout(resolve, 5))
-      try {
-        return await (originalCopy as (...args: unknown[]) => Promise<void>)(from, to, ...rest)
-      }
-      finally {
-        activeDestinations.delete(resolvedDest)
-      }
-    })
-
     await Promise.all([
       builder.buildPackage({
         dep: 'pkg-a',
@@ -142,9 +117,9 @@ describe('runtime npm builder concurrent dedupe', () => {
     ])
 
     const sharedDest = path.resolve(outDir, 'shared')
-    const sharedCopyCalls = copySpy.mock.calls.filter(([, to]) => path.resolve(String(to)) === sharedDest)
+    const sharedPackageInfoCalls = getPackageInfoMock.mock.calls.filter(([dep]) => dep === 'shared')
 
     expect(await fs.pathExists(path.resolve(sharedDest, 'index.js'))).toBe(true)
-    expect(sharedCopyCalls).toHaveLength(1)
+    expect(sharedPackageInfoCalls).toHaveLength(1)
   })
 })

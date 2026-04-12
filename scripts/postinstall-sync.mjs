@@ -8,6 +8,8 @@ import { syncRolldownCatalogReferences } from './print-rolldown-versions.mjs'
 const ROOT_DIR = path.dirname(fileURLToPath(new URL('../package.json', import.meta.url)))
 const WORKSPACE_PATH = path.resolve(ROOT_DIR, 'pnpm-workspace.yaml')
 const GENERATED_CATALOG_PATH = path.resolve(ROOT_DIR, 'packages/create-weapp-vite/src/generated/catalog.ts')
+const ROOT_WEAPP_VITE_LINK_PATH = path.resolve(ROOT_DIR, 'node_modules/weapp-vite')
+const ROOT_WEAPP_VITE_TARGET_PATH = path.resolve(ROOT_DIR, 'packages/weapp-vite')
 const CHUNK_MODE_FAKE_PKG_FILES = [
   {
     filePath: path.resolve(ROOT_DIR, 'e2e-apps/chunk-modes/node_modules/fake-pkg/package.json'),
@@ -123,6 +125,30 @@ async function ensureChunkModeFakePkg() {
   return changedFiles
 }
 
+async function ensureRootWeappViteLink() {
+  const expectedRelativeTarget = path.relative(
+    path.dirname(ROOT_WEAPP_VITE_LINK_PATH),
+    ROOT_WEAPP_VITE_TARGET_PATH,
+  )
+  const currentTarget = await fs.readlink(ROOT_WEAPP_VITE_LINK_PATH).catch(() => null)
+  const resolvedTarget = currentTarget
+    ? path.resolve(path.dirname(ROOT_WEAPP_VITE_LINK_PATH), currentTarget)
+    : null
+
+  if (resolvedTarget === ROOT_WEAPP_VITE_TARGET_PATH) {
+    return false
+  }
+
+  const currentStat = await fs.lstat(ROOT_WEAPP_VITE_LINK_PATH).catch(() => null)
+  if (currentStat) {
+    await fs.rm(ROOT_WEAPP_VITE_LINK_PATH, { force: true, recursive: true })
+  }
+
+  await fs.mkdir(path.dirname(ROOT_WEAPP_VITE_LINK_PATH), { recursive: true })
+  await fs.symlink(expectedRelativeTarget, ROOT_WEAPP_VITE_LINK_PATH, 'junction')
+  return true
+}
+
 async function main() {
   const changedFiles = []
 
@@ -135,6 +161,10 @@ async function main() {
 
   changedFiles.push(...syncRolldownCatalogReferences(ROOT_DIR))
   changedFiles.push(...await ensureChunkModeFakePkg())
+
+  if (await ensureRootWeappViteLink()) {
+    changedFiles.push(ROOT_WEAPP_VITE_LINK_PATH)
+  }
 
   if (changedFiles.length === 0) {
     return

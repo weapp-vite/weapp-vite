@@ -3,6 +3,7 @@ import type { InputOption } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../../context'
 import type { NpmBuildOptions } from '../../../types'
+import { copyFile } from 'node:fs/promises'
 import { isBuiltin } from 'node:module'
 import process from 'node:process'
 import { defu, fs, isObject } from '@weapp-core/shared'
@@ -70,6 +71,24 @@ function toPluginArray(plugins: NpmBuildOptions['plugins']): Plugin[] {
     result.push(current as Plugin)
   }
   return result
+}
+
+async function copyDirectory(sourceDir: string, targetDir: string) {
+  await fs.ensureDir(targetDir)
+  const entries = await fs.readdir(sourceDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const sourcePath = path.resolve(sourceDir, entry.name)
+    const targetPath = path.resolve(targetDir, entry.name)
+
+    if (entry.isDirectory()) {
+      await copyDirectory(sourcePath, targetPath)
+      continue
+    }
+
+    await fs.ensureDir(path.dirname(targetPath))
+    await copyFile(sourcePath, targetPath)
+  }
 }
 
 export function createPackageBuilder(
@@ -179,7 +198,8 @@ export function createPackageBuilder(
   }
 
   async function copyBuild({ from, to }: { from: string, to: string, name: string }) {
-    await fs.copy(from, to)
+    await fs.remove(to)
+    await copyDirectory(from, to)
   }
 
   let buildPackage: PackageBuilder['buildPackage']
