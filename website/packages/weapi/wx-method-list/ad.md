@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 广告
 
-<WeapiCatalog capability="ad" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="ad" base-path="/packages/weapi/wx-method-list" />

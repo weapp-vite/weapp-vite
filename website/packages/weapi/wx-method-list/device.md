@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 设备
 
-<WeapiCatalog capability="device" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="device" base-path="/packages/weapi/wx-method-list" />

@@ -10,4 +10,4 @@ keywords:
 
 # 抖音兼容矩阵 · 跳转
 
-<WeapiCompatibilityCatalog platform="douyin" capability="navigate" base-path="/packages-runtime/weapi/douyin-compat-matrix" />
+<WeapiCompatibilityCatalog platform="douyin" capability="navigate" base-path="/packages/weapi/douyin-compat-matrix" />

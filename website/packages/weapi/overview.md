@@ -80,6 +80,6 @@ const api = createWeapi({
 
 ## 下一步
 
-- 想看整体覆盖情况：[/packages-runtime/weapi/compat-overview](/packages-runtime/weapi/compat-overview)
-- 想查具体 API：[/packages-runtime/weapi/wx-method-list](/packages-runtime/weapi/wx-method-list)
+- 想看整体覆盖情况：[/packages/weapi/compat-overview](/packages/weapi/compat-overview)
+- 想查具体 API：[/packages/weapi/wx-method-list](/packages/weapi/wx-method-list)
 - 想理解 Wevu 体系里的入口区别：[/wevu/api-package](/wevu/api-package)

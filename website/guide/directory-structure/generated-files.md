@@ -44,6 +44,7 @@ keywords:
 
 - 负责模板中的全局组件类型提示
 - 配合自动导入组件一起工作
+- 会在可推断场景下合并小程序组件通用基础属性（如 `class`、`style`、`id`）
 
 当 `weapp.autoImportComponents.vueComponents` 开启时，它会出现。
 

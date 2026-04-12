@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-27T06:02:31.466Z",
+  "generatedAt": "2026-04-12T04:29:03.021Z",
   "site": "https://vite.icebreaker.top",
-  "count": 288,
+  "count": 274,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -21,7 +21,7 @@
         "/"
       ],
       "headings": [],
-      "updatedAt": "2026-03-02",
+      "updatedAt": "2026-03-01",
       "source": "ai.md"
     },
     {
@@ -146,7 +146,7 @@
         "layout: section",
         "案例 2"
       ],
-      "updatedAt": "2026-03-09",
+      "updatedAt": "2026-04-05",
       "source": "blog/drafts/weapp-vite-rethinking-slidev-detailed.md"
     },
     {
@@ -179,7 +179,7 @@
         "1) AI 协作",
         "AI 协作的三层结构"
       ],
-      "updatedAt": "2026-03-09",
+      "updatedAt": "2026-04-05",
       "source": "blog/drafts/weapp-vite-rethinking-slidev.md"
     },
     {
@@ -388,7 +388,7 @@
       "headings": [
         "加入技术交流群"
       ],
-      "updatedAt": "2026-02-26",
+      "updatedAt": "2026-02-27",
       "source": "community/group.md"
     },
     {
@@ -413,7 +413,7 @@
         "MBTI性格测试工具",
         "草莓拼豆"
       ],
-      "updatedAt": "2026-03-25",
+      "updatedAt": "2026-03-24",
       "source": "community/showcase.md"
     },
     {
@@ -439,13 +439,13 @@
         "字段说明",
         "禁用与分包覆盖"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-03-14",
       "source": "config/auto-import-components.md"
     },
     {
       "id": "doc-608305280c",
       "title": "构建输出与兼容",
-      "summary": "解释 Weapp-vite 的产物输出目录、JS 输出格式与兼容策略，以及这些配置对包体积和运行稳定性的影响。",
+      "summary": "解释 weapp-vite 的平台、输出目录、JS 输出格式与兼容策略，以及这些配置与 Vite build 的边界。",
       "url": "/config/build-and-output",
       "canonical": "https://vite.icebreaker.top/config/build-and-output",
       "keywords": [
@@ -454,21 +454,25 @@
         "build",
         "output",
         "构建输出与兼容",
-        "构建产物",
-        "兼容策略"
+        "jsformat",
+        "multiplatform",
+        "调试"
       ],
       "headings": [
         "构建输出与兼容 {#build-and-output}",
-        "输出目录来源",
+        "输出目录是怎么决定的",
         "weapp.platform {#weapp-platform}",
         "weapp.multiPlatform {#weapp-multiplatform}",
         "weapp.cleanOutputsInDev {#weapp-cleanoutputsindev}",
         "weapp.packageSizeWarningBytes {#weapp-packagesizewarningbytes}",
         "weapp.jsFormat {#weapp-jsformat}",
         "weapp.es5 {#weapp-es5}",
-        "build.minify 与 build.sourcemap {#build-minify-sourcemap}"
+        "顶层 build.* 该怎么配",
+        "常见组合",
+        "多平台项目",
+        "保守兼容输出"
       ],
-      "updatedAt": "2026-03-27",
+      "updatedAt": "2026-04-05",
       "source": "config/build-and-output.md"
     },
     {
@@ -526,7 +530,7 @@
         "字段说明",
         "CLI 说明与常见问题"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "config/generate.md"
     },
     {
@@ -570,11 +574,19 @@
       ],
       "headings": [
         "配置概览 {#config-overview}",
+        "先分清两类配置",
+        "看本目录的场景",
+        "看 Vite 官方配置的场景",
+        "defineConfig 推荐写法",
         "推荐阅读顺序",
         "按场景找配置",
-        "配置索引"
+        "配置索引",
+        "常见边界问题",
+        "weapp 和顶层 build / resolve 会冲突吗",
+        "配置改了但编辑器没提示",
+        "不知道一个字段到底归谁管"
       ],
-      "updatedAt": "2026-03-27",
+      "updatedAt": "2026-04-09",
       "source": "config/index.md"
     },
     {
@@ -629,7 +641,7 @@
     {
       "id": "doc-f3a4d0dc0e",
       "title": "库模式配置",
-      "summary": "Weapp-vite 的 lib 模式用于构建小程序组件库或业务模块。本页聚焦 weapp.lib 的入口、输出路径、组件 JSON 和 DTS 选项。",
+      "summary": "weapp-vite 的 lib 模式用于构建小程序组件库或业务模块库，支持多入口、路径保持、组件 JSON 生成与 DTS 输出。",
       "url": "/config/lib",
       "canonical": "https://vite.icebreaker.top/config/lib",
       "keywords": [
@@ -637,79 +649,85 @@
         "config",
         "lib",
         "库模式",
-        "weapp.lib",
-        "weapp-vite",
+        "dts",
+        "componentjson",
         "库模式配置"
       ],
       "headings": [
         "库模式配置 {#lib-config}",
         "weapp.lib {#weapp-lib}",
-        "基础示例",
         "字段说明",
+        "entry",
+        "root",
+        "outDir",
+        "preservePath",
+        "fileName",
+        "componentJson",
         "weapp.lib.dts {#weapp-lib-dts}",
-        "快速示例",
-        "选项说明",
-        "常见组合",
-        "保留源码路径",
-        "统一输出成 [name]/index",
-        "注意事项",
-        "npm 发布建议"
+        "mode 怎么选",
+        "常见组合"
       ],
-      "updatedAt": "2026-03-20",
+      "updatedAt": "2026-04-05",
       "source": "config/lib.md"
     },
     {
       "id": "doc-0f26edd636",
       "title": "npm 配置",
-      "summary": "Weapp-vite 会自动把 **dependencies** 里的依赖构建成 miniprogram_npm/，而把 **devDependencies** 视为“仅构建期依赖”，直接内联进产物。",
+      "summary": "weapp-vite 会把运行时依赖构建到小程序 npm 目录，并允许你按主包、插件、分包精细控制依赖落位、缓存与底层构建参数。",
       "url": "/config/npm",
       "canonical": "https://vite.icebreaker.top/config/npm",
       "keywords": [
         "配置",
         "config",
         "npm",
-        "weapp-vite",
-        "会自动把",
-        "dependencies",
-        "里的依赖构建成",
+        "miniprogram_npm",
+        "subpackages",
+        "alipaynpmmode",
+        "微信小程序",
         "分包"
       ],
       "headings": [
         "npm 配置 {#config-npm}",
-        "依赖分类规则（默认）",
+        "默认依赖分类规则",
         "weapp.npm {#weapp-npm}",
-        "主包 / 分包依赖落位",
-        "插件 npm 包落位演示",
-        "控制 npm 依赖的压缩与 sourcemap",
-        "手动构建命令",
-        "常见问题"
+        "字段说明",
+        "enable",
+        "cache",
+        "strategy",
+        "include",
+        "mainPackage.dependencies",
+        "pluginPackage.dependencies",
+        "subPackages",
+        "buildOptions"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-10",
       "source": "config/npm.md"
     },
     {
       "id": "doc-8e3066d5f3",
       "title": "基础目录与资源收集",
-      "summary": "基础目录与资源收集 {#paths-config}，聚焦 config / paths 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。",
+      "summary": "说明 weapp-vite 如何确定源码根目录、插件目录和资源复制范围，以及这些配置与 Vite root/publicDir 的边界。",
       "url": "/config/paths",
       "canonical": "https://vite.icebreaker.top/config/paths",
       "keywords": [
         "配置",
         "config",
         "paths",
-        "基础目录与资源收集",
-        "聚焦",
-        "/",
-        "相关场景"
+        "srcroot",
+        "pluginroot",
+        "copy",
+        "基础目录与资源收集"
       ],
       "headings": [
         "基础目录与资源收集 {#paths-config}",
         "weapp.srcRoot {#weapp-srcroot}",
         "weapp.pluginRoot {#weapp-pluginroot}",
         "weapp.copy {#weapp-copy}",
-        "weapp.isAdditionalWxml {#weapp-isadditionalwxml}"
+        "与 public/ 的关系",
+        "weapp.isAdditionalWxml {#weapp-isadditionalwxml}",
+        "顶层 root 和 weapp.srcRoot 的区别"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "config/paths.md"
     },
     {
@@ -742,70 +760,76 @@
         "适用场景",
         "相关文档"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "config/route-rules.md"
     },
     {
       "id": "doc-8b23c4fd4a",
       "title": "共享配置",
-      "summary": "weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、forwardConsole、injectWeapi 与 MCP 等能力。",
+      "summary": "weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、app.prelude 前置注入、forwardConsole、injectWeapi、injectRequestGlobals 与 MCP 等能力。",
       "url": "/config/shared",
       "canonical": "https://vite.icebreaker.top/config/shared",
       "keywords": [
-        "wevu",
         "配置",
-        "调试",
         "config",
         "shared",
-        "共享配置",
-        "除了",
-        "api"
+        "autoroutes",
+        "appprelude",
+        "mcp",
+        "forwardconsole",
+        "injectweapi"
       ],
       "headings": [
         "共享配置 {#shared-config}",
         "weapp.autoRoutes {#weapp-autoroutes}",
-        "配置示例",
         "weapp.debug {#weapp-debug}",
-        "调试示例",
-        "常见调试技巧",
+        "weapp.appPrelude {#weapp-appprelude}",
         "weapp.logger {#weapp-logger}",
         "weapp.forwardConsole {#weapp-forwardconsole}",
-        "配置示例",
-        "字段说明",
-        "触发方式",
-        "注意事项"
+        "weapp.injectWeapi {#weapp-injectweapi}",
+        "weapp.injectRequestGlobals {#weapp-injectrequestglobals}",
+        "weapp.mcp {#weapp-mcp}",
+        "这页和 Vite 原生配置的边界"
       ],
-      "updatedAt": "2026-03-27",
+      "updatedAt": "2026-04-12",
       "source": "config/shared.md"
     },
     {
       "id": "doc-7a3b2be564",
       "title": "分包配置",
-      "summary": "Weapp-vite 会读取 app.json.subPackages 来生成分包产物；weapp.subPackages 则用于 **构建期补充配置**（独立分包、依赖裁剪、共享样式等）。",
+      "summary": "weapp-vite 会读取 app.json.subPackages 生成分包产物；weapp.subPackages 则提供独立分包、分包级内联配置、自动导入覆盖与共享样式等增强能力。",
       "url": "/config/subpackages",
       "canonical": "https://vite.icebreaker.top/config/subpackages",
       "keywords": [
         "配置",
-        "分包",
         "config",
         "subpackages",
         "分包配置",
-        "weapp-vite",
-        "会读取"
+        "independent",
+        "styles",
+        "分包"
       ],
       "headings": [
         "分包配置 {#subpackages-config}",
         "weapp.subPackages {#weapp-subpackages}",
         "字段说明",
-        "subPackages.*.styles {#subpackages-styles}"
+        "independent",
+        "inlineConfig",
+        "autoImportComponents",
+        "watchSharedStyles",
+        "styles",
+        "subPackages.*.styles {#subpackages-styles}",
+        "与自动路由的关系",
+        "与 npm 分包落位的关系",
+        "常见建议"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "config/subpackages.md"
     },
     {
       "id": "doc-d78c0650d7",
       "title": "TypeScript 支持文件",
-      "summary": "weapp-vite 会生成 .weapp-vite 下的托管 tsconfig 与类型文件，用于让旧项目平滑迁移并稳定接入编辑器提示。",
+      "summary": "weapp-vite 会生成 .weapp-vite 下的托管 tsconfig 与类型文件，用于稳定承接自动路由、自动导入组件、layout 和编辑器提示。",
       "url": "/config/typescript",
       "canonical": "https://vite.icebreaker.top/config/typescript",
       "keywords": [
@@ -816,18 +840,23 @@
         ".weapp-vite",
         "typed-router",
         "typed-components",
-        "迁移指南"
+        "weapp-vite"
       ],
       "headings": [
         "TypeScript 支持文件 {#typescript-support}",
-        "会生成什么",
+        "会生成哪些文件",
         "什么时候生成",
-        "对旧项目的兼容策略",
-        "weapp.typescript",
-        "推荐迁移方式",
-        "相关文档"
+        "weapp.typescript {#weapp-typescript}",
+        "四个分组分别管什么",
+        "每个分组都支持什么",
+        "推荐接入方式",
+        "新项目",
+        "旧项目",
+        "与顶层 resolve.alias / compilerOptions.paths 的关系",
+        "常见问题",
+        "为什么改了配置后编辑器还没提示"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "config/typescript.md"
     },
     {
@@ -851,31 +880,39 @@
         "weapp.vue.template {#weapp-vue-template}",
         "weapp.vue.autoImport {#weapp-vue-autoimport}"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-09",
       "source": "config/vue.md"
     },
     {
       "id": "doc-7b53a5ab4d",
       "title": "Web 运行时配置 experimental",
-      "summary": "weapp-vite 可选集成浏览器端运行时 @weapp-vite/web，用于 H5 预览、兼容验证与开发期调试。",
+      "summary": "weapp-vite 可选集成浏览器端运行时 @weapp-vite/web，用于预览、兼容验证、截图联调与 AI 调试。",
       "url": "/config/web",
       "canonical": "https://vite.icebreaker.top/config/web",
       "keywords": [
         "配置",
-        "运行时",
         "config",
         "web",
-        "运行时配置",
+        "运行时",
         "experimental",
-        "weapp-vite"
+        "ai",
+        "运行时配置"
       ],
       "headings": [
         "Web 运行时配置 experimental {#web-config}",
-        "什么时候应该开启",
         "weapp.web {#weapp-web}",
-        "示例"
+        "字段说明",
+        "enable",
+        "root",
+        "srcDir",
+        "outDir",
+        "pluginOptions",
+        "vite",
+        "什么时候适合开启",
+        "和截图 / AI 联调的关系",
+        "与 Vite 顶层配置的边界"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "config/web.md"
     },
     {
@@ -899,16 +936,16 @@
         "weapp.wevu.defaults {#weapp-wevu-defaults}",
         "配置示例",
         "注意事项",
-        "weapp.wevu.preset {#weapp-wevu-preset}",
-        "配置示例",
-        "performance 预设内容",
-        "覆盖规则",
-        "weapp.wevu.autoSetDataPick {#weapp-wevu-auto-setdata-pick}",
-        "配置示例",
-        "行为说明",
-        "FAQ"
+        "component.allowNullPropInput",
+        "全局默认开启 virtualHost: true",
+        "virtualHost 的覆盖规则",
+        "手动开启 virtualHost 的几种方式 {#manual-virtualhost}",
+        "方式 1： + defineComponentJson",
+        "方式 2： + defineOptions",
+        "方式 3：defineComponent({ options })",
+        "方式 4： 配置块"
       ],
-      "updatedAt": "2026-03-27",
+      "updatedAt": "2026-04-12",
       "source": "config/wevu.md"
     },
     {
@@ -1044,7 +1081,7 @@
         "补齐必需的配置文件"
       ],
       "headings": [
-        "weapp-vite init 做了什么？",
+        "wv init 做了什么？",
         "1. 修改 project.config.json",
         "2. 更新 package.json",
         "3. 新增 tsconfig.json 与 vite-env.d.ts",
@@ -1052,7 +1089,7 @@
         "5. 更新 .gitignore",
         "6. 其他辅助文件"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "deep/init.md"
     },
     {
@@ -1081,23 +1118,23 @@
       "source": "deep/scan.md"
     },
     {
-      "id": "doc-8a12762232",
-      "title": "weapp-vite-template",
-      "summary": "weapp-vite-template，聚焦 demos / aa 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/demos/aa/README",
-      "canonical": "https://vite.icebreaker.top/demos/aa/README",
+      "id": "doc-af5be2e088",
+      "title": "Weapp-vite 模板示例",
+      "summary": "Weapp-vite 模板项目的最小使用说明，覆盖开发、构建与打开微信开发者工具的基础命令。",
+      "url": "/demos/my-app/README",
+      "canonical": "https://vite.icebreaker.top/demos/my-app/README",
       "keywords": [
         "weapp-vite",
-        "Vue SFC",
+        "模板项目",
         "微信小程序",
+        "快速开始",
+        "Vue SFC",
         "demos",
-        "aa",
-        "weapp-vite-template",
-        "聚焦",
-        "/"
+        "my",
+        "app"
       ],
       "headings": [
-        "weapp-vite-template",
+        "Weapp-vite-template",
         "使用方式",
         "开发",
         "构建",
@@ -1105,8 +1142,8 @@
         "生成组件/页面",
         "文档地址"
       ],
-      "updatedAt": "2026-02-26",
-      "source": "demos/aa/README.md"
+      "updatedAt": "2026-04-05",
+      "source": "demos/my-app/README.md"
     },
     {
       "id": "doc-08bd36b182",
@@ -1128,15 +1165,17 @@
         "AI 协作指南",
         "Skills",
         "MCP",
-        "示例：驱动 weapp-vite screenshot 做验收",
+        "AI 意图路由",
+        "示例：驱动 wv screenshot 做验收",
+        "示例：驱动 wv compare 做验收",
         "AI 终端里的 DevTools 日志桥接",
         "最小工作流",
+        "推荐的 AI 工具优先级",
         "推荐给 AI 的提示词",
         "相关配置",
-        "llms.txt",
-        "关联阅读"
+        "llms.txt"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-07",
       "source": "guide/ai.md"
     },
     {
@@ -1160,7 +1199,7 @@
         "JSON / JSONC 别名",
         "常见问题排查"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/alias.md"
     },
     {
@@ -1217,7 +1256,7 @@
         "类型声明与 HTML 自定义数据",
         "常见疑问"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-12",
       "source": "guide/auto-import.md"
     },
     {
@@ -1247,7 +1286,7 @@
         "写入 app.json 的方式",
         "常见问题"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "guide/auto-routes.md"
     },
     {
@@ -1286,7 +1325,7 @@
     {
       "id": "doc-13e32e3ea2",
       "title": "CLI 命令参考",
-      "summary": "weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、ide logs、generate 与 weapp-ide-cli 透传规则。",
+      "summary": "weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、ide logs、generate，以及 screenshot/compare 等 weapp-ide-cli 透传规则。",
       "url": "/guide/cli",
       "canonical": "https://vite.icebreaker.top/guide/cli",
       "keywords": [
@@ -1311,7 +1350,7 @@
         "7) generate / g",
         "8) init"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "guide/cli.md"
     },
     {
@@ -1337,7 +1376,7 @@
         "补充：直接把 DevTools 日志桥接回终端",
         "3. 提交贡献"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "guide/debug.md"
     },
     {
@@ -1347,12 +1386,14 @@
       "url": "/guide/directory-structure/app-bar",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/app-bar",
       "keywords": [
+        "skyline",
+        "appbar",
+        "目录结构",
+        "app-bar",
         "guide",
         "directory",
         "structure",
-        "app",
-        "bar",
-        "app-bar"
+        "app"
       ],
       "headings": [
         "app-bar/",
@@ -1360,7 +1401,7 @@
         "位置要求",
         "它和普通页面的区别"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/app-bar.md"
     },
     {
@@ -1370,12 +1411,14 @@
       "url": "/guide/directory-structure/app-json",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/app-json",
       "keywords": [
+        "app.json",
+        "应用配置",
+        "目录结构",
+        "weapp-vite",
         "guide",
         "directory",
         "structure",
-        "app",
-        "json",
-        "app.json .js|.ts ?"
+        "app"
       ],
       "headings": [
         "app.json(.js|.ts)?",
@@ -1384,7 +1427,7 @@
         "和目录结构的关键关系",
         "什么时候用脚本化形式"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/app-json.md"
     },
     {
@@ -1394,18 +1437,21 @@
       "url": "/guide/directory-structure/app-style",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/app-style",
       "keywords": [
+        "全局样式",
+        "wxss",
+        "目录结构",
+        "weapp-vite",
         "guide",
         "directory",
         "structure",
-        "app",
-        "style"
+        "app"
       ],
       "headings": [
         "app.(css|scss|wxss|...)",
         "常见后缀",
         "常见用途"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/app-style.md"
     },
     {
@@ -1415,12 +1461,14 @@
       "url": "/guide/directory-structure/app-ts",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/app-ts",
       "keywords": [
+        "App 生命周期",
+        "typescript",
+        "目录结构",
+        "app.ts",
         "guide",
         "directory",
         "structure",
-        "app",
-        "ts",
-        "app. js|ts"
+        "app"
       ],
       "headings": [
         "app.(js|ts)",
@@ -1428,7 +1476,7 @@
         "支持哪些后缀",
         "它和页面目录的关系"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/app-ts.md"
     },
     {
@@ -1438,12 +1486,14 @@
       "url": "/guide/directory-structure/app-vue",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/app-vue",
       "keywords": [
+        "app.vue",
+        "Vue SFC",
+        "defineappjson",
+        "目录结构",
         "guide",
         "directory",
         "structure",
-        "app",
-        "vue",
-        "app.vue"
+        "app"
       ],
       "headings": [
         "app.vue",
@@ -1451,20 +1501,23 @@
         "典型写法",
         "它和 app.(js|ts) / app.json(.js|.ts)? / app.(css|scss|wxss|...) 的关系"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/app-vue.md"
     },
     {
       "id": "doc-6a9462e101",
       "title": "components",
-      "summary": "components，聚焦 guide / directory-structure 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "summary": "主包组件目录，默认参与自动导入组件扫描，并作为 `usingComponents` 自动补全的重要来源。",
       "url": "/guide/directory-structure/components",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/components",
       "keywords": [
+        "components",
+        "自动导入组件",
+        "usingcomponents",
+        "目录结构",
         "guide",
         "directory",
-        "structure",
-        "components"
+        "structure"
       ],
       "headings": [
         "components/",
@@ -1472,7 +1525,7 @@
         "它解决什么问题",
         "适合放什么"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/components.md"
     },
     {
@@ -1482,20 +1535,21 @@
       "url": "/guide/directory-structure/custom-tab-bar",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/custom-tab-bar",
       "keywords": [
+        "custom-tab-bar",
+        "tabbar",
+        "微信小程序",
+        "目录结构",
         "guide",
         "directory",
         "structure",
-        "custom",
-        "tab",
-        "bar",
-        "custom-tab-bar"
+        "custom"
       ],
       "headings": [
         "custom-tab-bar/",
         "触发条件",
         "位置要求"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/custom-tab-bar.md"
     },
     {
@@ -1505,13 +1559,14 @@
       "url": "/guide/directory-structure/generated-files",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/generated-files",
       "keywords": [
+        ".weapp-vite",
+        "类型声明",
+        "自动生成文件",
+        "目录结构",
         "wevu",
         "guide",
         "directory",
-        "structure",
-        "generated",
-        "files",
-        "类型声明文件"
+        "structure"
       ],
       "headings": [
         "类型声明文件",
@@ -1523,7 +1578,7 @@
         "默认位置",
         "相关文档"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-12",
       "source": "guide/directory-structure/generated-files.md"
     },
     {
@@ -1550,7 +1605,7 @@
         "默认能力速查",
         "相关文档"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-12",
       "source": "guide/directory-structure/index.md"
     },
     {
@@ -1583,7 +1638,7 @@
         "6.2 以为 layout 可以写成动态表达式",
         "7. 总结"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "guide/directory-structure/layouts.md"
     },
     {
@@ -1593,32 +1648,37 @@
       "url": "/guide/directory-structure/package-json",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/package-json",
       "keywords": [
+        "package.json",
+        "脚本命令",
+        "wv",
+        "目录结构",
         "guide",
         "directory",
         "structure",
-        "package",
-        "json",
-        "package.json"
+        "package"
       ],
       "headings": [
         "package.json",
         "通常会放什么",
         "为什么目录结构页要提它"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/package-json.md"
     },
     {
       "id": "doc-a2cfe45557",
       "title": "pages",
-      "summary": "pages，聚焦 guide / directory-structure 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "summary": "主包页面目录，是自动路由的默认扫描入口之一，也是页面级构建产物与路由生成的核心来源。",
       "url": "/guide/directory-structure/pages",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/pages",
       "keywords": [
+        "pages",
+        "自动路由",
+        "页面目录",
+        "目录结构",
         "guide",
         "directory",
-        "structure",
-        "pages"
+        "structure"
       ],
       "headings": [
         "pages/",
@@ -1627,7 +1687,7 @@
         "页面目录的常见形态",
         "识别规则"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/pages.md"
     },
     {
@@ -1637,60 +1697,67 @@
       "url": "/guide/directory-structure/project-config",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/project-config",
       "keywords": [
+        "project.config.json",
+        "微信开发者工具",
+        "miniprogramroot",
+        "目录结构",
         "配置",
         "guide",
         "directory",
-        "structure",
-        "project",
-        "config",
-        "project.config.json"
+        "structure"
       ],
       "headings": [
         "project.config.json",
         "常见职责",
         "与目录结构的关系"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/project-config.md"
     },
     {
       "id": "doc-eac15489c3",
       "title": "public",
-      "summary": "public，聚焦 guide / directory-structure 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "summary": "构建时原样复制到产物目录的静态资源目录，适合放无需参与模块分析和编译转换的文件。",
       "url": "/guide/directory-structure/public",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/public",
       "keywords": [
+        "public",
+        "静态资源",
+        "构建复制",
+        "目录结构",
         "guide",
         "directory",
-        "structure",
-        "public"
+        "structure"
       ],
       "headings": [
         "public/",
         "适合放这里的内容",
         "不适合放这里的内容"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/public.md"
     },
     {
       "id": "doc-3573d40e77",
       "title": "shared",
-      "summary": "shared/ 不是框架保留目录，但它是很推荐的共享层位置。",
+      "summary": "跨主包与分包共享模块的推荐目录，用来沉淀复用逻辑、常量、样式与跨包共享能力。",
       "url": "/guide/directory-structure/shared",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/shared",
       "keywords": [
+        "shared",
+        "分包共享",
+        "公共模块",
+        "目录结构",
         "guide",
         "directory",
-        "structure",
-        "shared"
+        "structure"
       ],
       "headings": [
         "shared/",
         "适合放什么",
         "为什么它常见"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/shared.md"
     },
     {
@@ -1700,12 +1767,14 @@
       "url": "/guide/directory-structure/src-root",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/src-root",
       "keywords": [
+        "srcroot",
+        "源码根目录",
+        "weapp-vite",
+        "目录结构",
         "guide",
         "directory",
         "structure",
-        "src",
-        "root",
-        "<srcRoot>"
+        "src"
       ],
       "headings": [
         "/",
@@ -1713,7 +1782,7 @@
         "它会影响什么",
         "一个简单判断"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-12",
       "source": "guide/directory-structure/src-root.md"
     },
     {
@@ -1723,13 +1792,14 @@
       "url": "/guide/directory-structure/subpackages",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/subpackages",
       "keywords": [
-        "配置",
+        "subpackages",
         "分包",
+        "目录结构",
+        "weapp-vite",
+        "配置",
         "guide",
         "directory",
-        "structure",
-        "subpackages",
-        "<subPackageRoot>"
+        "structure"
       ],
       "headings": [
         "/",
@@ -1737,26 +1807,29 @@
         "对应目录",
         "默认行为"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/subpackages.md"
     },
     {
       "id": "doc-0e9173d598",
       "title": "utils",
-      "summary": "utils，聚焦 guide / directory-structure 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "summary": "通用工具函数的推荐目录，适合放业务无关、可复用且能在主包与分包之间共享的辅助模块。",
       "url": "/guide/directory-structure/utils",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/utils",
       "keywords": [
+        "utils",
+        "工具函数",
+        "公共模块",
+        "目录结构",
         "guide",
         "directory",
-        "structure",
-        "utils"
+        "structure"
       ],
       "headings": [
         "utils/",
         "常见内容"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/utils.md"
     },
     {
@@ -1766,13 +1839,14 @@
       "url": "/guide/directory-structure/vite-config",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/vite-config",
       "keywords": [
+        "vite.config.ts",
+        "weapp 配置",
+        "自动路由",
+        "目录结构",
         "配置",
         "guide",
         "directory",
-        "structure",
-        "vite",
-        "config",
-        "vite.config.ts"
+        "structure"
       ],
       "headings": [
         "vite.config.ts",
@@ -1780,7 +1854,7 @@
         "最小示例",
         "什么时候先看它"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/vite-config.md"
     },
     {
@@ -1790,15 +1864,18 @@
       "url": "/guide/directory-structure/workers",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/workers",
       "keywords": [
+        "workers",
+        "worker",
+        "目录结构",
+        "微信小程序",
         "guide",
         "directory",
-        "structure",
-        "workers"
+        "structure"
       ],
       "headings": [
         "workers/"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-05",
       "source": "guide/directory-structure/workers.md"
     },
     {
@@ -1826,7 +1903,7 @@
         "生成不同类型的模板",
         "CLI 参数速查"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "guide/generate.md"
     },
     {
@@ -1887,7 +1964,7 @@
         "1. 先准备一个原生项目",
         "2. 接入 weapp-vite"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "guide/index.md"
     },
     {
@@ -1956,8 +2033,8 @@
         "routerules",
         "setpagelayout",
         "usepagelayout",
-        "wevu",
-        "运行时"
+        "layout-host",
+        "provide"
       ],
       "headings": [
         "页面 Layout 使用指南",
@@ -1973,7 +2050,7 @@
         "5.1 优先级",
         "6. 运行时怎么切换 layout"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "guide/layouts.md"
     },
     {
@@ -2006,7 +2083,7 @@
         "常见问题",
         "为什么没有 app.json 与页面产物？"
       ],
-      "updatedAt": "2026-03-20",
+      "updatedAt": "2026-03-19",
       "source": "guide/lib-mode.md"
     },
     {
@@ -2037,7 +2114,7 @@
         "4. 验证运行",
         "5. 可选增强"
       ],
-      "updatedAt": "2026-03-16",
+      "updatedAt": "2026-04-12",
       "source": "guide/manual-integration.md"
     },
     {
@@ -2090,7 +2167,7 @@
         "京东小程序 {#platform-jd}",
         "小红书小程序 {#platform-xhs}"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "guide/multi-platform.md"
     },
     {
@@ -2112,13 +2189,13 @@
       "headings": [
         "npm 自动构建",
         "自动构建",
-        "1. 构建到 miniprogram_npm（来自 dependencies）",
-        "2. 内联到脚本产物（不在 dependencies 的依赖）",
+        "1. 构建到 miniprogram_npm（明确的小程序包 / 显式指定的包）",
+        "2. 内联到脚本产物（默认行为）",
         "详细解释",
         "怎么选（建议）",
         "手动构建"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-10",
       "source": "guide/npm.md"
     },
     {
@@ -2150,7 +2227,7 @@
         "插件 WXSS 没有生成？",
         "附加功能是否生效？"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "guide/plugin.md"
     },
     {
@@ -2209,7 +2286,7 @@
         "调试建议",
         "分析产物布局"
       ],
-      "updatedAt": "2026-03-20",
+      "updatedAt": "2026-04-05",
       "source": "guide/subpackage.md"
     },
     {
@@ -2240,7 +2317,7 @@
         "类型与导入位置",
         "适用范围说明"
       ],
-      "updatedAt": "2026-03-11",
+      "updatedAt": "2026-03-10",
       "source": "guide/vite-plugin-host.md"
     },
     {
@@ -2399,7 +2476,7 @@
         "已知限制",
         "建议用法"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "guide/web-compat-matrix.md"
     },
     {
@@ -2423,11 +2500,13 @@
         "核心简介",
         "我们想解决的问题",
         "Weapp-vite 的能力亮点",
+        "现在不只是构建器",
         "什么时候适合选择 Weapp-vite",
         "什么时候可以考虑其他方案",
-        "迁移与生态"
+        "迁移与生态",
+        "对 AI 更友好的地方"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "guide/what-is-weapp-vite.md"
     },
     {
@@ -2539,7 +2618,7 @@
         "2. 组件生成了，但页面里用不了",
         "3. 图片、字体、静态资源路径不对"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/build-and-output.md"
     },
     {
@@ -2572,7 +2651,7 @@
         "最常见的误判",
         "误判 1：白屏一定是运行时问题"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/debugging.md"
     },
     {
@@ -2604,7 +2683,7 @@
         "最小配置检查清单",
         "新用户建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/env-and-config.md"
     },
     {
@@ -2637,7 +2716,7 @@
         "7.3 数据改了但页面没更新",
         "7.4 页面标题没生效"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "handbook/getting-started.md"
     },
     {
@@ -2668,7 +2747,7 @@
         "7. 总结",
         "8. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "handbook/index.md"
     },
     {
@@ -2700,7 +2779,7 @@
         "什么叫“可回滚迁移”",
         "一份迁移清单"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/migration.md"
     },
     {
@@ -2726,7 +2805,7 @@
         "常见坑",
         "相关链接"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/monorepo.md"
     },
     {
@@ -2757,7 +2836,7 @@
         "页面里到底该保留多少平台细节",
         "一份很实用的原生能力检查清单"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/native-apis.md"
     },
     {
@@ -2788,7 +2867,7 @@
         "大对象：不要直接塞 URL",
         "页面栈什么时候会出问题"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/navigation.md"
     },
     {
@@ -2815,7 +2894,7 @@
         "上传和下载属于同一层吗",
         "一个足够稳的最小原则"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/network.md"
     },
     {
@@ -2845,7 +2924,7 @@
         "2. 页面里到处散落上报",
         "3. 只埋点击，不埋关键结果"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/observability.md"
     },
     {
@@ -2876,7 +2955,7 @@
         "体验优化不要只盯性能指标",
         "一份很实用的性能检查清单"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/performance.md"
     },
     {
@@ -2905,9 +2984,10 @@
         "1. 所有内容都放全局",
         "2. 所有内容都放页面目录",
         "3. 过早拆成特别复杂的领域层",
-        "一句话建议"
+        "4. 忽略项目根目录的 AI / 工具文件",
+        "什么时候应该运行 wv prepare"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "handbook/project-structure.md"
     },
     {
@@ -2937,7 +3017,7 @@
         "什么时候适合接入命令行 IDE 流程",
         "一个给新用户的建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/publish.md"
     },
     {
@@ -2970,7 +3050,7 @@
         "3. 每一章该怎么看",
         "4. 新用户最常见的 5 个误区"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/reading-guide.md"
     },
     {
@@ -3003,7 +3083,7 @@
         "3. 一个常见问题到入口的映射表",
         "4. 你也可以按“当前阶段”找"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-02",
       "source": "handbook/reference.md"
     },
     {
@@ -3029,7 +3109,7 @@
         "常见坑",
         "相关链接"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/assets.md"
     },
     {
@@ -3057,7 +3137,7 @@
         "原生组件怎么获得更稳的类型",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/components.md"
     },
     {
@@ -3083,7 +3163,7 @@
         "配方 6：分享能力",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/cookbook.md"
     },
     {
@@ -3112,7 +3192,7 @@
         "一个很实用的判断方式",
         "更复杂的统一方案"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/events-and-v-model.md"
     },
     {
@@ -3144,7 +3224,7 @@
         "一个很实用的表单建议",
         "一句话总结"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/forms.md"
     },
     {
@@ -3175,7 +3255,7 @@
         "一个实用判断标准",
         "接下来按这个顺序继续看"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/index.md"
     },
     {
@@ -3205,7 +3285,7 @@
         "一个新用户很实用的判断方法",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/json.md"
     },
     {
@@ -3230,7 +3310,7 @@
         "页面常用 hooks",
         "常见坑"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/lifecycle.md"
     },
     {
@@ -3263,7 +3343,7 @@
         "保留为 WXML",
         "降级为"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/native-wxml.md"
     },
     {
@@ -3289,7 +3369,7 @@
         "基本示例",
         "相关链接"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/options-api.md"
     },
     {
@@ -3320,7 +3400,7 @@
         "3. 明明是 SFC 项目，还在大量手写 usingComponents",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/script-setup.md"
     },
     {
@@ -3345,7 +3425,7 @@
         "你要记住的 3 件事",
         "相关链接"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/style.md"
     },
     {
@@ -3377,7 +3457,7 @@
         "一个新用户很容易踩的坑",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/template.md"
     },
     {
@@ -3407,7 +3487,7 @@
         "3. 共享组件没有真正共享边界",
         "4. 只看构建成功，不看真实加载体验"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/subpackages.md"
     },
     {
@@ -3434,7 +3514,7 @@
         "什么时候不用它更好",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/bind-model.md"
     },
     {
@@ -3461,7 +3541,7 @@
         "一个很实用的组件设计习惯",
         "一句话总结"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/component.md"
     },
     {
@@ -3485,7 +3565,7 @@
         "我什么时候该去怀疑不是 Wevu 问题？",
         "更完整的排错入口"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/faq.md"
     },
     {
@@ -3516,7 +3596,7 @@
         "5. 什么时候可以先不用",
         "6. 一个典型页面会怎么写"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/index.md"
     },
     {
@@ -3539,7 +3619,7 @@
         "一个判断标准",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/plugins.md"
     },
     {
@@ -3567,7 +3647,7 @@
         "旧 API 的态度",
         "一句话建议"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/provide-inject.md"
     },
     {
@@ -3596,7 +3676,7 @@
         "一条非常重要的开发习惯",
         "一句话总结"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/runtime.md"
     },
     {
@@ -3624,7 +3704,7 @@
         "不一定一开始就要上很多 store",
         "一句话总结"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/store.md"
     },
     {
@@ -3651,7 +3731,7 @@
         "一个简单建议",
         "一句话总结"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/testing.md"
     },
     {
@@ -3670,7 +3750,7 @@
         "自动化"
       ],
       "headings": [],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "index.md"
     },
     {
@@ -3691,7 +3771,7 @@
         "安装",
         "使用方式"
       ],
-      "updatedAt": "2026-02-26",
+      "updatedAt": "2026-02-27",
       "source": "integration/miniprogram-computed.md"
     },
     {
@@ -3795,7 +3875,7 @@
         "集成",
         "模板地址"
       ],
-      "updatedAt": "2026-02-26",
+      "updatedAt": "2026-02-27",
       "source": "integration/vue-mini.md"
     },
     {
@@ -3815,7 +3895,7 @@
         "/ai"
       ],
       "headings": [],
-      "updatedAt": "2026-03-02",
+      "updatedAt": "2026-03-01",
       "source": "llms.md"
     },
     {
@@ -3834,7 +3914,7 @@
       "headings": [
         "迁移"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "migration/index.md"
     },
     {
@@ -3859,7 +3939,7 @@
         "升级了内置 vite 的版本，从 v5 到 v6,",
         "修复"
       ],
-      "updatedAt": "2026-02-26",
+      "updatedAt": "2026-02-27",
       "source": "migration/v3.md"
     },
     {
@@ -3882,7 +3962,7 @@
         "从 v3 升级到 v4",
         "重大变更"
       ],
-      "updatedAt": "2026-02-26",
+      "updatedAt": "2026-02-27",
       "source": "migration/v4.md"
     },
     {
@@ -3958,11 +4038,13 @@
         "何时使用",
         "快速开始",
         "非交互模式",
+        "CLI 参数",
         "可编程 API",
         "可选模板（当前实现）",
+        "初始化后会做什么",
         "与主文档的关系"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-05",
       "source": "packages/create-weapp-vite.md"
     },
     {
@@ -3987,7 +4069,7 @@
         "已有独立文档模块",
         "说明"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-12",
       "source": "packages/index.md"
     },
     {
@@ -4011,11 +4093,14 @@
         "安装",
         "启动方式",
         "主要能力",
-        "安全约束",
-        "二次开发建议",
-        "关联阅读"
+        "Tools",
+        "Resources",
+        "Prompts",
+        "AI 友好的截图工具",
+        "take_weapp_screenshot 输入参数",
+        "compare_weapp_screenshot 输入参数"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-07",
       "source": "packages/mcp.md"
     },
     {
@@ -4249,8 +4334,8 @@
       "id": "doc-b3ba14bc74",
       "title": "支付宝兼容矩阵",
       "summary": "@wevu/api 按微信命名调用时的支付宝兼容矩阵。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix",
+      "url": "/packages/weapi/alipay-compat-matrix",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix",
       "keywords": [
         "@wevu/api",
         "支付宝",
@@ -4264,499 +4349,499 @@
       "headings": [
         "支付宝兼容矩阵"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix.md"
     },
     {
       "id": "doc-9bf58e0865",
       "title": "支付宝兼容矩阵 · 广告",
-      "summary": "@wevu/api 支付宝兼容矩阵中的广告能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/ad",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/ad",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦广告能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/ad",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/ad",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "广告",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "ad",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 广告"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/ad.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/ad.md"
     },
     {
       "id": "doc-0af23deebd",
       "title": "支付宝兼容矩阵 · AI",
-      "summary": "@wevu/api 支付宝兼容矩阵中的 AI 能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/ai",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/ai",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦AI能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/ai",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/ai",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "ai",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "ai",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · AI"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/ai.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/ai.md"
     },
     {
       "id": "doc-1799be9234",
       "title": "支付宝兼容矩阵 · 基础",
-      "summary": "@wevu/api 支付宝兼容矩阵中的基础能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/base",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/base",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦基础能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/base",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/base",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "基础",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "base",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 基础"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/base.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/base.md"
     },
     {
       "id": "doc-b3810e20a9",
       "title": "支付宝兼容矩阵 · 画布",
-      "summary": "@wevu/api 支付宝兼容矩阵中的画布能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/canvas",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/canvas",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦画布能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/canvas",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/canvas",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "画布",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "canvas",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 画布"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/canvas.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/canvas.md"
     },
     {
       "id": "doc-93f49f66f1",
       "title": "支付宝兼容矩阵 · 聊天工具",
-      "summary": "@wevu/api 支付宝兼容矩阵中的聊天工具能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/chattool",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/chattool",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦聊天工具能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/chattool",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/chattool",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "聊天工具",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "chattool",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 聊天工具"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/chattool.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/chattool.md"
     },
     {
       "id": "doc-e8e11a7eb4",
       "title": "支付宝兼容矩阵 · 数据分析",
-      "summary": "@wevu/api 支付宝兼容矩阵中的数据分析能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/data-analysis",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/data-analysis",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦数据分析能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/data-analysis",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/data-analysis",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "数据分析",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "data",
-        "analysis"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 数据分析"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/data-analysis.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/data-analysis.md"
     },
     {
       "id": "doc-f2cd4624b8",
       "title": "支付宝兼容矩阵 · 设备",
-      "summary": "@wevu/api 支付宝兼容矩阵中的设备能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/device",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/device",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦设备能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/device",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/device",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "设备",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "device",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 设备"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/device.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/device.md"
     },
     {
       "id": "doc-64816d29ef",
       "title": "支付宝兼容矩阵 · 第三方平台",
-      "summary": "@wevu/api 支付宝兼容矩阵中的第三方平台能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/ext",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/ext",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦第三方平台能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/ext",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/ext",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "第三方平台",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "ext",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 第三方平台"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/ext.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/ext.md"
     },
     {
       "id": "doc-d130c4507f",
       "title": "支付宝兼容矩阵 · 文件",
-      "summary": "@wevu/api 支付宝兼容矩阵中的文件能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/file",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/file",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦文件能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/file",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/file",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "文件",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "file",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 文件"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/file.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/file.md"
     },
     {
       "id": "doc-4ac074209a",
       "title": "支付宝兼容矩阵 · 位置",
-      "summary": "@wevu/api 支付宝兼容矩阵中的位置能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/location",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/location",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦位置能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/location",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/location",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "位置",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "location",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 位置"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/location.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/location.md"
     },
     {
       "id": "doc-0f8f74ab20",
       "title": "支付宝兼容矩阵 · 媒体",
-      "summary": "@wevu/api 支付宝兼容矩阵中的媒体能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/media",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/media",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦媒体能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/media",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/media",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "媒体",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "media",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 媒体"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/media.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/media.md"
     },
     {
       "id": "doc-67c86ca0bf",
       "title": "支付宝兼容矩阵 · 跳转",
-      "summary": "@wevu/api 支付宝兼容矩阵中的跳转能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/navigate",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/navigate",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦跳转能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/navigate",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/navigate",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "跳转",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "navigate",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 跳转"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/navigate.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/navigate.md"
     },
     {
       "id": "doc-463face037",
       "title": "支付宝兼容矩阵 · 网络",
-      "summary": "@wevu/api 支付宝兼容矩阵中的网络能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/network",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/network",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦网络能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/network",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/network",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "网络",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "network",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 网络"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/network.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/network.md"
     },
     {
       "id": "doc-58dc370c3a",
       "title": "支付宝兼容矩阵 · 开放接口",
-      "summary": "@wevu/api 支付宝兼容矩阵中的开放接口能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/open-api",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/open-api",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦开放接口能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/open-api",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/open-api",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "开放接口",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "open",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 开放接口"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/open-api.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/open-api.md"
     },
     {
       "id": "doc-56cad0d59c",
       "title": "支付宝兼容矩阵 · 支付",
-      "summary": "@wevu/api 支付宝兼容矩阵中的支付能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/payment",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/payment",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦支付能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/payment",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/payment",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "支付",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "payment",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 支付"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/payment.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/payment.md"
     },
     {
       "id": "doc-b9e75a7a29",
       "title": "支付宝兼容矩阵 · 路由",
-      "summary": "@wevu/api 支付宝兼容矩阵中的路由能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/route",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/route",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦路由能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/route",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/route",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "路由",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "route",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 路由"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/route.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/route.md"
     },
     {
       "id": "doc-5ae272383f",
       "title": "支付宝兼容矩阵 · 转发",
-      "summary": "@wevu/api 支付宝兼容矩阵中的转发能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/share",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/share",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦转发能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/share",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/share",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "转发",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "share",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 转发"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/share.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/share.md"
     },
     {
       "id": "doc-dfd26433df",
       "title": "支付宝兼容矩阵 · 数据缓存",
-      "summary": "@wevu/api 支付宝兼容矩阵中的数据缓存能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/storage",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/storage",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦数据缓存能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/storage",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/storage",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "数据缓存",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "storage",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 数据缓存"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/storage.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/storage.md"
     },
     {
       "id": "doc-405071160b",
       "title": "支付宝兼容矩阵 · 界面",
-      "summary": "@wevu/api 支付宝兼容矩阵中的界面能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/ui",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/ui",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦界面能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/ui",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/ui",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "界面",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "ui",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · 界面"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/ui.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/ui.md"
     },
     {
       "id": "doc-c35e80f216",
       "title": "支付宝兼容矩阵 · Worker",
-      "summary": "@wevu/api 支付宝兼容矩阵中的 Worker 能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/worker",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/worker",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦Worker能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/worker",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/worker",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "worker",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "worker",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · Worker"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/worker.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/worker.md"
     },
     {
       "id": "doc-792d8a6a9c",
       "title": "支付宝兼容矩阵 · WXML",
-      "summary": "@wevu/api 支付宝兼容矩阵中的 WXML 能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/wxml",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/wxml",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦WXML能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/wxml",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/wxml",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "wxml",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "wxml",
-        "支付宝兼容矩阵"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · WXML"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/wxml.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/wxml.md"
     },
     {
       "id": "doc-e32466562b",
       "title": "支付宝兼容矩阵 · XR-FRAME",
-      "summary": "@wevu/api 支付宝兼容矩阵中的 XR-FRAME 能力。",
-      "url": "/packages-runtime/weapi/alipay-compat-matrix/xr-frame",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/alipay-compat-matrix/xr-frame",
+      "summary": "@wevu/api 的支付宝兼容矩阵页，聚焦XR-FRAME能力分类，帮助快速查看支付宝小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/alipay-compat-matrix/xr-frame",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/xr-frame",
       "keywords": [
+        "weapi",
+        "支付宝小程序",
+        "兼容矩阵",
+        "xr-frame",
         "api",
         "packages",
-        "weapi",
         "alipay",
-        "compat",
-        "matrix",
-        "xr",
-        "frame"
+        "compat"
       ],
       "headings": [
         "支付宝兼容矩阵 · XR-FRAME"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/alipay-compat-matrix/xr-frame.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/alipay-compat-matrix/xr-frame.md"
     },
     {
       "id": "doc-47b06895de",
       "title": "@wevu/api 兼容总览",
       "summary": "@wevu/api 三端 API 兼容报告总览，覆盖覆盖率、对齐结论与核心差异映射。",
-      "url": "/packages-runtime/weapi/compat-overview",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/compat-overview",
+      "url": "/packages/weapi/compat-overview",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/compat-overview",
       "keywords": [
         "@wevu/api",
         "兼容报告",
@@ -4770,15 +4855,15 @@
       "headings": [
         "@wevu/api 兼容总览"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/compat-overview.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/compat-overview.md"
     },
     {
       "id": "doc-78b1b7024b",
       "title": "抖音兼容矩阵",
       "summary": "@wevu/api 按微信命名调用时的抖音兼容矩阵。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix",
+      "url": "/packages/weapi/douyin-compat-matrix",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix",
       "keywords": [
         "@wevu/api",
         "抖音",
@@ -4792,499 +4877,499 @@
       "headings": [
         "抖音兼容矩阵"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix.md"
     },
     {
       "id": "doc-7fc609798a",
       "title": "抖音兼容矩阵 · 广告",
-      "summary": "抖音兼容矩阵 · 广告，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/ad",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/ad",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦广告能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/ad",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/ad",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "广告",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "ad",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 广告"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/ad.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/ad.md"
     },
     {
       "id": "doc-e6165cebbb",
       "title": "抖音兼容矩阵 · AI",
-      "summary": "@wevu/api 抖音兼容矩阵中的 AI 能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/ai",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/ai",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦AI能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/ai",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/ai",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "ai",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "ai",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · AI"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/ai.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/ai.md"
     },
     {
       "id": "doc-22d01e33a1",
       "title": "抖音兼容矩阵 · 基础",
-      "summary": "抖音兼容矩阵 · 基础，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/base",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/base",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦基础能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/base",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/base",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "基础",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "base",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 基础"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/base.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/base.md"
     },
     {
       "id": "doc-604a5e08d7",
       "title": "抖音兼容矩阵 · 画布",
-      "summary": "抖音兼容矩阵 · 画布，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/canvas",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/canvas",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦画布能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/canvas",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/canvas",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "画布",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "canvas",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 画布"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/canvas.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/canvas.md"
     },
     {
       "id": "doc-a8c90e6d55",
       "title": "抖音兼容矩阵 · 聊天工具",
-      "summary": "@wevu/api 抖音兼容矩阵中的聊天工具能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/chattool",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/chattool",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦聊天工具能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/chattool",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/chattool",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "聊天工具",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "chattool",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 聊天工具"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/chattool.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/chattool.md"
     },
     {
       "id": "doc-65da2826eb",
       "title": "抖音兼容矩阵 · 数据分析",
-      "summary": "@wevu/api 抖音兼容矩阵中的数据分析能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/data-analysis",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/data-analysis",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦数据分析能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/data-analysis",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/data-analysis",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "数据分析",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "data",
-        "analysis"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 数据分析"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/data-analysis.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/data-analysis.md"
     },
     {
       "id": "doc-56be11d7b8",
       "title": "抖音兼容矩阵 · 设备",
-      "summary": "抖音兼容矩阵 · 设备，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/device",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/device",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦设备能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/device",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/device",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "设备",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "device",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 设备"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/device.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/device.md"
     },
     {
       "id": "doc-6ec6ae0677",
       "title": "抖音兼容矩阵 · 第三方平台",
-      "summary": "@wevu/api 抖音兼容矩阵中的第三方平台能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/ext",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/ext",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦第三方平台能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/ext",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/ext",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "第三方平台",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "ext",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 第三方平台"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/ext.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/ext.md"
     },
     {
       "id": "doc-395a687df0",
       "title": "抖音兼容矩阵 · 文件",
-      "summary": "抖音兼容矩阵 · 文件，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/file",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/file",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦文件能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/file",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/file",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "文件",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "file",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 文件"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/file.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/file.md"
     },
     {
       "id": "doc-07fb734578",
       "title": "抖音兼容矩阵 · 位置",
-      "summary": "抖音兼容矩阵 · 位置，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/location",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/location",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦位置能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/location",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/location",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "位置",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "location",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 位置"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/location.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/location.md"
     },
     {
       "id": "doc-9d8d6ddc11",
       "title": "抖音兼容矩阵 · 媒体",
-      "summary": "抖音兼容矩阵 · 媒体，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/media",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/media",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦媒体能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/media",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/media",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "媒体",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "media",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 媒体"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/media.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/media.md"
     },
     {
       "id": "doc-3327d61cdc",
       "title": "抖音兼容矩阵 · 跳转",
-      "summary": "抖音兼容矩阵 · 跳转，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/navigate",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/navigate",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦跳转能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/navigate",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/navigate",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "跳转",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "navigate",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 跳转"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/navigate.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/navigate.md"
     },
     {
       "id": "doc-56a5c86117",
       "title": "抖音兼容矩阵 · 网络",
-      "summary": "抖音兼容矩阵 · 网络，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/network",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/network",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦网络能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/network",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/network",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "网络",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "network",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 网络"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/network.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/network.md"
     },
     {
       "id": "doc-1e4002d5ad",
       "title": "抖音兼容矩阵 · 开放接口",
-      "summary": "@wevu/api 抖音兼容矩阵中的开放接口能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/open-api",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/open-api",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦开放接口能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/open-api",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/open-api",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "开放接口",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "open",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 开放接口"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/open-api.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/open-api.md"
     },
     {
       "id": "doc-dedb5a54ac",
       "title": "抖音兼容矩阵 · 支付",
-      "summary": "抖音兼容矩阵 · 支付，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/payment",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/payment",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦支付能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/payment",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/payment",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "支付",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "payment",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 支付"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/payment.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/payment.md"
     },
     {
       "id": "doc-8e24bf93bb",
       "title": "抖音兼容矩阵 · 路由",
-      "summary": "抖音兼容矩阵 · 路由，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/route",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/route",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦路由能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/route",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/route",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "路由",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "route",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 路由"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/route.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/route.md"
     },
     {
       "id": "doc-5a1610ce77",
       "title": "抖音兼容矩阵 · 转发",
-      "summary": "抖音兼容矩阵 · 转发，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/share",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/share",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦转发能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/share",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/share",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "转发",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "share",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 转发"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/share.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/share.md"
     },
     {
       "id": "doc-e84eacb377",
       "title": "抖音兼容矩阵 · 数据缓存",
-      "summary": "@wevu/api 抖音兼容矩阵中的数据缓存能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/storage",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/storage",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦数据缓存能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/storage",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/storage",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "数据缓存",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "storage",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 数据缓存"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/storage.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/storage.md"
     },
     {
       "id": "doc-ee0955fece",
       "title": "抖音兼容矩阵 · 界面",
-      "summary": "抖音兼容矩阵 · 界面，聚焦 packages / weapi 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/ui",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/ui",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦界面能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/ui",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/ui",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "界面",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "ui",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · 界面"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/ui.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/ui.md"
     },
     {
       "id": "doc-eab7f71e6e",
       "title": "抖音兼容矩阵 · Worker",
-      "summary": "@wevu/api 抖音兼容矩阵中的 Worker 能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/worker",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/worker",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦Worker能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/worker",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/worker",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "worker",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "worker",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · Worker"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/worker.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/worker.md"
     },
     {
       "id": "doc-76d950c174",
       "title": "抖音兼容矩阵 · WXML",
-      "summary": "@wevu/api 抖音兼容矩阵中的 WXML 能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/wxml",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/wxml",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦WXML能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/wxml",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/wxml",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "wxml",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "wxml",
-        "抖音兼容矩阵"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · WXML"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/wxml.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/wxml.md"
     },
     {
       "id": "doc-8c6695a2b1",
       "title": "抖音兼容矩阵 · XR-FRAME",
-      "summary": "@wevu/api 抖音兼容矩阵中的 XR-FRAME 能力。",
-      "url": "/packages-runtime/weapi/douyin-compat-matrix/xr-frame",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/douyin-compat-matrix/xr-frame",
+      "summary": "@wevu/api 的抖音兼容矩阵页，聚焦XR-FRAME能力分类，帮助快速查看抖音小程序与微信 API 的兼容情况。",
+      "url": "/packages/weapi/douyin-compat-matrix/xr-frame",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/xr-frame",
       "keywords": [
+        "weapi",
+        "抖音小程序",
+        "兼容矩阵",
+        "xr-frame",
         "api",
         "packages",
-        "weapi",
         "douyin",
-        "compat",
-        "matrix",
-        "xr",
-        "frame"
+        "compat"
       ],
       "headings": [
         "抖音兼容矩阵 · XR-FRAME"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/douyin-compat-matrix/xr-frame.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/douyin-compat-matrix/xr-frame.md"
     },
     {
       "id": "doc-e1b8e95c46",
       "title": "兼容差异说明",
       "summary": "@wevu/api 兼容报告中的特殊命名、类型来源差异与 gap 说明。",
-      "url": "/packages-runtime/weapi/gap-notes",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/gap-notes",
+      "url": "/packages/weapi/gap-notes",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/gap-notes",
       "keywords": [
         "@wevu/api",
         "gap",
@@ -5298,15 +5383,15 @@
       "headings": [
         "兼容差异说明"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/gap-notes.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/gap-notes.md"
     },
     {
       "id": "doc-d4b54403eb",
       "title": "@wevu/api",
       "summary": "@wevu/api 独立文档入口，按总览、全量目录、兼容矩阵与差异说明组织。",
-      "url": "/packages-runtime/weapi/",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/",
+      "url": "/packages/weapi/",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/",
       "keywords": [
         "@wevu/api",
         "weapi",
@@ -5316,15 +5401,15 @@
         "packages"
       ],
       "headings": [],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/index.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/index.md"
     },
     {
       "id": "doc-5eadf3fe19",
       "title": "wpi 概览",
       "summary": "wpi 是 @wevu/api 提供的统一跨端 API 对象，支持 Promise、回调、能力探测与显式平台注入。",
-      "url": "/packages-runtime/weapi/overview",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/overview",
+      "url": "/packages/weapi/overview",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/overview",
       "keywords": [
         "wpi",
         "@wevu/api",
@@ -5346,15 +5431,15 @@
         "行为说明",
         "下一步"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/overview.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/overview.md"
     },
     {
       "id": "doc-7aa4d6d43b",
       "title": "平台独有 API 清单",
       "summary": "@wevu/api 三端类型来源中，相对微信命名体系的支付宝/抖音独有 API 清单。",
-      "url": "/packages-runtime/weapi/platform-only-methods",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/platform-only-methods",
+      "url": "/packages/weapi/platform-only-methods",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/platform-only-methods",
       "keywords": [
         "@wevu/api",
         "平台独有",
@@ -5368,15 +5453,15 @@
       "headings": [
         "平台独有 API 清单"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/platform-only-methods.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/platform-only-methods.md"
     },
     {
       "id": "doc-0f0650d092",
       "title": "API 全量清单",
       "summary": "@wevu/api 基于微信命名体系的全量 API 目录，包含每个 API 的用途、示例与微信开放文档搜索入口。",
-      "url": "/packages-runtime/weapi/wx-method-list",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list",
+      "url": "/packages/weapi/wx-method-list",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list",
       "keywords": [
         "@wevu/api",
         "API 全量清单",
@@ -5390,492 +5475,492 @@
       "headings": [
         "API 全量清单"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list.md"
     },
     {
       "id": "doc-2fe3cf6c0c",
       "title": "API 全量清单 · 广告",
-      "summary": "@wevu/api API 全量清单中的广告能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/ad",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/ad",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦广告能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/ad",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/ad",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "广告",
+        "packages",
         "wx",
         "method",
-        "list",
-        "ad",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 广告"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/ad.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/ad.md"
     },
     {
       "id": "doc-19e8db5267",
       "title": "API 全量清单 · AI",
-      "summary": "@wevu/api API 全量清单中的 AI 能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/ai",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/ai",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦AI能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/ai",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/ai",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "ai",
+        "packages",
         "wx",
         "method",
-        "list",
-        "ai",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · AI"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/ai.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/ai.md"
     },
     {
       "id": "doc-0930f8f1c4",
       "title": "API 全量清单 · 基础",
-      "summary": "@wevu/api API 全量清单中的基础能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/base",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/base",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦基础能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/base",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/base",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "基础",
+        "packages",
         "wx",
         "method",
-        "list",
-        "base",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 基础"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/base.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/base.md"
     },
     {
       "id": "doc-3b3608effe",
       "title": "API 全量清单 · 画布",
-      "summary": "@wevu/api API 全量清单中的画布能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/canvas",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/canvas",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦画布能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/canvas",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/canvas",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "画布",
+        "packages",
         "wx",
         "method",
-        "list",
-        "canvas",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 画布"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/canvas.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/canvas.md"
     },
     {
       "id": "doc-c6df1a519a",
       "title": "API 全量清单 · 聊天工具",
-      "summary": "@wevu/api API 全量清单中的聊天工具能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/chattool",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/chattool",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦聊天工具能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/chattool",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/chattool",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "聊天工具",
+        "packages",
         "wx",
         "method",
-        "list",
-        "chattool",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 聊天工具"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/chattool.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/chattool.md"
     },
     {
       "id": "doc-3977d7db92",
       "title": "API 全量清单 · 数据分析",
-      "summary": "@wevu/api API 全量清单中的数据分析能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/data-analysis",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/data-analysis",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦数据分析能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/data-analysis",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/data-analysis",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "数据分析",
+        "packages",
         "wx",
         "method",
-        "list",
-        "data",
-        "analysis"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 数据分析"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/data-analysis.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/data-analysis.md"
     },
     {
       "id": "doc-08bbfbdfad",
       "title": "API 全量清单 · 设备",
-      "summary": "@wevu/api API 全量清单中的设备能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/device",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/device",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦设备能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/device",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/device",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "设备",
+        "packages",
         "wx",
         "method",
-        "list",
-        "device",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 设备"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/device.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/device.md"
     },
     {
       "id": "doc-7215297d36",
       "title": "API 全量清单 · 第三方平台",
-      "summary": "@wevu/api API 全量清单中的第三方平台能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/ext",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/ext",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦第三方平台能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/ext",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/ext",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "第三方平台",
+        "packages",
         "wx",
         "method",
-        "list",
-        "ext",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 第三方平台"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/ext.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/ext.md"
     },
     {
       "id": "doc-5cc9acd4b8",
       "title": "API 全量清单 · 文件",
-      "summary": "@wevu/api API 全量清单中的文件能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/file",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/file",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦文件能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/file",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/file",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "文件",
+        "packages",
         "wx",
         "method",
-        "list",
-        "file",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 文件"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/file.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/file.md"
     },
     {
       "id": "doc-55632eb187",
       "title": "API 全量清单 · 位置",
-      "summary": "@wevu/api API 全量清单中的位置能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/location",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/location",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦位置能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/location",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/location",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "位置",
+        "packages",
         "wx",
         "method",
-        "list",
-        "location",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 位置"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/location.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/location.md"
     },
     {
       "id": "doc-6ba262d82b",
       "title": "API 全量清单 · 媒体",
-      "summary": "@wevu/api API 全量清单中的媒体能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/media",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/media",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦媒体能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/media",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/media",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "媒体",
+        "packages",
         "wx",
         "method",
-        "list",
-        "media",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 媒体"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/media.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/media.md"
     },
     {
       "id": "doc-10522ee293",
       "title": "API 全量清单 · 跳转",
-      "summary": "@wevu/api API 全量清单中的跳转能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/navigate",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/navigate",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦跳转能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/navigate",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/navigate",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "跳转",
+        "packages",
         "wx",
         "method",
-        "list",
-        "navigate",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 跳转"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/navigate.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/navigate.md"
     },
     {
       "id": "doc-551114f3c5",
       "title": "API 全量清单 · 网络",
-      "summary": "@wevu/api API 全量清单中的网络能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/network",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/network",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦网络能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/network",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/network",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "网络",
+        "packages",
         "wx",
         "method",
-        "list",
-        "network",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 网络"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/network.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/network.md"
     },
     {
       "id": "doc-4da05e8f6d",
       "title": "API 全量清单 · 开放接口",
-      "summary": "@wevu/api API 全量清单中的开放接口能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/open-api",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/open-api",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦开放接口能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/open-api",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/open-api",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "开放接口",
+        "packages",
         "wx",
         "method",
-        "list",
-        "open",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 开放接口"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/open-api.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/open-api.md"
     },
     {
       "id": "doc-0c3e536582",
       "title": "API 全量清单 · 支付",
-      "summary": "@wevu/api API 全量清单中的支付能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/payment",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/payment",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦支付能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/payment",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/payment",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "支付",
+        "packages",
         "wx",
         "method",
-        "list",
-        "payment",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 支付"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/payment.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/payment.md"
     },
     {
       "id": "doc-d916834522",
       "title": "API 全量清单 · 路由",
-      "summary": "@wevu/api API 全量清单中的路由能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/route",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/route",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦路由能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/route",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/route",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "路由",
+        "packages",
         "wx",
         "method",
-        "list",
-        "route",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 路由"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/route.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/route.md"
     },
     {
       "id": "doc-701a1d9cb2",
       "title": "API 全量清单 · 转发",
-      "summary": "@wevu/api API 全量清单中的转发能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/share",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/share",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦转发能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/share",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/share",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "转发",
+        "packages",
         "wx",
         "method",
-        "list",
-        "share",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 转发"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/share.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/share.md"
     },
     {
       "id": "doc-3c00b9cb07",
       "title": "API 全量清单 · 数据缓存",
-      "summary": "@wevu/api API 全量清单中的数据缓存能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/storage",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/storage",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦数据缓存能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/storage",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/storage",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "数据缓存",
+        "packages",
         "wx",
         "method",
-        "list",
-        "storage",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 数据缓存"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/storage.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/storage.md"
     },
     {
       "id": "doc-107420920b",
       "title": "API 全量清单 · 界面",
-      "summary": "@wevu/api API 全量清单中的界面能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/ui",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/ui",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦界面能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/ui",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/ui",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "界面",
+        "packages",
         "wx",
         "method",
-        "list",
-        "ui",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · 界面"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/ui.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/ui.md"
     },
     {
       "id": "doc-eb981c346b",
       "title": "API 全量清单 · Worker",
-      "summary": "@wevu/api API 全量清单中的 Worker 能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/worker",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/worker",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦Worker能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/worker",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/worker",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "worker",
+        "packages",
         "wx",
         "method",
-        "list",
-        "worker",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · Worker"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/worker.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/worker.md"
     },
     {
       "id": "doc-77b6f10b2b",
       "title": "API 全量清单 · WXML",
-      "summary": "@wevu/api API 全量清单中的 WXML 能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/wxml",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/wxml",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦WXML能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/wxml",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/wxml",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "wxml",
+        "packages",
         "wx",
         "method",
-        "list",
-        "wxml",
-        "全量清单"
+        "list"
       ],
       "headings": [
         "API 全量清单 · WXML"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/wxml.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/wxml.md"
     },
     {
       "id": "doc-c854cc34c9",
       "title": "API 全量清单 · XR-FRAME",
-      "summary": "@wevu/api API 全量清单中的 XR-FRAME 能力。",
-      "url": "/packages-runtime/weapi/wx-method-list/xr-frame",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/weapi/wx-method-list/xr-frame",
+      "summary": "@wevu/api 的 API 全量清单页，聚焦XR-FRAME能力分类，便于快速检索微信小程序相关接口与组件 API。",
+      "url": "/packages/weapi/wx-method-list/xr-frame",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/xr-frame",
       "keywords": [
-        "api",
-        "packages",
         "weapi",
+        "微信小程序",
+        "api",
+        "xr-frame",
+        "packages",
         "wx",
         "method",
-        "list",
-        "xr",
-        "frame"
+        "list"
       ],
       "headings": [
         "API 全量清单 · XR-FRAME"
       ],
-      "updatedAt": "2026-03-13",
-      "source": "packages-runtime/weapi/wx-method-list/xr-frame.md"
+      "updatedAt": "2026-04-12",
+      "source": "packages/weapi/wx-method-list/xr-frame.md"
     },
     {
       "id": "doc-70402715ac",
@@ -5896,25 +5981,26 @@
       "headings": [
         "weapp-ide-cli",
         "安装",
+        "快速开始",
         "命令大全",
         "1) 微信官方 CLI 透传命令",
         "2) automator 增强命令",
+        "weapp screenshot 选项",
+        "weapp compare 选项",
         "3) config 子命令",
         "4) 支付宝 minidev 转发",
         "5) 程序化命令目录导出",
-        "语言切换",
-        "参数前置校验（增强）",
-        "参考"
+        "语言切换"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "packages/weapp-ide-cli.md"
     },
     {
       "id": "doc-41f0bdb222",
       "title": "@weapp-vite/web",
       "summary": "@weapp-vite/web 是实验性的 H5 运行时与 Vite 插件，用于把小程序模板能力映射到浏览器环境做验证。",
-      "url": "/packages-runtime/web",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/web",
+      "url": "/packages/web",
+      "canonical": "https://vite.icebreaker.top/packages/web",
       "keywords": [
         "weapp-vite",
         "运行时",
@@ -5934,14 +6020,14 @@
         "能力边界"
       ],
       "updatedAt": "2026-02-27",
-      "source": "packages-runtime/web.md"
+      "source": "packages/web.md"
     },
     {
       "id": "doc-683109f6b2",
       "title": "@wevu/compiler",
       "summary": "@wevu/compiler 是 Wevu 的编译能力底座，提供 Vue SFC 与小程序模板的解析、转换和输出能力。",
-      "url": "/packages-runtime/wevu-compiler",
-      "canonical": "https://vite.icebreaker.top/packages-runtime/wevu-compiler",
+      "url": "/packages/wevu-compiler",
+      "canonical": "https://vite.icebreaker.top/packages/wevu-compiler",
       "keywords": [
         "weapp-vite",
         "wevu",
@@ -5961,7 +6047,7 @@
         "与 Weapp-vite 的关系"
       ],
       "updatedAt": "2026-02-27",
-      "source": "packages-runtime/wevu-compiler.md"
+      "source": "packages/wevu-compiler.md"
     },
     {
       "id": "doc-c6d110bdf1",
@@ -5990,415 +6076,11 @@
         "构建产物里只有 WXML？",
         "目录结构正确仍报 require() 错误？",
         "引入 UMD/CJS 模块时报错？",
-        "custom-tab-bar 不生效？"
+        "custom-tab-bar 不生效？",
+        ".weapp-vite 支持文件缺失或过期？"
       ],
-      "updatedAt": "2026-02-26",
+      "updatedAt": "2026-04-05",
       "source": "troubleshoot/index.md"
-    },
-    {
-      "id": "doc-0eeef59057",
-      "title": "weapp-vite",
-      "summary": "weapp-vite，聚焦 typedoc-api / index 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/",
-      "keywords": [
-        "weapp-vite",
-        "api",
-        "typedoc",
-        "聚焦",
-        "typedoc-api",
-        "/",
-        "相关场景",
-        "覆盖"
-      ],
-      "headings": [
-        "weapp-vite",
-        "Interfaces",
-        "Type Aliases"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/index.md"
-    },
-    {
-      "id": "doc-33d1d4f4ae",
-      "title": "Interface: AppEntry",
-      "summary": "Interface: AppEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/AppEntry",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/AppEntry",
-      "keywords": [
-        "api",
-        "typedoc",
-        "interfaces",
-        "appentry",
-        "Interface:",
-        "聚焦",
-        "typedoc-api",
-        "/"
-      ],
-      "headings": [
-        "Interface: AppEntry",
-        "Properties",
-        "deps",
-        "Defined in",
-        "json",
-        "Defined in",
-        "jsonPath",
-        "Defined in",
-        "path",
-        "Defined in",
-        "type",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/AppEntry.md"
-    },
-    {
-      "id": "doc-b34cad9026",
-      "title": "Interface: ComponentDep",
-      "summary": "Interface: ComponentDep，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/ComponentDep",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/ComponentDep",
-      "keywords": [
-        "api",
-        "typedoc",
-        "interfaces",
-        "componentdep",
-        "Interface:",
-        "聚焦",
-        "typedoc-api",
-        "/"
-      ],
-      "headings": [
-        "Interface: ComponentDep",
-        "Properties",
-        "path",
-        "Defined in",
-        "type",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/ComponentDep.md"
-    },
-    {
-      "id": "doc-c86a061560",
-      "title": "Interface: ComponentEntry",
-      "summary": "Interface: ComponentEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/ComponentEntry",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/ComponentEntry",
-      "keywords": [
-        "api",
-        "typedoc",
-        "interfaces",
-        "componententry",
-        "Interface:",
-        "聚焦",
-        "typedoc-api",
-        "/"
-      ],
-      "headings": [
-        "Interface: ComponentEntry",
-        "Properties",
-        "deps",
-        "Defined in",
-        "json",
-        "Defined in",
-        "jsonPath",
-        "Defined in",
-        "path",
-        "Defined in",
-        "type",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/ComponentEntry.md"
-    },
-    {
-      "id": "doc-dbf2a3fa37",
-      "title": "Interface: PageDep",
-      "summary": "Interface: PageDep，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/PageDep",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/PageDep",
-      "keywords": [
-        "api",
-        "typedoc",
-        "interfaces",
-        "pagedep",
-        "Interface:",
-        "聚焦",
-        "typedoc-api",
-        "/"
-      ],
-      "headings": [
-        "Interface: PageDep",
-        "Properties",
-        "path",
-        "Defined in",
-        "type",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/PageDep.md"
-    },
-    {
-      "id": "doc-84a2e3e2fa",
-      "title": "Interface: PageEntry",
-      "summary": "Interface: PageEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/PageEntry",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/PageEntry",
-      "keywords": [
-        "api",
-        "typedoc",
-        "interfaces",
-        "pageentry",
-        "Interface:",
-        "聚焦",
-        "typedoc-api",
-        "/"
-      ],
-      "headings": [
-        "Interface: PageEntry",
-        "Properties",
-        "deps",
-        "Defined in",
-        "json?",
-        "Defined in",
-        "jsonPath?",
-        "Defined in",
-        "path",
-        "Defined in",
-        "type",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/PageEntry.md"
-    },
-    {
-      "id": "doc-a88ee2b4a7",
-      "title": "Interface: Subpackage",
-      "summary": "Interface: Subpackage，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/Subpackage",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/Subpackage",
-      "keywords": [
-        "分包",
-        "api",
-        "typedoc",
-        "interfaces",
-        "subpackage",
-        "Interface:",
-        "聚焦",
-        "typedoc-api"
-      ],
-      "headings": [
-        "Interface: Subpackage",
-        "Extended by",
-        "Properties",
-        "entry?",
-        "Defined in",
-        "independent?",
-        "Defined in",
-        "name?",
-        "Defined in",
-        "pages",
-        "Defined in",
-        "root"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/Subpackage.md"
-    },
-    {
-      "id": "doc-ee8e6663d3",
-      "title": "Interface: SubpackageDep",
-      "summary": "Interface: SubpackageDep，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/SubpackageDep",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/SubpackageDep",
-      "keywords": [
-        "分包",
-        "api",
-        "typedoc",
-        "interfaces",
-        "subpackagedep",
-        "Interface:",
-        "聚焦",
-        "typedoc-api"
-      ],
-      "headings": [
-        "Interface: SubpackageDep",
-        "Extends",
-        "Properties",
-        "entry?",
-        "Inherited from",
-        "Defined in",
-        "independent?",
-        "Inherited from",
-        "Defined in",
-        "name?",
-        "Inherited from",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/SubpackageDep.md"
-    },
-    {
-      "id": "doc-3062b638f9",
-      "title": "Interface: SubPackageEntry",
-      "summary": "Interface: SubPackageEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/SubPackageEntry",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/SubPackageEntry",
-      "keywords": [
-        "分包",
-        "api",
-        "typedoc",
-        "interfaces",
-        "subpackageentry",
-        "Interface:",
-        "聚焦",
-        "typedoc-api"
-      ],
-      "headings": [
-        "Interface: SubPackageEntry",
-        "Properties",
-        "deps",
-        "Defined in",
-        "path",
-        "Defined in",
-        "type",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/SubPackageEntry.md"
-    },
-    {
-      "id": "doc-542a4e35b6",
-      "title": "Interface: WatchOptions",
-      "summary": "Interface: WatchOptions，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/WatchOptions",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/WatchOptions",
-      "keywords": [
-        "api",
-        "typedoc",
-        "interfaces",
-        "watchoptions",
-        "Interface:",
-        "聚焦",
-        "typedoc-api",
-        "/"
-      ],
-      "headings": [
-        "Interface: WatchOptions",
-        "Extends",
-        "Properties",
-        "alwaysStat?",
-        "Inherited from",
-        "Defined in",
-        "atomic?",
-        "Inherited from",
-        "Defined in",
-        "awaitWriteFinish?",
-        "Inherited from",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/WatchOptions.md"
-    },
-    {
-      "id": "doc-20cef0e38a",
-      "title": "Interface: WeappViteConfig",
-      "summary": "Interface: WeappViteConfig，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/interfaces/WeappViteConfig",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/WeappViteConfig",
-      "keywords": [
-        "weapp-vite",
-        "配置",
-        "分包",
-        "api",
-        "typedoc",
-        "interfaces",
-        "weappviteconfig",
-        "Interface:"
-      ],
-      "headings": [
-        "Interface: WeappViteConfig",
-        "Properties",
-        "srcRoot?",
-        "Defined in",
-        "subPackage?",
-        "Defined in",
-        "watch?",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/interfaces/WeappViteConfig.md"
-    },
-    {
-      "id": "doc-d6b38ab5de",
-      "title": "Type Alias: Dep",
-      "summary": "Type Alias: Dep，聚焦 typedoc-api / type-aliases 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/type-aliases/Dep",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/type-aliases/Dep",
-      "keywords": [
-        "api",
-        "typedoc",
-        "type",
-        "aliases",
-        "dep",
-        "Alias:",
-        "聚焦",
-        "typedoc-api"
-      ],
-      "headings": [
-        "Type Alias: Dep",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/type-aliases/Dep.md"
-    },
-    {
-      "id": "doc-afe8a68f14",
-      "title": "Type Alias: Entry",
-      "summary": "Type Alias: Entry，聚焦 typedoc-api / type-aliases 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/type-aliases/Entry",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/type-aliases/Entry",
-      "keywords": [
-        "api",
-        "typedoc",
-        "type",
-        "aliases",
-        "entry",
-        "Alias:",
-        "聚焦",
-        "typedoc-api"
-      ],
-      "headings": [
-        "Type Alias: Entry",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/type-aliases/Entry.md"
-    },
-    {
-      "id": "doc-eaa1089f6b",
-      "title": "Type Alias: UserConfig",
-      "summary": "Type Alias: UserConfig，聚焦 typedoc-api / type-aliases 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
-      "url": "/typedoc-api/type-aliases/UserConfig",
-      "canonical": "https://vite.icebreaker.top/typedoc-api/type-aliases/UserConfig",
-      "keywords": [
-        "配置",
-        "api",
-        "typedoc",
-        "type",
-        "aliases",
-        "userconfig",
-        "Alias:",
-        "聚焦"
-      ],
-      "headings": [
-        "Type Alias: UserConfig",
-        "Type declaration",
-        "weapp?",
-        "Defined in"
-      ],
-      "updatedAt": "2026-02-26",
-      "source": "typedoc-api/type-aliases/UserConfig.md"
     },
     {
       "id": "doc-dd0bc17fa3",
@@ -6430,7 +6112,7 @@
         "3. 回调风格调用",
         "4. *Sync 直连调用"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-12",
       "source": "wevu/api-package.md"
     },
     {
@@ -6454,7 +6136,7 @@
         "2. 推荐做法",
         "3. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/core.md"
     },
     {
@@ -6479,7 +6161,7 @@
         "3. 迁移建议",
         "4. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/index.md"
     },
     {
@@ -6502,7 +6184,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/lifecycle.md"
     },
     {
@@ -6525,7 +6207,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/reactivity.md"
     },
     {
@@ -6549,7 +6231,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/runtime-bridge.md"
     },
     {
@@ -6574,7 +6256,7 @@
         "2. 迁移建议",
         "3. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/setup-context.md"
     },
     {
@@ -6597,7 +6279,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/store.md"
     },
     {
@@ -6621,7 +6303,7 @@
         "1. 推荐做法",
         "2. 参考资源"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/types.md"
     },
     {
@@ -6651,7 +6333,7 @@
         "defineModel() {#definemodel}",
         "defineOptions() {#defineoptions}"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-08",
       "source": "wevu/api/core.md"
     },
     {
@@ -6667,7 +6349,7 @@
         "vue-style"
       ],
       "headings": [],
-      "updatedAt": "2026-03-09",
+      "updatedAt": "2026-03-08",
       "source": "wevu/api/index.md"
     },
     {
@@ -6697,7 +6379,7 @@
         "页面生命周期 Hook",
         "onLoad() {#onload}"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-04-02",
       "source": "wevu/api/lifecycle.md"
     },
     {
@@ -6760,7 +6442,7 @@
         "子路径边界",
         "示例"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api/runtime-bridge.md"
     },
     {
@@ -6790,7 +6472,7 @@
         "useNativeRouter() {#usenativerouter}",
         "useNativePageRouter() {#usenativepagerouter}"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api/setup-context.md"
     },
     {
@@ -6818,7 +6500,7 @@
         "ActionSubscriber {#actionsubscriber}",
         "SubscriptionCallback {#subscriptioncallback}"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-02",
       "source": "wevu/api/store.md"
     },
     {
@@ -6870,7 +6552,7 @@
       "headings": [
         "兼容性与注意事项"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/compatibility.md"
     },
     {
@@ -6893,14 +6575,17 @@
         "defineComponent（组件）",
         "页面也用 defineComponent（统一模型）",
         "原生 Component 选项在 Wevu 的写法",
+        "props 和 properties：相同点与区别",
+        "相同点",
+        "不同点",
+        "最终注册到原生时会发生什么",
+        "代码示例",
+        "优先级与选择建议",
         "Behavior 迁移补充（SFC 场景）",
         "写法 1： + defineComponent（最直观）",
-        "写法 2： + defineOptions",
-        "lifetimes / pageLifetimes 对应的 hooks",
-        "lifetimes（组件生命周期）",
-        "pageLifetimes（页面对组件的影响）"
+        "写法 2： + defineOptions"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-04-08",
       "source": "wevu/component.md"
     },
     {
@@ -6926,7 +6611,7 @@
         "适合什么场景",
         "相关页面"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/fetch.md"
     },
     {
@@ -6959,7 +6644,7 @@
         "10. 速查表",
         "11. 扩展阅读"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-04-05",
       "source": "wevu/index.md"
     },
     {
@@ -6986,7 +6671,7 @@
         "5. 注意事项",
         "6. 相关页面"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/jsx-runtime.md"
     },
     {
@@ -7019,7 +6704,7 @@
         "阶段 3：收口（重点是“可持续”）",
         "原生到 Vue SFC 映射表（高频）"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-04-09",
       "source": "wevu/migration/from-native-to-vue-sfc.md"
     },
     {
@@ -7047,7 +6732,7 @@
         "5. 组件 props / emit（运行时约定）",
         "6. 接入 Store（可选但常用）"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/quick-start.md"
     },
     {
@@ -7079,7 +6764,7 @@
         "6. 调试与迁移建议",
         "7. 速查表"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/router.md"
     },
     {
@@ -7112,7 +6797,7 @@
         "setup：签名与上下文",
         "生命周期钩子"
       ],
-      "updatedAt": "2026-03-27",
+      "updatedAt": "2026-04-08",
       "source": "wevu/runtime.md"
     },
     {
@@ -7218,9 +6903,11 @@
         "Vue SFC：配置与宏",
         "usingComponents：为什么脚本里不要 import",
         "配置块模式对比",
-        "Script Setup JSON 宏（build-time） {#script-setup-json-macros}"
+        "Script Setup JSON 宏（build-time） {#script-setup-json-macros}",
+        "virtualHost 与样式透传边界",
+        "推荐写法"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-08",
       "source": "wevu/vue-sfc/config.md"
     },
     {
@@ -7409,7 +7096,7 @@
         "setup() 上下文（Setup Context）",
         "emit 的差异（triggerEvent 语义）"
       ],
-      "updatedAt": "2026-03-23",
+      "updatedAt": "2026-03-21",
       "source": "wevu/vue3-compat.md"
     },
     {
@@ -7442,7 +7129,7 @@
         "不同的部分",
         "1. 渲染层（完全不同）"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-04-02",
       "source": "wevu/vue3-vs-wevu.md"
     },
     {

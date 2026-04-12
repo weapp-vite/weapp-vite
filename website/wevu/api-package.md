@@ -346,7 +346,7 @@ else {
 更实用的阅读方式是：
 
 - 在这里理解“对象心智”和“调用方式”
-- 去 [@wevu/api 包文档](/packages-runtime/weapi/) 看平台支持矩阵和独立包说明
+- 去 [@wevu/api 包文档](/packages/weapi/) 看平台支持矩阵和独立包说明
 - 在编辑器里直接通过 `wpi.` 获得类型提示与补全
 
 换句话说，这一页回答的是“怎么用这层对象”，而不是“把 400 多个方法名机械抄一遍”。
@@ -360,7 +360,7 @@ else {
 - 跟踪 `@wevu/api` 自身的能力边界
 - 查看更偏独立包视角的说明
 
-请直接阅读 [@wevu/api 包文档](/packages-runtime/weapi/)。
+请直接阅读 [@wevu/api 包文档](/packages/weapi/)。
 
 ## 相关页面
 

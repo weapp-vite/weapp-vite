@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages/weapi/src/core/methodMapping/supportMatrix'
+import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages-runtime/weapi/src/core/methodMapping/supportMatrix'
 import { matchWeapiCapability, WEAPI_CAPABILITY_GROUPS } from '../shared/weapiCapabilities'
 
 interface WeapiCatalogItem {

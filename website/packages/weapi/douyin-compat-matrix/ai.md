@@ -10,4 +10,4 @@ keywords:
 
 # 抖音兼容矩阵 · AI
 
-<WeapiCompatibilityCatalog platform="douyin" capability="ai" base-path="/packages-runtime/weapi/douyin-compat-matrix" />
+<WeapiCompatibilityCatalog platform="douyin" capability="ai" base-path="/packages/weapi/douyin-compat-matrix" />

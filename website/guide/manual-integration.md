@@ -44,15 +44,17 @@ pnpm add -D weapp-vite vite typescript @types/node sass
 ```json
 {
   "scripts": {
+    "postinstall": "wv prepare",
     "dev": "wv dev",
     "build": "wv build",
     "open": "wv open",
-    "analyze": "wv analyze"
+    "analyze": "wv analyze",
+    "prepare": "wv prepare"
   }
 }
 ```
 
-后续运行时只需执行 `pnpm run dev` / `pnpm run build` 等常规命令。
+后续运行时只需执行 `pnpm run dev` / `pnpm run build` 等常规命令；`postinstall` 与显式 `prepare` 则用于提前生成 `.weapp-vite/*` 托管类型文件。
 
 ### tsconfig
 
@@ -69,7 +71,7 @@ pnpm add -D weapp-vite vite typescript @types/node sass
     "allowJs": true,
     "types": ["miniprogram-api-typings"]
   },
-  "include": ["src/**/*", "typed-router.d.ts", "typed-components.d.ts"]
+  "include": ["src/**/*", ".weapp-vite/**/*.d.ts"]
 }
 ```
 
@@ -144,6 +146,7 @@ src/
 1. 在命令行执行 `pnpm run dev`，等待 `dist/` 生成。
 2. 打开微信开发者工具，导入当前项目，勾选「服务端口」后可选用 `pnpm run dev -- --open` 自动唤起 IDE。
 3. 构建上传使用 `pnpm run build`，需要分析分包时执行 `pnpm run analyze`。
+4. 如果只想先生成类型支持文件而不启动开发服务，可单独执行 `pnpm run prepare`。
 
 ## 5. 可选增强
 

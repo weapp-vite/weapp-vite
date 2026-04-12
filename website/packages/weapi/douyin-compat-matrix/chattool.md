@@ -10,4 +10,4 @@ keywords:
 
 # 抖音兼容矩阵 · 聊天工具
 
-<WeapiCompatibilityCatalog platform="douyin" capability="chattool" base-path="/packages-runtime/weapi/douyin-compat-matrix" />
+<WeapiCompatibilityCatalog platform="douyin" capability="chattool" base-path="/packages/weapi/douyin-compat-matrix" />

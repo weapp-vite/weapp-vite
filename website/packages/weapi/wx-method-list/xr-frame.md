@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · XR-FRAME
 
-<WeapiCatalog capability="xr-frame" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="xr-frame" base-path="/packages/weapi/wx-method-list" />

@@ -10,4 +10,4 @@ keywords:
 
 # 支付宝兼容矩阵 · 聊天工具
 
-<WeapiCompatibilityCatalog platform="alipay" capability="chattool" base-path="/packages-runtime/weapi/alipay-compat-matrix" />
+<WeapiCompatibilityCatalog platform="alipay" capability="chattool" base-path="/packages/weapi/alipay-compat-matrix" />

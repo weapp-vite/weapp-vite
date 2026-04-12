@@ -26,6 +26,10 @@ keywords:
 ├─ project.config.json
 ├─ package.json
 ├─ public/
+├─ .weapp-vite/
+│  ├─ typed-router.d.ts
+│  ├─ typed-components.d.ts
+│  └─ components.d.ts
 └─ <srcRoot>/
    ├─ app.(js|ts)
    ├─ app.vue
@@ -42,9 +46,6 @@ keywords:
    ├─ shared/
    ├─ utils/
    ├─ workers/
-   ├─ typed-router.d.ts
-   ├─ typed-components.d.ts
-   └─ components.d.ts
 ```
 
 ## 先记住三条
@@ -67,22 +68,22 @@ keywords:
 
 ## 默认能力速查
 
-| 位置                                                              | 作用                                               |
-| ----------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------- | ----- | ------------------------------------------- |
-| `vite.config.ts`                                                  | 定义 `srcRoot`、自动路由、分包、自动导入组件等能力 |
-| `project.config.json`                                             | 微信开发者工具配置                                 |
-| `public/`                                                         | 构建时原样复制的静态资源                           |
-| `app.(js                                                          | ts)`                                               | 应用脚本入口，承载生命周期和全局初始化          |
-| `app.vue`                                                         | Vue SFC 形式的应用入口，可组合脚本、JSON 宏与样式  |
-| `app.json(.js                                                     | .ts)?`                                             | 应用配置入口，既支持原生 JSON，也支持脚本化生成 |
-| `app.(css                                                         | scss                                               | wxss                                            | ...)` | 全局样式入口，支持 CSS、WXSS 与常见预处理器 |
-| `layouts/`                                                        | 页面 layout 约定目录，承载默认布局和命名布局       |
-| `pages/`                                                          | 主包页面目录                                       |
-| `components/`                                                     | 主包组件目录，默认参与自动导入扫描                 |
-| `<subPackageRoot>/pages/`                                         | 已声明分包 root 下的页面目录                       |
-| `custom-tab-bar/`                                                 | `tabBar.custom === true` 时的固定入口              |
-| `app-bar/`                                                        | `appBar` 开启时的固定入口                          |
-| `typed-router.d.ts` / `typed-components.d.ts` / `components.d.ts` | 自动生成的类型声明文件                             |
+| 位置                                                                                                  | 作用                                               |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------- | ----- | ------------------------------------------- |
+| `vite.config.ts`                                                                                      | 定义 `srcRoot`、自动路由、分包、自动导入组件等能力 |
+| `project.config.json`                                                                                 | 微信开发者工具配置                                 |
+| `public/`                                                                                             | 构建时原样复制的静态资源                           |
+| `app.(js                                                                                              | ts)`                                               | 应用脚本入口，承载生命周期和全局初始化          |
+| `app.vue`                                                                                             | Vue SFC 形式的应用入口，可组合脚本、JSON 宏与样式  |
+| `app.json(.js                                                                                         | .ts)?`                                             | 应用配置入口，既支持原生 JSON，也支持脚本化生成 |
+| `app.(css                                                                                             | scss                                               | wxss                                            | ...)` | 全局样式入口，支持 CSS、WXSS 与常见预处理器 |
+| `layouts/`                                                                                            | 页面 layout 约定目录，承载默认布局和命名布局       |
+| `pages/`                                                                                              | 主包页面目录                                       |
+| `components/`                                                                                         | 主包组件目录，默认参与自动导入扫描                 |
+| `<subPackageRoot>/pages/`                                                                             | 已声明分包 root 下的页面目录                       |
+| `custom-tab-bar/`                                                                                     | `tabBar.custom === true` 时的固定入口              |
+| `app-bar/`                                                                                            | `appBar` 开启时的固定入口                          |
+| `.weapp-vite/typed-router.d.ts` / `.weapp-vite/typed-components.d.ts` / `.weapp-vite/components.d.ts` | 自动生成的类型声明文件                             |
 
 ## 相关文档
 

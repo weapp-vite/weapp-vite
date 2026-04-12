@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 支付
 
-<WeapiCatalog capability="payment" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="payment" base-path="/packages/weapi/wx-method-list" />

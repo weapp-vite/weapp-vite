@@ -10,4 +10,4 @@ keywords:
 
 # 抖音兼容矩阵 · 基础
 
-<WeapiCompatibilityCatalog platform="douyin" capability="base" base-path="/packages-runtime/weapi/douyin-compat-matrix" />
+<WeapiCompatibilityCatalog platform="douyin" capability="base" base-path="/packages/weapi/douyin-compat-matrix" />

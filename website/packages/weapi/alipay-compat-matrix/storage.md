@@ -10,4 +10,4 @@ keywords:
 
 # 支付宝兼容矩阵 · 数据缓存
 
-<WeapiCompatibilityCatalog platform="alipay" capability="storage" base-path="/packages-runtime/weapi/alipay-compat-matrix" />
+<WeapiCompatibilityCatalog platform="alipay" capability="storage" base-path="/packages/weapi/alipay-compat-matrix" />

@@ -43,9 +43,9 @@ keywords:
 | `weapp-ide-cli`           | 微信开发者工具 CLI 增强封装              | 本地自动化、CI 预览/上传、截图与截图对比           | [/packages/weapp-ide-cli](/packages/weapp-ide-cli)                         |
 | `rolldown-require`        | 以 Rolldown 为核心的 bundle+require 工具 | 加载 TS/MJS/CJS 配置文件                           | [/packages/rolldown-require/index.zh](/packages/rolldown-require/index.zh) |
 | `vite-plugin-performance` | Vite 插件 Hook 耗时分析                  | 定位构建慢点、插件调优                             | [/packages/vite-plugin-performance](/packages/vite-plugin-performance)     |
-| `@wevu/compiler`          | Wevu 编译能力底座                        | 复用 SFC/模板编译管线                              | [/packages-runtime/wevu-compiler](/packages-runtime/wevu-compiler)         |
-| `@wevu/api`               | 跨平台小程序 API 封装                    | Promise 风格统一调用                               | [/packages-runtime/weapi/](/packages-runtime/weapi/)                       |
-| `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                        | [/packages-runtime/web](/packages-runtime/web)                             |
+| `@wevu/compiler`          | Wevu 编译能力底座                        | 复用 SFC/模板编译管线                              | [/packages/wevu-compiler](/packages/wevu-compiler)                         |
+| `@wevu/api`               | 跨平台小程序 API 封装                    | Promise 风格统一调用                               | [/packages/weapi/](/packages/weapi/)                                       |
+| `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                        | [/packages/web](/packages/web)                                             |
 | `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放                      | [/packages/mcp](/packages/mcp)                                             |
 | `@weapp-vite/volar`       | Volar 语言插件                           | `<json>` 配置块补全与校验                          | [/packages/volar](/packages/volar)                                         |
 

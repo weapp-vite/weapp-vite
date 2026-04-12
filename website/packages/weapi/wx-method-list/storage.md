@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 数据缓存
 
-<WeapiCatalog capability="storage" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="storage" base-path="/packages/weapi/wx-method-list" />

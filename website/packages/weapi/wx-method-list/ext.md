@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 第三方平台
 
-<WeapiCatalog capability="ext" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="ext" base-path="/packages/weapi/wx-method-list" />

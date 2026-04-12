@@ -10,4 +10,4 @@ keywords:
 
 # 支付宝兼容矩阵 · 画布
 
-<WeapiCompatibilityCatalog platform="alipay" capability="canvas" base-path="/packages-runtime/weapi/alipay-compat-matrix" />
+<WeapiCompatibilityCatalog platform="alipay" capability="canvas" base-path="/packages/weapi/alipay-compat-matrix" />

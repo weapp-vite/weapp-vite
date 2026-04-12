@@ -117,7 +117,8 @@ export default defineConfig({
 
 ## `weapp.appPrelude` {#weapp-appprelude}
 
-- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require' }`
+- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require'; requestRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] } }`
+- **默认值**：`{ mode: 'require' }`
 
 用于控制 `src/app.prelude.ts` / `src/app.prelude.js` 这类前置脚本的注入方式。
 
@@ -140,11 +141,16 @@ export default defineConfig({
 - `mode: 'require'`：默认模式。按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
 - `requestRuntime`：在 `appPrelude` 时机安装请求相关运行时全局，并保留 chunk 级局部绑定兜底，适合 `axios`、`graphql-request`、`socket.io-client` 等依赖
 
+默认 `mode: 'require'` 下，构建产物通常会看到两类额外文件：
+
+- `app.prelude.js`：按主包 / 分包作用域拆分的前置脚本
+- `request-globals-runtime.js`：请求相关运行时共享 installer（启用 `requestRuntime` 或旧版 `injectRequestGlobals` 时出现）
+
 ```ts
 export default defineConfig({
   weapp: {
     appPrelude: {
-      mode: 'entry',
+      mode: 'require',
       requestRuntime: {
         enabled: true,
         targets: ['fetch', 'Headers', 'Request', 'Response'],
@@ -163,6 +169,9 @@ export default defineConfig({
 
 > [!NOTE]
 > 当前 `app.prelude` 仅支持无 `import` / `export` 的自包含脚本。
+
+> [!TIP]
+> 如果你只想打开请求运行时安装，也可以直接写成 `requestRuntime: true`。`weapp-vite` 会使用默认目标集合，并仍然保留对第三方库自由变量读取的 chunk 级兜底。
 
 ## `weapp.logger` {#weapp-logger}
 
@@ -261,6 +270,9 @@ export default defineConfig({
 - 团队统一走 `@wevu/api`
 - 希望在运行时补齐一套更一致的 API 访问入口
 
+> [!NOTE]
+> 当前 `replaceWx` 会采用静态宿主全局同步与源码重写，不再依赖 `Function(...)` 这类动态执行能力，因此更适合真实小程序宿主与受限运行环境。
+
 ## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
 
 - **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
@@ -300,6 +312,8 @@ export default defineConfig({
 > 新项目建议直接使用 `weapp.appPrelude.requestRuntime`。`injectRequestGlobals` 目前仍兼容 1-2 个小版本，后续会移除。
 >
 > 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装请求相关全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
+>
+> 历史版本里这个共享产物可能叫 `dist.js`；当前已经统一改为更易识别的 `request-globals-runtime.js`。
 
 ## `weapp.mcp` {#weapp-mcp}
 

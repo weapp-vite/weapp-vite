@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 路由
 
-<WeapiCatalog capability="route" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="route" base-path="/packages/weapi/wx-method-list" />

@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 聊天工具
 
-<WeapiCatalog capability="chattool" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="chattool" base-path="/packages/weapi/wx-method-list" />

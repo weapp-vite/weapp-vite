@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { generateMethodCompatibilityMatrix } from '../../../packages/weapi/src/core/methodMapping'
-import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages/weapi/src/core/methodMapping/supportMatrix'
+import { generateMethodCompatibilityMatrix } from '../../../packages-runtime/weapi/src/core/methodMapping'
+import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages-runtime/weapi/src/core/methodMapping/supportMatrix'
 import { matchWeapiCapability, WEAPI_CAPABILITY_GROUPS } from '../shared/weapiCapabilities'
 
 interface CompatibilityItem {

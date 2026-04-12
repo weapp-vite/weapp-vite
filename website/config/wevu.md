@@ -69,6 +69,47 @@ export default defineConfig({
 - 当 `app.vue`/组件导出为对象字面量时，Weapp-vite 会把默认值直接合并进编译产物，方便排查与调试；若导出是变量或函数，仍会回落到运行时合并。
 - 若设置了 `component.options.virtualHost = true`，Weapp-vite 会在 **页面** 入口自动补上 `virtualHost: false`，避免页面虚拟节点导致的渲染层错误；需要为页面开启时请在页面内显式配置。
 
+### `component.allowNullPropInput`
+
+从 `weapp-vite 6.15.1 / wevu 6.15.1` 开始，`weapp.wevu.defaults.component.allowNullPropInput` 默认会被设为 `true`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wevu: {
+      defaults: {
+        component: {
+          allowNullPropInput: true,
+        },
+      },
+    },
+  },
+})
+```
+
+它的作用是兼容小程序运行时把传入的 `undefined` 视为 `null` 的行为，减少 `String`、`Number` 等已声明类型 props 在微信开发者工具里反复出现的 `null` 类型告警。
+
+如果你的项目明确希望保持“`null` 一律视为非法输入”的旧行为，也可以显式关闭：
+
+```ts
+export default defineConfig({
+  weapp: {
+    wevu: {
+      defaults: {
+        component: {
+          allowNullPropInput: false,
+        },
+      },
+    },
+  },
+})
+```
+
+> [!TIP]
+> 这个默认值同样会覆盖“页面 / 组件没有显式 props 定义”的场景，避免空属性归一化时出现 `Object.entries(undefined)` 一类启动期报错。
+
 ### 全局默认开启 `virtualHost: true`
 
 微信官方文档里的 `virtualHost: true`，在 `weapp-vite` + `wevu` 里推荐通过 `weapp.wevu.defaults.component.options.virtualHost` 统一配置。

@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 位置
 
-<WeapiCatalog capability="location" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="location" base-path="/packages/weapi/wx-method-list" />

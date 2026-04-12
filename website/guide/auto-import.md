@@ -132,6 +132,7 @@ export default <UserConfig>{
 
 - `typedComponents`: 生成 `typed-components.d.ts`，提供 `componentProps`、`ComponentProp` 等类型，方便在脚本中推断组件属性。
 - `htmlCustomData`: 生成 `mini-program.html-data.json`，供 VS Code、微信开发者工具读取，实现标签/属性智能提示。
+- `vueComponents`: 生成 `.weapp-vite/components.d.ts`，为 Vue SFC 模板补齐全局组件声明。
 
 ```ts
 export default <UserConfig>{
@@ -139,6 +140,7 @@ export default <UserConfig>{
     autoImportComponents: {
       globs: ['components/**/*.wxml'],
       typedComponents: true, // 或 'types/typed-components.d.ts'
+      vueComponents: true,
       htmlCustomData: 'dist/mini-program.html-data.json',
     },
   },
@@ -146,6 +148,16 @@ export default <UserConfig>{
 ```
 
 构建器会在组件扫描、resolver 匹配的同一流程中自动刷新这些文件，无需手动触发。
+
+从 `weapp-vite 6.15.1` 开始，`components.d.ts` 在为“带源码跳转的原生组件”补齐 Vue 模板类型时，也会稳定合并小程序通用基础属性。这意味着像下面这样的写法不再被误报：
+
+```vue
+<template>
+  <Tabbar id="main-tabbar" class="text-red" style="padding: 8rpx" />
+</template>
+```
+
+如果你依赖组件库或业务组件在模板里接收 `class`、`style`、`id` 这类基础属性，建议保持 `vueComponents` 输出开启。
 
 如果你需要在编辑器或 CI 预热阶段提前生成这些文件，可以执行：
 

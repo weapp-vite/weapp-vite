@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 画布
 
-<WeapiCatalog capability="canvas" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="canvas" base-path="/packages/weapi/wx-method-list" />

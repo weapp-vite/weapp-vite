@@ -10,4 +10,4 @@ keywords:
 
 # 抖音兼容矩阵 · 数据缓存
 
-<WeapiCompatibilityCatalog platform="douyin" capability="storage" base-path="/packages-runtime/weapi/douyin-compat-matrix" />
+<WeapiCompatibilityCatalog platform="douyin" capability="storage" base-path="/packages/weapi/douyin-compat-matrix" />

@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 媒体
 
-<WeapiCatalog capability="media" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="media" base-path="/packages/weapi/wx-method-list" />

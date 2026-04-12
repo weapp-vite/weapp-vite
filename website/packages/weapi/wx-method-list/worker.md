@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · Worker
 
-<WeapiCatalog capability="worker" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="worker" base-path="/packages/weapi/wx-method-list" />

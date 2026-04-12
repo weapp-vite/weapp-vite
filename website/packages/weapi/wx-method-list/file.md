@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 文件
 
-<WeapiCatalog capability="file" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="file" base-path="/packages/weapi/wx-method-list" />

@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · 跳转
 
-<WeapiCatalog capability="navigate" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="navigate" base-path="/packages/weapi/wx-method-list" />

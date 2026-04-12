@@ -10,4 +10,4 @@ keywords:
 
 # API 全量清单 · WXML
 
-<WeapiCatalog capability="wxml" base-path="/packages-runtime/weapi/wx-method-list" />
+<WeapiCatalog capability="wxml" base-path="/packages/weapi/wx-method-list" />
