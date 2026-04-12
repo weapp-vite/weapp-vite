@@ -1018,7 +1018,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['common.js'].code).toContain(`Object.defineProperty(exports,${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)},{enumerable:false,get:function(){return vn}});`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)}]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)}]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
   })
@@ -1079,7 +1079,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../dist.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
   })
