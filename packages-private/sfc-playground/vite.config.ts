@@ -38,6 +38,10 @@ export default defineConfig({
         replacement: resolve(__dirname, '../../@weapp-core/shared/src/index.ts'),
       },
       {
+        find: /^@weapp-core\/constants$/,
+        replacement: resolve(__dirname, '../../@weapp-core/constants/src/index.ts'),
+      },
+      {
         find: /^node:path$/,
         replacement: 'pathe',
       },
