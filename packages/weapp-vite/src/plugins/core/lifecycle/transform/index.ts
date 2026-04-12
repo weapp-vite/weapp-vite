@@ -7,6 +7,7 @@ import logger from '../../../../logger'
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
+  resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
@@ -26,7 +27,9 @@ export function createTransformHook(state: CorePluginState) {
 
   function resolveRequestGlobalsTransformCode(id: string, code: string) {
     const requestGlobalsTargets = injectRequestGlobalsOptions?.targets?.length
-      ? injectRequestGlobalsOptions.targets
+      ? injectRequestGlobalsOptions.mode === 'auto'
+        ? resolveAutoRequestGlobalsTargets(code, injectRequestGlobalsOptions.targets)
+        : injectRequestGlobalsOptions.targets
       : resolveManualRequestGlobalsTargets(code)
     if (requestGlobalsTargets.length === 0) {
       return null

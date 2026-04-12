@@ -106,12 +106,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ]),
     } as any)
 
-    const result = await transform('export const value = 1', '/project/src/pages/request-globals/fetch.vue')
+    const result = await transform('export const value = fetch("/api")', '/project/src/pages/request-globals/fetch.vue')
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
-    expect(code).toContain('export const value = 1')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).not.toContain('"WebSocket"')
+    expect(code).toContain('export const value = fetch("/api")')
   })
 
   it('injects request globals for loaded page entries even before entriesMap is populated', async () => {
@@ -135,12 +136,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
       entriesMap: new Map(),
     } as any)
 
-    const result = await transform('export const value = 1', '/project/src/pages/request-globals/fetch.vue')
+    const result = await transform('export const value = fetch("/api")', '/project/src/pages/request-globals/fetch.vue')
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
-    expect(code).toContain('export const value = 1')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).not.toContain('"WebSocket"')
+    expect(code).toContain('export const value = fetch("/api")')
   })
 
   it('injects request globals into existing vue script blocks when transform fallback receives raw sfc code', async () => {
@@ -167,7 +169,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const result = await transform(
       [
         '<script setup lang="ts">',
-        'const value = 1',
+        'const value = fetch("/api")',
         '</script>',
         '<script lang="ts">',
         'export default {}',

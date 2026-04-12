@@ -31,7 +31,7 @@ vi.mock('../../../utils', async () => {
 describe('core lifecycle load hook injectWeapi', () => {
   it('injects abort globals for tanstack query projects during app load', async () => {
     const loadEntry = vi.fn(async () => ({
-      code: 'App({})',
+      code: 'const controller = new AbortController(); App({ controller })',
     }))
 
     const load = createLoadHook({
@@ -71,6 +71,7 @@ describe('core lifecycle load hook injectWeapi', () => {
         'defineAppJson({ pages: [] })',
         '</script>',
         '<script lang="ts">',
+        'console.log(fetch)',
         'export default {}',
         '</script>',
       ].join('\n'),
@@ -181,7 +182,7 @@ describe('core lifecycle load hook injectWeapi', () => {
 
   it('injects request globals into page entries when auto mode is matched', async () => {
     const sourceId = '/project/src/pages/request/index.ts'
-    const loadEntry = vi.fn(async () => ({ code: 'Page({})' }))
+    const loadEntry = vi.fn(async () => ({ code: 'const response = fetch("/api"); Page({ response })' }))
     const load = createLoadHook({
       ctx: {
         configService: {
@@ -205,13 +206,14 @@ describe('core lifecycle load hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
-    expect(code).toContain('Page({})')
+    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).not.toContain('"WebSocket"')
+    expect(code).toContain('Page({ response })')
   })
 
   it('injects websocket globals for socket.io-client projects during app load', async () => {
     const loadEntry = vi.fn(async () => ({
-      code: 'App({})',
+      code: 'const socket = new WebSocket("wss://request-globals.invalid/socket"); App({ socket })',
     }))
 
     const load = createLoadHook({
@@ -238,14 +240,14 @@ describe('core lifecycle load hook injectWeapi', () => {
 
     expect(code).toContain('installRequestGlobals')
     expect(code).toContain('"WebSocket"')
-    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
-    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
+    expect(code).not.toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
+    expect(code).not.toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
   })
 
   it('injects request globals into declared page entries even when loadedEntrySet is empty', async () => {
     const sourceId = '/project/src/pages/request-globals/fetch.vue'
-    const loadEntry = vi.fn(async () => ({ code: 'Page({})' }))
+    const loadEntry = vi.fn(async () => ({ code: 'const response = fetch("/api"); Page({ response })' }))
     const load = createLoadHook({
       ctx: {
         configService: {
@@ -273,7 +275,7 @@ describe('core lifecycle load hook injectWeapi', () => {
 
     expect(loadEntry).toHaveBeenCalledWith(sourceId, 'page')
     expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('Page({})')
+    expect(code).toContain('Page({ response })')
   })
 
   it('injects wpi and replaces wx/my/platform global when replaceWx is enabled', async () => {

@@ -10,6 +10,7 @@ import {
   createInjectRequestGlobalsCode,
   createInjectRequestGlobalsSfcCode,
   injectRequestGlobalsIntoSfc,
+  resolveAutoRequestGlobalsTargets,
   resolveInjectRequestGlobalsOptions,
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
@@ -309,5 +310,63 @@ describe('injectRequestGlobals helpers', () => {
       'AbortController',
       'AbortSignal',
     ])
+  })
+
+  it('resolves request runtime targets on demand for fetch usage in auto mode', () => {
+    expect(resolveAutoRequestGlobalsTargets(
+      'export async function run() { return fetch("/api") }',
+      [
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
+      ],
+    )).toEqual([
+      'fetch',
+      'Headers',
+      'Request',
+      'Response',
+      'AbortController',
+      'AbortSignal',
+      'XMLHttpRequest',
+    ])
+  })
+
+  it('resolves websocket target on demand without request runtime group', () => {
+    expect(resolveAutoRequestGlobalsTargets(
+      'export const socket = new WebSocket("wss://request-globals.invalid/socket")',
+      [
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
+      ],
+    )).toEqual([
+      'WebSocket',
+    ])
+  })
+
+  it('does not treat locally shadowed globals as auto-injection usage', () => {
+    expect(resolveAutoRequestGlobalsTargets(
+      'const fetch = createFetch(); export { fetch }',
+      [
+        'fetch',
+        'Headers',
+        'Request',
+        'Response',
+        'AbortController',
+        'AbortSignal',
+        'XMLHttpRequest',
+        'WebSocket',
+      ],
+    )).toEqual([])
   })
 })

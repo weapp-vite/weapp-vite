@@ -285,11 +285,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     rewriteBundleDynamicGlobalResolution(rolldownBundle)
 
     const installerChunks = injectRequestGlobalsOptions?.targets?.length
-      ? injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets)
+      ? injectRequestGlobalsBundleRuntime(rolldownBundle, injectRequestGlobalsOptions.targets, injectRequestGlobalsOptions.mode)
       : new Map<string, string>()
     if (injectRequestGlobalsOptions?.targets?.length) {
-      injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
-      injectRequestGlobalsLocalBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, state.entriesMap)
+      injectRequestGlobalsPassiveBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, injectRequestGlobalsOptions.mode, state.entriesMap)
+      injectRequestGlobalsLocalBindings(rolldownBundle, installerChunks, injectRequestGlobalsOptions.targets, injectRequestGlobalsOptions.mode, state.entriesMap)
       injectAxiosFetchAdapterEnv(rolldownBundle)
     }
 
@@ -311,6 +311,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       {
         enabled: injectRequestGlobalsOptions?.prelude === true,
         installerChunks,
+        mode: injectRequestGlobalsOptions?.mode ?? 'explicit',
         targets: injectRequestGlobalsOptions?.targets ?? [],
       },
       asset => this.emitFile(asset),

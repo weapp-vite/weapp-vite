@@ -938,6 +938,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
+          'const __keep__ = [XMLHttpRequest, WebSocket];',
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
@@ -947,7 +948,7 @@ describe('core lifecycle emit hook extra branches', () => {
       'pages/request-globals/fetch.js': {
         type: 'chunk',
         fileName: 'pages/request-globals/fetch.js',
-        code: 'const e=require("../../common.js");Page({})',
+        code: 'const e=require("../../common.js");const response = fetch("/api");const socket = WebSocket;Page({ response, socket })',
         imports: ['common.js'],
         dynamicImports: [],
       },
@@ -1012,6 +1013,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'pages/request-globals/fetch.js',
         code: [
           'const e=require("../../common.js"),t=require("../../dist.js");',
+          'console.log(fetch);',
           'Page({ setup(){',
           `const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`,
           `var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch;`,
@@ -1026,7 +1028,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../dist.js")`)
-    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = t["At"]({ targets: ["fetch"] }) || globalThis;`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
   })
@@ -1107,7 +1109,7 @@ describe('core lifecycle emit hook extra branches', () => {
       'app.js': {
         type: 'chunk',
         fileName: 'app.js',
-        code: 'const e=require("./common.js");App({})',
+        code: 'const e=require("./common.js");const response = fetch("/api");const socket = WebSocket;App({ response, socket })',
         imports: ['common.js'],
         dynamicImports: [],
       },
@@ -1148,6 +1150,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'dist.js',
         code: [
           'const e=require("./common.js");',
+          'const __keep__ = [Request, WebSocket];',
           'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),

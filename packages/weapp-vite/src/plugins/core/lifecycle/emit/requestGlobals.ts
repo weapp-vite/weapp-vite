@@ -16,6 +16,7 @@ import path from 'pathe'
 import {
   createRequestGlobalsPassiveBindingsCode,
   FULL_REQUEST_GLOBAL_TARGETS,
+  resolveAutoRequestGlobalsTargets,
   resolveRequestGlobalsBindingTargets,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 import { toPosixPath } from '../../../../utils'
@@ -28,6 +29,16 @@ import {
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
 } from './constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
+
+function resolveChunkRequestGlobalsTargets(
+  code: string,
+  targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
+) {
+  return mode === 'auto'
+    ? resolveAutoRequestGlobalsTargets(code, targets)
+    : targets
+}
 
 export function resolveRequestGlobalsInstallerName(code: string) {
   const installerMatch = code.match(REQUEST_GLOBAL_INSTALLER_RE)
@@ -150,13 +161,15 @@ export function resolveRequestGlobalsExportName(code: string) {
   }
 }
 
-export function injectRequestGlobalsBundleRuntime(bundle: OutputBundle, targets: WeappInjectRequestGlobalsTarget[]) {
+export function injectRequestGlobalsBundleRuntime(
+  bundle: OutputBundle,
+  targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
+) {
   const installerChunks = new Map<string, string>()
   if (targets.length === 0) {
     return installerChunks
   }
-
-  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -172,9 +185,18 @@ export function injectRequestGlobalsBundleRuntime(bundle: OutputBundle, targets:
     }
 
     installerChunks.set(toPosixPath(chunk.fileName), exportName)
-    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
+    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+    if (chunkTargets.length === 0) {
+      continue
+    }
+
+    const bindingTargets = resolveRequestGlobalsBindingTargets(chunkTargets)
+    if (bindingTargets.length === 0) {
+      continue
+    }
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
     const runtimeBindingCode = [
-      `const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = ${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      `const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = ${installerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`,
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `${target} = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
     ].join(';')
@@ -195,16 +217,12 @@ export function injectRequestGlobalsPassiveBindings(
   bundle: OutputBundle,
   installerChunks: Map<string, string>,
   targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
 ) {
   if (installerChunks.size === 0 || targets.length === 0) {
     return
   }
-  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
-  if (bindingTargets.length === 0) {
-    return
-  }
-  const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(targets)
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
@@ -225,6 +243,14 @@ export function injectRequestGlobalsPassiveBindings(
     if (entryType === 'page' || entryType === 'component' || entryType === 'app') {
       continue
     }
+    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+    if (chunkTargets.length === 0) {
+      continue
+    }
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
+    if (!passiveBindingsCode) {
+      continue
+    }
     chunk.code = `/* ${REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER} */ ${passiveBindingsCode}\n${chunk.code}`
   }
 }
@@ -233,13 +259,10 @@ export function injectRequestGlobalsLocalBindings(
   bundle: OutputBundle,
   installerChunks: Map<string, string>,
   targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
 ) {
   if (installerChunks.size === 0 || targets.length === 0) {
-    return
-  }
-  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
-  if (bindingTargets.length === 0) {
     return
   }
   for (const output of Object.values(bundle)) {
@@ -253,6 +276,14 @@ export function injectRequestGlobalsLocalBindings(
       continue
     }
     if (chunk.code.includes(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)) {
+      continue
+    }
+    const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+    if (chunkTargets.length === 0) {
+      continue
+    }
+    const bindingTargets = resolveRequestGlobalsBindingTargets(chunkTargets)
+    if (bindingTargets.length === 0) {
       continue
     }
     let requireImportLiteral: string | null = null
@@ -275,7 +306,7 @@ export function injectRequestGlobalsLocalBindings(
     }
     const injectionCode = [
       `const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require(${requireImportLiteral})`,
-      `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`,
       `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
@@ -315,11 +346,13 @@ export function createRequestGlobalsPreludeCode(
   chunk: OutputChunk,
   installerChunks: Map<string, string>,
   targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
 ) {
-  if (targets.length === 0 || chunk.code.includes(REQUEST_GLOBAL_PRELUDE_MARKER)) {
+  const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+  if (chunkTargets.length === 0 || chunk.code.includes(REQUEST_GLOBAL_PRELUDE_MARKER)) {
     return undefined
   }
-  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  const bindingTargets = resolveRequestGlobalsBindingTargets(chunkTargets)
   if (bindingTargets.length === 0) {
     return undefined
   }
@@ -329,14 +362,14 @@ export function createRequestGlobalsPreludeCode(
   let installerHostCode: string | undefined
 
   if (installerName && exportName) {
-    installerHostCode = `${installerName}({ targets: ${JSON.stringify(targets)} }) || globalThis`
+    installerHostCode = `${installerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
   }
   else {
     const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
     if (!installerImport?.requireImportLiteral || !installerImport.exportName) {
       return undefined
     }
-    installerHostCode = `require(${installerImport.requireImportLiteral})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`
+    installerHostCode = `require(${installerImport.requireImportLiteral})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
   }
 
   return [
@@ -358,11 +391,13 @@ export function createRequestGlobalsPreludeAssetCode(
   chunk: OutputChunk,
   installerChunks: Map<string, string>,
   targets: WeappInjectRequestGlobalsTarget[],
+  mode: 'auto' | 'explicit',
 ) {
-  if (targets.length === 0) {
+  const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
+  if (chunkTargets.length === 0) {
     return undefined
   }
-  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+  const bindingTargets = resolveRequestGlobalsBindingTargets(chunkTargets)
   if (bindingTargets.length === 0) {
     return undefined
   }
@@ -372,7 +407,7 @@ export function createRequestGlobalsPreludeAssetCode(
     return undefined
   }
 
-  const installerHostCode = `require(${JSON.stringify(toRequireRequestPath(preludeFileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(targets)} }) || globalThis`
+  const installerHostCode = `require(${JSON.stringify(toRequireRequestPath(preludeFileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
 
   return [
     `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,

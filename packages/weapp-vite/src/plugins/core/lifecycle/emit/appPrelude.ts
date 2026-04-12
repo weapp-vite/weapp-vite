@@ -130,6 +130,7 @@ export function emitAppPreludeRequireAssets(
   requestGlobalsPreludeOptions: {
     enabled: boolean
     installerChunks: Map<string, string>
+    mode: 'auto' | 'explicit'
     targets: WeappInjectRequestGlobalsTarget[]
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
@@ -158,7 +159,7 @@ export function emitAppPreludeRequireAssets(
     })
     const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled
       ? scopeChunks
-          .map(chunk => createRequestGlobalsPreludeAssetCode(fileName, chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets))
+          .map(chunk => createRequestGlobalsPreludeAssetCode(fileName, chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets, requestGlobalsPreludeOptions.mode))
           .find(Boolean)
       : undefined
     const source = [requestGlobalsPreludeCode, appPreludeCode].filter(Boolean).join('\n')
@@ -174,6 +175,7 @@ export function injectAppPreludeCode(
   requestGlobalsPreludeOptions: {
     enabled: boolean
     installerChunks: Map<string, string>
+    mode: 'auto' | 'explicit'
     targets: WeappInjectRequestGlobalsTarget[]
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
@@ -198,7 +200,7 @@ export function injectAppPreludeCode(
       continue
     }
     const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled && options.mode !== 'require'
-      ? createRequestGlobalsPreludeCode(chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets)
+      ? createRequestGlobalsPreludeCode(chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets, requestGlobalsPreludeOptions.mode)
       : undefined
     const injectedCode = [
       requestGlobalsPreludeCode,

@@ -17,6 +17,7 @@ import {
   REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
 } from '@weapp-core/constants'
 import { parse as parseSfc } from 'vue/compiler-sfc'
+import { parseJsLike, traverse } from '../../../utils/babel'
 
 export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'fetch',
@@ -33,6 +34,24 @@ export const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'AbortController',
   'AbortSignal',
 ]
+
+export const REQUEST_RUNTIME_REQUEST_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+  'fetch',
+  'Headers',
+  'Request',
+  'Response',
+  'AbortController',
+  'AbortSignal',
+  'XMLHttpRequest',
+]
+
+const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectRequestGlobalsTarget>([
+  'fetch',
+  'Headers',
+  'Request',
+  'Response',
+  'XMLHttpRequest',
+])
 
 const DEFAULT_REQUEST_GLOBAL_DEPENDENCIES = ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client']
 const DEFAULT_ABORT_GLOBAL_DEPENDENCIES = ['@tanstack/query-core', '@tanstack/vue-query']
@@ -316,6 +335,81 @@ const MANUAL_REQUEST_GLOBALS_IMPORT_RE = /from\s*['"](?:@wevu\/web-apis|weapp-vi
 const MANUAL_INSTALL_REQUEST_GLOBALS_CALL_RE = /\binstallRequestGlobals\s*\(/
 const MANUAL_INSTALL_ABORT_GLOBALS_CALL_RE = /\binstallAbortGlobals\s*\(/
 
+function normalizeResolvedRequestGlobalTargets(
+  targets: Iterable<WeappInjectRequestGlobalsTarget>,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+) {
+  const resolvedSet = new Set(targets)
+  return allowedTargets.filter(target => resolvedSet.has(target))
+}
+
+function extractRequestGlobalsUsageSource(code: string) {
+  if (!code.includes('<script')) {
+    return code
+  }
+
+  const { descriptor, errors } = parseSfc(code, {
+    filename: 'request-globals-usage.vue',
+    ignoreEmpty: false,
+  })
+  if (errors.length > 0) {
+    return code
+  }
+
+  const blocks = [
+    descriptor.script?.content,
+    descriptor.scriptSetup?.content,
+  ].filter((content): content is string => typeof content === 'string' && content.trim().length > 0)
+
+  return blocks.join('\n')
+}
+
+function resolveReferencedRequestGlobalsTargets(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+) {
+  if (allowedTargets.length === 0) {
+    return []
+  }
+
+  const usageSource = extractRequestGlobalsUsageSource(code)
+  if (!usageSource.trim()) {
+    return []
+  }
+
+  const allowedTargetSet = new Set(allowedTargets)
+  const fastPathMatched = allowedTargets.some(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
+  if (!fastPathMatched) {
+    return []
+  }
+
+  try {
+    const ast = parseJsLike(usageSource)
+    const resolvedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+
+    traverse(ast as any, {
+      Identifier(path: any) {
+        const identifierName = path.node?.name
+        if (!identifierName || !allowedTargetSet.has(identifierName)) {
+          return
+        }
+        if (typeof path.isReferencedIdentifier === 'function' && !path.isReferencedIdentifier()) {
+          return
+        }
+        if (path.scope?.hasBinding?.(identifierName)) {
+          return
+        }
+        resolvedTargets.add(identifierName)
+      },
+    })
+
+    return [...resolvedTargets]
+  }
+  catch {
+    return allowedTargets.filter(target => new RegExp(`\\b${target}\\b`, 'u').test(usageSource))
+  }
+}
+
 export function resolveManualRequestGlobalsTargets(code: string): WeappInjectRequestGlobalsTarget[] {
   if (!MANUAL_REQUEST_GLOBALS_IMPORT_RE.test(code)) {
     return []
@@ -334,6 +428,43 @@ export function resolveManualRequestGlobalsTargets(code: string): WeappInjectReq
   }
 
   return [...targets]
+}
+
+/**
+ * @description 根据源码里的实际引用情况，推导 auto 模式需要安装的最小请求全局集合。
+ */
+export function resolveAutoRequestGlobalsTargets(
+  code: string,
+  allowedTargets: readonly WeappInjectRequestGlobalsTarget[],
+): WeappInjectRequestGlobalsTarget[] {
+  const referencedTargets = resolveReferencedRequestGlobalsTargets(code, allowedTargets)
+  if (referencedTargets.length === 0) {
+    return []
+  }
+
+  const resolvedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  const referencedTargetSet = new Set(referencedTargets)
+
+  if (referencedTargets.some(target => REQUEST_RUNTIME_CORE_USAGE_TARGETS.has(target))) {
+    for (const target of REQUEST_RUNTIME_REQUEST_TARGETS) {
+      if (allowedTargets.includes(target)) {
+        resolvedTargets.add(target)
+      }
+    }
+  }
+  else if (referencedTargetSet.has('AbortController') || referencedTargetSet.has('AbortSignal')) {
+    for (const target of ABORT_REQUEST_GLOBAL_TARGETS) {
+      if (allowedTargets.includes(target)) {
+        resolvedTargets.add(target)
+      }
+    }
+  }
+
+  if (referencedTargetSet.has('WebSocket') && allowedTargets.includes('WebSocket')) {
+    resolvedTargets.add('WebSocket')
+  }
+
+  return normalizeResolvedRequestGlobalTargets(resolvedTargets, allowedTargets)
 }
 
 /**

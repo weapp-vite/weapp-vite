@@ -1,6 +1,7 @@
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
+  resolveAutoRequestGlobalsTargets,
   resolveManualRequestGlobalsTargets,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
 
@@ -9,6 +10,23 @@ export function resolvePassiveRequestGlobalsTargets(code: string, requestGlobals
     return []
   }
   return resolveManualRequestGlobalsTargets(code)
+}
+
+export function resolveRequestGlobalsTargetsForCode(
+  code: string,
+  options: {
+    mode?: 'auto' | 'explicit'
+    targets?: string[]
+  } | null | undefined,
+) {
+  const requestGlobalsTargets = options?.targets ?? []
+  if (requestGlobalsTargets.length === 0) {
+    return []
+  }
+  if (options?.mode === 'auto') {
+    return resolveAutoRequestGlobalsTargets(code, requestGlobalsTargets as any)
+  }
+  return requestGlobalsTargets
 }
 
 export function injectRequestGlobalsIntoLoadResult(

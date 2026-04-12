@@ -11,7 +11,11 @@ import { normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
-import { injectRequestGlobalsIntoLoadResult, resolvePassiveRequestGlobalsTargets } from './requestGlobals'
+import {
+  injectRequestGlobalsIntoLoadResult,
+  resolvePassiveRequestGlobalsTargets,
+  resolveRequestGlobalsTargetsForCode,
+} from './requestGlobals'
 import {
   createWeapiInjectionCode,
   replacePlatformApiInLoadResult,
@@ -30,13 +34,6 @@ export function createLoadHook(state: CorePluginState) {
     appPrelude: configService.weappViteConfig?.appPrelude,
     injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
   }, configService.packageJson, message => logger.warn(message))
-
-  function resolveRequestGlobalsTargets() {
-    if (!injectRequestGlobalsOptions) {
-      return []
-    }
-    return injectRequestGlobalsOptions.targets
-  }
 
   async function ensureWeapiAvailable(pluginCtx: any, importer: string) {
     if (weapiResolution.checked) {
@@ -82,7 +79,9 @@ export function createLoadHook(state: CorePluginState) {
     if (libEntry) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'component')
-      const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      const requestGlobalsTargets = result && typeof result === 'object' && 'code' in result
+        ? resolveRequestGlobalsTargetsForCode((result as any).code, injectRequestGlobalsOptions)
+        : injectRequestGlobalsOptions?.targets ?? []
       if (requestGlobalsTargets.length === 0) {
         return result
       }
@@ -95,7 +94,9 @@ export function createLoadHook(state: CorePluginState) {
     if (relativeBasename === resolveRootEntryBasename(state)) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
-      const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      const requestGlobalsTargets = result && typeof result === 'object' && 'code' in result
+        ? resolveRequestGlobalsTargetsForCode((result as any).code, injectRequestGlobalsOptions)
+        : injectRequestGlobalsOptions?.targets ?? []
       const passiveRequestGlobalsTargets = result && typeof result === 'object' && 'code' in result
         ? resolvePassiveRequestGlobalsTargets((result as any).code, requestGlobalsTargets)
         : []
@@ -140,7 +141,9 @@ export function createLoadHook(state: CorePluginState) {
       const loadType = declaredEntryType === 'page' ? 'page' : 'component'
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, loadType)
-      const requestGlobalsTargets = resolveRequestGlobalsTargets()
+      const requestGlobalsTargets = result && typeof result === 'object' && 'code' in result
+        ? resolveRequestGlobalsTargetsForCode((result as any).code, injectRequestGlobalsOptions)
+        : injectRequestGlobalsOptions?.targets ?? []
       const passiveRequestGlobalsTargets = result && typeof result === 'object' && 'code' in result
         ? resolvePassiveRequestGlobalsTargets((result as any).code, requestGlobalsTargets)
         : []
