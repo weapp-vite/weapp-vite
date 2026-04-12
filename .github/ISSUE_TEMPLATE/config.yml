@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Feature Request
+  - name: 问题讨论与使用咨询
     url: https://github.com/weapp-vite/weapp-vite/discussions
-    about: Suggest new features for consideration
+    about: 如果是使用问题、方案讨论或还不确定是否应开 issue，请先到 Discussions
   # - name: Discord Chat
   #   url: https://chat.vuejs.org
   #   about: Ask questions and discuss with other Vue users in real time.

@@ -1,5 +1,5 @@
-name: 🐞 Bug report
-description: Create a report to help us improve
+name: 🐞 Bug 反馈
+description: 提交问题报告，帮助我们定位与修复
 title: '[Bug]: '
 labels: [bug]
 assignees:
@@ -8,64 +8,68 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Before You Start...**
+        **提交前请先确认**
 
-        This form is only for submitting bug reports. If you have a usage question
-        or are unsure if this is really a bug, make sure to:
+        这个表单只用于提交 Bug。
 
-        Also try to search for your issue - it may have already been answered or even fixed in the development branch.
-        However, if you find that an old, closed issue still persists in the latest version,
-        you should open a new issue using the form below instead of commenting on the old issue.
+        如果你是使用问题、方案讨论，或还不确定是否属于缺陷，请优先使用 Discussions。
+
+        提交前也请先搜索现有 issue。
+        如果某个旧 issue 已关闭，但你在最新版本里仍能稳定复现，请重新开一个新 issue，而不是在旧 issue 下继续追加评论。
   - type: input
     id: version
     attributes:
-      label: version
+      label: 版本号
     validations:
       required: true
   - type: input
     id: reproduction-link
     attributes:
-      label: Link to minimal reproduction
+      label: 最小复现链接
       description: |
-        You can always provide a GitHub repository.
+        可以直接提供一个 GitHub 仓库链接。
 
-        The reproduction should be **minimal** - i.e. it should contain only the bare minimum amount of code needed
-        to show the bug.
+        复现仓库应尽量 **最小化**，只保留触发问题所需的最少代码。
 
-        Please do not just fill in a random link. The issue will be closed if no valid reproduction is provided.
-      placeholder: Reproduction Link
+        请不要随意填写无关链接；如果没有有效复现，issue 可能会被关闭。
+      placeholder: 复现仓库或最小复现链接
     validations:
       required: true
   - type: textarea
     id: steps-to-reproduce
     attributes:
-      label: Steps to reproduce
+      label: 复现步骤
       description: |
-        What do we need to do after opening your repro in order to make the bug happen? Clear and concise reproduction instructions are important for us to be able to triage your issue in a timely manner. Note that you can use [Markdown](https://guides.github.com/features/mastering-markdown/) to format lists and code.
-      placeholder: Steps to reproduce
+        在打开复现后，需要按什么步骤才能稳定触发问题？请尽量写清楚、写具体。
+        你可以使用 Markdown 来组织列表和代码片段。
+      placeholder: |
+        1. 安装依赖
+        2. 执行构建 / dev / e2e
+        3. 打开某个页面或执行某段逻辑
+        4. 观察报错
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: What is expected?
+      label: 预期结果
     validations:
       required: true
   - type: textarea
     id: actually-happening
     attributes:
-      label: What is actually happening?
+      label: 实际结果
     validations:
       required: true
   - type: textarea
     id: system-info
     attributes:
-      label: System Info
-      description: Output of `npx -y envinfo@latest --system --npmPackages --binaries`
+      label: 环境信息
+      description: 可粘贴 `npx -y envinfo@latest --system --npmPackages --binaries` 的输出
       render: shell
-      placeholder: System, Binaries
+      placeholder: 系统、Node、pnpm、相关依赖版本等
   - type: textarea
     id: additional-comments
     attributes:
-      label: Any additional comments?
-      description: e.g. some background/context of how you ran into this bug.
+      label: 补充说明
+      description: 例如背景信息、日志、截图、相关 issue 或你已经尝试过的排查手段。

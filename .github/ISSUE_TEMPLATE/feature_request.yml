@@ -1,0 +1,57 @@
+name: ✨ 功能建议
+description: 提交新功能或现有能力改进建议
+title: '[Feature]: '
+labels: [enhancement]
+assignees:
+  - sonofmagic
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **提交前请先确认**
+
+        这个表单用于提交新功能提案，或对现有能力提出改进建议。
+
+        提交前请先搜索现有 issues 和 discussions，避免重复。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 这个功能要解决什么问题？
+      description: 描述当前的痛点、限制或缺失能力。
+      placeholder: 说明现在的工作流问题或能力缺口。
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: 期望的方案
+      description: 描述你希望新增的 API、配置、行为或交互方式。
+      placeholder: 说明你希望引入的功能设计。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 你考虑过哪些替代方案？
+      description: 列出当前可行的 workaround 或其他思路。
+      placeholder: 说明替代方案、取舍，或为什么当前 workaround 不够用。
+  - type: textarea
+    id: example
+    attributes:
+      label: 示例或期望用法
+      description: 如果方便，请提供配置片段、伪代码、截图或期望产物。
+      placeholder: |
+        示例：
+
+        ```ts
+        export default defineConfig({
+          weapp: {
+            ...
+          },
+        })
+        ```
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 补充说明
+      description: 可补充背景、相关链接、关联 issue、兼容性约束等信息。
