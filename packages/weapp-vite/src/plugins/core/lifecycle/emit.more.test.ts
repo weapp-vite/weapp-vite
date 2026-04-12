@@ -1033,6 +1033,49 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
   })
 
+  it('injects top-level local bindings when installer is inlined into the same entry chunk', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/request-globals/fetch.js': {
+        type: 'chunk',
+        fileName: 'pages/request-globals/fetch.js',
+        code: [
+          'const e=require("../../common.js");',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'console.log(fetch, URL);',
+          'Page({});',
+        ].join(''),
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const code = bundle['pages/request-globals/fetch.js'].code
+    expect(code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+    expect(code.indexOf('const e=require("../../common.js");')).toBeLessThan(code.indexOf(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn(`))
+    expect(code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"] }) || globalThis`)
+    expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.fetch`)
+    expect(code).toContain(`var URL = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.URL`)
+  })
+
   it('prepends installer require before earlier shared chunk requires in page chunks', async () => {
     const state = createState({
       subPackageMeta: null,

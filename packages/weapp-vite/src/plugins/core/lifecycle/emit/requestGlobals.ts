@@ -220,7 +220,7 @@ export function injectRequestGlobalsPassiveBindings(
   mode: 'auto' | 'explicit',
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
 ) {
-  if (installerChunks.size === 0 || targets.length === 0) {
+  if (targets.length === 0) {
     return
   }
   for (const output of Object.values(bundle)) {
@@ -262,7 +262,7 @@ export function injectRequestGlobalsLocalBindings(
   mode: 'auto' | 'explicit',
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
 ) {
-  if (installerChunks.size === 0 || targets.length === 0) {
+  if (targets.length === 0) {
     return
   }
   for (const output of Object.values(bundle)) {
@@ -286,6 +286,8 @@ export function injectRequestGlobalsLocalBindings(
     if (bindingTargets.length === 0) {
       continue
     }
+    const inlineInstallerName = resolveRequestGlobalsInstallerName(chunk.code)
+    const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)
     let requireImportLiteral: string | null = null
     let exportName: string | undefined
     for (const requireMatch of chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)) {
@@ -301,16 +303,27 @@ export function injectRequestGlobalsLocalBindings(
       requireImportLiteral = requireMatch[2] ?? null
       break
     }
-    if (!requireImportLiteral || !exportName) {
+    const installerHostExpression = inlineInstallerName
+      ? `${inlineInstallerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
+      : requireImportLiteral && exportName
+        ? `${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
+        : null
+    if (!installerHostExpression) {
       continue
     }
     const injectionCode = [
-      `const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require(${requireImportLiteral})`,
-      `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`,
+      ...(!inlineInstallerName && requireImportLiteral && exportName
+        ? [`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require(${requireImportLiteral})`]
+        : []),
+      `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${installerHostExpression}`,
       `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
     ].join(';')
+    if (inlineInstallerName && firstRequireMatch?.[0]) {
+      chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${chunk.code.replace(firstRequireMatch[0], match => `${match};${injectionCode}`)}\n`
+      continue
+    }
     chunk.code = `/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */ ${injectionCode};\n${chunk.code}`
   }
 }
