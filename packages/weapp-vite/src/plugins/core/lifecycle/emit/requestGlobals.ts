@@ -11,6 +11,7 @@ import {
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
   REQUEST_GLOBAL_PRELUDE_MARKER,
+  REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME,
 } from '@weapp-core/constants'
 import path from 'pathe'
 import {
@@ -29,8 +30,6 @@ import {
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
 } from './constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
-
-const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
 function resolveChunkRequestGlobalsTargets(
   code: string,

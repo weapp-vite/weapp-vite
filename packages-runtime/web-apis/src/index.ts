@@ -8,6 +8,7 @@ import {
   resolveRequestGlobalsHost,
   resolveRequestGlobalsHosts,
 } from './shared'
+import { TextDecoderPolyfill, TextEncoderPolyfill } from './textCodec'
 import { URLPolyfill, URLSearchParamsPolyfill } from './url'
 import { BlobPolyfill, FormDataPolyfill } from './web'
 import { WebSocketPolyfill } from './websocket'
@@ -18,6 +19,8 @@ export type WeappInjectRequestGlobalsTarget
     | 'Headers'
     | 'Request'
     | 'Response'
+    | 'TextEncoder'
+    | 'TextDecoder'
     | 'AbortController'
     | 'AbortSignal'
     | 'XMLHttpRequest'
@@ -29,17 +32,30 @@ export interface InstallRequestGlobalsOptions {
 
 type WeappRequestGlobalActualTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
 
-function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
-  const bindingTargets: WeappRequestGlobalActualTarget[] = [...targets]
-  const needsUrlGlobals = targets.some(target => (
+function hasRequestRuntimeBinaryUsage(targets: WeappInjectRequestGlobalsTarget[]) {
+  return targets.some(target => (
     target === 'fetch'
     || target === 'Request'
     || target === 'Response'
     || target === 'XMLHttpRequest'
     || target === 'WebSocket'
   ))
+}
 
-  if (needsUrlGlobals) {
+function resolveInstallTargets(targets: WeappInjectRequestGlobalsTarget[]) {
+  const installTargets: WeappInjectRequestGlobalsTarget[] = [...targets]
+  if (hasRequestRuntimeBinaryUsage(targets)) {
+    installTargets.push('TextEncoder', 'TextDecoder')
+  }
+  return [...new Set(installTargets)]
+}
+
+function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
+  const bindingTargets: WeappRequestGlobalActualTarget[] = [...targets]
+  const needsRequestRuntimeBinarySupport = hasRequestRuntimeBinaryUsage(targets)
+
+  if (needsRequestRuntimeBinarySupport) {
+    bindingTargets.push('TextEncoder', 'TextDecoder')
     bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
   }
 
@@ -103,6 +119,20 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectReque
   if (target === 'Response') {
     if (typeof host.Response !== 'function' || isPlaceholderRequestGlobal(host.Response)) {
       assignHostGlobal(host, 'Response', ResponsePolyfill)
+    }
+    return
+  }
+
+  if (target === 'TextEncoder') {
+    if (typeof host.TextEncoder !== 'function' || isPlaceholderRequestGlobal(host.TextEncoder)) {
+      assignHostGlobal(host, 'TextEncoder', TextEncoderPolyfill)
+    }
+    return
+  }
+
+  if (target === 'TextDecoder') {
+    if (typeof host.TextDecoder !== 'function' || isPlaceholderRequestGlobal(host.TextDecoder)) {
+      assignHostGlobal(host, 'TextDecoder', TextDecoderPolyfill)
     }
     return
   }
@@ -195,25 +225,21 @@ function syncWeappViteRequestGlobalsActuals(
  * @description 按需向小程序全局环境注入缺失的请求相关对象。
  */
 export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}) {
-  const targets = options.targets ?? [
+  const targets = resolveInstallTargets(options.targets ?? [
     'fetch',
     'Headers',
     'Request',
     'Response',
+    'TextEncoder',
+    'TextDecoder',
     'AbortController',
     'AbortSignal',
     'XMLHttpRequest',
     'WebSocket',
-  ]
+  ])
   const hosts = resolveRequestGlobalsHosts()
   const primaryHost = resolveRequestGlobalsHost()
-  const needsUrlGlobals = targets.some(target => (
-    target === 'fetch'
-    || target === 'Request'
-    || target === 'Response'
-    || target === 'XMLHttpRequest'
-    || target === 'WebSocket'
-  ))
+  const needsUrlGlobals = hasRequestRuntimeBinaryUsage(targets)
 
   ensureRuntimeHostAliases(primaryHost)
 

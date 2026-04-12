@@ -30,6 +30,8 @@ describe('injectRequestGlobals helpers', () => {
         'Headers',
         'Request',
         'Response',
+        'TextEncoder',
+        'TextDecoder',
         'AbortController',
         'AbortSignal',
         'XMLHttpRequest',
@@ -51,6 +53,8 @@ describe('injectRequestGlobals helpers', () => {
         'Headers',
         'Request',
         'Response',
+        'TextEncoder',
+        'TextDecoder',
         'AbortController',
         'AbortSignal',
         'XMLHttpRequest',
@@ -115,6 +119,8 @@ describe('injectRequestGlobals helpers', () => {
         'Headers',
         'Request',
         'Response',
+        'TextEncoder',
+        'TextDecoder',
         'AbortController',
         'AbortSignal',
         'XMLHttpRequest',
@@ -141,6 +147,8 @@ describe('injectRequestGlobals helpers', () => {
         'Headers',
         'Request',
         'Response',
+        'TextEncoder',
+        'TextDecoder',
         'AbortController',
         'AbortSignal',
         'XMLHttpRequest',
@@ -212,6 +220,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain(REQUEST_GLOBAL_INSTALLER_HOST_REF)
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
+    expect(code).toContain(`var TextDecoder = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.TextDecoder`)
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
   })
 
@@ -222,6 +231,7 @@ describe('injectRequestGlobals helpers', () => {
 
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
+    expect(code).toContain(`var TextEncoder = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.TextEncoder`)
   })
 
   it('can create passive local binding injection code for manual installers', () => {
@@ -233,6 +243,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain(`function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value)`)
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
+    expect(code).toContain(`var TextDecoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextDecoder",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
     expect(code).not.toContain('import { installRequestGlobals')
   })
 
@@ -245,6 +256,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain(`var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest"`)
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket"`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL"`)
+    expect(code).toContain(`var TextEncoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextEncoder"`)
     expect(code).not.toContain(`${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
@@ -256,7 +268,16 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain('<script lang="ts">')
     expect(code).toContain('installRequestGlobals')
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
+    expect(code).toContain(`var TextDecoder = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.TextDecoder`)
     expect(code).toContain('</script>')
+  })
+
+  it('resolves direct TextDecoder references in auto mode without requiring request dependencies', () => {
+    expect(resolveAutoRequestGlobalsTargets(`
+      export function decodePayload(payload) {
+        return new TextDecoder().decode(payload)
+      }
+    `, ['TextDecoder', 'TextEncoder', 'fetch'])).toEqual(['TextDecoder'])
   })
 
   it('injects into existing normal script before falling back to a new block', () => {
@@ -305,6 +326,8 @@ describe('injectRequestGlobals helpers', () => {
       'Headers',
       'Request',
       'Response',
+      'TextEncoder',
+      'TextDecoder',
       'AbortController',
       'AbortSignal',
       'XMLHttpRequest',

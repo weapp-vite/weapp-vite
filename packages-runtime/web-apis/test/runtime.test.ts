@@ -74,6 +74,8 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).Headers
     delete (globalThis as Record<string, any>).Request
     delete (globalThis as Record<string, any>).Response
+    delete (globalThis as Record<string, any>).TextEncoder
+    delete (globalThis as Record<string, any>).TextDecoder
     delete (globalThis as Record<string, any>).AbortController
     delete (globalThis as Record<string, any>).AbortSignal
     delete (globalThis as Record<string, any>).XMLHttpRequest
@@ -100,6 +102,8 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.AbortController).toBe('function')
     expect(typeof globalThis.Headers).toBe('function')
     expect(typeof globalThis.WebSocket).toBe('function')
+    expect(typeof globalThis.TextEncoder).toBe('function')
+    expect(typeof globalThis.TextDecoder).toBe('function')
   })
 
   it('supports fetch through @wevu/api request bridge without requiring wevu/fetch', async () => {
@@ -188,8 +192,23 @@ describe('request globals runtime', () => {
     expect(typeof (globalThis as any).wx.fetch).toBe('function')
     expect(typeof (globalThis as any).wx.URL).toBe('function')
     expect(typeof (globalThis as any).wx.URLSearchParams).toBe('function')
+    expect(typeof (globalThis as any).wx.TextEncoder).toBe('function')
+    expect(typeof (globalThis as any).wx.TextDecoder).toBe('function')
     expect(typeof globalThis.Blob).toBe('function')
     expect(typeof globalThis.FormData).toBe('function')
+  })
+
+  it('installs text codec globals required by request runtime and preserves unicode roundtrip', async () => {
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch'],
+    })
+
+    expect(typeof globalThis.TextEncoder).toBe('function')
+    expect(typeof globalThis.TextDecoder).toBe('function')
+
+    const bytes = new globalThis.TextEncoder().encode('你好, weapp-vite')
+    expect(new globalThis.TextDecoder().decode(bytes)).toBe('你好, weapp-vite')
   })
 
   it('installs request globals onto global alias hosts used by websocket libraries', async () => {

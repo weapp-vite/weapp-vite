@@ -37,6 +37,7 @@ Run full monorepo `pnpm test` only when cross-package impact is likely or explic
 ## 4. Editing Guardrails
 
 - Prefer minimal diffs in generated-code string assertions: verify behavior intent, not fragile formatting trivia.
+- 新增或迁移会跨 chunk / prelude / runtime / tests 共享的稳定 marker、导出名或宿主 key 时，优先放到 `@weapp-core/constants`，不要把这类常量只留在 `packages/weapp-vite` 的局部实现文件里。
 - When a behavior change is intentional, update:
   - transform implementation
   - unit tests

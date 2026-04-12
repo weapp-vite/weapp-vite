@@ -142,6 +142,8 @@ export type WeappInjectRequestGlobalsTarget
     | 'Headers'
     | 'Request'
     | 'Response'
+    | 'TextEncoder'
+    | 'TextDecoder'
     | 'AbortController'
     | 'AbortSignal'
     | 'XMLHttpRequest'

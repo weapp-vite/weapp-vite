@@ -20,6 +20,7 @@ export const REQUEST_GLOBAL_INSTALLER_HOST_REF = '__rh'
 export const REQUEST_GLOBAL_CHUNK_MODULE_REF = '__rm'
 export const REQUEST_GLOBAL_CHUNK_HOST_REF = '__rc'
 export const REQUEST_GLOBAL_BUNDLE_HOST_REF = '__rb'
+export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
 export const WEVU_PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
 export const WEVU_PAGE_LAYOUT_NONE = '__wv_no_layout'

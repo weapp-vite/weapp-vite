@@ -108,26 +108,42 @@ export function cloneArrayBufferView(view: ArrayBufferView) {
   return copied.buffer
 }
 
+export function encodeTextFallback(value: string) {
+  const normalized = String(value)
+  const binary = unescape(encodeURIComponent(normalized))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes.buffer
+}
+
 export function encodeText(value: string) {
   if (typeof TextEncoder === 'function') {
     return new TextEncoder().encode(value).buffer
   }
-  const bytes = new Uint8Array(value.length)
-  for (let i = 0; i < value.length; i++) {
-    bytes[i] = value.charCodeAt(i) & 0xFF
+  return encodeTextFallback(value)
+}
+
+export function decodeTextFallback(value: ArrayBuffer) {
+  const bytes = new Uint8Array(value)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
   }
-  return bytes.buffer
+  try {
+    return decodeURIComponent(escape(binary))
+  }
+  catch {
+    return binary
+  }
 }
 
 export function decodeText(value: ArrayBuffer) {
   if (typeof TextDecoder === 'function') {
     return new TextDecoder().decode(value)
   }
-  let text = ''
-  for (const byte of new Uint8Array(value)) {
-    text += String.fromCharCode(byte)
-  }
-  return text
+  return decodeTextFallback(value)
 }
 
 export function normalizeHeaderName(name: string) {

@@ -24,6 +24,8 @@ export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'Headers',
   'Request',
   'Response',
+  'TextEncoder',
+  'TextDecoder',
   'AbortController',
   'AbortSignal',
   'XMLHttpRequest',
@@ -40,6 +42,8 @@ export const REQUEST_RUNTIME_REQUEST_TARGETS: WeappInjectRequestGlobalsTarget[] 
   'Headers',
   'Request',
   'Response',
+  'TextEncoder',
+  'TextDecoder',
   'AbortController',
   'AbortSignal',
   'XMLHttpRequest',
@@ -266,7 +270,7 @@ function resolveRequestGlobalsRuntimeModuleId() {
 
 export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestGlobalsTarget[]) {
   const bindingTargets: WeappRequestGlobalFreeBindingTarget[] = [...targets]
-  const needsUrlGlobals = targets.some(target => (
+  const needsRequestRuntimeBinarySupport = targets.some(target => (
     target === 'fetch'
     || target === 'Request'
     || target === 'Response'
@@ -274,7 +278,8 @@ export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestG
     || target === 'WebSocket'
   ))
 
-  if (needsUrlGlobals) {
+  if (needsRequestRuntimeBinarySupport) {
+    bindingTargets.push('TextEncoder', 'TextDecoder')
     bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
   }
 
@@ -331,6 +336,12 @@ export function createRequestGlobalsPassiveBindingsCode(targets: WeappInjectRequ
     }
     if (target === 'Response') {
       return `var Response = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Response",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[null])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.Response,[null])?globalThis.Response:${placeholderFactory})`
+    }
+    if (target === 'TextEncoder') {
+      return `var TextEncoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextEncoder",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.TextEncoder,[])?globalThis.TextEncoder:${placeholderFactory})`
+    }
+    if (target === 'TextDecoder') {
+      return `var TextDecoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextDecoder",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.TextDecoder,[])?globalThis.TextDecoder:${placeholderFactory})`
     }
     if (target === 'XMLHttpRequest') {
       return `var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},[])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${placeholderFactory})`
@@ -564,6 +575,9 @@ export function resolveAutoRequestGlobalsTargets(
     resolvedTargets.add(target)
   }
   const referencedTargetSet = new Set(referencedTargets)
+  for (const target of referencedTargets) {
+    resolvedTargets.add(target)
+  }
 
   if (referencedTargets.some(target => REQUEST_RUNTIME_CORE_USAGE_TARGETS.has(target))) {
     for (const target of REQUEST_RUNTIME_REQUEST_TARGETS) {

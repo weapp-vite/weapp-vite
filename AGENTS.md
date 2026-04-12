@@ -113,6 +113,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Variables/files: camelCase.
 - Classes/types: PascalCase.
 - Prefer named exports unless a file intentionally owns a single default export.
+- 跨包共享、会进入最终运行时代码、或需要在多个包/测试之间保持稳定值的 runtime marker / key / helper-name 常量，优先收敛到 `@weapp-core/constants`；不要把这类常量继续散落在 `packages/weapp-vite` 的单文件内部。
 - Keep eslint/stylelint clean and avoid introducing TypeScript errors.
 - Always fix stylelint issues in standalone style files and in `<style>` blocks inside `.vue` files (including generated style outputs).
 - JSDoc comments must be in Chinese.
