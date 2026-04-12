@@ -100,6 +100,7 @@ const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
   /miniprogram-builder\/modules\/corecompiler\/summerCompiler/i,
 ] as const
 const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile', 'all'] as const
+const DEVTOOLS_ISLOGIN_JSON_PATTERN = /"login"\s*:\s*(true|false)/i
 
 function normalizePathForMatch(value: string) {
   const normalized = path.normalize(path.resolve(value))
@@ -418,6 +419,36 @@ function resolveWechatCliPath(cliPath?: string) {
     return DEFAULT_WECHAT_CLI_WINDOWS_PATH
   }
   return DEFAULT_WECHAT_CLI_MACOS_PATH
+}
+
+export function extractDevtoolsCliLoginState(output: string | undefined) {
+  const normalized = typeof output === 'string' ? output : ''
+  const match = normalized.match(DEVTOOLS_ISLOGIN_JSON_PATTERN)
+  if (!match) {
+    return null
+  }
+  return match[1]?.toLowerCase() === 'true'
+}
+
+async function resolveDevtoolsCliLoginState(cliPath?: string) {
+  const resolvedCliPath = resolveWechatCliPath(cliPath)
+  const result = await execa(resolvedCliPath, ['islogin'], {
+    reject: false,
+    timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
+  })
+  const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
+  const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+  const loginState = extractDevtoolsCliLoginState(`${stdout}\n${stderr}`)
+
+  if (loginState !== null) {
+    return loginState
+  }
+
+  if ((result.exitCode ?? 1) !== 0) {
+    throw new Error(stderr || stdout || `Failed to verify WeChat DevTools login: exit ${(result.exitCode ?? 1)}`)
+  }
+
+  return null
 }
 
 async function recoverDevtoolsCompileCache(options: {
@@ -1258,25 +1289,9 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
   let closeError: unknown = null
   try {
     if (resolveAutomatorLaunchMode() === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
-      const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({
-        projectPath,
-        timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
-        trustProject: isProjectPathTrustedByEnv(projectPath),
-        projectConfig: {
-          libVersion: DEFAULT_LIB_VERSION,
-        },
-      } satisfies AutomatorCliBridgePayload)], {
-        reject: false,
-        timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
-        env: {
-          ...process.env,
-          [AUTOMATOR_LAUNCH_MODE_ENV]: '',
-        },
-      })
-      if ((result.exitCode ?? 1) !== 0) {
-        const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
-        const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
-        throw new Error(stderr || stdout || `Failed to verify automator cli bridge login: exit ${(result.exitCode ?? 1)}`)
+      const loginState = await resolveDevtoolsCliLoginState()
+      if (loginState === false) {
+        throw createDevtoolsLoginRequiredError('需要重新登录')
       }
     }
     else {

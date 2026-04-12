@@ -82,6 +82,8 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).FormData
     delete (globalThis as Record<string, any>).wx
     delete (globalThis as Record<string, any>).global
+    delete (globalThis as Record<string, any>).self
+    delete (globalThis as Record<string, any>).window
     delete (globalThis as Record<string, any>)[REQUEST_GLOBAL_ACTUALS_KEY]
     wpiConnectSocketMock.mockReset()
   })
@@ -204,6 +206,47 @@ describe('request globals runtime', () => {
     expect(typeof (globalThis as any).global.WebSocket).toBe('function')
     expect((globalThis as any).self).toBe(globalThis)
     expect((globalThis as any).window).toBe(globalThis)
+  })
+
+  it('ignores null alias hosts when installing request globals', async () => {
+    ;(globalThis as Record<string, any>).global = null
+    ;(globalThis as Record<string, any>).self = null
+    ;(globalThis as Record<string, any>).window = null
+
+    const { installRequestGlobals } = await import('../src')
+
+    expect(() => installRequestGlobals({
+      targets: ['fetch', 'XMLHttpRequest', 'WebSocket'],
+    })).not.toThrow()
+    expect(typeof globalThis.fetch).toBe('function')
+    expect(typeof globalThis.XMLHttpRequest).toBe('function')
+    expect(typeof globalThis.WebSocket).toBe('function')
+  })
+
+  it('ignores host objects that reject injected request globals', async () => {
+    const throwingHost = Object.create(null)
+
+    for (const key of ['fetch', 'URL', 'URLSearchParams', 'Blob', 'FormData'] as const) {
+      Object.defineProperty(throwingHost, key, {
+        configurable: true,
+        enumerable: true,
+        get: () => undefined,
+        set: () => {
+          throw new TypeError(`Cannot set property '${key}' of host`)
+        },
+      })
+    }
+
+    ;(globalThis as Record<string, any>).wx = throwingHost
+
+    const { installRequestGlobals } = await import('../src')
+
+    expect(() => installRequestGlobals({
+      targets: ['fetch'],
+    })).not.toThrow()
+    expect(typeof globalThis.fetch).toBe('function')
+    expect(typeof globalThis.URL).toBe('function')
+    expect(typeof globalThis.URLSearchParams).toBe('function')
   })
 
   it('replaces lazy placeholder globals with real runtime implementations', async () => {

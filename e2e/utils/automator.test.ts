@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { describe, expect, it } from 'vitest'
-import { isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
+import { extractDevtoolsCliLoginState, isLikelyRelaunchRetryableError, terminateBridgeCliProcess } from './automator'
 
 function waitForSpawn(child: ReturnType<typeof spawn>) {
   return new Promise<number>((resolve, reject) => {
@@ -43,6 +43,12 @@ async function waitForProcessGone(pid: number, timeoutMs = 3_000) {
 }
 
 describe('automator', () => {
+  it('extracts login state from WeChat DevTools cli output', () => {
+    expect(extractDevtoolsCliLoginState('- initialize\n\n{"login":false}\n✔ islogin')).toBe(false)
+    expect(extractDevtoolsCliLoginState('- initialize\n\n{"login":true}\n✔ islogin')).toBe(true)
+    expect(extractDevtoolsCliLoginState('')).toBeNull()
+  })
+
   it('treats App.getCurrentPage protocol timeout as a retryable relaunch error', () => {
     const error = new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms')
 

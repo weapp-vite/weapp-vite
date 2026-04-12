@@ -387,12 +387,12 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
 
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-385/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-385/index', 'attach-probe')
       if (!issuePage) {
         throw new Error('Failed to launch issue-385 page')
       }
 
-      const runtimeResult = await waitForIssue385Runtime(issuePage)
+      const runtimeResult = await waitForIssue385Runtime(issuePage, 30_000)
       expect(runtimeResult?.layoutName).toBe('default')
       expect(runtimeResult?.componentAttachCount).toBe(1)
     }

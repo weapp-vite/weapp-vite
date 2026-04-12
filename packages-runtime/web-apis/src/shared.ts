@@ -54,7 +54,7 @@ export function resolveRequestGlobalsHost() {
 }
 
 function isRequestGlobalsHostCandidate(value: unknown): value is Record<string, any> {
-  return typeof value === 'object' || typeof value === 'function'
+  return value != null && (typeof value === 'object' || typeof value === 'function')
 }
 
 function pushRequestGlobalsHost(

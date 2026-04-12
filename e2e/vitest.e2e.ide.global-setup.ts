@@ -95,6 +95,7 @@ export default async function setupIdeE2E() {
 
   const {
     assertDevtoolsLoggedIn,
+    isDevtoolsLoginRequiredError,
     isDevtoolsHttpPortError,
   } = await import('./utils/automator')
   const projectPath = process.env.WEAPP_VITE_E2E_LOGIN_CHECK_PROJECT_PATH || DEFAULT_LOGIN_CHECK_PROJECT
@@ -107,6 +108,16 @@ export default async function setupIdeE2E() {
       const rawMessage = error instanceof Error ? error.message : String(error)
       const compactMessage = rawMessage.replace(WHITESPACE_RE, ' ').trim()
       const skipMessage = `WeChat DevTools 基础设施不可用，跳过 IDE 自动化用例。${compactMessage ? ` 原因: ${compactMessage.slice(0, 240)}` : ''}`
+      process.env[DEVTOOLS_SKIP_REASON_ENV] = skipMessage
+      process.stdout.write(`[warn] [runtime:launch-skip] ${skipMessage}\n`)
+      return async () => {
+        writeIdeWarningReport(reportPaths)
+      }
+    }
+    if (isDevtoolsLoginRequiredError(error)) {
+      const rawMessage = error instanceof Error ? error.message : String(error)
+      const compactMessage = rawMessage.replace(WHITESPACE_RE, ' ').trim()
+      const skipMessage = `WeChat DevTools 未登录，跳过 IDE 自动化用例。${compactMessage ? ` 原因: ${compactMessage.slice(0, 240)}` : ''}`
       process.env[DEVTOOLS_SKIP_REASON_ENV] = skipMessage
       process.stdout.write(`[warn] [runtime:launch-skip] ${skipMessage}\n`)
       return async () => {

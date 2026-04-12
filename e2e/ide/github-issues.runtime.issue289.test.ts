@@ -30,7 +30,7 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const objectPage = await relaunchPage(miniProgram, '/pages/issue-289/object-literal/index', 'object-list-loose')
+      const objectPage = await relaunchPage(miniProgram, '/pages/issue-289/object-literal/index', 'object-list-loose', 30_000)
       if (!objectPage) {
         throw new Error('Failed to launch object-literal page')
       }
@@ -56,7 +56,7 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
       expect(objectUpdatedWxml).not.toContain('object list hidden')
       expect(objectUpdatedWxml).toContain('激活项：item-1')
 
-      const mapPage = await relaunchPage(miniProgram, '/pages/issue-289/map-class/index', 'issue289-map-toggle-expanded')
+      const mapPage = await relaunchPage(miniProgram, '/pages/issue-289/map-class/index', 'issue289-map-toggle-expanded', 30_000)
       if (!mapPage) {
         throw new Error('Failed to launch map-class page')
       }
@@ -125,7 +125,7 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
       const mapExpandedOnWxml = await readPageWxml(mapPage)
       expect(mapExpandedOnWxml).toContain('map-meta-list-open')
 
-      const rootPage = await relaunchPage(miniProgram, '/pages/issue-289/root-class/index', 'root class: aaaa')
+      const rootPage = await relaunchPage(miniProgram, '/pages/issue-289/root-class/index', 'root class: aaaa', 30_000)
       if (!rootPage) {
         throw new Error('Failed to launch root-class page')
       }
@@ -146,7 +146,7 @@ describe.sequential('e2e app: github-issues / issue-289', () => {
       expect(rootUpdatedWxml).toContain('options hidden')
       expect(rootUpdatedWxml).toContain('选中类：root-b')
 
-      const computedPage = await relaunchPage(miniProgram, '/pages/issue-289/computed-class/index', 'issue289-computed-toggle-source')
+      const computedPage = await relaunchPage(miniProgram, '/pages/issue-289/computed-class/index', 'issue289-computed-toggle-source', 30_000)
       if (!computedPage) {
         throw new Error('Failed to launch computed-class page')
       }

@@ -237,17 +237,6 @@ function normalizeRoutePath(routePath: string) {
   return routePath.replace(LEADING_SLASH_RE, '')
 }
 
-function formatDebugSnippet(value: string | null | undefined, maxLength = 160) {
-  if (!value) {
-    return '<empty>'
-  }
-  const normalized = value.replace(WHITESPACE_RE, ' ').trim()
-  if (normalized.length <= maxLength) {
-    return normalized
-  }
-  return `${normalized.slice(0, maxLength)}...`
-}
-
 export async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 12_000) {
   const normalizedExpectedPath = normalizeRoutePath(expectedPath)
   const start = Date.now()
@@ -265,46 +254,16 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   return null
 }
 
-async function waitForRouteReady(miniProgram: any, route: string, readyText?: string, timeoutMs = 20_000) {
-  const normalizedExpectedPath = normalizeRoutePath(route)
-  const start = Date.now()
-  let lastPath = ''
-  let lastWxmlSnippet = ''
-
-  while (Date.now() - start <= timeoutMs) {
-    try {
-      const currentPage = await miniProgram.currentPage()
-      lastPath = normalizeRoutePath(currentPage?.path ?? '')
-      if (lastPath === normalizedExpectedPath) {
-        try {
-          lastWxmlSnippet = formatDebugSnippet(await readPageWxml(currentPage))
-        }
-        catch {
-        }
-        const ready = await waitForPageWxml(currentPage, readyText, 800)
-        if (ready) {
-          return currentPage
-        }
-      }
-    }
-    catch {
-    }
-    await delay(220)
-  }
-
-  process.stdout.write(
-    `[github-issues:relaunch] timeout route=${route} lastPath=${lastPath || '<none>'} readyText=${readyText || '<none>'} lastWxml=${lastWxmlSnippet || '<unavailable>'}\n`,
-  )
-  return null
-}
-
 export async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 20_000) {
   async function runAttempts(targetMiniProgram: any, phase: 'primary' | 'restart') {
     for (let attempt = 0; attempt < 4; attempt += 1) {
       process.stdout.write(`[github-issues:relaunch] phase=${phase} route=${route} attempt=${attempt + 1}/4\n`)
       let page: any = null
       try {
-        page = await targetMiniProgram.reLaunch(route)
+        page = await runAutomatorOp(`reLaunch ${route}`, () => targetMiniProgram.reLaunch(route), {
+          timeoutMs: Math.min(timeoutMs, 12_000),
+          retries: 1,
+        })
       }
       catch {
         await delay(280)
@@ -315,10 +274,15 @@ export async function relaunchPage(miniProgram: any, route: string, readyText?: 
         continue
       }
 
-      const readyPage = await waitForRouteReady(targetMiniProgram, route, readyText, timeoutMs)
-      if (readyPage) {
-        return readyPage
+      const currentPage = await waitForCurrentPagePath(targetMiniProgram, route, timeoutMs)
+      const targetPage = currentPage ?? page
+      const ready = targetPage
+        ? await waitForPageWxml(targetPage, readyText, timeoutMs)
+        : false
+      if (ready) {
+        return targetPage
       }
+      process.stdout.write(`[github-issues:relaunch] timeout route=${route} readyText=${readyText || '<none>'} currentPage=${currentPage?.path || '<none>'}\n`)
       await delay(220)
     }
 
