@@ -1,6 +1,6 @@
 ---
 title: 共享配置
-description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、app.prelude 前置注入、forwardConsole、injectWeapi、injectRequestGlobals 与 MCP 等能力。
+description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、app.prelude 前置注入、forwardConsole、injectWeapi、webRuntime 与 MCP 等能力。
 keywords:
   - 配置
   - config
@@ -117,7 +117,7 @@ export default defineConfig({
 
 ## `weapp.appPrelude` {#weapp-appprelude}
 
-- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require'; requestRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] } }`
+- **类型**：`boolean | { enabled?: boolean; mode?: 'inline' | 'entry' | 'require'; webRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] }; requestRuntime?: boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[] } }`
 - **默认值**：`{ mode: 'require' }`
 
 用于控制 `src/app.prelude.ts` / `src/app.prelude.js` 这类前置脚本的注入方式。
@@ -139,19 +139,20 @@ export default defineConfig({
 - `mode: 'inline'`：把 prelude 代码内联到每个目标 JS chunk 顶部，执行时机最稳
 - `mode: 'entry'`：只注入到 `app/page/component` 入口 chunk，适合希望减少重复代码的场景
 - `mode: 'require'`：默认模式。按主包 / 分包作用域额外产出 `app.prelude.js`，再在对应 chunk 顶部注入静态 `require(...)`，适合希望保留靠前执行时机并减少重复代码的场景
-- `requestRuntime`：在 `appPrelude` 时机安装请求相关运行时全局，并保留 chunk 级局部绑定兜底，适合 `axios`、`graphql-request`、`socket.io-client` 等依赖
+- `webRuntime`：在 `appPrelude` 时机安装 Web Runtime 全局，并保留 chunk 级局部绑定兜底，适合 `axios`、`graphql-request`、`socket.io-client` 等依赖
+- `requestRuntime`：旧别名，已废弃，请迁移到 `webRuntime`
 
 默认 `mode: 'require'` 下，构建产物通常会看到两类额外文件：
 
 - `app.prelude.js`：按主包 / 分包作用域拆分的前置脚本
-- `request-globals-runtime.js`：请求相关运行时共享 installer（启用 `requestRuntime` 或旧版 `injectRequestGlobals` 时出现）
+- `request-globals-runtime.js`：Web Runtime 共享 installer（启用 `webRuntime`、旧版 `requestRuntime` 或旧版 `injectRequestGlobals` 时出现）
 
 ```ts
 export default defineConfig({
   weapp: {
     appPrelude: {
       mode: 'require',
-      requestRuntime: {
+      webRuntime: {
         enabled: true,
         targets: ['fetch', 'Headers', 'Request', 'Response'],
         dependencies: [/^axios$/, /^graphql-request$/],
@@ -171,7 +172,7 @@ export default defineConfig({
 > 当前 `app.prelude` 仅支持无 `import` / `export` 的自包含脚本。
 
 > [!TIP]
-> 如果你只想打开请求运行时安装，也可以直接写成 `requestRuntime: true`。`weapp-vite` 会使用默认目标集合，并仍然保留对第三方库自由变量读取的 chunk 级兜底。
+> 如果你只想打开 Web Runtime 安装，也可以直接写成 `webRuntime: true`。`weapp-vite` 会使用默认目标集合，并仍然保留对第三方库自由变量读取的 chunk 级兜底。
 
 ## `weapp.logger` {#weapp-logger}
 
@@ -273,12 +274,12 @@ export default defineConfig({
 > [!NOTE]
 > 当前 `replaceWx` 会采用静态宿主全局同步与源码重写，不再依赖 `Function(...)` 这类动态执行能力，因此更适合真实小程序宿主与受限运行环境。
 
-## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
+## `weapp.injectWebRuntimeGlobals` {#weapp-injectwebruntimeglobals}
 
 - **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
-- **状态**：已废弃，建议迁移到 `weapp.appPrelude.requestRuntime`
+- **状态**：兼容配置；更推荐使用 `weapp.appPrelude.webRuntime`
 
-用于为请求相关全局对象做注入，例如：
+用于为 Web Runtime 全局对象做注入，例如：
 
 - `fetch`
 - `Headers`
@@ -291,7 +292,7 @@ export default defineConfig({
 ```ts
 export default defineConfig({
   weapp: {
-    injectRequestGlobals: {
+    injectWebRuntimeGlobals: {
       enabled: true,
       prelude: true,
       targets: ['fetch', 'Headers', 'Request', 'Response'],
@@ -307,13 +308,20 @@ export default defineConfig({
 - 第三方依赖假设了浏览器请求全局已存在
 
 > [!NOTE]
-> 这里解决的是“运行时请求相关全局对象注入”，不是 Vite 顶层的 `define` 替换，也不是 polyfill 插件的通用替代品。
+> 这里解决的是“运行时 Web Runtime 全局对象注入”，不是 Vite 顶层的 `define` 替换，也不是 polyfill 插件的通用替代品。
 >
-> 新项目建议直接使用 `weapp.appPrelude.requestRuntime`。`injectRequestGlobals` 目前仍兼容 1-2 个小版本，后续会移除。
+> 新项目建议直接使用 `weapp.appPrelude.webRuntime`。`injectWebRuntimeGlobals` 适合不想改到 `appPrelude` 结构、但又想使用更准确命名的场景。
 >
-> 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装请求相关全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
+> 当 `prelude: true` 时，会复用 `appPrelude` 注入时机提前触发 request-globals installer，让 `app/page/component` 入口能在用户 `app.prelude` 之前先安装所需的 Web Runtime 全局对象；但现有的 chunk 级局部绑定仍会保留，用于兜住第三方库在模块初始化阶段直接读取自由变量的场景。
 >
 > 历史版本里这个共享产物可能叫 `dist.js`；当前已经统一改为更易识别的 `request-globals-runtime.js`。
+
+## `weapp.injectRequestGlobals` {#weapp-injectrequestglobals}
+
+- **类型**：`boolean | { enabled?: boolean; targets?: string[]; dependencies?: (string | RegExp)[]; prelude?: boolean }`
+- **状态**：已废弃，请迁移到 `weapp.appPrelude.webRuntime` 或 `weapp.injectWebRuntimeGlobals`
+
+这是历史字段，行为仍与 `injectWebRuntimeGlobals` 兼容，但名称已经过窄。
 
 ## `weapp.mcp` {#weapp-mcp}
 

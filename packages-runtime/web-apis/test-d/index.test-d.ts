@@ -1,18 +1,25 @@
-import type { InstallRequestGlobalsOptions, WeappInjectRequestGlobalsTarget } from '@wevu/web-apis'
-import { installRequestGlobals } from '@wevu/web-apis'
+import type {
+  InstallWebRuntimeGlobalsOptions,
+  WeappInjectRequestGlobalsTarget,
+  WeappInjectWebRuntimeGlobalsTarget,
+} from '@wevu/web-apis'
+import { installRequestGlobals, installWebRuntimeGlobals } from '@wevu/web-apis'
 import { expectError, expectType } from 'tsd'
 
-const target: WeappInjectRequestGlobalsTarget = 'fetch'
+const target: WeappInjectWebRuntimeGlobalsTarget = 'fetch'
+expectType<WeappInjectWebRuntimeGlobalsTarget>(target)
 expectType<WeappInjectRequestGlobalsTarget>(target)
 
-const options: InstallRequestGlobalsOptions = {
+const options: InstallWebRuntimeGlobalsOptions = {
   targets: ['fetch', 'Request', 'XMLHttpRequest'],
 }
-expectType<WeappInjectRequestGlobalsTarget[] | undefined>(options.targets)
+expectType<WeappInjectWebRuntimeGlobalsTarget[] | undefined>(options.targets)
+expectType<void>(installWebRuntimeGlobals(options))
+expectType<void>(installWebRuntimeGlobals())
 expectType<void>(installRequestGlobals(options))
 expectType<void>(installRequestGlobals())
 
-expectError<WeappInjectRequestGlobalsTarget>('URL')
-expectError<InstallRequestGlobalsOptions>({
+expectError<WeappInjectWebRuntimeGlobalsTarget>('URL')
+expectError<InstallWebRuntimeGlobalsOptions>({
   targets: ['URL'],
 })

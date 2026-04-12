@@ -14,8 +14,9 @@ const objectConfig = defineConfig({
     },
     appPrelude: {
       mode: 'entry',
+      webRuntime: true,
     },
-    injectRequestGlobals: {
+    injectWebRuntimeGlobals: {
       enabled: true,
       prelude: true,
     },
@@ -36,13 +37,18 @@ expectType<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.a
 expectType<boolean | {
   enabled?: boolean
   mode?: 'inline' | 'entry' | 'require'
+  webRuntime?: boolean | {
+    enabled?: boolean
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+    dependencies?: (string | RegExp)[]
+  }
 } | undefined>(objectConfig.weapp?.appPrelude)
 expectType<boolean | {
   enabled?: boolean
-  targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+  targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
   dependencies?: (string | RegExp)[]
   prelude?: boolean
-} | undefined>(objectConfig.weapp?.injectRequestGlobals)
+} | undefined>(objectConfig.weapp?.injectWebRuntimeGlobals)
 expectType<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 
 const promiseConfig = defineConfig(Promise.resolve({

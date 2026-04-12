@@ -3,7 +3,10 @@ import type {
   WeappAppPreludeConfig,
   WeappInjectRequestGlobalsConfig,
   WeappInjectRequestGlobalsTarget,
+  WeappInjectWebRuntimeGlobalsConfig,
+  WeappInjectWebRuntimeGlobalsTarget,
   WeappRequestRuntimeConfig,
+  WeappWebRuntimeConfig,
 } from '../../../types'
 import {
   REQUEST_GLOBAL_ACTUALS_KEY,
@@ -19,7 +22,7 @@ import {
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { parseJsLike, traverse } from '../../../utils/babel'
 
-export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
   'fetch',
   'Headers',
   'Request',
@@ -32,12 +35,12 @@ export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
   'WebSocket',
 ]
 
-export const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+export const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
   'AbortController',
   'AbortSignal',
 ]
 
-export const REQUEST_RUNTIME_REQUEST_TARGETS: WeappInjectRequestGlobalsTarget[] = [
+export const REQUEST_RUNTIME_REQUEST_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
   'fetch',
   'Headers',
   'Request',
@@ -49,7 +52,7 @@ export const REQUEST_RUNTIME_REQUEST_TARGETS: WeappInjectRequestGlobalsTarget[] 
   'XMLHttpRequest',
 ]
 
-const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectRequestGlobalsTarget>([
+const REQUEST_RUNTIME_CORE_USAGE_TARGETS = new Set<WeappInjectWebRuntimeGlobalsTarget>([
   'fetch',
   'Headers',
   'Request',
@@ -72,12 +75,12 @@ const REQUEST_GLOBAL_FREE_BINDING_TARGETS = new Set<WeappRequestGlobalFreeBindin
 
 export interface InjectRequestGlobalsAutoRule {
   dependencyPatterns: (string | RegExp)[]
-  targets: WeappInjectRequestGlobalsTarget[]
+  targets: WeappInjectWebRuntimeGlobalsTarget[]
 }
 
 export interface ResolvedInjectRequestGlobalsOptions {
   mode: 'auto' | 'explicit'
-  targets: WeappInjectRequestGlobalsTarget[]
+  targets: WeappInjectWebRuntimeGlobalsTarget[]
   dependencyPatterns?: (string | RegExp)[]
   prelude: boolean
 }
@@ -85,6 +88,7 @@ export interface ResolvedInjectRequestGlobalsOptions {
 export interface ResolveRequestRuntimeOptionsInput {
   appPrelude?: boolean | WeappAppPreludeConfig
   injectRequestGlobals?: boolean | WeappInjectRequestGlobalsConfig
+  webRuntime?: boolean | WeappInjectWebRuntimeGlobalsConfig
 }
 
 const CODE_USAGE_AUTO_RULES: InjectRequestGlobalsAutoRule[] = [
@@ -102,17 +106,36 @@ const CODE_USAGE_AUTO_RULES: InjectRequestGlobalsAutoRule[] = [
   },
 ]
 
-function resolveAppPreludeRequestRuntimeConfig(
+function resolveAppPreludeWebRuntimeConfig(
   appPrelude?: boolean | WeappAppPreludeConfig,
-): boolean | WeappInjectRequestGlobalsConfig | undefined {
-  if (!appPrelude || typeof appPrelude !== 'object' || !('requestRuntime' in appPrelude)) {
+  warn?: (message: string) => void,
+): boolean | WeappInjectWebRuntimeGlobalsConfig | undefined {
+  if (!appPrelude || typeof appPrelude !== 'object') {
     return undefined
   }
 
+  const webRuntime = appPrelude.webRuntime as boolean | WeappWebRuntimeConfig | undefined
   const requestRuntime = appPrelude.requestRuntime as boolean | WeappRequestRuntimeConfig | undefined
+
+  if (webRuntime !== undefined) {
+    if (requestRuntime !== undefined) {
+      warn?.('`weapp.appPrelude.requestRuntime` 已废弃，且当前会被 `weapp.appPrelude.webRuntime` 覆盖。请迁移到 `weapp.appPrelude.webRuntime`。')
+    }
+    if (typeof webRuntime === 'boolean') {
+      return webRuntime
+        ? { enabled: true, prelude: true }
+        : false
+    }
+    return {
+      ...webRuntime,
+      prelude: true,
+    }
+  }
+
   if (requestRuntime === undefined) {
     return undefined
   }
+  warn?.('`weapp.appPrelude.requestRuntime` 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。')
   if (typeof requestRuntime === 'boolean') {
     return requestRuntime
       ? { enabled: true, prelude: true }
@@ -221,7 +244,7 @@ export function resolveInjectRequestGlobalsOptions(
   }
 
   const autoRules = resolveAutoRules(config)
-  const matchedTargets = new Set<WeappInjectRequestGlobalsTarget>()
+  const matchedTargets = new Set<WeappInjectWebRuntimeGlobalsTarget>()
   for (const rule of autoRules) {
     if (!hasMatchedDependency(packageJson, rule.dependencyPatterns)) {
       continue
@@ -247,18 +270,29 @@ export function resolveRequestRuntimeOptions(
   packageJson: PackageJson | undefined,
   warn?: (message: string) => void,
 ): ResolvedInjectRequestGlobalsOptions | null {
-  const nestedConfig = resolveAppPreludeRequestRuntimeConfig(input.appPrelude)
+  const nestedConfig = resolveAppPreludeWebRuntimeConfig(input.appPrelude, warn)
+  const preferredTopLevelConfig = input.webRuntime
   const legacyConfig = input.injectRequestGlobals
 
   if (nestedConfig !== undefined) {
+    if (preferredTopLevelConfig !== undefined) {
+      warn?.('`weapp.injectWebRuntimeGlobals` 当前会被 `weapp.appPrelude.webRuntime` 覆盖。请优先使用 `weapp.appPrelude.webRuntime`。')
+    }
     if (legacyConfig !== undefined) {
-      warn?.('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.appPrelude.requestRuntime` 覆盖。请迁移到 `weapp.appPrelude.requestRuntime`。')
+      warn?.('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.appPrelude.webRuntime` 覆盖。请迁移到 `weapp.appPrelude.webRuntime`。')
     }
     return resolveInjectRequestGlobalsOptions(nestedConfig, packageJson)
   }
 
+  if (preferredTopLevelConfig !== undefined) {
+    if (legacyConfig !== undefined) {
+      warn?.('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.injectWebRuntimeGlobals` 覆盖。请迁移到 `weapp.injectWebRuntimeGlobals`。')
+    }
+    return resolveInjectRequestGlobalsOptions(preferredTopLevelConfig, packageJson)
+  }
+
   if (legacyConfig !== undefined) {
-    warn?.('`weapp.injectRequestGlobals` 已废弃，请迁移到 `weapp.appPrelude.requestRuntime`。')
+    warn?.('`weapp.injectRequestGlobals` 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。')
   }
 
   return resolveInjectRequestGlobalsOptions(legacyConfig, packageJson)
@@ -627,7 +661,7 @@ export function createInjectRequestGlobalsCode(
 
   const runtimeModuleId = resolveRequestGlobalsRuntimeModuleId()
   const lines = [
-    `import { installRequestGlobals as __weappViteInstallRequestGlobals } from ${JSON.stringify(runtimeModuleId)}`,
+    `import { installWebRuntimeGlobals as __weappViteInstallRequestGlobals } from ${JSON.stringify(runtimeModuleId)}`,
   ]
 
   if (options?.localBindings) {

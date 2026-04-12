@@ -10,6 +10,7 @@ import type {
   WeappHmrConfig,
   WeappInjectRequestGlobalsConfig,
   WeappInjectWeapiConfig,
+  WeappInjectWebRuntimeGlobalsConfig,
   WeappMcpConfig,
   WeappNpmConfig,
   WeappRouteRules,
@@ -152,8 +153,9 @@ export interface WeappViteConfig {
   routeRules?: WeappRouteRules
   appPrelude?: boolean | WeappAppPreludeConfig
   injectWeapi?: boolean | WeappInjectWeapiConfig
+  injectWebRuntimeGlobals?: boolean | WeappInjectWebRuntimeGlobalsConfig
   /**
-   * @deprecated 已废弃，请迁移到 `weapp.appPrelude.requestRuntime`。
+   * @deprecated 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。
    */
   injectRequestGlobals?: boolean | WeappInjectRequestGlobalsConfig
   mcp?: boolean | WeappMcpConfig

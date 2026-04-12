@@ -14,10 +14,21 @@ export interface WeappViteConfig {
   appPrelude?: boolean | {
     enabled?: boolean
     mode?: 'inline' | 'entry' | 'require'
+    webRuntime?: boolean | {
+      enabled?: boolean
+      targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+      dependencies?: (string | RegExp)[]
+    }
+  }
+  injectWebRuntimeGlobals?: boolean | {
+    enabled?: boolean
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+    dependencies?: (string | RegExp)[]
+    prelude?: boolean
   }
   injectRequestGlobals?: boolean | {
     enabled?: boolean
-    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
     dependencies?: (string | RegExp)[]
     prelude?: boolean
   }

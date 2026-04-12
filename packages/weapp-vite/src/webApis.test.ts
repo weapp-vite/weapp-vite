@@ -1,11 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+const installWebRuntimeGlobalsMock = vi.fn()
+const installRequestGlobalsMock = vi.fn()
+const installAbortGlobalsMock = vi.fn()
+
+vi.mock('@wevu/web-apis', () => ({
+  installWebRuntimeGlobals: installWebRuntimeGlobalsMock,
+  installRequestGlobals: installRequestGlobalsMock,
+  installAbortGlobals: installAbortGlobalsMock,
+}))
 
 describe('web-apis compatibility entry', () => {
-  it('re-exports installRequestGlobals from @wevu/web-apis', async () => {
+  it('re-exports installWebRuntimeGlobals from @wevu/web-apis and keeps request alias', async () => {
     const compatibility = await import('./webApis')
-    const webApis = await import('@wevu/web-apis')
 
-    expect(compatibility.installRequestGlobals).toBe(webApis.installRequestGlobals)
-    expect(compatibility.installAbortGlobals).toBe(webApis.installAbortGlobals)
+    expect(compatibility.installWebRuntimeGlobals).toBe(installWebRuntimeGlobalsMock)
+    expect(compatibility.installRequestGlobals).toBe(installRequestGlobalsMock)
+    expect(compatibility.installAbortGlobals).toBe(installAbortGlobalsMock)
   })
 })

@@ -2,11 +2,11 @@
 
 ## 1. 简介
 
-`@wevu/web-apis` 为小程序运行时提供一组 Web API 兼容层，重点解决第三方请求库在小程序环境中缺失 `fetch`、`Request`、`Response`、`AbortController`、`XMLHttpRequest`、`URL`、`WebSocket` 等全局对象的问题。
+`@wevu/web-apis` 为小程序运行时提供一组 Web API 兼容层，重点解决第三方库在小程序环境中缺失 `fetch`、`Request`、`Response`、`AbortController`、`XMLHttpRequest`、`URL`、`WebSocket`、`TextEncoder`、`TextDecoder` 等全局对象的问题。
 
 它主要服务于：
 
-- `weapp-vite` 的请求全局注入能力
+- `weapp-vite` 的 Web Runtime 全局注入能力
 - `wevu` 运行时对 Web 风格请求库的兼容
 - `axios`、`graphql-request` 等依赖 Web API 的第三方库
 
@@ -26,12 +26,12 @@ pnpm add @wevu/web-apis
 
 ## 4. 快速开始
 
-### 4.1 安装完整请求全局
+### 4.1 安装完整 Web Runtime
 
 ```ts
-import { installRequestGlobals } from '@wevu/web-apis'
+import { installWebRuntimeGlobals } from '@wevu/web-apis'
 
-installRequestGlobals()
+installWebRuntimeGlobals()
 
 const response = await fetch('https://request-globals.invalid/data')
 console.log(await response.json())
@@ -51,9 +51,9 @@ controller.abort()
 ### 4.3 按目标精简注入
 
 ```ts
-import { installRequestGlobals } from '@wevu/web-apis'
+import { installWebRuntimeGlobals } from '@wevu/web-apis'
 
-installRequestGlobals({
+installWebRuntimeGlobals({
   targets: ['fetch', 'Headers', 'Request', 'Response'],
 })
 ```
@@ -61,9 +61,9 @@ installRequestGlobals({
 ### 4.4 安装并使用 WebSocket
 
 ```ts
-import { installRequestGlobals } from '@wevu/web-apis'
+import { installWebRuntimeGlobals } from '@wevu/web-apis'
 
-installRequestGlobals({
+installWebRuntimeGlobals({
   targets: ['WebSocket'],
 })
 
@@ -86,7 +86,8 @@ socket.onclose = (event) => {
 
 | 导出                                                       | 说明                                            |
 | ---------------------------------------------------------- | ----------------------------------------------- |
-| `installRequestGlobals`                                    | 按需安装请求相关全局对象                        |
+| `installWebRuntimeGlobals`                                 | 按需安装 Web Runtime 全局对象                   |
+| `installRequestGlobals`                                    | 旧别名，兼容历史代码                            |
 | `installAbortGlobals`                                      | 仅安装 `AbortController` / `AbortSignal`        |
 | `fetch`                                                    | 基于小程序请求能力适配的 `fetch` 实现           |
 | `HeadersPolyfill` / `RequestPolyfill` / `ResponsePolyfill` | HTTP 相关兼容类                                 |
@@ -121,3 +122,8 @@ pnpm --filter @wevu/web-apis typecheck
 
 - `@wevu/api`：[../weapi/README.md](../weapi/README.md)
 - `wevu`：[../wevu/README.md](../wevu/README.md)
+
+## 10. 兼容说明
+
+- 新项目建议使用 `installWebRuntimeGlobals()`
+- `installRequestGlobals()` 仍保留为兼容别名，后续会逐步淡出文档主叙事

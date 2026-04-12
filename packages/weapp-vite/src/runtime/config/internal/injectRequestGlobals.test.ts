@@ -102,10 +102,10 @@ describe('injectRequestGlobals helpers', () => {
     })
   })
 
-  it('supports appPrelude.requestRuntime with implicit prelude timing', () => {
+  it('supports appPrelude.webRuntime with implicit prelude timing', () => {
     expect(resolveRequestRuntimeOptions({
       appPrelude: {
-        requestRuntime: {},
+        webRuntime: {},
       },
     }, {
       dependencies: {
@@ -129,10 +129,10 @@ describe('injectRequestGlobals helpers', () => {
     })
   })
 
-  it('supports appPrelude.requestRuntime boolean shorthand', () => {
+  it('supports appPrelude.webRuntime boolean shorthand', () => {
     expect(resolveRequestRuntimeOptions({
       appPrelude: {
-        requestRuntime: true,
+        webRuntime: true,
       },
     }, {
       dependencies: {
@@ -157,12 +157,12 @@ describe('injectRequestGlobals helpers', () => {
     })
   })
 
-  it('prefers appPrelude.requestRuntime over legacy injectRequestGlobals and warns', () => {
+  it('prefers appPrelude.webRuntime over legacy injectRequestGlobals and warns', () => {
     const warn = vi.fn()
 
     expect(resolveRequestRuntimeOptions({
       appPrelude: {
-        requestRuntime: {
+        webRuntime: {
           enabled: true,
           targets: ['fetch'],
         },
@@ -181,7 +181,34 @@ describe('injectRequestGlobals helpers', () => {
       prelude: true,
       targets: ['fetch'],
     })
-    expect(warn).toHaveBeenCalledWith('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.appPrelude.requestRuntime` 覆盖。请迁移到 `weapp.appPrelude.requestRuntime`。')
+    expect(warn).toHaveBeenCalledWith('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.appPrelude.webRuntime` 覆盖。请迁移到 `weapp.appPrelude.webRuntime`。')
+  })
+
+  it('prefers appPrelude.webRuntime over deprecated appPrelude.requestRuntime and warns', () => {
+    const warn = vi.fn()
+
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        webRuntime: {
+          enabled: true,
+          targets: ['fetch'],
+        },
+        requestRuntime: {
+          enabled: true,
+          targets: ['XMLHttpRequest'],
+        },
+      },
+    }, {
+      dependencies: {
+        dayjs: '^1.0.0',
+      },
+    }, warn)).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      prelude: true,
+      targets: ['fetch'],
+    })
+    expect(warn).toHaveBeenCalledWith('`weapp.appPrelude.requestRuntime` 已废弃，且当前会被 `weapp.appPrelude.webRuntime` 覆盖。请迁移到 `weapp.appPrelude.webRuntime`。')
   })
 
   it('keeps legacy injectRequestGlobals behavior during compatibility window and warns once', () => {
@@ -202,11 +229,54 @@ describe('injectRequestGlobals helpers', () => {
       prelude: false,
       targets: ['fetch'],
     })
-    expect(warn).toHaveBeenCalledWith('`weapp.injectRequestGlobals` 已废弃，请迁移到 `weapp.appPrelude.requestRuntime`。')
+    expect(warn).toHaveBeenCalledWith('`weapp.injectRequestGlobals` 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。')
+  })
+
+  it('supports injectWebRuntimeGlobals as a top-level alias', () => {
+    expect(resolveRequestRuntimeOptions({
+      webRuntime: {
+        enabled: true,
+        targets: ['fetch'],
+      },
+    }, {
+      dependencies: {
+        dayjs: '^1.0.0',
+      },
+    })).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      prelude: false,
+      targets: ['fetch'],
+    })
+  })
+
+  it('prefers injectWebRuntimeGlobals over legacy injectRequestGlobals and warns', () => {
+    const warn = vi.fn()
+
+    expect(resolveRequestRuntimeOptions({
+      webRuntime: {
+        enabled: true,
+        targets: ['fetch'],
+      },
+      injectRequestGlobals: {
+        enabled: true,
+        targets: ['XMLHttpRequest'],
+      },
+    }, {
+      dependencies: {
+        dayjs: '^1.0.0',
+      },
+    }, warn)).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      prelude: false,
+      targets: ['fetch'],
+    })
+    expect(warn).toHaveBeenCalledWith('`weapp.injectRequestGlobals` 已废弃，且当前会被 `weapp.injectWebRuntimeGlobals` 覆盖。请迁移到 `weapp.injectWebRuntimeGlobals`。')
   })
 
   it('creates stable injection code', () => {
-    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('installRequestGlobals')
+    expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('installWebRuntimeGlobals')
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('weapp-vite/web-apis')
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('"XMLHttpRequest"')
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('"WebSocket"')
@@ -244,7 +314,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
     expect(code).toContain(`var TextDecoder = ${REQUEST_GLOBAL_EXPOSE_HELPER}("TextDecoder",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(`)
-    expect(code).not.toContain('import { installRequestGlobals')
+    expect(code).not.toContain('import { installWebRuntimeGlobals')
   })
 
   it('keeps free-variable bindings for request libraries instead of relying on app-level globals only', () => {
@@ -266,7 +336,7 @@ describe('injectRequestGlobals helpers', () => {
     })
 
     expect(code).toContain('<script lang="ts">')
-    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('installWebRuntimeGlobals')
     expect(code).toContain(`var fetch = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
     expect(code).toContain(`var TextDecoder = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.TextDecoder`)
     expect(code).toContain('</script>')
@@ -294,7 +364,7 @@ describe('injectRequestGlobals helpers', () => {
     )
 
     expect(code.match(/<script\b/g)?.length).toBe(2)
-    expect(code).toContain('<script lang="ts">import { installRequestGlobals')
+    expect(code).toContain('<script lang="ts">import { installWebRuntimeGlobals')
     expect(code).toContain('export default {}')
   })
 

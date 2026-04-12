@@ -32,6 +32,7 @@ export function createLoadHook(state: CorePluginState) {
   const weapiResolution = { checked: false, available: false }
   const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
     appPrelude: configService.weappViteConfig?.appPrelude,
+    webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
     injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
   }, configService.packageJson, message => logger.warn(message))
 

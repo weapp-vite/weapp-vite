@@ -56,7 +56,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call({}, '/project/src/app.ts')
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('installWebRuntimeGlobals')
     expect(code).toContain('"AbortController","AbortSignal"')
     expect(code).not.toContain('"XMLHttpRequest"')
     expect(code).not.toContain('"fetch"')
@@ -100,7 +100,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code.match(/<script\b/g)?.length).toBe(2)
-    expect(code).toContain('<script lang="ts">import { installRequestGlobals')
+    expect(code).toContain('<script lang="ts">import { installWebRuntimeGlobals')
     expect(code).toContain('export default {}')
   })
 
@@ -152,7 +152,7 @@ describe('core lifecycle load hook injectWeapi', () => {
             dependencies: {},
           },
           weappViteConfig: {
-            injectRequestGlobals: {
+            injectWebRuntimeGlobals: {
               enabled: true,
               targets: ['AbortController', 'AbortSignal'],
             },
@@ -176,7 +176,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call({}, sourceId)
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('installWebRuntimeGlobals')
     expect(code).toContain('Component({})')
   })
 
@@ -205,8 +205,8 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call({}, sourceId)
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('installWebRuntimeGlobals')
+    expect(code).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest"')
     expect(code).not.toContain('"WebSocket"')
     expect(code).toContain('Page({ response })')
   })
@@ -238,7 +238,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call({}, '/project/src/app.ts')
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('installWebRuntimeGlobals')
     expect(code).toContain('"WebSocket"')
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
@@ -272,8 +272,8 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call({}, '/project/src/app.ts')
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
+    expect(code).toContain('installWebRuntimeGlobals')
+    expect(code).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
   })
@@ -307,7 +307,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(loadEntry).toHaveBeenCalledWith(sourceId, 'page')
-    expect(code).toContain('installRequestGlobals')
+    expect(code).toContain('installWebRuntimeGlobals')
     expect(code).toContain('Page({ response })')
   })
 

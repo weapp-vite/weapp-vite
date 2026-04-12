@@ -132,7 +132,7 @@ export default defineConfig(env => ({
 | [基础目录与资源收集](./paths.md) | `srcRoot` / `pluginRoot` / `copy` / `isAdditionalWxml` |
 | [构建输出与兼容](./build-and-output.md) | `platform` / `multiPlatform` / `jsFormat` / `cleanOutputsInDev` / `packageSizeWarningBytes` / 顶层 `build.*` |
 | [TypeScript 支持文件](./typescript.md) | `.weapp-vite/tsconfig.*`、托管类型输出、`weapp.typescript` |
-| [共享配置](./shared.md) | `autoRoutes` / `debug` / `logger` / `appPrelude` / `forwardConsole` / `injectWeapi` / `injectRequestGlobals` / `mcp` |
+| [共享配置](./shared.md) | `autoRoutes` / `debug` / `logger` / `appPrelude` / `forwardConsole` / `injectWeapi` / `injectWebRuntimeGlobals` / `mcp` |
 | [Route Rules 与 Layout](./route-rules.md) | `weapp.routeRules`、layout 默认值、`layouts/` 约定 |
 | [JSON 配置](./json.md) | `jsonAlias` / `json.defaults` / `json.mergeStrategy` |
 | [JS 配置](./js.md) | `tsconfigPaths` / `ast` 与顶层 `resolve.alias` 的边界 |

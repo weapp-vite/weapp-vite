@@ -94,8 +94,8 @@ describe('request globals runtime', () => {
     const existingFetch = vi.fn()
     ;(globalThis as Record<string, any>).fetch = existingFetch
 
-    const { installRequestGlobals } = await import('../src')
-    installRequestGlobals()
+    const { installWebRuntimeGlobals } = await import('../src')
+    installWebRuntimeGlobals()
 
     expect(globalThis.fetch).toBe(existingFetch)
     expect(typeof globalThis.XMLHttpRequest).toBe('function')

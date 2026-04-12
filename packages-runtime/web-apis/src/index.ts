@@ -14,7 +14,7 @@ import { BlobPolyfill, FormDataPolyfill } from './web'
 import { WebSocketPolyfill } from './websocket'
 import { XMLHttpRequestPolyfill } from './xhr'
 
-export type WeappInjectRequestGlobalsTarget
+export type WeappInjectWebRuntimeGlobalsTarget
   = | 'fetch'
     | 'Headers'
     | 'Request'
@@ -26,13 +26,17 @@ export type WeappInjectRequestGlobalsTarget
     | 'XMLHttpRequest'
     | 'WebSocket'
 
-export interface InstallRequestGlobalsOptions {
-  targets?: WeappInjectRequestGlobalsTarget[]
+export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
+
+export interface InstallWebRuntimeGlobalsOptions {
+  targets?: WeappInjectWebRuntimeGlobalsTarget[]
 }
 
-type WeappRequestGlobalActualTarget = WeappInjectRequestGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
+export interface InstallRequestGlobalsOptions extends InstallWebRuntimeGlobalsOptions {}
 
-function hasRequestRuntimeBinaryUsage(targets: WeappInjectRequestGlobalsTarget[]) {
+type WeappRequestGlobalActualTarget = WeappInjectWebRuntimeGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
+
+function hasRequestRuntimeBinaryUsage(targets: WeappInjectWebRuntimeGlobalsTarget[]) {
   return targets.some(target => (
     target === 'fetch'
     || target === 'Request'
@@ -42,15 +46,15 @@ function hasRequestRuntimeBinaryUsage(targets: WeappInjectRequestGlobalsTarget[]
   ))
 }
 
-function resolveInstallTargets(targets: WeappInjectRequestGlobalsTarget[]) {
-  const installTargets: WeappInjectRequestGlobalsTarget[] = [...targets]
+function resolveInstallTargets(targets: WeappInjectWebRuntimeGlobalsTarget[]) {
+  const installTargets: WeappInjectWebRuntimeGlobalsTarget[] = [...targets]
   if (hasRequestRuntimeBinaryUsage(targets)) {
     installTargets.push('TextEncoder', 'TextDecoder')
   }
   return [...new Set(installTargets)]
 }
 
-function resolveActualBindingTargets(targets: WeappInjectRequestGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
+function resolveActualBindingTargets(targets: WeappInjectWebRuntimeGlobalsTarget[]): WeappRequestGlobalActualTarget[] {
   const bindingTargets: WeappRequestGlobalActualTarget[] = [...targets]
   const needsRequestRuntimeBinarySupport = hasRequestRuntimeBinaryUsage(targets)
 
@@ -94,7 +98,7 @@ function assignHostGlobal(host: Record<string, any>, key: string, value: unknown
   }
 }
 
-function installSingleTarget(host: Record<string, any>, target: WeappInjectRequestGlobalsTarget) {
+function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRuntimeGlobalsTarget) {
   if (target === 'fetch') {
     if (typeof host.fetch !== 'function' || isPlaceholderRequestGlobal(host.fetch)) {
       assignHostGlobal(host, 'fetch', requestGlobalsFetch)
@@ -200,7 +204,7 @@ function ensureRuntimeHostAliases(host: Record<string, any>) {
 
 function syncWeappViteRequestGlobalsActuals(
   host: Record<string, any>,
-  targets: WeappInjectRequestGlobalsTarget[],
+  targets: WeappInjectWebRuntimeGlobalsTarget[],
 ) {
   const globalObject = host != null
     && (typeof host === 'object' || typeof host === 'function')
@@ -222,9 +226,9 @@ function syncWeappViteRequestGlobalsActuals(
 }
 
 /**
- * @description 按需向小程序全局环境注入缺失的请求相关对象。
+ * @description 按需向小程序全局环境注入缺失的 Web Runtime 对象。
  */
-export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}) {
+export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOptions = {}) {
   const targets = resolveInstallTargets(options.targets ?? [
     'fetch',
     'Headers',
@@ -267,10 +271,17 @@ export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}
 }
 
 /**
+ * @description 已废弃，请迁移到 `installWebRuntimeGlobals`。
+ */
+export function installRequestGlobals(options: InstallRequestGlobalsOptions = {}) {
+  return installWebRuntimeGlobals(options)
+}
+
+/**
  * @description 仅安装 AbortController 与 AbortSignal 兼容层。
  */
 export function installAbortGlobals() {
-  const host = installRequestGlobals({
+  const host = installWebRuntimeGlobals({
     targets: ['AbortController', 'AbortSignal'],
   })
   return host

@@ -52,6 +52,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
   const astEngine = resolveAstEngine(configService.weappViteConfig)
   const injectRequestGlobalsOptions = resolveRequestRuntimeOptions({
     appPrelude: configService.weappViteConfig?.appPrelude,
+    webRuntime: configService.weappViteConfig?.injectWebRuntimeGlobals,
     injectRequestGlobals: configService.weappViteConfig?.injectRequestGlobals,
   }, configService.packageJson, message => logger.warn(message))
   const npmBuildCandidateDependencies = resolveNpmBuildCandidateDependencyRecordSync(ctx, configService.packageJson)

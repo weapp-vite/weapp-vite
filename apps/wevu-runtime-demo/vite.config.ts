@@ -3,7 +3,7 @@ import { defineConfig } from 'weapp-vite'
 export default defineConfig(() => ({
   weapp: {
     appPrelude: {
-      requestRuntime: true,
+      webRuntime: true,
     },
     srcRoot: 'src',
   },

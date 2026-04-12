@@ -109,8 +109,8 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const result = await transform('export const value = fetch("/api")', '/project/src/pages/request-globals/fetch.vue')
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('installWebRuntimeGlobals')
+    expect(code).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest"')
     expect(code).not.toContain('"WebSocket"')
     expect(code).toContain('export const value = fetch("/api")')
   })
@@ -139,8 +139,8 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const result = await transform('export const value = fetch("/api")', '/project/src/pages/request-globals/fetch.vue')
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('installRequestGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest"')
+    expect(code).toContain('installWebRuntimeGlobals')
+    expect(code).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest"')
     expect(code).not.toContain('"WebSocket"')
     expect(code).toContain('export const value = fetch("/api")')
   })
@@ -180,7 +180,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code.match(/<script\b/g)?.length).toBe(2)
-    expect(code).toContain('<script lang="ts">import { installRequestGlobals')
+    expect(code).toContain('<script lang="ts">import { installWebRuntimeGlobals')
     expect(code).toContain('export default {}')
   })
 

@@ -137,7 +137,7 @@ export interface WeappInjectWeapiConfig {
   globalName?: string
 }
 
-export type WeappInjectRequestGlobalsTarget
+export type WeappInjectWebRuntimeGlobalsTarget
   = | 'fetch'
     | 'Headers'
     | 'Request'
@@ -149,20 +149,32 @@ export type WeappInjectRequestGlobalsTarget
     | 'XMLHttpRequest'
     | 'WebSocket'
 
+export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
+
 /**
- * @description 请求相关全局对象注入配置
+ * @description Web Runtime 全局对象注入配置
  */
-export interface WeappInjectRequestGlobalsConfig {
+export interface WeappInjectWebRuntimeGlobalsConfig {
   enabled?: boolean
-  targets?: WeappInjectRequestGlobalsTarget[]
+  targets?: WeappInjectWebRuntimeGlobalsTarget[]
   dependencies?: (string | RegExp)[]
   prelude?: boolean
 }
 
 /**
- * @description `app.prelude` 中的请求运行时安装配置
+ * @description 已废弃，请迁移到 `WeappInjectWebRuntimeGlobalsConfig`
  */
-export interface WeappRequestRuntimeConfig extends Omit<WeappInjectRequestGlobalsConfig, 'prelude'> {}
+export interface WeappInjectRequestGlobalsConfig extends WeappInjectWebRuntimeGlobalsConfig {}
+
+/**
+ * @description `app.prelude` 中的 Web Runtime 安装配置
+ */
+export interface WeappWebRuntimeConfig extends Omit<WeappInjectWebRuntimeGlobalsConfig, 'prelude'> {}
+
+/**
+ * @description 已废弃，请迁移到 `WeappWebRuntimeConfig`
+ */
+export interface WeappRequestRuntimeConfig extends WeappWebRuntimeConfig {}
 
 export type WeappAppPreludeMode = 'inline' | 'entry' | 'require'
 
@@ -172,6 +184,10 @@ export type WeappAppPreludeMode = 'inline' | 'entry' | 'require'
 export interface WeappAppPreludeConfig {
   enabled?: boolean
   mode?: WeappAppPreludeMode
+  webRuntime?: boolean | WeappWebRuntimeConfig
+  /**
+   * @deprecated 已废弃，请迁移到 `weapp.appPrelude.webRuntime`。
+   */
   requestRuntime?: boolean | WeappRequestRuntimeConfig
 }
 
