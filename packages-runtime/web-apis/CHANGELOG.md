@@ -1,5 +1,13 @@
 # @wevu/web-apis
 
+## 1.2.3
+
+### Patch Changes
+
+- 🐛 **修复小程序请求全局安装在原生运行时中的兼容性问题：现在会跳过 `null` 宿主、对拒绝写入的宿主安全降级，并稳定同步实际全局注册表，避免 `installRequestGlobals()` / `injectRequestGlobals` 场景下出现 `Cannot set property 'fetch' of undefined`，同时提升 IDE e2e 中共享 DevTools 会话切页的稳定性。** [`25fb6e7`](https://github.com/weapp-vite/weapp-vite/commit/25fb6e78611b6d58990576d61383636122248f60) by @sonofmagic
+- 📦 **Dependencies** [`db65791`](https://github.com/weapp-vite/weapp-vite/commit/db65791b4d042b3090d3f4eecae30d2cc6ca7da5)
+  → `@weapp-core/constants@0.1.0`
+
 ## 1.2.2
 
 ### Patch Changes

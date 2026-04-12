@@ -1,5 +1,12 @@
 # @weapp-vite/web
 
+## 1.3.14
+
+### Patch Changes
+
+- 📦 **Dependencies** [`db65791`](https://github.com/weapp-vite/weapp-vite/commit/db65791b4d042b3090d3f4eecae30d2cc6ca7da5)
+  → `@weapp-core/constants@0.1.0`
+
 ## 1.3.13
 
 ### Patch Changes

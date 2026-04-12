@@ -1,5 +1,15 @@
 # wevu
 
+## 6.15.1
+
+### Patch Changes
+
+- 🐛 **修复组件 props 在传入 `undefined` 后被小程序运行时视为 `null` 时的兼容缺口。`wevu` 现在提供显式的 `allowNullPropInput` 开关，并补齐显式 `properties` 分支的归一化逻辑；`weapp-vite` 则把该行为接入 `vite.config.ts` 的 `weapp.wevu.defaults.component.allowNullPropInput` 默认值体系中，Vue SFC 默认保持开启，也允许项目侧统一关闭，避免微信开发者工具对 `String` / `Number` 等已声明类型 props 反复输出 `null` 类型告警。** [`2fda07a`](https://github.com/weapp-vite/weapp-vite/commit/2fda07a604e64608b976a7782e7f1dbb4308aef4) by @sonofmagic
+
+- 🐛 **收敛 `appPrelude` 与 `requestRuntime` 的默认注入路径，并修复默认开启 `allowNullPropInput` 后无 props 页面在小程序运行时触发 `Object.entries(undefined)` 的问题。现在 `weapp.appPrelude.requestRuntime` 在 `require` 模式下会优先安装到 `app.prelude.js`，对应的 DevTools 运行时用例已覆盖；同时无 props 的页面也不会再因为空属性归一化而在启动时崩溃。** [`195783b`](https://github.com/weapp-vite/weapp-vite/commit/195783b2be1c76f32d3657e4336845279c0cbd64) by @sonofmagic
+- 📦 **Dependencies** [`db65791`](https://github.com/weapp-vite/weapp-vite/commit/db65791b4d042b3090d3f4eecae30d2cc6ca7da5)
+  → `@weapp-core/constants@0.1.0`, `@wevu/compiler@6.15.1`
+
 ## 6.15.0
 
 ### Patch Changes

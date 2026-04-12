@@ -1,5 +1,39 @@
 # weapp-vite
 
+## 6.15.1
+
+### Patch Changes
+
+- 🐛 **修复自动生成的 `components.d.ts` 在为带源码跳转的原生组件补充类型时，没有把小程序通用基础属性稳定合并进最终组件 props 的问题。现在这类组件在 Vue 模板中也能正确接受 `class`、`style`、`id` 等基础属性，避免像 `<Tabbar class="text-red" />` 这样的写法被误报类型错误。** [#445](https://github.com/weapp-vite/weapp-vite/pull/445) by @sonofmagic
+
+- 🐛 **调整 `weapp.appPrelude` 的默认模式为 `require`，避免项目在未显式配置时默认采用 `inline` 或多入口内联注入。现在默认行为会为主包与独立分包产出独立的 `app.prelude.js`，入口 chunk 仅保留 `require()` 调用；如需原先的内联效果，仍可显式配置 `weapp.appPrelude.mode = "inline"` 或 `weapp.appPrelude.mode = "entry"`。** [`81d7a3e`](https://github.com/weapp-vite/weapp-vite/commit/81d7a3ee2feac484fa5435a3d24a81c45f02c4b7) by @sonofmagic
+
+- 🐛 **修复 `injectWeapi.replaceWx` 注入时代码仍依赖 `Function(...)` 动态执行的问题，改为仅使用静态宿主全局同步与源码重写方案，避免在小程序宿主中因 `Function` 不可用而导致 `wx` / `my` 替换逻辑失效。** [`2291aca`](https://github.com/weapp-vite/weapp-vite/commit/2291aca7ca26f2f5e486dbef2b5e4dbe87f3aef7) by @sonofmagic
+
+- 🐛 **修复本地分包从共享 `miniprogram_npm` 缓存复制 npm 产物时的稳定性问题。现在 `weapp-vite` 在按依赖过滤复制独立分包 npm 文件时会使用受控的目录遍历复制，避免 `tdesign-miniprogram/transition/*` 这类深层文件在构建阶段偶发 `ENOENT`，恢复 GitHub issue 分包场景和相关 CI e2e 的稳定通过。** [`6c36a6e`](https://github.com/weapp-vite/weapp-vite/commit/6c36a6ee2e05a2a5395de21c88354d7bf28db5de) by @sonofmagic
+
+- 🐛 **修复组件 props 在传入 `undefined` 后被小程序运行时视为 `null` 时的兼容缺口。`wevu` 现在提供显式的 `allowNullPropInput` 开关，并补齐显式 `properties` 分支的归一化逻辑；`weapp-vite` 则把该行为接入 `vite.config.ts` 的 `weapp.wevu.defaults.component.allowNullPropInput` 默认值体系中，Vue SFC 默认保持开启，也允许项目侧统一关闭，避免微信开发者工具对 `String` / `Number` 等已声明类型 props 反复输出 `null` 类型告警。** [`2fda07a`](https://github.com/weapp-vite/weapp-vite/commit/2fda07a604e64608b976a7782e7f1dbb4308aef4) by @sonofmagic
+
+- 🐛 **修复本地依赖安装与小程序 npm 构建的两个稳定性问题：一是 `postinstall` 现在会自动修正根目录损坏的 `weapp-vite` workspace 链接，避免 `pnpm build` 在 fixture 与 e2e 应用里找不到 CLI 入口；二是小程序 npm 目录改为使用受控递归复制，避免像 `tdesign-miniprogram` 这类包在分包依赖缓存构建时触发 `ENOENT`，从而让 `pnpm test` 与相关分包构建流程更稳定。** [`9e558da`](https://github.com/weapp-vite/weapp-vite/commit/9e558dabe6a3ef7ac76bf4167bd3813a06eed324) by @sonofmagic
+
+- 🐛 **修复 `app.prelude.ts` 中 `import.meta.filename` 未被静态替换的问题，并补齐 `appPrelude.mode: "inline"` 的构建与 DevTools 运行时回归用例。现在 `app.prelude.ts` 会沿用常规脚本的 `import.meta` 编译行为，在多次页面 `reLaunch` 场景下也只会通过内置 guard 执行一次。** [`f8d3dbd`](https://github.com/weapp-vite/weapp-vite/commit/f8d3dbd07f064f8d0c5b979c7e1233291a0fa0f4) by @sonofmagic
+
+- 🐛 **将请求相关运行时注入能力收敛到 `weapp.appPrelude.requestRuntime`，统一用 `appPrelude` 表达前置执行时机，同时保留 `weapp.injectRequestGlobals` 作为过渡兼容配置。当前版本中旧配置仍可使用，但会输出废弃提示；当新旧配置同时存在时，会优先采用 `appPrelude.requestRuntime`。** [`b336110`](https://github.com/weapp-vite/weapp-vite/commit/b3361100b404f6ea20cdaf168dead4bea4fbc8d7) by @sonofmagic
+
+- 🐛 **收敛 `appPrelude` 与 `requestRuntime` 的默认注入路径，并修复默认开启 `allowNullPropInput` 后无 props 页面在小程序运行时触发 `Object.entries(undefined)` 的问题。现在 `weapp.appPrelude.requestRuntime` 在 `require` 模式下会优先安装到 `app.prelude.js`，对应的 DevTools 运行时用例已覆盖；同时无 props 的页面也不会再因为空属性归一化而在启动时崩溃。** [`195783b`](https://github.com/weapp-vite/weapp-vite/commit/195783b2be1c76f32d3657e4336845279c0cbd64) by @sonofmagic
+
+- 🐛 **修复 request globals 运行时共享产物默认输出为 `dist.js` 的命名问题，改为更语义化的 `request-globals-runtime.js`，让小程序构建产物和入口引用更容易理解与排查。** [`aaab8ba`](https://github.com/weapp-vite/weapp-vite/commit/aaab8baee0dbbc279f41403aed2eb2132eda2713) by @sonofmagic
+
+- 🐛 **修复 `app.vue` 中使用 `weapp-vite/auto-routes` 时，构建阶段提取 `defineAppJson` 宏配置会错误解析 `auto-routes` 回退路径的问题。现在打包产物会优先命中 `dist` 同级的 `auto-routes.mjs`，避免 `app.vue` 被误判为缺少应用配置，恢复 GitHub issue 场景与相关小程序项目的正常构建。** [`2e0539a`](https://github.com/weapp-vite/weapp-vite/commit/2e0539ab3c3f3fc25cc310878c04566427355f09) by @sonofmagic
+
+- 🐛 **新增 `@weapp-core/constants` 包，用于沉淀可同时被 Node 侧构建流程、小程序运行时代码以及测试复用的共享常量；同时将请求全局对象注入与 app prelude 相关的内部私有命名迁移到该包统一管理，缩短 guard key、共享字段和 helper 标识符，减少最终构建产物中的冗长内部字段名，同时保持原有运行时行为与兼容性不变。** [`db65791`](https://github.com/weapp-vite/weapp-vite/commit/db65791b4d042b3090d3f4eecae30d2cc6ca7da5) by @sonofmagic
+- 📦 Updated 5 dependencies [`2fda07a`](https://github.com/weapp-vite/weapp-vite/commit/2fda07a604e64608b976a7782e7f1dbb4308aef4)
+  <details><summary>Details</summary>
+
+  `wevu@6.15.1`, `@wevu/web-apis@1.2.3`, `@weapp-core/constants@0.1.0`, `@weapp-vite/web@1.3.14`, `@weapp-vite/ast@6.15.1`
+
+  </details>
+
 ## 6.15.0
 
 ### Minor Changes
