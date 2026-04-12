@@ -34,6 +34,7 @@ const REPORT_META = {
 }
 const RESOLVED_CREATE_WEAPP_VITE_VERSION = process.env.CREATE_WEAPP_VITE_RESOLVED_VERSION?.trim() || ''
 const NEWLINE_RE = /\r?\n/
+const DEV_REBUILD_SUCCESS_RE = /小程序已重新构建/
 const TEMPLATE_DIR_MAP = {
   'default': 'weapp-vite-template',
   'lib': 'weapp-vite-lib-template',
@@ -456,7 +457,42 @@ async function waitForFileChange(file, previousMtimeMs, timeoutMs) {
   throw new Error(`Timed out waiting for file update: ${file}`)
 }
 
-async function measureDevUpdate(projectDir, label) {
+function hasSuccessfulRebuildSince(stdout, previousLength) {
+  const nextOutput = stdout.slice(previousLength)
+  return DEV_REBUILD_SUCCESS_RE.test(nextOutput)
+}
+
+async function waitForFileChangeOrSuccessfulRebuild({
+  file,
+  previousMtimeMs,
+  stdoutChunks,
+  previousStdoutLength,
+  timeoutMs,
+  pollIntervalMs = 500,
+}) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const stat = await fs.stat(file)
+      if (stat.mtimeMs > previousMtimeMs) {
+        return Date.now() - startedAt
+      }
+    }
+    catch {
+      // noop
+    }
+
+    if (hasSuccessfulRebuildSince(stdoutChunks.join(''), previousStdoutLength)) {
+      return Date.now() - startedAt
+    }
+
+    await delay(pollIntervalMs)
+  }
+
+  throw new Error(`Timed out waiting for file update: ${file}`)
+}
+
+async function measureDevUpdate(projectDir, stdoutChunks) {
   const sourceFile = await findExistingFile([
     path.join(projectDir, 'src/app.json'),
     path.join(projectDir, 'src/app.ts'),
@@ -469,16 +505,23 @@ async function measureDevUpdate(projectDir, label) {
   ])
 
   if (!sourceFile || !distFile) {
-    throw new Error(`[${label}] Missing source/dist file for dev update measurement`)
+    throw new Error('Missing source/dist file for dev update measurement')
   }
 
   const original = await fs.readFile(sourceFile, 'utf8')
   const marker = `\n/* create-weapp-vite-smoke:${Date.now()} */\n`
   const previousMtimeMs = (await fs.stat(distFile)).mtimeMs
+  const previousStdoutLength = stdoutChunks.join('').length
 
   try {
     await fs.writeFile(sourceFile, `${original}${marker}`, 'utf8')
-    return await waitForFileChange(distFile, previousMtimeMs, UPDATE_TIMEOUT_MS)
+    return await waitForFileChangeOrSuccessfulRebuild({
+      file: distFile,
+      previousMtimeMs,
+      stdoutChunks,
+      previousStdoutLength,
+      timeoutMs: UPDATE_TIMEOUT_MS,
+    })
   }
   finally {
     await fs.writeFile(sourceFile, original, 'utf8')
@@ -539,7 +582,7 @@ async function runDevSmoke(projectDir, label, devCommand) {
             ].filter(Boolean).join('\n\n'),
           )
         }
-        const updateMs = await measureDevUpdate(projectDir, label)
+        const updateMs = await measureDevUpdate(projectDir, stdoutChunks)
         return {
           readyMs,
           updateMs,
@@ -698,4 +741,10 @@ async function main() {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main()
+}
+
+export {
+  hasSuccessfulRebuildSince,
+  waitForFileChange,
+  waitForFileChangeOrSuccessfulRebuild,
 }
