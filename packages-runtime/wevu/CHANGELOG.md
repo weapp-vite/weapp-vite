@@ -1,5 +1,15 @@
 # wevu
 
+## 6.15.2
+
+### Patch Changes
+
+- 🐛 **修复 Vue 3.4 `v-bind` shorthand 在小程序模板编译中的兼容性问题。现在除了普通属性绑定外，`:foo-bar`、`:class`、`:style`、`:ref`、`<slot :name />` 与 `<component :is />` 等场景都会按 Vue 3.4 语义回退到同名表达式，并正确处理 kebab-case 到 camelCase 的变量映射，避免编译后丢失绑定或把动态组件错误降级为普通标签。** [#449](https://github.com/weapp-vite/weapp-vite/pull/449) by @sonofmagic
+
+- 🐛 **修复 `wevu` 的组件模板 ref 类型链路，补齐对 Vue 3.5 `DefineComponent` 额外泛型的透传，并让 `defineComponent()` 返回的组件定义继续对齐 `DefineComponent` 公共实例类型。现在通过 `ref()` 或 `useTemplateRef()` 引用带 `defineExpose()` 的组件时，暴露成员、`$refs` 与 `$el` 等类型信息都能被正确推导，不再出现“功能正常但类型报错”的问题。** [#449](https://github.com/weapp-vite/weapp-vite/pull/449) by @sonofmagic
+- 📦 **Dependencies** [`1fd4b09`](https://github.com/weapp-vite/weapp-vite/commit/1fd4b0908a02b28176b0e668edbbb95b7bb9dd97)
+  → `@wevu/compiler@6.15.2`
+
 ## 6.15.1
 
 ### Patch Changes
