@@ -113,6 +113,7 @@
 - 在页面文件中执行 `weapp-vite: Add Current Page To app.json`，直接把当前页面加入顶层或匹配的分包页面声明
 - 在 `app.json` 的 `pages` / `subPackages` / `subpackages` 中补全已有页面 route，减少手动输入和路径拼写错误
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
+- 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
 - 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断
 - 当 `app.json` 声明了不存在的页面路径时，编辑器会提示缺失的页面文件
 - 悬浮到常用脚本项、`defineConfig`、`generate` 或 `<json>` 块时，可看到轻量提示

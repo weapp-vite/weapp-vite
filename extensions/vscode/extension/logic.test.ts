@@ -9,6 +9,8 @@ import {
   getMissingCommonScripts,
   getSuggestedScripts,
   getViteConfigObjectPath,
+  getVueJsonBlockCompletionContext,
+  isInsideVueJsonBlock,
   resolveCommandFromScripts,
 } from './logic'
 
@@ -171,4 +173,43 @@ it('does not duplicate an existing page route in app json', () => {
 
   assert.equal(result.changed, false)
   assert.deepEqual(result.appJson.pages, ['pages/home/index'])
+})
+
+it('detects cursor inside vue json block', () => {
+  assert.equal(isInsideVueJsonBlock([
+    '<template>',
+    '</template>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBar',
+  ].join('\n'), [
+    '"',
+    '}',
+    '</json>',
+  ].join('\n')), true)
+})
+
+it('does not treat cursor outside vue json block as json block context', () => {
+  assert.equal(isInsideVueJsonBlock([
+    '<template>',
+    '  <view />',
+  ].join('\n'), [
+    '</template>',
+    '<json>',
+    '</json>',
+  ].join('\n')), false)
+})
+
+it('detects vue json block property completion context', () => {
+  assert.deepEqual(getVueJsonBlockCompletionContext([
+    '<json>',
+    '{',
+    '  "navigation',
+  ].join('\n'), [
+    '"',
+    '}',
+    '</json>',
+  ].join('\n'), '  "navigation'), {
+    type: 'property',
+  })
 })

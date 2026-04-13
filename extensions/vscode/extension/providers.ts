@@ -20,6 +20,7 @@ import {
 } from './content'
 import {
   getViteConfigObjectPath,
+  getVueJsonBlockCompletionContext,
 } from './logic'
 import {
   getAppJsonPageRouteSuggestions,
@@ -30,6 +31,38 @@ import {
 } from './workspace'
 
 const QUOTED_STRING_PATTERN = /"([^"]+)"/u
+const VUE_JSON_BLOCK_COMPLETION_ITEMS = [
+  {
+    label: 'navigationBarTitleText',
+    insertText: '"navigationBarTitleText": "$1"',
+    detail: '页面标题',
+  },
+  {
+    label: 'enablePullDownRefresh',
+    insertText: '"enablePullDownRefresh": true',
+    detail: '启用下拉刷新',
+  },
+  {
+    label: 'backgroundColor',
+    insertText: '"backgroundColor": "#f6f7fb"',
+    detail: '页面背景色',
+  },
+  {
+    label: 'backgroundTextStyle',
+    insertText: '"backgroundTextStyle": "dark"',
+    detail: '下拉 loading 样式',
+  },
+  {
+    label: 'navigationStyle',
+    insertText: '"navigationStyle": "default"',
+    detail: '导航栏样式',
+  },
+  {
+    label: 'disableScroll',
+    insertText: '"disableScroll": true',
+    detail: '禁止页面滚动',
+  },
+]
 
 const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
   detail: string
@@ -282,6 +315,19 @@ export class WeappViteVueCompletionProvider {
     }
 
     const linePrefix = document.lineAt(position.line).text.slice(0, position.character)
+    const textBeforeCursor = document.getText(new vscode.Range(0, 0, position.line, position.character))
+    const textAfterCursor = document.getText(new vscode.Range(position.line, position.character, document.lineCount, 0))
+    const jsonBlockContext = getVueJsonBlockCompletionContext(textBeforeCursor, textAfterCursor, linePrefix)
+
+    if (jsonBlockContext?.type === 'property') {
+      return VUE_JSON_BLOCK_COMPLETION_ITEMS.map((suggestion, index) => {
+        const item = new vscode.CompletionItem(suggestion.label, vscode.CompletionItemKind.Property)
+        item.insertText = new vscode.SnippetString(suggestion.insertText)
+        item.detail = suggestion.detail
+        item.sortText = `0${index}`
+        return item
+      })
+    }
 
     if (!linePrefix.trimStart().startsWith('<')) {
       return []

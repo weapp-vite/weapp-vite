@@ -8,6 +8,10 @@ const APP_JSON_PAGES_ARRAY_LINE_PATTERN = /^\s*"pages"\s*:\s*\[\s*$/u
 const APP_JSON_SUBPACKAGES_LINE_PATTERN = /^\s*"(?:subPackages|subpackages)"\s*:\s*\[\s*$/u
 const APP_JSON_ROOT_LINE_PATTERN = /^\s*"root"\s*:\s*"([^"]+)"/u
 const TRAILING_COMMA_PATTERN = /,$/u
+const VUE_JSON_BLOCK_TAG_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>/gu
+const VUE_JSON_BLOCK_CLOSE_TAG_PATTERN = /<\/json>/gu
+const VUE_JSON_BLOCK_CLOSE_EXISTS_PATTERN = /<\/json>/u
+const JSON_PROPERTY_PREFIX_PATTERN = /^\s*"[^"]*$/u
 const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
 
 export function getSuggestedScripts(preferWvAlias = true) {
@@ -106,6 +110,35 @@ export function getViteConfigObjectPath(textBeforeCursor: string) {
   }
 
   return path.reverse()
+}
+
+export function isInsideVueJsonBlock(textBeforeCursor: string, textAfterCursor: string) {
+  const lastOpenIndex = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_TAG_PATTERN)].at(-1)?.index ?? -1
+  const lastCloseIndex = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_CLOSE_TAG_PATTERN)].at(-1)?.index ?? -1
+
+  if (lastOpenIndex < 0 || lastOpenIndex < lastCloseIndex) {
+    return false
+  }
+
+  return VUE_JSON_BLOCK_CLOSE_EXISTS_PATTERN.test(textAfterCursor)
+}
+
+export function getVueJsonBlockCompletionContext(
+  textBeforeCursor: string,
+  textAfterCursor: string,
+  linePrefix: string,
+) {
+  if (!JSON_PROPERTY_PREFIX_PATTERN.test(linePrefix)) {
+    return null
+  }
+
+  if (!isInsideVueJsonBlock(textBeforeCursor, textAfterCursor)) {
+    return null
+  }
+
+  return {
+    type: 'property',
+  }
 }
 
 function normalizeRoute(route: string) {
