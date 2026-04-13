@@ -4,6 +4,7 @@ import { it } from 'vitest'
 
 import {
   collectAppJsonPageRoutes,
+  collectMissingPageRoutes,
   getPageFileCandidatePaths,
 } from './navigation'
 
@@ -41,4 +42,12 @@ it('returns ordered page file candidates', () => {
     path.normalize('pages/demo/index.js'),
     path.normalize('pages/demo/index.wxml'),
   ])
+})
+
+it('collects missing page routes with async file existence checks', async () => {
+  const missingRoutes = await collectMissingPageRoutes({
+    pages: ['pages/home/index', 'pages/missing/index'],
+  }, async route => route === 'pages/home/index')
+
+  assert.deepEqual(missingRoutes, ['pages/missing/index'])
 })

@@ -150,6 +150,11 @@
           "default": true,
           "description": "是否在 package.json 中提示缺失的常用 weapp-vite scripts。"
         },
+        "weapp-vite.enableAppJsonDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在 app.json 中提示缺失的页面文件声明。"
+        },
         "weapp-vite.enableHover": {
           "type": "boolean",
           "default": true,

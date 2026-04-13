@@ -1,6 +1,7 @@
 import vscode from 'vscode'
 
 import {
+  APP_JSON_DIAGNOSTIC_SOURCE,
   COMMON_SCRIPT_NAMES,
   DOCS_GENERATE_URL,
   DOCS_GUIDE_URL,
@@ -81,6 +82,39 @@ export function buildPackageJsonDiagnostics(document: any) {
   diagnostics.push(diagnostic)
 
   return diagnostics
+}
+
+export function buildAppJsonDiagnostics(document: any, missingRoutes: string[]) {
+  return missingRoutes.map((route) => {
+    const quotedRoute = `"${route}"`
+    let targetLine = 0
+    let targetCharacter = 0
+
+    for (let line = 0; line < document.lineCount; line++) {
+      const lineText = document.lineAt(line).text
+      const character = lineText.indexOf(quotedRoute)
+
+      if (character >= 0) {
+        targetLine = line
+        targetCharacter = character + 1
+        break
+      }
+    }
+
+    const diagnostic = new vscode.Diagnostic(
+      new vscode.Range(
+        targetLine,
+        targetCharacter,
+        targetLine,
+        targetCharacter + route.length,
+      ),
+      `未找到页面文件：${route}（已尝试 .vue / .ts / .js / .wxml）`,
+      vscode.DiagnosticSeverity.Information,
+    )
+
+    diagnostic.source = APP_JSON_DIAGNOSTIC_SOURCE
+    return diagnostic
+  })
 }
 
 export function getDocItems() {

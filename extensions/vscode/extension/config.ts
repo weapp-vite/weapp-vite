@@ -12,6 +12,10 @@ export function isPackageJsonDiagnosticsEnabled() {
   return getExtensionConfiguration().get('enablePackageJsonDiagnostics', true)
 }
 
+export function isAppJsonDiagnosticsEnabled() {
+  return getExtensionConfiguration().get('enableAppJsonDiagnostics', true)
+}
+
 export function isHoverEnabled() {
   return getExtensionConfiguration().get('enableHover', true)
 }

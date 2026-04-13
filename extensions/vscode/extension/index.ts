@@ -11,6 +11,7 @@ import {
   showProjectOverview,
 } from './commands'
 import {
+  isAppJsonDiagnosticsEnabled,
   isPackageJsonDiagnosticsEnabled,
   isStatusBarEnabled,
 } from './config'
@@ -20,6 +21,7 @@ import {
   VITE_CONFIG_FILE_PATTERN,
 } from './constants'
 import {
+  buildAppJsonDiagnostics,
   buildPackageJsonDiagnostics,
 } from './content'
 import {
@@ -30,22 +32,24 @@ import {
   WeappViteVueCompletionProvider,
 } from './providers'
 import {
+  getMissingAppJsonPageRoutes,
   getProjectContext,
+  isAppJsonDocument,
   isPackageJsonDocument,
 } from './workspace'
 
 let outputChannel
 let statusBarItem
-let packageJsonDiagnostics
+let diagnostics
 
 function getOutputChannel() {
   outputChannel ??= vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME)
   return outputChannel
 }
 
-function getPackageJsonDiagnostics() {
-  packageJsonDiagnostics ??= vscode.languages.createDiagnosticCollection('weapp-vite')
-  return packageJsonDiagnostics
+function getDiagnostics() {
+  diagnostics ??= vscode.languages.createDiagnosticCollection('weapp-vite')
+  return diagnostics
 }
 
 function refreshPackageJsonDiagnostics(document: any) {
@@ -54,11 +58,25 @@ function refreshPackageJsonDiagnostics(document: any) {
   }
 
   if (!isPackageJsonDiagnosticsEnabled()) {
-    getPackageJsonDiagnostics().delete(document.uri)
+    getDiagnostics().delete(document.uri)
     return
   }
 
-  getPackageJsonDiagnostics().set(document.uri, buildPackageJsonDiagnostics(document))
+  getDiagnostics().set(document.uri, buildPackageJsonDiagnostics(document))
+}
+
+async function refreshAppJsonDiagnostics(document: any) {
+  if (!isAppJsonDocument(document)) {
+    return
+  }
+
+  if (!isAppJsonDiagnosticsEnabled()) {
+    getDiagnostics().delete(document.uri)
+    return
+  }
+
+  const missingRoutes = await getMissingAppJsonPageRoutes(document)
+  getDiagnostics().set(document.uri, buildAppJsonDiagnostics(document, missingRoutes))
 }
 
 async function refreshStatusBar() {
@@ -169,6 +187,7 @@ export function activate(context: any) {
 
         for (const document of vscode.workspace.textDocuments) {
           refreshPackageJsonDiagnostics(document)
+          void refreshAppJsonDiagnostics(document)
         }
       }
     }),
@@ -177,15 +196,21 @@ export function activate(context: any) {
         refreshPackageJsonDiagnostics(document)
       }
 
+      if (isAppJsonDocument(document)) {
+        void refreshAppJsonDiagnostics(document)
+      }
+
       if (document.fileName.endsWith('package.json') || VITE_CONFIG_FILE_PATTERN.test(document.fileName)) {
         void refreshStatusBar()
       }
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
       refreshPackageJsonDiagnostics(document)
+      void refreshAppJsonDiagnostics(document)
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
       refreshPackageJsonDiagnostics(event.document)
+      void refreshAppJsonDiagnostics(event.document)
     }),
   ]
 
@@ -197,14 +222,15 @@ export function activate(context: any) {
 
   for (const document of vscode.workspace.textDocuments) {
     refreshPackageJsonDiagnostics(document)
+    void refreshAppJsonDiagnostics(document)
   }
 
-  context.subscriptions.push(...disposables, getOutputChannel(), getPackageJsonDiagnostics(), {
+  context.subscriptions.push(...disposables, getOutputChannel(), getDiagnostics(), {
     dispose() {
       state.terminalCache = undefined
       statusBarItem = undefined
       outputChannel = undefined
-      packageJsonDiagnostics = undefined
+      diagnostics = undefined
     },
   })
 }

@@ -3,6 +3,7 @@ import path from 'node:path'
 import vscode from 'vscode'
 
 import {
+  APP_JSON_FILE_PATTERN,
   PACKAGE_JSON_FILE_PATTERN,
   VITE_CONFIG_FILE_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
@@ -13,6 +14,7 @@ import {
 } from './logic'
 import {
   collectAppJsonPageRoutes,
+  collectMissingPageRoutes,
   getPageFileCandidatePaths,
 } from './navigation'
 
@@ -32,6 +34,10 @@ export function getPrimaryWorkspaceFolder() {
 
 export function isPackageJsonDocument(document: any) {
   return PACKAGE_JSON_FILE_PATTERN.test(document.uri.path)
+}
+
+export function isAppJsonDocument(document: any) {
+  return APP_JSON_FILE_PATTERN.test(document.uri.path)
 }
 
 export function isViteConfigDocument(document: any) {
@@ -265,6 +271,29 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
   }
 
   return items
+}
+
+export async function getMissingAppJsonPageRoutes(document: any) {
+  if (!isAppJsonDocument(document)) {
+    return []
+  }
+
+  let appJson
+
+  try {
+    appJson = JSON.parse(document.getText())
+  }
+  catch {
+    return []
+  }
+
+  const appJsonDir = path.dirname(document.uri.fsPath)
+
+  return collectMissingPageRoutes(appJson, async (route) => {
+    const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+
+    return Boolean(await getExistingProjectFile(candidatePaths))
+  })
 }
 
 export function resolveCommand(

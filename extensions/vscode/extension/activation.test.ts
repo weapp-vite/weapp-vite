@@ -107,6 +107,7 @@ function createMockVscode() {
       createDiagnosticCollection(name) {
         const collection = {
           name,
+          entries: [],
           set() {},
           delete() {},
           dispose() {},

@@ -28,6 +28,7 @@ it('package output keeps runtime entry files on disk', () => {
     'extension/constants.ts',
     'extension/commands.ts',
     'extension/content.ts',
+    'extension/navigation.ts',
     'extension/providers.ts',
     'extension/workspace.ts',
     'tsconfig.json',

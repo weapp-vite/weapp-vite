@@ -17,6 +17,7 @@ import {
   getVueCustomBlockHover,
 } from './content'
 import {
+  isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
   isVueDocument,
@@ -38,6 +39,18 @@ export class WeappViteCodeActionProvider {
         arguments: [document],
       }
       actions.push(insertScriptsAction)
+    }
+
+    if (isAppJsonDocument(document)) {
+      const openProjectFileAction = new vscode.CodeAction(
+        '打开 weapp-vite 关键文件 / 页面',
+        vscode.CodeActionKind.QuickFix,
+      )
+      openProjectFileAction.command = {
+        command: 'weapp-vite.openProjectFile',
+        title: '打开 weapp-vite 关键文件 / 页面',
+      }
+      actions.push(openProjectFileAction)
     }
 
     if (isViteConfigDocument(document)) {

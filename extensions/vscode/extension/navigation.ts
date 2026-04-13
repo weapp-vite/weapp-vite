@@ -70,3 +70,18 @@ export function getPageFileCandidatePaths(route: string) {
     `${normalizedRoute}.wxml`,
   ].map(candidate => path.normalize(candidate))
 }
+
+export async function collectMissingPageRoutes(
+  appJson: Record<string, any>,
+  hasPageFile: (route: string) => Promise<boolean>,
+) {
+  const missingRoutes = []
+
+  for (const route of collectAppJsonPageRoutes(appJson)) {
+    if (!await hasPageFile(route)) {
+      missingRoutes.push(route)
+    }
+  }
+
+  return missingRoutes
+}

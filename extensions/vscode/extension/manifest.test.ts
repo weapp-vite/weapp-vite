@@ -63,6 +63,7 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
 
   assert.equal(properties['weapp-vite.showStatusBar'].default, true)
   assert.equal(properties['weapp-vite.enablePackageJsonDiagnostics'].default, true)
+  assert.equal(properties['weapp-vite.enableAppJsonDiagnostics'].default, true)
   assert.equal(properties['weapp-vite.enableHover'].default, true)
   assert.equal(properties['weapp-vite.enableCompletion'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)

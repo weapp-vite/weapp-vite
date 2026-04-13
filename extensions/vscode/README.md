@@ -104,6 +104,7 @@
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
 - 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断
+- 当 `app.json` 声明了不存在的页面路径时，编辑器会提示缺失的页面文件
 - 悬浮到常用脚本项、`defineConfig`、`generate` 或 `<json>` 块时，可看到轻量提示
 - 在 `package.json` 中，补全会建议常用 script key 和 `wv` 命令值
 - 在 `vite.config.*` 中，补全会建议 `defineConfig`、`generate` 和 `plugins` 骨架
@@ -114,6 +115,7 @@
 
 - `weapp-vite.showStatusBar`
 - `weapp-vite.enablePackageJsonDiagnostics`
+- `weapp-vite.enableAppJsonDiagnostics`
 - `weapp-vite.enableHover`
 - `weapp-vite.enableCompletion`
 - `weapp-vite.preferWvAlias`
