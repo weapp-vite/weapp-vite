@@ -746,3 +746,91 @@ it('filters problem and drift page nodes in tree', async () => {
     'pages/drift/index',
   ])
 })
+
+it('shows empty filter node when no page matches current filter', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        EventEmitter: class {
+          event = () => ({ dispose() {} })
+          fire() {}
+          dispose() {}
+        },
+        TreeItem: class {
+          label
+          collapsibleState
+
+          constructor(label: string, collapsibleState: number) {
+            this.label = label
+            this.collapsibleState = collapsibleState
+          }
+        },
+        ThemeIcon: class {
+          id
+
+          constructor(id: string) {
+            this.id = id
+          }
+        },
+        TreeItemCollapsibleState: {
+          None: 0,
+          Expanded: 2,
+        },
+        Uri: {
+          file(fsPath: string) {
+            return { fsPath, path: fsPath }
+          },
+        },
+        workspace: {
+          fs: {
+            readFile: async () => Buffer.from(''),
+          },
+        },
+      },
+    }
+  })
+  vi.doMock('./workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async () => {
+        return {
+          appJsonPath: '/workspace/src/app.json',
+          subpackages: [],
+          topLevelPages: [
+            {
+              pageFilePath: '/workspace/src/pages/home/index.vue',
+              route: 'pages/home/index',
+            },
+          ],
+          unregisteredPages: [],
+          workspaceFolder: {
+            uri: {
+              fsPath: '/workspace',
+            },
+          },
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+
+  provider.setFilterMode('problems')
+  const rootNodes = await provider.getChildren()
+  const emptyItem = provider.getTreeItem(rootNodes[0])
+
+  assert.equal(rootNodes.length, 1)
+  assert.equal(rootNodes[0].label, '当前筛选没有匹配页面')
+  assert.equal(rootNodes[0].description, '仅问题页')
+  assert.equal(emptyItem.command?.command, 'weapp-vite.clearPagesTreeFilter')
+  assert.equal(emptyItem.iconPath?.id, 'filter')
+  assert.equal(emptyItem.contextValue, 'weappPages.emptyFilter')
+})

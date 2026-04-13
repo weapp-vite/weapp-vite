@@ -22,6 +22,12 @@ interface WeappPagesTreeGroupNode extends WeappPagesTreeBaseNode {
 
 export type WeappPagesTreeFilterMode = 'all' | 'current' | 'drift' | 'problems'
 
+interface WeappPagesTreeEmptyNode extends WeappPagesTreeBaseNode {
+  contextValue: string
+  kind: 'empty'
+  tooltip: string
+}
+
 interface WeappPagesTreePageNode extends WeappPagesTreeBaseNode {
   appJsonPath: string
   badges: string[]
@@ -37,7 +43,23 @@ interface WeappPagesTreePageNode extends WeappPagesTreeBaseNode {
   tooltip: string
 }
 
-type WeappPagesTreeNode = WeappPagesTreeGroupNode | WeappPagesTreePageNode
+type WeappPagesTreeNode = WeappPagesTreeEmptyNode | WeappPagesTreeGroupNode | WeappPagesTreePageNode
+
+function getFilterModeLabel(filterMode: WeappPagesTreeFilterMode) {
+  if (filterMode === 'current') {
+    return '仅当前页'
+  }
+
+  if (filterMode === 'drift') {
+    return '仅配置漂移页'
+  }
+
+  if (filterMode === 'problems') {
+    return '仅问题页'
+  }
+
+  return '全部页面'
+}
 
 function getPageNodeDescription(pageFilePath: string | null, workspacePath: string) {
   if (!pageFilePath) {
@@ -231,7 +253,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
   }
 
   getTreeItem(element: WeappPagesTreeNode) {
-    const collapsibleState = element.kind === 'page'
+    const collapsibleState = element.kind === 'page' || element.kind === 'empty'
       ? vscode.TreeItemCollapsibleState.None
       : vscode.TreeItemCollapsibleState.Expanded
     const item = new vscode.TreeItem(element.label, collapsibleState)
@@ -250,6 +272,15 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       item.contextValue = element.contextValue
       item.iconPath = new vscode.ThemeIcon(element.iconId)
       item.resourceUri = element.pageFilePath ? targetUri : undefined
+      item.tooltip = element.tooltip
+    }
+    else if (element.kind === 'empty') {
+      item.command = {
+        command: 'weapp-vite.clearPagesTreeFilter',
+        title: '清除 Pages 筛选',
+      }
+      item.contextValue = element.contextValue
+      item.iconPath = new vscode.ThemeIcon('filter')
       item.tooltip = element.tooltip
     }
     else {
@@ -381,6 +412,18 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       if (unregisteredGroup) {
         rootNodes.push(unregisteredGroup)
       }
+    }
+
+    if (rootNodes.length === 0 && this.filterMode !== 'all') {
+      const emptyNode: WeappPagesTreeEmptyNode = {
+        kind: 'empty',
+        label: '当前筛选没有匹配页面',
+        description: getFilterModeLabel(this.filterMode),
+        contextValue: 'weappPages.emptyFilter',
+        tooltip: `当前筛选: ${getFilterModeLabel(this.filterMode)}\n点击后清除筛选并恢复完整页面树。`,
+      }
+
+      return [emptyNode]
     }
 
     return rootNodes
