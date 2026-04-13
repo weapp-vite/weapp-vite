@@ -11,6 +11,10 @@ import {
 import {
   resolveCommandFromScripts,
 } from './logic'
+import {
+  collectAppJsonPageRoutes,
+  getPageFileCandidatePaths,
+} from './navigation'
 
 export function getPrimaryWorkspaceFolder() {
   const activeUri = vscode.window.activeTextEditor?.document.uri
@@ -66,6 +70,16 @@ async function readTextFile(filePath: string) {
   catch {
     return null
   }
+}
+
+async function getExistingProjectFile(filePaths: string[]) {
+  for (const filePath of filePaths) {
+    if (await pathExists(filePath)) {
+      return filePath
+    }
+  }
+
+  return null
 }
 
 export function getEditor(documentOrEditor: any) {
@@ -180,6 +194,77 @@ export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFol
     packageSignals: [...new Set(packageSignals)],
     fileSignals: [...new Set(fileSignals)],
   }
+}
+
+export async function getProjectNavigationItems(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  const context = await getProjectContext(workspaceFolder)
+
+  if (!context) {
+    return []
+  }
+
+  const workspacePath = context.workspaceFolder.uri.fsPath
+  const items = []
+  const viteConfigPath = await getExistingProjectFile([
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+    'vite.config.cjs',
+  ].map(fileName => path.join(workspacePath, fileName)))
+  const appJsonPath = await getExistingProjectFile([
+    path.join(workspacePath, 'src', 'app.json'),
+    path.join(workspacePath, 'app.json'),
+  ])
+
+  if (context.packageJsonPath) {
+    items.push({
+      label: '$(package) package.json',
+      description: '项目脚本与依赖',
+      detail: path.relative(workspacePath, context.packageJsonPath),
+      uri: vscode.Uri.file(context.packageJsonPath),
+    })
+  }
+
+  if (viteConfigPath) {
+    items.push({
+      label: '$(settings-gear) vite.config',
+      description: 'weapp-vite 配置入口',
+      detail: path.relative(workspacePath, viteConfigPath),
+      uri: vscode.Uri.file(viteConfigPath),
+    })
+  }
+
+  if (appJsonPath) {
+    items.push({
+      label: '$(json) app.json',
+      description: '小程序全局配置',
+      detail: path.relative(workspacePath, appJsonPath),
+      uri: vscode.Uri.file(appJsonPath),
+    })
+
+    const appJson = await readJsonFile(appJsonPath)
+    const appJsonDir = path.dirname(appJsonPath)
+
+    for (const route of collectAppJsonPageRoutes(appJson ?? {})) {
+      const pageFilePath = await getExistingProjectFile(
+        getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate)),
+      )
+
+      if (!pageFilePath) {
+        continue
+      }
+
+      items.push({
+        label: `$(file-submodule) ${route}`,
+        description: '页面文件',
+        detail: path.relative(workspacePath, pageFilePath),
+        uri: vscode.Uri.file(pageFilePath),
+      })
+    }
+  }
+
+  return items
 }
 
 export function resolveCommand(

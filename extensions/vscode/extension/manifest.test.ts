@@ -26,6 +26,7 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.insertDefineConfigTemplate',
     'weapp-vite.insertCommonScripts',
     'weapp-vite.openDocs',
+    'weapp-vite.openProjectFile',
   ])
 })
 

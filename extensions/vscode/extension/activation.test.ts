@@ -56,6 +56,7 @@ function createMockVscode() {
       showWarningMessage() {},
       showInformationMessage() {},
       showQuickPick: async () => undefined,
+      showTextDocument: async () => undefined,
       setStatusBarMessage() {},
       onDidChangeActiveTextEditor(handler) {
         return { dispose() {}, handler }
@@ -92,6 +93,9 @@ function createMockVscode() {
         return { dispose() {}, handler }
       },
       applyEdit: async () => true,
+      openTextDocument: async () => ({
+        uri: { path: '/tmp/demo.ts' },
+      }),
     },
     commands: {
       registerCommand(command, handler) {
@@ -241,7 +245,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 12)
+    assert.equal(state.registeredCommands.length, 13)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -257,6 +261,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.insertDefineConfigTemplate',
         'weapp-vite.insertCommonScripts',
         'weapp-vite.openDocs',
+        'weapp-vite.openProjectFile',
       ],
     )
     assert.equal(state.registeredProviders.length, 5)

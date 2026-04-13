@@ -66,7 +66,8 @@
     "onCommand:weapp-vite.insertJsonBlockTemplate",
     "onCommand:weapp-vite.insertDefineConfigTemplate",
     "onCommand:weapp-vite.insertCommonScripts",
-    "onCommand:weapp-vite.openDocs"
+    "onCommand:weapp-vite.openDocs",
+    "onCommand:weapp-vite.openProjectFile"
   ],
   "contributes": {
     "commands": [
@@ -128,6 +129,11 @@
       {
         "command": "weapp-vite.openDocs",
         "title": "Open Docs",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.openProjectFile",
+        "title": "Open Project File",
         "category": "weapp-vite"
       }
     ],
@@ -240,6 +246,10 @@
         {
           "command": "weapp-vite.openDocs",
           "when": "true"
+        },
+        {
+          "command": "weapp-vite.openProjectFile",
+          "when": "workspaceFolderCount > 0"
         }
       ],
       "explorer/context": [
@@ -267,6 +277,11 @@
         },
         {
           "command": "weapp-vite.openDocs",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.openProjectFile",
           "group": "navigation",
           "when": "resourceScheme == file"
         }
@@ -313,6 +328,18 @@
             },
             "completionEvents": [
               "onCommand:weapp-vite.openDocs"
+            ]
+          },
+          {
+            "id": "weapp-vite.open-project-file",
+            "title": "快速打开关键文件和页面",
+            "description": "运行 `weapp-vite: Open Project File`，快速跳转到 `package.json`、`vite.config.*`、`app.json` 和已声明页面。",
+            "media": {
+              "image": "assets/logo.png",
+              "altText": "weapp-vite"
+            },
+            "completionEvents": [
+              "onCommand:weapp-vite.openProjectFile"
             ]
           }
         ]

@@ -20,6 +20,7 @@ import {
   getEditor,
   getPrimaryWorkspaceFolder,
   getProjectContext,
+  getProjectNavigationItems,
   isPackageJsonDocument,
   isViteConfigDocument,
   isVueDocument,
@@ -212,6 +213,36 @@ export async function openDocumentation() {
   await vscode.env.openExternal(vscode.Uri.parse(selected.url))
 }
 
+export async function openProjectFile(state: any) {
+  const context = await ensureProjectContext('打开项目文件')
+
+  if (!context) {
+    return
+  }
+
+  const items = await getProjectNavigationItems(context.workspaceFolder)
+
+  if (items.length === 0) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前工作区还没有可导航的关键文件。')
+    return
+  }
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: '选择要打开的 weapp-vite 关键文件或页面',
+    matchOnDescription: true,
+    matchOnDetail: true,
+  })
+
+  if (!selected) {
+    return
+  }
+
+  state.getOutputChannel().appendLine(`[open] ${selected.detail}`)
+
+  const document = await vscode.workspace.openTextDocument(selected.uri)
+  await vscode.window.showTextDocument(document, { preview: false })
+}
+
 export async function showCommandPalette(state: any) {
   const context = await ensureProjectContext('打开命令面板')
 
@@ -231,6 +262,12 @@ export async function showCommandPalette(state: any) {
   })
 
   items.push(
+    {
+      label: '$(go-to-file) 打开关键文件 / 页面',
+      description: '快速打开 vite.config、app.json、package.json 和页面文件',
+      detail: '从 weapp-vite 项目关键入口中直接跳转。',
+      commandId: 'openProjectFile',
+    },
     {
       label: '$(info) 查看项目概览',
       description: '输出当前工作区识别信息',
@@ -256,6 +293,11 @@ export async function showCommandPalette(state: any) {
   })
 
   if (!selected) {
+    return
+  }
+
+  if (selected.commandId === 'openProjectFile') {
+    await openProjectFile(state)
     return
   }
 

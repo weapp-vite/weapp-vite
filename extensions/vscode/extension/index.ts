@@ -5,6 +5,7 @@ import {
   insertDefineConfigTemplate,
   insertJsonBlockTemplate,
   openDocumentation,
+  openProjectFile,
   runWorkspaceCommand,
   showCommandPalette,
   showProjectOverview,
@@ -110,6 +111,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.insertDefineConfigTemplate', () => insertDefineConfigTemplate()),
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.openDocs', () => openDocumentation()),
+    vscode.commands.registerCommand('weapp-vite.openProjectFile', () => openProjectFile(state)),
     vscode.languages.registerCodeActionsProvider(
       [
         { language: 'json', scheme: 'file' },
