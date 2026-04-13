@@ -179,6 +179,7 @@ function createMockVscode() {
       Property: 2,
       Function: 3,
       Value: 4,
+      File: 5,
     },
     SnippetString: class {
       constructor(value) {
@@ -270,7 +271,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.revealCurrentPageInAppJson',
       ],
     )
-    assert.equal(state.registeredProviders.length, 5)
+    assert.equal(state.registeredProviders.length, 6)
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)

@@ -27,6 +27,7 @@ import {
   buildPackageJsonDiagnostics,
 } from './content'
 import {
+  WeappViteAppJsonCompletionProvider,
   WeappViteCodeActionProvider,
   WeappViteConfigCompletionProvider,
   WeappViteHoverProvider,
@@ -111,6 +112,7 @@ async function refreshStatusBar() {
 export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
+  const appJsonCompletionProvider = new WeappViteAppJsonCompletionProvider()
   const packageJsonCompletionProvider = new WeappVitePackageJsonCompletionProvider()
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
@@ -148,6 +150,15 @@ export function activate(context: any) {
       { language: 'vue', scheme: 'file' },
       vueCompletionProvider,
       '<',
+    ),
+    vscode.languages.registerCompletionItemProvider(
+      [
+        { language: 'json', scheme: 'file', pattern: '**/app.json' },
+        { language: 'jsonc', scheme: 'file', pattern: '**/app.json' },
+      ],
+      appJsonCompletionProvider,
+      '"',
+      '/',
     ),
     vscode.languages.registerCompletionItemProvider(
       [

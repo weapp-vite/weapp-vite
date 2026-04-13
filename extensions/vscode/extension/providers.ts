@@ -12,11 +12,14 @@ import {
   VUE_JSON_BLOCK_PATTERN,
 } from './constants'
 import {
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteInsertText,
   getPackageJsonScriptHover,
   getViteConfigHover,
   getVueCustomBlockHover,
 } from './content'
 import {
+  getAppJsonPageRouteSuggestions,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -140,6 +143,41 @@ export class WeappVitePackageJsonCompletionProvider {
     }
 
     return []
+  }
+}
+
+export class WeappViteAppJsonCompletionProvider {
+  async provideCompletionItems(document: any, position: any) {
+    if (!isCompletionEnabled() || !isAppJsonDocument(document)) {
+      return []
+    }
+
+    const linePrefix = document.lineAt(position.line).text.slice(0, position.character)
+    const textBeforeCursor = document.getText(new vscode.Range(0, 0, position.line, position.character))
+    const context = getAppJsonRouteCompletionContext(textBeforeCursor, linePrefix)
+
+    if (!context) {
+      return []
+    }
+
+    const routes = await getAppJsonPageRouteSuggestions(document)
+
+    return routes
+      .map((route, index) => {
+        const insertText = getAppJsonRouteInsertText(route, context.root)
+
+        if (!insertText) {
+          return null
+        }
+
+        const item = new vscode.CompletionItem(insertText, vscode.CompletionItemKind.File)
+        item.insertText = insertText
+        item.detail = `page route: ${route}`
+        item.documentation = new vscode.MarkdownString(`对应页面文件路由：\`${route}\``)
+        item.sortText = `0${index}`
+        return item
+      })
+      .filter(Boolean)
   }
 }
 

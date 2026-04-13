@@ -3,6 +3,8 @@ import { it } from 'vitest'
 
 import {
   applySuggestedScripts,
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteInsertText,
   getMissingCommonScripts,
   getSuggestedScripts,
   resolveCommandFromScripts,
@@ -85,4 +87,32 @@ it('uses configured fallback alias when no script is found', () => {
     command: 'weapp-vite open',
     source: 'CLI 回退命令',
   })
+})
+
+it('detects top level app json pages completion context', () => {
+  assert.deepEqual(getAppJsonRouteCompletionContext([
+    '{',
+    '  "pages": [',
+    '    "pages/ho',
+  ].join('\n'), '    "pages/ho'), {
+    root: null,
+  })
+})
+
+it('detects subpackage app json pages completion context', () => {
+  assert.deepEqual(getAppJsonRouteCompletionContext([
+    '{',
+    '  "subPackages": [',
+    '    {',
+    '      "root": "packageA",',
+    '      "pages": [',
+    '        "detail/in',
+  ].join('\n'), '        "detail/in'), {
+    root: 'packageA',
+  })
+})
+
+it('normalizes route insert text for subpackage pages', () => {
+  assert.equal(getAppJsonRouteInsertText('packageA/detail/index', 'packageA'), 'detail/index')
+  assert.equal(getAppJsonRouteInsertText('pages/home/index', null), 'pages/home/index')
 })

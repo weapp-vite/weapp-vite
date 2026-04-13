@@ -101,6 +101,43 @@ async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder
   ])
 }
 
+export async function getAppJsonPageRouteSuggestions(document: any) {
+  if (!isAppJsonDocument(document)) {
+    return []
+  }
+
+  const appJsonDir = path.dirname(document.uri.fsPath)
+  const patterns = [
+    '**/*.vue',
+    '**/*.ts',
+    '**/*.js',
+    '**/*.wxml',
+  ]
+  const files = await Promise.all(patterns.map(async (pattern) => {
+    return vscode.workspace.findFiles(new vscode.RelativePattern(appJsonDir, pattern))
+  }))
+  const routes = new Set<string>()
+
+  for (const group of files) {
+    for (const file of group) {
+      const relativePath = path.relative(appJsonDir, file.fsPath)
+      const route = getRouteFromPageFilePath(relativePath)
+
+      if (!route) {
+        continue
+      }
+
+      if (route === 'app' || route.endsWith('/app')) {
+        continue
+      }
+
+      routes.add(route)
+    }
+  }
+
+  return [...routes].sort()
+}
+
 export function getEditor(documentOrEditor: any) {
   if (!documentOrEditor) {
     return null

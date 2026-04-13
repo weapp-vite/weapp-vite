@@ -13,6 +13,8 @@ import {
   WEAPP_VITE_SCRIPT_PATTERN,
 } from './constants'
 import {
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteInsertText,
   getMissingCommonScripts,
 } from './logic'
 
@@ -209,4 +211,9 @@ export function getVueCustomBlockHover(lineText: string) {
     '',
     '建议使用 `lang="jsonc"` 以便保留注释。',
   ].join('\n'))
+}
+
+export {
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteInsertText,
 }
