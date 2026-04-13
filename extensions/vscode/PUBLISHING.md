@@ -69,6 +69,7 @@ VSCE_PAT=your_token pnpm run publish:vsce
 - `pnpm run build` 使用 `tsdown` 将扩展运行时代码打包到 `dist/extension.js`
 - `pnpm run test` 通过 Vitest 执行 TypeScript 单元测试
 - `pnpm run smoke:dist` 会加载编译后的 `dist/extension.js`，并用模拟的 VS Code Host 验证扩展激活
+- `pnpm run test:host:smoke` 会下载并启动真实 VS Code 宿主，执行最小插件烟测，适合放在 CI 中兜底安装后行为
 - `pnpm run check:vsix` 会打出本地 `.vsix`，并校验最终归档里的文件列表
 - `check:publish` 已经包含 `lint`、`test` 和打包校验，是最稳妥的发布前关卡
 - `release:marketplace:plan` 会检测当前版本是否在本次 release 中变化，并在 CI 中写入 GitHub Actions 输出变量
@@ -79,6 +80,13 @@ VSCE_PAT=your_token pnpm run publish:vsce
 
 ```bash
 pnpm --dir extensions/vscode run check:publish
+```
+
+如果希望进一步确认真实 VS Code 宿主能正常拉起扩展，建议在 CI 额外执行：
+
+```bash
+pnpm --dir extensions/vscode run build
+pnpm --dir extensions/vscode run test:host:smoke
 ```
 
 如果还想在 CI 或本地验证真实打包过程：

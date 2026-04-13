@@ -35,7 +35,9 @@ jobs:
     name: VSCode Extension Package Dry Run (Node 20)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: vscode-extension
+    needs:
+      - vscode-extension
+      - vscode-extension-host-smoke
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -54,3 +56,22 @@ jobs:
           path: extensions/vscode/.artifacts/*.vsix
           if-no-files-found: error
           include-hidden-files: true
+
+  vscode-extension-host-smoke:
+    name: VSCode Extension Host Smoke (Node 20)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    needs: vscode-extension
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 20
+
+      - name: Build extension
+        run: pnpm --dir extensions/vscode run build
+
+      - name: Run VS Code host smoke test
+        run: pnpm --dir extensions/vscode run test:host:smoke
