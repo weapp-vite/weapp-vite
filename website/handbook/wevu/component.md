@@ -1,32 +1,21 @@
 ---
-title: 组件：props、emit、slots
-description: 从组件通信最常见的三件事出发，解释 Wevu 里的 props、emit 和 slots 在小程序宿主下分别应该怎么理解。
+title: 组件通信
+description: 在 wevu 里怎么做 props、emit 和 slots，以及和 Web Vue 的区别。
 keywords:
   - handbook
   - wevu
   - component
   - props
   - emit
-  - slots
 ---
 
-# 组件：props、emit、slots
+# 组件通信
 
-组件通信在小程序里不是不能做，而是更适合用“宿主视角”理解。
+组件通信就三件事：父给子数据、子给父事件、插槽。在小程序里都能做，但要用"宿主视角"来理解。
 
-你可以把它拆成 3 件事：
+## props：父组件给子组件数据
 
-- 父组件怎么给子组件数据
-- 子组件怎么把事件抛回去
-- 插槽能力到底能用到什么程度
-
-## props：先把它理解成输入数据
-
-无论你写的是更接近 Vue 的 props 语义，还是更接近小程序的 `properties` 语义，本质上都是一件事：
-
-> 父组件向子组件输入数据。
-
-一个很简单的例子：
+用 `<script setup>` 的话：
 
 ```vue
 <!-- goods-card.vue -->
@@ -45,19 +34,30 @@ const props = defineProps<{
 </template>
 ```
 
+用 `defineComponent` 的话，通过 `properties`：
+
+```ts
+export default defineComponent({
+  properties: {
+    title: { type: String, value: '' },
+    price: { type: Number, value: 0 },
+  },
+  setup(props) {
+    // props.title, props.price 是响应式的
+  },
+})
+```
+
 父组件使用：
 
 ```vue
 <GoodsCard title="键盘" :price="199" />
 ```
 
-## emit：把它理解成“向父层抛业务事件”
-
-小程序事件最终还是以事件载荷的方式向上走，所以在设计事件时，尽量让事件名和载荷都更明确。
-
-例如：
+## emit：子组件给父组件事件
 
 ```vue
+<!-- 子组件 -->
 <script setup lang="ts">
 const emit = defineEmits<{
   select: [{ id: string }]
@@ -75,22 +75,29 @@ function onTap() {
 </template>
 ```
 
-父组件接收：
-
 ```vue
+<!-- 父组件 -->
 <GoodsCard @select="onGoodsSelect" />
 ```
 
-## slots：要按小程序边界看待
+用 `defineComponent` 的话，通过 `ctx.emit`：
 
-插槽可以用，但不要默认以为 Web Vue 里复杂的插槽模式都能原样照搬。
+```ts
+export default defineComponent({
+  setup(props, ctx) {
+    function onTap() {
+      ctx.emit('select', { id: 'sku-1' })
+    }
+    return { onTap }
+  },
+})
+```
 
-更适合优先使用的是：
+底层走的是小程序的 `triggerEvent`。
 
-- 结构清晰的默认插槽
-- 边界明确的少量插槽位
+## slots：插槽
 
-例如：
+默认插槽可以正常用：
 
 ```vue
 <BaseCard>
@@ -98,25 +105,18 @@ function onTap() {
 </BaseCard>
 ```
 
-如果你已经开始高度依赖复杂作用域插槽，建议先评估：
+但不要默认以为 Web Vue 里复杂的作用域插槽都能照搬。小程序的组件隔离机制和浏览器不一样，复杂插槽模式要实际验证。
 
-- 是否真的必要
-- 是否能拆成更明确的 props + 插槽组合
-
-## 一个很实用的组件设计习惯
+## 组件设计的建议
 
 组件对外只暴露两类东西：
 
 - 输入：props
 - 输出：事件
 
-不要让组件外部过度依赖它的内部细节。
+不要让外部依赖组件的内部实现细节。props 定义清晰、事件语义明确，组件就好维护。
 
-## 一句话总结
+## 接下来
 
-在 Wevu 里做组件通信时，优先追求“输入清晰、事件明确、插槽克制”，而不是追求和 Web Vue 完全同构。
-
-接下来建议继续看：
-
-- [Store：状态怎么放更合理](/handbook/wevu/store)
-- [provide / inject：依赖注入](/handbook/wevu/provide-inject)
+- [状态管理](/handbook/wevu/store)
+- [表单和双向绑定](/handbook/wevu/bind-model)

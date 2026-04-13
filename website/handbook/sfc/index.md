@@ -1,6 +1,6 @@
 ---
-title: 先建立 SFC 心智模型
-description: 用新用户最容易理解的方式解释 .vue 文件在 Weapp-vite 里如何落到小程序产物，以及写 Vue SFC 时哪些地方和 Web Vue 一样，哪些地方不一样。
+title: .vue 怎么变成小程序
+description: 解释 .vue 文件在 weapp-vite 里是怎么被编译成小程序四件套的，以及写 Vue SFC 时哪些地方和 Web Vue 一样，哪些地方不一样。
 keywords:
   - handbook
   - sfc
@@ -8,19 +8,15 @@ keywords:
   - Weapp-vite
 ---
 
-# 先建立 SFC 心智模型
+# .vue 怎么变成小程序
 
-如果你已经会写 Web Vue，第一次写小程序 SFC 时最容易出现一种错觉：
+如果你写过 Web Vue，第一次写小程序 SFC 的时候很容易产生一个错觉："这不就是在写普通 Vue 吗？"
 
-“我现在是不是就在写普通 Vue 页面？”
+写法确实很像，但跑的地方完全不一样。
 
-答案是：**写法接近，但宿主和输出完全不是一回事。**
+## 一个 .vue 文件最终会变成什么
 
-## 先记住最关键的一句话
-
-你写的是 `.vue`，但最终运行的是小程序四件套。
-
-例如这个文件：
+你写的是这样：
 
 ```vue
 <script setup lang="ts">
@@ -46,28 +42,26 @@ const count = ref(0)
 </style>
 ```
 
-构建后会变成近似这样的结构：
+构建之后，它会变成：
 
 ```txt
 dist/pages/product/
-├─ index.js
-├─ index.json
-├─ index.wxml
-└─ index.wxss
+├─ index.js      ← script 部分
+├─ index.json    ← definePageJson 的输出
+├─ index.wxml    ← template 部分
+└─ index.wxss    ← style 部分
 ```
 
-所以你写 SFC 时，脑子里要同时存在两层视角：
+所以你写 SFC 的时候，脑子里要同时想两件事：
 
-- 代码组织层：我是用 Vue 单文件组件来组织页面
-- 宿主约束层：最终还是要遵守小程序模板、事件、样式和组件规则
+- 我在用 Vue 的方式组织代码
+- 但最终产物要遵守小程序的规则
 
-## 一个 `.vue` 文件里的 4 个块分别负责什么
+## 四个块各自负责什么
 
 ### `<template>`
 
-负责视图结构，但要优先写小程序语义。
-
-例如：
+写视图结构。但要用小程序的标签，不是 HTML 标签：
 
 ```vue
 <template>
@@ -80,15 +74,11 @@ dist/pages/product/
 </template>
 ```
 
-这里依然推荐：
-
-- `<view>`、`<text>`、`<button>`
-- `@tap`
-- 小程序能稳定编译的条件渲染和循环写法
+用 `view` 不用 `div`，用 `text` 不用 `span`，用 `@tap` 不用 `@click`。
 
 ### `<script setup>`
 
-负责页面逻辑，推荐作为默认写法：
+写页面逻辑。推荐默认就用 `<script setup lang="ts">`：
 
 ```vue
 <script setup lang="ts">
@@ -100,73 +90,71 @@ const finalPrice = computed(() => price.value * discount.value)
 </script>
 ```
 
-### `<json>`
+### `definePageJson()`
 
-或对应的 JSON 宏，负责页面/组件配置。
-
-例如：
+声明页面配置。这是小程序特有的，Web Vue 里没有：
 
 ```ts
 definePageJson(() => ({
   navigationBarTitleText: '订单列表',
+  enablePullDownRefresh: true,
 }))
 ```
 
+它会被编译成页面的 `.json` 文件。
+
 ### `<style>`
 
-负责样式输出，但最终仍要符合小程序宿主能力边界。
+写样式。最终会变成 `.wxss`，所以有些浏览器里能用的 CSS 在这里不一定行：
 
-## 和 Web Vue 最容易混淆的地方
+```vue
+<style scoped>
+.page {
+  padding: 24rpx; /* rpx 是小程序的响应式单位 */
+}
+</style>
+```
 
-### 1. 响应式 API 的来源
+## 和 Web Vue 最容易搞混的三件事
 
-日常页面/组件开发里，优先从 `wevu` 导入：
+### 1. 响应式 API 要从 wevu 导入
+
+这是新手最常踩的坑。在小程序里，`ref`、`computed`、`watch` 这些要从 `wevu` 导入：
 
 ```ts
+// ❌ 错的 — 从 vue 导入的在小程序运行时里不会触发页面更新
+import { computed, ref } from 'vue'
+
+// ✅ 对的
 import { computed, ref } from 'wevu'
 ```
 
-### 2. 模板不是浏览器 DOM
+### 2. 模板最终是 WXML，不是浏览器 DOM
 
-你看到的是 Vue 风格模板，但最终走向是 WXML，不是浏览器 DOM。
+你看到的是 Vue 风格的模板语法，但它会被编译成 WXML。这意味着：
 
-这意味着：
+- 事件不是标准 DOM Event，是小程序事件
+- 模板表达式的能力有边界
+- 不是所有 Vue 的高级模板特性都能用
 
-- 事件语义不是标准 DOM Event
-- 模板表达式能力有小程序边界
-- 某些高级插槽或复杂模板能力要谨慎验证
+### 3. 页面配置是小程序概念
 
-### 3. 页面配置不是 `defineOptions`
+`definePageJson()` 设置的是小程序页面的标题、下拉刷新、组件声明这些东西，这在浏览器里是不存在的。
 
-在小程序页面里，你还需要处理：
-
-- 页面标题
-- 组件声明
-- 页面宿主配置
-
-这些不是浏览器页面概念，而是小程序页面概念。
-
-## 新用户应该先掌握哪些内容
-
-建议按这个顺序学 SFC：
-
-1. 模板基础写法
-2. `script setup` 的日常范式
-3. 页面 JSON 配置怎么写
-4. 组件导入与拆分
-5. 事件与 `v-model`
-6. 样式和资源路径
-
-比如，一个很典型的页面组件组合可能是这样：
+## 一个典型的页面长什么样
 
 ```vue
 <script setup lang="ts">
 import { ref } from 'wevu'
 import ProductCard from '../../components/product-card/index.vue'
 
+definePageJson(() => ({
+  navigationBarTitleText: '商品列表',
+}))
+
 const products = ref([
-  { id: '1', title: '键盘' },
-  { id: '2', title: '鼠标' },
+  { id: '1', title: '键盘', price: 199 },
+  { id: '2', title: '鼠标', price: 99 },
 ])
 </script>
 
@@ -176,22 +164,34 @@ const products = ref([
       v-for="item in products"
       :key="item.id"
       :title="item.title"
+      :price="item.price"
     />
   </view>
 </template>
+
+<style scoped>
+.page {
+  padding: 32rpx;
+}
+</style>
 ```
 
-## 一个实用判断标准
+这里面你能看到：
 
-如果你正在犹豫“这件事该从 Vue 角度想，还是从小程序角度想”，就问自己：
+- 组件可以直接 `import .vue` 来用
+- `v-for`、`:key`、`:title` 这些 Vue 语法都能用
+- 但标签是 `view` 不是 `div`
 
-> 这个能力最终会不会落到模板、JSON、事件或样式产物上？
+## 怎么判断一个写法在小程序里行不行
 
-如果答案是“会”，那就一定要考虑小程序宿主边界。
+问自己一个问题：
 
-## 接下来按这个顺序继续看
+> 这个东西最终会落到模板、JSON、事件还是样式产物上？
 
-- [Template：先学哪些写法](/handbook/sfc/template)
-- [Script Setup：推荐日常范式](/handbook/sfc/script-setup)
-- [JSON：页面配置放哪里](/handbook/sfc/json)
-- [组件：拆分、导入与注册](/handbook/sfc/components)
+如果会，就要考虑小程序的限制。比如你想用 `<teleport>`，这在小程序里是没有的，因为 WXML 没有这个概念。
+
+## 接下来
+
+- [模板和事件怎么写](/handbook/sfc/template)
+- [脚本逻辑怎么组织](/handbook/sfc/script-setup)
+- [组件怎么拆](/handbook/sfc/components)

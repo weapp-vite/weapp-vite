@@ -1,150 +1,162 @@
 ---
-title: 从零开始学 Weapp-vite
-description: handbook 按新用户的真实学习顺序组织 Weapp-vite、Vue SFC 与 Wevu，帮助你从项目启动一路走到页面开发、业务落地与上线发布。
+title: 创建项目，跑起来
+description: 从零开始创建一个 Weapp-vite + Wevu 小程序项目，写出第一个页面，确认它能在开发者工具里正常运行。
 keywords:
   - Weapp-vite
   - Wevu
-  - Vue SFC
   - handbook
-  - 学习路径
+  - 快速开始
 ---
 
-# 从零开始学 Weapp-vite
+# 创建项目，跑起来
 
-如果你是第一次接触 `weapp-vite`，最容易卡住的通常不是“不会配某个字段”，而是：
+这篇教程不讲理论，目标就一个：你跟着做完，能在微信开发者工具里看到自己写的页面。
 
-- 不知道应该先看 `guide`、`config`、`wevu` 还是 `handbook`
-- 不确定 `weapp-vite`、Vue SFC、`wevu` 三者分别负责什么
-- 能把项目跑起来，但一写页面、一拆组件、一做请求就开始乱
+## 你需要准备什么
 
-`/handbook` 这套教程就是专门解决这个问题的。它不打算把所有 API 平铺直叙地罗列一遍，而是按“一个新用户真的会怎么学、怎么做项目”的顺序，把核心能力串成一条可执行路径。
+- Node.js 22 LTS（`>=22.12.0`）
+- pnpm
+- 微信开发者工具
 
-## 1. 这套教程解决什么问题
+如果你后面想用命令行控制开发者工具（打开、预览、上传），记得在开发者工具的设置里开启"服务端口"。
 
-| 你现在的困惑                     | handbook 想给你的答案                                  |
-| -------------------------------- | ------------------------------------------------------ |
-| 我应该先看哪套文档？             | 先用教程建立顺序感，再回到专题页查细节                 |
-| 三层能力分别负责什么？           | 先分清编译期、运行时、业务代码的边界                   |
-| 页面能跑，但项目越写越乱怎么办？ | 按“项目启动 → SFC → Wevu → 业务 → 上线”逐步收口        |
-| 碰到具体问题时应该跳去哪里？     | 每章都给你对应的 `/guide`、`/config`、`/wevu` 跳转入口 |
+## 创建项目
 
-你可以先把整条学习路径理解为 5 个阶段：
-
-1. 先把项目跑起来。
-2. 再学会怎么写页面和组件。
-3. 再理解运行时为什么这样工作。
-4. 然后把导航、请求、分包和原生能力做扎实。
-5. 最后再处理调试、性能、发布和迁移。
-
-## 2. 先建立一个最小认知模型
-
-你可以先把整个技术栈理解成三层：
-
-```txt
-你写的业务代码
-├─ .vue 页面 / 组件
-├─ services / stores / utils
-└─ app.json / page.json / 路由配置
-
-Weapp-vite 负责：开发、构建、扫描、输出产物
-Vue SFC 编译链负责：把 .vue 拆成 WXML / WXSS / JS / JSON
-Wevu 负责：响应式、生命周期、setup 语义、最小化 setData
+```bash
+pnpm create weapp-vite
 ```
 
-对应到一个最小页面，大概就是这样：
+跟着提示走就行。创建完之后，你会看到大概这样的目录：
+
+```txt
+my-app/
+├─ src/
+│  ├─ app.vue
+│  ├─ app.json
+│  └─ pages/
+│     └─ home/
+│        └─ index.vue
+├─ vite.config.ts
+├─ project.config.json
+├─ package.json
+└─ AGENTS.md
+```
+
+脚手架还会问你要不要装推荐的 AI skills，如果跳过了，后面可以手动装：
+
+```bash
+npx skills add sonofmagic/skills
+```
+
+## 写第一个页面
+
+打开 `src/pages/home/index.vue`，写一个最简单的计数器：
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { computed, ref } from 'wevu'
 
 definePageJson(() => ({
-  navigationBarTitleText: 'Hello Weapp-vite',
+  navigationBarTitleText: '首页',
 }))
 
 const count = ref(0)
+const doubled = computed(() => count.value * 2)
 </script>
 
 <template>
   <view class="page">
+    <text class="title">Hello Weapp-vite</text>
     <text>count: {{ count }}</text>
-    <button @tap="count += 1">
-      加一
+    <text>doubled: {{ doubled }}</text>
+    <button @tap="count++">
+      +1
     </button>
   </view>
 </template>
+
+<style scoped>
+.page {
+  padding: 32rpx;
+}
+
+.title {
+  display: block;
+  margin-bottom: 24rpx;
+  font-size: 36rpx;
+  font-weight: 600;
+}
+</style>
 ```
 
-上面这段代码背后实际发生的是：
+这里面有几个关键点，先记住就行，后面会展开讲：
 
-- `weapp-vite` 负责 dev/build、目录扫描、输出 `dist`
-- SFC 编译链把 `.vue` 转成小程序能识别的四件套
-- `wevu` 让 `ref()`、事件绑定和页面更新在小程序里工作起来
+- `definePageJson()` 是页面配置的宏，用来设置标题、下拉刷新这些
+- 响应式 API（`ref`、`computed`）从 `wevu` 导入，不是从 `vue`
+- 模板里用的是小程序标签（`view`、`text`、`button`），事件用 `@tap` 不是 `@click`
 
-## 3. 这套教程怎么读最顺
+## 确认页面被路由系统识别
 
-### 3.1 想最快上手
+页面写好了，还得确认它被纳入了应用。看一下 `src/app.json`：
 
-按下面顺序看：
+```json
+{
+  "pages": ["pages/home/index"],
+  "window": {
+    "navigationBarTitleText": "Demo"
+  }
+}
+```
 
-1. [30 分钟快速开始](/handbook/getting-started)
-2. [目录结构怎么放最顺手](/handbook/project-structure)
-3. [先建立 SFC 心智模型](/handbook/sfc/)
-4. [为什么要用 Wevu](/handbook/wevu/)
-5. [页面跳转与路由参数](/handbook/navigation)
+如果你开了自动路由（`weapp.autoRoutes`），这一步可以省掉，`pages/` 下的 `.vue` 文件会被自动扫描。
 
-### 3.2 已经有项目，想系统补齐认知
+## 启动开发
 
-可以按 sidebar 的 5 个阶段顺着读：
+```bash
+pnpm dev
+```
 
-- 第 1 步：把项目、构建、配置跑顺
-- 第 2 步：把 Vue SFC 写顺手
-- 第 3 步：把 Wevu 的运行时边界搞明白
-- 第 4 步：把导航、请求、原生能力、分包做扎实
-- 第 5 步：把调试、性能、发布、迁移收口
+然后用微信开发者工具打开项目的 `dist` 目录（不是 `src`）。你应该能看到页面正常显示，点按钮数字会变。
 
-## 4. `/guide`、`/config`、`/wevu`、`/handbook` 分别看什么
+如果你在用 AI 终端，这几个命令会很常用：
 
-很多新用户都会在这四类文档之间反复跳。可以这样区分：
+```bash
+wv prepare          # 生成类型支持文件
+wv ide logs --open  # 把开发者工具的 console 桥接到终端
+```
 
-| 文档分区    | 最适合解决的问题                                 | 典型页面                                                               |
-| ----------- | ------------------------------------------------ | ---------------------------------------------------------------------- |
-| `/guide`    | 这个能力怎么开、怎么用                           | [自动路由](/guide/auto-routes)、[插件开发](/guide/plugin)              |
-| `/config`   | 这个配置项是什么、默认值是什么、应该怎么配       | [subpackages](/config/subpackages)、[routeRules](/config/route-rules)  |
-| `/wevu`     | 运行时能力本身是什么、API 边界是什么             | [Wevu 概览](/wevu/)、[API 首页](/wevu/api/)                            |
-| `/handbook` | 我第一次做项目时，应该按什么顺序把这些能力串起来 | [快速开始](/handbook/getting-started)、[参考索引](/handbook/reference) |
+## 跑不起来？先查这几个地方
 
-举个例子，如果你在做一个“商品列表页 + 购物车”的小程序：
+| 症状             | 先查什么                                                          |
+| ---------------- | ----------------------------------------------------------------- |
+| 页面白屏         | `app.json` 里有没有这个页面路径                                   |
+| 点按钮没反应     | `ref` 是不是从 `wevu` 导入的                                      |
+| 数据改了页面没变 | 同上，从 `vue` 导入的 `ref` 在小程序里不会触发更新                |
+| 标题没生效       | 看 `dist/pages/home/index.json` 里有没有 `navigationBarTitleText` |
+| 开发者工具打不开 | 确认导入的是 `dist` 目录，不是 `src`                              |
 
-- 想知道自动路由怎么开，看 [/guide/auto-routes](/guide/auto-routes)
-- 想知道分包字段怎么写，看 [/config/subpackages](/config/subpackages)
-- 想知道 `ref`、`computed`、生命周期来自哪里，看 [/wevu/](/wevu/)
-- 想知道整个页面应该怎么分层、什么时候拆 store、什么时候做分包，就看 [/handbook/](/handbook/)
+## 这套技术栈是怎么分工的
 
-## 5. 你能在 handbook 里获得什么
+你现在不需要完全理解，但知道这个分工会帮你后面排查问题：
 
-- 一条按真实开发顺序组织的学习路线
-- 更偏“怎么做项目”的解释，而不是只讲单点功能
-- 每章都会尽量给出最小示例，帮你判断“什么时候该这样写”
-- 遇到细节问题时，会指回更准确的 `/guide`、`/config`、`/wevu` 页面
+```txt
+weapp-vite  → 负责开发、构建、把 .vue 编译成小程序文件
+wevu        → 负责运行时：响应式、生命周期、状态管理
+你的代码     → 页面、组件、请求、业务逻辑
+```
 
-## 6. 现在就从哪里开始
+一个 `.vue` 文件最终会变成小程序的四件套：
 
-- 完全第一次接触：看 [怎么阅读这套教程](/handbook/reading-guide)
-- 想马上跑一个页面：看 [30 分钟快速开始](/handbook/getting-started)
-- 你最关心 Vue 写法：从 [先建立 SFC 心智模型](/handbook/sfc/) 开始
-- 你最关心运行时：从 [为什么要用 Wevu](/handbook/wevu/) 开始
+```txt
+dist/pages/home/
+├─ index.js      ← 页面逻辑
+├─ index.json    ← 页面配置
+├─ index.wxml    ← 模板
+└─ index.wxss    ← 样式
+```
 
-## 7. 总结
+遇到问题的时候，去 `dist` 里看这些文件，比盯着源码猜要快得多。
 
-`handbook` 的价值不在于“把所有知识一次讲完”，而在于帮你先建立顺序感，再把专题文档串起来。
+## 下一步
 
-如果你现在只做一件事，建议直接进入 [30 分钟快速开始](/handbook/getting-started)。
-
-## 8. 参考资源
-
-| 主题       | 推荐入口                                    |
-| ---------- | ------------------------------------------- |
-| 项目启动   | [快速开始](/guide/)                         |
-| 教程导读   | [怎么阅读这套教程](/handbook/reading-guide) |
-| 运行时总览 | [Wevu 概览](/wevu/)                         |
-| 配置索引   | [配置总览](/config/)                        |
+项目跑起来了，接下来看看[目录怎么放](/handbook/project-structure)比较合理。

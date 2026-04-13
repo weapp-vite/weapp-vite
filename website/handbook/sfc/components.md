@@ -1,21 +1,45 @@
 ---
-title: 组件：拆分、导入与注册
-description: 解释新项目里组件应该如何拆分、何时直接 import .vue、何时还需要 usingComponents，以及原生组件如何获得更稳的类型提示。
+title: 组件怎么拆
+description: 什么时候该拆组件、怎么导入、什么时候还需要 usingComponents、原生组件怎么接类型。
 keywords:
   - handbook
   - sfc
   - components
-  - usingComponents
-  - Vue SFC
+  - 组件
 ---
 
-# 组件：拆分、导入与注册
+# 组件怎么拆
 
-页面能跑起来之后，下一个很快会遇到的问题就是：什么时候该拆组件，以及拆完之后怎么接回页面。
+页面能跑起来之后，下一个问题就是：什么时候该拆组件，拆完怎么接回页面。
 
-## 先看一个推荐的拆分例子
+## 默认方式：直接 import .vue
 
-例如订单列表页：
+```vue
+<script setup lang="ts">
+import OrderCard from './components/order-card.vue'
+import OrderEmpty from './components/order-empty.vue'
+</script>
+
+<template>
+  <OrderCard v-for="item in list" :key="item.id" :data="item" />
+  <OrderEmpty v-if="isEmpty" />
+</template>
+```
+
+这是新项目推荐的默认方式。好处是 IDE 跳转稳、重构安全、依赖关系一目了然。
+
+## 什么时候该拆
+
+出现这些信号就值得拆：
+
+- 页面模板超过 100 行了
+- 同一块 UI 在多个页面出现
+- 某块区域有自己的状态和行为
+- 你开始复制粘贴同样的模板结构
+
+## 放哪里
+
+只服务当前页面的组件，放页面目录下：
 
 ```txt
 pages/order-list/
@@ -25,65 +49,24 @@ pages/order-list/
    └─ order-empty.vue
 ```
 
-页面里直接导入：
+多个页面稳定复用的，放全局 `components/`：
 
-```vue
-<script setup lang="ts">
-import OrderCard from './components/order-card.vue'
-import OrderEmpty from './components/order-empty.vue'
-</script>
+```txt
+src/components/
+├─ empty-state/index.vue
+├─ price-text/index.vue
+└─ loading-view/index.vue
 ```
 
-这是新项目最推荐的默认方式。
+判断标准很简单：如果这个组件只有一个页面在用，就放页面目录。等第二个页面也要用的时候再提升到全局。
 
-## 为什么默认推荐直接 `import .vue`
+## 什么时候还需要 usingComponents
 
-因为它同时解决了几个非常现实的问题：
+直接 `import .vue` 能覆盖大部分场景。但这些情况还是需要 `usingComponents`：
 
-- IDE 跳转更直接
-- 重构改名更稳
-- 类型提示更自然
-- 页面依赖关系一眼能看懂
-
-例如：
-
-```vue
-<script setup lang="ts">
-import GoodsCard from '../../components/goods-card/index.vue'
-</script>
-
-<template>
-  <GoodsCard title="键盘" :price="199" />
-</template>
-```
-
-## 什么时候该拆成组件
-
-通常出现下面这些信号，就值得拆：
-
-- 页面模板已经很长
-- 同一块 UI 在多个页面复用
-- 某块区域有独立状态和行为
-- 你开始在模板里反复复制同样结构
-
-比如：
-
-- 商品卡片
-- 空状态
-- 地址选择块
-- 订单状态条
-
-## 什么时候还需要 `usingComponents`
-
-`usingComponents` 不是不能用，而是它在新项目里更适合作为补充方案。
-
-常见场景：
-
-- 接第三方原生小程序组件
-- 引入不是 `.vue` 的原生组件目录
-- 历史工程尚未完全迁移到 SFC import
-
-例如：
+- 接第三方原生小程序组件（不是 `.vue` 的）
+- 引入原生组件目录
+- 历史项目还没迁移到 SFC import
 
 ```ts
 definePageJson(() => ({
@@ -93,31 +76,59 @@ definePageJson(() => ({
 }))
 ```
 
-## 页面局部组件还是全局组件
+## 组件的 props 和事件
 
-一个很好用的判断标准是：
+用 `defineProps` 和 `defineEmits`：
 
-- 只服务当前页面的，放页面目录下
-- 多个页面稳定复用的，放全局 `components/`
+```vue
+<!-- components/goods-card/index.vue -->
+<script setup lang="ts">
+const props = defineProps<{
+  title: string
+  price: number
+}>()
 
-例如：
+const emit = defineEmits<{
+  select: [id: string]
+}>()
 
-更适合页面局部：
+function onTap() {
+  emit('select', 'sku-1')
+}
+</script>
 
-- `order-filter-bar`
-- `refund-progress-panel`
+<template>
+  <view class="goods-card" @tap="onTap">
+    <text>{{ props.title }}</text>
+    <text>¥{{ props.price }}</text>
+  </view>
+</template>
+```
 
-更适合全局：
+父组件使用：
 
-- `empty-state`
-- `price-text`
-- `loading-view`
+```vue
+<GoodsCard title="键盘" :price="199" @select="onGoodsSelect" />
+```
 
-## 原生组件怎么获得更稳的类型
+如果用的是 `defineComponent` 风格，props 通过 `properties` 声明：
 
-如果你引入的不是 `.vue`，而是原生小程序组件目录，也可以通过类型工具补齐 props 提示。
+```ts
+export default defineComponent({
+  properties: {
+    title: { type: String, value: '' },
+    price: { type: Number, value: 0 },
+  },
+  setup(props, ctx) {
+    // props.title, props.price
+    // ctx.emit('select', data)
+  },
+})
+```
 
-例如：
+## 原生组件怎么加类型
+
+如果你引入的是原生小程序组件（不是 `.vue`），可以用 wevu 提供的类型工具补齐 props 提示：
 
 ```ts
 import type { InferNativeProps, NativeComponent, NativePropType } from 'wevu'
@@ -133,28 +144,27 @@ const nativeProperties = {
 }
 
 type NativeBadgeProps = InferNativeProps<typeof nativeProperties>
-
 const NativeBadge = {} as NativeComponent<NativeBadgeProps>
 export default NativeBadge
 ```
 
-然后在页面里照常使用：
+然后在页面里正常用，有类型提示：
 
 ```vue
-<script setup lang="ts">
-import NativeBadge from '../../native/badge/index'
-</script>
-
-<template>
-  <NativeBadge label="已完成" tone="success" />
-</template>
+<NativeBadge label="已完成" tone="success" />
 ```
 
-## 一句话建议
+## 插槽
 
-SFC 新项目里，组件优先 `import .vue`；`usingComponents` 只在你确实需要原生路径映射时再出手。
+插槽可以用，但不要默认以为 Web Vue 里复杂的作用域插槽都能照搬。优先用结构清晰的默认插槽：
 
-接下来建议继续看：
+```vue
+<BaseCard>
+  <view>这里是插槽内容</view>
+</BaseCard>
+```
 
-- [事件与 v-model：怎么绑定最稳](/handbook/sfc/events-and-v-model)
-- [表单：输入、校验与受控写法](/handbook/sfc/forms)
+## 接下来
+
+- [常用写法速查](/handbook/sfc/cookbook)
+- [Wevu 是什么，不是什么](/handbook/wevu/)
