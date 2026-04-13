@@ -65,6 +65,7 @@
     "onCommand:weapp-vite.runAction",
     "onCommand:weapp-vite.insertJsonBlockTemplate",
     "onCommand:weapp-vite.insertDefineConfigTemplate",
+    "onCommand:weapp-vite.insertDefinePageJsonTemplate",
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
     "onCommand:weapp-vite.addCurrentPageToAppJson",
@@ -123,6 +124,11 @@
       {
         "command": "weapp-vite.insertDefineConfigTemplate",
         "title": "Insert defineConfig Template",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.insertDefinePageJsonTemplate",
+        "title": "Insert definePageJson Template",
         "category": "weapp-vite"
       },
       {
@@ -269,6 +275,10 @@
           "when": "resourceFilename =~ /^vite\\.config\\./"
         },
         {
+          "command": "weapp-vite.insertDefinePageJsonTemplate",
+          "when": "editorLangId == vue"
+        },
+        {
           "command": "weapp-vite.insertCommonScripts",
           "when": "resourceFilename == package.json"
         },
@@ -314,6 +324,11 @@
           "command": "weapp-vite.insertDefineConfigTemplate",
           "group": "navigation",
           "when": "resourceFilename =~ /^vite\\.config\\./"
+        },
+        {
+          "command": "weapp-vite.insertDefinePageJsonTemplate",
+          "group": "navigation",
+          "when": "editorLangId == vue"
         },
         {
           "command": "weapp-vite.insertCommonScripts",
@@ -380,6 +395,7 @@
             },
             "completionEvents": [
               "onCommand:weapp-vite.insertDefineConfigTemplate",
+              "onCommand:weapp-vite.insertDefinePageJsonTemplate",
               "onCommand:weapp-vite.insertJsonBlockTemplate"
             ]
           },

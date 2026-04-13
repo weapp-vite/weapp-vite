@@ -85,6 +85,7 @@
 - `weapp-vite: Reveal Current Page In app.json`
 - `weapp-vite: Create Page From Route`
 - `weapp-vite: Add Current Page To app.json`
+- `weapp-vite: Insert definePageJson Template`
 
 扩展会按以下顺序解析命令：
 
@@ -104,6 +105,7 @@
 扩展还提供了以下实用编辑器能力：
 
 - 在 `.vue` 中通过代码操作或补全插入 `weapp-vite` `<json>` 块
+- 在 `.vue` 中执行 `weapp-vite: Insert definePageJson Template`，快速插入页面配置骨架
 - 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面

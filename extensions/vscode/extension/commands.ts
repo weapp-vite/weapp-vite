@@ -11,6 +11,7 @@ import {
 } from './constants'
 import {
   getDefineConfigTemplate,
+  getDefinePageJsonTemplate,
   getDocItems,
   getJsonBlockSnippet,
   getPageVueTemplate,
@@ -74,6 +75,17 @@ export async function insertDefineConfigTemplate() {
   await editor.edit((editBuilder) => {
     editBuilder.replace(fullRange, getDefineConfigTemplate())
   })
+}
+
+export async function insertDefinePageJsonTemplate() {
+  const editor = vscode.window.activeTextEditor
+
+  if (!editor || !isVueDocument(editor.document)) {
+    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 .vue 文件后再插入 definePageJson 模板。')
+    return
+  }
+
+  await insertSnippetToActiveEditor(getDefinePageJsonTemplate())
 }
 
 export async function insertCommonScripts(editorOrDocument: any, refreshPackageJsonDiagnostics: (document: any) => void) {

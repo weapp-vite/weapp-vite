@@ -252,7 +252,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 17)
+    assert.equal(state.registeredCommands.length, 18)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -266,6 +266,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.runAction',
         'weapp-vite.insertJsonBlockTemplate',
         'weapp-vite.insertDefineConfigTemplate',
+        'weapp-vite.insertDefinePageJsonTemplate',
         'weapp-vite.insertCommonScripts',
         'weapp-vite.createPageFromRoute',
         'weapp-vite.addCurrentPageToAppJson',

@@ -290,6 +290,19 @@ export class WeappViteCodeActionProvider {
       actions.push(addPageToAppJsonAction)
 
       const lineText = document.lineAt(range.start.line).text
+      const documentText = document.getText()
+
+      if (!documentText.includes('definePageJson(')) {
+        const definePageJsonAction = new vscode.CodeAction(
+          '插入 definePageJson 模板',
+          vscode.CodeActionKind.RefactorRewrite,
+        )
+        definePageJsonAction.command = {
+          command: 'weapp-vite.insertDefinePageJsonTemplate',
+          title: '插入 definePageJson 模板',
+        }
+        actions.push(definePageJsonAction)
+      }
 
       if (!VUE_JSON_BLOCK_PATTERN.test(lineText)) {
         const jsonBlockAction = new vscode.CodeAction(

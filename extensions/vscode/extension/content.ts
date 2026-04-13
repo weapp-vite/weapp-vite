@@ -38,6 +38,14 @@ export function getDefineConfigTemplate() {
   ].join('\n')
 }
 
+export function getDefinePageJsonTemplate() {
+  return [
+    'definePageJson({',
+    '  navigationBarTitleText: \'$1\',',
+    '})',
+  ].join('\n')
+}
+
 export function getPageVueTemplate(route: string) {
   const normalizedRoute = route.trim().replace(/^\/+|\/+$/g, '')
   const title = normalizedRoute.split('/').filter(Boolean).at(-2) || normalizedRoute.split('/').filter(Boolean).at(-1) || 'New Page'
