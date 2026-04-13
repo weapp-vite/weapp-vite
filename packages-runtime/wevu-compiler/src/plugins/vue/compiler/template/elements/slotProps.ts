@@ -4,7 +4,7 @@ import { NodeTypes } from '@vue/compiler-core'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parse as babelParse } from '../../../../../utils/babel'
 import { normalizeWxmlExpressionWithContext } from '../expression'
-import { toWxmlStringLiteral } from './helpers'
+import { getBindDirectiveExpression, toWxmlStringLiteral } from './helpers'
 
 const BACKSLASH_RE = /\\/g
 const SINGLE_QUOTE_RE = /'/g
@@ -82,7 +82,7 @@ export function collectSlotBindingExpression(node: ElementNode, context: Transfo
     }
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
       if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION) {
-        const rawExpValue = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
+        const rawExpValue = getBindDirectiveExpression(prop)
         if (prop.arg.content === 'name') {
           continue
         }

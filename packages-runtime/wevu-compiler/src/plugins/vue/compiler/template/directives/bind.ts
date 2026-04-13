@@ -2,6 +2,7 @@ import type { DirectiveNode } from '@vue/compiler-core'
 import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
+import { getBindDirectiveExpression } from '../elements/helpers'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { parseBabelExpression } from '../expression/parse'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
@@ -50,15 +51,12 @@ export function transformBindDirective(
   context: TransformContext,
   forInfo?: ForParseResult,
 ): string | null {
-  const { exp, arg } = node
+  const { arg } = node
   if (!arg) {
     return null
   }
   const argValue = arg.type === NodeTypes.SIMPLE_EXPRESSION ? arg.content : ''
-  if (!exp) {
-    return null
-  }
-  const rawExpValue = exp.type === NodeTypes.SIMPLE_EXPRESSION ? exp.content : ''
+  const rawExpValue = getBindDirectiveExpression(node)
   if (!rawExpValue) {
     return null
   }
