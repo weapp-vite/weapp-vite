@@ -59,10 +59,22 @@ async function getPageDriftFields(pageFilePath: string | null) {
   }
 }
 
-function getPageNodeContextValue(baseStatus: WeappPagesTreePageNode['baseStatus'], driftFields: string[]) {
-  return driftFields.length > 0
-    ? `weappPage.${baseStatus}.drift`
-    : `weappPage.${baseStatus}`
+function getPageNodeContextValue(
+  baseStatus: WeappPagesTreePageNode['baseStatus'],
+  current: boolean,
+  driftFields: string[],
+) {
+  const parts = ['weappPage', baseStatus]
+
+  if (driftFields.length > 0) {
+    parts.push('drift')
+  }
+
+  if (current) {
+    parts.push('current')
+  }
+
+  return parts.join('.')
 }
 
 function getPageNodeIconId(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean, driftFields: string[]) {
@@ -142,7 +154,7 @@ function createPageNode(
     appJsonPath,
     badges,
     baseStatus,
-    contextValue: getPageNodeContextValue(baseStatus, driftFields),
+    contextValue: getPageNodeContextValue(baseStatus, current, driftFields),
     driftFields,
     current,
     description: [primaryDescription, ...badges.filter(badge => badge !== primaryDescription)].filter(Boolean).join(' · '),

@@ -231,6 +231,7 @@ it('marks current page in pages tree', async () => {
 
   assert.equal(currentItem.description, 'src/pages/home/index.vue · 当前页面')
   assert.equal(currentItem.iconPath?.id, 'target')
+  assert.equal(currentItem.contextValue, 'weappPage.exists.current')
 })
 
 it('marks config drift pages in tree', async () => {
@@ -423,4 +424,5 @@ it('prioritizes missing status over current state and sorts problem pages first'
   assert.equal(appPages[0].label, 'pages/current-missing/index')
   assert.equal(firstItem.description, '缺少页面文件 · 当前页面')
   assert.equal(firstItem.iconPath?.id, 'warning')
+  assert.equal(firstItem.contextValue, 'weappPage.missing.current')
 })

@@ -393,32 +393,52 @@
         {
           "command": "weapp-vite.createPageFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && viewItem == weappPage.missing"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.missing || viewItem == weappPage.missing.current)"
+        },
+        {
+          "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
+          "group": "inline",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing.current)"
+        },
+        {
+          "command": "weapp-vite.copyPageRouteFromTreeItem",
+          "group": "inline",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift.current)"
+        },
+        {
+          "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
+          "group": "inline",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift.current)"
+        },
+        {
+          "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
+          "group": "inline",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift.current)"
         },
         {
           "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.unregistered.drift)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
         },
         {
           "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.unregistered.drift)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
         },
         {
           "command": "weapp-vite.addPageToAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.drift)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
         },
         {
           "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.drift || viewItem == weappPage.missing)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current)"
         },
         {
           "command": "weapp-vite.copyPageRouteFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.drift || viewItem == weappPage.missing || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.drift)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
         }
       ],
       "editor/context": [

@@ -92,3 +92,36 @@ it('manifest contributes pages explorer view', () => {
     },
   ])
 })
+
+it('manifest exposes current-page explorer quick actions', () => {
+  const treeMenus = packageJson.contributes.menus['view/item/context']
+
+  assert.equal(
+    treeMenus.some(item =>
+      item.command === 'weapp-vite.revealPageRouteInAppJsonFromTreeItem'
+      && item.group === 'inline'
+      && item.when.includes('weappPage.exists.current')
+      && item.when.includes('weappPage.missing.current'),
+    ),
+    true,
+  )
+
+  assert.equal(
+    treeMenus.some(item =>
+      item.command === 'weapp-vite.copyPageRouteFromTreeItem'
+      && item.group === 'inline'
+      && item.when.includes('weappPage.unregistered.current'),
+    ),
+    true,
+  )
+
+  assert.equal(
+    treeMenus.some(item =>
+      item.command === 'weapp-vite.syncJsonFromDefinePageJsonInTreeItem'
+      && item.group === 'inline'
+      && item.when.includes('weappPage.exists.drift.current')
+      && item.when.includes('weappPage.unregistered.drift.current'),
+    ),
+    true,
+  )
+})
