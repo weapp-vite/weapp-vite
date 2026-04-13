@@ -67,7 +67,9 @@
     "onCommand:weapp-vite.insertDefineConfigTemplate",
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.openDocs",
-    "onCommand:weapp-vite.openProjectFile"
+    "onCommand:weapp-vite.openProjectFile",
+    "onCommand:weapp-vite.copyCurrentPageRoute",
+    "onCommand:weapp-vite.revealCurrentPageInAppJson"
   ],
   "contributes": {
     "commands": [
@@ -134,6 +136,16 @@
       {
         "command": "weapp-vite.openProjectFile",
         "title": "Open Project File",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.copyCurrentPageRoute",
+        "title": "Copy Current Page Route",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.revealCurrentPageInAppJson",
+        "title": "Reveal Current Page In app.json",
         "category": "weapp-vite"
       }
     ],
@@ -255,6 +267,14 @@
         {
           "command": "weapp-vite.openProjectFile",
           "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.copyCurrentPageRoute",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.revealCurrentPageInAppJson",
+          "when": "resourceScheme == file"
         }
       ],
       "explorer/context": [
@@ -287,6 +307,16 @@
         },
         {
           "command": "weapp-vite.openProjectFile",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.copyCurrentPageRoute",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.revealCurrentPageInAppJson",
           "group": "navigation",
           "when": "resourceScheme == file"
         }
@@ -345,6 +375,19 @@
             },
             "completionEvents": [
               "onCommand:weapp-vite.openProjectFile"
+            ]
+          },
+          {
+            "id": "weapp-vite.page-route-actions",
+            "title": "处理当前页面路由",
+            "description": "运行 `weapp-vite: Copy Current Page Route` 或 `weapp-vite: Reveal Current Page In app.json`，快速复用当前页面声明。",
+            "media": {
+              "image": "assets/logo.png",
+              "altText": "weapp-vite"
+            },
+            "completionEvents": [
+              "onCommand:weapp-vite.copyCurrentPageRoute",
+              "onCommand:weapp-vite.revealCurrentPageInAppJson"
             ]
           }
         ]

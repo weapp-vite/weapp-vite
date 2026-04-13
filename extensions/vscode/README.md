@@ -81,6 +81,8 @@
 - `weapp-vite: Show Output`
 - `weapp-vite: Open Docs`
 - `weapp-vite: Open Project File`
+- `weapp-vite: Copy Current Page Route`
+- `weapp-vite: Reveal Current Page In app.json`
 
 扩展会按以下顺序解析命令：
 
@@ -103,6 +105,8 @@
 - 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
+- 在页面文件中执行 `weapp-vite: Copy Current Page Route`，快速复制当前页面 route
+- 在页面文件中执行 `weapp-vite: Reveal Current Page In app.json`，直接跳到 `app.json` 中的声明位置
 - 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断
 - 当 `app.json` 声明了不存在的页面路径时，编辑器会提示缺失的页面文件
 - 悬浮到常用脚本项、`defineConfig`、`generate` 或 `<json>` 块时，可看到轻量提示

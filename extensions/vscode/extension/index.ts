@@ -1,11 +1,13 @@
 import vscode from 'vscode'
 
 import {
+  copyCurrentPageRoute,
   insertCommonScripts,
   insertDefineConfigTemplate,
   insertJsonBlockTemplate,
   openDocumentation,
   openProjectFile,
+  revealCurrentPageInAppJson,
   runWorkspaceCommand,
   showCommandPalette,
   showProjectOverview,
@@ -130,6 +132,8 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.openDocs', () => openDocumentation()),
     vscode.commands.registerCommand('weapp-vite.openProjectFile', () => openProjectFile(state)),
+    vscode.commands.registerCommand('weapp-vite.copyCurrentPageRoute', () => copyCurrentPageRoute(state)),
+    vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
     vscode.languages.registerCodeActionsProvider(
       [
         { language: 'json', scheme: 'file' },

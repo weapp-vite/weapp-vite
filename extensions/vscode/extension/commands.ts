@@ -17,6 +17,7 @@ import {
   applySuggestedScripts,
 } from './logic'
 import {
+  getCurrentPageRouteLocation,
   getEditor,
   getPrimaryWorkspaceFolder,
   getProjectContext,
@@ -25,6 +26,7 @@ import {
   isViteConfigDocument,
   isVueDocument,
   resolveCommand,
+  resolveCurrentPageRoute,
 } from './workspace'
 
 async function insertSnippetToActiveEditor(snippetText: string) {
@@ -243,6 +245,50 @@ export async function openProjectFile(state: any) {
   await vscode.window.showTextDocument(document, { preview: false })
 }
 
+async function ensureCurrentPageRoute(operationLabel: string) {
+  const resolved = await resolveCurrentPageRoute()
+
+  if (resolved) {
+    return resolved
+  }
+
+  void vscode.window.showWarningMessage(`weapp-vite: 当前文件无法识别为已声明页面，不能${operationLabel}。`)
+  return null
+}
+
+export async function copyCurrentPageRoute(state: any) {
+  const resolved = await ensureCurrentPageRoute('复制页面路由')
+
+  if (!resolved) {
+    return
+  }
+
+  await vscode.env.clipboard.writeText(resolved.route)
+  state.getOutputChannel().appendLine(`[route] copied ${resolved.route}`)
+  void vscode.window.showInformationMessage(`weapp-vite: 已复制页面路由 ${resolved.route}`)
+}
+
+export async function revealCurrentPageInAppJson(state: any) {
+  const location = await getCurrentPageRouteLocation()
+
+  if (!location) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前文件无法定位到 app.json 中的页面声明。')
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(location.appJsonPath))
+  const selection = new vscode.Range(
+    document.positionAt(location.range.start + 1),
+    document.positionAt(location.range.end - 1),
+  )
+
+  state.getOutputChannel().appendLine(`[route] reveal ${location.route}`)
+  await vscode.window.showTextDocument(document, {
+    preview: false,
+    selection,
+  })
+}
+
 export async function showCommandPalette(state: any) {
   const context = await ensureProjectContext('打开命令面板')
 
@@ -262,6 +308,18 @@ export async function showCommandPalette(state: any) {
   })
 
   items.push(
+    {
+      label: '$(clippy) 复制当前页面路由',
+      description: '复制当前活动页面文件对应的 route',
+      detail: '要求当前文件已在 app.json 中声明。',
+      commandId: 'copyCurrentPageRoute',
+    },
+    {
+      label: '$(link-external) 在 app.json 中定位当前页面',
+      description: '打开 app.json 并定位到当前页面声明',
+      detail: '要求当前文件已在 app.json 中声明。',
+      commandId: 'revealCurrentPageInAppJson',
+    },
     {
       label: '$(go-to-file) 打开关键文件 / 页面',
       description: '快速打开 vite.config、app.json、package.json 和页面文件',
@@ -298,6 +356,16 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'openProjectFile') {
     await openProjectFile(state)
+    return
+  }
+
+  if (selected.commandId === 'copyCurrentPageRoute') {
+    await copyCurrentPageRoute(state)
+    return
+  }
+
+  if (selected.commandId === 'revealCurrentPageInAppJson') {
+    await revealCurrentPageInAppJson(state)
     return
   }
 

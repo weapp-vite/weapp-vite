@@ -27,6 +27,8 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.insertCommonScripts',
     'weapp-vite.openDocs',
     'weapp-vite.openProjectFile',
+    'weapp-vite.copyCurrentPageRoute',
+    'weapp-vite.revealCurrentPageInAppJson',
   ])
 })
 

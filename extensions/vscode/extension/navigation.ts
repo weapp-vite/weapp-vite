@@ -1,5 +1,9 @@
 import path from 'node:path'
 
+function normalizeRoute(route: string) {
+  return route.trim().replace(/^\/+|\/+$/g, '')
+}
+
 export function collectAppJsonPageRoutes(appJson: Record<string, any>) {
   const routes = new Set<string>()
 
@@ -8,7 +12,7 @@ export function collectAppJsonPageRoutes(appJson: Record<string, any>) {
       return
     }
 
-    const normalizedRoute = route.trim().replace(/^\/+|\/+$/g, '')
+    const normalizedRoute = normalizeRoute(route)
 
     if (normalizedRoute) {
       routes.add(normalizedRoute)
@@ -57,7 +61,7 @@ export function collectAppJsonPageRoutes(appJson: Record<string, any>) {
 }
 
 export function getPageFileCandidatePaths(route: string) {
-  const normalizedRoute = route.trim().replace(/^\/+|\/+$/g, '')
+  const normalizedRoute = normalizeRoute(route)
 
   if (!normalizedRoute) {
     return []
@@ -84,4 +88,34 @@ export async function collectMissingPageRoutes(
   }
 
   return missingRoutes
+}
+
+export function getRouteFromPageFilePath(filePath: string) {
+  const normalizedPath = filePath.trim()
+
+  if (!normalizedPath) {
+    return null
+  }
+
+  const extension = path.extname(normalizedPath)
+
+  if (!['.vue', '.ts', '.js', '.wxml'].includes(extension)) {
+    return null
+  }
+
+  return normalizeRoute(normalizedPath.slice(0, -extension.length).split(path.sep).join('/'))
+}
+
+export function findRouteTextRange(appJsonText: string, route: string) {
+  const target = `"${normalizeRoute(route)}"`
+  const start = appJsonText.indexOf(target)
+
+  if (start < 0) {
+    return null
+  }
+
+  return {
+    start,
+    end: start + target.length,
+  }
 }

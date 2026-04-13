@@ -130,6 +130,9 @@ function createMockVscode() {
     },
     env: {
       openExternal: async () => true,
+      clipboard: {
+        writeText: async () => true,
+      },
     },
     Uri: {
       file(fsPath) {
@@ -246,7 +249,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 13)
+    assert.equal(state.registeredCommands.length, 15)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -263,6 +266,8 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.insertCommonScripts',
         'weapp-vite.openDocs',
         'weapp-vite.openProjectFile',
+        'weapp-vite.copyCurrentPageRoute',
+        'weapp-vite.revealCurrentPageInAppJson',
       ],
     )
     assert.equal(state.registeredProviders.length, 5)
