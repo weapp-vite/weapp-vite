@@ -12,7 +12,9 @@ const VUE_JSON_BLOCK_TAG_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>
 const VUE_JSON_BLOCK_CLOSE_TAG_PATTERN = /<\/json>/gu
 const VUE_JSON_BLOCK_CLOSE_EXISTS_PATTERN = /<\/json>/u
 const DEFINE_PAGE_JSON_PATTERN = /\bdefinePageJson\s*\(/u
+const DEFINE_PAGE_JSON_CLOSE_PATTERN = /\}\s*\)/u
 const JSON_PROPERTY_PREFIX_PATTERN = /^\s*"[^"]*$/u
+const DEFINE_PAGE_JSON_PROPERTY_PREFIX_PATTERN = /^\s*[A-Za-z_$][\w$]*$/u
 const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
 
 export interface RunActionQuickPickItem {
@@ -148,6 +150,42 @@ export function getVueJsonBlockCompletionContext(
   }
 
   if (!isInsideVueJsonBlock(textBeforeCursor, textAfterCursor)) {
+    return null
+  }
+
+  return {
+    type: 'property',
+  }
+}
+
+export function isInsideDefinePageJson(textBeforeCursor: string, textAfterCursor: string) {
+  const definePageJsonIndex = textBeforeCursor.lastIndexOf('definePageJson(')
+
+  if (definePageJsonIndex < 0) {
+    return false
+  }
+
+  const definePageJsonText = textBeforeCursor.slice(definePageJsonIndex)
+  const openCount = (definePageJsonText.match(/\{/g) ?? []).length
+  const closeCount = (definePageJsonText.match(/\}/g) ?? []).length
+
+  if (openCount === 0 || openCount <= closeCount) {
+    return false
+  }
+
+  return DEFINE_PAGE_JSON_CLOSE_PATTERN.test(textAfterCursor)
+}
+
+export function getDefinePageJsonCompletionContext(
+  textBeforeCursor: string,
+  textAfterCursor: string,
+  linePrefix: string,
+) {
+  if (!DEFINE_PAGE_JSON_PROPERTY_PREFIX_PATTERN.test(linePrefix)) {
+    return null
+  }
+
+  if (!isInsideDefinePageJson(textBeforeCursor, textAfterCursor)) {
     return null
   }
 

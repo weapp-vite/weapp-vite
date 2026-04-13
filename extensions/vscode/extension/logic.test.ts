@@ -7,11 +7,13 @@ import {
   getAppJsonRouteCompletionContext,
   getAppJsonRouteInsertText,
   getCurrentPageRunActionItems,
+  getDefinePageJsonCompletionContext,
   getMissingCommonScripts,
   getSuggestedScripts,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
   getVuePageConfigState,
+  isInsideDefinePageJson,
   isInsideVueJsonBlock,
   resolveCommandFromScripts,
 } from './logic'
@@ -212,6 +214,32 @@ it('detects vue json block property completion context', () => {
     '}',
     '</json>',
   ].join('\n'), '  "navigation'), {
+    type: 'property',
+  })
+})
+
+it('detects cursor inside definePageJson object', () => {
+  assert.equal(isInsideDefinePageJson([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBar',
+  ].join('\n'), [
+    'TitleText: \'Demo\',',
+    '})',
+    '</script>',
+  ].join('\n')), true)
+})
+
+it('detects definePageJson property completion context', () => {
+  assert.deepEqual(getDefinePageJsonCompletionContext([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBar',
+  ].join('\n'), [
+    'TitleText: \'Demo\',',
+    '})',
+    '</script>',
+  ].join('\n'), '  navigationBar'), {
     type: 'property',
   })
 })

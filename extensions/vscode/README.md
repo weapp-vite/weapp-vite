@@ -121,6 +121,7 @@
 - 当页面 `.vue` 已能识别为页面文件但尚未声明到 `app.json` 时，编辑器会直接在当前页面给出诊断和补齐入口
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
+- 在页面 `.vue` 的 `definePageJson({...})` 中也可补全常用页面字段，减少在脚本配置里手写键名
 - 在页面 `.vue` 中，只有缺少 `definePageJson(...)` 或缺少 `<json>` 块时，才会出现对应的补齐 code action，减少重复提示
 - 在页面文件里执行 `weapp-vite: Run Action` 时，会优先展示当前页面相关动作，并带出当前 route 与声明状态，减少在通用命令中来回筛选
 - 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断

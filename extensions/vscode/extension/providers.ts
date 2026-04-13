@@ -20,6 +20,7 @@ import {
   getVueCustomBlockHover,
 } from './content'
 import {
+  getDefinePageJsonCompletionContext,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
   getVuePageConfigState,
@@ -68,6 +69,38 @@ const VUE_JSON_BLOCK_COMPLETION_ITEMS = [
   {
     label: 'disableScroll',
     insertText: '"disableScroll": true',
+    detail: '禁止页面滚动',
+  },
+]
+const DEFINE_PAGE_JSON_COMPLETION_ITEMS = [
+  {
+    label: 'navigationBarTitleText',
+    insertText: 'navigationBarTitleText: \'$1\',',
+    detail: '页面标题',
+  },
+  {
+    label: 'enablePullDownRefresh',
+    insertText: 'enablePullDownRefresh: true,',
+    detail: '启用下拉刷新',
+  },
+  {
+    label: 'backgroundColor',
+    insertText: 'backgroundColor: \'#f6f7fb\',',
+    detail: '页面背景色',
+  },
+  {
+    label: 'backgroundTextStyle',
+    insertText: 'backgroundTextStyle: \'dark\',',
+    detail: '下拉 loading 样式',
+  },
+  {
+    label: 'navigationStyle',
+    insertText: 'navigationStyle: \'default\',',
+    detail: '导航栏样式',
+  },
+  {
+    label: 'disableScroll',
+    insertText: 'disableScroll: true,',
     detail: '禁止页面滚动',
   },
 ]
@@ -360,9 +393,20 @@ export class WeappViteVueCompletionProvider {
     const textBeforeCursor = document.getText(new vscode.Range(0, 0, position.line, position.character))
     const textAfterCursor = document.getText(new vscode.Range(position.line, position.character, document.lineCount, 0))
     const jsonBlockContext = getVueJsonBlockCompletionContext(textBeforeCursor, textAfterCursor, linePrefix)
+    const definePageJsonContext = getDefinePageJsonCompletionContext(textBeforeCursor, textAfterCursor, linePrefix)
 
     if (jsonBlockContext?.type === 'property') {
       return VUE_JSON_BLOCK_COMPLETION_ITEMS.map((suggestion, index) => {
+        const item = new vscode.CompletionItem(suggestion.label, vscode.CompletionItemKind.Property)
+        item.insertText = new vscode.SnippetString(suggestion.insertText)
+        item.detail = suggestion.detail
+        item.sortText = `0${index}`
+        return item
+      })
+    }
+
+    if (definePageJsonContext?.type === 'property') {
+      return DEFINE_PAGE_JSON_COMPLETION_ITEMS.map((suggestion, index) => {
         const item = new vscode.CompletionItem(suggestion.label, vscode.CompletionItemKind.Property)
         item.insertText = new vscode.SnippetString(suggestion.insertText)
         item.detail = suggestion.detail
