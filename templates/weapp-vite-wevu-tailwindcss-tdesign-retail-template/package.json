@@ -34,13 +34,13 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "@icebreakers/eslint-config": "^4.0.3",
-    "@icebreakers/stylelint-config": "^3.0.3",
+    "@icebreakers/eslint-config": "^4.0.4",
+    "@icebreakers/stylelint-config": "^3.0.4",
     "autoprefixer": "catalog:",
     "eslint": "^10.2.0",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
-    "stylelint": "^17.6.0",
+    "stylelint": "^17.7.0",
     "tailwindcss": "catalog:tailwind3",
     "typescript": "catalog:",
     "vue-tsc": "catalog:",

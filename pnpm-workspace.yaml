@@ -33,7 +33,7 @@ catalog:
   '@types/node': ^25.6.0
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
-  '@vitejs/plugin-vue': ^6.0.5
+  '@vitejs/plugin-vue': ^6.0.6
   '@vue/compiler-core': ^3.5.32
   '@vue/compiler-dom': ^3.5.32
   '@vue/language-core': ^3.2.6
@@ -42,7 +42,7 @@ catalog:
   bundle-require: ^5.1.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
-  comment-json: ^4.6.2
+  comment-json: ^5.0.0
   dayjs: ^1.11.20
   debug: ^4.4.3
   echarts: ^6.0.0
@@ -52,11 +52,11 @@ catalog:
   gm-crypto: ^0.1.12
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
-  lru-cache: ^11.3.3
+  lru-cache: ^11.3.5
   magic-string: ^0.30.21
   merge: ^2.1.1
   miniprogram-api-typings: ^5.1.2
-  oxc-parser: ^0.124.0
+  oxc-parser: ^0.125.0
   oxc-walker: ^0.7.0
   pathe: ^2.0.3
   pkg-types: ^2.3.0
@@ -68,7 +68,7 @@ catalog:
   tailwind-variants: ^3.2.2
   tailwindcss: ^4.2.2
   tdesign-miniprogram: ^1.13.2
-  ts-morph: ^27.0.2
+  ts-morph: ^28.0.0
   tslib: ^2.8.1
   typescript: ^6.0.2
   vite: 8.0.8
