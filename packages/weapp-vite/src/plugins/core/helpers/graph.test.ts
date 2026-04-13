@@ -1,7 +1,12 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import { describe, expect, it } from 'vitest'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
-import { collectAffectedEntries, refreshModuleGraph, refreshSharedChunkImporters } from './graph'
+import {
+  collectAffectedEntries,
+  refreshModuleGraph,
+  refreshPartialSharedChunkImporters,
+  refreshSharedChunkImporters,
+} from './graph'
 
 function createChunk(fileName: string, overrides: Partial<OutputChunk> = {}): OutputChunk {
   return {
@@ -174,5 +179,34 @@ describe('core helpers graph', () => {
     )
     expect(state.hmrSharedChunkImporters.has('chunks/entry-like.js')).toBe(false)
     expect(state.hmrSharedChunkImporters.has('chunks/missing.js')).toBe(false)
+  })
+
+  it('preserves existing shared chunk importers when partial emits omit unchanged shared chunks', () => {
+    const state = createState()
+    state.resolvedEntryMap.set('/project/src/pages/issue-398.vue', { value: true })
+    state.resolvedEntryMap.set('/project/src/components/base-navbar.vue', { value: true })
+    state.resolvedEntryMap.set('/project/src/components/base-footer.vue', { value: true })
+    state.hmrSharedChunkImporters.set('chunks/runtime.js', new Set([
+      '/project/src/pages/issue-398.vue',
+      '/project/src/components/base-navbar.vue',
+      '/project/src/components/base-footer.vue',
+    ]))
+
+    const partialBundle: OutputBundle = {
+      'components/base-navbar.js': createChunk('components/base-navbar.js', {
+        moduleIds: ['/project/src/components/base-navbar.vue'],
+        imports: ['chunks/runtime.js'],
+      }),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set(['/project/src/components/base-navbar.vue']))
+
+    expect(state.hmrSharedChunkImporters.get('chunks/runtime.js')).toEqual(
+      new Set([
+        '/project/src/pages/issue-398.vue',
+        '/project/src/components/base-navbar.vue',
+        '/project/src/components/base-footer.vue',
+      ]),
+    )
   })
 })

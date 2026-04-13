@@ -82,7 +82,12 @@ export function refreshModuleGraph(
   }
 }
 
-function appendSharedChunkImporters(bundle: OutputBundle, state: CorePluginState, onlyEntryIds?: Set<string>) {
+function appendSharedChunkImporters(
+  bundle: OutputBundle,
+  state: CorePluginState,
+  onlyEntryIds?: Set<string>,
+  previousImporters?: Map<string, Set<string>>,
+) {
   const getTrackedImporterIds = (chunk: OutputChunk) => {
     const trackedImporterIds = new Set<string>()
 
@@ -146,6 +151,15 @@ function appendSharedChunkImporters(bundle: OutputBundle, state: CorePluginState
     for (const imported of imports) {
       const target = bundle[imported]
       if (!target || target.type !== 'chunk') {
+        if (previousImporters?.get(imported)?.has(entryId)) {
+          const current = state.hmrSharedChunkImporters.get(imported)
+          if (current) {
+            current.add(entryId)
+          }
+          else {
+            state.hmrSharedChunkImporters.set(imported, new Set([entryId]))
+          }
+        }
         continue
       }
       const targetChunk = target as OutputChunk
@@ -173,6 +187,11 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     return
   }
 
+  const previousImporters = new Map<string, Set<string>>()
+  for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
+    previousImporters.set(chunkId, new Set(importers))
+  }
+
   for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
     for (const entryId of entryIds) {
       importers.delete(entryId)
@@ -182,5 +201,5 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     }
   }
 
-  appendSharedChunkImporters(bundle, state, entryIds)
+  appendSharedChunkImporters(bundle, state, entryIds, previousImporters)
 }
