@@ -1,5 +1,69 @@
 # create-weapp-vite
 
+## 2.2.0
+
+### Minor Changes
+
+- ✨ **VS Code 扩展现在会在页面同时使用 `definePageJson` 与 `<json>` 且关键页面配置不一致时给出诊断提示，帮助更早发现双写页面配置时的同步遗漏问题。** [`16614f4`](https://github.com/weapp-vite/weapp-vite/commit/16614f4f1796ff90b6bbffacbc243a33df1c2063) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在 `app.json` 中将已存在页面的 route 识别为可点击链接，可通过 `Cmd/Ctrl + Click` 直接跳转到对应页面文件，进一步减少从页面声明到源码之间的手动查找成本。** [`a1ef9f3`](https://github.com/weapp-vite/weapp-vite/commit/a1ef9f3f54347d04846ed5c01341126ab4d85d04) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会检查页面 `definePageJson` 与 `<json>` 中的 `enablePullDownRefresh` 是否一致，并提供双向同步 quick fix。这样布尔类页面配置在双写场景下也能直接补齐和修正，减少页面行为配置漂移。** [`eca97e9`](https://github.com/weapp-vite/weapp-vite/commit/eca97e9a32f5f9c6bc173b094c704eb3a462a285) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在页面 `.vue` 的 `definePageJson({...})` 中补全常用页面字段，让脚本配置写法也能获得和 `<json>` 自定义块一致的页面配置补全体验。** [`c8b937d`](https://github.com/weapp-vite/weapp-vite/commit/c8b937d515f1b67111cfb1d33f23ef52548288ff) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会在页面 `.vue` 已能识别为页面文件但尚未声明到 `app.json` 时，直接在当前页面给出诊断提示，并只在这类页面上显示 `Add Current Page To app.json` 的补齐操作，减少普通组件中的无关提示。** [`3caec2c`](https://github.com/weapp-vite/weapp-vite/commit/3caec2c6f0a8771bd71f70c4ffa2866d38b89dde) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在页面标题双写场景中自动补齐缺失的一侧配置。无论是 `<json>` 缺少 `navigationBarTitleText`，还是 `definePageJson` 缺少该字段，都可以直接通过现有同步 quick fix 一步补齐。** [`d5327bd`](https://github.com/weapp-vite/weapp-vite/commit/d5327bd7f7cc8213e18e8b9e9c719aecdeea16e8) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在页面 `.vue` 中为 `definePageJson` 及常用页面配置键提供 hover 说明，帮助开发者在脚本配置写法下更快理解字段用途而无需反复查阅文档。** [`3137c17`](https://github.com/weapp-vite/weapp-vite/commit/3137c17e8f98ff338b1a6d68d49faee0be8e8192) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会为 `weapp-vite Pages` 视图中的当前问题页面提供更直接的行内修复动作。当前页如果缺少页面文件，可直接在树节点上创建页面；如果页面文件存在但尚未声明到 `app.json`，也可直接在树节点上补齐声明，减少只为修一个当前页面问题而打开右键菜单的操作成本。** [`d33bb5d`](https://github.com/weapp-vite/weapp-vite/commit/d33bb5d2f5b7400a972eebdc710e1e999349e1d3) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在 `app.json` 的已存在页面 route 上直接执行 `Open Page From Route`，无需手动搜索页面文件即可从页面声明一跳进入对应页面源码。** [`21213f1`](https://github.com/weapp-vite/weapp-vite/commit/21213f1a9b6901cba04eb6d8e95636a5f4b27117) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在页面 `.vue` 的 `definePageJson({...})` 与 `<json>` 页面配置中补全常用枚举值和布尔值，例如 `navigationStyle`、`backgroundTextStyle`、`enablePullDownRefresh` 与 `disableScroll`，进一步减少页面配置手写成本。** [`e5bb55f`](https://github.com/weapp-vite/weapp-vite/commit/e5bb55fbc58852d9441f336ca2297405d0472e0d) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会同时检查页面 `definePageJson` 与 `<json>` 中的 `navigationStyle` 是否一致，并提供双向同步 quick fix。无论是配置值不一致，还是某一侧缺少该字段，都可以直接在页面里完成补齐与同步。** [`eee02a8`](https://github.com/weapp-vite/weapp-vite/commit/eee02a809f6f6c3b0db6d80403ef3dec80a4946e) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会为 `weapp-vite Pages` 视图中的当前页面节点提供更直接的快捷动作入口。当前页节点会带上独立状态上下文，并以内联方式暴露复制 route、定位 `app.json` 以及配置漂移同步等常用操作；同时新增“定位当前页面到 Pages 视图”命令与标题栏入口，在树视图刷新后也能稳定重新聚焦当前页面，减少从树视图切换到命令面板或编辑器上下文的次数。** [`246ceb4`](https://github.com/weapp-vite/weapp-vite/commit/246ceb4c4de3fec1e163e406d15582e8a5b9f457) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在 `weapp-vite Pages` 侧边栏中直接修复页面配置漂移。对存在 `definePageJson` 与 `<json>` 不一致的页面节点，可以右键整页同步任一方向，一次性把常用页面字段修正到一致状态。** [`1ce380f`](https://github.com/weapp-vite/weapp-vite/commit/1ce380f9697677e2572a3ec71f31fcc472619fc3) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在页面标题双写不一致时提供双向 quick fix，不仅可以将 `<json>` 的 `navigationBarTitleText` 同步为 `definePageJson`，也可以反向将 `definePageJson` 同步为 `<json>`，让页面配置修复流程更完整。** [`db14d21`](https://github.com/weapp-vite/weapp-vite/commit/db14d2163e5dd20d4fd4f2827de0b24e0661068b) by @sonofmagic
+
+- ✨ **VS Code 扩展中的 `Run Action` 现在会根据当前页面上下文优先展示页面相关操作，并直接提示当前 route 与声明状态，减少页面开发时在通用命令里反复筛选。** [`9309d37`](https://github.com/weapp-vite/weapp-vite/commit/9309d3755fd75d34c0ff06898ba2bf9623ccc749) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会让 `weapp-vite Pages` 侧边栏自动跟随当前活动页面，并在树节点上标记当前页面与页面状态。开发者切换页面时可以直接在侧边栏看到当前定位，同时区分正常页面、缺失页面和未声明页面。** [`9dcc24e`](https://github.com/weapp-vite/weapp-vite/commit/9dcc24e19448f4b757059101f6143ce7fb84ef92) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在 `app.json` 的页面 route 上显示 hover，直接提示当前 route 对应页面文件是否存在，并展示扩展尝试匹配的页面文件路径，便于快速排查页面声明与文件路径不一致的问题。** [`40b6a22`](https://github.com/weapp-vite/weapp-vite/commit/40b6a226b292cdb7067cf788e58666ff7aeee22d) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会在检测到 `definePageJson` 与 `<json>` 的页面标题配置不一致时提供 quick fix，可直接将 `<json>` 中的 `navigationBarTitleText` 同步为 `definePageJson` 的值，减少双写配置时的手动修正成本。** [`a555dfe`](https://github.com/weapp-vite/weapp-vite/commit/a555dfe43f7d69e0b5d5cfbb01bd5add2ca94525) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会以更细化的复合状态展示 `weapp-vite Pages` 侧边栏中的页面节点。缺失页面、未声明页面、配置漂移页面和当前页面会按优先级组合显示在节点描述、图标和排序中，帮助开发者更快定位最需要处理的问题页面。** [`0f0eb0b`](https://github.com/weapp-vite/weapp-vite/commit/0f0eb0b1793fb77535ff8c46fe87908c76ebb75f) by @sonofmagic
+
+- ✨ **VS Code 扩展现在支持在 `weapp-vite Pages` 侧边栏视图中直接执行页面修复动作。可以对树节点右键创建缺失页面、把未声明页面加入 `app.json`、定位到页面声明位置以及复制页面 route，让页面结构维护不再依赖当前活动编辑器。** [`f66dc20`](https://github.com/weapp-vite/weapp-vite/commit/f66dc202b097aa994d635fe9df9aa9acefa83ccb) by @sonofmagic
+
+- ✨ **VS Code 扩展新增了 `weapp-vite Pages` Explorer 视图，可以按顶层页面、分包页面和未声明页面浏览项目页面结构。点击页面节点即可直接打开对应页面文件，若 `app.json` 已声明但页面文件缺失，则会直接打开 `app.json` 方便继续修复。** [`7d947f9`](https://github.com/weapp-vite/weapp-vite/commit/7d947f99e0483c8a305002ee6cb61641564e65ac) by @sonofmagic
+
+- ✨ **VS Code 扩展现在为 `weapp-vite Pages` 视图提供问题聚焦筛选能力。开发者可以直接在标题栏切换“仅问题页”“仅当前页”“仅配置漂移页”，并一键清除筛选，让页面排查与修复更适合中大型项目的日常工作流。** [`77920b5`](https://github.com/weapp-vite/weapp-vite/commit/77920b5b8d8fe7aa38fca63dbec70dc55ee1731a) by @sonofmagic
+
+- ✨ **VS Code 扩展现在为 `weapp-vite Pages` 视图提供独立刷新命令和标题栏入口。开发者在手动修改 `app.json`、新增页面文件或调整分包结构后，可以直接在侧边栏重建页面树，并自动重新同步当前页面定位，减少等待编辑器事件触发或来回切换文件的成本。** [`9318f90`](https://github.com/weapp-vite/weapp-vite/commit/9318f909757acfd8150184e949b4fb635ab8057e) by @sonofmagic
+
+- ✨ **VS Code 扩展现在会在 `weapp-vite Pages` 侧边栏中直接标记页面配置漂移状态。当页面 `definePageJson` 与 `<json>` 的常用字段不一致时，页面节点会显示配置漂移提示，方便在页面结构视图里同时发现配置问题。** [`1a2c8e5`](https://github.com/weapp-vite/weapp-vite/commit/1a2c8e5a73da766c36ae59f43a16750379629784) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复仅包含 `<script setup>` 的 Vue 页面在自动注入 Web Runtime 全局能力时被错误跳过的问题。现在 issue #448 这类页面会正确注入 `atob`、`btoa`、`queueMicrotask`、`performance`、`crypto`、`Event`、`CustomEvent` 对应的 runtime installer，并补齐构建回归与微信开发者工具 e2e 覆盖，避免页面在 attached 阶段因全局能力未初始化而挂载失败。** [#453](https://github.com/weapp-vite/weapp-vite/pull/453) by @sonofmagic
+
+- 🐛 **VS Code 扩展现在会在 `weapp-vite Pages` 视图的筛选结果为空时显示明确的空状态节点，并支持直接点击清除筛选。这样在使用“仅问题页”或“仅配置漂移页”等聚焦模式时，不会再因为树视图完全空白而难以判断当前状态。** [`7588862`](https://github.com/weapp-vite/weapp-vite/commit/758886219fec0508d49ae7869248cbc21631b09f) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` / `@wevu/web-apis` 的 Web Runtime 按需注入链路补齐下一批高频全局能力：新增 `atob`、`btoa`、`queueMicrotask`、`performance.now`、`crypto.getRandomValues`、`Event`、`CustomEvent` 的 runtime installer、局部绑定和自动目标解析，并补充 `github-issues` 中 issue #448 的构建回归页，确保这些能力在真实小程序构建产物里可以按需注入到页面作用域。** [#452](https://github.com/weapp-vite/weapp-vite/pull/452) by @sonofmagic
+
+- 🐛 **恢复 `wevu` 对外导出的 `WevuComponentConstructor` 类型别名，修复 lib 模式生成的声明文件在引用 `import("wevu").WevuComponentConstructor` 时出现的类型回归，避免 `e2e-apps/lib-mode` 与下游依赖 `wevu` 类型入口的项目在 `tsd`/类型检查阶段报错。** [`3e17ae6`](https://github.com/weapp-vite/weapp-vite/commit/3e17ae62fdcaac1910cbfdbba52ef944d876fa92) by @sonofmagic
+
+- 🐛 **修复 `wevu` 响应式/只读包装对 `Date`、`Map`、`Set`、`WeakMap` 与 `WeakSet` 等内置对象的错误代理行为。现在 `reactive()`、`shallowReactive()`、`readonly()` 与 `shallowReadonly()` 会直接返回这些内置对象本身，不再生成不可靠的 Proxy；同时为集合类型保留后续引入专用 collection handlers 的扩展注释，避免当前出现“被代理但方法绑定异常”的半可用状态。** [#451](https://github.com/weapp-vite/weapp-vite/pull/451) by @Sun79
+
 ## 2.1.2
 
 ### Patch Changes
