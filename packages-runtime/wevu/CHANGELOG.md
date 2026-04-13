@@ -1,5 +1,15 @@
 # wevu
 
+## 6.15.3
+
+### Patch Changes
+
+- 🐛 **恢复 `wevu` 对外导出的 `WevuComponentConstructor` 类型别名，修复 lib 模式生成的声明文件在引用 `import("wevu").WevuComponentConstructor` 时出现的类型回归，避免 `e2e-apps/lib-mode` 与下游依赖 `wevu` 类型入口的项目在 `tsd`/类型检查阶段报错。** [`3e17ae6`](https://github.com/weapp-vite/weapp-vite/commit/3e17ae62fdcaac1910cbfdbba52ef944d876fa92) by @sonofmagic
+
+- 🐛 **修复 `wevu` 响应式/只读包装对 `Date`、`Map`、`Set`、`WeakMap` 与 `WeakSet` 等内置对象的错误代理行为。现在 `reactive()`、`shallowReactive()`、`readonly()` 与 `shallowReadonly()` 会直接返回这些内置对象本身，不再生成不可靠的 Proxy；同时为集合类型保留后续引入专用 collection handlers 的扩展注释，避免当前出现“被代理但方法绑定异常”的半可用状态。** [#451](https://github.com/weapp-vite/weapp-vite/pull/451) by @Sun79
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.15.3`
+
 ## 6.15.2
 
 ### Patch Changes

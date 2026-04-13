@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.15.3
+
+### Patch Changes
+
+- 🐛 **修复仅包含 `<script setup>` 的 Vue 页面在自动注入 Web Runtime 全局能力时被错误跳过的问题。现在 issue #448 这类页面会正确注入 `atob`、`btoa`、`queueMicrotask`、`performance`、`crypto`、`Event`、`CustomEvent` 对应的 runtime installer，并补齐构建回归与微信开发者工具 e2e 覆盖，避免页面在 attached 阶段因全局能力未初始化而挂载失败。** [#453](https://github.com/weapp-vite/weapp-vite/pull/453) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` / `@wevu/web-apis` 的 Web Runtime 按需注入链路补齐下一批高频全局能力：新增 `atob`、`btoa`、`queueMicrotask`、`performance.now`、`crypto.getRandomValues`、`Event`、`CustomEvent` 的 runtime installer、局部绑定和自动目标解析，并补充 `github-issues` 中 issue #448 的构建回归页，确保这些能力在真实小程序构建产物里可以按需注入到页面作用域。** [#452](https://github.com/weapp-vite/weapp-vite/pull/452) by @sonofmagic
+- 📦 **Dependencies** [`1393de9`](https://github.com/weapp-vite/weapp-vite/commit/1393de9cab02b635501b397b36f8d5fd2e2bb44b)
+  → `@wevu/web-apis@1.2.5`, `wevu@6.15.3`, `@weapp-vite/ast@6.15.3`
+
 ## 6.15.2
 
 ### Patch Changes
