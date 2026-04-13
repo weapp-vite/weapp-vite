@@ -180,8 +180,53 @@ describe('core lifecycle transform hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code.match(/<script\b/g)?.length).toBe(2)
-    expect(code).toContain('<script lang="ts">import { installWebRuntimeGlobals')
+    expect(code).toContain('import { installWebRuntimeGlobals as __weappViteInstallRequestGlobals } from "weapp-vite/web-apis"')
     expect(code).toContain('export default {}')
+  })
+
+  it('injects request globals into script-setup-only vue sfc raw code for next web runtime globals', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {},
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {
+            injectWebRuntimeGlobals: {
+              enabled: true,
+            },
+          },
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+      loadedEntrySet: new Set(['/project/src/pages/issue-448/index.vue']),
+      entriesMap: new Map(),
+    } as any)
+
+    const result = await transform(
+      [
+        '<script setup lang="ts">',
+        'const encoded = btoa("AB")',
+        'const decoded = atob(encoded)',
+        'const duration = performance.now()',
+        'const random = crypto.getRandomValues(new Uint8Array(4))',
+        'const eventType = new Event("tick").type',
+        'const customEventType = new CustomEvent("payload").type',
+        'queueMicrotask(() => {})',
+        '</script>',
+        '<template><view>{{ decoded }}</view></template>',
+      ].join('\n'),
+      '/project/src/pages/issue-448/index.vue',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('import { installWebRuntimeGlobals as __weappViteInstallRequestGlobals } from "weapp-vite/web-apis"')
+    expect(code).toContain('"atob","btoa","queueMicrotask","performance","crypto","Event","CustomEvent"')
+    expect(code).toContain('const encoded = btoa("AB")')
   })
 
   it('injects passive local bindings for manual installRequestGlobals usage without auto mode', async () => {
