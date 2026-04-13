@@ -35,6 +35,7 @@
     "sass": "catalog:",
     "stylelint": "^17.6.0",
     "typescript": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

@@ -41,6 +41,7 @@
     "tailwindcss": "catalog:tailwind3",
     "typescript": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

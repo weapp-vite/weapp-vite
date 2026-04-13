@@ -121,7 +121,7 @@ async function collectTemplateFilesBySuffix(root: string, suffixes: string[]) {
     const entries = await fs.readdir(dir, { withFileTypes: true })
     for (const entry of entries) {
       const full = path.join(dir, entry.name)
-      if (shouldSkipTemplateFile(full, root)) {
+      if (shouldSkipTemplateFile(full)) {
         continue
       }
       if (entry.isDirectory()) {
