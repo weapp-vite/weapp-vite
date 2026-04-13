@@ -12,6 +12,7 @@ import { transformDirective } from '../directives'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
+import { getBindDirectiveExpression } from './helpers'
 
 const builtinTagSet = new Set(builtinComponents.map(tag => tag.toLowerCase()))
 
@@ -97,7 +98,7 @@ export function collectElementAttributes(
         && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
         && prop.arg.content === 'ref'
       ) {
-        const rawExp = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
+        const rawExp = getBindDirectiveExpression(prop)
         if (rawExp) {
           const expAst = normalizeJsExpressionWithContext(rawExp, context, { hint: 'ref 绑定' })
           if (expAst) {
@@ -125,18 +126,16 @@ export function collectElementAttributes(
         prop.name === 'bind'
         && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
         && prop.arg.content === 'class'
-        && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION
       ) {
-        dynamicClassExp = prop.exp.content
+        dynamicClassExp = getBindDirectiveExpression(prop) || undefined
         continue
       }
       if (
         prop.name === 'bind'
         && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
         && prop.arg.content === 'style'
-        && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION
       ) {
-        dynamicStyleExp = prop.exp.content
+        dynamicStyleExp = getBindDirectiveExpression(prop) || undefined
         continue
       }
       if (prop.name === 'show' && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION) {

@@ -758,6 +758,24 @@ describe('Vue Template Compiler', () => {
       expect(result.code).toContain('data-name="{{item.name}}"')
     })
 
+    it('should support Vue 3.4 v-bind shorthand for static props', () => {
+      const result = compileVueTemplateToWxml(
+        '<view :visible :foo-bar>Item</view>',
+        'test.vue',
+      )
+      expect(result.code).toContain('visible="{{visible}}"')
+      expect(result.code).toContain('foo-bar="{{fooBar}}"')
+    })
+
+    it('should support Vue 3.4 v-bind shorthand for dynamic component is', () => {
+      const result = compileVueTemplateToWxml(
+        '<component :is />',
+        'test.vue',
+      )
+      expect(result.code).toContain('<component data-is="{{is}}"></component>')
+      expect(result.warnings).not.toContain('<component> 未提供 :is 绑定，将按普通元素处理。')
+    })
+
     it('should compile inline @click expression with $event to inline handler', () => {
       const result = compileVueTemplateToWxml(
         '<button @click="handle(\'ok\', $event)">Click</button>',

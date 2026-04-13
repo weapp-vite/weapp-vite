@@ -1,10 +1,13 @@
 /* eslint-disable ts/no-empty-object-type -- 允许空对象类型占位 */
 import type {
   AllowedComponentProps as VueAllowedComponentProps,
+  Component as VueComponent,
   ComponentCustomProps as VueComponentCustomProps,
   ComponentOptionsMixin as VueComponentOptionsMixin,
+  ComponentProvideOptions as VueComponentProvideOptions,
   ComputedOptions as VueComputedOptions,
   DefineComponent as VueDefineComponent,
+  Directive as VueDirective,
   EmitsOptions as VueEmitsOptions,
   MethodOptions as VueMethodOptions,
   ObjectDirective as VueObjectDirective,
@@ -42,6 +45,13 @@ export type DefineComponent<
     ? ExtractDefaultPropTypes<PropsOrPropOptions>
     : {},
   S extends VueSlotsType = VueSlotsType,
+  LC extends Record<string, VueComponent> = {},
+  Directives extends Record<string, VueDirective> = {},
+  Exposed extends string = string,
+  Provide extends VueComponentProvideOptions = VueComponentProvideOptions,
+  MakeDefaultsOptional extends boolean = true,
+  TypeRefs extends Record<string, unknown> = {},
+  TypeEl extends Element = any,
 > = VueDefineComponent<
   PropsOrPropOptions,
   RawBindings,
@@ -55,7 +65,14 @@ export type DefineComponent<
   PP,
   Props,
   Defaults,
-  S
+  S,
+  LC,
+  Directives,
+  Exposed,
+  Provide,
+  MakeDefaultsOptional,
+  TypeRefs,
+  TypeEl
 >
 
 export type NativeComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<

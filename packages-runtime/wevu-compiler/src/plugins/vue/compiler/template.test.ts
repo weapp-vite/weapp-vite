@@ -91,6 +91,34 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('change:leftWidth="{{swipe.initLeftWidth}}"')
   })
 
+  it('supports Vue 3.4 v-bind shorthand for static props', () => {
+    const template = `
+<view :visible :foo-bar />
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(code).toContain('visible="{{visible}}"')
+    expect(code).toContain('foo-bar="{{fooBar}}"')
+  })
+
+  it('supports Vue 3.4 v-bind shorthand for dynamic component is', () => {
+    const template = `
+<component :is />
+    `.trim()
+
+    const { code, warnings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(code).toContain('<component data-is="{{is}}"></component>')
+    expect(warnings).not.toContain('<component> 未提供 :is 绑定，将按普通元素处理。')
+  })
+
   it('renders mustache with spaces when interpolation mode is spaced', () => {
     const template = `
 <view v-if="ok" :prop="value" :class="dynamicClass" v-show="visible">{{ text }}</view>

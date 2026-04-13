@@ -31,10 +31,10 @@ describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => 
     const pageJs = await fs.readFile(pageJsPath, 'utf8')
 
     expect(runtimeJs).toContain('Object.defineProperty(exports,`t`,{enumerable:!0,get:function(){return')
-    expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
+    expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
     expect(pageJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(pageJs).toContain('const __rm = require(`../../request-globals-runtime.js`)')
-    expect(pageJs).toContain('const __rc = __rm["t"]({ targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(pageJs).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
     expect(pageJs).toContain('var fetch = __rc.fetch')
     expect(pageJs).toContain('var URL = __rc.URL')
     expect(pageJs).toContain('var XMLHttpRequest = __rc.XMLHttpRequest')

@@ -11,7 +11,7 @@ import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
-import { buildScopePropsExpression, findSlotDirective, isScopedSlotsDisabled } from './helpers'
+import { buildScopePropsExpression, findSlotDirective, getBindDirectiveExpression, isScopedSlotsDisabled } from './helpers'
 import { transformNormalElement } from './tag-normal'
 import {
   buildSlotDeclaration,
@@ -254,12 +254,16 @@ export function transformComponentElement(node: ElementNode, context: TransformC
     }
   }
 
-  if (!isDirective || !isDirective.exp) {
+  if (!isDirective) {
     context.warnings.push('<component> 未提供 :is 绑定，将按普通元素处理。')
     return transformNormalElement(node, context, transformNode)
   }
 
-  const componentVar = isDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? isDirective.exp.content : ''
+  const componentVar = getBindDirectiveExpression(isDirective)
+  if (!componentVar) {
+    context.warnings.push('<component> 未提供 :is 绑定，将按普通元素处理。')
+    return transformNormalElement(node, context, transformNode)
+  }
 
   const otherProps = node.props.filter(prop => prop !== isDirective)
   const attrs: string[] = []

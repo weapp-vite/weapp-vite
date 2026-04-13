@@ -93,10 +93,37 @@ export function withSlotProps<T>(context: TransformContext, mapping: Record<stri
 }
 
 const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+const BIND_SHORTHAND_ARG_RE = /^[A-Z_$][\w$]*(?:-[A-Z_$][\w$]*)*$/i
 const BACKSLASH_RE = /\\/g
 const SINGLE_QUOTE_RE = /'/g
 const CR_RE = /\r/g
 const LF_RE = /\n/g
+
+function camelizeBindShorthandArg(value: string) {
+  return value.replace(/-([\w$])/g, (_, char: string) => char.toUpperCase())
+}
+
+export function getBindDirectiveExpression(node: DirectiveNode): string {
+  const rawExp = node.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? node.exp.content : ''
+  if (rawExp) {
+    return rawExp
+  }
+
+  if (
+    node.name !== 'bind'
+    || node.arg?.type !== NodeTypes.SIMPLE_EXPRESSION
+    || !node.arg.isStatic
+  ) {
+    return ''
+  }
+
+  const rawArg = node.arg.content.trim()
+  if (!rawArg || !BIND_SHORTHAND_ARG_RE.test(rawArg)) {
+    return ''
+  }
+
+  return camelizeBindShorthandArg(rawArg)
+}
 
 export function collectScopePropMapping(context: TransformContext): Record<string, string> {
   const mapping: Record<string, string> = {}
@@ -116,15 +143,6 @@ export function collectScopePropMapping(context: TransformContext): Record<strin
   return mapping
 }
 
-export function buildScopePropsExpression(context: TransformContext): string | null {
-  const mapping = collectScopePropMapping(context)
-  const keys = Object.keys(mapping)
-  if (!keys.length) {
-    return null
-  }
-  return `[${keys.map(key => `${toWxmlStringLiteral(key)},${key}`).join(',')}]`
-}
-
 export function toWxmlStringLiteral(value: string) {
   const escaped = value
     .replace(BACKSLASH_RE, '\\\\')
@@ -132,6 +150,15 @@ export function toWxmlStringLiteral(value: string) {
     .replace(CR_RE, '\\r')
     .replace(LF_RE, '\\n')
   return `'${escaped}'`
+}
+
+export function buildScopePropsExpression(context: TransformContext): string | null {
+  const mapping = collectScopePropMapping(context)
+  const keys = Object.keys(mapping)
+  if (!keys.length) {
+    return null
+  }
+  return `[${keys.map(key => `${toWxmlStringLiteral(key)},${key}`).join(',')}]`
 }
 
 export function hashString(input: string) {

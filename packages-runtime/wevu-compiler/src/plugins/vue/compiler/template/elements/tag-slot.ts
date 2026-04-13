@@ -13,6 +13,7 @@ import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 import {
   collectScopePropMapping,
+  getBindDirectiveExpression,
   hashString,
   isScopedSlotsDisabled,
   withSlotProps,
@@ -63,7 +64,7 @@ export function resolveSlotNameFromSlotElement(node: ElementNode): SlotNameInfo 
     }
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
       if (prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION && prop.arg.content === 'name') {
-        const raw = prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? prop.exp.content : ''
+        const raw = getBindDirectiveExpression(prop)
         if (raw) {
           return { type: 'dynamic', exp: raw }
         }

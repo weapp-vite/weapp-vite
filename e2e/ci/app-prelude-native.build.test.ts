@@ -233,7 +233,7 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')
     expect(rootPreludeJs).not.toContain('"WebSocket"')
     expect(runtimeJs).toContain('Object.defineProperty(exports,`t`,{enumerable:!0,get:function(){return')
-    expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
+    expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
     expect(rootPreludeJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(rootPreludeJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 })

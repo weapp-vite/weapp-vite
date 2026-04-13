@@ -1,13 +1,11 @@
 import type { InlineExpressionMap } from './register/inline'
 import type {
   ComponentPropsOptions,
-  ComponentPublicInstance,
   ComputedDefinitions,
+  DefineComponent,
   DefineComponentOptions,
-  InferProps,
   MethodDefinitions,
   MiniProgramComponentRawOptions,
-  ShallowUnwrapRef,
 } from './types'
 import { WEVU_SCOPED_SLOT_CREATOR_KEY } from '@weapp-core/constants'
 import { createApp } from './app'
@@ -61,16 +59,13 @@ export interface ComponentDefinition<
 }
 
 type SetupBindings<S> = Exclude<S, void> extends never ? Record<string, never> : Exclude<S, void>
-type ResolveProps<P> = P extends ComponentPropsOptions ? InferProps<P> : P
-export interface WevuComponentConstructor<
-  Props,
+export type WevuDefinedComponent<
+  PropsOrPropOptions,
   RawBindings,
   D extends object,
   C extends ComputedDefinitions,
   M extends MethodDefinitions,
-> {
-  new (): ComponentPublicInstance<D, C, M, Props> & ShallowUnwrapRef<RawBindings>
-}
+> = DefineComponent<PropsOrPropOptions, RawBindings, D, C, M> & ComponentDefinition<D, C, M>
 export interface SetupContextWithTypeProps<TypeProps> {
   props: TypeProps
   [key: string]: any
@@ -131,10 +126,10 @@ export function defineComponent<
   S extends Record<string, any> | void = Record<string, any> | void,
 >(
   options: DefineComponentOptions<P, D, C, M, S>,
-): WevuComponentConstructor<ResolveProps<P>, SetupBindings<S>, D, C, M>
+): WevuDefinedComponent<P, SetupBindings<S>, D, C, M>
 export function defineComponent(
   options: DefineComponentOptions<any, any, any, any, any>,
-): WevuComponentConstructor<Record<string, any>, Record<string, any>, Record<string, any>, ComputedDefinitions, MethodDefinitions> {
+): WevuDefinedComponent<ComponentPropsOptions, Record<string, any>, Record<string, any>, ComputedDefinitions, MethodDefinitions> {
   ensureScopedSlotComponentGlobal()
   const resolvedOptions = applyWevuComponentDefaults(options)
   const {
@@ -200,8 +195,8 @@ export function defineComponent(
     __wevu_options: componentOptions as ComponentDefinition<any, any, any>['__wevu_options'],
   }
 
-  return definition as unknown as WevuComponentConstructor<
-    Record<string, any>,
+  return definition as unknown as WevuDefinedComponent<
+    ComponentPropsOptions,
     Record<string, any>,
     Record<string, any>,
     ComputedDefinitions,
