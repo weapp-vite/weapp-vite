@@ -11,6 +11,7 @@ type ModuleWithLoad = typeof Module & {
 function createMockVscode() {
   const registeredCommands: Array<{ command: string, handler: unknown }> = []
   const registeredProviders: Array<{ type: string, selector: unknown }> = []
+  const createdTreeViews: Array<{ viewId: string, options: unknown }> = []
   const diagnosticCollections: Array<{ name: string }> = []
   const outputChannels: Array<{ name: string }> = []
   const statusBarItems: Array<{ command?: string }> = []
@@ -47,7 +48,18 @@ function createMockVscode() {
       showWarningMessage() {},
       showInformationMessage() {},
       showQuickPick: async () => undefined,
+      showTextDocument: async () => undefined,
       setStatusBarMessage() {},
+      createTreeView(viewId: string, options: unknown) {
+        const treeView = {
+          options,
+          reveal: async () => true,
+          viewId,
+          dispose() {},
+        }
+        createdTreeViews.push(treeView)
+        return treeView
+      },
       onDidChangeActiveTextEditor() {
         return { dispose() {} }
       },
@@ -59,7 +71,9 @@ function createMockVscode() {
         stat: async () => {
           throw new Error('not found')
         },
+        createDirectory: async () => true,
         readFile: async () => Buffer.from(''),
+        writeFile: async () => true,
       },
       getWorkspaceFolder: () => undefined,
       getConfiguration: () => ({
@@ -83,6 +97,9 @@ function createMockVscode() {
         return { dispose() {} }
       },
       applyEdit: async () => true,
+      openTextDocument: async () => ({
+        uri: { path: '/tmp/demo.ts' },
+      }),
     },
     commands: {
       registerCommand(command: string, handler: unknown) {
@@ -120,6 +137,9 @@ function createMockVscode() {
     },
     env: {
       openExternal: async () => true,
+      clipboard: {
+        writeText: async () => true,
+      },
     },
     Uri: {
       file(fsPath: string) {
@@ -204,9 +224,36 @@ function createMockVscode() {
     WorkspaceEdit: class {
       replace() {}
     },
+    EventEmitter: class {
+      event = () => ({ dispose() {} })
+      fire() {}
+      dispose() {}
+    },
+    TreeItem: class {
+      label: string
+      collapsibleState: number
+
+      constructor(label: string, collapsibleState: number) {
+        this.label = label
+        this.collapsibleState = collapsibleState
+      }
+    },
+    ThemeIcon: class {
+      id: string
+
+      constructor(id: string) {
+        this.id = id
+      }
+    },
+    TreeItemCollapsibleState: {
+      None: 0,
+      Collapsed: 1,
+      Expanded: 2,
+    },
   }
 
   return {
+    createdTreeViews,
     diagnosticCollections,
     mockVscode,
     outputChannels,
@@ -254,11 +301,34 @@ async function main() {
         'weapp-vite.runAction',
         'weapp-vite.insertJsonBlockTemplate',
         'weapp-vite.insertDefineConfigTemplate',
+        'weapp-vite.insertDefinePageJsonTemplate',
+        'weapp-vite.syncDefinePageJsonTitleFromJson',
+        'weapp-vite.syncJsonTitleFromDefinePageJson',
         'weapp-vite.insertCommonScripts',
+        'weapp-vite.createPageFromRoute',
+        'weapp-vite.createPageFromTreeItem',
+        'weapp-vite.openPageFromRoute',
+        'weapp-vite.addCurrentPageToAppJson',
+        'weapp-vite.addPageToAppJsonFromTreeItem',
         'weapp-vite.openDocs',
+        'weapp-vite.openProjectFile',
+        'weapp-vite.copyCurrentPageRoute',
+        'weapp-vite.copyPageRouteFromTreeItem',
+        'weapp-vite.revealCurrentPageInAppJson',
+        'weapp-vite.revealCurrentPageInPagesTree',
+        'weapp-vite.refreshPagesTree',
+        'weapp-vite.filterProblemPagesInTree',
+        'weapp-vite.filterCurrentPageInTree',
+        'weapp-vite.filterDriftPagesInTree',
+        'weapp-vite.clearPagesTreeFilter',
+        'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
+        'weapp-vite.syncDefinePageJsonFromJsonInTreeItem',
+        'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 6)
+    assert.equal(state.registeredProviders.length, 7)
+    assert.equal(state.createdTreeViews.length, 1)
+    assert.equal(state.createdTreeViews[0]?.viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0]?.command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)
