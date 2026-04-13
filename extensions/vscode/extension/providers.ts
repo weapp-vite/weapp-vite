@@ -19,6 +19,7 @@ import {
   getViteConfigHover,
   getVueCustomBlockHover,
   getVuePageConfigHover,
+  getVuePageTitleConsistencyState,
 } from './content'
 import {
   getDefinePageJsonCompletionContext,
@@ -409,6 +410,7 @@ export class WeappViteCodeActionProvider {
     if (isVueDocument(document)) {
       const documentText = document.getText()
       const pageConfigState = getVuePageConfigState(documentText)
+      const titleConsistencyState = getVuePageTitleConsistencyState(documentText)
       const currentPageCandidate = await getCurrentPageRouteCandidate(document)
 
       if (currentPageCandidate && !currentPageCandidate.declared) {
@@ -447,6 +449,19 @@ export class WeappViteCodeActionProvider {
           title: '插入 weapp-vite <json> 自定义块',
         }
         actions.push(jsonBlockAction)
+      }
+
+      if (titleConsistencyState && !titleConsistencyState.matches) {
+        const syncTitleAction = new vscode.CodeAction(
+          '将 <json> 标题同步为 definePageJson',
+          vscode.CodeActionKind.QuickFix,
+        )
+        syncTitleAction.command = {
+          command: 'weapp-vite.syncJsonTitleFromDefinePageJson',
+          title: '将 <json> 标题同步为 definePageJson',
+          arguments: [document],
+        }
+        actions.push(syncTitleAction)
       }
     }
 

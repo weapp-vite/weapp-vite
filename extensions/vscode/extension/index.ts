@@ -15,6 +15,7 @@ import {
   runWorkspaceCommand,
   showCommandPalette,
   showProjectOverview,
+  syncJsonTitleFromDefinePageJson,
 } from './commands'
 import {
   isAppJsonDiagnosticsEnabled,
@@ -159,6 +160,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.insertJsonBlockTemplate', () => insertJsonBlockTemplate()),
     vscode.commands.registerCommand('weapp-vite.insertDefineConfigTemplate', () => insertDefineConfigTemplate()),
     vscode.commands.registerCommand('weapp-vite.insertDefinePageJsonTemplate', () => insertDefinePageJsonTemplate()),
+    vscode.commands.registerCommand('weapp-vite.syncJsonTitleFromDefinePageJson', document => syncJsonTitleFromDefinePageJson(document)),
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.createPageFromRoute', (document, route) => createPageFromRoute(document, route)),
     vscode.commands.registerCommand('weapp-vite.openPageFromRoute', (document, route) => openPageFromRoute(document, route)),

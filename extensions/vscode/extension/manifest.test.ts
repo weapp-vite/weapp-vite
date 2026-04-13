@@ -25,6 +25,7 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.insertJsonBlockTemplate',
     'weapp-vite.insertDefineConfigTemplate',
     'weapp-vite.insertDefinePageJsonTemplate',
+    'weapp-vite.syncJsonTitleFromDefinePageJson',
     'weapp-vite.insertCommonScripts',
     'weapp-vite.createPageFromRoute',
     'weapp-vite.openPageFromRoute',

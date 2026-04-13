@@ -60,6 +60,8 @@ it('builds app.json diagnostics for missing page routes', async () => {
     buildAppJsonDiagnostics,
     buildVuePageConfigConsistencyDiagnostics,
     buildVuePageDiagnostics,
+    getVuePageTextWithSyncedJsonTitle,
+    getVuePageTitleConsistencyState,
   } = await import('./content')
   const diagnostics = buildAppJsonDiagnostics(createDocument([
     '{',
@@ -93,6 +95,30 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '}',
     '</json>',
   ].join('\n')))[0]?.message, 'definePageJson 与 <json> 中的 navigationBarTitleText 不一致：\'Home\' / \'Index\'')
+  assert.equal(getVuePageTitleConsistencyState([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBarTitleText: \'Home\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBarTitleText": "Index"',
+    '}',
+    '</json>',
+  ].join('\n'))?.matches, false)
+  assert.equal(getVuePageTextWithSyncedJsonTitle([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBarTitleText: \'Home\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBarTitleText": "Index"',
+    '}',
+    '</json>',
+  ].join('\n'))?.includes('"navigationBarTitleText": "Home"'), true)
 
   vi.doUnmock('vscode')
   vi.resetModules()
