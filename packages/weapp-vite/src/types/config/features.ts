@@ -148,6 +148,13 @@ export type WeappInjectWebRuntimeGlobalsTarget
     | 'AbortSignal'
     | 'XMLHttpRequest'
     | 'WebSocket'
+    | 'atob'
+    | 'btoa'
+    | 'queueMicrotask'
+    | 'performance'
+    | 'crypto'
+    | 'Event'
+    | 'CustomEvent'
 
 export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
 

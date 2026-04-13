@@ -9,9 +9,12 @@ import { expectError, expectType } from 'tsd'
 const target: WeappInjectWebRuntimeGlobalsTarget = 'fetch'
 expectType<WeappInjectWebRuntimeGlobalsTarget>(target)
 expectType<WeappInjectRequestGlobalsTarget>(target)
+expectType<WeappInjectWebRuntimeGlobalsTarget>('performance')
+expectType<WeappInjectWebRuntimeGlobalsTarget>('crypto')
+expectType<WeappInjectWebRuntimeGlobalsTarget>('queueMicrotask')
 
 const options: InstallWebRuntimeGlobalsOptions = {
-  targets: ['fetch', 'Request', 'XMLHttpRequest'],
+  targets: ['fetch', 'Request', 'XMLHttpRequest', 'performance', 'crypto'],
 }
 expectType<WeappInjectWebRuntimeGlobalsTarget[] | undefined>(options.targets)
 expectType<void>(installWebRuntimeGlobals(options))

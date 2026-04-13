@@ -2,7 +2,7 @@
 
 ## 1. 简介
 
-`@wevu/web-apis` 为小程序运行时提供一组 Web API 兼容层，重点解决第三方库在小程序环境中缺失 `fetch`、`Request`、`Response`、`AbortController`、`XMLHttpRequest`、`URL`、`WebSocket`、`TextEncoder`、`TextDecoder` 等全局对象的问题。
+`@wevu/web-apis` 为小程序运行时提供一组 Web API 兼容层，重点解决第三方库在小程序环境中缺失 `fetch`、`Request`、`Response`、`AbortController`、`XMLHttpRequest`、`URL`、`WebSocket`、`TextEncoder`、`TextDecoder`、`atob`、`btoa`、`queueMicrotask`、`performance.now`、`crypto.getRandomValues`、`Event`、`CustomEvent` 等全局对象的问题。
 
 它主要服务于：
 
@@ -15,6 +15,7 @@
 - 按需安装 `fetch`、`Headers`、`Request`、`Response`
 - 提供 `AbortController` / `AbortSignal` 兼容层
 - 提供 `XMLHttpRequest`、`URL`、`URLSearchParams`、`Blob`、`FormData`、`WebSocket` 兼容层
+- 提供 `atob`、`btoa`、`queueMicrotask`、`performance.now`、`crypto.getRandomValues`、`Event`、`CustomEvent` 兼容层
 - 自动把能力安装到可用的小程序宿主全局对象
 - 默认基于 `@wevu/api` 的请求能力完成底层转发
 
@@ -58,7 +59,23 @@ installWebRuntimeGlobals({
 })
 ```
 
-### 4.4 安装并使用 WebSocket
+### 4.4 安装轻量通用 Web Runtime 能力
+
+```ts
+import { installWebRuntimeGlobals } from '@wevu/web-apis'
+
+installWebRuntimeGlobals({
+  targets: ['atob', 'btoa', 'queueMicrotask', 'performance', 'crypto', 'Event', 'CustomEvent'],
+})
+
+const encoded = btoa('AB')
+const decoded = atob(encoded)
+const now = performance.now()
+const bytes = crypto.getRandomValues(new Uint8Array(4))
+const event = new CustomEvent('payload', { detail: { ok: true } })
+```
+
+### 4.5 安装并使用 WebSocket
 
 ```ts
 import { installWebRuntimeGlobals } from '@wevu/web-apis'
@@ -100,6 +117,7 @@ socket.onclose = (event) => {
 - 在小程序环境中运行 `axios` 的 `fetch` 适配器
 - 在小程序环境中运行 `graphql-request`
 - 在小程序环境中直接复用浏览器风格的 `WebSocket` 客户端代码
+- 在小程序环境中运行依赖 `atob` / `btoa` / `queueMicrotask` / `performance.now` / `crypto.getRandomValues` 的工具库
 - 给依赖 `URL` / `FormData` / `Blob` 的库补齐基础全局对象
 
 ## 7. WebSocket 兼容说明

@@ -82,6 +82,13 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).WebSocket
     delete (globalThis as Record<string, any>).Blob
     delete (globalThis as Record<string, any>).FormData
+    delete (globalThis as Record<string, any>).atob
+    delete (globalThis as Record<string, any>).btoa
+    delete (globalThis as Record<string, any>).queueMicrotask
+    delete (globalThis as Record<string, any>).performance
+    delete (globalThis as Record<string, any>).crypto
+    delete (globalThis as Record<string, any>).Event
+    delete (globalThis as Record<string, any>).CustomEvent
     delete (globalThis as Record<string, any>).wx
     delete (globalThis as Record<string, any>).global
     delete (globalThis as Record<string, any>).self
@@ -104,6 +111,13 @@ describe('request globals runtime', () => {
     expect(typeof globalThis.WebSocket).toBe('function')
     expect(typeof globalThis.TextEncoder).toBe('function')
     expect(typeof globalThis.TextDecoder).toBe('function')
+    expect(typeof globalThis.atob).toBe('function')
+    expect(typeof globalThis.btoa).toBe('function')
+    expect(typeof globalThis.queueMicrotask).toBe('function')
+    expect(typeof globalThis.performance.now).toBe('function')
+    expect(typeof globalThis.crypto.getRandomValues).toBe('function')
+    expect(typeof globalThis.Event).toBe('function')
+    expect(typeof globalThis.CustomEvent).toBe('function')
   })
 
   it('supports fetch through @wevu/api request bridge without requiring wevu/fetch', async () => {
@@ -336,6 +350,48 @@ describe('request globals runtime', () => {
     const searchParams = new URLSearchParamsPolyfill()
     searchParams.append('variables', '{"ok":true}')
     expect(searchParams.toString()).toBe('variables=%7B%22ok%22%3Atrue%7D')
+  })
+
+  it('installs the next batch of web runtime globals with stable behavior', async () => {
+    setGlobalValue('performance', undefined)
+    setGlobalValue('crypto', undefined)
+    ;(globalThis as Record<string, any>).wx = {
+      getPerformance: () => ({
+        now: () => 321.5,
+      }),
+      getRandomValues: (typedArray: Uint8Array) => {
+        typedArray.set([1, 2, 3, 4].slice(0, typedArray.length))
+        return typedArray
+      },
+    }
+
+    const { installWebRuntimeGlobals } = await import('../src')
+    installWebRuntimeGlobals({
+      targets: ['atob', 'btoa', 'queueMicrotask', 'performance', 'crypto', 'Event', 'CustomEvent'],
+    })
+
+    expect(globalThis.btoa('AB')).toBe('QUI=')
+    expect(globalThis.atob('QUI=')).toBe('AB')
+    expect(globalThis.performance.now()).toBe(321.5)
+
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(4))
+    expect([...bytes]).toEqual([1, 2, 3, 4])
+
+    const microtaskSpy = vi.fn()
+    globalThis.queueMicrotask(microtaskSpy)
+    await Promise.resolve()
+    expect(microtaskSpy).toHaveBeenCalledTimes(1)
+
+    const event = new globalThis.Event('tick')
+    const customEvent = new globalThis.CustomEvent('payload', {
+      detail: { ok: true },
+      cancelable: true,
+    })
+    customEvent.preventDefault()
+
+    expect(event.type).toBe('tick')
+    expect(customEvent.detail).toEqual({ ok: true })
+    expect(customEvent.defaultPrevented).toBe(true)
   })
 
   it('supports mini-program SocketTask through the injected WebSocket bridge', async () => {
