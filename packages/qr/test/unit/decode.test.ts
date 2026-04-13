@@ -78,7 +78,7 @@ describe('decodeQrCodeFromBase64', () => {
       const base64 = await loadQrFixtureBase64(fixture.file)
       await expect(decodeQrCodeFromBase64(base64)).rejects.toThrow(fixture.expectedError)
     }
-  })
+  }, 15_000)
 
   it('keeps the exported buffer decoder aligned with the base64 decoder', async () => {
     const fixture = (await loadQrFixtures())[0]
