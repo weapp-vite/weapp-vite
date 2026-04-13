@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { effect } from '@/reactivity/core'
 import { convertToReactive, isReactive, reactive, toRaw, touchReactive } from '@/reactivity/reactive'
+import { ref } from '@/reactivity/ref'
 
 describe('reactive - edge cases and boundary values', () => {
   describe('reactive on primitives', () => {
@@ -497,6 +498,12 @@ describe('reactive - edge cases and boundary values', () => {
       expect(observed).toBe(weakSet)
       expect(isReactive(observed)).toBe(false)
       expect(toRaw(observed)).toBe(weakSet)
+    })
+
+    it('should keep Date methods usable when wrapped by ref', () => {
+      const dateRef = ref(new Date('2024-01-01T00:00:00.000Z'))
+
+      expect(dateRef.value.valueOf()).toBe(new Date('2024-01-01T00:00:00.000Z').valueOf())
     })
 
     it('should handle deeply nested structures', () => {

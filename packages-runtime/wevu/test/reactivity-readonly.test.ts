@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { reactive } from '@/reactivity/reactive'
-import { isProxy, isReadonly, readonly } from '@/reactivity/readonly'
+import { isProxy, isReadonly, readonly, shallowReadonly } from '@/reactivity/readonly'
 import { ref } from '@/reactivity/ref'
 
 describe('readonly - edge cases and boundary values', () => {
@@ -161,6 +161,47 @@ describe('readonly - edge cases and boundary values', () => {
       // 嵌套数组不是 readonly
       ro[0][0] = 100
       expect(ro[0][0]).toBe(100)
+    })
+  })
+
+  describe('readonly on unsupported built-ins', () => {
+    it('should return Date as-is', () => {
+      const date = new Date('2024-01-01T00:00:00.000Z')
+      const ro = readonly(date)
+
+      expect(ro).toBe(date)
+      expect(ro.valueOf()).toBe(date.valueOf())
+      expect(isReadonly(ro)).toBe(false)
+    })
+
+    it('should return Map as-is', () => {
+      const map = new Map([['key', 'value']])
+      const ro = readonly(map)
+
+      expect(ro).toBe(map)
+      expect(ro.get('key')).toBe('value')
+      expect(isReadonly(ro)).toBe(false)
+    })
+
+    it('should return Set as-is', () => {
+      const set = new Set([1, 2, 3])
+      const ro = readonly(set)
+
+      expect(ro).toBe(set)
+      expect(ro.has(2)).toBe(true)
+      expect(isReadonly(ro)).toBe(false)
+    })
+
+    it('should keep shallowReadonly aligned for unsupported built-ins', () => {
+      const weakMap = new WeakMap<object, string>()
+      const key = {}
+      weakMap.set(key, 'value')
+      const weakSet = new WeakSet<object>()
+      const value = {}
+      weakSet.add(value)
+
+      expect(shallowReadonly(weakMap)).toBe(weakMap)
+      expect(shallowReadonly(weakSet)).toBe(weakSet)
     })
   })
 

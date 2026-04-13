@@ -35,7 +35,7 @@ function targetTypeMap(rawType: string) {
 }
 
 export function getTargetType(value: object) {
-  return (value as any)[ReactiveFlags.SKIP] || !Object.isExtensible(value)
+  return (value as any)[ReactiveFlags.SKIP]
     ? TargetType.INVALID
     : targetTypeMap(toRawType(value))
 }
