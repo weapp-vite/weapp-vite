@@ -15,7 +15,10 @@ import {
   getDocItems,
   getJsonBlockSnippet,
   getPageVueTemplate,
+  getVuePageConfigDriftFields,
+  getVuePageTextWithSyncedDefinePageJsonFields,
   getVuePageTextWithSyncedDefinePageJsonTitle,
+  getVuePageTextWithSyncedJsonFields,
   getVuePageTextWithSyncedJsonTitle,
 } from './content'
 import {
@@ -52,6 +55,21 @@ function getTreePageNodeRoute(item: any) {
 
 function getTreePageNodeAppJsonPath(item: any) {
   return typeof item?.appJsonPath === 'string' && item.appJsonPath.trim() ? item.appJsonPath : null
+}
+
+function getTreePageFilePath(item: any) {
+  return typeof item?.pageFilePath === 'string' && item.pageFilePath.trim() ? item.pageFilePath : null
+}
+
+async function applyFullDocumentText(document: any, nextText: string) {
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+  const edit = new vscode.WorkspaceEdit()
+
+  edit.replace(document.uri, fullRange, nextText)
+  await vscode.workspace.applyEdit(edit)
 }
 
 async function insertSnippetToActiveEditor(snippetText: string) {
@@ -583,6 +601,50 @@ export async function copyPageRouteFromTreeItem(item: any, state: any) {
   await vscode.env.clipboard.writeText(route)
   state.getOutputChannel().appendLine(`[route] copied ${route}`)
   void vscode.window.showInformationMessage(`weapp-vite: 已复制页面路由 ${route}`)
+}
+
+export async function syncJsonFromDefinePageJsonInTreeItem(item: any) {
+  const pageFilePath = getTreePageFilePath(item)
+
+  if (!pageFilePath) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前树节点没有可同步的页面文件。')
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(pageFilePath))
+  const driftFields = getVuePageConfigDriftFields(document.getText())
+  const nextText = getVuePageTextWithSyncedJsonFields(document.getText(), driftFields)
+
+  if (!nextText) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前页面配置已同步。')
+    return
+  }
+
+  await applyFullDocumentText(document, nextText)
+  await document.save()
+  await vscode.window.showTextDocument(document, { preview: false })
+}
+
+export async function syncDefinePageJsonFromJsonInTreeItem(item: any) {
+  const pageFilePath = getTreePageFilePath(item)
+
+  if (!pageFilePath) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前树节点没有可同步的页面文件。')
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(pageFilePath))
+  const driftFields = getVuePageConfigDriftFields(document.getText())
+  const nextText = getVuePageTextWithSyncedDefinePageJsonFields(document.getText(), driftFields)
+
+  if (!nextText) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前页面配置已同步。')
+    return
+  }
+
+  await applyFullDocumentText(document, nextText)
+  await document.save()
+  await vscode.window.showTextDocument(document, { preview: false })
 }
 
 export async function showCommandPalette(state: any) {

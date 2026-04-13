@@ -406,6 +406,24 @@ export function getVuePageTextWithSyncedJsonField(documentText: string, field: s
   return documentText.replace(JSON_BLOCK_OPEN_OBJECT_PATTERN, `$1\n  ${formatJsonPageConfigField(fieldDefinition, state.definePageJsonValue)},`)
 }
 
+export function getVuePageTextWithSyncedJsonFields(documentText: string, fields: string[]) {
+  let nextText = documentText
+  let changed = false
+
+  for (const field of fields) {
+    const syncedText = getVuePageTextWithSyncedJsonField(nextText, field)
+
+    if (!syncedText || syncedText === nextText) {
+      continue
+    }
+
+    nextText = syncedText
+    changed = true
+  }
+
+  return changed ? nextText : null
+}
+
 export function getVuePageTextWithSyncedJsonTitle(documentText: string) {
   return getVuePageTextWithSyncedJsonField(documentText, 'navigationBarTitleText')
 }
@@ -423,6 +441,24 @@ export function getVuePageTextWithSyncedDefinePageJsonField(documentText: string
   }
 
   return documentText.replace(DEFINE_PAGE_JSON_OPEN_OBJECT_PATTERN, `$1\n  ${formatDefinePageConfigField(fieldDefinition, state.jsonBlockValue)},`)
+}
+
+export function getVuePageTextWithSyncedDefinePageJsonFields(documentText: string, fields: string[]) {
+  let nextText = documentText
+  let changed = false
+
+  for (const field of fields) {
+    const syncedText = getVuePageTextWithSyncedDefinePageJsonField(nextText, field)
+
+    if (!syncedText || syncedText === nextText) {
+      continue
+    }
+
+    nextText = syncedText
+    changed = true
+  }
+
+  return changed ? nextText : null
 }
 
 export function getVuePageTextWithSyncedDefinePageJsonTitle(documentText: string) {

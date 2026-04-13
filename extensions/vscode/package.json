@@ -79,7 +79,9 @@
     "onCommand:weapp-vite.copyCurrentPageRoute",
     "onCommand:weapp-vite.copyPageRouteFromTreeItem",
     "onCommand:weapp-vite.revealCurrentPageInAppJson",
-    "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem"
+    "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
+    "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
+    "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
   ],
   "contributes": {
     "commands": [
@@ -206,6 +208,16 @@
       {
         "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
         "title": "Reveal Page Route In app.json From Explorer Item",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
+        "title": "Sync definePageJson From <json> In Explorer Item",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
+        "title": "Sync <json> From definePageJson In Explorer Item",
         "category": "weapp-vite"
       }
     ],
@@ -384,19 +396,29 @@
           "when": "view == weapp-vite.pages && viewItem == weappPage.missing"
         },
         {
+          "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.unregistered.drift)"
+        },
+        {
+          "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.unregistered.drift)"
+        },
+        {
           "command": "weapp-vite.addPageToAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && viewItem == weappPage.unregistered"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.drift)"
         },
         {
           "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.missing)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.drift || viewItem == weappPage.missing)"
         },
         {
           "command": "weapp-vite.copyPageRouteFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.missing || viewItem == weappPage.unregistered)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.drift || viewItem == weappPage.missing || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.drift)"
         }
       ],
       "editor/context": [

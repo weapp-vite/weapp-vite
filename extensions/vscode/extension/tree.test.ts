@@ -330,5 +330,6 @@ it('marks config drift pages in tree', async () => {
 
   assert.equal(item.description, 'src/pages/home/index.vue · 配置漂移')
   assert.equal(item.iconPath?.id, 'alert')
+  assert.equal(item.contextValue, 'weappPage.exists.drift')
   assert.equal(item.tooltip?.includes('配置漂移: navigationBarTitleText'), true)
 })

@@ -19,7 +19,9 @@ import {
   runWorkspaceCommand,
   showCommandPalette,
   showProjectOverview,
+  syncDefinePageJsonFromJsonInTreeItem,
   syncDefinePageJsonTitleFromJson,
+  syncJsonFromDefinePageJsonInTreeItem,
   syncJsonTitleFromDefinePageJson,
 } from './commands'
 import {
@@ -214,6 +216,8 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.copyPageRouteFromTreeItem', item => copyPageRouteFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
+    vscode.commands.registerCommand('weapp-vite.syncDefinePageJsonFromJsonInTreeItem', item => syncDefinePageJsonFromJsonInTreeItem(item)),
+    vscode.commands.registerCommand('weapp-vite.syncJsonFromDefinePageJsonInTreeItem', item => syncJsonFromDefinePageJsonInTreeItem(item)),
     vscode.languages.registerCodeActionsProvider(
       [
         { language: 'json', scheme: 'file' },

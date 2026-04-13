@@ -128,7 +128,9 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       item.description = element.current
         ? [element.description, element.driftFields.length > 0 ? '配置漂移' : '', '当前页面'].filter(Boolean).join(' · ')
         : [element.description, element.driftFields.length > 0 ? '配置漂移' : ''].filter(Boolean).join(' · ')
-      item.contextValue = `weappPage.${element.status}`
+      item.contextValue = element.driftFields.length > 0
+        ? `weappPage.${element.status}.drift`
+        : `weappPage.${element.status}`
       item.iconPath = element.current
         ? new vscode.ThemeIcon('target')
         : new vscode.ThemeIcon(

@@ -62,8 +62,10 @@ it('builds app.json diagnostics for missing page routes', async () => {
     buildVuePageDiagnostics,
     getVuePageConfigDriftFields,
     getVuePageConfigConsistencyState,
+    getVuePageTextWithSyncedDefinePageJsonFields,
     getVuePageTextWithSyncedDefinePageJsonField,
     getVuePageTextWithSyncedDefinePageJsonTitle,
+    getVuePageTextWithSyncedJsonFields,
     getVuePageTextWithSyncedJsonField,
     getVuePageTextWithSyncedJsonTitle,
     getVuePageTitleConsistencyState,
@@ -378,6 +380,34 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '}',
     '</json>',
   ].join('\n')), ['navigationBarTitleText', 'navigationStyle'])
+  assert.equal(getVuePageTextWithSyncedJsonFields([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBarTitleText: \'Home\',',
+    '  navigationStyle: \'custom\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBarTitleText": "Index",',
+    '  "navigationStyle": "default"',
+    '}',
+    '</json>',
+  ].join('\n'), ['navigationBarTitleText', 'navigationStyle'])?.includes('"navigationStyle": "custom"'), true)
+  assert.equal(getVuePageTextWithSyncedDefinePageJsonFields([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBarTitleText: \'Home\',',
+    '  navigationStyle: \'default\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBarTitleText": "Index",',
+    '  "navigationStyle": "custom"',
+    '}',
+    '</json>',
+  ].join('\n'), ['navigationBarTitleText', 'navigationStyle'])?.includes('navigationStyle: \'custom\''), true)
 
   vi.doUnmock('vscode')
   vi.resetModules()
