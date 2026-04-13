@@ -1,6 +1,6 @@
 import { track, trigger } from '../core'
 import { bumpRawVersion, rawVersionMap } from './patchState'
-import { isObject, ReactiveFlags, toRaw, VERSION_KEY } from './shared'
+import { getTargetType, isObject, ReactiveFlags, TargetType, toRaw, VERSION_KEY } from './shared'
 import { rawMap, shallowReactiveMap } from './state'
 
 const shallowHandlers: ProxyHandler<any> = {
@@ -64,11 +64,14 @@ export function shallowReactive<T extends object>(target: T): T {
   if (!isObject(target)) {
     return target
   }
+  if ((target as any)[ReactiveFlags.IS_REACTIVE]) {
+    return target
+  }
   const existingProxy = shallowReactiveMap.get(target)
   if (existingProxy) {
     return existingProxy
   }
-  if ((target as any)[ReactiveFlags.IS_REACTIVE]) {
+  if (getTargetType(target) === TargetType.INVALID) {
     return target
   }
   const proxy = new Proxy(target, shallowHandlers)
