@@ -4,11 +4,13 @@ import {
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { FULL_REQUEST_GLOBAL_TARGETS } from '../../packages/weapp-vite/src/runtime/config/internal/injectRequestGlobals'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/wevu-runtime-demo')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED = FULL_REQUEST_GLOBAL_TARGETS.map(target => JSON.stringify(target)).join(',')
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
@@ -31,10 +33,10 @@ describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => 
     const pageJs = await fs.readFile(pageJsPath, 'utf8')
 
     expect(runtimeJs).toContain('Object.defineProperty(exports,`t`,{enumerable:!0,get:function(){return')
-    expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
+    expect(runtimeJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
     expect(pageJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(pageJs).toContain('const __rm = require(`../../request-globals-runtime.js`)')
-    expect(pageJs).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
+    expect(pageJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
     expect(pageJs).toContain('var fetch = __rc.fetch')
     expect(pageJs).toContain('var URL = __rc.URL')
     expect(pageJs).toContain('var XMLHttpRequest = __rc.XMLHttpRequest')
