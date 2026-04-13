@@ -154,7 +154,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
 
   async getChildren(element?: WeappPagesTreeNode) {
     if (element) {
-      return element.children
+      return 'children' in element ? element.children : []
     }
 
     const workspaceFolder = getPrimaryWorkspaceFolder()

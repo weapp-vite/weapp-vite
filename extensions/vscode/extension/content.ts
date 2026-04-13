@@ -105,10 +105,11 @@ function getPositionFromOffset(text: string, offset: number) {
   const normalizedOffset = Math.max(0, Math.min(offset, text.length))
   const textBeforeOffset = text.slice(0, normalizedOffset)
   const lines = textBeforeOffset.split('\n')
+  const lastLine = lines.length > 0 ? lines[lines.length - 1] : ''
 
   return {
     line: lines.length - 1,
-    character: lines.at(-1)?.length ?? 0,
+    character: lastLine.length,
   }
 }
 
@@ -178,7 +179,8 @@ export function getDefinePageJsonTemplate() {
 
 export function getPageVueTemplate(route: string) {
   const normalizedRoute = route.trim().replace(/^\/+|\/+$/g, '')
-  const title = normalizedRoute.split('/').filter(Boolean).at(-2) || normalizedRoute.split('/').filter(Boolean).at(-1) || 'New Page'
+  const segments = normalizedRoute.split('/').filter(Boolean)
+  const title = segments[segments.length - 2] || segments[segments.length - 1] || 'New Page'
 
   return [
     '<script setup lang="ts">',

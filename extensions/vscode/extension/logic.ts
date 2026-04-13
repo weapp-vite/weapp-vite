@@ -134,8 +134,10 @@ export function getViteConfigObjectPath(textBeforeCursor: string) {
 }
 
 export function isInsideVueJsonBlock(textBeforeCursor: string, textAfterCursor: string) {
-  const lastOpenIndex = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_TAG_PATTERN)].at(-1)?.index ?? -1
-  const lastCloseIndex = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_CLOSE_TAG_PATTERN)].at(-1)?.index ?? -1
+  const openMatches = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_TAG_PATTERN)]
+  const closeMatches = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_CLOSE_TAG_PATTERN)]
+  const lastOpenIndex = openMatches.length > 0 ? (openMatches[openMatches.length - 1].index ?? -1) : -1
+  const lastCloseIndex = closeMatches.length > 0 ? (closeMatches[closeMatches.length - 1].index ?? -1) : -1
 
   if (lastOpenIndex < 0 || lastOpenIndex < lastCloseIndex) {
     return false

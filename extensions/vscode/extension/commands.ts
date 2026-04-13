@@ -40,6 +40,7 @@ import {
   getPrimaryWorkspaceFolder,
   getProjectContext,
   getProjectNavigationItems,
+  isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
   isVueDocument,
