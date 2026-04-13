@@ -126,6 +126,25 @@ it('manifest exposes current-page explorer quick actions', () => {
     ),
     true,
   )
+
+  assert.equal(
+    treeMenus.some(item =>
+      item.command === 'weapp-vite.createPageFromTreeItem'
+      && item.group === 'inline'
+      && item.when === 'view == weapp-vite.pages && viewItem == weappPage.missing.current',
+    ),
+    true,
+  )
+
+  assert.equal(
+    treeMenus.some(item =>
+      item.command === 'weapp-vite.addPageToAppJsonFromTreeItem'
+      && item.group === 'inline'
+      && item.when.includes('weappPage.unregistered.current')
+      && item.when.includes('weappPage.unregistered.drift.current'),
+    ),
+    true,
+  )
 })
 
 it('manifest exposes pages explorer title action for current page reveal', () => {

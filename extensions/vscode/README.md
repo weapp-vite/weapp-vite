@@ -114,7 +114,7 @@
 - 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`
 - `weapp-vite Pages` 视图右键可直接执行页面修复动作，包括创建缺失页面、把未声明页面加入 `app.json`、定位声明和复制 route
 - `weapp-vite Pages` 视图会自动跟随当前活动页面，并在树节点上标记当前页面和页面状态，减少手动查找
-- 当节点对应当前活动页面时，`weapp-vite Pages` 会直接在节点上提供行内快捷动作，可更快执行复制 route、定位 `app.json` 和配置同步
+- 当节点对应当前活动页面时，`weapp-vite Pages` 会直接在节点上提供行内快捷动作；当前页若缺少页面文件或尚未声明到 `app.json`，也可直接在树上完成创建或补声明
 - `weapp-vite Pages` 视图标题栏也提供了“定位当前页面”动作，当前页跟随失焦或树节点刚刷新后也能一键重新聚焦
 - `weapp-vite Pages` 视图标题栏提供独立刷新动作，文件系统或 `app.json` 结构变更后可立即重建页面树并重新对齐当前页
 - 当页面 `definePageJson` 与 `<json>` 存在配置漂移时，`weapp-vite Pages` 也会直接在节点上标记出来

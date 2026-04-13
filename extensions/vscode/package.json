@@ -412,6 +412,11 @@
       "view/item/context": [
         {
           "command": "weapp-vite.createPageFromTreeItem",
+          "group": "inline",
+          "when": "view == weapp-vite.pages && viewItem == weappPage.missing.current"
+        },
+        {
+          "command": "weapp-vite.createPageFromTreeItem",
           "group": "navigation",
           "when": "view == weapp-vite.pages && (viewItem == weappPage.missing || viewItem == weappPage.missing.current)"
         },
@@ -444,6 +449,11 @@
           "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
           "group": "navigation",
           "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+        },
+        {
+          "command": "weapp-vite.addPageToAppJsonFromTreeItem",
+          "group": "inline",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift.current)"
         },
         {
           "command": "weapp-vite.addPageToAppJsonFromTreeItem",
