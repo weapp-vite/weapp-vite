@@ -11,6 +11,7 @@ const TRAILING_COMMA_PATTERN = /,$/u
 const VUE_JSON_BLOCK_TAG_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>/gu
 const VUE_JSON_BLOCK_CLOSE_TAG_PATTERN = /<\/json>/gu
 const VUE_JSON_BLOCK_CLOSE_EXISTS_PATTERN = /<\/json>/u
+const DEFINE_PAGE_JSON_PATTERN = /\bdefinePageJson\s*\(/u
 const JSON_PROPERTY_PREFIX_PATTERN = /^\s*"[^"]*$/u
 const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
 
@@ -138,6 +139,13 @@ export function getVueJsonBlockCompletionContext(
 
   return {
     type: 'property',
+  }
+}
+
+export function getVuePageConfigState(documentText: string) {
+  return {
+    hasDefinePageJson: DEFINE_PAGE_JSON_PATTERN.test(documentText),
+    hasJsonBlock: VUE_JSON_BLOCK_TAG_PATTERN.test(documentText),
   }
 }
 

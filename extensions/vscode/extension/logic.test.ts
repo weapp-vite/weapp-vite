@@ -10,6 +10,7 @@ import {
   getSuggestedScripts,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
+  getVuePageConfigState,
   isInsideVueJsonBlock,
   resolveCommandFromScripts,
 } from './logic'
@@ -211,5 +212,23 @@ it('detects vue json block property completion context', () => {
     '</json>',
   ].join('\n'), '  "navigation'), {
     type: 'property',
+  })
+})
+
+it('detects vue page config state from document text', () => {
+  assert.deepEqual(getVuePageConfigState([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBarTitleText: \'Demo\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBarTitleText": "Demo"',
+    '}',
+    '</json>',
+  ].join('\n')), {
+    hasDefinePageJson: true,
+    hasJsonBlock: true,
   })
 })

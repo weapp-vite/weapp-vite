@@ -21,6 +21,7 @@ import {
 import {
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
+  getVuePageConfigState,
 } from './logic'
 import {
   getAppJsonPageRouteSuggestions,
@@ -279,6 +280,8 @@ export class WeappViteCodeActionProvider {
     }
 
     if (isVueDocument(document)) {
+      const documentText = document.getText()
+      const pageConfigState = getVuePageConfigState(documentText)
       const addPageToAppJsonAction = new vscode.CodeAction(
         '将当前页面加入 app.json',
         vscode.CodeActionKind.QuickFix,
@@ -290,9 +293,8 @@ export class WeappViteCodeActionProvider {
       actions.push(addPageToAppJsonAction)
 
       const lineText = document.lineAt(range.start.line).text
-      const documentText = document.getText()
 
-      if (!documentText.includes('definePageJson(')) {
+      if (!pageConfigState.hasDefinePageJson) {
         const definePageJsonAction = new vscode.CodeAction(
           '插入 definePageJson 模板',
           vscode.CodeActionKind.RefactorRewrite,
@@ -304,7 +306,7 @@ export class WeappViteCodeActionProvider {
         actions.push(definePageJsonAction)
       }
 
-      if (!VUE_JSON_BLOCK_PATTERN.test(lineText)) {
+      if (!pageConfigState.hasJsonBlock && !VUE_JSON_BLOCK_PATTERN.test(lineText)) {
         const jsonBlockAction = new vscode.CodeAction(
           '插入 weapp-vite <json> 自定义块',
           vscode.CodeActionKind.RefactorRewrite,
