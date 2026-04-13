@@ -462,6 +462,17 @@ export class WeappViteCodeActionProvider {
           arguments: [document],
         }
         actions.push(syncTitleAction)
+
+        const syncDefinePageJsonTitleAction = new vscode.CodeAction(
+          '将 definePageJson 标题同步为 <json>',
+          vscode.CodeActionKind.QuickFix,
+        )
+        syncDefinePageJsonTitleAction.command = {
+          command: 'weapp-vite.syncDefinePageJsonTitleFromJson',
+          title: '将 definePageJson 标题同步为 <json>',
+          arguments: [document],
+        }
+        actions.push(syncDefinePageJsonTitleAction)
       }
     }
 

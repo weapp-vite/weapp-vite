@@ -66,6 +66,7 @@
     "onCommand:weapp-vite.insertJsonBlockTemplate",
     "onCommand:weapp-vite.insertDefineConfigTemplate",
     "onCommand:weapp-vite.insertDefinePageJsonTemplate",
+    "onCommand:weapp-vite.syncDefinePageJsonTitleFromJson",
     "onCommand:weapp-vite.syncJsonTitleFromDefinePageJson",
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
@@ -131,6 +132,11 @@
       {
         "command": "weapp-vite.insertDefinePageJsonTemplate",
         "title": "Insert definePageJson Template",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
+        "title": "Sync definePageJson Title From <json>",
         "category": "weapp-vite"
       },
       {
@@ -291,6 +297,10 @@
           "when": "editorLangId == vue"
         },
         {
+          "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
+          "when": "editorLangId == vue"
+        },
+        {
           "command": "weapp-vite.syncJsonTitleFromDefinePageJson",
           "when": "editorLangId == vue"
         },
@@ -347,6 +357,11 @@
         },
         {
           "command": "weapp-vite.insertDefinePageJsonTemplate",
+          "group": "navigation",
+          "when": "editorLangId == vue"
+        },
+        {
+          "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
           "group": "navigation",
           "when": "editorLangId == vue"
         },

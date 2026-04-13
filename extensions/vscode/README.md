@@ -121,6 +121,7 @@
 - 当页面 `.vue` 已能识别为页面文件但尚未声明到 `app.json` 时，编辑器会直接在当前页面给出诊断和补齐入口
 - 当页面同时使用 `definePageJson` 和 `<json>` 且关键配置不一致时，编辑器会直接在当前页面提示不一致诊断
 - 检测到 `definePageJson` 与 `<json>` 的标题配置不一致时，可直接通过 quick fix 把 `<json>` 标题同步为 `definePageJson`
+- 同样也支持反向 quick fix，把 `definePageJson` 标题同步为 `<json>`，避免只能单向修复
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
 - 在页面 `.vue` 的 `definePageJson({...})` 中也可补全常用页面字段，减少在脚本配置里手写键名

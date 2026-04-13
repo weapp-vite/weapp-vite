@@ -15,6 +15,7 @@ import {
   getDocItems,
   getJsonBlockSnippet,
   getPageVueTemplate,
+  getVuePageTextWithSyncedDefinePageJsonTitle,
   getVuePageTextWithSyncedJsonTitle,
 } from './content'
 import {
@@ -102,6 +103,39 @@ export async function syncJsonTitleFromDefinePageJson(editorOrDocument: any) {
   }
 
   const nextText = getVuePageTextWithSyncedJsonTitle(document.getText())
+
+  if (!nextText) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前页面标题配置已同步。')
+    return
+  }
+
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+
+  if (editor && editor.document === document) {
+    await editor.edit((editBuilder) => {
+      editBuilder.replace(fullRange, nextText)
+    })
+  }
+  else {
+    const edit = new vscode.WorkspaceEdit()
+    edit.replace(document.uri, fullRange, nextText)
+    await vscode.workspace.applyEdit(edit)
+  }
+}
+
+export async function syncDefinePageJsonTitleFromJson(editorOrDocument: any) {
+  const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
+  const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
+
+  if (!document || !isVueDocument(document)) {
+    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 .vue 文件后再同步页面标题。')
+    return
+  }
+
+  const nextText = getVuePageTextWithSyncedDefinePageJsonTitle(document.getText())
 
   if (!nextText) {
     void vscode.window.showInformationMessage('weapp-vite: 当前页面标题配置已同步。')

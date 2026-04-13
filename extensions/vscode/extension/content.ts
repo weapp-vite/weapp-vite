@@ -262,6 +262,16 @@ export function getVuePageTextWithSyncedJsonTitle(documentText: string) {
   return documentText.replace(JSON_BLOCK_TITLE_FIELD_PATTERN, `"navigationBarTitleText": "${state.definePageJsonTitle}"`)
 }
 
+export function getVuePageTextWithSyncedDefinePageJsonTitle(documentText: string) {
+  const state = getVuePageTitleConsistencyState(documentText)
+
+  if (!state || state.matches) {
+    return null
+  }
+
+  return documentText.replace(DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN, `navigationBarTitleText: '${state.jsonBlockTitle}'`)
+}
+
 export function getDocItems() {
   return [
     {
