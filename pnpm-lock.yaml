@@ -2193,6 +2193,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
 
   templates/weapp-vite-tailwindcss-template:
     devDependencies:
@@ -2238,6 +2241,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
 
   templates/weapp-vite-tailwindcss-vant-template:
     dependencies:
@@ -2287,6 +2293,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
 
   templates/weapp-vite-template:
     devDependencies:
@@ -2314,6 +2323,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
 
   templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template:
     dependencies:
