@@ -18,7 +18,10 @@ import {
   getPackageJsonScriptHover,
   getViteConfigHover,
   getVueCustomBlockHover,
+  getVuePageConfigConsistencyState,
   getVuePageConfigHover,
+  getVuePageTextWithSyncedDefinePageJsonField,
+  getVuePageTextWithSyncedJsonField,
   getVuePageTitleConsistencyState,
 } from './content'
 import {
@@ -175,6 +178,19 @@ const PAGE_CONFIG_BOOLEAN_VALUE_COMPLETION_ITEMS: Record<string, Array<{
       detail: '关闭下拉刷新',
     },
   ],
+}
+
+function createReplaceDocumentCodeAction(document: any, title: string, nextText: string) {
+  const action = new vscode.CodeAction(title, vscode.CodeActionKind.QuickFix)
+  const edit = new vscode.WorkspaceEdit()
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+
+  edit.replace(document.uri, fullRange, nextText)
+  action.edit = edit
+  return action
 }
 
 const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
@@ -411,6 +427,7 @@ export class WeappViteCodeActionProvider {
       const documentText = document.getText()
       const pageConfigState = getVuePageConfigState(documentText)
       const titleConsistencyState = getVuePageTitleConsistencyState(documentText)
+      const navigationStyleConsistencyState = getVuePageConfigConsistencyState(documentText, 'navigationStyle')
       const currentPageCandidate = await getCurrentPageRouteCandidate(document)
 
       if (currentPageCandidate && !currentPageCandidate.declared) {
@@ -473,6 +490,28 @@ export class WeappViteCodeActionProvider {
           arguments: [document],
         }
         actions.push(syncDefinePageJsonTitleAction)
+      }
+
+      if (navigationStyleConsistencyState && !navigationStyleConsistencyState.matches) {
+        const nextJsonText = getVuePageTextWithSyncedJsonField(documentText, 'navigationStyle')
+
+        if (nextJsonText) {
+          actions.push(createReplaceDocumentCodeAction(
+            document,
+            '将 <json> navigationStyle 同步为 definePageJson',
+            nextJsonText,
+          ))
+        }
+
+        const nextDefinePageJsonText = getVuePageTextWithSyncedDefinePageJsonField(documentText, 'navigationStyle')
+
+        if (nextDefinePageJsonText) {
+          actions.push(createReplaceDocumentCodeAction(
+            document,
+            '将 definePageJson navigationStyle 同步为 <json>',
+            nextDefinePageJsonText,
+          ))
+        }
       }
     }
 

@@ -60,7 +60,10 @@ it('builds app.json diagnostics for missing page routes', async () => {
     buildAppJsonDiagnostics,
     buildVuePageConfigConsistencyDiagnostics,
     buildVuePageDiagnostics,
+    getVuePageConfigConsistencyState,
+    getVuePageTextWithSyncedDefinePageJsonField,
     getVuePageTextWithSyncedDefinePageJsonTitle,
+    getVuePageTextWithSyncedJsonField,
     getVuePageTextWithSyncedJsonTitle,
     getVuePageTitleConsistencyState,
   } = await import('./content')
@@ -176,6 +179,98 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '}',
     '</json>',
   ].join('\n'))?.includes('navigationBarTitleText: \'Index\''), true)
+  assert.equal(getVuePageConfigConsistencyState([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationStyle: \'custom\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationStyle": "default"',
+    '}',
+    '</json>',
+  ].join('\n'), 'navigationStyle')?.matches, false)
+  assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationStyle: \'custom\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationStyle": "default"',
+    '}',
+    '</json>',
+  ].join('\n'))).at(-1)?.message, 'definePageJson 与 <json> 中的 navigationStyle 不一致：\'custom\' / \'default\'')
+  assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationStyle: \'custom\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '}',
+    '</json>',
+  ].join('\n'))).at(-1)?.message, '<json> 缺少 navigationStyle，可从 definePageJson 同步。')
+  assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationStyle": "custom"',
+    '}',
+    '</json>',
+  ].join('\n'))).at(-1)?.message, 'definePageJson 缺少 navigationStyle，可从 <json> 同步。')
+  assert.equal(getVuePageTextWithSyncedJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationStyle: \'custom\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationStyle": "default"',
+    '}',
+    '</json>',
+  ].join('\n'), 'navigationStyle')?.includes('"navigationStyle": "custom"'), true)
+  assert.equal(getVuePageTextWithSyncedJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationStyle: \'custom\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '}',
+    '</json>',
+  ].join('\n'), 'navigationStyle')?.includes('"navigationStyle": "custom"'), true)
+  assert.equal(getVuePageTextWithSyncedDefinePageJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationStyle: \'default\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationStyle": "custom"',
+    '}',
+    '</json>',
+  ].join('\n'), 'navigationStyle')?.includes('navigationStyle: \'custom\''), true)
+  assert.equal(getVuePageTextWithSyncedDefinePageJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationStyle": "custom"',
+    '}',
+    '</json>',
+  ].join('\n'), 'navigationStyle')?.includes('navigationStyle: \'custom\''), true)
 
   vi.doUnmock('vscode')
   vi.resetModules()
