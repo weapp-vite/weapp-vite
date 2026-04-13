@@ -940,7 +940,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'const __keep__ = [XMLHttpRequest, WebSocket];',
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -997,7 +997,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'common.js',
         code: [
           'const __keep__ = [XMLHttpRequest, WebSocket];',
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, URLSearchParams: Map, Blob: Array, FormData: Map, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, URLSearchParams: Map, Blob: Array, FormData: Map, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object }}',
           'Object.defineProperty(exports,`noop`,{enumerable:!0,get:function(){return __keep__}})',
         ].join(';'),
         imports: [],
@@ -1053,7 +1053,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'dist.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -1108,7 +1108,7 @@ describe('core lifecycle emit hook extra branches', () => {
         fileName: 'pages/request-globals/fetch.js',
         code: [
           'const e=require("../../common.js");',
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'console.log(fetch, URL);',
           'Page({});',
         ].join(''),
@@ -1151,7 +1151,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'dist.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return t}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -1195,7 +1195,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(';'),
         imports: [],
@@ -1246,7 +1246,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'const e=require("./common.js");',
           'const __keep__ = [Request, WebSocket];',
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: ['common.js'],
@@ -1299,7 +1299,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -1360,7 +1360,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],
@@ -1431,7 +1431,7 @@ describe('core lifecycle emit hook extra branches', () => {
         type: 'chunk',
         fileName: 'common.js',
         code: [
-          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
           'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
         ].join(''),
         imports: [],

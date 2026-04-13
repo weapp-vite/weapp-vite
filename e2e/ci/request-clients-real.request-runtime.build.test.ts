@@ -56,7 +56,7 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
       const runtimeJs = await fs.readFile(path.join(distRoot, 'request-globals-runtime.js'), 'utf8')
 
       expect(runtimeJs).toContain('Object.defineProperty(exports,`t`,{enumerable:!0,get:function(){return')
-      expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
+      expect(runtimeJs).toContain('targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`]')
 
       for (const entryFile of testCase.entryFiles) {
         const entryJs = await fs.readFile(path.join(distRoot, entryFile), 'utf8')
@@ -66,7 +66,7 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
         expect(entryJs).toContain('var fetch = __rc.fetch')
         expect(entryJs).toContain('var XMLHttpRequest = __rc.XMLHttpRequest')
         expect(entryJs).toContain('var WebSocket = __rc.WebSocket')
-        expect(entryJs).toContain('targets: ["fetch","Headers","Request","Response","AbortController","AbortSignal","XMLHttpRequest","WebSocket"]')
+        expect(entryJs).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
       }
     })
   }
