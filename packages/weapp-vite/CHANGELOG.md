@@ -1,5 +1,23 @@
 # weapp-vite
 
+## 6.15.2
+
+### Patch Changes
+
+- 🐛 **修复小程序请求运行时按需注入缺失 `TextDecoder` 与 `TextEncoder` 的问题。现在 `fetch`、`Request`、`Response`、`XMLHttpRequest`、`WebSocket` 等链路会自动补齐文本编解码构造器，并在运行时 installer、局部自由变量绑定和最终 bundle 注入阶段保持一致，避免真实宿主里出现 `TextDecoder is not defined` 一类初始化错误；同时把共享 runtime marker 常量收敛到 `@weapp-core/constants`，统一跨包实现与测试约束。** [`b8b4b0e`](https://github.com/weapp-vite/weapp-vite/commit/b8b4b0e6aa0f878de557fa1a93f583f4df8bb232) by @sonofmagic
+
+- 🐛 **调整 request globals 的默认自动注入策略，改为按源码与产物中的实际引用按需注入。现在只有在实际使用 `fetch` 相关能力时才会注入请求运行时那组依赖，只有在实际使用 `WebSocket` 时才会注入 `WebSocket` 兼容层，同时保持入口、公共 chunk 与 app prelude 的注入目标一致。** [`b8f58bb`](https://github.com/weapp-vite/weapp-vite/commit/b8f58bb9b93429ac376b610f240c5160672fa195) by @sonofmagic
+
+- 🐛 **修复 request globals 默认自动注入在按需模式下的多处边界场景。现在会同时识别源码中的自由变量引用、常见请求库导入，以及构建后 shared chunk 中的 websocket 线索，按需补齐 `fetch`、`XMLHttpRequest`、`WebSocket`、`URL` 等关联全局对象；同时避免把仅存在于 `<script setup>` 中的源码级注入错误地下沉进 `setup()`，并在无法静态确定 installer 导出名时回退到运行时解析，确保 `socket.io-client` 与 request-globals 页面在真实小程序构建产物里仍能拿到顶层局部绑定。** [`0510a45`](https://github.com/weapp-vite/weapp-vite/commit/0510a45ea0a9882e9549e9791e7bbc07f6a97002) by @sonofmagic
+
+- 🐛 **修复 dev / HMR 场景下 shared chunk importer 的增量刷新丢失问题。现在当 partial emit 没把未变化的 shared chunk 一起带进当前 bundle 时，会保留已有 importer 关联，不再先删后丢，避免后续页面、layout、组件在连续热更新后失去 shared runtime 的联动重编译，导致小程序模拟器偶发出现 `** is not a function`、运行时 helper 缺失或相关 chunk 引用失配。** [`e75773a`](https://github.com/weapp-vite/weapp-vite/commit/e75773a28c8a75d03fcbf7498f1c316c05844444) by @sonofmagic
+
+- 🐛 **将按需注入能力的主命名从偏窄的 request 语义收敛为更准确的 Web Runtime 语义。现在推荐使用 `weapp.appPrelude.webRuntime`、`weapp.injectWebRuntimeGlobals` 与 `installWebRuntimeGlobals()`，并保留 `requestRuntime`、`injectRequestGlobals`、`installRequestGlobals()` 作为兼容别名与过渡提示；同时同步更新类型导出、示例项目与文档，避免新增 `TextEncoder`、`TextDecoder`、`WebSocket`、`URL` 等能力后继续沿用过时命名。** [`a4b33b0`](https://github.com/weapp-vite/weapp-vite/commit/a4b33b089b0487120c1cf999a9fdb17efb5b9055) by @sonofmagic
+
+- 🐛 **修复 request runtime / request globals 在真实小程序构建产物中的按需注入回归。现在会为未显式导出的 installer 自动补稳定私有导出，确保页面入口、`app.prelude.js` 和独立 `request-globals-runtime.js` 都能拿到正确的安装函数，并把运行时覆盖补齐到 `wevu-runtime-demo`、Vue 版 request-clients、原生 request-clients 以及 app prelude 场景，避免 DevTools 真机链路中出现 `fetch`、`XMLHttpRequest` 或 `WebSocket` 未初始化的问题。** [`cd7cf6a`](https://github.com/weapp-vite/weapp-vite/commit/cd7cf6aac3a85dd766f5600234e5305eb0798fdd) by @sonofmagic
+- 📦 **Dependencies** [`b8b4b0e`](https://github.com/weapp-vite/weapp-vite/commit/b8b4b0e6aa0f878de557fa1a93f583f4df8bb232)
+  → `@wevu/web-apis@1.2.4`, `wevu@6.15.2`, `@weapp-vite/ast@6.15.2`
+
 ## 6.15.1
 
 ### Patch Changes
