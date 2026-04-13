@@ -228,7 +228,7 @@ const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
 }
 
 export class WeappViteCodeActionProvider {
-  provideCodeActions(document: any, range: any) {
+  async provideCodeActions(document: any, range: any) {
     /** @type {import('vscode').CodeAction[]} */
     const actions = []
 
@@ -259,16 +259,32 @@ export class WeappViteCodeActionProvider {
       actions.push(openProjectFileAction)
 
       if (routeMatch) {
-        const createPageAction = new vscode.CodeAction(
-          '创建缺失页面文件',
-          vscode.CodeActionKind.QuickFix,
-        )
-        createPageAction.command = {
-          command: 'weapp-vite.createPageFromRoute',
-          title: '创建缺失页面文件',
-          arguments: [document, routeMatch[1]],
+        const routeFileStatus = await getAppJsonRouteFileStatus(document, routeMatch[1])
+
+        if (routeFileStatus?.pageFilePath) {
+          const openPageAction = new vscode.CodeAction(
+            '打开页面文件',
+            vscode.CodeActionKind.QuickFix,
+          )
+          openPageAction.command = {
+            command: 'weapp-vite.openPageFromRoute',
+            title: '打开页面文件',
+            arguments: [document, routeMatch[1]],
+          }
+          actions.push(openPageAction)
         }
-        actions.push(createPageAction)
+        else {
+          const createPageAction = new vscode.CodeAction(
+            '创建缺失页面文件',
+            vscode.CodeActionKind.QuickFix,
+          )
+          createPageAction.command = {
+            command: 'weapp-vite.createPageFromRoute',
+            title: '创建缺失页面文件',
+            arguments: [document, routeMatch[1]],
+          }
+          actions.push(createPageAction)
+        }
       }
     }
 

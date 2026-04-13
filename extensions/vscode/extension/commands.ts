@@ -22,6 +22,7 @@ import {
   getVuePageConfigState,
 } from './logic'
 import {
+  getAppJsonRouteFileStatus,
   getAppJsonRouteFileTarget,
   getAppJsonTextWithAddedRoute,
   getCurrentPageRouteCandidate,
@@ -341,6 +342,26 @@ export async function createPageFromRoute(editorOrDocument: any, route?: string)
   const createdDocument = await vscode.workspace.openTextDocument(targetUri)
   await vscode.window.showTextDocument(createdDocument, { preview: false })
   void vscode.window.showInformationMessage(`weapp-vite: 已创建页面 ${route}`)
+}
+
+export async function openPageFromRoute(editorOrDocument: any, route?: string) {
+  const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
+  const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
+
+  if (!document || !isAppJsonDocument(document) || typeof route !== 'string' || !route.trim()) {
+    void vscode.window.showWarningMessage('weapp-vite: 请在 app.json 的页面路由上执行打开页面。')
+    return
+  }
+
+  const status = await getAppJsonRouteFileStatus(document, route)
+
+  if (!status?.pageFilePath) {
+    void vscode.window.showWarningMessage(`weapp-vite: 未找到页面文件 ${route}`)
+    return
+  }
+
+  const targetDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(status.pageFilePath))
+  await vscode.window.showTextDocument(targetDocument, { preview: false })
 }
 
 export async function addCurrentPageToAppJson(state: any) {

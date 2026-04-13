@@ -84,6 +84,7 @@
 - `weapp-vite: Copy Current Page Route`
 - `weapp-vite: Reveal Current Page In app.json`
 - `weapp-vite: Create Page From Route`
+- `weapp-vite: Open Page From Route`
 - `weapp-vite: Add Current Page To app.json`
 - `weapp-vite: Insert definePageJson Template`
 
@@ -112,6 +113,7 @@
 - 在页面文件中执行 `weapp-vite: Copy Current Page Route`，快速复制当前页面 route
 - 在页面文件中执行 `weapp-vite: Reveal Current Page In app.json`，直接跳到 `app.json` 中的声明位置
 - 在 `app.json` 的缺失页面路由上执行 `weapp-vite: Create Page From Route`，直接生成对应 `.vue` 页面骨架
+- 在 `app.json` 的已存在页面路由上执行 `weapp-vite: Open Page From Route`，直接跳到对应页面文件
 - 在页面文件中执行 `weapp-vite: Add Current Page To app.json`，直接把当前页面加入顶层或匹配的分包页面声明
 - 在 `app.json` 的 `pages` / `subPackages` / `subpackages` 中补全已有页面 route，减少手动输入和路径拼写错误
 - 悬浮在 `app.json` 的页面 route 上时，可直接看到对应页面文件是否存在，以及扩展实际尝试匹配的页面文件路径
