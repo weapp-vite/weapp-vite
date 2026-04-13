@@ -165,6 +165,27 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(commonJs).toContain(`${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["URL"],["https://request-globals.invalid"])`)
   })
 
+  it('issue #448: injects the next batch of web runtime globals on demand', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-448/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-448/index.wxml')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-448 next web runtime globals')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('microtaskState')
+    expect(pageJs).toContain('/* __wvRGC__ */')
+    expect(pageJs).toContain(`var atob = ${REQUEST_GLOBAL_EXPOSE_HELPER}("atob"`)
+    expect(pageJs).toContain(`var btoa = ${REQUEST_GLOBAL_EXPOSE_HELPER}("btoa"`)
+    expect(pageJs).toContain(`var queueMicrotask = ${REQUEST_GLOBAL_EXPOSE_HELPER}("queueMicrotask"`)
+    expect(pageJs).toContain(`var performance = ${REQUEST_GLOBAL_EXPOSE_HELPER}("performance"`)
+    expect(pageJs).toContain(`var crypto = ${REQUEST_GLOBAL_EXPOSE_HELPER}("crypto"`)
+    expect(pageJs).toContain(`var Event = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Event"`)
+    expect(pageJs).toContain(`var CustomEvent = ${REQUEST_GLOBAL_EXPOSE_HELPER}("CustomEvent"`)
+  })
+
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {
     await runIssue393Build()
 

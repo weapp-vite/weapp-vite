@@ -1,13 +1,18 @@
 import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
+import { atobPolyfill, btoaPolyfill } from './base64'
+import { cryptoPolyfill } from './crypto'
+import { CustomEventPolyfill, EventPolyfill } from './events'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
+import { performancePolyfill } from './performance'
 import {
   installRequestGlobalBinding,
   RequestGlobalsEventTarget,
   resolveRequestGlobalsHost,
   resolveRequestGlobalsHosts,
 } from './shared'
+import { queueMicrotaskPolyfill } from './task'
 import { TextDecoderPolyfill, TextEncoderPolyfill } from './textCodec'
 import { URLPolyfill, URLSearchParamsPolyfill } from './url'
 import { BlobPolyfill, FormDataPolyfill } from './web'
@@ -25,6 +30,13 @@ export type WeappInjectWebRuntimeGlobalsTarget
     | 'AbortSignal'
     | 'XMLHttpRequest'
     | 'WebSocket'
+    | 'atob'
+    | 'btoa'
+    | 'queueMicrotask'
+    | 'performance'
+    | 'crypto'
+    | 'Event'
+    | 'CustomEvent'
 
 export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
 
@@ -50,6 +62,9 @@ function resolveInstallTargets(targets: WeappInjectWebRuntimeGlobalsTarget[]) {
   const installTargets: WeappInjectWebRuntimeGlobalsTarget[] = [...targets]
   if (hasRequestRuntimeBinaryUsage(targets)) {
     installTargets.push('TextEncoder', 'TextDecoder')
+  }
+  if (targets.includes('CustomEvent')) {
+    installTargets.push('Event')
   }
   return [...new Set(installTargets)]
 }
@@ -162,6 +177,55 @@ function installSingleTarget(host: Record<string, any>, target: WeappInjectWebRu
     return
   }
 
+  if (target === 'atob') {
+    if (typeof host.atob !== 'function' || isPlaceholderRequestGlobal(host.atob)) {
+      assignHostGlobal(host, 'atob', atobPolyfill)
+    }
+    return
+  }
+
+  if (target === 'btoa') {
+    if (typeof host.btoa !== 'function' || isPlaceholderRequestGlobal(host.btoa)) {
+      assignHostGlobal(host, 'btoa', btoaPolyfill)
+    }
+    return
+  }
+
+  if (target === 'queueMicrotask') {
+    if (typeof host.queueMicrotask !== 'function' || isPlaceholderRequestGlobal(host.queueMicrotask)) {
+      assignHostGlobal(host, 'queueMicrotask', queueMicrotaskPolyfill)
+    }
+    return
+  }
+
+  if (target === 'performance') {
+    if (!host.performance || typeof host.performance.now !== 'function') {
+      assignHostGlobal(host, 'performance', performancePolyfill)
+    }
+    return
+  }
+
+  if (target === 'crypto') {
+    if (!host.crypto || typeof host.crypto.getRandomValues !== 'function') {
+      assignHostGlobal(host, 'crypto', cryptoPolyfill)
+    }
+    return
+  }
+
+  if (target === 'Event') {
+    if (typeof host.Event !== 'function' || isPlaceholderRequestGlobal(host.Event)) {
+      assignHostGlobal(host, 'Event', EventPolyfill)
+    }
+    return
+  }
+
+  if (target === 'CustomEvent') {
+    if (typeof host.CustomEvent !== 'function' || isPlaceholderRequestGlobal(host.CustomEvent)) {
+      assignHostGlobal(host, 'CustomEvent', CustomEventPolyfill)
+    }
+    return
+  }
+
   if (target === 'XMLHttpRequest' && (typeof host.XMLHttpRequest !== 'function' || isPlaceholderRequestGlobal(host.XMLHttpRequest))) {
     assignHostGlobal(host, 'XMLHttpRequest', XMLHttpRequestPolyfill)
   }
@@ -240,6 +304,13 @@ export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOption
     'AbortSignal',
     'XMLHttpRequest',
     'WebSocket',
+    'atob',
+    'btoa',
+    'queueMicrotask',
+    'performance',
+    'crypto',
+    'Event',
+    'CustomEvent',
   ])
   const hosts = resolveRequestGlobalsHosts()
   const primaryHost = resolveRequestGlobalsHost()
@@ -290,10 +361,17 @@ export function installAbortGlobals() {
 export {
   AbortControllerPolyfill,
   AbortSignalPolyfill,
+  atobPolyfill,
   BlobPolyfill,
+  btoaPolyfill,
+  cryptoPolyfill,
+  CustomEventPolyfill,
+  EventPolyfill,
   requestGlobalsFetch as fetch,
   FormDataPolyfill,
   HeadersPolyfill,
+  performancePolyfill,
+  queueMicrotaskPolyfill,
   RequestGlobalsEventTarget,
   RequestPolyfill,
   ResponsePolyfill,

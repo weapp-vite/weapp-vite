@@ -16,19 +16,19 @@ export interface WeappViteConfig {
     mode?: 'inline' | 'entry' | 'require'
     webRuntime?: boolean | {
       enabled?: boolean
-      targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+      targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
       dependencies?: (string | RegExp)[]
     }
   }
   injectWebRuntimeGlobals?: boolean | {
     enabled?: boolean
-    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
     dependencies?: (string | RegExp)[]
     prelude?: boolean
   }
   injectRequestGlobals?: boolean | {
     enabled?: boolean
-    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
     dependencies?: (string | RegExp)[]
     prelude?: boolean
   }

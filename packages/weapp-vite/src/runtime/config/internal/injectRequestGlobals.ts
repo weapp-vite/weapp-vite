@@ -33,6 +33,13 @@ export const FULL_REQUEST_GLOBAL_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] =
   'AbortSignal',
   'XMLHttpRequest',
   'WebSocket',
+  'atob',
+  'btoa',
+  'queueMicrotask',
+  'performance',
+  'crypto',
+  'Event',
+  'CustomEvent',
 ]
 
 export const ABORT_REQUEST_GLOBAL_TARGETS: WeappInjectWebRuntimeGlobalsTarget[] = [
@@ -317,6 +324,10 @@ export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestG
     bindingTargets.push('URL', 'URLSearchParams', 'Blob', 'FormData')
   }
 
+  if (targets.includes('CustomEvent')) {
+    bindingTargets.push('Event')
+  }
+
   return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
 }
 
@@ -340,16 +351,35 @@ export function createRequestGlobalsPassiveBindingsCode(targets: WeappInjectRequ
     `function ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(value){try{Object.defineProperty(value,${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)},{value:true,configurable:true})}catch{value[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]=true}return value}`,
     `function ${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}(name){const placeholder=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return actual.apply(this,args)};return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
     `function ${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}(name){const placeholder=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];if(typeof actual!=="function"){throw new Error(name+" is not initialized")}return Reflect.construct(actual,args)};return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
+    `function __weappViteRequestGlobalsLazyObject(name,keys){const placeholder=Object.create(null);for(const key of keys){placeholder[key]=function(...args){const actual=${REQUEST_GLOBAL_ACTUALS_KEY}[name];const actualValue=actual?.[key];if(typeof actualValue!=="function"){throw new Error(name+"."+key+" is not initialized")}return actualValue.apply(actual,args)}}return ${REQUEST_GLOBAL_MARK_PLACEHOLDER_HELPER}(placeholder)}`,
     `function ${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(value,args){if(typeof value!=="function"||value?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]===true){return false}try{return Reflect.construct(value,args),true}catch{return false}}`,
-    `function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value){if(value==null){return value}const current=globalThis[name];if(current===value){return value}if(typeof current!=="function"||current?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]===true){try{globalThis[name]=value}catch{}}return value}`,
+    `function ${REQUEST_GLOBAL_EXPOSE_HELPER}(name,value){if(value==null){return value}const current=globalThis[name];if(current===value){return value}if((typeof current!=="function"&&typeof current!=="object")||current?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]===true){try{globalThis[name]=value}catch{}}return value}`,
   ].join(';')
   const bindingCode = bindingTargets.map((target) => {
     if (target === 'fetch') {
       return `var fetch = ${REQUEST_GLOBAL_EXPOSE_HELPER}("fetch",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["fetch"]:typeof globalThis.fetch==="function"&&globalThis.fetch?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.fetch:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("fetch"))`
     }
 
+    if (target === 'atob') {
+      return `var atob = ${REQUEST_GLOBAL_EXPOSE_HELPER}("atob",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["atob"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["atob"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["atob"]:typeof globalThis.atob==="function"&&globalThis.atob?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.atob:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("atob"))`
+    }
+
+    if (target === 'btoa') {
+      return `var btoa = ${REQUEST_GLOBAL_EXPOSE_HELPER}("btoa",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["btoa"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["btoa"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["btoa"]:typeof globalThis.btoa==="function"&&globalThis.btoa?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.btoa:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("btoa"))`
+    }
+
+    if (target === 'queueMicrotask') {
+      return `var queueMicrotask = ${REQUEST_GLOBAL_EXPOSE_HELPER}("queueMicrotask",typeof ${REQUEST_GLOBAL_ACTUALS_KEY}["queueMicrotask"]==="function"&&${REQUEST_GLOBAL_ACTUALS_KEY}["queueMicrotask"]?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${REQUEST_GLOBAL_ACTUALS_KEY}["queueMicrotask"]:typeof globalThis.queueMicrotask==="function"&&globalThis.queueMicrotask?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.queueMicrotask:${REQUEST_GLOBAL_LAZY_FUNCTION_HELPER}("queueMicrotask"))`
+    }
+
     const placeholderFactory = `${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}(${JSON.stringify(target)})`
     const actualRef = `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}]`
+    if (target === 'performance') {
+      return `var performance = ${REQUEST_GLOBAL_EXPOSE_HELPER}("performance",${actualRef}&&typeof ${actualRef}.now==="function"&&${actualRef}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${actualRef}:globalThis.performance&&typeof globalThis.performance.now==="function"&&globalThis.performance?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.performance:__weappViteRequestGlobalsLazyObject("performance",["now"]))`
+    }
+    if (target === 'crypto') {
+      return `var crypto = ${REQUEST_GLOBAL_EXPOSE_HELPER}("crypto",${actualRef}&&typeof ${actualRef}.getRandomValues==="function"&&${actualRef}?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?${actualRef}:globalThis.crypto&&typeof globalThis.crypto.getRandomValues==="function"&&globalThis.crypto?.[${JSON.stringify(REQUEST_GLOBAL_PLACEHOLDER_KEY)}]!==true?globalThis.crypto:__weappViteRequestGlobalsLazyObject("crypto",["getRandomValues"]))`
+    }
     if (target === 'URL') {
       return `var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${actualRef},["https://request-globals.invalid"])?${actualRef}:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.URL,["https://request-globals.invalid"])?globalThis.URL:${placeholderFactory})`
     }

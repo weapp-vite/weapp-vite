@@ -17,6 +17,7 @@ import {
   REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
 } from '@weapp-core/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 
@@ -35,6 +36,7 @@ const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
+const FULL_REQUEST_GLOBAL_TARGETS_LITERAL = JSON.stringify(FULL_REQUEST_GLOBAL_TARGETS)
 
 vi.mock('../../../runtime/chunkStrategy', () => ({
   DEFAULT_SHARED_CHUNK_STRATEGY: 'copy',
@@ -1319,7 +1321,7 @@ describe('core lifecycle emit hook extra branches', () => {
 
     const appCode = bundle['app.js'].code
     expect(appCode).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
-    expect(appCode).toContain('require("./common.js")["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(appCode).toContain(`require("./common.js")["At"]({ targets: ${FULL_REQUEST_GLOBAL_TARGETS_LITERAL} }) || globalThis`)
     expect(appCode.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(appCode.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 
@@ -1389,7 +1391,7 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['app.js'].code).toContain('require("./app.prelude.js")')
     expect(bundle['app.js'].code).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(String(bundle['app.prelude.js'].source)).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
-    expect(String(bundle['app.prelude.js'].source)).toContain('require("./common.js")["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis')
+    expect(String(bundle['app.prelude.js'].source)).toContain(`require("./common.js")["At"]({ targets: ${FULL_REQUEST_GLOBAL_TARGETS_LITERAL} }) || globalThis`)
     expect(String(bundle['app.prelude.js'].source).indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(String(bundle['app.prelude.js'].source).indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 

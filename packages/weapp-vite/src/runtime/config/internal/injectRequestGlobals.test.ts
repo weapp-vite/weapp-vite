@@ -17,6 +17,26 @@ import {
 } from './injectRequestGlobals'
 
 describe('injectRequestGlobals helpers', () => {
+  const fullWebRuntimeTargets = [
+    'fetch',
+    'Headers',
+    'Request',
+    'Response',
+    'TextEncoder',
+    'TextDecoder',
+    'AbortController',
+    'AbortSignal',
+    'XMLHttpRequest',
+    'WebSocket',
+    'atob',
+    'btoa',
+    'queueMicrotask',
+    'performance',
+    'crypto',
+    'Event',
+    'CustomEvent',
+  ] as const
+
   it('enables auto injection when matching dependencies are present', () => {
     expect(resolveInjectRequestGlobalsOptions(undefined, {
       dependencies: {
@@ -25,18 +45,7 @@ describe('injectRequestGlobals helpers', () => {
     })).toEqual({
       mode: 'auto',
       prelude: false,
-      targets: [
-        'fetch',
-        'Headers',
-        'Request',
-        'Response',
-        'TextEncoder',
-        'TextDecoder',
-        'AbortController',
-        'AbortSignal',
-        'XMLHttpRequest',
-        'WebSocket',
-      ],
+      targets: [...fullWebRuntimeTargets],
     })
   })
 
@@ -48,18 +57,7 @@ describe('injectRequestGlobals helpers', () => {
     })).toEqual({
       mode: 'auto',
       prelude: false,
-      targets: [
-        'fetch',
-        'Headers',
-        'Request',
-        'Response',
-        'TextEncoder',
-        'TextDecoder',
-        'AbortController',
-        'AbortSignal',
-        'XMLHttpRequest',
-        'WebSocket',
-      ],
+      targets: [...fullWebRuntimeTargets],
     })
   })
 
@@ -114,18 +112,7 @@ describe('injectRequestGlobals helpers', () => {
     })).toEqual({
       mode: 'auto',
       prelude: true,
-      targets: [
-        'fetch',
-        'Headers',
-        'Request',
-        'Response',
-        'TextEncoder',
-        'TextDecoder',
-        'AbortController',
-        'AbortSignal',
-        'XMLHttpRequest',
-        'WebSocket',
-      ],
+      targets: [...fullWebRuntimeTargets],
     })
   })
 
@@ -142,18 +129,7 @@ describe('injectRequestGlobals helpers', () => {
       mode: 'explicit',
       dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
       prelude: true,
-      targets: [
-        'fetch',
-        'Headers',
-        'Request',
-        'Response',
-        'TextEncoder',
-        'TextDecoder',
-        'AbortController',
-        'AbortSignal',
-        'XMLHttpRequest',
-        'WebSocket',
-      ],
+      targets: [...fullWebRuntimeTargets],
     })
   })
 
@@ -330,6 +306,20 @@ describe('injectRequestGlobals helpers', () => {
     expect(code).not.toContain(`${REQUEST_GLOBAL_INSTALLER_HOST_REF}.fetch`)
   })
 
+  it('creates passive bindings for the next web runtime batch', () => {
+    const code = createInjectRequestGlobalsCode(['atob', 'btoa', 'queueMicrotask', 'performance', 'crypto', 'Event', 'CustomEvent'], {
+      passiveLocalBindings: true,
+    })
+
+    expect(code).toContain(`var atob = ${REQUEST_GLOBAL_EXPOSE_HELPER}("atob"`)
+    expect(code).toContain(`var btoa = ${REQUEST_GLOBAL_EXPOSE_HELPER}("btoa"`)
+    expect(code).toContain(`var queueMicrotask = ${REQUEST_GLOBAL_EXPOSE_HELPER}("queueMicrotask"`)
+    expect(code).toContain(`var performance = ${REQUEST_GLOBAL_EXPOSE_HELPER}("performance"`)
+    expect(code).toContain(`var crypto = ${REQUEST_GLOBAL_EXPOSE_HELPER}("crypto"`)
+    expect(code).toContain(`var Event = ${REQUEST_GLOBAL_EXPOSE_HELPER}("Event"`)
+    expect(code).toContain(`var CustomEvent = ${REQUEST_GLOBAL_EXPOSE_HELPER}("CustomEvent"`)
+  })
+
   it('can create a valid sfc injection block', () => {
     const code = createInjectRequestGlobalsSfcCode(['fetch'], {
       localBindings: true,
@@ -348,6 +338,39 @@ describe('injectRequestGlobals helpers', () => {
         return new TextDecoder().decode(payload)
       }
     `, ['TextDecoder', 'TextEncoder', 'fetch'])).toEqual(['TextDecoder'])
+  })
+
+  it('resolves direct next-batch references in auto mode without pulling request runtime group', () => {
+    expect(resolveAutoRequestGlobalsTargets(`
+      export function createRuntimeSnapshot() {
+        queueMicrotask(() => {})
+        return [
+          btoa("A"),
+          atob("QQ=="),
+          performance.now(),
+          crypto.getRandomValues(new Uint8Array(1))[0],
+          new Event("tick").type,
+          new CustomEvent("payload").type,
+        ]
+      }
+    `, [
+      'atob',
+      'btoa',
+      'queueMicrotask',
+      'performance',
+      'crypto',
+      'Event',
+      'CustomEvent',
+      'fetch',
+    ])).toEqual([
+      'atob',
+      'btoa',
+      'queueMicrotask',
+      'performance',
+      'crypto',
+      'Event',
+      'CustomEvent',
+    ])
   })
 
   it('injects into existing normal script before falling back to a new block', () => {
@@ -391,18 +414,7 @@ describe('injectRequestGlobals helpers', () => {
     expect(resolveManualRequestGlobalsTargets([
       'import { installRequestGlobals } from "@wevu/web-apis"',
       'installRequestGlobals()',
-    ].join('\n'))).toEqual([
-      'fetch',
-      'Headers',
-      'Request',
-      'Response',
-      'TextEncoder',
-      'TextDecoder',
-      'AbortController',
-      'AbortSignal',
-      'XMLHttpRequest',
-      'WebSocket',
-    ])
+    ].join('\n'))).toEqual([...fullWebRuntimeTargets])
   })
 
   it('detects manual installAbortGlobals usage from compatibility imports', () => {

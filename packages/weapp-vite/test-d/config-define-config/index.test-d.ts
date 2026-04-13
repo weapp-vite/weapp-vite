@@ -39,13 +39,13 @@ expectType<boolean | {
   mode?: 'inline' | 'entry' | 'require'
   webRuntime?: boolean | {
     enabled?: boolean
-    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+    targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
     dependencies?: (string | RegExp)[]
   }
 } | undefined>(objectConfig.weapp?.appPrelude)
 expectType<boolean | {
   enabled?: boolean
-  targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket')[]
+  targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
   dependencies?: (string | RegExp)[]
   prelude?: boolean
 } | undefined>(objectConfig.weapp?.injectWebRuntimeGlobals)
