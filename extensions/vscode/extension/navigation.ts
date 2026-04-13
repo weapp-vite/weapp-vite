@@ -75,6 +75,16 @@ export function getPageFileCandidatePaths(route: string) {
   ].map(candidate => path.normalize(candidate))
 }
 
+export function getPreferredPageFilePath(route: string) {
+  const normalizedRoute = normalizeRoute(route)
+
+  if (!normalizedRoute) {
+    return null
+  }
+
+  return path.normalize(`${normalizedRoute}.vue`)
+}
+
 export async function collectMissingPageRoutes(
   appJson: Record<string, any>,
   hasPageFile: (route: string) => Promise<boolean>,

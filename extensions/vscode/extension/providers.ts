@@ -29,6 +29,8 @@ import {
   isVueDocument,
 } from './workspace'
 
+const QUOTED_STRING_PATTERN = /"([^"]+)"/u
+
 const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
   detail: string
   documentation?: string
@@ -205,6 +207,8 @@ export class WeappViteCodeActionProvider {
     }
 
     if (isAppJsonDocument(document)) {
+      const lineText = document.lineAt(range.start.line).text
+      const routeMatch = lineText.match(QUOTED_STRING_PATTERN)
       const openProjectFileAction = new vscode.CodeAction(
         '打开 weapp-vite 关键文件 / 页面',
         vscode.CodeActionKind.QuickFix,
@@ -214,6 +218,19 @@ export class WeappViteCodeActionProvider {
         title: '打开 weapp-vite 关键文件 / 页面',
       }
       actions.push(openProjectFileAction)
+
+      if (routeMatch) {
+        const createPageAction = new vscode.CodeAction(
+          '创建缺失页面文件',
+          vscode.CodeActionKind.QuickFix,
+        )
+        createPageAction.command = {
+          command: 'weapp-vite.createPageFromRoute',
+          title: '创建缺失页面文件',
+          arguments: [document, routeMatch[1]],
+        }
+        actions.push(createPageAction)
+      }
     }
 
     if (isViteConfigDocument(document)) {

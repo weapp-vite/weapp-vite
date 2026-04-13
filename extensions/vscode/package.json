@@ -66,6 +66,7 @@
     "onCommand:weapp-vite.insertJsonBlockTemplate",
     "onCommand:weapp-vite.insertDefineConfigTemplate",
     "onCommand:weapp-vite.insertCommonScripts",
+    "onCommand:weapp-vite.createPageFromRoute",
     "onCommand:weapp-vite.openDocs",
     "onCommand:weapp-vite.openProjectFile",
     "onCommand:weapp-vite.copyCurrentPageRoute",
@@ -126,6 +127,11 @@
       {
         "command": "weapp-vite.insertCommonScripts",
         "title": "Insert Common Scripts",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.createPageFromRoute",
+        "title": "Create Page From Route",
         "category": "weapp-vite"
       },
       {
@@ -261,6 +267,10 @@
           "when": "resourceFilename == package.json"
         },
         {
+          "command": "weapp-vite.createPageFromRoute",
+          "when": "resourceFilename == app.json"
+        },
+        {
           "command": "weapp-vite.openDocs",
           "when": "true"
         },
@@ -309,6 +319,11 @@
           "command": "weapp-vite.openProjectFile",
           "group": "navigation",
           "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.createPageFromRoute",
+          "group": "navigation",
+          "when": "resourceFilename == app.json"
         },
         {
           "command": "weapp-vite.copyCurrentPageRoute",

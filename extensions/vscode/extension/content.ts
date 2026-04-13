@@ -38,6 +38,38 @@ export function getDefineConfigTemplate() {
   ].join('\n')
 }
 
+export function getPageVueTemplate(route: string) {
+  const normalizedRoute = route.trim().replace(/^\/+|\/+$/g, '')
+  const title = normalizedRoute.split('/').filter(Boolean).at(-2) || normalizedRoute.split('/').filter(Boolean).at(-1) || 'New Page'
+
+  return [
+    '<script setup lang="ts">',
+    'definePageJson({',
+    `  navigationBarTitleText: '${title}',`,
+    '})',
+    '</script>',
+    '',
+    '<template>',
+    '  <view class="page">',
+    `    ${normalizedRoute}`,
+    '  </view>',
+    '</template>',
+    '',
+    '<json lang="jsonc">',
+    '{',
+    `  "navigationBarTitleText": "${title}"`,
+    '}',
+    '</json>',
+    '',
+    '<style scoped>',
+    '.page {',
+    '  padding: 32rpx;',
+    '}',
+    '</style>',
+    '',
+  ].join('\n')
+}
+
 export function buildPackageJsonDiagnostics(document: any) {
   const diagnostics = []
   let packageJson

@@ -69,7 +69,9 @@ function createMockVscode() {
         stat: async () => {
           throw new Error('not found')
         },
+        createDirectory: async () => true,
         readFile: async () => Buffer.from(''),
+        writeFile: async () => true,
       },
       getWorkspaceFolder: () => undefined,
       getConfiguration: () => ({
@@ -250,7 +252,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 15)
+    assert.equal(state.registeredCommands.length, 16)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -265,6 +267,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.insertJsonBlockTemplate',
         'weapp-vite.insertDefineConfigTemplate',
         'weapp-vite.insertCommonScripts',
+        'weapp-vite.createPageFromRoute',
         'weapp-vite.openDocs',
         'weapp-vite.openProjectFile',
         'weapp-vite.copyCurrentPageRoute',

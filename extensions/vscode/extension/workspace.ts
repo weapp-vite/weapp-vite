@@ -17,6 +17,7 @@ import {
   collectMissingPageRoutes,
   findRouteTextRange,
   getPageFileCandidatePaths,
+  getPreferredPageFilePath,
   getRouteFromPageFilePath,
 } from './navigation'
 
@@ -341,6 +342,20 @@ export async function getMissingAppJsonPageRoutes(document: any) {
 
     return Boolean(await getExistingProjectFile(candidatePaths))
   })
+}
+
+export async function getAppJsonRouteFileTarget(document: any, route: string) {
+  if (!isAppJsonDocument(document)) {
+    return null
+  }
+
+  const relativePath = getPreferredPageFilePath(route)
+
+  if (!relativePath) {
+    return null
+  }
+
+  return path.join(path.dirname(document.uri.fsPath), relativePath)
 }
 
 export async function resolveCurrentPageRoute(document = vscode.window.activeTextEditor?.document) {

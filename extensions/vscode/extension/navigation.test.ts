@@ -7,6 +7,7 @@ import {
   collectMissingPageRoutes,
   findRouteTextRange,
   getPageFileCandidatePaths,
+  getPreferredPageFilePath,
   getRouteFromPageFilePath,
 } from './navigation'
 
@@ -44,6 +45,10 @@ it('returns ordered page file candidates', () => {
     path.normalize('pages/demo/index.js'),
     path.normalize('pages/demo/index.wxml'),
   ])
+})
+
+it('returns a preferred vue page file path', () => {
+  assert.equal(getPreferredPageFilePath('/pages/demo/index/'), path.normalize('pages/demo/index.vue'))
 })
 
 it('collects missing page routes with async file existence checks', async () => {

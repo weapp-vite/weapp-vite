@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import vscode from 'vscode'
 
 import {
@@ -12,11 +13,13 @@ import {
   getDefineConfigTemplate,
   getDocItems,
   getJsonBlockSnippet,
+  getPageVueTemplate,
 } from './content'
 import {
   applySuggestedScripts,
 } from './logic'
 import {
+  getAppJsonRouteFileTarget,
   getCurrentPageRouteLocation,
   getEditor,
   getPrimaryWorkspaceFolder,
@@ -28,6 +31,8 @@ import {
   resolveCommand,
   resolveCurrentPageRoute,
 } from './workspace'
+
+const TRAILING_FILE_SEGMENT_PATTERN = /\/[^/]+$/u
 
 async function insertSnippetToActiveEditor(snippetText: string) {
   const editor = vscode.window.activeTextEditor
@@ -287,6 +292,39 @@ export async function revealCurrentPageInAppJson(state: any) {
     preview: false,
     selection,
   })
+}
+
+export async function createPageFromRoute(editorOrDocument: any, route?: string) {
+  const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
+  const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
+
+  if (!document || !isAppJsonDocument(document) || typeof route !== 'string' || !route.trim()) {
+    void vscode.window.showWarningMessage('weapp-vite: 请在 app.json 的页面路由上执行创建页面。')
+    return
+  }
+
+  const targetPath = await getAppJsonRouteFileTarget(document, route)
+
+  if (!targetPath) {
+    void vscode.window.showWarningMessage('weapp-vite: 无法解析要创建的页面文件路径。')
+    return
+  }
+
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+    void vscode.window.showInformationMessage(`weapp-vite: 页面文件已存在 ${route}`)
+    return
+  }
+  catch {
+  }
+
+  const targetUri = vscode.Uri.file(targetPath)
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath.replace(TRAILING_FILE_SEGMENT_PATTERN, '')))
+  await vscode.workspace.fs.writeFile(targetUri, Buffer.from(getPageVueTemplate(route), 'utf8'))
+
+  const createdDocument = await vscode.workspace.openTextDocument(targetUri)
+  await vscode.window.showTextDocument(createdDocument, { preview: false })
+  void vscode.window.showInformationMessage(`weapp-vite: 已创建页面 ${route}`)
 }
 
 export async function showCommandPalette(state: any) {
