@@ -29,7 +29,10 @@ const PAGE_CONFIG_FIELD_DESCRIPTIONS: Record<string, string> = {
   disableScroll: '设置页面是否整体禁止滚动。',
 }
 const DEFINE_PAGE_JSON_TITLE_PATTERN = /definePageJson\s*\(\s*\{[\s\S]*?navigationBarTitleText\s*:\s*'([^']+)'/u
+const DEFINE_PAGE_JSON_BLOCK_PATTERN = /definePageJson\s*\(/u
+const DEFINE_PAGE_JSON_OPEN_OBJECT_PATTERN = /(definePageJson\s*\(\s*\{)/u
 const JSON_BLOCK_TITLE_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>[\s\S]*?"navigationBarTitleText"\s*:\s*"([^"]+)"/u
+const JSON_BLOCK_OPEN_OBJECT_PATTERN = /(<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>\s*\{)/u
 const DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN = /navigationBarTitleText\s*:\s*'[^']+'/u
 const JSON_BLOCK_TITLE_FIELD_PATTERN = /"navigationBarTitleText"\s*:\s*"([^"]+)"/u
 
@@ -45,17 +48,27 @@ function getPositionFromOffset(text: string, offset: number) {
 }
 
 export function getVuePageTitleConsistencyState(documentText: string) {
+  const hasDefinePageJson = DEFINE_PAGE_JSON_BLOCK_PATTERN.test(documentText)
+  const hasJsonBlock = VUE_JSON_BLOCK_PATTERN.test(documentText)
   const definePageJsonMatch = documentText.match(DEFINE_PAGE_JSON_TITLE_PATTERN)
   const jsonBlockMatch = documentText.match(JSON_BLOCK_TITLE_PATTERN)
 
-  if (!definePageJsonMatch || !jsonBlockMatch) {
+  if (!hasDefinePageJson && !hasJsonBlock) {
     return null
   }
 
+  const definePageJsonTitle = definePageJsonMatch?.[1] ?? null
+  const jsonBlockTitle = jsonBlockMatch?.[1] ?? null
+  const matches = Boolean(definePageJsonTitle && jsonBlockTitle && definePageJsonTitle === jsonBlockTitle)
+
   return {
-    definePageJsonTitle: definePageJsonMatch[1],
-    jsonBlockTitle: jsonBlockMatch[1],
-    matches: definePageJsonMatch[1] === jsonBlockMatch[1],
+    canSyncDefinePageJsonFromJson: Boolean(hasDefinePageJson && hasJsonBlock && jsonBlockTitle && definePageJsonTitle !== jsonBlockTitle),
+    canSyncJsonFromDefinePageJson: Boolean(hasDefinePageJson && hasJsonBlock && definePageJsonTitle && definePageJsonTitle !== jsonBlockTitle),
+    definePageJsonTitle,
+    hasDefinePageJson,
+    hasJsonBlock,
+    jsonBlockTitle,
+    matches,
   }
 }
 
@@ -227,6 +240,28 @@ export function buildVuePageConfigConsistencyDiagnostics(document: any) {
     return []
   }
 
+  if (state.hasDefinePageJson && state.hasJsonBlock && state.definePageJsonTitle && !state.jsonBlockTitle) {
+    const diagnostic = new vscode.Diagnostic(
+      new vscode.Range(0, 0, 0, 1),
+      '<json> 缺少 navigationBarTitleText，可从 definePageJson 同步。',
+      vscode.DiagnosticSeverity.Information,
+    )
+
+    diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
+    return [diagnostic]
+  }
+
+  if (state.hasDefinePageJson && state.hasJsonBlock && !state.definePageJsonTitle && state.jsonBlockTitle) {
+    const diagnostic = new vscode.Diagnostic(
+      new vscode.Range(0, 0, 0, 1),
+      'definePageJson 缺少 navigationBarTitleText，可从 <json> 同步。',
+      vscode.DiagnosticSeverity.Information,
+    )
+
+    diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
+    return [diagnostic]
+  }
+
   const definePageJsonFieldMatch = DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN.exec(documentText)
 
   if (!definePageJsonFieldMatch || definePageJsonFieldMatch.index == null) {
@@ -255,21 +290,29 @@ export function buildVuePageConfigConsistencyDiagnostics(document: any) {
 export function getVuePageTextWithSyncedJsonTitle(documentText: string) {
   const state = getVuePageTitleConsistencyState(documentText)
 
-  if (!state || state.matches) {
+  if (!state || state.matches || !state.hasJsonBlock || !state.definePageJsonTitle) {
     return null
   }
 
-  return documentText.replace(JSON_BLOCK_TITLE_FIELD_PATTERN, `"navigationBarTitleText": "${state.definePageJsonTitle}"`)
+  if (JSON_BLOCK_TITLE_FIELD_PATTERN.test(documentText)) {
+    return documentText.replace(JSON_BLOCK_TITLE_FIELD_PATTERN, `"navigationBarTitleText": "${state.definePageJsonTitle}"`)
+  }
+
+  return documentText.replace(JSON_BLOCK_OPEN_OBJECT_PATTERN, `$1\n  "navigationBarTitleText": "${state.definePageJsonTitle}",`)
 }
 
 export function getVuePageTextWithSyncedDefinePageJsonTitle(documentText: string) {
   const state = getVuePageTitleConsistencyState(documentText)
 
-  if (!state || state.matches) {
+  if (!state || state.matches || !state.hasDefinePageJson || !state.jsonBlockTitle) {
     return null
   }
 
-  return documentText.replace(DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN, `navigationBarTitleText: '${state.jsonBlockTitle}'`)
+  if (DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN.test(documentText)) {
+    return documentText.replace(DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN, `navigationBarTitleText: '${state.jsonBlockTitle}'`)
+  }
+
+  return documentText.replace(DEFINE_PAGE_JSON_OPEN_OBJECT_PATTERN, `$1\n  navigationBarTitleText: '${state.jsonBlockTitle}',`)
 }
 
 export function getDocItems() {
