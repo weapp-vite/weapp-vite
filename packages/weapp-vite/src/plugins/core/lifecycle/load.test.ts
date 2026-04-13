@@ -9,11 +9,13 @@ import {
 import { parseSync } from 'oxc-parser'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
+import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
 import { createLoadHook, createOptionsHook } from './load'
 
 const resolveWeappLibEntriesMock = vi.hoisted(() => vi.fn())
 const findJsEntryMock = vi.hoisted(() => vi.fn())
 const findVueEntryMock = vi.hoisted(() => vi.fn())
+const FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED = FULL_REQUEST_GLOBAL_TARGETS.map(target => JSON.stringify(target)).join(',')
 
 vi.mock('../../../runtime/lib', () => ({
   resolveWeappLibEntries: resolveWeappLibEntriesMock,
@@ -273,7 +275,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
     expect(code).toContain('installWebRuntimeGlobals')
-    expect(code).toContain('"fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"')
+    expect(code).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
     expect(code).toContain(`var WebSocket = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.WebSocket`)
     expect(code).toContain(`var URL = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.URL`)
   })
