@@ -13,7 +13,7 @@ export default defineConfig({
     srcRoot: 'src',
     appPrelude: {
       mode: appPreludeMode,
-      requestRuntime: requestGlobalsPreludeEnabled
+      webRuntime: requestGlobalsPreludeEnabled
         ? {
             enabled: true,
             targets: ['fetch', 'Headers', 'Request', 'Response'],

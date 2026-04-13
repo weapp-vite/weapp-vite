@@ -1,8 +1,0 @@
-{
-  "pages": [
-    "pages/index/index"
-  ],
-  "window": {
-    "navigationBarTitleText": "App Lifecycle WeVu Vue"
-  }
-}

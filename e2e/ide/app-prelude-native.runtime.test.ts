@@ -7,6 +7,7 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const APP_PRELUDE_IDE_LAUNCH_TIMEOUT = 180_000
 
 async function runBuild(
   mode?: 'inline',
@@ -49,6 +50,7 @@ async function getSharedMiniProgram(
     try {
       sharedMiniProgram = await launchAutomator({
         projectPath: APP_ROOT,
+        timeout: APP_PRELUDE_IDE_LAUNCH_TIMEOUT,
       })
       sharedMiniProgramByMode.set(mode, sharedMiniProgram)
     }

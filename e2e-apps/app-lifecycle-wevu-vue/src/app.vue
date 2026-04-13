@@ -18,6 +18,15 @@ interface LifecycleApp {
   finalizeLifecycleLogs?: () => void
 }
 
+defineAppJson({
+  pages: [
+    'pages/index/index',
+  ],
+  window: {
+    navigationBarTitleText: 'App Lifecycle WeVu Vue',
+  },
+})
+
 const app = getCurrentInstance() as LifecycleApp | null
 
 if (app) {
