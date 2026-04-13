@@ -177,6 +177,11 @@ async function revealCurrentPageInPagesTree(pagesTreeProvider: WeappVitePagesTre
   await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 }
 
+async function refreshPagesTree(pagesTreeProvider: WeappVitePagesTreeProvider, pagesTreeView: any) {
+  pagesTreeProvider.refresh()
+  await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+}
+
 export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
@@ -220,6 +225,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.copyPageRouteFromTreeItem', item => copyPageRouteFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInPagesTree', () => revealCurrentPageInPagesTree(pagesTreeProvider, pagesTreeView)),
+    vscode.commands.registerCommand('weapp-vite.refreshPagesTree', () => refreshPagesTree(pagesTreeProvider, pagesTreeView)),
     vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.syncDefinePageJsonFromJsonInTreeItem', item => syncDefinePageJsonFromJsonInTreeItem(item)),
     vscode.commands.registerCommand('weapp-vite.syncJsonFromDefinePageJsonInTreeItem', item => syncJsonFromDefinePageJsonInTreeItem(item)),

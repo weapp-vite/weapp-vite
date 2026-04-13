@@ -39,6 +39,7 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.copyPageRouteFromTreeItem',
     'weapp-vite.revealCurrentPageInAppJson',
     'weapp-vite.revealCurrentPageInPagesTree',
+    'weapp-vite.refreshPagesTree',
     'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
     'weapp-vite.syncDefinePageJsonFromJsonInTreeItem',
     'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
@@ -129,6 +130,11 @@ it('manifest exposes current-page explorer quick actions', () => {
 
 it('manifest exposes pages explorer title action for current page reveal', () => {
   assert.deepEqual(packageJson.contributes.menus['view/title'], [
+    {
+      command: 'weapp-vite.refreshPagesTree',
+      group: 'navigation',
+      when: 'view == weapp-vite.pages',
+    },
     {
       command: 'weapp-vite.revealCurrentPageInPagesTree',
       group: 'navigation',

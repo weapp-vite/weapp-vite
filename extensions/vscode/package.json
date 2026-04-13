@@ -80,6 +80,7 @@
     "onCommand:weapp-vite.copyPageRouteFromTreeItem",
     "onCommand:weapp-vite.revealCurrentPageInAppJson",
     "onCommand:weapp-vite.revealCurrentPageInPagesTree",
+    "onCommand:weapp-vite.refreshPagesTree",
     "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
     "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
     "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
@@ -209,6 +210,11 @@
       {
         "command": "weapp-vite.revealCurrentPageInPagesTree",
         "title": "Reveal Current Page In Pages Explorer",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.refreshPagesTree",
+        "title": "Refresh Pages Explorer",
         "category": "weapp-vite"
       },
       {
@@ -390,6 +396,10 @@
         {
           "command": "weapp-vite.revealCurrentPageInPagesTree",
           "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.refreshPagesTree",
+          "when": "workspaceFolderCount > 0"
         }
       ],
       "explorer/context": [
@@ -452,6 +462,11 @@
         }
       ],
       "view/title": [
+        {
+          "command": "weapp-vite.refreshPagesTree",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
         {
           "command": "weapp-vite.revealCurrentPageInPagesTree",
           "group": "navigation",
