@@ -22,6 +22,33 @@ import {
   getRouteFromPageFilePath,
 } from './navigation'
 
+function normalizeRoute(route: string) {
+  return route.trim().replace(/^\/+|\/+$/g, '')
+}
+
+function getSubpackageEntries(appJson: Record<string, any>) {
+  return [
+    ...(Array.isArray(appJson?.subPackages) ? appJson.subPackages : []),
+    ...(Array.isArray(appJson?.subpackages) ? appJson.subpackages : []),
+  ].filter(item => item && typeof item === 'object')
+}
+
+export interface WeappPageTreeEntry {
+  pageFilePath: string | null
+  route: string
+}
+
+export interface WeappPagesTreeSnapshot {
+  appJsonPath: string
+  subpackages: Array<{
+    pages: WeappPageTreeEntry[]
+    root: string
+  }>
+  topLevelPages: WeappPageTreeEntry[]
+  unregisteredPages: WeappPageTreeEntry[]
+  workspaceFolder: any
+}
+
 export function getPrimaryWorkspaceFolder() {
   const activeUri = vscode.window.activeTextEditor?.document.uri
 
@@ -320,6 +347,97 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
   }
 
   return items
+}
+
+export async function getWeappPagesTreeSnapshot(workspaceFolder = getPrimaryWorkspaceFolder()): Promise<WeappPagesTreeSnapshot | null> {
+  const context = await getProjectContext(workspaceFolder)
+
+  if (!context) {
+    return null
+  }
+
+  const appJsonPath = await getProjectAppJsonPath(context.workspaceFolder)
+
+  if (!appJsonPath) {
+    return null
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof appJson !== 'object') {
+    return null
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  const resolvePageEntry = async (route: string): Promise<WeappPageTreeEntry> => {
+    const pageFilePath = await getExistingProjectFile(
+      getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate)),
+    )
+
+    return {
+      pageFilePath,
+      route,
+    }
+  }
+
+  const topLevelPages = await Promise.all(
+    (Array.isArray(appJson.pages) ? appJson.pages : [])
+      .filter((route): route is string => typeof route === 'string')
+      .map(route => resolvePageEntry(normalizeRoute(route)))
+      .filter(Boolean),
+  )
+  const subpackages = await Promise.all(getSubpackageEntries(appJson).map(async (subPackage) => {
+    const root = normalizeRoute(typeof subPackage.root === 'string' ? subPackage.root : '')
+    const pages = await Promise.all(
+      (Array.isArray(subPackage.pages) ? subPackage.pages : [])
+        .filter((page): page is string => typeof page === 'string')
+        .map(page => resolvePageEntry([root, normalizeRoute(page)].filter(Boolean).join('/'))),
+    )
+
+    return {
+      root,
+      pages,
+    }
+  }))
+
+  const patterns = [
+    '**/*.vue',
+    '**/*.ts',
+    '**/*.js',
+    '**/*.wxml',
+  ]
+  const pageFiles = await Promise.all(patterns.map(async (pattern) => {
+    return vscode.workspace.findFiles(new vscode.RelativePattern(appJsonDir, pattern))
+  }))
+  const declaredRoutes = new Set(collectAppJsonPageRoutes(appJson))
+  const unregisteredRoutes = new Set<string>()
+
+  for (const files of pageFiles) {
+    for (const file of files) {
+      const relativePath = path.relative(appJsonDir, file.fsPath)
+      const route = getRouteFromPageFilePath(relativePath)
+
+      if (!route || route === 'app' || route.endsWith('/app') || declaredRoutes.has(route)) {
+        continue
+      }
+
+      unregisteredRoutes.add(route)
+    }
+  }
+
+  const unregisteredPages = await Promise.all(
+    [...unregisteredRoutes].sort().map(route => resolvePageEntry(route)),
+  )
+
+  return {
+    appJsonPath,
+    subpackages: subpackages
+      .filter(item => item.root || item.pages.length > 0)
+      .sort((left, right) => left.root.localeCompare(right.root)),
+    topLevelPages,
+    unregisteredPages,
+    workspaceFolder: context.workspaceFolder,
+  }
 }
 
 export async function getMissingAppJsonPageRoutes(document: any) {

@@ -9,6 +9,7 @@ const extensionIndexUrl = pathToFileURL(path.resolve(__dirname, 'index.ts')).hre
 function createMockVscode() {
   const registeredCommands = []
   const registeredProviders = []
+  const registeredTreeProviders = []
   const diagnosticCollections = []
   const outputChannels = []
   const statusBarItems = []
@@ -58,6 +59,10 @@ function createMockVscode() {
       showQuickPick: async () => undefined,
       showTextDocument: async () => undefined,
       setStatusBarMessage() {},
+      registerTreeDataProvider(viewId, provider) {
+        registeredTreeProviders.push({ provider, viewId })
+        return { dispose() {} }
+      },
       onDidChangeActiveTextEditor(handler) {
         return { dispose() {}, handler }
       },
@@ -205,12 +210,29 @@ function createMockVscode() {
     WorkspaceEdit: class {
       replace() {}
     },
+    EventEmitter: class {
+      event = () => ({ dispose() {} })
+      fire() {}
+      dispose() {}
+    },
+    TreeItem: class {
+      constructor(label, collapsibleState) {
+        this.label = label
+        this.collapsibleState = collapsibleState
+      }
+    },
+    TreeItemCollapsibleState: {
+      None: 0,
+      Collapsed: 1,
+      Expanded: 2,
+    },
   }
 
   return {
     mockVscode,
     registeredCommands,
     registeredProviders,
+    registeredTreeProviders,
     diagnosticCollections,
     outputChannels,
     statusBarItems,
@@ -284,6 +306,8 @@ it('activate registers commands, providers, status bar and diagnostics', async (
       ],
     )
     assert.equal(state.registeredProviders.length, 7)
+    assert.equal(state.registeredTreeProviders.length, 1)
+    assert.equal(state.registeredTreeProviders[0].viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)

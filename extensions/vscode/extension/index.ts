@@ -44,6 +44,9 @@ import {
   WeappViteVueCompletionProvider,
 } from './providers'
 import {
+  WeappVitePagesTreeProvider,
+} from './tree'
+import {
   getCurrentPageRouteCandidate,
   getMissingAppJsonPageRoutes,
   getProjectContext,
@@ -145,6 +148,7 @@ export function activate(context: any) {
   const packageJsonCompletionProvider = new WeappVitePackageJsonCompletionProvider()
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
+  const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const state = {
     getOutputChannel,
     terminalCache: undefined,
@@ -171,6 +175,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.openProjectFile', () => openProjectFile(state)),
     vscode.commands.registerCommand('weapp-vite.copyCurrentPageRoute', () => copyCurrentPageRoute(state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
+    vscode.window.registerTreeDataProvider('weapp-vite.pages', pagesTreeProvider),
     vscode.languages.registerCodeActionsProvider(
       [
         { language: 'json', scheme: 'file' },
@@ -234,13 +239,16 @@ export function activate(context: any) {
     ),
     vscode.window.onDidChangeActiveTextEditor(() => {
       void refreshStatusBar()
+      pagesTreeProvider.refresh()
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       void refreshStatusBar()
+      pagesTreeProvider.refresh()
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('weapp-vite')) {
         void refreshStatusBar()
+        pagesTreeProvider.refresh()
 
         for (const document of vscode.workspace.textDocuments) {
           refreshPackageJsonDiagnostics(document)
@@ -265,16 +273,20 @@ export function activate(context: any) {
       if (document.fileName.endsWith('package.json') || VITE_CONFIG_FILE_PATTERN.test(document.fileName)) {
         void refreshStatusBar()
       }
+
+      pagesTreeProvider.refresh()
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
       refreshPackageJsonDiagnostics(document)
       void refreshAppJsonDiagnostics(document)
       void refreshVuePageDiagnostics(document)
+      pagesTreeProvider.refresh()
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
       refreshPackageJsonDiagnostics(event.document)
       void refreshAppJsonDiagnostics(event.document)
       void refreshVuePageDiagnostics(event.document)
+      pagesTreeProvider.refresh()
     }),
   ]
 

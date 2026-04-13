@@ -76,3 +76,13 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
   assert.equal(properties['weapp-vite.enableCompletion'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)
 })
+
+it('manifest contributes pages explorer view', () => {
+  assert.deepEqual(packageJson.contributes.views.explorer, [
+    {
+      id: 'weapp-vite.pages',
+      name: 'weapp-vite Pages',
+      when: 'workspaceFolderCount > 0',
+    },
+  ])
+})

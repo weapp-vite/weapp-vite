@@ -250,6 +250,15 @@
         }
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "weapp-vite.pages",
+          "name": "weapp-vite Pages",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
     "menus": {
       "commandPalette": [
         {
