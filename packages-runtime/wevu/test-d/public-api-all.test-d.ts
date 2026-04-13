@@ -55,6 +55,7 @@ import type {
   VNode,
   VNodeProps,
   WeappIntrinsicElementBaseAttributes,
+  WevuComponentConstructor,
   WevuPlugin,
   WevuTypedRouterRouteMap,
 } from 'wevu'
@@ -205,6 +206,7 @@ type MissingMacroApi = Exclude<ScriptSetupMacroApiName, keyof typeof wevu>
 
 expectType<never>({} as MissingRuntimeApi)
 expectType<never>({} as MissingMacroApi)
+expectType<WevuComponentConstructor<any, any, any, any, any> | null>(null)
 declare const compilerEntry: CompilerEntry
 expectType<CompilerEntry>(compilerEntry)
 
