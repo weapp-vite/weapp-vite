@@ -60,6 +60,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     buildAppJsonDiagnostics,
     buildVuePageConfigConsistencyDiagnostics,
     buildVuePageDiagnostics,
+    getVuePageConfigDriftFields,
     getVuePageConfigConsistencyState,
     getVuePageTextWithSyncedDefinePageJsonField,
     getVuePageTextWithSyncedDefinePageJsonTitle,
@@ -363,6 +364,20 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '}',
     '</json>',
   ].join('\n'), 'enablePullDownRefresh')?.includes('enablePullDownRefresh: true'), true)
+  assert.deepEqual(getVuePageConfigDriftFields([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBarTitleText: \'Home\',',
+    '  navigationStyle: \'custom\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBarTitleText": "Index",',
+    '  "navigationStyle": "default"',
+    '}',
+    '</json>',
+  ].join('\n')), ['navigationBarTitleText', 'navigationStyle'])
 
   vi.doUnmock('vscode')
   vi.resetModules()

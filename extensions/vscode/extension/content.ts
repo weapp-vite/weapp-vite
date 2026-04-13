@@ -367,6 +367,30 @@ export function buildVuePageConfigConsistencyDiagnostics(document: any) {
   return diagnostics
 }
 
+export function getVuePageConfigDriftFields(documentText: string) {
+  const driftFields = []
+
+  for (const fieldDefinition of PAGE_CONFIG_SYNC_FIELDS) {
+    const state = getVuePageConfigConsistencyState(documentText, fieldDefinition.key)
+
+    if (!state || state.matches) {
+      continue
+    }
+
+    if (!state.hasDefinePageJson || !state.hasJsonBlock) {
+      continue
+    }
+
+    if (!state.definePageJsonValue && !state.jsonBlockValue) {
+      continue
+    }
+
+    driftFields.push(fieldDefinition.label)
+  }
+
+  return driftFields
+}
+
 export function getVuePageTextWithSyncedJsonField(documentText: string, field: string) {
   const fieldDefinition = getPageConfigFieldDefinition(field)
   const state = getVuePageConfigConsistencyState(documentText, field)

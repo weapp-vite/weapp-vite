@@ -1,6 +1,10 @@
+import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import vscode from 'vscode'
 
+import {
+  getVuePageConfigDriftFields,
+} from './content'
 import {
   getPrimaryWorkspaceFolder,
   getWeappPagesTreeSnapshot,
@@ -18,6 +22,7 @@ interface WeappPagesTreeGroupNode extends WeappPagesTreeBaseNode {
 
 interface WeappPagesTreePageNode extends WeappPagesTreeBaseNode {
   appJsonPath: string
+  driftFields: string[]
   current: boolean
   kind: 'page'
   pageFilePath: string | null
@@ -36,6 +41,20 @@ function getPageNodeDescription(pageFilePath: string | null, workspacePath: stri
   return path.relative(workspacePath, pageFilePath)
 }
 
+async function getPageDriftFields(pageFilePath: string | null) {
+  if (!pageFilePath || path.extname(pageFilePath) !== '.vue') {
+    return []
+  }
+
+  try {
+    const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(pageFilePath))
+    return getVuePageConfigDriftFields(Buffer.from(bytes).toString('utf8'))
+  }
+  catch {
+    return []
+  }
+}
+
 function createPageNode(
   route: string,
   pageFilePath: string | null,
@@ -43,19 +62,25 @@ function createPageNode(
   workspacePath: string,
   status: WeappPagesTreePageNode['status'],
   current: boolean,
+  driftFields: string[],
 ): WeappPagesTreeNode {
   return {
     kind: 'page',
     label: route,
     appJsonPath,
+    driftFields,
     current,
     description: getPageNodeDescription(pageFilePath, workspacePath),
     pageFilePath,
     route,
     status,
-    tooltip: pageFilePath
-      ? `route: ${route}\n页面文件: ${path.relative(workspacePath, pageFilePath)}`
-      : `route: ${route}\n页面文件缺失，点击后打开 app.json`,
+    tooltip: [
+      `route: ${route}`,
+      pageFilePath
+        ? `页面文件: ${path.relative(workspacePath, pageFilePath)}`
+        : '页面文件缺失，点击后打开 app.json',
+      driftFields.length > 0 ? `配置漂移: ${driftFields.join(', ')}` : '',
+    ].filter(Boolean).join('\n'),
   }
 }
 
@@ -101,17 +126,19 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
         arguments: [targetUri],
       }
       item.description = element.current
-        ? [element.description, '当前页面'].filter(Boolean).join(' · ')
-        : element.description
+        ? [element.description, element.driftFields.length > 0 ? '配置漂移' : '', '当前页面'].filter(Boolean).join(' · ')
+        : [element.description, element.driftFields.length > 0 ? '配置漂移' : ''].filter(Boolean).join(' · ')
       item.contextValue = `weappPage.${element.status}`
       item.iconPath = element.current
         ? new vscode.ThemeIcon('target')
         : new vscode.ThemeIcon(
-            element.status === 'missing'
-              ? 'warning'
-              : element.status === 'unregistered'
-                ? 'circle-outline'
-                : 'file',
+            element.driftFields.length > 0
+              ? 'alert'
+              : element.status === 'missing'
+                ? 'warning'
+                : element.status === 'unregistered'
+                  ? 'circle-outline'
+                  : 'file',
           )
       item.resourceUri = element.pageFilePath ? targetUri : undefined
       item.tooltip = element.tooltip
@@ -143,11 +170,12 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
     const workspacePath = snapshot.workspaceFolder.uri.fsPath
     const rootNodes: WeappPagesTreeNode[] = []
     this.pageNodesByRoute.clear()
-    const createTrackedPageNode = (
+    const createTrackedPageNode = async (
       route: string,
       pageFilePath: string | null,
       status: WeappPagesTreePageNode['status'],
     ) => {
+      const driftFields = await getPageDriftFields(pageFilePath)
       const node = createPageNode(
         route,
         pageFilePath,
@@ -155,6 +183,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
         workspacePath,
         status,
         route === this.currentRoute,
+        driftFields,
       ) as WeappPagesTreePageNode
 
       this.pageNodesByRoute.set(route, node)
@@ -165,26 +194,28 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       kind: 'group',
       label: 'App Pages',
       description: `${snapshot.topLevelPages.length} 个页面`,
-      children: snapshot.topLevelPages.map(page => createTrackedPageNode(
+      children: await Promise.all(snapshot.topLevelPages.map(async page => createTrackedPageNode(
         page.route,
         page.pageFilePath,
         page.pageFilePath ? 'exists' : 'missing',
-      )),
+      ))),
     })
 
     rootNodes.push({
       kind: 'group',
       label: 'Subpackages',
       description: `${snapshot.subpackages.length} 个分包`,
-      children: snapshot.subpackages.map(subPackage => ({
-        kind: 'subpackage',
-        label: subPackage.root,
-        description: `${subPackage.pages.length} 个页面`,
-        children: subPackage.pages.map(page => createTrackedPageNode(
-          page.route,
-          page.pageFilePath,
-          page.pageFilePath ? 'exists' : 'missing',
-        )),
+      children: await Promise.all(snapshot.subpackages.map(async (subPackage) => {
+        return {
+          kind: 'subpackage',
+          label: subPackage.root,
+          description: `${subPackage.pages.length} 个页面`,
+          children: await Promise.all(subPackage.pages.map(async page => createTrackedPageNode(
+            page.route,
+            page.pageFilePath,
+            page.pageFilePath ? 'exists' : 'missing',
+          ))),
+        }
       })),
     })
 
@@ -193,11 +224,11 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
         kind: 'group',
         label: 'Unregistered Pages',
         description: `${snapshot.unregisteredPages.length} 个页面`,
-        children: snapshot.unregisteredPages.map(page => createTrackedPageNode(
+        children: await Promise.all(snapshot.unregisteredPages.map(async page => createTrackedPageNode(
           page.route,
           page.pageFilePath,
           'unregistered',
-        )),
+        ))),
       })
     }
 

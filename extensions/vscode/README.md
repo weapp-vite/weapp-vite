@@ -114,6 +114,7 @@
 - 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`
 - `weapp-vite Pages` 视图右键可直接执行页面修复动作，包括创建缺失页面、把未声明页面加入 `app.json`、定位声明和复制 route
 - `weapp-vite Pages` 视图会自动跟随当前活动页面，并在树节点上标记当前页面和页面状态，减少手动查找
+- 当页面 `definePageJson` 与 `<json>` 存在配置漂移时，`weapp-vite Pages` 也会直接在节点上标记出来
 - 在页面文件中执行 `weapp-vite: Copy Current Page Route`，快速复制当前页面 route
 - 在页面文件中执行 `weapp-vite: Reveal Current Page In app.json`，直接跳到 `app.json` 中的声明位置
 - 在 `app.json` 的缺失页面路由上执行 `weapp-vite: Create Page From Route`，直接生成对应 `.vue` 页面骨架
