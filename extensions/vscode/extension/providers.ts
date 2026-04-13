@@ -18,6 +18,7 @@ import {
   getPackageJsonScriptHover,
   getViteConfigHover,
   getVueCustomBlockHover,
+  getVuePageConfigHover,
 } from './content'
 import {
   getDefinePageJsonCompletionContext,
@@ -615,7 +616,7 @@ export class WeappViteHoverProvider {
     }
 
     if (isVueDocument(document)) {
-      const markdown = getVueCustomBlockHover(lineText)
+      const markdown = getVueCustomBlockHover(lineText) ?? getVuePageConfigHover(wordText, lineText)
 
       if (markdown) {
         return new vscode.Hover(markdown)

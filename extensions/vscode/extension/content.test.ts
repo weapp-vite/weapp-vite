@@ -153,3 +153,32 @@ it('builds app.json route hover for missing page files', async () => {
   vi.doUnmock('vscode')
   vi.resetModules()
 })
+
+it('builds definePageJson hover for vue page config keys', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        MarkdownString: class {
+          value
+
+          constructor(value: string) {
+            this.value = value
+          }
+        },
+      },
+    }
+  })
+  vi.resetModules()
+
+  const {
+    getVuePageConfigHover,
+  } = await import('./content')
+  const definePageJsonHover = getVuePageConfigHover('definePageJson', 'definePageJson({')
+  const fieldHover = getVuePageConfigHover('navigationBarTitleText', '  navigationBarTitleText: \'Demo\',')
+
+  assert.equal(definePageJsonHover?.value.includes('definePageJson 页面配置'), true)
+  assert.equal(fieldHover?.value.includes('设置当前页面的导航栏标题文本。'), true)
+
+  vi.doUnmock('vscode')
+  vi.resetModules()
+})

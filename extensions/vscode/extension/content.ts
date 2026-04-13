@@ -20,6 +20,15 @@ import {
   getMissingCommonScripts,
 } from './logic'
 
+const PAGE_CONFIG_FIELD_DESCRIPTIONS: Record<string, string> = {
+  navigationBarTitleText: '设置当前页面的导航栏标题文本。',
+  enablePullDownRefresh: '控制当前页面是否启用下拉刷新。',
+  backgroundColor: '设置窗口的背景色。',
+  backgroundTextStyle: '设置下拉刷新区域的文本样式，可选 dark / light。',
+  navigationStyle: '设置导航栏样式，可选 default / custom。',
+  disableScroll: '设置页面是否整体禁止滚动。',
+}
+
 export function getJsonBlockSnippet() {
   return [
     '<json lang="jsonc">',
@@ -296,6 +305,32 @@ export function getVueCustomBlockHover(lineText: string) {
     '该块通常用于放置页面或组件对应的小程序 JSON 配置。',
     '',
     '建议使用 `lang="jsonc"` 以便保留注释。',
+  ].join('\n'))
+}
+
+export function getVuePageConfigHover(wordRangeText: string, lineText: string) {
+  if (wordRangeText === 'definePageJson' || lineText.includes('definePageJson(')) {
+    return new vscode.MarkdownString([
+      '**definePageJson 页面配置**',
+      '',
+      '用于在页面脚本中声明小程序页面配置。',
+      '',
+      '适合与 `<script setup lang="ts">` 配合使用。',
+    ].join('\n'))
+  }
+
+  const fieldDescription = PAGE_CONFIG_FIELD_DESCRIPTIONS[wordRangeText]
+
+  if (!fieldDescription) {
+    return null
+  }
+
+  return new vscode.MarkdownString([
+    `**${wordRangeText}**`,
+    '',
+    fieldDescription,
+    '',
+    '可用于 `definePageJson({...})` 或页面 `<json>` 配置块。',
   ].join('\n'))
 }
 
