@@ -509,3 +509,240 @@ it('resolves page node by route after refresh', async () => {
   assert.equal(pageNode?.route, 'pages/home/index')
   assert.equal(pageNode?.contextValue, 'weappPage.exists')
 })
+
+it('filters current page nodes in tree', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        EventEmitter: class {
+          event = () => ({ dispose() {} })
+          fire() {}
+          dispose() {}
+        },
+        TreeItem: class {
+          label
+          collapsibleState
+
+          constructor(label: string, collapsibleState: number) {
+            this.label = label
+            this.collapsibleState = collapsibleState
+          }
+        },
+        ThemeIcon: class {
+          id
+
+          constructor(id: string) {
+            this.id = id
+          }
+        },
+        TreeItemCollapsibleState: {
+          None: 0,
+          Expanded: 2,
+        },
+        Uri: {
+          file(fsPath: string) {
+            return { fsPath, path: fsPath }
+          },
+        },
+        workspace: {
+          fs: {
+            readFile: async () => Buffer.from(''),
+          },
+        },
+      },
+    }
+  })
+  vi.doMock('./workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async () => {
+        return {
+          appJsonPath: '/workspace/src/app.json',
+          subpackages: [
+            {
+              root: 'packageA',
+              pages: [
+                {
+                  pageFilePath: '/workspace/src/packageA/detail/index.vue',
+                  route: 'packageA/detail/index',
+                },
+              ],
+            },
+          ],
+          topLevelPages: [
+            {
+              pageFilePath: '/workspace/src/pages/home/index.vue',
+              route: 'pages/home/index',
+            },
+          ],
+          unregisteredPages: [
+            {
+              pageFilePath: '/workspace/src/pages/extra/index.vue',
+              route: 'pages/extra/index',
+            },
+          ],
+          workspaceFolder: {
+            uri: {
+              fsPath: '/workspace',
+            },
+          },
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+
+  provider.setCurrentRoute('packageA/detail/index')
+  provider.setFilterMode('current')
+  const rootNodes = await provider.getChildren()
+
+  assert.equal(rootNodes.length, 1)
+  assert.equal(rootNodes[0].label, 'Subpackages')
+  assert.equal(rootNodes[0].description, '1 个分包')
+
+  const subpackages = await provider.getChildren(rootNodes[0])
+
+  assert.equal(subpackages.length, 1)
+  assert.equal(subpackages[0].label, 'packageA')
+})
+
+it('filters problem and drift page nodes in tree', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        EventEmitter: class {
+          event = () => ({ dispose() {} })
+          fire() {}
+          dispose() {}
+        },
+        TreeItem: class {
+          label
+          collapsibleState
+
+          constructor(label: string, collapsibleState: number) {
+            this.label = label
+            this.collapsibleState = collapsibleState
+          }
+        },
+        ThemeIcon: class {
+          id
+
+          constructor(id: string) {
+            this.id = id
+          }
+        },
+        TreeItemCollapsibleState: {
+          None: 0,
+          Expanded: 2,
+        },
+        Uri: {
+          file(fsPath: string) {
+            return { fsPath, path: fsPath }
+          },
+        },
+        workspace: {
+          fs: {
+            readFile: async (uri: { fsPath: string }) => {
+              if (uri.fsPath.endsWith('/pages/drift/index.vue')) {
+                return Buffer.from([
+                  '<script setup lang="ts">',
+                  'definePageJson({',
+                  '  navigationBarTitleText: \'Drift\',',
+                  '})',
+                  '</script>',
+                  '<json lang="jsonc">',
+                  '{',
+                  '  "navigationBarTitleText": "Mismatch"',
+                  '}',
+                  '</json>',
+                ].join('\n'))
+              }
+
+              return Buffer.from('')
+            },
+          },
+        },
+      },
+    }
+  })
+  vi.doMock('./workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async () => {
+        return {
+          appJsonPath: '/workspace/src/app.json',
+          subpackages: [],
+          topLevelPages: [
+            {
+              pageFilePath: '/workspace/src/pages/ok/index.vue',
+              route: 'pages/ok/index',
+            },
+            {
+              pageFilePath: '/workspace/src/pages/drift/index.vue',
+              route: 'pages/drift/index',
+            },
+            {
+              pageFilePath: null,
+              route: 'pages/missing/index',
+            },
+          ],
+          unregisteredPages: [
+            {
+              pageFilePath: '/workspace/src/pages/extra/index.vue',
+              route: 'pages/extra/index',
+            },
+          ],
+          workspaceFolder: {
+            uri: {
+              fsPath: '/workspace',
+            },
+          },
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+
+  provider.setFilterMode('problems')
+  const problemGroups = await provider.getChildren()
+
+  assert.equal(problemGroups.length, 2)
+  assert.equal(problemGroups[0].label, 'App Pages')
+  assert.equal(problemGroups[0].description, '2 个页面')
+  assert.equal(problemGroups[1].label, 'Unregistered Pages')
+
+  const problemPages = await provider.getChildren(problemGroups[0])
+
+  assert.deepEqual(problemPages.map(page => page.label), [
+    'pages/missing/index',
+    'pages/drift/index',
+  ])
+
+  provider.setFilterMode('drift')
+  const driftGroups = await provider.getChildren()
+  const driftPages = await provider.getChildren(driftGroups[0])
+
+  assert.equal(driftGroups.length, 1)
+  assert.equal(driftGroups[0].label, 'App Pages')
+  assert.deepEqual(driftPages.map(page => page.label), [
+    'pages/drift/index',
+  ])
+})

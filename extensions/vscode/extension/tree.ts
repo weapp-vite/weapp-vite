@@ -20,6 +20,8 @@ interface WeappPagesTreeGroupNode extends WeappPagesTreeBaseNode {
   kind: 'group' | 'subpackage'
 }
 
+export type WeappPagesTreeFilterMode = 'all' | 'current' | 'drift' | 'problems'
+
 interface WeappPagesTreePageNode extends WeappPagesTreeBaseNode {
   appJsonPath: string
   badges: string[]
@@ -177,6 +179,7 @@ function createPageNode(
 export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<WeappPagesTreeNode> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<WeappPagesTreeNode | undefined>()
   private currentRoute: string | null = null
+  private filterMode: WeappPagesTreeFilterMode = 'all'
   private pageNodesByRoute = new Map<string, WeappPagesTreePageNode>()
 
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event
@@ -193,6 +196,23 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
 
     this.currentRoute = route
     this.refresh()
+  }
+
+  setFilterMode(filterMode: WeappPagesTreeFilterMode) {
+    if (this.filterMode === filterMode) {
+      return
+    }
+
+    this.filterMode = filterMode
+    this.refresh()
+  }
+
+  clearFilterMode() {
+    this.setFilterMode('all')
+  }
+
+  getFilterMode() {
+    return this.filterMode
   }
 
   getPageNodeByRoute(route: string) {
@@ -278,47 +298,89 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       this.pageNodesByRoute.set(route, node)
       return node
     }
+    const filterPageNodes = <T extends WeappPagesTreePageNode>(nodes: T[]) => {
+      if (this.filterMode === 'all') {
+        return nodes
+      }
 
-    rootNodes.push({
-      kind: 'group',
-      label: 'App Pages',
-      description: `${snapshot.topLevelPages.length} 个页面`,
-      children: sortPageNodes(await Promise.all(snapshot.topLevelPages.map(async page => createTrackedPageNode(
+      return nodes.filter((node) => {
+        if (this.filterMode === 'current') {
+          return node.current
+        }
+
+        if (this.filterMode === 'drift') {
+          return node.driftFields.length > 0
+        }
+
+        return node.baseStatus !== 'exists' || node.driftFields.length > 0
+      })
+    }
+    const createPageGroupNode = (label: string, descriptionLabel: string, children: WeappPagesTreePageNode[]): WeappPagesTreeGroupNode | null => {
+      const filteredChildren = sortPageNodes(filterPageNodes(children))
+
+      if (filteredChildren.length === 0) {
+        return null
+      }
+
+      return {
+        kind: 'group',
+        label,
+        description: `${filteredChildren.length} 个${descriptionLabel}`,
+        children: filteredChildren,
+      }
+    }
+    const topLevelPages = await Promise.all(snapshot.topLevelPages.map(async page => createTrackedPageNode(
+      page.route,
+      page.pageFilePath,
+      page.pageFilePath ? 'exists' : 'missing',
+    )))
+
+    const appPagesGroup = createPageGroupNode('App Pages', '页面', topLevelPages)
+
+    if (appPagesGroup) {
+      rootNodes.push(appPagesGroup)
+    }
+
+    const subpackageNodes = (await Promise.all(snapshot.subpackages.map(async (subPackage) => {
+      const pages = await Promise.all(subPackage.pages.map(async page => createTrackedPageNode(
         page.route,
         page.pageFilePath,
         page.pageFilePath ? 'exists' : 'missing',
-      )))),
-    })
+      )))
+      const filteredChildren = sortPageNodes(filterPageNodes(pages))
 
-    rootNodes.push({
-      kind: 'group',
-      label: 'Subpackages',
-      description: `${snapshot.subpackages.length} 个分包`,
-      children: await Promise.all(snapshot.subpackages.map(async (subPackage) => {
-        return {
-          kind: 'subpackage',
-          label: subPackage.root,
-          description: `${subPackage.pages.length} 个页面`,
-          children: sortPageNodes(await Promise.all(subPackage.pages.map(async page => createTrackedPageNode(
-            page.route,
-            page.pageFilePath,
-            page.pageFilePath ? 'exists' : 'missing',
-          )))),
-        }
-      })),
-    })
+      if (filteredChildren.length === 0) {
+        return null
+      }
 
-    if (snapshot.unregisteredPages.length > 0) {
+      return {
+        kind: 'subpackage',
+        label: subPackage.root,
+        description: `${filteredChildren.length} 个页面`,
+        children: filteredChildren,
+      } satisfies WeappPagesTreeGroupNode
+    }))).filter(Boolean) as WeappPagesTreeGroupNode[]
+
+    if (subpackageNodes.length > 0) {
       rootNodes.push({
         kind: 'group',
-        label: 'Unregistered Pages',
-        description: `${snapshot.unregisteredPages.length} 个页面`,
-        children: sortPageNodes(await Promise.all(snapshot.unregisteredPages.map(async page => createTrackedPageNode(
-          page.route,
-          page.pageFilePath,
-          'unregistered',
-        )))),
+        label: 'Subpackages',
+        description: `${subpackageNodes.length} 个分包`,
+        children: subpackageNodes,
       })
+    }
+
+    if (snapshot.unregisteredPages.length > 0) {
+      const unregisteredPages = await Promise.all(snapshot.unregisteredPages.map(async page => createTrackedPageNode(
+        page.route,
+        page.pageFilePath,
+        'unregistered',
+      )))
+      const unregisteredGroup = createPageGroupNode('Unregistered Pages', '页面', unregisteredPages)
+
+      if (unregisteredGroup) {
+        rootNodes.push(unregisteredGroup)
+      }
     }
 
     return rootNodes

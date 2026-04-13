@@ -81,6 +81,10 @@
     "onCommand:weapp-vite.revealCurrentPageInAppJson",
     "onCommand:weapp-vite.revealCurrentPageInPagesTree",
     "onCommand:weapp-vite.refreshPagesTree",
+    "onCommand:weapp-vite.filterProblemPagesInTree",
+    "onCommand:weapp-vite.filterCurrentPageInTree",
+    "onCommand:weapp-vite.filterDriftPagesInTree",
+    "onCommand:weapp-vite.clearPagesTreeFilter",
     "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
     "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
     "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
@@ -215,6 +219,26 @@
       {
         "command": "weapp-vite.refreshPagesTree",
         "title": "Refresh Pages Explorer",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.filterProblemPagesInTree",
+        "title": "Filter Problem Pages In Explorer",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.filterCurrentPageInTree",
+        "title": "Filter Current Page In Explorer",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.filterDriftPagesInTree",
+        "title": "Filter Drift Pages In Explorer",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.clearPagesTreeFilter",
+        "title": "Clear Pages Explorer Filter",
         "category": "weapp-vite"
       },
       {
@@ -400,6 +424,22 @@
         {
           "command": "weapp-vite.refreshPagesTree",
           "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.filterProblemPagesInTree",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.filterCurrentPageInTree",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.filterDriftPagesInTree",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.clearPagesTreeFilter",
+          "when": "workspaceFolderCount > 0"
         }
       ],
       "explorer/context": [
@@ -474,6 +514,26 @@
       "view/title": [
         {
           "command": "weapp-vite.refreshPagesTree",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
+        {
+          "command": "weapp-vite.filterProblemPagesInTree",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
+        {
+          "command": "weapp-vite.filterCurrentPageInTree",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
+        {
+          "command": "weapp-vite.filterDriftPagesInTree",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
+        {
+          "command": "weapp-vite.clearPagesTreeFilter",
           "group": "navigation",
           "when": "view == weapp-vite.pages"
         },

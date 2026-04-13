@@ -1,5 +1,8 @@
-import vscode from 'vscode'
+import type {
+  WeappPagesTreeFilterMode,
+} from './tree'
 
+import vscode from 'vscode'
 import {
   addCurrentPageToAppJson,
   addPageToAppJsonFromTreeItem,
@@ -182,6 +185,20 @@ async function refreshPagesTree(pagesTreeProvider: WeappVitePagesTreeProvider, p
   await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 }
 
+async function applyPagesTreeFilter(
+  pagesTreeProvider: WeappVitePagesTreeProvider,
+  pagesTreeView: any,
+  filterMode: WeappPagesTreeFilterMode,
+) {
+  pagesTreeProvider.setFilterMode(filterMode)
+  await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+}
+
+async function clearPagesTreeFilter(pagesTreeProvider: WeappVitePagesTreeProvider, pagesTreeView: any) {
+  pagesTreeProvider.clearFilterMode()
+  await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+}
+
 export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
@@ -226,6 +243,10 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInPagesTree', () => revealCurrentPageInPagesTree(pagesTreeProvider, pagesTreeView)),
     vscode.commands.registerCommand('weapp-vite.refreshPagesTree', () => refreshPagesTree(pagesTreeProvider, pagesTreeView)),
+    vscode.commands.registerCommand('weapp-vite.filterProblemPagesInTree', () => applyPagesTreeFilter(pagesTreeProvider, pagesTreeView, 'problems')),
+    vscode.commands.registerCommand('weapp-vite.filterCurrentPageInTree', () => applyPagesTreeFilter(pagesTreeProvider, pagesTreeView, 'current')),
+    vscode.commands.registerCommand('weapp-vite.filterDriftPagesInTree', () => applyPagesTreeFilter(pagesTreeProvider, pagesTreeView, 'drift')),
+    vscode.commands.registerCommand('weapp-vite.clearPagesTreeFilter', () => clearPagesTreeFilter(pagesTreeProvider, pagesTreeView)),
     vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.syncDefinePageJsonFromJsonInTreeItem', item => syncDefinePageJsonFromJsonInTreeItem(item)),
     vscode.commands.registerCommand('weapp-vite.syncJsonFromDefinePageJsonInTreeItem', item => syncJsonFromDefinePageJsonInTreeItem(item)),
