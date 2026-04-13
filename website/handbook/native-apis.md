@@ -179,4 +179,4 @@ export class LocationUnavailableError extends Error {}
 接下来你可以继续看：
 
 - [分包与包体策略](/handbook/subpackages)
-- [监控、埋点与线上可观测性](/handbook/observability)
+- [调试与排错（按层定位）](/handbook/debugging)
