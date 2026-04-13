@@ -30,6 +30,13 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
             this.collapsibleState = collapsibleState
           }
         },
+        ThemeIcon: class {
+          id
+
+          constructor(id: string) {
+            this.id = id
+          }
+        },
         TreeItemCollapsibleState: {
           None: 0,
           Expanded: 2,
@@ -111,11 +118,13 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
 
   assert.equal(appPageItem.command?.command, 'vscode.open')
   assert.equal(appPageItem.contextValue, 'weappPage.exists')
+  assert.equal(appPageItem.iconPath?.id, 'file')
 
   const missingPageItem = provider.getTreeItem(appPages[1])
 
   assert.equal(missingPageItem.command?.arguments?.[0]?.fsPath, '/workspace/src/app.json')
   assert.equal(missingPageItem.contextValue, 'weappPage.missing')
+  assert.equal(missingPageItem.iconPath?.id, 'warning')
 
   const subpackages = await provider.getChildren(rootNodes[1])
 
@@ -129,4 +138,85 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
   const unregisteredPageItem = provider.getTreeItem(unregisteredPages[0])
 
   assert.equal(unregisteredPageItem.contextValue, 'weappPage.unregistered')
+  assert.equal(unregisteredPageItem.iconPath?.id, 'circle-outline')
+})
+
+it('marks current page in pages tree', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        EventEmitter: class {
+          event = () => ({ dispose() {} })
+          fire() {}
+          dispose() {}
+        },
+        TreeItem: class {
+          label
+          collapsibleState
+
+          constructor(label: string, collapsibleState: number) {
+            this.label = label
+            this.collapsibleState = collapsibleState
+          }
+        },
+        ThemeIcon: class {
+          id
+
+          constructor(id: string) {
+            this.id = id
+          }
+        },
+        TreeItemCollapsibleState: {
+          None: 0,
+          Expanded: 2,
+        },
+        Uri: {
+          file(fsPath: string) {
+            return { fsPath, path: fsPath }
+          },
+        },
+      },
+    }
+  })
+  vi.doMock('./workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async () => {
+        return {
+          appJsonPath: '/workspace/src/app.json',
+          subpackages: [],
+          topLevelPages: [
+            {
+              pageFilePath: '/workspace/src/pages/home/index.vue',
+              route: 'pages/home/index',
+            },
+          ],
+          unregisteredPages: [],
+          workspaceFolder: {
+            uri: {
+              fsPath: '/workspace',
+            },
+          },
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+
+  provider.setCurrentRoute('pages/home/index')
+  const rootNodes = await provider.getChildren()
+  const appPages = await provider.getChildren(rootNodes[0])
+  const currentItem = provider.getTreeItem(appPages[0])
+
+  assert.equal(currentItem.description, 'src/pages/home/index.vue · 当前页面')
+  assert.equal(currentItem.iconPath?.id, 'target')
 })

@@ -144,6 +144,33 @@ async function refreshStatusBar() {
   statusBarItem.show()
 }
 
+async function syncPagesTreeState(pagesTreeProvider: WeappVitePagesTreeProvider, pagesTreeView: any, document = vscode.window.activeTextEditor?.document) {
+  const currentPageCandidate = await getCurrentPageRouteCandidate(document)
+  const currentRoute = currentPageCandidate?.route ?? null
+
+  pagesTreeProvider.setCurrentRoute(currentRoute)
+
+  if (!currentRoute) {
+    return
+  }
+
+  const pageNode = pagesTreeProvider.getPageNodeByRoute(currentRoute)
+
+  if (!pageNode) {
+    return
+  }
+
+  try {
+    await pagesTreeView.reveal(pageNode, {
+      expand: true,
+      focus: false,
+      select: true,
+    })
+  }
+  catch {
+  }
+}
+
 export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
@@ -153,6 +180,10 @@ export function activate(context: any) {
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
+  const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
+    showCollapseAll: true,
+    treeDataProvider: pagesTreeProvider,
+  })
   const state = {
     getOutputChannel,
     terminalCache: undefined,
@@ -183,7 +214,6 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.copyPageRouteFromTreeItem', item => copyPageRouteFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
-    vscode.window.registerTreeDataProvider('weapp-vite.pages', pagesTreeProvider),
     vscode.languages.registerCodeActionsProvider(
       [
         { language: 'json', scheme: 'file' },
@@ -247,16 +277,17 @@ export function activate(context: any) {
     ),
     vscode.window.onDidChangeActiveTextEditor(() => {
       void refreshStatusBar()
-      pagesTreeProvider.refresh()
+      void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => {
       void refreshStatusBar()
       pagesTreeProvider.refresh()
+      void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('weapp-vite')) {
         void refreshStatusBar()
-        pagesTreeProvider.refresh()
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
         for (const document of vscode.workspace.textDocuments) {
           refreshPackageJsonDiagnostics(document)
@@ -283,18 +314,27 @@ export function activate(context: any) {
       }
 
       pagesTreeProvider.refresh()
+      if (vscode.window.activeTextEditor?.document === document) {
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView, document)
+      }
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
       refreshPackageJsonDiagnostics(document)
       void refreshAppJsonDiagnostics(document)
       void refreshVuePageDiagnostics(document)
       pagesTreeProvider.refresh()
+      if (vscode.window.activeTextEditor?.document === document) {
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView, document)
+      }
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
       refreshPackageJsonDiagnostics(event.document)
       void refreshAppJsonDiagnostics(event.document)
       void refreshVuePageDiagnostics(event.document)
       pagesTreeProvider.refresh()
+      if (vscode.window.activeTextEditor?.document === event.document) {
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView, event.document)
+      }
     }),
   ]
 
@@ -303,13 +343,14 @@ export function activate(context: any) {
   disposables.push(statusBarItem)
 
   void refreshStatusBar()
+  void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
   for (const document of vscode.workspace.textDocuments) {
     refreshPackageJsonDiagnostics(document)
     void refreshAppJsonDiagnostics(document)
   }
 
-  context.subscriptions.push(...disposables, getOutputChannel(), getDiagnostics(), {
+  context.subscriptions.push(...disposables, pagesTreeView, getOutputChannel(), getDiagnostics(), {
     dispose() {
       state.terminalCache = undefined
       statusBarItem = undefined

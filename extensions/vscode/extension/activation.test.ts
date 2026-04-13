@@ -9,7 +9,7 @@ const extensionIndexUrl = pathToFileURL(path.resolve(__dirname, 'index.ts')).hre
 function createMockVscode() {
   const registeredCommands = []
   const registeredProviders = []
-  const registeredTreeProviders = []
+  const createdTreeViews = []
   const diagnosticCollections = []
   const outputChannels = []
   const statusBarItems = []
@@ -59,9 +59,15 @@ function createMockVscode() {
       showQuickPick: async () => undefined,
       showTextDocument: async () => undefined,
       setStatusBarMessage() {},
-      registerTreeDataProvider(viewId, provider) {
-        registeredTreeProviders.push({ provider, viewId })
-        return { dispose() {} }
+      createTreeView(viewId, options) {
+        const treeView = {
+          options,
+          reveal: async () => true,
+          viewId,
+          dispose() {},
+        }
+        createdTreeViews.push(treeView)
+        return treeView
       },
       onDidChangeActiveTextEditor(handler) {
         return { dispose() {}, handler }
@@ -221,6 +227,11 @@ function createMockVscode() {
         this.collapsibleState = collapsibleState
       }
     },
+    ThemeIcon: class {
+      constructor(id) {
+        this.id = id
+      }
+    },
     TreeItemCollapsibleState: {
       None: 0,
       Collapsed: 1,
@@ -232,7 +243,7 @@ function createMockVscode() {
     mockVscode,
     registeredCommands,
     registeredProviders,
-    registeredTreeProviders,
+    createdTreeViews,
     diagnosticCollections,
     outputChannels,
     statusBarItems,
@@ -310,8 +321,8 @@ it('activate registers commands, providers, status bar and diagnostics', async (
       ],
     )
     assert.equal(state.registeredProviders.length, 7)
-    assert.equal(state.registeredTreeProviders.length, 1)
-    assert.equal(state.registeredTreeProviders[0].viewId, 'weapp-vite.pages')
+    assert.equal(state.createdTreeViews.length, 1)
+    assert.equal(state.createdTreeViews[0].viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)
