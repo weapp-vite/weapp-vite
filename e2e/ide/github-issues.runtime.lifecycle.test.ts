@@ -198,6 +198,35 @@ async function waitForIssue418419Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function waitForIssue446Runtime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (
+        runtime?.ok
+        && runtime?.mounted
+        && runtime?.nativeAnchorReady
+        && runtime?.componentReady
+        && runtime?.componentSnapshot?.visible === true
+        && runtime?.componentSnapshot?.fooBar === 'issue-446-short-bind'
+      ) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
@@ -495,6 +524,43 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.descriptorConfigurable).toBe(true)
       expect(runtimeResult?.hasDataObject).toBe(true)
       expect(runtimeResult?.runtimeError).toBeNull()
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #446: keeps template refs and shortBind props available in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-446/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-446/index.js')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-446/index.json')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-446 template ref and shortBind')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('visible="{{visible}}"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('foo-bar="{{fooBar}}"')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('issue-446-short-bind')
+    expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"ShortBindProbe": "/components/issue-446/ShortBindProbe/index"')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-446/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-446 page')
+      }
+
+      const runtimeResult = await waitForIssue446Runtime(issuePage)
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.mounted).toBe(true)
+      expect(runtimeResult?.nativeAnchorReady).toBe(true)
+      expect(runtimeResult?.componentReady).toBe(true)
+      expect(runtimeResult?.shortBindVisible).toBe(true)
+      expect(runtimeResult?.shortBindFooBar).toBe('issue-446-short-bind')
+      expect(runtimeResult?.componentSnapshot).toEqual({
+        visible: true,
+        fooBar: 'issue-446-short-bind',
+        summary: 'visible:issue-446-short-bind',
+      })
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
