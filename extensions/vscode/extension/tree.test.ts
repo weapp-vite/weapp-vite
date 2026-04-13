@@ -116,17 +116,18 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
 
   const appPages = await provider.getChildren(rootNodes[0])
 
-  assert.equal(appPages[0].label, 'pages/home/index')
-  assert.equal(appPages[0].description, path.relative('/workspace', '/workspace/src/pages/home/index.vue'))
-  assert.equal(appPages[1].description, '缺少页面文件')
+  assert.equal(appPages[0].label, 'pages/missing/index')
+  assert.equal(appPages[0].description, '缺少页面文件')
+  assert.equal(appPages[1].label, 'pages/home/index')
+  assert.equal(appPages[1].description, path.relative('/workspace', '/workspace/src/pages/home/index.vue'))
 
-  const appPageItem = provider.getTreeItem(appPages[0])
+  const appPageItem = provider.getTreeItem(appPages[1])
 
   assert.equal(appPageItem.command?.command, 'vscode.open')
   assert.equal(appPageItem.contextValue, 'weappPage.exists')
   assert.equal(appPageItem.iconPath?.id, 'file')
 
-  const missingPageItem = provider.getTreeItem(appPages[1])
+  const missingPageItem = provider.getTreeItem(appPages[0])
 
   assert.equal(missingPageItem.command?.arguments?.[0]?.fsPath, '/workspace/src/app.json')
   assert.equal(missingPageItem.contextValue, 'weappPage.missing')
@@ -332,4 +333,94 @@ it('marks config drift pages in tree', async () => {
   assert.equal(item.iconPath?.id, 'alert')
   assert.equal(item.contextValue, 'weappPage.exists.drift')
   assert.equal(item.tooltip?.includes('配置漂移: navigationBarTitleText'), true)
+})
+
+it('prioritizes missing status over current state and sorts problem pages first', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        EventEmitter: class {
+          event = () => ({ dispose() {} })
+          fire() {}
+          dispose() {}
+        },
+        TreeItem: class {
+          label
+          collapsibleState
+
+          constructor(label: string, collapsibleState: number) {
+            this.label = label
+            this.collapsibleState = collapsibleState
+          }
+        },
+        ThemeIcon: class {
+          id
+
+          constructor(id: string) {
+            this.id = id
+          }
+        },
+        TreeItemCollapsibleState: {
+          None: 0,
+          Expanded: 2,
+        },
+        Uri: {
+          file(fsPath: string) {
+            return { fsPath, path: fsPath }
+          },
+        },
+        workspace: {
+          fs: {
+            readFile: async () => Buffer.from(''),
+          },
+        },
+      },
+    }
+  })
+  vi.doMock('./workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async () => {
+        return {
+          appJsonPath: '/workspace/src/app.json',
+          subpackages: [],
+          topLevelPages: [
+            {
+              pageFilePath: '/workspace/src/pages/ok/index.vue',
+              route: 'pages/ok/index',
+            },
+            {
+              pageFilePath: null,
+              route: 'pages/current-missing/index',
+            },
+          ],
+          unregisteredPages: [],
+          workspaceFolder: {
+            uri: {
+              fsPath: '/workspace',
+            },
+          },
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+
+  provider.setCurrentRoute('pages/current-missing/index')
+  const rootNodes = await provider.getChildren()
+  const appPages = await provider.getChildren(rootNodes[0])
+  const firstItem = provider.getTreeItem(appPages[0])
+
+  assert.equal(appPages[0].label, 'pages/current-missing/index')
+  assert.equal(firstItem.description, '缺少页面文件 · 当前页面')
+  assert.equal(firstItem.iconPath?.id, 'warning')
 })

@@ -116,6 +116,7 @@
 - `weapp-vite Pages` 视图会自动跟随当前活动页面，并在树节点上标记当前页面和页面状态，减少手动查找
 - 当页面 `definePageJson` 与 `<json>` 存在配置漂移时，`weapp-vite Pages` 也会直接在节点上标记出来
 - 对存在配置漂移的页面节点，可直接在 `weapp-vite Pages` 里右键执行整页同步，把 `<json>` 或 `definePageJson` 一次性同步到一致状态
+- 页面节点状态现在会按优先级组合展示，像“缺少页面文件 + 当前页面”这类复合状态会直接体现在节点描述和排序上
 - 在页面文件中执行 `weapp-vite: Copy Current Page Route`，快速复制当前页面 route
 - 在页面文件中执行 `weapp-vite: Reveal Current Page In app.json`，直接跳到 `app.json` 中的声明位置
 - 在 `app.json` 的缺失页面路由上执行 `weapp-vite: Create Page From Route`，直接生成对应 `.vue` 页面骨架
