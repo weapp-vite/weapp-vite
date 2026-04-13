@@ -6,6 +6,7 @@ import {
   applySuggestedScripts,
   getAppJsonRouteCompletionContext,
   getAppJsonRouteInsertText,
+  getCurrentPageRunActionItems,
   getMissingCommonScripts,
   getSuggestedScripts,
   getViteConfigObjectPath,
@@ -231,4 +232,30 @@ it('detects vue page config state from document text', () => {
     hasDefinePageJson: true,
     hasJsonBlock: true,
   })
+})
+
+it('prioritizes declared current page run actions', () => {
+  assert.deepEqual(getCurrentPageRunActionItems({
+    route: 'pages/home/index',
+    declared: true,
+    hasDefinePageJson: false,
+    hasJsonBlock: true,
+  }).map(item => item.commandId), [
+    'copyCurrentPageRoute',
+    'revealCurrentPageInAppJson',
+    'insertDefinePageJsonTemplate',
+  ])
+})
+
+it('prioritizes undeclared current page run actions', () => {
+  assert.deepEqual(getCurrentPageRunActionItems({
+    route: 'pages/about/index',
+    declared: false,
+    hasDefinePageJson: false,
+    hasJsonBlock: false,
+  }).map(item => item.commandId), [
+    'addCurrentPageToAppJson',
+    'insertDefinePageJsonTemplate',
+    'insertJsonBlockTemplate',
+  ])
 })

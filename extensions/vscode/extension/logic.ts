@@ -15,6 +15,20 @@ const DEFINE_PAGE_JSON_PATTERN = /\bdefinePageJson\s*\(/u
 const JSON_PROPERTY_PREFIX_PATTERN = /^\s*"[^"]*$/u
 const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
 
+export interface RunActionQuickPickItem {
+  label: string
+  description: string
+  detail: string
+  commandId: string
+}
+
+export interface CurrentPageActionContext {
+  route: string
+  declared: boolean
+  hasDefinePageJson: boolean
+  hasJsonBlock: boolean
+}
+
 export function getSuggestedScripts(preferWvAlias = true) {
   if (preferWvAlias) {
     return { ...SCRIPT_COMMAND_SUGGESTIONS }
@@ -147,6 +161,62 @@ export function getVuePageConfigState(documentText: string) {
     hasDefinePageJson: DEFINE_PAGE_JSON_PATTERN.test(documentText),
     hasJsonBlock: VUE_JSON_BLOCK_TAG_PATTERN.test(documentText),
   }
+}
+
+export function getCurrentPageRunActionItems(
+  currentPage: CurrentPageActionContext | null,
+): RunActionQuickPickItem[] {
+  if (!currentPage) {
+    return []
+  }
+
+  const items: RunActionQuickPickItem[] = []
+
+  if (!currentPage.declared) {
+    items.push({
+      label: '$(add) 将当前页面加入 app.json',
+      description: `当前页面路由 ${currentPage.route}`,
+      detail: '把当前活动页面文件写入顶层 pages 或匹配的分包 pages。',
+      commandId: 'addCurrentPageToAppJson',
+    })
+  }
+
+  if (currentPage.declared) {
+    items.push(
+      {
+        label: '$(clippy) 复制当前页面路由',
+        description: `当前页面路由 ${currentPage.route}`,
+        detail: '复制当前活动页面文件对应的 route。',
+        commandId: 'copyCurrentPageRoute',
+      },
+      {
+        label: '$(link-external) 在 app.json 中定位当前页面',
+        description: `当前页面已声明 ${currentPage.route}`,
+        detail: '打开 app.json 并定位到当前页面声明。',
+        commandId: 'revealCurrentPageInAppJson',
+      },
+    )
+  }
+
+  if (!currentPage.hasDefinePageJson) {
+    items.push({
+      label: '$(symbol-function) 插入 definePageJson 模板',
+      description: `为当前页面补齐页面配置 ${currentPage.route}`,
+      detail: '向当前 .vue 页面插入 definePageJson(...) 骨架。',
+      commandId: 'insertDefinePageJsonTemplate',
+    })
+  }
+
+  if (!currentPage.hasJsonBlock) {
+    items.push({
+      label: '$(json) 插入 <json> 模板',
+      description: `为当前页面补齐 <json> 配置块 ${currentPage.route}`,
+      detail: '向当前 .vue 页面插入 <json lang="jsonc"> 自定义块。',
+      commandId: 'insertJsonBlockTemplate',
+    })
+  }
+
+  return items
 }
 
 function normalizeRoute(route: string) {

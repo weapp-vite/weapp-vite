@@ -18,6 +18,8 @@ import {
 } from './content'
 import {
   applySuggestedScripts,
+  getCurrentPageRunActionItems,
+  getVuePageConfigState,
 } from './logic'
 import {
   getAppJsonRouteFileTarget,
@@ -394,29 +396,33 @@ export async function showCommandPalette(state: any) {
     }
   })
 
-  items.push(
-    {
-      label: '$(add) 将当前页面加入 app.json',
-      description: '把当前活动页面文件写入页面声明',
-      detail: '支持写入顶层 pages 或匹配的分包 pages。',
-      commandId: 'addCurrentPageToAppJson',
-    },
-    {
-      label: '$(clippy) 复制当前页面路由',
-      description: '复制当前活动页面文件对应的 route',
-      detail: '要求当前文件已在 app.json 中声明。',
-      commandId: 'copyCurrentPageRoute',
-    },
-    {
-      label: '$(link-external) 在 app.json 中定位当前页面',
-      description: '打开 app.json 并定位到当前页面声明',
-      detail: '要求当前文件已在 app.json 中声明。',
-      commandId: 'revealCurrentPageInAppJson',
-    },
+  const activeDocument = vscode.window.activeTextEditor?.document
+  const currentPageCandidate = activeDocument ? await getCurrentPageRouteCandidate(activeDocument) : null
+  const isVuePageDocument = Boolean(activeDocument && isVueDocument(activeDocument))
+  const currentPage = currentPageCandidate
+    ? {
+        route: currentPageCandidate.route,
+        declared: currentPageCandidate.declared,
+        ...(
+          isVuePageDocument
+            ? getVuePageConfigState(activeDocument.getText())
+            : {
+                hasDefinePageJson: true,
+                hasJsonBlock: true,
+              }
+        ),
+      }
+    : null
+
+  items.unshift(...getCurrentPageRunActionItems(currentPage))
+
+  const commonItems = [
     {
       label: '$(go-to-file) 打开关键文件 / 页面',
       description: '快速打开 vite.config、app.json、package.json 和页面文件',
-      detail: '从 weapp-vite 项目关键入口中直接跳转。',
+      detail: currentPage
+        ? `当前页面 ${currentPage.route}。从 weapp-vite 项目关键入口中直接跳转。`
+        : '从 weapp-vite 项目关键入口中直接跳转。',
       commandId: 'openProjectFile',
     },
     {
@@ -437,10 +443,20 @@ export async function showCommandPalette(state: any) {
       detail: '查看 weapp-vite 指南、generate 文档与扩展目录。',
       commandId: 'openDocs',
     },
-  )
+  ]
+
+  if (currentPage) {
+    items.push(commonItems[0])
+    items.push(...commonItems.slice(1))
+  }
+  else {
+    items.push(...commonItems)
+  }
 
   const selected = await vscode.window.showQuickPick(items, {
-    placeHolder: '选择要执行的 weapp-vite 操作',
+    placeHolder: currentPage
+      ? `选择当前页面 ${currentPage.route} 的 weapp-vite 操作`
+      : '选择要执行的 weapp-vite 操作',
   })
 
   if (!selected) {
@@ -464,6 +480,16 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'revealCurrentPageInAppJson') {
     await revealCurrentPageInAppJson(state)
+    return
+  }
+
+  if (selected.commandId === 'insertDefinePageJsonTemplate') {
+    await insertDefinePageJsonTemplate()
+    return
+  }
+
+  if (selected.commandId === 'insertJsonBlockTemplate') {
+    await insertJsonBlockTemplate()
     return
   }
 
