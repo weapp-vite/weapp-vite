@@ -7,6 +7,7 @@ import {
   getAppJsonRouteInsertText,
   getMissingCommonScripts,
   getSuggestedScripts,
+  getViteConfigObjectPath,
   resolveCommandFromScripts,
 } from './logic'
 
@@ -115,4 +116,23 @@ it('detects subpackage app json pages completion context', () => {
 it('normalizes route insert text for subpackage pages', () => {
   assert.equal(getAppJsonRouteInsertText('packageA/detail/index', 'packageA'), 'detail/index')
   assert.equal(getAppJsonRouteInsertText('pages/home/index', null), 'pages/home/index')
+})
+
+it('detects vite config object path inside weapp generate blocks', () => {
+  assert.deepEqual(getViteConfigObjectPath([
+    'export default defineConfig({',
+    '  weapp: {',
+    '    generate: {',
+    '      dirs: {',
+    '        component: \'src/components\',',
+  ].join('\n')), ['weapp', 'generate', 'dirs'])
+})
+
+it('detects vite config object path inside top level config object', () => {
+  assert.deepEqual(getViteConfigObjectPath([
+    'export default defineConfig({',
+    '  plugins: [',
+    '  ],',
+    '  ',
+  ].join('\n')), [])
 })

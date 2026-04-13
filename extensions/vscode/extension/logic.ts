@@ -7,6 +7,8 @@ const APP_JSON_ROUTE_VALUE_PREFIX_PATTERN = /^\s*"[^"]*$/u
 const APP_JSON_PAGES_ARRAY_LINE_PATTERN = /^\s*"pages"\s*:\s*\[\s*$/u
 const APP_JSON_SUBPACKAGES_LINE_PATTERN = /^\s*"(?:subPackages|subpackages)"\s*:\s*\[\s*$/u
 const APP_JSON_ROOT_LINE_PATTERN = /^\s*"root"\s*:\s*"([^"]+)"/u
+const TRAILING_COMMA_PATTERN = /,$/u
+const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
 
 export function getSuggestedScripts(preferWvAlias = true) {
   if (preferWvAlias) {
@@ -81,6 +83,29 @@ export function getAppJsonRouteInsertText(route: string, root: string | null) {
   }
 
   return normalizedRoute
+}
+
+export function getViteConfigObjectPath(textBeforeCursor: string) {
+  const lines = textBeforeCursor.split('\n')
+  const path = []
+  let depth = 0
+
+  for (let index = lines.length - 1; index >= 0; index--) {
+    const line = lines[index]
+    const normalizedLine = line.trim().replace(TRAILING_COMMA_PATTERN, '')
+    const depthBeforeLine = depth
+    const openCount = (line.match(/\{/g) ?? []).length
+    const closeCount = (line.match(/\}/g) ?? []).length
+    const propertyMatch = normalizedLine.match(VITE_CONFIG_PROPERTY_BLOCK_PATTERN)
+
+    depth += openCount - closeCount
+
+    if (propertyMatch && depth > depthBeforeLine) {
+      path.push(propertyMatch[1])
+    }
+  }
+
+  return path.reverse()
 }
 
 export function getMissingCommonScripts(packageJson: Record<string, any>) {
