@@ -67,6 +67,7 @@
     "onCommand:weapp-vite.insertDefineConfigTemplate",
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
+    "onCommand:weapp-vite.addCurrentPageToAppJson",
     "onCommand:weapp-vite.openDocs",
     "onCommand:weapp-vite.openProjectFile",
     "onCommand:weapp-vite.copyCurrentPageRoute",
@@ -132,6 +133,11 @@
       {
         "command": "weapp-vite.createPageFromRoute",
         "title": "Create Page From Route",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.addCurrentPageToAppJson",
+        "title": "Add Current Page To app.json",
         "category": "weapp-vite"
       },
       {
@@ -271,6 +277,10 @@
           "when": "resourceFilename == app.json"
         },
         {
+          "command": "weapp-vite.addCurrentPageToAppJson",
+          "when": "editorLangId == vue"
+        },
+        {
           "command": "weapp-vite.openDocs",
           "when": "true"
         },
@@ -324,6 +334,11 @@
           "command": "weapp-vite.createPageFromRoute",
           "group": "navigation",
           "when": "resourceFilename == app.json"
+        },
+        {
+          "command": "weapp-vite.addCurrentPageToAppJson",
+          "group": "navigation",
+          "when": "editorLangId == vue"
         },
         {
           "command": "weapp-vite.copyCurrentPageRoute",
@@ -395,12 +410,13 @@
           {
             "id": "weapp-vite.page-route-actions",
             "title": "处理当前页面路由",
-            "description": "运行 `weapp-vite: Copy Current Page Route` 或 `weapp-vite: Reveal Current Page In app.json`，快速复用当前页面声明。",
+            "description": "运行 `weapp-vite: Copy Current Page Route`、`weapp-vite: Reveal Current Page In app.json` 或 `weapp-vite: Add Current Page To app.json`，快速复用当前页面声明。",
             "media": {
               "image": "assets/logo.png",
               "altText": "weapp-vite"
             },
             "completionEvents": [
+              "onCommand:weapp-vite.addCurrentPageToAppJson",
               "onCommand:weapp-vite.copyCurrentPageRoute",
               "onCommand:weapp-vite.revealCurrentPageInAppJson"
             ]

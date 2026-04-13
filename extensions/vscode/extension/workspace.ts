@@ -10,6 +10,7 @@ import {
   WEAPP_VITE_SCRIPT_PATTERN,
 } from './constants'
 import {
+  applyPageRouteToAppJson,
   resolveCommandFromScripts,
 } from './logic'
 import {
@@ -413,6 +414,58 @@ export async function getCurrentPageRouteLocation(document = vscode.window.activ
   return {
     ...resolved,
     range,
+  }
+}
+
+export async function getCurrentPageRouteCandidate(document = vscode.window.activeTextEditor?.document) {
+  if (!document?.uri?.fsPath) {
+    return null
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return null
+  }
+
+  const relativePath = path.relative(path.dirname(appJsonPath), document.uri.fsPath)
+  const route = getRouteFromPageFilePath(relativePath)
+
+  if (!route) {
+    return null
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+  const existingRoutes = collectAppJsonPageRoutes(appJson ?? {})
+
+  return {
+    appJson,
+    appJsonPath,
+    declared: existingRoutes.includes(route),
+    route,
+    workspaceFolder,
+  }
+}
+
+export async function getAppJsonTextWithAddedRoute(document = vscode.window.activeTextEditor?.document) {
+  const candidate = await getCurrentPageRouteCandidate(document)
+
+  if (!candidate || !candidate.appJson || candidate.declared) {
+    return null
+  }
+
+  const result = applyPageRouteToAppJson(candidate.appJson, candidate.route)
+
+  if (!result.changed) {
+    return null
+  }
+
+  return {
+    ...candidate,
+    nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
+    packageLocation: result.packageLocation,
+    packageRoot: result.packageRoot,
   }
 }
 

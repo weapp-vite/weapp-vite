@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { it } from 'vitest'
 
 import {
+  applyPageRouteToAppJson,
   applySuggestedScripts,
   getAppJsonRouteCompletionContext,
   getAppJsonRouteInsertText,
@@ -135,4 +136,39 @@ it('detects vite config object path inside top level config object', () => {
     '  ],',
     '  ',
   ].join('\n')), [])
+})
+
+it('adds a top level page route to app json', () => {
+  const result = applyPageRouteToAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/about/index')
+
+  assert.equal(result.changed, true)
+  assert.equal(result.packageLocation, 'pages')
+  assert.deepEqual(result.appJson.pages, ['pages/home/index', 'pages/about/index'])
+})
+
+it('adds a subpackage page route to matching subpackage', () => {
+  const result = applyPageRouteToAppJson({
+    subPackages: [
+      {
+        root: 'packageA',
+        pages: ['home/index'],
+      },
+    ],
+  }, 'packageA/detail/index')
+
+  assert.equal(result.changed, true)
+  assert.equal(result.packageLocation, 'subPackages')
+  assert.equal(result.packageRoot, 'packageA')
+  assert.deepEqual(result.appJson.subPackages[0].pages, ['home/index', 'detail/index'])
+})
+
+it('does not duplicate an existing page route in app json', () => {
+  const result = applyPageRouteToAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/home/index')
+
+  assert.equal(result.changed, false)
+  assert.deepEqual(result.appJson.pages, ['pages/home/index'])
 })

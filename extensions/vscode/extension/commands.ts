@@ -20,6 +20,8 @@ import {
 } from './logic'
 import {
   getAppJsonRouteFileTarget,
+  getAppJsonTextWithAddedRoute,
+  getCurrentPageRouteCandidate,
   getCurrentPageRouteLocation,
   getEditor,
   getPrimaryWorkspaceFolder,
@@ -327,6 +329,41 @@ export async function createPageFromRoute(editorOrDocument: any, route?: string)
   void vscode.window.showInformationMessage(`weapp-vite: 已创建页面 ${route}`)
 }
 
+export async function addCurrentPageToAppJson(state: any) {
+  const result = await getAppJsonTextWithAddedRoute()
+
+  if (!result) {
+    const candidate = await getCurrentPageRouteCandidate()
+
+    if (!candidate) {
+      void vscode.window.showWarningMessage('weapp-vite: 当前文件无法识别为可加入 app.json 的页面。')
+      return
+    }
+
+    if (candidate.declared) {
+      void vscode.window.showInformationMessage(`weapp-vite: 页面已存在于 app.json 中 ${candidate.route}`)
+      return
+    }
+
+    void vscode.window.showWarningMessage('weapp-vite: 当前页面无法写入 app.json。')
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(result.appJsonPath))
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+  const edit = new vscode.WorkspaceEdit()
+
+  edit.replace(document.uri, fullRange, result.nextText)
+  await vscode.workspace.applyEdit(edit)
+  await document.save()
+  state.getOutputChannel().appendLine(`[route] add ${result.route}`)
+  void vscode.window.showInformationMessage(`weapp-vite: 已将页面加入 app.json ${result.route}`)
+  await vscode.window.showTextDocument(document, { preview: false })
+}
+
 export async function showCommandPalette(state: any) {
   const context = await ensureProjectContext('打开命令面板')
 
@@ -346,6 +383,12 @@ export async function showCommandPalette(state: any) {
   })
 
   items.push(
+    {
+      label: '$(add) 将当前页面加入 app.json',
+      description: '把当前活动页面文件写入页面声明',
+      detail: '支持写入顶层 pages 或匹配的分包 pages。',
+      commandId: 'addCurrentPageToAppJson',
+    },
     {
       label: '$(clippy) 复制当前页面路由',
       description: '复制当前活动页面文件对应的 route',
@@ -399,6 +442,11 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'copyCurrentPageRoute') {
     await copyCurrentPageRoute(state)
+    return
+  }
+
+  if (selected.commandId === 'addCurrentPageToAppJson') {
+    await addCurrentPageToAppJson(state)
     return
   }
 

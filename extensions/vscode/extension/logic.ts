@@ -108,6 +108,102 @@ export function getViteConfigObjectPath(textBeforeCursor: string) {
   return path.reverse()
 }
 
+function normalizeRoute(route: string) {
+  return route.trim().replace(/^\/+|\/+$/g, '')
+}
+
+function findMatchingSubPackage(
+  subPackages: Array<Record<string, any>>,
+  route: string,
+) {
+  const normalizedRoute = normalizeRoute(route)
+  let matched: Record<string, any> | null = null
+  let matchedRootLength = -1
+
+  for (const subPackage of subPackages) {
+    if (!subPackage || typeof subPackage !== 'object' || typeof subPackage.root !== 'string') {
+      continue
+    }
+
+    const root = normalizeRoute(subPackage.root)
+
+    if (!root) {
+      continue
+    }
+
+    if (normalizedRoute === root || normalizedRoute.startsWith(`${root}/`)) {
+      if (root.length > matchedRootLength) {
+        matched = subPackage
+        matchedRootLength = root.length
+      }
+    }
+  }
+
+  return matched
+}
+
+export function applyPageRouteToAppJson(appJson: Record<string, any>, route: string) {
+  const normalizedRoute = normalizeRoute(route)
+
+  if (!normalizedRoute) {
+    return {
+      changed: false,
+      packageLocation: 'pages' as const,
+      packageRoot: null,
+      appJson,
+    }
+  }
+
+  const nextAppJson = { ...appJson }
+  const originalPages = Array.isArray(nextAppJson.pages) ? nextAppJson.pages : []
+  const lowerSubPackages = Array.isArray(nextAppJson.subpackages) ? nextAppJson.subpackages : []
+  const upperSubPackages = Array.isArray(nextAppJson.subPackages) ? nextAppJson.subPackages : []
+  const allSubPackages = [...upperSubPackages, ...lowerSubPackages]
+  const matchedSubPackage = findMatchingSubPackage(allSubPackages, normalizedRoute)
+
+  if (matchedSubPackage) {
+    const packageRoot = normalizeRoute(matchedSubPackage.root)
+    const relativeRoute = normalizedRoute.slice(packageRoot.length + 1)
+    const existingPages = Array.isArray(matchedSubPackage.pages) ? matchedSubPackage.pages : []
+
+    if (existingPages.includes(relativeRoute)) {
+      return {
+        changed: false,
+        packageLocation: 'subPackages' as const,
+        packageRoot,
+        appJson: nextAppJson,
+      }
+    }
+
+    matchedSubPackage.pages = [...existingPages, relativeRoute]
+
+    return {
+      changed: true,
+      packageLocation: 'subPackages' as const,
+      packageRoot,
+      appJson: nextAppJson,
+    }
+  }
+
+  if (originalPages.includes(normalizedRoute)) {
+    return {
+      changed: false,
+      packageLocation: 'pages' as const,
+      packageRoot: null,
+      appJson: nextAppJson,
+    }
+  }
+
+  nextAppJson.pages = [...originalPages, normalizedRoute]
+
+  return {
+    changed: true,
+    packageLocation: 'pages' as const,
+    packageRoot: null,
+    appJson: nextAppJson,
+  }
+}
+
 export function getMissingCommonScripts(packageJson: Record<string, any>) {
   const scripts = typeof packageJson?.scripts === 'object' && packageJson.scripts
     ? packageJson.scripts

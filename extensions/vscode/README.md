@@ -84,6 +84,7 @@
 - `weapp-vite: Copy Current Page Route`
 - `weapp-vite: Reveal Current Page In app.json`
 - `weapp-vite: Create Page From Route`
+- `weapp-vite: Add Current Page To app.json`
 
 扩展会按以下顺序解析命令：
 
@@ -109,6 +110,7 @@
 - 在页面文件中执行 `weapp-vite: Copy Current Page Route`，快速复制当前页面 route
 - 在页面文件中执行 `weapp-vite: Reveal Current Page In app.json`，直接跳到 `app.json` 中的声明位置
 - 在 `app.json` 的缺失页面路由上执行 `weapp-vite: Create Page From Route`，直接生成对应 `.vue` 页面骨架
+- 在页面文件中执行 `weapp-vite: Add Current Page To app.json`，直接把当前页面加入顶层或匹配的分包页面声明
 - 在 `app.json` 的 `pages` / `subPackages` / `subpackages` 中补全已有页面 route，减少手动输入和路径拼写错误
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断

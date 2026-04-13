@@ -1,6 +1,7 @@
 import vscode from 'vscode'
 
 import {
+  addCurrentPageToAppJson,
   copyCurrentPageRoute,
   createPageFromRoute,
   insertCommonScripts,
@@ -134,6 +135,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.insertDefineConfigTemplate', () => insertDefineConfigTemplate()),
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.createPageFromRoute', (document, route) => createPageFromRoute(document, route)),
+    vscode.commands.registerCommand('weapp-vite.addCurrentPageToAppJson', () => addCurrentPageToAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.openDocs', () => openDocumentation()),
     vscode.commands.registerCommand('weapp-vite.openProjectFile', () => openProjectFile(state)),
     vscode.commands.registerCommand('weapp-vite.copyCurrentPageRoute', () => copyCurrentPageRoute(state)),

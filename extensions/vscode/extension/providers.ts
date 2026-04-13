@@ -246,6 +246,16 @@ export class WeappViteCodeActionProvider {
     }
 
     if (isVueDocument(document)) {
+      const addPageToAppJsonAction = new vscode.CodeAction(
+        '将当前页面加入 app.json',
+        vscode.CodeActionKind.QuickFix,
+      )
+      addPageToAppJsonAction.command = {
+        command: 'weapp-vite.addCurrentPageToAppJson',
+        title: '将当前页面加入 app.json',
+      }
+      actions.push(addPageToAppJsonAction)
+
       const lineText = document.lineAt(range.start.line).text
 
       if (!VUE_JSON_BLOCK_PATTERN.test(lineText)) {
