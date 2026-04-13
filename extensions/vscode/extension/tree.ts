@@ -199,6 +199,17 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
     return this.pageNodesByRoute.get(route) ?? null
   }
 
+  async resolvePageNodeByRoute(route: string) {
+    const cachedNode = this.getPageNodeByRoute(route)
+
+    if (cachedNode) {
+      return cachedNode
+    }
+
+    await this.getChildren()
+    return this.getPageNodeByRoute(route)
+  }
+
   getTreeItem(element: WeappPagesTreeNode) {
     const collapsibleState = element.kind === 'page'
       ? vscode.TreeItemCollapsibleState.None

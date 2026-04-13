@@ -156,7 +156,7 @@ async function syncPagesTreeState(pagesTreeProvider: WeappVitePagesTreeProvider,
     return
   }
 
-  const pageNode = pagesTreeProvider.getPageNodeByRoute(currentRoute)
+  const pageNode = await pagesTreeProvider.resolvePageNodeByRoute(currentRoute)
 
   if (!pageNode) {
     return
@@ -171,6 +171,10 @@ async function syncPagesTreeState(pagesTreeProvider: WeappVitePagesTreeProvider,
   }
   catch {
   }
+}
+
+async function revealCurrentPageInPagesTree(pagesTreeProvider: WeappVitePagesTreeProvider, pagesTreeView: any) {
+  await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 }
 
 export function activate(context: any) {
@@ -215,6 +219,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.copyCurrentPageRoute', () => copyCurrentPageRoute(state)),
     vscode.commands.registerCommand('weapp-vite.copyPageRouteFromTreeItem', item => copyPageRouteFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
+    vscode.commands.registerCommand('weapp-vite.revealCurrentPageInPagesTree', () => revealCurrentPageInPagesTree(pagesTreeProvider, pagesTreeView)),
     vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.syncDefinePageJsonFromJsonInTreeItem', item => syncDefinePageJsonFromJsonInTreeItem(item)),
     vscode.commands.registerCommand('weapp-vite.syncJsonFromDefinePageJsonInTreeItem', item => syncJsonFromDefinePageJsonInTreeItem(item)),

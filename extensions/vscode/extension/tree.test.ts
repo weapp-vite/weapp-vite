@@ -426,3 +426,86 @@ it('prioritizes missing status over current state and sorts problem pages first'
   assert.equal(firstItem.iconPath?.id, 'warning')
   assert.equal(firstItem.contextValue, 'weappPage.missing.current')
 })
+
+it('resolves page node by route after refresh', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        EventEmitter: class {
+          event = () => ({ dispose() {} })
+          fire() {}
+          dispose() {}
+        },
+        TreeItem: class {
+          label
+          collapsibleState
+
+          constructor(label: string, collapsibleState: number) {
+            this.label = label
+            this.collapsibleState = collapsibleState
+          }
+        },
+        ThemeIcon: class {
+          id
+
+          constructor(id: string) {
+            this.id = id
+          }
+        },
+        TreeItemCollapsibleState: {
+          None: 0,
+          Expanded: 2,
+        },
+        Uri: {
+          file(fsPath: string) {
+            return { fsPath, path: fsPath }
+          },
+        },
+        workspace: {
+          fs: {
+            readFile: async () => Buffer.from(''),
+          },
+        },
+      },
+    }
+  })
+  vi.doMock('./workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async () => {
+        return {
+          appJsonPath: '/workspace/src/app.json',
+          subpackages: [],
+          topLevelPages: [
+            {
+              pageFilePath: '/workspace/src/pages/home/index.vue',
+              route: 'pages/home/index',
+            },
+          ],
+          unregisteredPages: [],
+          workspaceFolder: {
+            uri: {
+              fsPath: '/workspace',
+            },
+          },
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+
+  provider.refresh()
+  const pageNode = await provider.resolvePageNodeByRoute('pages/home/index')
+
+  assert.equal(pageNode?.route, 'pages/home/index')
+  assert.equal(pageNode?.contextValue, 'weappPage.exists')
+})

@@ -79,6 +79,7 @@
     "onCommand:weapp-vite.copyCurrentPageRoute",
     "onCommand:weapp-vite.copyPageRouteFromTreeItem",
     "onCommand:weapp-vite.revealCurrentPageInAppJson",
+    "onCommand:weapp-vite.revealCurrentPageInPagesTree",
     "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
     "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
     "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
@@ -203,6 +204,11 @@
       {
         "command": "weapp-vite.revealCurrentPageInAppJson",
         "title": "Reveal Current Page In app.json",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.revealCurrentPageInPagesTree",
+        "title": "Reveal Current Page In Pages Explorer",
         "category": "weapp-vite"
       },
       {
@@ -380,6 +386,10 @@
         {
           "command": "weapp-vite.revealCurrentPageInAppJson",
           "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.revealCurrentPageInPagesTree",
+          "when": "resourceScheme == file"
         }
       ],
       "explorer/context": [
@@ -439,6 +449,13 @@
           "command": "weapp-vite.copyPageRouteFromTreeItem",
           "group": "navigation",
           "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "weapp-vite.revealCurrentPageInPagesTree",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
         }
       ],
       "editor/context": [
@@ -504,6 +521,11 @@
         },
         {
           "command": "weapp-vite.revealCurrentPageInAppJson",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.revealCurrentPageInPagesTree",
           "group": "navigation",
           "when": "resourceScheme == file"
         }
