@@ -39,6 +39,16 @@ const PAGE_CONFIG_SYNC_FIELDS = [
     label: 'navigationBarTitleText',
     jsonFieldPattern: /"navigationBarTitleText"\s*:\s*"([^"]+)"/u,
     jsonPattern: /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>[\s\S]*?"navigationBarTitleText"\s*:\s*"([^"]+)"/u,
+    valueType: 'string',
+  },
+  {
+    defineFieldPattern: /enablePullDownRefresh\s*:\s*(true|false)/u,
+    definePattern: /definePageJson\s*\(\s*\{[\s\S]*?enablePullDownRefresh\s*:\s*(true|false)/u,
+    key: 'enablePullDownRefresh',
+    label: 'enablePullDownRefresh',
+    jsonFieldPattern: /"enablePullDownRefresh"\s*:\s*(true|false)/u,
+    jsonPattern: /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>[\s\S]*?"enablePullDownRefresh"\s*:\s*(true|false)/u,
+    valueType: 'boolean',
   },
   {
     defineFieldPattern: /navigationStyle\s*:\s*'[^']+'/u,
@@ -47,6 +57,7 @@ const PAGE_CONFIG_SYNC_FIELDS = [
     label: 'navigationStyle',
     jsonFieldPattern: /"navigationStyle"\s*:\s*"([^"]+)"/u,
     jsonPattern: /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>[\s\S]*?"navigationStyle"\s*:\s*"([^"]+)"/u,
+    valueType: 'string',
   },
 ] as const
 
@@ -60,6 +71,34 @@ function escapeSingleQuotedValue(value: string) {
 
 function escapeJsonStringValue(value: string) {
   return JSON.stringify(value).slice(1, -1)
+}
+
+function normalizePageConfigValue(value: string | null, valueType: string) {
+  if (value == null) {
+    return null
+  }
+
+  if (valueType === 'boolean') {
+    return value === 'true' ? 'true' : 'false'
+  }
+
+  return value
+}
+
+function formatDefinePageConfigField(fieldDefinition: NonNullable<ReturnType<typeof getPageConfigFieldDefinition>>, value: string) {
+  if (fieldDefinition.valueType === 'boolean') {
+    return `${fieldDefinition.key}: ${value}`
+  }
+
+  return `${fieldDefinition.key}: '${escapeSingleQuotedValue(value)}'`
+}
+
+function formatJsonPageConfigField(fieldDefinition: NonNullable<ReturnType<typeof getPageConfigFieldDefinition>>, value: string) {
+  if (fieldDefinition.valueType === 'boolean') {
+    return `"${fieldDefinition.key}": ${value}`
+  }
+
+  return `"${fieldDefinition.key}": "${escapeJsonStringValue(value)}"`
 }
 
 function getPositionFromOffset(text: string, offset: number) {
@@ -89,8 +128,8 @@ export function getVuePageConfigConsistencyState(documentText: string, field: st
     return null
   }
 
-  const definePageJsonValue = definePageJsonMatch?.[1] ?? null
-  const jsonBlockValue = jsonBlockMatch?.[1] ?? null
+  const definePageJsonValue = normalizePageConfigValue(definePageJsonMatch?.[1] ?? null, fieldDefinition.valueType)
+  const jsonBlockValue = normalizePageConfigValue(jsonBlockMatch?.[1] ?? null, fieldDefinition.valueType)
   const matches = Boolean(definePageJsonValue && jsonBlockValue && definePageJsonValue === jsonBlockValue)
 
   return {
@@ -336,13 +375,11 @@ export function getVuePageTextWithSyncedJsonField(documentText: string, field: s
     return null
   }
 
-  const jsonValue = escapeJsonStringValue(state.definePageJsonValue)
-
   if (fieldDefinition.jsonFieldPattern.test(documentText)) {
-    return documentText.replace(fieldDefinition.jsonFieldPattern, `"${fieldDefinition.key}": "${jsonValue}"`)
+    return documentText.replace(fieldDefinition.jsonFieldPattern, formatJsonPageConfigField(fieldDefinition, state.definePageJsonValue))
   }
 
-  return documentText.replace(JSON_BLOCK_OPEN_OBJECT_PATTERN, `$1\n  "${fieldDefinition.key}": "${jsonValue}",`)
+  return documentText.replace(JSON_BLOCK_OPEN_OBJECT_PATTERN, `$1\n  ${formatJsonPageConfigField(fieldDefinition, state.definePageJsonValue)},`)
 }
 
 export function getVuePageTextWithSyncedJsonTitle(documentText: string) {
@@ -357,13 +394,11 @@ export function getVuePageTextWithSyncedDefinePageJsonField(documentText: string
     return null
   }
 
-  const defineValue = escapeSingleQuotedValue(state.jsonBlockValue)
-
   if (fieldDefinition.defineFieldPattern.test(documentText)) {
-    return documentText.replace(fieldDefinition.defineFieldPattern, `${fieldDefinition.key}: '${defineValue}'`)
+    return documentText.replace(fieldDefinition.defineFieldPattern, formatDefinePageConfigField(fieldDefinition, state.jsonBlockValue))
   }
 
-  return documentText.replace(DEFINE_PAGE_JSON_OPEN_OBJECT_PATTERN, `$1\n  ${fieldDefinition.key}: '${defineValue}',`)
+  return documentText.replace(DEFINE_PAGE_JSON_OPEN_OBJECT_PATTERN, `$1\n  ${formatDefinePageConfigField(fieldDefinition, state.jsonBlockValue)},`)
 }
 
 export function getVuePageTextWithSyncedDefinePageJsonTitle(documentText: string) {

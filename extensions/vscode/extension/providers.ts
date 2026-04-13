@@ -193,6 +193,34 @@ function createReplaceDocumentCodeAction(document: any, title: string, nextText:
   return action
 }
 
+function pushPageConfigSyncActions(actions: any[], document: any, documentText: string, field: string) {
+  const consistencyState = getVuePageConfigConsistencyState(documentText, field)
+
+  if (!consistencyState || consistencyState.matches) {
+    return
+  }
+
+  const nextJsonText = getVuePageTextWithSyncedJsonField(documentText, field)
+
+  if (nextJsonText) {
+    actions.push(createReplaceDocumentCodeAction(
+      document,
+      `将 <json> ${field} 同步为 definePageJson`,
+      nextJsonText,
+    ))
+  }
+
+  const nextDefinePageJsonText = getVuePageTextWithSyncedDefinePageJsonField(documentText, field)
+
+  if (nextDefinePageJsonText) {
+    actions.push(createReplaceDocumentCodeAction(
+      document,
+      `将 definePageJson ${field} 同步为 <json>`,
+      nextDefinePageJsonText,
+    ))
+  }
+}
+
 const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
   detail: string
   documentation?: string
@@ -427,7 +455,6 @@ export class WeappViteCodeActionProvider {
       const documentText = document.getText()
       const pageConfigState = getVuePageConfigState(documentText)
       const titleConsistencyState = getVuePageTitleConsistencyState(documentText)
-      const navigationStyleConsistencyState = getVuePageConfigConsistencyState(documentText, 'navigationStyle')
       const currentPageCandidate = await getCurrentPageRouteCandidate(document)
 
       if (currentPageCandidate && !currentPageCandidate.declared) {
@@ -492,27 +519,8 @@ export class WeappViteCodeActionProvider {
         actions.push(syncDefinePageJsonTitleAction)
       }
 
-      if (navigationStyleConsistencyState && !navigationStyleConsistencyState.matches) {
-        const nextJsonText = getVuePageTextWithSyncedJsonField(documentText, 'navigationStyle')
-
-        if (nextJsonText) {
-          actions.push(createReplaceDocumentCodeAction(
-            document,
-            '将 <json> navigationStyle 同步为 definePageJson',
-            nextJsonText,
-          ))
-        }
-
-        const nextDefinePageJsonText = getVuePageTextWithSyncedDefinePageJsonField(documentText, 'navigationStyle')
-
-        if (nextDefinePageJsonText) {
-          actions.push(createReplaceDocumentCodeAction(
-            document,
-            '将 definePageJson navigationStyle 同步为 <json>',
-            nextDefinePageJsonText,
-          ))
-        }
-      }
+      pushPageConfigSyncActions(actions, document, documentText, 'enablePullDownRefresh')
+      pushPageConfigSyncActions(actions, document, documentText, 'navigationStyle')
     }
 
     return actions

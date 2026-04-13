@@ -271,6 +271,98 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '}',
     '</json>',
   ].join('\n'), 'navigationStyle')?.includes('navigationStyle: \'custom\''), true)
+  assert.equal(getVuePageConfigConsistencyState([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  enablePullDownRefresh: true,',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "enablePullDownRefresh": false',
+    '}',
+    '</json>',
+  ].join('\n'), 'enablePullDownRefresh')?.matches, false)
+  assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  enablePullDownRefresh: true,',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "enablePullDownRefresh": false',
+    '}',
+    '</json>',
+  ].join('\n'))).at(-1)?.message, 'definePageJson 与 <json> 中的 enablePullDownRefresh 不一致：\'true\' / \'false\'')
+  assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  enablePullDownRefresh: true,',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '}',
+    '</json>',
+  ].join('\n'))).at(-1)?.message, '<json> 缺少 enablePullDownRefresh，可从 definePageJson 同步。')
+  assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "enablePullDownRefresh": true',
+    '}',
+    '</json>',
+  ].join('\n'))).at(-1)?.message, 'definePageJson 缺少 enablePullDownRefresh，可从 <json> 同步。')
+  assert.equal(getVuePageTextWithSyncedJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  enablePullDownRefresh: true,',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "enablePullDownRefresh": false',
+    '}',
+    '</json>',
+  ].join('\n'), 'enablePullDownRefresh')?.includes('"enablePullDownRefresh": true'), true)
+  assert.equal(getVuePageTextWithSyncedJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  enablePullDownRefresh: true,',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '}',
+    '</json>',
+  ].join('\n'), 'enablePullDownRefresh')?.includes('"enablePullDownRefresh": true'), true)
+  assert.equal(getVuePageTextWithSyncedDefinePageJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  enablePullDownRefresh: false,',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "enablePullDownRefresh": true',
+    '}',
+    '</json>',
+  ].join('\n'), 'enablePullDownRefresh')?.includes('enablePullDownRefresh: true'), true)
+  assert.equal(getVuePageTextWithSyncedDefinePageJsonField([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "enablePullDownRefresh": true',
+    '}',
+    '</json>',
+  ].join('\n'), 'enablePullDownRefresh')?.includes('enablePullDownRefresh: true'), true)
 
   vi.doUnmock('vscode')
   vi.resetModules()
