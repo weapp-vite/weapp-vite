@@ -55,6 +55,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
 
   const {
     buildAppJsonDiagnostics,
+    buildVuePageDiagnostics,
   } = await import('./content')
   const diagnostics = buildAppJsonDiagnostics(createDocument([
     '{',
@@ -68,6 +69,14 @@ it('builds app.json diagnostics for missing page routes', async () => {
   assert.equal(diagnostics.length, 1)
   assert.equal(diagnostics[0].message, '未找到页面文件：pages/missing/index（已尝试 .vue / .ts / .js / .wxml）')
   assert.equal(diagnostics[0].range.start.line, 3)
+  assert.equal(buildVuePageDiagnostics({
+    declared: false,
+    route: 'pages/demo/index',
+  })[0]?.message, '当前页面尚未声明到 app.json：pages/demo/index')
+  assert.equal(buildVuePageDiagnostics({
+    declared: true,
+    route: 'pages/demo/index',
+  }).length, 0)
 
   vi.doUnmock('vscode')
   vi.resetModules()

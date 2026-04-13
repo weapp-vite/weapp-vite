@@ -118,6 +118,7 @@
 - 在 `app.json` 的 `pages` / `subPackages` / `subpackages` 中补全已有页面 route，减少手动输入和路径拼写错误
 - 悬浮在 `app.json` 的页面 route 上时，可直接看到对应页面文件是否存在，以及扩展实际尝试匹配的页面文件路径
 - 在 `app.json` 里可直接 `Cmd/Ctrl + Click` 已存在的页面 route，跳转到对应页面文件
+- 当页面 `.vue` 已能识别为页面文件但尚未声明到 `app.json` 时，编辑器会直接在当前页面给出诊断和补齐入口
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
 - 在页面 `.vue` 中，只有缺少 `definePageJson(...)` 或缺少 `<json>` 块时，才会出现对应的补齐 code action，减少重复提示

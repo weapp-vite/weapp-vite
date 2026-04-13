@@ -20,6 +20,7 @@ export const PACKAGE_JSON_PROPERTY_PREFIX_PATTERN = /^\s*"/
 export const COMMON_SCRIPT_NAMES = ['dev', 'build', 'generate', 'open']
 export const APP_JSON_DIAGNOSTIC_SOURCE = 'weapp-vite/app.json'
 export const PACKAGE_JSON_DIAGNOSTIC_SOURCE = 'weapp-vite/package.json'
+export const PAGE_FILE_DIAGNOSTIC_SOURCE = 'weapp-vite/page-file'
 export const DOCS_BASE_URL = 'https://vite.icebreaker.top'
 export const DOCS_GUIDE_URL = `${DOCS_BASE_URL}/guide/`
 export const DOCS_GENERATE_URL = `${DOCS_GUIDE_URL}generate.html`

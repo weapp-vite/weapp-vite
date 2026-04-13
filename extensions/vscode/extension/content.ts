@@ -8,6 +8,7 @@ import {
   DOCS_GUIDE_URL,
   DOCS_VSCODE_URL,
   PACKAGE_JSON_DIAGNOSTIC_SOURCE,
+  PAGE_FILE_DIAGNOSTIC_SOURCE,
   SCRIPT_COMMAND_SUGGESTIONS,
   VUE_JSON_BLOCK_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
@@ -158,6 +159,21 @@ export function buildAppJsonDiagnostics(document: any, missingRoutes: string[]) 
     diagnostic.source = APP_JSON_DIAGNOSTIC_SOURCE
     return diagnostic
   })
+}
+
+export function buildVuePageDiagnostics(candidate: { declared: boolean, route: string } | null) {
+  if (!candidate || candidate.declared) {
+    return []
+  }
+
+  const diagnostic = new vscode.Diagnostic(
+    new vscode.Range(0, 0, 0, 1),
+    `当前页面尚未声明到 app.json：${candidate.route}`,
+    vscode.DiagnosticSeverity.Information,
+  )
+
+  diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
+  return [diagnostic]
 }
 
 export function getDocItems() {

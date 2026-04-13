@@ -29,6 +29,7 @@ import {
 import {
   buildAppJsonDiagnostics,
   buildPackageJsonDiagnostics,
+  buildVuePageDiagnostics,
 } from './content'
 import {
   WeappViteAppJsonCompletionProvider,
@@ -40,10 +41,12 @@ import {
   WeappViteVueCompletionProvider,
 } from './providers'
 import {
+  getCurrentPageRouteCandidate,
   getMissingAppJsonPageRoutes,
   getProjectContext,
   isAppJsonDocument,
   isPackageJsonDocument,
+  isVueDocument,
 } from './workspace'
 
 let outputChannel
@@ -85,6 +88,20 @@ async function refreshAppJsonDiagnostics(document: any) {
 
   const missingRoutes = await getMissingAppJsonPageRoutes(document)
   getDiagnostics().set(document.uri, buildAppJsonDiagnostics(document, missingRoutes))
+}
+
+async function refreshVuePageDiagnostics(document: any) {
+  if (!isVueDocument(document)) {
+    return
+  }
+
+  if (!isAppJsonDiagnosticsEnabled()) {
+    getDiagnostics().delete(document.uri)
+    return
+  }
+
+  const currentPageCandidate = await getCurrentPageRouteCandidate(document)
+  getDiagnostics().set(document.uri, buildVuePageDiagnostics(currentPageCandidate))
 }
 
 async function refreshStatusBar() {
@@ -220,6 +237,7 @@ export function activate(context: any) {
         for (const document of vscode.workspace.textDocuments) {
           refreshPackageJsonDiagnostics(document)
           void refreshAppJsonDiagnostics(document)
+          void refreshVuePageDiagnostics(document)
         }
       }
     }),
@@ -232,6 +250,10 @@ export function activate(context: any) {
         void refreshAppJsonDiagnostics(document)
       }
 
+      if (isVueDocument(document)) {
+        void refreshVuePageDiagnostics(document)
+      }
+
       if (document.fileName.endsWith('package.json') || VITE_CONFIG_FILE_PATTERN.test(document.fileName)) {
         void refreshStatusBar()
       }
@@ -239,10 +261,12 @@ export function activate(context: any) {
     vscode.workspace.onDidOpenTextDocument((document) => {
       refreshPackageJsonDiagnostics(document)
       void refreshAppJsonDiagnostics(document)
+      void refreshVuePageDiagnostics(document)
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
       refreshPackageJsonDiagnostics(event.document)
       void refreshAppJsonDiagnostics(event.document)
+      void refreshVuePageDiagnostics(event.document)
     }),
   ]
 

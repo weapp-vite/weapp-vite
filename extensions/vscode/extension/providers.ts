@@ -31,6 +31,7 @@ import {
 import {
   getAppJsonPageRouteSuggestions,
   getAppJsonRouteFileStatus,
+  getCurrentPageRouteCandidate,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -304,15 +305,19 @@ export class WeappViteCodeActionProvider {
     if (isVueDocument(document)) {
       const documentText = document.getText()
       const pageConfigState = getVuePageConfigState(documentText)
-      const addPageToAppJsonAction = new vscode.CodeAction(
-        '将当前页面加入 app.json',
-        vscode.CodeActionKind.QuickFix,
-      )
-      addPageToAppJsonAction.command = {
-        command: 'weapp-vite.addCurrentPageToAppJson',
-        title: '将当前页面加入 app.json',
+      const currentPageCandidate = await getCurrentPageRouteCandidate(document)
+
+      if (currentPageCandidate && !currentPageCandidate.declared) {
+        const addPageToAppJsonAction = new vscode.CodeAction(
+          '将当前页面加入 app.json',
+          vscode.CodeActionKind.QuickFix,
+        )
+        addPageToAppJsonAction.command = {
+          command: 'weapp-vite.addCurrentPageToAppJson',
+          title: '将当前页面加入 app.json',
+        }
+        actions.push(addPageToAppJsonAction)
       }
-      actions.push(addPageToAppJsonAction)
 
       const lineText = document.lineAt(range.start.line).text
 
