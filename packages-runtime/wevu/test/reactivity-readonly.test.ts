@@ -172,6 +172,7 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro).toBe(date)
       expect(ro.valueOf()).toBe(date.valueOf())
       expect(isReadonly(ro)).toBe(false)
+      expect(isProxy(ro)).toBe(false)
     })
 
     it('should return Map as-is', () => {
@@ -181,6 +182,7 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro).toBe(map)
       expect(ro.get('key')).toBe('value')
       expect(isReadonly(ro)).toBe(false)
+      expect(isProxy(ro)).toBe(false)
     })
 
     it('should return Set as-is', () => {
@@ -190,9 +192,13 @@ describe('readonly - edge cases and boundary values', () => {
       expect(ro).toBe(set)
       expect(ro.has(2)).toBe(true)
       expect(isReadonly(ro)).toBe(false)
+      expect(isProxy(ro)).toBe(false)
     })
 
     it('should keep shallowReadonly aligned for unsupported built-ins', () => {
+      const date = new Date('2024-01-01T00:00:00.000Z')
+      const map = new Map([['key', 'value']])
+      const set = new Set([1, 2, 3])
       const weakMap = new WeakMap<object, string>()
       const key = {}
       weakMap.set(key, 'value')
@@ -200,6 +206,9 @@ describe('readonly - edge cases and boundary values', () => {
       const value = {}
       weakSet.add(value)
 
+      expect(shallowReadonly(date)).toBe(date)
+      expect(shallowReadonly(map)).toBe(map)
+      expect(shallowReadonly(set)).toBe(set)
       expect(shallowReadonly(weakMap)).toBe(weakMap)
       expect(shallowReadonly(weakSet)).toBe(weakSet)
     })
