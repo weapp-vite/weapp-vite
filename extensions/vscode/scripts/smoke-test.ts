@@ -109,6 +109,10 @@ function createMockVscode() {
         registeredProviders.push({ type: 'completion', selector })
         return { dispose() {} }
       },
+      registerDocumentLinkProvider(selector: unknown) {
+        registeredProviders.push({ type: 'documentLink', selector })
+        return { dispose() {} }
+      },
       registerHoverProvider(selector: unknown) {
         registeredProviders.push({ type: 'hover', selector })
         return { dispose() {} }
@@ -254,7 +258,7 @@ async function main() {
         'weapp-vite.openDocs',
       ],
     )
-    assert.equal(state.registeredProviders.length, 5)
+    assert.equal(state.registeredProviders.length, 6)
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0]?.command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)

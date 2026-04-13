@@ -32,6 +32,7 @@ import {
 } from './content'
 import {
   WeappViteAppJsonCompletionProvider,
+  WeappViteAppJsonDocumentLinkProvider,
   WeappViteCodeActionProvider,
   WeappViteConfigCompletionProvider,
   WeappViteHoverProvider,
@@ -117,6 +118,7 @@ export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
   const appJsonCompletionProvider = new WeappViteAppJsonCompletionProvider()
+  const appJsonDocumentLinkProvider = new WeappViteAppJsonDocumentLinkProvider()
   const packageJsonCompletionProvider = new WeappVitePackageJsonCompletionProvider()
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
@@ -167,6 +169,13 @@ export function activate(context: any) {
       appJsonCompletionProvider,
       '"',
       '/',
+    ),
+    vscode.languages.registerDocumentLinkProvider(
+      [
+        { language: 'json', scheme: 'file', pattern: '**/app.json' },
+        { language: 'jsonc', scheme: 'file', pattern: '**/app.json' },
+      ],
+      appJsonDocumentLinkProvider,
     ),
     vscode.languages.registerCompletionItemProvider(
       [

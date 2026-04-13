@@ -8,6 +8,7 @@ import {
   findRouteTextRange,
   getPageFileCandidatePaths,
   getPreferredPageFilePath,
+  getQuotedRouteRangesAtLine,
   getQuotedRouteValueAtLine,
   getRouteFromPageFilePath,
 } from './navigation'
@@ -89,4 +90,19 @@ it('gets quoted route value at cursor position', () => {
   assert.equal(getQuotedRouteValueAtLine(lineText, 6), 'pages/home/index')
   assert.equal(getQuotedRouteValueAtLine(lineText, 21), 'pages/home/index')
   assert.equal(getQuotedRouteValueAtLine(lineText, 2), null)
+})
+
+it('gets quoted route ranges at line', () => {
+  assert.deepEqual(getQuotedRouteRangesAtLine('    "pages/home/index", "pages/logs/index"'), [
+    {
+      value: 'pages/home/index',
+      start: 5,
+      end: 21,
+    },
+    {
+      value: 'pages/logs/index',
+      start: 25,
+      end: 41,
+    },
+  ])
 })

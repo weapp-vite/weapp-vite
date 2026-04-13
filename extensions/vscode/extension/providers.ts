@@ -25,6 +25,7 @@ import {
   getVuePageConfigState,
 } from './logic'
 import {
+  getQuotedRouteRangesAtLine,
   getQuotedRouteValueAtLine,
 } from './navigation'
 import {
@@ -447,6 +448,38 @@ export class WeappViteAppJsonCompletionProvider {
         return item
       })
       .filter(Boolean)
+  }
+}
+
+export class WeappViteAppJsonDocumentLinkProvider {
+  async provideDocumentLinks(document: any) {
+    if (!isAppJsonDocument(document)) {
+      return []
+    }
+
+    const links = []
+
+    for (let line = 0; line < document.lineCount; line++) {
+      const lineText = document.lineAt(line).text
+      const routeRanges = getQuotedRouteRangesAtLine(lineText)
+
+      for (const routeRange of routeRanges) {
+        const status = await getAppJsonRouteFileStatus(document, routeRange.value)
+
+        if (!status?.pageFilePath) {
+          continue
+        }
+
+        const target = vscode.Uri.file(status.pageFilePath)
+        const range = new vscode.Range(line, routeRange.start, line, routeRange.end)
+        const link = new vscode.DocumentLink(range, target)
+
+        link.tooltip = `打开页面文件 ${routeRange.value}`
+        links.push(link)
+      }
+    }
+
+    return links
   }
 }
 

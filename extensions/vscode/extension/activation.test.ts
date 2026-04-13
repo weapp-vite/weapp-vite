@@ -125,6 +125,10 @@ function createMockVscode() {
         registeredProviders.push({ type: 'completion', selector })
         return { dispose() {} }
       },
+      registerDocumentLinkProvider(selector) {
+        registeredProviders.push({ type: 'documentLink', selector })
+        return { dispose() {} }
+      },
       registerHoverProvider(selector) {
         registeredProviders.push({ type: 'hover', selector })
         return { dispose() {} }
@@ -277,7 +281,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.revealCurrentPageInAppJson',
       ],
     )
-    assert.equal(state.registeredProviders.length, 6)
+    assert.equal(state.registeredProviders.length, 7)
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)

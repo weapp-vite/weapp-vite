@@ -154,3 +154,26 @@ export function getQuotedRouteValueAtLine(lineText: string, character: number) {
 
   return null
 }
+
+export function getQuotedRouteRangesAtLine(lineText: string) {
+  const quotedValuePattern = /"([^"]+)"/gu
+  const ranges = []
+
+  for (const match of lineText.matchAll(quotedValuePattern)) {
+    const fullMatch = match[0]
+    const value = match[1]
+    const start = match.index ?? -1
+
+    if (start < 0) {
+      continue
+    }
+
+    ranges.push({
+      value,
+      start: start + 1,
+      end: start + fullMatch.length - 1,
+    })
+  }
+
+  return ranges
+}
