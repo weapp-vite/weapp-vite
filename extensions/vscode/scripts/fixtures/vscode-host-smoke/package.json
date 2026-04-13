@@ -1,0 +1,8 @@
+{
+  "name": "vscode-host-smoke-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "weapp-vite": "workspace:*"
+  }
+}

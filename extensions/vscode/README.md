@@ -193,6 +193,7 @@
 ```bash
 pnpm --dir extensions/vscode run build
 pnpm --dir extensions/vscode run test
+pnpm --dir extensions/vscode run test:host:smoke
 pnpm --dir extensions/vscode run release:marketplace:plan
 pnpm --dir extensions/vscode run smoke:dist
 pnpm --dir extensions/vscode run check:package
@@ -201,6 +202,7 @@ pnpm --dir extensions/vscode run check:vsix
 
 `build` 会通过 `tsdown` 将扩展运行时打成单个 CommonJS 入口，测试则继续通过 Vitest 直接执行 TypeScript 源码。
 构建完成后，`smoke:dist` 会使用模拟的 VS Code API 加载编译产物 `dist/extension.js`，确认激活链路仍然正常。
+`test:host:smoke` 则用于在真实 VS Code 宿主中跑一条最小 smoke 链路；首次使用前需要安装 `@vscode/test-electron`。
 如果要检查最终 Marketplace 产物内容，可执行 `check:vsix`，它会生成本地 `.vsix` 并校验归档文件列表。
 源码 `package.json` 使用 workspace 包名 `@weapp-vite/vscode`，而 `publish:vsce` / `package:dry-run` 会在临时目录中把发布 manifest 重写成 Marketplace 使用的 `weapp-vite` 与 `Weapp Vite`。
 

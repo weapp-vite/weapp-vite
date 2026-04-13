@@ -28,7 +28,13 @@ const requiredFiles = [
   'README.md',
   'CHANGELOG.md',
   'LICENSE',
+  'scripts/vscode-host-smoke.ts',
+  'scripts/vscode-host-smoke-runner.cjs',
   'snippets/weapp-vite.code-snippets',
+  'scripts/fixtures/vscode-host-smoke/package.json',
+  'scripts/fixtures/vscode-host-smoke/vite.config.ts',
+  'scripts/fixtures/vscode-host-smoke/src/app.json',
+  'scripts/fixtures/vscode-host-smoke/src/pages/home/index.vue',
   'syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
 ]
 

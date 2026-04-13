@@ -40,6 +40,12 @@ it('package output keeps runtime entry files on disk', () => {
     'scripts/plan-marketplace-release.ts',
     'scripts/release-vsce.ts',
     'scripts/smoke-test.ts',
+    'scripts/vscode-host-smoke.ts',
+    'scripts/vscode-host-smoke-runner.cjs',
+    'scripts/fixtures/vscode-host-smoke/package.json',
+    'scripts/fixtures/vscode-host-smoke/vite.config.ts',
+    'scripts/fixtures/vscode-host-smoke/src/app.json',
+    'scripts/fixtures/vscode-host-smoke/src/pages/home/index.vue',
     'syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
   ]
 
