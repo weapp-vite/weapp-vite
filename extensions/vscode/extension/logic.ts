@@ -14,7 +14,11 @@ const VUE_JSON_BLOCK_CLOSE_EXISTS_PATTERN = /<\/json>/u
 const DEFINE_PAGE_JSON_PATTERN = /\bdefinePageJson\s*\(/u
 const DEFINE_PAGE_JSON_CLOSE_PATTERN = /\}\s*\)/u
 const JSON_PROPERTY_PREFIX_PATTERN = /^\s*"[^"]*$/u
+const JSON_VALUE_PREFIX_PATTERN = /^\s*"([^"]+)"\s*:\s*"[^"]*$/u
+const JSON_BOOLEAN_VALUE_PREFIX_PATTERN = /^\s*"([^"]+)"\s*:\s*[A-Za-z]*$/u
 const DEFINE_PAGE_JSON_PROPERTY_PREFIX_PATTERN = /^\s*[A-Za-z_$][\w$]*$/u
+const DEFINE_PAGE_JSON_VALUE_PREFIX_PATTERN = /^\s*([A-Za-z_$][\w$]*)\s*:\s*'[^']*$/u
+const DEFINE_PAGE_JSON_BOOLEAN_VALUE_PREFIX_PATTERN = /^\s*([A-Za-z_$][\w$]*)\s*:\s*[A-Za-z]*$/u
 const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
 
 export interface RunActionQuickPickItem {
@@ -145,11 +149,29 @@ export function getVueJsonBlockCompletionContext(
   textAfterCursor: string,
   linePrefix: string,
 ) {
-  if (!JSON_PROPERTY_PREFIX_PATTERN.test(linePrefix)) {
+  if (!isInsideVueJsonBlock(textBeforeCursor, textAfterCursor)) {
     return null
   }
 
-  if (!isInsideVueJsonBlock(textBeforeCursor, textAfterCursor)) {
+  const jsonValueMatch = linePrefix.match(JSON_VALUE_PREFIX_PATTERN)
+
+  if (jsonValueMatch) {
+    return {
+      type: 'value',
+      key: jsonValueMatch[1],
+    }
+  }
+
+  const jsonBooleanValueMatch = linePrefix.match(JSON_BOOLEAN_VALUE_PREFIX_PATTERN)
+
+  if (jsonBooleanValueMatch) {
+    return {
+      type: 'booleanValue',
+      key: jsonBooleanValueMatch[1],
+    }
+  }
+
+  if (!JSON_PROPERTY_PREFIX_PATTERN.test(linePrefix)) {
     return null
   }
 
@@ -181,11 +203,29 @@ export function getDefinePageJsonCompletionContext(
   textAfterCursor: string,
   linePrefix: string,
 ) {
-  if (!DEFINE_PAGE_JSON_PROPERTY_PREFIX_PATTERN.test(linePrefix)) {
+  if (!isInsideDefinePageJson(textBeforeCursor, textAfterCursor)) {
     return null
   }
 
-  if (!isInsideDefinePageJson(textBeforeCursor, textAfterCursor)) {
+  const definePageJsonValueMatch = linePrefix.match(DEFINE_PAGE_JSON_VALUE_PREFIX_PATTERN)
+
+  if (definePageJsonValueMatch) {
+    return {
+      type: 'value',
+      key: definePageJsonValueMatch[1],
+    }
+  }
+
+  const definePageJsonBooleanValueMatch = linePrefix.match(DEFINE_PAGE_JSON_BOOLEAN_VALUE_PREFIX_PATTERN)
+
+  if (definePageJsonBooleanValueMatch) {
+    return {
+      type: 'booleanValue',
+      key: definePageJsonBooleanValueMatch[1],
+    }
+  }
+
+  if (!DEFINE_PAGE_JSON_PROPERTY_PREFIX_PATTERN.test(linePrefix)) {
     return null
   }
 

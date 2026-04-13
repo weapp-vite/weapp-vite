@@ -105,6 +105,76 @@ const DEFINE_PAGE_JSON_COMPLETION_ITEMS = [
     detail: '禁止页面滚动',
   },
 ]
+const PAGE_CONFIG_VALUE_COMPLETION_ITEMS: Record<string, Array<{
+  detail: string
+  insertText: string
+  kind: number
+  label: string
+}>> = {
+  backgroundTextStyle: [
+    {
+      label: 'dark',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'dark',
+      detail: '下拉 loading 深色样式',
+    },
+    {
+      label: 'light',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'light',
+      detail: '下拉 loading 浅色样式',
+    },
+  ],
+  navigationStyle: [
+    {
+      label: 'default',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'default',
+      detail: '默认导航栏样式',
+    },
+    {
+      label: 'custom',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'custom',
+      detail: '自定义导航栏样式',
+    },
+  ],
+}
+const PAGE_CONFIG_BOOLEAN_VALUE_COMPLETION_ITEMS: Record<string, Array<{
+  detail: string
+  insertText: string
+  kind: number
+  label: string
+}>> = {
+  disableScroll: [
+    {
+      label: 'true',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'true',
+      detail: '启用后禁止页面滚动',
+    },
+    {
+      label: 'false',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'false',
+      detail: '保持页面可滚动',
+    },
+  ],
+  enablePullDownRefresh: [
+    {
+      label: 'true',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'true',
+      detail: '启用下拉刷新',
+    },
+    {
+      label: 'false',
+      kind: vscode.CompletionItemKind.Value,
+      insertText: 'false',
+      detail: '关闭下拉刷新',
+    },
+  ],
+}
 
 const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
   detail: string
@@ -406,10 +476,50 @@ export class WeappViteVueCompletionProvider {
       })
     }
 
+    if (jsonBlockContext?.type === 'value') {
+      return (PAGE_CONFIG_VALUE_COMPLETION_ITEMS[jsonBlockContext.key] ?? []).map((suggestion, index) => {
+        const item = new vscode.CompletionItem(suggestion.label, suggestion.kind)
+        item.insertText = suggestion.insertText
+        item.detail = suggestion.detail
+        item.sortText = `0${index}`
+        return item
+      })
+    }
+
+    if (jsonBlockContext?.type === 'booleanValue') {
+      return (PAGE_CONFIG_BOOLEAN_VALUE_COMPLETION_ITEMS[jsonBlockContext.key] ?? []).map((suggestion, index) => {
+        const item = new vscode.CompletionItem(suggestion.label, suggestion.kind)
+        item.insertText = suggestion.insertText
+        item.detail = suggestion.detail
+        item.sortText = `0${index}`
+        return item
+      })
+    }
+
     if (definePageJsonContext?.type === 'property') {
       return DEFINE_PAGE_JSON_COMPLETION_ITEMS.map((suggestion, index) => {
         const item = new vscode.CompletionItem(suggestion.label, vscode.CompletionItemKind.Property)
         item.insertText = new vscode.SnippetString(suggestion.insertText)
+        item.detail = suggestion.detail
+        item.sortText = `0${index}`
+        return item
+      })
+    }
+
+    if (definePageJsonContext?.type === 'value') {
+      return (PAGE_CONFIG_VALUE_COMPLETION_ITEMS[definePageJsonContext.key] ?? []).map((suggestion, index) => {
+        const item = new vscode.CompletionItem(suggestion.label, suggestion.kind)
+        item.insertText = suggestion.insertText
+        item.detail = suggestion.detail
+        item.sortText = `0${index}`
+        return item
+      })
+    }
+
+    if (definePageJsonContext?.type === 'booleanValue') {
+      return (PAGE_CONFIG_BOOLEAN_VALUE_COMPLETION_ITEMS[definePageJsonContext.key] ?? []).map((suggestion, index) => {
+        const item = new vscode.CompletionItem(suggestion.label, suggestion.kind)
+        item.insertText = suggestion.insertText
         item.detail = suggestion.detail
         item.sortText = `0${index}`
         return item

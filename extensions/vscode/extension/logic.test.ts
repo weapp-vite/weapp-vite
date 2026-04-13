@@ -218,6 +218,36 @@ it('detects vue json block property completion context', () => {
   })
 })
 
+it('detects vue json block value completion context', () => {
+  assert.deepEqual(getVueJsonBlockCompletionContext([
+    '<json>',
+    '{',
+    '  "navigationStyle": "cu',
+  ].join('\n'), [
+    'stom"',
+    '}',
+    '</json>',
+  ].join('\n'), '  "navigationStyle": "cu'), {
+    type: 'value',
+    key: 'navigationStyle',
+  })
+})
+
+it('detects vue json block boolean value completion context', () => {
+  assert.deepEqual(getVueJsonBlockCompletionContext([
+    '<json>',
+    '{',
+    '  "enablePullDownRefresh": tr',
+  ].join('\n'), [
+    'ue',
+    '}',
+    '</json>',
+  ].join('\n'), '  "enablePullDownRefresh": tr'), {
+    type: 'booleanValue',
+    key: 'enablePullDownRefresh',
+  })
+})
+
 it('detects cursor inside definePageJson object', () => {
   assert.equal(isInsideDefinePageJson([
     '<script setup lang="ts">',
@@ -241,6 +271,36 @@ it('detects definePageJson property completion context', () => {
     '</script>',
   ].join('\n'), '  navigationBar'), {
     type: 'property',
+  })
+})
+
+it('detects definePageJson value completion context', () => {
+  assert.deepEqual(getDefinePageJsonCompletionContext([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationStyle: \'cu',
+  ].join('\n'), [
+    'stom\',',
+    '})',
+    '</script>',
+  ].join('\n'), '  navigationStyle: \'cu'), {
+    type: 'value',
+    key: 'navigationStyle',
+  })
+})
+
+it('detects definePageJson boolean value completion context', () => {
+  assert.deepEqual(getDefinePageJsonCompletionContext([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  disableScroll: tr',
+  ].join('\n'), [
+    'ue,',
+    '})',
+    '</script>',
+  ].join('\n'), '  disableScroll: tr'), {
+    type: 'booleanValue',
+    key: 'disableScroll',
   })
 })
 

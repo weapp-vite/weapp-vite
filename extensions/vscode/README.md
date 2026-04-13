@@ -122,6 +122,7 @@
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
 - 在页面 `.vue` 的 `definePageJson({...})` 中也可补全常用页面字段，减少在脚本配置里手写键名
+- 在页面 `.vue` 的 `definePageJson({...})` 和 `<json>` 配置里，常用枚举值与布尔值也会给出上下文补全
 - 悬浮到 `definePageJson` 或常用页面配置键时，可直接查看字段说明，减少来回翻文档
 - 在页面 `.vue` 中，只有缺少 `definePageJson(...)` 或缺少 `<json>` 块时，才会出现对应的补齐 code action，减少重复提示
 - 在页面文件里执行 `weapp-vite: Run Action` 时，会优先展示当前页面相关动作，并带出当前 route 与声明状态，减少在通用命令中来回筛选
