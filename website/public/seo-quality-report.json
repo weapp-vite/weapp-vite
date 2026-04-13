@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-04-12T04:29:03.383Z",
+  "generatedAt": "2026-04-13T12:10:33.732Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 274,
-    "docs": 259,
+    "files": 259,
+    "docs": 244,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 274,
+    "withFrontmatter": 259,
     "missingFrontmatter": 0
   },
   "coverage": {
     "all": {
-      "total": 274,
-      "title": 274,
-      "description": 274,
-      "keywords": 274,
-      "date": 9
-    },
-    "docs": {
       "total": 259,
       "title": 259,
       "description": 259,
       "keywords": 259,
+      "date": 9
+    },
+    "docs": {
+      "total": 244,
+      "title": 244,
+      "description": 244,
+      "keywords": 244,
       "date": 1
     },
     "blog": {
@@ -44,7 +44,7 @@
       "title": 100,
       "description": 100,
       "keywords": 100,
-      "date": 3.3
+      "date": 3.5
     },
     "docs": {
       "title": 100,
@@ -107,7 +107,7 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 274,
+    "checked": 259,
     "issues": []
   },
   "qualityIssueCounts": {}

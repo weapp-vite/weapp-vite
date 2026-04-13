@@ -3,6 +3,32 @@ import {
   SCRIPT_COMMAND_SUGGESTIONS,
 } from './constants'
 
+const APP_JSON_ROUTE_VALUE_PREFIX_PATTERN = /^\s*"[^"]*$/u
+const APP_JSON_PAGES_ARRAY_LINE_PATTERN = /^\s*"pages"\s*:\s*\[\s*$/u
+const APP_JSON_SUBPACKAGES_LINE_PATTERN = /^\s*"(?:subPackages|subpackages)"\s*:\s*\[\s*$/u
+const APP_JSON_ROOT_LINE_PATTERN = /^\s*"root"\s*:\s*"([^"]+)"/u
+const TRAILING_COMMA_PATTERN = /,$/u
+const VUE_JSON_BLOCK_TAG_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>/gu
+const VUE_JSON_BLOCK_CLOSE_TAG_PATTERN = /<\/json>/gu
+const VUE_JSON_BLOCK_CLOSE_EXISTS_PATTERN = /<\/json>/u
+const DEFINE_PAGE_JSON_PATTERN = /\bdefinePageJson\s*\(/u
+const JSON_PROPERTY_PREFIX_PATTERN = /^\s*"[^"]*$/u
+const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
+
+export interface RunActionQuickPickItem {
+  label: string
+  description: string
+  detail: string
+  commandId: string
+}
+
+export interface CurrentPageActionContext {
+  route: string
+  declared: boolean
+  hasDefinePageJson: boolean
+  hasJsonBlock: boolean
+}
+
 export function getSuggestedScripts(preferWvAlias = true) {
   if (preferWvAlias) {
     return { ...SCRIPT_COMMAND_SUGGESTIONS }
@@ -13,6 +39,279 @@ export function getSuggestedScripts(preferWvAlias = true) {
     build: 'weapp-vite build',
     open: 'weapp-vite open',
     generate: 'weapp-vite generate',
+  }
+}
+
+export function getAppJsonRouteCompletionContext(textBeforeCursor: string, linePrefix: string) {
+  if (!APP_JSON_ROUTE_VALUE_PREFIX_PATTERN.test(linePrefix)) {
+    return null
+  }
+
+  const lines = textBeforeCursor.split('\n')
+
+  for (let index = lines.length - 1; index >= 0; index--) {
+    const currentLine = lines[index]
+
+    if (!APP_JSON_PAGES_ARRAY_LINE_PATTERN.test(currentLine)) {
+      continue
+    }
+
+    let root = null
+    let inSubPackage = false
+
+    for (let parentIndex = index - 1; parentIndex >= 0; parentIndex--) {
+      const parentLine = lines[parentIndex]
+      const rootMatch = parentLine.match(APP_JSON_ROOT_LINE_PATTERN)
+
+      if (rootMatch && root == null) {
+        root = rootMatch[1].trim().replace(/^\/+|\/+$/g, '')
+      }
+
+      if (APP_JSON_SUBPACKAGES_LINE_PATTERN.test(parentLine)) {
+        inSubPackage = true
+        break
+      }
+
+      if (APP_JSON_PAGES_ARRAY_LINE_PATTERN.test(parentLine)) {
+        break
+      }
+    }
+
+    return {
+      root: inSubPackage ? root : null,
+    }
+  }
+
+  return null
+}
+
+export function getAppJsonRouteInsertText(route: string, root: string | null) {
+  if (!root) {
+    return route
+  }
+
+  const normalizedRoot = root.trim().replace(/^\/+|\/+$/g, '')
+  const normalizedRoute = route.trim().replace(/^\/+|\/+$/g, '')
+
+  if (normalizedRoute === normalizedRoot) {
+    return ''
+  }
+
+  if (normalizedRoute.startsWith(`${normalizedRoot}/`)) {
+    return normalizedRoute.slice(normalizedRoot.length + 1)
+  }
+
+  return normalizedRoute
+}
+
+export function getViteConfigObjectPath(textBeforeCursor: string) {
+  const lines = textBeforeCursor.split('\n')
+  const path = []
+  let depth = 0
+
+  for (let index = lines.length - 1; index >= 0; index--) {
+    const line = lines[index]
+    const normalizedLine = line.trim().replace(TRAILING_COMMA_PATTERN, '')
+    const depthBeforeLine = depth
+    const openCount = (line.match(/\{/g) ?? []).length
+    const closeCount = (line.match(/\}/g) ?? []).length
+    const propertyMatch = normalizedLine.match(VITE_CONFIG_PROPERTY_BLOCK_PATTERN)
+
+    depth += openCount - closeCount
+
+    if (propertyMatch && depth > depthBeforeLine) {
+      path.push(propertyMatch[1])
+    }
+  }
+
+  return path.reverse()
+}
+
+export function isInsideVueJsonBlock(textBeforeCursor: string, textAfterCursor: string) {
+  const lastOpenIndex = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_TAG_PATTERN)].at(-1)?.index ?? -1
+  const lastCloseIndex = [...textBeforeCursor.matchAll(VUE_JSON_BLOCK_CLOSE_TAG_PATTERN)].at(-1)?.index ?? -1
+
+  if (lastOpenIndex < 0 || lastOpenIndex < lastCloseIndex) {
+    return false
+  }
+
+  return VUE_JSON_BLOCK_CLOSE_EXISTS_PATTERN.test(textAfterCursor)
+}
+
+export function getVueJsonBlockCompletionContext(
+  textBeforeCursor: string,
+  textAfterCursor: string,
+  linePrefix: string,
+) {
+  if (!JSON_PROPERTY_PREFIX_PATTERN.test(linePrefix)) {
+    return null
+  }
+
+  if (!isInsideVueJsonBlock(textBeforeCursor, textAfterCursor)) {
+    return null
+  }
+
+  return {
+    type: 'property',
+  }
+}
+
+export function getVuePageConfigState(documentText: string) {
+  return {
+    hasDefinePageJson: DEFINE_PAGE_JSON_PATTERN.test(documentText),
+    hasJsonBlock: VUE_JSON_BLOCK_TAG_PATTERN.test(documentText),
+  }
+}
+
+export function getCurrentPageRunActionItems(
+  currentPage: CurrentPageActionContext | null,
+): RunActionQuickPickItem[] {
+  if (!currentPage) {
+    return []
+  }
+
+  const items: RunActionQuickPickItem[] = []
+
+  if (!currentPage.declared) {
+    items.push({
+      label: '$(add) 将当前页面加入 app.json',
+      description: `当前页面路由 ${currentPage.route}`,
+      detail: '把当前活动页面文件写入顶层 pages 或匹配的分包 pages。',
+      commandId: 'addCurrentPageToAppJson',
+    })
+  }
+
+  if (currentPage.declared) {
+    items.push(
+      {
+        label: '$(clippy) 复制当前页面路由',
+        description: `当前页面路由 ${currentPage.route}`,
+        detail: '复制当前活动页面文件对应的 route。',
+        commandId: 'copyCurrentPageRoute',
+      },
+      {
+        label: '$(link-external) 在 app.json 中定位当前页面',
+        description: `当前页面已声明 ${currentPage.route}`,
+        detail: '打开 app.json 并定位到当前页面声明。',
+        commandId: 'revealCurrentPageInAppJson',
+      },
+    )
+  }
+
+  if (!currentPage.hasDefinePageJson) {
+    items.push({
+      label: '$(symbol-function) 插入 definePageJson 模板',
+      description: `为当前页面补齐页面配置 ${currentPage.route}`,
+      detail: '向当前 .vue 页面插入 definePageJson(...) 骨架。',
+      commandId: 'insertDefinePageJsonTemplate',
+    })
+  }
+
+  if (!currentPage.hasJsonBlock) {
+    items.push({
+      label: '$(json) 插入 <json> 模板',
+      description: `为当前页面补齐 <json> 配置块 ${currentPage.route}`,
+      detail: '向当前 .vue 页面插入 <json lang="jsonc"> 自定义块。',
+      commandId: 'insertJsonBlockTemplate',
+    })
+  }
+
+  return items
+}
+
+function normalizeRoute(route: string) {
+  return route.trim().replace(/^\/+|\/+$/g, '')
+}
+
+function findMatchingSubPackage(
+  subPackages: Array<Record<string, any>>,
+  route: string,
+) {
+  const normalizedRoute = normalizeRoute(route)
+  let matched: Record<string, any> | null = null
+  let matchedRootLength = -1
+
+  for (const subPackage of subPackages) {
+    if (!subPackage || typeof subPackage !== 'object' || typeof subPackage.root !== 'string') {
+      continue
+    }
+
+    const root = normalizeRoute(subPackage.root)
+
+    if (!root) {
+      continue
+    }
+
+    if (normalizedRoute === root || normalizedRoute.startsWith(`${root}/`)) {
+      if (root.length > matchedRootLength) {
+        matched = subPackage
+        matchedRootLength = root.length
+      }
+    }
+  }
+
+  return matched
+}
+
+export function applyPageRouteToAppJson(appJson: Record<string, any>, route: string) {
+  const normalizedRoute = normalizeRoute(route)
+
+  if (!normalizedRoute) {
+    return {
+      changed: false,
+      packageLocation: 'pages' as const,
+      packageRoot: null,
+      appJson,
+    }
+  }
+
+  const nextAppJson = { ...appJson }
+  const originalPages = Array.isArray(nextAppJson.pages) ? nextAppJson.pages : []
+  const lowerSubPackages = Array.isArray(nextAppJson.subpackages) ? nextAppJson.subpackages : []
+  const upperSubPackages = Array.isArray(nextAppJson.subPackages) ? nextAppJson.subPackages : []
+  const allSubPackages = [...upperSubPackages, ...lowerSubPackages]
+  const matchedSubPackage = findMatchingSubPackage(allSubPackages, normalizedRoute)
+
+  if (matchedSubPackage) {
+    const packageRoot = normalizeRoute(matchedSubPackage.root)
+    const relativeRoute = normalizedRoute.slice(packageRoot.length + 1)
+    const existingPages = Array.isArray(matchedSubPackage.pages) ? matchedSubPackage.pages : []
+
+    if (existingPages.includes(relativeRoute)) {
+      return {
+        changed: false,
+        packageLocation: 'subPackages' as const,
+        packageRoot,
+        appJson: nextAppJson,
+      }
+    }
+
+    matchedSubPackage.pages = [...existingPages, relativeRoute]
+
+    return {
+      changed: true,
+      packageLocation: 'subPackages' as const,
+      packageRoot,
+      appJson: nextAppJson,
+    }
+  }
+
+  if (originalPages.includes(normalizedRoute)) {
+    return {
+      changed: false,
+      packageLocation: 'pages' as const,
+      packageRoot: null,
+      appJson: nextAppJson,
+    }
+  }
+
+  nextAppJson.pages = [...originalPages, normalizedRoute]
+
+  return {
+    changed: true,
+    packageLocation: 'pages' as const,
+    packageRoot: null,
+    appJson: nextAppJson,
   }
 }
 

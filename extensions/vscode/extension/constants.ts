@@ -13,10 +13,12 @@ export const TERMINAL_NAME = 'weapp-vite'
 export const WEAPP_VITE_SCRIPT_PATTERN = /\b(?:wv|weapp-vite)\b/
 export const WEAPP_VITE_CONFIG_PATTERN = /\bweapp-vite\b/
 export const VITE_CONFIG_FILE_PATTERN = /vite\.config\./
+export const APP_JSON_FILE_PATTERN = /(?:^|\/)app\.json$/
 export const PACKAGE_JSON_FILE_PATTERN = /(?:^|\/)package\.json$/
 export const VUE_JSON_BLOCK_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>/u
 export const PACKAGE_JSON_PROPERTY_PREFIX_PATTERN = /^\s*"/
 export const COMMON_SCRIPT_NAMES = ['dev', 'build', 'generate', 'open']
+export const APP_JSON_DIAGNOSTIC_SOURCE = 'weapp-vite/app.json'
 export const PACKAGE_JSON_DIAGNOSTIC_SOURCE = 'weapp-vite/package.json'
 export const DOCS_BASE_URL = 'https://vite.icebreaker.top'
 export const DOCS_GUIDE_URL = `${DOCS_BASE_URL}/guide/`

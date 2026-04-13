@@ -100,7 +100,7 @@ keywords:
 | -------------------------- | ---------------------------------------------------------------------------------------------- |
 | 自动路由怎么开             | [/guide/auto-routes](/guide/auto-routes)                                                       |
 | 分包字段怎么配             | [/config/subpackages](/config/subpackages)                                                     |
-| `v-model` 在小程序里怎么写 | [/handbook/sfc/events-and-v-model](/handbook/sfc/events-and-v-model)                           |
+| `v-model` 在小程序里怎么写 | [/handbook/sfc/template](/handbook/sfc/template)                                               |
 | 页面为什么不更新           | [/handbook/debugging](/handbook/debugging) 和 [/handbook/wevu/runtime](/handbook/wevu/runtime) |
 | Wevu 生命周期怎么理解      | [/wevu/api/lifecycle](/wevu/api/lifecycle)                                                     |
 | Web 运行时支持到什么程度   | [/guide/web-compat-matrix](/guide/web-compat-matrix)                                           |
@@ -112,7 +112,7 @@ keywords:
 
 先看：
 
-- [30 分钟快速开始](/handbook/getting-started)
+- [30 分钟快速开始](/handbook/)
 - [目录结构怎么放最顺手](/handbook/project-structure)
 - [环境变量与配置怎么分层](/handbook/env-and-config)
 
@@ -137,7 +137,7 @@ keywords:
 
 - [性能与体验优化](/handbook/performance)
 - [构建、预览与上传](/handbook/publish)
-- [监控、埋点与线上可观测性](/handbook/observability)
+- [调试与排错（按层定位）](/handbook/debugging)
 
 ## 5. 最后一个建议
 
@@ -153,18 +153,18 @@ keywords:
 
 ## 6. 速查表
 
-| 你要找的东西 | 优先入口                 | 第二入口                                           |
-| ------------ | ------------------------ | -------------------------------------------------- |
-| 功能开关     | [/guide/](/guide/)       | [/troubleshoot/index](/troubleshoot/index)         |
-| 配置字段     | [/config/](/config/)     | [/guide/](/guide/)                                 |
-| 运行时 API   | [/wevu/api/](/wevu/api/) | [/wevu/](/wevu/)                                   |
-| 教程路线     | [/handbook/](/handbook/) | [/handbook/reading-guide](/handbook/reading-guide) |
+| 你要找的东西 | 优先入口                 | 第二入口                                   |
+| ------------ | ------------------------ | ------------------------------------------ |
+| 功能开关     | [/guide/](/guide/)       | [/troubleshoot/index](/troubleshoot/index) |
+| 配置字段     | [/config/](/config/)     | [/guide/](/guide/)                         |
+| 运行时 API   | [/wevu/api/](/wevu/api/) | [/wevu/](/wevu/)                           |
+| 教程路线     | [/handbook/](/handbook/) | [/handbook/reference](/handbook/reference) |
 
 ## 7. 参考资源
 
-| 主题       | 推荐入口                                    |
-| ---------- | ------------------------------------------- |
-| 教程导读   | [怎么阅读这套教程](/handbook/reading-guide) |
-| 运行时总览 | [Wevu 概览](/wevu/)                         |
-| API 总览   | [Wevu API](/wevu/api/)                      |
-| 常见问题   | [troubleshoot](/troubleshoot/index)         |
+| 主题       | 推荐入口                                  |
+| ---------- | ----------------------------------------- |
+| 教程导读   | [参考入口与速查索引](/handbook/reference) |
+| 运行时总览 | [Wevu 概览](/wevu/)                       |
+| API 总览   | [Wevu API](/wevu/api/)                    |
+| 常见问题   | [troubleshoot](/troubleshoot/index)       |

@@ -12,18 +12,224 @@ import {
   VUE_JSON_BLOCK_PATTERN,
 } from './constants'
 import {
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteHover,
+  getAppJsonRouteInsertText,
   getPackageJsonScriptHover,
   getViteConfigHover,
   getVueCustomBlockHover,
 } from './content'
 import {
+  getViteConfigObjectPath,
+  getVueJsonBlockCompletionContext,
+  getVuePageConfigState,
+} from './logic'
+import {
+  getQuotedRouteRangesAtLine,
+  getQuotedRouteValueAtLine,
+} from './navigation'
+import {
+  getAppJsonPageRouteSuggestions,
+  getAppJsonRouteFileStatus,
+  isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
   isVueDocument,
 } from './workspace'
 
+const QUOTED_STRING_PATTERN = /"([^"]+)"/u
+const VUE_JSON_BLOCK_COMPLETION_ITEMS = [
+  {
+    label: 'navigationBarTitleText',
+    insertText: '"navigationBarTitleText": "$1"',
+    detail: '页面标题',
+  },
+  {
+    label: 'enablePullDownRefresh',
+    insertText: '"enablePullDownRefresh": true',
+    detail: '启用下拉刷新',
+  },
+  {
+    label: 'backgroundColor',
+    insertText: '"backgroundColor": "#f6f7fb"',
+    detail: '页面背景色',
+  },
+  {
+    label: 'backgroundTextStyle',
+    insertText: '"backgroundTextStyle": "dark"',
+    detail: '下拉 loading 样式',
+  },
+  {
+    label: 'navigationStyle',
+    insertText: '"navigationStyle": "default"',
+    detail: '导航栏样式',
+  },
+  {
+    label: 'disableScroll',
+    insertText: '"disableScroll": true',
+    detail: '禁止页面滚动',
+  },
+]
+
+const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
+  detail: string
+  documentation?: string
+  insertText: string
+  kind: number
+  label: string
+}>> = {
+  'root': [
+    {
+      label: 'weapp',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'weapp: {\n    $1\n  },',
+      detail: 'weapp-vite 主配置',
+    },
+    {
+      label: 'plugins',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'plugins: [\n    $1\n  ],',
+      detail: 'Vite / weapp-vite plugins',
+    },
+    {
+      label: 'css',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'css: {\n    $1\n  },',
+      detail: 'Vite CSS 配置',
+    },
+  ],
+  'weapp': [
+    {
+      label: 'srcRoot',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'srcRoot: \'src\',',
+      detail: 'weapp 源码根目录',
+    },
+    {
+      label: 'generate',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'generate: {\n      $1\n    },',
+      detail: '页面/组件生成配置',
+      documentation: `参考文档：${DOCS_GENERATE_URL}`,
+    },
+    {
+      label: 'multiPlatform',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'multiPlatform: true,',
+      detail: '启用多平台构建能力',
+    },
+    {
+      label: 'web',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'web: {\n      enable: true,\n      outDir: \'dist/web\',\n    },',
+      detail: 'Web 运行时配置',
+    },
+    {
+      label: 'injectWeapi',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'injectWeapi: {\n      enabled: true,\n      replaceWx: true,\n    },',
+      detail: 'weapi 注入配置',
+    },
+    {
+      label: 'autoImportComponents',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'autoImportComponents: {\n      globs: [\'components/**/*\'],\n      resolvers: [\n        $1\n      ],\n    },',
+      detail: '自动导入组件配置',
+    },
+    {
+      label: 'subPackages',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'subPackages: {\n      packageA: {\n        dependencies: [],\n      },\n    },',
+      detail: '分包依赖配置',
+    },
+    {
+      label: 'worker',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'worker: {\n      entry: [\n        \'index\',\n      ],\n    },',
+      detail: 'worker 入口配置',
+    },
+    {
+      label: 'copy',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'copy: {\n      include: [\n        $1\n      ],\n    },',
+      detail: '额外拷贝文件配置',
+    },
+    {
+      label: 'jsonAlias',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'jsonAlias: {\n      entries: [\n        {\n          find: \'@\',\n          replacement: $1,\n        },\n      ],\n    },',
+      detail: 'json alias 配置',
+    },
+  ],
+  'weapp.generate': [
+    {
+      label: 'extensions',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'extensions: {\n        js: \'ts\',\n        wxss: \'scss\',\n      },',
+      detail: '生成文件扩展名配置',
+      documentation: `参考文档：${DOCS_GENERATE_URL}`,
+    },
+    {
+      label: 'dirs',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'dirs: {\n        component: \'src/components\',\n        page: \'src/pages\',\n      },',
+      detail: '生成目录配置',
+      documentation: `参考文档：${DOCS_GENERATE_URL}`,
+    },
+    {
+      label: 'filenames',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'filenames: {\n        component: \'index\',\n        page: \'index\',\n      },',
+      detail: '生成文件名配置',
+      documentation: `参考文档：${DOCS_GENERATE_URL}`,
+    },
+  ],
+  'weapp.generate.extensions': [
+    {
+      label: 'js',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'js: \'ts\',',
+      detail: '脚本扩展名',
+    },
+    {
+      label: 'wxss',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'wxss: \'scss\',',
+      detail: '样式扩展名',
+    },
+  ],
+  'weapp.generate.dirs': [
+    {
+      label: 'component',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'component: \'src/components\',',
+      detail: '组件目录',
+    },
+    {
+      label: 'page',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'page: \'src/pages\',',
+      detail: '页面目录',
+    },
+  ],
+  'weapp.generate.filenames': [
+    {
+      label: 'component',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'component: \'index\',',
+      detail: '组件文件名',
+    },
+    {
+      label: 'page',
+      kind: vscode.CompletionItemKind.Property,
+      insertText: 'page: \'index\',',
+      detail: '页面文件名',
+    },
+  ],
+}
+
 export class WeappViteCodeActionProvider {
-  provideCodeActions(document: any, range: any) {
+  async provideCodeActions(document: any, range: any) {
     /** @type {import('vscode').CodeAction[]} */
     const actions = []
 
@@ -40,6 +246,49 @@ export class WeappViteCodeActionProvider {
       actions.push(insertScriptsAction)
     }
 
+    if (isAppJsonDocument(document)) {
+      const lineText = document.lineAt(range.start.line).text
+      const routeMatch = lineText.match(QUOTED_STRING_PATTERN)
+      const openProjectFileAction = new vscode.CodeAction(
+        '打开 weapp-vite 关键文件 / 页面',
+        vscode.CodeActionKind.QuickFix,
+      )
+      openProjectFileAction.command = {
+        command: 'weapp-vite.openProjectFile',
+        title: '打开 weapp-vite 关键文件 / 页面',
+      }
+      actions.push(openProjectFileAction)
+
+      if (routeMatch) {
+        const routeFileStatus = await getAppJsonRouteFileStatus(document, routeMatch[1])
+
+        if (routeFileStatus?.pageFilePath) {
+          const openPageAction = new vscode.CodeAction(
+            '打开页面文件',
+            vscode.CodeActionKind.QuickFix,
+          )
+          openPageAction.command = {
+            command: 'weapp-vite.openPageFromRoute',
+            title: '打开页面文件',
+            arguments: [document, routeMatch[1]],
+          }
+          actions.push(openPageAction)
+        }
+        else {
+          const createPageAction = new vscode.CodeAction(
+            '创建缺失页面文件',
+            vscode.CodeActionKind.QuickFix,
+          )
+          createPageAction.command = {
+            command: 'weapp-vite.createPageFromRoute',
+            title: '创建缺失页面文件',
+            arguments: [document, routeMatch[1]],
+          }
+          actions.push(createPageAction)
+        }
+      }
+    }
+
     if (isViteConfigDocument(document)) {
       const defineConfigAction = new vscode.CodeAction(
         '插入 weapp-vite defineConfig 模板',
@@ -53,9 +302,33 @@ export class WeappViteCodeActionProvider {
     }
 
     if (isVueDocument(document)) {
+      const documentText = document.getText()
+      const pageConfigState = getVuePageConfigState(documentText)
+      const addPageToAppJsonAction = new vscode.CodeAction(
+        '将当前页面加入 app.json',
+        vscode.CodeActionKind.QuickFix,
+      )
+      addPageToAppJsonAction.command = {
+        command: 'weapp-vite.addCurrentPageToAppJson',
+        title: '将当前页面加入 app.json',
+      }
+      actions.push(addPageToAppJsonAction)
+
       const lineText = document.lineAt(range.start.line).text
 
-      if (!VUE_JSON_BLOCK_PATTERN.test(lineText)) {
+      if (!pageConfigState.hasDefinePageJson) {
+        const definePageJsonAction = new vscode.CodeAction(
+          '插入 definePageJson 模板',
+          vscode.CodeActionKind.RefactorRewrite,
+        )
+        definePageJsonAction.command = {
+          command: 'weapp-vite.insertDefinePageJsonTemplate',
+          title: '插入 definePageJson 模板',
+        }
+        actions.push(definePageJsonAction)
+      }
+
+      if (!pageConfigState.hasJsonBlock && !VUE_JSON_BLOCK_PATTERN.test(lineText)) {
         const jsonBlockAction = new vscode.CodeAction(
           '插入 weapp-vite <json> 自定义块',
           vscode.CodeActionKind.RefactorRewrite,
@@ -79,6 +352,19 @@ export class WeappViteVueCompletionProvider {
     }
 
     const linePrefix = document.lineAt(position.line).text.slice(0, position.character)
+    const textBeforeCursor = document.getText(new vscode.Range(0, 0, position.line, position.character))
+    const textAfterCursor = document.getText(new vscode.Range(position.line, position.character, document.lineCount, 0))
+    const jsonBlockContext = getVueJsonBlockCompletionContext(textBeforeCursor, textAfterCursor, linePrefix)
+
+    if (jsonBlockContext?.type === 'property') {
+      return VUE_JSON_BLOCK_COMPLETION_ITEMS.map((suggestion, index) => {
+        const item = new vscode.CompletionItem(suggestion.label, vscode.CompletionItemKind.Property)
+        item.insertText = new vscode.SnippetString(suggestion.insertText)
+        item.detail = suggestion.detail
+        item.sortText = `0${index}`
+        return item
+      })
+    }
 
     if (!linePrefix.trimStart().startsWith('<')) {
       return []
@@ -130,6 +416,73 @@ export class WeappVitePackageJsonCompletionProvider {
   }
 }
 
+export class WeappViteAppJsonCompletionProvider {
+  async provideCompletionItems(document: any, position: any) {
+    if (!isCompletionEnabled() || !isAppJsonDocument(document)) {
+      return []
+    }
+
+    const linePrefix = document.lineAt(position.line).text.slice(0, position.character)
+    const textBeforeCursor = document.getText(new vscode.Range(0, 0, position.line, position.character))
+    const context = getAppJsonRouteCompletionContext(textBeforeCursor, linePrefix)
+
+    if (!context) {
+      return []
+    }
+
+    const routes = await getAppJsonPageRouteSuggestions(document)
+
+    return routes
+      .map((route, index) => {
+        const insertText = getAppJsonRouteInsertText(route, context.root)
+
+        if (!insertText) {
+          return null
+        }
+
+        const item = new vscode.CompletionItem(insertText, vscode.CompletionItemKind.File)
+        item.insertText = insertText
+        item.detail = `page route: ${route}`
+        item.documentation = new vscode.MarkdownString(`对应页面文件路由：\`${route}\``)
+        item.sortText = `0${index}`
+        return item
+      })
+      .filter(Boolean)
+  }
+}
+
+export class WeappViteAppJsonDocumentLinkProvider {
+  async provideDocumentLinks(document: any) {
+    if (!isAppJsonDocument(document)) {
+      return []
+    }
+
+    const links = []
+
+    for (let line = 0; line < document.lineCount; line++) {
+      const lineText = document.lineAt(line).text
+      const routeRanges = getQuotedRouteRangesAtLine(lineText)
+
+      for (const routeRange of routeRanges) {
+        const status = await getAppJsonRouteFileStatus(document, routeRange.value)
+
+        if (!status?.pageFilePath) {
+          continue
+        }
+
+        const target = vscode.Uri.file(status.pageFilePath)
+        const range = new vscode.Range(line, routeRange.start, line, routeRange.end)
+        const link = new vscode.DocumentLink(range, target)
+
+        link.tooltip = `打开页面文件 ${routeRange.value}`
+        links.push(link)
+      }
+    }
+
+    return links
+  }
+}
+
 export class WeappViteConfigCompletionProvider {
   provideCompletionItems(document: any, position: any) {
     if (!isCompletionEnabled()) {
@@ -137,6 +490,9 @@ export class WeappViteConfigCompletionProvider {
     }
 
     const linePrefix = document.lineAt(position.line).text.slice(0, position.character)
+    const textBeforeCursor = document.getText(new vscode.Range(0, 0, position.line, position.character))
+    const objectPath = getViteConfigObjectPath(textBeforeCursor)
+    const completionSetKey = objectPath.length > 0 ? objectPath.join('.') : 'root'
     /** @type {import('vscode').CompletionItem[]} */
     const items = []
 
@@ -147,18 +503,17 @@ export class WeappViteConfigCompletionProvider {
       items.push(defineConfigItem)
     }
 
-    if (linePrefix.trimStart().startsWith('g') || linePrefix.includes('{')) {
-      const generateItem = new vscode.CompletionItem('generate', vscode.CompletionItemKind.Property)
-      generateItem.insertText = new vscode.SnippetString('generate: {\n    $1\n  },')
-      generateItem.documentation = new vscode.MarkdownString(`参考文档：${DOCS_GENERATE_URL}`)
-      items.push(generateItem)
-    }
+    for (const [index, suggestion] of (VITE_CONFIG_COMPLETION_SETS[completionSetKey] ?? []).entries()) {
+      const item = new vscode.CompletionItem(suggestion.label, suggestion.kind)
+      item.insertText = new vscode.SnippetString(suggestion.insertText)
+      item.detail = suggestion.detail
+      item.sortText = `0${index}`
 
-    if (linePrefix.trimStart().startsWith('p') || linePrefix.includes('{')) {
-      const pluginsItem = new vscode.CompletionItem('plugins', vscode.CompletionItemKind.Property)
-      pluginsItem.insertText = new vscode.SnippetString('plugins: [\n    $1\n  ],')
-      pluginsItem.detail = 'Vite / weapp-vite plugins'
-      items.push(pluginsItem)
+      if (suggestion.documentation) {
+        item.documentation = new vscode.MarkdownString(suggestion.documentation)
+      }
+
+      items.push(item)
     }
 
     return items
@@ -180,6 +535,25 @@ export class WeappViteHoverProvider {
 
       if (markdown) {
         return new vscode.Hover(markdown)
+      }
+    }
+
+    if (isAppJsonDocument(document)) {
+      const route = getQuotedRouteValueAtLine(lineText, position.character)
+
+      if (route) {
+        return getAppJsonRouteFileStatus(document, route).then((status) => {
+          if (!status) {
+            return null
+          }
+
+          return new vscode.Hover(getAppJsonRouteHover(
+            status.route,
+            status.pageFilePath,
+            status.candidatePaths,
+            status.workspacePath,
+          ))
+        })
       }
     }
 

@@ -154,6 +154,6 @@ const nickname = ref('游客')
 
 如果你当前正处在迁移期，建议配合这些页面一起看：
 
-- [30 分钟快速开始](/handbook/getting-started)
+- [30 分钟快速开始](/handbook/)
 - [先建立 SFC 心智模型](/handbook/sfc/)
 - [为什么要用 Wevu](/handbook/wevu/)

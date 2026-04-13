@@ -56,6 +56,7 @@ function createMockVscode() {
       showWarningMessage() {},
       showInformationMessage() {},
       showQuickPick: async () => undefined,
+      showTextDocument: async () => undefined,
       setStatusBarMessage() {},
       onDidChangeActiveTextEditor(handler) {
         return { dispose() {}, handler }
@@ -68,7 +69,9 @@ function createMockVscode() {
         stat: async () => {
           throw new Error('not found')
         },
+        createDirectory: async () => true,
         readFile: async () => Buffer.from(''),
+        writeFile: async () => true,
       },
       getWorkspaceFolder: () => undefined,
       getConfiguration: () => ({
@@ -92,6 +95,9 @@ function createMockVscode() {
         return { dispose() {}, handler }
       },
       applyEdit: async () => true,
+      openTextDocument: async () => ({
+        uri: { path: '/tmp/demo.ts' },
+      }),
     },
     commands: {
       registerCommand(command, handler) {
@@ -103,6 +109,7 @@ function createMockVscode() {
       createDiagnosticCollection(name) {
         const collection = {
           name,
+          entries: [],
           set() {},
           delete() {},
           dispose() {},
@@ -118,6 +125,10 @@ function createMockVscode() {
         registeredProviders.push({ type: 'completion', selector })
         return { dispose() {} }
       },
+      registerDocumentLinkProvider(selector) {
+        registeredProviders.push({ type: 'documentLink', selector })
+        return { dispose() {} }
+      },
       registerHoverProvider(selector) {
         registeredProviders.push({ type: 'hover', selector })
         return { dispose() {} }
@@ -125,6 +136,9 @@ function createMockVscode() {
     },
     env: {
       openExternal: async () => true,
+      clipboard: {
+        writeText: async () => true,
+      },
     },
     Uri: {
       file(fsPath) {
@@ -171,6 +185,7 @@ function createMockVscode() {
       Property: 2,
       Function: 3,
       Value: 4,
+      File: 5,
     },
     SnippetString: class {
       constructor(value) {
@@ -241,7 +256,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 12)
+    assert.equal(state.registeredCommands.length, 19)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -255,11 +270,18 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.runAction',
         'weapp-vite.insertJsonBlockTemplate',
         'weapp-vite.insertDefineConfigTemplate',
+        'weapp-vite.insertDefinePageJsonTemplate',
         'weapp-vite.insertCommonScripts',
+        'weapp-vite.createPageFromRoute',
+        'weapp-vite.openPageFromRoute',
+        'weapp-vite.addCurrentPageToAppJson',
         'weapp-vite.openDocs',
+        'weapp-vite.openProjectFile',
+        'weapp-vite.copyCurrentPageRoute',
+        'weapp-vite.revealCurrentPageInAppJson',
       ],
     )
-    assert.equal(state.registeredProviders.length, 5)
+    assert.equal(state.registeredProviders.length, 7)
     assert.equal(state.statusBarItems.length, 1)
     assert.equal(state.statusBarItems[0].command, 'weapp-vite.runAction')
     assert.equal(state.outputChannels.length, 1)

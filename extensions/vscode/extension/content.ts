@@ -1,6 +1,8 @@
+import path from 'node:path'
 import vscode from 'vscode'
 
 import {
+  APP_JSON_DIAGNOSTIC_SOURCE,
   COMMON_SCRIPT_NAMES,
   DOCS_GENERATE_URL,
   DOCS_GUIDE_URL,
@@ -12,6 +14,8 @@ import {
   WEAPP_VITE_SCRIPT_PATTERN,
 } from './constants'
 import {
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteInsertText,
   getMissingCommonScripts,
 } from './logic'
 
@@ -32,6 +36,46 @@ export function getDefineConfigTemplate() {
     'export default defineConfig({',
     '  // https://vite.icebreaker.top/guide/generate.html',
     '})',
+  ].join('\n')
+}
+
+export function getDefinePageJsonTemplate() {
+  return [
+    'definePageJson({',
+    '  navigationBarTitleText: \'$1\',',
+    '})',
+  ].join('\n')
+}
+
+export function getPageVueTemplate(route: string) {
+  const normalizedRoute = route.trim().replace(/^\/+|\/+$/g, '')
+  const title = normalizedRoute.split('/').filter(Boolean).at(-2) || normalizedRoute.split('/').filter(Boolean).at(-1) || 'New Page'
+
+  return [
+    '<script setup lang="ts">',
+    'definePageJson({',
+    `  navigationBarTitleText: '${title}',`,
+    '})',
+    '</script>',
+    '',
+    '<template>',
+    '  <view class="page">',
+    `    ${normalizedRoute}`,
+    '  </view>',
+    '</template>',
+    '',
+    '<json lang="jsonc">',
+    '{',
+    `  "navigationBarTitleText": "${title}"`,
+    '}',
+    '</json>',
+    '',
+    '<style scoped>',
+    '.page {',
+    '  padding: 32rpx;',
+    '}',
+    '</style>',
+    '',
   ].join('\n')
 }
 
@@ -83,6 +127,39 @@ export function buildPackageJsonDiagnostics(document: any) {
   return diagnostics
 }
 
+export function buildAppJsonDiagnostics(document: any, missingRoutes: string[]) {
+  return missingRoutes.map((route) => {
+    const quotedRoute = `"${route}"`
+    let targetLine = 0
+    let targetCharacter = 0
+
+    for (let line = 0; line < document.lineCount; line++) {
+      const lineText = document.lineAt(line).text
+      const character = lineText.indexOf(quotedRoute)
+
+      if (character >= 0) {
+        targetLine = line
+        targetCharacter = character + 1
+        break
+      }
+    }
+
+    const diagnostic = new vscode.Diagnostic(
+      new vscode.Range(
+        targetLine,
+        targetCharacter,
+        targetLine,
+        targetCharacter + route.length,
+      ),
+      `未找到页面文件：${route}（已尝试 .vue / .ts / .js / .wxml）`,
+      vscode.DiagnosticSeverity.Information,
+    )
+
+    diagnostic.source = APP_JSON_DIAGNOSTIC_SOURCE
+    return diagnostic
+  })
+}
+
 export function getDocItems() {
   return [
     {
@@ -127,6 +204,35 @@ export function getPackageJsonScriptHover(lineText: string) {
   }
 
   return null
+}
+
+export function getAppJsonRouteHover(
+  route: string,
+  pageFilePath: string | null,
+  candidatePaths: string[],
+  workspacePath: string,
+) {
+  const relativeCandidates = candidatePaths.map(candidate => path.relative(workspacePath, candidate))
+
+  if (pageFilePath) {
+    return new vscode.MarkdownString([
+      '**app.json 页面路由**',
+      '',
+      `当前 route：\`${route}\``,
+      '',
+      `已找到页面文件：\`${path.relative(workspacePath, pageFilePath)}\``,
+    ].join('\n'))
+  }
+
+  return new vscode.MarkdownString([
+    '**app.json 页面路由**',
+    '',
+    `当前 route：\`${route}\``,
+    '',
+    '未找到对应页面文件。',
+    '',
+    `已尝试：${relativeCandidates.map(candidate => `\`${candidate}\``).join('、')}`,
+  ].join('\n'))
 }
 
 export function getViteConfigHover(wordRangeText: string, lineText: string) {
@@ -175,4 +281,9 @@ export function getVueCustomBlockHover(lineText: string) {
     '',
     '建议使用 `lang="jsonc"` 以便保留注释。',
   ].join('\n'))
+}
+
+export {
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteInsertText,
 }

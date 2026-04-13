@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-04-12T04:29:03.021Z",
+  "generatedAt": "2026-04-13T12:10:33.376Z",
   "site": "https://vite.icebreaker.top",
-  "count": 274,
+  "count": 259,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -586,7 +586,7 @@
         "配置改了但编辑器没提示",
         "不知道一个字段到底归谁管"
       ],
-      "updatedAt": "2026-04-09",
+      "updatedAt": "2026-04-13",
       "source": "config/index.md"
     },
     {
@@ -766,7 +766,7 @@
     {
       "id": "doc-8b23c4fd4a",
       "title": "共享配置",
-      "summary": "weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、app.prelude 前置注入、forwardConsole、injectWeapi、injectRequestGlobals 与 MCP 等能力。",
+      "summary": "weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、app.prelude 前置注入、forwardConsole、injectWeapi、webRuntime 与 MCP 等能力。",
       "url": "/config/shared",
       "canonical": "https://vite.icebreaker.top/config/shared",
       "keywords": [
@@ -787,11 +787,12 @@
         "weapp.logger {#weapp-logger}",
         "weapp.forwardConsole {#weapp-forwardconsole}",
         "weapp.injectWeapi {#weapp-injectweapi}",
+        "weapp.injectWebRuntimeGlobals {#weapp-injectwebruntimeglobals}",
         "weapp.injectRequestGlobals {#weapp-injectrequestglobals}",
         "weapp.mcp {#weapp-mcp}",
         "这页和 Vite 原生配置的边界"
       ],
-      "updatedAt": "2026-04-12",
+      "updatedAt": "2026-04-13",
       "source": "config/shared.md"
     },
     {
@@ -2687,67 +2688,31 @@
       "source": "handbook/env-and-config.md"
     },
     {
-      "id": "doc-475b15497f",
-      "title": "30 分钟快速开始",
-      "summary": "用一个最小可运行的小程序页面，带你按顺序完成项目创建、页面编写、开发预览和常见问题排查。",
-      "url": "/handbook/getting-started",
-      "canonical": "https://vite.icebreaker.top/handbook/getting-started",
-      "keywords": [
-        "weapp-vite",
-        "handbook",
-        "getting started",
-        "快速开始",
-        "Vue SFC",
-        "wevu",
-        "getting",
-        "started"
-      ],
-      "headings": [
-        "30 分钟快速开始",
-        "1. 第 0 步：准备环境",
-        "2. 第 1 步：创建项目",
-        "3. 第 2 步：先写一个最小页面",
-        "4. 第 3 步：确认页面已经被路由系统看到",
-        "5. 第 4 步：启动开发",
-        "6. 第 5 步：学会看“最终产物”",
-        "7. 第 6 步：最常见的 6 个问题",
-        "7.1 页面白屏",
-        "7.2 点击按钮没有反应",
-        "7.3 数据改了但页面没更新",
-        "7.4 页面标题没生效"
-      ],
-      "updatedAt": "2026-04-05",
-      "source": "handbook/getting-started.md"
-    },
-    {
       "id": "doc-e2ce0b9ee8",
-      "title": "从零开始学 Weapp-vite",
-      "summary": "handbook 按新用户的真实学习顺序组织 Weapp-vite、Vue SFC 与 Wevu，帮助你从项目启动一路走到页面开发、业务落地与上线发布。",
+      "title": "创建项目，跑起来",
+      "summary": "从零开始创建一个 Weapp-vite + Wevu 小程序项目，写出第一个页面，确认它能在开发者工具里正常运行。",
       "url": "/handbook/",
       "canonical": "https://vite.icebreaker.top/handbook/",
       "keywords": [
         "weapp-vite",
         "wevu",
-        "Vue SFC",
         "handbook",
-        "学习路径",
-        "配置",
-        "从零开始学"
+        "快速开始",
+        "创建项目",
+        "跑起来"
       ],
       "headings": [
-        "从零开始学 Weapp-vite",
-        "1. 这套教程解决什么问题",
-        "2. 先建立一个最小认知模型",
-        "3. 这套教程怎么读最顺",
-        "3.1 想最快上手",
-        "3.2 已经有项目，想系统补齐认知",
-        "4. /guide、/config、/wevu、/handbook 分别看什么",
-        "5. 你能在 handbook 里获得什么",
-        "6. 现在就从哪里开始",
-        "7. 总结",
-        "8. 参考资源"
+        "创建项目，跑起来",
+        "你需要准备什么",
+        "创建项目",
+        "写第一个页面",
+        "确认页面被路由系统识别",
+        "启动开发",
+        "跑不起来？先查这几个地方",
+        "这套技术栈是怎么分工的",
+        "下一步"
       ],
-      "updatedAt": "2026-04-05",
+      "updatedAt": "2026-04-13",
       "source": "handbook/index.md"
     },
     {
@@ -2779,34 +2744,8 @@
         "什么叫“可回滚迁移”",
         "一份迁移清单"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/migration.md"
-    },
-    {
-      "id": "doc-fc82d0ef7b",
-      "title": "Monorepo 与多包协作",
-      "summary": "Monorepo 与多包协作，聚焦 handbook / monorepo 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。",
-      "url": "/handbook/monorepo",
-      "canonical": "https://vite.icebreaker.top/handbook/monorepo",
-      "keywords": [
-        "handbook",
-        "monorepo",
-        "与多包协作",
-        "聚焦",
-        "/",
-        "相关场景",
-        "覆盖",
-        "weapp-vite"
-      ],
-      "headings": [
-        "Monorepo 与多包协作",
-        "本章你会学到什么",
-        "推荐实践",
-        "常见坑",
-        "相关链接"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/monorepo.md"
     },
     {
       "id": "doc-3d1ab8b204",
@@ -2836,7 +2775,7 @@
         "页面里到底该保留多少平台细节",
         "一份很实用的原生能力检查清单"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/native-apis.md"
     },
     {
@@ -2896,36 +2835,6 @@
       ],
       "updatedAt": "2026-03-21",
       "source": "handbook/network.md"
-    },
-    {
-      "id": "doc-3a0a8651d9",
-      "title": "监控、埋点与线上可观测性",
-      "summary": "从线上问题定位的角度解释小程序项目里最值得先建设的错误监控、请求监控和业务埋点体系。",
-      "url": "/handbook/observability",
-      "canonical": "https://vite.icebreaker.top/handbook/observability",
-      "keywords": [
-        "handbook",
-        "observability",
-        "监控",
-        "埋点",
-        "埋点与线上可观测性"
-      ],
-      "headings": [
-        "监控、埋点与线上可观测性",
-        "新项目最值得先做的 3 件事",
-        "1. 错误上报",
-        "2. 请求上报",
-        "3. 关键业务埋点",
-        "一个推荐的最小结构",
-        "页面不应该直接拼装所有上报字段",
-        "一个错误上报的简单示例",
-        "埋点最容易做错的地方",
-        "1. 事件名没有规则",
-        "2. 页面里到处散落上报",
-        "3. 只埋点击，不埋关键结果"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/observability.md"
     },
     {
       "id": "doc-71b93ba1e9",
@@ -3021,39 +2930,6 @@
       "source": "handbook/publish.md"
     },
     {
-      "id": "doc-8050fc8988",
-      "title": "怎么阅读这套教程",
-      "summary": "用新用户能快速建立心智模型的方式介绍 handbook 的阅读顺序、术语边界，以及遇到问题时该跳去哪里继续查。",
-      "url": "/handbook/reading-guide",
-      "canonical": "https://vite.icebreaker.top/handbook/reading-guide",
-      "keywords": [
-        "handbook",
-        "reading guide",
-        "weapp-vite",
-        "wevu",
-        "Vue SFC",
-        "编译",
-        "api",
-        "reading"
-      ],
-      "headings": [
-        "怎么阅读这套教程",
-        "1. 先记住 4 个关键词",
-        "1.1 Weapp-vite",
-        "1.2 Vue SFC 编译链",
-        "1.3 Wevu",
-        "1.4 handbook",
-        "2. 推荐阅读路径",
-        "2.1 路线 A：你想最快跑通一个 demo",
-        "2.2 路线 B：你已经能跑项目，但想把项目做规范",
-        "2.3 路线 C：你在排查复杂问题",
-        "3. 每一章该怎么看",
-        "4. 新用户最常见的 5 个误区"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/reading-guide.md"
-    },
-    {
       "id": "doc-adacbe8b34",
       "title": "参考入口与速查索引",
       "summary": "帮你在遇到具体问题时，快速判断应该回到 guide、config、wevu 还是源码，避免在文档体系里来回迷路。",
@@ -3083,154 +2959,67 @@
         "3. 一个常见问题到入口的映射表",
         "4. 你也可以按“当前阶段”找"
       ],
-      "updatedAt": "2026-04-02",
+      "updatedAt": "2026-04-13",
       "source": "handbook/reference.md"
     },
     {
-      "id": "doc-20292ae0bb",
-      "title": "资源：图片/字体/路径",
-      "summary": "资源：图片/字体/路径，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。",
-      "url": "/handbook/sfc/assets",
-      "canonical": "https://vite.icebreaker.top/handbook/sfc/assets",
-      "keywords": [
-        "handbook",
-        "sfc",
-        "assets",
-        "资源：图片/字体/路径",
-        "聚焦",
-        "/",
-        "相关场景",
-        "覆盖"
-      ],
-      "headings": [
-        "资源：图片/字体/路径",
-        "本章你会学到什么",
-        "图片引用策略（建议优先级）",
-        "常见坑",
-        "相关链接"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/sfc/assets.md"
-    },
-    {
       "id": "doc-535d1b00be",
-      "title": "组件：拆分、导入与注册",
-      "summary": "解释新项目里组件应该如何拆分、何时直接 import .vue、何时还需要 usingComponents，以及原生组件如何获得更稳的类型提示。",
+      "title": "组件怎么拆",
+      "summary": "什么时候该拆组件、怎么导入、什么时候还需要 usingComponents、原生组件怎么接类型。",
       "url": "/handbook/sfc/components",
       "canonical": "https://vite.icebreaker.top/handbook/sfc/components",
       "keywords": [
         "handbook",
         "sfc",
         "components",
-        "usingcomponents",
-        "Vue SFC",
-        "组件：拆分",
-        "导入与注册"
+        "组件",
+        "组件怎么拆"
       ],
       "headings": [
-        "组件：拆分、导入与注册",
-        "先看一个推荐的拆分例子",
-        "为什么默认推荐直接 import .vue",
-        "什么时候该拆成组件",
+        "组件怎么拆",
+        "默认方式：直接 import .vue",
+        "什么时候该拆",
+        "放哪里",
         "什么时候还需要 usingComponents",
-        "页面局部组件还是全局组件",
-        "原生组件怎么获得更稳的类型",
-        "一句话建议"
+        "组件的 props 和事件",
+        "原生组件怎么加类型",
+        "插槽",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/sfc/components.md"
     },
     {
       "id": "doc-46d05d67ee",
-      "title": "高频场景配方",
-      "summary": "把小程序 SFC 项目里最常见的业务场景整理成可直接参考的写法清单，帮助新用户在写真实页面时快速找到起手式。",
+      "title": "常用写法速查",
+      "summary": "小程序 SFC 项目里最常见的业务场景写法，可以直接照着改。",
       "url": "/handbook/sfc/cookbook",
       "canonical": "https://vite.icebreaker.top/handbook/sfc/cookbook",
       "keywords": [
         "handbook",
         "sfc",
         "cookbook",
-        "配方",
-        "高频场景配方"
+        "速查",
+        "常用写法速查"
       ],
       "headings": [
-        "高频场景配方",
-        "配方 1：登录拦截后再回跳",
-        "配方 2：列表页的标准结构",
-        "配方 3：表单页怎么起手",
-        "配方 4：详情页首次加载",
-        "配方 5：通用弹窗 / toast 能力",
-        "配方 6：分享能力",
-        "一句话建议"
+        "常用写法速查",
+        "列表页",
+        "详情页",
+        "表单页",
+        "登录拦截",
+        "分享",
+        "Tab 切换",
+        "Toast / Modal 封装",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/sfc/cookbook.md"
     },
     {
-      "id": "doc-242e4b1693",
-      "title": "事件与 v-model：怎么绑定最稳",
-      "summary": "从 input、picker、自定义组件这些最常见场景出发，解释小程序里的事件语义和 v-model 边界，帮助新用户少踩双向绑定的坑。",
-      "url": "/handbook/sfc/events-and-v-model",
-      "canonical": "https://vite.icebreaker.top/handbook/sfc/events-and-v-model",
-      "keywords": [
-        "handbook",
-        "sfc",
-        "events",
-        "v-model",
-        "事件",
-        "微信小程序",
-        "model",
-        "事件与"
-      ],
-      "headings": [
-        "事件与 v-model：怎么绑定最稳",
-        "第一条建议：事件名优先按小程序语义写",
-        "一个最常见的输入场景",
-        "但要记住：这里的 v-model 本质不是 Web DOM v-model",
-        "什么时候不用 v-model 更稳",
-        "自定义组件支持 v-model 的最小协议",
-        "一个很实用的判断方式",
-        "更复杂的统一方案"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/sfc/events-and-v-model.md"
-    },
-    {
-      "id": "doc-e73cab5ae3",
-      "title": "表单：输入、校验与受控写法",
-      "summary": "从 input、textarea、picker、自定义表单组件的真实业务场景出发，解释在小程序里怎样写出稳定、不卡光标、可校验的表单。",
-      "url": "/handbook/sfc/forms",
-      "canonical": "https://vite.icebreaker.top/handbook/sfc/forms",
-      "keywords": [
-        "handbook",
-        "sfc",
-        "forms",
-        "表单",
-        "v-model",
-        "表单：输入",
-        "校验与受控写法"
-      ],
-      "headings": [
-        "表单：输入、校验与受控写法",
-        "先看一个常见表单例子",
-        "输入类组件的常见处理方式",
-        "input / textarea",
-        "picker",
-        "“输入中校验”和“提交前校验”建议分开",
-        "输入中校验",
-        "提交前校验",
-        "异步校验要注意什么",
-        "什么时候该考虑 bindModel",
-        "一个很实用的表单建议",
-        "一句话总结"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/sfc/forms.md"
-    },
-    {
       "id": "doc-e961caaf2d",
-      "title": "先建立 SFC 心智模型",
-      "summary": "用新用户最容易理解的方式解释 .vue 文件在 Weapp-vite 里如何落到小程序产物，以及写 Vue SFC 时哪些地方和 Web Vue 一样，哪些地方不一样。",
+      "title": ".vue 怎么变成小程序",
+      "summary": "解释 .vue 文件在 weapp-vite 里是怎么被编译成小程序四件套的，以及写 Vue SFC 时哪些地方和 Web Vue 一样，哪些地方不一样。",
       "url": "/handbook/sfc/",
       "canonical": "https://vite.icebreaker.top/handbook/sfc/",
       "keywords": [
@@ -3238,200 +3027,97 @@
         "sfc",
         "Vue SFC",
         "weapp-vite",
+        "wevu",
+        "微信小程序",
         "配置",
-        "api",
-        "先建立",
-        "心智模型"
+        "api"
       ],
       "headings": [
-        "先建立 SFC 心智模型",
-        "先记住最关键的一句话",
-        "一个 .vue 文件里的 4 个块分别负责什么",
-        "和 Web Vue 最容易混淆的地方",
-        "1. 响应式 API 的来源",
-        "2. 模板不是浏览器 DOM",
-        "3. 页面配置不是 defineOptions",
-        "新用户应该先掌握哪些内容",
-        "一个实用判断标准",
-        "接下来按这个顺序继续看"
+        ".vue 怎么变成小程序",
+        "一个 .vue 文件最终会变成什么",
+        "四个块各自负责什么",
+        "definePageJson()",
+        "和 Web Vue 最容易搞混的三件事",
+        "1. 响应式 API 要从 wevu 导入",
+        "2. 模板最终是 WXML，不是浏览器 DOM",
+        "3. 页面配置是小程序概念",
+        "一个典型的页面长什么样",
+        "怎么判断一个写法在小程序里行不行",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/sfc/index.md"
     },
     {
-      "id": "doc-94fe59216f",
-      "title": "JSON：页面配置放哪里",
-      "summary": "从新项目默认实践出发，解释 defineAppJson、definePageJson、defineComponentJson 和 json 块各自的定位，以及什么时候还需要 usingComponents。",
-      "url": "/handbook/sfc/json",
-      "canonical": "https://vite.icebreaker.top/handbook/sfc/json",
-      "keywords": [
-        "handbook",
-        "sfc",
-        "json",
-        "definepagejson",
-        "defineappjson",
-        "配置",
-        "JSON：页面配置放哪里"
-      ],
-      "headings": [
-        "JSON：页面配置放哪里",
-        "新项目默认推荐：优先用 JSON 宏",
-        "App、Page、Component 分别怎么写",
-        "App",
-        "Page",
-        "Component",
-        "什么时候还会出现",
-        "usingComponents 什么时候需要",
-        "一个新用户很实用的判断方法",
-        "一句话建议"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/sfc/json.md"
-    },
-    {
-      "id": "doc-d8fe4e2086",
-      "title": "生命周期：页面/组件对齐",
-      "summary": "生命周期：页面/组件对齐，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。",
-      "url": "/handbook/sfc/lifecycle",
-      "canonical": "https://vite.icebreaker.top/handbook/sfc/lifecycle",
-      "keywords": [
-        "handbook",
-        "sfc",
-        "lifecycle",
-        "生命周期：页面/组件对齐",
-        "聚焦",
-        "/",
-        "相关场景",
-        "覆盖"
-      ],
-      "headings": [
-        "生命周期：页面/组件对齐",
-        "本章你会学到什么",
-        "页面常用 hooks",
-        "常见坑"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/sfc/lifecycle.md"
-    },
-    {
-      "id": "doc-03b9539a06",
-      "title": "Template：原生 WXML 语法直通",
-      "summary": "Weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语法（标签/属性/事件）基本按原样保留。",
-      "url": "/handbook/sfc/native-wxml",
-      "canonical": "https://vite.icebreaker.top/handbook/sfc/native-wxml",
-      "keywords": [
-        "Vue SFC",
-        "编译",
-        "handbook",
-        "sfc",
-        "native",
-        "wxml",
-        "Template：原生",
-        "语法直通"
-      ],
-      "headings": [
-        "Template：原生 WXML 语法直通",
-        "本章你会学到什么",
-        "结论",
-        "原生语法直通清单",
-        "结构与列表",
-        "事件绑定",
-        "资源/模板相关标签",
-        "常见原生属性",
-        "与 Vue 语法共存的注意点",
-        "何时编译为 WXML template，何时变成 block",
-        "保留为 WXML",
-        "降级为"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/sfc/native-wxml.md"
-    },
-    {
-      "id": "doc-6e1cad03d1",
-      "title": "Options API：兼容写法",
-      "summary": "Options API：兼容写法，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。",
-      "url": "/handbook/sfc/options-api",
-      "canonical": "https://vite.icebreaker.top/handbook/sfc/options-api",
-      "keywords": [
-        "api",
-        "handbook",
-        "sfc",
-        "options",
-        "API：兼容写法",
-        "聚焦",
-        "/",
-        "相关场景"
-      ],
-      "headings": [
-        "Options API：兼容写法",
-        "本章你会学到什么",
-        "建议场景",
-        "基本示例",
-        "相关链接"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/sfc/options-api.md"
-    },
-    {
       "id": "doc-bb65759914",
-      "title": "Script Setup：推荐日常范式",
-      "summary": "用页面、组件和 app 入口的常见写法解释为什么新项目应该优先使用 script setup，以及在 Weapp-vite + Wevu 里有哪些固定习惯值得尽早统一。",
+      "title": "脚本逻辑怎么组织",
+      "summary": "用 script setup 写页面和组件的推荐范式，包括代码组织顺序、生命周期用法、Options API 兼容写法。",
       "url": "/handbook/sfc/script-setup",
       "canonical": "https://vite.icebreaker.top/handbook/sfc/script-setup",
       "keywords": [
         "handbook",
         "sfc",
         "script setup",
-        "Vue SFC",
+        "生命周期",
+        "Options API",
         "api",
         "script",
-        "setup",
-        "Setup：推荐日常范式"
+        "setup"
       ],
       "headings": [
-        "Script Setup：推荐日常范式",
-        "一个新页面的推荐起手式",
-        "组件导入推荐直接 import .vue",
-        "app 入口也建议统一成 app.vue",
-        "一种很好用的页面组织顺序",
-        "最容易犯的 3 个错误",
-        "1. 从 vue 导入响应式 API",
-        "2. 在异步回调里注册 hooks",
-        "3. 明明是 SFC 项目，还在大量手写 usingComponents",
-        "一句话建议"
+        "脚本逻辑怎么组织",
+        "一个页面的推荐写法",
+        "推荐的代码组织顺序",
+        "生命周期怎么用",
+        "页面常用的 hooks",
+        "交互类 hooks",
+        "组件的 hooks",
+        "最重要的规则：hooks 必须同步注册",
+        "组件导入",
+        "app.vue 入口",
+        "如果你更习惯 Options API",
+        "三个最常见的错误"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/sfc/script-setup.md"
     },
     {
       "id": "doc-826825b6d4",
-      "title": "样式：wxss / scoped / 预处理器",
-      "summary": "样式：wxss / scoped / 预处理器，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。",
+      "title": "样式和资源怎么处理",
+      "summary": "SFC 里的样式怎么落到 WXSS、scoped 的真实行为、预处理器怎么选、图片和字体怎么引用。",
       "url": "/handbook/sfc/style",
       "canonical": "https://vite.icebreaker.top/handbook/sfc/style",
       "keywords": [
         "handbook",
         "sfc",
         "style",
-        "样式：wxss",
-        "/",
+        "wxss",
         "scoped",
-        "预处理器",
-        "聚焦"
+        "图片",
+        "资源",
+        "微信小程序"
       ],
       "headings": [
-        "样式：wxss / scoped / 预处理器",
-        "本章你会学到什么",
-        "你要记住的 3 件事",
-        "相关链接"
+        "样式和资源怎么处理",
+        "样式最终会变成 WXSS",
+        "scoped 是怎么回事",
+        "小程序对 CSS 的限制",
+        "选择器",
+        "不一定能用的 CSS",
+        "rpx 是主力单位",
+        "预处理器",
+        "样式怎么组织",
+        "图片怎么引用",
+        "小图片：放在页面或组件旁边",
+        "跨页面复用的图片：放 src/assets/"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/sfc/style.md"
     },
     {
       "id": "doc-149f007a1c",
-      "title": "Template：先学哪些写法",
-      "summary": "从新用户最常写的页面结构、列表、条件、事件出发，解释小程序 SFC 模板该怎么写最稳，以及哪些 Web Vue 习惯要主动收住。",
+      "title": "模板和事件怎么写",
+      "summary": "小程序 SFC 模板的日常写法：条件渲染、列表、事件绑定、v-model，以及哪些 Web Vue 的习惯要收一收。",
       "url": "/handbook/sfc/template",
       "canonical": "https://vite.icebreaker.top/handbook/sfc/template",
       "keywords": [
@@ -3439,25 +3125,26 @@
         "sfc",
         "template",
         "模板",
+        "事件",
+        "v-model",
         "Vue SFC",
-        "微信小程序",
-        "Template：先学哪些写法"
+        "配置"
       ],
       "headings": [
-        "Template：先学哪些写法",
-        "先建立一个够用的判断标准",
-        "一个推荐的页面模板形态",
-        "条件渲染怎么写最稳",
-        "列表渲染的推荐姿势",
-        "事件优先用小程序语义",
-        "不推荐在模板里做什么",
-        "1. 重计算",
-        "2. 副作用调用",
-        "class 和 style 怎么看待",
-        "一个新用户很容易踩的坑",
-        "一句话建议"
+        "模板和事件怎么写",
+        "日常最常用的几种写法",
+        "条件渲染",
+        "列表渲染",
+        "事件绑定",
+        "v-model",
+        "页面配置",
+        "动态 class",
+        "模板里不要做的事",
+        "不要放复杂计算",
+        "不要调有副作用的函数",
+        "原生 WXML 语法"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/sfc/template.md"
     },
     {
@@ -3492,8 +3179,8 @@
     },
     {
       "id": "doc-4a097961c2",
-      "title": "bindModel：表单多了以后怎么收口",
-      "summary": "当表单组件越来越多、事件和值来源越来越不统一时，如何用 bindModel 把取值、设值和转换逻辑集中管理。",
+      "title": "表单和双向绑定",
+      "summary": "v-model 的边界、什么时候该用显式写法、bindModel 解决什么问题。",
       "url": "/handbook/wevu/bind-model",
       "canonical": "https://vite.icebreaker.top/handbook/wevu/bind-model",
       "keywords": [
@@ -3501,26 +3188,28 @@
         "wevu",
         "bindmodel",
         "表单",
+        "v-model",
         "bind",
         "model",
-        "bindModel：表单多了以后怎么收口"
+        "表单和双向绑定"
       ],
       "headings": [
-        "bindModel：表单多了以后怎么收口",
-        "它适合解决什么问题",
-        "一个典型场景",
-        "它最适合什么页面",
-        "一个更复杂一点的例子",
-        "什么时候不用它更好",
-        "一句话建议"
+        "表单和双向绑定",
+        "简单场景：直接用 v-model",
+        "v-model 的限制",
+        "什么时候改用显式写法",
+        "自定义组件支持 v-model",
+        "表单校验怎么组织",
+        "bindModel：表单字段多了以后怎么收口",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/wevu/bind-model.md"
     },
     {
       "id": "doc-4df354dc90",
-      "title": "组件：props、emit、slots",
-      "summary": "从组件通信最常见的三件事出发，解释 Wevu 里的 props、emit 和 slots 在小程序宿主下分别应该怎么理解。",
+      "title": "组件通信",
+      "summary": "在 wevu 里怎么做 props、emit 和 slots，以及和 Web Vue 的区别。",
       "url": "/handbook/wevu/component",
       "canonical": "https://vite.icebreaker.top/handbook/wevu/component",
       "keywords": [
@@ -3529,210 +3218,103 @@
         "component",
         "props",
         "emit",
-        "slots",
-        "微信小程序",
-        "组件：props"
+        "组件通信"
       ],
       "headings": [
-        "组件：props、emit、slots",
-        "props：先把它理解成输入数据",
-        "emit：把它理解成“向父层抛业务事件”",
-        "slots：要按小程序边界看待",
-        "一个很实用的组件设计习惯",
-        "一句话总结"
+        "组件通信",
+        "props：父组件给子组件数据",
+        "emit：子组件给父组件事件",
+        "slots：插槽",
+        "组件设计的建议",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/wevu/component.md"
     },
     {
-      "id": "doc-8f24d0ca45",
-      "title": "FAQ 与排错",
-      "summary": "收口 Wevu 新用户最常遇到的几个问题，帮助快速判断是导入错误、hooks 时机问题，还是组件协议问题。",
-      "url": "/handbook/wevu/faq",
-      "canonical": "https://vite.icebreaker.top/handbook/wevu/faq",
-      "keywords": [
-        "handbook",
-        "wevu",
-        "faq",
-        "排错",
-        "与排错"
-      ],
-      "headings": [
-        "FAQ 与排错",
-        "为什么我更新了 ref，页面没变化？",
-        "为什么某些 hooks 不触发？",
-        "为什么自定义组件的 v-model 不生效？",
-        "我什么时候该去怀疑不是 Wevu 问题？",
-        "更完整的排错入口"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/wevu/faq.md"
-    },
-    {
       "id": "doc-01e51ec7e9",
-      "title": "为什么要用 Wevu",
-      "summary": "从新用户最关心的角度解释 Wevu 的定位、价值和边界，帮助你判断什么时候该直接写原生，什么时候适合进入 Wevu 运行时范式。",
+      "title": "Wevu 是什么，不是什么",
+      "summary": "搞清楚 wevu 在这套技术栈里的定位：它负责什么、不负责什么、和 Vue 是什么关系。",
       "url": "/handbook/wevu/",
       "canonical": "https://vite.icebreaker.top/handbook/wevu/",
       "keywords": [
         "handbook",
         "wevu",
         "运行时",
-        "为什么要用 Wevu",
-        "微信小程序",
-        "为什么要用"
+        "是什么",
+        "不是什么"
       ],
       "headings": [
-        "为什么要用 Wevu",
-        "1. 先给一句非常实用的定义",
-        "2. 为什么新项目通常值得用 Wevu",
-        "2.1 原生写法在中小项目很快会变得难维护",
-        "2.2 Wevu 能把这些逻辑变得更可组合",
-        "3. 它和 Vue Web 最大的区别是什么",
-        "3.1 没有浏览器 DOM",
-        "3.2 没有完整的 Virtual DOM 路线",
-        "3.3 事件、组件树、原生能力仍然受小程序约束",
-        "4. 什么时候推荐用 Wevu",
-        "5. 什么时候可以先不用",
-        "6. 一个典型页面会怎么写"
+        "Wevu 是什么，不是什么",
+        "一句话说清楚",
+        "它负责什么",
+        "它不负责什么",
+        "和 Vue 是什么关系",
+        "为什么不直接用原生写法",
+        "什么时候可以不用",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/wevu/index.md"
     },
     {
-      "id": "doc-c776e1ebd9",
-      "title": "插件与全局能力",
-      "summary": "解释在 Wevu 里怎样把日志、错误上报、请求工具这类全局能力统一挂到应用入口，而不是让页面各自重复实现。",
-      "url": "/handbook/wevu/plugins",
-      "canonical": "https://vite.icebreaker.top/handbook/wevu/plugins",
-      "keywords": [
-        "handbook",
-        "wevu",
-        "plugins",
-        "全局能力",
-        "插件与全局能力"
-      ],
-      "headings": [
-        "插件与全局能力",
-        "一个最小示例",
-        "适合放成全局能力的内容",
-        "一个判断标准",
-        "一句话建议"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/wevu/plugins.md"
-    },
-    {
-      "id": "doc-6289583ecb",
-      "title": "provide / inject：什么时候该用，什么时候别用",
-      "summary": "从小程序宿主限制出发，解释 Wevu 里的 provide / inject 能做什么、不能做什么，以及什么时候更应该改用 store。",
-      "url": "/handbook/wevu/provide-inject",
-      "canonical": "https://vite.icebreaker.top/handbook/wevu/provide-inject",
-      "keywords": [
-        "handbook",
-        "wevu",
-        "provide",
-        "inject",
-        "api",
-        "/",
-        "inject：什么时候该用",
-        "什么时候别用"
-      ],
-      "headings": [
-        "provide / inject：什么时候该用，什么时候别用",
-        "先说结论",
-        "为什么不能直接照搬 Web Vue 心智",
-        "一个适合使用的场景",
-        "一个不太推荐的场景",
-        "旧 API 的态度",
-        "一句话建议"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/wevu/provide-inject.md"
-    },
-    {
       "id": "doc-adcbf38444",
-      "title": "运行时：setup、hooks 与更新",
-      "summary": "从页面和组件的真实运行时序出发，解释 Wevu 的 setup 上下文、hooks 注册规则和页面更新机制，帮助新用户真正理解“为什么这样写会生效”。",
+      "title": "响应式和生命周期",
+      "summary": "理解 wevu 的 setup 上下文、响应式系统和页面更新机制。",
       "url": "/handbook/wevu/runtime",
       "canonical": "https://vite.icebreaker.top/handbook/wevu/runtime",
       "keywords": [
         "handbook",
         "wevu",
         "runtime",
-        "setup",
-        "hooks",
+        "响应式",
+        "生命周期",
         "运行时",
-        "运行时：setup",
-        "与更新"
+        "响应式和生命周期"
       ],
       "headings": [
-        "运行时：setup、hooks 与更新",
-        "先看一个最小运行时例子",
-        "为什么 hooks 必须同步注册",
-        "setup() 里适合放什么",
-        "状态更新为什么能反映到页面",
-        "页面 hooks 和业务流程怎么结合",
-        "一条非常重要的开发习惯",
-        "一句话总结"
+        "响应式和生命周期",
+        "setup 是怎么回事",
+        "响应式系统",
+        "状态更新怎么反映到页面",
+        "常见的响应式陷阱",
+        "生命周期的完整图景",
+        "页面 hooks",
+        "组件 hooks",
+        "App hooks",
+        "hooks 必须同步注册",
+        "一个完整的页面示例",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/wevu/runtime.md"
     },
     {
       "id": "doc-4371013d0d",
-      "title": "Store：状态怎么放更合理",
-      "summary": "解释什么时候该上 store、什么时候局部 state 就够用，以及在 Wevu 项目里如何按业务域组织状态、请求和页面编排。",
+      "title": "状态管理",
+      "summary": "什么时候该上 store、什么时候页面本地状态就够了、store 怎么组织。",
       "url": "/handbook/wevu/store",
       "canonical": "https://vite.icebreaker.top/handbook/wevu/store",
       "keywords": [
         "handbook",
         "wevu",
         "store",
+        "状态管理"
+      ],
+      "headings": [
         "状态管理",
-        "Store：状态怎么放更合理"
-      ],
-      "headings": [
-        "Store：状态怎么放更合理",
-        "一个很好用的判断标准",
-        "只服务当前页面",
-        "跨页面复用或跨模块共享",
-        "一个很典型的 store 例子",
-        "页面里怎么消费 store",
-        "一个经常被忽略的原则",
+        "什么时候用页面本地状态",
+        "什么时候上 store",
+        "怎么写一个 store",
+        "按业务域拆 store",
         "store 和 service 的边界",
-        "不一定一开始就要上很多 store",
-        "一句话总结"
+        "storeToRefs",
+        "store 还提供什么",
+        "不要过早引入 store",
+        "接下来"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-04-13",
       "source": "handbook/wevu/store.md"
-    },
-    {
-      "id": "doc-b910c2b69f",
-      "title": "测试与 Mock：先测什么最划算",
-      "summary": "解释在 Wevu 项目里哪些逻辑最适合优先测试，哪些需要 stub 小程序全局，帮助新用户把测试成本压到合理范围。",
-      "url": "/handbook/wevu/testing",
-      "canonical": "https://vite.icebreaker.top/handbook/wevu/testing",
-      "keywords": [
-        "handbook",
-        "wevu",
-        "testing",
-        "mock",
-        "测试与",
-        "Mock：先测什么最划算"
-      ],
-      "headings": [
-        "测试与 Mock：先测什么最划算",
-        "最值得优先测的 3 类逻辑",
-        "1. 纯函数",
-        "2. service 层",
-        "3. composable / store",
-        "哪些地方需要 mock / stub",
-        "一个简单建议",
-        "一句话总结"
-      ],
-      "updatedAt": "2026-03-21",
-      "source": "handbook/wevu/testing.md"
     },
     {
       "id": "doc-8698cf9a35",

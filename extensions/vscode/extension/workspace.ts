@@ -3,14 +3,24 @@ import path from 'node:path'
 import vscode from 'vscode'
 
 import {
+  APP_JSON_FILE_PATTERN,
   PACKAGE_JSON_FILE_PATTERN,
   VITE_CONFIG_FILE_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
   WEAPP_VITE_SCRIPT_PATTERN,
 } from './constants'
 import {
+  applyPageRouteToAppJson,
   resolveCommandFromScripts,
 } from './logic'
+import {
+  collectAppJsonPageRoutes,
+  collectMissingPageRoutes,
+  findRouteTextRange,
+  getPageFileCandidatePaths,
+  getPreferredPageFilePath,
+  getRouteFromPageFilePath,
+} from './navigation'
 
 export function getPrimaryWorkspaceFolder() {
   const activeUri = vscode.window.activeTextEditor?.document.uri
@@ -28,6 +38,10 @@ export function getPrimaryWorkspaceFolder() {
 
 export function isPackageJsonDocument(document: any) {
   return PACKAGE_JSON_FILE_PATTERN.test(document.uri.path)
+}
+
+export function isAppJsonDocument(document: any) {
+  return APP_JSON_FILE_PATTERN.test(document.uri.path)
 }
 
 export function isViteConfigDocument(document: any) {
@@ -66,6 +80,64 @@ async function readTextFile(filePath: string) {
   catch {
     return null
   }
+}
+
+async function getExistingProjectFile(filePaths: string[]) {
+  for (const filePath of filePaths) {
+    if (await pathExists(filePath)) {
+      return filePath
+    }
+  }
+
+  return null
+}
+
+async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  if (!workspaceFolder) {
+    return null
+  }
+
+  return getExistingProjectFile([
+    path.join(workspaceFolder.uri.fsPath, 'src', 'app.json'),
+    path.join(workspaceFolder.uri.fsPath, 'app.json'),
+  ])
+}
+
+export async function getAppJsonPageRouteSuggestions(document: any) {
+  if (!isAppJsonDocument(document)) {
+    return []
+  }
+
+  const appJsonDir = path.dirname(document.uri.fsPath)
+  const patterns = [
+    '**/*.vue',
+    '**/*.ts',
+    '**/*.js',
+    '**/*.wxml',
+  ]
+  const files = await Promise.all(patterns.map(async (pattern) => {
+    return vscode.workspace.findFiles(new vscode.RelativePattern(appJsonDir, pattern))
+  }))
+  const routes = new Set<string>()
+
+  for (const group of files) {
+    for (const file of group) {
+      const relativePath = path.relative(appJsonDir, file.fsPath)
+      const route = getRouteFromPageFilePath(relativePath)
+
+      if (!route) {
+        continue
+      }
+
+      if (route === 'app' || route.endsWith('/app')) {
+        continue
+      }
+
+      routes.add(route)
+    }
+  }
+
+  return [...routes].sort()
 }
 
 export function getEditor(documentOrEditor: any) {
@@ -179,6 +251,240 @@ export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFol
     scripts,
     packageSignals: [...new Set(packageSignals)],
     fileSignals: [...new Set(fileSignals)],
+  }
+}
+
+export async function getProjectNavigationItems(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  const context = await getProjectContext(workspaceFolder)
+
+  if (!context) {
+    return []
+  }
+
+  const workspacePath = context.workspaceFolder.uri.fsPath
+  const items = []
+  const viteConfigPath = await getExistingProjectFile([
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+    'vite.config.cjs',
+  ].map(fileName => path.join(workspacePath, fileName)))
+  const appJsonPath = await getProjectAppJsonPath(context.workspaceFolder)
+
+  if (context.packageJsonPath) {
+    items.push({
+      label: '$(package) package.json',
+      description: '项目脚本与依赖',
+      detail: path.relative(workspacePath, context.packageJsonPath),
+      uri: vscode.Uri.file(context.packageJsonPath),
+    })
+  }
+
+  if (viteConfigPath) {
+    items.push({
+      label: '$(settings-gear) vite.config',
+      description: 'weapp-vite 配置入口',
+      detail: path.relative(workspacePath, viteConfigPath),
+      uri: vscode.Uri.file(viteConfigPath),
+    })
+  }
+
+  if (appJsonPath) {
+    items.push({
+      label: '$(json) app.json',
+      description: '小程序全局配置',
+      detail: path.relative(workspacePath, appJsonPath),
+      uri: vscode.Uri.file(appJsonPath),
+    })
+
+    const appJson = await readJsonFile(appJsonPath)
+    const appJsonDir = path.dirname(appJsonPath)
+
+    for (const route of collectAppJsonPageRoutes(appJson ?? {})) {
+      const pageFilePath = await getExistingProjectFile(
+        getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate)),
+      )
+
+      if (!pageFilePath) {
+        continue
+      }
+
+      items.push({
+        label: `$(file-submodule) ${route}`,
+        description: '页面文件',
+        detail: path.relative(workspacePath, pageFilePath),
+        uri: vscode.Uri.file(pageFilePath),
+      })
+    }
+  }
+
+  return items
+}
+
+export async function getMissingAppJsonPageRoutes(document: any) {
+  if (!isAppJsonDocument(document)) {
+    return []
+  }
+
+  let appJson
+
+  try {
+    appJson = JSON.parse(document.getText())
+  }
+  catch {
+    return []
+  }
+
+  const appJsonDir = path.dirname(document.uri.fsPath)
+
+  return collectMissingPageRoutes(appJson, async (route) => {
+    const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+
+    return Boolean(await getExistingProjectFile(candidatePaths))
+  })
+}
+
+export async function getAppJsonRouteFileTarget(document: any, route: string) {
+  if (!isAppJsonDocument(document)) {
+    return null
+  }
+
+  const relativePath = getPreferredPageFilePath(route)
+
+  if (!relativePath) {
+    return null
+  }
+
+  return path.join(path.dirname(document.uri.fsPath), relativePath)
+}
+
+export async function getAppJsonRouteFileStatus(document: any, route: string) {
+  if (!isAppJsonDocument(document) || typeof route !== 'string' || !route.trim()) {
+    return null
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonDir = path.dirname(document.uri.fsPath)
+  const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+  const pageFilePath = await getExistingProjectFile(candidatePaths)
+  const workspacePath = workspaceFolder?.uri.fsPath ?? appJsonDir
+
+  return {
+    route,
+    pageFilePath,
+    candidatePaths,
+    workspacePath,
+  }
+}
+
+export async function resolveCurrentPageRoute(document = vscode.window.activeTextEditor?.document) {
+  if (!document?.uri?.fsPath) {
+    return null
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return null
+  }
+
+  const relativePath = path.relative(path.dirname(appJsonPath), document.uri.fsPath)
+  const route = getRouteFromPageFilePath(relativePath)
+
+  if (!route) {
+    return null
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+  const routes = collectAppJsonPageRoutes(appJson ?? {})
+
+  if (!routes.includes(route)) {
+    return null
+  }
+
+  return {
+    appJsonPath,
+    route,
+    workspaceFolder,
+  }
+}
+
+export async function getCurrentPageRouteLocation(document = vscode.window.activeTextEditor?.document) {
+  const resolved = await resolveCurrentPageRoute(document)
+
+  if (!resolved) {
+    return null
+  }
+
+  const appJsonText = await readTextFile(resolved.appJsonPath)
+
+  if (typeof appJsonText !== 'string') {
+    return null
+  }
+
+  const range = findRouteTextRange(appJsonText, resolved.route)
+
+  if (!range) {
+    return null
+  }
+
+  return {
+    ...resolved,
+    range,
+  }
+}
+
+export async function getCurrentPageRouteCandidate(document = vscode.window.activeTextEditor?.document) {
+  if (!document?.uri?.fsPath) {
+    return null
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return null
+  }
+
+  const relativePath = path.relative(path.dirname(appJsonPath), document.uri.fsPath)
+  const route = getRouteFromPageFilePath(relativePath)
+
+  if (!route) {
+    return null
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+  const existingRoutes = collectAppJsonPageRoutes(appJson ?? {})
+
+  return {
+    appJson,
+    appJsonPath,
+    declared: existingRoutes.includes(route),
+    route,
+    workspaceFolder,
+  }
+}
+
+export async function getAppJsonTextWithAddedRoute(document = vscode.window.activeTextEditor?.document) {
+  const candidate = await getCurrentPageRouteCandidate(document)
+
+  if (!candidate || !candidate.appJson || candidate.declared) {
+    return null
+  }
+
+  const result = applyPageRouteToAppJson(candidate.appJson, candidate.route)
+
+  if (!result.changed) {
+    return null
+  }
+
+  return {
+    ...candidate,
+    nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
+    packageLocation: result.packageLocation,
+    packageRoot: result.packageRoot,
   }
 }
 

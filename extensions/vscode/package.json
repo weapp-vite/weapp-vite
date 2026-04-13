@@ -65,8 +65,15 @@
     "onCommand:weapp-vite.runAction",
     "onCommand:weapp-vite.insertJsonBlockTemplate",
     "onCommand:weapp-vite.insertDefineConfigTemplate",
+    "onCommand:weapp-vite.insertDefinePageJsonTemplate",
     "onCommand:weapp-vite.insertCommonScripts",
-    "onCommand:weapp-vite.openDocs"
+    "onCommand:weapp-vite.createPageFromRoute",
+    "onCommand:weapp-vite.openPageFromRoute",
+    "onCommand:weapp-vite.addCurrentPageToAppJson",
+    "onCommand:weapp-vite.openDocs",
+    "onCommand:weapp-vite.openProjectFile",
+    "onCommand:weapp-vite.copyCurrentPageRoute",
+    "onCommand:weapp-vite.revealCurrentPageInAppJson"
   ],
   "contributes": {
     "commands": [
@@ -121,13 +128,48 @@
         "category": "weapp-vite"
       },
       {
+        "command": "weapp-vite.insertDefinePageJsonTemplate",
+        "title": "Insert definePageJson Template",
+        "category": "weapp-vite"
+      },
+      {
         "command": "weapp-vite.insertCommonScripts",
         "title": "Insert Common Scripts",
         "category": "weapp-vite"
       },
       {
+        "command": "weapp-vite.createPageFromRoute",
+        "title": "Create Page From Route",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.openPageFromRoute",
+        "title": "Open Page From Route",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.addCurrentPageToAppJson",
+        "title": "Add Current Page To app.json",
+        "category": "weapp-vite"
+      },
+      {
         "command": "weapp-vite.openDocs",
         "title": "Open Docs",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.openProjectFile",
+        "title": "Open Project File",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.copyCurrentPageRoute",
+        "title": "Copy Current Page Route",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.revealCurrentPageInAppJson",
+        "title": "Reveal Current Page In app.json",
         "category": "weapp-vite"
       }
     ],
@@ -143,6 +185,11 @@
           "type": "boolean",
           "default": true,
           "description": "是否在 package.json 中提示缺失的常用 weapp-vite scripts。"
+        },
+        "weapp-vite.enableAppJsonDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在 app.json 中提示缺失的页面文件声明。"
         },
         "weapp-vite.enableHover": {
           "type": "boolean",
@@ -234,12 +281,40 @@
           "when": "resourceFilename =~ /^vite\\.config\\./"
         },
         {
+          "command": "weapp-vite.insertDefinePageJsonTemplate",
+          "when": "editorLangId == vue"
+        },
+        {
           "command": "weapp-vite.insertCommonScripts",
           "when": "resourceFilename == package.json"
         },
         {
+          "command": "weapp-vite.createPageFromRoute",
+          "when": "resourceFilename == app.json"
+        },
+        {
+          "command": "weapp-vite.openPageFromRoute",
+          "when": "resourceFilename == app.json"
+        },
+        {
+          "command": "weapp-vite.addCurrentPageToAppJson",
+          "when": "editorLangId == vue"
+        },
+        {
           "command": "weapp-vite.openDocs",
           "when": "true"
+        },
+        {
+          "command": "weapp-vite.openProjectFile",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "weapp-vite.copyCurrentPageRoute",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.revealCurrentPageInAppJson",
+          "when": "resourceScheme == file"
         }
       ],
       "explorer/context": [
@@ -261,12 +336,47 @@
           "when": "resourceFilename =~ /^vite\\.config\\./"
         },
         {
+          "command": "weapp-vite.insertDefinePageJsonTemplate",
+          "group": "navigation",
+          "when": "editorLangId == vue"
+        },
+        {
           "command": "weapp-vite.insertCommonScripts",
           "group": "navigation",
           "when": "resourceFilename == package.json"
         },
         {
           "command": "weapp-vite.openDocs",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.openProjectFile",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.createPageFromRoute",
+          "group": "navigation",
+          "when": "resourceFilename == app.json"
+        },
+        {
+          "command": "weapp-vite.openPageFromRoute",
+          "group": "navigation",
+          "when": "resourceFilename == app.json"
+        },
+        {
+          "command": "weapp-vite.addCurrentPageToAppJson",
+          "group": "navigation",
+          "when": "editorLangId == vue"
+        },
+        {
+          "command": "weapp-vite.copyCurrentPageRoute",
+          "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.revealCurrentPageInAppJson",
           "group": "navigation",
           "when": "resourceScheme == file"
         }
@@ -300,6 +410,7 @@
             },
             "completionEvents": [
               "onCommand:weapp-vite.insertDefineConfigTemplate",
+              "onCommand:weapp-vite.insertDefinePageJsonTemplate",
               "onCommand:weapp-vite.insertJsonBlockTemplate"
             ]
           },
@@ -313,6 +424,32 @@
             },
             "completionEvents": [
               "onCommand:weapp-vite.openDocs"
+            ]
+          },
+          {
+            "id": "weapp-vite.open-project-file",
+            "title": "快速打开关键文件和页面",
+            "description": "运行 `weapp-vite: Open Project File`，快速跳转到 `package.json`、`vite.config.*`、`app.json` 和已声明页面。",
+            "media": {
+              "image": "assets/logo.png",
+              "altText": "weapp-vite"
+            },
+            "completionEvents": [
+              "onCommand:weapp-vite.openProjectFile"
+            ]
+          },
+          {
+            "id": "weapp-vite.page-route-actions",
+            "title": "处理当前页面路由",
+            "description": "运行 `weapp-vite: Copy Current Page Route`、`weapp-vite: Reveal Current Page In app.json` 或 `weapp-vite: Add Current Page To app.json`，快速复用当前页面声明。",
+            "media": {
+              "image": "assets/logo.png",
+              "altText": "weapp-vite"
+            },
+            "completionEvents": [
+              "onCommand:weapp-vite.addCurrentPageToAppJson",
+              "onCommand:weapp-vite.copyCurrentPageRoute",
+              "onCommand:weapp-vite.revealCurrentPageInAppJson"
             ]
           }
         ]

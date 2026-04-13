@@ -80,6 +80,13 @@
 - `weapp-vite: Show Project Info`
 - `weapp-vite: Show Output`
 - `weapp-vite: Open Docs`
+- `weapp-vite: Open Project File`
+- `weapp-vite: Copy Current Page Route`
+- `weapp-vite: Reveal Current Page In app.json`
+- `weapp-vite: Create Page From Route`
+- `weapp-vite: Open Page From Route`
+- `weapp-vite: Add Current Page To app.json`
+- `weapp-vite: Insert definePageJson Template`
 
 扩展会按以下顺序解析命令：
 
@@ -99,12 +106,27 @@
 扩展还提供了以下实用编辑器能力：
 
 - 在 `.vue` 中通过代码操作或补全插入 `weapp-vite` `<json>` 块
+- 在 `.vue` 中执行 `weapp-vite: Insert definePageJson Template`，快速插入页面配置骨架
 - 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
+- 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
+- 在页面文件中执行 `weapp-vite: Copy Current Page Route`，快速复制当前页面 route
+- 在页面文件中执行 `weapp-vite: Reveal Current Page In app.json`，直接跳到 `app.json` 中的声明位置
+- 在 `app.json` 的缺失页面路由上执行 `weapp-vite: Create Page From Route`，直接生成对应 `.vue` 页面骨架
+- 在 `app.json` 的已存在页面路由上执行 `weapp-vite: Open Page From Route`，直接跳到对应页面文件
+- 在页面文件中执行 `weapp-vite: Add Current Page To app.json`，直接把当前页面加入顶层或匹配的分包页面声明
+- 在 `app.json` 的 `pages` / `subPackages` / `subpackages` 中补全已有页面 route，减少手动输入和路径拼写错误
+- 悬浮在 `app.json` 的页面 route 上时，可直接看到对应页面文件是否存在，以及扩展实际尝试匹配的页面文件路径
+- 在 `app.json` 里可直接 `Cmd/Ctrl + Click` 已存在的页面 route，跳转到对应页面文件
+- 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
+- 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
+- 在页面 `.vue` 中，只有缺少 `definePageJson(...)` 或缺少 `<json>` 块时，才会出现对应的补齐 code action，减少重复提示
+- 在页面文件里执行 `weapp-vite: Run Action` 时，会优先展示当前页面相关动作，并带出当前 route 与声明状态，减少在通用命令中来回筛选
 - 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断
+- 当 `app.json` 声明了不存在的页面路径时，编辑器会提示缺失的页面文件
 - 悬浮到常用脚本项、`defineConfig`、`generate` 或 `<json>` 块时，可看到轻量提示
 - 在 `package.json` 中，补全会建议常用 script key 和 `wv` 命令值
-- 在 `vite.config.*` 中，补全会建议 `defineConfig`、`generate` 和 `plugins` 骨架
+- 在 `vite.config.*` 中，补全会建议 `defineConfig` 以及 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 
 ## 配置项
 
@@ -112,6 +134,7 @@
 
 - `weapp-vite.showStatusBar`
 - `weapp-vite.enablePackageJsonDiagnostics`
+- `weapp-vite.enableAppJsonDiagnostics`
 - `weapp-vite.enableHover`
 - `weapp-vite.enableCompletion`
 - `weapp-vite.preferWvAlias`
