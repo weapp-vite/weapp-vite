@@ -124,4 +124,9 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
   const subpackagePages = await provider.getChildren(subpackages[0])
 
   assert.equal(subpackagePages[0].label, 'packageA/detail/index')
+
+  const unregisteredPages = await provider.getChildren(rootNodes[2])
+  const unregisteredPageItem = provider.getTreeItem(unregisteredPages[0])
+
+  assert.equal(unregisteredPageItem.contextValue, 'weappPage.unregistered')
 })

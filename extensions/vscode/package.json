@@ -70,12 +70,16 @@
     "onCommand:weapp-vite.syncJsonTitleFromDefinePageJson",
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
+    "onCommand:weapp-vite.createPageFromTreeItem",
     "onCommand:weapp-vite.openPageFromRoute",
     "onCommand:weapp-vite.addCurrentPageToAppJson",
+    "onCommand:weapp-vite.addPageToAppJsonFromTreeItem",
     "onCommand:weapp-vite.openDocs",
     "onCommand:weapp-vite.openProjectFile",
     "onCommand:weapp-vite.copyCurrentPageRoute",
-    "onCommand:weapp-vite.revealCurrentPageInAppJson"
+    "onCommand:weapp-vite.copyPageRouteFromTreeItem",
+    "onCommand:weapp-vite.revealCurrentPageInAppJson",
+    "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem"
   ],
   "contributes": {
     "commands": [
@@ -155,6 +159,11 @@
         "category": "weapp-vite"
       },
       {
+        "command": "weapp-vite.createPageFromTreeItem",
+        "title": "Create Page From Explorer Item",
+        "category": "weapp-vite"
+      },
+      {
         "command": "weapp-vite.openPageFromRoute",
         "title": "Open Page From Route",
         "category": "weapp-vite"
@@ -162,6 +171,11 @@
       {
         "command": "weapp-vite.addCurrentPageToAppJson",
         "title": "Add Current Page To app.json",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.addPageToAppJsonFromTreeItem",
+        "title": "Add Page To app.json From Explorer Item",
         "category": "weapp-vite"
       },
       {
@@ -180,8 +194,18 @@
         "category": "weapp-vite"
       },
       {
+        "command": "weapp-vite.copyPageRouteFromTreeItem",
+        "title": "Copy Page Route From Explorer Item",
+        "category": "weapp-vite"
+      },
+      {
         "command": "weapp-vite.revealCurrentPageInAppJson",
         "title": "Reveal Current Page In app.json",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
+        "title": "Reveal Page Route In app.json From Explorer Item",
         "category": "weapp-vite"
       }
     ],
@@ -351,6 +375,28 @@
           "command": "weapp-vite.runAction",
           "group": "navigation",
           "when": "resourceScheme == file"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "weapp-vite.createPageFromTreeItem",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages && viewItem == weappPage.missing"
+        },
+        {
+          "command": "weapp-vite.addPageToAppJsonFromTreeItem",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages && viewItem == weappPage.unregistered"
+        },
+        {
+          "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.missing)"
+        },
+        {
+          "command": "weapp-vite.copyPageRouteFromTreeItem",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.missing || viewItem == weappPage.unregistered)"
         }
       ],
       "editor/context": [

@@ -24,9 +24,13 @@ import {
   getVuePageConfigState,
 } from './logic'
 import {
+  getAppJsonDocumentUri,
   getAppJsonRouteFileStatus,
   getAppJsonRouteFileTarget,
+  getAppJsonRouteFileTargetFromPath,
+  getAppJsonRouteLocation,
   getAppJsonTextWithAddedRoute,
+  getAppJsonTextWithAddedSpecificRoute,
   getCurrentPageRouteCandidate,
   getCurrentPageRouteLocation,
   getEditor,
@@ -41,6 +45,14 @@ import {
 } from './workspace'
 
 const TRAILING_FILE_SEGMENT_PATTERN = /\/[^/]+$/u
+
+function getTreePageNodeRoute(item: any) {
+  return typeof item?.route === 'string' && item.route.trim() ? item.route : null
+}
+
+function getTreePageNodeAppJsonPath(item: any) {
+  return typeof item?.appJsonPath === 'string' && item.appJsonPath.trim() ? item.appJsonPath : null
+}
 
 async function insertSnippetToActiveEditor(snippetText: string) {
   const editor = vscode.window.activeTextEditor
@@ -412,6 +424,39 @@ export async function createPageFromRoute(editorOrDocument: any, route?: string)
   void vscode.window.showInformationMessage(`weapp-vite: 已创建页面 ${route}`)
 }
 
+export async function createPageFromTreeItem(item: any) {
+  const route = getTreePageNodeRoute(item)
+  const appJsonPath = getTreePageNodeAppJsonPath(item)
+
+  if (!route || !appJsonPath) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前树节点无法创建页面。')
+    return
+  }
+
+  const targetPath = getAppJsonRouteFileTargetFromPath(appJsonPath, route)
+
+  if (!targetPath) {
+    void vscode.window.showWarningMessage('weapp-vite: 无法解析要创建的页面文件路径。')
+    return
+  }
+
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+    void vscode.window.showInformationMessage(`weapp-vite: 页面文件已存在 ${route}`)
+    return
+  }
+  catch {
+  }
+
+  const targetUri = vscode.Uri.file(targetPath)
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath.replace(TRAILING_FILE_SEGMENT_PATTERN, '')))
+  await vscode.workspace.fs.writeFile(targetUri, Buffer.from(getPageVueTemplate(route), 'utf8'))
+
+  const createdDocument = await vscode.workspace.openTextDocument(targetUri)
+  await vscode.window.showTextDocument(createdDocument, { preview: false })
+  void vscode.window.showInformationMessage(`weapp-vite: 已创建页面 ${route}`)
+}
+
 export async function openPageFromRoute(editorOrDocument: any, route?: string) {
   const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
   const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
@@ -465,6 +510,79 @@ export async function addCurrentPageToAppJson(state: any) {
   state.getOutputChannel().appendLine(`[route] add ${result.route}`)
   void vscode.window.showInformationMessage(`weapp-vite: 已将页面加入 app.json ${result.route}`)
   await vscode.window.showTextDocument(document, { preview: false })
+}
+
+export async function addPageToAppJsonFromTreeItem(item: any, state: any) {
+  const route = getTreePageNodeRoute(item)
+  const appJsonPath = getTreePageNodeAppJsonPath(item)
+
+  if (!route || !appJsonPath) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前树节点无法加入 app.json。')
+    return
+  }
+
+  const result = await getAppJsonTextWithAddedSpecificRoute(appJsonPath, route)
+
+  if (!result) {
+    void vscode.window.showInformationMessage(`weapp-vite: 页面已存在于 app.json ${route}`)
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(getAppJsonDocumentUri(result.appJsonPath))
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+  const edit = new vscode.WorkspaceEdit()
+
+  edit.replace(document.uri, fullRange, result.nextText)
+  await vscode.workspace.applyEdit(edit)
+  await document.save()
+  state.getOutputChannel().appendLine(`[route] add ${result.route}`)
+  void vscode.window.showInformationMessage(`weapp-vite: 已将页面加入 app.json ${result.route}`)
+  await vscode.window.showTextDocument(document, { preview: false })
+}
+
+export async function revealPageRouteInAppJsonFromTreeItem(item: any, state: any) {
+  const route = getTreePageNodeRoute(item)
+  const appJsonPath = getTreePageNodeAppJsonPath(item)
+
+  if (!route || !appJsonPath) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前树节点无法定位到 app.json。')
+    return
+  }
+
+  const location = await getAppJsonRouteLocation(appJsonPath, route)
+
+  if (!location) {
+    void vscode.window.showWarningMessage(`weapp-vite: 未在 app.json 中找到页面声明 ${route}`)
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(getAppJsonDocumentUri(location.appJsonPath))
+  const selection = new vscode.Range(
+    document.positionAt(location.range.start + 1),
+    document.positionAt(location.range.end - 1),
+  )
+
+  state.getOutputChannel().appendLine(`[route] reveal ${location.route}`)
+  await vscode.window.showTextDocument(document, {
+    preview: false,
+    selection,
+  })
+}
+
+export async function copyPageRouteFromTreeItem(item: any, state: any) {
+  const route = getTreePageNodeRoute(item)
+
+  if (!route) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前树节点没有可复制的页面路由。')
+    return
+  }
+
+  await vscode.env.clipboard.writeText(route)
+  state.getOutputChannel().appendLine(`[route] copied ${route}`)
+  void vscode.window.showInformationMessage(`weapp-vite: 已复制页面路由 ${route}`)
 }
 
 export async function showCommandPalette(state: any) {

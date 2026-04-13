@@ -2,8 +2,11 @@ import vscode from 'vscode'
 
 import {
   addCurrentPageToAppJson,
+  addPageToAppJsonFromTreeItem,
   copyCurrentPageRoute,
+  copyPageRouteFromTreeItem,
   createPageFromRoute,
+  createPageFromTreeItem,
   insertCommonScripts,
   insertDefineConfigTemplate,
   insertDefinePageJsonTemplate,
@@ -12,6 +15,7 @@ import {
   openPageFromRoute,
   openProjectFile,
   revealCurrentPageInAppJson,
+  revealPageRouteInAppJsonFromTreeItem,
   runWorkspaceCommand,
   showCommandPalette,
   showProjectOverview,
@@ -169,12 +173,16 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.syncJsonTitleFromDefinePageJson', document => syncJsonTitleFromDefinePageJson(document)),
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.createPageFromRoute', (document, route) => createPageFromRoute(document, route)),
+    vscode.commands.registerCommand('weapp-vite.createPageFromTreeItem', item => createPageFromTreeItem(item)),
     vscode.commands.registerCommand('weapp-vite.openPageFromRoute', (document, route) => openPageFromRoute(document, route)),
     vscode.commands.registerCommand('weapp-vite.addCurrentPageToAppJson', () => addCurrentPageToAppJson(state)),
+    vscode.commands.registerCommand('weapp-vite.addPageToAppJsonFromTreeItem', item => addPageToAppJsonFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.openDocs', () => openDocumentation()),
     vscode.commands.registerCommand('weapp-vite.openProjectFile', () => openProjectFile(state)),
     vscode.commands.registerCommand('weapp-vite.copyCurrentPageRoute', () => copyCurrentPageRoute(state)),
+    vscode.commands.registerCommand('weapp-vite.copyPageRouteFromTreeItem', item => copyPageRouteFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.revealCurrentPageInAppJson', () => revealCurrentPageInAppJson(state)),
+    vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
     vscode.window.registerTreeDataProvider('weapp-vite.pages', pagesTreeProvider),
     vscode.languages.registerCodeActionsProvider(
       [

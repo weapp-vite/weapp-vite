@@ -21,6 +21,7 @@ interface WeappPagesTreePageNode extends WeappPagesTreeBaseNode {
   kind: 'page'
   pageFilePath: string | null
   route: string
+  status: 'exists' | 'missing' | 'unregistered'
   tooltip: string
 }
 
@@ -39,6 +40,7 @@ function createPageNode(
   pageFilePath: string | null,
   appJsonPath: string,
   workspacePath: string,
+  status: WeappPagesTreePageNode['status'],
 ): WeappPagesTreeNode {
   return {
     kind: 'page',
@@ -47,6 +49,7 @@ function createPageNode(
     description: getPageNodeDescription(pageFilePath, workspacePath),
     pageFilePath,
     route,
+    status,
     tooltip: pageFilePath
       ? `route: ${route}\n页面文件: ${path.relative(workspacePath, pageFilePath)}`
       : `route: ${route}\n页面文件缺失，点击后打开 app.json`,
@@ -78,7 +81,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
         title: element.pageFilePath ? '打开页面文件' : '打开 app.json',
         arguments: [targetUri],
       }
-      item.contextValue = element.pageFilePath ? 'weappPage.exists' : 'weappPage.missing'
+      item.contextValue = `weappPage.${element.status}`
       item.resourceUri = element.pageFilePath ? targetUri : undefined
       item.tooltip = element.tooltip
     }
@@ -118,6 +121,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
         page.pageFilePath,
         snapshot.appJsonPath,
         workspacePath,
+        page.pageFilePath ? 'exists' : 'missing',
       )),
     })
 
@@ -134,6 +138,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
           page.pageFilePath,
           snapshot.appJsonPath,
           workspacePath,
+          page.pageFilePath ? 'exists' : 'missing',
         )),
       })),
     })
@@ -148,6 +153,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
           page.pageFilePath,
           snapshot.appJsonPath,
           workspacePath,
+          'unregistered',
         )),
       })
     }

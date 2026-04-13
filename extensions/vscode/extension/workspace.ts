@@ -130,6 +130,10 @@ async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder
   ])
 }
 
+export function getAppJsonDocumentUri(appJsonPath: string) {
+  return vscode.Uri.file(appJsonPath)
+}
+
 export async function getAppJsonPageRouteSuggestions(document: any) {
   if (!isAppJsonDocument(document)) {
     return []
@@ -477,6 +481,16 @@ export async function getAppJsonRouteFileTarget(document: any, route: string) {
   return path.join(path.dirname(document.uri.fsPath), relativePath)
 }
 
+export function getAppJsonRouteFileTargetFromPath(appJsonPath: string, route: string) {
+  const relativePath = getPreferredPageFilePath(route)
+
+  if (!relativePath) {
+    return null
+  }
+
+  return path.join(path.dirname(appJsonPath), relativePath)
+}
+
 export async function getAppJsonRouteFileStatus(document: any, route: string) {
   if (!isAppJsonDocument(document) || typeof route !== 'string' || !route.trim()) {
     return null
@@ -554,6 +568,26 @@ export async function getCurrentPageRouteLocation(document = vscode.window.activ
   }
 }
 
+export async function getAppJsonRouteLocation(appJsonPath: string, route: string) {
+  const appJsonText = await readTextFile(appJsonPath)
+
+  if (typeof appJsonText !== 'string') {
+    return null
+  }
+
+  const range = findRouteTextRange(appJsonText, route)
+
+  if (!range) {
+    return null
+  }
+
+  return {
+    appJsonPath,
+    range,
+    route,
+  }
+}
+
 export async function getCurrentPageRouteCandidate(document = vscode.window.activeTextEditor?.document) {
   if (!document?.uri?.fsPath) {
     return null
@@ -603,6 +637,29 @@ export async function getAppJsonTextWithAddedRoute(document = vscode.window.acti
     nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
     packageLocation: result.packageLocation,
     packageRoot: result.packageRoot,
+  }
+}
+
+export async function getAppJsonTextWithAddedSpecificRoute(appJsonPath: string, route: string) {
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof route !== 'string' || !route.trim()) {
+    return null
+  }
+
+  const normalizedRoute = normalizeRoute(route)
+  const result = applyPageRouteToAppJson(appJson, normalizedRoute)
+
+  if (!result.changed) {
+    return null
+  }
+
+  return {
+    appJsonPath,
+    nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
+    packageLocation: result.packageLocation,
+    packageRoot: result.packageRoot,
+    route: normalizedRoute,
   }
 }
 

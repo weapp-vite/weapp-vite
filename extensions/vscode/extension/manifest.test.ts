@@ -29,12 +29,16 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.syncJsonTitleFromDefinePageJson',
     'weapp-vite.insertCommonScripts',
     'weapp-vite.createPageFromRoute',
+    'weapp-vite.createPageFromTreeItem',
     'weapp-vite.openPageFromRoute',
     'weapp-vite.addCurrentPageToAppJson',
+    'weapp-vite.addPageToAppJsonFromTreeItem',
     'weapp-vite.openDocs',
     'weapp-vite.openProjectFile',
     'weapp-vite.copyCurrentPageRoute',
+    'weapp-vite.copyPageRouteFromTreeItem',
     'weapp-vite.revealCurrentPageInAppJson',
+    'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
   ])
 })
 
