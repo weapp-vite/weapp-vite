@@ -359,6 +359,25 @@ export async function getAppJsonRouteFileTarget(document: any, route: string) {
   return path.join(path.dirname(document.uri.fsPath), relativePath)
 }
 
+export async function getAppJsonRouteFileStatus(document: any, route: string) {
+  if (!isAppJsonDocument(document) || typeof route !== 'string' || !route.trim()) {
+    return null
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonDir = path.dirname(document.uri.fsPath)
+  const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+  const pageFilePath = await getExistingProjectFile(candidatePaths)
+  const workspacePath = workspaceFolder?.uri.fsPath ?? appJsonDir
+
+  return {
+    route,
+    pageFilePath,
+    candidatePaths,
+    workspacePath,
+  }
+}
+
 export async function resolveCurrentPageRoute(document = vscode.window.activeTextEditor?.document) {
   if (!document?.uri?.fsPath) {
     return null

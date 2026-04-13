@@ -1,3 +1,4 @@
+import path from 'node:path'
 import vscode from 'vscode'
 
 import {
@@ -203,6 +204,35 @@ export function getPackageJsonScriptHover(lineText: string) {
   }
 
   return null
+}
+
+export function getAppJsonRouteHover(
+  route: string,
+  pageFilePath: string | null,
+  candidatePaths: string[],
+  workspacePath: string,
+) {
+  const relativeCandidates = candidatePaths.map(candidate => path.relative(workspacePath, candidate))
+
+  if (pageFilePath) {
+    return new vscode.MarkdownString([
+      '**app.json 页面路由**',
+      '',
+      `当前 route：\`${route}\``,
+      '',
+      `已找到页面文件：\`${path.relative(workspacePath, pageFilePath)}\``,
+    ].join('\n'))
+  }
+
+  return new vscode.MarkdownString([
+    '**app.json 页面路由**',
+    '',
+    `当前 route：\`${route}\``,
+    '',
+    '未找到对应页面文件。',
+    '',
+    `已尝试：${relativeCandidates.map(candidate => `\`${candidate}\``).join('、')}`,
+  ].join('\n'))
 }
 
 export function getViteConfigHover(wordRangeText: string, lineText: string) {

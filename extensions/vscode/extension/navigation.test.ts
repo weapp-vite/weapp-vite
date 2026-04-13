@@ -8,6 +8,7 @@ import {
   findRouteTextRange,
   getPageFileCandidatePaths,
   getPreferredPageFilePath,
+  getQuotedRouteValueAtLine,
   getRouteFromPageFilePath,
 } from './navigation'
 
@@ -80,4 +81,12 @@ it('finds the route text range in app json text', () => {
     start: 43,
     end: 61,
   })
+})
+
+it('gets quoted route value at cursor position', () => {
+  const lineText = '    "pages/home/index",'
+
+  assert.equal(getQuotedRouteValueAtLine(lineText, 6), 'pages/home/index')
+  assert.equal(getQuotedRouteValueAtLine(lineText, 21), 'pages/home/index')
+  assert.equal(getQuotedRouteValueAtLine(lineText, 2), null)
 })

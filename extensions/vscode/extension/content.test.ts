@@ -72,3 +72,75 @@ it('builds app.json diagnostics for missing page routes', async () => {
   vi.doUnmock('vscode')
   vi.resetModules()
 })
+
+it('builds app.json route hover for existing page files', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        MarkdownString: class {
+          value
+
+          constructor(value: string) {
+            this.value = value
+          }
+        },
+      },
+    }
+  })
+  vi.resetModules()
+
+  const {
+    getAppJsonRouteHover,
+  } = await import('./content')
+  const hover = getAppJsonRouteHover(
+    'pages/home/index',
+    '/workspace/src/pages/home/index.vue',
+    [
+      '/workspace/src/pages/home/index.vue',
+      '/workspace/src/pages/home/index.ts',
+    ],
+    '/workspace',
+  )
+
+  assert.equal(hover?.value.includes('当前 route：`pages/home/index`'), true)
+  assert.equal(hover?.value.includes('已找到页面文件：`src/pages/home/index.vue`'), true)
+
+  vi.doUnmock('vscode')
+  vi.resetModules()
+})
+
+it('builds app.json route hover for missing page files', async () => {
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        MarkdownString: class {
+          value
+
+          constructor(value: string) {
+            this.value = value
+          }
+        },
+      },
+    }
+  })
+  vi.resetModules()
+
+  const {
+    getAppJsonRouteHover,
+  } = await import('./content')
+  const hover = getAppJsonRouteHover(
+    'pages/missing/index',
+    null,
+    [
+      '/workspace/src/pages/missing/index.vue',
+      '/workspace/src/pages/missing/index.ts',
+    ],
+    '/workspace',
+  )
+
+  assert.equal(hover?.value.includes('未找到对应页面文件。'), true)
+  assert.equal(hover?.value.includes('`src/pages/missing/index.vue`'), true)
+
+  vi.doUnmock('vscode')
+  vi.resetModules()
+})

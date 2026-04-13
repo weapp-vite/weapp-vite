@@ -129,3 +129,28 @@ export function findRouteTextRange(appJsonText: string, route: string) {
     end: start + target.length,
   }
 }
+
+export function getQuotedRouteValueAtLine(lineText: string, character: number) {
+  if (character < 0) {
+    return null
+  }
+
+  const quotedValuePattern = /"([^"]+)"/gu
+
+  for (const match of lineText.matchAll(quotedValuePattern)) {
+    const fullMatch = match[0]
+    const value = match[1]
+    const start = match.index ?? -1
+    const end = start + fullMatch.length
+
+    if (start < 0) {
+      continue
+    }
+
+    if (character >= start && character <= end) {
+      return value
+    }
+  }
+
+  return null
+}

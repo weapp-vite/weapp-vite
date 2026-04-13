@@ -13,6 +13,7 @@ import {
 } from './constants'
 import {
   getAppJsonRouteCompletionContext,
+  getAppJsonRouteHover,
   getAppJsonRouteInsertText,
   getPackageJsonScriptHover,
   getViteConfigHover,
@@ -24,7 +25,11 @@ import {
   getVuePageConfigState,
 } from './logic'
 import {
+  getQuotedRouteValueAtLine,
+} from './navigation'
+import {
   getAppJsonPageRouteSuggestions,
+  getAppJsonRouteFileStatus,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -481,6 +486,25 @@ export class WeappViteHoverProvider {
 
       if (markdown) {
         return new vscode.Hover(markdown)
+      }
+    }
+
+    if (isAppJsonDocument(document)) {
+      const route = getQuotedRouteValueAtLine(lineText, position.character)
+
+      if (route) {
+        return getAppJsonRouteFileStatus(document, route).then((status) => {
+          if (!status) {
+            return null
+          }
+
+          return new vscode.Hover(getAppJsonRouteHover(
+            status.route,
+            status.pageFilePath,
+            status.candidatePaths,
+            status.workspacePath,
+          ))
+        })
       }
     }
 
