@@ -29,6 +29,7 @@ import {
 import {
   buildAppJsonDiagnostics,
   buildPackageJsonDiagnostics,
+  buildVuePageConfigConsistencyDiagnostics,
   buildVuePageDiagnostics,
 } from './content'
 import {
@@ -101,7 +102,10 @@ async function refreshVuePageDiagnostics(document: any) {
   }
 
   const currentPageCandidate = await getCurrentPageRouteCandidate(document)
-  getDiagnostics().set(document.uri, buildVuePageDiagnostics(currentPageCandidate))
+  getDiagnostics().set(document.uri, [
+    ...buildVuePageDiagnostics(currentPageCandidate),
+    ...buildVuePageConfigConsistencyDiagnostics(document),
+  ])
 }
 
 async function refreshStatusBar() {

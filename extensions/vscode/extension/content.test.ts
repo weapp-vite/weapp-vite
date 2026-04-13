@@ -5,6 +5,9 @@ function createDocument(text: string) {
   const lines = text.split('\n')
 
   return {
+    getText() {
+      return text
+    },
     lineCount: lines.length,
     lineAt(index: number) {
       return {
@@ -55,6 +58,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
 
   const {
     buildAppJsonDiagnostics,
+    buildVuePageConfigConsistencyDiagnostics,
     buildVuePageDiagnostics,
   } = await import('./content')
   const diagnostics = buildAppJsonDiagnostics(createDocument([
@@ -77,6 +81,18 @@ it('builds app.json diagnostics for missing page routes', async () => {
     declared: true,
     route: 'pages/demo/index',
   }).length, 0)
+  assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
+    '<script setup lang="ts">',
+    'definePageJson({',
+    '  navigationBarTitleText: \'Home\',',
+    '})',
+    '</script>',
+    '<json lang="jsonc">',
+    '{',
+    '  "navigationBarTitleText": "Index"',
+    '}',
+    '</json>',
+  ].join('\n')))[0]?.message, 'definePageJson 与 <json> 中的 navigationBarTitleText 不一致：\'Home\' / \'Index\'')
 
   vi.doUnmock('vscode')
   vi.resetModules()

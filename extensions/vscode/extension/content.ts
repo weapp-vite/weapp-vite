@@ -28,6 +28,20 @@ const PAGE_CONFIG_FIELD_DESCRIPTIONS: Record<string, string> = {
   navigationStyle: '设置导航栏样式，可选 default / custom。',
   disableScroll: '设置页面是否整体禁止滚动。',
 }
+const DEFINE_PAGE_JSON_TITLE_PATTERN = /definePageJson\s*\(\s*\{[\s\S]*?navigationBarTitleText\s*:\s*'([^']+)'/u
+const JSON_BLOCK_TITLE_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>[\s\S]*?"navigationBarTitleText"\s*:\s*"([^"]+)"/u
+const DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN = /navigationBarTitleText\s*:\s*'[^']+'/u
+
+function getPositionFromOffset(text: string, offset: number) {
+  const normalizedOffset = Math.max(0, Math.min(offset, text.length))
+  const textBeforeOffset = text.slice(0, normalizedOffset)
+  const lines = textBeforeOffset.split('\n')
+
+  return {
+    line: lines.length - 1,
+    character: lines.at(-1)?.length ?? 0,
+  }
+}
 
 export function getJsonBlockSnippet() {
   return [
@@ -178,6 +192,44 @@ export function buildVuePageDiagnostics(candidate: { declared: boolean, route: s
   const diagnostic = new vscode.Diagnostic(
     new vscode.Range(0, 0, 0, 1),
     `当前页面尚未声明到 app.json：${candidate.route}`,
+    vscode.DiagnosticSeverity.Information,
+  )
+
+  diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
+  return [diagnostic]
+}
+
+export function buildVuePageConfigConsistencyDiagnostics(document: any) {
+  const documentText = document.getText()
+  const definePageJsonMatch = documentText.match(DEFINE_PAGE_JSON_TITLE_PATTERN)
+  const jsonBlockMatch = documentText.match(JSON_BLOCK_TITLE_PATTERN)
+
+  if (!definePageJsonMatch || !jsonBlockMatch) {
+    return []
+  }
+
+  if (definePageJsonMatch[1] === jsonBlockMatch[1]) {
+    return []
+  }
+
+  const definePageJsonFieldMatch = DEFINE_PAGE_JSON_TITLE_FIELD_PATTERN.exec(documentText)
+
+  if (!definePageJsonFieldMatch || definePageJsonFieldMatch.index == null) {
+    return []
+  }
+
+  const start = definePageJsonFieldMatch.index
+  const end = start + definePageJsonFieldMatch[0].length
+  const startPosition = getPositionFromOffset(documentText, start)
+  const endPosition = getPositionFromOffset(documentText, end)
+  const diagnostic = new vscode.Diagnostic(
+    new vscode.Range(
+      startPosition.line,
+      startPosition.character,
+      endPosition.line,
+      endPosition.character,
+    ),
+    `definePageJson 与 <json> 中的 navigationBarTitleText 不一致：'${definePageJsonMatch[1]}' / '${jsonBlockMatch[1]}'`,
     vscode.DiagnosticSeverity.Information,
   )
 
