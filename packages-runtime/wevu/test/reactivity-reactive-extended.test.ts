@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { effect } from '@/reactivity/core'
 import { convertToReactive, isReactive, reactive, toRaw, touchReactive } from '@/reactivity/reactive'
+import { ref } from '@/reactivity/ref'
 
 describe('reactive - edge cases and boundary values', () => {
   describe('reactive on primitives', () => {
@@ -450,30 +451,59 @@ describe('reactive - edge cases and boundary values', () => {
       expect(effectCount).toBe(2)
     })
 
-    it('should handle Date objects', () => {
+    it('should not proxy Date objects', () => {
       const date = new Date('2024-01-01')
-      const proxy = reactive(date)
+      const observed = reactive(date)
 
-      expect(isReactive(proxy)).toBe(true)
-      // 说明：Date 对象在 Proxy 下存在兼容性问题，这里只验证其为 reactive
-      expect(toRaw(proxy)).toBe(date)
+      expect(observed).toBe(date)
+      expect(isReactive(observed)).toBe(false)
+      expect(toRaw(observed)).toBe(date)
     })
 
-    it('should handle Map objects', () => {
+    it('should not proxy Map objects', () => {
       const map = new Map([['key', 'value']])
-      const proxy = reactive(map)
+      const observed = reactive(map)
 
-      expect(isReactive(proxy)).toBe(true)
-      // 说明：Map/Set 在 Proxy 下存在方法绑定问题，这里只验证其为 reactive
-      expect(toRaw(proxy)).toBe(map)
+      expect(observed).toBe(map)
+      expect(isReactive(observed)).toBe(false)
+      expect(toRaw(observed)).toBe(map)
     })
 
-    it('should handle Set objects', () => {
+    it('should not proxy Set objects', () => {
       const set = new Set([1, 2, 3])
-      const proxy = reactive(set)
+      const observed = reactive(set)
 
-      expect(isReactive(proxy)).toBe(true)
-      expect(toRaw(proxy)).toBe(set)
+      expect(observed).toBe(set)
+      expect(isReactive(observed)).toBe(false)
+      expect(toRaw(observed)).toBe(set)
+    })
+
+    it('should not proxy WeakMap objects', () => {
+      const weakMap = new WeakMap<object, string>()
+      const key = {}
+      weakMap.set(key, 'value')
+      const observed = reactive(weakMap)
+
+      expect(observed).toBe(weakMap)
+      expect(isReactive(observed)).toBe(false)
+      expect(toRaw(observed)).toBe(weakMap)
+    })
+
+    it('should not proxy WeakSet objects', () => {
+      const weakSet = new WeakSet<object>()
+      const value = {}
+      weakSet.add(value)
+      const observed = reactive(weakSet)
+
+      expect(observed).toBe(weakSet)
+      expect(isReactive(observed)).toBe(false)
+      expect(toRaw(observed)).toBe(weakSet)
+    })
+
+    it('should keep Date methods usable when wrapped by ref', () => {
+      const dateRef = ref(new Date('2024-01-01T00:00:00.000Z'))
+
+      expect(dateRef.value.valueOf()).toBe(new Date('2024-01-01T00:00:00.000Z').valueOf())
     })
 
     it('should handle deeply nested structures', () => {

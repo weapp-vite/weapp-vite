@@ -14,7 +14,7 @@ import {
   removeParentLink,
   resolvePathToTarget,
 } from './reactive/patchState'
-import { isArrayIndexKey, isObject, ReactiveFlags, toRaw, VERSION_KEY } from './reactive/shared'
+import { getTargetType, isArrayIndexKey, isObject, ReactiveFlags, TargetType, toRaw, VERSION_KEY } from './reactive/shared'
 import { rawMap, reactiveMap } from './reactive/state'
 
 export { addMutationRecorder, removeMutationRecorder } from './reactive/mutation'
@@ -208,11 +208,14 @@ export function reactive<T extends object>(target: T): T {
   if (!isObject(target)) {
     return target
   }
+  if ((target as any)[ReactiveFlags.IS_REACTIVE]) {
+    return target
+  }
   const existingProxy = reactiveMap.get(target)
   if (existingProxy) {
     return existingProxy
   }
-  if ((target as any)[ReactiveFlags.IS_REACTIVE]) {
+  if (getTargetType(target) === TargetType.INVALID) {
     return target
   }
   const proxy = new Proxy(target, mutableHandlers)

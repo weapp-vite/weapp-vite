@@ -64,6 +64,14 @@ describe('reactivity (root version)', () => {
     expect(isReactive({})).toBe(false)
   })
 
+  it('keeps frozen plain objects reactive', () => {
+    const frozen = Object.freeze({ n: 1 })
+    const observed = reactive(frozen)
+
+    expect(observed).not.toBe(frozen)
+    expect(isReactive(observed)).toBe(true)
+  })
+
   it('effect onStop is called and lazy option', () => {
     let cleaned = 0
     const runner = effect(() => {}, {

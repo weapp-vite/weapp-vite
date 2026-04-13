@@ -1,6 +1,6 @@
 import type { Ref } from './ref'
 import { isObject, isReactive } from './reactive'
-import { ReactiveFlags } from './reactive/shared'
+import { getTargetType, ReactiveFlags, TargetType } from './reactive/shared'
 import { isRef, markAsRef } from './ref'
 
 function createReadonlyWrapper(target: any): any {
@@ -27,6 +27,9 @@ function createReadonlyWrapper(target: any): any {
     return readonlyRef
   }
   if (!isObject(target)) {
+    return target
+  }
+  if (getTargetType(target as object) === TargetType.INVALID) {
     return target
   }
   return new Proxy(target as object, {

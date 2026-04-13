@@ -4,6 +4,7 @@ import type {
 import { describe, expect, it } from 'vitest'
 import {
   addMutationRecorder,
+  isReactive,
   markRaw,
   prelinkReactiveTree,
   reactive,
@@ -96,6 +97,21 @@ describe('reactive mutation tracking', () => {
     expect(shallowReactive(base)).toBe(proxy)
     expect(shallowReactive(proxy)).toBe(proxy)
     expect(isShallowReactive(proxy)).toBe(true)
+    const date = new Date('2024-01-01')
+    expect(shallowReactive(date)).toBe(date)
+    const map = new Map()
+    expect(shallowReactive(map)).toBe(map)
+    expect(isReactive(shallowReactive(map))).toBe(false)
+    const set = new Set([1, 2, 3])
+    expect(shallowReactive(set)).toBe(set)
+    const weakMap = new WeakMap<object, string>()
+    const weakMapKey = {}
+    weakMap.set(weakMapKey, 'value')
+    expect(shallowReactive(weakMap)).toBe(weakMap)
+    const weakSet = new WeakSet<object>()
+    const weakSetValue = {}
+    weakSet.add(weakSetValue)
+    expect(shallowReactive(weakSet)).toBe(weakSet)
 
     delete (proxy as any).missing
   })
