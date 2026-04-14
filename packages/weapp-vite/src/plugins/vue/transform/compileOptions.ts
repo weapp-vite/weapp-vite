@@ -57,6 +57,7 @@ export function createCompileVueFileOptions(
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? (scopedSlotsCompiler !== 'augmented')
   const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
   const htmlTagToWxml = configService.weappViteConfig?.vue?.template?.htmlTagToWxml
+  const htmlTagToWxmlTagClass = configService.weappViteConfig?.vue?.template?.htmlTagToWxmlTagClass ?? true
   const classStyleRuntimeConfig = configService.weappViteConfig?.vue?.template?.classStyleRuntime ?? 'js'
   const objectLiteralBindMode = configService.weappViteConfig?.vue?.template?.objectLiteralBindMode ?? 'runtime'
   const mustacheInterpolation = configService.weappViteConfig?.vue?.template?.mustacheInterpolation ?? 'compact'
@@ -98,6 +99,7 @@ export function createCompileVueFileOptions(
     template: {
       platform: templatePlatformOptions.templatePlatform,
       htmlTagToWxml,
+      htmlTagToWxmlTagClass,
       scopedSlotsCompiler,
       scopedSlotsRequireProps,
       slotMultipleInstance,

@@ -67,6 +67,7 @@ export function compileVueTemplateToWxml(
       warnings,
       platform: options?.platform ?? wechatPlatform,
       htmlTagToWxmlMap,
+      htmlTagToWxmlTagClass: options?.htmlTagToWxmlTagClass ?? true,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
       scopedSlotsRequireProps,
       slotMultipleInstance: options?.slotMultipleInstance ?? true,

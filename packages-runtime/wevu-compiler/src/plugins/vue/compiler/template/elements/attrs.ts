@@ -11,13 +11,21 @@ import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '
 import { transformDirective } from '../directives'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
-import { resolveTemplateTagName } from '../htmlTagMapping'
+import { resolveMappedHtmlTagClassName, resolveTemplateTagName } from '../htmlTagMapping'
 import { getBindDirectiveExpression } from './helpers'
 
 const builtinTagSet = new Set(builtinComponents.map(tag => tag.toLowerCase()))
 
 function isBuiltinTag(tag: string) {
   return builtinTagSet.has(tag.toLowerCase())
+}
+
+function prependStaticClass(staticClass: string | undefined, className: string) {
+  const tokens = staticClass?.split(/\s+/).filter(Boolean) ?? []
+  if (!tokens.includes(className)) {
+    tokens.unshift(className)
+  }
+  return tokens.join(' ')
 }
 
 export function collectElementAttributes(
@@ -35,6 +43,7 @@ export function collectElementAttributes(
   const resolvedTag = options?.resolvedTag ?? resolveTemplateTagName(node.tag, context)
   const isComponentElement = options?.isComponent ?? !isBuiltinTag(resolvedTag)
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
+  const mappedTagClass = resolveMappedHtmlTagClassName(node.tag, context, resolvedTag)
   let staticClass: string | undefined
   let staticId: string | undefined
   let dynamicClassExp: string | undefined
@@ -155,6 +164,10 @@ export function collectElementAttributes(
         attrs.push(dir)
       }
     }
+  }
+
+  if (mappedTagClass) {
+    staticClass = prependStaticClass(staticClass, mappedTagClass)
   }
 
   if (templateRef) {

@@ -442,11 +442,11 @@ const cover = '/cover.png'
     })
 
     const payload = emitFile.mock.calls[0]?.[0]
-    expect(result.template).toContain('<view class="card">')
-    expect(payload.source).toContain('<view class="card">')
-    expect(payload.source).toContain('<text>{{title}}</text>')
-    expect(payload.source).toContain('<image src="{{cover}}" />')
-    expect(payload.source).toContain('<navigator url="/pages/detail/index">详情</navigator>')
+    expect(result.template).toContain('<view class="div card">')
+    expect(payload.source).toContain('<view class="div card">')
+    expect(payload.source).toContain('<text class="span">{{title}}</text>')
+    expect(payload.source).toContain('<image class="img" src="{{cover}}" />')
+    expect(payload.source).toContain('<navigator class="a" url="/pages/detail/index">详情</navigator>')
     expect(payload.source).not.toContain('<div')
     expect(payload.source).not.toContain('<span')
     expect(payload.source).not.toContain('<img')

@@ -66,6 +66,7 @@ export interface TransformContext {
   warnings: string[]
   platform: MiniProgramPlatform
   htmlTagToWxmlMap?: Record<string, string>
+  htmlTagToWxmlTagClass: boolean
   scopedSlotsCompiler: ScopedSlotsCompilerMode
   scopedSlotsRequireProps: boolean
   slotMultipleInstance: boolean
@@ -114,6 +115,7 @@ export type TransformNode = (node: any, context: TransformContext) => string
 export interface TemplateCompileOptions {
   platform?: MiniProgramPlatform
   htmlTagToWxml?: boolean | Record<string, string>
+  htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: ScopedSlotsCompilerMode
   scopedSlotsRequireProps?: boolean
   slotMultipleInstance?: boolean

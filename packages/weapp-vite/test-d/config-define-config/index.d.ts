@@ -36,6 +36,7 @@ export interface WeappViteConfig {
   vue?: {
     template?: {
       htmlTagToWxml?: boolean | Record<string, string>
+      htmlTagToWxmlTagClass?: boolean
     }
   }
 }

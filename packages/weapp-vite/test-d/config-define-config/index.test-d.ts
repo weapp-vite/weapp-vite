@@ -25,6 +25,7 @@ const objectConfig = defineConfig({
         htmlTagToWxml: {
           div: 'view',
         },
+        htmlTagToWxmlTagClass: false,
       },
     },
     autoImportComponents: {
@@ -50,6 +51,7 @@ expectType<boolean | {
   prelude?: boolean
 } | undefined>(objectConfig.weapp?.injectWebRuntimeGlobals)
 expectType<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
+expectType<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 
 const promiseConfig = defineConfig(Promise.resolve({
   weapp: {

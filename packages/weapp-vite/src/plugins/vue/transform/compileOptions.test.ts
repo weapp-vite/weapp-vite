@@ -131,6 +131,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
               htmlTagToWxml: {
                 div: 'view',
               },
+              htmlTagToWxmlTagClass: false,
               scopedSlotsCompiler: 'augmented',
               classStyleRuntime: 'auto',
             },
@@ -148,6 +149,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.htmlTagToWxml).toEqual({
       div: 'view',
     })
+    expect(options.template.htmlTagToWxmlTagClass).toBe(false)
     expect(options.template.classStyleRuntime).toBe('wxs')
     expect(options.template.wxsExtension).toBe('sjs')
     expect(options.template.classStyleWxsSrc).toBe('/virtual/__class_style__.wxs')
@@ -234,6 +236,35 @@ describe('resolveVueTemplatePlatformOptions', () => {
     )
 
     expect(options.template.htmlTagToWxml).toBe(false)
+    expect(options.template.htmlTagToWxmlTagClass).toBe(true)
+  })
+
+  it('allows disabling mapped tag class injection in compile options', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {
+          vue: {
+            template: {
+              htmlTagToWxmlTagClass: false,
+            },
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.template.htmlTagToWxmlTagClass).toBe(false)
   })
 
   it('reads component allowNullPropInput from weapp.wevu.defaults', () => {

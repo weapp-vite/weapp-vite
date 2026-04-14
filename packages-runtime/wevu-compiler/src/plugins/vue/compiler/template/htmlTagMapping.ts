@@ -6,6 +6,7 @@ export const DEFAULT_HTML_TO_WXML_TAG_MAP: Record<string, string> = {
   aside: 'view',
   b: 'text',
   blockquote: 'view',
+  br: 'view',
   button: 'button',
   code: 'text',
   dd: 'view',
@@ -24,6 +25,7 @@ export const DEFAULT_HTML_TO_WXML_TAG_MAP: Record<string, string> = {
   h5: 'view',
   h6: 'view',
   header: 'view',
+  hr: 'view',
   i: 'text',
   img: 'image',
   input: 'input',
@@ -73,4 +75,27 @@ export function resolveTemplateTagName(tag: string, context: Pick<TransformConte
   }
 
   return context.htmlTagToWxmlMap?.[lowerTag] ?? tag
+}
+
+export function resolveMappedHtmlTagClassName(
+  tag: string,
+  context: Pick<TransformContext, 'htmlTagToWxmlMap' | 'htmlTagToWxmlTagClass'>,
+  resolvedTag?: string,
+): string | undefined {
+  if (!context.htmlTagToWxmlTagClass || !tag) {
+    return undefined
+  }
+
+  const lowerTag = tag.toLowerCase()
+  if (tag !== lowerTag) {
+    return undefined
+  }
+
+  const mappedTag = context.htmlTagToWxmlMap?.[lowerTag]
+  const nextTag = resolvedTag ?? mappedTag ?? tag
+  if (!mappedTag || nextTag === lowerTag) {
+    return undefined
+  }
+
+  return lowerTag
 }

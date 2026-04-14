@@ -81,10 +81,10 @@ const cover = '/cover.png'
       },
     )
 
-    expect(result.template).toContain('<view class="card">')
-    expect(result.template).toContain('<text>{{title}}</text>')
-    expect(result.template).toContain('<image src="{{cover}}" />')
-    expect(result.template).toContain('<navigator url="/pages/detail/index">详情</navigator>')
+    expect(result.template).toContain('<view class="div card">')
+    expect(result.template).toContain('<text class="span">{{title}}</text>')
+    expect(result.template).toContain('<image class="img" src="{{cover}}" />')
+    expect(result.template).toContain('<navigator class="a" url="/pages/detail/index">详情</navigator>')
     expect(result.template).not.toContain('<div')
     expect(result.template).not.toContain('<span')
     expect(result.template).not.toContain('<img')
@@ -109,6 +109,50 @@ const cover = '/cover.png'
 
     expect(result.template).toContain('<div><span>hello</span></div>')
     expect(result.template).not.toContain('<view><text>hello</text></view>')
+  })
+
+  it('adds mapped tag classes by default and allows disabling them in compileVueFile options', async () => {
+    const source = `
+<template>
+  <h3 class="title" :class="titleClass">标题</h3>
+  <br />
+</template>
+<script setup lang="ts">
+const titleClass = 'hero'
+</script>
+    `.trim()
+
+    const enabled = await compileVueFile(
+      source,
+      '/project/src/pages/index/index.vue',
+      {
+        template: {
+          htmlTagToWxml: true,
+        },
+      },
+    )
+    const disabled = await compileVueFile(
+      source,
+      '/project/src/pages/index/index.vue',
+      {
+        template: {
+          htmlTagToWxml: true,
+          htmlTagToWxmlTagClass: false,
+        },
+      },
+    )
+
+    expect(enabled.template).toContain('<view class="{{__wv_cls_0}}">标题</view>')
+    expect(enabled.template).toContain('<view class="br" />')
+    expect(enabled.script).toContain('__wv_cls_0')
+    expect(enabled.script).toContain('h3 title')
+    expect(enabled.script).toContain('titleClass')
+    expect(disabled.template).toContain('<view class="{{__wv_cls_0}}">标题</view>')
+    expect(disabled.template).not.toContain('class="br"')
+    expect(disabled.script).toContain('__wv_cls_0')
+    expect(disabled.script).toContain('"title"')
+    expect(disabled.script).toContain('titleClass')
+    expect(disabled.script).not.toContain('h3 title')
   })
 
   it('merges inline map with defineOptions methods for component simple handlers', async () => {

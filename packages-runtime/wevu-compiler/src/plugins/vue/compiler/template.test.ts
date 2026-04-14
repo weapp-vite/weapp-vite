@@ -166,10 +166,10 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('<view class="card" bindtap="onTap">')
-    expect(code).toContain('<text>{{title}}</text>')
-    expect(code).toContain('<image src="{{cover}}" />')
-    expect(code).toContain('<navigator url="/pages/detail/index">详情</navigator>')
+    expect(code).toContain('<view class="div card" bindtap="onTap">')
+    expect(code).toContain('<text class="span">{{title}}</text>')
+    expect(code).toContain('<image class="img" src="{{cover}}" />')
+    expect(code).toContain('<navigator class="a" url="/pages/detail/index">详情</navigator>')
     expect(code).not.toContain('data-wd-tap')
     expect(code).not.toContain('<div')
     expect(code).not.toContain('<span')
@@ -189,7 +189,7 @@ describe('compileVueTemplateToWxml', () => {
       },
     })
 
-    expect(code).toContain('<scroll-view><view>hello</view></scroll-view>')
+    expect(code).toContain('<scroll-view class="section"><view class="span">hello</view></scroll-view>')
   })
 
   it('allows disabling html tag mapping explicitly', () => {
@@ -215,7 +215,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('<view>')
+    expect(code).toContain('<view class="div">')
     expect(code).toContain('<HelloCard />')
     expect(code).toContain('<hello-card />')
     expect(code).not.toContain('<textCard')
@@ -229,7 +229,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, warnings, layoutHosts } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('<text bindtap="onTap">text</text>')
+    expect(code).toContain('<text class="span" bindtap="onTap">text</text>')
     expect(code).not.toContain('data-wd-tap')
     expect(layoutHosts).toBeUndefined()
     expect(warnings).toContain('layout-host 仅支持声明在组件节点上，当前节点已忽略。')
@@ -244,8 +244,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('<block wx:if="{{ok}}"><view>')
-    expect(code).toContain('<text wx:for="{{list}}" wx:for-item="item"')
+    expect(code).toContain('<block wx:if="{{ok}}"><view class="div">')
+    expect(code).toContain('<text class="span" wx:for="{{list}}" wx:for-item="item"')
     expect(code).toContain('{{item}}</text>')
     expect(code).not.toContain('<div ')
     expect(code).not.toContain('<span ')
@@ -262,7 +262,45 @@ describe('compileVueTemplateToWxml', () => {
       },
     })
 
-    expect(code).toContain('<view><view>hello</view><image src="/cover.png" /></view>')
+    expect(code).toContain('<view class="div"><view class="span">hello</view><image class="img" src="/cover.png" /></view>')
+  })
+
+  it('merges mapped tag class with existing static and dynamic class bindings by default', () => {
+    const template = `
+<h3 class="title" :class="titleClass">标题</h3>
+<br />
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(code).toContain('class="{{__wv_cls_0}}"')
+    expect(code).toContain('<view class="br" />')
+    const classBinding = classStyleBindings?.find(binding => binding.name === '__wv_cls_0')
+    expect(classBinding?.exp).toContain('h3 title')
+    expect(classBinding?.exp).toContain('titleClass')
+  })
+
+  it('allows disabling mapped tag class injection explicitly', () => {
+    const template = `
+<h3 class="title" :class="titleClass">标题</h3>
+<br />
+    `.trim()
+
+    const { code, classStyleBindings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { htmlTagToWxmlTagClass: false },
+    )
+
+    expect(code).toContain('class="{{__wv_cls_0}}"')
+    expect(code).not.toContain('class="br"')
+    const classBinding = classStyleBindings?.find(binding => binding.name === '__wv_cls_0')
+    expect(classBinding?.exp).toContain('title')
+    expect(classBinding?.exp).toContain('titleClass')
+    expect(classBinding?.exp).not.toContain('h3 title')
   })
 
   it('falls back interpolation call expression to runtime binding', () => {
