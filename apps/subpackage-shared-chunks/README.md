@@ -7,7 +7,7 @@
 - **真实的 app.json 规划**：主包仅保留首页，并通过 `preloadRule` 预下载高频分包，启用 `lazyCodeLoading` 与 `theme/sitemap`。
 - **分包差异化配置**：`packages/order` 作为独立分包，开启专属 `autoImportComponents`、`dependencies`，同时显式保留“成功注入”和“失败注入”两种共享样式路径示例，其余分包沿用主包默认策略。
 - **自动组件导入**：主包与分包分别声明 `autoImportComponents.globs`，页面引用 `<HelloWorld>`、`<OrderMetrics>` 时无需手动维护 `usingComponents`。
-- **共享 chunk 策略**：在 `vite.config.ts` 中通过 `chunks.sharedStrategy: 'duplicate'` 控制跨分包依赖复制，避免首包拉取大量共享模块。
+- **共享 chunk 策略**：在 `vite.config.ts` 或 `weapp-vite.config.ts` 中通过 `chunks.sharedStrategy: 'duplicate'` 控制跨分包依赖复制，避免首包拉取大量共享模块。
 - **CLI 分析**：可执行 `pnpm --filter subpackage-shared-chunks weapp-vite analyze` 查看各分包产物与共享依赖。
 
 ## 共享样式路径示例

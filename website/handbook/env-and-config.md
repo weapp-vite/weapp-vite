@@ -36,7 +36,7 @@ keywords:
 - `.env`
 - `.env.development`
 - `.env.production`
-- `vite.config.ts`
+- `vite.config.ts` / `weapp-vite.config.ts`
 
 ### 运行期配置
 

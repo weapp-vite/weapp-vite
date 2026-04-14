@@ -24,5 +24,11 @@ describe('weapp-vite config file', () => {
     // config service should resolve src root and config path from weapp-vite.config.ts
     expect(ctx.configService.srcRoot).toBe('src-from-weapp')
     expect(ctx.configService.configFilePath?.endsWith('weapp-vite.config.ts')).toBe(true)
+
+    // top-level Vite options should still come from vite.config.ts only
+    expect(ctx.configService.options.config.define?.__FROM_VITE_CONFIG__).toBe('"vite"')
+    expect(ctx.configService.options.config.define?.__FROM_WEAPP_CONFIG__).toBeUndefined()
+    expect(ctx.configService.options.config.build?.sourcemap).toBe(true)
+    expect(ctx.configService.options.config.build?.minify).not.toBe(false)
   })
 })

@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   launchIsolatedMiniProgram,
@@ -92,6 +92,15 @@ async function getRouterMiniProgram() {
 }
 
 describe.sequential('e2e app: wevu-features / router', () => {
+  afterEach(async () => {
+    if (routerMiniProgram) {
+      const miniProgram = routerMiniProgram
+      routerMiniProgram = null
+      await miniProgram.close()
+    }
+    await closeSharedMiniProgram()
+  })
+
   afterAll(async () => {
     if (routerMiniProgram) {
       const miniProgram = routerMiniProgram

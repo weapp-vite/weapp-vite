@@ -234,8 +234,6 @@ describe('runtime: vue compat helpers', () => {
       setup() {
         const router = useNativeRouter()
         const hostPageRouter = useNativePageRouter()
-        expect(router).toBe(componentRouter)
-        expect(hostPageRouter).toBe(pageRouter)
         router.navigateTo({ url: './from-component' })
         hostPageRouter.navigateTo({ url: './from-page' })
         return {}
@@ -246,14 +244,16 @@ describe('runtime: vue compat helpers', () => {
     const inst: any = {
       setData() {},
       properties: {},
+      is: 'components/demo-card/index',
+      route: 'pages/demo/index',
       router: componentRouter,
       pageRouter,
     }
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
 
-    expect(componentRouter.navigateTo).toHaveBeenCalledWith({ url: './from-component' })
-    expect(pageRouter.navigateTo).toHaveBeenCalledWith({ url: './from-page' })
+    expect(componentRouter.navigateTo).toHaveBeenCalledWith({ url: '/components/demo-card/from-component' })
+    expect(pageRouter.navigateTo).toHaveBeenCalledWith({ url: '/pages/demo/from-page' })
   })
 
   it('useNativeRouter/useNativePageRouter fallback to global route methods when instance router is unavailable', () => {
@@ -310,16 +310,20 @@ describe('runtime: vue compat helpers', () => {
 
     defineComponent({
       setup() {
-        expect(useNativeRouter()).toBe(pageRouterOnly)
-        expect(useNativePageRouter()).toBe(pageRouterOnly)
+        const router = useNativeRouter()
+        const pageRouter = useNativePageRouter()
+        router.navigateTo({ url: './from-component-fallback' })
+        pageRouter.navigateTo({ url: './from-page-fallback' })
         return {}
       },
     })
 
     defineComponent({
       setup() {
-        expect(useNativeRouter()).toBe(componentRouterOnly)
-        expect(useNativePageRouter()).toBe(componentRouterOnly)
+        const router = useNativeRouter()
+        const pageRouter = useNativePageRouter()
+        router.navigateTo({ url: './from-component-only' })
+        pageRouter.navigateTo({ url: './from-page-only' })
         return {}
       },
     })
@@ -329,11 +333,15 @@ describe('runtime: vue compat helpers', () => {
     const pageRouterOnlyInstance: any = {
       setData() {},
       properties: {},
+      is: 'components/fallback-card/index',
+      route: 'pages/fallback/index',
       pageRouter: pageRouterOnly,
     }
     const componentRouterOnlyInstance: any = {
       setData() {},
       properties: {},
+      is: 'components/router-only/index',
+      route: 'pages/router-only/index',
       router: componentRouterOnly,
     }
 
@@ -341,6 +349,13 @@ describe('runtime: vue compat helpers', () => {
     pageRouterOnlyOptions.lifetimes.attached.call(pageRouterOnlyInstance)
     componentRouterOnlyOptions.lifetimes.created.call(componentRouterOnlyInstance)
     componentRouterOnlyOptions.lifetimes.attached.call(componentRouterOnlyInstance)
+
+    expect(pageRouterOnly.navigateTo).toHaveBeenCalledTimes(2)
+    expect(pageRouterOnly.navigateTo).toHaveBeenNthCalledWith(1, { url: '/components/fallback-card/from-component-fallback' })
+    expect(pageRouterOnly.navigateTo).toHaveBeenNthCalledWith(2, { url: '/pages/fallback/from-page-fallback' })
+    expect(componentRouterOnly.navigateTo).toHaveBeenCalledTimes(2)
+    expect(componentRouterOnly.navigateTo).toHaveBeenNthCalledWith(1, { url: '/components/router-only/from-component-only' })
+    expect(componentRouterOnly.navigateTo).toHaveBeenNthCalledWith(2, { url: '/pages/router-only/from-page-only' })
   })
 
   it('useNativeRouter/useNativePageRouter fallback to my route methods when wx is unavailable', () => {

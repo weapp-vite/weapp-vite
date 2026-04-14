@@ -161,7 +161,7 @@ flowchart LR
 }
 ```
 
-2. 在 `vite.config.ts` 里为该 `root` 配置 `weapp.subPackages`（关键是 `independent`，其余按需）：
+2. 在 `vite.config.ts` 或 `weapp-vite.config.ts` 里为该 `root` 配置 `weapp.subPackages`（关键是 `independent`，其余按需）：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -184,7 +184,7 @@ export default defineConfig({
 ```
 
 > [!TIP]
-> 如果你不想把“独立分包开发”的配置长期留在主配置里，可以单独新建一个 `vite.config.order.ts`，再用 `wv dev -c vite.config.order.ts` 运行；生产构建仍用默认的 `vite.config.ts`。
+> 如果你不想把“独立分包开发”的配置长期留在主配置里，可以单独新建一个 `vite.config.order.ts`，再用 `wv dev -c vite.config.order.ts` 运行；生产构建仍用默认的 `vite.config.ts` 或 `weapp-vite.config.ts`。
 
 ## 分包样式共享
 
@@ -237,7 +237,7 @@ export default defineConfig({
 
 ### 调试建议
 
-1. 确认 `app.json` 中的 `independent: true` 是否与 `vite.config.ts` 中的 `weapp.subPackages` 保持一致。
+1. 确认 `app.json` 中的 `independent: true` 是否与 `vite.config.ts` 或 `weapp-vite.config.ts` 中的 `weapp.subPackages` 保持一致。
 2. 利用 `weapp.debug.watchFiles` 查看产物位置，确认独立分包是否生成独立的 `miniprogram_npm`。
 3. 如果分包引用到了主包路径，构建会报错提示，请及时调整引用方式或拆分公共模块。
 

@@ -47,9 +47,9 @@ export function checkWorkersOptions(
   const workersDir = scanService.workersDir
   const hasWorkersDir = Boolean(workersDir)
   if (hasWorkersDir && configService.weappViteConfig?.worker?.entry === undefined) {
-    logger.error('检测到已经开启了 `worker`，请在 `vite.config.ts` 中设置 `weapp.worker.entry` 路径')
+    logger.error('检测到已经开启了 `worker`，请在 `vite.config.ts` / `weapp-vite.config.ts` 中设置 `weapp.worker.entry` 路径')
     logger.error('比如引入的 `worker` 路径为 `workers/index`, 此时 `weapp.worker.entry` 设置为 `[index]` ')
-    throw new Error('请在 `vite.config.ts` 中设置 `weapp.worker.entry` 路径')
+    throw new Error('请在 `vite.config.ts` / `weapp-vite.config.ts` 中设置 `weapp.worker.entry` 路径')
   }
 
   return {

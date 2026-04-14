@@ -55,6 +55,22 @@ describe('resolveWeappConfigFile', () => {
     expect(fromRoot).toBe(rootConfig)
   })
 
+  it('does not auto-merge root weapp config when a custom explicit config file is specified', async () => {
+    const root = await createTempDir()
+    const customConfig = path.join(root, 'weapp-vite.lib.config.ts')
+    const rootConfig = path.join(root, 'weapp-vite.config.ts')
+
+    await fs.writeFile(customConfig, 'export default {}', 'utf8')
+    await fs.writeFile(rootConfig, 'export default {}', 'utf8')
+
+    const resolved = await resolveWeappConfigFile({
+      root,
+      specified: customConfig,
+    })
+
+    expect(resolved).toBeUndefined()
+  })
+
   it('exports full config candidate list', () => {
     expect(WEAPP_VITE_CONFIG_CANDIDATES).toContain('weapp-vite.config.ts')
     expect(WEAPP_VITE_CONFIG_CANDIDATES.length).toBeGreaterThan(1)

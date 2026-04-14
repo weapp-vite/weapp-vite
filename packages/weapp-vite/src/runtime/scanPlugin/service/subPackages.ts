@@ -68,5 +68,5 @@ export function loadSubPackages(ctx: MutableCompilerContext) {
     return [...subPackageMap.values()]
   }
 
-  throw new Error(`在 ${configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
+  throw new Error(`在 ${configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` / \`weapp-vite.config.ts\` 中设置正确的 \`weapp.srcRoot\` 配置路径`)
 }

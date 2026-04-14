@@ -7,7 +7,7 @@ import { createHmrMarker, replaceFileByRename, resolvePlatforms, waitForFileCont
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
-const COMMON_JS_PATH = path.join(DIST_ROOT, 'common.js')
+const SHARED_RUNTIME_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
 const STORE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store/index.js')
 const STORE_SHARE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store-share/index.js')
 const PLATFORM_LIST = resolvePlatforms()
@@ -25,11 +25,11 @@ async function waitForCommonMarkerWithRetry(
   retrySourceContent: string,
 ) {
   try {
-    return await waitForFileContains(COMMON_JS_PATH, marker, 20_000)
+    return await waitForFileContains(SHARED_RUNTIME_PATH, marker, 20_000)
   }
   catch {
     await replaceFileByRename(SHARED_STORE_SOURCE_PATH, `${retrySourceContent}\n`)
-    return await waitForFileContains(COMMON_JS_PATH, marker, 20_000)
+    return await waitForFileContains(SHARED_RUNTIME_PATH, marker, 20_000)
   }
 }
 
@@ -56,7 +56,7 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFile(COMMON_JS_PATH, 90_000), `${platform} initial common.js`)
+      await dev.waitFor(waitForFile(SHARED_RUNTIME_PATH, 90_000), `${platform} initial shared runtime`)
       await dev.waitFor(waitForFile(STORE_PAGE_JS_PATH, 90_000), `${platform} initial store page js`)
       await dev.waitFor(waitForFile(STORE_SHARE_PAGE_JS_PATH, 90_000), `${platform} initial store-share page js`)
 
@@ -75,8 +75,8 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
         fs.readFile(STORE_SHARE_PAGE_JS_PATH, 'utf8'),
       ])
 
-      expect(storePageJs).toContain('require("../../common.js")')
-      expect(storeSharePageJs).toContain('require("../../common.js")')
+      expect(storePageJs).toContain('require("../../weapp-vendors/wevu-defineProperty.js")')
+      expect(storeSharePageJs).toContain('require("../../weapp-vendors/wevu-defineProperty.js")')
       expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
@@ -101,7 +101,7 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
-      await dev.waitFor(waitForFile(COMMON_JS_PATH, 90_000), `${platform} initial common.js`)
+      await dev.waitFor(waitForFile(SHARED_RUNTIME_PATH, 90_000), `${platform} initial shared runtime`)
 
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, firstUpdatedSource)
       await replaceFileByRename(SHARED_STORE_SOURCE_PATH, secondUpdatedSource)

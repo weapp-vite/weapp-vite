@@ -240,5 +240,5 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
     throw new Error('`app.json` 解析失败，请确保 `app.json` 文件格式正确')
   }
 
-  throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\` 或 \`app.vue\`，请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径`)
+  throw new Error(`在 ${appDirname} 目录下没有找到 \`app.json\` 或 \`app.vue\`，请确保你初始化了小程序项目，或者在 \`vite.config.ts\` / \`weapp-vite.config.ts\` 中设置正确的 \`weapp.srcRoot\` 配置路径`)
 }

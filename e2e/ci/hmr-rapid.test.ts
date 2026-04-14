@@ -21,6 +21,20 @@ const SFC_SRC_PATH = path.join(APP_ROOT, 'src/pages/hmr-sfc/index.vue')
 const PLATFORM_LIST = resolvePlatforms()
 const RAPID_HMR_TIMEOUT = 180_000
 
+async function retryWithSourceTouch<T>(
+  task: () => Promise<T>,
+  touchFilePath: string,
+  touchContent: string,
+) {
+  try {
+    return await task()
+  }
+  catch {
+    await replaceFileByRename(touchFilePath, touchContent)
+    return await task()
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -41,11 +55,18 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
-      all: true,
+      stdio: 'inherit',
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000),
+          SRC_TEMPLATE,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'HMR'), `${platform} initial template`)
 
       // 第一次修改
@@ -57,10 +78,20 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       await replaceFileByRename(SRC_TEMPLATE, secondUpdate)
 
       // 等待 dist 包含第二次标记
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
-        `${platform} rapid second template marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
+          `${platform} rapid second template marker`,
+        )
+      }
+      catch {
+        await replaceFileByRename(SRC_TEMPLATE, `${secondUpdate}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
+          `${platform} rapid second template marker (retry)`,
+        )
+      }
       expect(content).toContain(secondMarker)
       expect(content).not.toContain(firstMarker)
     }

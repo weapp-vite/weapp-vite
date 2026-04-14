@@ -9,5 +9,5 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*", "vite.config.ts"]
+  "include": ["src/**/*", "vite.config.ts", "weapp-vite.config.ts"]
 }

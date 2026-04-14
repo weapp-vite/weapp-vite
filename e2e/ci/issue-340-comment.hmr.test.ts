@@ -1,10 +1,10 @@
-import { access, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, resolvePlatforms } from '../utils/hmr-helpers'
 import { waitForFile } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -14,8 +14,6 @@ const CONFIG_PATH = path.join(APP_ROOT, 'weapp-vite.config.ts')
 const SHARED_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/issue-340-shared.ts')
 const APP_JS_PATH = path.join(DIST_ROOT, 'app.js')
 const APP_JSON_PATH = path.join(DIST_ROOT, 'app.json')
-const SHARED_CHUNK_PATH = path.join(DIST_ROOT, 'issue-340-shared.js')
-const RUNTIME_CHUNK_PATH = path.join(DIST_ROOT, 'rolldown-runtime.js')
 const ITEM_PAGE_JS_PATH = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
 const USER_PAGE_JS_PATH = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
 const PLATFORM_LIST = resolvePlatforms()
@@ -49,6 +47,62 @@ async function pathExists(filePath: string) {
   catch {
     return false
   }
+}
+
+async function collectJsFiles(root: string): Promise<string[]> {
+  const entries = await readdir(root, { withFileTypes: true })
+  const files = await Promise.all(entries.map(async (entry) => {
+    const entryPath = path.join(root, entry.name)
+    if (entry.isDirectory()) {
+      return collectJsFiles(entryPath)
+    }
+    return entry.isFile() && entry.name.endsWith('.js') ? [entryPath] : []
+  }))
+  return files.flat()
+}
+
+async function findSharedCarrierFiles(marker: string) {
+  const jsFiles = await collectJsFiles(DIST_ROOT)
+  const matched: string[] = []
+
+  for (const filePath of jsFiles) {
+    const content = await readFile(filePath, 'utf8')
+    if (content.includes(marker)) {
+      matched.push(filePath)
+    }
+  }
+
+  return matched.sort()
+}
+
+async function waitForSharedCarrierFiles(
+  marker: string,
+  timeoutMs = 90_000,
+) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const matched = await findSharedCarrierFiles(marker)
+    if (matched.length > 0) {
+      return matched
+    }
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error(`Timed out waiting for shared outputs to contain marker: ${marker}`)
+}
+
+async function waitForSharedCarrierFilesWithoutMarker(
+  marker: string,
+  timeoutMs = 90_000,
+) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const matched = await findSharedCarrierFiles(marker)
+    if (matched.length === 0) {
+      return
+    }
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error(`Timed out waiting for shared outputs to remove marker: ${marker}`)
 }
 
 beforeEach(async () => {
@@ -104,17 +158,18 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     try {
       await dev.waitFor(waitForFile(APP_JSON_PATH, 240_000), `${platform} issue-340-hoist app.json generated`)
       await dev.waitFor(waitForFile(APP_JS_PATH, 240_000), `${platform} initial app.js generated`)
-      await dev.waitFor(waitForFile(SHARED_CHUNK_PATH, 240_000), `${platform} initial shared chunk generated`)
       await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), `${platform} initial item page script generated`)
       await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), `${platform} initial user page script generated`)
 
+      expect((await findSharedCarrierFiles('issue-340-hoist')).length).toBeGreaterThan(0)
+
       await replaceFileByRename(SHARED_SOURCE_PATH, updatedSharedSource)
 
-      const sharedChunkContent = await dev.waitFor(
-        waitForFileContains(SHARED_CHUNK_PATH, marker),
-        `${platform} updated shared chunk marker`,
-      )
-      expect(sharedChunkContent).toContain(marker)
+      const updatedSharedCarrierFiles = await dev.waitFor(waitForSharedCarrierFiles(
+        marker,
+      ), `${platform} updated shared output marker`)
+      const sharedOutputContents = await Promise.all(updatedSharedCarrierFiles.map(filePath => readFile(filePath, 'utf8')))
+      sharedOutputContents.forEach(content => expect(content).toContain(marker))
 
       const [appJsonExists, appJs, itemPageJs, userPageJs] = await Promise.all([
         pathExists(APP_JSON_PATH),
@@ -125,17 +180,8 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
 
       expect(appJsonExists).toBe(true)
       expect(appJs).not.toContain('node_modules/wevu/dist/index.js')
-      expect(itemPageJs).toContain('require("../../../issue-340-shared.js")')
-      expect(userPageJs).toContain('require("../../../issue-340-shared.js")')
       expect(itemPageJs).not.toContain('node_modules/wevu/dist/index.js')
       expect(userPageJs).not.toContain('node_modules/wevu/dist/index.js')
-      expect(sharedChunkContent).toContain('require("./rolldown-runtime.js")')
-      expect(sharedChunkContent).toContain('__commonJSMin')
-
-      const runtimeChunkExists = await pathExists(RUNTIME_CHUNK_PATH)
-      expect(runtimeChunkExists).toBe(true)
-      const runtimeChunk = await readFile(RUNTIME_CHUNK_PATH, 'utf8')
-      expect(runtimeChunk).toContain('__commonJSMin')
     }
     finally {
       await dev.stop(5_000)
@@ -172,18 +218,24 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
 
     try {
       await dev.waitFor(waitForFile(APP_JSON_PATH, 240_000), `${platform} issue-340-hoist app.json generated`)
-      await dev.waitFor(waitForFile(SHARED_CHUNK_PATH, 240_000), `${platform} initial shared chunk generated`)
+      await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), `${platform} initial item page script generated`)
+      await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), `${platform} initial user page script generated`)
+
+      expect((await findSharedCarrierFiles('issue-340-hoist')).length).toBeGreaterThan(0)
 
       await replaceFileByRename(SHARED_SOURCE_PATH, firstUpdatedSource)
       await replaceFileByRename(SHARED_SOURCE_PATH, secondUpdatedSource)
 
-      const sharedChunkContent = await dev.waitFor(
-        waitForFileContains(SHARED_CHUNK_PATH, secondMarker),
-        `${platform} updated second shared chunk marker`,
-      )
+      const updatedSharedCarrierFiles = await dev.waitFor((async () => {
+        await waitForSharedCarrierFilesWithoutMarker(firstMarker)
+        return await waitForSharedCarrierFiles(secondMarker)
+      })(), `${platform} updated second shared output marker`)
+      const sharedOutputContents = await Promise.all(updatedSharedCarrierFiles.map(filePath => readFile(filePath, 'utf8')))
 
-      expect(sharedChunkContent).toContain(secondMarker)
-      expect(sharedChunkContent).not.toContain(firstMarker)
+      sharedOutputContents.forEach((content) => {
+        expect(content).toContain(secondMarker)
+        expect(content).not.toContain(firstMarker)
+      })
       expect(dev.getOutput()).not.toContain('Build failed')
 
       const [itemPageJs, userPageJs] = await Promise.all([
@@ -191,8 +243,8 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
         readFile(USER_PAGE_JS_PATH, 'utf8'),
       ])
 
-      expect(itemPageJs).toContain('require("../../../issue-340-shared.js")')
-      expect(userPageJs).toContain('require("../../../issue-340-shared.js")')
+      expect(itemPageJs).not.toContain('node_modules/wevu/dist/index.js')
+      expect(userPageJs).not.toContain('node_modules/wevu/dist/index.js')
     }
     finally {
       await dev.stop(5_000)

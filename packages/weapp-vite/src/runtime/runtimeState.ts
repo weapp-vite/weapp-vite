@@ -51,6 +51,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     srcRoot: '',
     configFilePath: undefined,
     weappWeb: undefined,
+    configMergeInfo: undefined,
   }
 }
 

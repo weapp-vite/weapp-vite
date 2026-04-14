@@ -20,7 +20,7 @@ keywords:
 - 小程序专属字段放在 `weapp` 下，例如 `srcRoot`、`autoRoutes`、`subPackages`、`mcp`
 
 ```ts
-// vite.config.ts
+// vite.config.ts 或 weapp-vite.config.ts
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
@@ -84,6 +84,8 @@ export default defineConfig({
 ## `defineConfig` 推荐写法
 
 推荐始终从 `weapp-vite/config` 导入 `defineConfig`，而不是直接从 `vite` 导入。这样 `weapp` 字段能拿到完整的类型提示、JSDoc 和跳转能力。
+
+默认情况下，项目可以只保留 `vite.config.*`，也可以只保留 `weapp-vite.config.*`；如果两者同时存在，`weapp-vite` 会读取并合并其中的 `weapp` 配置。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'

@@ -36,6 +36,7 @@ describe('tsconfig support', () => {
     expect(node.extends).toBe('./tsconfig.shared.json')
     expect(node.compilerOptions.types).toContain('node')
     expect(node.include).toContain('../vite.config.ts')
+    expect(node.include).toContain('../weapp-vite.config.ts')
     expect(server.extends).toBe('./tsconfig.shared.json')
     expect(server.compilerOptions.types).toContain('node')
     expect(server.files).toEqual([])

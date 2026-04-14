@@ -83,13 +83,13 @@ pnpm add -D weapp-vite vite typescript @types/node sass
     "module": "ESNext",
     "moduleResolution": "Node"
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "weapp-vite.config.ts"]
 }
 ```
 
-### vite.config.ts
+### vite.config.ts / weapp-vite.config.ts
 
-在项目根目录创建 `vite.config.ts`：
+在项目根目录创建 `vite.config.ts` 或 `weapp-vite.config.ts`：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -104,6 +104,8 @@ export default defineConfig({
   },
 })
 ```
+
+如果两个文件同时存在，`weapp-vite` 会把 `weapp-vite.config.*` 中的 `weapp` 配置与 `vite.config.*` 合并；如果你只想保留一个文件，也完全可以只保留其中任意一个。
 
 `srcRoot` 指向你存放 `app.*`、`pages/` 的目录；如果想继续在根目录开发，可以把 `srcRoot` 改成 `'.'`。
 

@@ -41,6 +41,13 @@ export interface LoadConfigResult {
   configFilePath?: string
   currentSubPackageRoot?: string
   weappWeb?: ResolvedWeappWebConfig
+  configMergeInfo?: ResolvedConfigMergeInfo
+}
+
+export interface ResolvedConfigMergeInfo {
+  merged: boolean
+  viteConfigPath?: string
+  weappConfigPath?: string
 }
 
 export interface ResolvedWeappLibConfig {

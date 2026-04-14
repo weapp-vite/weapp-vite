@@ -152,7 +152,7 @@ definePageMeta({
 
 ## 5. `routeRules` 怎么和 layout 配合
 
-如果你不想每个页面都手写 `definePageMeta({ layout })`，可以在 `vite.config.ts` 里用 `weapp.routeRules` 批量声明默认布局。
+如果你不想每个页面都手写 `definePageMeta({ layout })`，可以在 `vite.config.ts` 或 `weapp-vite.config.ts` 里用 `weapp.routeRules` 批量声明默认布局。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'

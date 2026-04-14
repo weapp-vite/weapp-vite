@@ -5,6 +5,7 @@ import { createConfigService } from './createConfigService'
 
 const {
   configureLoggerMock,
+  loggerInfoMock,
   detectMock,
   loadConfigImplMock,
   mergeWorkersMock,
@@ -13,6 +14,7 @@ const {
   mergeInlineConfigMock,
 } = vi.hoisted(() => ({
   configureLoggerMock: vi.fn(),
+  loggerInfoMock: vi.fn(),
   detectMock: vi.fn(),
   loadConfigImplMock: vi.fn(),
   mergeWorkersMock: vi.fn(),
@@ -22,6 +24,9 @@ const {
 }))
 
 vi.mock('../../logger', () => ({
+  default: {
+    info: loggerInfoMock,
+  },
   configureLogger: configureLoggerMock,
 }))
 
@@ -151,6 +156,9 @@ describe('createConfigService', () => {
       outputExtensions: {
         script: '.js',
       },
+      configMergeInfo: {
+        merged: false,
+      },
       aliasEntries: [],
       relativeSrcRoot: (p: string) => path.relative('/work/src', p) || '.',
     })
@@ -177,6 +185,7 @@ describe('createConfigService', () => {
     })
     expect(loaded.weappWeb).toBeUndefined()
     expect(loaded.currentSubPackageRoot).toBeUndefined()
+    expect(loggerInfoMock).not.toHaveBeenCalled()
 
     service.setDefineEnv('CUSTOM_FLAG', 1)
     const define = service.defineImportMetaEnv
@@ -338,5 +347,45 @@ describe('createConfigService', () => {
     } as typeof service
 
     expect(service.relativeOutputPath.call(withEmptyRelative, '/project/src/app.ts')).toBe('')
+  })
+
+  it('logs merged config priority when vite.config.ts and weapp-vite.config.ts both exist', async () => {
+    loadConfigImplMock.mockResolvedValueOnce({
+      cwd: '/work',
+      isDev: true,
+      mode: 'production',
+      config: {
+        weapp: {
+          logger: 'silent',
+        },
+      },
+      packageJson: {
+        name: 'demo',
+      },
+      projectConfig: {},
+      srcRoot: 'src',
+      platform: 'weapp',
+      mpDistRoot: 'dist',
+      outputExtensions: {
+        script: '.js',
+      },
+      configFilePath: '/work/weapp-vite.config.ts',
+      configMergeInfo: {
+        merged: true,
+        viteConfigPath: '/work/vite.config.ts',
+        weappConfigPath: '/work/weapp-vite.config.ts',
+      },
+      aliasEntries: [],
+      relativeSrcRoot: (p: string) => path.relative('/work/src', p) || '.',
+    })
+
+    const service = createConfigService(createCtx())
+    await service.load({
+      cwd: '/work',
+      mode: 'production',
+      isDev: true,
+    })
+
+    expect(loggerInfoMock).toHaveBeenCalledWith('[config] 检测到同时存在 weapp-vite.config.ts 与 vite.config.ts，已合并其中的 `weapp` 配置，优先级：weapp-vite.config.ts > vite.config.ts')
   })
 })

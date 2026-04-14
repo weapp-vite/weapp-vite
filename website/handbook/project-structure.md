@@ -55,7 +55,7 @@ src/
 
 ```txt
 .
-├─ vite.config.ts
+├─ vite.config.ts / weapp-vite.config.ts
 ├─ project.config.json
 ├─ AGENTS.md
 ├─ .weapp-vite/
@@ -64,7 +64,7 @@ src/
 
 它们分别负责：
 
-- `vite.config.ts`：项目配置入口
+- `vite.config.ts` / `weapp-vite.config.ts`：项目配置入口
 - `project.config.json`：微信开发者工具工程配置
 - `AGENTS.md`：给 AI 的项目级工作流约束
 - `.weapp-vite/`：托管的支持文件与类型产物
@@ -255,7 +255,7 @@ wv prepare
 
 1. 根目录 `AGENTS.md`
 2. `node_modules/weapp-vite/dist/docs/index.md`
-3. `vite.config.ts`
+3. `vite.config.ts` / `weapp-vite.config.ts`
 
 ## 一句话建议
 

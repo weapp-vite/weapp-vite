@@ -7,7 +7,7 @@ import { defu, removeExtensionDeep } from '@weapp-core/shared'
 import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
-import { configureLogger } from '../../logger'
+import logger, { configureLogger } from '../../logger'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
@@ -172,6 +172,14 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     oxcVitePlugin: oxcRuntimeSupport.vitePlugin,
   })
 
+  function formatConfigDisplayPath(filePath?: string) {
+    if (!filePath) {
+      return undefined
+    }
+    const relative = normalizeRelativePath(path.relative(options.cwd, filePath))
+    return relative && relative !== '' ? relative : path.basename(filePath)
+  }
+
   async function load(optionsInput?: Partial<LoadConfigOptions>) {
     const defaultCwd = process.cwd()
     const input = defu<LoadConfigOptions, LoadConfigOptions[]>(optionsInput, {
@@ -197,6 +205,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
 
     setOptions(resolvedConfig)
     configureLogger(resolvedConfig.config.weapp?.logger)
+    if (resolvedConfig.configMergeInfo?.merged) {
+      const weappConfigDisplay = formatConfigDisplayPath(resolvedConfig.configMergeInfo.weappConfigPath) ?? 'weapp-vite.config.ts'
+      const viteConfigDisplay = formatConfigDisplayPath(resolvedConfig.configMergeInfo.viteConfigPath) ?? 'vite.config.ts'
+      logger.info(`[config] 检测到同时存在 ${weappConfigDisplay} 与 ${viteConfigDisplay}，已合并其中的 \`weapp\` 配置，优先级：${weappConfigDisplay} > ${viteConfigDisplay}`)
+    }
     packageManager = (await detect()) ?? {
       agent: 'npm',
       name: 'npm',

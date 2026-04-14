@@ -17,7 +17,7 @@ keywords:
 `weapp-vite` 会尽量帮你把“npm 依赖怎么进小程序”这件事自动化：默认提供 **2 种自动策略**，以及 **1 个手动触发**命令。
 
 ::: tip 配置速记
-若需要关闭自动打包、切换缓存策略或为特定依赖覆写 Vite 库模式的构建选项，请在 `vite.config.ts` 中调整 [`weapp.npm`](/config/npm.md#weapp-npm)。
+若需要关闭自动打包、切换缓存策略或为特定依赖覆写 Vite 库模式的构建选项，请在 `vite.config.ts` 或 `weapp-vite.config.ts` 中调整 [`weapp.npm`](/config/npm.md#weapp-npm)。
 :::
 
 ## 自动构建
