@@ -165,6 +165,31 @@ describe('openIde', () => {
     })
   })
 
+  it('reopens current weapp project immediately when reuse is disabled', async () => {
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect: miniProgramDisconnectMock,
+    })
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'dist/dev/mp-weixin', {
+      reuseOpenedProject: false,
+    })
+
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      timeout: 3000,
+    })
+    expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(2)
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
+    expect(parseMock).toHaveBeenCalledWith([
+      'close',
+    ])
+    expect(launchAutomatorMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      trustProject: true,
+    })
+  })
+
   it('does not append trust-project when explicitly disabled', async () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })

@@ -41,6 +41,7 @@ export interface ResolvedIdeCommandContext {
 
 export interface OpenIdeOptions {
   trustProject?: boolean
+  reuseOpenedProject?: boolean
 }
 
 async function openWechatIdeByAutomator(projectPath: string) {
@@ -220,9 +221,38 @@ async function tryReuseOpenedWechatIde(projectPath: string) {
   } as const
 }
 
+async function reopenOpenedWechatIde(projectPath: string) {
+  let miniProgram: Awaited<ReturnType<typeof connectOpenedAutomator>> | undefined
+  try {
+    miniProgram = await connectOpenedAutomator({
+      projectPath,
+      timeout: 3_000,
+    })
+  }
+  catch {
+    return false
+  }
+
+  miniProgram.disconnect()
+  logger.info('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
+  const closed = await closeIde()
+  if (!closed) {
+    logger.warn('关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
+  }
+
+  await openWechatIdeByAutomator(projectPath)
+  return true
+}
+
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   if (platform === 'weapp' && projectPath && options.trustProject !== false) {
     try {
+      if (options.reuseOpenedProject === false) {
+        const reopened = await reopenOpenedWechatIde(projectPath)
+        if (reopened) {
+          return
+        }
+      }
       const reuseResult = await tryReuseOpenedWechatIde(projectPath)
       if (reuseResult?.reused || reuseResult?.reopened) {
         return
