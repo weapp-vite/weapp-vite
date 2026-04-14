@@ -19,7 +19,7 @@ keywords:
 
 ::: tip TL;DR
 
-1. 在 `vite.config.ts` 中设置 `weapp.pluginRoot` 指向插件目录。
+1. 在 `vite.config.ts` 或 `weapp-vite.config.ts` 中设置 `weapp.pluginRoot` 指向插件目录。
 2. 将 `plugin.json`、公共组件与页面放在该目录下，结构与官方要求保持一致。
 3. 执行 `pnpm dev` / `pnpm build` 后，`dist-plugin/**` 会生成完整插件包，可直接导入微信开发者工具或配合 `weapp-ide-cli` 上传。
    :::
@@ -150,6 +150,6 @@ dist-plugin/
 插件编译共享绝大部分能力：
 
 - 自动构建 npm、WXML/WXSS 增强、auto-import 等功能均可在插件内使用；
-- 如果某些能力需要额外配置（如自动导入组件），请在 `vite.config.ts` 或插件目录下的模块中参照主应用的写法。
+- 如果某些能力需要额外配置（如自动导入组件），请在 `vite.config.ts`、`weapp-vite.config.ts` 或插件目录下的模块中参照主应用的写法。
 
 如仍有疑问，可到 [社区交流群](/community/group) 反馈或查看示例仓库的实现，或在 Issue 板块留言寻求帮助。

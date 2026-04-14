@@ -123,7 +123,7 @@ export default defineConfig({
 
 - `shared`：多端共享、公共基础配置
 - `app`：页面、组件、SFC、布局相关源码
-- `node`：`vite.config.*`、脚本、生成器、Node 工具
+- `node`：`vite.config.*`、`weapp-vite.config.*`、脚本、生成器、Node 工具
 - `server`：服务端辅助代码或本地 server 代码
 
 ### 每个分组都支持什么

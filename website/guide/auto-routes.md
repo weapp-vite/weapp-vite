@@ -26,7 +26,7 @@ keywords:
 
 ## 快速开启
 
-自动路由默认关闭；如果想启用或做细粒度控制，可以在 `vite.config.ts` 中配置：
+自动路由默认关闭；如果想启用或做细粒度控制，可以在 `vite.config.ts` 或 `weapp-vite.config.ts` 中配置：
 
 ```ts
 import { defineConfig } from 'weapp-vite'
@@ -218,7 +218,7 @@ export default defineConfig({
 })
 ```
 
-相对路径会基于 `vite.config.*` 所在目录解析；如果没有配置文件路径，则退回到当前工作目录。
+相对路径会基于 `vite.config.*` 或 `weapp-vite.config.*` 所在目录解析；如果没有配置文件路径，则退回到当前工作目录。
 
 如果你在项目里使用 `wevu` 的 `useNativeRouter()/useNativePageRouter()`，或 `wevu/router` 的 `useRouter()`，`typed-router.d.ts` 还会自动注入模块增强，让 Router 的 `url` 参数继承自动路由联合类型（同时保留 `./detail`、`../detail` 这类相对路径写法）。
 

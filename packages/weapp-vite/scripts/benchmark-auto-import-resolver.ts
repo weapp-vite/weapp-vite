@@ -17,6 +17,7 @@ import { getAutoImportConfig } from '../src/runtime/autoImport/config'
 import { syncManagedTsconfigFiles } from '../src/runtime/tsconfigSupport'
 import { resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { scanWxml } from '../src/wxml'
+import { patchProjectConfigFile } from './utils/config-file'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '5', 10)
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
@@ -209,8 +210,6 @@ async function seedFixture(projectRoot: string, usedTags: string[], mode: 'disab
 }
 
 async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current' | 'legacy') {
-  const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
-  const viteConfig = await readFile(viteConfigPath, 'utf8')
   const replacement = mode === 'disabled'
     ? [
         '      autoImportComponents: false,',
@@ -226,25 +225,26 @@ async function patchViteConfig(projectRoot: string, mode: 'disabled' | 'current'
         '        ]',
         '      }',
       ].join('\n')
-  const nextViteConfig = viteConfig.replace(ORIGINAL_AUTO_IMPORT_BLOCK, replacement)
-
-  if (nextViteConfig === viteConfig) {
-    throw new Error(`Failed to patch benchmark vite config: ${viteConfigPath}`)
-  }
-
-  await writeFile(viteConfigPath, nextViteConfig, 'utf8')
+  await patchProjectConfigFile(
+    projectRoot,
+    content => content.replace(ORIGINAL_AUTO_IMPORT_BLOCK, replacement),
+    {
+      errorMessage: 'Failed to patch benchmark config for resolver benchmark',
+    },
+  )
 }
 
 async function patchBenchmarkConfigImports(projectRoot: string) {
-  const viteConfigPath = path.join(projectRoot, 'vite.config.ts')
-  const viteConfig = await readFile(viteConfigPath, 'utf8')
-  const nextViteConfig = viteConfig
-    .replace(`import { defineConfig } from 'weapp-vite'`, `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`)
-    .replace(`import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'`, `import { VantResolver } from '${BENCHMARK_RESOLVER_PATH}'`)
-
-  if (nextViteConfig !== viteConfig) {
-    await writeFile(viteConfigPath, nextViteConfig, 'utf8')
-  }
+  await patchProjectConfigFile(
+    projectRoot,
+    content => content
+      .replace(`import { defineConfig } from 'weapp-vite'`, `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`)
+      .replace(`import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'`, `import { VantResolver } from '${BENCHMARK_RESOLVER_PATH}'`),
+    {
+      allowUnchanged: true,
+      errorMessage: 'Failed to patch benchmark config imports for resolver benchmark',
+    },
+  )
 
   await writeFile(path.join(projectRoot, 'benchmark-vant-resolver.ts'), renderBenchmarkVantResolver(), 'utf8')
 }

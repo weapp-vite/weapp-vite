@@ -336,6 +336,19 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const configFilePath = weappLoaded?.path ?? loaded?.path ?? resolvedConfigFile
+    const configMergeInfo = loaded?.path && weappLoaded?.path && !shouldReuseLoadedWeappConfig(weappLoaded.path, loaded.path)
+      ? {
+          merged: true,
+          viteConfigPath: loaded.path,
+          weappConfigPath: weappLoaded.path,
+        }
+      : {
+          merged: false,
+          viteConfigPath: loaded?.path,
+          weappConfigPath: shouldReuseLoadedWeappConfig(weappLoaded?.path, loaded?.path)
+            ? undefined
+            : weappLoaded?.path,
+        }
     const outputExtensions = getOutputExtensions(platform)
 
     const relativeSrcRoot = (p: string) => {
@@ -368,6 +381,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       currentSubPackageRoot: undefined,
       weappWeb: resolvedWebConfig,
       weappLib: resolvedLibConfig,
+      configMergeInfo,
     }
   }
 }

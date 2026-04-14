@@ -94,7 +94,7 @@ bun create weapp-vite
 │   └── vite-env.d.ts
 ├── tsconfig.json
 ├── tsconfig.node.json
-└── vite.config.ts
+└── vite.config.ts / weapp-vite.config.ts
 ```
 
 :::
@@ -210,7 +210,7 @@ bun open
 
 ![微信开发者工具创建基础项目](../images/create-project.png)
 
-> 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
+> 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 或 `weapp-vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
 
 ### 2. 接入 `weapp-vite`
 
@@ -322,7 +322,7 @@ pnpm g [filename]
 
 配置项可以与 `vite` 通用，同时加入了 `weapp-vite` 的扩展:
 
-`vite.config.[m]ts`:
+`vite.config.[m]ts` 或 `weapp-vite.config.[m]ts`:
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -338,3 +338,5 @@ export default defineConfig({
 你也可以在 `defineConfig` 里继续使用其他 Vite 插件（例如 `weapp-tailwindcss`）。
 
 更多配置见：[/config/](/config/)
+
+如果两个文件同时存在，`weapp-vite` 会合并其中的 `weapp` 配置，优先级为 `weapp-vite.config.*` 高于 `vite.config.*`。

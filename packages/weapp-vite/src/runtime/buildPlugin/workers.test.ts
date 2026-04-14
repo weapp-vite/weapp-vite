@@ -124,7 +124,7 @@ describe('runtime buildPlugin workers', () => {
     const configService = createMockConfigService()
     const scanService = { workersDir: 'workers' } as any
 
-    expect(() => checkWorkersOptions('miniapp', configService, scanService)).toThrow('请在 `vite.config.ts` 中设置 `weapp.worker.entry` 路径')
+    expect(() => checkWorkersOptions('miniapp', configService, scanService)).toThrow('请在 `vite.config.ts` / `weapp-vite.config.ts` 中设置 `weapp.worker.entry` 路径')
     expect(loggerMock.error).toHaveBeenCalledTimes(2)
   })
 

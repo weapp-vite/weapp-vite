@@ -130,4 +130,23 @@ describe('support files integration', () => {
       await dispose()
     }
   })
+
+  it('supports projects that only keep weapp-vite.config.ts', async () => {
+    const viteConfigPath = path.resolve(cwd, 'vite.config.ts')
+    const weappConfigPath = path.resolve(cwd, 'weapp-vite.config.ts')
+    await fs.rename(viteConfigPath, weappConfigPath)
+
+    const { ctx, dispose } = await createTestCompilerContext({ cwd })
+    const managedNodeTsconfigPath = path.resolve(cwd, '.weapp-vite/tsconfig.node.json')
+
+    try {
+      const nodeTsconfig = JSON.parse(await fs.readFile(managedNodeTsconfigPath, 'utf8'))
+
+      expect(ctx.configService.configFilePath?.endsWith('weapp-vite.config.ts')).toBe(true)
+      expect(nodeTsconfig.include).toContain('../weapp-vite.config.ts')
+    }
+    finally {
+      await dispose()
+    }
+  })
 })

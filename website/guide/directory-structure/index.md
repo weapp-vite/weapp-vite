@@ -22,7 +22,7 @@ keywords:
 
 ```text
 .
-├─ vite.config.ts
+├─ vite.config.ts / weapp-vite.config.ts
 ├─ project.config.json
 ├─ package.json
 ├─ public/
@@ -55,13 +55,13 @@ keywords:
 3. `layouts`、`custom-tab-bar`、`app-bar`、类型声明文件这些都属于带固定语义的保留位置
 
 > [!TIP]
-> 这一组文档里的 `<srcRoot>`、`<subPackageRoot>` 都是变量占位，不是固定目录名。它们分别代表你在 `vite.config.ts` 中声明的源码根目录和分包 root。
+> 这一组文档里的 `<srcRoot>`、`<subPackageRoot>` 都是变量占位，不是固定目录名。它们分别代表你在 `vite.config.ts` / `weapp-vite.config.ts` 中声明的源码根目录和分包 root。
 
 <DirectoryStructureCatalog />
 
 ## 从哪里开始看
 
-- 想先建立全局认知：看 [📄 vite.config.ts](/guide/directory-structure/vite-config)、[📁 `<srcRoot>/`](/guide/directory-structure/src-root)
+- 想先建立全局认知：看 [📄 配置入口文件](/guide/directory-structure/vite-config)、[📁 `<srcRoot>/`](/guide/directory-structure/src-root)
 - 想搞清楚页面 layout 放哪里：看 [📁 `<srcRoot>/layouts/`](/guide/directory-structure/layouts)
 - 想搞清楚页面与分包：看 [📁 `<srcRoot>/pages/`](/guide/directory-structure/pages)、[📁 `<srcRoot>/<subPackageRoot>/`](/guide/directory-structure/subpackages)
 - 想搞清楚自动生成产物：看 [类型声明文件](/guide/directory-structure/generated-files)
@@ -70,7 +70,7 @@ keywords:
 
 | 位置                                                                                                  | 作用                                               |
 | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------- | ----- | ------------------------------------------- |
-| `vite.config.ts`                                                                                      | 定义 `srcRoot`、自动路由、分包、自动导入组件等能力 |
+| `vite.config.ts` / `weapp-vite.config.ts`                                                             | 定义 `srcRoot`、自动路由、分包、自动导入组件等能力 |
 | `project.config.json`                                                                                 | 微信开发者工具配置                                 |
 | `public/`                                                                                             | 构建时原样复制的静态资源                           |
 | `app.(js                                                                                              | ts)`                                               | 应用脚本入口，承载生命周期和全局初始化          |

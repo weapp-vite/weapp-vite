@@ -36,7 +36,7 @@
 ### Vue 项目
 
 ```typescript
-// vite.config.ts
+// vite.config.ts 或 weapp-vite.config.ts
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
@@ -248,7 +248,7 @@ weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
 wv mcp --workspace-root /absolute/path/to/weapp-vite
 ```
 
-在 `vite.config.ts` 中开启自动启动：
+在 `vite.config.ts` 或 `weapp-vite.config.ts` 中开启自动启动：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'

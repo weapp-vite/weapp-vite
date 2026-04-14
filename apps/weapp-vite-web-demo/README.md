@@ -19,7 +19,7 @@
 
 ## 组件智能提示
 
-`vite.config.ts` 中开启了 `autoImportComponents`，会在构建/开发时：
+`vite.config.ts` 或 `weapp-vite.config.ts` 中开启了 `autoImportComponents`，会在构建/开发时：
 
 - 生成 `typed-components.d.ts`，供 TypeScript 识别组件属性类型（已在 `tsconfig.json` 中纳入 `include`）；
 - 输出 `auto-import-components.json`，记录可自动导入的组件；
@@ -41,7 +41,7 @@
 | `WEAPP_WEB_PORT` | `5173` | Dev Server 监听端口。 |
 | `WEAPP_WEB_OPEN` | `false` | 设为 `true` 时在启动 Dev Server 后自动打开浏览器。 |
 
-环境变量会在 `vite.config.ts` 中被读取，可按需追加更多自定义配置。
+环境变量会在 `vite.config.ts` 或 `weapp-vite.config.ts` 中被读取，可按需追加更多自定义配置。
 
 文件结构：
 
