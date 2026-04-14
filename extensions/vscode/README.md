@@ -150,6 +150,7 @@
 - 当 `usingComponents` 指向的本地组件文件不存在时，可直接通过 quick fix 创建缺失组件文件，减少手动补目录和骨架
 - 对已存在的本地 `usingComponents` 组件路径，也支持 `Cmd/Ctrl + Click` 直接跳转到组件文件，和 `app.json` 页面路由保持一致的导航体验
 - 当本地组件文件在资源管理器中被重命名或移动时，扩展也会自动同步更新引用它们的 `usingComponents` 路径，减少手工改 JSON
+- 当本地组件文件被删除，且同一路径的其他候选组件文件也不存在时，扩展会自动清理失效的 `usingComponents` 引用，避免残留脏配置
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
 - 在页面 `.vue` 的 `definePageJson({...})` 中也可补全常用页面字段，减少在脚本配置里手写键名

@@ -17,6 +17,7 @@ import {
   getVueJsonUsingComponentReferenceAtOffset,
   getVueJsonUsingComponentReferences,
   getVuePageConfigState,
+  getVueTextWithRemovedUsingComponentPaths,
   isInsideDefinePageJson,
   isInsideVueJsonBlock,
   movePageRouteInAppJson,
@@ -461,6 +462,8 @@ it('finds usingComponents reference at offset', () => {
   const offset = valueStart + 5
 
   assert.deepEqual(getVueJsonUsingComponentReferenceAtOffset(documentText, offset), {
+    entryStart: documentText.indexOf('"card-user": "/components/card/user/index"'),
+    entryEnd: documentText.indexOf('"card-user": "/components/card/user/index"') + '"card-user": "/components/card/user/index"'.length,
     name: 'card-user',
     path: componentPath,
     valueStart,
@@ -494,6 +497,27 @@ it('applies multiple text replacements from back to front', () => {
       { start: 11, end: 16, text: 'GAMMA' },
     ],
   ), 'alpha BETA GAMMA')
+})
+
+it('removes usingComponents entries from a vue json block', () => {
+  assert.equal(getVueTextWithRemovedUsingComponentPaths([
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index",',
+    '    "user-avatar": "./components/avatar/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n'), ['/components/card/user/index']), [
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "user-avatar": "./components/avatar/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n'))
 })
 
 it('prioritizes declared current page run actions', () => {

@@ -77,6 +77,7 @@ it('updates rooted usingComponents paths when a component file moves', async () 
 
   const {
     getVueTextsWithMovedUsingComponentPath,
+    getVueTextsWithRemovedUsingComponentPath,
   } = await import('./workspace')
 
   const updates = await getVueTextsWithMovedUsingComponentPath(
@@ -93,4 +94,17 @@ it('updates rooted usingComponents paths when a component file moves', async () 
   assert.equal(updates.length, 1)
   assert.equal(updates[0].filePath, '/workspace/src/pages/home/index.vue')
   assert.equal(updates[0].nextText.includes('/components/profile/card/index'), true)
+
+  const removalUpdates = await getVueTextsWithRemovedUsingComponentPath(
+    {
+      uri: {
+        fsPath: '/workspace',
+        path: '/workspace',
+      },
+    },
+    '/workspace/src/components/card/user/index.vue',
+  )
+
+  assert.equal(removalUpdates.length, 1)
+  assert.equal(removalUpdates[0].nextText.includes('/components/card/user/index'), false)
 })

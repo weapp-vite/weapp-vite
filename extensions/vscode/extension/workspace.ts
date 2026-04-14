@@ -15,6 +15,7 @@ import {
   getMovedUsingComponentPath,
   getVueJsonUsingComponentReferenceAtOffset,
   getVueJsonUsingComponentReferences,
+  getVueTextWithRemovedUsingComponentPaths,
   movePageRouteInAppJson,
   removePageRouteFromAppJson,
   resolveCommandFromScripts,
@@ -730,6 +731,67 @@ export async function getVueTextsWithMovedUsingComponentPath(
     }
 
     const nextText = applyTextReplacements(documentText, replacements)
+
+    if (!nextText) {
+      continue
+    }
+
+    updates.push({
+      filePath: file.fsPath,
+      nextText,
+    })
+  }
+
+  return updates
+}
+
+export async function getVueTextsWithRemovedUsingComponentPath(
+  workspaceFolder: any,
+  deletedFilePath: string,
+) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
+  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const updates = []
+
+  for (const file of vueFiles) {
+    const documentText = await readTextFile(file.fsPath)
+
+    if (typeof documentText !== 'string') {
+      continue
+    }
+
+    const removablePaths = []
+
+    for (const reference of getVueJsonUsingComponentReferences(documentText)) {
+      if (!isLocalUsingComponentPath(reference.path)) {
+        continue
+      }
+
+      const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+
+      if (!candidatePaths.includes(deletedFilePath)) {
+        continue
+      }
+
+      const siblingCandidates = candidatePaths.filter(candidatePath => candidatePath !== deletedFilePath)
+      let hasSiblingCandidate = false
+
+      for (const siblingCandidate of siblingCandidates) {
+        if (await pathExists(siblingCandidate)) {
+          hasSiblingCandidate = true
+          break
+        }
+      }
+
+      if (hasSiblingCandidate) {
+        continue
+      }
+
+      removablePaths.push(reference.path)
+    }
+
+    const nextText = getVueTextWithRemovedUsingComponentPaths(documentText, removablePaths)
 
     if (!nextText) {
       continue

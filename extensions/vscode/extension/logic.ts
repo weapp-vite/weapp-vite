@@ -41,6 +41,8 @@ export interface CurrentPageActionContext {
 }
 
 export interface VueUsingComponentReference {
+  entryEnd: number
+  entryStart: number
   name: string
   path: string
   valueEnd: number
@@ -296,6 +298,8 @@ export function getVueJsonUsingComponentReferences(documentText: string): VueUsi
         const valueStart = objectContentStart + entryIndex + valueTokenIndex + 1
 
         references.push({
+          entryStart: objectContentStart + entryIndex,
+          entryEnd: objectContentStart + entryIndex + fullMatch.length,
           name,
           path: componentPath,
           valueStart,
@@ -362,6 +366,76 @@ export function applyTextReplacements(documentText: string, replacements: TextRe
   }
 
   return nextText === documentText ? null : nextText
+}
+
+function getUsingComponentRemovalRange(documentText: string, reference: VueUsingComponentReference) {
+  const lineStart = documentText.lastIndexOf('\n', reference.entryStart - 1) + 1
+  const lineEndIndex = documentText.indexOf('\n', reference.entryEnd)
+  const lineEnd = lineEndIndex >= 0 ? lineEndIndex : documentText.length
+  const beforeEntry = documentText.slice(lineStart, reference.entryStart)
+  const afterEntry = documentText.slice(reference.entryEnd, lineEnd)
+
+  if (beforeEntry.trim() === '' && /^,?\s*$/u.test(afterEntry)) {
+    return {
+      start: lineStart,
+      end: lineEndIndex >= 0 ? lineEndIndex + 1 : lineEnd,
+    }
+  }
+
+  let start = reference.entryStart
+  let end = reference.entryEnd
+  let next = end
+
+  while (next < documentText.length && /\s/u.test(documentText[next])) {
+    next++
+  }
+
+  if (documentText[next] === ',') {
+    end = next + 1
+
+    while (end < documentText.length && /[ \t]/u.test(documentText[end])) {
+      end++
+    }
+  }
+  else {
+    let previous = start - 1
+
+    while (previous >= 0 && /\s/u.test(documentText[previous])) {
+      previous--
+    }
+
+    if (documentText[previous] === ',') {
+      start = previous
+
+      while (start > 0 && /[ \t]/u.test(documentText[start - 1])) {
+        start--
+      }
+    }
+  }
+
+  return {
+    start,
+    end,
+  }
+}
+
+export function getVueTextWithRemovedUsingComponentPaths(documentText: string, componentPaths: string[]) {
+  const normalizedPaths = new Set(componentPaths
+    .filter((componentPath): componentPath is string => typeof componentPath === 'string' && componentPath.trim().length > 0)
+    .map(componentPath => componentPath.trim()))
+
+  if (normalizedPaths.size === 0) {
+    return null
+  }
+
+  const replacements = getVueJsonUsingComponentReferences(documentText)
+    .filter(reference => normalizedPaths.has(reference.path))
+    .map(reference => getUsingComponentRemovalRange(documentText, reference))
+
+  return applyTextReplacements(documentText, replacements.map(range => ({
+    ...range,
+    text: '',
+  })))
 }
 
 export function getCurrentPageRunActionItems(

@@ -81,6 +81,7 @@ import {
   getProjectAppJsonPath,
   getProjectContext,
   getVueTextsWithMovedUsingComponentPath,
+  getVueTextsWithRemovedUsingComponentPath,
   isAppJsonDocument,
   isPackageJsonDocument,
   isVueDocument,
@@ -323,6 +324,26 @@ async function syncDeletedPageRoute(file: { fsPath: string }) {
   return true
 }
 
+async function syncDeletedUsingComponentPaths(file: { fsPath: string }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const updates = await getVueTextsWithRemovedUsingComponentPath(projectFolder, file.fsPath)
+
+  if (updates.length === 0) {
+    return false
+  }
+
+  for (const update of updates) {
+    await writeTextFile(update.filePath, update.nextText)
+  }
+
+  return true
+}
+
 export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
@@ -536,6 +557,7 @@ export function activate(context: any) {
 
         for (const file of event.files) {
           didSyncAnyRoute = await syncDeletedPageRoute(file) || didSyncAnyRoute
+          didSyncAnyRoute = await syncDeletedUsingComponentPaths(file) || didSyncAnyRoute
         }
 
         if (!didSyncAnyRoute) {
