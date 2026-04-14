@@ -348,7 +348,9 @@ async function getGoodsList(id: number) {
 > 迁移第一步允许“结构升级但逻辑不重构”。先跑通，再优化。
 
 > [!TIP]
-> 如果原页面的 WXML 里混用了较多 HTML 风格标签（例如 `div`、`span`、`img`、`a`），迁移到 `.vue` 后可以先利用 `weapp.vue.template.htmlTagToWxml` 做一层编译期映射，降低第一轮机械迁移的模板改造量。等页面稳定后，再按团队规范决定是否统一回写成原生小程序标签。
+> 如果原页面的 WXML 里混用了较多 HTML 风格标签（例如 `div`、`span`、`img`、`a`、`h1/h2/h3`、`br`、`hr`），迁移到 `.vue` 后可以先利用 `weapp.vue.template.htmlTagToWxml` 做一层编译期映射，降低第一轮机械迁移的模板改造量。
+>
+> 当前默认还会通过 `weapp.vue.template.htmlTagToWxmlTagClass` 给映射后的节点追加原标签名 class，例如 `h3 -> <view class="h3">`、`br -> <view class="br" />`，便于你后续用 CSS 渐进恢复 HTML 默认外观；如果团队不需要这层语义 class，也可以显式关闭。
 
 ## 两种落地策略：渐进式 vs 直接式
 

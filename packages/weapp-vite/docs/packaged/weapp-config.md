@@ -32,6 +32,16 @@ export default defineConfig({
 
 用于给页面路由追加规则，例如 layout、运行时行为等。它属于项目级编排，而不是组件内部语义。
 
+### `vue.template.htmlTagToWxml`
+
+适合从 Web/Vue 模板迁移到小程序 `.vue` 的项目。开启后，会把常见 HTML 标签映射成小程序内置标签，例如 `div -> view`、`span -> text`、`img -> image`、`a -> navigator`，也包含 `br/hr` 这类容易在迁移时“消失”的标签。
+
+### `vue.template.htmlTagToWxmlTagClass`
+
+默认开启。仅当 `htmlTagToWxml` 发生标签映射时，为输出节点追加原标签名 class，例如 `h3 -> <view class="h3">`、`br -> <view class="br" />`。
+
+如果你的迁移策略是“先跑通，再用 CSS 逐步恢复默认外观”，这个开关很有价值；如果不希望产物里自动带这层语义 class，可以显式设为 `false`。
+
 ### `layout`
 
 页面 layout 既可能来自项目级规则，也可能来自页面侧 `definePageMeta`。排查时先确认是哪一层生效。
