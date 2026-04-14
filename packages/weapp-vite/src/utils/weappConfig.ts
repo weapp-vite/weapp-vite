@@ -1,5 +1,6 @@
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
+import { isDefaultViteConfigBasename } from './loadViteConfigFile'
 
 const WEAPP_VITE_CONFIG_CANDIDATES = [
   'weapp-vite.config.ts',
@@ -28,6 +29,11 @@ export function isWeappConfigBasename(filePath: string) {
   return WEAPP_VITE_CONFIG_SET.has(path.basename(filePath))
 }
 
+function isExplicitCustomConfigFile(filePath: string) {
+  const basename = path.basename(filePath)
+  return basename.includes('.config.') && !isDefaultViteConfigBasename(filePath) && !isWeappConfigBasename(filePath)
+}
+
 async function findWeappConfigInDirectory(directory: string): Promise<string | undefined> {
   for (const filename of WEAPP_VITE_CONFIG_CANDIDATES) {
     const candidatePath = path.resolve(directory, filename)
@@ -48,6 +54,10 @@ export async function resolveWeappConfigFile(options: ResolveWeappConfigFileOpti
       if (await fs.pathExists(resolvedSpecified)) {
         return resolvedSpecified
       }
+      return undefined
+    }
+
+    if (isExplicitCustomConfigFile(resolvedSpecified)) {
       return undefined
     }
 

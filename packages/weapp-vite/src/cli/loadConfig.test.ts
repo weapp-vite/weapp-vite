@@ -152,4 +152,29 @@ describe('loadConfig', () => {
 
     await expect(loadConfig('/project/vite.config.ts')).rejects.toThrow('weapp cjs wrapped')
   })
+
+  it('does not merge root weapp config when an explicit custom config file is passed', async () => {
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          lib: {
+            entry: 'src/index.ts',
+          },
+        },
+      },
+      path: '/project/weapp-vite.lib.config.ts',
+      dependencies: ['/project/weapp-vite.lib.config.ts'],
+    })
+    resolveWeappConfigFileMock.mockResolvedValueOnce(undefined)
+
+    const result = await loadConfig('/project/weapp-vite.lib.config.ts')
+
+    expect(loadViteConfigFileMock).toHaveBeenCalledTimes(1)
+    expect(result?.path).toBe('/project/weapp-vite.lib.config.ts')
+    expect(result?.config.weapp).toEqual({
+      lib: {
+        entry: 'src/index.ts',
+      },
+    })
+  })
 })

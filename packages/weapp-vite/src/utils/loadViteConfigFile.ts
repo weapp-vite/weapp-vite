@@ -12,6 +12,12 @@ const DEFAULT_VITE_CONFIG_FILES = [
   'vite.config.cjs',
 ]
 
+const DEFAULT_VITE_CONFIG_FILE_SET = new Set<string>(DEFAULT_VITE_CONFIG_FILES)
+
+export function isDefaultViteConfigBasename(filePath: string) {
+  return DEFAULT_VITE_CONFIG_FILE_SET.has(path.basename(filePath))
+}
+
 async function resolveImplicitConfigFile(configRoot: string) {
   for (const fileName of DEFAULT_VITE_CONFIG_FILES) {
     const filePath = path.resolve(configRoot, fileName)
@@ -47,3 +53,5 @@ export async function loadViteConfigFile(
     resolvedConfigLoader,
   )
 }
+
+export { DEFAULT_VITE_CONFIG_FILES }

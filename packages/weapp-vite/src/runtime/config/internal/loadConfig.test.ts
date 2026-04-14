@@ -318,6 +318,41 @@ describe('runtime config internal loadConfig', () => {
     })
   })
 
+  it('does not merge root weapp config when an explicit custom config file is passed', async () => {
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          lib: {
+            entry: 'src/index.ts',
+          },
+        },
+      },
+      path: '/project/weapp-vite.lib.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(true)
+    resolveWeappConfigFileMock.mockResolvedValueOnce(undefined)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/weapp-vite.lib.config.ts',
+    } as any)
+
+    expect(result.configFilePath).toBe('/project/weapp-vite.lib.config.ts')
+    expect(result.configMergeInfo).toEqual({
+      merged: false,
+      viteConfigPath: '/project/weapp-vite.lib.config.ts',
+      weappConfigPath: undefined,
+    })
+    expect(result.config.weapp?.lib).toEqual({
+      entry: 'src/index.ts',
+    })
+  })
+
   it('enables native resolve.tsconfigPaths by default without advanced options', async () => {
     loadViteConfigFileMock.mockResolvedValueOnce({
       config: {
