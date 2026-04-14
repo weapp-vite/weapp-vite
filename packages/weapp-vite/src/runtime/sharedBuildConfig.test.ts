@@ -15,6 +15,7 @@ import {
   resolveNodeModulesSharedPath,
   resolveSharedBuildChunksOptions,
   resolveSharedPathRoot,
+  resolveStableHashedDistChunkFileName,
 } from './sharedBuildConfig'
 
 function createConfigService(chunks: Record<string, unknown> = {}): ConfigService {
@@ -136,6 +137,24 @@ describe('sharedBuildConfig', () => {
       name: 'dist',
       facadeModuleId: '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/index.mjs',
     })).toBe(REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME)
+  })
+
+  it('renames hashed workspace dist chunks to stable vendor file names', () => {
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+    })).toBe('weapp-vendors/wevu-src.js')
+
+    const output = createSharedBuildOutput(createConfigService(), () => [])
+    expect(output.chunkFileNames({
+      name: 'src-BD3I133J',
+      facadeModuleId: '/project/packages-runtime/wevu/dist/src-BD3I133J.mjs',
+    })).toBe('weapp-vendors/wevu-src.js')
+  })
+
+  it('renames hashed node_modules dist chunks to stable vendor file names', () => {
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/node_modules/.pnpm/@scope+pkg@1.0.0/node_modules/@scope/pkg/dist/store-fwgCLl_K.mjs',
+    })).toBe('weapp-vendors/scope-pkg-store.js')
   })
 
   it('returns undefined for path mode when there is only one importer', () => {
