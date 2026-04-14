@@ -395,6 +395,113 @@ export function applyPageRouteToAppJson(appJson: Record<string, any>, route: str
   }
 }
 
+function cloneAppJsonForRouteMutation(appJson: Record<string, any>) {
+  return {
+    ...appJson,
+    pages: Array.isArray(appJson.pages) ? [...appJson.pages] : appJson.pages,
+    subPackages: Array.isArray(appJson.subPackages)
+      ? appJson.subPackages.map((subPackage) => {
+          if (!subPackage || typeof subPackage !== 'object') {
+            return subPackage
+          }
+
+          return {
+            ...subPackage,
+            pages: Array.isArray(subPackage.pages) ? [...subPackage.pages] : subPackage.pages,
+          }
+        })
+      : appJson.subPackages,
+    subpackages: Array.isArray(appJson.subpackages)
+      ? appJson.subpackages.map((subPackage) => {
+          if (!subPackage || typeof subPackage !== 'object') {
+            return subPackage
+          }
+
+          return {
+            ...subPackage,
+            pages: Array.isArray(subPackage.pages) ? [...subPackage.pages] : subPackage.pages,
+          }
+        })
+      : appJson.subpackages,
+  }
+}
+
+function removePageRouteFromAppJson(appJson: Record<string, any>, route: string) {
+  const normalizedRoute = normalizeRoute(route)
+  const nextAppJson = cloneAppJsonForRouteMutation(appJson)
+  let changed = false
+
+  if (Array.isArray(nextAppJson.pages)) {
+    const filteredPages = nextAppJson.pages.filter((page: unknown) => page !== normalizedRoute)
+
+    if (filteredPages.length !== nextAppJson.pages.length) {
+      nextAppJson.pages = filteredPages
+      changed = true
+    }
+  }
+
+  for (const key of ['subPackages', 'subpackages'] as const) {
+    const subPackages = nextAppJson[key]
+
+    if (!Array.isArray(subPackages)) {
+      continue
+    }
+
+    for (const subPackage of subPackages) {
+      if (!subPackage || typeof subPackage !== 'object' || typeof subPackage.root !== 'string' || !Array.isArray(subPackage.pages)) {
+        continue
+      }
+
+      const packageRoot = normalizeRoute(subPackage.root)
+
+      if (!packageRoot || !normalizedRoute.startsWith(`${packageRoot}/`)) {
+        continue
+      }
+
+      const relativeRoute = normalizedRoute.slice(packageRoot.length + 1)
+      const filteredPages = subPackage.pages.filter((page: unknown) => page !== relativeRoute)
+
+      if (filteredPages.length !== subPackage.pages.length) {
+        subPackage.pages = filteredPages
+        changed = true
+      }
+    }
+  }
+
+  return {
+    appJson: nextAppJson,
+    changed,
+  }
+}
+
+export function movePageRouteInAppJson(appJson: Record<string, any>, fromRoute: string, toRoute: string) {
+  const normalizedFromRoute = normalizeRoute(fromRoute)
+  const normalizedToRoute = normalizeRoute(toRoute)
+
+  if (!normalizedFromRoute || !normalizedToRoute || normalizedFromRoute === normalizedToRoute) {
+    return {
+      changed: false,
+      appJson,
+    }
+  }
+
+  const removed = removePageRouteFromAppJson(appJson, normalizedFromRoute)
+
+  if (!removed.changed) {
+    return {
+      changed: false,
+      appJson: removed.appJson,
+    }
+  }
+
+  const added = applyPageRouteToAppJson(removed.appJson, normalizedToRoute)
+
+  return {
+    changed: true,
+    appJson: added.appJson,
+  }
+}
+
 export function getMissingCommonScripts(packageJson: Record<string, any>) {
   const scripts = typeof packageJson?.scripts === 'object' && packageJson.scripts
     ? packageJson.scripts

@@ -11,6 +11,7 @@ import {
 } from './constants'
 import {
   applyPageRouteToAppJson,
+  movePageRouteInAppJson,
   resolveCommandFromScripts,
 } from './logic'
 import {
@@ -760,6 +761,34 @@ export async function getAppJsonTextWithAddedRoutes(appJsonPath: string, routes:
     addedRoutes,
     appJsonPath,
     nextText: `${JSON.stringify(nextAppJson, null, 2)}\n`,
+  }
+}
+
+export async function getAppJsonTextWithMovedRoute(appJsonPath: string, fromRoute: string, toRoute: string) {
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof fromRoute !== 'string' || typeof toRoute !== 'string') {
+    return null
+  }
+
+  const normalizedFromRoute = normalizeRoute(fromRoute)
+  const normalizedToRoute = normalizeRoute(toRoute)
+
+  if (!normalizedFromRoute || !normalizedToRoute || normalizedFromRoute === normalizedToRoute) {
+    return null
+  }
+
+  const result = movePageRouteInAppJson(appJson, normalizedFromRoute, normalizedToRoute)
+
+  if (!result.changed) {
+    return null
+  }
+
+  return {
+    appJsonPath,
+    fromRoute: normalizedFromRoute,
+    nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
+    toRoute: normalizedToRoute,
   }
 }
 

@@ -15,6 +15,7 @@ import {
   getVuePageConfigState,
   isInsideDefinePageJson,
   isInsideVueJsonBlock,
+  movePageRouteInAppJson,
   resolveCommandFromScripts,
 } from './logic'
 
@@ -174,6 +175,61 @@ it('does not duplicate an existing page route in app json', () => {
   const result = applyPageRouteToAppJson({
     pages: ['pages/home/index'],
   }, 'pages/home/index')
+
+  assert.equal(result.changed, false)
+  assert.deepEqual(result.appJson.pages, ['pages/home/index'])
+})
+
+it('moves a top level page route in app json', () => {
+  const result = movePageRouteInAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/home/index', 'pages/profile/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.pages, ['pages/profile/index'])
+})
+
+it('moves a page route between subpackages', () => {
+  const result = movePageRouteInAppJson({
+    subPackages: [
+      {
+        root: 'packageA',
+        pages: ['detail/index'],
+      },
+      {
+        root: 'packageB',
+        pages: ['home/index'],
+      },
+    ],
+  }, 'packageA/detail/index', 'packageB/detail/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.subPackages, [
+    {
+      root: 'packageA',
+      pages: [],
+    },
+    {
+      root: 'packageB',
+      pages: ['home/index', 'detail/index'],
+    },
+  ])
+})
+
+it('does nothing when moving to the same route', () => {
+  const original = {
+    pages: ['pages/home/index'],
+  }
+  const result = movePageRouteInAppJson(original, 'pages/home/index', 'pages/home/index')
+
+  assert.equal(result.changed, false)
+  assert.equal(result.appJson, original)
+})
+
+it('does nothing when source route is not declared', () => {
+  const result = movePageRouteInAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/about/index', 'pages/profile/index')
 
   assert.equal(result.changed, false)
   assert.deepEqual(result.appJson.pages, ['pages/home/index'])

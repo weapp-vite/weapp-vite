@@ -2,6 +2,8 @@ import type {
   WeappPagesTreeFilterMode,
 } from './tree'
 
+import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import vscode from 'vscode'
 import {
   addCurrentPageToAppJson,
@@ -51,6 +53,9 @@ import {
   showGeneratePicker,
 } from './generate'
 import {
+  getRouteFromPageFilePath,
+} from './navigation'
+import {
   WeappViteAppJsonCompletionProvider,
   WeappViteAppJsonDocumentLinkProvider,
   WeappViteCodeActionProvider,
@@ -63,8 +68,11 @@ import {
   WeappVitePagesTreeProvider,
 } from './tree'
 import {
+  findNearestWeappViteProjectWorkspaceFolder,
+  getAppJsonTextWithMovedRoute,
   getCurrentPageRouteCandidate,
   getMissingAppJsonPageRoutes,
+  getProjectAppJsonPath,
   getProjectContext,
   isAppJsonDocument,
   isPackageJsonDocument,
@@ -204,6 +212,42 @@ async function applyPagesTreeFilter(
 async function clearPagesTreeFilter(pagesTreeProvider: WeappVitePagesTreeProvider, pagesTreeView: any) {
   pagesTreeProvider.clearFilterMode()
   await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+}
+
+async function writeTextFile(filePath: string, text: string) {
+  await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), Buffer.from(text, 'utf8'))
+}
+
+async function syncRenamedPageRoute(file: { oldUri: any, newUri: any }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.newUri.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const appJsonPath = await getProjectAppJsonPath(projectFolder)
+
+  if (!appJsonPath) {
+    return false
+  }
+
+  const relativeFromPath = path.relative(path.dirname(appJsonPath), file.oldUri.fsPath)
+  const relativeToPath = path.relative(path.dirname(appJsonPath), file.newUri.fsPath)
+  const fromRoute = getRouteFromPageFilePath(relativeFromPath)
+  const toRoute = getRouteFromPageFilePath(relativeToPath)
+
+  if (!fromRoute || !toRoute || fromRoute === toRoute) {
+    return false
+  }
+
+  const appJsonUpdate = await getAppJsonTextWithMovedRoute(appJsonPath, fromRoute, toRoute)
+
+  if (!appJsonUpdate) {
+    return false
+  }
+
+  await writeTextFile(appJsonUpdate.appJsonPath, appJsonUpdate.nextText)
+  return true
 }
 
 export function activate(context: any) {
@@ -382,6 +426,29 @@ export function activate(context: any) {
       if (vscode.window.activeTextEditor?.document === event.document) {
         void syncPagesTreeState(pagesTreeProvider, pagesTreeView, event.document)
       }
+    }),
+    vscode.workspace.onDidRenameFiles((event) => {
+      void (async () => {
+        let didSyncAnyRoute = false
+
+        for (const file of event.files) {
+          didSyncAnyRoute = await syncRenamedPageRoute(file) || didSyncAnyRoute
+        }
+
+        if (!didSyncAnyRoute) {
+          return
+        }
+
+        pagesTreeProvider.refresh()
+        void refreshStatusBar()
+
+        for (const document of vscode.workspace.textDocuments) {
+          void refreshAppJsonDiagnostics(document)
+          void refreshVuePageDiagnostics(document)
+        }
+
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+      })()
     }),
   ]
 
