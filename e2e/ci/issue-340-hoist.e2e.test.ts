@@ -37,7 +37,7 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
     const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
     const userRuntimePath = path.join(DIST_ROOT, 'subpackages/user/rolldown-runtime.js')
     const rootWevuDefinePropertyPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
-    const rootWevuRouterPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-router.js')
+    const rootWevuSrcPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-src.js')
 
     const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
     const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
@@ -64,7 +64,7 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
     expect(await fs.pathExists(itemVendorsPath)).toBe(false)
     expect(await fs.pathExists(userVendorsPath)).toBe(false)
     expect(await fs.pathExists(rootWevuDefinePropertyPath)).toBe(true)
-    expect(await fs.pathExists(rootWevuRouterPath)).toBe(true)
+    expect(await fs.pathExists(rootWevuSrcPath)).toBe(true)
     expect(await fs.pathExists(itemRuntimePath)).toBe(false)
     expect(await fs.pathExists(userRuntimePath)).toBe(false)
   })
