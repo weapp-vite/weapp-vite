@@ -301,7 +301,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 38)
+    assert.equal(state.registeredCommands.length, 40)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -338,6 +338,8 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.filterCurrentPageInTree',
         'weapp-vite.filterDriftPagesInTree',
         'weapp-vite.clearPagesTreeFilter',
+        'weapp-vite.repairProjectIssues',
+        'weapp-vite.generateMissingComponentsFromProject',
         'weapp-vite.generateMissingPagesFromAppJson',
         'weapp-vite.syncUnregisteredPagesToAppJson',
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',

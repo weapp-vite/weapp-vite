@@ -46,6 +46,8 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.filterCurrentPageInTree',
     'weapp-vite.filterDriftPagesInTree',
     'weapp-vite.clearPagesTreeFilter',
+    'weapp-vite.repairProjectIssues',
+    'weapp-vite.generateMissingComponentsFromProject',
     'weapp-vite.generateMissingPagesFromAppJson',
     'weapp-vite.syncUnregisteredPagesToAppJson',
     'weapp-vite.revealPageRouteInAppJsonFromTreeItem',

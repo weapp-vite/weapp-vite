@@ -119,6 +119,7 @@
 - 当已声明页面文件在资源管理器中被重命名或移动时，扩展会自动同步更新 `app.json` 里的 route，减少手工改路径
 - 当已声明页面文件被删除，且同 route 的其他候选页面文件也不存在时，扩展会自动从 `app.json` 清理对应 route，减少残留脏配置
 - 上述页面 route 同步与清理同样覆盖页面目录整体重命名、移动和删除的场景，不只限于单个页面文件
+- `Run Action` 里新增“修复项目问题”入口，可集中扫描并批量处理缺失页面、未注册页面和缺失组件
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
 - Explorer 侧边栏新增 `weapp-vite Pages` 视图，按顶层页面、分包页面、未声明页面分组浏览项目页面结构
 - 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`

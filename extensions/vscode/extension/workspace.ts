@@ -105,6 +105,18 @@ export interface WeappPagesTreeSnapshot {
   workspaceFolder: any
 }
 
+export interface WeappProjectIssueSnapshot {
+  appJsonPath: string | null
+  missingComponentEntries: Array<{
+    candidatePaths: string[]
+    componentPath: string
+    filePath: string
+  }>
+  missingPageRoutes: string[]
+  unregisteredPageRoutes: string[]
+  workspaceFolder: any
+}
+
 export function getPrimaryWorkspaceFolder() {
   const activeUri = vscode.window.activeTextEditor?.document.uri
 
@@ -828,6 +840,46 @@ export async function getVueTextsWithRemovedUsingComponentPath(
   }
 
   return updates
+}
+
+export async function getProjectIssueSnapshot(workspaceFolder = getPrimaryWorkspaceFolder()): Promise<WeappProjectIssueSnapshot | null> {
+  const context = await getProjectContext(workspaceFolder)
+
+  if (!context) {
+    return null
+  }
+
+  const pagesSnapshot = await getWeappPagesTreeSnapshot(context.workspaceFolder)
+  const appJsonPath = pagesSnapshot?.appJsonPath ?? await getProjectAppJsonPath(context.workspaceFolder)
+  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : context.workspaceFolder.uri.fsPath
+  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const missingComponentEntries: WeappProjectIssueSnapshot['missingComponentEntries'] = []
+
+  for (const file of vueFiles) {
+    const document = await vscode.workspace.openTextDocument(file)
+    const missingComponents = await getMissingVueUsingComponents(document)
+
+    for (const entry of missingComponents) {
+      missingComponentEntries.push({
+        componentPath: entry.path,
+        candidatePaths: entry.candidatePaths,
+        filePath: file.fsPath,
+      })
+    }
+  }
+
+  return {
+    appJsonPath,
+    missingComponentEntries,
+    missingPageRoutes: [
+      ...(pagesSnapshot?.topLevelPages ?? []),
+      ...((pagesSnapshot?.subpackages ?? []).flatMap(item => item.pages)),
+    ]
+      .filter(page => !page.pageFilePath)
+      .map(page => page.route),
+    unregisteredPageRoutes: (pagesSnapshot?.unregisteredPages ?? []).map(page => page.route),
+    workspaceFolder: context.workspaceFolder,
+  }
 }
 
 export async function resolveCurrentPageRoute(document = vscode.window.activeTextEditor?.document) {
