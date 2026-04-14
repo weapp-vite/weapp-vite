@@ -23,6 +23,7 @@
 - 识别到 weapp-vite 工作区后的状态栏入口
 - `dev` / `build` / `open` / `info` 等常用工作区命令
 - 内置 `generate` 页面 / 组件骨架，不依赖 `wv` CLI
+- 内置生成会读取 `vite.config.*` 中常见的 `weapp.generate.dirs` / `filenames` 配置
 - `<json>` 块和 `defineConfig` 的代码片段
 - 面向 `package.json`、`vite.config.*`、`.vue` 的代码操作
 - 对常用脚本缺失情况的轻量 `package.json` 诊断
@@ -93,7 +94,7 @@
 
 1. `dev` / `build` / `open` / `doctor` 优先使用匹配的 `package.json` scripts，例如 `dev`、`build`、`open`、`doctor`、`info`
 2. 如果未命中，则回退到 `wv <command>`
-3. `generate` 为扩展内置能力，直接生成页面 / 组件 `.vue` 骨架，不依赖 CLI
+3. `generate` 为扩展内置能力，直接生成页面 / 组件 `.vue` 骨架，不依赖 CLI，并会读取 `weapp.generate.dirs` / `filenames`
 
 终端工作目录会优先取当前活动编辑器所在的工作区目录，否则取第一个打开的工作区目录。
 
@@ -112,6 +113,7 @@
 - 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
 - 在资源管理器中右键目录或文件，可直接执行 `Create Page Here` / `Create Component Here`
+- 通过内置 `Generate` 创建页面后，可直接选择是否同步加入 `app.json`
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
 - Explorer 侧边栏新增 `weapp-vite Pages` 视图，按顶层页面、分包页面、未声明页面分组浏览项目页面结构
 - 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`

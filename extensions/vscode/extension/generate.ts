@@ -10,10 +10,16 @@ import {
   getRouteFromPageFilePath,
 } from './navigation'
 import {
+  readWeappGenerateConfigSnapshot,
+} from './projectConfig'
+import {
   findNearestWeappViteProjectWorkspaceFolder,
+  getAppJsonDocumentUri,
+  getAppJsonTextWithAddedSpecificRoute,
   getPrimaryWorkspaceFolder,
   getProjectAppJsonPath,
   getProjectContext,
+  getProjectViteConfigPath,
 } from './workspace'
 
 export type BuiltInGenerateType = 'component' | 'page'
@@ -26,6 +32,12 @@ const DEFAULT_GENERATE_DIRS: Record<BuiltInGenerateType, string> = {
 const DEFAULT_GENERATE_FILENAMES: Record<BuiltInGenerateType, string> = {
   page: 'index',
   component: 'index',
+}
+
+interface ResolvedGenerateDefaults {
+  filenames: Partial<Record<BuiltInGenerateType, string>>
+  dirs: Partial<Record<BuiltInGenerateType, string>>
+  srcRoot?: string
 }
 
 function normalizeGenerateInput(input: string) {
@@ -49,12 +61,30 @@ function getDefaultGenerateBaseDir(projectPath: string, appJsonPath: string | nu
   return path.join(projectSourceRoot, DEFAULT_GENERATE_DIRS[type])
 }
 
+function getPreferredGenerateBaseDir(
+  projectPath: string,
+  appJsonPath: string | null,
+  type: BuiltInGenerateType,
+  defaults?: ResolvedGenerateDefaults,
+) {
+  if (defaults?.dirs[type]) {
+    return path.join(projectPath, defaults.dirs[type]!)
+  }
+
+  if (!appJsonPath && defaults?.srcRoot) {
+    return path.join(projectPath, defaults.srcRoot, DEFAULT_GENERATE_DIRS[type])
+  }
+
+  return getDefaultGenerateBaseDir(projectPath, appJsonPath, type)
+}
+
 export function resolveGenerateTargetPath(
   projectPath: string,
   appJsonPath: string | null,
   type: BuiltInGenerateType,
   inputPath: string,
   targetDirectory?: string | null,
+  defaults?: ResolvedGenerateDefaults,
 ) {
   const normalizedInput = normalizeGenerateInput(inputPath)
 
@@ -64,9 +94,37 @@ export function resolveGenerateTargetPath(
 
   const baseDir = targetDirectory && targetDirectory.trim()
     ? targetDirectory
-    : getDefaultGenerateBaseDir(projectPath, appJsonPath, type)
+    : getPreferredGenerateBaseDir(projectPath, appJsonPath, type, defaults)
+  const fileName = defaults?.filenames[type] ?? DEFAULT_GENERATE_FILENAMES[type]
 
-  return path.join(baseDir, normalizedInput, `${DEFAULT_GENERATE_FILENAMES[type]}.vue`)
+  return path.join(baseDir, normalizedInput, `${fileName}.vue`)
+}
+
+async function getResolvedGenerateDefaults(context: { workspaceFolder: any }) {
+  const viteConfigPath = await getProjectViteConfigPath(context.workspaceFolder)
+
+  if (!viteConfigPath) {
+    return {
+      dirs: {},
+      filenames: {},
+    } satisfies ResolvedGenerateDefaults
+  }
+
+  try {
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(viteConfigPath))
+    const snapshot = readWeappGenerateConfigSnapshot(document.getText())
+
+    return snapshot ?? {
+      dirs: {},
+      filenames: {},
+    }
+  }
+  catch {
+    return {
+      dirs: {},
+      filenames: {},
+    } satisfies ResolvedGenerateDefaults
+  }
 }
 
 async function resolveResourceDirectory(resourceUri?: any) {
@@ -170,6 +228,49 @@ async function writeGeneratedVueFile(
   void vscode.window.showInformationMessage(`weapp-vite: 已创建${label} ${relativeTargetPath}`)
 }
 
+async function maybeRegisterGeneratedPage(state: any, appJsonPath: string | null, targetPath: string) {
+  if (!appJsonPath) {
+    return
+  }
+
+  const relativePath = path.relative(path.dirname(appJsonPath), targetPath)
+  const route = getRouteFromPageFilePath(relativePath)
+
+  if (!route) {
+    return
+  }
+
+  const action = await vscode.window.showInformationMessage(
+    `weapp-vite: 已创建页面 ${route}，是否同时加入 app.json？`,
+    '加入 app.json',
+    '稍后',
+  )
+
+  if (action !== '加入 app.json') {
+    return
+  }
+
+  const result = await getAppJsonTextWithAddedSpecificRoute(appJsonPath, route)
+
+  if (!result) {
+    void vscode.window.showInformationMessage(`weapp-vite: 页面已存在于 app.json ${route}`)
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(getAppJsonDocumentUri(result.appJsonPath))
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+  const edit = new vscode.WorkspaceEdit()
+
+  edit.replace(document.uri, fullRange, result.nextText)
+  await vscode.workspace.applyEdit(edit)
+  await document.save()
+  state.getOutputChannel().appendLine(`[route] add ${route}`)
+  void vscode.window.showInformationMessage(`weapp-vite: 已将页面加入 app.json ${route}`)
+}
+
 async function promptGenerateInput(type: BuiltInGenerateType, baseDir: string, workspacePath: string) {
   const typeLabel = type === 'page' ? '页面' : '组件'
 
@@ -196,8 +297,9 @@ async function generateWithType(state: any, type: BuiltInGenerateType, resourceU
     appJsonPath,
     context,
   } = generateContext
+  const defaults = await getResolvedGenerateDefaults(context)
   const targetDirectory = await resolveResourceDirectory(resourceUri)
-  const baseDir = targetDirectory ?? getDefaultGenerateBaseDir(context.workspaceFolder.uri.fsPath, appJsonPath, type)
+  const baseDir = targetDirectory ?? getPreferredGenerateBaseDir(context.workspaceFolder.uri.fsPath, appJsonPath, type, defaults)
   const inputPath = await promptGenerateInput(type, baseDir, context.workspaceFolder.uri.fsPath)
 
   if (!inputPath) {
@@ -210,6 +312,7 @@ async function generateWithType(state: any, type: BuiltInGenerateType, resourceU
     type,
     inputPath,
     baseDir,
+    defaults,
   )
 
   if (!targetPath) {
@@ -218,6 +321,10 @@ async function generateWithType(state: any, type: BuiltInGenerateType, resourceU
   }
 
   await writeGeneratedVueFile(state, type, targetPath, context.workspaceFolder.uri.fsPath, appJsonPath, inputPath)
+
+  if (type === 'page') {
+    await maybeRegisterGeneratedPage(state, appJsonPath, targetPath)
+  }
 }
 
 export async function showGeneratePicker(state: any, resourceUri?: any) {

@@ -45,6 +45,27 @@ it('resolves target path from explorer directory when provided', async () => {
   assert.equal(targetPath, path.join('/workspace/demo/src/packageA/detail/index.vue'))
 })
 
+it('resolves target path from generate config defaults when no explorer directory is provided', async () => {
+  const { resolveGenerateTargetPath } = await loadGenerateModule()
+  const targetPath = resolveGenerateTargetPath(
+    '/workspace/demo',
+    '/workspace/demo/src/app.json',
+    'component',
+    'card',
+    null,
+    {
+      dirs: {
+        component: 'src/custom-components',
+      },
+      filenames: {
+        component: 'main',
+      },
+    },
+  )
+
+  assert.equal(targetPath, path.join('/workspace/demo/src/custom-components/card/main.vue'))
+})
+
 it('rejects unsafe relative paths', async () => {
   const { resolveGenerateTargetPath } = await loadGenerateModule()
   assert.equal(resolveGenerateTargetPath(

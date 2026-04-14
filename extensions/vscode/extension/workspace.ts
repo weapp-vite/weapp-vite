@@ -119,6 +119,20 @@ async function getExistingProjectFile(filePaths: string[]) {
   return null
 }
 
+export async function getProjectViteConfigPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  if (!workspaceFolder) {
+    return null
+  }
+
+  return getExistingProjectFile([
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+    'vite.config.cjs',
+  ].map(fileName => path.join(workspaceFolder.uri.fsPath, fileName)))
+}
+
 export async function getWeappViteProjectSignals(folderPath: string, packageJson?: Record<string, any> | null) {
   const resolvedPackageJson = packageJson ?? await readJsonFile(path.join(folderPath, 'package.json'))
   const viteConfigCandidates = [
@@ -349,13 +363,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
 
   const workspacePath = context.workspaceFolder.uri.fsPath
   const items = []
-  const viteConfigPath = await getExistingProjectFile([
-    'vite.config.ts',
-    'vite.config.mts',
-    'vite.config.js',
-    'vite.config.mjs',
-    'vite.config.cjs',
-  ].map(fileName => path.join(workspacePath, fileName)))
+  const viteConfigPath = await getProjectViteConfigPath(context.workspaceFolder)
   const appJsonPath = await getProjectAppJsonPath(context.workspaceFolder)
 
   if (context.packageJsonPath) {
