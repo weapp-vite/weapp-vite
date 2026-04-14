@@ -6,6 +6,10 @@ import { initConfig, resetContext } from '@/index'
 import * as npm from '@/npm'
 import { ctx } from '@/state'
 
+interface PackageJsonShape {
+  scripts?: Record<string, string>
+}
+
 describe('init', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -29,7 +33,7 @@ describe('init', () => {
     for (const file of files) {
       expect(await fs.pathExists(path.join(root, file))).toBe(true)
     }
-    const pkg = await fs.readJSON(path.join(root, 'package.json'))
+    const pkg = await fs.readJSON(path.join(root, 'package.json')) as PackageJsonShape
     expect(pkg.scripts).toMatchObject({
       'dev': 'weapp-vite dev',
       'dev:open': 'weapp-vite dev -o',

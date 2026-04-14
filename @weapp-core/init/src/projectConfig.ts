@@ -3,7 +3,7 @@ import logger from '@weapp-core/logger'
 import { defu, get, set } from '@weapp-core/shared'
 import path from 'pathe'
 import { ctx } from './state'
-import { readJsonIfExists, writeJsonFile } from './utils/fs'
+import { readJsonIfExists, writeFile } from './utils/fs'
 import { resolveOutputPath } from './utils/path'
 
 function applyProjectConfigDefaults(projectConfig: ProjectConfig) {
@@ -117,7 +117,7 @@ export async function createOrUpdateProjectConfig(options: UpdateProjectConfigOp
     ctx.projectConfig.value = projectConfig
 
     if (write) {
-      await writeJsonFile(outputPath, projectConfig)
+      await writeFile(outputPath, JSON.stringify(projectConfig, null, 2))
       logger.log(`✨ 写入 ${path.relative(root, outputPath)} 成功!`)
     }
 

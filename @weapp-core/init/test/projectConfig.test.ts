@@ -1,3 +1,4 @@
+import type { ProjectConfig } from '@/types'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
@@ -19,11 +20,13 @@ describe('projectConfig', () => {
   it('creates default project.config when missing', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-project-'))
     const config = await createOrUpdateProjectConfig({ root })
-    const saved = await fs.readJSON(path.join(root, 'project.config.json'))
+    const savedContent = await fs.readFile(path.join(root, 'project.config.json'), 'utf8')
+    const saved = await fs.readJSON(path.join(root, 'project.config.json')) as ProjectConfig
 
     expect(config.miniprogramRoot).toBe('dist/')
     expect(saved.setting.packNpmRelationList).toContainEqual(defaultRelation)
     expect(saved.setting.packNpmManually).toBe(true)
+    expect(savedContent.endsWith('\n')).toBe(false)
   })
 
   it('applies defaults to existing plugin project and fills missing relations', async () => {

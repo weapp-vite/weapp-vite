@@ -428,7 +428,7 @@ async function prepareScenarioProject(scenarioId) {
   const projectConfig = JSON.parse(await fs.readFile(path.join(chunkModesRoot, 'project.config.json'), 'utf8'))
   projectConfig.projectname = `shared-chunk-modes-${scenarioId}`
   projectConfig.miniprogramRoot = 'dist'
-  await fs.writeFile(path.join(targetRoot, 'project.config.json'), `${JSON.stringify(projectConfig, null, 2)}\n`)
+  await fs.writeFile(path.join(targetRoot, 'project.config.json'), JSON.stringify(projectConfig, null, 2))
 
   const privateConfig = await fs.readFile(path.join(chunkModesRoot, 'project.private.config.json'), 'utf8')
   await fs.writeFile(path.join(targetRoot, 'project.private.config.json'), privateConfig)

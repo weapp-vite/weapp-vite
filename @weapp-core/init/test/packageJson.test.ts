@@ -9,6 +9,12 @@ import { logger } from '../vitest.setup'
 
 const CARET_PREFIX_RE = /^\^/
 
+interface PackageJsonShape {
+  devDependencies: Record<string, string>
+  scripts?: Record<string, string>
+  version?: string
+}
+
 describe('packageJson', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -21,7 +27,7 @@ describe('packageJson', () => {
       .mockResolvedValueOnce('^2.0.0')
 
     const pkg = await createOrUpdatePackageJson({ root, command: 'weapp-vite' })
-    const saved = await fs.readJSON(path.join(root, 'package.json'))
+    const saved = await fs.readJSON(path.join(root, 'package.json')) as PackageJsonShape
 
     expect(pkg.scripts?.dev).toBe('weapp-vite dev')
     expect(saved.scripts?.build).toBe('weapp-vite build')
@@ -62,7 +68,7 @@ describe('packageJson', () => {
     const packagePath = path.join(root, 'package.json')
     const { version: weappViteVersion } = await fs.readJSON(
       path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
-    )
+    ) as PackageJsonShape
     await fs.outputJSON(packagePath, {
       name: 'existing-app',
       scripts: { lint: 'pnpm lint' },

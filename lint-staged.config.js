@@ -1,13 +1,25 @@
-const WECHAT_DEVTOOLS_PROJECT_CONFIG_RE
-  = /^(?:apps|e2e-apps|templates)\/.+\/project(?:\.private)?\.config\.json$/
+const WECHAT_DEVTOOLS_PROJECT_CONFIG_RE = /(?:^|\/)project(?:\.private)?\.config\.json$/
+
+function isWechatDevtoolsProjectConfig(file) {
+  return WECHAT_DEVTOOLS_PROJECT_CONFIG_RE.test(file)
+}
 
 function filterWechatDevtoolsProjectConfigs(files) {
   return files.filter((file) => {
-    return !WECHAT_DEVTOOLS_PROJECT_CONFIG_RE.test(file)
+    return !isWechatDevtoolsProjectConfig(file)
   })
 }
 
 export default {
+  '**/project{,.private}.config.json': (files) => {
+    const projectConfigFiles = files.filter(isWechatDevtoolsProjectConfig)
+
+    if (projectConfigFiles.length === 0) {
+      return []
+    }
+
+    return [`node scripts/fix-wechat-devtools-project-config-eof.mjs ${projectConfigFiles.join(' ')}`]
+  },
   'skills/**/*.{yaml,yml}': ['node skills/scripts/validate-skills-yaml.mjs'],
   '!(apps)/**/*.{js,jsx,mjs,ts,tsx,mts,vue}': [
     'eslint --fix --max-warnings=0 --no-warn-ignored',
