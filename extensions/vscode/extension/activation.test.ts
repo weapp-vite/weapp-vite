@@ -219,6 +219,12 @@ function createMockVscode() {
         this.contents = contents
       }
     },
+    DocumentLink: class {
+      constructor(range, target) {
+        this.range = range
+        this.target = target
+      }
+    },
     WorkspaceEdit: class {
       replace() {}
     },
@@ -339,7 +345,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 7)
+    assert.equal(state.registeredProviders.length, 8)
     assert.equal(state.createdTreeViews.length, 1)
     assert.equal(state.createdTreeViews[0].viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)

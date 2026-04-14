@@ -66,6 +66,7 @@ import {
   WeappViteHoverProvider,
   WeappVitePackageJsonCompletionProvider,
   WeappViteVueCompletionProvider,
+  WeappViteVueDocumentLinkProvider,
 } from './providers'
 import {
   WeappVitePagesTreeProvider,
@@ -309,6 +310,7 @@ export function activate(context: any) {
   const packageJsonCompletionProvider = new WeappVitePackageJsonCompletionProvider()
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
+  const vueDocumentLinkProvider = new WeappViteVueDocumentLinkProvider()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
     showCollapseAll: true,
@@ -387,6 +389,10 @@ export function activate(context: any) {
         { language: 'jsonc', scheme: 'file', pattern: '**/app.json' },
       ],
       appJsonDocumentLinkProvider,
+    ),
+    vscode.languages.registerDocumentLinkProvider(
+      { language: 'vue', scheme: 'file' },
+      vueDocumentLinkProvider,
     ),
     vscode.languages.registerCompletionItemProvider(
       [

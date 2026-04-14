@@ -30,6 +30,7 @@ import {
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
   getVueJsonUsingComponentReferenceAtOffset,
+  getVueJsonUsingComponentReferences,
   getVuePageConfigState,
 } from './logic'
 import {
@@ -735,6 +736,36 @@ export class WeappViteAppJsonDocumentLinkProvider {
         link.tooltip = `打开页面文件 ${routeRange.value}`
         links.push(link)
       }
+    }
+
+    return links
+  }
+}
+
+export class WeappViteVueDocumentLinkProvider {
+  async provideDocumentLinks(document: any) {
+    if (!isVueDocument(document)) {
+      return []
+    }
+
+    const links = []
+    const references = getVueJsonUsingComponentReferences(document.getText())
+
+    for (const reference of references) {
+      const status = await getVueUsingComponentFileStatus(document, reference.path)
+
+      if (!status?.isLocal || !status.componentFilePath) {
+        continue
+      }
+
+      const target = vscode.Uri.file(status.componentFilePath)
+      const start = document.positionAt(reference.valueStart)
+      const end = document.positionAt(reference.valueEnd)
+      const range = new vscode.Range(start.line, start.character, end.line, end.character)
+      const link = new vscode.DocumentLink(range, target)
+
+      link.tooltip = `打开组件文件 ${reference.path}`
+      links.push(link)
     }
 
     return links
