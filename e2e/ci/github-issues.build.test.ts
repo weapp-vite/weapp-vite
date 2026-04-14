@@ -1,10 +1,4 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
-import {
-  REQUEST_GLOBAL_ACTUALS_KEY,
-  REQUEST_GLOBAL_EXPOSE_HELPER,
-  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
-  REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER,
-} from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
@@ -67,11 +61,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-338/index.wxml')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('<block wx:if="{{true}}"><view class="issue338-page">')
-    expect(pageWxml).toContain('<text class="issue338-title">{{title}}</text>')
-    expect(pageWxml).toContain('<image class="issue338-cover" src="{{cover}}" mode="aspectFit" />')
-    expect(pageWxml).toContain('<view class="issue338-links">')
-    expect(pageWxml).toContain('<navigator class="issue338-link" wx:for="{{links}}"')
+    expect(pageWxml).toContain('<weapp-layout-default>')
+    expect(pageWxml).toContain('<block wx:if="{{true}}"><view class="div issue338-page">')
+    expect(pageWxml).toContain('<text class="span issue338-title">{{title}}</text>')
+    expect(pageWxml).toContain('<image class="img issue338-cover" src="{{cover}}" mode="aspectFit" />')
+    expect(pageWxml).toContain('<view class="section issue338-links">')
+    expect(pageWxml).toContain('<navigator class="a issue338-link" wx:for="{{links}}"')
     expect(pageWxml).toContain('url="{{\'/pages/\'+link+\'/index\'}}"')
     expect(pageWxml).not.toContain('<div')
     expect(pageWxml).not.toContain('<span')
@@ -149,20 +144,19 @@ describe.sequential('e2e app: github-issues (build)', () => {
     await runBuild()
 
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-420/index.js')
-    const commonJsPath = path.join(DIST_ROOT, 'common.js')
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-420/index.wxml')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
-    const commonJs = await fs.readFile(commonJsPath, 'utf-8')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
 
     expect(pageWxml).toContain('issue-420 socket.io-client bootstrap')
     expect(pageJs).toContain('transportName')
     expect(pageJs).toContain('socket.invalid/github-issues')
-    expect(commonJs).toContain(REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER)
-    expect(commonJs).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",`)
-    expect(commonJs).toContain(`var URL = ${REQUEST_GLOBAL_EXPOSE_HELPER}("URL",`)
-    expect(commonJs).toContain(`${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"],["wss://request-globals.invalid"])`)
-    expect(commonJs).toContain(`${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["URL"],["https://request-globals.invalid"])`)
+    expect(pageJs).toContain('/* __wvRGC__ */')
+    expect(pageJs).toContain('const __rc = __rm["r"]({ targets: ["WebSocket"] }) || globalThis;')
+    expect(pageJs).toContain('var WebSocket = __rc.WebSocket;')
+    expect(pageJs).toContain('var URL = __rc.URL;')
+    expect(pageJs).toContain('__ra["WebSocket"] = __rc.WebSocket;')
+    expect(pageJs).toContain('__ra["URL"] = __rc.URL;')
   })
 
   it('issue #448: injects the next batch of web runtime globals on demand', async () => {
@@ -176,7 +170,6 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('issue-448 next web runtime globals')
     expect(pageJs).toContain('_runE2E')
     expect(pageJs).toContain('microtaskState')
-    expect(pageJs).toContain('request-globals-runtime.js')
     expect(pageJs).toContain('targets:[`atob`,`btoa`,`queueMicrotask`,`performance`,`crypto`,`Event`,`CustomEvent`]')
     expect(pageJs).toContain('get atob(){return r}')
     expect(pageJs).toContain('get btoa(){return i}')
@@ -263,15 +256,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
     await runBuild()
 
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-389/index.js')
-    const commonJsPath = path.join(DIST_ROOT, 'common.js')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
-    const commonJs = await fs.readFile(commonJsPath, 'utf-8')
 
     expect(pageJs).toContain('issue-389 native runtime export should stay native-only')
     expect(pageJs).toContain('__wevuSetPageLayout')
-    expect(commonJs).not.toContain('__wevuPageLayoutState')
-    expect(commonJs).not.toContain('usePageLayout() 必须在 setup() 的同步阶段调用')
-    expect(commonJs).not.toContain('syncRuntimePageLayoutStateFromRuntime')
+    expect(pageJs).not.toContain('__wevuPageLayoutState')
+    expect(pageJs).not.toContain('usePageLayout() 必须在 setup() 的同步阶段调用')
+    expect(pageJs).not.toContain('syncRuntimePageLayoutStateFromRuntime')
   })
 
   it('issue #398: emits layout and component importers that share the same wevu runtime chunk', async () => {
@@ -306,7 +297,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(footerJs).toContain('__issue398FooterMounted')
     expect(footerJs).toContain('__issue398FooterLabel')
 
-    const sharedImportPattern = /require\((['"`])(\.\.\/\.\.\/\.\.\/src-[^'"`]+\.js)\1\)/
+    const sharedImportPattern = /require\((['"`])(\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-src\.js)\1\)/
     const navbarSharedImport = navbarJs.match(sharedImportPattern)
     const footerSharedImport = footerJs.match(sharedImportPattern)
 
@@ -540,8 +531,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-294/index.json')
     const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
-    const commonJsPath = path.join(DIST_ROOT, 'common.js')
-    const commonJs = await fs.readFile(commonJsPath, 'utf-8')
+    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
+    const wevuRuntime = await fs.readFile(wevuRuntimePath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-294 share hooks')
     expect(issuePageJs).toContain('enableOnShareAppMessage:!0')
@@ -552,7 +543,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toContain('issue-294-timeline-')
     expect(issuePageJson).not.toContain('"enableShareAppMessage"')
     expect(issuePageJson).not.toContain('"enableShareTimeline"')
-    expect(commonJs).toContain('showShareMenu')
+    expect(wevuRuntime).toContain('showShareMenu')
   })
   it('issue #297: compiles complex call expressions', async () => {
     await runBuild()
@@ -801,8 +792,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
 
@@ -822,12 +813,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
     const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
     const invalidSharedPageWxmlPath = path.join(DIST_ROOT, 'subpackages/item/issue-340-shared.wxml')
-    const rootCommonPath = path.join(DIST_ROOT, 'common.js')
+    const rootSharedRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
     const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
     const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
     const itemInvalidCommonPath = path.join(DIST_ROOT, 'subpackages/item/common.js')
     const userInvalidCommonPath = path.join(DIST_ROOT, 'subpackages/user/common.js')
-    const rootVendorsPath = path.join(DIST_ROOT, 'vendors.js')
     const itemVendorsPath = path.join(DIST_ROOT, 'subpackages/item/vendors.js')
     const userVendorsPath = path.join(DIST_ROOT, 'subpackages/user/vendors.js')
     const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
@@ -853,22 +843,21 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemShared).toContain('issue-340')
     expect(userShared).toContain('issue-340')
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
-    expect(itemShared).not.toMatch(/vendors(?:\.\d+)?\.js/)
-    expect(userShared).not.toMatch(/vendors(?:\.\d+)?\.js/)
+    expect(itemShared).not.toMatch(/subpackages_item.*subpackages_user\/common\.js/)
+    expect(userShared).not.toMatch(/subpackages_item.*subpackages_user\/common\.js/)
 
     expect(itemSubPackage?.pages).toEqual([
       'index',
       'login-required/index',
     ])
     expect(await fs.pathExists(invalidSharedPageWxmlPath)).toBe(false)
-    expect(await fs.pathExists(rootCommonPath)).toBe(true)
+    expect(await fs.pathExists(rootSharedRuntimePath)).toBe(true)
     expect(await fs.pathExists(itemInvalidCommonPath)).toBe(false)
     expect(await fs.pathExists(userInvalidCommonPath)).toBe(false)
-    expect(await fs.pathExists(rootVendorsPath)).toBe(false)
     expect(await fs.pathExists(itemVendorsPath)).toBe(false)
     expect(await fs.pathExists(userVendorsPath)).toBe(false)
     expect(await fs.pathExists(itemRuntimePath)).toBe(true)
@@ -1022,13 +1011,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const launchPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.js')
     const resultPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.wxml')
     const resultPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.js')
-    const commonJsPath = path.join(DIST_ROOT, 'common.js')
+    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
 
     const launchPageWxml = await fs.readFile(launchPageWxmlPath, 'utf-8')
     const launchPageJs = await fs.readFile(launchPageJsPath, 'utf-8')
     const resultPageWxml = await fs.readFile(resultPageWxmlPath, 'utf-8')
     const resultPageJs = await fs.readFile(resultPageJsPath, 'utf-8')
-    const commonJs = await fs.readFile(commonJsPath, 'utf-8')
+    const wevuRuntime = await fs.readFile(wevuRuntimePath, 'utf-8')
 
     expect(launchPageWxml).toContain('issue-373 store computed survives reLaunch')
     expect(launchPageWxml).toContain('launch count: {{count}}')
@@ -1044,8 +1033,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(resultPageJs).toContain('increment')
     expect(resultPageJs).toContain('_runE2E')
 
-    expect(commonJs).toContain('issue-373-store')
-    expect(commonJs).toContain('count:e,doubled:t,increment:n,reset:r')
-    expect(commonJs).toMatch(/[A-Za-z_$][\w$]*\(`issue-373-store`,\(\)=>\{/)
+    expect(wevuRuntime).toContain('Object.defineProperty(exports,`_`')
+    expect(wevuRuntime).toContain('Object.defineProperty(exports,`Dt`')
+    expect(launchPageJs).toContain('let r=e._(),{count:i,doubled:a}=e.Dt(r);')
+    expect(resultPageJs).toContain('let r=e._(),{count:i,doubled:a}=e.Dt(r);')
   })
 })

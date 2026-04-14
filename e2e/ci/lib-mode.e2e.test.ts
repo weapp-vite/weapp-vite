@@ -17,6 +17,12 @@ type SharedMode = 'common' | 'path' | 'inline'
 const sharedModes: SharedMode[] = ['common', 'path', 'inline']
 const sharedStrategies: SharedStrategy[] = ['duplicate', 'hoist']
 
+function isRootSharedChunk(file: string) {
+  return file === 'app.js'
+    || /^common(?:\.\d+)?\.js$/.test(file)
+    || /^weapp-vendors\/.+\.js$/.test(file)
+}
+
 async function scanFiles(root: string) {
   // eslint-disable-next-line new-cap
   const fd = new fdir({
@@ -159,9 +165,9 @@ describe('lib mode e2e', () => {
         expect(files).toContain('utils/index.js')
 
         if (sharedMode === 'inline') {
-          const hasCommon = locations.includes('common.js') || locations.includes('shared/common.js')
+          const hasCommon = locations.some(isRootSharedChunk) || locations.includes('shared/common.js')
           if (hasCommon) {
-            expect(locations).toContain('common.js')
+            expect(locations.some(isRootSharedChunk)).toBe(true)
           }
           else {
             expect(locations).toContain('components/button/index.js')
@@ -172,7 +178,7 @@ describe('lib mode e2e', () => {
           expect(locations).toContain('shared/common.js')
         }
         else {
-          expect(locations).toContain('common.js')
+          expect(locations.some(isRootSharedChunk)).toBe(true)
         }
       }
     }

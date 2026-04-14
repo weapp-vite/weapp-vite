@@ -59,6 +59,8 @@ const sharedStrategies: SharedStrategy[] = ['duplicate', 'hoist']
 
 function isRootCommonChunk(file: string) {
   return /^common(?:\.\d+)?\.js$/.test(file)
+    || file === 'app.js'
+    || /^weapp-vendors\/.+\.js$/.test(file)
 }
 
 function isSubpackageSharedChunk(file: string, root: string) {

@@ -81,7 +81,7 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
 }
 
 describe.sequential('issue #391 watch shared chunk rebuild', () => {
-  it('keeps the shared common.js import after editing one importer page', async () => {
+  it('keeps the shared runtime chunk import after editing one importer page', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
     const tempProject = await createTempFixtureProject(fixtureSource, 'issue-391-watch')
     const cwd = tempProject.tempDir
@@ -113,22 +113,22 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       const outDir = ctxResult.ctx.configService.outDir
       const pageOutputPath = path.resolve(outDir, 'pages/issue-391/index.js')
       const peerOutputPath = path.resolve(outDir, 'pages/issue-391-peer/index.js')
-      const commonOutputPath = path.resolve(outDir, 'common.js')
+      const sharedRuntimeOutputPath = path.resolve(outDir, 'weapp-vendors/wevu-defineProperty.js')
       const pageSourcePath = path.resolve(cwd, 'src/pages/issue-391/index.ts')
-      const sharedImportPattern = /require\((['"])\.\.\/\.\.\/common\.js\1\)/
+      const sharedImportPattern = /require\((['"])\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/
 
       await waitForFileContains(pageOutputPath, 'issue-391-initial-marker')
-      await waitForFileContains(commonOutputPath, 'issue-391-shared-sentinel')
+      await waitForFileContains(sharedRuntimeOutputPath, 'issue-391-shared-sentinel')
 
       const initialPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const initialPeerOutput = await fs.readFile(peerOutputPath, 'utf8')
-      const initialCommonOutput = await fs.readFile(commonOutputPath, 'utf8')
+      const initialSharedRuntimeOutput = await fs.readFile(sharedRuntimeOutputPath, 'utf8')
 
       expect(initialPageOutput).toMatch(sharedImportPattern)
       expect(initialPeerOutput).toMatch(sharedImportPattern)
       expect(initialPageOutput).not.toContain('issue-391-shared-sentinel')
       expect(initialPeerOutput).not.toContain('issue-391-shared-sentinel')
-      expect(initialCommonOutput).toContain('issue-391-shared-sentinel')
+      expect(initialSharedRuntimeOutput).toContain('issue-391-shared-sentinel')
 
       const originalSource = await fs.readFile(pageSourcePath, 'utf8')
       const updatedSource = originalSource.replace('issue-391-initial-marker', 'issue-391-updated-marker')
@@ -141,14 +141,14 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
 
       const updatedPageOutput = await fs.readFile(pageOutputPath, 'utf8')
       const updatedPeerOutput = await fs.readFile(peerOutputPath, 'utf8')
-      const updatedCommonOutput = await fs.readFile(commonOutputPath, 'utf8')
+      const updatedSharedRuntimeOutput = await fs.readFile(sharedRuntimeOutputPath, 'utf8')
 
       expect(updatedPageOutput).toContain('issue-391-updated-marker')
       expect(updatedPageOutput).toMatch(sharedImportPattern)
       expect(updatedPeerOutput).toMatch(sharedImportPattern)
       expect(updatedPageOutput).not.toContain('issue-391-shared-sentinel')
       expect(updatedPeerOutput).not.toContain('issue-391-shared-sentinel')
-      expect(updatedCommonOutput).toContain('issue-391-shared-sentinel')
+      expect(updatedSharedRuntimeOutput).toContain('issue-391-shared-sentinel')
     }
     finally {
       await watcher?.close()

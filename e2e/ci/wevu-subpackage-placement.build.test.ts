@@ -37,8 +37,8 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     const normalDetailJsPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/pages/detail/index.js')
     const independentEntryJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/entry/index.js')
     const independentDetailJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/detail/index.js')
-    const mainSharedChunkPath = path.join(DIST_ROOT, 'common.js')
-    const normalSharedChunkPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/common.js')
+    const mainSharedChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
+    const normalSharedChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-store.js')
     const independentSharedChunkPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/independentState.js')
 
     expect(await fs.pathExists(appJsonPath)).toBe(true)
@@ -87,7 +87,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       'MainVueCard': '/components/main-vue-card/index',
       'native-badge': '/native/native-badge/index',
     })
-    expect(mainPageJs).toContain('require(`../../common.js`)')
+    expect(mainPageJs).toContain('require(`../../weapp-vendors/wevu-defineProperty.js`)')
     expect(mainPageJs).toContain('runE2E')
     expect(mainPageJs).toContain('MainVueCard')
     expect(mainPageWxml).toContain('__WSP_MAIN_VUE__')
@@ -99,16 +99,15 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     expect(mainComponentWxml).toContain('{{props.count}}')
     expect(mainComponentWxml).toContain('{{props.double}}')
 
-    expect(mainSharedChunk).toContain('`onLaunch`')
-    expect(mainSharedChunk).toContain('`onLoad`')
+    expect(mainSharedChunk).toContain('onLaunch')
     expect(mainSharedChunk).toContain('Object.defineProperty(exports,')
 
     expect(mainPageJs).toContain('/subpackages/normal-wevu/pages/entry/index')
     expect(mainPageJs).toContain('/subpackages/independent-wevu/pages/entry/index')
 
-    expect(normalEntryJs).toContain('require(`../../common.js`)')
+    expect(normalEntryJs).toContain('require(`../../../../weapp-vendors/wevu-store.js`)')
     expect(normalEntryJs).toContain('goIndependent')
-    expect(normalDetailJs).toContain('require(`../../common.js`)')
+    expect(normalDetailJs).toContain('require(`../../../../weapp-vendors/wevu-store.js`)')
     expect(normalDetailJs).toContain('from.value')
 
     expect(independentEntryJs).toContain('require(`../../independentState.js`)')
@@ -128,8 +127,8 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       .filter(file => typeof file === 'string' && file.endsWith('.js'))
       .map(file => toPosixPath(file))
 
-    expect(distJsFiles.includes('common.js')).toBe(true)
-    expect(distJsFiles.some(file => file.includes('subpackages/normal-wevu/common.js'))).toBe(true)
+    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-defineProperty.js'))).toBe(true)
+    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-store.js'))).toBe(true)
     expect(distJsFiles.some(file => file.includes('subpackages/independent-wevu/independentState.js'))).toBe(true)
     expect(distJsFiles.includes('pages/index/index.js')).toBe(true)
   })
