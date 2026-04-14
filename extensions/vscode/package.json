@@ -96,6 +96,13 @@
     "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
   ],
   "contributes": {
+    "iconThemes": [
+      {
+        "id": "weapp-vite-file-icons",
+        "label": "weapp-vite File Icons",
+        "path": "./assets/weapp-vite-icon-theme.json"
+      }
+    ],
     "commands": [
       {
         "command": "weapp-vite.generate",

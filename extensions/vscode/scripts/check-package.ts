@@ -28,6 +28,8 @@ const requiredFiles = [
   'README.md',
   'CHANGELOG.md',
   'LICENSE',
+  'assets/logo.svg',
+  'assets/weapp-vite-icon-theme.json',
   'scripts/vscode-host-smoke.ts',
   'scripts/vscode-host-smoke-runner.cjs',
   'snippets/weapp-vite.code-snippets',
