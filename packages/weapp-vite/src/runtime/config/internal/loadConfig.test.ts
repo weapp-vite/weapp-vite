@@ -283,6 +283,12 @@ describe('runtime config internal loadConfig', () => {
     loadViteConfigFileMock
       .mockResolvedValueOnce({
         config: {
+          define: {
+            __FROM_VITE_CONFIG__: '"vite"',
+          },
+          build: {
+            sourcemap: true,
+          },
           weapp: {
             srcRoot: 'src-from-vite',
           },
@@ -291,6 +297,12 @@ describe('runtime config internal loadConfig', () => {
       })
       .mockResolvedValueOnce({
         config: {
+          define: {
+            __FROM_WEAPP_CONFIG__: '"weapp"',
+          },
+          build: {
+            minify: false,
+          },
           weapp: {
             srcRoot: 'src-from-weapp',
           },
@@ -310,6 +322,10 @@ describe('runtime config internal loadConfig', () => {
     } as any)
 
     expect(result.config.weapp?.srcRoot).toBe('src-from-weapp')
+    expect(result.config.define?.__FROM_VITE_CONFIG__).toBe('"vite"')
+    expect(result.config.define?.__FROM_WEAPP_CONFIG__).toBeUndefined()
+    expect(result.config.build?.sourcemap).toBe(true)
+    expect(result.config.build?.minify).not.toBe(false)
     expect(result.configFilePath).toBe('/project/weapp-vite.config.ts')
     expect(result.configMergeInfo).toEqual({
       merged: true,
