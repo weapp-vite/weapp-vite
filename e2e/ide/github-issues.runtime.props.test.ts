@@ -1,6 +1,6 @@
 import { fs } from '@weapp-core/shared'
 import path from 'pathe'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -14,46 +14,45 @@ import {
 } from './github-issues.runtime.shared'
 
 describe.sequential('e2e app: github-issues / props', () => {
+  afterEach(async () => {
+    await closeSharedMiniProgram()
+  })
+
   afterAll(async () => {
     await closeSharedMiniProgram()
   })
 
-  it('issue #317: loads duplicated shared chunks with localized runtime inside subpackages', async (ctx) => {
-    const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
-    const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
-    expect(await fs.pathExists(itemSharedPath)).toBe(true)
-    expect(await fs.pathExists(userSharedPath)).toBe(true)
-
+  async function expectLaunchableRoute(ctx: any, route: string, readyText?: string) {
     const miniProgram = await getSharedMiniProgram(ctx)
-    try {
-      const itemPage = await relaunchPage(miniProgram, '/subpackages/item/index')
-      const userPage = await relaunchPage(miniProgram, '/subpackages/user/index')
-      expect(itemPage).toBeTruthy()
-      expect(userPage).toBeTruthy()
-    }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
-    }
+    const page = await relaunchPage(miniProgram, route, readyText)
+    expect(page).toBeTruthy()
+    await releaseSharedMiniProgram(miniProgram)
+  }
+
+  it('issue #317: loads duplicated shared chunks with localized runtime inside item subpackage', async (ctx) => {
+    const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
+    expect(await fs.pathExists(itemSharedPath)).toBe(true)
+    await expectLaunchableRoute(ctx, '/subpackages/item/index')
   })
 
-  it('issue #340: loads cross-subpackage source imports in item/login-required and user/register/form', async (ctx) => {
-    const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
-    const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
-    const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
-    const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
-    expect(itemPageJs).toContain('item-login-required:issue-340:shared')
-    expect(userPageJs).toContain('user-register-form:issue-340:shared')
+  it('issue #317: loads duplicated shared chunks with localized runtime inside user subpackage', async (ctx) => {
+    const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
+    expect(await fs.pathExists(userSharedPath)).toBe(true)
+    await expectLaunchableRoute(ctx, '/subpackages/user/index')
+  })
 
-    const miniProgram = await getSharedMiniProgram(ctx)
-    try {
-      const itemPage = await relaunchPage(miniProgram, '/subpackages/item/login-required/index')
-      const userPage = await relaunchPage(miniProgram, '/subpackages/user/register/form')
-      expect(itemPage).toBeTruthy()
-      expect(userPage).toBeTruthy()
-    }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
-    }
+  it('issue #340: loads cross-subpackage source imports in item/login-required', async (ctx) => {
+    const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
+    const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
+    expect(itemPageJs).toContain('item-login-required:issue-340:shared')
+    await expectLaunchableRoute(ctx, '/subpackages/item/login-required/index')
+  })
+
+  it('issue #340: loads cross-subpackage source imports in user/register/form', async (ctx) => {
+    const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
+    const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
+    expect(userPageJs).toContain('user-register-form:issue-340:shared')
+    await expectLaunchableRoute(ctx, '/subpackages/user/register/form')
   })
 
   it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async (ctx) => {

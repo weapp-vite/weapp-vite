@@ -1,4 +1,6 @@
 import type { SetupContextRouter } from '../types'
+import { parsePathInput } from '../../routerInternal/location'
+import { createAbsoluteRoutePath, resolvePath, stringifyQuery } from '../../routerInternal/shared'
 import { getCurrentSetupContext } from '../hooks'
 import { getMiniProgramGlobalObject } from '../platform'
 
@@ -7,6 +9,7 @@ type RuntimeRouterMethodName = 'switchTab' | 'reLaunch' | 'redirectTo' | 'naviga
 type RuntimeRouterAccessor = 'router' | 'pageRouter'
 
 const RUNTIME_ROUTER_METHODS: RuntimeRouterMethodName[] = ['switchTab', 'reLaunch', 'redirectTo', 'navigateTo', 'navigateBack']
+const runtimeRouterWrapperCache = new WeakMap<RuntimeRouter, Map<string, RuntimeRouter>>()
 
 function isRuntimeRouter(candidate: unknown): candidate is RuntimeRouter {
   if (!candidate || typeof candidate !== 'object') {
@@ -33,6 +36,75 @@ function createGlobalRouterFallback(): RuntimeRouter | undefined {
   return fallbackRouter
 }
 
+function resolveBasePathCandidate(candidate: unknown): string | undefined {
+  if (typeof candidate !== 'string' || !candidate) {
+    return undefined
+  }
+  const normalized = resolvePath(candidate, '')
+  return normalized || undefined
+}
+
+function resolveRouterBasePath(
+  nativeInstance: Record<string, any>,
+  accessor: RuntimeRouterAccessor,
+): string | undefined {
+  const candidates = accessor === 'pageRouter'
+    ? [nativeInstance.route, nativeInstance.__route__, nativeInstance.is]
+    : [nativeInstance.is, nativeInstance.route, nativeInstance.__route__]
+
+  for (const candidate of candidates) {
+    const resolved = resolveBasePathCandidate(candidate)
+    if (resolved) {
+      return resolved
+    }
+  }
+
+  return undefined
+}
+
+function resolveScopedRouterUrl(url: string, basePath?: string): string {
+  if (!basePath || (!url.startsWith('./') && !url.startsWith('../'))) {
+    return url
+  }
+
+  const { path, query, hash } = parsePathInput(url)
+  const resolvedPath = createAbsoluteRoutePath(resolvePath(path, basePath))
+  const queryString = stringifyQuery(query)
+  return `${resolvedPath}${queryString ? `?${queryString}` : ''}${hash}`
+}
+
+function createScopedRuntimeRouter(rawRouter: RuntimeRouter, basePath?: string): RuntimeRouter {
+  const cacheKey = basePath ?? ''
+  const cachedByBasePath = runtimeRouterWrapperCache.get(rawRouter)
+  const cachedRouter = cachedByBasePath?.get(cacheKey)
+  if (cachedRouter) {
+    return cachedRouter
+  }
+
+  const scopedRouter = Object.create(null) as RuntimeRouter
+  for (const methodName of RUNTIME_ROUTER_METHODS) {
+    ;(scopedRouter as Record<string, any>)[methodName] = (option: Record<string, any>) => {
+      const rawMethod = (rawRouter as Record<string, any>)[methodName]
+      if (methodName === 'navigateBack' || !option || typeof option !== 'object') {
+        return rawMethod.call(rawRouter, option)
+      }
+
+      const nextUrl = typeof option.url === 'string'
+        ? resolveScopedRouterUrl(option.url, basePath)
+        : option.url
+      const nextOption = nextUrl === option.url
+        ? option
+        : { ...option, url: nextUrl }
+      return rawMethod.call(rawRouter, nextOption)
+    }
+  }
+
+  const nextCache = cachedByBasePath ?? new Map<string, RuntimeRouter>()
+  nextCache.set(cacheKey, scopedRouter)
+  runtimeRouterWrapperCache.set(rawRouter, nextCache)
+  return scopedRouter
+}
+
 function useRuntimeRouterByAccessor(
   primaryAccessor: RuntimeRouterAccessor,
   fallbackAccessor: RuntimeRouterAccessor,
@@ -44,19 +116,20 @@ function useRuntimeRouterByAccessor(
   }
 
   const nativeInstance = ctx.instance as Record<string, any>
+  const basePath = resolveRouterBasePath(nativeInstance, primaryAccessor)
   const primaryRouter = nativeInstance[primaryAccessor]
   if (isRuntimeRouter(primaryRouter)) {
-    return primaryRouter
+    return createScopedRuntimeRouter(primaryRouter, basePath)
   }
 
   const fallbackRouter = nativeInstance[fallbackAccessor]
   if (isRuntimeRouter(fallbackRouter)) {
-    return fallbackRouter
+    return createScopedRuntimeRouter(fallbackRouter, basePath)
   }
 
   const globalFallbackRouter = createGlobalRouterFallback()
   if (globalFallbackRouter) {
-    return globalFallbackRouter
+    return createScopedRuntimeRouter(globalFallbackRouter, basePath)
   }
 
   throw new Error('当前运行环境不支持 Router，请升级微信基础库到 2.16.1+ 或检查平台路由能力')

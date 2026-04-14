@@ -1034,8 +1034,16 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(resultPageJs).toContain('_runE2E')
 
     expect(wevuRuntime).toContain('Object.defineProperty(exports,`_`')
-    expect(wevuRuntime).toContain('Object.defineProperty(exports,`Dt`')
-    expect(launchPageJs).toContain('let r=e._(),{count:i,doubled:a}=e.Dt(r);')
-    expect(resultPageJs).toContain('let r=e._(),{count:i,doubled:a}=e.Dt(r);')
+    const launchStoreToRefsMatch = launchPageJs.match(/let r=e\._\(\),\{count:i,doubled:a\}=e\.([A-Za-z$_][\w$]*)\(r\);/)
+    const resultStoreToRefsMatch = resultPageJs.match(/let r=e\._\(\),\{count:i,doubled:a\}=e\.([A-Za-z$_][\w$]*)\(r\);/)
+
+    expect(launchStoreToRefsMatch).toBeTruthy()
+    expect(resultStoreToRefsMatch).toBeTruthy()
+
+    const launchStoreToRefsHelper = launchStoreToRefsMatch?.[1]
+    const resultStoreToRefsHelper = resultStoreToRefsMatch?.[1]
+
+    expect(launchStoreToRefsHelper).toBe(resultStoreToRefsHelper)
+    expect(wevuRuntime).toContain(`Object.defineProperty(exports,\`${launchStoreToRefsHelper}\``)
   })
 })

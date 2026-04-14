@@ -127,5 +127,5 @@ export function setPageLayout(layout: string | false, props?: Record<string, any
 }
 
 export function resolveRuntimePageLayoutName(layout: string | false) {
-  return layout === false ? NO_LAYOUT_RUNTIME_KEY : layout
+  return layout === false ? WEVU_PAGE_LAYOUT_NONE : layout
 }
