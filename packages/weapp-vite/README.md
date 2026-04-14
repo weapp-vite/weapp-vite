@@ -46,11 +46,20 @@ export default defineConfig({
       enable: true,
       template: {
         removeComments: true,
+        htmlTagToWxml: true,
+        htmlTagToWxmlTagClass: true,
       },
     },
   },
 })
 ```
+
+如果你在把传统 HTML/Vue 模板迁移到小程序 `.vue`，这两个模板配置通常最有用：
+
+- `weapp.vue.template.htmlTagToWxml`
+  把 `div/span/img/a/h1...` 等常见 HTML 标签映射成小程序内置标签。
+- `weapp.vue.template.htmlTagToWxmlTagClass`
+  默认开启。在映射发生时追加原标签名 class，例如 `h3 -> <view class="h3">`、`br -> <view class="br" />`，便于你自己写 CSS 低成本恢复默认外观；不需要时可设为 `false`。
 
 ```vue
 <!-- App.vue -->

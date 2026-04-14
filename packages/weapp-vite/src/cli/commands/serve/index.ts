@@ -169,6 +169,7 @@ export function registerServeCommand(cli: CAC) {
           })
           if (!openedByForwardConsole) {
             await openIde(configService.platform, resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd), {
+              reuseOpenedProject: false,
               trustProject: options.trustProject,
             })
           }

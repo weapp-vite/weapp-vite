@@ -32,6 +32,7 @@ keywords:
     removeComments?: boolean
     simplifyWhitespace?: boolean
     htmlTagToWxml?: boolean | Record<string, string>
+    htmlTagToWxmlTagClass?: boolean
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
     scopedSlotsRequireProps?: boolean
     slotMultipleInstance?: boolean
@@ -52,6 +53,7 @@ export default defineConfig({
     vue: {
       template: {
         htmlTagToWxml: true,
+        htmlTagToWxmlTagClass: true,
         scopedSlotsCompiler: 'auto',
         scopedSlotsRequireProps: true,
         slotMultipleInstance: true,
@@ -67,9 +69,14 @@ export default defineConfig({
 
 字段说明：
 - `htmlTagToWxml`：是否将 `.vue` 模板中的常见 HTML 标签映射为小程序内置标签。
-  - `true` 或省略：启用默认映射表（例如 `div -> view`、`span -> text`、`img -> image`、`a -> navigator`）。
+  - `true` 或省略：启用默认映射表（例如 `div -> view`、`span -> text`、`img -> image`、`a -> navigator`、`br -> view`、`hr -> view`）。
   - `false`：关闭该能力，保留模板中的原始标签名。
   - `Record<string, string>`：在默认映射表基础上追加或覆盖自定义映射。
+- `htmlTagToWxmlTagClass`：是否在发生 HTML 标签映射时，同时给转换后的节点追加“原标签名 class”。
+  - 默认 `true`。
+  - 启用后，`<h3 class="title" :class="dynamicCls" />` 会编译为带有稳定语义 class 的节点，静态 class 会拼合成 `h3 title`，动态 `:class` 保持原样。
+  - 适合低成本还原 `h1/h2/h3/ul/ol/li/p/br/hr` 等 HTML 标签的默认外观。
+  - 设为 `false` 时，只做标签名映射，不追加这层 class。
 - `scopedSlotsCompiler`：作用域插槽编译策略。
   - `auto`：自动选择最小可用方案（默认）。
   - `augmented`：强制使用增强方案。
@@ -124,8 +131,49 @@ export default defineConfig({
 })
 ```
 
+示例：关闭自动追加原标签 class
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    vue: {
+      template: {
+        htmlTagToWxml: true,
+        htmlTagToWxmlTagClass: false,
+      },
+    },
+  },
+})
+```
+
+示例：默认开启时的模板效果
+
+```vue
+<template>
+  <div class="wrap">
+    <h3 :class="titleClass">标题</h3>
+    <hr />
+    <br />
+  </div>
+</template>
+```
+
+会编译出类似结果：
+
+```wxml
+<view class="div wrap">
+  <view class="h3" :class="titleClass">标题</view>
+  <view class="hr" />
+  <view class="br" />
+</view>
+```
+
 > [!NOTE]
 > `htmlTagToWxml` 只作用于 Vue SFC 模板编译，不影响原生 `.wxml` 文件。
+>
+> `htmlTagToWxmlTagClass` 只在“标签名确实发生了 HTML -> WXML 映射”时生效；像 `button -> button` 这类未改名场景，不会额外注入 `.button`。
 >
 > `removeComments` / `simplifyWhitespace` 当前仍是兼容性预留位，尚未接入实际编译流程；其余字段已经参与模板编译输出。
 

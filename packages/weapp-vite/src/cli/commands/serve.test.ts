@@ -245,6 +245,7 @@ describe('serve cli command', () => {
     await actionPromise
 
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      reuseOpenedProject: false,
       trustProject: false,
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(2)
