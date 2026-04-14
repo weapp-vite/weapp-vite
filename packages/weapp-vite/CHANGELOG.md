@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.15.4
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite` 等公开包对 `@weapp-core/constants` 发布依赖被锁定为精确版本的问题，并补充 constants 包变更必须带 changeset 的发布校验，避免共享常量新增导出后用户安装到旧版 constants 产物时出现运行时报错。** [`a1951ca`](https://github.com/weapp-vite/weapp-vite/commit/a1951ca0c73cca640f4897ed42814f787b5e6446) by @sonofmagic
+- 📦 Updated 5 dependencies [`a1951ca`](https://github.com/weapp-vite/weapp-vite/commit/a1951ca0c73cca640f4897ed42814f787b5e6446)
+  <details><summary>Details</summary>
+
+  `@weapp-core/constants@0.1.1`, `wevu@6.15.4`, `@weapp-vite/web@1.3.15`, `@wevu/web-apis@1.2.6`, `@weapp-vite/ast@6.15.4`
+
+  </details>
+
 ## 6.15.3
 
 ### Patch Changes

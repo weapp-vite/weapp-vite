@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.1.1
+
+### Patch Changes
+
+- 🐛 **修复 VS Code 插件发布计划仅比较上一个提交版本的问题，改为直接比较仓库当前版本与 Marketplace 线上版本。这样当某次首次发布失败后，只要线上版本仍然落后，后续成功的 release workflow 仍会自动补发对应版本。** [`d07671d`](https://github.com/weapp-vite/weapp-vite/commit/d07671dcb18e63ed2d451b153727ce693a516186) by @sonofmagic
+
+- 🐛 **修复 VS Code 插件发布临时 manifest 仍携带 `devDependencies`、`scripts` 和 `private` 字段的问题，避免 `vsce` 在发布阶段错误地拿开发依赖参与引擎版本校验，导致 Marketplace 自动发布失败。** [`e67c573`](https://github.com/weapp-vite/weapp-vite/commit/e67c573ad76437d617ec89517b34384567062b31) by @sonofmagic
+
 ## 0.1.0
 
 ### Minor Changes
