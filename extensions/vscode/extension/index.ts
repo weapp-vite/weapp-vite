@@ -44,6 +44,11 @@ import {
   buildVuePageDiagnostics,
 } from './content'
 import {
+  generateComponentInExplorer,
+  generatePageInExplorer,
+  showGeneratePicker,
+} from './generate'
+import {
   WeappViteAppJsonCompletionProvider,
   WeappViteAppJsonDocumentLinkProvider,
   WeappViteCodeActionProvider,
@@ -217,7 +222,7 @@ export function activate(context: any) {
     terminalCache: undefined,
   }
   const disposables = [
-    vscode.commands.registerCommand('weapp-vite.generate', () => runWorkspaceCommand('generate', state)),
+    vscode.commands.registerCommand('weapp-vite.generate', resourceUri => showGeneratePicker(state, resourceUri)),
     vscode.commands.registerCommand('weapp-vite.dev', () => runWorkspaceCommand('dev', state)),
     vscode.commands.registerCommand('weapp-vite.build', () => runWorkspaceCommand('build', state)),
     vscode.commands.registerCommand('weapp-vite.open', () => runWorkspaceCommand('open', state)),
@@ -233,6 +238,8 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.createPageFromRoute', (document, route) => createPageFromRoute(document, route)),
     vscode.commands.registerCommand('weapp-vite.createPageFromTreeItem', item => createPageFromTreeItem(item)),
+    vscode.commands.registerCommand('weapp-vite.generatePageInExplorer', resourceUri => generatePageInExplorer(resourceUri, state)),
+    vscode.commands.registerCommand('weapp-vite.generateComponentInExplorer', resourceUri => generateComponentInExplorer(resourceUri, state)),
     vscode.commands.registerCommand('weapp-vite.openPageFromRoute', (document, route) => openPageFromRoute(document, route)),
     vscode.commands.registerCommand('weapp-vite.addCurrentPageToAppJson', () => addCurrentPageToAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.addPageToAppJsonFromTreeItem', item => addPageToAppJsonFromTreeItem(item, state)),

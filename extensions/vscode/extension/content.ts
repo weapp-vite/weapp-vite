@@ -213,6 +213,39 @@ export function getPageVueTemplate(route: string) {
   ].join('\n')
 }
 
+function toPascalCase(value: string) {
+  return value
+    .split(/[^A-Za-z0-9]+/u)
+    .filter(Boolean)
+    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join('') || 'WeappComponent'
+}
+
+export function getComponentVueTemplate(name: string) {
+  const normalizedName = name.trim().replace(/^\/+|\/+$/g, '')
+  const segments = normalizedName.split('/').filter(Boolean)
+  const componentName = toPascalCase(segments[segments.length - 1] ?? normalizedName)
+
+  return [
+    '<script setup lang="ts">',
+    `defineOptions({ name: '${componentName}' })`,
+    '</script>',
+    '',
+    '<template>',
+    `  <view class="${componentName}">`,
+    '    <slot />',
+    '  </view>',
+    '</template>',
+    '',
+    '<style scoped>',
+    `.${componentName} {`,
+    '  display: block;',
+    '}',
+    '</style>',
+    '',
+  ].join('\n')
+}
+
 export async function buildPackageJsonDiagnostics(document: any) {
   const diagnostics = []
   let packageJson

@@ -2,4 +2,4 @@
 "@weapp-vite/vscode": patch
 ---
 
-修复 VS Code 扩展对 `package.json` 的 weapp-vite 常用脚本诊断误报。现在只有当当前目录同时具备 weapp-vite 的包级信号，并且能结合 `vite.config.*` 或 `app.json` 确认为真实 weapp-vite 项目时，才会提示补齐 `dev/build/generate/open` 等常用脚本，避免 monorepo 中普通包或工具包被无差别提示。
+改进 VS Code 扩展的 weapp-vite 项目体验：修复 `package.json` 常用脚本诊断误报，只在能确认当前目录确实是 weapp-vite 项目时才提示补齐脚本；同时把 `Generate` 改为扩展内置的页面 / 组件 `.vue` 骨架生成能力，不再依赖 `wv` CLI，并新增资源管理器目录右键创建页面 / 组件入口。

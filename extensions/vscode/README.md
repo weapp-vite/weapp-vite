@@ -2,7 +2,7 @@
 
 面向 `weapp-vite` 项目的 VS Code 官方扩展。
 
-它把日常高频动作直接放进编辑器里：识别项目、展示状态栏入口、执行 `dev/build/generate/open`、补齐常用脚本、增强 `vite.config.*` / `package.json` / `.vue` 的编辑体验，并为 weapp-vite 的 `<json>` 自定义块提供语法高亮与代码片段。
+它把日常高频动作直接放进编辑器里：识别项目、展示状态栏入口、执行 `dev/build/open`、内置生成页面/组件、补齐常用脚本、增强 `vite.config.*` / `package.json` / `.vue` 的编辑体验，并为 weapp-vite 的 `<json>` 自定义块提供语法高亮与代码片段。
 
 ## 官方入口
 
@@ -21,7 +21,8 @@
 
 - `.vue` 文件中 weapp-vite `<json>` 自定义块的语法高亮
 - 识别到 weapp-vite 工作区后的状态栏入口
-- `dev` / `build` / `generate` / `open` / `info` 等常用工作区命令
+- `dev` / `build` / `open` / `info` 等常用工作区命令
+- 内置 `generate` 页面 / 组件骨架，不依赖 `wv` CLI
 - `<json>` 块和 `defineConfig` 的代码片段
 - 面向 `package.json`、`vite.config.*`、`.vue` 的代码操作
 - 对常用脚本缺失情况的轻量 `package.json` 诊断
@@ -90,8 +91,9 @@
 
 扩展会按以下顺序解析命令：
 
-1. 优先使用匹配的 `package.json` scripts，例如 `dev`、`build`、`open`、`generate`、`g`、`doctor`、`info`
+1. `dev` / `build` / `open` / `doctor` 优先使用匹配的 `package.json` scripts，例如 `dev`、`build`、`open`、`doctor`、`info`
 2. 如果未命中，则回退到 `wv <command>`
+3. `generate` 为扩展内置能力，直接生成页面 / 组件 `.vue` 骨架，不依赖 CLI
 
 终端工作目录会优先取当前活动编辑器所在的工作区目录，否则取第一个打开的工作区目录。
 
@@ -109,6 +111,7 @@
 - 在 `.vue` 中执行 `weapp-vite: Insert definePageJson Template`，快速插入页面配置骨架
 - 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
+- 在资源管理器中右键目录或文件，可直接执行 `Create Page Here` / `Create Component Here`
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
 - Explorer 侧边栏新增 `weapp-vite Pages` 视图，按顶层页面、分包页面、未声明页面分组浏览项目页面结构
 - 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`

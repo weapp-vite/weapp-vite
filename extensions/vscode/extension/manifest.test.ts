@@ -30,6 +30,8 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.insertCommonScripts',
     'weapp-vite.createPageFromRoute',
     'weapp-vite.createPageFromTreeItem',
+    'weapp-vite.generatePageInExplorer',
+    'weapp-vite.generateComponentInExplorer',
     'weapp-vite.openPageFromRoute',
     'weapp-vite.addCurrentPageToAppJson',
     'weapp-vite.addPageToAppJsonFromTreeItem',
@@ -147,6 +149,28 @@ it('manifest exposes current-page explorer quick actions', () => {
       && item.group === 'inline'
       && item.when.includes('weappPage.unregistered.current')
       && item.when.includes('weappPage.unregistered.drift.current'),
+    ),
+    true,
+  )
+})
+
+it('manifest exposes explorer context generate actions', () => {
+  const explorerMenus = packageJson.contributes.menus['explorer/context']
+
+  assert.equal(
+    explorerMenus.some(item =>
+      item.command === 'weapp-vite.generatePageInExplorer'
+      && item.group === '2_weapp-vite@1'
+      && item.when === 'resourceScheme == file',
+    ),
+    true,
+  )
+
+  assert.equal(
+    explorerMenus.some(item =>
+      item.command === 'weapp-vite.generateComponentInExplorer'
+      && item.group === '2_weapp-vite@2'
+      && item.when === 'resourceScheme == file',
     ),
     true,
   )

@@ -656,6 +656,15 @@ export async function showCommandPalette(state: any) {
   }
 
   const items = Object.values(COMMAND_DEFINITIONS).map((commandDefinition) => {
+    if (commandDefinition.id === 'generate') {
+      return {
+        label: '$(sparkle) 生成页面 / 组件',
+        description: '内置生成 .vue 页面与组件骨架',
+        detail: '根据当前目录或默认目录创建页面 / 组件，不依赖 weapp-vite CLI。',
+        commandId: commandDefinition.id,
+      }
+    }
+
     const resolved = resolveCommand(context, commandDefinition)
 
     return {
@@ -735,6 +744,13 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'openProjectFile') {
     await openProjectFile(state)
+    return
+  }
+
+  if (selected.commandId === 'generate') {
+    const { showGeneratePicker } = await import('./generate.js')
+
+    await showGeneratePicker(state)
     return
   }
 

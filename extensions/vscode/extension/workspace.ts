@@ -192,7 +192,7 @@ export async function getWeappViteProjectSignals(folderPath: string, packageJson
   }
 }
 
-async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
+export async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
   if (!workspaceFolder) {
     return null
   }
@@ -301,6 +301,43 @@ export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFol
     packageSignals: projectSignals.packageSignals,
     fileSignals: projectSignals.fileSignals,
   }
+}
+
+export async function findNearestWeappViteProjectWorkspaceFolder(startPath: string) {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(startPath)) ?? getPrimaryWorkspaceFolder()
+
+  if (!workspaceFolder) {
+    return null
+  }
+
+  const workspaceRoot = workspaceFolder.uri.fsPath
+  let currentPath = startPath
+
+  while (currentPath.startsWith(workspaceRoot)) {
+    const signals = await getWeappViteProjectSignals(currentPath)
+
+    if (signals.isConfirmedWeappViteProject) {
+      return {
+        ...workspaceFolder,
+        name: path.basename(currentPath),
+        uri: vscode.Uri.file(currentPath),
+      }
+    }
+
+    if (currentPath === workspaceRoot) {
+      break
+    }
+
+    const parentPath = path.dirname(currentPath)
+
+    if (parentPath === currentPath) {
+      break
+    }
+
+    currentPath = parentPath
+  }
+
+  return null
 }
 
 export async function getProjectNavigationItems(workspaceFolder = getPrimaryWorkspaceFolder()) {

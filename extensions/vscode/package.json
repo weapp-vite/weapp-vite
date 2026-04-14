@@ -71,6 +71,8 @@
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
     "onCommand:weapp-vite.createPageFromTreeItem",
+    "onCommand:weapp-vite.generatePageInExplorer",
+    "onCommand:weapp-vite.generateComponentInExplorer",
     "onCommand:weapp-vite.openPageFromRoute",
     "onCommand:weapp-vite.addCurrentPageToAppJson",
     "onCommand:weapp-vite.addPageToAppJsonFromTreeItem",
@@ -169,6 +171,16 @@
       {
         "command": "weapp-vite.createPageFromTreeItem",
         "title": "Create Page From Explorer Item",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.generatePageInExplorer",
+        "title": "Create Page Here",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.generateComponentInExplorer",
+        "title": "Create Component Here",
         "category": "weapp-vite"
       },
       {
@@ -446,6 +458,16 @@
         {
           "command": "weapp-vite.runAction",
           "group": "navigation",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.generatePageInExplorer",
+          "group": "2_weapp-vite@1",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.generateComponentInExplorer",
+          "group": "2_weapp-vite@2",
           "when": "resourceScheme == file"
         }
       ],
