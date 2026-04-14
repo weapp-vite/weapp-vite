@@ -1,0 +1,15 @@
+{
+  "iconDefinitions": {
+    "_weappViteConfig": {
+      "iconPath": "./logo.svg"
+    }
+  },
+  "fileNames": {
+    "weapp-vite.config.ts": "_weappViteConfig",
+    "weapp-vite.config.mts": "_weappViteConfig",
+    "weapp-vite.config.cts": "_weappViteConfig",
+    "weapp-vite.config.js": "_weappViteConfig",
+    "weapp-vite.config.mjs": "_weappViteConfig",
+    "weapp-vite.config.cjs": "_weappViteConfig"
+  }
+}

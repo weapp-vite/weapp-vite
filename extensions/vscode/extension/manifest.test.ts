@@ -63,6 +63,16 @@ it('manifest keeps publish-safe file whitelist', () => {
   ].sort())
 })
 
+it('manifest contributes weapp-vite file icon theme for dedicated config files', () => {
+  assert.deepEqual(packageJson.contributes.iconThemes, [
+    {
+      id: 'weapp-vite-file-icons',
+      label: 'weapp-vite File Icons',
+      path: './assets/weapp-vite-icon-theme.json',
+    },
+  ])
+})
+
 it('manifest exposes local verification scripts', () => {
   assert.equal(packageJson.scripts.build, 'pnpm exec tsdown --config tsdown.config.mts')
   assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts')

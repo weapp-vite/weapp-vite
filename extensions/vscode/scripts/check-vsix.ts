@@ -23,6 +23,8 @@ const requiredEntries = [
   'extension/changelog.md',
   'extension/readme.md',
   'extension/assets/logo.png',
+  'extension/assets/logo.svg',
+  'extension/assets/weapp-vite-icon-theme.json',
   'extension/dist/extension.js',
   'extension/package.json',
   'extension/snippets/weapp-vite.code-snippets',

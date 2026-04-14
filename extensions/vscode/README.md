@@ -149,6 +149,7 @@
 - 悬浮到常用脚本项、`defineConfig`、`generate` 或 `<json>` 块时，可看到轻量提示
 - 在 `package.json` 中，补全会建议常用 script key 和 `wv` 命令值
 - 在 `vite.config.*` 中，补全会建议 `defineConfig` 以及 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
+- 扩展内置 `weapp-vite File Icons` 文件图标主题，可为 `weapp-vite.config.*` 显示 weapp-vite logo；如果你当前使用的是其他第三方 icon theme，Explorer 仍会按该主题自己的规则显示图标
 
 ## 配置项
 

@@ -42,6 +42,8 @@ it('package output keeps runtime entry files on disk', () => {
     'scripts/smoke-test.ts',
     'scripts/vscode-host-smoke.ts',
     'scripts/vscode-host-smoke-runner.cjs',
+    'assets/logo.svg',
+    'assets/weapp-vite-icon-theme.json',
     'scripts/fixtures/vscode-host-smoke/package.json',
     'scripts/fixtures/vscode-host-smoke/vite.config.ts',
     'scripts/fixtures/vscode-host-smoke/src/app.json',
