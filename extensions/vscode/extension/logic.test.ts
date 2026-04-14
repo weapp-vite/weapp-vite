@@ -4,11 +4,13 @@ import { it } from 'vitest'
 import {
   applyPageRouteToAppJson,
   applySuggestedScripts,
+  applyTextReplacements,
   getAppJsonRouteCompletionContext,
   getAppJsonRouteInsertText,
   getCurrentPageRunActionItems,
   getDefinePageJsonCompletionContext,
   getMissingCommonScripts,
+  getMovedUsingComponentPath,
   getSuggestedScripts,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
@@ -464,6 +466,34 @@ it('finds usingComponents reference at offset', () => {
     valueStart,
     valueEnd: valueStart + componentPath.length,
   })
+})
+
+it('preserves rooted usingComponents paths when target file moves', () => {
+  assert.equal(getMovedUsingComponentPath(
+    '/components/card/user/index',
+    '/workspace/src/pages/home/index.vue',
+    '/workspace/src/app.json',
+    '/workspace/src/components/profile/card/index.vue',
+  ), '/components/profile/card/index')
+})
+
+it('preserves relative usingComponents paths when target file moves', () => {
+  assert.equal(getMovedUsingComponentPath(
+    './components/avatar/index',
+    '/workspace/src/pages/home/index.vue',
+    '/workspace/src/app.json',
+    '/workspace/src/pages/home/widgets/avatar/index.vue',
+  ), './widgets/avatar/index')
+})
+
+it('applies multiple text replacements from back to front', () => {
+  assert.equal(applyTextReplacements(
+    'alpha beta gamma',
+    [
+      { start: 6, end: 10, text: 'BETA' },
+      { start: 11, end: 16, text: 'GAMMA' },
+    ],
+  ), 'alpha BETA GAMMA')
 })
 
 it('prioritizes declared current page run actions', () => {

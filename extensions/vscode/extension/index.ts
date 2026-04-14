@@ -80,6 +80,7 @@ import {
   getMissingVueUsingComponents,
   getProjectAppJsonPath,
   getProjectContext,
+  getVueTextsWithMovedUsingComponentPath,
   isAppJsonDocument,
   isPackageJsonDocument,
   isVueDocument,
@@ -255,6 +256,26 @@ async function syncRenamedPageRoute(file: { oldUri: any, newUri: any }) {
   }
 
   await writeTextFile(appJsonUpdate.appJsonPath, appJsonUpdate.nextText)
+  return true
+}
+
+async function syncRenamedUsingComponentPaths(file: { oldUri: any, newUri: any }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.newUri.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const updates = await getVueTextsWithMovedUsingComponentPath(projectFolder, file.oldUri.fsPath, file.newUri.fsPath)
+
+  if (updates.length === 0) {
+    return false
+  }
+
+  for (const update of updates) {
+    await writeTextFile(update.filePath, update.nextText)
+  }
+
   return true
 }
 
@@ -491,6 +512,7 @@ export function activate(context: any) {
 
         for (const file of event.files) {
           didSyncAnyRoute = await syncRenamedPageRoute(file) || didSyncAnyRoute
+          didSyncAnyRoute = await syncRenamedUsingComponentPaths(file) || didSyncAnyRoute
         }
 
         if (!didSyncAnyRoute) {

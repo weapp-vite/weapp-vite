@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {
   COMMON_SCRIPT_NAMES,
   SCRIPT_COMMAND_SUGGESTIONS,
@@ -43,6 +45,12 @@ export interface VueUsingComponentReference {
   path: string
   valueEnd: number
   valueStart: number
+}
+
+interface TextReplacement {
+  end: number
+  start: number
+  text: string
 }
 
 export function getSuggestedScripts(preferWvAlias = true) {
@@ -304,6 +312,56 @@ export function getVueJsonUsingComponentReferenceAtOffset(documentText: string, 
   return getVueJsonUsingComponentReferences(documentText).find((reference) => {
     return offset >= reference.valueStart && offset <= reference.valueEnd
   }) ?? null
+}
+
+export function getMovedUsingComponentPath(
+  originalPath: string,
+  documentPath: string,
+  appJsonPath: string | null,
+  targetFilePath: string,
+) {
+  const normalizedOriginalPath = originalPath.trim().replace(/\\/gu, '/')
+  const targetExtension = path.extname(targetFilePath)
+  const targetPathWithoutExtension = targetExtension
+    ? targetFilePath.slice(0, -targetExtension.length)
+    : targetFilePath
+
+  if (!normalizedOriginalPath || !targetPathWithoutExtension) {
+    return null
+  }
+
+  if (normalizedOriginalPath.startsWith('.')) {
+    const relativePath = path.relative(path.dirname(documentPath), targetPathWithoutExtension).split(path.sep).join('/')
+
+    if (!relativePath) {
+      return './'
+    }
+
+    return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+  }
+
+  const basePath = path.dirname(appJsonPath ?? documentPath)
+  const resolvedPath = path.relative(basePath, targetPathWithoutExtension).split(path.sep).join('/').replace(/^\/+/u, '')
+
+  if (!resolvedPath) {
+    return normalizedOriginalPath.startsWith('/') ? '/' : ''
+  }
+
+  return normalizedOriginalPath.startsWith('/') ? `/${resolvedPath}` : resolvedPath
+}
+
+export function applyTextReplacements(documentText: string, replacements: TextReplacement[]) {
+  if (replacements.length === 0) {
+    return null
+  }
+
+  let nextText = documentText
+
+  for (const replacement of [...replacements].sort((left, right) => right.start - left.start)) {
+    nextText = `${nextText.slice(0, replacement.start)}${replacement.text}${nextText.slice(replacement.end)}`
+  }
+
+  return nextText === documentText ? null : nextText
 }
 
 export function getCurrentPageRunActionItems(

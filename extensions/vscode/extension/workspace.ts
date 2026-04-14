@@ -11,6 +11,8 @@ import {
 } from './constants'
 import {
   applyPageRouteToAppJson,
+  applyTextReplacements,
+  getMovedUsingComponentPath,
   getVueJsonUsingComponentReferenceAtOffset,
   getVueJsonUsingComponentReferences,
   movePageRouteInAppJson,
@@ -682,6 +684,64 @@ export async function getVueUsingComponentFileTarget(document: any, componentPat
   }
 
   return status.candidatePaths[0]
+}
+
+export async function getVueTextsWithMovedUsingComponentPath(
+  workspaceFolder: any,
+  oldFilePath: string,
+  newFilePath: string,
+) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
+  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const updates = []
+
+  for (const file of vueFiles) {
+    const documentText = await readTextFile(file.fsPath)
+
+    if (typeof documentText !== 'string') {
+      continue
+    }
+
+    const replacements = []
+
+    for (const reference of getVueJsonUsingComponentReferences(documentText)) {
+      if (!isLocalUsingComponentPath(reference.path)) {
+        continue
+      }
+
+      const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+
+      if (!candidatePaths.includes(oldFilePath)) {
+        continue
+      }
+
+      const nextPath = getMovedUsingComponentPath(reference.path, file.fsPath, appJsonPath, newFilePath)
+
+      if (!nextPath || nextPath === reference.path) {
+        continue
+      }
+
+      replacements.push({
+        start: reference.valueStart,
+        end: reference.valueEnd,
+        text: nextPath,
+      })
+    }
+
+    const nextText = applyTextReplacements(documentText, replacements)
+
+    if (!nextText) {
+      continue
+    }
+
+    updates.push({
+      filePath: file.fsPath,
+      nextText,
+    })
+  }
+
+  return updates
 }
 
 export async function resolveCurrentPageRoute(document = vscode.window.activeTextEditor?.document) {
