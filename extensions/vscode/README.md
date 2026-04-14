@@ -208,5 +208,5 @@ pnpm --dir extensions/vscode run check:vsix
 
 ## 发布
 
-扩展版本现在通过 changeset 驱动，合并 release PR 后会在仓库统一的 `release.yml` 中自动发布到 VS Code Marketplace。
+扩展版本现在通过 changeset 驱动，合并 release PR 后会在仓库统一的 `release.yml` 中自动查询 VS Code Marketplace 当前线上版本；只要仓库中的扩展版本高于线上版本，且对应发布 tag 尚不存在，就会自动发布到 Marketplace。
 详见 `extensions/vscode/PUBLISHING.md`。
