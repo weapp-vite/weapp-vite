@@ -352,6 +352,64 @@ describe('request globals runtime', () => {
     expect(searchParams.toString()).toBe('variables=%7B%22ok%22%3Atrue%7D')
   })
 
+  it('keeps directly imported web-apis polyfills interoperable', async () => {
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      options.success?.({
+        data: 'ok',
+        statusCode: 200,
+        header: {
+          'content-type': 'text/plain;charset=UTF-8',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const {
+      RequestPolyfill,
+      ResponsePolyfill,
+      TextDecoderPolyfill,
+      TextEncoderPolyfill,
+      URLPolyfill,
+      fetch: requestGlobalsFetch,
+    } = await import('../src')
+
+    const request = new RequestPolyfill(
+      new URLPolyfill('/polyfill', 'https://request-globals.invalid'),
+      {
+        body: 'payload',
+        method: 'POST',
+      },
+    )
+    expect(request.url).toBe('https://request-globals.invalid/polyfill')
+    expect(request.body).toBeNull()
+    expect(Object.hasOwn(request, 'body')).toBe(false)
+    expect(Object.hasOwn(request, 'bodyUsed')).toBe(false)
+    expect(request.bodyUsed).toBe(false)
+    expect(await request.text()).toBe('payload')
+    expect(request.bodyUsed).toBe(true)
+
+    const response = new ResponsePolyfill('123')
+    expect(response.body).toBeNull()
+    expect(Object.hasOwn(response, 'body')).toBe(false)
+    expect(Object.hasOwn(response, 'bodyUsed')).toBe(false)
+    expect(Object.keys(response)).not.toContain('body')
+    expect(Object.keys(response)).not.toContain('bodyValue')
+    expect(await response.text()).toBe('123')
+
+    const fetchResponse = await requestGlobalsFetch(
+      new URLPolyfill('/polyfill', 'https://request-globals.invalid'),
+    )
+    expect(wpiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://request-globals.invalid/polyfill',
+    }))
+    expect(await fetchResponse.text()).toBe('ok')
+
+    const bytes = new TextEncoderPolyfill().encode('你好, issue-459')
+    expect(new TextDecoderPolyfill().decode(bytes)).toBe('你好, issue-459')
+  })
+
   it('installs the next batch of web runtime globals with stable behavior', async () => {
     setGlobalValue('performance', undefined)
     setGlobalValue('crypto', undefined)

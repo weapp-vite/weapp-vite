@@ -375,6 +375,8 @@ export {
   RequestGlobalsEventTarget,
   RequestPolyfill,
   ResponsePolyfill,
+  TextDecoderPolyfill,
+  TextEncoderPolyfill,
   URLPolyfill,
   URLSearchParamsPolyfill,
   WebSocketPolyfill,

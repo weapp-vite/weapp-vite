@@ -1,4 +1,5 @@
 import { wpi } from '@wevu/api'
+import { resolveUrlConstructor as resolveHostUrlConstructor, resolveTextEncoderConstructor } from './constructors'
 import { cloneArrayBuffer, cloneArrayBufferView, RequestGlobalsEventTarget } from './shared'
 import { URLPolyfill } from './url'
 import { BlobPolyfill } from './web'
@@ -45,8 +46,9 @@ function createDomLikeError(name: string, message: string) {
 }
 
 function encodeReasonLength(reason: string) {
-  if (typeof TextEncoder === 'function') {
-    return new TextEncoder().encode(reason).byteLength
+  const TextEncoderConstructor = resolveTextEncoderConstructor()
+  if (TextEncoderConstructor) {
+    return new TextEncoderConstructor().encode(reason).byteLength
   }
   return unescape(encodeURIComponent(reason)).length
 }
@@ -73,7 +75,7 @@ function normalizeCloseReason(reason?: string) {
 }
 
 function resolveUrlConstructor() {
-  return typeof URL === 'function' ? URL : URLPolyfill
+  return resolveHostUrlConstructor() ?? URLPolyfill
 }
 
 function normalizeProtocols(protocols?: string | string[]) {

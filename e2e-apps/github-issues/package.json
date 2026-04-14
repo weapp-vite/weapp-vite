@@ -10,6 +10,7 @@
     "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
+    "@wevu/web-apis": "workspace:*",
     "camelcase": "^9.0.0",
     "dayjs": "catalog:",
     "merge": "catalog:",

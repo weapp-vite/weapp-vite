@@ -1,3 +1,5 @@
+import { resolveTextDecoderConstructor, resolveTextEncoderConstructor } from './constructors'
+
 export interface RequestGlobalsEventLike {
   type: string
   target?: unknown
@@ -119,8 +121,9 @@ export function encodeTextFallback(value: string) {
 }
 
 export function encodeText(value: string) {
-  if (typeof TextEncoder === 'function') {
-    return new TextEncoder().encode(value).buffer
+  const TextEncoderConstructor = resolveTextEncoderConstructor()
+  if (TextEncoderConstructor) {
+    return new TextEncoderConstructor().encode(value).buffer
   }
   return encodeTextFallback(value)
 }
@@ -140,8 +143,9 @@ export function decodeTextFallback(value: ArrayBuffer) {
 }
 
 export function decodeText(value: ArrayBuffer) {
-  if (typeof TextDecoder === 'function') {
-    return new TextDecoder().decode(value)
+  const TextDecoderConstructor = resolveTextDecoderConstructor()
+  if (TextDecoderConstructor) {
+    return new TextDecoderConstructor().decode(value)
   }
   return decodeTextFallback(value)
 }

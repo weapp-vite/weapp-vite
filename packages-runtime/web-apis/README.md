@@ -108,6 +108,7 @@ socket.onclose = (event) => {
 | `installAbortGlobals`                                      | 仅安装 `AbortController` / `AbortSignal`        |
 | `fetch`                                                    | 基于小程序请求能力适配的 `fetch` 实现           |
 | `HeadersPolyfill` / `RequestPolyfill` / `ResponsePolyfill` | HTTP 相关兼容类                                 |
+| `TextEncoderPolyfill` / `TextDecoderPolyfill`              | 文本编解码兼容类                                |
 | `URLPolyfill` / `URLSearchParamsPolyfill`                  | URL 相关兼容类                                  |
 | `WebSocketPolyfill`                                        | 基于小程序 `SocketTask` 的 `WebSocket` 兼容实现 |
 | `XMLHttpRequestPolyfill`                                   | XHR 兼容实现                                    |

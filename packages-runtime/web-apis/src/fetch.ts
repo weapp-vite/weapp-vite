@@ -1,4 +1,6 @@
+import type { URLPolyfill } from './url'
 import { wpi } from '@wevu/api'
+import { isUrlInstance, isUrlSearchParamsInstance } from './constructors'
 import { HeadersPolyfill, ResponsePolyfill } from './http'
 import { cloneArrayBuffer, cloneArrayBufferView, normalizeHeaderName } from './shared'
 
@@ -28,7 +30,7 @@ export interface RequestGlobalsFetchInit {
   [key: string]: unknown
 }
 
-type RequestGlobalsFetchInput = string | URL | RequestLikeInput
+type RequestGlobalsFetchInput = string | URL | URLPolyfill | RequestLikeInput
 type MiniProgramRequestMethod = NonNullable<WechatMiniprogram.RequestOption['method']>
 
 const REQUEST_METHODS: ReadonlyArray<MiniProgramRequestMethod> = [
@@ -46,10 +48,6 @@ const hasOwn = Object.prototype.hasOwnProperty
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
-}
-
-function isNativeUrlInstance(value: unknown): value is URL {
-  return typeof URL !== 'undefined' && value instanceof URL
 }
 
 function createAbortError() {
@@ -161,7 +159,7 @@ async function normalizeRequestBody(body: unknown, headers: HeaderMap) {
     }
     return body
   }
-  if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) {
+  if (isUrlSearchParamsInstance(body)) {
     if (!hasHeader(headers, 'content-type')) {
       headers['content-type'] = 'application/x-www-form-urlencoded;charset=UTF-8'
     }
@@ -189,7 +187,7 @@ async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: Request
   const requestInput = isRequestLikeInput(input) ? input : undefined
   const url = typeof input === 'string'
     ? input
-    : isNativeUrlInstance(input)
+    : isUrlInstance(input)
       ? input.toString()
       : requestInput?.url
 

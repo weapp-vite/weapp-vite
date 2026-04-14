@@ -1,3 +1,5 @@
+import type { URLPolyfill } from './url'
+import { isUrlInstance } from './constructors'
 import {
   cloneArrayBuffer,
   cloneArrayBufferView,
@@ -15,10 +17,6 @@ function isIterableHeaders(input: unknown): input is Iterable<HeaderTuple> {
 
 function isHeaderObject(input: unknown): input is Record<string, unknown> {
   return typeof input === 'object' && input !== null
-}
-
-function isNativeUrlInstance(value: unknown): value is URL {
-  return typeof URL !== 'undefined' && value instanceof URL
 }
 
 export class HeadersPolyfill {
@@ -102,6 +100,10 @@ export class HeadersPolyfill {
 }
 
 type RequestBodyLike = string | ArrayBuffer | ArrayBufferView | Blob | null | undefined
+const requestBodyStore = new WeakMap<RequestPolyfill, RequestBodyLike>()
+const requestBodyUsedStore = new WeakMap<RequestPolyfill, boolean>()
+const responseBodyStore = new WeakMap<ResponsePolyfill, RequestBodyLike>()
+const responseBodyUsedStore = new WeakMap<ResponsePolyfill, boolean>()
 
 function normalizeBody(body: unknown): RequestBodyLike {
   if (body == null || typeof body === 'string' || body instanceof ArrayBuffer || ArrayBuffer.isView(body)) {
@@ -140,36 +142,51 @@ async function readBodyAsText(body: RequestBodyLike) {
   return decodeText(buffer)
 }
 
+function getRequestBodyValue(request?: RequestPolyfill) {
+  return request ? requestBodyStore.get(request) : undefined
+}
+
+function getResponseBodyValue(response: ResponsePolyfill) {
+  return responseBodyStore.get(response)
+}
+
 export class RequestPolyfill {
   readonly url: string
   readonly method: string
   readonly headers: HeadersPolyfill
   readonly signal: AbortSignal | null
   readonly [Symbol.toStringTag] = 'Request'
-  private readonly bodyValue: RequestBodyLike
-  bodyUsed = false
 
-  constructor(input: string | URL | RequestPolyfill, init: Record<string, any> = {}) {
+  constructor(input: string | URL | URLPolyfill | RequestPolyfill, init: Record<string, any> = {}) {
     const request = input instanceof RequestPolyfill ? input : undefined
     this.url = typeof input === 'string'
       ? input
-      : isNativeUrlInstance(input)
+      : isUrlInstance(input)
         ? input.toString()
         : request?.url ?? ''
     this.method = String(init.method ?? request?.method ?? 'GET').toUpperCase()
     this.headers = new HeadersPolyfill(init.headers ?? request?.headers)
     this.signal = init.signal ?? request?.signal ?? null
-    this.bodyValue = normalizeBody(init.body ?? request?.bodyValue)
+    requestBodyStore.set(this, normalizeBody(init.body ?? getRequestBodyValue(request)))
+    requestBodyUsedStore.set(this, false)
+  }
+
+  get body(): ReadableStream<Uint8Array> | null {
+    return null
+  }
+
+  get bodyUsed() {
+    return requestBodyUsedStore.get(this) === true
   }
 
   async arrayBuffer() {
-    this.bodyUsed = true
-    return readBodyAsArrayBuffer(this.bodyValue)
+    requestBodyUsedStore.set(this, true)
+    return readBodyAsArrayBuffer(getRequestBodyValue(this))
   }
 
   async text() {
-    this.bodyUsed = true
-    return readBodyAsText(this.bodyValue)
+    requestBodyUsedStore.set(this, true)
+    return readBodyAsText(getRequestBodyValue(this))
   }
 
   clone() {
@@ -177,7 +194,7 @@ export class RequestPolyfill {
       method: this.method,
       headers: this.headers,
       signal: this.signal,
-      body: this.bodyValue,
+      body: getRequestBodyValue(this),
     })
   }
 }
@@ -190,13 +207,11 @@ export class ResponsePolyfill {
   readonly url: string
   readonly redirected = false
   readonly type: ResponseType = 'basic'
-  readonly body: ReadableStream<Uint8Array> | null = null
   readonly [Symbol.toStringTag] = 'Response'
-  private readonly bodyValue: RequestBodyLike
-  bodyUsed = false
 
   constructor(body?: RequestBodyLike, init: Record<string, any> = {}) {
-    this.bodyValue = normalizeBody(body)
+    responseBodyStore.set(this, normalizeBody(body))
+    responseBodyUsedStore.set(this, false)
     this.status = Number.isFinite(init.status) ? init.status : 200
     this.statusText = init.statusText ?? ''
     this.ok = this.status >= 200 && this.status < 300
@@ -204,9 +219,17 @@ export class ResponsePolyfill {
     this.url = init.url ?? ''
   }
 
+  get body(): ReadableStream<Uint8Array> | null {
+    return null
+  }
+
+  get bodyUsed() {
+    return responseBodyUsedStore.get(this) === true
+  }
+
   async arrayBuffer() {
-    this.bodyUsed = true
-    return readBodyAsArrayBuffer(this.bodyValue)
+    responseBodyUsedStore.set(this, true)
+    return readBodyAsArrayBuffer(getResponseBodyValue(this))
   }
 
   async blob() {
@@ -225,12 +248,12 @@ export class ResponsePolyfill {
   }
 
   async text() {
-    this.bodyUsed = true
-    return readBodyAsText(this.bodyValue)
+    responseBodyUsedStore.set(this, true)
+    return readBodyAsText(getResponseBodyValue(this))
   }
 
   clone() {
-    return new ResponsePolyfill(this.bodyValue, {
+    return new ResponsePolyfill(getResponseBodyValue(this), {
       status: this.status,
       statusText: this.statusText,
       headers: this.headers,

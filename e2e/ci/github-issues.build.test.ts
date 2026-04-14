@@ -187,6 +187,21 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('get CustomEvent(){return l}')
   })
 
+  it('issue #459: keeps directly imported web-apis polyfills interoperable in github-issues app', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-459/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-459/index.wxml')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-459 web-apis polyfill compatibility')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('`/abc`,`https://issue-459.invalid`')
+    expect(pageJs).toContain('`bodyValue`')
+    expect(pageJs).toContain('issue-459')
+  })
+
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {
     await runIssue393Build()
 
