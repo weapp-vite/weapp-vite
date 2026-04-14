@@ -114,6 +114,7 @@
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
 - 在资源管理器中右键目录或文件，可直接执行 `Create Page Here` / `Create Component Here`
 - 通过内置 `Generate` 创建页面后，可直接选择是否同步加入 `app.json`
+- `weapp-vite Pages` 标题栏支持一键把未注册页面批量同步进 `app.json`
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
 - Explorer 侧边栏新增 `weapp-vite Pages` 视图，按顶层页面、分包页面、未声明页面分组浏览项目页面结构
 - 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`

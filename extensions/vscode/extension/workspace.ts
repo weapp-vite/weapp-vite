@@ -726,6 +726,43 @@ export async function getAppJsonTextWithAddedSpecificRoute(appJsonPath: string, 
   }
 }
 
+export async function getAppJsonTextWithAddedRoutes(appJsonPath: string, routes: string[]) {
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || !Array.isArray(routes) || routes.length === 0) {
+    return null
+  }
+
+  let nextAppJson = appJson
+  const addedRoutes: string[] = []
+
+  for (const route of routes) {
+    if (typeof route !== 'string' || !route.trim()) {
+      continue
+    }
+
+    const normalizedRoute = normalizeRoute(route)
+    const result = applyPageRouteToAppJson(nextAppJson, normalizedRoute)
+
+    if (!result.changed) {
+      continue
+    }
+
+    nextAppJson = result.appJson
+    addedRoutes.push(normalizedRoute)
+  }
+
+  if (addedRoutes.length === 0) {
+    return null
+  }
+
+  return {
+    addedRoutes,
+    appJsonPath,
+    nextText: `${JSON.stringify(nextAppJson, null, 2)}\n`,
+  }
+}
+
 export function resolveCommand(
   context: { scripts: Record<string, string>, packageManager: string },
   commandDefinition: { id: string, scriptCandidates: string[], fallbackCommand: string },

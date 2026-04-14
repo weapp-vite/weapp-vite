@@ -33,6 +33,7 @@ import {
   getAppJsonRouteFileTargetFromPath,
   getAppJsonRouteLocation,
   getAppJsonTextWithAddedRoute,
+  getAppJsonTextWithAddedRoutes,
   getAppJsonTextWithAddedSpecificRoute,
   getCurrentPageRouteCandidate,
   getCurrentPageRouteLocation,
@@ -40,6 +41,7 @@ import {
   getPrimaryWorkspaceFolder,
   getProjectContext,
   getProjectNavigationItems,
+  getWeappPagesTreeSnapshot,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -562,6 +564,45 @@ export async function addPageToAppJsonFromTreeItem(item: any, state: any) {
   await vscode.window.showTextDocument(document, { preview: false })
 }
 
+export async function syncUnregisteredPagesToAppJson(state: any) {
+  const context = await ensureProjectContext('同步未注册页面')
+
+  if (!context) {
+    return
+  }
+
+  const snapshot = await getWeappPagesTreeSnapshot(context.workspaceFolder)
+
+  if (!snapshot || snapshot.unregisteredPages.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有未注册页面。')
+    return
+  }
+
+  const result = await getAppJsonTextWithAddedRoutes(
+    snapshot.appJsonPath,
+    snapshot.unregisteredPages.map(page => page.route),
+  )
+
+  if (!result) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有可写入 app.json 的未注册页面。')
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(getAppJsonDocumentUri(result.appJsonPath))
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+  const edit = new vscode.WorkspaceEdit()
+
+  edit.replace(document.uri, fullRange, result.nextText)
+  await vscode.workspace.applyEdit(edit)
+  await document.save()
+  state.getOutputChannel().appendLine(`[route] add-many ${result.addedRoutes.join(', ')}`)
+  void vscode.window.showInformationMessage(`weapp-vite: 已同步 ${result.addedRoutes.length} 个未注册页面到 app.json`)
+  await vscode.window.showTextDocument(document, { preview: false })
+}
+
 export async function revealPageRouteInAppJsonFromTreeItem(item: any, state: any) {
   const route = getTreePageNodeRoute(item)
   const appJsonPath = getTreePageNodeAppJsonPath(item)
@@ -697,6 +738,12 @@ export async function showCommandPalette(state: any) {
 
   const commonItems = [
     {
+      label: '$(diff-added) 同步未注册页面到 app.json',
+      description: '批量把文件系统中已存在但未声明的页面写入 app.json',
+      detail: '基于 weapp-vite Pages 视图的未注册页面扫描结果批量同步。',
+      commandId: 'syncUnregisteredPagesToAppJson',
+    },
+    {
       label: '$(go-to-file) 打开关键文件 / 页面',
       description: '快速打开 vite.config、app.json、package.json 和页面文件',
       detail: currentPage
@@ -744,6 +791,11 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'openProjectFile') {
     await openProjectFile(state)
+    return
+  }
+
+  if (selected.commandId === 'syncUnregisteredPagesToAppJson') {
+    await syncUnregisteredPagesToAppJson(state)
     return
   }
 

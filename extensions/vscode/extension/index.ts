@@ -26,6 +26,7 @@ import {
   syncDefinePageJsonTitleFromJson,
   syncJsonFromDefinePageJsonInTreeItem,
   syncJsonTitleFromDefinePageJson,
+  syncUnregisteredPagesToAppJson,
 } from './commands'
 import {
   isAppJsonDiagnosticsEnabled,
@@ -254,6 +255,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.filterCurrentPageInTree', () => applyPagesTreeFilter(pagesTreeProvider, pagesTreeView, 'current')),
     vscode.commands.registerCommand('weapp-vite.filterDriftPagesInTree', () => applyPagesTreeFilter(pagesTreeProvider, pagesTreeView, 'drift')),
     vscode.commands.registerCommand('weapp-vite.clearPagesTreeFilter', () => clearPagesTreeFilter(pagesTreeProvider, pagesTreeView)),
+    vscode.commands.registerCommand('weapp-vite.syncUnregisteredPagesToAppJson', () => syncUnregisteredPagesToAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.syncDefinePageJsonFromJsonInTreeItem', item => syncDefinePageJsonFromJsonInTreeItem(item)),
     vscode.commands.registerCommand('weapp-vite.syncJsonFromDefinePageJsonInTreeItem', item => syncJsonFromDefinePageJsonInTreeItem(item)),
