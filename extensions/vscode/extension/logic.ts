@@ -426,7 +426,7 @@ function cloneAppJsonForRouteMutation(appJson: Record<string, any>) {
   }
 }
 
-function removePageRouteFromAppJson(appJson: Record<string, any>, route: string) {
+export function removePageRouteFromAppJson(appJson: Record<string, any>, route: string) {
   const normalizedRoute = normalizeRoute(route)
   const nextAppJson = cloneAppJsonForRouteMutation(appJson)
   let changed = false

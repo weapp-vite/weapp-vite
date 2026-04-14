@@ -108,6 +108,9 @@ function createMockVscode() {
       onDidRenameFiles(handler) {
         return { dispose() {}, handler }
       },
+      onDidDeleteFiles(handler) {
+        return { dispose() {}, handler }
+      },
       applyEdit: async () => true,
       openTextDocument: async () => ({
         uri: { path: '/tmp/demo.ts' },

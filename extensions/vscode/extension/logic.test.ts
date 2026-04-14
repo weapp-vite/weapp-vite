@@ -16,6 +16,7 @@ import {
   isInsideDefinePageJson,
   isInsideVueJsonBlock,
   movePageRouteInAppJson,
+  removePageRouteFromAppJson,
   resolveCommandFromScripts,
 } from './logic'
 
@@ -175,6 +176,43 @@ it('does not duplicate an existing page route in app json', () => {
   const result = applyPageRouteToAppJson({
     pages: ['pages/home/index'],
   }, 'pages/home/index')
+
+  assert.equal(result.changed, false)
+  assert.deepEqual(result.appJson.pages, ['pages/home/index'])
+})
+
+it('removes a top level page route from app json', () => {
+  const result = removePageRouteFromAppJson({
+    pages: ['pages/home/index', 'pages/profile/index'],
+  }, 'pages/home/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.pages, ['pages/profile/index'])
+})
+
+it('removes a subpackage page route from app json', () => {
+  const result = removePageRouteFromAppJson({
+    subPackages: [
+      {
+        root: 'packageA',
+        pages: ['detail/index', 'list/index'],
+      },
+    ],
+  }, 'packageA/detail/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.subPackages, [
+    {
+      root: 'packageA',
+      pages: ['list/index'],
+    },
+  ])
+})
+
+it('does nothing when removing a route that is not declared', () => {
+  const result = removePageRouteFromAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/about/index')
 
   assert.equal(result.changed, false)
   assert.deepEqual(result.appJson.pages, ['pages/home/index'])

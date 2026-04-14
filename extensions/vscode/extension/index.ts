@@ -53,6 +53,7 @@ import {
   showGeneratePicker,
 } from './generate'
 import {
+  getPageFileCandidatePaths,
   getRouteFromPageFilePath,
 } from './navigation'
 import {
@@ -70,6 +71,7 @@ import {
 import {
   findNearestWeappViteProjectWorkspaceFolder,
   getAppJsonTextWithMovedRoute,
+  getAppJsonTextWithRemovedRoute,
   getCurrentPageRouteCandidate,
   getMissingAppJsonPageRoutes,
   getProjectAppJsonPath,
@@ -241,6 +243,50 @@ async function syncRenamedPageRoute(file: { oldUri: any, newUri: any }) {
   }
 
   const appJsonUpdate = await getAppJsonTextWithMovedRoute(appJsonPath, fromRoute, toRoute)
+
+  if (!appJsonUpdate) {
+    return false
+  }
+
+  await writeTextFile(appJsonUpdate.appJsonPath, appJsonUpdate.nextText)
+  return true
+}
+
+async function syncDeletedPageRoute(file: { fsPath: string }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const appJsonPath = await getProjectAppJsonPath(projectFolder)
+
+  if (!appJsonPath) {
+    return false
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  const relativePath = path.relative(appJsonDir, file.fsPath)
+  const route = getRouteFromPageFilePath(relativePath)
+
+  if (!route) {
+    return false
+  }
+
+  const siblingCandidates = getPageFileCandidatePaths(route)
+    .map(candidate => path.join(appJsonDir, candidate))
+    .filter(candidatePath => candidatePath !== file.fsPath)
+
+  for (const candidatePath of siblingCandidates) {
+    try {
+      await vscode.workspace.fs.stat(vscode.Uri.file(candidatePath))
+      return false
+    }
+    catch {
+    }
+  }
+
+  const appJsonUpdate = await getAppJsonTextWithRemovedRoute(appJsonPath, route)
 
   if (!appJsonUpdate) {
     return false
@@ -433,6 +479,29 @@ export function activate(context: any) {
 
         for (const file of event.files) {
           didSyncAnyRoute = await syncRenamedPageRoute(file) || didSyncAnyRoute
+        }
+
+        if (!didSyncAnyRoute) {
+          return
+        }
+
+        pagesTreeProvider.refresh()
+        void refreshStatusBar()
+
+        for (const document of vscode.workspace.textDocuments) {
+          void refreshAppJsonDiagnostics(document)
+          void refreshVuePageDiagnostics(document)
+        }
+
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+      })()
+    }),
+    vscode.workspace.onDidDeleteFiles((event) => {
+      void (async () => {
+        let didSyncAnyRoute = false
+
+        for (const file of event.files) {
+          didSyncAnyRoute = await syncDeletedPageRoute(file) || didSyncAnyRoute
         }
 
         if (!didSyncAnyRoute) {

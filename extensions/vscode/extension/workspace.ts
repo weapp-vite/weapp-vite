@@ -12,6 +12,7 @@ import {
 import {
   applyPageRouteToAppJson,
   movePageRouteInAppJson,
+  removePageRouteFromAppJson,
   resolveCommandFromScripts,
 } from './logic'
 import {
@@ -789,6 +790,27 @@ export async function getAppJsonTextWithMovedRoute(appJsonPath: string, fromRout
     fromRoute: normalizedFromRoute,
     nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
     toRoute: normalizedToRoute,
+  }
+}
+
+export async function getAppJsonTextWithRemovedRoute(appJsonPath: string, route: string) {
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof route !== 'string' || !route.trim()) {
+    return null
+  }
+
+  const normalizedRoute = normalizeRoute(route)
+  const result = removePageRouteFromAppJson(appJson, normalizedRoute)
+
+  if (!result.changed) {
+    return null
+  }
+
+  return {
+    appJsonPath,
+    nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
+    route: normalizedRoute,
   }
 }
 
