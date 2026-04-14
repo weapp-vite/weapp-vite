@@ -66,6 +66,22 @@ function resolveUsingComponentCandidatePaths(
   return getUsingComponentCandidatePaths(normalizedComponentPath).map(candidate => path.join(basePath, candidate))
 }
 
+function matchesMovedPath(candidatePath: string, originalPath: string) {
+  return candidatePath === originalPath || candidatePath.startsWith(`${originalPath}${path.sep}`)
+}
+
+function getMovedCandidatePath(candidatePath: string, originalPath: string, targetPath: string) {
+  if (!matchesMovedPath(candidatePath, originalPath)) {
+    return null
+  }
+
+  if (candidatePath === originalPath) {
+    return targetPath
+  }
+
+  return path.join(targetPath, candidatePath.slice(originalPath.length + 1))
+}
+
 function getSubpackageEntries(appJson: Record<string, any>) {
   return [
     ...(Array.isArray(appJson?.subPackages) ? appJson.subPackages : []),
@@ -712,12 +728,19 @@ export async function getVueTextsWithMovedUsingComponentPath(
       }
 
       const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+      const matchedCandidatePath = candidatePaths.find(candidatePath => matchesMovedPath(candidatePath, oldFilePath))
 
-      if (!candidatePaths.includes(oldFilePath)) {
+      if (!matchedCandidatePath) {
         continue
       }
 
-      const nextPath = getMovedUsingComponentPath(reference.path, file.fsPath, appJsonPath, newFilePath)
+      const movedCandidatePath = getMovedCandidatePath(matchedCandidatePath, oldFilePath, newFilePath)
+
+      if (!movedCandidatePath) {
+        continue
+      }
+
+      const nextPath = getMovedUsingComponentPath(reference.path, file.fsPath, appJsonPath, movedCandidatePath)
 
       if (!nextPath || nextPath === reference.path) {
         continue
@@ -769,12 +792,13 @@ export async function getVueTextsWithRemovedUsingComponentPath(
       }
 
       const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+      const matchedCandidatePaths = candidatePaths.filter(candidatePath => matchesMovedPath(candidatePath, deletedFilePath))
 
-      if (!candidatePaths.includes(deletedFilePath)) {
+      if (matchedCandidatePaths.length === 0) {
         continue
       }
 
-      const siblingCandidates = candidatePaths.filter(candidatePath => candidatePath !== deletedFilePath)
+      const siblingCandidates = candidatePaths.filter(candidatePath => !matchesMovedPath(candidatePath, deletedFilePath))
       let hasSiblingCandidate = false
 
       for (const siblingCandidate of siblingCandidates) {
