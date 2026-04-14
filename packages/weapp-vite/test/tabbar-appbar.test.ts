@@ -16,7 +16,6 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
     /exports\.async2/,
     /exports\.default/,
   ],
-  'common.js': [/__commonJS/, /module\.exports/],
   'components/Navbar/Navbar.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
     /\bComponent\(/,
@@ -28,34 +27,38 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'custom-tab-bar/index.js': [
     /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/common\.js["']\)/,
+    /require\(["']\.\.\/weapp-vendors\/wevu-defineProperty\.js["']\)/,
     /\bComponent\(/,
     /require\.async\(["']\.\.\/pages\/index\/async\.js["']\)/,
   ],
   'pages/index/async.js': [/exports\.async/, /exports\.default/],
   'pages/index/index.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/common\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js["']\)/,
     /\bPage\(/,
     /require\.async\(["']\.\/async["']\)/,
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/src-[^/"']+\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-src\.js["']\)\.\w+\(\{/,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/src-[^/"']+\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-src\.js["']\)\.\w+\(\{/,
   ],
-  'src-[hash].js': [
-    /require\(["']\.\/common\.js["']\)/,
+  'weapp-vendors/wevu-defineProperty.js': [
+    /__commonJS(?:Min)?/,
+    /module\.exports/,
+  ],
+  'weapp-vendors/wevu-src.js': [
+    /require\(["']\.\/wevu-defineProperty\.js["']\)/,
     /\bcreateWevuComponent\b/,
   ],
   'rolldown-runtime.js': [/Object\.defineProperty/],
 }
 
 function normalizeDistFile(file: string) {
-  return file.replace(/^src-[^/]+\.js$/, 'src-[hash].js')
+  return file
 }
 
 function assertJsContent(file: string, content: string) {
