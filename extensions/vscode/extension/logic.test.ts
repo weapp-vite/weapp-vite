@@ -12,6 +12,8 @@ import {
   getSuggestedScripts,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
+  getVueJsonUsingComponentReferenceAtOffset,
+  getVueJsonUsingComponentReferences,
   getVuePageConfigState,
   isInsideDefinePageJson,
   isInsideVueJsonBlock,
@@ -413,6 +415,54 @@ it('detects vue page config state from document text', () => {
   ].join('\n')), {
     hasDefinePageJson: true,
     hasJsonBlock: true,
+  })
+})
+
+it('collects usingComponents references from vue json block', () => {
+  assert.deepEqual(getVueJsonUsingComponentReferences([
+    '<template><view /></template>',
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index",',
+    '    "user-avatar": "./components/avatar/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n')).map(item => ({
+    name: item.name,
+    path: item.path,
+  })), [
+    {
+      name: 'card-user',
+      path: '/components/card/user/index',
+    },
+    {
+      name: 'user-avatar',
+      path: './components/avatar/index',
+    },
+  ])
+})
+
+it('finds usingComponents reference at offset', () => {
+  const documentText = [
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n')
+  const componentPath = '/components/card/user/index'
+  const valueStart = documentText.indexOf(componentPath)
+  const offset = valueStart + 5
+
+  assert.deepEqual(getVueJsonUsingComponentReferenceAtOffset(documentText, offset), {
+    name: 'card-user',
+    path: componentPath,
+    valueStart,
+    valueEnd: valueStart + componentPath.length,
   })
 })
 

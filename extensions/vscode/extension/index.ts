@@ -10,6 +10,7 @@ import {
   addPageToAppJsonFromTreeItem,
   copyCurrentPageRoute,
   copyPageRouteFromTreeItem,
+  createComponentFromUsingComponents,
   createPageFromRoute,
   createPageFromTreeItem,
   generateMissingPagesFromAppJson,
@@ -46,6 +47,7 @@ import {
   buildPackageJsonDiagnostics,
   buildVuePageConfigConsistencyDiagnostics,
   buildVuePageDiagnostics,
+  buildVueUsingComponentDiagnostics,
 } from './content'
 import {
   generateComponentInExplorer,
@@ -74,6 +76,7 @@ import {
   getAppJsonTextWithRemovedRoute,
   getCurrentPageRouteCandidate,
   getMissingAppJsonPageRoutes,
+  getMissingVueUsingComponents,
   getProjectAppJsonPath,
   getProjectContext,
   isAppJsonDocument,
@@ -133,9 +136,11 @@ async function refreshVuePageDiagnostics(document: any) {
   }
 
   const currentPageCandidate = await getCurrentPageRouteCandidate(document)
+  const missingUsingComponents = await getMissingVueUsingComponents(document)
   getDiagnostics().set(document.uri, [
     ...buildVuePageDiagnostics(currentPageCandidate),
     ...buildVuePageConfigConsistencyDiagnostics(document),
+    ...buildVueUsingComponentDiagnostics(document.getText(), missingUsingComponents),
   ])
 }
 
@@ -329,6 +334,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.syncJsonTitleFromDefinePageJson', document => syncJsonTitleFromDefinePageJson(document)),
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.createPageFromRoute', (document, route) => createPageFromRoute(document, route)),
+    vscode.commands.registerCommand('weapp-vite.createComponentFromUsingComponents', (document, componentPath) => createComponentFromUsingComponents(document, componentPath)),
     vscode.commands.registerCommand('weapp-vite.createPageFromTreeItem', item => createPageFromTreeItem(item)),
     vscode.commands.registerCommand('weapp-vite.generatePageInExplorer', resourceUri => generatePageInExplorer(resourceUri, state)),
     vscode.commands.registerCommand('weapp-vite.generateComponentInExplorer', resourceUri => generateComponentInExplorer(resourceUri, state)),

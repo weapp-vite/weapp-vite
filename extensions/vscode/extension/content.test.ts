@@ -65,6 +65,8 @@ it('builds app.json diagnostics for missing page routes', async () => {
     buildAppJsonDiagnostics,
     buildVuePageConfigConsistencyDiagnostics,
     buildVuePageDiagnostics,
+    buildVueUsingComponentDiagnostics,
+    getVueUsingComponentHover,
     getVuePageConfigDriftFields,
     getVuePageConfigConsistencyState,
     getVuePageTextWithSyncedDefinePageJsonFields,
@@ -95,6 +97,26 @@ it('builds app.json diagnostics for missing page routes', async () => {
     declared: true,
     route: 'pages/demo/index',
   }).length, 0)
+  assert.equal(buildVueUsingComponentDiagnostics([
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n'), [
+    {
+      path: '/components/card/user/index',
+      valueStart: 58,
+      valueEnd: 85,
+      candidatePaths: [
+        '/workspace/src/components/card/user/index.vue',
+        '/workspace/src/components/card/user/index.ts',
+      ],
+      workspacePath: '/workspace',
+    },
+  ])[0]?.message.includes('未找到 usingComponents 组件文件：/components/card/user/index'), true)
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -143,6 +165,16 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '}',
     '</json>',
   ].join('\n'))?.includes('navigationBarTitleText: \'Index\''), true)
+  assert.equal(getVueUsingComponentHover(
+    '/components/card/user/index',
+    '/workspace/src/components/card/user/index.vue',
+    [
+      '/workspace/src/components/card/user/index.vue',
+      '/workspace/src/components/card/user/index.ts',
+    ],
+    '/workspace',
+    true,
+  )?.value.includes('已找到组件文件：`src/components/card/user/index.vue`'), true)
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',

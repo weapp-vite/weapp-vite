@@ -335,6 +335,33 @@ export function buildVuePageDiagnostics(candidate: { declared: boolean, route: s
   return [diagnostic]
 }
 
+export function buildVueUsingComponentDiagnostics(documentText: string, references: Array<{
+  candidatePaths: string[]
+  path: string
+  valueEnd: number
+  valueStart: number
+  workspacePath: string
+}>) {
+  return references.map((reference) => {
+    const startPosition = getPositionFromOffset(documentText, reference.valueStart)
+    const endPosition = getPositionFromOffset(documentText, reference.valueEnd)
+    const relativeCandidates = reference.candidatePaths.map(candidate => path.relative(reference.workspacePath, candidate))
+    const diagnostic = new vscode.Diagnostic(
+      new vscode.Range(
+        startPosition.line,
+        startPosition.character,
+        endPosition.line,
+        endPosition.character,
+      ),
+      `未找到 usingComponents 组件文件：${reference.path}${relativeCandidates.length > 0 ? `（已尝试 ${relativeCandidates.map(candidate => `\`${candidate}\``).join(' / ')}）` : ''}`,
+      vscode.DiagnosticSeverity.Information,
+    )
+
+    diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
+    return diagnostic
+  })
+}
+
 export function buildVuePageConfigConsistencyDiagnostics(document: any) {
   const documentText = document.getText()
   const diagnostics = []
@@ -566,6 +593,46 @@ export function getAppJsonRouteHover(
     `当前 route：\`${route}\``,
     '',
     '未找到对应页面文件。',
+    '',
+    `已尝试：${relativeCandidates.map(candidate => `\`${candidate}\``).join('、')}`,
+  ].join('\n'))
+}
+
+export function getVueUsingComponentHover(
+  componentPath: string,
+  componentFilePath: string | null,
+  candidatePaths: string[],
+  workspacePath: string,
+  isLocal: boolean,
+) {
+  if (!isLocal) {
+    return new vscode.MarkdownString([
+      '**usingComponents 组件引用**',
+      '',
+      `当前路径：\`${componentPath}\``,
+      '',
+      '当前引用不是本地组件路径，扩展不会尝试解析到工作区文件。',
+    ].join('\n'))
+  }
+
+  const relativeCandidates = candidatePaths.map(candidate => path.relative(workspacePath, candidate))
+
+  if (componentFilePath) {
+    return new vscode.MarkdownString([
+      '**usingComponents 组件引用**',
+      '',
+      `当前路径：\`${componentPath}\``,
+      '',
+      `已找到组件文件：\`${path.relative(workspacePath, componentFilePath)}\``,
+    ].join('\n'))
+  }
+
+  return new vscode.MarkdownString([
+    '**usingComponents 组件引用**',
+    '',
+    `当前路径：\`${componentPath}\``,
+    '',
+    '未找到对应组件文件。',
     '',
     `已尝试：${relativeCandidates.map(candidate => `\`${candidate}\``).join('、')}`,
   ].join('\n'))

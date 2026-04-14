@@ -11,6 +11,8 @@ import {
 } from './constants'
 import {
   applyPageRouteToAppJson,
+  getVueJsonUsingComponentReferenceAtOffset,
+  getVueJsonUsingComponentReferences,
   movePageRouteInAppJson,
   removePageRouteFromAppJson,
   resolveCommandFromScripts,
@@ -26,6 +28,39 @@ import {
 
 function normalizeRoute(route: string) {
   return route.trim().replace(/^\/+|\/+$/g, '')
+}
+
+function isLocalUsingComponentPath(componentPath: string) {
+  return Boolean(componentPath.trim()) && !componentPath.includes('://')
+}
+
+function getUsingComponentCandidatePaths(componentPath: string) {
+  const normalizedPath = componentPath.trim().replace(/\\/gu, '/').replace(/\/+$/gu, '')
+
+  if (!normalizedPath) {
+    return []
+  }
+
+  return ['.vue', '.ts', '.js', '.wxml'].map(extension => path.normalize(`${normalizedPath}${extension}`))
+}
+
+function resolveUsingComponentCandidatePaths(
+  appJsonPath: string | null,
+  documentPath: string,
+  componentPath: string,
+) {
+  if (!isLocalUsingComponentPath(componentPath)) {
+    return []
+  }
+
+  const basePath = componentPath.startsWith('.')
+    ? path.dirname(documentPath)
+    : path.dirname(appJsonPath ?? documentPath)
+  const normalizedComponentPath = componentPath.startsWith('.')
+    ? componentPath
+    : componentPath.replace(/^\/+/u, '')
+
+  return getUsingComponentCandidatePaths(normalizedComponentPath).map(candidate => path.join(basePath, candidate))
 }
 
 function getSubpackageEntries(appJson: Record<string, any>) {
@@ -573,6 +608,80 @@ export async function getAppJsonRouteFileStatus(document: any, route: string) {
     candidatePaths,
     workspacePath,
   }
+}
+
+export async function getVueUsingComponentFileStatus(document: any, componentPath: string) {
+  if (!isVueDocument(document) || typeof componentPath !== 'string' || !componentPath.trim()) {
+    return null
+  }
+
+  if (!isLocalUsingComponentPath(componentPath)) {
+    return {
+      componentFilePath: null,
+      componentPath,
+      candidatePaths: [],
+      isLocal: false,
+      workspacePath: vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath ?? path.dirname(document.uri.fsPath),
+    }
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+  const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, document.uri.fsPath, componentPath)
+  const componentFilePath = await getExistingProjectFile(candidatePaths)
+  const workspacePath = workspaceFolder?.uri.fsPath ?? path.dirname(document.uri.fsPath)
+
+  return {
+    componentFilePath,
+    componentPath,
+    candidatePaths,
+    isLocal: true,
+    workspacePath,
+  }
+}
+
+export async function getMissingVueUsingComponents(document: any) {
+  if (!isVueDocument(document)) {
+    return []
+  }
+
+  const references = getVueJsonUsingComponentReferences(document.getText())
+  const missingReferences = []
+
+  for (const reference of references) {
+    const status = await getVueUsingComponentFileStatus(document, reference.path)
+
+    if (!status?.isLocal || status.componentFilePath) {
+      continue
+    }
+
+    missingReferences.push({
+      ...reference,
+      candidatePaths: status.candidatePaths,
+      workspacePath: status.workspacePath,
+    })
+  }
+
+  return missingReferences
+}
+
+export function getVueUsingComponentReferenceAtPosition(document: any, position: any) {
+  if (!isVueDocument(document)) {
+    return null
+  }
+
+  const offset = document.offsetAt(position)
+  return getVueJsonUsingComponentReferenceAtOffset(document.getText(), offset)
+}
+
+export async function getVueUsingComponentFileTarget(document: any, componentPath: string) {
+  const status = await getVueUsingComponentFileStatus(document, componentPath)
+
+  if (!status?.isLocal || status.candidatePaths.length === 0) {
+    return null
+  }
+
+  return status.candidatePaths[0]
 }
 
 export async function resolveCurrentPageRoute(document = vscode.window.activeTextEditor?.document) {

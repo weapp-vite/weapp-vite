@@ -20,6 +20,9 @@ const DEFINE_PAGE_JSON_PROPERTY_PREFIX_PATTERN = /^\s*[A-Za-z_$][\w$]*$/u
 const DEFINE_PAGE_JSON_VALUE_PREFIX_PATTERN = /^\s*([A-Za-z_$][\w$]*)\s*:\s*'[^']*$/u
 const DEFINE_PAGE_JSON_BOOLEAN_VALUE_PREFIX_PATTERN = /^\s*([A-Za-z_$][\w$]*)\s*:\s*[A-Za-z]*$/u
 const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
+const VUE_JSON_BLOCK_CONTENT_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>([\s\S]*?)<\/json>/gu
+const VUE_USING_COMPONENTS_OBJECT_PATTERN = /"usingComponents"\s*:\s*\{([\s\S]*?)\}/gu
+const JSON_STRING_ENTRY_PATTERN = /"([^"]+)"\s*:\s*"([^"]+)"/gu
 
 export interface RunActionQuickPickItem {
   label: string
@@ -33,6 +36,13 @@ export interface CurrentPageActionContext {
   declared: boolean
   hasDefinePageJson: boolean
   hasJsonBlock: boolean
+}
+
+export interface VueUsingComponentReference {
+  name: string
+  path: string
+  valueEnd: number
+  valueStart: number
 }
 
 export function getSuggestedScripts(preferWvAlias = true) {
@@ -241,6 +251,59 @@ export function getVuePageConfigState(documentText: string) {
     hasDefinePageJson: DEFINE_PAGE_JSON_PATTERN.test(documentText),
     hasJsonBlock: VUE_JSON_BLOCK_TAG_PATTERN.test(documentText),
   }
+}
+
+export function getVueJsonUsingComponentReferences(documentText: string): VueUsingComponentReference[] {
+  const references: VueUsingComponentReference[] = []
+
+  for (const blockMatch of documentText.matchAll(VUE_JSON_BLOCK_CONTENT_PATTERN)) {
+    const blockContent = blockMatch[1]
+    const blockIndex = blockMatch.index ?? -1
+
+    if (blockIndex < 0) {
+      continue
+    }
+
+    const blockContentStart = blockIndex + blockMatch[0].indexOf('>') + 1
+
+    for (const usingComponentsMatch of blockContent.matchAll(VUE_USING_COMPONENTS_OBJECT_PATTERN)) {
+      const objectContent = usingComponentsMatch[1]
+      const objectContentStart = blockContentStart + (usingComponentsMatch.index ?? 0) + usingComponentsMatch[0].lastIndexOf(objectContent)
+
+      for (const entryMatch of objectContent.matchAll(JSON_STRING_ENTRY_PATTERN)) {
+        const [fullMatch, name, componentPath] = entryMatch
+        const entryIndex = entryMatch.index ?? -1
+
+        if (entryIndex < 0) {
+          continue
+        }
+
+        const valueToken = `"${componentPath}"`
+        const valueTokenIndex = fullMatch.lastIndexOf(valueToken)
+
+        if (valueTokenIndex < 0) {
+          continue
+        }
+
+        const valueStart = objectContentStart + entryIndex + valueTokenIndex + 1
+
+        references.push({
+          name,
+          path: componentPath,
+          valueStart,
+          valueEnd: valueStart + componentPath.length,
+        })
+      }
+    }
+  }
+
+  return references
+}
+
+export function getVueJsonUsingComponentReferenceAtOffset(documentText: string, offset: number) {
+  return getVueJsonUsingComponentReferences(documentText).find((reference) => {
+    return offset >= reference.valueStart && offset <= reference.valueEnd
+  }) ?? null
 }
 
 export function getCurrentPageRunActionItems(

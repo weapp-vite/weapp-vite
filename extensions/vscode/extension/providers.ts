@@ -23,11 +23,13 @@ import {
   getVuePageTextWithSyncedDefinePageJsonField,
   getVuePageTextWithSyncedJsonField,
   getVuePageTitleConsistencyState,
+  getVueUsingComponentHover,
 } from './content'
 import {
   getDefinePageJsonCompletionContext,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
+  getVueJsonUsingComponentReferenceAtOffset,
   getVuePageConfigState,
 } from './logic'
 import {
@@ -38,6 +40,7 @@ import {
   getAppJsonPageRouteSuggestions,
   getAppJsonRouteFileStatus,
   getCurrentPageRouteCandidate,
+  getVueUsingComponentFileStatus,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -521,6 +524,28 @@ export class WeappViteCodeActionProvider {
 
       pushPageConfigSyncActions(actions, document, documentText, 'enablePullDownRefresh')
       pushPageConfigSyncActions(actions, document, documentText, 'navigationStyle')
+
+      const usingComponentReference = getVueJsonUsingComponentReferenceAtOffset(
+        documentText,
+        document.offsetAt(range.start),
+      )
+
+      if (usingComponentReference) {
+        const usingComponentStatus = await getVueUsingComponentFileStatus(document, usingComponentReference.path)
+
+        if (usingComponentStatus?.isLocal && !usingComponentStatus.componentFilePath) {
+          const createComponentAction = new vscode.CodeAction(
+            '创建缺失组件文件',
+            vscode.CodeActionKind.QuickFix,
+          )
+          createComponentAction.command = {
+            command: 'weapp-vite.createComponentFromUsingComponents',
+            title: '创建缺失组件文件',
+            arguments: [document, usingComponentReference.path],
+          }
+          actions.push(createComponentAction)
+        }
+      }
     }
 
     return actions
@@ -799,6 +824,27 @@ export class WeappViteHoverProvider {
     }
 
     if (isVueDocument(document)) {
+      const usingComponentReference = getVueJsonUsingComponentReferenceAtOffset(
+        document.getText(),
+        document.offsetAt(position),
+      )
+
+      if (usingComponentReference) {
+        return getVueUsingComponentFileStatus(document, usingComponentReference.path).then((status) => {
+          if (!status) {
+            return null
+          }
+
+          return new vscode.Hover(getVueUsingComponentHover(
+            status.componentPath,
+            status.componentFilePath,
+            status.candidatePaths,
+            status.workspacePath,
+            status.isLocal,
+          ))
+        })
+      }
+
       const markdown = getVueCustomBlockHover(lineText) ?? getVuePageConfigHover(wordText, lineText)
 
       if (markdown) {

@@ -146,6 +146,8 @@
 - 如果其中一侧缺少 `navigationBarTitleText`，同步 quick fix 也会自动补齐，而不只是覆盖已有值
 - `navigationStyle` 也会参与双写一致性检查，并提供双向同步 quick fix，减少页面配置漂移
 - `enablePullDownRefresh` 这类布尔页面字段现在也会做双写一致性诊断和双向同步
+- 在 `.vue` 的 `<json>` 里声明 `usingComponents` 时，扩展会解析本地组件路径，悬浮展示解析结果，并对缺失组件给出诊断
+- 当 `usingComponents` 指向的本地组件文件不存在时，可直接通过 quick fix 创建缺失组件文件，减少手动补目录和骨架
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
 - 在页面 `.vue` 的 `definePageJson({...})` 中也可补全常用页面字段，减少在脚本配置里手写键名

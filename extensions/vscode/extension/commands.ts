@@ -10,6 +10,7 @@ import {
   TERMINAL_NAME,
 } from './constants'
 import {
+  getComponentVueTemplate,
   getDefineConfigTemplate,
   getDefinePageJsonTemplate,
   getDocItems,
@@ -41,6 +42,7 @@ import {
   getPrimaryWorkspaceFolder,
   getProjectContext,
   getProjectNavigationItems,
+  getVueUsingComponentFileTarget,
   getWeappPagesTreeSnapshot,
   isAppJsonDocument,
   isPackageJsonDocument,
@@ -496,6 +498,39 @@ export async function openPageFromRoute(editorOrDocument: any, route?: string) {
 
   const targetDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(status.pageFilePath))
   await vscode.window.showTextDocument(targetDocument, { preview: false })
+}
+
+export async function createComponentFromUsingComponents(editorOrDocument: any, componentPath?: string) {
+  const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
+  const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
+
+  if (!document || !isVueDocument(document) || typeof componentPath !== 'string' || !componentPath.trim()) {
+    void vscode.window.showWarningMessage('weapp-vite: 请在 .vue 的 usingComponents 路径上执行创建组件。')
+    return
+  }
+
+  const targetPath = await getVueUsingComponentFileTarget(document, componentPath)
+
+  if (!targetPath) {
+    void vscode.window.showWarningMessage('weapp-vite: 无法解析要创建的组件文件路径。')
+    return
+  }
+
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+    void vscode.window.showInformationMessage(`weapp-vite: 组件文件已存在 ${componentPath}`)
+    return
+  }
+  catch {
+  }
+
+  const targetUri = vscode.Uri.file(targetPath)
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath.replace(TRAILING_FILE_SEGMENT_PATTERN, '')))
+  await vscode.workspace.fs.writeFile(targetUri, Buffer.from(getComponentVueTemplate(componentPath), 'utf8'))
+
+  const createdDocument = await vscode.workspace.openTextDocument(targetUri)
+  await vscode.window.showTextDocument(createdDocument, { preview: false })
+  void vscode.window.showInformationMessage(`weapp-vite: 已创建组件 ${componentPath}`)
 }
 
 export async function addCurrentPageToAppJson(state: any) {
