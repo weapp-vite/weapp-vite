@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
 import { it, vi } from 'vitest'
 
-function createDocument(text: string) {
+function createDocument(text: string, fsPath = '/workspace/package.json') {
   const lines = text.split('\n')
 
   return {
+    uri: {
+      fsPath,
+      path: fsPath,
+    },
     getText() {
       return text
     },
@@ -480,6 +485,99 @@ it('builds app.json route hover for missing page files', async () => {
 
   assert.equal(hover?.value.includes('未找到对应页面文件。'), true)
   assert.equal(hover?.value.includes('`src/pages/missing/index.vue`'), true)
+
+  vi.doUnmock('vscode')
+  vi.resetModules()
+})
+
+it('only builds package.json diagnostics for confirmed weapp-vite projects', async () => {
+  const files = new Map<string, string>([
+    ['/workspace/app/package.json', JSON.stringify({
+      name: 'demo-app',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+      scripts: {
+        dev: 'wv dev',
+      },
+    })],
+    ['/workspace/app/vite.config.ts', 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+    ['/workspace/lib/package.json', JSON.stringify({
+      name: 'demo-lib',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+  ])
+
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        Range: class {
+          start
+          end
+
+          constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+            this.start = { line: startLine, character: startCharacter }
+            this.end = { line: endLine, character: endCharacter }
+          }
+        },
+        Diagnostic: class {
+          range
+          message
+          severity
+
+          constructor(range: any, message: string, severity: number) {
+            this.range = range
+            this.message = message
+            this.severity = severity
+          }
+        },
+        DiagnosticSeverity: {
+          Information: 1,
+        },
+        workspace: {
+          fs: {
+            stat: async (uri: { fsPath: string }) => {
+              if (!files.has(uri.fsPath)) {
+                throw new TypeError('not found')
+              }
+
+              return {}
+            },
+            readFile: async (uri: { fsPath: string }) => {
+              const content = files.get(uri.fsPath)
+
+              if (typeof content !== 'string') {
+                throw new TypeError('not found')
+              }
+
+              return Buffer.from(content)
+            },
+          },
+        },
+        Uri: {
+          file(nextFsPath: string) {
+            return {
+              fsPath: nextFsPath,
+              path: nextFsPath,
+            }
+          },
+        },
+      },
+    }
+  })
+  vi.resetModules()
+
+  const {
+    buildPackageJsonDiagnostics,
+  } = await import('./content')
+  const confirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get('/workspace/app/package.json')!, '/workspace/app/package.json'))
+  const unconfirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get('/workspace/lib/package.json')!, '/workspace/lib/package.json'))
+
+  assert.equal(confirmedDiagnostics.length, 1)
+  assert.equal(confirmedDiagnostics[0].message, '建议补齐常用 weapp-vite 脚本：build, generate, open')
+  assert.equal(unconfirmedDiagnostics.length, 0)
 
   vi.doUnmock('vscode')
   vi.resetModules()

@@ -19,6 +19,9 @@ import {
   getAppJsonRouteInsertText,
   getMissingCommonScripts,
 } from './logic'
+import {
+  getWeappViteProjectSignals,
+} from './workspace'
 
 const PAGE_CONFIG_FIELD_DESCRIPTIONS: Record<string, string> = {
   navigationBarTitleText: '设置当前页面的导航栏标题文本。',
@@ -210,7 +213,7 @@ export function getPageVueTemplate(route: string) {
   ].join('\n')
 }
 
-export function buildPackageJsonDiagnostics(document: any) {
+export async function buildPackageJsonDiagnostics(document: any) {
   const diagnostics = []
   let packageJson
 
@@ -221,22 +224,15 @@ export function buildPackageJsonDiagnostics(document: any) {
     return diagnostics
   }
 
-  const dependencyBuckets = [
-    packageJson?.dependencies,
-    packageJson?.devDependencies,
-    packageJson?.peerDependencies,
-  ]
-  const scripts = typeof packageJson?.scripts === 'object' && packageJson.scripts
-    ? packageJson.scripts
-    : {}
-  const hasWeappViteDependency = dependencyBuckets.some((dependencies) => {
-    return Boolean(dependencies?.['weapp-vite'])
-  })
-  const hasWeappViteScript = Object.values(scripts).some((value) => {
-    return typeof value === 'string' && WEAPP_VITE_SCRIPT_PATTERN.test(value)
-  })
+  const packageJsonPath = document.uri?.fsPath
 
-  if (!hasWeappViteDependency && !hasWeappViteScript) {
+  if (typeof packageJsonPath !== 'string' || packageJsonPath.length === 0) {
+    return diagnostics
+  }
+
+  const projectSignals = await getWeappViteProjectSignals(path.dirname(packageJsonPath), packageJson)
+
+  if (!projectSignals.isConfirmedWeappViteProject) {
     return diagnostics
   }
 

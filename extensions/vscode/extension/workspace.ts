@@ -119,6 +119,79 @@ async function getExistingProjectFile(filePaths: string[]) {
   return null
 }
 
+export async function getWeappViteProjectSignals(folderPath: string, packageJson?: Record<string, any> | null) {
+  const resolvedPackageJson = packageJson ?? await readJsonFile(path.join(folderPath, 'package.json'))
+  const viteConfigCandidates = [
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+    'vite.config.cjs',
+  ].map(fileName => path.join(folderPath, fileName))
+  const appJsonCandidates = [
+    path.join(folderPath, 'src', 'app.json'),
+    path.join(folderPath, 'app.json'),
+  ]
+  const packageSignals = []
+  const fileSignals = []
+  let hasWeappViteConfigSignal = false
+  let hasAppJsonSignal = false
+  const dependencyBuckets = [
+    resolvedPackageJson?.dependencies,
+    resolvedPackageJson?.devDependencies,
+    resolvedPackageJson?.peerDependencies,
+  ]
+  const scripts = typeof resolvedPackageJson?.scripts === 'object' && resolvedPackageJson.scripts
+    ? resolvedPackageJson.scripts
+    : {}
+
+  for (const dependencies of dependencyBuckets) {
+    if (dependencies && typeof dependencies === 'object' && dependencies['weapp-vite']) {
+      packageSignals.push('依赖包含 weapp-vite')
+    }
+  }
+
+  for (const [scriptName, scriptValue] of Object.entries(scripts)) {
+    if (typeof scriptValue === 'string' && WEAPP_VITE_SCRIPT_PATTERN.test(scriptValue)) {
+      packageSignals.push(`脚本 ${scriptName} 调用了 weapp-vite CLI`)
+    }
+  }
+
+  for (const viteConfigPath of viteConfigCandidates) {
+    if (!(await pathExists(viteConfigPath))) {
+      continue
+    }
+
+    const viteConfigContent = await readTextFile(viteConfigPath)
+
+    if (typeof viteConfigContent === 'string' && WEAPP_VITE_CONFIG_PATTERN.test(viteConfigContent)) {
+      fileSignals.push(`${path.basename(viteConfigPath)} 引用了 weapp-vite`)
+      hasWeappViteConfigSignal = true
+    }
+
+    break
+  }
+
+  for (const appJsonPath of appJsonCandidates) {
+    if (await pathExists(appJsonPath)) {
+      fileSignals.push(`存在 ${path.relative(folderPath, appJsonPath)}`)
+      hasAppJsonSignal = true
+      break
+    }
+  }
+
+  return {
+    packageSignals: [...new Set(packageSignals)],
+    fileSignals: [...new Set(fileSignals)],
+    hasAppJsonSignal,
+    hasPackageSignal: packageSignals.length > 0,
+    hasWeappViteConfigSignal,
+    isConfirmedWeappViteProject: packageSignals.length > 0 && (hasWeappViteConfigSignal || hasAppJsonSignal),
+    packageJson: resolvedPackageJson,
+    scripts,
+  }
+}
+
 async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
   if (!workspaceFolder) {
     return null
@@ -212,76 +285,21 @@ export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFol
 
   const folderPath = workspaceFolder.uri.fsPath
   const packageJsonPath = path.join(folderPath, 'package.json')
-  const viteConfigCandidates = [
-    'vite.config.ts',
-    'vite.config.mts',
-    'vite.config.js',
-    'vite.config.mjs',
-    'vite.config.cjs',
-  ].map(fileName => path.join(folderPath, fileName))
-  const appJsonCandidates = [
-    path.join(folderPath, 'src', 'app.json'),
-    path.join(folderPath, 'app.json'),
-  ]
   const packageJson = await readJsonFile(packageJsonPath)
-  const packageSignals = []
-  const fileSignals = []
-  let hasWeappViteConfigSignal = false
-  const dependencyBuckets = [
-    packageJson?.dependencies,
-    packageJson?.devDependencies,
-    packageJson?.peerDependencies,
-  ]
-  const scripts = typeof packageJson?.scripts === 'object' && packageJson.scripts
-    ? packageJson.scripts
-    : {}
+  const projectSignals = await getWeappViteProjectSignals(folderPath, packageJson)
 
-  for (const dependencies of dependencyBuckets) {
-    if (dependencies && typeof dependencies === 'object') {
-      if (dependencies['weapp-vite']) {
-        packageSignals.push('依赖包含 weapp-vite')
-      }
-    }
-  }
-
-  for (const [scriptName, scriptValue] of Object.entries(scripts)) {
-    if (typeof scriptValue === 'string' && WEAPP_VITE_SCRIPT_PATTERN.test(scriptValue)) {
-      packageSignals.push(`脚本 ${scriptName} 调用了 weapp-vite CLI`)
-    }
-  }
-
-  for (const viteConfigPath of viteConfigCandidates) {
-    if (await pathExists(viteConfigPath)) {
-      const viteConfigContent = await readTextFile(viteConfigPath)
-
-      if (typeof viteConfigContent === 'string' && WEAPP_VITE_CONFIG_PATTERN.test(viteConfigContent)) {
-        fileSignals.push(`${path.basename(viteConfigPath)} 引用了 weapp-vite`)
-        hasWeappViteConfigSignal = true
-      }
-
-      break
-    }
-  }
-
-  for (const appJsonPath of appJsonCandidates) {
-    if (await pathExists(appJsonPath)) {
-      fileSignals.push(`存在 ${path.relative(folderPath, appJsonPath)}`)
-      break
-    }
-  }
-
-  if (packageSignals.length === 0 && !hasWeappViteConfigSignal) {
+  if (!projectSignals.hasPackageSignal && !projectSignals.hasWeappViteConfigSignal) {
     return null
   }
 
   return {
     workspaceFolder,
     packageJsonPath: await pathExists(packageJsonPath) ? packageJsonPath : null,
-    packageJson,
+    packageJson: projectSignals.packageJson,
     packageManager: getPackageManager(packageJson),
-    scripts,
-    packageSignals: [...new Set(packageSignals)],
-    fileSignals: [...new Set(fileSignals)],
+    scripts: projectSignals.scripts,
+    packageSignals: projectSignals.packageSignals,
+    fileSignals: projectSignals.fileSignals,
   }
 }
 

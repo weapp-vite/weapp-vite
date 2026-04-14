@@ -78,7 +78,7 @@ function getDiagnostics() {
   return diagnostics
 }
 
-function refreshPackageJsonDiagnostics(document: any) {
+async function refreshPackageJsonDiagnostics(document: any) {
   if (!isPackageJsonDocument(document)) {
     return
   }
@@ -88,7 +88,7 @@ function refreshPackageJsonDiagnostics(document: any) {
     return
   }
 
-  getDiagnostics().set(document.uri, buildPackageJsonDiagnostics(document))
+  getDiagnostics().set(document.uri, await buildPackageJsonDiagnostics(document))
 }
 
 async function refreshAppJsonDiagnostics(document: any) {
@@ -326,7 +326,7 @@ export function activate(context: any) {
         void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
         for (const document of vscode.workspace.textDocuments) {
-          refreshPackageJsonDiagnostics(document)
+          void refreshPackageJsonDiagnostics(document)
           void refreshAppJsonDiagnostics(document)
           void refreshVuePageDiagnostics(document)
         }
@@ -334,7 +334,7 @@ export function activate(context: any) {
     }),
     vscode.workspace.onDidSaveTextDocument((document) => {
       if (isPackageJsonDocument(document)) {
-        refreshPackageJsonDiagnostics(document)
+        void refreshPackageJsonDiagnostics(document)
       }
 
       if (isAppJsonDocument(document)) {
@@ -355,7 +355,7 @@ export function activate(context: any) {
       }
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
-      refreshPackageJsonDiagnostics(document)
+      void refreshPackageJsonDiagnostics(document)
       void refreshAppJsonDiagnostics(document)
       void refreshVuePageDiagnostics(document)
       pagesTreeProvider.refresh()
@@ -364,7 +364,7 @@ export function activate(context: any) {
       }
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
-      refreshPackageJsonDiagnostics(event.document)
+      void refreshPackageJsonDiagnostics(event.document)
       void refreshAppJsonDiagnostics(event.document)
       void refreshVuePageDiagnostics(event.document)
       pagesTreeProvider.refresh()
@@ -382,7 +382,7 @@ export function activate(context: any) {
   void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
   for (const document of vscode.workspace.textDocuments) {
-    refreshPackageJsonDiagnostics(document)
+    void refreshPackageJsonDiagnostics(document)
     void refreshAppJsonDiagnostics(document)
   }
 
