@@ -46,6 +46,7 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.filterCurrentPageInTree',
     'weapp-vite.filterDriftPagesInTree',
     'weapp-vite.clearPagesTreeFilter',
+    'weapp-vite.generateMissingPagesFromAppJson',
     'weapp-vite.syncUnregisteredPagesToAppJson',
     'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
     'weapp-vite.syncDefinePageJsonFromJsonInTreeItem',
@@ -201,6 +202,11 @@ it('manifest exposes pages explorer title action for current page reveal', () =>
     },
     {
       command: 'weapp-vite.clearPagesTreeFilter',
+      group: 'navigation',
+      when: 'view == weapp-vite.pages',
+    },
+    {
+      command: 'weapp-vite.generateMissingPagesFromAppJson',
       group: 'navigation',
       when: 'view == weapp-vite.pages',
     },

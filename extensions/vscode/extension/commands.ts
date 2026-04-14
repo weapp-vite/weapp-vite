@@ -603,6 +603,66 @@ export async function syncUnregisteredPagesToAppJson(state: any) {
   await vscode.window.showTextDocument(document, { preview: false })
 }
 
+export async function generateMissingPagesFromAppJson(state: any) {
+  const context = await ensureProjectContext('生成缺失页面')
+
+  if (!context) {
+    return
+  }
+
+  const snapshot = await getWeappPagesTreeSnapshot(context.workspaceFolder)
+
+  if (!snapshot) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前未找到可分析的页面结构。')
+    return
+  }
+
+  const missingRoutes = [
+    ...snapshot.topLevelPages,
+    ...snapshot.subpackages.flatMap(item => item.pages),
+  ]
+    .filter(page => !page.pageFilePath)
+    .map(page => page.route)
+
+  if (missingRoutes.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有缺失的页面文件。')
+    return
+  }
+
+  const createdEntries: Array<{ route: string, targetPath: string }> = []
+
+  for (const route of missingRoutes) {
+    const targetPath = getAppJsonRouteFileTargetFromPath(snapshot.appJsonPath, route)
+
+    if (!targetPath) {
+      continue
+    }
+
+    try {
+      await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+      continue
+    }
+    catch {
+    }
+
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath.replace(TRAILING_FILE_SEGMENT_PATTERN, '')))
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(targetPath), Buffer.from(getPageVueTemplate(route), 'utf8'))
+    createdEntries.push({ route, targetPath })
+  }
+
+  if (createdEntries.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 缺失页面文件已存在，无需重新生成。')
+    return
+  }
+
+  const [firstCreatedEntry] = createdEntries
+  const firstDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(firstCreatedEntry.targetPath))
+
+  state.getOutputChannel().appendLine(`[generate] missing-pages ${createdEntries.map(item => item.route).join(', ')}`)
+  await vscode.window.showTextDocument(firstDocument, { preview: false })
+  void vscode.window.showInformationMessage(`weapp-vite: 已生成 ${createdEntries.length} 个缺失页面，首个页面 ${firstCreatedEntry.route}`)
+}
+
 export async function revealPageRouteInAppJsonFromTreeItem(item: any, state: any) {
   const route = getTreePageNodeRoute(item)
   const appJsonPath = getTreePageNodeAppJsonPath(item)
@@ -744,6 +804,12 @@ export async function showCommandPalette(state: any) {
       commandId: 'syncUnregisteredPagesToAppJson',
     },
     {
+      label: '$(file-add) 生成缺失页面文件',
+      description: '批量补齐 app.json 中已声明但文件缺失的页面',
+      detail: '基于 weapp-vite Pages 视图的缺失页面扫描结果批量生成。',
+      commandId: 'generateMissingPagesFromAppJson',
+    },
+    {
       label: '$(go-to-file) 打开关键文件 / 页面',
       description: '快速打开 vite.config、app.json、package.json 和页面文件',
       detail: currentPage
@@ -796,6 +862,11 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'syncUnregisteredPagesToAppJson') {
     await syncUnregisteredPagesToAppJson(state)
+    return
+  }
+
+  if (selected.commandId === 'generateMissingPagesFromAppJson') {
+    await generateMissingPagesFromAppJson(state)
     return
   }
 

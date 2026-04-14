@@ -228,6 +228,30 @@ async function writeGeneratedVueFile(
   void vscode.window.showInformationMessage(`weapp-vite: 已创建${label} ${relativeTargetPath}`)
 }
 
+export async function createMissingPageFile(
+  state: any,
+  route: string,
+  targetPath: string,
+  workspacePath: string,
+) {
+  const relativeTargetPath = path.relative(workspacePath, targetPath)
+
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+    return false
+  }
+  catch {
+  }
+
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(targetPath)))
+  await vscode.workspace.fs.writeFile(
+    vscode.Uri.file(targetPath),
+    Buffer.from(getPageVueTemplate(route), 'utf8'),
+  )
+  state.getOutputChannel().appendLine(`[generate] 页面 ${targetPath}`)
+  return relativeTargetPath
+}
+
 async function maybeRegisterGeneratedPage(state: any, appJsonPath: string | null, targetPath: string) {
   if (!appJsonPath) {
     return

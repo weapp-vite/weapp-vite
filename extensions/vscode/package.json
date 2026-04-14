@@ -87,6 +87,7 @@
     "onCommand:weapp-vite.filterCurrentPageInTree",
     "onCommand:weapp-vite.filterDriftPagesInTree",
     "onCommand:weapp-vite.clearPagesTreeFilter",
+    "onCommand:weapp-vite.generateMissingPagesFromAppJson",
     "onCommand:weapp-vite.syncUnregisteredPagesToAppJson",
     "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
     "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
@@ -252,6 +253,11 @@
       {
         "command": "weapp-vite.clearPagesTreeFilter",
         "title": "Clear Pages Explorer Filter",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.generateMissingPagesFromAppJson",
+        "title": "Generate Missing Pages From app.json",
         "category": "weapp-vite"
       },
       {
@@ -562,6 +568,11 @@
         },
         {
           "command": "weapp-vite.clearPagesTreeFilter",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
+        {
+          "command": "weapp-vite.generateMissingPagesFromAppJson",
           "group": "navigation",
           "when": "view == weapp-vite.pages"
         },
