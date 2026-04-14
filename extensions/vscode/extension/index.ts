@@ -74,7 +74,9 @@ import {
 import {
   findNearestWeappViteProjectWorkspaceFolder,
   getAppJsonTextWithMovedRoute,
+  getAppJsonTextWithMovedRoutes,
   getAppJsonTextWithRemovedRoute,
+  getAppJsonTextWithRemovedRoutes,
   getCurrentPageRouteCandidate,
   getMissingAppJsonPageRoutes,
   getMissingVueUsingComponents,
@@ -235,6 +237,16 @@ async function syncRenamedPageRoute(file: { oldUri: any, newUri: any }) {
     return false
   }
 
+  const appJsonUpdates = await getAppJsonTextWithMovedRoutes(projectFolder, file.oldUri.fsPath, file.newUri.fsPath)
+
+  if (appJsonUpdates.length > 0) {
+    for (const update of appJsonUpdates) {
+      await writeTextFile(update.appJsonPath, update.nextText)
+    }
+
+    return true
+  }
+
   const appJsonPath = await getProjectAppJsonPath(projectFolder)
 
   if (!appJsonPath) {
@@ -285,6 +297,16 @@ async function syncDeletedPageRoute(file: { fsPath: string }) {
 
   if (!projectFolder) {
     return false
+  }
+
+  const appJsonUpdates = await getAppJsonTextWithRemovedRoutes(projectFolder, file.fsPath)
+
+  if (appJsonUpdates.length > 0) {
+    for (const update of appJsonUpdates) {
+      await writeTextFile(update.appJsonPath, update.nextText)
+    }
+
+    return true
   }
 
   const appJsonPath = await getProjectAppJsonPath(projectFolder)

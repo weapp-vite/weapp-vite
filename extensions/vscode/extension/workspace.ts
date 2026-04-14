@@ -1048,6 +1048,71 @@ export async function getAppJsonTextWithMovedRoute(appJsonPath: string, fromRout
   }
 }
 
+export async function getAppJsonTextWithMovedRoutes(
+  workspaceFolder: any,
+  oldFilePath: string,
+  newFilePath: string,
+) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return []
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof appJson !== 'object') {
+    return []
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  let nextAppJson = appJson
+  const movedRoutes = []
+
+  for (const route of collectAppJsonPageRoutes(appJson)) {
+    const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+    const matchedCandidatePath = candidatePaths.find(candidatePath => matchesMovedPath(candidatePath, oldFilePath))
+
+    if (!matchedCandidatePath) {
+      continue
+    }
+
+    const movedCandidatePath = getMovedCandidatePath(matchedCandidatePath, oldFilePath, newFilePath)
+
+    if (!movedCandidatePath) {
+      continue
+    }
+
+    const nextRoute = getRouteFromPageFilePath(path.relative(appJsonDir, movedCandidatePath))
+
+    if (!nextRoute || nextRoute === route) {
+      continue
+    }
+
+    const result = movePageRouteInAppJson(nextAppJson, route, nextRoute)
+
+    if (!result.changed) {
+      continue
+    }
+
+    nextAppJson = result.appJson
+    movedRoutes.push({
+      fromRoute: route,
+      toRoute: nextRoute,
+    })
+  }
+
+  if (movedRoutes.length === 0) {
+    return []
+  }
+
+  return [{
+    appJsonPath,
+    movedRoutes,
+    nextText: `${JSON.stringify(nextAppJson, null, 2)}\n`,
+  }]
+}
+
 export async function getAppJsonTextWithRemovedRoute(appJsonPath: string, route: string) {
   const appJson = await readJsonFile(appJsonPath)
 
@@ -1067,6 +1132,66 @@ export async function getAppJsonTextWithRemovedRoute(appJsonPath: string, route:
     nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
     route: normalizedRoute,
   }
+}
+
+export async function getAppJsonTextWithRemovedRoutes(workspaceFolder: any, deletedFilePath: string) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return []
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof appJson !== 'object') {
+    return []
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  let nextAppJson = appJson
+  const removedRoutes = []
+
+  for (const route of collectAppJsonPageRoutes(appJson)) {
+    const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+    const matchedCandidatePaths = candidatePaths.filter(candidatePath => matchesMovedPath(candidatePath, deletedFilePath))
+
+    if (matchedCandidatePaths.length === 0) {
+      continue
+    }
+
+    const siblingCandidates = candidatePaths.filter(candidatePath => !matchesMovedPath(candidatePath, deletedFilePath))
+    let hasSiblingCandidate = false
+
+    for (const siblingCandidate of siblingCandidates) {
+      if (await pathExists(siblingCandidate)) {
+        hasSiblingCandidate = true
+        break
+      }
+    }
+
+    if (hasSiblingCandidate) {
+      continue
+    }
+
+    const result = removePageRouteFromAppJson(nextAppJson, route)
+
+    if (!result.changed) {
+      continue
+    }
+
+    nextAppJson = result.appJson
+    removedRoutes.push(route)
+  }
+
+  if (removedRoutes.length === 0) {
+    return []
+  }
+
+  return [{
+    appJsonPath,
+    nextText: `${JSON.stringify(nextAppJson, null, 2)}\n`,
+    removedRoutes,
+  }]
 }
 
 export function resolveCommand(

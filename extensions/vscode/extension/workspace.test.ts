@@ -281,3 +281,138 @@ it('removes usingComponents paths when a component directory is deleted', async 
   assert.equal(updates[0].nextText.includes('/components/card/user/index'), false)
   assert.equal(updates[0].nextText.includes('/components/avatar/index'), true)
 })
+
+it('updates app.json routes when a page directory moves', async () => {
+  const fileContents = new Map<string, string>([
+    ['/workspace/src/app.json', JSON.stringify({
+      pages: [
+        'pages/card/user/index',
+        'pages/home/index',
+      ],
+    }, null, 2)],
+  ])
+
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        workspace: {
+          fs: {
+            stat: async (uri: { fsPath: string }) => {
+              if (!fileContents.has(uri.fsPath)) {
+                throw new Error('not found')
+              }
+
+              return {
+                type: 0,
+              }
+            },
+            readFile: async (uri: { fsPath: string }) => {
+              const content = fileContents.get(uri.fsPath)
+
+              if (content == null) {
+                throw new Error('not found')
+              }
+
+              return Buffer.from(content)
+            },
+          },
+        },
+        Uri: {
+          file(fsPath: string) {
+            return {
+              fsPath,
+              path: fsPath,
+            }
+          },
+        },
+      },
+    }
+  })
+  vi.resetModules()
+
+  const {
+    getAppJsonTextWithMovedRoutes,
+  } = await import('./workspace')
+
+  const updates = await getAppJsonTextWithMovedRoutes(
+    {
+      uri: {
+        fsPath: '/workspace',
+        path: '/workspace',
+      },
+    },
+    '/workspace/src/pages/card',
+    '/workspace/src/pages/profile/card',
+  )
+
+  assert.equal(updates.length, 1)
+  assert.equal(updates[0].nextText.includes('pages/profile/card/user/index'), true)
+  assert.equal(updates[0].nextText.includes('pages/card/user/index'), false)
+})
+
+it('removes app.json routes when a page directory is deleted', async () => {
+  const fileContents = new Map<string, string>([
+    ['/workspace/src/app.json', JSON.stringify({
+      pages: [
+        'pages/card/user/index',
+        'pages/home/index',
+      ],
+    }, null, 2)],
+  ])
+
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        workspace: {
+          fs: {
+            stat: async (uri: { fsPath: string }) => {
+              if (!fileContents.has(uri.fsPath)) {
+                throw new Error('not found')
+              }
+
+              return {
+                type: 0,
+              }
+            },
+            readFile: async (uri: { fsPath: string }) => {
+              const content = fileContents.get(uri.fsPath)
+
+              if (content == null) {
+                throw new Error('not found')
+              }
+
+              return Buffer.from(content)
+            },
+          },
+        },
+        Uri: {
+          file(fsPath: string) {
+            return {
+              fsPath,
+              path: fsPath,
+            }
+          },
+        },
+      },
+    }
+  })
+  vi.resetModules()
+
+  const {
+    getAppJsonTextWithRemovedRoutes,
+  } = await import('./workspace')
+
+  const updates = await getAppJsonTextWithRemovedRoutes(
+    {
+      uri: {
+        fsPath: '/workspace',
+        path: '/workspace',
+      },
+    },
+    '/workspace/src/pages/card',
+  )
+
+  assert.equal(updates.length, 1)
+  assert.equal(updates[0].nextText.includes('pages/card/user/index'), false)
+  assert.equal(updates[0].nextText.includes('pages/home/index'), true)
+})
