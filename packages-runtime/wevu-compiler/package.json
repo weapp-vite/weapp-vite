@@ -53,7 +53,7 @@
   "dependencies": {
     "@vue/compiler-core": "catalog:",
     "@vue/compiler-dom": "catalog:",
-    "@weapp-core/constants": "workspace:*",
+    "@weapp-core/constants": "workspace:^",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/ast": "workspace:*",
     "comment-json": "catalog:",

@@ -26,6 +26,8 @@ jobs:
       main_command: |
         pnpm check:changeset:frontmatter
         pnpm check:create-weapp-vite-changeset
+        pnpm check:weapp-core-constants-changeset
+        pnpm check:weapp-core-constants-dependency-range
         pnpm check:vscode-extension-changeset
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
@@ -54,6 +56,8 @@ jobs:
       main_command: |
         pnpm check:changeset:frontmatter
         pnpm check:create-weapp-vite-changeset
+        pnpm check:weapp-core-constants-changeset
+        pnpm check:weapp-core-constants-dependency-range
         pnpm check:vscode-extension-changeset
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"

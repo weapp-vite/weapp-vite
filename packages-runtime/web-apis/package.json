@@ -79,7 +79,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@weapp-core/constants": "workspace:*",
+    "@weapp-core/constants": "workspace:^",
     "@wevu/api": "workspace:*"
   },
   "publishConfig": {

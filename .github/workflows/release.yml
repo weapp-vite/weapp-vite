@@ -40,6 +40,11 @@ jobs:
       - name: Validate changeset frontmatter
         run: pnpm check:changeset:frontmatter
 
+      - name: Validate constants release guards
+        run: |
+          pnpm check:weapp-core-constants-changeset
+          pnpm check:weapp-core-constants-dependency-range
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1

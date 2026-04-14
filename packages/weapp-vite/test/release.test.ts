@@ -68,6 +68,15 @@ async function createIsolatedPackageWorkspace(packageRoot: string) {
 }
 
 describe('weapp-vite release pack', () => {
+  it('keeps @weapp-core/constants on workspace caret', async () => {
+    const packageRoot = path.resolve(import.meta.dirname, '..')
+    const packageJson = JSON.parse(await fs.readFile(path.join(packageRoot, 'package.json'), 'utf8')) as {
+      dependencies?: Record<string, string>
+    }
+
+    expect(packageJson.dependencies?.['@weapp-core/constants']).toBe('workspace:^')
+  })
+
   it('includes packaged dist docs in npm pack output', async () => {
     const packageRoot = path.resolve(import.meta.dirname, '..')
     const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-pack-cache-'))
