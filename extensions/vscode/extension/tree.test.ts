@@ -119,7 +119,7 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
   assert.equal(appPages[0].label, 'pages/missing/index')
   assert.equal(appPages[0].description, '缺少页面文件')
   assert.equal(appPages[1].label, 'pages/home/index')
-  assert.equal(appPages[1].description, path.relative('/workspace', '/workspace/src/pages/home/index.vue'))
+  assert.equal(appPages[1].description, 'src/pages/home/index.vue')
 
   const appPageItem = provider.getTreeItem(appPages[1])
 
