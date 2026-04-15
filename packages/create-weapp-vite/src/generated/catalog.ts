@@ -39,7 +39,7 @@ export const TEMPLATE_CATALOG = {
   'vite-plugin-inspect': '^11.3.3',
   'vue-tsc': '^3.2.6',
   'weapp-tailwindcss': '^4.11.2',
-  autoprefixer: '^10.4.27',
+  autoprefixer: '^10.5.0',
   clsx: '^2.1.1',
   dayjs: '^1.11.20',
   debug: '^4.4.3',

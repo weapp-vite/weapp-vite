@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
-    "@icebreakers/eslint-config": "^4.0.4",
+    "@icebreakers/eslint-config": "^4.0.5",
     "@icebreakers/stylelint-config": "^3.0.4",
     "@iconify-json/mdi": "catalog:",
     "autoprefixer": "catalog:",
