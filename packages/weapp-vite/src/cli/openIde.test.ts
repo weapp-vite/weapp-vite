@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseMock = vi.hoisted(() => vi.fn())
+const isAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
+const formatAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
@@ -26,8 +28,10 @@ const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 vi.mock('weapp-ide-cli', () => ({
   bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
   connectOpenedAutomator: connectOpenedAutomatorMock,
+  formatAutomatorLoginError: formatAutomatorLoginErrorMock,
   parse: parseMock,
   getConfig: getConfigMock,
+  isAutomatorLoginError: isAutomatorLoginErrorMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   launchAutomator: launchAutomatorMock,
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
@@ -55,6 +59,8 @@ vi.mock('../logger', () => ({
 describe('openIde', () => {
   beforeEach(() => {
     parseMock.mockReset()
+    isAutomatorLoginErrorMock.mockReset()
+    formatAutomatorLoginErrorMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     formatWechatIdeLoginRequiredErrorMock.mockReset()
     formatRetryHotkeyPromptMock.mockReset()
@@ -74,7 +80,9 @@ describe('openIde', () => {
     colorsMock.bold.mockClear()
 
     parseMock.mockResolvedValue(undefined)
+    isAutomatorLoginErrorMock.mockReturnValue(false)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    formatAutomatorLoginErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     getConfigMock.mockResolvedValue({
       cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
     })
@@ -227,6 +235,23 @@ describe('openIde', () => {
 
     expect(loggerMock.warn).toHaveBeenCalledWith('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
     expect(loggerMock.error).toHaveBeenCalledWith(error)
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+    ])
+  })
+
+  it('reminds user when devtools login is invalid before falling back from automator open', async () => {
+    const { openIde } = await import('./openIde')
+    const error = new Error('需要重新登录 (code 10)')
+    launchAutomatorMock.mockRejectedValueOnce(error)
+    isAutomatorLoginErrorMock.mockReturnValueOnce(true)
+
+    await openIde('weapp', 'dist/dev/mp-weixin')
+
+    expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
+    expect(loggerMock.warn).toHaveBeenCalledWith('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     expect(parseMock).toHaveBeenCalledWith([
       'open',
       '-p',

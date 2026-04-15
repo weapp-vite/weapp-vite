@@ -6,9 +6,11 @@ import path from 'pathe'
 import {
   bootstrapWechatDevtoolsSettings,
   connectOpenedAutomator,
+  formatAutomatorLoginError,
   formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
   getConfig,
+  isAutomatorLoginError,
   isWechatIdeLoginRequiredError,
   launchAutomator,
   parse,
@@ -275,6 +277,10 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
       return
     }
     catch (error) {
+      if (isAutomatorLoginError(error)) {
+        logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
+        logger.warn(formatAutomatorLoginError(error))
+      }
       logger.warn('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
       logger.error(error)
     }
