@@ -60,3 +60,29 @@ it('reads generate config from function-style defineConfig', () => {
     filenames: {},
   })
 })
+
+it('reads generate config from function block return defineConfig', () => {
+  const snapshot = readWeappGenerateConfigSnapshot([
+    'import { defineConfig } from \'weapp-vite\'',
+    'export default defineConfig(() => {',
+    '  return {',
+    '    weapp: {',
+    '      srcRoot: \'src\',',
+    '      generate: {',
+    '        filenames: {',
+    '          component: \'main\',',
+    '        },',
+    '      },',
+    '    },',
+    '  }',
+    '})',
+  ].join('\n'))
+
+  assert.deepEqual(snapshot, {
+    srcRoot: 'src',
+    dirs: {},
+    filenames: {
+      component: 'main',
+    },
+  })
+})

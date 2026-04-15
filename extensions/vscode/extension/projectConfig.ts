@@ -1,86 +1,361 @@
-import ts from 'typescript'
-
 export interface WeappGenerateConfigSnapshot {
   filenames: Partial<Record<'component' | 'page', string>>
   dirs: Partial<Record<'component' | 'page', string>>
   srcRoot?: string
 }
 
-function getPropertyName(node: ts.PropertyName) {
-  if (ts.isIdentifier(node) || ts.isStringLiteral(node)) {
-    return node.text
+function skipTrivia(sourceText: string, start: number) {
+  let index = start
+
+  while (index < sourceText.length) {
+    const char = sourceText[index]
+    const nextChar = sourceText[index + 1]
+
+    if (char === ' ' || char === '\t' || char === '\r' || char === '\n') {
+      index += 1
+      continue
+    }
+
+    if (char === '/' && nextChar === '/') {
+      index += 2
+
+      while (index < sourceText.length && sourceText[index] !== '\n') {
+        index += 1
+      }
+
+      continue
+    }
+
+    if (char === '/' && nextChar === '*') {
+      index += 2
+
+      while (index < sourceText.length - 1) {
+        if (sourceText[index] === '*' && sourceText[index + 1] === '/') {
+          index += 2
+          break
+        }
+
+        index += 1
+      }
+
+      continue
+    }
+
+    break
   }
 
-  return null
+  return index
 }
 
-function getObjectProperty(node: ts.ObjectLiteralExpression, name: string) {
-  return node.properties.find((property) => {
-    return ts.isPropertyAssignment(property)
-      && getPropertyName(property.name) === name
-  }) as ts.PropertyAssignment | undefined
+function findMatchingToken(sourceText: string, start: number, openToken: string, closeToken: string) {
+  let depth = 0
+  let index = start
+
+  while (index < sourceText.length) {
+    const char = sourceText[index]
+    const nextChar = sourceText[index + 1]
+
+    if (char === '\'' || char === '"' || char === '`') {
+      const quote = char
+      index += 1
+
+      while (index < sourceText.length) {
+        if (sourceText[index] === '\\') {
+          index += 2
+          continue
+        }
+
+        if (sourceText[index] === quote) {
+          index += 1
+          break
+        }
+
+        index += 1
+      }
+
+      continue
+    }
+
+    if (char === '/' && nextChar === '/') {
+      index += 2
+
+      while (index < sourceText.length && sourceText[index] !== '\n') {
+        index += 1
+      }
+
+      continue
+    }
+
+    if (char === '/' && nextChar === '*') {
+      index += 2
+
+      while (index < sourceText.length - 1) {
+        if (sourceText[index] === '*' && sourceText[index + 1] === '/') {
+          index += 2
+          break
+        }
+
+        index += 1
+      }
+
+      continue
+    }
+
+    if (char === openToken) {
+      depth += 1
+    }
+    else if (char === closeToken) {
+      depth -= 1
+
+      if (depth === 0) {
+        return index
+      }
+    }
+
+    index += 1
+  }
+
+  return -1
 }
 
-function getObjectLiteral(node: ts.Expression | undefined): ts.ObjectLiteralExpression | null {
-  if (!node) {
+function findTopLevelPropertyValueRange(sourceText: string, objectStart: number, propertyName: string) {
+  const objectEnd = findMatchingToken(sourceText, objectStart, '{', '}')
+
+  if (objectEnd < 0) {
     return null
   }
 
-  if (ts.isParenthesizedExpression(node)) {
-    return getObjectLiteral(node.expression)
-  }
+  let depth = 0
+  let index = objectStart + 1
 
-  if (ts.isObjectLiteralExpression(node)) {
-    return node
-  }
+  while (index < objectEnd) {
+    const char = sourceText[index]
+    const nextChar = sourceText[index + 1]
 
-  if (ts.isCallExpression(node)) {
-    const [firstArgument] = node.arguments
+    if (char === '\'' || char === '"' || char === '`') {
+      const quote = char
+      const quoteStart = index
+      index += 1
 
-    if (firstArgument) {
-      return getObjectLiteral(firstArgument)
-    }
-  }
+      while (index < objectEnd) {
+        if (sourceText[index] === '\\') {
+          index += 2
+          continue
+        }
 
-  if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
-    if (ts.isBlock(node.body)) {
-      for (const statement of node.body.statements) {
-        if (ts.isReturnStatement(statement)) {
-          return getObjectLiteral(statement.expression)
+        if (sourceText[index] === quote) {
+          index += 1
+          break
+        }
+
+        index += 1
+      }
+
+      if (depth === 0 && quote !== '`') {
+        const keyText = sourceText.slice(quoteStart + 1, index - 1)
+        const colonIndex = skipTrivia(sourceText, index)
+
+        if (keyText === propertyName && sourceText[colonIndex] === ':') {
+          const valueStart = skipTrivia(sourceText, colonIndex + 1)
+          return {
+            end: objectEnd,
+            start: valueStart,
+          }
         }
       }
 
-      return null
+      continue
     }
 
-    return getObjectLiteral(node.body)
+    if (char === '/' && nextChar === '/') {
+      index += 2
+
+      while (index < objectEnd && sourceText[index] !== '\n') {
+        index += 1
+      }
+
+      continue
+    }
+
+    if (char === '/' && nextChar === '*') {
+      index += 2
+
+      while (index < objectEnd - 1) {
+        if (sourceText[index] === '*' && sourceText[index + 1] === '/') {
+          index += 2
+          break
+        }
+
+        index += 1
+      }
+
+      continue
+    }
+
+    if (char === '{' || char === '[' || char === '(') {
+      depth += 1
+      index += 1
+      continue
+    }
+
+    if (char === '}' || char === ']' || char === ')') {
+      depth -= 1
+      index += 1
+      continue
+    }
+
+    if (depth === 0 && /[$\w]/u.test(char)) {
+      const keyStart = index
+      index += 1
+
+      while (index < objectEnd && /[$\w]/u.test(sourceText[index])) {
+        index += 1
+      }
+
+      const keyText = sourceText.slice(keyStart, index)
+      const colonIndex = skipTrivia(sourceText, index)
+
+      if (keyText === propertyName && sourceText[colonIndex] === ':') {
+        const valueStart = skipTrivia(sourceText, colonIndex + 1)
+        return {
+          end: objectEnd,
+          start: valueStart,
+        }
+      }
+
+      continue
+    }
+
+    index += 1
   }
 
   return null
 }
 
-function getStringLiteralValue(node: ts.Expression | undefined) {
-  if (!node) {
+function readStringLiteralAt(sourceText: string, start: number) {
+  const quote = sourceText[start]
+
+  if (quote !== '\'' && quote !== '"') {
     return null
   }
 
-  if (ts.isStringLiteralLike(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-    return node.text
+  let index = start + 1
+  let value = ''
+
+  while (index < sourceText.length) {
+    const char = sourceText[index]
+
+    if (char === '\\') {
+      const escaped = sourceText[index + 1]
+
+      if (escaped == null) {
+        return null
+      }
+
+      value += escaped
+      index += 2
+      continue
+    }
+
+    if (char === quote) {
+      return value
+    }
+
+    value += char
+    index += 1
   }
 
   return null
 }
 
-function readStringMap(node: ts.ObjectLiteralExpression | null, keys: Array<'component' | 'page'>) {
+function findReturnedObjectLiteral(sourceText: string, bodyStart: number) {
+  const bodyEnd = findMatchingToken(sourceText, bodyStart, '{', '}')
+
+  if (bodyEnd < 0) {
+    return null
+  }
+
+  const returnIndex = sourceText.indexOf('return', bodyStart + 1)
+
+  if (returnIndex < 0 || returnIndex >= bodyEnd) {
+    return null
+  }
+
+  const objectStart = sourceText.indexOf('{', returnIndex + 'return'.length)
+
+  if (objectStart < 0 || objectStart >= bodyEnd) {
+    return null
+  }
+
+  return objectStart
+}
+
+function findExportObjectStart(sourceText: string) {
+  const exportIndex = sourceText.indexOf('export default')
+
+  if (exportIndex < 0) {
+    return null
+  }
+
+  let expressionStart = skipTrivia(sourceText, exportIndex + 'export default'.length)
+
+  if (sourceText[expressionStart] === '{') {
+    return expressionStart
+  }
+
+  if (!sourceText.startsWith('defineConfig', expressionStart)) {
+    return null
+  }
+
+  const callStart = sourceText.indexOf('(', expressionStart)
+
+  if (callStart < 0) {
+    return null
+  }
+
+  const argumentStart = skipTrivia(sourceText, callStart + 1)
+
+  if (sourceText[argumentStart] === '{') {
+    return argumentStart
+  }
+
+  if (sourceText[argumentStart] === '(') {
+    const arrowIndex = sourceText.indexOf('=>', argumentStart)
+
+    if (arrowIndex < 0) {
+      return null
+    }
+
+    expressionStart = skipTrivia(sourceText, arrowIndex + 2)
+
+    if (sourceText[expressionStart] === '(') {
+      const objectStart = skipTrivia(sourceText, expressionStart + 1)
+      return sourceText[objectStart] === '{' ? objectStart : null
+    }
+
+    if (sourceText[expressionStart] === '{') {
+      return findReturnedObjectLiteral(sourceText, expressionStart)
+    }
+  }
+
+  return null
+}
+
+function readStringMap(sourceText: string, objectStart: number | null, keys: Array<'component' | 'page'>) {
   const result: Partial<Record<'component' | 'page', string>> = {}
 
-  if (!node) {
+  if (objectStart == null) {
     return result
   }
 
   for (const key of keys) {
-    const property = getObjectProperty(node, key)
-    const value = getStringLiteralValue(property?.initializer)
+    const valueRange = findTopLevelPropertyValueRange(sourceText, objectStart, key)
+
+    if (!valueRange) {
+      continue
+    }
+
+    const value = readStringLiteralAt(sourceText, valueRange.start)
 
     if (value) {
       result[key] = value
@@ -90,39 +365,31 @@ function readStringMap(node: ts.ObjectLiteralExpression | null, keys: Array<'com
   return result
 }
 
-function getExportObject(sourceFile: ts.SourceFile) {
-  for (const statement of sourceFile.statements) {
-    if (ts.isExportAssignment(statement)) {
-      return getObjectLiteral(statement.expression)
-    }
-  }
-
-  return null
-}
-
 export function readWeappGenerateConfigSnapshot(sourceText: string) {
-  const sourceFile = ts.createSourceFile('vite.config.ts', sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
-  const exportObject = getExportObject(sourceFile)
+  const exportObjectStart = findExportObjectStart(sourceText)
 
-  if (!exportObject) {
+  if (exportObjectStart == null) {
     return null
   }
 
-  const weappProperty = getObjectProperty(exportObject, 'weapp')
-  const weappObject = getObjectLiteral(weappProperty?.initializer)
+  const weappValueRange = findTopLevelPropertyValueRange(sourceText, exportObjectStart, 'weapp')
 
-  if (!weappObject) {
+  if (!weappValueRange || sourceText[weappValueRange.start] !== '{') {
     return null
   }
 
-  const generateProperty = getObjectProperty(weappObject, 'generate')
-  const generateObject = getObjectLiteral(generateProperty?.initializer)
-  const dirsProperty = generateObject ? getObjectProperty(generateObject, 'dirs') : undefined
-  const filenamesProperty = generateObject ? getObjectProperty(generateObject, 'filenames') : undefined
+  const generateValueRange = findTopLevelPropertyValueRange(sourceText, weappValueRange.start, 'generate')
+  const dirsValueRange = generateValueRange && sourceText[generateValueRange.start] === '{'
+    ? findTopLevelPropertyValueRange(sourceText, generateValueRange.start, 'dirs')
+    : null
+  const filenamesValueRange = generateValueRange && sourceText[generateValueRange.start] === '{'
+    ? findTopLevelPropertyValueRange(sourceText, generateValueRange.start, 'filenames')
+    : null
+  const srcRootValueRange = findTopLevelPropertyValueRange(sourceText, weappValueRange.start, 'srcRoot')
 
   return {
-    srcRoot: getStringLiteralValue(getObjectProperty(weappObject, 'srcRoot')?.initializer) ?? undefined,
-    dirs: readStringMap(getObjectLiteral(dirsProperty?.initializer), ['component', 'page']),
-    filenames: readStringMap(getObjectLiteral(filenamesProperty?.initializer), ['component', 'page']),
+    srcRoot: srcRootValueRange ? readStringLiteralAt(sourceText, srcRootValueRange.start) ?? undefined : undefined,
+    dirs: readStringMap(sourceText, dirsValueRange?.start ?? null, ['component', 'page']),
+    filenames: readStringMap(sourceText, filenamesValueRange?.start ?? null, ['component', 'page']),
   } satisfies WeappGenerateConfigSnapshot
 }
