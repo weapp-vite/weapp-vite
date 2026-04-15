@@ -1,5 +1,23 @@
 # weapp-vite
 
+## 6.15.6
+
+### Patch Changes
+
+- 🐛 **修复小程序 production 构建下 Web Runtime 自动注入代码的可读性退化问题。现在 `miniprogram` 目标在 production 合并配置中默认关闭 `build.minify`，使注入后的 runtime 安装与局部绑定代码保持可读形态，便于定位线上问题与调试构建产物。同时补充 `github-issues` 的 issue #457 回归用例，锁定注入代码可读输出。** [#462](https://github.com/weapp-vite/weapp-vite/pull/462) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite.config.ts` 与 `vite.config.ts` 的合并行为：现在无论只存在 `weapp-vite.config.ts`，还是两份配置同时存在，`weapp-vite.config.ts` 中的顶层 Vite 配置与 `weapp` 配置都会生效，且优先级高于 `vite.config.ts`。这保证了 `plugins`、`css`、`resolve`、`define` 等配置能稳定参与构建。** [`789815e`](https://github.com/weapp-vite/weapp-vite/commit/789815ea79e0fe65a836bbc262284e294c53e2e2) by @sonofmagic
+
+- 🐛 **增强微信开发者工具启动前的本地配置预热能力。`weapp-ide-cli` 现在会在 `open`、`auto`、`auto-preview` 与 automator 启动前自动补齐 DevTools 安全设置，并可按命令参数或全局配置自动信任目标项目；同时新增 `autoBootstrapDevtools`、`autoTrustProject` 配置项与更直观的 `config show` / `config doctor` 输出。`weapp-vite` 复用了这套底层能力，新增 `ide setup` 命令，并让 `open`、`dev --open`、`build --open` 共享同一套 DevTools 预热与项目信任策略。** [`08fd6ae`](https://github.com/weapp-vite/weapp-vite/commit/08fd6ae8093f7935ee6a9df51eef639c185fa861) by @sonofmagic
+
+- 🐛 **统一仓库内微信小程序模板与夹具的默认 `appid` 为真实可用值 `wxb3d842a4a7e3440d`，不再保留测试账号或游客账号占位；同时修复 IDE E2E 在扩展 `project.config.json` 时无差别追加末尾空行的问题，避免运行开发者工具验证后产生纯换行噪音改动。** [`8809778`](https://github.com/weapp-vite/weapp-vite/commit/880977826aa7d4f33275d8acfaca3bbd70e16417) by @sonofmagic
+- 📦 Updated 4 dependencies [`fcd6d99`](https://github.com/weapp-vite/weapp-vite/commit/fcd6d990e4e6b996a761d43226e42a756793fe22)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/web@1.3.16`, `weapp-ide-cli@5.2.3`, `@weapp-vite/ast@6.15.6`, `wevu@6.15.6`
+
+  </details>
+
 ## 6.15.5
 
 ### Patch Changes
