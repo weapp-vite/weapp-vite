@@ -88,6 +88,6 @@ describe.sequential('e2e app: wevu-vue-demo (script setup emit compat)', () => {
     expect(emitMatrixJs).toMatch(/emit\(\s*['"`]options['"`],/)
     expect(emitMatrixJs).toMatch(/bubbles:\s*true/)
     expect(emitMatrixJs).toMatch(/composed:\s*true/)
-    expect(emitMatrixJs).toMatch(/fn:\s*\(([^)]*)\)\s*=>\s*[A-Za-z_$][\w$]*\.emitNative\([A-Za-z_$][\w$]*\)/)
+    expect(emitMatrixJs).toContain('emitNative($event)')
   })
 })

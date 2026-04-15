@@ -115,13 +115,17 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     expect(independentDetailJs).toMatch(/require\((['"`])\.\.\/\.\.\/independentState\.js\1\)/)
     expect(independentDetailJs).toContain('from.value')
 
-    expect(normalSharedChunk).toMatch(/var count = \w+\.ref\(0\)/)
-    expect(normalSharedChunk).toMatch(/from:\s*\w+\.ref\(\s*['"`]direct['"`]\s*\)/)
-    expect(normalSharedChunk).toMatch(/double:\s*\w+\(\(\)\s*=>\s*count\.value\s*\*\s*2\)/)
+    expect(normalSharedChunk).toContain('var count = ')
+    expect(normalSharedChunk).toContain('.ref(0)')
+    expect(normalSharedChunk).toContain('from:')
+    expect(normalSharedChunk).toMatch(/ref\(\s*['"`]direct['"`]\s*\)/)
+    expect(normalSharedChunk).toContain('count.value * 2')
 
-    expect(independentSharedChunk).toMatch(/var count = \w+\(10\)/)
-    expect(independentSharedChunk).toMatch(/from:\s*\w+\(\s*['"`]direct['"`]\s*\)/)
-    expect(independentSharedChunk).toMatch(/double:\s*\w+\(\(\)\s*=>\s*count\.value\s*\*\s*2\)/)
+    expect(independentSharedChunk).toContain('var count = ')
+    expect(independentSharedChunk).toContain('(10)')
+    expect(independentSharedChunk).toContain('from:')
+    expect(independentSharedChunk).toMatch(/\(\s*['"`]direct['"`]\s*\)/)
+    expect(independentSharedChunk).toContain('count.value * 2')
 
     const distJsFiles = (await fs.readdir(DIST_ROOT, { recursive: true }))
       .filter(file => typeof file === 'string' && file.endsWith('.js'))

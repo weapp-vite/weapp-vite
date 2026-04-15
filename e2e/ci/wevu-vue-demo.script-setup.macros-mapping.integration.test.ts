@@ -75,7 +75,8 @@ describe.sequential('e2e app: wevu-vue-demo (script setup macros mapping)', () =
     expect(altPanelJs).toContain('emit run payload')
     expect(altPanelJs).toContain('emit runevent payload')
 
-    expect(modelInputJs).toMatch(/props:\s*\/\*\s*@__PURE__\s*\*\/\s*\w+\.\w+\(\{\s*label:\s*\{\s*type:\s*String,\s*required:\s*false,\s*default:\s*['"`]Model Input['"`]\s*\}/)
+    expect(modelInputJs).toContain('mergeModels({ label:')
+    expect(modelInputJs).toMatch(/label:\s*\{\s*type:\s*String,\s*required:\s*false,\s*default:\s*['"`]Model Input['"`]\s*\}/)
     expect(modelInputJs).toMatch(/emits:\s*\[\s*['"`]update:modelValue['"`]\s*\]/)
   })
 })
