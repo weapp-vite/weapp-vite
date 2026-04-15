@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.1.3
+
+### Patch Changes
+
+- 🐛 **优化 VS Code 扩展的配置文件图标体验，并将扩展构建切换为 ESM 产物，同时移除运行时对 TypeScript 编译器的静态依赖，显著缩小打包后的 VSIX 体积。** [`5f7daab`](https://github.com/weapp-vite/weapp-vite/commit/5f7daab5366130216db920c4ceb3e302f4fb985e) by @sonofmagic
+
 ## 0.1.2
 
 ### Patch Changes
