@@ -3,7 +3,7 @@
   "miniprogramRoot": "dist/",
   "srcMiniprogramRoot": "dist/",
   "compileType": "miniprogram",
-  "appid": "wx0000000000000000",
+  "appid": "wxb3d842a4a7e3440d",
   "setting": {
     "es6": true,
     "minified": false,

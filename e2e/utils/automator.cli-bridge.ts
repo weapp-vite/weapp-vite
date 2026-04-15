@@ -139,17 +139,6 @@ async function terminateCliProcessTree(cliPid?: number) {
   }
 }
 
-function readJsonObject(filePath: string) {
-  try {
-    const content = fs.readFileSync(filePath, 'utf8')
-    const parsed = JSON.parse(content)
-    return parsed && typeof parsed === 'object' ? parsed as Record<string, any> : undefined
-  }
-  catch {
-    return undefined
-  }
-}
-
 function mergeProjectConfig(base: Record<string, any>, patch: Record<string, any>) {
   for (const [key, value] of Object.entries(patch)) {
     if (Array.isArray(value)) {
@@ -167,6 +156,29 @@ function mergeProjectConfig(base: Record<string, any>, patch: Record<string, any
     base[key] = value
   }
   return base
+}
+
+function readJsonDocument(filePath: string) {
+  try {
+    const source = fs.readFileSync(filePath, 'utf8')
+    const parsed = JSON.parse(source)
+    if (!parsed || typeof parsed !== 'object') {
+      return undefined
+    }
+    return {
+      parsed: parsed as Record<string, any>,
+      source,
+      hasTrailingNewline: /\r?\n$/.test(source),
+    }
+  }
+  catch {
+    return undefined
+  }
+}
+
+function stringifyJsonDocument(value: Record<string, any>, options: { trailingNewline: boolean }) {
+  const source = JSON.stringify(value, null, 2)
+  return options.trailingNewline ? `${source}\n` : source
 }
 
 function resolveCliPath(cliPath?: string) {
@@ -293,19 +305,25 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions) {
   })
 }
 
-async function extendProjectConfig(projectPath: string, projectConfig?: Record<string, any>) {
+export async function extendProjectConfig(projectPath: string, projectConfig?: Record<string, any>) {
   if (!projectConfig || Object.keys(projectConfig).length === 0) {
     return
   }
 
   const configPath = path.resolve(projectPath, 'project.config.json')
-  const current = readJsonObject(configPath)
-  if (!current) {
+  const currentDocument = readJsonDocument(configPath)
+  if (!currentDocument) {
     throw new Error(`Failed to read project config: ${configPath}`)
   }
 
-  const next = mergeProjectConfig({ ...current }, projectConfig)
-  fs.writeFileSync(configPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8')
+  const next = mergeProjectConfig({ ...currentDocument.parsed }, projectConfig)
+  const nextSource = stringifyJsonDocument(next, {
+    trailingNewline: currentDocument.hasTrailingNewline,
+  })
+  if (nextSource === currentDocument.source) {
+    return
+  }
+  fs.writeFileSync(configPath, nextSource, 'utf8')
 }
 
 async function main() {

@@ -1,7 +1,10 @@
+import fs from 'node:fs'
 import net from 'node:net'
+import os from 'node:os'
+import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, describe, expect, it } from 'vitest'
-import { waitForSocketReady } from './automator.cli-bridge'
+import { extendProjectConfig, waitForSocketReady } from './automator.cli-bridge'
 
 function createMockChild(spawnfile = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli') {
   const stdout = new PassThrough()
@@ -120,5 +123,63 @@ describe('waitForSocketReady', () => {
     child.emit('error', new Error('spawn /Applications/wechatwebdevtools.app/Contents/MacOS/cli ENOENT'))
 
     await expect(task).rejects.toThrow(/Failed to spawn WeChat DevTools CLI/)
+  })
+})
+
+describe('extendProjectConfig', () => {
+  const tempDirs: string[] = []
+
+  afterEach(() => {
+    while (tempDirs.length > 0) {
+      const dir = tempDirs.pop()
+      if (dir) {
+        fs.rmSync(dir, { recursive: true, force: true })
+      }
+    }
+  })
+
+  function createProjectConfig(source: string) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'automator-cli-bridge-'))
+    tempDirs.push(dir)
+    fs.writeFileSync(path.join(dir, 'project.config.json'), source, 'utf8')
+    return dir
+  }
+
+  it('preserves files without a trailing newline when merged config is unchanged', async () => {
+    const projectPath = createProjectConfig('{\n  "appid": "wx123"\n}')
+
+    await extendProjectConfig(projectPath, {
+      appid: 'wx123',
+    })
+
+    expect(fs.readFileSync(path.join(projectPath, 'project.config.json'), 'utf8')).toBe('{\n  "appid": "wx123"\n}')
+  })
+
+  it('preserves files without a trailing newline when writing merged config', async () => {
+    const projectPath = createProjectConfig('{\n  "appid": "wx123"\n}')
+
+    await extendProjectConfig(projectPath, {
+      setting: {
+        es6: true,
+      },
+    })
+
+    expect(fs.readFileSync(path.join(projectPath, 'project.config.json'), 'utf8')).toBe(
+      '{\n  "appid": "wx123",\n  "setting": {\n    "es6": true\n  }\n}',
+    )
+  })
+
+  it('preserves an existing trailing newline when writing merged config', async () => {
+    const projectPath = createProjectConfig('{\n  "appid": "wx123"\n}\n')
+
+    await extendProjectConfig(projectPath, {
+      setting: {
+        es6: true,
+      },
+    })
+
+    expect(fs.readFileSync(path.join(projectPath, 'project.config.json'), 'utf8')).toBe(
+      '{\n  "appid": "wx123",\n  "setting": {\n    "es6": true\n  }\n}\n',
+    )
   })
 })
