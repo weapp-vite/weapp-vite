@@ -12,6 +12,10 @@ export default defineConfig({
     onlyBundle: false,
   },
   format: ['esm'],
+  minify: false,
+  sourcemap: true,
+  hash: false,
+  unbundle: true,
   shims: true,
   tsconfig: './tsconfig.build.json',
   outExtensions() {
