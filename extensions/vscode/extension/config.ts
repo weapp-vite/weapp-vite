@@ -27,3 +27,7 @@ export function isCompletionEnabled() {
 export function useWvAlias() {
   return getExtensionConfiguration().get('preferWvAlias', true)
 }
+
+export function shouldPromptFileIcons() {
+  return getExtensionConfiguration().get('promptFileIcons', true)
+}

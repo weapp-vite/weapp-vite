@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, it, vi } from 'vitest'
 
-const treeModuleUrl = pathToFileURL(path.resolve(__dirname, 'tree.ts')).href
+const treeModuleUrl = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'tree.ts')).href
 
 afterEach(() => {
   vi.clearAllMocks()

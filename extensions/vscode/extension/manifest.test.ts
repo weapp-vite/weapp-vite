@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
 
-const packageJsonPath = path.resolve(__dirname, '..', 'package.json')
+const packageJsonPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 
 it('manifest exposes practical command set', () => {
@@ -18,6 +19,7 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.dev',
     'weapp-vite.build',
     'weapp-vite.open',
+    'weapp-vite.useFileIcons',
     'weapp-vite.doctor',
     'weapp-vite.showProjectInfo',
     'weapp-vite.showOutput',
@@ -104,6 +106,7 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
   assert.equal(properties['weapp-vite.enableHover'].default, true)
   assert.equal(properties['weapp-vite.enableCompletion'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)
+  assert.equal(properties['weapp-vite.promptFileIcons'].default, true)
 })
 
 it('manifest contributes pages explorer view', () => {

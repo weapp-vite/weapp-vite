@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, it, vi } from 'vitest'
 
-const extensionIndexUrl = pathToFileURL(path.resolve(__dirname, 'index.ts')).href
+const extensionIndexUrl = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'index.ts')).href
 
 function createMockVscode() {
   const registeredCommands = []
@@ -89,7 +89,9 @@ function createMockVscode() {
         get(_key, defaultValue) {
           return defaultValue
         },
+        update: async () => true,
       }),
+      findFiles: async () => [],
       onDidChangeWorkspaceFolders(handler) {
         return { dispose() {}, handler }
       },
@@ -121,6 +123,9 @@ function createMockVscode() {
         registeredCommands.push({ command, handler })
         return { dispose() {} }
       },
+    },
+    ConfigurationTarget: {
+      Global: 1,
     },
     languages: {
       createDiagnosticCollection(name) {
@@ -301,7 +306,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 40)
+    assert.equal(state.registeredCommands.length, 41)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -309,6 +314,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.dev',
         'weapp-vite.build',
         'weapp-vite.open',
+        'weapp-vite.useFileIcons',
         'weapp-vite.doctor',
         'weapp-vite.showProjectInfo',
         'weapp-vite.showOutput',

@@ -57,6 +57,10 @@ import {
   showGeneratePicker,
 } from './generate'
 import {
+  enableWeappViteFileIcons,
+  maybePromptForWeappViteFileIcons,
+} from './icons'
+import {
   getPageFileCandidatePaths,
   getRouteFromPageFilePath,
 } from './navigation'
@@ -391,6 +395,7 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.dev', () => runWorkspaceCommand('dev', state)),
     vscode.commands.registerCommand('weapp-vite.build', () => runWorkspaceCommand('build', state)),
     vscode.commands.registerCommand('weapp-vite.open', () => runWorkspaceCommand('open', state)),
+    vscode.commands.registerCommand('weapp-vite.useFileIcons', () => enableWeappViteFileIcons()),
     vscode.commands.registerCommand('weapp-vite.doctor', () => runWorkspaceCommand('doctor', state)),
     vscode.commands.registerCommand('weapp-vite.showProjectInfo', () => showProjectOverview(state)),
     vscode.commands.registerCommand('weapp-vite.showOutput', () => getOutputChannel().show(true)),
@@ -609,6 +614,7 @@ export function activate(context: any) {
 
   void refreshStatusBar()
   void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+  void maybePromptForWeappViteFileIcons()
 
   for (const document of vscode.workspace.textDocuments) {
     void refreshPackageJsonDiagnostics(document)

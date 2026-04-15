@@ -10,9 +10,18 @@ export interface CommandDefinition {
 export const OUTPUT_CHANNEL_NAME = 'weapp-vite'
 export const STATUS_BAR_PRIORITY = 120
 export const TERMINAL_NAME = 'weapp-vite'
+export const WEAPP_VITE_FILE_ICON_THEME_ID = 'weapp-vite-file-icons'
 export const WEAPP_VITE_SCRIPT_PATTERN = /\b(?:wv|weapp-vite)\b/
 export const WEAPP_VITE_CONFIG_PATTERN = /\bweapp-vite\b/
 export const VITE_CONFIG_FILE_PATTERN = /vite\.config\./
+export const WEAPP_VITE_CONFIG_FILE_NAMES = [
+  'weapp-vite.config.ts',
+  'weapp-vite.config.mts',
+  'weapp-vite.config.cts',
+  'weapp-vite.config.js',
+  'weapp-vite.config.mjs',
+  'weapp-vite.config.cjs',
+]
 export const APP_JSON_FILE_PATTERN = /(?:^|\/)app\.json$/
 export const PACKAGE_JSON_FILE_PATTERN = /(?:^|\/)package\.json$/
 export const VUE_JSON_BLOCK_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>/u

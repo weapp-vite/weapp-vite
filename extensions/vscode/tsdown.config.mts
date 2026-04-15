@@ -8,7 +8,7 @@ export default defineConfig({
   dts: false,
   entry: ['extension.ts'],
   fixedExtension: false,
-  format: ['cjs'],
+  format: ['esm'],
   inputOptions(options) {
     const previousOnLog = options.onLog
 

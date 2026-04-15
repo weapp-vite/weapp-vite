@@ -1,12 +1,10 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
-import Module from 'node:module'
+import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-
-type ModuleWithLoad = typeof Module & {
-  _load: (request: string, parent: NodeModule | null | undefined, isMain: boolean) => unknown
-}
+import { pathToFileURL } from 'node:url'
 
 function createMockVscode() {
   const registeredCommands: Array<{ command: string, handler: unknown }> = []
@@ -81,6 +79,7 @@ function createMockVscode() {
           return defaultValue
         },
       }),
+      findFiles: async () => [],
       onDidChangeWorkspaceFolders() {
         return { dispose() {} }
       },
@@ -271,22 +270,47 @@ function createMockVscode() {
 
 async function main() {
   const extensionRoot = process.cwd()
-  const distEntryPath = path.join(extensionRoot, 'dist', 'extension.js')
+  const distDirPath = path.join(extensionRoot, 'dist')
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-vscode-smoke-'))
+  const tempDistDirPath = path.join(tempDir, 'dist')
+  const tempEntryPath = path.join(tempDistDirPath, 'extension.js')
+  const tempVscodePath = path.join(tempDir, 'mock-vscode.js')
   const state = createMockVscode()
-  const moduleWithLoad = Module as ModuleWithLoad
-  const originalLoad = moduleWithLoad._load
-
-  moduleWithLoad._load = function patchedLoad(request, parent, isMain) {
-    if (request === 'vscode') {
-      return state.mockVscode
-    }
-
-    return originalLoad.call(this, request, parent, isMain)
-  }
 
   try {
-    const distRequire = Module.createRequire(distEntryPath)
-    const extension = distRequire(distEntryPath)
+    await fs.access(path.join(distDirPath, 'extension.js'))
+    const distFiles = await fs.readdir(distDirPath)
+
+    await fs.mkdir(tempDistDirPath, { recursive: true })
+
+    await fs.writeFile(tempVscodePath, 'export default globalThis.__WEAPP_VITE_VSCODE_MOCK__;\n')
+
+    for (const fileName of distFiles) {
+      const sourcePath = path.join(distDirPath, fileName)
+      const targetPath = path.join(tempDistDirPath, fileName)
+      const stat = await fs.stat(sourcePath)
+
+      if (!stat.isFile()) {
+        continue
+      }
+
+      if (!fileName.endsWith('.js')) {
+        await fs.copyFile(sourcePath, targetPath)
+        continue
+      }
+
+      const sourceText = await fs.readFile(sourcePath, 'utf8')
+      const targetText = sourceText.replaceAll(
+        'from "vscode"',
+        `from ${JSON.stringify(pathToFileURL(tempVscodePath).href)}`,
+      )
+
+      await fs.writeFile(targetPath, targetText)
+    }
+
+    ;(globalThis as typeof globalThis & { __WEAPP_VITE_VSCODE_MOCK__?: unknown }).__WEAPP_VITE_VSCODE_MOCK__ = state.mockVscode
+
+    const extension = await import(pathToFileURL(tempEntryPath).href)
     const subscriptions: Array<{ dispose: () => void }> = []
 
     assert.equal(typeof extension.activate, 'function')
@@ -301,6 +325,7 @@ async function main() {
         'weapp-vite.dev',
         'weapp-vite.build',
         'weapp-vite.open',
+        'weapp-vite.useFileIcons',
         'weapp-vite.doctor',
         'weapp-vite.showProjectInfo',
         'weapp-vite.showOutput',
@@ -351,7 +376,8 @@ async function main() {
     console.log('extensions/vscode smoke test ok')
   }
   finally {
-    moduleWithLoad._load = originalLoad
+    delete (globalThis as typeof globalThis & { __WEAPP_VITE_VSCODE_MOCK__?: unknown }).__WEAPP_VITE_VSCODE_MOCK__
+    await fs.rm(tempDir, { force: true, recursive: true })
   }
 }
 
