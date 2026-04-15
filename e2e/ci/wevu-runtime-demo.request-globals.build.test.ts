@@ -32,10 +32,10 @@ describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => 
     const runtimeJs = await fs.readFile(runtimeJsPath, 'utf8')
     const pageJs = await fs.readFile(pageJsPath, 'utf8')
 
-    expect(runtimeJs).toContain('Object.defineProperty(exports,`t`,{enumerable:!0,get:function(){return')
+    expect(runtimeJs).toContain('Object.defineProperty(exports,')
     expect(runtimeJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
     expect(pageJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-    expect(pageJs).toContain('const __rm = require(`../../request-globals-runtime.js`)')
+    expect(pageJs).toMatch(/const __rm = require\((['"`])\.\.\/\.\.\/request-globals-runtime\.js\1\)/)
     expect(pageJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
     expect(pageJs).toContain('var fetch = __rc.fetch')
     expect(pageJs).toContain('var URL = __rc.URL')

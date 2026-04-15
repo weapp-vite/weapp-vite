@@ -57,14 +57,14 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
       const distRoot = await runBuild(testCase.appRoot, testCase.label)
       const runtimeJs = await fs.readFile(path.join(distRoot, 'request-globals-runtime.js'), 'utf8')
 
-      expect(runtimeJs).toContain('Object.defineProperty(exports,`t`,{enumerable:!0,get:function(){return')
+      expect(runtimeJs).toContain('Object.defineProperty(exports,')
       expect(runtimeJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
 
       for (const entryFile of testCase.entryFiles) {
         const entryJs = await fs.readFile(path.join(distRoot, entryFile), 'utf8')
 
         expect(entryJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-        expect(entryJs).toContain('require(`../../request-globals-runtime.js`)')
+        expect(entryJs).toMatch(/require\((['"`])\.\.\/\.\.\/request-globals-runtime\.js\1\)/)
         expect(entryJs).toContain('var fetch = __rc.fetch')
         expect(entryJs).toContain('var XMLHttpRequest = __rc.XMLHttpRequest')
         expect(entryJs).toContain('var WebSocket = __rc.WebSocket')

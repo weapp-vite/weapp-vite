@@ -27,6 +27,6 @@ describe.sequential('e2e app: object-literal-bind-prop', () => {
     expect(pageWxml).not.toContain('root="{{({')
 
     expect(pageJs).toContain('__wv_bind_0')
-    expect(pageJs).toContain('return{a:`aaaa`}')
+    expect(pageJs).toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
   })
 })
