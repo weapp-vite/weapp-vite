@@ -29,6 +29,6 @@ describe('weapp-vite config file', () => {
     expect(ctx.configService.options.config.define?.__FROM_VITE_CONFIG__).toBe('"vite"')
     expect(ctx.configService.options.config.define?.__FROM_WEAPP_CONFIG__).toBeUndefined()
     expect(ctx.configService.options.config.build?.sourcemap).toBe(true)
-    expect(ctx.configService.options.config.build?.minify).not.toBe(false)
+    expect(ctx.configService.options.config.build?.minify).toBeUndefined()
   })
 })

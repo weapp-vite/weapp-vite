@@ -170,14 +170,28 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('issue-448 next web runtime globals')
     expect(pageJs).toContain('_runE2E')
     expect(pageJs).toContain('microtaskState')
-    expect(pageJs).toContain('targets:[`atob`,`btoa`,`queueMicrotask`,`performance`,`crypto`,`Event`,`CustomEvent`]')
-    expect(pageJs).toContain('get atob(){return r}')
-    expect(pageJs).toContain('get btoa(){return i}')
-    expect(pageJs).toContain('get queueMicrotask(){return a}')
-    expect(pageJs).toContain('get performance(){return o}')
-    expect(pageJs).toContain('get crypto(){return s}')
-    expect(pageJs).toContain('get Event(){return c}')
-    expect(pageJs).toContain('get CustomEvent(){return l}')
+    expect(pageJs).toContain('installWebRuntimeGlobals({ targets: [')
+    expect(pageJs).toContain('"queueMicrotask"')
+    expect(pageJs).toContain('const encoded = btoa("AB");')
+    expect(pageJs).toContain('function _runE2E() {')
+  })
+
+  it('issue #457: keeps injected web runtime code readable in production output', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-457/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-457/index.wxml')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const lineCount = pageJs.split('\n').length
+
+    expect(pageWxml).toContain('issue-457 web runtime debug readability')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('installWebRuntimeGlobals({ targets: [')
+    expect(pageJs).toContain('"atob"')
+    expect(pageJs).toContain('"btoa"')
+    expect(pageJs).toContain('const encoded = btoa("issue-457");')
+    expect(lineCount).toBeGreaterThan(5)
   })
 
   it('issue #459: keeps directly imported web-apis polyfills interoperable in github-issues app', async () => {
