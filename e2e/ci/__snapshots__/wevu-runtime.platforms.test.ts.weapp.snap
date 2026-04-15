@@ -157,12 +157,9 @@ exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > we
 
 exports[`wevu runtime platform outputs > builds and snapshots weapp outputs > wevu-runtime::weapp::pages/hmr-sfc/index 1`] = `
 "<weapp-layout-default>
-  <import src="../../shared-hmr/card-template.wxml" />
-  <wxs module="hmrShared" src="../../shared-hmr/helper.wxs" />
   <view class="hmr-sfc-page">
     <view class="title">HMR-SFC</view>
     <view class="marker">{{marker}}</view>
-    <template is="hmrSharedCard" data="{{ label: hmrShared.label() }}"></template>
   </view>
 </weapp-layout-default>
 "
