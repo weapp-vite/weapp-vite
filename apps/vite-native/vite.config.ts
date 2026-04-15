@@ -6,7 +6,7 @@ import path from 'pathe'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 // import Inspect from 'vite-plugin-inspect'
 
-import { UnifiedViteWeappTailwindcssPlugin as uvwt } from 'weapp-tailwindcss/vite'
+import { weappTailwindcss } from 'weapp-tailwindcss/vite'
 import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components/resolvers'
 // import { register } from 'tsx/esm/api'
 // register()
@@ -36,7 +36,7 @@ export default <UserConfig>{
   plugins: process.env.__TEST__
     ? []
     : [
-        uvwt({
+        weappTailwindcss({
           rem2rpx: true,
           cssSelectorReplacement: {
             root: ['page', '.tw-page'],

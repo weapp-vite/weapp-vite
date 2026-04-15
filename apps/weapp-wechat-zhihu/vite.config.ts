@@ -1,4 +1,4 @@
-import { UnifiedViteWeappTailwindcssPlugin as uvwt } from 'weapp-tailwindcss/vite'
+import { weappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
@@ -6,7 +6,7 @@ export default defineConfig({
     // weapp-vite options
   },
   plugins: [
-    uvwt(
+    weappTailwindcss(
       {
         rem2rpx: true,
       },

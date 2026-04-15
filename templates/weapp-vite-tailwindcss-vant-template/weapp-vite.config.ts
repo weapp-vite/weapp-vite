@@ -1,4 +1,4 @@
-import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
+import { weappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'
 
@@ -43,8 +43,8 @@ export default defineConfig({
     },
   },
   plugins: [
-    UnifiedViteWeappTailwindcssPlugin({
+    weappTailwindcss({
       rem2rpx: true,
-    }) as any,
+    }),
   ],
 })

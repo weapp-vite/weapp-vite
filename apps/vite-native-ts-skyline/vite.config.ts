@@ -1,7 +1,7 @@
 // import path from 'node:path'
-import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
-import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
+import { weappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
+import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 
 export default defineConfig({
   weapp: {
@@ -18,8 +18,7 @@ export default defineConfig({
     // weapp-vite options
   },
   plugins: [
-    // @ts-ignore
-    UnifiedViteWeappTailwindcssPlugin({
+    weappTailwindcss({
       rem2rpx: true,
     }),
   ],
