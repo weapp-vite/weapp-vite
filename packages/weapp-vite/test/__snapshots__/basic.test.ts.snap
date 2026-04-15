@@ -1,6 +1,14 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`build basic > dist > app.js 1`] = `"App({globalData:{},onLaunch(){}});"`;
+exports[`build basic > dist > app.js 1`] = `
+"//#region test/fixture-projects/weapp-vite/basic/src/app.ts
+App({
+	globalData: {},
+	onLaunch() {}
+});
+//#endregion
+"
+`;
 
 exports[`build basic > dist > app.json 1`] = `
 "{
@@ -16,11 +24,17 @@ exports[`build basic > dist > app.json 1`] = `
 `;
 
 exports[`build basic > dist > app.wxss 1`] = `
-".app{color:red}
-/*$vite$:1*/"
+".app {
+  color: red;
+}/*$vite$:1*/"
 `;
 
-exports[`build basic > dist > components/Navbar/Navbar.js 1`] = `"Component({});"`;
+exports[`build basic > dist > components/Navbar/Navbar.js 1`] = `
+"//#region test/fixture-projects/weapp-vite/basic/src/components/Navbar/Navbar.ts
+Component({});
+//#endregion
+"
+`;
 
 exports[`build basic > dist > components/Navbar/Navbar.json 1`] = `
 "{
@@ -36,11 +50,22 @@ exports[`build basic > dist > components/Navbar/Navbar.wxml 1`] = `
 `;
 
 exports[`build basic > dist > components/Navbar/Navbar.wxss 1`] = `
-".navbar{color:red}
-/*$vite$:1*/"
+".navbar {
+  color: red;
+}/*$vite$:1*/"
 `;
 
-exports[`build basic > dist > pages/index/index.js 1`] = `"var e=class{constructor(){this.x=\`1\`}};Page({data:{Test:e}});"`;
+exports[`build basic > dist > pages/index/index.js 1`] = `
+"//#region test/fixture-projects/weapp-vite/basic/src/pages/index/index.ts
+var Test = class {
+	constructor() {
+		this.x = "1";
+	}
+};
+Page({ data: { Test } });
+//#endregion
+"
+`;
 
 exports[`build basic > dist > pages/index/index.json 1`] = `
 "{
@@ -60,8 +85,9 @@ exports[`build basic > dist > pages/index/index.wxml 1`] = `
 `;
 
 exports[`build basic > dist > pages/index/index.wxss 1`] = `
-".page{color:red}
-/*$vite$:1*/"
+".page {
+  color: red;
+}/*$vite$:1*/"
 `;
 
 exports[`build basic > dist > sitemap.json 1`] = `
