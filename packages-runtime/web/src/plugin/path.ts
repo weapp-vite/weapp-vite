@@ -66,8 +66,10 @@ export function toViteFsImport(absPath: string) {
 export function resolveRuntimePolyfillPath() {
   const currentDir = dirname(fileURLToPath(import.meta.url))
   const candidates = [
+    resolve(currentDir, '../runtime/index.mjs'),
     resolve(currentDir, './runtime/index.mjs'),
     resolve(currentDir, '../runtime/polyfill.ts'),
+    resolve(currentDir, '../runtime/index.ts'),
   ]
 
   for (const candidate of candidates) {
