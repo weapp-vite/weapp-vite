@@ -34,8 +34,13 @@ keywords:
 ## 0. 准备工作
 
 1. 下载并安装最新版 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)。
-2. 启动开发者工具，在「设置 > 安全设置」中勾选 **服务端口**。这是 `pnpm dev --open`、`pnpm open` 等命令能唤起 IDE 的前提。
-3. 第一次使用建议先手动打开一次项目，确认开发者工具可用，避免后续命令行提示 _“请先在微信开发者工具中开启服务端口”_。
+2. 启动开发者工具，并先确认当前账号已登录。`weapp-ide-cli` / `weapp-vite` 现在会在调用前自动尝试预热 DevTools 安全设置，但首次仍建议手动确认开发者工具可正常工作。
+3. 如果你希望命令行默认自动信任项目，可执行：
+
+```sh
+weapp config set autoBootstrapDevtools true
+weapp config set autoTrustProject true
+```
 
 ## 1. 使用官方模板
 
@@ -250,19 +255,19 @@ bun i
 
 ```sh
 pnpm dev
-pnpm dev --open # 已开启服务端口时自动打开微信开发者工具
-pnpm dev -o # 已开启服务端口时自动打开微信开发者工具
+pnpm dev --open # 自动预热 DevTools 配置后打开微信开发者工具
+pnpm dev -o # 自动预热 DevTools 配置后打开微信开发者工具
 wv ide logs --open # 持续监听 DevTools console，并桥接回终端
 ```
 
-命令会启动监听构建。保存后会自动重新编译并同步到开发目录；如果已开启服务端口，也可以配合 `--open` 直接拉起微信开发者工具。
+命令会启动监听构建。保存后会自动重新编译并同步到开发目录；配合 `--open` 时，会先尝试预热 DevTools 配置，再直接拉起微信开发者工具。
 
 ### 构建命令
 
 ```sh
 pnpm build
-pnpm build --open # 打开微信开发者工具，见下方
-pnpm build -o # 打开微信开发者工具，见下方
+pnpm build --open # 预热 DevTools 配置后打开微信开发者工具，见下方
+pnpm build -o # 预热 DevTools 配置后打开微信开发者工具，见下方
 ```
 
 此时会执行生产构建，重新生成输出目录，并应用压缩、静态资源处理和分包产物整理。
@@ -271,9 +276,10 @@ pnpm build -o # 打开微信开发者工具，见下方
 
 ```sh
 pnpm open
+wv ide setup .
 ```
 
-使用该命令直接打开微信开发者工具（需要先开启服务端口）。
+`pnpm open` 会直接打开微信开发者工具；`wv ide setup .` 则只做 DevTools 配置预热，不会立即打开 IDE。
 
 也可以通过 `weapp-vite` 直接调用 `weapp-ide-cli` 的完整命令能力（预览、上传、automator、config 等）：
 
@@ -288,6 +294,7 @@ wv compare --project ./dist/build/mp-weixin --baseline .screenshots/baseline/ind
 # 或使用命名空间透传
 wv ide preview --project ./dist/build/mp-weixin
 wv ide config show
+wv ide setup .
 ```
 
 > [!WARNING]
@@ -299,7 +306,7 @@ wv ide config show
 - 想开始使用 Vue 单文件组件：看 [Vue SFC 开发](/guide/vue-sfc/) 和 [Wevu 概览](/wevu/)。
 - 想减少手写 `app.json.pages` 与 `usingComponents`：看 [自动路由](/guide/auto-routes) 与 [自动导入组件](/guide/auto-import)。
 - 想做 AI 协作或本地 MCP：看 [AI 协作](/guide/ai) 与 [@weapp-vite/mcp](/packages/mcp)。
-  > 请在 `微信开发者工具` → `设置` → `安全设置` → 勾选 `服务端口`。
+  > 默认情况下 CLI 会自动尝试预热 DevTools 服务端口配置；如果你不希望自动处理，可执行 `weapp config set autoBootstrapDevtools false`。
 
 > [!WARNING]
 > Linux 目前没有官方微信开发者工具，请安装社区版：[msojocs/wechat-web-devtools-linux](https://github.com/msojocs/wechat-web-devtools-linux)，并把 `wechat-devtools-cli` 链接到系统 `PATH`，例如：

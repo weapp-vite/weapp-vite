@@ -130,6 +130,11 @@ wv open [root]
 | --------------------------- | --------------------------------------- |
 | `-p, --platform <platform>` | 目标平台（`weapp` \| `h5` \| `alipay`） |
 
+说明：
+
+- 当目标平台为 `weapp` 时，`wv open` 会先复用 `weapp-ide-cli` 的底层能力，自动尝试预热微信开发者工具安全设置。
+- 若你通过 `weapp config set autoTrustProject true` 开启了默认项目信任，未显式传 `--trust-project` 时也会按该策略执行。
+
 ### 5) `ide logs`
 
 持续监听微信开发者工具里的小程序日志，并转发到当前终端。
@@ -160,7 +165,27 @@ wv ide logs --open
 wv ide logs ./dist/dev -p weapp
 ```
 
-### 6) `npm`（含别名）
+### 6) `ide setup`
+
+只预热微信开发者工具本地配置，不立即打开 IDE。
+
+```bash
+wv ide setup [root]
+```
+
+适用场景：
+
+- 想先把 DevTools 安全设置和项目信任状态写好，再手动打开 IDE
+- 在自动化脚本里提前准备环境，但不希望立即拉起窗口
+
+示例：
+
+```bash
+wv ide setup .
+wv ide setup ./dist/dev
+```
+
+### 7) `npm`（含别名）
 
 调用 IDE 的 npm 构建能力。
 
@@ -170,7 +195,7 @@ wv build:npm
 wv build-npm
 ```
 
-### 7) `generate` / `g`
+### 8) `generate` / `g`
 
 生成 app / page / component 文件骨架。
 
@@ -280,7 +305,25 @@ wv cache --clean compile
 wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
 wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 wv cache --clean all
+wv config set autoBootstrapDevtools true
+wv config set autoTrustProject true
 ```
+
+和 DevTools 自动预热相关的高频配置：
+
+```bash
+wv config show
+wv config doctor
+wv config get autoBootstrapDevtools
+wv config get autoTrustProject
+wv config set autoBootstrapDevtools true
+wv config set autoTrustProject true
+```
+
+默认生效值：
+
+- `autoBootstrapDevtools`: `true`
+- `autoTrustProject`: `false`
 
 高频透传命令里，和 AI 验收最相关的是下面两类：
 
