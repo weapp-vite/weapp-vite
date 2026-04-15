@@ -28,6 +28,10 @@ import {
   getPreferredPageFilePath,
   getRouteFromPageFilePath,
 } from './navigation'
+import {
+  getRelativeDisplayPath,
+  isSameOrDescendantPath,
+} from './pathUtils'
 
 function normalizeRoute(route: string) {
   return route.trim().replace(/^\/+|\/+$/g, '')
@@ -67,7 +71,7 @@ function resolveUsingComponentCandidatePaths(
 }
 
 function matchesMovedPath(candidatePath: string, originalPath: string) {
-  return candidatePath === originalPath || candidatePath.startsWith(`${originalPath}${path.sep}`)
+  return isSameOrDescendantPath(candidatePath, originalPath)
 }
 
 function getMovedCandidatePath(candidatePath: string, originalPath: string, targetPath: string) {
@@ -256,7 +260,7 @@ export async function getWeappViteProjectSignals(folderPath: string, packageJson
 
   for (const appJsonPath of appJsonCandidates) {
     if (await pathExists(appJsonPath)) {
-      fileSignals.push(`存在 ${path.relative(folderPath, appJsonPath)}`)
+      fileSignals.push(`存在 ${getRelativeDisplayPath(folderPath, appJsonPath)}`)
       hasAppJsonSignal = true
       break
     }
@@ -438,7 +442,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
     items.push({
       label: '$(package) package.json',
       description: '项目脚本与依赖',
-      detail: path.relative(workspacePath, context.packageJsonPath),
+      detail: getRelativeDisplayPath(workspacePath, context.packageJsonPath),
       uri: vscode.Uri.file(context.packageJsonPath),
     })
   }
@@ -447,7 +451,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
     items.push({
       label: '$(settings-gear) vite.config',
       description: 'weapp-vite 配置入口',
-      detail: path.relative(workspacePath, viteConfigPath),
+      detail: getRelativeDisplayPath(workspacePath, viteConfigPath),
       uri: vscode.Uri.file(viteConfigPath),
     })
   }
@@ -456,7 +460,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
     items.push({
       label: '$(json) app.json',
       description: '小程序全局配置',
-      detail: path.relative(workspacePath, appJsonPath),
+      detail: getRelativeDisplayPath(workspacePath, appJsonPath),
       uri: vscode.Uri.file(appJsonPath),
     })
 
@@ -475,7 +479,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
       items.push({
         label: `$(file-submodule) ${route}`,
         description: '页面文件',
-        detail: path.relative(workspacePath, pageFilePath),
+        detail: getRelativeDisplayPath(workspacePath, pageFilePath),
         uri: vscode.Uri.file(pageFilePath),
       })
     }

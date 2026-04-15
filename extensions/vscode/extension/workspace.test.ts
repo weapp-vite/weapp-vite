@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import { afterEach, it, vi } from 'vitest'
 
 afterEach(() => {
@@ -8,10 +9,14 @@ afterEach(() => {
   vi.resetModules()
 })
 
+function normalizeFsPath(fsPath: string) {
+  return path.normalize(fsPath)
+}
+
 it('updates rooted usingComponents paths when a component file moves', async () => {
   const fileContents = new Map<string, string>([
-    ['/workspace/src/app.json', '{}\n'],
-    ['/workspace/src/pages/home/index.vue', [
+    [normalizeFsPath('/workspace/src/app.json'), '{}\n'],
+    [normalizeFsPath('/workspace/src/pages/home/index.vue'), [
       '<json lang="jsonc">',
       '{',
       '  "usingComponents": {',
@@ -48,8 +53,8 @@ it('updates rooted usingComponents paths when a component file moves', async () 
           },
           findFiles: async () => [
             {
-              fsPath: '/workspace/src/pages/home/index.vue',
-              path: '/workspace/src/pages/home/index.vue',
+              fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+              path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
             },
           ],
         },
@@ -87,12 +92,12 @@ it('updates rooted usingComponents paths when a component file moves', async () 
         path: '/workspace',
       },
     },
-    '/workspace/src/components/card/user/index.vue',
-    '/workspace/src/components/profile/card/index.vue',
+    normalizeFsPath('/workspace/src/components/card/user/index.vue'),
+    normalizeFsPath('/workspace/src/components/profile/card/index.vue'),
   )
 
   assert.equal(updates.length, 1)
-  assert.equal(updates[0].filePath, '/workspace/src/pages/home/index.vue')
+  assert.equal(updates[0].filePath, normalizeFsPath('/workspace/src/pages/home/index.vue'))
   assert.equal(updates[0].nextText.includes('/components/profile/card/index'), true)
 
   const removalUpdates = await getVueTextsWithRemovedUsingComponentPath(
@@ -102,7 +107,7 @@ it('updates rooted usingComponents paths when a component file moves', async () 
         path: '/workspace',
       },
     },
-    '/workspace/src/components/card/user/index.vue',
+    normalizeFsPath('/workspace/src/components/card/user/index.vue'),
   )
 
   assert.equal(removalUpdates.length, 1)
@@ -111,8 +116,8 @@ it('updates rooted usingComponents paths when a component file moves', async () 
 
 it('updates rooted usingComponents paths when a component directory moves', async () => {
   const fileContents = new Map<string, string>([
-    ['/workspace/src/app.json', '{}\n'],
-    ['/workspace/src/pages/home/index.vue', [
+    [normalizeFsPath('/workspace/src/app.json'), '{}\n'],
+    [normalizeFsPath('/workspace/src/pages/home/index.vue'), [
       '<json lang="jsonc">',
       '{',
       '  "usingComponents": {',
@@ -149,8 +154,8 @@ it('updates rooted usingComponents paths when a component directory moves', asyn
           },
           findFiles: async () => [
             {
-              fsPath: '/workspace/src/pages/home/index.vue',
-              path: '/workspace/src/pages/home/index.vue',
+              fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+              path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
             },
           ],
         },
@@ -187,8 +192,8 @@ it('updates rooted usingComponents paths when a component directory moves', asyn
         path: '/workspace',
       },
     },
-    '/workspace/src/components/card',
-    '/workspace/src/components/profile/card',
+    normalizeFsPath('/workspace/src/components/card'),
+    normalizeFsPath('/workspace/src/components/profile/card'),
   )
 
   assert.equal(updates.length, 1)
@@ -197,8 +202,8 @@ it('updates rooted usingComponents paths when a component directory moves', asyn
 
 it('removes usingComponents paths when a component directory is deleted', async () => {
   const fileContents = new Map<string, string>([
-    ['/workspace/src/app.json', '{}\n'],
-    ['/workspace/src/pages/home/index.vue', [
+    [normalizeFsPath('/workspace/src/app.json'), '{}\n'],
+    [normalizeFsPath('/workspace/src/pages/home/index.vue'), [
       '<json lang="jsonc">',
       '{',
       '  "usingComponents": {',
@@ -236,8 +241,8 @@ it('removes usingComponents paths when a component directory is deleted', async 
           },
           findFiles: async () => [
             {
-              fsPath: '/workspace/src/pages/home/index.vue',
-              path: '/workspace/src/pages/home/index.vue',
+              fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+              path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
             },
           ],
         },
@@ -274,7 +279,7 @@ it('removes usingComponents paths when a component directory is deleted', async 
         path: '/workspace',
       },
     },
-    '/workspace/src/components/card',
+    normalizeFsPath('/workspace/src/components/card'),
   )
 
   assert.equal(updates.length, 1)
@@ -284,7 +289,7 @@ it('removes usingComponents paths when a component directory is deleted', async 
 
 it('updates app.json routes when a page directory moves', async () => {
   const fileContents = new Map<string, string>([
-    ['/workspace/src/app.json', JSON.stringify({
+    [normalizeFsPath('/workspace/src/app.json'), JSON.stringify({
       pages: [
         'pages/card/user/index',
         'pages/home/index',
@@ -341,8 +346,8 @@ it('updates app.json routes when a page directory moves', async () => {
         path: '/workspace',
       },
     },
-    '/workspace/src/pages/card',
-    '/workspace/src/pages/profile/card',
+    normalizeFsPath('/workspace/src/pages/card'),
+    normalizeFsPath('/workspace/src/pages/profile/card'),
   )
 
   assert.equal(updates.length, 1)
@@ -352,7 +357,7 @@ it('updates app.json routes when a page directory moves', async () => {
 
 it('removes app.json routes when a page directory is deleted', async () => {
   const fileContents = new Map<string, string>([
-    ['/workspace/src/app.json', JSON.stringify({
+    [normalizeFsPath('/workspace/src/app.json'), JSON.stringify({
       pages: [
         'pages/card/user/index',
         'pages/home/index',
@@ -409,7 +414,7 @@ it('removes app.json routes when a page directory is deleted', async () => {
         path: '/workspace',
       },
     },
-    '/workspace/src/pages/card',
+    normalizeFsPath('/workspace/src/pages/card'),
   )
 
   assert.equal(updates.length, 1)

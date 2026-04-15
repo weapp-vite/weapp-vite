@@ -20,6 +20,9 @@ import {
   getMissingCommonScripts,
 } from './logic'
 import {
+  getRelativeDisplayPath,
+} from './pathUtils'
+import {
   getWeappViteProjectSignals,
 } from './workspace'
 
@@ -345,7 +348,7 @@ export function buildVueUsingComponentDiagnostics(documentText: string, referenc
   return references.map((reference) => {
     const startPosition = getPositionFromOffset(documentText, reference.valueStart)
     const endPosition = getPositionFromOffset(documentText, reference.valueEnd)
-    const relativeCandidates = reference.candidatePaths.map(candidate => path.relative(reference.workspacePath, candidate))
+    const relativeCandidates = reference.candidatePaths.map(candidate => getRelativeDisplayPath(reference.workspacePath, candidate))
     const diagnostic = new vscode.Diagnostic(
       new vscode.Range(
         startPosition.line,
@@ -575,7 +578,7 @@ export function getAppJsonRouteHover(
   candidatePaths: string[],
   workspacePath: string,
 ) {
-  const relativeCandidates = candidatePaths.map(candidate => path.relative(workspacePath, candidate))
+  const relativeCandidates = candidatePaths.map(candidate => getRelativeDisplayPath(workspacePath, candidate))
 
   if (pageFilePath) {
     return new vscode.MarkdownString([
@@ -583,7 +586,7 @@ export function getAppJsonRouteHover(
       '',
       `当前 route：\`${route}\``,
       '',
-      `已找到页面文件：\`${path.relative(workspacePath, pageFilePath)}\``,
+      `已找到页面文件：\`${getRelativeDisplayPath(workspacePath, pageFilePath)}\``,
     ].join('\n'))
   }
 
@@ -615,7 +618,7 @@ export function getVueUsingComponentHover(
     ].join('\n'))
   }
 
-  const relativeCandidates = candidatePaths.map(candidate => path.relative(workspacePath, candidate))
+  const relativeCandidates = candidatePaths.map(candidate => getRelativeDisplayPath(workspacePath, candidate))
 
   if (componentFilePath) {
     return new vscode.MarkdownString([
@@ -623,7 +626,7 @@ export function getVueUsingComponentHover(
       '',
       `当前路径：\`${componentPath}\``,
       '',
-      `已找到组件文件：\`${path.relative(workspacePath, componentFilePath)}\``,
+      `已找到组件文件：\`${getRelativeDisplayPath(workspacePath, componentFilePath)}\``,
     ].join('\n'))
   }
 

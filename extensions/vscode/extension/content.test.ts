@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import { it, vi } from 'vitest'
 
 function createDocument(text: string, fsPath = '/workspace/package.json') {
@@ -20,6 +21,10 @@ function createDocument(text: string, fsPath = '/workspace/package.json') {
       }
     },
   }
+}
+
+function normalizeFsPath(fsPath: string) {
+  return path.normalize(fsPath)
 }
 
 it('builds app.json diagnostics for missing page routes', async () => {
@@ -524,7 +529,7 @@ it('builds app.json route hover for missing page files', async () => {
 
 it('only builds package.json diagnostics for confirmed weapp-vite projects', async () => {
   const files = new Map<string, string>([
-    ['/workspace/app/package.json', JSON.stringify({
+    [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
       name: 'demo-app',
       dependencies: {
         'weapp-vite': '^1.0.0',
@@ -533,8 +538,8 @@ it('only builds package.json diagnostics for confirmed weapp-vite projects', asy
         dev: 'wv dev',
       },
     })],
-    ['/workspace/app/vite.config.ts', 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
-    ['/workspace/lib/package.json', JSON.stringify({
+    [normalizeFsPath('/workspace/app/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+    [normalizeFsPath('/workspace/lib/package.json'), JSON.stringify({
       name: 'demo-lib',
       dependencies: {
         'weapp-vite': '^1.0.0',
@@ -604,8 +609,10 @@ it('only builds package.json diagnostics for confirmed weapp-vite projects', asy
   const {
     buildPackageJsonDiagnostics,
   } = await import('./content')
-  const confirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get('/workspace/app/package.json')!, '/workspace/app/package.json'))
-  const unconfirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get('/workspace/lib/package.json')!, '/workspace/lib/package.json'))
+  const confirmedPackageJsonPath = normalizeFsPath('/workspace/app/package.json')
+  const unconfirmedPackageJsonPath = normalizeFsPath('/workspace/lib/package.json')
+  const confirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(confirmedPackageJsonPath)!, confirmedPackageJsonPath))
+  const unconfirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(unconfirmedPackageJsonPath)!, unconfirmedPackageJsonPath))
 
   assert.equal(confirmedDiagnostics.length, 1)
   assert.equal(confirmedDiagnostics[0].message, '建议补齐常用 weapp-vite 脚本：build, generate, open')

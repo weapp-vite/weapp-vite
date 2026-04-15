@@ -34,8 +34,8 @@ afterEach(() => {
 
 it('creates document links for existing local usingComponents paths', async () => {
   const existingFiles = new Set([
-    '/workspace/src/app.json',
-    '/workspace/src/components/card/user/index.vue',
+    path.normalize('/workspace/src/app.json'),
+    path.normalize('/workspace/src/components/card/user/index.vue'),
   ])
 
   vi.doMock('vscode', () => {
@@ -129,6 +129,6 @@ it('creates document links for existing local usingComponents paths', async () =
   const links = await provider.provideDocumentLinks(document)
 
   assert.equal(links.length, 1)
-  assert.equal(links[0].target.fsPath, '/workspace/src/components/card/user/index.vue')
+  assert.equal(links[0].target.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(links[0].tooltip, '打开组件文件 /components/card/user/index')
 })
