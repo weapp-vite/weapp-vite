@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-use-before-define -- JSX 渲染器存在递归与互相调用的编译 helper，按阅读顺序组织更稳定。 */
 import type {
   Expression,
   JSXElement,

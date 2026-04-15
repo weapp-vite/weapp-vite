@@ -16,6 +16,7 @@ import { writeJsonFile } from './utils/fs'
 const DIGIT_RE = /\d/
 const CRLF_RE = /\r\n/g
 const WINDOWS_VERBATIM_PATH_RE = /^\\\\\?\\/
+const TOURIST_APP_ID = 'touristappid'
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATE_DIR_MAP: Record<TemplateName, string> = {
   [TemplateName.default]: 'weapp-vite-template',
@@ -153,6 +154,21 @@ async function ensureDotGitignore(root: string) {
   await fs.move(gitignorePath, dotGitignorePath)
 }
 
+async function rewriteProjectConfigAppId(targetDir: string) {
+  const projectConfigPath = path.resolve(targetDir, 'project.config.json')
+  if (!await fs.pathExists(projectConfigPath)) {
+    return
+  }
+
+  const projectConfig = await fs.readJSON(projectConfigPath) as Record<string, any>
+  if (!projectConfig || typeof projectConfig !== 'object' || projectConfig.appid === TOURIST_APP_ID) {
+    return
+  }
+
+  projectConfig.appid = TOURIST_APP_ID
+  await writeJsonFile(projectConfigPath, projectConfig)
+}
+
 function createEmptyPackageJson(): PackageJson {
   return {
     name: 'weapp-vite-app',
@@ -279,6 +295,7 @@ export async function createProject(
   }
 
   await copyTemplateDir(preferredTemplateDir, workspaceTemplateDir, targetDir)
+  await rewriteProjectConfigAppId(targetDir)
 
   const templatePackagePath = path.resolve(preferredTemplateDir, 'package.json')
   const packageJsonPath = path.resolve(targetDir, 'package.json')
@@ -325,6 +342,7 @@ export const __internal = {
   createAgentsGuidelines,
   copyTemplateDir,
   ensureDotGitignore,
+  rewriteProjectConfigAppId,
   resolveTemplateDirs,
   shouldSkipTemplateFile,
   installRecommendedSkills,

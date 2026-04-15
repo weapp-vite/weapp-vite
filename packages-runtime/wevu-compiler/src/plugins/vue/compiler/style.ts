@@ -24,38 +24,6 @@ export interface StyleCompileOptions {
 }
 
 /**
- * 将 Vue SFC 的 style 块转换为 WXSS
- */
-export function compileVueStyleToWxss(
-  styleBlock: SFCStyleBlock,
-  options: StyleCompileOptions,
-): StyleCompileResult {
-  const { id, scoped, modules } = options
-  const source = styleBlock.content
-
-  let code = source
-
-  // 1. 处理 scoped 样式
-  if (scoped || styleBlock.scoped) {
-    code = transformScopedCss(code, id)
-  }
-
-  // 2. 处理 CSS Modules
-  if (modules || styleBlock.module) {
-    const moduleName = typeof styleBlock.module === 'string' ? styleBlock.module : '$style'
-    const moduleResult = transformCssModules(code, id)
-    return {
-      code: moduleResult.code,
-      modules: {
-        [moduleName]: moduleResult.classes,
-      },
-    }
-  }
-
-  return { code }
-}
-
-/**
  * 转换 scoped CSS
  * 为每个选择器添加特定的 scoped 属性
  */
@@ -93,6 +61,26 @@ function transformScopedCss(source: string, id: string): string {
 
     return `${selectors.join(', ')} ${rules}`
   })
+}
+
+/**
+ * 样式转换：CSS → WXSS
+ * 处理小程序不支持的 CSS 特性
+ */
+/**
+ * 生成简单的 hash
+ */
+function generateHash(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // 转为 32 位整数
+  }
+  // 使用更好的散列方法
+  const h = Math.abs(hash).toString(36)
+  // 如果 hash 太短，添加一些变化
+  return h + str.length.toString(36)
 }
 
 /**
@@ -136,21 +124,33 @@ function transformCssModules(source: string, id: string): {
 }
 
 /**
- * 样式转换：CSS → WXSS
- * 处理小程序不支持的 CSS 特性
+ * 将 Vue SFC 的 style 块转换为 WXSS
  */
-/**
- * 生成简单的 hash
- */
-function generateHash(str: string): string {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // 转为 32 位整数
+export function compileVueStyleToWxss(
+  styleBlock: SFCStyleBlock,
+  options: StyleCompileOptions,
+): StyleCompileResult {
+  const { id, scoped, modules } = options
+  const source = styleBlock.content
+
+  let code = source
+
+  // 1. 处理 scoped 样式
+  if (scoped || styleBlock.scoped) {
+    code = transformScopedCss(code, id)
   }
-  // 使用更好的散列方法
-  const h = Math.abs(hash).toString(36)
-  // 如果 hash 太短，添加一些变化
-  return h + str.length.toString(36)
+
+  // 2. 处理 CSS Modules
+  if (modules || styleBlock.module) {
+    const moduleName = typeof styleBlock.module === 'string' ? styleBlock.module : '$style'
+    const moduleResult = transformCssModules(code, id)
+    return {
+      code: moduleResult.code,
+      modules: {
+        [moduleName]: moduleResult.classes,
+      },
+    }
+  }
+
+  return { code }
 }

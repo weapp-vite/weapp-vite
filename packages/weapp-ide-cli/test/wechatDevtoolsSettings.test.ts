@@ -96,6 +96,7 @@ describe('bootstrapWechatDevtoolsSettings', () => {
     await fs.writeFile(path.join(localDataDir, 'hash_key_map_2.json'), '{}\n', 'utf8')
 
     const projectPath = '/Users/tester/Projects/demo-app'
+    const normalizedProjectPath = path.resolve(projectPath)
     const result = await bootstrapWechatDevtoolsSettings({
       homeDir,
       platform: 'darwin',
@@ -109,16 +110,16 @@ describe('bootstrapWechatDevtoolsSettings', () => {
       trustedProjectCount: 1,
     })
 
-    const trustedProjectHash = createStorageHash(`project2_${projectPath}`)
+    const trustedProjectHash = createStorageHash(`project2_${normalizedProjectPath}`)
     const hashKeyMap = await readJson(path.join(localDataDir, 'hash_key_map_2.json'))
     expect(hashKeyMap).toMatchObject({
-      [trustedProjectHash]: `project2_${projectPath}`,
+      [trustedProjectHash]: `project2_${normalizedProjectPath}`,
     })
 
     const trustedProject = await readJson(path.join(localDataDir, `localstorage_${trustedProjectHash}.json`))
     expect(trustedProject).toMatchObject({
-      projectid: projectPath,
-      projectpath: projectPath,
+      projectid: normalizedProjectPath,
+      projectpath: normalizedProjectPath,
       isTrusted: true,
     })
   })

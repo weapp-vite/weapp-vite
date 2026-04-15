@@ -120,6 +120,17 @@ describe('createProject', () => {
     expect(files).toContain('AGENTS.md')
   })
 
+  it.each(Object.values(TemplateName))('rewrites generated project.config.json appid to touristappid for template %s', async (templateName) => {
+    const root = await createTmpRoot(`tourist-appid-${templateName}`)
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, templateName)
+
+    const projectConfig = await readJsonAs<{ appid?: string }>(path.join(root, 'project.config.json'))
+    expect(projectConfig.appid).toBe('touristappid')
+  })
+
   it('installs recommended local skills when enabled', async () => {
     const root = await createTmpRoot('install-skills')
 
