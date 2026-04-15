@@ -148,6 +148,12 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - usernames, home-directory paths, local workspace names, PID values, machine-specific ports, or one-off debug artifact paths
   - CI/local generated report paths such as `docs/reports/**` unless the feature is explicitly about those outputs
 - Prefer repo-relative paths, temporary directories created inside the test at runtime, stable helper abstractions, and assertions that do not depend on local machine layout.
+- 对构建产物、bundle、shared chunk、runtime wrapper 的字符串断言，不要依赖打包器生成的局部 helper 名、临时变量名、chunk 内部导入别名或其 hash 后缀。
+- 禁止示例包括：`require_store_fwgCLl_K`、`require_src__P44BAOw`、`createContext-BDSht839`、`_sfc_main$1`、`n`、`e` 这类可能因编译、压缩、拆包顺序变化而漂移的名字。
+- 这类断言应优先改为稳定语义校验：
+  - 匹配公开导出名、稳定 marker、相对路径、字面量值、对象结构、调用语义
+  - 需要正则时，匹配结构和相邻语义，不要把“随机 helper 名本身”作为通过条件
+- 如果必须覆盖一段编译产物结构，先证明该名字是显式稳定契约；否则默认视为不稳定实现细节。
 - Scope clarification:
   - This restriction primarily targets production/source code, shared fixtures, snapshots, and general-purpose assertions introduced while fixing tests.
   - Ordinary test-only temporary paths created at runtime in `*.test.ts` / `*.spec.ts` are allowed when they are isolated, machine-agnostic, and not asserted as machine-specific values.

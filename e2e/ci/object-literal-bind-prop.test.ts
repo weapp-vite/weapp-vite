@@ -22,11 +22,13 @@ describe.sequential('e2e app: object-literal-bind-prop', () => {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
 
-    expect(pageWxml).toContain('root="{{__wv_bind_0}}"')
+    const bindIdMatch = pageWxml.match(/root="\{\{(__wv_bind_\d+)\}\}"/)
+    expect(bindIdMatch).not.toBeNull()
+    const bindId = bindIdMatch?.[1] ?? '__wv_bind_0'
     expect(pageWxml).not.toContain('root="{{{')
     expect(pageWxml).not.toContain('root="{{({')
 
-    expect(pageJs).toContain('__wv_bind_0')
-    expect(pageJs).toContain('return{a:`aaaa`}')
+    expect(pageJs).toContain(bindId)
+    expect(pageJs).toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
   })
 })

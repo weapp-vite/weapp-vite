@@ -66,6 +66,21 @@ function deserializeSnapshotValue(snapshotValue: string) {
   return normalized
 }
 
+function normalizeStyleSnapshotValue(value: string) {
+  return value
+    .replace(/\r\n/g, '\n')
+    .replace(/^\/\*.*?\*\/\n?/gm, '')
+    .replace(/\n{2,}/g, '\n')
+    .replace(/\{([^{}]*)\}/g, (_, body: string) => {
+      const declarations = body
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b))
+      return declarations.length > 0 ? `{\n  ${declarations.join('\n  ')}\n}` : '{}'
+    })
+}
+
 async function loadPlatformSnapshots(platform: RuntimePlatform) {
   const cached = SNAPSHOT_CACHE.get(platform)
   if (cached) {
@@ -93,7 +108,10 @@ async function expectPlatformSnapshot(platform: RuntimePlatform, key: string, va
   const currentTestName = expect.getState().currentTestName
   const snapshotKey = `${currentTestName} > ${key} 1`
   expect(snapshotData[snapshotKey]).toBeDefined()
-  expect(value).toBe(deserializeSnapshotValue(snapshotData[snapshotKey]))
+  const expectedValue = deserializeSnapshotValue(snapshotData[snapshotKey])
+  const normalizedValue = key.endsWith('.style') ? normalizeStyleSnapshotValue(value) : value
+  const normalizedExpectedValue = key.endsWith('.style') ? normalizeStyleSnapshotValue(expectedValue) : expectedValue
+  expect(normalizedValue).toBe(normalizedExpectedValue)
 }
 
 const describeRuntimePlatforms = SHOULD_VALIDATE_WEAPP ? describe.sequential : describe.skip.sequential
@@ -126,16 +144,16 @@ describeRuntimePlatforms('wevu runtime platform outputs', () => {
         const scriptPath = path.join(DIST_ROOT, `${pagePath}.js`)
         const scriptSource = await fs.readFile(scriptPath, 'utf-8')
         expect(scriptSource).toMatch(/this\.root(?:\)\.a|\.a)/)
-        expect(scriptSource).toMatch(/try\s*\{return/)
-        expect(scriptSource).toMatch(/catch(?:\([^)]*\))?\{return``\}/)
+        expect(scriptSource).toMatch(/try\s*\{\s*return/)
+        expect(scriptSource).toMatch(/catch(?:\s*\([^)]*\))?\s*\{\s*return\s*(?:""|''|``)\s*;\s*\}/)
       }
     }
 
     const commonScriptPath = path.join(DIST_ROOT, 'common.js')
     if (await fs.pathExists(commonScriptPath)) {
       const commonScript = await fs.readFile(commonScriptPath, 'utf-8')
-      expect(commonScript).toContain(`MP_PLATFORM:\`${platform}\``)
-      expect(commonScript).toContain(`PLATFORM:\`${platform}\``)
+      expect(commonScript).toMatch(new RegExp(`["'\`]MP_PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
+      expect(commonScript).toMatch(new RegExp(`["'\`]PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
 
       if (platform === 'tt') {
         expect(commonScript).toMatch(/\?\.tt\b|\.tt\b|[`'"]tt[`'"]/)

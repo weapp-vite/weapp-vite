@@ -70,8 +70,8 @@ async function runBuild(appRoot: string, platform: RuntimePlatform) {
 }
 
 function assertPlatformTreeShaking(commonScript: string, platform: RuntimePlatform) {
-  expect(commonScript).toContain(`MP_PLATFORM:\`${platform}\``)
-  expect(commonScript).toContain(`PLATFORM:\`${platform}\``)
+  expect(commonScript).toMatch(new RegExp(`["'\`]MP_PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
+  expect(commonScript).toMatch(new RegExp(`["'\`]PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
 
   if (platform === 'tt') {
     expect(commonScript).toMatch(/\?\.tt\b|\.tt\b|[`'"]tt[`'"]/)

@@ -71,6 +71,6 @@ describe.sequential('e2e app: wevu-vue-demo (template compat)', () => {
     expect(pageJs).toContain('Object.fromEntries')
     expect(pageJs).toContain('dynamic-')
     expect(pageJs).toContain('onNativeEventWithArgs')
-    expect(pageJs).toContain('`touchcancel`,`zone`,n')
+    expect(pageJs).toMatch(/['"`]touchcancel['"`],\s*['"`]zone['"`],/)
   })
 })

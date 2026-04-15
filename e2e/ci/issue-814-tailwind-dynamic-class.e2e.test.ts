@@ -37,7 +37,7 @@ describe.skip('e2e app: issue #814 tailwind dynamic class matrix', () => {
   it('tailwind3 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind3)
 
-    expect(wxml).toContain('class="{{__wv_cls_0}}"')
+    expect(wxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
     expect(wxml).toContain('gap-_b24px_B')
     expect(js).toContain('`flex`+')
     expect(js).toContain('this.bbb')
@@ -49,7 +49,7 @@ describe.skip('e2e app: issue #814 tailwind dynamic class matrix', () => {
   it('tailwind4 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind4)
 
-    expect(wxml).toContain('class="{{__wv_cls_0}}"')
+    expect(wxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
     expect(wxml).toContain('gap-_b24px_B')
     expect(js).toContain('`flex`+')
     expect(js).toContain('this.bbb')
@@ -61,7 +61,7 @@ describe.skip('e2e app: issue #814 tailwind dynamic class matrix', () => {
   it('tailwind4-broken keeps dynamic class binding in js but reproduces unescaped arbitrary-value symptom', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind4Broken)
 
-    expect(wxml).toContain('class="{{__wv_cls_0}}"')
+    expect(wxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
     expect(wxml).toContain('gap-_b24px_B')
     expect(js).toContain('`flex`+')
     expect(js).toContain('this.bbb')

@@ -196,6 +196,7 @@ describe('runtime config merge miniprogram', () => {
       __PROD__: true,
       __VITE_IS_MODERN__: 'false',
     })
+    expect(result.build?.minify).toBe(false)
     expect(result.build?.emptyOutDir).toBe(false)
     expect(result.build?.modulePreload).toBe(false)
     expect((result.build as any).rollupOptions).toBeUndefined()

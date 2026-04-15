@@ -178,6 +178,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       define: miniprogramDefines,
       build: {
         modulePreload: false,
+        minify: false,
         emptyOutDir: false,
         // @ts-ignore
         rolldownOptions: {

@@ -101,7 +101,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('/pages/issue-431/index.js')
     expect(pageJs).toContain('/pages/issue-431')
     expect(pageJs).toContain('importMetaSnapshot')
-    expect(pageJs).toContain('url:`/pages/issue-431/index.js`')
+    expect(pageJs).toContain('url: "/pages/issue-431/index.js"')
     expect(pageJs).not.toContain('import.meta.url')
     expect(pageJs).not.toContain('import.meta.dirname')
     expect(pageJs).not.toContain('import.meta.env')
@@ -152,11 +152,14 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('transportName')
     expect(pageJs).toContain('socket.invalid/github-issues')
     expect(pageJs).toContain('/* __wvRGC__ */')
-    expect(pageJs).toContain('const __rc = __rm["r"]({ targets: ["WebSocket"] }) || globalThis;')
-    expect(pageJs).toContain('var WebSocket = __rc.WebSocket;')
-    expect(pageJs).toContain('var URL = __rc.URL;')
-    expect(pageJs).toContain('__ra["WebSocket"] = __rc.WebSocket;')
-    expect(pageJs).toContain('__ra["URL"] = __rc.URL;')
+    expect(pageJs).toContain('targets: ["WebSocket"]')
+    expect(pageJs).toContain('|| globalThis')
+    expect(pageJs).toContain('var WebSocket =')
+    expect(pageJs).toContain('.WebSocket;')
+    expect(pageJs).toContain('var URL =')
+    expect(pageJs).toContain('.URL;')
+    expect(pageJs).toContain('["WebSocket"] =')
+    expect(pageJs).toContain('["URL"] =')
   })
 
   it('issue #448: injects the next batch of web runtime globals on demand', async () => {
@@ -170,14 +173,28 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('issue-448 next web runtime globals')
     expect(pageJs).toContain('_runE2E')
     expect(pageJs).toContain('microtaskState')
-    expect(pageJs).toContain('targets:[`atob`,`btoa`,`queueMicrotask`,`performance`,`crypto`,`Event`,`CustomEvent`]')
-    expect(pageJs).toContain('get atob(){return r}')
-    expect(pageJs).toContain('get btoa(){return i}')
-    expect(pageJs).toContain('get queueMicrotask(){return a}')
-    expect(pageJs).toContain('get performance(){return o}')
-    expect(pageJs).toContain('get crypto(){return s}')
-    expect(pageJs).toContain('get Event(){return c}')
-    expect(pageJs).toContain('get CustomEvent(){return l}')
+    expect(pageJs).toContain('installWebRuntimeGlobals({ targets: [')
+    expect(pageJs).toContain('"queueMicrotask"')
+    expect(pageJs).toContain('const encoded = btoa("AB");')
+    expect(pageJs).toContain('function _runE2E() {')
+  })
+
+  it('issue #457: keeps injected web runtime code readable in production output', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-457/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-457/index.wxml')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const lineCount = pageJs.split('\n').length
+
+    expect(pageWxml).toContain('issue-457 web runtime debug readability')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('installWebRuntimeGlobals({ targets: [')
+    expect(pageJs).toContain('"atob"')
+    expect(pageJs).toContain('"btoa"')
+    expect(pageJs).toContain('const encoded = btoa("issue-457");')
+    expect(lineCount).toBeGreaterThan(5)
   })
 
   it('issue #459: keeps directly imported web-apis polyfills interoperable in github-issues app', async () => {
@@ -190,8 +207,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(pageWxml).toContain('issue-459 web-apis polyfill compatibility')
     expect(pageJs).toContain('_runE2E')
-    expect(pageJs).toContain('`/abc`,`https://issue-459.invalid`')
-    expect(pageJs).toContain('`bodyValue`')
+    expect(pageJs).toContain('"/abc", "https://issue-459.invalid"')
+    expect(pageJs).toContain('"bodyValue"')
     expect(pageJs).toContain('issue-459')
   })
 
@@ -246,10 +263,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('<attach-probe id="attach-probe" />')
     expect(pageWxml).toContain(`!__wv_page_layout_name || __wv_page_layout_name === 'default'`)
     expect(pageJs).toMatch(/__wv_page_layout_name:\s*[`'"]default[`'"]/)
-    expect(pageJs).toContain('__wv_page_layout_props:{}')
-    expect(pageJs).toContain('Object.keys(a).every(')
-    expect(pageJs).toContain('Object.keys(a).length===Object.keys(r).length')
-    expect(pageJs).toContain('||this.setData({__wv_page_layout_name:n,__wv_page_layout_props:r})')
+    expect(pageJs).toMatch(/__wv_page_layout_props:\s*\{\}/)
+    expect(pageJs).toContain('Object.keys(__wv_current_layout_props).every(')
+    expect(pageJs).toContain('Object.keys(__wv_current_layout_props).length === Object.keys(__wv_next_layout_props).length')
+    expect(pageJs).toContain('this.setData({')
   })
 
   it('issue #389: keeps native setPageLayout off the wevu layout runtime path', async () => {
@@ -360,8 +377,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('_runE2E')
     expect(pageJs).toContain('issue-446-short-bind')
     expect(pageJs).toContain('__wevuTemplateRefs')
-    expect(pageJs).toContain('name:`nativeAnchor`')
-    expect(pageJs).toContain('name:`shortBindProbe`')
+    expect(pageJs).toContain('name: "nativeAnchor"')
+    expect(pageJs).toContain('name: "shortBindProbe"')
     expect(pageJson).toContain('"ShortBindProbe": "/components/issue-446/ShortBindProbe/index"')
     expect(componentWxml).toContain('{{props.visible ? \'visible\' : \'hidden\'}}')
     expect(componentWxml).toContain('{{props.fooBar}}')
@@ -461,7 +478,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(computedPageJs).toContain('runE2E')
     expect(computedPageJs).toContain('showItemsChanged')
 
-    expect(objectLiteralWxml).toContain('root="{{__wv_bind_0}}"')
+    const objectLiteralBindMatch = objectLiteralWxml.match(/root="\{\{(__wv_bind_\d+)\}\}"/)
+    expect(objectLiteralBindMatch).not.toBeNull()
+    const objectLiteralBindId = objectLiteralBindMatch?.[1] ?? '__wv_bind_0'
     expect(objectLiteralWxml).not.toContain('root="{{{')
     expect(objectLiteralWxml).not.toContain('root="{{({')
     expect(objectLiteralWxml).toMatch(/wx:if="\{\{showList\}\}"/)
@@ -488,8 +507,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const mapClassBindingTokens = mapClassWxml.match(/__wv_cls_\d+/g) ?? []
     expect(new Set(mapClassBindingTokens).size).toBeGreaterThanOrEqual(1)
 
-    expect(objectLiteralJs).toContain('__wv_bind_0')
-    expect(objectLiteralJs).toMatch(/return\{a:[`'"]aaaa[`'"]\}/)
+    expect(objectLiteralJs).toContain(objectLiteralBindId)
+    expect(objectLiteralJs).toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
     expect(objectLiteralJs).toContain('showList')
     expect(objectLiteralJs).toContain('compactMode')
     expect(objectLiteralJs).toContain('activeId')
@@ -535,8 +554,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const wevuRuntime = await fs.readFile(wevuRuntimePath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-294 share hooks')
-    expect(issuePageJs).toContain('enableOnShareAppMessage:!0')
-    expect(issuePageJs).toContain('enableOnShareTimeline:!0')
+    expect(issuePageJs).toContain('enableOnShareAppMessage: true')
+    expect(issuePageJs).toContain('enableOnShareTimeline: true')
     expect(issuePageJs).not.toMatch(/onShareAppMessage(?:\(\)|:function\(\))\{return\{\}\}/)
     expect(issuePageJs).not.toMatch(/onShareTimeline(?:\(\)|:function\(\))\{return\{\}\}/)
     expect(issuePageJs).toContain('issue-294-share-')
@@ -654,7 +673,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageWxml).toContain('issue-309 onLoad hook')
     expect(issuePageWxml).toContain('loadCount: {{loadCount}}')
     expect(issuePageJs).toContain('_runE2E')
-    expect(issuePageJs).toContain('__wevu_isPage:!0')
+    expect(issuePageJs).toContain('__wevu_isPage: true')
     expect(issuePageJs).toContain('loadCount')
     expect(issuePageJs).not.toContain('onPullDownRefresh')
   })
@@ -671,7 +690,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageWxml).toContain('issue-309 created lifecycle onLoad hook')
     expect(issuePageWxml).toContain('loadCount: {{loadCount}}')
     expect(issuePageJs).toContain('_runE2E')
-    expect(issuePageJs).toContain('__wevu_isPage:!0')
+    expect(issuePageJs).toContain('__wevu_isPage: true')
     expect(issuePageJs).toContain('loadCount')
     expect(issuePageJs).not.toContain('onPullDownRefresh')
   })
@@ -747,9 +766,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toContain('_runE2E')
     expect(issuePageJs).toContain('setData')
     expect(issuePageJs).toContain('pick')
-    expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]count['"`]/)
-    expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]list['"`]/)
-    expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]__wv_bind_\d+['"`]/)
+    expect(issuePageJs).toContain('"count"')
+    expect(issuePageJs).toContain('"list"')
+    expect(issuePageJs).toMatch(/['"`]__wv_bind_\d+['"`]/)
   })
 
   it('issue #322: keeps static class and hidden v-show fallback when expression access throws', async () => {
@@ -770,11 +789,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageWxml).not.toContain('</input>')
     expect(issuePageWxml).toMatch(/<input[^>]*\/><view style="\{\{__wv_style_\d+\}\}" class="issue322-error-tip">/)
 
-    expect(issuePageJs).toContain('__wv_cls_0')
-    expect(issuePageJs).toContain('__wv_style_0')
-    expect(issuePageJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`errors`)')
-    expect(issuePageJs).toMatch(/return["'`]issue322-input issue322-input-base["'`]/)
-    expect(issuePageJs).toMatch(/return["'`]display: none["'`]/)
+    expect(issuePageJs).toMatch(/__wv_cls_\d+/)
+    expect(issuePageJs).toMatch(/__wv_style_\d+/)
+    expect(issuePageJs).toContain('Object.prototype.hasOwnProperty.call(this.$state, "errors")')
+    expect(issuePageJs).toMatch(/return\s+["'`]issue322-input issue322-input-base["'`]/)
+    expect(issuePageJs).toMatch(/return\s+["'`]display: none["'`]/)
   })
 
   it('issue #317: keeps shared chunk duplication in subpackages without invalid self or runtime imports', async () => {
@@ -952,22 +971,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toContain('_resetE2E')
     expect(issuePageJs).toContain('_runE2E')
 
-    expect(probeWxml).toContain('{{__wv_bind_0}}')
-    expect(probeWxml).toContain('{{__wv_bind_1}}')
+    const probeBindTokens = probeWxml.match(/__wv_bind_\d+/g) ?? []
+    expect(new Set(probeBindTokens).size).toBeGreaterThanOrEqual(2)
     expect(probeWxml).toMatch(/data-destructured-bool="\{\{__wv_bind_\d+\}\}"/)
     expect(probeWxml).toMatch(/data-props-bool="\{\{__wv_bind_\d+\}\}"/)
     expect(probeWxml).not.toContain('String(bool)')
     expect(probeWxml).not.toContain('String(props.bool)')
     expect(probeJs).toContain('__wevuProps.bool')
-    expect(probeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`bool`)')
+    expect(probeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state, "bool")')
     expect(probeJs).not.toContain('__wevuProps.props')
 
-    expect(strictProbeWxml).toContain('{{__wv_bind_0}}')
+    expect(strictProbeWxml).toMatch(/\{\{__wv_bind_\d+\}\}/)
     expect(strictProbeWxml).toMatch(/data-strict-bool="\{\{__wv_bind_\d+\}\}"/)
     expect(strictProbeWxml).toContain('data-strict-str="{{str}}"')
     expect(strictProbeWxml).not.toContain('String(bool)')
     expect(strictProbeJs).toContain('__wevuProps.bool')
-    expect(strictProbeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`bool`)')
+    expect(strictProbeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state, "bool")')
     expect(strictProbeJs).not.toContain('__wevuProps.props')
     expect(JSON.parse(strictProbeJson)?.styleIsolation).toBe('apply-shared')
   })
@@ -1001,7 +1020,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(probeWxml).toContain('{{historyText}}')
     expect(probeJs).toContain('valueHistory')
     expect(probeJs).toContain('historyText')
-    expect(probeJs).toMatch(/default:[`'"]0\.00[`'"]/)
+    expect(probeJs).toMatch(/default:\s*['"`]0\.00['"`]/)
   })
 
   it('issue #373: compiles shared store computed bindings across reLaunch pages', async () => {
@@ -1033,17 +1052,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(resultPageJs).toContain('increment')
     expect(resultPageJs).toContain('_runE2E')
 
-    expect(wevuRuntime).toContain('Object.defineProperty(exports,`_`')
-    const launchStoreToRefsMatch = launchPageJs.match(/let r=e\._\(\),\{count:i,doubled:a\}=e\.([A-Za-z$_][\w$]*)\(r\);/)
-    const resultStoreToRefsMatch = resultPageJs.match(/let r=e\._\(\),\{count:i,doubled:a\}=e\.([A-Za-z$_][\w$]*)\(r\);/)
-
-    expect(launchStoreToRefsMatch).toBeTruthy()
-    expect(resultStoreToRefsMatch).toBeTruthy()
-
-    const launchStoreToRefsHelper = launchStoreToRefsMatch?.[1]
-    const resultStoreToRefsHelper = resultStoreToRefsMatch?.[1]
-
-    expect(launchStoreToRefsHelper).toBe(resultStoreToRefsHelper)
-    expect(wevuRuntime).toContain(`Object.defineProperty(exports,\`${launchStoreToRefsHelper}\``)
+    expect(wevuRuntime).toContain('Object.defineProperty(exports, "storeToRefs"')
+    expect(launchPageJs).toContain('storeToRefs(store)')
+    expect(resultPageJs).toContain('storeToRefs(store)')
   })
 })

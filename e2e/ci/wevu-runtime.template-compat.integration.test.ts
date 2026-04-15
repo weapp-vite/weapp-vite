@@ -14,10 +14,12 @@ describe.sequential('wevu runtime template compat integration', () => {
     expect(wxml).toContain(`wx:elif="{{branch === 'elseIf'}}"`)
 
     expect(wxml).toContain(`wx:for="{{entries}}"`)
-    expect(wxml).toContain(`{{__wv_item_0[0]}} = {{__wv_item_0[1]}}`)
+    const tupleItemMatch = wxml.match(/\{\{(__wv_item_\d+)\[0\]\}\} = \{\{\1\[1\]\}\}/)
+    expect(tupleItemMatch).not.toBeNull()
 
     expect(wxml).toContain(`wx:for="{{entryObjects}}"`)
-    expect(wxml).toContain(`{{__wv_item_1.key}} = {{__wv_item_1.value}}`)
+    const objectItemMatch = wxml.match(/\{\{(__wv_item_\d+)\.key\}\} = \{\{\1\.value\}\}/)
+    expect(objectItemMatch).not.toBeNull()
 
     expect(wxml).toContain(`wx:for="{{summaryMap}}"`)
     expect(wxml).toContain(`wx:for-item="value" wx:for-index="key"`)
