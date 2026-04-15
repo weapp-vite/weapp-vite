@@ -40,7 +40,7 @@ describe('shared chunks duplication strategy', () => {
     const codeA = await fs.readFile(path.resolve(distDir, 'packageA/pages/foo.js'), 'utf8')
     const codeB = await fs.readFile(path.resolve(distDir, 'packageB/pages/bar.js'), 'utf8')
 
-    expect(codeA).toMatch(/require\((['`])\.\.\/weapp-shared\/common\.js\1\)/)
-    expect(codeB).toMatch(/require\((['`])\.\.\/weapp-shared\/common\.js\1\)/)
+    expect(codeA).toMatch(/require\((['"`])\.\.\/weapp-shared\/common\.js\1\)/)
+    expect(codeB).toMatch(/require\((['"`])\.\.\/weapp-shared\/common\.js\1\)/)
   })
 })
