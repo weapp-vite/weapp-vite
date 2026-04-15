@@ -334,6 +334,60 @@ describe('runtime config internal loadConfig', () => {
     })
   })
 
+  it('treats standalone weapp-vite.config.ts as the primary full config', async () => {
+    loadViteConfigFileMock
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({
+        config: {
+          plugins: [{ name: 'user-plugin' }],
+          css: {
+            postcss: {
+              plugins: ['postcss-user-plugin'],
+            },
+          },
+          resolve: {
+            alias: {
+              '@': '/project/src',
+            },
+          },
+          weapp: {
+            srcRoot: 'src',
+          },
+        },
+        path: '/project/weapp-vite.config.ts',
+      })
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
+    resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+    } as any)
+
+    expect(result.config.plugins).toEqual([
+      { name: 'oxc-vite' },
+      { name: 'user-plugin' },
+    ])
+    expect(result.config.css?.postcss?.plugins).toEqual(['postcss-user-plugin'])
+    expect(result.config.resolve?.alias).toEqual([
+      {
+        find: '@',
+        replacement: '/project/src',
+      },
+    ])
+    expect(result.config.weapp?.srcRoot).toBe('src')
+    expect(result.configFilePath).toBe('/project/weapp-vite.config.ts')
+    expect(result.configMergeInfo).toEqual({
+      merged: false,
+      viteConfigPath: undefined,
+      weappConfigPath: '/project/weapp-vite.config.ts',
+    })
+  })
+
   it('does not merge root weapp config when an explicit custom config file is passed', async () => {
     loadViteConfigFileMock.mockResolvedValueOnce({
       config: {

@@ -167,13 +167,18 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       }
     }
 
+    const shouldUseWeappConfigAsPrimary = !loaded?.path && Boolean(weappLoaded?.config)
+    const primaryLoadedConfig = shouldUseWeappConfigAsPrimary
+      ? weappLoaded?.config
+      : loadedConfig
+
     const config = defu<InlineConfig, (InlineConfig | undefined)[]>(
       inlineConfig,
       {
         mode,
         configFile: false,
       },
-      loadedConfig,
+      primaryLoadedConfig,
       {
         build: {
           rolldownOptions: {
@@ -191,7 +196,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       },
     )
 
-    if (weappLoaded?.config?.weapp) {
+    if (!shouldUseWeappConfigAsPrimary && weappLoaded?.config?.weapp) {
       config.weapp = defu(
         weappLoaded.config.weapp,
         config.weapp ?? {},
