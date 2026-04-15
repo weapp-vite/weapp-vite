@@ -406,16 +406,34 @@ async function terminateProcess(child) {
 
 async function waitForChildClose(child, timeoutMs = 10_000) {
   if (child.exitCode !== null) {
-    return
+    return true
   }
 
+  let settled = false
   await Promise.race([
     new Promise((resolve) => {
-      child.once('close', resolve)
-      child.once('error', resolve)
+      child.once('close', () => {
+        settled = true
+        resolve()
+      })
+      child.once('error', () => {
+        settled = true
+        resolve()
+      })
     }),
     delay(timeoutMs),
   ])
+
+  return settled || child.exitCode !== null
+}
+
+function cleanupChildProcessHandles(child) {
+  child.removeAllListeners?.('close')
+  child.removeAllListeners?.('error')
+  child.stdout?.destroy?.()
+  child.stderr?.destroy?.()
+  child.stdin?.destroy?.()
+  child.unref?.()
 }
 
 async function distHasRequiredOutputs(projectDir) {
@@ -604,7 +622,11 @@ async function runDevSmoke(projectDir, label, devCommand) {
   }
   finally {
     await terminateProcess(child)
-    await waitForChildClose(child)
+    const closed = await waitForChildClose(child)
+    if (!closed) {
+      console.warn(`[${label}] dev command did not fully close after termination; forcing stdio cleanup`)
+      cleanupChildProcessHandles(child)
+    }
   }
 }
 
@@ -744,7 +766,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 }
 
 export {
+  cleanupChildProcessHandles,
   hasSuccessfulRebuildSince,
+  waitForChildClose,
   waitForFileChange,
   waitForFileChangeOrSuccessfulRebuild,
 }

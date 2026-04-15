@@ -1,11 +1,15 @@
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import os from 'node:os'
+
 import path from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
+  cleanupChildProcessHandles,
   hasSuccessfulRebuildSince,
+  waitForChildClose,
   waitForFileChangeOrSuccessfulRebuild,
 } from '../../../scripts/create-weapp-vite-smoke.mjs'
 
@@ -38,5 +42,31 @@ describe('create-weapp-vite smoke helpers', () => {
       timeoutMs: 500,
       pollIntervalMs: 10,
     })).resolves.toBeGreaterThanOrEqual(0)
+  })
+
+  it('force-cleans lingering dev child handles when close never arrives', async () => {
+    const child = new EventEmitter() as EventEmitter & {
+      exitCode: number | null
+      stdout: { destroy: ReturnType<typeof vi.fn> }
+      stderr: { destroy: ReturnType<typeof vi.fn> }
+      stdin: { destroy: ReturnType<typeof vi.fn> }
+      unref: ReturnType<typeof vi.fn>
+      removeAllListeners: EventEmitter['removeAllListeners']
+    }
+
+    child.exitCode = null
+    child.stdout = { destroy: vi.fn() }
+    child.stderr = { destroy: vi.fn() }
+    child.stdin = { destroy: vi.fn() }
+    child.unref = vi.fn()
+
+    await expect(waitForChildClose(child, 20)).resolves.toBe(false)
+
+    cleanupChildProcessHandles(child)
+
+    expect(child.stdout.destroy).toHaveBeenCalledTimes(1)
+    expect(child.stderr.destroy).toHaveBeenCalledTimes(1)
+    expect(child.stdin.destroy).toHaveBeenCalledTimes(1)
+    expect(child.unref).toHaveBeenCalledTimes(1)
   })
 })
