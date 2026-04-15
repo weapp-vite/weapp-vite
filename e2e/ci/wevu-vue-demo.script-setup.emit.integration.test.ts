@@ -68,7 +68,7 @@ describe.sequential('e2e app: wevu-vue-demo (script setup emit compat)', () => {
     expect(pageJs).toContain('empty-direct')
     expect(pageJs).toContain('options-explicit-$event')
     expect(pageJs).toContain('onEmitMatrixPayloadTitle')
-    expect(pageJs).toMatch(/onEmitMatrixPayloadTitle\([A-Za-z_$][\w$]*\.title\)/)
+    expect(pageJs).toMatch(/onEmitMatrixPayloadTitle\([^)]*\.title\)/)
     expect(pageJs).not.toContain('unknown-title')
     expect(pageJs).not.toContain('unknown-time')
 

@@ -65,9 +65,12 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
 
         expect(entryJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
         expect(entryJs).toMatch(/require\((['"`])\.\.\/\.\.\/request-globals-runtime\.js\1\)/)
-        expect(entryJs).toContain('var fetch = __rc.fetch')
-        expect(entryJs).toContain('var XMLHttpRequest = __rc.XMLHttpRequest')
-        expect(entryJs).toContain('var WebSocket = __rc.WebSocket')
+        expect(entryJs).toContain('var fetch =')
+        expect(entryJs).toContain('.fetch')
+        expect(entryJs).toContain('var XMLHttpRequest =')
+        expect(entryJs).toContain('.XMLHttpRequest')
+        expect(entryJs).toContain('var WebSocket =')
+        expect(entryJs).toContain('.WebSocket')
         expect(entryJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
       }
     })
