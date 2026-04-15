@@ -1,26 +1,21 @@
-// index.ts
-// 获取应用实例
 import { formatTime } from '../../utils/util'
+import { prepareWorker } from './worker'
 
 const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
+const workerPath = 'workers/index.js'
+let activeWorker: { terminate?: () => void } | undefined
 
-function createNewWorker() {
-  const worker = wx.createWorker('workers/index.js', {
-    useExperimentalWorker: true,
-  })
-
-  worker.onMessage((x) => {
-    console.log('worker', x)
-  })
-  // 监听worker被系统回收事件
-  worker.onProcessKilled(() => {
-    // 重新创建一个worker
-    createNewWorker()
-  })
+function formatWorkerMessage(payload: unknown) {
+  if (typeof payload === 'string') {
+    return payload
+  }
+  try {
+    return JSON.stringify(payload)
+  }
+  catch {
+    return String(payload)
+  }
 }
-
-// 创建实验worker
-createNewWorker()
 
 Component({
   data: {
@@ -33,14 +28,73 @@ Component({
     canIUseGetUserProfile: wx.canIUse('getUserProfile'),
     canIUseNicknameComp: wx.canIUse('input.type.nickname'),
     ss: formatTime(new Date()),
+    workerStatus: 'idle',
+    workerMessage: '未初始化',
   },
   lifetimes: {
     ready() {
-
+      void this.setupWorker()
     },
   },
   methods: {
-    // 事件处理函数
+    async setupWorker() {
+      if (typeof activeWorker?.terminate === 'function') {
+        activeWorker.terminate()
+        activeWorker = undefined
+      }
+
+      this.setData({
+        workerStatus: 'loading',
+        workerMessage: '正在初始化 worker',
+      })
+
+      const result = await prepareWorker(wx, {
+        workerPath,
+        workerSubpackage: true,
+      })
+
+      if (result.status !== 'ready' || !result.worker) {
+        this.setData({
+          workerStatus: result.status,
+          workerMessage: result.detail,
+        })
+        return
+      }
+
+      const worker = result.worker
+      activeWorker = worker
+      this.setData({
+        workerStatus: 'created',
+        workerMessage: result.detail,
+      })
+
+      worker.onMessage((payload) => {
+        this.setData({
+          workerStatus: 'ready',
+          workerMessage: formatWorkerMessage(payload),
+        })
+      })
+
+      if (typeof worker.onError === 'function') {
+        worker.onError((error) => {
+          this.setData({
+            workerStatus: 'error',
+            workerMessage: formatWorkerMessage(error),
+          })
+        })
+      }
+
+      if (typeof worker.onProcessKilled === 'function') {
+        worker.onProcessKilled(() => {
+          this.setData({
+            workerStatus: 'restarting',
+            workerMessage: 'worker 进程被回收，准备重建',
+          })
+          activeWorker = undefined
+          void this.setupWorker()
+        })
+      }
+    },
     bindViewTap() {
       wx.navigateTo({
         url: '../logs/logs',
@@ -63,9 +117,8 @@ Component({
       })
     },
     getUserProfile() {
-      // 推荐使用wx.getUserProfile获取用户信息，开发者每次通过该接口获取用户个人信息均需用户确认，开发者妥善保管用户快速填写的头像昵称，避免重复弹窗
       wx.getUserProfile({
-        desc: '展示用户信息', // 声明获取用户个人信息后的用途，后续会展示在弹窗中，请谨慎填写
+        desc: '展示用户信息',
         success: (res) => {
           console.log(res)
           this.setData({

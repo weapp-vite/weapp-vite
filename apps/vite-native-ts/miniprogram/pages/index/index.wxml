@@ -7,3 +7,5 @@
 <newcom/>
 
 <text class="a">首页</text>
+<text class="worker-status">worker-status: {{workerStatus}}</text>
+<text class="worker-message">worker-message: {{workerMessage}}</text>

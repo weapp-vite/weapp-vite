@@ -1,3 +1,8 @@
 .a {
   color: red;
 }
+
+.worker-status,
+.worker-message {
+  display: block;
+}
