@@ -1,6 +1,6 @@
 {
   "name": "e2e-app-github-issues",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "dev": "weapp-vite dev",

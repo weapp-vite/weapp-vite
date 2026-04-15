@@ -1,5 +1,15 @@
 # wevu
 
+## 6.15.5
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` 在小程序 IDE 运行时中的两类稳定性问题：一是页面布局运行时错误地引用未定义常量导致布局切换失败；二是 `useNativeRouter()` / `useNativePageRouter()` 在相对路径导航与跨页面调用场景下的路径语义不稳定。同时补齐相关 `e2e:ide` 与 `e2e:ci` 回归覆盖，避免压缩别名和共享 chunk 产物路径变化再次造成误报。** [`eedc149`](https://github.com/weapp-vite/weapp-vite/commit/eedc149b8c5668ee3dc86008de27b83609efeb6c) by @sonofmagic
+
+- 🐛 **为 Vue 模板的 `htmlTagToWxml` 转换补充默认标签语义 class 注入能力：当 `.vue` 中的 HTML 标签被转换为小程序内置标签时，会默认追加原标签名 class（如 `h3 -> <view class="h3">`、`br -> <view class="br" />`），便于用户自行用 CSS 低成本恢复默认外观；同时新增 `vue.template.htmlTagToWxmlTagClass` 开关，支持按需关闭该行为。** [`5f21605`](https://github.com/weapp-vite/weapp-vite/commit/5f21605625cc29e206650890438e8be53d3311de) by @sonofmagic
+- 📦 **Dependencies** [`5f21605`](https://github.com/weapp-vite/weapp-vite/commit/5f21605625cc29e206650890438e8be53d3311de)
+  → `@wevu/compiler@6.15.5`
+
 ## 6.15.4
 
 ### Patch Changes

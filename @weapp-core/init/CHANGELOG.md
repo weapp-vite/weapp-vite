@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 6.0.7
+
+### Patch Changes
+
+- 🐛 **修复 `project.config.json` 与 `project.private.config.json` 末尾空行问题，避免微信开发者工具打开后反复产生无意义改动；同时在提交阶段自动清理这类文件的文件尾换行。** [`42288ec`](https://github.com/weapp-vite/weapp-vite/commit/42288ec85268f9184f74916343abb670a89bb6b7) by @sonofmagic
+
 ## 6.0.6
 
 ### Patch Changes
