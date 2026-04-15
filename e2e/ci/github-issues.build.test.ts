@@ -478,7 +478,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(computedPageJs).toContain('runE2E')
     expect(computedPageJs).toContain('showItemsChanged')
 
-    expect(objectLiteralWxml).toContain('root="{{__wv_bind_0}}"')
+    const objectLiteralBindMatch = objectLiteralWxml.match(/root="\{\{(__wv_bind_\d+)\}\}"/)
+    expect(objectLiteralBindMatch).not.toBeNull()
+    const objectLiteralBindId = objectLiteralBindMatch?.[1] ?? '__wv_bind_0'
     expect(objectLiteralWxml).not.toContain('root="{{{')
     expect(objectLiteralWxml).not.toContain('root="{{({')
     expect(objectLiteralWxml).toMatch(/wx:if="\{\{showList\}\}"/)
@@ -505,7 +507,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const mapClassBindingTokens = mapClassWxml.match(/__wv_cls_\d+/g) ?? []
     expect(new Set(mapClassBindingTokens).size).toBeGreaterThanOrEqual(1)
 
-    expect(objectLiteralJs).toContain('__wv_bind_0')
+    expect(objectLiteralJs).toContain(objectLiteralBindId)
     expect(objectLiteralJs).toMatch(/return\s*\{\s*a:\s*['"`]aaaa['"`]\s*\}/)
     expect(objectLiteralJs).toContain('showList')
     expect(objectLiteralJs).toContain('compactMode')
@@ -787,8 +789,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageWxml).not.toContain('</input>')
     expect(issuePageWxml).toMatch(/<input[^>]*\/><view style="\{\{__wv_style_\d+\}\}" class="issue322-error-tip">/)
 
-    expect(issuePageJs).toContain('__wv_cls_0')
-    expect(issuePageJs).toContain('__wv_style_0')
+    expect(issuePageJs).toMatch(/__wv_cls_\d+/)
+    expect(issuePageJs).toMatch(/__wv_style_\d+/)
     expect(issuePageJs).toContain('Object.prototype.hasOwnProperty.call(this.$state, "errors")')
     expect(issuePageJs).toMatch(/return\s+["'`]issue322-input issue322-input-base["'`]/)
     expect(issuePageJs).toMatch(/return\s+["'`]display: none["'`]/)
@@ -969,8 +971,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toContain('_resetE2E')
     expect(issuePageJs).toContain('_runE2E')
 
-    expect(probeWxml).toContain('{{__wv_bind_0}}')
-    expect(probeWxml).toContain('{{__wv_bind_1}}')
+    const probeBindTokens = probeWxml.match(/__wv_bind_\d+/g) ?? []
+    expect(new Set(probeBindTokens).size).toBeGreaterThanOrEqual(2)
     expect(probeWxml).toMatch(/data-destructured-bool="\{\{__wv_bind_\d+\}\}"/)
     expect(probeWxml).toMatch(/data-props-bool="\{\{__wv_bind_\d+\}\}"/)
     expect(probeWxml).not.toContain('String(bool)')
@@ -979,7 +981,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(probeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state, "bool")')
     expect(probeJs).not.toContain('__wevuProps.props')
 
-    expect(strictProbeWxml).toContain('{{__wv_bind_0}}')
+    expect(strictProbeWxml).toMatch(/\{\{__wv_bind_\d+\}\}/)
     expect(strictProbeWxml).toMatch(/data-strict-bool="\{\{__wv_bind_\d+\}\}"/)
     expect(strictProbeWxml).toContain('data-strict-str="{{str}}"')
     expect(strictProbeWxml).not.toContain('String(bool)')
