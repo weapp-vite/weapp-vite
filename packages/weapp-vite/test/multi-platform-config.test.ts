@@ -29,7 +29,7 @@ describe('multiPlatform config', () => {
 
     try {
       expect(ctx.configService.projectConfig.miniprogramRoot).toBe('dist/mp-weixin')
-      expect(ctx.configService.projectConfig.appid).toBe('wx-private')
+      expect(ctx.configService.projectConfig.appid).toBe('wxb3d842a4a7e3440d')
     }
     finally {
       await dispose()
