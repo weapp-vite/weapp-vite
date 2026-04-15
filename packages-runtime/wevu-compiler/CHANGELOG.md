@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.15.5
+
+### Patch Changes
+
+- 🐛 **为 Vue 模板的 `htmlTagToWxml` 转换补充默认标签语义 class 注入能力：当 `.vue` 中的 HTML 标签被转换为小程序内置标签时，会默认追加原标签名 class（如 `h3 -> <view class="h3">`、`br -> <view class="br" />`），便于用户自行用 CSS 低成本恢复默认外观；同时新增 `vue.template.htmlTagToWxmlTagClass` 开关，支持按需关闭该行为。** [`5f21605`](https://github.com/weapp-vite/weapp-vite/commit/5f21605625cc29e206650890438e8be53d3311de) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.15.5`
+
 ## 6.15.4
 
 ### Patch Changes

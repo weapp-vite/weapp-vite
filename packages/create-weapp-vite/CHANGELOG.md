@@ -1,5 +1,21 @@
 # create-weapp-vite
 
+## 2.2.2
+
+### Patch Changes
+
+- 🐛 **修复 `wv dev -o` 复用已打开微信开发者工具窗口时可能继续命中旧模块缓存的问题。现在开发态打开同一项目时会主动重开 DevTools，以刷新最新构建产物，避免构建已更新但 IDE 仍报旧 chunk / 旧依赖错误。** [`9e3a1c6`](https://github.com/weapp-vite/weapp-vite/commit/9e3a1c6680b19d514ece0ffbe6c2fc27cf7b3aa5) by @sonofmagic
+
+- 🐛 **修复 `wevu` 在小程序 IDE 运行时中的两类稳定性问题：一是页面布局运行时错误地引用未定义常量导致布局切换失败；二是 `useNativeRouter()` / `useNativePageRouter()` 在相对路径导航与跨页面调用场景下的路径语义不稳定。同时补齐相关 `e2e:ide` 与 `e2e:ci` 回归覆盖，避免压缩别名和共享 chunk 产物路径变化再次造成误报。** [`eedc149`](https://github.com/weapp-vite/weapp-vite/commit/eedc149b8c5668ee3dc86008de27b83609efeb6c) by @sonofmagic
+
+- 🐛 **修复 `project.config.json` 与 `project.private.config.json` 末尾空行问题，避免微信开发者工具打开后反复产生无意义改动；同时在提交阶段自动清理这类文件的文件尾换行。** [`42288ec`](https://github.com/weapp-vite/weapp-vite/commit/42288ec85268f9184f74916343abb670a89bb6b7) by @sonofmagic
+
+- 🐛 **补齐 `vite.config.*` 与 `weapp-vite.config.*` 双配置入口在工程体验上的一致性。现在托管的 `.weapp-vite/tsconfig.node.json`、示例项目 `tsconfig`、配置加载提示与相关 benchmark 脚本都会同时识别这两类文件；当项目中同时存在两套配置时，CLI 会明确提示当前已合并 `weapp` 配置，并说明 `weapp-vite.config.*` 的优先级高于 `vite.config.*`。同时同步更新手动接入、目录结构、自动路由、分包、插件、npm 等文档入口，避免用户继续误以为只能使用 `vite.config.ts`。** [`d17dfd7`](https://github.com/weapp-vite/weapp-vite/commit/d17dfd791d68aaf2f41e1083bf05c4558f1c75b0) by @sonofmagic
+
+- 🐛 **为 Vue 模板的 `htmlTagToWxml` 转换补充默认标签语义 class 注入能力：当 `.vue` 中的 HTML 标签被转换为小程序内置标签时，会默认追加原标签名 class（如 `h3 -> <view class="h3">`、`br -> <view class="br" />`），便于用户自行用 CSS 低成本恢复默认外观；同时新增 `vue.template.htmlTagToWxmlTagClass` 开关，支持按需关闭该行为。** [`5f21605`](https://github.com/weapp-vite/weapp-vite/commit/5f21605625cc29e206650890438e8be53d3311de) by @sonofmagic
+
+- 🐛 **修复小程序构建透传上游 `dist` 内部 hash chunk 名的问题。`wevu/dist/src-*.mjs`、`store-*.mjs` 一类内部产物现在会被改写为稳定的 `weapp-vendors/*` 文件名，避免微信开发者工具在 `dev` / 重开场景中出现 `module is not defined` 的漂移模块报错。** [`e1d94a1`](https://github.com/weapp-vite/weapp-vite/commit/e1d94a18296b8d88eaad78b70cfa8f8966f10f7e) by @sonofmagic
+
 ## 2.2.1
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 {
   "name": "@wevu/web-apis",
   "type": "module",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Web API polyfills and global installers for mini-program runtimes",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
