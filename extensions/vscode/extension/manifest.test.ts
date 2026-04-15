@@ -30,6 +30,8 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.insertCommonScripts',
     'weapp-vite.createPageFromRoute',
     'weapp-vite.createPageFromTreeItem',
+    'weapp-vite.generatePageInExplorer',
+    'weapp-vite.generateComponentInExplorer',
     'weapp-vite.openPageFromRoute',
     'weapp-vite.addCurrentPageToAppJson',
     'weapp-vite.addPageToAppJsonFromTreeItem',
@@ -44,6 +46,10 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.filterCurrentPageInTree',
     'weapp-vite.filterDriftPagesInTree',
     'weapp-vite.clearPagesTreeFilter',
+    'weapp-vite.repairProjectIssues',
+    'weapp-vite.generateMissingComponentsFromProject',
+    'weapp-vite.generateMissingPagesFromAppJson',
+    'weapp-vite.syncUnregisteredPagesToAppJson',
     'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
     'weapp-vite.syncDefinePageJsonFromJsonInTreeItem',
     'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
@@ -162,6 +168,28 @@ it('manifest exposes current-page explorer quick actions', () => {
   )
 })
 
+it('manifest exposes explorer context generate actions', () => {
+  const explorerMenus = packageJson.contributes.menus['explorer/context']
+
+  assert.equal(
+    explorerMenus.some(item =>
+      item.command === 'weapp-vite.generatePageInExplorer'
+      && item.group === '2_weapp-vite@1'
+      && item.when === 'resourceScheme == file',
+    ),
+    true,
+  )
+
+  assert.equal(
+    explorerMenus.some(item =>
+      item.command === 'weapp-vite.generateComponentInExplorer'
+      && item.group === '2_weapp-vite@2'
+      && item.when === 'resourceScheme == file',
+    ),
+    true,
+  )
+})
+
 it('manifest exposes pages explorer title action for current page reveal', () => {
   assert.deepEqual(packageJson.contributes.menus['view/title'], [
     {
@@ -186,6 +214,16 @@ it('manifest exposes pages explorer title action for current page reveal', () =>
     },
     {
       command: 'weapp-vite.clearPagesTreeFilter',
+      group: 'navigation',
+      when: 'view == weapp-vite.pages',
+    },
+    {
+      command: 'weapp-vite.generateMissingPagesFromAppJson',
+      group: 'navigation',
+      when: 'view == weapp-vite.pages',
+    },
+    {
+      command: 'weapp-vite.syncUnregisteredPagesToAppJson',
       group: 'navigation',
       when: 'view == weapp-vite.pages',
     },

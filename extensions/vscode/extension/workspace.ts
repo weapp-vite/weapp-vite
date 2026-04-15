@@ -11,6 +11,13 @@ import {
 } from './constants'
 import {
   applyPageRouteToAppJson,
+  applyTextReplacements,
+  getMovedUsingComponentPath,
+  getVueJsonUsingComponentReferenceAtOffset,
+  getVueJsonUsingComponentReferences,
+  getVueTextWithRemovedUsingComponentPaths,
+  movePageRouteInAppJson,
+  removePageRouteFromAppJson,
   resolveCommandFromScripts,
 } from './logic'
 import {
@@ -21,9 +28,62 @@ import {
   getPreferredPageFilePath,
   getRouteFromPageFilePath,
 } from './navigation'
+import {
+  getRelativeDisplayPath,
+  isSameOrDescendantPath,
+} from './pathUtils'
 
 function normalizeRoute(route: string) {
   return route.trim().replace(/^\/+|\/+$/g, '')
+}
+
+function isLocalUsingComponentPath(componentPath: string) {
+  return Boolean(componentPath.trim()) && !componentPath.includes('://')
+}
+
+function getUsingComponentCandidatePaths(componentPath: string) {
+  const normalizedPath = componentPath.trim().replace(/\\/gu, '/').replace(/\/+$/gu, '')
+
+  if (!normalizedPath) {
+    return []
+  }
+
+  return ['.vue', '.ts', '.js', '.wxml'].map(extension => path.normalize(`${normalizedPath}${extension}`))
+}
+
+function resolveUsingComponentCandidatePaths(
+  appJsonPath: string | null,
+  documentPath: string,
+  componentPath: string,
+) {
+  if (!isLocalUsingComponentPath(componentPath)) {
+    return []
+  }
+
+  const basePath = componentPath.startsWith('.')
+    ? path.dirname(documentPath)
+    : path.dirname(appJsonPath ?? documentPath)
+  const normalizedComponentPath = componentPath.startsWith('.')
+    ? componentPath
+    : componentPath.replace(/^\/+/u, '')
+
+  return getUsingComponentCandidatePaths(normalizedComponentPath).map(candidate => path.join(basePath, candidate))
+}
+
+function matchesMovedPath(candidatePath: string, originalPath: string) {
+  return isSameOrDescendantPath(candidatePath, originalPath)
+}
+
+function getMovedCandidatePath(candidatePath: string, originalPath: string, targetPath: string) {
+  if (!matchesMovedPath(candidatePath, originalPath)) {
+    return null
+  }
+
+  if (candidatePath === originalPath) {
+    return targetPath
+  }
+
+  return path.join(targetPath, candidatePath.slice(originalPath.length + 1))
 }
 
 function getSubpackageEntries(appJson: Record<string, any>) {
@@ -46,6 +106,18 @@ export interface WeappPagesTreeSnapshot {
   }>
   topLevelPages: WeappPageTreeEntry[]
   unregisteredPages: WeappPageTreeEntry[]
+  workspaceFolder: any
+}
+
+export interface WeappProjectIssueSnapshot {
+  appJsonPath: string | null
+  missingComponentEntries: Array<{
+    candidatePaths: string[]
+    componentPath: string
+    filePath: string
+  }>
+  missingPageRoutes: string[]
+  unregisteredPageRoutes: string[]
   workspaceFolder: any
 }
 
@@ -119,7 +191,94 @@ async function getExistingProjectFile(filePaths: string[]) {
   return null
 }
 
-async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
+export async function getProjectViteConfigPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  if (!workspaceFolder) {
+    return null
+  }
+
+  return getExistingProjectFile([
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+    'vite.config.cjs',
+  ].map(fileName => path.join(workspaceFolder.uri.fsPath, fileName)))
+}
+
+export async function getWeappViteProjectSignals(folderPath: string, packageJson?: Record<string, any> | null) {
+  const resolvedPackageJson = packageJson ?? await readJsonFile(path.join(folderPath, 'package.json'))
+  const viteConfigCandidates = [
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+    'vite.config.cjs',
+  ].map(fileName => path.join(folderPath, fileName))
+  const appJsonCandidates = [
+    path.join(folderPath, 'src', 'app.json'),
+    path.join(folderPath, 'app.json'),
+  ]
+  const packageSignals = []
+  const fileSignals = []
+  let hasWeappViteConfigSignal = false
+  let hasAppJsonSignal = false
+  const dependencyBuckets = [
+    resolvedPackageJson?.dependencies,
+    resolvedPackageJson?.devDependencies,
+    resolvedPackageJson?.peerDependencies,
+  ]
+  const scripts = typeof resolvedPackageJson?.scripts === 'object' && resolvedPackageJson.scripts
+    ? resolvedPackageJson.scripts
+    : {}
+
+  for (const dependencies of dependencyBuckets) {
+    if (dependencies && typeof dependencies === 'object' && dependencies['weapp-vite']) {
+      packageSignals.push('依赖包含 weapp-vite')
+    }
+  }
+
+  for (const [scriptName, scriptValue] of Object.entries(scripts)) {
+    if (typeof scriptValue === 'string' && WEAPP_VITE_SCRIPT_PATTERN.test(scriptValue)) {
+      packageSignals.push(`脚本 ${scriptName} 调用了 weapp-vite CLI`)
+    }
+  }
+
+  for (const viteConfigPath of viteConfigCandidates) {
+    if (!(await pathExists(viteConfigPath))) {
+      continue
+    }
+
+    const viteConfigContent = await readTextFile(viteConfigPath)
+
+    if (typeof viteConfigContent === 'string' && WEAPP_VITE_CONFIG_PATTERN.test(viteConfigContent)) {
+      fileSignals.push(`${path.basename(viteConfigPath)} 引用了 weapp-vite`)
+      hasWeappViteConfigSignal = true
+    }
+
+    break
+  }
+
+  for (const appJsonPath of appJsonCandidates) {
+    if (await pathExists(appJsonPath)) {
+      fileSignals.push(`存在 ${getRelativeDisplayPath(folderPath, appJsonPath)}`)
+      hasAppJsonSignal = true
+      break
+    }
+  }
+
+  return {
+    packageSignals: [...new Set(packageSignals)],
+    fileSignals: [...new Set(fileSignals)],
+    hasAppJsonSignal,
+    hasPackageSignal: packageSignals.length > 0,
+    hasWeappViteConfigSignal,
+    isConfirmedWeappViteProject: packageSignals.length > 0 && (hasWeappViteConfigSignal || hasAppJsonSignal),
+    packageJson: resolvedPackageJson,
+    scripts,
+  }
+}
+
+export async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
   if (!workspaceFolder) {
     return null
   }
@@ -212,77 +371,59 @@ export async function getProjectContext(workspaceFolder = getPrimaryWorkspaceFol
 
   const folderPath = workspaceFolder.uri.fsPath
   const packageJsonPath = path.join(folderPath, 'package.json')
-  const viteConfigCandidates = [
-    'vite.config.ts',
-    'vite.config.mts',
-    'vite.config.js',
-    'vite.config.mjs',
-    'vite.config.cjs',
-  ].map(fileName => path.join(folderPath, fileName))
-  const appJsonCandidates = [
-    path.join(folderPath, 'src', 'app.json'),
-    path.join(folderPath, 'app.json'),
-  ]
   const packageJson = await readJsonFile(packageJsonPath)
-  const packageSignals = []
-  const fileSignals = []
-  let hasWeappViteConfigSignal = false
-  const dependencyBuckets = [
-    packageJson?.dependencies,
-    packageJson?.devDependencies,
-    packageJson?.peerDependencies,
-  ]
-  const scripts = typeof packageJson?.scripts === 'object' && packageJson.scripts
-    ? packageJson.scripts
-    : {}
+  const projectSignals = await getWeappViteProjectSignals(folderPath, packageJson)
 
-  for (const dependencies of dependencyBuckets) {
-    if (dependencies && typeof dependencies === 'object') {
-      if (dependencies['weapp-vite']) {
-        packageSignals.push('依赖包含 weapp-vite')
-      }
-    }
-  }
-
-  for (const [scriptName, scriptValue] of Object.entries(scripts)) {
-    if (typeof scriptValue === 'string' && WEAPP_VITE_SCRIPT_PATTERN.test(scriptValue)) {
-      packageSignals.push(`脚本 ${scriptName} 调用了 weapp-vite CLI`)
-    }
-  }
-
-  for (const viteConfigPath of viteConfigCandidates) {
-    if (await pathExists(viteConfigPath)) {
-      const viteConfigContent = await readTextFile(viteConfigPath)
-
-      if (typeof viteConfigContent === 'string' && WEAPP_VITE_CONFIG_PATTERN.test(viteConfigContent)) {
-        fileSignals.push(`${path.basename(viteConfigPath)} 引用了 weapp-vite`)
-        hasWeappViteConfigSignal = true
-      }
-
-      break
-    }
-  }
-
-  for (const appJsonPath of appJsonCandidates) {
-    if (await pathExists(appJsonPath)) {
-      fileSignals.push(`存在 ${path.relative(folderPath, appJsonPath)}`)
-      break
-    }
-  }
-
-  if (packageSignals.length === 0 && !hasWeappViteConfigSignal) {
+  if (!projectSignals.hasPackageSignal && !projectSignals.hasWeappViteConfigSignal) {
     return null
   }
 
   return {
     workspaceFolder,
     packageJsonPath: await pathExists(packageJsonPath) ? packageJsonPath : null,
-    packageJson,
+    packageJson: projectSignals.packageJson,
     packageManager: getPackageManager(packageJson),
-    scripts,
-    packageSignals: [...new Set(packageSignals)],
-    fileSignals: [...new Set(fileSignals)],
+    scripts: projectSignals.scripts,
+    packageSignals: projectSignals.packageSignals,
+    fileSignals: projectSignals.fileSignals,
   }
+}
+
+export async function findNearestWeappViteProjectWorkspaceFolder(startPath: string) {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(startPath)) ?? getPrimaryWorkspaceFolder()
+
+  if (!workspaceFolder) {
+    return null
+  }
+
+  const workspaceRoot = workspaceFolder.uri.fsPath
+  let currentPath = startPath
+
+  while (currentPath.startsWith(workspaceRoot)) {
+    const signals = await getWeappViteProjectSignals(currentPath)
+
+    if (signals.isConfirmedWeappViteProject) {
+      return {
+        ...workspaceFolder,
+        name: path.basename(currentPath),
+        uri: vscode.Uri.file(currentPath),
+      }
+    }
+
+    if (currentPath === workspaceRoot) {
+      break
+    }
+
+    const parentPath = path.dirname(currentPath)
+
+    if (parentPath === currentPath) {
+      break
+    }
+
+    currentPath = parentPath
+  }
+
+  return null
 }
 
 export async function getProjectNavigationItems(workspaceFolder = getPrimaryWorkspaceFolder()) {
@@ -294,20 +435,14 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
 
   const workspacePath = context.workspaceFolder.uri.fsPath
   const items = []
-  const viteConfigPath = await getExistingProjectFile([
-    'vite.config.ts',
-    'vite.config.mts',
-    'vite.config.js',
-    'vite.config.mjs',
-    'vite.config.cjs',
-  ].map(fileName => path.join(workspacePath, fileName)))
+  const viteConfigPath = await getProjectViteConfigPath(context.workspaceFolder)
   const appJsonPath = await getProjectAppJsonPath(context.workspaceFolder)
 
   if (context.packageJsonPath) {
     items.push({
       label: '$(package) package.json',
       description: '项目脚本与依赖',
-      detail: path.relative(workspacePath, context.packageJsonPath),
+      detail: getRelativeDisplayPath(workspacePath, context.packageJsonPath),
       uri: vscode.Uri.file(context.packageJsonPath),
     })
   }
@@ -316,7 +451,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
     items.push({
       label: '$(settings-gear) vite.config',
       description: 'weapp-vite 配置入口',
-      detail: path.relative(workspacePath, viteConfigPath),
+      detail: getRelativeDisplayPath(workspacePath, viteConfigPath),
       uri: vscode.Uri.file(viteConfigPath),
     })
   }
@@ -325,7 +460,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
     items.push({
       label: '$(json) app.json',
       description: '小程序全局配置',
-      detail: path.relative(workspacePath, appJsonPath),
+      detail: getRelativeDisplayPath(workspacePath, appJsonPath),
       uri: vscode.Uri.file(appJsonPath),
     })
 
@@ -344,7 +479,7 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
       items.push({
         label: `$(file-submodule) ${route}`,
         description: '页面文件',
-        detail: path.relative(workspacePath, pageFilePath),
+        detail: getRelativeDisplayPath(workspacePath, pageFilePath),
         uri: vscode.Uri.file(pageFilePath),
       })
     }
@@ -510,6 +645,247 @@ export async function getAppJsonRouteFileStatus(document: any, route: string) {
   }
 }
 
+export async function getVueUsingComponentFileStatus(document: any, componentPath: string) {
+  if (!isVueDocument(document) || typeof componentPath !== 'string' || !componentPath.trim()) {
+    return null
+  }
+
+  if (!isLocalUsingComponentPath(componentPath)) {
+    return {
+      componentFilePath: null,
+      componentPath,
+      candidatePaths: [],
+      isLocal: false,
+      workspacePath: vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath ?? path.dirname(document.uri.fsPath),
+    }
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+  const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, document.uri.fsPath, componentPath)
+  const componentFilePath = await getExistingProjectFile(candidatePaths)
+  const workspacePath = workspaceFolder?.uri.fsPath ?? path.dirname(document.uri.fsPath)
+
+  return {
+    componentFilePath,
+    componentPath,
+    candidatePaths,
+    isLocal: true,
+    workspacePath,
+  }
+}
+
+export async function getMissingVueUsingComponents(document: any) {
+  if (!isVueDocument(document)) {
+    return []
+  }
+
+  const references = getVueJsonUsingComponentReferences(document.getText())
+  const missingReferences = []
+
+  for (const reference of references) {
+    const status = await getVueUsingComponentFileStatus(document, reference.path)
+
+    if (!status?.isLocal || status.componentFilePath) {
+      continue
+    }
+
+    missingReferences.push({
+      ...reference,
+      candidatePaths: status.candidatePaths,
+      workspacePath: status.workspacePath,
+    })
+  }
+
+  return missingReferences
+}
+
+export function getVueUsingComponentReferenceAtPosition(document: any, position: any) {
+  if (!isVueDocument(document)) {
+    return null
+  }
+
+  const offset = document.offsetAt(position)
+  return getVueJsonUsingComponentReferenceAtOffset(document.getText(), offset)
+}
+
+export async function getVueUsingComponentFileTarget(document: any, componentPath: string) {
+  const status = await getVueUsingComponentFileStatus(document, componentPath)
+
+  if (!status?.isLocal || status.candidatePaths.length === 0) {
+    return null
+  }
+
+  return status.candidatePaths[0]
+}
+
+export async function getVueTextsWithMovedUsingComponentPath(
+  workspaceFolder: any,
+  oldFilePath: string,
+  newFilePath: string,
+) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
+  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const updates = []
+
+  for (const file of vueFiles) {
+    const documentText = await readTextFile(file.fsPath)
+
+    if (typeof documentText !== 'string') {
+      continue
+    }
+
+    const replacements = []
+
+    for (const reference of getVueJsonUsingComponentReferences(documentText)) {
+      if (!isLocalUsingComponentPath(reference.path)) {
+        continue
+      }
+
+      const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+      const matchedCandidatePath = candidatePaths.find(candidatePath => matchesMovedPath(candidatePath, oldFilePath))
+
+      if (!matchedCandidatePath) {
+        continue
+      }
+
+      const movedCandidatePath = getMovedCandidatePath(matchedCandidatePath, oldFilePath, newFilePath)
+
+      if (!movedCandidatePath) {
+        continue
+      }
+
+      const nextPath = getMovedUsingComponentPath(reference.path, file.fsPath, appJsonPath, movedCandidatePath)
+
+      if (!nextPath || nextPath === reference.path) {
+        continue
+      }
+
+      replacements.push({
+        start: reference.valueStart,
+        end: reference.valueEnd,
+        text: nextPath,
+      })
+    }
+
+    const nextText = applyTextReplacements(documentText, replacements)
+
+    if (!nextText) {
+      continue
+    }
+
+    updates.push({
+      filePath: file.fsPath,
+      nextText,
+    })
+  }
+
+  return updates
+}
+
+export async function getVueTextsWithRemovedUsingComponentPath(
+  workspaceFolder: any,
+  deletedFilePath: string,
+) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
+  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const updates = []
+
+  for (const file of vueFiles) {
+    const documentText = await readTextFile(file.fsPath)
+
+    if (typeof documentText !== 'string') {
+      continue
+    }
+
+    const removablePaths = []
+
+    for (const reference of getVueJsonUsingComponentReferences(documentText)) {
+      if (!isLocalUsingComponentPath(reference.path)) {
+        continue
+      }
+
+      const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+      const matchedCandidatePaths = candidatePaths.filter(candidatePath => matchesMovedPath(candidatePath, deletedFilePath))
+
+      if (matchedCandidatePaths.length === 0) {
+        continue
+      }
+
+      const siblingCandidates = candidatePaths.filter(candidatePath => !matchesMovedPath(candidatePath, deletedFilePath))
+      let hasSiblingCandidate = false
+
+      for (const siblingCandidate of siblingCandidates) {
+        if (await pathExists(siblingCandidate)) {
+          hasSiblingCandidate = true
+          break
+        }
+      }
+
+      if (hasSiblingCandidate) {
+        continue
+      }
+
+      removablePaths.push(reference.path)
+    }
+
+    const nextText = getVueTextWithRemovedUsingComponentPaths(documentText, removablePaths)
+
+    if (!nextText) {
+      continue
+    }
+
+    updates.push({
+      filePath: file.fsPath,
+      nextText,
+    })
+  }
+
+  return updates
+}
+
+export async function getProjectIssueSnapshot(workspaceFolder = getPrimaryWorkspaceFolder()): Promise<WeappProjectIssueSnapshot | null> {
+  const context = await getProjectContext(workspaceFolder)
+
+  if (!context) {
+    return null
+  }
+
+  const pagesSnapshot = await getWeappPagesTreeSnapshot(context.workspaceFolder)
+  const appJsonPath = pagesSnapshot?.appJsonPath ?? await getProjectAppJsonPath(context.workspaceFolder)
+  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : context.workspaceFolder.uri.fsPath
+  const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
+  const missingComponentEntries: WeappProjectIssueSnapshot['missingComponentEntries'] = []
+
+  for (const file of vueFiles) {
+    const document = await vscode.workspace.openTextDocument(file)
+    const missingComponents = await getMissingVueUsingComponents(document)
+
+    for (const entry of missingComponents) {
+      missingComponentEntries.push({
+        componentPath: entry.path,
+        candidatePaths: entry.candidatePaths,
+        filePath: file.fsPath,
+      })
+    }
+  }
+
+  return {
+    appJsonPath,
+    missingComponentEntries,
+    missingPageRoutes: [
+      ...(pagesSnapshot?.topLevelPages ?? []),
+      ...((pagesSnapshot?.subpackages ?? []).flatMap(item => item.pages)),
+    ]
+      .filter(page => !page.pageFilePath)
+      .map(page => page.route),
+    unregisteredPageRoutes: (pagesSnapshot?.unregisteredPages ?? []).map(page => page.route),
+    workspaceFolder: context.workspaceFolder,
+  }
+}
+
 export async function resolveCurrentPageRoute(document = vscode.window.activeTextEditor?.document) {
   if (!document?.uri?.fsPath) {
     return null
@@ -661,6 +1037,217 @@ export async function getAppJsonTextWithAddedSpecificRoute(appJsonPath: string, 
     packageRoot: result.packageRoot,
     route: normalizedRoute,
   }
+}
+
+export async function getAppJsonTextWithAddedRoutes(appJsonPath: string, routes: string[]) {
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || !Array.isArray(routes) || routes.length === 0) {
+    return null
+  }
+
+  let nextAppJson = appJson
+  const addedRoutes: string[] = []
+
+  for (const route of routes) {
+    if (typeof route !== 'string' || !route.trim()) {
+      continue
+    }
+
+    const normalizedRoute = normalizeRoute(route)
+    const result = applyPageRouteToAppJson(nextAppJson, normalizedRoute)
+
+    if (!result.changed) {
+      continue
+    }
+
+    nextAppJson = result.appJson
+    addedRoutes.push(normalizedRoute)
+  }
+
+  if (addedRoutes.length === 0) {
+    return null
+  }
+
+  return {
+    addedRoutes,
+    appJsonPath,
+    nextText: `${JSON.stringify(nextAppJson, null, 2)}\n`,
+  }
+}
+
+export async function getAppJsonTextWithMovedRoute(appJsonPath: string, fromRoute: string, toRoute: string) {
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof fromRoute !== 'string' || typeof toRoute !== 'string') {
+    return null
+  }
+
+  const normalizedFromRoute = normalizeRoute(fromRoute)
+  const normalizedToRoute = normalizeRoute(toRoute)
+
+  if (!normalizedFromRoute || !normalizedToRoute || normalizedFromRoute === normalizedToRoute) {
+    return null
+  }
+
+  const result = movePageRouteInAppJson(appJson, normalizedFromRoute, normalizedToRoute)
+
+  if (!result.changed) {
+    return null
+  }
+
+  return {
+    appJsonPath,
+    fromRoute: normalizedFromRoute,
+    nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
+    toRoute: normalizedToRoute,
+  }
+}
+
+export async function getAppJsonTextWithMovedRoutes(
+  workspaceFolder: any,
+  oldFilePath: string,
+  newFilePath: string,
+) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return []
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof appJson !== 'object') {
+    return []
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  let nextAppJson = appJson
+  const movedRoutes = []
+
+  for (const route of collectAppJsonPageRoutes(appJson)) {
+    const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+    const matchedCandidatePath = candidatePaths.find(candidatePath => matchesMovedPath(candidatePath, oldFilePath))
+
+    if (!matchedCandidatePath) {
+      continue
+    }
+
+    const movedCandidatePath = getMovedCandidatePath(matchedCandidatePath, oldFilePath, newFilePath)
+
+    if (!movedCandidatePath) {
+      continue
+    }
+
+    const nextRoute = getRouteFromPageFilePath(path.relative(appJsonDir, movedCandidatePath))
+
+    if (!nextRoute || nextRoute === route) {
+      continue
+    }
+
+    const result = movePageRouteInAppJson(nextAppJson, route, nextRoute)
+
+    if (!result.changed) {
+      continue
+    }
+
+    nextAppJson = result.appJson
+    movedRoutes.push({
+      fromRoute: route,
+      toRoute: nextRoute,
+    })
+  }
+
+  if (movedRoutes.length === 0) {
+    return []
+  }
+
+  return [{
+    appJsonPath,
+    movedRoutes,
+    nextText: `${JSON.stringify(nextAppJson, null, 2)}\n`,
+  }]
+}
+
+export async function getAppJsonTextWithRemovedRoute(appJsonPath: string, route: string) {
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof route !== 'string' || !route.trim()) {
+    return null
+  }
+
+  const normalizedRoute = normalizeRoute(route)
+  const result = removePageRouteFromAppJson(appJson, normalizedRoute)
+
+  if (!result.changed) {
+    return null
+  }
+
+  return {
+    appJsonPath,
+    nextText: `${JSON.stringify(result.appJson, null, 2)}\n`,
+    route: normalizedRoute,
+  }
+}
+
+export async function getAppJsonTextWithRemovedRoutes(workspaceFolder: any, deletedFilePath: string) {
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return []
+  }
+
+  const appJson = await readJsonFile(appJsonPath)
+
+  if (!appJson || typeof appJson !== 'object') {
+    return []
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  let nextAppJson = appJson
+  const removedRoutes = []
+
+  for (const route of collectAppJsonPageRoutes(appJson)) {
+    const candidatePaths = getPageFileCandidatePaths(route).map(candidate => path.join(appJsonDir, candidate))
+    const matchedCandidatePaths = candidatePaths.filter(candidatePath => matchesMovedPath(candidatePath, deletedFilePath))
+
+    if (matchedCandidatePaths.length === 0) {
+      continue
+    }
+
+    const siblingCandidates = candidatePaths.filter(candidatePath => !matchesMovedPath(candidatePath, deletedFilePath))
+    let hasSiblingCandidate = false
+
+    for (const siblingCandidate of siblingCandidates) {
+      if (await pathExists(siblingCandidate)) {
+        hasSiblingCandidate = true
+        break
+      }
+    }
+
+    if (hasSiblingCandidate) {
+      continue
+    }
+
+    const result = removePageRouteFromAppJson(nextAppJson, route)
+
+    if (!result.changed) {
+      continue
+    }
+
+    nextAppJson = result.appJson
+    removedRoutes.push(route)
+  }
+
+  if (removedRoutes.length === 0) {
+    return []
+  }
+
+  return [{
+    appJsonPath,
+    nextText: `${JSON.stringify(nextAppJson, null, 2)}\n`,
+    removedRoutes,
+  }]
 }
 
 export function resolveCommand(

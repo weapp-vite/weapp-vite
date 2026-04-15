@@ -2,14 +2,19 @@ import type {
   WeappPagesTreeFilterMode,
 } from './tree'
 
+import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import vscode from 'vscode'
 import {
   addCurrentPageToAppJson,
   addPageToAppJsonFromTreeItem,
   copyCurrentPageRoute,
   copyPageRouteFromTreeItem,
+  createComponentFromUsingComponents,
   createPageFromRoute,
   createPageFromTreeItem,
+  generateMissingComponentsFromProject,
+  generateMissingPagesFromAppJson,
   insertCommonScripts,
   insertDefineConfigTemplate,
   insertDefinePageJsonTemplate,
@@ -17,6 +22,7 @@ import {
   openDocumentation,
   openPageFromRoute,
   openProjectFile,
+  repairProjectIssues,
   revealCurrentPageInAppJson,
   revealPageRouteInAppJsonFromTreeItem,
   runWorkspaceCommand,
@@ -26,6 +32,7 @@ import {
   syncDefinePageJsonTitleFromJson,
   syncJsonFromDefinePageJsonInTreeItem,
   syncJsonTitleFromDefinePageJson,
+  syncUnregisteredPagesToAppJson,
 } from './commands'
 import {
   isAppJsonDiagnosticsEnabled,
@@ -42,7 +49,17 @@ import {
   buildPackageJsonDiagnostics,
   buildVuePageConfigConsistencyDiagnostics,
   buildVuePageDiagnostics,
+  buildVueUsingComponentDiagnostics,
 } from './content'
+import {
+  generateComponentInExplorer,
+  generatePageInExplorer,
+  showGeneratePicker,
+} from './generate'
+import {
+  getPageFileCandidatePaths,
+  getRouteFromPageFilePath,
+} from './navigation'
 import {
   WeappViteAppJsonCompletionProvider,
   WeappViteAppJsonDocumentLinkProvider,
@@ -51,14 +68,24 @@ import {
   WeappViteHoverProvider,
   WeappVitePackageJsonCompletionProvider,
   WeappViteVueCompletionProvider,
+  WeappViteVueDocumentLinkProvider,
 } from './providers'
 import {
   WeappVitePagesTreeProvider,
 } from './tree'
 import {
+  findNearestWeappViteProjectWorkspaceFolder,
+  getAppJsonTextWithMovedRoute,
+  getAppJsonTextWithMovedRoutes,
+  getAppJsonTextWithRemovedRoute,
+  getAppJsonTextWithRemovedRoutes,
   getCurrentPageRouteCandidate,
   getMissingAppJsonPageRoutes,
+  getMissingVueUsingComponents,
+  getProjectAppJsonPath,
   getProjectContext,
+  getVueTextsWithMovedUsingComponentPath,
+  getVueTextsWithRemovedUsingComponentPath,
   isAppJsonDocument,
   isPackageJsonDocument,
   isVueDocument,
@@ -78,7 +105,7 @@ function getDiagnostics() {
   return diagnostics
 }
 
-function refreshPackageJsonDiagnostics(document: any) {
+async function refreshPackageJsonDiagnostics(document: any) {
   if (!isPackageJsonDocument(document)) {
     return
   }
@@ -88,7 +115,7 @@ function refreshPackageJsonDiagnostics(document: any) {
     return
   }
 
-  getDiagnostics().set(document.uri, buildPackageJsonDiagnostics(document))
+  getDiagnostics().set(document.uri, await buildPackageJsonDiagnostics(document))
 }
 
 async function refreshAppJsonDiagnostics(document: any) {
@@ -116,9 +143,11 @@ async function refreshVuePageDiagnostics(document: any) {
   }
 
   const currentPageCandidate = await getCurrentPageRouteCandidate(document)
+  const missingUsingComponents = await getMissingVueUsingComponents(document)
   getDiagnostics().set(document.uri, [
     ...buildVuePageDiagnostics(currentPageCandidate),
     ...buildVuePageConfigConsistencyDiagnostics(document),
+    ...buildVueUsingComponentDiagnostics(document.getText(), missingUsingComponents),
   ])
 }
 
@@ -199,6 +228,146 @@ async function clearPagesTreeFilter(pagesTreeProvider: WeappVitePagesTreeProvide
   await syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 }
 
+async function writeTextFile(filePath: string, text: string) {
+  await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), Buffer.from(text, 'utf8'))
+}
+
+async function syncRenamedPageRoute(file: { oldUri: any, newUri: any }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.newUri.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const appJsonUpdates = await getAppJsonTextWithMovedRoutes(projectFolder, file.oldUri.fsPath, file.newUri.fsPath)
+
+  if (appJsonUpdates.length > 0) {
+    for (const update of appJsonUpdates) {
+      await writeTextFile(update.appJsonPath, update.nextText)
+    }
+
+    return true
+  }
+
+  const appJsonPath = await getProjectAppJsonPath(projectFolder)
+
+  if (!appJsonPath) {
+    return false
+  }
+
+  const relativeFromPath = path.relative(path.dirname(appJsonPath), file.oldUri.fsPath)
+  const relativeToPath = path.relative(path.dirname(appJsonPath), file.newUri.fsPath)
+  const fromRoute = getRouteFromPageFilePath(relativeFromPath)
+  const toRoute = getRouteFromPageFilePath(relativeToPath)
+
+  if (!fromRoute || !toRoute || fromRoute === toRoute) {
+    return false
+  }
+
+  const appJsonUpdate = await getAppJsonTextWithMovedRoute(appJsonPath, fromRoute, toRoute)
+
+  if (!appJsonUpdate) {
+    return false
+  }
+
+  await writeTextFile(appJsonUpdate.appJsonPath, appJsonUpdate.nextText)
+  return true
+}
+
+async function syncRenamedUsingComponentPaths(file: { oldUri: any, newUri: any }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.newUri.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const updates = await getVueTextsWithMovedUsingComponentPath(projectFolder, file.oldUri.fsPath, file.newUri.fsPath)
+
+  if (updates.length === 0) {
+    return false
+  }
+
+  for (const update of updates) {
+    await writeTextFile(update.filePath, update.nextText)
+  }
+
+  return true
+}
+
+async function syncDeletedPageRoute(file: { fsPath: string }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const appJsonUpdates = await getAppJsonTextWithRemovedRoutes(projectFolder, file.fsPath)
+
+  if (appJsonUpdates.length > 0) {
+    for (const update of appJsonUpdates) {
+      await writeTextFile(update.appJsonPath, update.nextText)
+    }
+
+    return true
+  }
+
+  const appJsonPath = await getProjectAppJsonPath(projectFolder)
+
+  if (!appJsonPath) {
+    return false
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  const relativePath = path.relative(appJsonDir, file.fsPath)
+  const route = getRouteFromPageFilePath(relativePath)
+
+  if (!route) {
+    return false
+  }
+
+  const siblingCandidates = getPageFileCandidatePaths(route)
+    .map(candidate => path.join(appJsonDir, candidate))
+    .filter(candidatePath => candidatePath !== file.fsPath)
+
+  for (const candidatePath of siblingCandidates) {
+    try {
+      await vscode.workspace.fs.stat(vscode.Uri.file(candidatePath))
+      return false
+    }
+    catch {
+    }
+  }
+
+  const appJsonUpdate = await getAppJsonTextWithRemovedRoute(appJsonPath, route)
+
+  if (!appJsonUpdate) {
+    return false
+  }
+
+  await writeTextFile(appJsonUpdate.appJsonPath, appJsonUpdate.nextText)
+  return true
+}
+
+async function syncDeletedUsingComponentPaths(file: { fsPath: string }) {
+  const projectFolder = await findNearestWeappViteProjectWorkspaceFolder(file.fsPath)
+
+  if (!projectFolder) {
+    return false
+  }
+
+  const updates = await getVueTextsWithRemovedUsingComponentPath(projectFolder, file.fsPath)
+
+  if (updates.length === 0) {
+    return false
+  }
+
+  for (const update of updates) {
+    await writeTextFile(update.filePath, update.nextText)
+  }
+
+  return true
+}
+
 export function activate(context: any) {
   const codeActionProvider = new WeappViteCodeActionProvider()
   const vueCompletionProvider = new WeappViteVueCompletionProvider()
@@ -207,6 +376,7 @@ export function activate(context: any) {
   const packageJsonCompletionProvider = new WeappVitePackageJsonCompletionProvider()
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
+  const vueDocumentLinkProvider = new WeappViteVueDocumentLinkProvider()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
     showCollapseAll: true,
@@ -217,7 +387,7 @@ export function activate(context: any) {
     terminalCache: undefined,
   }
   const disposables = [
-    vscode.commands.registerCommand('weapp-vite.generate', () => runWorkspaceCommand('generate', state)),
+    vscode.commands.registerCommand('weapp-vite.generate', resourceUri => showGeneratePicker(state, resourceUri)),
     vscode.commands.registerCommand('weapp-vite.dev', () => runWorkspaceCommand('dev', state)),
     vscode.commands.registerCommand('weapp-vite.build', () => runWorkspaceCommand('build', state)),
     vscode.commands.registerCommand('weapp-vite.open', () => runWorkspaceCommand('open', state)),
@@ -232,7 +402,10 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.syncJsonTitleFromDefinePageJson', document => syncJsonTitleFromDefinePageJson(document)),
     vscode.commands.registerCommand('weapp-vite.insertCommonScripts', document => insertCommonScripts(document, refreshPackageJsonDiagnostics)),
     vscode.commands.registerCommand('weapp-vite.createPageFromRoute', (document, route) => createPageFromRoute(document, route)),
+    vscode.commands.registerCommand('weapp-vite.createComponentFromUsingComponents', (document, componentPath) => createComponentFromUsingComponents(document, componentPath)),
     vscode.commands.registerCommand('weapp-vite.createPageFromTreeItem', item => createPageFromTreeItem(item)),
+    vscode.commands.registerCommand('weapp-vite.generatePageInExplorer', resourceUri => generatePageInExplorer(resourceUri, state)),
+    vscode.commands.registerCommand('weapp-vite.generateComponentInExplorer', resourceUri => generateComponentInExplorer(resourceUri, state)),
     vscode.commands.registerCommand('weapp-vite.openPageFromRoute', (document, route) => openPageFromRoute(document, route)),
     vscode.commands.registerCommand('weapp-vite.addCurrentPageToAppJson', () => addCurrentPageToAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.addPageToAppJsonFromTreeItem', item => addPageToAppJsonFromTreeItem(item, state)),
@@ -247,6 +420,10 @@ export function activate(context: any) {
     vscode.commands.registerCommand('weapp-vite.filterCurrentPageInTree', () => applyPagesTreeFilter(pagesTreeProvider, pagesTreeView, 'current')),
     vscode.commands.registerCommand('weapp-vite.filterDriftPagesInTree', () => applyPagesTreeFilter(pagesTreeProvider, pagesTreeView, 'drift')),
     vscode.commands.registerCommand('weapp-vite.clearPagesTreeFilter', () => clearPagesTreeFilter(pagesTreeProvider, pagesTreeView)),
+    vscode.commands.registerCommand('weapp-vite.repairProjectIssues', () => repairProjectIssues(state)),
+    vscode.commands.registerCommand('weapp-vite.generateMissingComponentsFromProject', () => generateMissingComponentsFromProject(state)),
+    vscode.commands.registerCommand('weapp-vite.generateMissingPagesFromAppJson', () => generateMissingPagesFromAppJson(state)),
+    vscode.commands.registerCommand('weapp-vite.syncUnregisteredPagesToAppJson', () => syncUnregisteredPagesToAppJson(state)),
     vscode.commands.registerCommand('weapp-vite.revealPageRouteInAppJsonFromTreeItem', item => revealPageRouteInAppJsonFromTreeItem(item, state)),
     vscode.commands.registerCommand('weapp-vite.syncDefinePageJsonFromJsonInTreeItem', item => syncDefinePageJsonFromJsonInTreeItem(item)),
     vscode.commands.registerCommand('weapp-vite.syncJsonFromDefinePageJsonInTreeItem', item => syncJsonFromDefinePageJsonInTreeItem(item)),
@@ -280,6 +457,10 @@ export function activate(context: any) {
         { language: 'jsonc', scheme: 'file', pattern: '**/app.json' },
       ],
       appJsonDocumentLinkProvider,
+    ),
+    vscode.languages.registerDocumentLinkProvider(
+      { language: 'vue', scheme: 'file' },
+      vueDocumentLinkProvider,
     ),
     vscode.languages.registerCompletionItemProvider(
       [
@@ -326,7 +507,7 @@ export function activate(context: any) {
         void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
         for (const document of vscode.workspace.textDocuments) {
-          refreshPackageJsonDiagnostics(document)
+          void refreshPackageJsonDiagnostics(document)
           void refreshAppJsonDiagnostics(document)
           void refreshVuePageDiagnostics(document)
         }
@@ -334,7 +515,7 @@ export function activate(context: any) {
     }),
     vscode.workspace.onDidSaveTextDocument((document) => {
       if (isPackageJsonDocument(document)) {
-        refreshPackageJsonDiagnostics(document)
+        void refreshPackageJsonDiagnostics(document)
       }
 
       if (isAppJsonDocument(document)) {
@@ -355,7 +536,7 @@ export function activate(context: any) {
       }
     }),
     vscode.workspace.onDidOpenTextDocument((document) => {
-      refreshPackageJsonDiagnostics(document)
+      void refreshPackageJsonDiagnostics(document)
       void refreshAppJsonDiagnostics(document)
       void refreshVuePageDiagnostics(document)
       pagesTreeProvider.refresh()
@@ -364,13 +545,61 @@ export function activate(context: any) {
       }
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
-      refreshPackageJsonDiagnostics(event.document)
+      void refreshPackageJsonDiagnostics(event.document)
       void refreshAppJsonDiagnostics(event.document)
       void refreshVuePageDiagnostics(event.document)
       pagesTreeProvider.refresh()
       if (vscode.window.activeTextEditor?.document === event.document) {
         void syncPagesTreeState(pagesTreeProvider, pagesTreeView, event.document)
       }
+    }),
+    vscode.workspace.onDidRenameFiles((event) => {
+      void (async () => {
+        let didSyncAnyRoute = false
+
+        for (const file of event.files) {
+          didSyncAnyRoute = await syncRenamedPageRoute(file) || didSyncAnyRoute
+          didSyncAnyRoute = await syncRenamedUsingComponentPaths(file) || didSyncAnyRoute
+        }
+
+        if (!didSyncAnyRoute) {
+          return
+        }
+
+        pagesTreeProvider.refresh()
+        void refreshStatusBar()
+
+        for (const document of vscode.workspace.textDocuments) {
+          void refreshAppJsonDiagnostics(document)
+          void refreshVuePageDiagnostics(document)
+        }
+
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+      })()
+    }),
+    vscode.workspace.onDidDeleteFiles((event) => {
+      void (async () => {
+        let didSyncAnyRoute = false
+
+        for (const file of event.files) {
+          didSyncAnyRoute = await syncDeletedPageRoute(file) || didSyncAnyRoute
+          didSyncAnyRoute = await syncDeletedUsingComponentPaths(file) || didSyncAnyRoute
+        }
+
+        if (!didSyncAnyRoute) {
+          return
+        }
+
+        pagesTreeProvider.refresh()
+        void refreshStatusBar()
+
+        for (const document of vscode.workspace.textDocuments) {
+          void refreshAppJsonDiagnostics(document)
+          void refreshVuePageDiagnostics(document)
+        }
+
+        void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
+      })()
     }),
   ]
 
@@ -382,7 +611,7 @@ export function activate(context: any) {
   void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
 
   for (const document of vscode.workspace.textDocuments) {
-    refreshPackageJsonDiagnostics(document)
+    void refreshPackageJsonDiagnostics(document)
     void refreshAppJsonDiagnostics(document)
   }
 

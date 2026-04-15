@@ -23,11 +23,14 @@ import {
   getVuePageTextWithSyncedDefinePageJsonField,
   getVuePageTextWithSyncedJsonField,
   getVuePageTitleConsistencyState,
+  getVueUsingComponentHover,
 } from './content'
 import {
   getDefinePageJsonCompletionContext,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
+  getVueJsonUsingComponentReferenceAtOffset,
+  getVueJsonUsingComponentReferences,
   getVuePageConfigState,
 } from './logic'
 import {
@@ -38,6 +41,7 @@ import {
   getAppJsonPageRouteSuggestions,
   getAppJsonRouteFileStatus,
   getCurrentPageRouteCandidate,
+  getVueUsingComponentFileStatus,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -521,6 +525,28 @@ export class WeappViteCodeActionProvider {
 
       pushPageConfigSyncActions(actions, document, documentText, 'enablePullDownRefresh')
       pushPageConfigSyncActions(actions, document, documentText, 'navigationStyle')
+
+      const usingComponentReference = getVueJsonUsingComponentReferenceAtOffset(
+        documentText,
+        document.offsetAt(range.start),
+      )
+
+      if (usingComponentReference) {
+        const usingComponentStatus = await getVueUsingComponentFileStatus(document, usingComponentReference.path)
+
+        if (usingComponentStatus?.isLocal && !usingComponentStatus.componentFilePath) {
+          const createComponentAction = new vscode.CodeAction(
+            '创建缺失组件文件',
+            vscode.CodeActionKind.QuickFix,
+          )
+          createComponentAction.command = {
+            command: 'weapp-vite.createComponentFromUsingComponents',
+            title: '创建缺失组件文件',
+            arguments: [document, usingComponentReference.path],
+          }
+          actions.push(createComponentAction)
+        }
+      }
     }
 
     return actions
@@ -716,6 +742,36 @@ export class WeappViteAppJsonDocumentLinkProvider {
   }
 }
 
+export class WeappViteVueDocumentLinkProvider {
+  async provideDocumentLinks(document: any) {
+    if (!isVueDocument(document)) {
+      return []
+    }
+
+    const links = []
+    const references = getVueJsonUsingComponentReferences(document.getText())
+
+    for (const reference of references) {
+      const status = await getVueUsingComponentFileStatus(document, reference.path)
+
+      if (!status?.isLocal || !status.componentFilePath) {
+        continue
+      }
+
+      const target = vscode.Uri.file(status.componentFilePath)
+      const start = document.positionAt(reference.valueStart)
+      const end = document.positionAt(reference.valueEnd)
+      const range = new vscode.Range(start.line, start.character, end.line, end.character)
+      const link = new vscode.DocumentLink(range, target)
+
+      link.tooltip = `打开组件文件 ${reference.path}`
+      links.push(link)
+    }
+
+    return links
+  }
+}
+
 export class WeappViteConfigCompletionProvider {
   provideCompletionItems(document: any, position: any) {
     if (!isCompletionEnabled()) {
@@ -799,6 +855,27 @@ export class WeappViteHoverProvider {
     }
 
     if (isVueDocument(document)) {
+      const usingComponentReference = getVueJsonUsingComponentReferenceAtOffset(
+        document.getText(),
+        document.offsetAt(position),
+      )
+
+      if (usingComponentReference) {
+        return getVueUsingComponentFileStatus(document, usingComponentReference.path).then((status) => {
+          if (!status) {
+            return null
+          }
+
+          return new vscode.Hover(getVueUsingComponentHover(
+            status.componentPath,
+            status.componentFilePath,
+            status.candidatePaths,
+            status.workspacePath,
+            status.isLocal,
+          ))
+        })
+      }
+
       const markdown = getVueCustomBlockHover(lineText) ?? getVuePageConfigHover(wordText, lineText)
 
       if (markdown) {

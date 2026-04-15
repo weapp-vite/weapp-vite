@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import { it, vi } from 'vitest'
 
-function createDocument(text: string) {
+function createDocument(text: string, fsPath = '/workspace/package.json') {
   const lines = text.split('\n')
 
   return {
+    uri: {
+      fsPath,
+      path: fsPath,
+    },
     getText() {
       return text
     },
@@ -15,6 +21,10 @@ function createDocument(text: string) {
       }
     },
   }
+}
+
+function normalizeFsPath(fsPath: string) {
+  return path.normalize(fsPath)
 }
 
 it('builds app.json diagnostics for missing page routes', async () => {
@@ -60,6 +70,8 @@ it('builds app.json diagnostics for missing page routes', async () => {
     buildAppJsonDiagnostics,
     buildVuePageConfigConsistencyDiagnostics,
     buildVuePageDiagnostics,
+    buildVueUsingComponentDiagnostics,
+    getVueUsingComponentHover,
     getVuePageConfigDriftFields,
     getVuePageConfigConsistencyState,
     getVuePageTextWithSyncedDefinePageJsonFields,
@@ -90,6 +102,26 @@ it('builds app.json diagnostics for missing page routes', async () => {
     declared: true,
     route: 'pages/demo/index',
   }).length, 0)
+  assert.equal(buildVueUsingComponentDiagnostics([
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n'), [
+    {
+      path: '/components/card/user/index',
+      valueStart: 58,
+      valueEnd: 85,
+      candidatePaths: [
+        '/workspace/src/components/card/user/index.vue',
+        '/workspace/src/components/card/user/index.ts',
+      ],
+      workspacePath: '/workspace',
+    },
+  ])[0]?.message.includes('未找到 usingComponents 组件文件：/components/card/user/index'), true)
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -138,6 +170,16 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '}',
     '</json>',
   ].join('\n'))?.includes('navigationBarTitleText: \'Index\''), true)
+  assert.equal(getVueUsingComponentHover(
+    '/components/card/user/index',
+    '/workspace/src/components/card/user/index.vue',
+    [
+      '/workspace/src/components/card/user/index.vue',
+      '/workspace/src/components/card/user/index.ts',
+    ],
+    '/workspace',
+    true,
+  )?.value.includes('已找到组件文件：`src/components/card/user/index.vue`'), true)
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -480,6 +522,101 @@ it('builds app.json route hover for missing page files', async () => {
 
   assert.equal(hover?.value.includes('未找到对应页面文件。'), true)
   assert.equal(hover?.value.includes('`src/pages/missing/index.vue`'), true)
+
+  vi.doUnmock('vscode')
+  vi.resetModules()
+})
+
+it('only builds package.json diagnostics for confirmed weapp-vite projects', async () => {
+  const files = new Map<string, string>([
+    [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
+      name: 'demo-app',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+      scripts: {
+        dev: 'wv dev',
+      },
+    })],
+    [normalizeFsPath('/workspace/app/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+    [normalizeFsPath('/workspace/lib/package.json'), JSON.stringify({
+      name: 'demo-lib',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+  ])
+
+  vi.doMock('vscode', () => {
+    return {
+      default: {
+        Range: class {
+          start
+          end
+
+          constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+            this.start = { line: startLine, character: startCharacter }
+            this.end = { line: endLine, character: endCharacter }
+          }
+        },
+        Diagnostic: class {
+          range
+          message
+          severity
+
+          constructor(range: any, message: string, severity: number) {
+            this.range = range
+            this.message = message
+            this.severity = severity
+          }
+        },
+        DiagnosticSeverity: {
+          Information: 1,
+        },
+        workspace: {
+          fs: {
+            stat: async (uri: { fsPath: string }) => {
+              if (!files.has(uri.fsPath)) {
+                throw new TypeError('not found')
+              }
+
+              return {}
+            },
+            readFile: async (uri: { fsPath: string }) => {
+              const content = files.get(uri.fsPath)
+
+              if (typeof content !== 'string') {
+                throw new TypeError('not found')
+              }
+
+              return Buffer.from(content)
+            },
+          },
+        },
+        Uri: {
+          file(nextFsPath: string) {
+            return {
+              fsPath: nextFsPath,
+              path: nextFsPath,
+            }
+          },
+        },
+      },
+    }
+  })
+  vi.resetModules()
+
+  const {
+    buildPackageJsonDiagnostics,
+  } = await import('./content')
+  const confirmedPackageJsonPath = normalizeFsPath('/workspace/app/package.json')
+  const unconfirmedPackageJsonPath = normalizeFsPath('/workspace/lib/package.json')
+  const confirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(confirmedPackageJsonPath)!, confirmedPackageJsonPath))
+  const unconfirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(unconfirmedPackageJsonPath)!, unconfirmedPackageJsonPath))
+
+  assert.equal(confirmedDiagnostics.length, 1)
+  assert.equal(confirmedDiagnostics[0].message, '建议补齐常用 weapp-vite 脚本：build, generate, open')
+  assert.equal(unconfirmedDiagnostics.length, 0)
 
   vi.doUnmock('vscode')
   vi.resetModules()

@@ -71,6 +71,8 @@
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
     "onCommand:weapp-vite.createPageFromTreeItem",
+    "onCommand:weapp-vite.generatePageInExplorer",
+    "onCommand:weapp-vite.generateComponentInExplorer",
     "onCommand:weapp-vite.openPageFromRoute",
     "onCommand:weapp-vite.addCurrentPageToAppJson",
     "onCommand:weapp-vite.addPageToAppJsonFromTreeItem",
@@ -85,6 +87,10 @@
     "onCommand:weapp-vite.filterCurrentPageInTree",
     "onCommand:weapp-vite.filterDriftPagesInTree",
     "onCommand:weapp-vite.clearPagesTreeFilter",
+    "onCommand:weapp-vite.repairProjectIssues",
+    "onCommand:weapp-vite.generateMissingComponentsFromProject",
+    "onCommand:weapp-vite.generateMissingPagesFromAppJson",
+    "onCommand:weapp-vite.syncUnregisteredPagesToAppJson",
     "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
     "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
     "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
@@ -179,6 +185,16 @@
         "category": "weapp-vite"
       },
       {
+        "command": "weapp-vite.generatePageInExplorer",
+        "title": "Create Page Here",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.generateComponentInExplorer",
+        "title": "Create Component Here",
+        "category": "weapp-vite"
+      },
+      {
         "command": "weapp-vite.openPageFromRoute",
         "title": "Open Page From Route",
         "category": "weapp-vite"
@@ -246,6 +262,26 @@
       {
         "command": "weapp-vite.clearPagesTreeFilter",
         "title": "Clear Pages Explorer Filter",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.repairProjectIssues",
+        "title": "Repair Project Issues",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.generateMissingComponentsFromProject",
+        "title": "Generate Missing Components From Project",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.generateMissingPagesFromAppJson",
+        "title": "Generate Missing Pages From app.json",
+        "category": "weapp-vite"
+      },
+      {
+        "command": "weapp-vite.syncUnregisteredPagesToAppJson",
+        "title": "Sync Unregistered Pages To app.json",
         "category": "weapp-vite"
       },
       {
@@ -454,6 +490,16 @@
           "command": "weapp-vite.runAction",
           "group": "navigation",
           "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.generatePageInExplorer",
+          "group": "2_weapp-vite@1",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "weapp-vite.generateComponentInExplorer",
+          "group": "2_weapp-vite@2",
+          "when": "resourceScheme == file"
         }
       ],
       "view/item/context": [
@@ -541,6 +587,16 @@
         },
         {
           "command": "weapp-vite.clearPagesTreeFilter",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
+        {
+          "command": "weapp-vite.generateMissingPagesFromAppJson",
+          "group": "navigation",
+          "when": "view == weapp-vite.pages"
+        },
+        {
+          "command": "weapp-vite.syncUnregisteredPagesToAppJson",
           "group": "navigation",
           "when": "view == weapp-vite.pages"
         },

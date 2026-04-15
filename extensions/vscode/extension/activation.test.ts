@@ -105,6 +105,12 @@ function createMockVscode() {
       onDidChangeTextDocument(handler) {
         return { dispose() {}, handler }
       },
+      onDidRenameFiles(handler) {
+        return { dispose() {}, handler }
+      },
+      onDidDeleteFiles(handler) {
+        return { dispose() {}, handler }
+      },
       applyEdit: async () => true,
       openTextDocument: async () => ({
         uri: { path: '/tmp/demo.ts' },
@@ -213,6 +219,12 @@ function createMockVscode() {
         this.contents = contents
       }
     },
+    DocumentLink: class {
+      constructor(range, target) {
+        this.range = range
+        this.target = target
+      }
+    },
     WorkspaceEdit: class {
       replace() {}
     },
@@ -289,7 +301,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions })
 
-    assert.equal(state.registeredCommands.length, 33)
+    assert.equal(state.registeredCommands.length, 40)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -308,7 +320,10 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.syncJsonTitleFromDefinePageJson',
         'weapp-vite.insertCommonScripts',
         'weapp-vite.createPageFromRoute',
+        'weapp-vite.createComponentFromUsingComponents',
         'weapp-vite.createPageFromTreeItem',
+        'weapp-vite.generatePageInExplorer',
+        'weapp-vite.generateComponentInExplorer',
         'weapp-vite.openPageFromRoute',
         'weapp-vite.addCurrentPageToAppJson',
         'weapp-vite.addPageToAppJsonFromTreeItem',
@@ -323,12 +338,16 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.filterCurrentPageInTree',
         'weapp-vite.filterDriftPagesInTree',
         'weapp-vite.clearPagesTreeFilter',
+        'weapp-vite.repairProjectIssues',
+        'weapp-vite.generateMissingComponentsFromProject',
+        'weapp-vite.generateMissingPagesFromAppJson',
+        'weapp-vite.syncUnregisteredPagesToAppJson',
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
         'weapp-vite.syncDefinePageJsonFromJsonInTreeItem',
         'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 7)
+    assert.equal(state.registeredProviders.length, 8)
     assert.equal(state.createdTreeViews.length, 1)
     assert.equal(state.createdTreeViews[0].viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)

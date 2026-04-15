@@ -10,6 +10,7 @@ import {
   TERMINAL_NAME,
 } from './constants'
 import {
+  getComponentVueTemplate,
   getDefineConfigTemplate,
   getDefinePageJsonTemplate,
   getDocItems,
@@ -33,13 +34,17 @@ import {
   getAppJsonRouteFileTargetFromPath,
   getAppJsonRouteLocation,
   getAppJsonTextWithAddedRoute,
+  getAppJsonTextWithAddedRoutes,
   getAppJsonTextWithAddedSpecificRoute,
   getCurrentPageRouteCandidate,
   getCurrentPageRouteLocation,
   getEditor,
   getPrimaryWorkspaceFolder,
   getProjectContext,
+  getProjectIssueSnapshot,
   getProjectNavigationItems,
+  getVueUsingComponentFileTarget,
+  getWeappPagesTreeSnapshot,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -496,6 +501,39 @@ export async function openPageFromRoute(editorOrDocument: any, route?: string) {
   await vscode.window.showTextDocument(targetDocument, { preview: false })
 }
 
+export async function createComponentFromUsingComponents(editorOrDocument: any, componentPath?: string) {
+  const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
+  const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
+
+  if (!document || !isVueDocument(document) || typeof componentPath !== 'string' || !componentPath.trim()) {
+    void vscode.window.showWarningMessage('weapp-vite: 请在 .vue 的 usingComponents 路径上执行创建组件。')
+    return
+  }
+
+  const targetPath = await getVueUsingComponentFileTarget(document, componentPath)
+
+  if (!targetPath) {
+    void vscode.window.showWarningMessage('weapp-vite: 无法解析要创建的组件文件路径。')
+    return
+  }
+
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+    void vscode.window.showInformationMessage(`weapp-vite: 组件文件已存在 ${componentPath}`)
+    return
+  }
+  catch {
+  }
+
+  const targetUri = vscode.Uri.file(targetPath)
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath.replace(TRAILING_FILE_SEGMENT_PATTERN, '')))
+  await vscode.workspace.fs.writeFile(targetUri, Buffer.from(getComponentVueTemplate(componentPath), 'utf8'))
+
+  const createdDocument = await vscode.workspace.openTextDocument(targetUri)
+  await vscode.window.showTextDocument(createdDocument, { preview: false })
+  void vscode.window.showInformationMessage(`weapp-vite: 已创建组件 ${componentPath}`)
+}
+
 export async function addCurrentPageToAppJson(state: any) {
   const result = await getAppJsonTextWithAddedRoute()
 
@@ -560,6 +598,230 @@ export async function addPageToAppJsonFromTreeItem(item: any, state: any) {
   state.getOutputChannel().appendLine(`[route] add ${result.route}`)
   void vscode.window.showInformationMessage(`weapp-vite: 已将页面加入 app.json ${result.route}`)
   await vscode.window.showTextDocument(document, { preview: false })
+}
+
+export async function syncUnregisteredPagesToAppJson(state: any) {
+  const context = await ensureProjectContext('同步未注册页面')
+
+  if (!context) {
+    return
+  }
+
+  const snapshot = await getWeappPagesTreeSnapshot(context.workspaceFolder)
+
+  if (!snapshot || snapshot.unregisteredPages.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有未注册页面。')
+    return
+  }
+
+  const result = await getAppJsonTextWithAddedRoutes(
+    snapshot.appJsonPath,
+    snapshot.unregisteredPages.map(page => page.route),
+  )
+
+  if (!result) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有可写入 app.json 的未注册页面。')
+    return
+  }
+
+  const document = await vscode.workspace.openTextDocument(getAppJsonDocumentUri(result.appJsonPath))
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  )
+  const edit = new vscode.WorkspaceEdit()
+
+  edit.replace(document.uri, fullRange, result.nextText)
+  await vscode.workspace.applyEdit(edit)
+  await document.save()
+  state.getOutputChannel().appendLine(`[route] add-many ${result.addedRoutes.join(', ')}`)
+  void vscode.window.showInformationMessage(`weapp-vite: 已同步 ${result.addedRoutes.length} 个未注册页面到 app.json`)
+  await vscode.window.showTextDocument(document, { preview: false })
+}
+
+export async function generateMissingPagesFromAppJson(state: any) {
+  const context = await ensureProjectContext('生成缺失页面')
+
+  if (!context) {
+    return
+  }
+
+  const snapshot = await getWeappPagesTreeSnapshot(context.workspaceFolder)
+
+  if (!snapshot) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前未找到可分析的页面结构。')
+    return
+  }
+
+  const missingRoutes = [
+    ...snapshot.topLevelPages,
+    ...snapshot.subpackages.flatMap(item => item.pages),
+  ]
+    .filter(page => !page.pageFilePath)
+    .map(page => page.route)
+
+  if (missingRoutes.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有缺失的页面文件。')
+    return
+  }
+
+  const createdEntries: Array<{ route: string, targetPath: string }> = []
+
+  for (const route of missingRoutes) {
+    const targetPath = getAppJsonRouteFileTargetFromPath(snapshot.appJsonPath, route)
+
+    if (!targetPath) {
+      continue
+    }
+
+    try {
+      await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+      continue
+    }
+    catch {
+    }
+
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath.replace(TRAILING_FILE_SEGMENT_PATTERN, '')))
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(targetPath), Buffer.from(getPageVueTemplate(route), 'utf8'))
+    createdEntries.push({ route, targetPath })
+  }
+
+  if (createdEntries.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 缺失页面文件已存在，无需重新生成。')
+    return
+  }
+
+  const [firstCreatedEntry] = createdEntries
+  const firstDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(firstCreatedEntry.targetPath))
+
+  state.getOutputChannel().appendLine(`[generate] missing-pages ${createdEntries.map(item => item.route).join(', ')}`)
+  await vscode.window.showTextDocument(firstDocument, { preview: false })
+  void vscode.window.showInformationMessage(`weapp-vite: 已生成 ${createdEntries.length} 个缺失页面，首个页面 ${firstCreatedEntry.route}`)
+}
+
+export async function generateMissingComponentsFromProject(state: any) {
+  const context = await ensureProjectContext('生成缺失组件')
+
+  if (!context) {
+    return
+  }
+
+  const snapshot = await getProjectIssueSnapshot(context.workspaceFolder)
+
+  if (!snapshot || snapshot.missingComponentEntries.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有缺失的 usingComponents 组件。')
+    return
+  }
+
+  const createdEntries: Array<{ componentPath: string, targetPath: string }> = []
+  const handledTargetPaths = new Set<string>()
+
+  for (const entry of snapshot.missingComponentEntries) {
+    const targetPath = entry.candidatePaths[0]
+
+    if (!targetPath || handledTargetPaths.has(targetPath)) {
+      continue
+    }
+
+    handledTargetPaths.add(targetPath)
+
+    try {
+      await vscode.workspace.fs.stat(vscode.Uri.file(targetPath))
+      continue
+    }
+    catch {
+    }
+
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetPath.replace(TRAILING_FILE_SEGMENT_PATTERN, '')))
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(targetPath), Buffer.from(getComponentVueTemplate(entry.componentPath), 'utf8'))
+    createdEntries.push({
+      componentPath: entry.componentPath,
+      targetPath,
+    })
+  }
+
+  if (createdEntries.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 缺失组件文件已存在，无需重新生成。')
+    return
+  }
+
+  const [firstCreatedEntry] = createdEntries
+  const firstDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(firstCreatedEntry.targetPath))
+
+  state.getOutputChannel().appendLine(`[generate] missing-components ${createdEntries.map(item => item.componentPath).join(', ')}`)
+  await vscode.window.showTextDocument(firstDocument, { preview: false })
+  void vscode.window.showInformationMessage(`weapp-vite: 已生成 ${createdEntries.length} 个缺失组件，首个组件 ${firstCreatedEntry.componentPath}`)
+}
+
+export async function repairProjectIssues(state: any) {
+  const context = await ensureProjectContext('修复项目问题')
+
+  if (!context) {
+    return
+  }
+
+  const snapshot = await getProjectIssueSnapshot(context.workspaceFolder)
+
+  if (!snapshot) {
+    void vscode.window.showWarningMessage('weapp-vite: 当前工作区无法分析项目问题。')
+    return
+  }
+
+  const items = []
+
+  if (snapshot.missingPageRoutes.length > 0) {
+    items.push({
+      label: '$(file-add) 生成缺失页面文件',
+      description: `${snapshot.missingPageRoutes.length} 个页面`,
+      detail: '批量补齐 app.json 中已声明但文件缺失的页面。',
+      commandId: 'generateMissingPagesFromAppJson',
+    })
+  }
+
+  if (snapshot.unregisteredPageRoutes.length > 0) {
+    items.push({
+      label: '$(diff-added) 同步未注册页面到 app.json',
+      description: `${snapshot.unregisteredPageRoutes.length} 个页面`,
+      detail: '批量把已存在但未声明的页面写入 app.json。',
+      commandId: 'syncUnregisteredPagesToAppJson',
+    })
+  }
+
+  if (snapshot.missingComponentEntries.length > 0) {
+    items.push({
+      label: '$(symbol-class) 生成缺失组件文件',
+      description: `${snapshot.missingComponentEntries.length} 个组件引用`,
+      detail: '批量补齐 usingComponents 中缺失的本地组件骨架。',
+      commandId: 'generateMissingComponentsFromProject',
+    })
+  }
+
+  if (items.length === 0) {
+    void vscode.window.showInformationMessage('weapp-vite: 当前没有可修复的项目结构问题。')
+    return
+  }
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: '选择要执行的项目级修复动作',
+  })
+
+  if (!selected) {
+    return
+  }
+
+  if (selected.commandId === 'generateMissingPagesFromAppJson') {
+    await generateMissingPagesFromAppJson(state)
+    return
+  }
+
+  if (selected.commandId === 'syncUnregisteredPagesToAppJson') {
+    await syncUnregisteredPagesToAppJson(state)
+    return
+  }
+
+  if (selected.commandId === 'generateMissingComponentsFromProject') {
+    await generateMissingComponentsFromProject(state)
+  }
 }
 
 export async function revealPageRouteInAppJsonFromTreeItem(item: any, state: any) {
@@ -656,6 +918,15 @@ export async function showCommandPalette(state: any) {
   }
 
   const items = Object.values(COMMAND_DEFINITIONS).map((commandDefinition) => {
+    if (commandDefinition.id === 'generate') {
+      return {
+        label: '$(sparkle) 生成页面 / 组件',
+        description: '内置生成 .vue 页面与组件骨架',
+        detail: '根据当前目录或默认目录创建页面 / 组件，不依赖 weapp-vite CLI。',
+        commandId: commandDefinition.id,
+      }
+    }
+
     const resolved = resolveCommand(context, commandDefinition)
 
     return {
@@ -687,6 +958,24 @@ export async function showCommandPalette(state: any) {
   items.unshift(...getCurrentPageRunActionItems(currentPage))
 
   const commonItems = [
+    {
+      label: '$(tools) 修复项目问题',
+      description: '集中扫描并处理页面与组件的结构问题',
+      detail: '聚合缺失页面、未注册页面、缺失组件等问题，并提供批量修复入口。',
+      commandId: 'repairProjectIssues',
+    },
+    {
+      label: '$(diff-added) 同步未注册页面到 app.json',
+      description: '批量把文件系统中已存在但未声明的页面写入 app.json',
+      detail: '基于 weapp-vite Pages 视图的未注册页面扫描结果批量同步。',
+      commandId: 'syncUnregisteredPagesToAppJson',
+    },
+    {
+      label: '$(file-add) 生成缺失页面文件',
+      description: '批量补齐 app.json 中已声明但文件缺失的页面',
+      detail: '基于 weapp-vite Pages 视图的缺失页面扫描结果批量生成。',
+      commandId: 'generateMissingPagesFromAppJson',
+    },
     {
       label: '$(go-to-file) 打开关键文件 / 页面',
       description: '快速打开 vite.config、app.json、package.json 和页面文件',
@@ -735,6 +1024,33 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'openProjectFile') {
     await openProjectFile(state)
+    return
+  }
+
+  if (selected.commandId === 'repairProjectIssues') {
+    await repairProjectIssues(state)
+    return
+  }
+
+  if (selected.commandId === 'syncUnregisteredPagesToAppJson') {
+    await syncUnregisteredPagesToAppJson(state)
+    return
+  }
+
+  if (selected.commandId === 'generateMissingPagesFromAppJson') {
+    await generateMissingPagesFromAppJson(state)
+    return
+  }
+
+  if (selected.commandId === 'generateMissingComponentsFromProject') {
+    await generateMissingComponentsFromProject(state)
+    return
+  }
+
+  if (selected.commandId === 'generate') {
+    const { showGeneratePicker } = await import('./generate.js')
+
+    await showGeneratePicker(state)
     return
   }
 

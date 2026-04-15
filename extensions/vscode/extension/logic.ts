@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {
   COMMON_SCRIPT_NAMES,
   SCRIPT_COMMAND_SUGGESTIONS,
@@ -20,6 +22,9 @@ const DEFINE_PAGE_JSON_PROPERTY_PREFIX_PATTERN = /^\s*[A-Za-z_$][\w$]*$/u
 const DEFINE_PAGE_JSON_VALUE_PREFIX_PATTERN = /^\s*([A-Za-z_$][\w$]*)\s*:\s*'[^']*$/u
 const DEFINE_PAGE_JSON_BOOLEAN_VALUE_PREFIX_PATTERN = /^\s*([A-Za-z_$][\w$]*)\s*:\s*[A-Za-z]*$/u
 const VITE_CONFIG_PROPERTY_BLOCK_PATTERN = /^([A-Za-z_$][\w$]*): \{$/u
+const VUE_JSON_BLOCK_CONTENT_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>([\s\S]*?)<\/json>/gu
+const VUE_USING_COMPONENTS_OBJECT_PATTERN = /"usingComponents"\s*:\s*\{([\s\S]*?)\}/gu
+const JSON_STRING_ENTRY_PATTERN = /"([^"]+)"\s*:\s*"([^"]+)"/gu
 
 export interface RunActionQuickPickItem {
   label: string
@@ -33,6 +38,21 @@ export interface CurrentPageActionContext {
   declared: boolean
   hasDefinePageJson: boolean
   hasJsonBlock: boolean
+}
+
+export interface VueUsingComponentReference {
+  entryEnd: number
+  entryStart: number
+  name: string
+  path: string
+  valueEnd: number
+  valueStart: number
+}
+
+interface TextReplacement {
+  end: number
+  start: number
+  text: string
 }
 
 export function getSuggestedScripts(preferWvAlias = true) {
@@ -243,6 +263,181 @@ export function getVuePageConfigState(documentText: string) {
   }
 }
 
+export function getVueJsonUsingComponentReferences(documentText: string): VueUsingComponentReference[] {
+  const references: VueUsingComponentReference[] = []
+
+  for (const blockMatch of documentText.matchAll(VUE_JSON_BLOCK_CONTENT_PATTERN)) {
+    const blockContent = blockMatch[1]
+    const blockIndex = blockMatch.index ?? -1
+
+    if (blockIndex < 0) {
+      continue
+    }
+
+    const blockContentStart = blockIndex + blockMatch[0].indexOf('>') + 1
+
+    for (const usingComponentsMatch of blockContent.matchAll(VUE_USING_COMPONENTS_OBJECT_PATTERN)) {
+      const objectContent = usingComponentsMatch[1]
+      const objectContentStart = blockContentStart + (usingComponentsMatch.index ?? 0) + usingComponentsMatch[0].lastIndexOf(objectContent)
+
+      for (const entryMatch of objectContent.matchAll(JSON_STRING_ENTRY_PATTERN)) {
+        const [fullMatch, name, componentPath] = entryMatch
+        const entryIndex = entryMatch.index ?? -1
+
+        if (entryIndex < 0) {
+          continue
+        }
+
+        const valueToken = `"${componentPath}"`
+        const valueTokenIndex = fullMatch.lastIndexOf(valueToken)
+
+        if (valueTokenIndex < 0) {
+          continue
+        }
+
+        const valueStart = objectContentStart + entryIndex + valueTokenIndex + 1
+
+        references.push({
+          entryStart: objectContentStart + entryIndex,
+          entryEnd: objectContentStart + entryIndex + fullMatch.length,
+          name,
+          path: componentPath,
+          valueStart,
+          valueEnd: valueStart + componentPath.length,
+        })
+      }
+    }
+  }
+
+  return references
+}
+
+export function getVueJsonUsingComponentReferenceAtOffset(documentText: string, offset: number) {
+  return getVueJsonUsingComponentReferences(documentText).find((reference) => {
+    return offset >= reference.valueStart && offset <= reference.valueEnd
+  }) ?? null
+}
+
+export function getMovedUsingComponentPath(
+  originalPath: string,
+  documentPath: string,
+  appJsonPath: string | null,
+  targetFilePath: string,
+) {
+  const normalizedOriginalPath = originalPath.trim().replace(/\\/gu, '/')
+  const targetExtension = path.extname(targetFilePath)
+  const targetPathWithoutExtension = targetExtension
+    ? targetFilePath.slice(0, -targetExtension.length)
+    : targetFilePath
+
+  if (!normalizedOriginalPath || !targetPathWithoutExtension) {
+    return null
+  }
+
+  if (normalizedOriginalPath.startsWith('.')) {
+    const relativePath = path.relative(path.dirname(documentPath), targetPathWithoutExtension).split(path.sep).join('/')
+
+    if (!relativePath) {
+      return './'
+    }
+
+    return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+  }
+
+  const basePath = path.dirname(appJsonPath ?? documentPath)
+  const resolvedPath = path.relative(basePath, targetPathWithoutExtension).split(path.sep).join('/').replace(/^\/+/u, '')
+
+  if (!resolvedPath) {
+    return normalizedOriginalPath.startsWith('/') ? '/' : ''
+  }
+
+  return normalizedOriginalPath.startsWith('/') ? `/${resolvedPath}` : resolvedPath
+}
+
+export function applyTextReplacements(documentText: string, replacements: TextReplacement[]) {
+  if (replacements.length === 0) {
+    return null
+  }
+
+  let nextText = documentText
+
+  for (const replacement of [...replacements].sort((left, right) => right.start - left.start)) {
+    nextText = `${nextText.slice(0, replacement.start)}${replacement.text}${nextText.slice(replacement.end)}`
+  }
+
+  return nextText === documentText ? null : nextText
+}
+
+function getUsingComponentRemovalRange(documentText: string, reference: VueUsingComponentReference) {
+  const lineStart = documentText.lastIndexOf('\n', reference.entryStart - 1) + 1
+  const lineEndIndex = documentText.indexOf('\n', reference.entryEnd)
+  const lineEnd = lineEndIndex >= 0 ? lineEndIndex : documentText.length
+  const beforeEntry = documentText.slice(lineStart, reference.entryStart)
+  const afterEntry = documentText.slice(reference.entryEnd, lineEnd)
+
+  if (beforeEntry.trim() === '' && /^,?\s*$/u.test(afterEntry)) {
+    return {
+      start: lineStart,
+      end: lineEndIndex >= 0 ? lineEndIndex + 1 : lineEnd,
+    }
+  }
+
+  let start = reference.entryStart
+  let end = reference.entryEnd
+  let next = end
+
+  while (next < documentText.length && /\s/u.test(documentText[next])) {
+    next++
+  }
+
+  if (documentText[next] === ',') {
+    end = next + 1
+
+    while (end < documentText.length && /[ \t]/u.test(documentText[end])) {
+      end++
+    }
+  }
+  else {
+    let previous = start - 1
+
+    while (previous >= 0 && /\s/u.test(documentText[previous])) {
+      previous--
+    }
+
+    if (documentText[previous] === ',') {
+      start = previous
+
+      while (start > 0 && /[ \t]/u.test(documentText[start - 1])) {
+        start--
+      }
+    }
+  }
+
+  return {
+    start,
+    end,
+  }
+}
+
+export function getVueTextWithRemovedUsingComponentPaths(documentText: string, componentPaths: string[]) {
+  const normalizedPaths = new Set(componentPaths
+    .filter((componentPath): componentPath is string => typeof componentPath === 'string' && componentPath.trim().length > 0)
+    .map(componentPath => componentPath.trim()))
+
+  if (normalizedPaths.size === 0) {
+    return null
+  }
+
+  const replacements = getVueJsonUsingComponentReferences(documentText)
+    .filter(reference => normalizedPaths.has(reference.path))
+    .map(reference => getUsingComponentRemovalRange(documentText, reference))
+
+  return applyTextReplacements(documentText, replacements.map(range => ({
+    ...range,
+    text: '',
+  })))
+}
+
 export function getCurrentPageRunActionItems(
   currentPage: CurrentPageActionContext | null,
 ): RunActionQuickPickItem[] {
@@ -392,6 +587,113 @@ export function applyPageRouteToAppJson(appJson: Record<string, any>, route: str
     packageLocation: 'pages' as const,
     packageRoot: null,
     appJson: nextAppJson,
+  }
+}
+
+function cloneAppJsonForRouteMutation(appJson: Record<string, any>) {
+  return {
+    ...appJson,
+    pages: Array.isArray(appJson.pages) ? [...appJson.pages] : appJson.pages,
+    subPackages: Array.isArray(appJson.subPackages)
+      ? appJson.subPackages.map((subPackage) => {
+          if (!subPackage || typeof subPackage !== 'object') {
+            return subPackage
+          }
+
+          return {
+            ...subPackage,
+            pages: Array.isArray(subPackage.pages) ? [...subPackage.pages] : subPackage.pages,
+          }
+        })
+      : appJson.subPackages,
+    subpackages: Array.isArray(appJson.subpackages)
+      ? appJson.subpackages.map((subPackage) => {
+          if (!subPackage || typeof subPackage !== 'object') {
+            return subPackage
+          }
+
+          return {
+            ...subPackage,
+            pages: Array.isArray(subPackage.pages) ? [...subPackage.pages] : subPackage.pages,
+          }
+        })
+      : appJson.subpackages,
+  }
+}
+
+export function removePageRouteFromAppJson(appJson: Record<string, any>, route: string) {
+  const normalizedRoute = normalizeRoute(route)
+  const nextAppJson = cloneAppJsonForRouteMutation(appJson)
+  let changed = false
+
+  if (Array.isArray(nextAppJson.pages)) {
+    const filteredPages = nextAppJson.pages.filter((page: unknown) => page !== normalizedRoute)
+
+    if (filteredPages.length !== nextAppJson.pages.length) {
+      nextAppJson.pages = filteredPages
+      changed = true
+    }
+  }
+
+  for (const key of ['subPackages', 'subpackages'] as const) {
+    const subPackages = nextAppJson[key]
+
+    if (!Array.isArray(subPackages)) {
+      continue
+    }
+
+    for (const subPackage of subPackages) {
+      if (!subPackage || typeof subPackage !== 'object' || typeof subPackage.root !== 'string' || !Array.isArray(subPackage.pages)) {
+        continue
+      }
+
+      const packageRoot = normalizeRoute(subPackage.root)
+
+      if (!packageRoot || !normalizedRoute.startsWith(`${packageRoot}/`)) {
+        continue
+      }
+
+      const relativeRoute = normalizedRoute.slice(packageRoot.length + 1)
+      const filteredPages = subPackage.pages.filter((page: unknown) => page !== relativeRoute)
+
+      if (filteredPages.length !== subPackage.pages.length) {
+        subPackage.pages = filteredPages
+        changed = true
+      }
+    }
+  }
+
+  return {
+    appJson: nextAppJson,
+    changed,
+  }
+}
+
+export function movePageRouteInAppJson(appJson: Record<string, any>, fromRoute: string, toRoute: string) {
+  const normalizedFromRoute = normalizeRoute(fromRoute)
+  const normalizedToRoute = normalizeRoute(toRoute)
+
+  if (!normalizedFromRoute || !normalizedToRoute || normalizedFromRoute === normalizedToRoute) {
+    return {
+      changed: false,
+      appJson,
+    }
+  }
+
+  const removed = removePageRouteFromAppJson(appJson, normalizedFromRoute)
+
+  if (!removed.changed) {
+    return {
+      changed: false,
+      appJson: removed.appJson,
+    }
+  }
+
+  const added = applyPageRouteToAppJson(removed.appJson, normalizedToRoute)
+
+  return {
+    changed: true,
+    appJson: added.appJson,
   }
 }
 

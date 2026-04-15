@@ -11,6 +11,20 @@ const artifactDir = path.join(extensionRoot, '.artifacts')
 const outputPath = path.join(artifactDir, 'weapp-vite.vsix')
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 const mode = process.argv[2] ?? 'package'
+const VSCE_ENV_ALLOWLIST = new Set([
+  'HOME',
+  'PATH',
+  'PATHEXT',
+  'SYSTEMROOT',
+  'SystemRoot',
+  'TEMP',
+  'TMP',
+  'TMPDIR',
+  'USERPROFILE',
+  'VSCE_PAT',
+  'COMSPEC',
+  'ComSpec',
+])
 
 interface ExtensionPackageJson {
   [key: string]: unknown
@@ -39,6 +53,29 @@ export function createPublishManifest(packageJson: ExtensionPackageJson) {
     name: packageJson['x-vsce']?.name ?? packageJson.name,
     displayName: packageJson['x-vsce']?.displayName ?? packageJson.displayName,
   }
+}
+
+/**
+ * 清理由 pnpm/npm 脚本注入的环境变量，避免 vsce/npm pack 误继承上层包上下文。
+ */
+export function createVsceEnv(env: NodeJS.ProcessEnv = process.env) {
+  const nextEnv: NodeJS.ProcessEnv = {}
+
+  for (const [key, value] of Object.entries(env)) {
+    if (value == null) {
+      continue
+    }
+
+    if (key.startsWith('npm_') || key.startsWith('PNPM_')) {
+      continue
+    }
+
+    if (VSCE_ENV_ALLOWLIST.has(key) || !key.includes('_')) {
+      nextEnv[key] = value
+    }
+  }
+
+  return nextEnv
 }
 
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as ExtensionPackageJson
@@ -94,7 +131,7 @@ export function runVsce(args: string[]) {
       cwd: publishRoot,
       stdio: 'inherit',
       shell: false,
-      env: process.env,
+      env: createVsceEnv(process.env),
     },
   )
 

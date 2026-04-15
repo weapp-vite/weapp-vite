@@ -6,6 +6,9 @@ import {
   getVuePageConfigDriftFields,
 } from './content'
 import {
+  getRelativeDisplayPath,
+} from './pathUtils'
+import {
   getPrimaryWorkspaceFolder,
   getWeappPagesTreeSnapshot,
 } from './workspace'
@@ -66,7 +69,7 @@ function getPageNodeDescription(pageFilePath: string | null, workspacePath: stri
     return '缺少页面文件'
   }
 
-  return path.relative(workspacePath, pageFilePath)
+  return getRelativeDisplayPath(workspacePath, pageFilePath)
 }
 
 async function getPageDriftFields(pageFilePath: string | null) {
@@ -189,7 +192,7 @@ function createPageNode(
     tooltip: [
       `route: ${route}`,
       pageFilePath
-        ? `页面文件: ${path.relative(workspacePath, pageFilePath)}`
+        ? `页面文件: ${getRelativeDisplayPath(workspacePath, pageFilePath)}`
         : '页面文件缺失，点击后打开 app.json',
       baseStatus === 'unregistered' ? '声明状态: 未加入 app.json' : '',
       driftFields.length > 0 ? `配置漂移: ${driftFields.join(', ')}` : '',

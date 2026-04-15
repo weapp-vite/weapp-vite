@@ -49,8 +49,8 @@ export const COMMAND_DEFINITIONS: Record<string, CommandDefinition> = {
   },
   generate: {
     id: 'generate',
-    label: '生成配置',
-    detail: '优先执行 generate 或 g 脚本。',
+    label: '生成页面 / 组件',
+    detail: '内置生成页面 / 组件 .vue 骨架。',
     scriptCandidates: ['generate', 'g'],
     fallbackCommand: 'wv generate',
   },

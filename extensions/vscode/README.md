@@ -2,7 +2,7 @@
 
 面向 `weapp-vite` 项目的 VS Code 官方扩展。
 
-它把日常高频动作直接放进编辑器里：识别项目、展示状态栏入口、执行 `dev/build/generate/open`、补齐常用脚本、增强 `vite.config.*` / `package.json` / `.vue` 的编辑体验，并为 weapp-vite 的 `<json>` 自定义块提供语法高亮与代码片段。
+它把日常高频动作直接放进编辑器里：识别项目、展示状态栏入口、执行 `dev/build/open`、内置生成页面/组件、补齐常用脚本、增强 `vite.config.*` / `package.json` / `.vue` 的编辑体验，并为 weapp-vite 的 `<json>` 自定义块提供语法高亮与代码片段。
 
 ## 官方入口
 
@@ -21,7 +21,9 @@
 
 - `.vue` 文件中 weapp-vite `<json>` 自定义块的语法高亮
 - 识别到 weapp-vite 工作区后的状态栏入口
-- `dev` / `build` / `generate` / `open` / `info` 等常用工作区命令
+- `dev` / `build` / `open` / `info` 等常用工作区命令
+- 内置 `generate` 页面 / 组件骨架，不依赖 `wv` CLI
+- 内置生成会读取 `vite.config.*` 中常见的 `weapp.generate.dirs` / `filenames` 配置
 - `<json>` 块和 `defineConfig` 的代码片段
 - 面向 `package.json`、`vite.config.*`、`.vue` 的代码操作
 - 对常用脚本缺失情况的轻量 `package.json` 诊断
@@ -90,8 +92,9 @@
 
 扩展会按以下顺序解析命令：
 
-1. 优先使用匹配的 `package.json` scripts，例如 `dev`、`build`、`open`、`generate`、`g`、`doctor`、`info`
+1. `dev` / `build` / `open` / `doctor` 优先使用匹配的 `package.json` scripts，例如 `dev`、`build`、`open`、`doctor`、`info`
 2. 如果未命中，则回退到 `wv <command>`
+3. `generate` 为扩展内置能力，直接生成页面 / 组件 `.vue` 骨架，不依赖 CLI，并会读取 `weapp.generate.dirs` / `filenames`
 
 终端工作目录会优先取当前活动编辑器所在的工作区目录，否则取第一个打开的工作区目录。
 
@@ -109,6 +112,14 @@
 - 在 `.vue` 中执行 `weapp-vite: Insert definePageJson Template`，快速插入页面配置骨架
 - 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
 - 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
+- 在资源管理器中右键目录或文件，可直接执行 `Create Page Here` / `Create Component Here`
+- 通过内置 `Generate` 创建页面后，可直接选择是否同步加入 `app.json`
+- `weapp-vite Pages` 标题栏支持一键把未注册页面批量同步进 `app.json`
+- `weapp-vite Pages` 标题栏也支持一键为 `app.json` 中缺失文件的页面批量生成页面骨架
+- 当已声明页面文件在资源管理器中被重命名或移动时，扩展会自动同步更新 `app.json` 里的 route，减少手工改路径
+- 当已声明页面文件被删除，且同 route 的其他候选页面文件也不存在时，扩展会自动从 `app.json` 清理对应 route，减少残留脏配置
+- 上述页面 route 同步与清理同样覆盖页面目录整体重命名、移动和删除的场景，不只限于单个页面文件
+- `Run Action` 里新增“修复项目问题”入口，可集中扫描并批量处理缺失页面、未注册页面和缺失组件
 - 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
 - Explorer 侧边栏新增 `weapp-vite Pages` 视图，按顶层页面、分包页面、未声明页面分组浏览项目页面结构
 - 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`
@@ -137,6 +148,12 @@
 - 如果其中一侧缺少 `navigationBarTitleText`，同步 quick fix 也会自动补齐，而不只是覆盖已有值
 - `navigationStyle` 也会参与双写一致性检查，并提供双向同步 quick fix，减少页面配置漂移
 - `enablePullDownRefresh` 这类布尔页面字段现在也会做双写一致性诊断和双向同步
+- 在 `.vue` 的 `<json>` 里声明 `usingComponents` 时，扩展会解析本地组件路径，悬浮展示解析结果，并对缺失组件给出诊断
+- 当 `usingComponents` 指向的本地组件文件不存在时，可直接通过 quick fix 创建缺失组件文件，减少手动补目录和骨架
+- 对已存在的本地 `usingComponents` 组件路径，也支持 `Cmd/Ctrl + Click` 直接跳转到组件文件，和 `app.json` 页面路由保持一致的导航体验
+- 当本地组件文件在资源管理器中被重命名或移动时，扩展也会自动同步更新引用它们的 `usingComponents` 路径，减少手工改 JSON
+- 当本地组件文件被删除，且同一路径的其他候选组件文件也不存在时，扩展会自动清理失效的 `usingComponents` 引用，避免残留脏配置
+- 上述同步与清理同样覆盖组件目录整体重命名、移动和删除的场景，不只限于单个组件文件
 - 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
 - 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
 - 在页面 `.vue` 的 `definePageJson({...})` 中也可补全常用页面字段，减少在脚本配置里手写键名

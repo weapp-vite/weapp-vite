@@ -19,6 +19,12 @@ import {
   getAppJsonRouteInsertText,
   getMissingCommonScripts,
 } from './logic'
+import {
+  getRelativeDisplayPath,
+} from './pathUtils'
+import {
+  getWeappViteProjectSignals,
+} from './workspace'
 
 const PAGE_CONFIG_FIELD_DESCRIPTIONS: Record<string, string> = {
   navigationBarTitleText: '设置当前页面的导航栏标题文本。',
@@ -210,7 +216,40 @@ export function getPageVueTemplate(route: string) {
   ].join('\n')
 }
 
-export function buildPackageJsonDiagnostics(document: any) {
+function toPascalCase(value: string) {
+  return value
+    .split(/[^A-Za-z0-9]+/u)
+    .filter(Boolean)
+    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join('') || 'WeappComponent'
+}
+
+export function getComponentVueTemplate(name: string) {
+  const normalizedName = name.trim().replace(/^\/+|\/+$/g, '')
+  const segments = normalizedName.split('/').filter(Boolean)
+  const componentName = toPascalCase(segments[segments.length - 1] ?? normalizedName)
+
+  return [
+    '<script setup lang="ts">',
+    `defineOptions({ name: '${componentName}' })`,
+    '</script>',
+    '',
+    '<template>',
+    `  <view class="${componentName}">`,
+    '    <slot />',
+    '  </view>',
+    '</template>',
+    '',
+    '<style scoped>',
+    `.${componentName} {`,
+    '  display: block;',
+    '}',
+    '</style>',
+    '',
+  ].join('\n')
+}
+
+export async function buildPackageJsonDiagnostics(document: any) {
   const diagnostics = []
   let packageJson
 
@@ -221,22 +260,15 @@ export function buildPackageJsonDiagnostics(document: any) {
     return diagnostics
   }
 
-  const dependencyBuckets = [
-    packageJson?.dependencies,
-    packageJson?.devDependencies,
-    packageJson?.peerDependencies,
-  ]
-  const scripts = typeof packageJson?.scripts === 'object' && packageJson.scripts
-    ? packageJson.scripts
-    : {}
-  const hasWeappViteDependency = dependencyBuckets.some((dependencies) => {
-    return Boolean(dependencies?.['weapp-vite'])
-  })
-  const hasWeappViteScript = Object.values(scripts).some((value) => {
-    return typeof value === 'string' && WEAPP_VITE_SCRIPT_PATTERN.test(value)
-  })
+  const packageJsonPath = document.uri?.fsPath
 
-  if (!hasWeappViteDependency && !hasWeappViteScript) {
+  if (typeof packageJsonPath !== 'string' || packageJsonPath.length === 0) {
+    return diagnostics
+  }
+
+  const projectSignals = await getWeappViteProjectSignals(path.dirname(packageJsonPath), packageJson)
+
+  if (!projectSignals.isConfirmedWeappViteProject) {
     return diagnostics
   }
 
@@ -304,6 +336,33 @@ export function buildVuePageDiagnostics(candidate: { declared: boolean, route: s
 
   diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
   return [diagnostic]
+}
+
+export function buildVueUsingComponentDiagnostics(documentText: string, references: Array<{
+  candidatePaths: string[]
+  path: string
+  valueEnd: number
+  valueStart: number
+  workspacePath: string
+}>) {
+  return references.map((reference) => {
+    const startPosition = getPositionFromOffset(documentText, reference.valueStart)
+    const endPosition = getPositionFromOffset(documentText, reference.valueEnd)
+    const relativeCandidates = reference.candidatePaths.map(candidate => getRelativeDisplayPath(reference.workspacePath, candidate))
+    const diagnostic = new vscode.Diagnostic(
+      new vscode.Range(
+        startPosition.line,
+        startPosition.character,
+        endPosition.line,
+        endPosition.character,
+      ),
+      `未找到 usingComponents 组件文件：${reference.path}${relativeCandidates.length > 0 ? `（已尝试 ${relativeCandidates.map(candidate => `\`${candidate}\``).join(' / ')}）` : ''}`,
+      vscode.DiagnosticSeverity.Information,
+    )
+
+    diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
+    return diagnostic
+  })
 }
 
 export function buildVuePageConfigConsistencyDiagnostics(document: any) {
@@ -519,7 +578,7 @@ export function getAppJsonRouteHover(
   candidatePaths: string[],
   workspacePath: string,
 ) {
-  const relativeCandidates = candidatePaths.map(candidate => path.relative(workspacePath, candidate))
+  const relativeCandidates = candidatePaths.map(candidate => getRelativeDisplayPath(workspacePath, candidate))
 
   if (pageFilePath) {
     return new vscode.MarkdownString([
@@ -527,7 +586,7 @@ export function getAppJsonRouteHover(
       '',
       `当前 route：\`${route}\``,
       '',
-      `已找到页面文件：\`${path.relative(workspacePath, pageFilePath)}\``,
+      `已找到页面文件：\`${getRelativeDisplayPath(workspacePath, pageFilePath)}\``,
     ].join('\n'))
   }
 
@@ -537,6 +596,46 @@ export function getAppJsonRouteHover(
     `当前 route：\`${route}\``,
     '',
     '未找到对应页面文件。',
+    '',
+    `已尝试：${relativeCandidates.map(candidate => `\`${candidate}\``).join('、')}`,
+  ].join('\n'))
+}
+
+export function getVueUsingComponentHover(
+  componentPath: string,
+  componentFilePath: string | null,
+  candidatePaths: string[],
+  workspacePath: string,
+  isLocal: boolean,
+) {
+  if (!isLocal) {
+    return new vscode.MarkdownString([
+      '**usingComponents 组件引用**',
+      '',
+      `当前路径：\`${componentPath}\``,
+      '',
+      '当前引用不是本地组件路径，扩展不会尝试解析到工作区文件。',
+    ].join('\n'))
+  }
+
+  const relativeCandidates = candidatePaths.map(candidate => getRelativeDisplayPath(workspacePath, candidate))
+
+  if (componentFilePath) {
+    return new vscode.MarkdownString([
+      '**usingComponents 组件引用**',
+      '',
+      `当前路径：\`${componentPath}\``,
+      '',
+      `已找到组件文件：\`${getRelativeDisplayPath(workspacePath, componentFilePath)}\``,
+    ].join('\n'))
+  }
+
+  return new vscode.MarkdownString([
+    '**usingComponents 组件引用**',
+    '',
+    `当前路径：\`${componentPath}\``,
+    '',
+    '未找到对应组件文件。',
     '',
     `已尝试：${relativeCandidates.map(candidate => `\`${candidate}\``).join('、')}`,
   ].join('\n'))

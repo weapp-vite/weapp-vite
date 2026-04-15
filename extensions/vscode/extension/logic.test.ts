@@ -4,17 +4,24 @@ import { it } from 'vitest'
 import {
   applyPageRouteToAppJson,
   applySuggestedScripts,
+  applyTextReplacements,
   getAppJsonRouteCompletionContext,
   getAppJsonRouteInsertText,
   getCurrentPageRunActionItems,
   getDefinePageJsonCompletionContext,
   getMissingCommonScripts,
+  getMovedUsingComponentPath,
   getSuggestedScripts,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
+  getVueJsonUsingComponentReferenceAtOffset,
+  getVueJsonUsingComponentReferences,
   getVuePageConfigState,
+  getVueTextWithRemovedUsingComponentPaths,
   isInsideDefinePageJson,
   isInsideVueJsonBlock,
+  movePageRouteInAppJson,
+  removePageRouteFromAppJson,
   resolveCommandFromScripts,
 } from './logic'
 
@@ -179,6 +186,98 @@ it('does not duplicate an existing page route in app json', () => {
   assert.deepEqual(result.appJson.pages, ['pages/home/index'])
 })
 
+it('removes a top level page route from app json', () => {
+  const result = removePageRouteFromAppJson({
+    pages: ['pages/home/index', 'pages/profile/index'],
+  }, 'pages/home/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.pages, ['pages/profile/index'])
+})
+
+it('removes a subpackage page route from app json', () => {
+  const result = removePageRouteFromAppJson({
+    subPackages: [
+      {
+        root: 'packageA',
+        pages: ['detail/index', 'list/index'],
+      },
+    ],
+  }, 'packageA/detail/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.subPackages, [
+    {
+      root: 'packageA',
+      pages: ['list/index'],
+    },
+  ])
+})
+
+it('does nothing when removing a route that is not declared', () => {
+  const result = removePageRouteFromAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/about/index')
+
+  assert.equal(result.changed, false)
+  assert.deepEqual(result.appJson.pages, ['pages/home/index'])
+})
+
+it('moves a top level page route in app json', () => {
+  const result = movePageRouteInAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/home/index', 'pages/profile/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.pages, ['pages/profile/index'])
+})
+
+it('moves a page route between subpackages', () => {
+  const result = movePageRouteInAppJson({
+    subPackages: [
+      {
+        root: 'packageA',
+        pages: ['detail/index'],
+      },
+      {
+        root: 'packageB',
+        pages: ['home/index'],
+      },
+    ],
+  }, 'packageA/detail/index', 'packageB/detail/index')
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.appJson.subPackages, [
+    {
+      root: 'packageA',
+      pages: [],
+    },
+    {
+      root: 'packageB',
+      pages: ['home/index', 'detail/index'],
+    },
+  ])
+})
+
+it('does nothing when moving to the same route', () => {
+  const original = {
+    pages: ['pages/home/index'],
+  }
+  const result = movePageRouteInAppJson(original, 'pages/home/index', 'pages/home/index')
+
+  assert.equal(result.changed, false)
+  assert.equal(result.appJson, original)
+})
+
+it('does nothing when source route is not declared', () => {
+  const result = movePageRouteInAppJson({
+    pages: ['pages/home/index'],
+  }, 'pages/about/index', 'pages/profile/index')
+
+  assert.equal(result.changed, false)
+  assert.deepEqual(result.appJson.pages, ['pages/home/index'])
+})
+
 it('detects cursor inside vue json block', () => {
   assert.equal(isInsideVueJsonBlock([
     '<template>',
@@ -320,6 +419,105 @@ it('detects vue page config state from document text', () => {
     hasDefinePageJson: true,
     hasJsonBlock: true,
   })
+})
+
+it('collects usingComponents references from vue json block', () => {
+  assert.deepEqual(getVueJsonUsingComponentReferences([
+    '<template><view /></template>',
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index",',
+    '    "user-avatar": "./components/avatar/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n')).map(item => ({
+    name: item.name,
+    path: item.path,
+  })), [
+    {
+      name: 'card-user',
+      path: '/components/card/user/index',
+    },
+    {
+      name: 'user-avatar',
+      path: './components/avatar/index',
+    },
+  ])
+})
+
+it('finds usingComponents reference at offset', () => {
+  const documentText = [
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n')
+  const componentPath = '/components/card/user/index'
+  const valueStart = documentText.indexOf(componentPath)
+  const offset = valueStart + 5
+
+  assert.deepEqual(getVueJsonUsingComponentReferenceAtOffset(documentText, offset), {
+    entryStart: documentText.indexOf('"card-user": "/components/card/user/index"'),
+    entryEnd: documentText.indexOf('"card-user": "/components/card/user/index"') + '"card-user": "/components/card/user/index"'.length,
+    name: 'card-user',
+    path: componentPath,
+    valueStart,
+    valueEnd: valueStart + componentPath.length,
+  })
+})
+
+it('preserves rooted usingComponents paths when target file moves', () => {
+  assert.equal(getMovedUsingComponentPath(
+    '/components/card/user/index',
+    '/workspace/src/pages/home/index.vue',
+    '/workspace/src/app.json',
+    '/workspace/src/components/profile/card/index.vue',
+  ), '/components/profile/card/index')
+})
+
+it('preserves relative usingComponents paths when target file moves', () => {
+  assert.equal(getMovedUsingComponentPath(
+    './components/avatar/index',
+    '/workspace/src/pages/home/index.vue',
+    '/workspace/src/app.json',
+    '/workspace/src/pages/home/widgets/avatar/index.vue',
+  ), './widgets/avatar/index')
+})
+
+it('applies multiple text replacements from back to front', () => {
+  assert.equal(applyTextReplacements(
+    'alpha beta gamma',
+    [
+      { start: 6, end: 10, text: 'BETA' },
+      { start: 11, end: 16, text: 'GAMMA' },
+    ],
+  ), 'alpha BETA GAMMA')
+})
+
+it('removes usingComponents entries from a vue json block', () => {
+  assert.equal(getVueTextWithRemovedUsingComponentPaths([
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "/components/card/user/index",',
+    '    "user-avatar": "./components/avatar/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n'), ['/components/card/user/index']), [
+    '<json lang="jsonc">',
+    '{',
+    '  "usingComponents": {',
+    '    "user-avatar": "./components/avatar/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n'))
 })
 
 it('prioritizes declared current page run actions', () => {
