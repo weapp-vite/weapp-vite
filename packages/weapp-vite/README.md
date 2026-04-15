@@ -187,6 +187,38 @@ wv ide logs
 wv ide logs --open
 ```
 
+## DevTools 配置预热
+
+`weapp-vite` 在打开微信开发者工具前，会复用 `weapp-ide-cli` 的底层能力，自动尝试预热本机 DevTools 配置：
+
+- 确保安全设置中的服务端口处于开启状态
+- 按命令参数或全局配置决定是否自动信任当前项目
+
+如果你只想预热配置、不立即打开 IDE，可以使用：
+
+```sh
+weapp-vite ide setup .
+# 等价写法
+wv ide setup .
+```
+
+如果你希望以后 `open` / `dev --open` / `build --open` 都默认自动信任项目，直接配置 `weapp-ide-cli` 即可：
+
+```sh
+weapp config set autoBootstrapDevtools true
+weapp config set autoTrustProject true
+```
+
+这样以后执行：
+
+```sh
+weapp-vite open .
+weapp-vite dev --open
+weapp-vite build --open
+```
+
+都会沿用同一套默认策略。
+
 ## CLI 中调用 weapp-ide-cli
 
 `weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/open/init/generate/analyze/npm` 等原生命令外，其它 IDE 相关命令都可以直接调用：
@@ -197,6 +229,7 @@ weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 weapp-vite cache --clean compile
 weapp-vite cache --clean all
 weapp-vite config lang zh
+weapp-vite config set autoTrustProject true
 weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
 # 等价写法
 wv preview --project ./dist/build/mp-weixin
@@ -208,6 +241,7 @@ wv cache --clean all
 ```sh
 weapp-vite ide preview --project ./dist/build/mp-weixin
 weapp-vite ide config show
+weapp-vite ide setup .
 weapp-vite ide logs --open
 # 等价写法
 wv ide preview --project ./dist/build/mp-weixin

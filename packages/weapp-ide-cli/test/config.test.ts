@@ -93,7 +93,13 @@ describe('config helpers', () => {
     const { getConfig } = await loadConfigModule()
     const result = await getConfig()
 
-    expect(result).toEqual({ cliPath: '/custom/cli', locale: 'en', source: 'custom' })
+    expect(result).toEqual({
+      cliPath: '/custom/cli',
+      locale: 'en',
+      autoBootstrapDevtools: undefined,
+      autoTrustProject: undefined,
+      source: 'custom',
+    })
     expect(loggerMock.info).toHaveBeenCalledWith('自定义 CLI 路径：/custom/cli')
   })
 
@@ -134,6 +140,60 @@ describe('config helpers', () => {
     expect(payload).toEqual({
       cliPath: '/custom/cli',
       locale: 'en',
+    })
+  })
+
+  it('writes auto bootstrap config and preserves existing values', async () => {
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockResolvedValue({ cliPath: '/custom/cli', autoTrustProject: true })
+    fsMock.ensureDir.mockResolvedValue(undefined)
+    fsMock.writeJSON.mockResolvedValue(undefined)
+
+    const { createAutoBootstrapDevtoolsConfig } = await loadConfigModule()
+    const result = await createAutoBootstrapDevtoolsConfig(false)
+
+    expect(result).toBe(false)
+    const [, payload] = fsMock.writeJSON.mock.calls[0]
+    expect(payload).toEqual({
+      cliPath: '/custom/cli',
+      autoTrustProject: true,
+      autoBootstrapDevtools: false,
+    })
+  })
+
+  it('reads boolean devtools config from custom config file', async () => {
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockResolvedValue({
+      cliPath: '/custom/cli',
+      locale: 'zh',
+      autoBootstrapDevtools: false,
+      autoTrustProject: true,
+    })
+
+    const { readCustomConfig } = await loadConfigModule()
+    const result = await readCustomConfig()
+
+    expect(result).toEqual({
+      cliPath: '/custom/cli',
+      locale: 'zh',
+      autoBootstrapDevtools: false,
+      autoTrustProject: true,
+    })
+  })
+
+  it('resolves effective devtools automation defaults', async () => {
+    const { resolveDevtoolsAutomationDefaults } = await loadConfigModule()
+
+    expect(resolveDevtoolsAutomationDefaults({})).toEqual({
+      autoBootstrapDevtools: true,
+      autoTrustProject: false,
+    })
+    expect(resolveDevtoolsAutomationDefaults({
+      autoBootstrapDevtools: false,
+      autoTrustProject: true,
+    })).toEqual({
+      autoBootstrapDevtools: false,
+      autoTrustProject: true,
     })
   })
 

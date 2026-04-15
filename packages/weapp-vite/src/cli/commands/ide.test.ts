@@ -4,6 +4,7 @@ const openIdeMock = vi.hoisted(() => vi.fn())
 const resolveIdeCommandContextMock = vi.hoisted(() => vi.fn())
 const resolveForwardConsoleOptionsMock = vi.hoisted(() => vi.fn())
 const startForwardConsoleBridgeMock = vi.hoisted(() => vi.fn())
+const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -14,6 +15,10 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('../openIde', () => ({
   openIde: openIdeMock,
   resolveIdeCommandContext: resolveIdeCommandContextMock,
+}))
+
+vi.mock('weapp-ide-cli', () => ({
+  bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
 }))
 
 vi.mock('../forwardConsole', () => ({
@@ -37,6 +42,7 @@ describe('ide logs command', () => {
     resolveIdeCommandContextMock.mockReset()
     resolveForwardConsoleOptionsMock.mockReset()
     startForwardConsoleBridgeMock.mockReset()
+    bootstrapWechatDevtoolsSettingsMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
@@ -64,6 +70,11 @@ describe('ide logs command', () => {
       enabled: true,
       logLevels: ['log', 'info', 'warn', 'error'],
       unhandledErrors: true,
+    })
+    bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
+      touchedInstanceCount: 1,
+      updatedSecurityCount: 1,
+      trustedProjectCount: 1,
     })
     startForwardConsoleBridgeMock.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
@@ -117,5 +128,30 @@ describe('ide logs command', () => {
     const { runIdeCommand } = await import('./ide')
 
     await expect(runIdeCommand('logs', undefined, {})).rejects.toThrow('`weapp-vite ide logs` 当前仅支持微信小程序平台。')
+  })
+
+  it('bootstraps devtools settings without opening ide for setup action', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('setup', undefined, {})
+
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+      trustProject: undefined,
+    })
+    expect(startForwardConsoleBridgeMock).not.toHaveBeenCalled()
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(loggerMock.info).toHaveBeenCalledWith('已完成微信开发者工具配置预热：扫描实例 1 个，更新安全设置 1 处，写入项目信任 1 处。')
+  })
+
+  it('forwards trust-project override for setup action', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('setup', undefined, { trustProject: false })
+
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+      trustProject: false,
+    })
   })
 })

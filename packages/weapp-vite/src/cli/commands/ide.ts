@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
+import { bootstrapWechatDevtoolsSettings } from 'weapp-ide-cli'
 import logger from '../../logger'
 import { resolveForwardConsoleOptions, startForwardConsoleBridge } from '../forwardConsole'
 import { openIde, resolveIdeCommandContext } from '../openIde'
@@ -39,7 +40,7 @@ async function waitForTermination(cleanup: () => Promise<void>) {
  * @description 执行 ide 子命令。
  */
 export async function runIdeCommand(action: string | undefined, root: string | undefined, options: GlobalCLIOptions) {
-  if (action !== 'logs') {
+  if (action !== 'logs' && action !== 'setup') {
     throw new Error(`未知 ide 子命令: ${action ?? '(empty)'}`)
   }
   filterDuplicateOptions(options)
@@ -58,6 +59,15 @@ export async function runIdeCommand(action: string | undefined, root: string | u
   }
   if (!resolved.projectPath) {
     throw new Error('无法解析微信开发者工具项目目录，请显式传入 root 或检查 project.config.json。')
+  }
+
+  if (action === 'setup') {
+    const result = await bootstrapWechatDevtoolsSettings({
+      projectPath: resolved.projectPath,
+      trustProject: options.trustProject,
+    })
+    logger.info(`已完成微信开发者工具配置预热：扫描实例 ${result.touchedInstanceCount} 个，更新安全设置 ${result.updatedSecurityCount} 处，写入项目信任 ${result.trustedProjectCount} 处。`)
+    return
   }
 
   if (options.open) {

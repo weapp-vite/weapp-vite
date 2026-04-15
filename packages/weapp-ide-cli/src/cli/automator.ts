@@ -3,7 +3,9 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Launcher } from '@weapp-vite/miniprogram-automator'
+import { readCustomConfig } from '../config/custom'
 import { resolveCliPath } from './resolver'
+import { bootstrapWechatDevtoolsSettings } from './wechatDevtoolsSettings'
 
 export interface AutomatorOptions {
   projectPath: string
@@ -237,10 +239,19 @@ export function formatAutomatorLoginError(error: unknown): string {
  * @description 基于当前配置解析 CLI 路径，并通过现代化 automator 入口启动会话。
  */
 export async function launchAutomator(options: AutomatorOptions) {
-  const { cliPath, projectPath, timeout = 30_000, trustProject = false } = options
+  const { cliPath, projectPath, timeout = 30_000 } = options
   const resolvedCliPath = cliPath ?? (await resolveCliPath()).cliPath ?? undefined
+  const config = await readCustomConfig()
+  const resolvedTrustProject = options.trustProject ?? config.autoTrustProject ?? false
   const launcher = new Launcher()
   let lastError: unknown = null
+
+  if (config.autoBootstrapDevtools !== false) {
+    await bootstrapWechatDevtoolsSettings({
+      projectPath,
+      trustProject: resolvedTrustProject,
+    })
+  }
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -248,7 +259,7 @@ export async function launchAutomator(options: AutomatorOptions) {
         cliPath: resolvedCliPath,
         projectPath,
         timeout,
-        trustProject,
+        trustProject: resolvedTrustProject,
       })
       const sessionMetadata = Reflect.get(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA') as { wsEndpoint?: string } | undefined
       if (typeof sessionMetadata?.wsEndpoint === 'string' && sessionMetadata.wsEndpoint) {

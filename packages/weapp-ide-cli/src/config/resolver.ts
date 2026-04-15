@@ -8,10 +8,25 @@ import { defaultCustomConfigFilePath } from './paths'
 interface CustomConfigJson {
   cliPath?: unknown
   locale?: unknown
+  autoBootstrapDevtools?: unknown
+  autoTrustProject?: unknown
 }
 
 function isCustomConfigJson(value: unknown): value is CustomConfigJson {
   return typeof value === 'object' && value !== null
+}
+
+/**
+ * @description 解析开发者工具自动预热相关配置的最终生效值。
+ */
+export function resolveDevtoolsAutomationDefaults(config: {
+  autoBootstrapDevtools?: boolean
+  autoTrustProject?: boolean
+}) {
+  return {
+    autoBootstrapDevtools: config.autoBootstrapDevtools ?? true,
+    autoTrustProject: config.autoTrustProject ?? false,
+  }
 }
 
 /**
@@ -24,6 +39,12 @@ export async function getConfig(): Promise<ResolvedConfig> {
       const config = isCustomConfigJson(rawConfig) ? rawConfig : {}
       const cliPath = typeof config.cliPath === 'string' ? config.cliPath.trim() : ''
       const locale = config.locale === 'zh' || config.locale === 'en' ? config.locale : undefined
+      const autoBootstrapDevtools = typeof config.autoBootstrapDevtools === 'boolean'
+        ? config.autoBootstrapDevtools
+        : undefined
+      const autoTrustProject = typeof config.autoTrustProject === 'boolean'
+        ? config.autoTrustProject
+        : undefined
 
       if (cliPath) {
         logger.info(`全局配置文件路径：${colors.green(defaultCustomConfigFilePath)}`)
@@ -31,6 +52,8 @@ export async function getConfig(): Promise<ResolvedConfig> {
         return {
           cliPath,
           locale,
+          autoBootstrapDevtools,
+          autoTrustProject,
           source: 'custom',
         }
       }
@@ -49,6 +72,8 @@ export async function getConfig(): Promise<ResolvedConfig> {
     return {
       cliPath: fallbackPath,
       locale: undefined,
+      autoBootstrapDevtools: undefined,
+      autoTrustProject: undefined,
       source: 'default',
     }
   }
@@ -56,6 +81,8 @@ export async function getConfig(): Promise<ResolvedConfig> {
   return {
     cliPath: '',
     locale: undefined,
+    autoBootstrapDevtools: undefined,
+    autoTrustProject: undefined,
     source: 'missing',
   }
 }

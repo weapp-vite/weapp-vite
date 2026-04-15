@@ -11,6 +11,8 @@ const JSON_OPTIONS = {
 interface CustomConfigFile {
   cliPath?: string
   locale?: 'zh' | 'en'
+  autoBootstrapDevtools?: boolean
+  autoTrustProject?: boolean
 }
 
 export async function readCustomConfig(): Promise<CustomConfigFile> {
@@ -24,7 +26,12 @@ export async function readCustomConfig(): Promise<CustomConfigFile> {
       return {}
     }
 
-    const candidate = config as { cliPath?: unknown, locale?: unknown }
+    const candidate = config as {
+      cliPath?: unknown
+      locale?: unknown
+      autoBootstrapDevtools?: unknown
+      autoTrustProject?: unknown
+    }
     const next: CustomConfigFile = {}
 
     if (typeof candidate.cliPath === 'string' && candidate.cliPath.trim()) {
@@ -33,6 +40,14 @@ export async function readCustomConfig(): Promise<CustomConfigFile> {
 
     if (candidate.locale === 'zh' || candidate.locale === 'en') {
       next.locale = candidate.locale
+    }
+
+    if (typeof candidate.autoBootstrapDevtools === 'boolean') {
+      next.autoBootstrapDevtools = candidate.autoBootstrapDevtools
+    }
+
+    if (typeof candidate.autoTrustProject === 'boolean') {
+      next.autoTrustProject = candidate.autoTrustProject
     }
 
     return next
@@ -78,6 +93,22 @@ export async function createLocaleConfig(locale: 'zh' | 'en') {
 }
 
 /**
+ * @description 写入开发者工具自动预热配置。
+ */
+export async function createAutoBootstrapDevtoolsConfig(value: boolean) {
+  await writeCustomConfig({ autoBootstrapDevtools: value })
+  return value
+}
+
+/**
+ * @description 写入项目自动信任配置。
+ */
+export async function createAutoTrustProjectConfig(value: boolean) {
+  await writeCustomConfig({ autoTrustProject: value })
+  return value
+}
+
+/**
  * @description 删除指定配置项。
  */
 export async function removeCustomConfigKey(key: keyof CustomConfigFile) {
@@ -103,6 +134,14 @@ export async function overwriteCustomConfig(config: CustomConfigFile) {
 
   if (config.locale === 'zh' || config.locale === 'en') {
     nextConfig.locale = config.locale
+  }
+
+  if (typeof config.autoBootstrapDevtools === 'boolean') {
+    nextConfig.autoBootstrapDevtools = config.autoBootstrapDevtools
+  }
+
+  if (typeof config.autoTrustProject === 'boolean') {
+    nextConfig.autoTrustProject = config.autoTrustProject
   }
 
   await writeCustomConfig(nextConfig, { replace: true })

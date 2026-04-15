@@ -1,10 +1,33 @@
 import { fs } from '@weapp-core/shared'
-import { createCustomConfig, createLocaleConfig, overwriteCustomConfig, readCustomConfig, removeCustomConfigKey } from '../config/custom'
+import {
+  createAutoBootstrapDevtoolsConfig,
+  createAutoTrustProjectConfig,
+  createCustomConfig,
+  createLocaleConfig,
+  overwriteCustomConfig,
+  readCustomConfig,
+  removeCustomConfigKey,
+} from '../config/custom'
 import { defaultCustomConfigFilePath } from '../config/paths'
+import { resolveDevtoolsAutomationDefaults } from '../config/resolver'
 import { i18nText } from '../i18n'
 import logger, { colors } from '../logger'
 import { promptForCliPath } from './prompt'
 import { resolveCliPath } from './resolver'
+
+function parseBooleanConfigValue(rawValue: string) {
+  const normalized = rawValue.trim().toLowerCase()
+  if (normalized === 'true' || normalized === '1' || normalized === 'on') {
+    return true
+  }
+  if (normalized === 'false' || normalized === '0' || normalized === 'off') {
+    return false
+  }
+  throw new Error(i18nText(
+    `无效的布尔配置值: ${rawValue}（请使用 true/false）`,
+    `Invalid boolean config value: ${rawValue} (use true/false)`,
+  ))
+}
 
 /**
  * @description 处理 config 子命令。
@@ -36,20 +59,24 @@ export async function handleConfigCommand(argv: string[]) {
 
   if (action === 'show') {
     const config = await readCustomConfig()
+    const effectiveDevtoolsDefaults = resolveDevtoolsAutomationDefaults(config)
     logger.info(i18nText(
       `配置文件路径：${colors.green(defaultCustomConfigFilePath)}`,
       `Config file: ${colors.green(defaultCustomConfigFilePath)}`,
     ))
-    console.log(JSON.stringify(config, null, 2))
+    console.log(JSON.stringify({
+      ...config,
+      effective: effectiveDevtoolsDefaults,
+    }, null, 2))
     return
   }
 
   if (action === 'get') {
     const key = argv[1]
-    if (key !== 'cliPath' && key !== 'locale') {
+    if (key !== 'cliPath' && key !== 'locale' && key !== 'autoBootstrapDevtools' && key !== 'autoTrustProject') {
       throw new Error(i18nText(
-        '仅支持读取配置项：cliPath | locale',
-        'Supported keys: cliPath | locale',
+        '仅支持读取配置项：cliPath | locale | autoBootstrapDevtools | autoTrustProject',
+        'Supported keys: cliPath | locale | autoBootstrapDevtools | autoTrustProject',
       ))
     }
 
@@ -57,6 +84,11 @@ export async function handleConfigCommand(argv: string[]) {
     const value = config[key]
     if (typeof value === 'string') {
       console.log(value)
+      return
+    }
+
+    if (typeof value === 'boolean') {
+      console.log(String(value))
       return
     }
 
@@ -96,18 +128,38 @@ export async function handleConfigCommand(argv: string[]) {
       return
     }
 
+    if (key === 'autoBootstrapDevtools') {
+      const parsed = parseBooleanConfigValue(value)
+      await createAutoBootstrapDevtoolsConfig(parsed)
+      logger.info(i18nText(
+        `autoBootstrapDevtools 已更新为：${parsed}`,
+        `autoBootstrapDevtools updated to: ${parsed}`,
+      ))
+      return
+    }
+
+    if (key === 'autoTrustProject') {
+      const parsed = parseBooleanConfigValue(value)
+      await createAutoTrustProjectConfig(parsed)
+      logger.info(i18nText(
+        `autoTrustProject 已更新为：${parsed}`,
+        `autoTrustProject updated to: ${parsed}`,
+      ))
+      return
+    }
+
     throw new Error(i18nText(
-      '仅支持设置配置项：cliPath | locale',
-      'Supported keys for set: cliPath | locale',
+      '仅支持设置配置项：cliPath | locale | autoBootstrapDevtools | autoTrustProject',
+      'Supported keys for set: cliPath | locale | autoBootstrapDevtools | autoTrustProject',
     ))
   }
 
   if (action === 'unset') {
     const key = argv[1]
-    if (key !== 'cliPath' && key !== 'locale') {
+    if (key !== 'cliPath' && key !== 'locale' && key !== 'autoBootstrapDevtools' && key !== 'autoTrustProject') {
       throw new Error(i18nText(
-        '仅支持清除配置项：cliPath | locale',
-        'Supported keys for unset: cliPath | locale',
+        '仅支持清除配置项：cliPath | locale | autoBootstrapDevtools | autoTrustProject',
+        'Supported keys for unset: cliPath | locale | autoBootstrapDevtools | autoTrustProject',
       ))
     }
 
@@ -126,6 +178,7 @@ export async function handleConfigCommand(argv: string[]) {
     const hasCustomCli = typeof rawConfig.cliPath === 'string' && rawConfig.cliPath.length > 0
     const hasValidCli = Boolean(resolvedCli.cliPath)
     const locale = rawConfig.locale ?? 'zh'
+    const effectiveDevtoolsDefaults = resolveDevtoolsAutomationDefaults(rawConfig)
 
     const report = {
       configFile: defaultCustomConfigFilePath,
@@ -133,6 +186,10 @@ export async function handleConfigCommand(argv: string[]) {
       cliPath: rawConfig.cliPath ?? null,
       cliPathValid: hasValidCli,
       locale,
+      autoBootstrapDevtools: rawConfig.autoBootstrapDevtools ?? null,
+      autoTrustProject: rawConfig.autoTrustProject ?? null,
+      effectiveAutoBootstrapDevtools: effectiveDevtoolsDefaults.autoBootstrapDevtools,
+      effectiveAutoTrustProject: effectiveDevtoolsDefaults.autoTrustProject,
       source: resolvedCli.source,
     }
 
@@ -189,11 +246,22 @@ export async function handleConfigCommand(argv: string[]) {
       ))
     }
 
-    const candidate = imported as { cliPath?: unknown, locale?: unknown }
+    const candidate = imported as {
+      cliPath?: unknown
+      locale?: unknown
+      autoBootstrapDevtools?: unknown
+      autoTrustProject?: unknown
+    }
     const cliPath = typeof candidate.cliPath === 'string' ? candidate.cliPath : undefined
     const locale = candidate.locale === 'zh' || candidate.locale === 'en' ? candidate.locale : undefined
+    const autoBootstrapDevtools = typeof candidate.autoBootstrapDevtools === 'boolean'
+      ? candidate.autoBootstrapDevtools
+      : undefined
+    const autoTrustProject = typeof candidate.autoTrustProject === 'boolean'
+      ? candidate.autoTrustProject
+      : undefined
 
-    await overwriteCustomConfig({ cliPath, locale })
+    await overwriteCustomConfig({ cliPath, locale, autoBootstrapDevtools, autoTrustProject })
     logger.info(i18nText(
       `配置已从 ${colors.green(inputPath)} 导入`,
       `Config imported from ${colors.green(inputPath)}`,

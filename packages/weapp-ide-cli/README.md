@@ -2,13 +2,12 @@
 
 `weapp-ide-cli` 是对「微信开发者工具」官方命令行的增强封装，提供更友好的参数体验、路径兼容与配置管理能力，帮助你在本地与持续集成环境中高效调用工具链。
 
-> 开始前请在微信开发者工具中打开「设置 → 安全设置 → 服务端口」。
-
 ## 功能亮点
 
 - 自动识别或记忆微信开发者工具 `cli` 所在位置，避免反复输入路径。
 - 为 `-p / --project`、`--qr-output` 等选项自动补全绝对路径，默认使用当前工作目录。
 - 使用与官方指令完全一致的调用方式，便于在脚本中无缝迁移。
+- 在 `open` / `auto` / `auto-preview` / automator 启动前，自动预热微信开发者工具安全设置，并可自动信任目标项目。
 - 支持 macOS、Windows 以及安装了社区版工具的 Linux 桌面环境。
 - 内置支付宝小程序 CLI 入口，直接转发至官方 `minidev` 工具。
 
@@ -34,6 +33,9 @@ weapp open -p
 # 启动并加载指定项目
 weapp open --project ./dist/dev/mp-weixin
 
+# 显式要求信任项目
+weapp open --project ./dist/dev/mp-weixin --trust-project
+
 # 执行预览、上传等官方支持的命令
 weapp preview
 weapp upload --project ./dist/build/mp-weixin
@@ -42,6 +44,13 @@ weapp cache --clean all
 ```
 
 `weapp` 与 `weapp-ide-cli` 等价，选择任一前缀即可。
+
+从当前版本开始，`weapp-ide-cli` 会在调用微信开发者工具前自动尝试预热本机 DevTools 配置：
+
+- 确保安全设置里启用服务端口
+- 根据命令或全局配置决定是否自动信任项目
+
+在 macOS 上，它会写入 `~/Library/Application Support/微信开发者工具/*/WeappLocalData` 下对应的本地配置；如果你不希望自动处理，也可以通过下文的 `config` 配置项关闭。
 
 ## 支付宝小程序（minidev）支持
 
@@ -155,18 +164,18 @@ weapp navigate --help
 
 ### 3. config 子命令
 
-| 命令                                         | 说明                                |
-| -------------------------------------------- | ----------------------------------- |
-| `weapp config`                               | 交互式配置 CLI 路径                 |
-| `weapp config lang <zh\|en>`                 | 切换并保存语言                      |
-| `weapp config set-lang <zh\|en>`             | `lang` 的别名                       |
-| `weapp config show`                          | 显示完整配置 JSON                   |
-| `weapp config get <cliPath\|locale>`         | 读取单个配置项                      |
-| `weapp config set <cliPath\|locale> <value>` | 写入配置项                          |
-| `weapp config unset <cliPath\|locale>`       | 删除配置项                          |
-| `weapp config doctor`                        | 配置健康诊断                        |
-| `weapp config export [path]`                 | 导出配置（不传 path 则输出 stdout） |
-| `weapp config import <path>`                 | 从 JSON 文件导入配置                |
+| 命令                                                                                  | 说明                                |
+| ------------------------------------------------------------------------------------- | ----------------------------------- |
+| `weapp config`                                                                        | 交互式配置 CLI 路径                 |
+| `weapp config lang <zh\|en>`                                                          | 切换并保存语言                      |
+| `weapp config set-lang <zh\|en>`                                                      | `lang` 的别名                       |
+| `weapp config show`                                                                   | 显示完整配置 JSON（含生效默认值）   |
+| `weapp config get <cliPath\|locale\|autoBootstrapDevtools\|autoTrustProject>`         | 读取单个配置项                      |
+| `weapp config set <cliPath\|locale\|autoBootstrapDevtools\|autoTrustProject> <value>` | 写入配置项                          |
+| `weapp config unset <cliPath\|locale\|autoBootstrapDevtools\|autoTrustProject>`       | 删除配置项                          |
+| `weapp config doctor`                                                                 | 配置健康诊断（含生效默认值）        |
+| `weapp config export [path]`                                                          | 导出配置（不传 path 则输出 stdout） |
+| `weapp config import <path>`                                                          | 从 JSON 文件导入配置                |
 
 ### 4. 支付宝 minidev 转发命令
 
@@ -223,14 +232,20 @@ weapp config show
 # 读取单个配置项
 weapp config get cliPath
 weapp config get locale
+weapp config get autoBootstrapDevtools
+weapp config get autoTrustProject
 
 # 设置配置项
 weapp config set cliPath /Applications/wechatwebdevtools.app/Contents/MacOS/cli
 weapp config set locale en
+weapp config set autoBootstrapDevtools true
+weapp config set autoTrustProject true
 
 # 清除配置项
 weapp config unset cliPath
 weapp config unset locale
+weapp config unset autoBootstrapDevtools
+weapp config unset autoTrustProject
 
 # 诊断配置可用性
 weapp config doctor
@@ -252,9 +267,35 @@ weapp config import ./weapp-ide-cli.config.json
 ```json
 {
   "cliPath": "/Applications/wechatwebdevtools.app/Contents/MacOS/cli",
-  "locale": "zh"
+  "locale": "zh",
+  "autoBootstrapDevtools": true,
+  "autoTrustProject": false
 }
 ```
+
+开发者工具自动预热相关配置说明：
+
+- `autoBootstrapDevtools`
+  - 默认生效值：`true`
+  - 含义：在 `weapp open`、`weapp auto`、`weapp auto-preview` 以及 automator 启动前，自动预写入微信开发者工具安全设置
+- `autoTrustProject`
+  - 默认生效值：`false`
+  - 含义：在未显式传 `--trust-project` 时，是否默认把目标项目写成已信任
+
+推荐配置：
+
+```sh
+weapp config set autoBootstrapDevtools true
+weapp config set autoTrustProject true
+```
+
+这样以后就可以直接执行：
+
+```sh
+weapp open --project ./dist/dev/mp-weixin
+```
+
+而不用每次都补 `--trust-project`。
 
 ## 平台支持与限制
 
@@ -268,7 +309,7 @@ weapp config import ./weapp-ide-cli.config.json
 
 ## 在脚本或 CI 中使用
 
-1. 确保执行环境已安装微信开发者工具并开启服务端口。
+1. 确保执行环境已安装微信开发者工具，并且当前账号已登录。
 2. 首次运行前可通过 `weapp config` 写入 CLI 路径，也可在 CI 中直接向 `~/.weapp-ide-cli/config.json` 写入。
 3. 在自动化流程中建议加上 `--qr-output`、`--result-output` 等参数，以便收集产物或日志。
 
@@ -316,8 +357,9 @@ WEAPP_IDE_CLI_LANG=en weapp navigate pages/index/index -p ./mini-app
 
 ## 常见问题
 
-- **命令执行后无反应**：请确认微信开发者工具已开启服务端口，并尝试重新登录或升级工具版本。
+- **命令执行后无反应**：请确认微信开发者工具已登录，并尝试重新打开工具或升级版本；默认情况下 CLI 会先自动预热服务端口配置。
 - **提示 `需要重新登录` 或 `code: 10`**：表示微信开发者工具登录态失效。交互模式下可按 `r` 重试，按 `q`、`Esc` 或 `Ctrl+C` 取消；非交互模式（含 CI / 非TTY）会直接失败返回非 0。
+- **不想自动改本机 DevTools 配置**：执行 `weapp config set autoBootstrapDevtools false` 关闭默认预热；如只想关闭默认自动信任项目，可执行 `weapp config set autoTrustProject false`。
 - **提示未找到 CLI**：检查配置文件中的路径是否真实存在，可使用绝对路径避免解析误差。
 - **Linux 环境报错**：需安装社区版工具并将 `wechat-devtools-cli` 加入 `PATH`，否则只能手动指定路径。
 - **`upload` 报参数缺失**：`weapp upload` 现在会在本地前置校验 `--version/-v` 与 `--desc/-d`，缺失时直接报错以避免触发远端失败。

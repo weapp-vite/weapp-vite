@@ -4,6 +4,8 @@
 export interface BaseConfig {
   cliPath: string
   locale?: 'zh' | 'en'
+  autoBootstrapDevtools?: boolean
+  autoTrustProject?: boolean
 }
 
 /**

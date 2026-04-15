@@ -21,8 +21,10 @@ const createInlineConfigMock = vi.hoisted(() => vi.fn((platform?: string) => ({ 
 const miniProgramDisconnectMock = vi.hoisted(() => vi.fn())
 const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const launchAutomatorMock = vi.hoisted(() => vi.fn())
+const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
+  bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
   connectOpenedAutomator: connectOpenedAutomatorMock,
   parse: parseMock,
   getConfig: getConfigMock,
@@ -66,6 +68,7 @@ describe('openIde', () => {
     miniProgramDisconnectMock.mockReset()
     connectOpenedAutomatorMock.mockReset()
     launchAutomatorMock.mockReset()
+    bootstrapWechatDevtoolsSettingsMock.mockReset()
     createInlineConfigMock.mockClear()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
@@ -87,6 +90,11 @@ describe('openIde', () => {
     launchAutomatorMock.mockResolvedValue({
       disconnect: miniProgramDisconnectMock,
     })
+    bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
+      touchedInstanceCount: 1,
+      updatedSecurityCount: 1,
+      trustedProjectCount: 1,
+    })
     miniProgramDisconnectMock.mockReset()
   })
 
@@ -107,6 +115,10 @@ describe('openIde', () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
 
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      trustProject: undefined,
+    })
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
       timeout: 3000,
@@ -194,6 +206,10 @@ describe('openIde', () => {
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev/mp-weixin',
+      trustProject: false,
+    })
     expect(parseMock).toHaveBeenCalledWith([
       'open',
       '-p',
@@ -210,6 +226,22 @@ describe('openIde', () => {
     await openIde('weapp', 'dist/dev/mp-weixin')
 
     expect(loggerMock.warn).toHaveBeenCalledWith('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
+    expect(loggerMock.error).toHaveBeenCalledWith(error)
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+    ])
+  })
+
+  it('logs and continues when devtools settings bootstrap fails', async () => {
+    const { openIde } = await import('./openIde')
+    const error = new Error('bootstrap failed')
+    bootstrapWechatDevtoolsSettingsMock.mockRejectedValueOnce(error)
+
+    await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('预写入微信开发者工具安全设置或项目信任状态失败，继续执行 open 流程。')
     expect(loggerMock.error).toHaveBeenCalledWith(error)
     expect(parseMock).toHaveBeenCalledWith([
       'open',

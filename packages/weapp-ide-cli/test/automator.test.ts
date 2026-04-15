@@ -14,6 +14,8 @@ import {
 const launchMock = vi.hoisted(() => vi.fn())
 const connectMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
+const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
+const readCustomConfigMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
 const writeFileMock = vi.hoisted(() => vi.fn())
 const readFileMock = vi.hoisted(() => vi.fn())
@@ -30,6 +32,14 @@ vi.mock('../src/cli/resolver', () => ({
   resolveCliPath: resolveCliPathMock,
 }))
 
+vi.mock('../src/config/custom', () => ({
+  readCustomConfig: readCustomConfigMock,
+}))
+
+vi.mock('../src/cli/wechatDevtoolsSettings', () => ({
+  bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
+}))
+
 vi.mock('node:fs/promises', () => ({
   default: {
     mkdir: mkdirMock,
@@ -44,11 +54,19 @@ describe('automator helpers', () => {
     launchMock.mockReset()
     connectMock.mockReset()
     resolveCliPathMock.mockReset()
+    bootstrapWechatDevtoolsSettingsMock.mockReset()
+    readCustomConfigMock.mockReset()
     mkdirMock.mockReset()
     writeFileMock.mockReset()
     readFileMock.mockReset()
     rmMock.mockReset()
     resolveCliPathMock.mockResolvedValue({ cliPath: '/Applications/wechat-cli', source: 'custom' })
+    readCustomConfigMock.mockResolvedValue({})
+    bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
+      touchedInstanceCount: 1,
+      updatedSecurityCount: 1,
+      trustedProjectCount: 1,
+    })
     launchMock.mockResolvedValue({ connected: true })
     connectMock.mockResolvedValue({ connected: true })
     mkdirMock.mockResolvedValue(undefined)
@@ -181,6 +199,10 @@ describe('automator helpers', () => {
         timeout: 12_345,
       })
 
+      expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        projectPath: '/workspace/project',
+        trustProject: false,
+      })
       expect(resolveCliPathMock).toHaveBeenCalledTimes(1)
       expect(launchMock).toHaveBeenCalledWith({
         cliPath: '/Applications/wechat-cli',
@@ -196,6 +218,10 @@ describe('automator helpers', () => {
         projectPath: '/workspace/project',
       })
 
+      expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        projectPath: '/workspace/project',
+        trustProject: false,
+      })
       expect(resolveCliPathMock).not.toHaveBeenCalled()
       expect(launchMock).toHaveBeenCalledWith({
         cliPath: '/custom/cli',
@@ -203,6 +229,39 @@ describe('automator helpers', () => {
         timeout: 30_000,
         trustProject: false,
       })
+    })
+
+    it('uses configured auto trust project when option is omitted', async () => {
+      readCustomConfigMock.mockResolvedValueOnce({
+        autoTrustProject: true,
+      })
+
+      await launchAutomator({
+        projectPath: '/workspace/project',
+      })
+
+      expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+        projectPath: '/workspace/project',
+        trustProject: true,
+      })
+      expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({
+        trustProject: true,
+      }))
+    })
+
+    it('skips devtools bootstrap when config disables it', async () => {
+      readCustomConfigMock.mockResolvedValueOnce({
+        autoBootstrapDevtools: false,
+      })
+
+      await launchAutomator({
+        projectPath: '/workspace/project',
+      })
+
+      expect(bootstrapWechatDevtoolsSettingsMock).not.toHaveBeenCalled()
+      expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({
+        trustProject: false,
+      }))
     })
 
     it('retries once for retryable startup jitter', async () => {

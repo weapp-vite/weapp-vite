@@ -16,6 +16,7 @@ const createCustomConfigMock = vi.hoisted(() => vi.fn())
 const overwriteCustomConfigMock = vi.hoisted(() => vi.fn())
 const readCustomConfigMock = vi.hoisted(() => vi.fn())
 const removeCustomConfigKeyMock = vi.hoisted(() => vi.fn())
+const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 const fsMock = vi.hoisted(() => ({
   pathExists: vi.fn(),
   writeJSON: vi.fn(),
@@ -40,6 +41,13 @@ vi.mock('../src/cli/resolver', () => ({
 
 vi.mock('../src/config/resolver', () => ({
   getConfiguredLocale: getConfiguredLocaleMock,
+  resolveDevtoolsAutomationDefaults: (config: {
+    autoBootstrapDevtools?: boolean
+    autoTrustProject?: boolean
+  }) => ({
+    autoBootstrapDevtools: config.autoBootstrapDevtools ?? true,
+    autoTrustProject: config.autoTrustProject ?? false,
+  }),
 }))
 
 vi.mock('../src/config/custom', () => ({
@@ -48,6 +56,10 @@ vi.mock('../src/config/custom', () => ({
   overwriteCustomConfig: overwriteCustomConfigMock,
   readCustomConfig: readCustomConfigMock,
   removeCustomConfigKey: removeCustomConfigKeyMock,
+}))
+
+vi.mock('../src/cli/wechatDevtoolsSettings', () => ({
+  bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
 }))
 
 vi.mock('../src/cli/prompt', () => ({
@@ -131,6 +143,7 @@ describe('cli parsing', () => {
     overwriteCustomConfigMock.mockReset()
     readCustomConfigMock.mockReset()
     removeCustomConfigKeyMock.mockReset()
+    bootstrapWechatDevtoolsSettingsMock.mockReset()
     fsMock.pathExists.mockReset()
     fsMock.writeJSON.mockReset()
     fsMock.readJSON.mockReset()
@@ -172,6 +185,11 @@ describe('cli parsing', () => {
     overwriteCustomConfigMock.mockResolvedValue(undefined)
     readCustomConfigMock.mockResolvedValue({})
     removeCustomConfigKeyMock.mockResolvedValue(undefined)
+    bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
+      touchedInstanceCount: 1,
+      updatedSecurityCount: 1,
+      trustedProjectCount: 1,
+    })
     fsMock.pathExists.mockResolvedValue(true)
     fsMock.writeJSON.mockResolvedValue(undefined)
     fsMock.readJSON.mockResolvedValue({})
@@ -221,6 +239,62 @@ describe('cli parsing', () => {
     ])
     expect(resolveCliPathMock).not.toHaveBeenCalled()
     expect(isOperatingSystemSupportedMock).not.toHaveBeenCalled()
+  })
+
+  it('bootstraps devtools settings before running wechat open', async () => {
+    const { parse } = await loadRunModule()
+
+    await parse(['open', '--project', './dist/dev/mp-weixin', '--trust-project'])
+
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: `${mockCwd}/dist/dev/mp-weixin`,
+      trustProject: true,
+    })
+    expect(executeMock).toHaveBeenCalledWith(
+      '/Applications/wechat-cli',
+      ['open', '--project', `${mockCwd}/dist/dev/mp-weixin`, '--trust-project'],
+      {
+        pipeStdout: false,
+        pipeStderr: false,
+      },
+    )
+  })
+
+  it('bootstraps security settings for open without project path', async () => {
+    const { parse } = await loadRunModule()
+
+    await parse(['open', '--appid', 'wx123'])
+
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: undefined,
+      trustProject: false,
+    })
+  })
+
+  it('uses configured autoTrustProject when command flag is absent', async () => {
+    readCustomConfigMock.mockResolvedValueOnce({
+      autoTrustProject: true,
+    })
+    const { parse } = await loadRunModule()
+
+    await parse(['open', '--project', './dist/dev/mp-weixin'])
+
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: `${mockCwd}/dist/dev/mp-weixin`,
+      trustProject: true,
+    })
+  })
+
+  it('skips bootstrap when autoBootstrapDevtools is disabled in config', async () => {
+    readCustomConfigMock.mockResolvedValueOnce({
+      autoBootstrapDevtools: false,
+    })
+    const { parse } = await loadRunModule()
+
+    await parse(['open', '--project', './dist/dev/mp-weixin'])
+
+    expect(bootstrapWechatDevtoolsSettingsMock).not.toHaveBeenCalled()
+    expect(executeMock).toHaveBeenCalledTimes(1)
   })
 
   it('supports --platform=ali style when delegating open to minidev', async () => {
@@ -301,6 +375,7 @@ describe('cli parsing', () => {
     readCustomConfigMock.mockResolvedValue({
       cliPath: '/custom/cli',
       locale: 'en',
+      autoBootstrapDevtools: false,
     })
 
     await parse(['config', 'show'])
@@ -311,6 +386,11 @@ describe('cli parsing', () => {
         {
           cliPath: '/custom/cli',
           locale: 'en',
+          autoBootstrapDevtools: false,
+          effective: {
+            autoBootstrapDevtools: false,
+            autoTrustProject: false,
+          },
         },
         null,
         2,
@@ -371,6 +451,12 @@ describe('cli parsing', () => {
     )
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining('"locale": "zh"'),
+    )
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"effectiveAutoBootstrapDevtools": true'),
+    )
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"effectiveAutoTrustProject": false'),
     )
     logSpy.mockRestore()
   })

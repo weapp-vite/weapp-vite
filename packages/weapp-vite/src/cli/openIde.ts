@@ -4,6 +4,7 @@ import process from 'node:process'
 import { promisify } from 'node:util'
 import path from 'pathe'
 import {
+  bootstrapWechatDevtoolsSettings,
   connectOpenedAutomator,
   formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
@@ -245,6 +246,19 @@ async function reopenOpenedWechatIde(projectPath: string) {
 }
 
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
+  if (platform === 'weapp' && projectPath) {
+    try {
+      await bootstrapWechatDevtoolsSettings({
+        projectPath,
+        trustProject: options.trustProject,
+      })
+    }
+    catch (error) {
+      logger.warn('预写入微信开发者工具安全设置或项目信任状态失败，继续执行 open 流程。')
+      logger.error(error)
+    }
+  }
+
   if (platform === 'weapp' && projectPath && options.trustProject !== false) {
     try {
       if (options.reuseOpenedProject === false) {

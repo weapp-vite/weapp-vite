@@ -1,5 +1,6 @@
 import type { ArgvTransform } from '../utils'
 import { cac } from 'cac'
+import { readCustomConfig } from '../config/custom'
 import { getConfiguredLocale } from '../config/resolver'
 import { configureLocaleFromArgv, i18nText, validateLocaleOption } from '../i18n'
 import logger, { colors } from '../logger'
@@ -20,6 +21,7 @@ import { AUTOMATOR_COMMAND_NAMES, getAutomatorCommandHelp, isAutomatorCommand, r
 import { runWechatCliWithRetry } from './run-login'
 import { printScreenshotHelp } from './screenshot'
 import { validateWechatCliCommandArgs } from './wechat-command-schema'
+import { bootstrapWechatDevtoolsSettings } from './wechatDevtoolsSettings'
 
 const MINIDEV_NAMESPACE = new Set<string>(MINIDEV_NAMESPACE_COMMAND_NAMES)
 const ALIPAY_PLATFORM_ALIASES = new Set<string>(MINIDEV_NAMESPACE_COMMAND_NAMES)
@@ -128,6 +130,52 @@ function createMinidevOpenArgv(argv: readonly string[]) {
   return removeOption(nextArgv, '--platform')
 }
 
+function shouldBootstrapWechatDevtools(command: string | undefined) {
+  return command === 'open' || command === 'auto' || command === 'auto-preview'
+}
+
+function resolveBooleanCliOption(argv: readonly string[], optionName: string) {
+  if (argv.includes(optionName)) {
+    return true
+  }
+
+  const rawValue = readOptionValue(argv, optionName)
+  if (rawValue === undefined) {
+    return undefined
+  }
+
+  const normalized = rawValue.trim().toLowerCase()
+  if (normalized === '' || normalized === 'true' || normalized === '1' || normalized === 'on') {
+    return true
+  }
+  if (normalized === 'false' || normalized === '0' || normalized === 'off') {
+    return false
+  }
+  return true
+}
+
+async function maybeBootstrapWechatDevtoolsSettings(argv: readonly string[]) {
+  const command = argv[0]
+  if (!shouldBootstrapWechatDevtools(command)) {
+    return
+  }
+
+  const config = await readCustomConfig()
+  if (config.autoBootstrapDevtools === false) {
+    return
+  }
+
+  const projectPath = readOptionValue(argv, '--project')
+  const trustProjectOption = resolveBooleanCliOption(argv, '--trust-project')
+  const trustProject = trustProjectOption === undefined
+    ? config.autoTrustProject ?? false
+    : trustProjectOption
+  await bootstrapWechatDevtoolsSettings({
+    projectPath,
+    trustProject,
+  })
+}
+
 /**
  * @description CLI 入口解析与分发。
  */
@@ -182,5 +230,6 @@ export async function parse(argv: string[]) {
     return
   }
 
+  await maybeBootstrapWechatDevtoolsSettings(formattedArgv)
   await runWechatCliWithRetry(cliPath, formattedArgv)
 }
