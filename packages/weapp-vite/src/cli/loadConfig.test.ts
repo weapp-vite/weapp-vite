@@ -87,12 +87,25 @@ describe('loadConfig', () => {
     })
   })
 
-  it('merges weapp config and dedupes dependencies when both configs are loaded', async () => {
+  it('merges full vite config with weapp config priority and dedupes dependencies when both configs are loaded', async () => {
     loadViteConfigFileMock
       .mockResolvedValueOnce({
         config: {
           define: {
             A: '1',
+            PRIORITY: '"vite"',
+          },
+          plugins: [{ name: 'vite-plugin' }],
+          css: {
+            postcss: {
+              plugins: ['vite-postcss'],
+            },
+          },
+          resolve: {
+            alias: {
+              '@priority': '/project/src/vite-priority',
+              '@vite-only': '/project/src/vite-only',
+            },
           },
           weapp: {
             fromVite: true,
@@ -104,6 +117,22 @@ describe('loadConfig', () => {
       })
       .mockResolvedValueOnce({
         config: {
+          define: {
+            B: '2',
+            PRIORITY: '"weapp"',
+          },
+          plugins: [{ name: 'weapp-plugin' }],
+          css: {
+            postcss: {
+              plugins: ['weapp-postcss'],
+            },
+          },
+          resolve: {
+            alias: {
+              '@priority': '/project/src/weapp-priority',
+              '@weapp-only': '/project/src/weapp-only',
+            },
+          },
           weapp: {
             overwrite: 'weapp',
             extra: true,
@@ -116,6 +145,27 @@ describe('loadConfig', () => {
 
     const result = await loadConfig('/project/vite.config.ts')
     expect(result?.path).toBe('/project/weapp-vite.config.ts')
+    expect(result?.config.define).toEqual({
+      B: '2',
+      PRIORITY: '"weapp"',
+      A: '1',
+    })
+    expect(result?.config.plugins).toEqual([
+      { name: 'weapp-plugin' },
+      { name: 'vite-plugin' },
+    ])
+    expect(result?.config.css).toEqual({
+      postcss: {
+        plugins: ['weapp-postcss', 'vite-postcss'],
+      },
+    })
+    expect(result?.config.resolve).toEqual({
+      alias: {
+        '@priority': '/project/src/weapp-priority',
+        '@weapp-only': '/project/src/weapp-only',
+        '@vite-only': '/project/src/vite-only',
+      },
+    })
     expect(result?.config.weapp).toEqual({
       overwrite: 'weapp',
       extra: true,

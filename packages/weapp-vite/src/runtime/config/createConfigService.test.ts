@@ -386,6 +386,6 @@ describe('createConfigService', () => {
       isDev: true,
     })
 
-    expect(loggerInfoMock).toHaveBeenCalledWith('[config] 检测到同时存在 weapp-vite.config.ts 与 vite.config.ts，已合并其中的 `weapp` 配置，优先级：weapp-vite.config.ts > vite.config.ts')
+    expect(loggerInfoMock).toHaveBeenCalledWith('[config] 检测到同时存在 weapp-vite.config.ts 与 vite.config.ts，已合并两份 Vite 配置，优先级：weapp-vite.config.ts > vite.config.ts')
   })
 })

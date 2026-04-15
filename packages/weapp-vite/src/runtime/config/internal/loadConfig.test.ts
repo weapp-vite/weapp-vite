@@ -285,9 +285,24 @@ describe('runtime config internal loadConfig', () => {
         config: {
           define: {
             __FROM_VITE_CONFIG__: '"vite"',
+            __MERGED_PRIORITY__: '"vite"',
           },
           build: {
             sourcemap: true,
+          },
+          plugins: [
+            { name: 'vite-plugin' },
+          ],
+          css: {
+            postcss: {
+              plugins: ['vite-postcss'],
+            },
+          },
+          resolve: {
+            alias: {
+              '@priority': '/project/src/vite-priority',
+              '@vite-only': '/project/src/vite-only',
+            },
           },
           weapp: {
             srcRoot: 'src-from-vite',
@@ -299,9 +314,24 @@ describe('runtime config internal loadConfig', () => {
         config: {
           define: {
             __FROM_WEAPP_CONFIG__: '"weapp"',
+            __MERGED_PRIORITY__: '"weapp"',
           },
           build: {
             minify: false,
+          },
+          plugins: [
+            { name: 'weapp-plugin' },
+          ],
+          css: {
+            postcss: {
+              plugins: ['weapp-postcss'],
+            },
+          },
+          resolve: {
+            alias: {
+              '@priority': '/project/src/weapp-priority',
+              '@weapp-only': '/project/src/weapp-only',
+            },
           },
           weapp: {
             srcRoot: 'src-from-weapp',
@@ -323,9 +353,37 @@ describe('runtime config internal loadConfig', () => {
 
     expect(result.config.weapp?.srcRoot).toBe('src-from-weapp')
     expect(result.config.define?.__FROM_VITE_CONFIG__).toBe('"vite"')
-    expect(result.config.define?.__FROM_WEAPP_CONFIG__).toBeUndefined()
+    expect(result.config.define?.__FROM_WEAPP_CONFIG__).toBe('"weapp"')
+    expect(result.config.define?.__MERGED_PRIORITY__).toBe('"weapp"')
     expect(result.config.build?.sourcemap).toBe(true)
-    expect(result.config.build?.minify).not.toBe(false)
+    expect(result.config.build?.minify).toBe(false)
+    expect(result.config.plugins).toEqual([
+      { name: 'oxc-vite' },
+      { name: 'weapp-plugin' },
+      { name: 'vite-plugin' },
+    ])
+    expect(result.config.css?.postcss?.plugins).toEqual([
+      'weapp-postcss',
+      'vite-postcss',
+    ])
+    expect(result.config.resolve?.alias).toEqual([
+      {
+        find: '@',
+        replacement: '/project/src-from-weapp',
+      },
+      {
+        find: '@priority',
+        replacement: '/project/src/weapp-priority',
+      },
+      {
+        find: '@vite-only',
+        replacement: '/project/src/vite-only',
+      },
+      {
+        find: '@weapp-only',
+        replacement: '/project/src/weapp-only',
+      },
+    ])
     expect(result.configFilePath).toBe('/project/weapp-vite.config.ts')
     expect(result.configMergeInfo).toEqual({
       merged: true,

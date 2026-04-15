@@ -64,13 +64,9 @@ export async function loadConfig(configFile?: string) {
     return undefined
   }
 
-  const config = loaded?.config ?? (weappLoaded?.config ?? {})
-  if (weappLoaded?.config?.weapp) {
-    config.weapp = defu(
-      weappLoaded.config.weapp,
-      config.weapp ?? {},
-    )
-  }
+  const config = weappLoaded?.config
+    ? defu(weappLoaded.config, loaded?.config ?? {})
+    : loaded?.config ?? {}
 
   const dependencySet = new Set<string>()
   for (const dependency of loaded?.dependencies ?? []) {

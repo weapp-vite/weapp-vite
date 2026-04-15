@@ -167,9 +167,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       }
     }
 
-    const shouldUseWeappConfigAsPrimary = !loaded?.path && Boolean(weappLoaded?.config)
-    const primaryLoadedConfig = shouldUseWeappConfigAsPrimary
-      ? weappLoaded?.config
+    const mergedLoadedConfig = weappLoaded?.config
+      ? defu(weappLoaded.config, loadedConfig)
       : loadedConfig
 
     const config = defu<InlineConfig, (InlineConfig | undefined)[]>(
@@ -178,7 +177,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
         mode,
         configFile: false,
       },
-      primaryLoadedConfig,
+      mergedLoadedConfig,
       {
         build: {
           rolldownOptions: {
@@ -195,13 +194,6 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
         weapp: getWeappViteConfig(),
       },
     )
-
-    if (!shouldUseWeappConfigAsPrimary && weappLoaded?.config?.weapp) {
-      config.weapp = defu(
-        weappLoaded.config.weapp,
-        config.weapp ?? {},
-      )
-    }
 
     const chunksConfigured = Boolean(
       inlineConfig?.weapp?.chunks
