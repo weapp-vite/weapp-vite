@@ -234,4 +234,30 @@ defineOptions(() => ({
     expect(generated).toContain('__VLS_ctx.summary')
     expect(generated).toContain('__VLS_ctx.onSubmit')
   })
+
+  it('supports defineOptions object data bindings for template type checking', () => {
+    const source = `<script setup lang="ts">
+defineOptions({
+  data: {
+    total: 1,
+    loading: false,
+  },
+  methods: {
+    onSubmit() {},
+  },
+})
+</script>
+<template>
+  <view>{{ total }}</view>
+  <view>{{ loading ? 'yes' : 'no' }}</view>
+  <view @tap="onSubmit" />
+</template>`
+
+    const { generated } = getGeneratedServiceScript(source)
+    expect(generated).toContain('const total: any = null as any')
+    expect(generated).toContain('const loading: any = null as any')
+    expect(generated).toContain('__VLS_ctx.total')
+    expect(generated).toContain('__VLS_ctx.loading')
+    expect(generated).toContain('__VLS_ctx.onSubmit')
+  })
 })

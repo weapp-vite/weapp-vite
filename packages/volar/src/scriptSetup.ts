@@ -286,7 +286,10 @@ function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts,
             }
             else if (tsModule.isPropertyAssignment(property)) {
               const initializer = unwrapParenthesizedExpression(property.initializer, tsModule)
-              if (tsModule.isArrowFunction(initializer) || tsModule.isFunctionExpression(initializer)) {
+              if (tsModule.isObjectLiteralExpression(initializer)) {
+                dataObject = initializer
+              }
+              else if (tsModule.isArrowFunction(initializer) || tsModule.isFunctionExpression(initializer)) {
                 dataObject = findReturnedObjectLiteral(initializer.body, tsModule)
               }
             }
