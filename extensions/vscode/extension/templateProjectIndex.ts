@@ -12,6 +12,9 @@ import {
   readWeappGenerateConfigSnapshot,
 } from './projectConfig'
 import {
+  extractTemplateComponentMeta,
+} from './templateComponentMeta'
+import {
   isWxmlDocument,
   resolveWxmlFileCompanionPaths,
 } from './templateContext'
@@ -299,77 +302,6 @@ function collectDefineModelNames(sourceText: string) {
 
   if (sourceText.includes('defineModel(')) {
     names.add('modelValue')
-  }
-
-  return [...names]
-}
-
-function collectQuotedEventNames(sourceText: string) {
-  const names = new Set<string>()
-
-  for (const match of sourceText.matchAll(/['"]([A-Za-z_$][\w$:-]*)['"]/gu)) {
-    names.add(match[1])
-  }
-
-  return [...names]
-}
-
-function collectDefineEmitsNames(sourceText: string) {
-  const names = new Set<string>()
-  const callPattern = /defineEmits\s*(<|\()/gu
-
-  for (const match of sourceText.matchAll(callPattern)) {
-    const marker = match[1]
-    const offset = (match.index ?? 0) + match[0].length - 1
-
-    if (marker === '<') {
-      const section = findBalancedSection(sourceText, offset, '<', '>')
-
-      if (!section) {
-        continue
-      }
-
-      for (const name of collectObjectLikePropNames(section.text)) {
-        names.add(name)
-      }
-
-      for (const name of collectQuotedEventNames(section.text)) {
-        names.add(name)
-      }
-    }
-    else {
-      const section = findBalancedSection(sourceText, offset, '(', ')')
-
-      if (!section) {
-        continue
-      }
-
-      const trimmed = section.text.trim()
-
-      if (trimmed.startsWith('[')) {
-        for (const name of collectQuotedEventNames(trimmed)) {
-          names.add(name)
-        }
-
-        continue
-      }
-
-      const objectStart = trimmed.indexOf('{')
-
-      if (objectStart < 0) {
-        continue
-      }
-
-      const objectSection = findBalancedSection(trimmed, objectStart, '{', '}')
-
-      if (!objectSection) {
-        continue
-      }
-
-      for (const name of collectObjectLikePropNames(objectSection.text)) {
-        names.add(name)
-      }
-    }
   }
 
   return [...names]
@@ -726,10 +658,13 @@ export async function getTemplateComponentProps(document: vscode.TextDocument, t
     return []
   }
 
-  const propNames = new Set([
-    ...collectDefinePropsNames(sourceText),
-    ...collectDefineModelNames(sourceText),
-  ])
+  const astMeta = extractTemplateComponentMeta(sourceText)
+  const propNames = astMeta.props.size > 0 || astMeta.models.size > 0
+    ? new Set([...astMeta.props, ...astMeta.models])
+    : new Set([
+        ...collectDefinePropsNames(sourceText),
+        ...collectDefineModelNames(sourceText),
+      ])
 
   return [...propNames]
     .map((name) => {
@@ -758,7 +693,12 @@ export async function getTemplateComponentEvents(document: vscode.TextDocument, 
     return []
   }
 
-  return collectDefineEmitsNames(sourceText)
+  const astMeta = extractTemplateComponentMeta(sourceText)
+  const emitNames = astMeta.emits.size > 0
+    ? [...astMeta.emits]
+    : []
+
+  return emitNames
     .filter(name => !name.startsWith('update:'))
     .map((name) => {
       return {
