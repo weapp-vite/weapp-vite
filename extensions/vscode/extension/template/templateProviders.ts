@@ -19,8 +19,10 @@ import {
 } from './miniprogramSchema'
 import {
   getClassNameAtOffset,
+  getEventHandlerReferenceAtOffset,
   getScriptIdentifierAtOffset,
   getWxmlInterpolationContext,
+  getWxmlScopedIdentifierMatch,
   getWxmlSourceText,
   isEventAttribute,
   isLinkAttribute,
@@ -167,6 +169,23 @@ function createSourceRange(document: vscode.TextDocument, sourceStart: number, s
     document.positionAt(documentStart),
     document.positionAt(documentEnd),
   )
+}
+
+function createScopedIdentifierLocation(
+  document: vscode.TextDocument,
+  scopedIdentifierMatch: ReturnType<typeof getWxmlScopedIdentifierMatch>,
+) {
+  if (!scopedIdentifierMatch || scopedIdentifierMatch.definitionStart == null || scopedIdentifierMatch.definitionEnd == null) {
+    return null
+  }
+
+  const range = createSourceRange(
+    document,
+    scopedIdentifierMatch.definitionStart,
+    scopedIdentifierMatch.definitionEnd,
+  )
+
+  return range ? new vscode.Location(document.uri, range.start) : null
 }
 
 function normalizeTemplateForTagMatch(sourceText: string) {
@@ -557,6 +576,12 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
         return null
       }
 
+      const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, sourceOffset, symbolName)
+
+      if (scopedIdentifierMatch) {
+        return createScopedIdentifierLocation(document, scopedIdentifierMatch)
+      }
+
       return resolveTemplateScriptDefinition(document, symbolName, 'prop')
     }
 
@@ -605,21 +630,33 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
         return null
       }
 
+      const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, sourceOffset, symbolName)
+
+      if (scopedIdentifierMatch) {
+        return createScopedIdentifierLocation(document, scopedIdentifierMatch)
+      }
+
       return resolveTemplateScriptDefinition(document, symbolName, 'prop')
     }
 
     if (tagContext.attribute && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset) && isEventAttribute(tagContext.attribute.name)) {
-      const symbolName = getScriptIdentifierAtOffset(
+      const scriptReference = getEventHandlerReferenceAtOffset(
         tagContext.attribute.value,
         tagContext.attribute.valueStart,
         sourceOffset,
       )
 
-      if (!symbolName) {
+      if (!scriptReference) {
         return null
       }
 
-      return resolveTemplateScriptDefinition(document, symbolName, 'method')
+      const scopedIdentifierMatch = getWxmlScopedIdentifierMatch(sourceText, sourceOffset, scriptReference.identifier)
+
+      if (scopedIdentifierMatch) {
+        return createScopedIdentifierLocation(document, scopedIdentifierMatch)
+      }
+
+      return resolveTemplateScriptDefinition(document, scriptReference.identifier, scriptReference.definitionType)
     }
 
     if (tagContext.attribute && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset) && isClassAttributeName(tagContext.attribute.name)) {

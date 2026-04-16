@@ -613,6 +613,154 @@ it('supports token-level script definitions inside recognized vue templates', as
   assert.equal(attrInterpolationDefinition?.range.line, 6)
 })
 
+it('resolves wx:for locals and event expression tokens precisely in wxml documents', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), '{}'],
+    [path.normalize('/workspace/src/pages/home/index.ts'), [
+      'const list = []',
+      'const pageTitle = \'demo\'',
+      'const handlers = {',
+      '  onTap() {},',
+      '}',
+    ].join('\n')],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDefinitionProvider,
+  } = await import('./templateProviders')
+
+  const definitionProvider = new WeappTemplateDefinitionProvider()
+  const document = createTextDocument(
+    'wxml',
+    [
+      '<view wx:for="{{ list }}" wx:for-item="product" wx:for-index="idx">',
+      '  <view bindtap="handlers.onTap(product, idx)">{{ product.name }} {{ idx }} {{ pageTitle }}</view>',
+      '</view>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const documentText = document.getText()
+  const handlersPosition = document.positionAt(documentText.indexOf('handlers') + 2)
+  const onTapPosition = document.positionAt(documentText.indexOf('onTap') + 2)
+  const productArgPosition = document.positionAt(documentText.indexOf('product, idx') + 2)
+  const idxArgPosition = document.positionAt(documentText.indexOf('idx)') + 1)
+  const productInterpolationPosition = document.positionAt(documentText.lastIndexOf('product.name') + 2)
+  const idxInterpolationPosition = document.positionAt(documentText.lastIndexOf('{{ idx }}') + 3)
+  const pageTitlePosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
+
+  const handlersDefinition = await definitionProvider.provideDefinition(document as any, handlersPosition as any)
+  const onTapDefinition = await definitionProvider.provideDefinition(document as any, onTapPosition as any)
+  const productArgDefinition = await definitionProvider.provideDefinition(document as any, productArgPosition as any)
+  const idxArgDefinition = await definitionProvider.provideDefinition(document as any, idxArgPosition as any)
+  const productInterpolationDefinition = await definitionProvider.provideDefinition(document as any, productInterpolationPosition as any)
+  const idxInterpolationDefinition = await definitionProvider.provideDefinition(document as any, idxInterpolationPosition as any)
+  const pageTitleDefinition = await definitionProvider.provideDefinition(document as any, pageTitlePosition as any)
+
+  assert.equal(handlersDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(handlersDefinition?.range.line, 2)
+  assert.equal(onTapDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(onTapDefinition?.range.line, 3)
+  assert.equal(productArgDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(productArgDefinition?.range.line, 0)
+  assert.equal(idxArgDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(idxArgDefinition?.range.line, 0)
+  assert.equal(productInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(productInterpolationDefinition?.range.line, 0)
+  assert.equal(idxInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(idxInterpolationDefinition?.range.line, 0)
+  assert.equal(pageTitleDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(pageTitleDefinition?.range.line, 1)
+})
+
 it('supports native custom component props and events in wxml documents', async () => {
   const files = new Map<string, string>([
     [path.normalize('/workspace/package.json'), JSON.stringify({

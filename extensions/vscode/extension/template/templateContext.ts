@@ -37,6 +37,17 @@ export interface WxmlInterpolationContext {
   end: number
 }
 
+export interface WxmlScopedIdentifierMatch {
+  definitionEnd: number | null
+  definitionStart: number | null
+  identifier: string
+}
+
+export interface WxmlEventHandlerReference {
+  definitionType: 'method' | 'prop'
+  identifier: string
+}
+
 function isScriptIdentifierChar(char: string | undefined) {
   return Boolean(char && /[$\w]/u.test(char))
 }
@@ -176,6 +187,114 @@ function parseTagName(tagText: string) {
     nameEnd: index,
     nameStart,
   }
+}
+
+function getScriptIdentifierSpanAtOffset(expression: string, expressionStart: number, absoluteOffset: number) {
+  if (!expression) {
+    return null
+  }
+
+  let relativeOffset = absoluteOffset - expressionStart
+
+  if (relativeOffset < 0 || relativeOffset > expression.length) {
+    return null
+  }
+
+  if (relativeOffset === expression.length) {
+    relativeOffset -= 1
+  }
+
+  if (!isScriptIdentifierChar(expression[relativeOffset])) {
+    if (isScriptIdentifierChar(expression[relativeOffset - 1])) {
+      relativeOffset -= 1
+    }
+    else if (isScriptIdentifierChar(expression[relativeOffset + 1])) {
+      relativeOffset += 1
+    }
+  }
+
+  if (!isScriptIdentifierChar(expression[relativeOffset])) {
+    return null
+  }
+
+  let tokenStart = relativeOffset
+  let tokenEnd = relativeOffset
+
+  while (tokenStart > 0 && isScriptIdentifierChar(expression[tokenStart - 1])) {
+    tokenStart -= 1
+  }
+
+  while (tokenEnd < expression.length && isScriptIdentifierChar(expression[tokenEnd])) {
+    tokenEnd += 1
+  }
+
+  const identifier = expression.slice(tokenStart, tokenEnd)
+
+  if (!/^[A-Za-z_$][\w$]*$/u.test(identifier)) {
+    return null
+  }
+
+  return {
+    identifier,
+    start: expressionStart + tokenStart,
+    end: expressionStart + tokenEnd,
+  }
+}
+
+function getWxmlOpenTagStack(sourceText: string, offset: number) {
+  const stack: Array<{
+    attributes: WxmlAttributeMatch[]
+    tagName: string
+  }> = []
+  const tagPattern = /<!--[\s\S]*?-->|<[^<>]+>/gu
+
+  for (const match of sourceText.matchAll(tagPattern)) {
+    const tagText = match[0]
+    const tagStart = match.index ?? -1
+
+    if (tagStart < 0) {
+      continue
+    }
+
+    const tagEnd = tagStart + tagText.length
+
+    if (tagEnd > offset) {
+      break
+    }
+
+    if (tagText.startsWith('<!--')) {
+      continue
+    }
+
+    const tagNameMatch = parseTagName(tagText)
+
+    if (!tagNameMatch?.name) {
+      continue
+    }
+
+    if (tagNameMatch.isClosingTag) {
+      for (let index = stack.length - 1; index >= 0; index--) {
+        if (stack[index].tagName === tagNameMatch.name) {
+          stack.splice(index, 1)
+          break
+        }
+      }
+
+      continue
+    }
+
+    const attributes = parseTagAttributes(tagText, tagStart, tagNameMatch.nameEnd)
+    const isSelfClosing = /\/\s*>$/u.test(tagText)
+
+    if (!isSelfClosing) {
+      stack.push({
+        attributes,
+        tagName: tagNameMatch.name,
+      })
+    }
+  }
+
+  return stack
 }
 
 export function isWxmlDocument(document: vscode.TextDocument) {
@@ -400,47 +519,90 @@ export function getPrimaryScriptIdentifier(expression: string) {
 }
 
 export function getScriptIdentifierAtOffset(expression: string, expressionStart: number, absoluteOffset: number) {
-  if (!expression) {
+  return getScriptIdentifierSpanAtOffset(expression, expressionStart, absoluteOffset)?.identifier ?? null
+}
+
+export function getEventHandlerReferenceAtOffset(
+  expression: string,
+  expressionStart: number,
+  absoluteOffset: number,
+): WxmlEventHandlerReference | null {
+  const identifierSpan = getScriptIdentifierSpanAtOffset(expression, expressionStart, absoluteOffset)
+
+  if (!identifierSpan) {
     return null
   }
 
-  let relativeOffset = absoluteOffset - expressionStart
+  const relativeTokenStart = identifierSpan.start - expressionStart
+  const callStart = expression.indexOf('(')
 
-  if (relativeOffset < 0 || relativeOffset > expression.length) {
-    return null
-  }
-
-  if (relativeOffset === expression.length) {
-    relativeOffset -= 1
-  }
-
-  if (!isScriptIdentifierChar(expression[relativeOffset])) {
-    if (isScriptIdentifierChar(expression[relativeOffset - 1])) {
-      relativeOffset -= 1
+  if (callStart >= 0 && relativeTokenStart > callStart) {
+    return {
+      definitionType: 'prop',
+      identifier: identifierSpan.identifier,
     }
-    else if (isScriptIdentifierChar(expression[relativeOffset + 1])) {
-      relativeOffset += 1
-    }
   }
 
-  if (!isScriptIdentifierChar(expression[relativeOffset])) {
+  const calleeExpression = callStart >= 0 ? expression.slice(0, callStart) : expression
+  const identifierMatches = [...calleeExpression.matchAll(/[$A-Z_a-z][\w$]*/gu)]
+  const lastMatch = identifierMatches.at(-1)
+  const isMethodIdentifier = Boolean(
+    lastMatch
+    && lastMatch.index != null
+    && relativeTokenStart === lastMatch.index
+    && identifierSpan.identifier === lastMatch[0],
+  )
+
+  return {
+    definitionType: isMethodIdentifier ? 'method' : 'prop',
+    identifier: identifierSpan.identifier,
+  }
+}
+
+export function getWxmlScopedIdentifierMatch(
+  sourceText: string,
+  offset: number,
+  identifier: string,
+): WxmlScopedIdentifierMatch | null {
+  const normalizedIdentifier = identifier.trim()
+
+  if (!/^[A-Za-z_$][\w$]*$/u.test(normalizedIdentifier)) {
     return null
   }
 
-  let tokenStart = relativeOffset
-  let tokenEnd = relativeOffset
+  const openTagStack = getWxmlOpenTagStack(sourceText, offset)
 
-  while (tokenStart > 0 && isScriptIdentifierChar(expression[tokenStart - 1])) {
-    tokenStart -= 1
+  for (let index = openTagStack.length - 1; index >= 0; index--) {
+    const attributes = openTagStack[index].attributes
+    const forAttribute = attributes.find(attribute => attribute.name === 'wx:for')
+
+    if (!forAttribute) {
+      continue
+    }
+
+    const itemAttribute = attributes.find(attribute => attribute.name === 'wx:for-item')
+    const indexAttribute = attributes.find(attribute => attribute.name === 'wx:for-index')
+    const itemIdentifier = itemAttribute?.value.trim() || 'item'
+    const indexIdentifier = indexAttribute?.value.trim() || 'index'
+
+    if (normalizedIdentifier === itemIdentifier) {
+      return {
+        definitionEnd: itemAttribute?.valueEnd ?? null,
+        definitionStart: itemAttribute?.valueStart ?? null,
+        identifier: normalizedIdentifier,
+      }
+    }
+
+    if (normalizedIdentifier === indexIdentifier) {
+      return {
+        definitionEnd: indexAttribute?.valueEnd ?? null,
+        definitionStart: indexAttribute?.valueStart ?? null,
+        identifier: normalizedIdentifier,
+      }
+    }
   }
 
-  while (tokenEnd < expression.length && isScriptIdentifierChar(expression[tokenEnd])) {
-    tokenEnd += 1
-  }
-
-  const identifier = expression.slice(tokenStart, tokenEnd)
-
-  return /^[A-Za-z_$][\w$]*$/u.test(identifier) ? identifier : null
+  return null
 }
 
 export function getClassNameAtOffset(value: string, valueStartOffset: number, absoluteOffset: number) {

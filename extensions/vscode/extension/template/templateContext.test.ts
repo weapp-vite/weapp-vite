@@ -2,8 +2,10 @@ import assert from 'node:assert/strict'
 import { it } from 'vitest'
 
 import {
+  getEventHandlerReferenceAtOffset,
   getScriptIdentifierAtOffset,
   getVueTemplateBlockRange,
+  getWxmlScopedIdentifierMatch,
   getWxmlSourceText,
   parseWxmlTagContext,
   toDocumentOffsetFromWxmlSource,
@@ -78,4 +80,47 @@ it('extracts the script identifier under the current cursor offset', () => {
   assert.equal(getScriptIdentifierAtOffset(interpolation, 100, 105), 'bar')
   assert.equal(getScriptIdentifierAtOffset(interpolation, 100, 111), 'baz')
   assert.equal(getScriptIdentifierAtOffset(interpolation, 100, 108), null)
+})
+
+it('resolves event handler token roles by cursor position', () => {
+  const expression = 'handlers.onTap(product, idx)'
+
+  assert.deepEqual(getEventHandlerReferenceAtOffset(expression, 50, 52), {
+    definitionType: 'prop',
+    identifier: 'handlers',
+  })
+  assert.deepEqual(getEventHandlerReferenceAtOffset(expression, 50, 61), {
+    definitionType: 'method',
+    identifier: 'onTap',
+  })
+  assert.deepEqual(getEventHandlerReferenceAtOffset(expression, 50, 68), {
+    definitionType: 'prop',
+    identifier: 'product',
+  })
+  assert.deepEqual(getEventHandlerReferenceAtOffset(expression, 50, 77), {
+    definitionType: 'prop',
+    identifier: 'idx',
+  })
+})
+
+it('detects wx:for scoped identifiers from the nearest active loop', () => {
+  const source = [
+    '<view wx:for="{{ list }}" wx:for-item="product" wx:for-index="idx">',
+    '  <text>{{ product.name }} {{ idx }}</text>',
+    '</view>',
+  ].join('\n')
+
+  const productMatch = getWxmlScopedIdentifierMatch(source, source.indexOf('product.name') + 2, 'product')
+  const idxMatch = getWxmlScopedIdentifierMatch(source, source.indexOf('{{ idx }}') + 3, 'idx')
+
+  assert.deepEqual(productMatch, {
+    definitionStart: source.indexOf('"product"') + 1,
+    definitionEnd: source.indexOf('"product"') + 8,
+    identifier: 'product',
+  })
+  assert.deepEqual(idxMatch, {
+    definitionStart: source.indexOf('"idx"') + 1,
+    definitionEnd: source.indexOf('"idx"') + 4,
+    identifier: 'idx',
+  })
 })
