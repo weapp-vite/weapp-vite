@@ -111,6 +111,10 @@ export function resolveMiniPlatform(input?: string | null): MpPlatform | undefin
   return PLATFORM_ALIAS_TO_ID.get(normalized)
 }
 
+export function resolveMiniPlatformWithDefault(platform?: MpPlatform): MpPlatform {
+  return platform ?? DEFAULT_MP_PLATFORM
+}
+
 export function getMiniProgramPlatformAdapter(platform: MpPlatform): MiniProgramPlatformAdapter {
   const adapter = PLATFORM_ADAPTER_BY_ID.get(platform)
   if (!adapter) {

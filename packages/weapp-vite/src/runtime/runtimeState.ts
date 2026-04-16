@@ -13,6 +13,7 @@ import PQueue from 'p-queue'
 import { FileCache } from '../cache'
 import { getOutputExtensions } from '../defaults'
 import { resolveMultiPlatformConfig } from '../multiPlatform'
+import { DEFAULT_MP_PLATFORM } from '../platform'
 import { createAutoRoutesArtifacts, createEmptyAutoRoutesSnapshot } from './autoRoutesPlugin/service/shared'
 
 interface AutoRoutesCandidateState {
@@ -34,7 +35,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
   return {
     config: {},
     aliasEntries: [],
-    outputExtensions: getOutputExtensions('weapp'),
+    outputExtensions: getOutputExtensions(DEFAULT_MP_PLATFORM),
     packageJson: {},
     relativeSrcRoot: p => p,
     cwd: process.cwd(),
@@ -49,7 +50,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     weappLib: undefined,
     weappLibOutputMap: undefined,
     packageJsonPath: '',
-    platform: 'weapp',
+    platform: DEFAULT_MP_PLATFORM,
     srcRoot: '',
     configFilePath: undefined,
     weappWeb: undefined,

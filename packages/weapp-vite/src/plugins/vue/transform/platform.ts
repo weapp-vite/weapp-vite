@@ -1,5 +1,5 @@
 import type { CompilerContext } from '../../../context'
-import { getJsonPlatformOptions } from '../../../platform'
+import { getJsonPlatformOptions, resolveMiniPlatformWithDefault } from '../../../platform'
 
 export interface VueTransformJsonPlatformOptions {
   platform: string
@@ -11,7 +11,7 @@ export interface VueTransformJsonPlatformOptions {
 export function resolveVueTransformJsonPlatformOptions(
   configService?: Pick<CompilerContext['configService'], 'platform' | 'weappViteConfig' | 'packageJson'>,
 ) {
-  const platform = configService?.platform ?? 'weapp'
+  const platform = resolveMiniPlatformWithDefault(configService?.platform)
 
   return {
     platform,

@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fdir as Fdir } from 'fdir'
 import { parse } from 'vue/compiler-sfc'
+import { resolveMiniPlatformWithDefault } from '../platform'
 import { findAutoImportCandidates, shouldBootstrapAutoImportWithoutGlobs } from '../plugins/autoImport'
 import { collectVueTemplateAutoImportTags } from '../plugins/hooks/useLoadEntry/loadEntry/template'
 import { scanWxml } from '../wxml'
@@ -44,7 +45,7 @@ async function collectAutoImportTemplateTags(ctx: MutableCompilerContext) {
     .withPromise()
 
   const tags = new Map<string, string>()
-  const platform = ctx.configService?.platform ?? 'weapp'
+  const platform = resolveMiniPlatformWithDefault(ctx.configService?.platform)
 
   for (const filePath of files) {
     const source = await readFile(filePath, 'utf8').catch(() => undefined)

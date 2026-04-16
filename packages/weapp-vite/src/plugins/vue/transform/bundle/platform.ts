@@ -1,6 +1,7 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import {
+  resolveMiniPlatformWithDefault,
   shouldEmitGenericPlaceholderAsset,
   shouldNormalizeVueTemplateForPlatform,
 } from '../../../../platform'
@@ -54,7 +55,7 @@ export function resolveVueBundlePlatformAssetOptions(options: {
   scriptModuleExtension?: string
 }) {
   return {
-    platform: options.configService?.platform ?? 'weapp',
+    platform: resolveMiniPlatformWithDefault(options.configService?.platform),
     templateExtension: options.templateExtension,
     scriptModuleExtension: options.scriptModuleExtension,
     dependencies: options.configService?.packageJson?.dependencies,

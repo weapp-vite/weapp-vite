@@ -1,7 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import type { MutableCompilerContext } from '../../../context'
 import { getPackageInfoSync } from 'local-pkg'
-import { getPlatformNpmDistDirName } from '../../../platform'
+import { getPlatformNpmDistDirName, resolveMiniPlatformWithDefault } from '../../../platform'
 
 const DEFAULT_NPM_STRATEGY = 'explicit'
 
@@ -162,12 +162,9 @@ export function hasLocalSubPackageNpmConfig(ctx: MutableCompilerContext) {
 }
 
 export function resolveNpmDistDirName(configService?: MutableCompilerContext['configService']) {
-  if (configService?.platform) {
-    return getPlatformNpmDistDirName(configService.platform, {
-      alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
-    })
-  }
-  return getPlatformNpmDistDirName('weapp')
+  return getPlatformNpmDistDirName(resolveMiniPlatformWithDefault(configService?.platform), {
+    alipayNpmMode: configService?.weappViteConfig?.npm?.alipayNpmMode,
+  })
 }
 
 export function resolveMainBuildDependencyPatterns(ctx: MutableCompilerContext) {

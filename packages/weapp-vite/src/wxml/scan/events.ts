@@ -1,6 +1,6 @@
 import type { MpPlatform } from '../../types'
 import { isBuiltinComponent } from '../../auto-import-components/builtin'
-import { getWxmlPlatformTransformOptions } from '../../platform'
+import { getWxmlPlatformTransformOptions, resolveMiniPlatformWithDefault } from '../../platform'
 
 const ALIPAY_COLON_EVENT_RE = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/
 const ALIPAY_PLAIN_EVENT_RE = /^(bind|catch)([A-Za-z].*)$/
@@ -122,13 +122,14 @@ export function defaultExcludeComponent(tagName: string) {
   return isBuiltinComponent(tagName)
 }
 
-export function resolveEventDirectiveName(raw: string, platform: MpPlatform = 'weapp') {
-  const directive = resolveEventDirective(raw, platform)
+export function resolveEventDirectiveName(raw: string, platform?: MpPlatform) {
+  const resolvedPlatform = resolveMiniPlatformWithDefault(platform)
+  const directive = resolveEventDirective(raw, resolvedPlatform)
   if (directive) {
     return directive
   }
 
-  if (getWxmlPlatformTransformOptions(platform).eventBindingStyle === 'alipay') {
+  if (getWxmlPlatformTransformOptions(resolvedPlatform).eventBindingStyle === 'alipay') {
     return resolveAlipayNativeEventBinding(raw)
   }
 

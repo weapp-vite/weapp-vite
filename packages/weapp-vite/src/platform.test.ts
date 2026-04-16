@@ -23,6 +23,7 @@ import {
   normalizeMiniPlatform,
   normalizePlatformNpmImportPath,
   resolveMiniPlatform,
+  resolveMiniPlatformWithDefault,
   shouldCopyEsModuleDirectory,
   shouldEmitGenericPlaceholderAsset,
   shouldFillComponentGenericsDefault,
@@ -53,6 +54,8 @@ describe('platform adapter registry', () => {
     expect(resolveMiniPlatform('jingdong')).toBe('jd')
     expect(resolveMiniPlatform('red')).toBe('xhs')
     expect(resolveMiniPlatform('unknown')).toBeUndefined()
+    expect(resolveMiniPlatformWithDefault()).toBe('weapp')
+    expect(resolveMiniPlatformWithDefault('alipay')).toBe('alipay')
   })
 
   it('exposes adapter metadata for every supported platform', () => {
