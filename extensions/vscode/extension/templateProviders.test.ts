@@ -271,9 +271,18 @@ it('provides local component definitions and resource links for wxml documents',
   const eventHover = await hoverProvider.provideHover(hoverDocument as any, eventHoverPosition as any)
 
   assert.equal(completionItems[0].label, 'card-user')
+  assert.equal(completionItems[0].documentation.value.includes('项目组件'), true)
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'title-text'), true)
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'active'), true)
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'bind:confirm'), true)
+  assert.equal(
+    attributeCompletionItems.find((item: any) => item.label === 'title-text')?.documentation.value.includes('类型: `string`'),
+    true,
+  )
+  assert.equal(
+    attributeCompletionItems.find((item: any) => item.label === 'bind:confirm')?.documentation.value.includes('参数: `value: number`'),
+    true,
+  )
   assert.equal(classCompletionItems.some((item: any) => item.label === 'hero-title'), true)
   assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(classDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxss'))

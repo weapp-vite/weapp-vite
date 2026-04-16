@@ -221,13 +221,18 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
 
     if (tagContext.tagNameStart != null && sourceOffset <= tagContext.tagNameEnd!) {
       const localComponents = await getTemplateLocalComponents(document)
-      const localComponentNames = [...localComponents.values()]
-        .map(component => component.name)
-        .filter(Boolean)
-      const localSet = new Set(localComponentNames.map(tagName => tagName.toLowerCase()))
-      const localItems = localComponentNames.map((tagName, index) => {
-        const item = createCompletionItem(tagName, vscode.CompletionItemKind.Module)
-        item.insertText = tagName
+      const localComponentEntries = [...localComponents.values()]
+        .filter(component => Boolean(component.name))
+      const localSet = new Set(localComponentEntries.map(component => component.name.toLowerCase()))
+      const localItems = localComponentEntries.map((component, index) => {
+        const item = createCompletionItem(
+          component.name,
+          vscode.CompletionItemKind.Module,
+          component.targetPath
+            ? createProjectComponentHoverMarkdown('tag', component.name, component.targetPath)
+            : undefined,
+        )
+        item.insertText = component.name
         item.detail = 'project component'
         item.sortText = `0${index.toString().padStart(3, '0')}`
         return item
@@ -282,6 +287,7 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
 
     if (tagContext.tagName && (ATTRIBUTE_COMPLETION_TRIGGER.has(triggerCharacter) || VALUE_COMPLETION_TRIGGER.has(triggerCharacter) || COMPONENT_COMPLETION_TRIGGER.has(triggerCharacter))) {
       const existingAttributes = new Set(tagContext.attributes.map(attribute => attribute.name))
+      const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagContext.tagName)
       const componentEvents = await getTemplateComponentEvents(document, tagContext.tagName)
       const componentEventItems = componentEvents
         .filter(attribute => !existingAttributes.has(attribute.label))
@@ -289,6 +295,11 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
           const item = createCompletionItem(attribute.label, vscode.CompletionItemKind.Event)
           item.insertText = new vscode.SnippetString(`${attribute.insertText}="$1"`)
           item.detail = 'component event'
+          if (resolvedMeta?.targetPath) {
+            item.documentation = new vscode.MarkdownString(
+              createProjectComponentHoverMarkdown('event', attribute.label, resolvedMeta.targetPath, attribute.summary),
+            )
+          }
           item.sortText = `1${index.toString().padStart(3, '0')}`
           return item
         })
@@ -299,6 +310,11 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
           const item = createCompletionItem(attribute.label, vscode.CompletionItemKind.Property)
           item.insertText = new vscode.SnippetString(`${attribute.insertText}="$1"`)
           item.detail = 'component prop'
+          if (resolvedMeta?.targetPath) {
+            item.documentation = new vscode.MarkdownString(
+              createProjectComponentHoverMarkdown('prop', attribute.label, resolvedMeta.targetPath, attribute.summary),
+            )
+          }
           item.sortText = `0${index.toString().padStart(3, '0')}`
           return item
         })
