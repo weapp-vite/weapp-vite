@@ -107,6 +107,7 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
   assert.equal(properties['weapp-vite.enableCompletion'].default, true)
   assert.equal(properties['weapp-vite.enableWxmlEnhancements'].default, true)
   assert.equal(properties['weapp-vite.enableWxmlDefinition'].default, true)
+  assert.equal(properties['weapp-vite.enableTemplateDecorations'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)
   assert.equal(properties['weapp-vite.promptFileIcons'].default, true)
 })

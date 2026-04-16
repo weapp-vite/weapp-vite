@@ -75,6 +75,9 @@ import {
   WeappViteVueDocumentLinkProvider,
 } from './providers'
 import {
+  TemplateDecorationController,
+} from './templateDecorations'
+import {
   WeappTemplateCompletionProvider,
   WeappTemplateDefinitionProvider,
   WeappTemplateDocumentHighlightProvider,
@@ -393,6 +396,7 @@ export function activate(context: any) {
   const wxmlDocumentHighlightProvider = new WeappTemplateDocumentHighlightProvider()
   const wxmlDocumentLinkProvider = new WeappTemplateDocumentLinkProvider()
   const wxmlDefinitionProvider = new WeappTemplateDefinitionProvider()
+  const templateDecorationController = new TemplateDecorationController()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
     showCollapseAll: true,
@@ -678,6 +682,7 @@ export function activate(context: any) {
 
   context.subscriptions.push(...disposables, pagesTreeView, getOutputChannel(), getDiagnostics(), {
     dispose() {
+      templateDecorationController.dispose()
       state.terminalCache = undefined
       statusBarItem = undefined
       outputChannel = undefined

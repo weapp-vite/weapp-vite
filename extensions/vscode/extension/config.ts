@@ -32,6 +32,10 @@ export function isWxmlDefinitionEnabled() {
   return getExtensionConfiguration().get('enableWxmlDefinition', true)
 }
 
+export function isTemplateDecorationEnabled() {
+  return getExtensionConfiguration().get('enableTemplateDecorations', true)
+}
+
 export function useWvAlias() {
   return getExtensionConfiguration().get('preferWvAlias', true)
 }

@@ -345,6 +345,11 @@
           "default": true,
           "description": "是否启用 .wxml 与 weapp-vite 页面/组件 .vue <template> 中的点击跳转。"
         },
+        "weapp-vite.enableTemplateDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用 .wxml 与 weapp-vite 页面/组件 .vue <template> 中的事件处理器和简单模板变量装饰高亮。"
+        },
         "weapp-vite.preferWvAlias": {
           "type": "boolean",
           "default": true,

@@ -25,8 +25,14 @@ function createMockVscode() {
     StatusBarAlignment: {
       Left: 1,
     },
+    ThemeColor: class {
+      constructor(id) {
+        this.id = id
+      }
+    },
     window: {
       activeTextEditor: undefined,
+      visibleTextEditors: [],
       createOutputChannel(name) {
         const channel = {
           name,
@@ -66,6 +72,11 @@ function createMockVscode() {
       showQuickPick: async () => undefined,
       showTextDocument: async () => undefined,
       setStatusBarMessage() {},
+      createTextEditorDecorationType() {
+        return {
+          dispose() {},
+        }
+      },
       createTreeView(viewId, options) {
         const treeView = {
           options,
@@ -77,6 +88,9 @@ function createMockVscode() {
         return treeView
       },
       onDidChangeActiveTextEditor(handler) {
+        return { dispose() {}, handler }
+      },
+      onDidChangeVisibleTextEditors(handler) {
         return { dispose() {}, handler }
       },
     },
@@ -112,6 +126,9 @@ function createMockVscode() {
         return { dispose() {}, handler }
       },
       onDidChangeTextDocument(handler) {
+        return { dispose() {}, handler }
+      },
+      onDidCloseTextDocument(handler) {
         return { dispose() {}, handler }
       },
       onDidRenameFiles(handler) {
