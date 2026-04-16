@@ -144,4 +144,18 @@ describe('runtime: app-level hooks', () => {
     expect(offMemoryWarningApi).toHaveBeenCalledTimes(1)
     expect(onMemoryWarningApi).toHaveBeenCalledTimes(2)
   })
+
+  it('avoids duplicate App registration when host global exists without __wxConfig', async () => {
+    ;(globalThis as any).wx = {}
+
+    createApp({
+      data: () => ({}),
+    })
+    createApp({
+      data: () => ({}),
+    })
+
+    expect(registeredApps).toHaveLength(1)
+    expect((globalThis as any).wx.__wevuAppRegistered).toBe(true)
+  })
 })

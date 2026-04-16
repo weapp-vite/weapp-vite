@@ -64,6 +64,10 @@ export interface MiniProgramRuntimeCapabilities {
    * @description 宿主是否支持通过全局 `startPullDownRefresh` 做下拉刷新桥接。
    */
   pullDownRefreshApi: boolean
+  /**
+   * @description 宿主是否支持通过全局对象调用 `navigateTo` / `redirectTo` 等路由 API。
+   */
+  globalRouterApi: boolean
 }
 
 export type MiniProgramRuntimeCapabilityName = keyof MiniProgramRuntimeCapabilities
@@ -166,6 +170,7 @@ export interface MiniProgramPlatformDescriptor {
    */
   runtime: {
     globalObjectKey: string
+    hostConfigKey: string
     pageIdentityRules: readonly MiniProgramPageIdentityRule[]
     capabilities: MiniProgramRuntimeCapabilities
   }

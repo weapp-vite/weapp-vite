@@ -2,7 +2,7 @@ import type { SetupContextRouter } from '../types'
 import { parsePathInput } from '../../routerInternal/location'
 import { createAbsoluteRoutePath, resolvePath, stringifyQuery } from '../../routerInternal/shared'
 import { getCurrentSetupContext } from '../hooks'
-import { getMiniProgramGlobalObject } from '../platform'
+import { getCurrentMiniProgramGlobalRouter } from '../platform'
 
 type RuntimeRouter = SetupContextRouter
 type RuntimeRouterMethodName = 'switchTab' | 'reLaunch' | 'redirectTo' | 'navigateTo' | 'navigateBack'
@@ -21,19 +21,7 @@ function isRuntimeRouter(candidate: unknown): candidate is RuntimeRouter {
 }
 
 function createGlobalRouterFallback(): RuntimeRouter | undefined {
-  const miniProgramGlobal = getMiniProgramGlobalObject()
-  if (!miniProgramGlobal) {
-    return undefined
-  }
-  const fallbackRouter = Object.create(null) as RuntimeRouter
-  for (const methodName of RUNTIME_ROUTER_METHODS) {
-    const handler = (miniProgramGlobal as Record<string, any>)[methodName]
-    if (typeof handler !== 'function') {
-      return undefined
-    }
-    ;(fallbackRouter as Record<string, any>)[methodName] = (...args: any[]) => handler.apply(miniProgramGlobal, args)
-  }
-  return fallbackRouter
+  return getCurrentMiniProgramGlobalRouter()
 }
 
 function resolveBasePathCandidate(candidate: unknown): string | undefined {
@@ -132,7 +120,7 @@ function useRuntimeRouterByAccessor(
     return createScopedRuntimeRouter(globalFallbackRouter, basePath)
   }
 
-  throw new Error('当前运行环境不支持 Router，请升级微信基础库到 2.16.1+ 或检查平台路由能力')
+  throw new Error('当前运行环境不支持 Router，请升级宿主基础库或检查平台路由能力')
 }
 
 /**
@@ -140,7 +128,7 @@ function useRuntimeRouterByAccessor(
  *
  * - 优先使用实例上的 `this.router`（组件路径语义）。
  * - 不可用时回退到 `this.pageRouter`。
- * - 低版本基础库再回退到全局 `wx.*` 路由方法。
+ * - 低版本基础库再回退到宿主全局路由方法。
  *
  * 如需更贴近 Vue Router 的高阶能力（导航守卫、失败类型、统一解析），
  * 推荐改用 `wevu/router` 子入口的 `useRouter()`。
@@ -154,7 +142,7 @@ export function useNativeRouter(): RuntimeRouter {
  *
  * - 优先使用实例上的 `this.pageRouter`（页面路径语义）。
  * - 不可用时回退到 `this.router`。
- * - 低版本基础库再回退到全局 `wx.*` 路由方法。
+ * - 低版本基础库再回退到宿主全局路由方法。
  *
  * 如需更贴近 Vue Router 的高阶能力（导航守卫、失败类型、统一解析），
  * 推荐改用 `wevu/router` 子入口的 `useRouter()`。

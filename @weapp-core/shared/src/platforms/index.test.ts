@@ -4,6 +4,7 @@ import {
   getMiniProgramPlatformDescriptor,
   getMiniProgramRuntimeCapabilities,
   getMiniProgramRuntimeGlobalKeys,
+  getMiniProgramRuntimeHostConfigKey,
   getMiniProgramTemplatePreset,
   getSupportedMiniProgramPlatforms,
   MINI_PROGRAM_PLATFORM_ALIASES,
@@ -36,8 +37,10 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('xhs')).toBe('xhs')
     expect(getMiniProgramRuntimeGlobalKeys()).toEqual(['wx', 'my', 'swan', 'tt', 'jd', 'xhs'])
+    expect(getMiniProgramRuntimeHostConfigKey('weapp')).toBe('__wxConfig')
     expect(supportsMiniProgramRuntimeCapability('weapp', 'pageShareMenu')).toBe(true)
     expect(supportsMiniProgramRuntimeCapability('alipay', 'pageShareMenu')).toBe(false)
+    expect(supportsMiniProgramRuntimeCapability('weapp', 'globalRouterApi')).toBe(true)
     expect(getMiniProgramRuntimeCapabilities('alipay').shareTimelineRequiresShareAppMessage).toBe(true)
   })
 

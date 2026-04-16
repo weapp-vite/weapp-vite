@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const GLOBAL_KEYS = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs', 'getCurrentPages'] as const
+const GLOBAL_KEYS = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs', 'getCurrentPages', '__wxConfig'] as const
 
 function clearMiniProgramGlobals() {
   for (const key of GLOBAL_KEYS) {
@@ -66,6 +66,58 @@ describe('runtime platform', () => {
 
     const { getCurrentMiniProgramPages } = await loadPlatformModule()
     expect(getCurrentMiniProgramPages()).toEqual([])
+  })
+
+  it('reads current host config through shared runtime descriptor', async () => {
+    ;(globalThis as any).wx = { name: 'wx-runtime' }
+    ;(globalThis as any).__wxConfig = {
+      debug: true,
+      networkTimeout: {
+        request: 12_000,
+      },
+    }
+
+    const { getCurrentMiniProgramHostConfig } = await loadPlatformModule()
+    expect(getCurrentMiniProgramHostConfig()).toEqual({
+      debug: true,
+      networkTimeout: {
+        request: 12_000,
+      },
+    })
+  })
+
+  it('creates current global router wrapper from runtime global object', async () => {
+    const calls: Array<{ method: string, context: any, args: any[] }> = []
+    ;(globalThis as any).wx = {
+      switchTab(...args: any[]) {
+        calls.push({ method: 'switchTab', context: this, args })
+      },
+      reLaunch(...args: any[]) {
+        calls.push({ method: 'reLaunch', context: this, args })
+      },
+      redirectTo(...args: any[]) {
+        calls.push({ method: 'redirectTo', context: this, args })
+      },
+      navigateTo(...args: any[]) {
+        calls.push({ method: 'navigateTo', context: this, args })
+      },
+      navigateBack(...args: any[]) {
+        calls.push({ method: 'navigateBack', context: this, args })
+      },
+    }
+
+    const { getCurrentMiniProgramGlobalRouter } = await loadPlatformModule()
+    const router = getCurrentMiniProgramGlobalRouter()
+    expect(router).toBeTruthy()
+
+    router?.navigateTo({ url: '/pages/demo/index' })
+    expect(calls).toEqual([
+      {
+        method: 'navigateTo',
+        context: (globalThis as any).wx,
+        args: [{ url: '/pages/demo/index' }],
+      },
+    ])
   })
 
   it('returns undefined when no supported runtime global exists', async () => {

@@ -11,6 +11,7 @@ export const DEFAULT_RUNTIME_CAPABILITIES: MiniProgramRuntimeCapabilities = Obje
   shareTimelineRequiresShareAppMessage: true,
   pageScrollApi: true,
   pullDownRefreshApi: true,
+  globalRouterApi: true,
 })
 const DEFAULT_PAGE_IDENTITY_RULES = [
   {
@@ -55,6 +56,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'wx',
+      hostConfigKey: '__wxConfig',
       capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: [
         {
@@ -122,6 +124,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'my',
+      hostConfigKey: '__wxConfig',
       capabilities: {
         ...DEFAULT_RUNTIME_CAPABILITIES,
         pageShareMenu: false,
@@ -161,6 +164,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'swan',
+      hostConfigKey: '__wxConfig',
       capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
@@ -196,6 +200,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'tt',
+      hostConfigKey: '__wxConfig',
       capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
@@ -232,6 +237,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'jd',
+      hostConfigKey: '__wxConfig',
       capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
@@ -268,6 +274,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'xhs',
+      hostConfigKey: '__wxConfig',
       capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },

@@ -1,5 +1,5 @@
 import type { SetDataSnapshotOptions } from '../types'
-import { getMiniProgramGlobalObject } from '../platform'
+import { getCurrentMiniProgramHostConfig, getMiniProgramGlobalObject } from '../platform'
 
 interface ResolvedHighFrequencyWarningOptions {
   enabled: boolean
@@ -79,8 +79,7 @@ export function resolveHighFrequencyWarningOptions(
  * 判断当前是否为开发态运行环境。
  */
 export function isDevelopmentRuntime(): boolean {
-  const globalRuntime = globalThis as Record<string, any>
-  const wxConfig = globalRuntime?.__wxConfig
+  const wxConfig = getCurrentMiniProgramHostConfig()
   if (wxConfig?.debug === true || wxConfig?.envVersion === 'develop') {
     return true
   }

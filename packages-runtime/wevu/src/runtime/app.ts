@@ -108,14 +108,11 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
 
   if (hasGlobalApp) {
     const globalObject = getMiniProgramGlobalObject()
-    const hasWxConfig = typeof globalObject?.__wxConfig !== 'undefined'
     const appRegisterKey = '__wevuAppRegistered'
-    const hasRegistered = hasWxConfig && globalObject
-      ? Boolean(globalObject[appRegisterKey])
-      : false
+    const hasRegistered = globalObject ? Boolean(globalObject[appRegisterKey]) : false
     // 开发者工具/HMR 可能重复执行入口，避免多次 App() 导致 AppService 事件监听累积。
     if (!hasRegistered) {
-      if (hasWxConfig && globalObject) {
+      if (globalObject) {
         globalObject[appRegisterKey] = true
       }
       // 若检测到全局 App 构造器则自动注册小程序 App

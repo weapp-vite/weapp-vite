@@ -3,6 +3,11 @@ import type {
   WeapiNetworkMethod,
   WeapiNetworkTimeoutConfig,
 } from './types'
+import {
+  getMiniProgramPlatformByRuntimeGlobalKey,
+  getMiniProgramRuntimeGlobalKeys,
+  getMiniProgramRuntimeHostConfigKey,
+} from '@weapp-core/shared'
 import { isPlainObject } from '../utils'
 import {
   DEFAULT_MAX_QUEUE_SIZE,
@@ -21,8 +26,23 @@ export function resolveQueueSize(value: number | undefined) {
   return Math.max(1, Math.floor(value))
 }
 
+function resolveCurrentMiniProgramHostConfig() {
+  const runtimeRoot = globalThis as Record<string, any>
+  for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
+    if (!runtimeRoot[globalKey]) {
+      continue
+    }
+    const platform = getMiniProgramPlatformByRuntimeGlobalKey(globalKey)
+    const hostConfig = runtimeRoot[getMiniProgramRuntimeHostConfigKey(platform)]
+    return isPlainObject(hostConfig) ? hostConfig : undefined
+  }
+
+  const defaultHostConfig = runtimeRoot[getMiniProgramRuntimeHostConfigKey(undefined)]
+  return isPlainObject(defaultHostConfig) ? defaultHostConfig : undefined
+}
+
 export function resolveHostTimeoutConfig(): Partial<WeapiNetworkTimeoutConfig> {
-  const hostConfig = (globalThis as any).__wxConfig
+  const hostConfig = resolveCurrentMiniProgramHostConfig()
   const networkTimeout = hostConfig?.networkTimeout
   if (!isPlainObject(networkTimeout)) {
     return {}

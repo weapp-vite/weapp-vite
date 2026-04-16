@@ -5,6 +5,7 @@ export {
   getMiniProgramRuntimeCapabilities,
   getMiniProgramRuntimeGlobalKey,
   getMiniProgramRuntimeGlobalKeys,
+  getMiniProgramRuntimeHostConfigKey,
   getMiniProgramTemplatePreset,
   getSupportedMiniProgramPlatforms,
   MINI_PROGRAM_PLATFORM_ALIASES,

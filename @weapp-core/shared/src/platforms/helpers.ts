@@ -132,6 +132,16 @@ export function getMiniProgramRuntimeGlobalKeys(platform?: MpPlatform): readonly
 }
 
 /**
+ * @description 获取平台 runtime 宿主配置 key。
+ */
+export function getMiniProgramRuntimeHostConfigKey(platform?: MpPlatform): string {
+  if (!platform) {
+    return '__wxConfig'
+  }
+  return getMiniProgramPlatformDescriptor(platform).runtime.hostConfigKey
+}
+
+/**
  * @description 获取平台 runtime 能力描述。
  */
 export function getMiniProgramRuntimeCapabilities(platform?: MpPlatform): MiniProgramRuntimeCapabilities {
