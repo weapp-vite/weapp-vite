@@ -50,7 +50,9 @@ export async function finalizeTransformEntryScript(options: {
     && result.script
     && result.template
     && isAutoSetDataPickEnabled(configService.weappViteConfig)
-    && mayNeedTransformSetDataPick(result.template)
+    && mayNeedTransformSetDataPick(result.template, {
+      platform: configService.platform,
+    })
   ) {
     const keys = collectSetDataPickKeysFromTemplate(result.template, {
       astEngine: resolveAstEngine(configService.weappViteConfig),

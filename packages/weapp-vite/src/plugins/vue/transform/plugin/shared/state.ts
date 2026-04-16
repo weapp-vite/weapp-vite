@@ -1,13 +1,16 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
-import { fs } from '@weapp-core/shared'
+import type { MpPlatform } from '../../../../../types'
+import { escapeStringRegexp, fs } from '@weapp-core/shared'
 import path from 'pathe'
+import { getWxmlDirectivePrefix } from '../../../../../platform'
 import { toAbsoluteId } from '../../../../../utils/toAbsoluteId'
 import { isVueLikeFile } from '../../shared'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
-const TEMPLATE_DYNAMIC_HINT_RE = /\{\{|wx:|bind[A-Za-z:_-]+=|catch[A-Za-z:_-]+=/
+const TEMPLATE_MUSTACHE_HINT = '{{'
+const TEMPLATE_EVENT_HINT_RE = /\b(?:bind|catch)[A-Za-z:_-]+=/
 const PAGE_FEATURE_HOOK_HINTS = [
   'onPageScroll',
   'onPullDownRefresh',
@@ -34,8 +37,22 @@ export function isVueLikeId(id: string) {
   return isVueLikeFile(id)
 }
 
-export function mayNeedTransformSetDataPick(template: string) {
-  return TEMPLATE_DYNAMIC_HINT_RE.test(template)
+export function mayNeedTransformSetDataPick(
+  template: string,
+  options?: {
+    platform?: MpPlatform
+  },
+) {
+  if (template.includes(TEMPLATE_MUSTACHE_HINT)) {
+    return true
+  }
+
+  const directivePrefix = getWxmlDirectivePrefix(options?.platform)
+  if (new RegExp(`${escapeStringRegexp(directivePrefix)}:`).test(template)) {
+    return true
+  }
+
+  return TEMPLATE_EVENT_HINT_RE.test(template)
 }
 
 export function mayNeedTransformPageFeatureInjection(script: string) {

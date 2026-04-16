@@ -421,6 +421,7 @@ describe('vue transform plugin shared helpers', () => {
   it('detects transform script post-process hints', () => {
     expect(mayNeedTransformSetDataPick('<view>{{ count }}</view>')).toBe(true)
     expect(mayNeedTransformSetDataPick('<view />')).toBe(false)
+    expect(mayNeedTransformSetDataPick('<view a:if="visible" />', { platform: 'alipay' })).toBe(true)
     expect(mayNeedTransformPageFeatureInjection('export default { onReachBottom() {} }')).toBe(true)
     expect(mayNeedTransformPageFeatureInjection('export default {}')).toBe(false)
     expect(mayNeedTransformPageScrollDiagnostics('export default { onPageScroll() {} }')).toBe(true)
@@ -558,6 +559,36 @@ describe('vue transform plugin shared helpers', () => {
     })
     expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ enhanced: true })', ['count'])
     expect(result.script).toBe('Page({ enhanced: true, __setDataPick: ["count"] })')
+  })
+
+  it('finalizes transform entry scripts with alipay directive-prefixed templates', async () => {
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+    injectSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ __setDataPick: ["count"] })',
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<view a:if="visible" />',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        platform: 'alipay',
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view a:if="visible" />', {
+      astEngine: 'oxc',
+    })
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['count'])
+    expect(result.script).toBe('Page({ __setDataPick: ["count"] })')
   })
 
   it('skips transform entry script finalize side effects when conditions are not met', async () => {
