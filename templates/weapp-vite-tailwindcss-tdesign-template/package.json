@@ -40,7 +40,7 @@
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
     "sass": "catalog:",
-    "stylelint": "^17.7.0",
+    "stylelint": "^17.8.0",
     "tailwindcss": "catalog:tailwind3",
     "typescript": "catalog:",
     "weapp-tailwindcss": "catalog:",

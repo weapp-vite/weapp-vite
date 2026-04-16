@@ -40,7 +40,7 @@
     "eslint": "^10.2.0",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
-    "stylelint": "^17.7.0",
+    "stylelint": "^17.8.0",
     "tailwindcss": "catalog:tailwind3",
     "typescript": "catalog:",
     "vue-tsc": "catalog:",

@@ -239,7 +239,7 @@
     "sass-embedded": "catalog:",
     "set-value": "^4.1.0",
     "socket.io": "^4.8.1",
-    "stylelint": "^17.7.0",
+    "stylelint": "^17.8.0",
     "supertest": "^7.2.2",
     "tailwindcss": "catalog:tailwind4",
     "tinypool": "^2.1.0",
