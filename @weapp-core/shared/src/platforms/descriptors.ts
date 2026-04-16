@@ -57,6 +57,8 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     runtime: {
       globalObjectKey: 'wx',
       hostConfigKey: '__wxConfig',
+      globalResolvePriority: 1,
+      routeGlobalResolvePriority: 0,
       capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: [
         {
@@ -125,6 +127,8 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     runtime: {
       globalObjectKey: 'my',
       hostConfigKey: '__wxConfig',
+      globalResolvePriority: 0,
+      routeGlobalResolvePriority: 2,
       capabilities: {
         ...DEFAULT_RUNTIME_CAPABILITIES,
         pageShareMenu: false,
@@ -201,6 +205,8 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     runtime: {
       globalObjectKey: 'tt',
       hostConfigKey: '__wxConfig',
+      globalResolvePriority: 2,
+      routeGlobalResolvePriority: 1,
       capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },

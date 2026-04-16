@@ -48,6 +48,25 @@ const SUPPORTED_MINI_PROGRAM_PLATFORMS = Object.freeze(
 const ORDERED_RUNTIME_GLOBAL_KEYS = Object.freeze(
   Array.from(new Set(MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => descriptor.runtime.globalObjectKey))),
 ) as readonly string[]
+const MAX_RUNTIME_RESOLVE_PRIORITY = Number.MAX_SAFE_INTEGER
+
+function getOrderedRuntimeGlobalKeysByPriority(
+  priorityKey: 'globalResolvePriority' | 'routeGlobalResolvePriority',
+) {
+  const ordered = [...MINI_PROGRAM_PLATFORM_DESCRIPTORS].sort((left, right) => {
+    const leftPriority = left.runtime[priorityKey] ?? MAX_RUNTIME_RESOLVE_PRIORITY
+    const rightPriority = right.runtime[priorityKey] ?? MAX_RUNTIME_RESOLVE_PRIORITY
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority
+    }
+    return MINI_PROGRAM_PLATFORM_DESCRIPTORS.indexOf(left) - MINI_PROGRAM_PLATFORM_DESCRIPTORS.indexOf(right)
+  })
+  return Object.freeze(
+    Array.from(new Set(ordered.map(descriptor => descriptor.runtime.globalObjectKey))),
+  ) as readonly string[]
+}
+const ORDERED_RUNTIME_GLOBAL_KEYS_BY_RESOLVE_PRIORITY = getOrderedRuntimeGlobalKeysByPriority('globalResolvePriority')
+const ORDERED_RUNTIME_GLOBAL_KEYS_BY_ROUTE_PRIORITY = getOrderedRuntimeGlobalKeysByPriority('routeGlobalResolvePriority')
 
 /**
  * @description 小程序平台别名映射表。
@@ -129,6 +148,26 @@ export function getMiniProgramRuntimeGlobalKeys(platform?: MpPlatform): readonly
     return [getMiniProgramRuntimeGlobalKey(platform)]
   }
   return ORDERED_RUNTIME_GLOBAL_KEYS
+}
+
+/**
+ * @description 返回按通用解析优先级排序的 runtime 全局对象 key。
+ */
+export function getMiniProgramRuntimeGlobalKeysByResolvePriority(platform?: MpPlatform): readonly string[] {
+  if (platform) {
+    return [getMiniProgramRuntimeGlobalKey(platform)]
+  }
+  return ORDERED_RUNTIME_GLOBAL_KEYS_BY_RESOLVE_PRIORITY
+}
+
+/**
+ * @description 返回按路由解析优先级排序的 runtime 全局对象 key。
+ */
+export function getMiniProgramRouteRuntimeGlobalKeys(platform?: MpPlatform): readonly string[] {
+  if (platform) {
+    return [getMiniProgramRuntimeGlobalKey(platform)]
+  }
+  return ORDERED_RUNTIME_GLOBAL_KEYS_BY_ROUTE_PRIORITY
 }
 
 /**

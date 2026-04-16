@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramPlatformDescriptor,
+  getMiniProgramRouteRuntimeGlobalKeys,
   getMiniProgramRuntimeCapabilities,
   getMiniProgramRuntimeGlobalKeys,
+  getMiniProgramRuntimeGlobalKeysByResolvePriority,
   getMiniProgramRuntimeHostConfigKey,
   getMiniProgramTemplatePreset,
   getSupportedMiniProgramPlatforms,
@@ -37,6 +39,8 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('xhs')).toBe('xhs')
     expect(getMiniProgramRuntimeGlobalKeys()).toEqual(['wx', 'my', 'swan', 'tt', 'jd', 'xhs'])
+    expect(getMiniProgramRuntimeGlobalKeysByResolvePriority()).toEqual(['my', 'wx', 'tt', 'swan', 'jd', 'xhs'])
+    expect(getMiniProgramRouteRuntimeGlobalKeys()).toEqual(['wx', 'tt', 'my', 'swan', 'jd', 'xhs'])
     expect(getMiniProgramRuntimeHostConfigKey('weapp')).toBe('__wxConfig')
     expect(supportsMiniProgramRuntimeCapability('weapp', 'pageShareMenu')).toBe(true)
     expect(supportsMiniProgramRuntimeCapability('alipay', 'pageShareMenu')).toBe(false)

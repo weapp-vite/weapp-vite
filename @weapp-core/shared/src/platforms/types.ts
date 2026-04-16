@@ -171,6 +171,14 @@ export interface MiniProgramPlatformDescriptor {
   runtime: {
     globalObjectKey: string
     hostConfigKey: string
+    /**
+     * @description 通用全局对象解析优先级，值越小越先尝试。
+     */
+    globalResolvePriority?: number
+    /**
+     * @description 路由全局对象解析优先级，值越小越先尝试。
+     */
+    routeGlobalResolvePriority?: number
     pageIdentityRules: readonly MiniProgramPageIdentityRule[]
     capabilities: MiniProgramRuntimeCapabilities
   }

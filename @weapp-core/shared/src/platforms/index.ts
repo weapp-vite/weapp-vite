@@ -2,9 +2,11 @@ export { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from './descriptors'
 export {
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramPlatformDescriptor,
+  getMiniProgramRouteRuntimeGlobalKeys,
   getMiniProgramRuntimeCapabilities,
   getMiniProgramRuntimeGlobalKey,
   getMiniProgramRuntimeGlobalKeys,
+  getMiniProgramRuntimeGlobalKeysByResolvePriority,
   getMiniProgramRuntimeHostConfigKey,
   getMiniProgramTemplatePreset,
   getSupportedMiniProgramPlatforms,
