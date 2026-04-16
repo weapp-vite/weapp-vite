@@ -1,6 +1,15 @@
 import type * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse, traverse } from '@weapp-vite/ast/babel'
 
+export interface TemplateComponentMeta {
+  emitDetails: Map<string, string | null>
+  emits: Set<string>
+  modelDetails: Map<string, string | null>
+  models: Set<string>
+  propDetails: Map<string, string | null>
+  props: Set<string>
+}
+
 function getPropertyName(node: t.Node | null | undefined): string | undefined {
   if (!node) {
     return undefined
@@ -19,6 +28,24 @@ function getPropertyName(node: t.Node | null | undefined): string | undefined {
   }
 
   return undefined
+}
+
+function normalizeSummary(value: string | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  const summary = value.replace(/\s+/gu, ' ').trim()
+
+  return summary || null
+}
+
+function getNodeSummary(node: t.Node | null | undefined, sourceText: string) {
+  if (node?.start == null || node.end == null) {
+    return null
+  }
+
+  return normalizeSummary(sourceText.slice(node.start, node.end))
 }
 
 function unwrapTypeAnnotation(
@@ -88,8 +115,14 @@ function collectTypeReferences(ast: t.File) {
   }
 }
 
-function collectPropNamesFromTypeLiteral(node: t.TSTypeLiteral) {
-  const names = new Set<string>()
+function setDetail(map: Map<string, string | null>, name: string, summary: string | null) {
+  if (!map.has(name) || (map.get(name) == null && summary != null)) {
+    map.set(name, summary)
+  }
+}
+
+function collectPropDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: string) {
+  const details = new Map<string, string | null>()
 
   for (const member of node.members) {
     if (member.type !== 'TSPropertySignature') {
@@ -99,15 +132,15 @@ function collectPropNamesFromTypeLiteral(node: t.TSTypeLiteral) {
     const name = getPropertyName(member.key)
 
     if (name) {
-      names.add(name)
+      setDetail(details, name, getNodeSummary(unwrapTypeAnnotation(member.typeAnnotation), sourceText))
     }
   }
 
-  return names
+  return details
 }
 
-function collectPropNamesFromInterface(node: t.TSInterfaceDeclaration) {
-  const names = new Set<string>()
+function collectPropDetailsFromInterface(node: t.TSInterfaceDeclaration, sourceText: string) {
+  const details = new Map<string, string | null>()
 
   for (const member of node.body.body) {
     if (member.type !== 'TSPropertySignature') {
@@ -117,15 +150,77 @@ function collectPropNamesFromInterface(node: t.TSInterfaceDeclaration) {
     const name = getPropertyName(member.key)
 
     if (name) {
-      names.add(name)
+      setDetail(details, name, getNodeSummary(unwrapTypeAnnotation(member.typeAnnotation), sourceText))
     }
   }
 
-  return names
+  return details
 }
 
-function collectPropNamesFromObjectExpression(node: t.ObjectExpression) {
-  const names = new Set<string>()
+function getRuntimeConstructorSummary(node: t.Node | null | undefined): string | null {
+  if (!node) {
+    return null
+  }
+
+  if (node.type === 'Identifier') {
+    if (node.name === 'String') {
+      return 'string'
+    }
+
+    if (node.name === 'Number') {
+      return 'number'
+    }
+
+    if (node.name === 'Boolean') {
+      return 'boolean'
+    }
+
+    if (node.name === 'Array') {
+      return 'any[]'
+    }
+
+    if (node.name === 'Object') {
+      return 'Record<string, any>'
+    }
+  }
+
+  if (node.type === 'ArrayExpression') {
+    const items = node.elements
+      .map(element => getRuntimeConstructorSummary(element))
+      .filter((value): value is string => Boolean(value))
+
+    return items.length > 0
+      ? normalizeSummary(items.join(' | '))
+      : null
+  }
+
+  return null
+}
+
+function getRuntimePropSummary(node: t.Node | null | undefined) {
+  if (!node) {
+    return null
+  }
+
+  if (node.type === 'ObjectExpression') {
+    for (const property of node.properties) {
+      if (property.type !== 'ObjectProperty') {
+        continue
+      }
+
+      if (getPropertyName(property.key) === 'type') {
+        return getRuntimeConstructorSummary(property.value)
+      }
+    }
+
+    return null
+  }
+
+  return getRuntimeConstructorSummary(node)
+}
+
+function collectPropDetailsFromObjectExpression(node: t.ObjectExpression) {
+  const details = new Map<string, string | null>()
 
   for (const property of node.properties) {
     if (property.type !== 'ObjectProperty' && property.type !== 'ObjectMethod') {
@@ -135,15 +230,33 @@ function collectPropNamesFromObjectExpression(node: t.ObjectExpression) {
     const name = getPropertyName(property.key)
 
     if (name) {
-      names.add(name)
+      setDetail(
+        details,
+        name,
+        property.type === 'ObjectProperty'
+          ? getRuntimePropSummary(property.value)
+          : null,
+      )
     }
   }
 
-  return names
+  return details
 }
 
-function collectEventNamesFromTypeLiteral(node: t.TSTypeLiteral) {
-  const names = new Set<string>()
+function getFunctionParameterSummary(parameter: t.FunctionParameter, sourceText: string) {
+  if (parameter.type === 'Identifier') {
+    const typeSummary = getNodeSummary(unwrapTypeAnnotation(parameter.typeAnnotation), sourceText)
+
+    return typeSummary
+      ? `${parameter.name}: ${typeSummary}`
+      : parameter.name
+  }
+
+  return getNodeSummary(parameter, sourceText)
+}
+
+function collectEventDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: string) {
+  const details = new Map<string, string | null>()
 
   for (const member of node.members) {
     if (member.type !== 'TSCallSignatureDeclaration') {
@@ -159,15 +272,21 @@ function collectEventNamesFromTypeLiteral(node: t.TSTypeLiteral) {
     const type = unwrapTypeAnnotation(parameter.typeAnnotation)
 
     if (type?.type === 'TSLiteralType' && type.literal.type === 'StringLiteral') {
-      names.add(type.literal.value)
+      const payloadSummary = member.parameters
+        .slice(1)
+        .map(parameter => getFunctionParameterSummary(parameter, sourceText))
+        .filter((value): value is string => Boolean(value))
+        .join(', ')
+
+      setDetail(details, type.literal.value, payloadSummary || 'void')
     }
   }
 
-  return names
+  return details
 }
 
-function collectEventNamesFromObjectTypeLiteral(node: t.TSTypeLiteral) {
-  const names = new Set<string>()
+function collectEventDetailsFromObjectTypeLiteral(node: t.TSTypeLiteral, sourceText: string) {
+  const details = new Map<string, string | null>()
 
   for (const member of node.members) {
     if (member.type !== 'TSPropertySignature') {
@@ -177,27 +296,27 @@ function collectEventNamesFromObjectTypeLiteral(node: t.TSTypeLiteral) {
     const name = getPropertyName(member.key)
 
     if (name) {
-      names.add(name)
+      setDetail(details, name, getNodeSummary(unwrapTypeAnnotation(member.typeAnnotation), sourceText))
     }
   }
 
-  return names
+  return details
 }
 
-function collectEventNamesFromArrayExpression(node: t.ArrayExpression) {
-  const names = new Set<string>()
+function collectEventDetailsFromArrayExpression(node: t.ArrayExpression) {
+  const details = new Map<string, string | null>()
 
   for (const element of node.elements) {
     if (element?.type === 'StringLiteral') {
-      names.add(element.value)
+      setDetail(details, element.value, null)
     }
   }
 
-  return names
+  return details
 }
 
-function collectModelNames(ast: t.File) {
-  const names = new Set<string>()
+function collectModelDetails(ast: t.File, sourceText: string) {
+  const details = new Map<string, string | null>()
 
   traverse(ast, {
     CallExpression(path) {
@@ -206,20 +325,44 @@ function collectModelNames(ast: t.File) {
       }
 
       const firstArgument = path.node.arguments[0]
+      const typeParameter = path.node.typeParameters?.params?.[0]
+      const summary = getNodeSummary(typeParameter, sourceText)
 
       if (firstArgument?.type === 'StringLiteral') {
-        names.add(firstArgument.value)
+        setDetail(details, firstArgument.value, summary)
         return
       }
 
-      names.add('modelValue')
+      setDetail(details, 'modelValue', summary)
     },
   })
 
-  return names
+  return details
 }
 
-export function extractTemplateComponentMeta(sourceText: string) {
+function addDetailEntries(
+  names: Set<string>,
+  targetMap: Map<string, string | null>,
+  sourceMap: Map<string, string | null>,
+) {
+  for (const [name, summary] of sourceMap) {
+    names.add(name)
+    setDetail(targetMap, name, summary)
+  }
+}
+
+function createEmptyTemplateComponentMeta(): TemplateComponentMeta {
+  return {
+    emitDetails: new Map<string, string | null>(),
+    emits: new Set<string>(),
+    modelDetails: new Map<string, string | null>(),
+    models: new Set<string>(),
+    propDetails: new Map<string, string | null>(),
+    props: new Set<string>(),
+  }
+}
+
+export function extractTemplateComponentMeta(sourceText: string): TemplateComponentMeta {
   const scriptSource = getSfcScriptSource(sourceText)
   let ast: t.File
 
@@ -230,17 +373,16 @@ export function extractTemplateComponentMeta(sourceText: string) {
     })
   }
   catch {
-    return {
-      emits: new Set<string>(),
-      models: new Set<string>(),
-      props: new Set<string>(),
-    }
+    return createEmptyTemplateComponentMeta()
   }
 
   const { interfaces, typeAliases } = collectTypeReferences(ast)
+  const emitDetails = new Map<string, string | null>()
   const props = new Set<string>()
+  const propDetails = new Map<string, string | null>()
   const emits = new Set<string>()
-  const models = collectModelNames(ast)
+  const modelDetails = collectModelDetails(ast, scriptSource)
+  const models = new Set(modelDetails.keys())
 
   traverse(ast, {
     CallExpression(path) {
@@ -252,9 +394,7 @@ export function extractTemplateComponentMeta(sourceText: string) {
         const typeParameter = path.node.typeParameters?.params?.[0]
 
         if (typeParameter?.type === 'TSTypeLiteral') {
-          for (const name of collectPropNamesFromTypeLiteral(typeParameter)) {
-            props.add(name)
-          }
+          addDetailEntries(props, propDetails, collectPropDetailsFromTypeLiteral(typeParameter, scriptSource))
         }
 
         if (typeParameter?.type === 'TSTypeReference' && typeParameter.typeName.type === 'Identifier') {
@@ -262,24 +402,18 @@ export function extractTemplateComponentMeta(sourceText: string) {
           const iface = interfaces.get(typeParameter.typeName.name)
 
           if (alias?.type === 'TSTypeLiteral') {
-            for (const name of collectPropNamesFromTypeLiteral(alias)) {
-              props.add(name)
-            }
+            addDetailEntries(props, propDetails, collectPropDetailsFromTypeLiteral(alias, scriptSource))
           }
 
           if (iface) {
-            for (const name of collectPropNamesFromInterface(iface)) {
-              props.add(name)
-            }
+            addDetailEntries(props, propDetails, collectPropDetailsFromInterface(iface, scriptSource))
           }
         }
 
         const firstArgument = path.node.arguments[0]
 
         if (firstArgument?.type === 'ObjectExpression') {
-          for (const name of collectPropNamesFromObjectExpression(firstArgument)) {
-            props.add(name)
-          }
+          addDetailEntries(props, propDetails, collectPropDetailsFromObjectExpression(firstArgument))
         }
       }
 
@@ -287,35 +421,29 @@ export function extractTemplateComponentMeta(sourceText: string) {
         const typeParameter = path.node.typeParameters?.params?.[0]
 
         if (typeParameter?.type === 'TSTypeLiteral') {
-          for (const name of collectEventNamesFromTypeLiteral(typeParameter)) {
-            emits.add(name)
-          }
-
-          for (const name of collectEventNamesFromObjectTypeLiteral(typeParameter)) {
-            emits.add(name)
-          }
+          addDetailEntries(emits, emitDetails, collectEventDetailsFromTypeLiteral(typeParameter, scriptSource))
+          addDetailEntries(emits, emitDetails, collectEventDetailsFromObjectTypeLiteral(typeParameter, scriptSource))
         }
 
         const firstArgument = path.node.arguments[0]
 
         if (firstArgument?.type === 'ArrayExpression') {
-          for (const name of collectEventNamesFromArrayExpression(firstArgument)) {
-            emits.add(name)
-          }
+          addDetailEntries(emits, emitDetails, collectEventDetailsFromArrayExpression(firstArgument))
         }
 
         if (firstArgument?.type === 'ObjectExpression') {
-          for (const name of collectPropNamesFromObjectExpression(firstArgument)) {
-            emits.add(name)
-          }
+          addDetailEntries(emits, emitDetails, collectPropDetailsFromObjectExpression(firstArgument))
         }
       }
     },
   })
 
   return {
+    emitDetails,
     emits,
+    modelDetails,
     models,
+    propDetails,
     props,
   }
 }

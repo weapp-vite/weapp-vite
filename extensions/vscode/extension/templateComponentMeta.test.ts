@@ -14,7 +14,7 @@ it('extracts props, emits, and models from script setup generics', () => {
     '}',
     'defineProps<Props>()',
     'defineEmits<{',
-    '  (e: \'confirm\'): void',
+    '  (e: \'confirm\', value: number): void',
     '  cancel: []',
     '}>()',
     'const checked = defineModel<boolean>(\'checked\')',
@@ -24,6 +24,11 @@ it('extracts props, emits, and models from script setup generics', () => {
   assert.deepEqual([...meta.props].sort(), ['count', 'titleText'])
   assert.deepEqual([...meta.emits].sort(), ['cancel', 'confirm'])
   assert.deepEqual([...meta.models].sort(), ['checked'])
+  assert.equal(meta.propDetails.get('titleText'), 'string')
+  assert.equal(meta.propDetails.get('count'), 'number')
+  assert.equal(meta.emitDetails.get('confirm'), 'value: number')
+  assert.equal(meta.emitDetails.get('cancel'), '[]')
+  assert.equal(meta.modelDetails.get('checked'), 'boolean')
 })
 
 it('extracts props and emits from runtime object and array forms', () => {
@@ -39,6 +44,9 @@ it('extracts props and emits from runtime object and array forms', () => {
 
   assert.deepEqual([...meta.props].sort(), ['active', 'titleText'])
   assert.deepEqual([...meta.emits].sort(), ['cancel', 'confirm'])
+  assert.equal(meta.propDetails.get('titleText'), 'string')
+  assert.equal(meta.propDetails.get('active'), 'boolean')
+  assert.equal(meta.emitDetails.get('confirm'), null)
 })
 
 it('prefers script setup content inside vue sfc source', () => {

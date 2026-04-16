@@ -31,6 +31,7 @@ import {
   getTemplateComponentEvents,
   getTemplateComponentProps,
   getTemplateLocalComponents,
+  getTemplateResolvedComponentMeta,
   getTemplateStyleClassMatches,
   isRecognizedWeappVueDocument,
   isRecognizedWeappWxmlDocument,
@@ -87,18 +88,30 @@ function createCompletionItem(label: string, kind: vscode.CompletionItemKind, do
   return item
 }
 
-function createProjectComponentHoverMarkdown(kind: 'tag' | 'prop' | 'event', label: string, targetPath: string) {
+function createProjectComponentHoverMarkdown(
+  kind: 'tag' | 'prop' | 'event',
+  label: string,
+  targetPath: string,
+  summary: string | null = null,
+) {
   const title = kind === 'tag'
     ? '项目组件'
     : kind === 'prop'
       ? '组件属性'
       : '组件事件'
-
-  return [
+  const summaryLabel = kind === 'event' ? '参数' : '类型'
+  const lines = [
     `**${title}**`,
     `\`${label}\``,
-    `来源: \`${targetPath}\``,
-  ].join('\n\n')
+  ]
+
+  if (summary) {
+    lines.push(`${summaryLabel}: \`${summary}\``)
+  }
+
+  lines.push(`来源: \`${targetPath}\``)
+
+  return lines.join('\n\n')
 }
 
 function createSourceRange(document: vscode.TextDocument, sourceStart: number, sourceEnd: number) {
@@ -337,22 +350,27 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
     }
 
     const localComponent = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagContext.tagName))
+    const resolvedMeta = localComponent?.targetPath
+      ? await getTemplateResolvedComponentMeta(document, tagContext.tagName)
+      : null
 
     if (tagContext.attribute && sourceOffset >= tagContext.attribute.nameStart && sourceOffset <= tagContext.attribute.nameEnd) {
-      if (localComponent?.targetPath) {
+      if (resolvedMeta) {
         const componentProps = await getTemplateComponentProps(document, tagContext.tagName)
+        const propEntry = componentProps.find(attribute => attribute.label === tagContext.attribute?.name)
 
-        if (componentProps.some(attribute => attribute.label === tagContext.attribute?.name)) {
+        if (propEntry) {
           return new vscode.Hover(new vscode.MarkdownString(
-            createProjectComponentHoverMarkdown('prop', tagContext.attribute.name, localComponent.targetPath),
+            createProjectComponentHoverMarkdown('prop', tagContext.attribute.name, resolvedMeta.targetPath, propEntry.summary),
           ))
         }
 
         const componentEvents = await getTemplateComponentEvents(document, tagContext.tagName)
+        const eventEntry = componentEvents.find(attribute => attribute.label === tagContext.attribute?.name)
 
-        if (componentEvents.some(attribute => attribute.label === tagContext.attribute?.name)) {
+        if (eventEntry) {
           return new vscode.Hover(new vscode.MarkdownString(
-            createProjectComponentHoverMarkdown('event', tagContext.attribute.name, localComponent.targetPath),
+            createProjectComponentHoverMarkdown('event', tagContext.attribute.name, resolvedMeta.targetPath, eventEntry.summary),
           ))
         }
       }
@@ -362,9 +380,9 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
     }
 
     if (tagContext.tagNameStart != null && sourceOffset >= tagContext.tagNameStart && sourceOffset <= tagContext.tagNameEnd!) {
-      if (localComponent?.targetPath) {
+      if (resolvedMeta) {
         return new vscode.Hover(new vscode.MarkdownString(
-          createProjectComponentHoverMarkdown('tag', tagContext.tagName, localComponent.targetPath),
+          createProjectComponentHoverMarkdown('tag', tagContext.tagName, resolvedMeta.targetPath),
         ))
       }
 

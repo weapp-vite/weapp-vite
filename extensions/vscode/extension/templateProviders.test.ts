@@ -79,7 +79,9 @@ it('provides local component definitions and resource links for wxml documents',
       '  titleText?: string',
       '  count: number',
       '}>()',
-      'defineEmits([\'confirm\'])',
+      'defineEmits<{',
+      '  (e: \'confirm\', value: number): void',
+      '}>()',
       'const active = defineModel<boolean>(\'active\')',
       '</script>',
       '<template><view /></template>',
@@ -281,7 +283,9 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(links[0].target.fsPath, path.normalize('/workspace/src/assets/banner.png'))
   assert.equal(tagHover?.contents.value.includes('项目组件'), true)
   assert.equal(propHover?.contents.value.includes('组件属性'), true)
+  assert.equal(propHover?.contents.value.includes('类型: `string`'), true)
   assert.equal(eventHover?.contents.value.includes('组件事件'), true)
+  assert.equal(eventHover?.contents.value.includes('参数: `value: number`'), true)
 })
 
 it('provides style class completions and definitions inside vue template values', async () => {

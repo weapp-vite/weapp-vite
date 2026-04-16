@@ -47,11 +47,19 @@ interface StyleClassMatch {
 interface ComponentPropEntry {
   insertText: string
   label: string
+  summary: string | null
 }
 
 interface ComponentEventEntry {
   insertText: string
   label: string
+  summary: string | null
+}
+
+interface ResolvedTemplateComponentMeta {
+  meta: ReturnType<typeof extractTemplateComponentMeta>
+  sourceText: string
+  targetPath: string
 }
 
 function normalizeTagName(tagName: string) {
@@ -643,11 +651,11 @@ export async function getTemplateLocalComponents(document: vscode.TextDocument) 
     : getWxmlLocalComponents(document)
 }
 
-export async function getTemplateComponentProps(document: vscode.TextDocument, tagName: string) {
+export async function getTemplateResolvedComponentMeta(document: vscode.TextDocument, tagName: string): Promise<ResolvedTemplateComponentMeta | null> {
   const componentTargetPath = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagName))?.targetPath ?? null
 
   if (!componentTargetPath || !componentTargetPath.endsWith('.vue')) {
-    return []
+    return null
   }
 
   const sourceText = componentTargetPath === document.uri.fsPath
@@ -655,10 +663,24 @@ export async function getTemplateComponentProps(document: vscode.TextDocument, t
     : await readTextFile(componentTargetPath)
 
   if (!sourceText) {
+    return null
+  }
+
+  return {
+    meta: extractTemplateComponentMeta(sourceText),
+    sourceText,
+    targetPath: componentTargetPath,
+  }
+}
+
+export async function getTemplateComponentProps(document: vscode.TextDocument, tagName: string) {
+  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
+
+  if (!resolvedMeta) {
     return []
   }
 
-  const astMeta = extractTemplateComponentMeta(sourceText)
+  const { meta: astMeta, sourceText } = resolvedMeta
   const propNames = astMeta.props.size > 0 || astMeta.models.size > 0
     ? new Set([...astMeta.props, ...astMeta.models])
     : new Set([
@@ -669,31 +691,25 @@ export async function getTemplateComponentProps(document: vscode.TextDocument, t
   return [...propNames]
     .map((name) => {
       const kebabName = toKebabCase(name)
+      const summary = astMeta.propDetails.get(name) ?? astMeta.modelDetails.get(name) ?? null
 
       return {
         insertText: kebabName,
         label: kebabName,
+        summary,
       } satisfies ComponentPropEntry
     })
     .filter((entry, index, list) => list.findIndex(item => item.label === entry.label) === index)
 }
 
 export async function getTemplateComponentEvents(document: vscode.TextDocument, tagName: string) {
-  const componentTargetPath = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagName))?.targetPath ?? null
+  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
 
-  if (!componentTargetPath || !componentTargetPath.endsWith('.vue')) {
+  if (!resolvedMeta) {
     return []
   }
 
-  const sourceText = componentTargetPath === document.uri.fsPath
-    ? document.getText()
-    : await readTextFile(componentTargetPath)
-
-  if (!sourceText) {
-    return []
-  }
-
-  const astMeta = extractTemplateComponentMeta(sourceText)
+  const { meta: astMeta } = resolvedMeta
   const emitNames = astMeta.emits.size > 0
     ? [...astMeta.emits]
     : []
@@ -704,6 +720,7 @@ export async function getTemplateComponentEvents(document: vscode.TextDocument, 
       return {
         insertText: `bind:${name}`,
         label: `bind:${name}`,
+        summary: astMeta.emitDetails.get(name) ?? null,
       } satisfies ComponentEventEntry
     })
     .filter((entry, index, list) => list.findIndex(item => item.label === entry.label) === index)
