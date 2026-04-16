@@ -656,13 +656,24 @@ export async function getTemplateLocalComponents(document: vscode.TextDocument) 
 export async function getTemplateResolvedComponentMeta(document: vscode.TextDocument, tagName: string): Promise<ResolvedTemplateComponentMeta | null> {
   const componentTargetPath = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagName))?.targetPath ?? null
 
-  if (!componentTargetPath || !componentTargetPath.endsWith('.vue')) {
+  if (!componentTargetPath) {
     return null
   }
 
-  const sourceText = componentTargetPath === document.uri.fsPath
+  const metaTargetPath = componentTargetPath.endsWith('.wxml')
+    ? await resolveExistingFile([
+        resolveWxmlFileCompanionPaths(componentTargetPath).ts,
+        resolveWxmlFileCompanionPaths(componentTargetPath).js,
+      ])
+    : componentTargetPath
+
+  if (!metaTargetPath) {
+    return null
+  }
+
+  const sourceText = metaTargetPath === document.uri.fsPath
     ? document.getText()
-    : await readTextFile(componentTargetPath)
+    : await readTextFile(metaTargetPath)
 
   if (!sourceText) {
     return null
@@ -671,7 +682,7 @@ export async function getTemplateResolvedComponentMeta(document: vscode.TextDocu
   return {
     meta: extractTemplateComponentMeta(sourceText),
     sourceText,
-    targetPath: componentTargetPath,
+    targetPath: metaTargetPath,
   }
 }
 

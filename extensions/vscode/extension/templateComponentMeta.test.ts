@@ -74,3 +74,27 @@ it('prefers script setup content inside vue sfc source', () => {
 
   assert.deepEqual([...meta.props].sort(), ['titleText'])
 })
+
+it('extracts native component properties and triggerEvent calls', () => {
+  const meta = extractTemplateComponentMeta([
+    'Component({',
+    '  properties: {',
+    '    titleText: String,',
+    '    active: { type: Boolean },',
+    '  },',
+    '  methods: {',
+    '    handleConfirm() {',
+    '      this.triggerEvent(\'confirm\')',
+    '    },',
+    '  },',
+    '})',
+  ].join('\n'))
+
+  assert.deepEqual([...meta.props].sort(), ['active', 'titleText'])
+  assert.deepEqual([...meta.emits].sort(), ['confirm'])
+  assert.equal(meta.propDetails.get('titleText'), 'string')
+  assert.equal(meta.propDetails.get('active'), 'boolean')
+  assert.equal(meta.emitDetails.get('confirm'), null)
+  assert.equal(typeof meta.propOffsets.get('titleText'), 'number')
+  assert.equal(typeof meta.emitOffsets.get('confirm'), 'number')
+})

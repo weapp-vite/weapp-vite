@@ -492,6 +492,43 @@ function collectModelOffsets(ast: t.File) {
   return offsets
 }
 
+function collectTriggerEventMeta(ast: t.File) {
+  const details = new Map<string, string | null>()
+  const offsets = new Map<string, number>()
+
+  traverse(ast, {
+    CallExpression(path) {
+      if (path.node.callee.type !== 'MemberExpression') {
+        return
+      }
+
+      const propertyName = path.node.callee.computed
+        ? getPropertyName(path.node.callee.property)
+        : path.node.callee.property.type === 'Identifier'
+          ? path.node.callee.property.name
+          : getPropertyName(path.node.callee.property)
+
+      if (propertyName !== 'triggerEvent') {
+        return
+      }
+
+      const firstArgument = path.node.arguments[0]
+
+      if (firstArgument?.type !== 'StringLiteral') {
+        return
+      }
+
+      setDetail(details, firstArgument.value, null)
+      setOffset(offsets, firstArgument.value, firstArgument.start)
+    },
+  })
+
+  return {
+    details,
+    offsets,
+  }
+}
+
 function addDetailEntries(
   names: Set<string>,
   targetMap: Map<string, string | null>,
@@ -549,6 +586,7 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
   const emits = new Set<string>()
   const modelDetails = collectModelDetails(ast, scriptSource)
   const modelOffsets = collectModelOffsets(ast)
+  const triggerEventMeta = collectTriggerEventMeta(ast)
   const models = new Set(modelDetails.keys())
 
   traverse(ast, {
@@ -610,10 +648,35 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
           addOffsetEntries(emitOffsets, collectPropOffsetsFromObjectExpression(firstArgument), scriptOffset)
         }
       }
+
+      if (path.node.callee.name === 'Component') {
+        const firstArgument = path.node.arguments[0]
+
+        if (firstArgument?.type !== 'ObjectExpression') {
+          return
+        }
+
+        for (const property of firstArgument.properties) {
+          if (property.type !== 'ObjectProperty') {
+            continue
+          }
+
+          const propertyName = getPropertyName(property.key)
+
+          if (propertyName !== 'properties' || property.value.type !== 'ObjectExpression') {
+            continue
+          }
+
+          addDetailEntries(props, propDetails, collectPropDetailsFromObjectExpression(property.value))
+          addOffsetEntries(propOffsets, collectPropOffsetsFromObjectExpression(property.value), scriptOffset)
+        }
+      }
     },
   })
 
   addOffsetEntries(propOffsets, modelOffsets, scriptOffset)
+  addDetailEntries(emits, emitDetails, triggerEventMeta.details)
+  addOffsetEntries(emitOffsets, triggerEventMeta.offsets, scriptOffset)
 
   return {
     emitDetails,

@@ -306,6 +306,203 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(eventHover?.contents.value.includes('参数: `value: number`'), true)
 })
 
+it('supports native custom component props and events in wxml documents', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), '{}'],
+    [path.normalize('/workspace/src/pages/home/index.json'), JSON.stringify({
+      usingComponents: {
+        'card-native': '/components/card/native/index',
+      },
+    })],
+    [path.normalize('/workspace/src/pages/home/index.ts'), [
+      'const pageTitle = \'demo\'',
+      'function handleTap() {}',
+    ].join('\n')],
+    [path.normalize('/workspace/src/components/card/native/index.wxml'), '<view />'],
+    [path.normalize('/workspace/src/components/card/native/index.ts'), [
+      'Component({',
+      '  properties: {',
+      '    titleText: String,',
+      '    active: { type: Boolean },',
+      '  },',
+      '  methods: {',
+      '    handleConfirm() {',
+      '      this.triggerEvent(\'confirm\')',
+      '    },',
+      '  },',
+      '})',
+    ].join('\n')],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      CompletionItem: class {
+        label
+        kind
+
+        constructor(label: string, kind: number) {
+          this.label = label
+          this.kind = kind
+        }
+      },
+      CompletionItemKind: {
+        Module: 1,
+        Property: 2,
+        Value: 3,
+        Event: 4,
+      },
+      SnippetString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
+      },
+      MarkdownString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
+      },
+      Hover: class {
+        contents
+
+        constructor(contents: any) {
+          this.contents = contents
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateCompletionProvider,
+    WeappTemplateDefinitionProvider,
+    WeappTemplateHoverProvider,
+  } = await import('./templateProviders')
+
+  const completionProvider = new WeappTemplateCompletionProvider()
+  const definitionProvider = new WeappTemplateDefinitionProvider()
+  const hoverProvider = new WeappTemplateHoverProvider()
+  const attrDocument = createTextDocument(
+    'wxml',
+    '<card-native dummy="" foo=""></card-native>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const usageDocument = createTextDocument(
+    'wxml',
+    '<card-native title-text="{{ pageTitle }}" bind:confirm="handleTap"></card-native>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const attrText = attrDocument.getText()
+  const usageText = usageDocument.getText()
+  const attrPosition = attrDocument.positionAt(attrText.indexOf('foo') - 1)
+  const tagPosition = usageDocument.positionAt(usageText.indexOf('card-native') + 2)
+  const propPosition = usageDocument.positionAt(usageText.indexOf('title-text') + 2)
+  const eventPosition = usageDocument.positionAt(usageText.indexOf('bind:confirm') + 2)
+
+  const attrItems = await completionProvider.provideCompletionItems(attrDocument as any, attrPosition as any)
+  const tagDefinition = await definitionProvider.provideDefinition(usageDocument as any, tagPosition as any)
+  const propDefinition = await definitionProvider.provideDefinition(usageDocument as any, propPosition as any)
+  const eventDefinition = await definitionProvider.provideDefinition(usageDocument as any, eventPosition as any)
+  const propHover = await hoverProvider.provideHover(usageDocument as any, propPosition as any)
+  const eventHover = await hoverProvider.provideHover(usageDocument as any, eventPosition as any)
+
+  assert.equal(attrItems.some((item: any) => item.label === 'title-text'), true)
+  assert.equal(attrItems.some((item: any) => item.label === 'bind:confirm'), true)
+  assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.wxml'))
+  assert.equal(propDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.ts'))
+  assert.equal(propDefinition?.range.line, 2)
+  assert.equal(eventDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.ts'))
+  assert.equal(eventDefinition?.range.line, 7)
+  assert.equal(propHover?.contents.value.includes('/workspace/src/components/card/native/index.ts'), true)
+  assert.equal(eventHover?.contents.value.includes('/workspace/src/components/card/native/index.ts'), true)
+})
+
 it('provides style class completions and definitions inside vue template values', async () => {
   const files = new Map<string, string>([
     [path.normalize('/workspace/package.json'), JSON.stringify({
