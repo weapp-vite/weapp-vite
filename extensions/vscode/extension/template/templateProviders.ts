@@ -19,7 +19,7 @@ import {
 } from './miniprogramSchema'
 import {
   getClassNameAtOffset,
-  getPrimaryScriptIdentifier,
+  getScriptIdentifierAtOffset,
   getWxmlInterpolationContext,
   getWxmlSourceText,
   isEventAttribute,
@@ -549,7 +549,9 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
 
     if (!tagContext.isInsideTag) {
       const interpolationContext = getWxmlInterpolationContext(sourceText, sourceOffset)
-      const symbolName = interpolationContext ? getPrimaryScriptIdentifier(interpolationContext.expression) : null
+      const symbolName = interpolationContext
+        ? getScriptIdentifierAtOffset(interpolationContext.expression, interpolationContext.start, sourceOffset)
+        : null
 
       if (!symbolName) {
         return null
@@ -586,8 +588,32 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
       }
     }
 
+    const interpolationContext = getWxmlInterpolationContext(sourceText, sourceOffset)
+
+    if (
+      tagContext.attribute
+      && interpolationContext
+      && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset)
+    ) {
+      const symbolName = getScriptIdentifierAtOffset(
+        interpolationContext.expression,
+        interpolationContext.start,
+        sourceOffset,
+      )
+
+      if (!symbolName) {
+        return null
+      }
+
+      return resolveTemplateScriptDefinition(document, symbolName, 'prop')
+    }
+
     if (tagContext.attribute && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset) && isEventAttribute(tagContext.attribute.name)) {
-      const symbolName = getPrimaryScriptIdentifier(tagContext.attribute.value)
+      const symbolName = getScriptIdentifierAtOffset(
+        tagContext.attribute.value,
+        tagContext.attribute.valueStart,
+        sourceOffset,
+      )
 
       if (!symbolName) {
         return null

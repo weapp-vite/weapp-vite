@@ -335,6 +335,7 @@ function findScriptDefinitionOffset(sourceText: string, symbolName: string, defi
         new RegExp(`\\bfunction\\s+${escapedName}\\s*\\(`, 'u'),
         new RegExp(`\\b(?:const|let|var)\\s+${escapedName}\\s*=`, 'u'),
         new RegExp(`\\b${escapedName}\\s*:\\s*(?:async\\s*)?(?:function\\b|\\()`, 'u'),
+        new RegExp(`(?:^|[,{]\\s*)(?:async\\s+)?${escapedName}\\s*\\([\\s\\S]*?\\)\\s*(?::[\\s\\S]*?)?\\{`, 'u'),
       ]
     : [
         new RegExp(`\\b(?:const|let|var)\\s+${escapedName}\\b`, 'u'),

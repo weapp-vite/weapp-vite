@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { it } from 'vitest'
 
 import {
+  getScriptIdentifierAtOffset,
   getVueTemplateBlockRange,
   getWxmlSourceText,
   parseWxmlTagContext,
@@ -68,4 +69,13 @@ it('parses wxml tag context around tag names and attributes', () => {
   assert.equal(classContext.attribute?.name, 'class')
   assert.equal(srcContext.attribute?.name, 'src')
   assert.equal(srcContext.attribute?.value, './banner.png')
+})
+
+it('extracts the script identifier under the current cursor offset', () => {
+  const interpolation = 'foo.bar + baz'
+
+  assert.equal(getScriptIdentifierAtOffset(interpolation, 100, 101), 'foo')
+  assert.equal(getScriptIdentifierAtOffset(interpolation, 100, 105), 'bar')
+  assert.equal(getScriptIdentifierAtOffset(interpolation, 100, 111), 'baz')
+  assert.equal(getScriptIdentifierAtOffset(interpolation, 100, 108), null)
 })

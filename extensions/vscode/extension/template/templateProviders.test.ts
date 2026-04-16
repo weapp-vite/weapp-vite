@@ -67,6 +67,10 @@ it('provides local component definitions and resource links for wxml documents',
     })],
     [path.normalize('/workspace/src/pages/home/index.ts'), [
       'const pageTitle = \'demo\'',
+      'const bottom = 24',
+      'const handlers = {',
+      '  onTap() {},',
+      '}',
       'function handleTap() {}',
     ].join('\n')],
     [path.normalize('/workspace/src/pages/home/index.wxss'), [
@@ -239,7 +243,7 @@ it('provides local component definitions and resource links for wxml documents',
   const hoverProvider = new WeappTemplateHoverProvider()
   const document = createTextDocument(
     'wxml',
-    '<card-user class="hero hero-title" bindtap="handleTap" src="/assets/banner.png">{{ pageTitle }}</card-user>',
+    '<card-user class="hero hero-title" style="height: {{ bottom }}rpx" bindtap="handlers.onTap" src="/assets/banner.png">{{ pageTitle }}</card-user>',
     path.normalize('/workspace/src/pages/home/index.wxml'),
   )
   const hoverDocument = createTextDocument(
@@ -257,8 +261,9 @@ it('provides local component definitions and resource links for wxml documents',
   const propNamePosition = hoverDocument.positionAt(hoverDocumentText.indexOf('title-text') + 2)
   const eventNamePosition = hoverDocument.positionAt(hoverDocumentText.indexOf('bind:confirm') + 2)
   const classValuePosition = document.positionAt(documentText.indexOf('hero-title') + 2)
-  const methodPosition = document.positionAt(documentText.indexOf('handleTap') + 2)
+  const methodPosition = document.positionAt(documentText.indexOf('onTap') + 2)
   const interpolationPosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
+  const attrInterpolationPosition = document.positionAt(documentText.indexOf('bottom') + 2)
 
   const completionItems = await completionProvider.provideCompletionItems(document as any, tagPosition as any)
   const attributeCompletionItems = await completionProvider.provideCompletionItems(document as any, attributePosition as any)
@@ -267,6 +272,7 @@ it('provides local component definitions and resource links for wxml documents',
   const classDefinition = await definitionProvider.provideDefinition(document as any, classValuePosition as any)
   const methodDefinition = await definitionProvider.provideDefinition(document as any, methodPosition as any)
   const interpolationDefinition = await definitionProvider.provideDefinition(document as any, interpolationPosition as any)
+  const attrInterpolationDefinition = await definitionProvider.provideDefinition(document as any, attrInterpolationPosition as any)
   const propNameDefinition = await definitionProvider.provideDefinition(hoverDocument as any, propNamePosition as any)
   const eventNameDefinition = await definitionProvider.provideDefinition(hoverDocument as any, eventNamePosition as any)
   const links = await linkProvider.provideDocumentLinks(document as any)
@@ -296,7 +302,10 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(classDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxss'))
   assert.equal(methodDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(methodDefinition?.range.line, 3)
   assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(attrInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(attrInterpolationDefinition?.range.line, 1)
   assert.equal(propNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(propNameDefinition?.range.line, 2)
   assert.equal(eventNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
@@ -312,6 +321,144 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(propHover?.contents.value.includes('类型: `string`'), true)
   assert.equal(eventHover?.contents.value.includes('组件事件'), true)
   assert.equal(eventHover?.contents.value.includes('参数: `value: number`'), true)
+})
+
+it('supports token-level script definitions inside recognized vue templates', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+      pages: ['pages/home/index'],
+    })],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDefinitionProvider,
+  } = await import('./templateProviders')
+
+  const definitionProvider = new WeappTemplateDefinitionProvider()
+  const document = createTextDocument(
+    'vue',
+    [
+      '<template>',
+      '  <view bindtap="handlers.onTap">{{ pageTitle }}</view>',
+      '  <view style="height: {{ bottom }}rpx" />',
+      '</template>',
+      '<script setup lang="ts">',
+      'const pageTitle = \'demo\'',
+      'const bottom = 24',
+      'const handlers = {',
+      '  onTap() {},',
+      '}',
+      '</script>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.vue'),
+  )
+  const documentText = document.getText()
+  const methodPosition = document.positionAt(documentText.indexOf('onTap') + 2)
+  const interpolationPosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
+  const attrInterpolationPosition = document.positionAt(documentText.indexOf('bottom') + 2)
+
+  const methodDefinition = await definitionProvider.provideDefinition(document as any, methodPosition as any)
+  const interpolationDefinition = await definitionProvider.provideDefinition(document as any, interpolationPosition as any)
+  const attrInterpolationDefinition = await definitionProvider.provideDefinition(document as any, attrInterpolationPosition as any)
+
+  assert.equal(methodDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+  assert.equal(methodDefinition?.range.line, 8)
+  assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+  assert.equal(interpolationDefinition?.range.line, 5)
+  assert.equal(attrInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+  assert.equal(attrInterpolationDefinition?.range.line, 6)
 })
 
 it('supports native custom component props and events in wxml documents', async () => {

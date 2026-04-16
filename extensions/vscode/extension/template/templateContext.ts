@@ -37,6 +37,10 @@ export interface WxmlInterpolationContext {
   end: number
 }
 
+function isScriptIdentifierChar(char: string | undefined) {
+  return Boolean(char && /[$\w]/u.test(char))
+}
+
 function isTemplateWhitespace(char: string | undefined) {
   return char === ' ' || char === '\t' || char === '\n' || char === '\r'
 }
@@ -371,9 +375,16 @@ export function isEventAttribute(attributeName: string | null | undefined) {
 
 export function getWxmlInterpolationContext(sourceText: string, offset: number): WxmlInterpolationContext | null {
   const openIndex = sourceText.lastIndexOf('{{', offset)
+  const closeBeforeOffset = sourceText.lastIndexOf('}}', offset)
   const closeIndex = sourceText.indexOf('}}', offset)
 
-  if (openIndex < 0 || closeIndex < 0 || openIndex > offset || closeIndex < offset) {
+  if (
+    openIndex < 0
+    || closeIndex < 0
+    || openIndex > offset
+    || closeIndex < offset
+    || closeBeforeOffset > openIndex
+  ) {
     return null
   }
 
@@ -386,6 +397,50 @@ export function getWxmlInterpolationContext(sourceText: string, offset: number):
 
 export function getPrimaryScriptIdentifier(expression: string) {
   return expression.trim().match(/[$A-Z_a-z][\w$]*/u)?.[0] ?? null
+}
+
+export function getScriptIdentifierAtOffset(expression: string, expressionStart: number, absoluteOffset: number) {
+  if (!expression) {
+    return null
+  }
+
+  let relativeOffset = absoluteOffset - expressionStart
+
+  if (relativeOffset < 0 || relativeOffset > expression.length) {
+    return null
+  }
+
+  if (relativeOffset === expression.length) {
+    relativeOffset -= 1
+  }
+
+  if (!isScriptIdentifierChar(expression[relativeOffset])) {
+    if (isScriptIdentifierChar(expression[relativeOffset - 1])) {
+      relativeOffset -= 1
+    }
+    else if (isScriptIdentifierChar(expression[relativeOffset + 1])) {
+      relativeOffset += 1
+    }
+  }
+
+  if (!isScriptIdentifierChar(expression[relativeOffset])) {
+    return null
+  }
+
+  let tokenStart = relativeOffset
+  let tokenEnd = relativeOffset
+
+  while (tokenStart > 0 && isScriptIdentifierChar(expression[tokenStart - 1])) {
+    tokenStart -= 1
+  }
+
+  while (tokenEnd < expression.length && isScriptIdentifierChar(expression[tokenEnd])) {
+    tokenEnd += 1
+  }
+
+  const identifier = expression.slice(tokenStart, tokenEnd)
+
+  return /^[A-Za-z_$][\w$]*$/u.test(identifier) ? identifier : null
 }
 
 export function getClassNameAtOffset(value: string, valueStartOffset: number, absoluteOffset: number) {
