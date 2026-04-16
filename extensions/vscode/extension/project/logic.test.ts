@@ -151,6 +151,25 @@ it('detects vite config object path inside top level config object', () => {
   ].join('\n')), [])
 })
 
+it('collects vue usingComponents key and value ranges', () => {
+  const documentText = [
+    '<template><view /></template>',
+    '<json>',
+    '{',
+    '  "usingComponents": {',
+    '    "card-user": "./components/card-user/index"',
+    '  }',
+    '}',
+    '</json>',
+  ].join('\n')
+  const [reference] = getVueJsonUsingComponentReferences(documentText)
+
+  assert.equal(reference.name, 'card-user')
+  assert.equal(documentText.slice(reference.nameStart, reference.nameEnd), 'card-user')
+  assert.equal(reference.path, './components/card-user/index')
+  assert.equal(documentText.slice(reference.valueStart, reference.valueEnd), './components/card-user/index')
+})
+
 it('adds a top level page route to app json', () => {
   const result = applyPageRouteToAppJson({
     pages: ['pages/home/index'],
@@ -465,6 +484,8 @@ it('finds usingComponents reference at offset', () => {
     entryStart: documentText.indexOf('"card-user": "/components/card/user/index"'),
     entryEnd: documentText.indexOf('"card-user": "/components/card/user/index"') + '"card-user": "/components/card/user/index"'.length,
     name: 'card-user',
+    nameStart: documentText.indexOf('"card-user": "/components/card/user/index"') + 1,
+    nameEnd: documentText.indexOf('"card-user": "/components/card/user/index"') + 1 + 'card-user'.length,
     path: componentPath,
     valueStart,
     valueEnd: valueStart + componentPath.length,

@@ -1069,6 +1069,351 @@ it('provides references and rename edits across recognized vue template and scri
   assert.equal(handlersRename?.edits.every((item: any) => item.newText === 'actions'), true)
 })
 
+it('provides component tag and member references and rename edits for standalone wxml documents', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), '{}'],
+    [path.normalize('/workspace/src/pages/home/index.json'), JSON.stringify({
+      usingComponents: {
+        'card-user': '/components/card/user/index',
+      },
+    })],
+    [path.normalize('/workspace/src/components/card/user/index.vue'), [
+      '<script setup lang="ts">',
+      'defineProps<{',
+      '  titleText?: string',
+      '}>()',
+      'defineEmits<{',
+      '  (e: \'confirm\', value: number): void',
+      '}>()',
+      '</script>',
+      '<template><view /></template>',
+    ].join('\n')],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      WorkspaceEdit: class {
+        edits
+
+        constructor() {
+          this.edits = []
+        }
+
+        replace(uri: any, range: any, newText: string) {
+          this.edits.push({ newText, range, uri })
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateReferenceProvider,
+    WeappTemplateRenameProvider,
+  } = await import('./templateProviders')
+
+  const referenceProvider = new WeappTemplateReferenceProvider()
+  const renameProvider = new WeappTemplateRenameProvider()
+  const document = createTextDocument(
+    'wxml',
+    [
+      '<card-user title-text="a" bind:confirm="handleTap"></card-user>',
+      '<card-user title-text="b" bind:confirm="handleTap"></card-user>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const documentText = document.getText()
+  const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
+  const propPosition = document.positionAt(documentText.indexOf('title-text') + 2)
+  const eventPosition = document.positionAt(documentText.indexOf('bind:confirm') + 2)
+
+  const tagReferences = await referenceProvider.provideReferences(document as any, tagPosition as any, { includeDeclaration: true } as any)
+  const propReferences = await referenceProvider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any)
+  const eventReferences = await referenceProvider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any)
+  const tagRename = await renameProvider.provideRenameEdits(document as any, tagPosition as any, 'profile-card')
+  const propRename = await renameProvider.provideRenameEdits(document as any, propPosition as any, 'heading-text')
+  const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'bind:submit')
+
+  assert.equal(tagReferences.length, 5)
+  assert.equal(tagReferences.filter((item: any) => item.uri.fsPath.endsWith('index.wxml')).length, 4)
+  assert.equal(tagReferences.filter((item: any) => item.uri.fsPath.endsWith('index.json')).length, 1)
+  assert.equal(propReferences.length, 3)
+  assert.equal(propReferences.filter((item: any) => item.uri.fsPath.endsWith('index.wxml')).length, 2)
+  assert.equal(propReferences.filter((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue')).length, 1)
+  assert.equal(eventReferences.length, 3)
+  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath.endsWith('index.wxml')).length, 2)
+  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue')).length, 1)
+  assert.equal(tagRename?.edits.length, 5)
+  assert.equal(tagRename?.edits.every((item: any) => item.newText === 'profile-card'), true)
+  assert.equal(propRename?.edits.length, 3)
+  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
+  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(eventRename?.edits.length, 3)
+  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
+  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'submit')
+})
+
+it('provides component tag and member references and rename edits for recognized vue template documents', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+      pages: ['pages/home/index'],
+    })],
+    [path.normalize('/workspace/src/components/card/user/index.vue'), [
+      '<script setup lang="ts">',
+      'defineProps<{',
+      '  titleText?: string',
+      '}>()',
+      'defineEmits<{',
+      '  (e: \'confirm\', value: number): void',
+      '}>()',
+      '</script>',
+      '<template><view /></template>',
+    ].join('\n')],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      WorkspaceEdit: class {
+        edits
+
+        constructor() {
+          this.edits = []
+        }
+
+        replace(uri: any, range: any, newText: string) {
+          this.edits.push({ newText, range, uri })
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateReferenceProvider,
+    WeappTemplateRenameProvider,
+  } = await import('./templateProviders')
+
+  const referenceProvider = new WeappTemplateReferenceProvider()
+  const renameProvider = new WeappTemplateRenameProvider()
+  const document = createTextDocument(
+    'vue',
+    [
+      '<template>',
+      '  <card-user title-text="a" bind:confirm="handleTap"></card-user>',
+      '  <card-user title-text="b" bind:confirm="handleTap" />',
+      '</template>',
+      '<json>',
+      '{',
+      '  "usingComponents": {',
+      '    "card-user": "../../components/card/user/index"',
+      '  }',
+      '}',
+      '</json>',
+      '<script setup lang="ts">',
+      'function handleTap() {}',
+      '</script>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.vue'),
+  )
+  const documentText = document.getText()
+  const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
+  const propPosition = document.positionAt(documentText.indexOf('title-text') + 2)
+  const eventPosition = document.positionAt(documentText.indexOf('bind:confirm') + 2)
+
+  const tagReferences = await referenceProvider.provideReferences(document as any, tagPosition as any, { includeDeclaration: true } as any)
+  const propReferences = await referenceProvider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any)
+  const eventReferences = await referenceProvider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any)
+  const tagRename = await renameProvider.provideRenameEdits(document as any, tagPosition as any, 'profile-card')
+  const propRename = await renameProvider.provideRenameEdits(document as any, propPosition as any, 'heading-text')
+  const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'bind:submit')
+
+  assert.equal(tagReferences.length, 4)
+  assert.equal(tagReferences.every((item: any) => item.uri.fsPath.endsWith('index.vue')), true)
+  assert.equal(propReferences.length, 3)
+  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 2)
+  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(eventReferences.length, 3)
+  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 2)
+  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(tagRename?.edits.length, 4)
+  assert.equal(tagRename?.edits.every((item: any) => item.newText === 'profile-card'), true)
+  assert.equal(propRename?.edits.length, 3)
+  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
+  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(eventRename?.edits.length, 3)
+  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
+  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
+})
+
 it('supports native custom component props and events in wxml documents', async () => {
   const files = new Map<string, string>([
     [path.normalize('/workspace/package.json'), JSON.stringify({

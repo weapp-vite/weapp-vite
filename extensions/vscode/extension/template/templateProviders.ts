@@ -34,9 +34,14 @@ import {
   toWxmlSourceOffset,
 } from './templateContext'
 import {
+  getTemplateComponentAttributeDefinitionRange,
+  getTemplateComponentAttributeRenameText,
   getTemplateComponentEvents,
   getTemplateComponentProps,
+  getTemplateLocalComponentAttributeRanges,
+  getTemplateLocalComponentDeclarationRanges,
   getTemplateLocalComponents,
+  getTemplateLocalComponentTagRanges,
   getTemplateResolvedComponentMeta,
   getTemplateScriptSymbolMatches,
   getTemplateStyleClassMatches,
@@ -62,6 +67,14 @@ interface TemplateIdentifierReference {
   identifier: string
   scopeKey: string | null
   start: number
+}
+
+interface TemplateComponentReferenceTarget {
+  attributeName?: string
+  kind: 'event' | 'prop' | 'tag'
+  placeholder: string
+  range: vscode.Range
+  tagName: string
 }
 
 function isClassAttributeName(attributeName: string | null | undefined) {
@@ -357,6 +370,128 @@ function getTemplateIdentifierReferencesForTarget(
 
 function getTemplateIdentifierPlaceholder(reference: TemplateIdentifierReference) {
   return reference.identifier
+}
+
+async function getTemplateComponentReferenceTarget(
+  document: vscode.TextDocument,
+  tagContext: ReturnType<typeof parseWxmlTagContext>,
+  sourceOffset: number,
+) {
+  if (!tagContext.isInsideTag || !tagContext.tagName) {
+    return null
+  }
+
+  const localComponent = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagContext.tagName))
+
+  if (!localComponent) {
+    return null
+  }
+
+  if (
+    tagContext.tagNameStart != null
+    && sourceOffset >= tagContext.tagNameStart
+    && sourceOffset <= tagContext.tagNameEnd!
+  ) {
+    const range = createSourceRange(document, tagContext.tagNameStart, tagContext.tagNameEnd!)
+
+    if (!range) {
+      return null
+    }
+
+    return {
+      kind: 'tag',
+      placeholder: tagContext.tagName,
+      range,
+      tagName: tagContext.tagName,
+    } satisfies TemplateComponentReferenceTarget
+  }
+
+  if (
+    !tagContext.attribute
+    || sourceOffset < tagContext.attribute.nameStart
+    || sourceOffset > tagContext.attribute.nameEnd
+  ) {
+    return null
+  }
+
+  const propEntry = (await getTemplateComponentProps(document, tagContext.tagName))
+    .find(item => item.label === tagContext.attribute?.name)
+
+  if (propEntry) {
+    const range = createSourceRange(document, tagContext.attribute.nameStart, tagContext.attribute.nameEnd)
+
+    if (!range) {
+      return null
+    }
+
+    return {
+      attributeName: tagContext.attribute.name,
+      kind: 'prop',
+      placeholder: tagContext.attribute.name,
+      range,
+      tagName: tagContext.tagName,
+    } satisfies TemplateComponentReferenceTarget
+  }
+
+  const eventEntry = (await getTemplateComponentEvents(document, tagContext.tagName))
+    .find(item => item.label === tagContext.attribute?.name)
+
+  if (!eventEntry) {
+    return null
+  }
+
+  const range = createSourceRange(document, tagContext.attribute.nameStart, tagContext.attribute.nameEnd)
+
+  if (!range) {
+    return null
+  }
+
+  return {
+    attributeName: tagContext.attribute.name,
+    kind: 'event',
+    placeholder: tagContext.attribute.name,
+    range,
+    tagName: tagContext.tagName,
+  } satisfies TemplateComponentReferenceTarget
+}
+
+async function readFileText(document: vscode.TextDocument, filePath: string, cache: Map<string, string>) {
+  let sourceText = cache.get(filePath)
+
+  if (sourceText != null) {
+    return sourceText
+  }
+
+  sourceText = filePath === document.uri.fsPath
+    ? document.getText()
+    : null
+
+  if (sourceText == null) {
+    try {
+      const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))
+      sourceText = Buffer.from(bytes).toString('utf8')
+    }
+    catch {
+      sourceText = ''
+    }
+  }
+
+  cache.set(filePath, sourceText)
+
+  return sourceText
+}
+
+async function createLocationFromFileRange(
+  document: vscode.TextDocument,
+  fileRange: { end: number, filePath: string, start: number },
+  cache: Map<string, string>,
+) {
+  const sourceText = await readFileText(document, fileRange.filePath, cache)
+  const position = fileRange.filePath === document.uri.fsPath
+    ? document.positionAt(fileRange.start)
+    : getPositionFromSourceText(sourceText, fileRange.start)
+
+  return new vscode.Location(vscode.Uri.file(fileRange.filePath), position)
 }
 
 function normalizeTemplateForTagMatch(sourceText: string) {
@@ -841,6 +976,45 @@ export class WeappTemplateReferenceProvider implements vscode.ReferenceProvider 
     }
 
     const tagContext = parseWxmlTagContext(sourceText, sourceOffset)
+    const componentTarget = await getTemplateComponentReferenceTarget(document, tagContext, sourceOffset)
+
+    if (componentTarget) {
+      const fileRanges = componentTarget.kind === 'tag'
+        ? getTemplateLocalComponentTagRanges(document, componentTarget.tagName)
+        : getTemplateLocalComponentAttributeRanges(
+            document,
+            componentTarget.tagName,
+            componentTarget.attributeName!,
+          )
+      const cache = new Map<string, string>()
+      const locations = await Promise.all(fileRanges.map(range =>
+        createLocationFromFileRange(document, range, cache),
+      ))
+
+      if (context.includeDeclaration !== false) {
+        const declarationRanges = await (componentTarget.kind === 'tag'
+          ? await getTemplateLocalComponentDeclarationRanges(document, componentTarget.tagName)
+          : (() => {
+              return getTemplateComponentAttributeDefinitionRange(
+                document,
+                componentTarget.tagName,
+                componentTarget.attributeName!,
+              ).then(range => range ? [range] : [])
+            })())
+
+        const declarationLocations = await Promise.all(declarationRanges.map(range =>
+          createLocationFromFileRange(document, range, cache),
+        ))
+
+        return [
+          ...declarationLocations,
+          ...locations,
+        ]
+      }
+
+      return locations
+    }
+
     const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
 
     if (!targetReference) {
@@ -933,6 +1107,15 @@ export class WeappTemplateRenameProvider implements vscode.RenameProvider {
     }
 
     const tagContext = parseWxmlTagContext(sourceText, sourceOffset)
+    const componentTarget = await getTemplateComponentReferenceTarget(document, tagContext, sourceOffset)
+
+    if (componentTarget) {
+      return {
+        placeholder: componentTarget.placeholder,
+        range: componentTarget.range,
+      }
+    }
+
     const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
 
     if (!targetReference) {
@@ -952,10 +1135,6 @@ export class WeappTemplateRenameProvider implements vscode.RenameProvider {
   }
 
   async provideRenameEdits(document: vscode.TextDocument, position: vscode.Position, newName: string) {
-    if (!/^[A-Za-z_$][\w$]*$/u.test(newName)) {
-      return null
-    }
-
     const sourceText = getWxmlSourceText(document)
     const sourceOffset = toWxmlSourceOffset(document, position)
 
@@ -964,6 +1143,84 @@ export class WeappTemplateRenameProvider implements vscode.RenameProvider {
     }
 
     const tagContext = parseWxmlTagContext(sourceText, sourceOffset)
+    const componentTarget = await getTemplateComponentReferenceTarget(document, tagContext, sourceOffset)
+
+    if (componentTarget) {
+      if (
+        (componentTarget.kind === 'tag' || componentTarget.kind === 'prop')
+        && !/^[a-z][\w-]*$/u.test(newName)
+      ) {
+        return null
+      }
+
+      if (componentTarget.kind === 'event' && !/^bind:[a-z][\w-]*$/u.test(newName)) {
+        return null
+      }
+
+      const edit = new vscode.WorkspaceEdit()
+      const seenEdits = new Set<string>()
+      const cache = new Map<string, string>()
+      const addEdit = async (fileRange: { end: number, filePath: string, start: number }, text: string) => {
+        const source = await readFileText(document, fileRange.filePath, cache)
+        const start = fileRange.filePath === document.uri.fsPath
+          ? document.positionAt(fileRange.start)
+          : getPositionFromSourceText(source, fileRange.start)
+        const end = fileRange.filePath === document.uri.fsPath
+          ? document.positionAt(fileRange.end)
+          : getPositionFromSourceText(source, fileRange.end)
+        const key = `${fileRange.filePath}:${fileRange.start}:${fileRange.end}:${text}`
+
+        if (seenEdits.has(key)) {
+          return
+        }
+
+        seenEdits.add(key)
+        edit.replace(vscode.Uri.file(fileRange.filePath), new vscode.Range(start, end), text)
+      }
+
+      const templateRanges = componentTarget.kind === 'tag'
+        ? getTemplateLocalComponentTagRanges(document, componentTarget.tagName)
+        : getTemplateLocalComponentAttributeRanges(
+            document,
+            componentTarget.tagName,
+            componentTarget.attributeName!,
+          )
+
+      for (const fileRange of templateRanges) {
+        await addEdit(fileRange, newName)
+      }
+
+      if (componentTarget.kind === 'tag') {
+        for (const fileRange of await getTemplateLocalComponentDeclarationRanges(document, componentTarget.tagName)) {
+          await addEdit(fileRange, newName)
+        }
+
+        return edit
+      }
+
+      const definitionRange = await getTemplateComponentAttributeDefinitionRange(
+        document,
+        componentTarget.tagName,
+        componentTarget.attributeName!,
+      )
+      const definitionRenameText = await getTemplateComponentAttributeRenameText(
+        document,
+        componentTarget.tagName,
+        componentTarget.attributeName!,
+        newName,
+      )
+
+      if (definitionRange && definitionRenameText) {
+        await addEdit(definitionRange, definitionRenameText)
+      }
+
+      return edit
+    }
+
+    if (!/^[A-Za-z_$][\w$]*$/u.test(newName)) {
+      return null
+    }
+
     const targetReference = getTemplateIdentifierReferenceAtOffset(sourceText, tagContext, sourceOffset)
 
     if (!targetReference) {

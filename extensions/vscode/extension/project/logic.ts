@@ -44,6 +44,8 @@ export interface VueUsingComponentReference {
   entryEnd: number
   entryStart: number
   name: string
+  nameEnd: number
+  nameStart: number
   path: string
   valueEnd: number
   valueStart: number
@@ -288,19 +290,24 @@ export function getVueJsonUsingComponentReferences(documentText: string): VueUsi
           continue
         }
 
+        const nameToken = `"${name}"`
+        const nameTokenIndex = fullMatch.indexOf(nameToken)
         const valueToken = `"${componentPath}"`
         const valueTokenIndex = fullMatch.lastIndexOf(valueToken)
 
-        if (valueTokenIndex < 0) {
+        if (nameTokenIndex < 0 || valueTokenIndex < 0) {
           continue
         }
 
+        const nameStart = objectContentStart + entryIndex + nameTokenIndex + 1
         const valueStart = objectContentStart + entryIndex + valueTokenIndex + 1
 
         references.push({
           entryStart: objectContentStart + entryIndex,
           entryEnd: objectContentStart + entryIndex + fullMatch.length,
           name,
+          nameEnd: nameStart + name.length,
+          nameStart,
           path: componentPath,
           valueStart,
           valueEnd: valueStart + componentPath.length,

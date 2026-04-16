@@ -26,11 +26,16 @@ import {
   extractTemplateComponentMeta,
 } from './templateComponentMeta'
 import {
+  getWxmlSourceText,
   isWxmlDocument,
   resolveWxmlFileCompanionPaths,
+  toDocumentOffsetFromWxmlSource,
 } from './templateContext'
 
 interface ResolvedUsingComponentReference {
+  declarationEnd: number | null
+  declarationFilePath: string | null
+  declarationStart: number | null
   name: string
   path: string
   targetPath: string | null
@@ -42,6 +47,12 @@ interface ScriptDefinitionMatch {
 }
 
 export interface TemplateScriptSymbolMatch {
+  end: number
+  filePath: string
+  start: number
+}
+
+export interface TemplateFileOffsetRange {
   end: number
   filePath: string
   start: number
@@ -73,6 +84,9 @@ interface ResolvedTemplateComponentMeta {
   targetPath: string
 }
 
+const JSON_USING_COMPONENTS_OBJECT_PATTERN = /"usingComponents"\s*:\s*\{([\s\S]*?)\}/gu
+const JSON_STRING_ENTRY_PATTERN = /"([^"]+)"\s*:\s*"([^"]+)"/gu
+
 function normalizeTagName(tagName: string) {
   return tagName.trim().toLowerCase()
 }
@@ -83,6 +97,254 @@ function toKebabCase(value: string) {
     .replace(/[_\s]+/gu, '-')
     .replace(/-+/gu, '-')
     .toLowerCase()
+}
+
+function toCamelCase(value: string) {
+  return value.replace(/-([a-z\d])/gu, (_, char: string) => char.toUpperCase())
+}
+
+function getJsonUsingComponentReferences(sourceText: string) {
+  const references: Array<{
+    name: string
+    nameEnd: number
+    nameStart: number
+    path: string
+  }> = []
+
+  for (const usingComponentsMatch of sourceText.matchAll(JSON_USING_COMPONENTS_OBJECT_PATTERN)) {
+    const objectContent = usingComponentsMatch[1]
+    const matchIndex = usingComponentsMatch.index ?? -1
+
+    if (matchIndex < 0) {
+      continue
+    }
+
+    const objectContentStart = matchIndex + usingComponentsMatch[0].lastIndexOf(objectContent)
+
+    for (const entryMatch of objectContent.matchAll(JSON_STRING_ENTRY_PATTERN)) {
+      const [fullMatch, name, componentPath] = entryMatch
+      const entryIndex = entryMatch.index ?? -1
+
+      if (entryIndex < 0) {
+        continue
+      }
+
+      const nameToken = `"${name}"`
+      const nameTokenIndex = fullMatch.indexOf(nameToken)
+
+      if (nameTokenIndex < 0) {
+        continue
+      }
+
+      const nameStart = objectContentStart + entryIndex + nameTokenIndex + 1
+
+      references.push({
+        name,
+        nameEnd: nameStart + name.length,
+        nameStart,
+        path: componentPath,
+      })
+    }
+  }
+
+  return references
+}
+
+function parseTemplateTagName(tagText: string) {
+  const match = tagText.match(/^<\s*(\/\s*)?([\w:-]+)/u)
+
+  if (!match || match.index == null) {
+    return null
+  }
+
+  const leadingSlash = match[1] ?? ''
+  const prefixLength = match[0].length - match[2].length
+
+  return {
+    isClosingTag: leadingSlash.length > 0,
+    name: match[2],
+    nameEnd: prefixLength + match[2].length,
+    nameStart: prefixLength,
+  }
+}
+
+function isTemplateWhitespace(char: string | undefined) {
+  return char === ' ' || char === '\t' || char === '\n' || char === '\r'
+}
+
+function parseTemplateTagAttributeRanges(tagText: string, tagStart: number, startOffset: number) {
+  const attributes: Array<TemplateFileOffsetRange & { name: string }> = []
+  let index = startOffset
+
+  while (index < tagText.length) {
+    while (index < tagText.length && isTemplateWhitespace(tagText[index])) {
+      index += 1
+    }
+
+    if (index >= tagText.length || tagText[index] === '>' || tagText[index] === '/') {
+      break
+    }
+
+    const nameStart = index
+
+    while (index < tagText.length && /[@:\w-]/u.test(tagText[index])) {
+      index += 1
+    }
+
+    const name = tagText.slice(nameStart, index)
+
+    if (!name) {
+      index += 1
+      continue
+    }
+
+    while (index < tagText.length && isTemplateWhitespace(tagText[index])) {
+      index += 1
+    }
+
+    if (tagText[index] !== '=') {
+      attributes.push({
+        end: tagStart + nameStart + name.length,
+        filePath: '',
+        name,
+        start: tagStart + nameStart,
+      })
+      continue
+    }
+
+    index += 1
+
+    while (index < tagText.length && isTemplateWhitespace(tagText[index])) {
+      index += 1
+    }
+
+    if (tagText[index] === '"' || tagText[index] === '\'') {
+      const quote = tagText[index]
+
+      index += 1
+
+      while (index < tagText.length && tagText[index] !== quote) {
+        index += 1
+      }
+
+      if (tagText[index] === quote) {
+        index += 1
+      }
+    }
+    else {
+      while (index < tagText.length && !isTemplateWhitespace(tagText[index]) && tagText[index] !== '>') {
+        index += 1
+      }
+    }
+
+    attributes.push({
+      end: tagStart + nameStart + name.length,
+      filePath: '',
+      name,
+      start: tagStart + nameStart,
+    })
+  }
+
+  return attributes
+}
+
+function getTemplateTagRanges(sourceText: string, filePath: string, tagName: string) {
+  const ranges: TemplateFileOffsetRange[] = []
+  const tagPattern = /<!--[\s\S]*?-->|<[^<>]+>/gu
+  const normalizedTagName = normalizeTagName(tagName)
+
+  for (const match of sourceText.matchAll(tagPattern)) {
+    const tagText = match[0]
+    const tagStart = match.index ?? -1
+
+    if (tagStart < 0 || tagText.startsWith('<!--')) {
+      continue
+    }
+
+    const tagNameMatch = parseTemplateTagName(tagText)
+
+    if (!tagNameMatch || normalizeTagName(tagNameMatch.name) !== normalizedTagName) {
+      continue
+    }
+
+    ranges.push({
+      end: tagStart + tagNameMatch.nameEnd,
+      filePath,
+      start: tagStart + tagNameMatch.nameStart,
+    })
+  }
+
+  return ranges
+}
+
+function getTemplateTagAttributeRanges(sourceText: string, filePath: string, tagName: string, attributeName: string) {
+  const ranges: TemplateFileOffsetRange[] = []
+  const tagPattern = /<!--[\s\S]*?-->|<[^<>]+>/gu
+  const normalizedTagName = normalizeTagName(tagName)
+  const normalizedAttributeName = attributeName.trim()
+
+  for (const match of sourceText.matchAll(tagPattern)) {
+    const tagText = match[0]
+    const tagStart = match.index ?? -1
+
+    if (tagStart < 0 || tagText.startsWith('<!--')) {
+      continue
+    }
+
+    const tagNameMatch = parseTemplateTagName(tagText)
+
+    if (!tagNameMatch || tagNameMatch.isClosingTag || normalizeTagName(tagNameMatch.name) !== normalizedTagName) {
+      continue
+    }
+
+    for (const attribute of parseTemplateTagAttributeRanges(tagText, tagStart, tagNameMatch.nameEnd)) {
+      if (attribute.name !== normalizedAttributeName) {
+        continue
+      }
+
+      ranges.push({
+        end: attribute.end,
+        filePath,
+        start: attribute.start,
+      })
+    }
+  }
+
+  return ranges
+}
+
+function getIdentifierRangeAtOffset(sourceText: string, offset: number) {
+  const safeOffset = Math.max(0, Math.min(offset, sourceText.length - 1))
+  const currentChar = sourceText[safeOffset]
+
+  if (currentChar === '\'' || currentChar === '"') {
+    let end = safeOffset + 1
+
+    while (end < sourceText.length && sourceText[end] !== currentChar) {
+      if (sourceText[end] === '\\') {
+        end += 2
+        continue
+      }
+
+      end += 1
+    }
+
+    return {
+      end,
+      start: safeOffset + 1,
+    }
+  }
+
+  let end = safeOffset
+
+  while (end < sourceText.length && /[$\w-]/u.test(sourceText[end])) {
+    end += 1
+  }
+
+  return {
+    end,
+    start: safeOffset,
+  }
 }
 
 async function pathExists(filePath: string) {
@@ -663,6 +925,9 @@ export async function getVueTemplateLocalComponents(document: vscode.TextDocumen
     const status = await getVueUsingComponentFileStatus(document, reference.path)
 
     components.set(normalizeTagName(reference.name), {
+      declarationEnd: reference.nameEnd,
+      declarationFilePath: document.uri.fsPath,
+      declarationStart: reference.nameStart,
       name: reference.name,
       path: reference.path,
       targetPath: status?.componentFilePath ?? null,
@@ -684,6 +949,9 @@ export async function getWxmlLocalComponents(document: vscode.TextDocument) {
   }
 
   try {
+    const declarationReferences = new Map(
+      getJsonUsingComponentReferences(jsonText).map(reference => [normalizeTagName(reference.name), reference]),
+    )
     const json = JSON.parse(jsonText)
     const usingComponents = json?.usingComponents
 
@@ -707,6 +975,9 @@ export async function getWxmlLocalComponents(document: vscode.TextDocument) {
       ])
 
       return [normalizeTagName(name), {
+        declarationEnd: declarationReferences.get(normalizeTagName(name))?.nameEnd ?? null,
+        declarationFilePath: companionPaths.json,
+        declarationStart: declarationReferences.get(normalizeTagName(name))?.nameStart ?? null,
         name,
         path: componentPath,
         targetPath,
@@ -724,6 +995,78 @@ export async function getTemplateLocalComponents(document: vscode.TextDocument) 
   return document.languageId === 'vue'
     ? getVueTemplateLocalComponents(document)
     : getWxmlLocalComponents(document)
+}
+
+export async function getTemplateLocalComponentDeclarationRanges(document: vscode.TextDocument, tagName: string) {
+  const localComponent = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagName))
+
+  if (
+    !localComponent?.declarationFilePath
+    || localComponent.declarationStart == null
+    || localComponent.declarationEnd == null
+  ) {
+    return []
+  }
+
+  return [{
+    end: localComponent.declarationEnd,
+    filePath: localComponent.declarationFilePath,
+    start: localComponent.declarationStart,
+  }] satisfies TemplateFileOffsetRange[]
+}
+
+export function getTemplateLocalComponentTagRanges(document: vscode.TextDocument, tagName: string) {
+  const sourceText = getWxmlSourceText(document)
+
+  if (!sourceText) {
+    return []
+  }
+
+  return getTemplateTagRanges(sourceText, document.uri.fsPath, tagName)
+    .map((range) => {
+      const start = toDocumentOffsetFromWxmlSource(document, range.start)
+      const end = toDocumentOffsetFromWxmlSource(document, range.end)
+
+      if (start == null || end == null) {
+        return null
+      }
+
+      return {
+        end,
+        filePath: range.filePath,
+        start,
+      } satisfies TemplateFileOffsetRange
+    })
+    .filter((range): range is TemplateFileOffsetRange => Boolean(range))
+}
+
+export function getTemplateLocalComponentAttributeRanges(
+  document: vscode.TextDocument,
+  tagName: string,
+  attributeName: string,
+) {
+  const sourceText = getWxmlSourceText(document)
+
+  if (!sourceText) {
+    return []
+  }
+
+  return getTemplateTagAttributeRanges(sourceText, document.uri.fsPath, tagName, attributeName)
+    .map((range) => {
+      const start = toDocumentOffsetFromWxmlSource(document, range.start)
+      const end = toDocumentOffsetFromWxmlSource(document, range.end)
+
+      if (start == null || end == null) {
+        return null
+      }
+
+      return {
+        end,
+        filePath: range.filePath,
+        start,
+      } satisfies TemplateFileOffsetRange
+    })
+    .filter((range): range is TemplateFileOffsetRange => Boolean(range))
 }
 
 export async function getTemplateResolvedComponentMeta(document: vscode.TextDocument, tagName: string): Promise<ResolvedTemplateComponentMeta | null> {
@@ -882,6 +1225,92 @@ export async function resolveTemplateComponentAttributeDefinition(
   }
 
   return null
+}
+
+export async function getTemplateComponentAttributeDefinitionRange(
+  document: vscode.TextDocument,
+  tagName: string,
+  attributeName: string,
+) {
+  const normalizedAttributeName = attributeName.trim()
+
+  if (!normalizedAttributeName) {
+    return null
+  }
+
+  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
+
+  if (!resolvedMeta) {
+    return null
+  }
+
+  const propEntry = getResolvedTemplateComponentProps(resolvedMeta)
+    .find(item => item.label === normalizedAttributeName)
+
+  if (propEntry) {
+    const offset = resolvedMeta.meta.propOffsets.get(propEntry.sourceName)
+      ?? resolvedMeta.meta.modelOffsets.get(propEntry.sourceName)
+
+    if (offset != null) {
+      const range = getIdentifierRangeAtOffset(resolvedMeta.sourceText, offset)
+      const currentName = resolvedMeta.sourceText.slice(range.start, range.end)
+
+      return currentName === propEntry.sourceName
+        ? {
+            filePath: resolvedMeta.targetPath,
+            kind: 'prop' as const,
+            sourceName: propEntry.sourceName,
+            start: range.start,
+            end: range.end,
+          }
+        : null
+    }
+  }
+
+  const eventEntry = getResolvedTemplateComponentEvents(resolvedMeta)
+    .find(item => item.label === normalizedAttributeName)
+
+  if (eventEntry) {
+    const offset = resolvedMeta.meta.emitOffsets.get(eventEntry.sourceName)
+
+    if (offset != null) {
+      const range = getIdentifierRangeAtOffset(resolvedMeta.sourceText, offset)
+      const currentName = resolvedMeta.sourceText.slice(range.start, range.end)
+
+      return currentName === eventEntry.sourceName
+        ? {
+            filePath: resolvedMeta.targetPath,
+            kind: 'event' as const,
+            sourceName: eventEntry.sourceName,
+            start: range.start,
+            end: range.end,
+          }
+        : null
+    }
+  }
+
+  return null
+}
+
+export async function getTemplateComponentAttributeRenameText(
+  document: vscode.TextDocument,
+  tagName: string,
+  attributeName: string,
+  newAttributeName: string,
+) {
+  const definitionRange = await getTemplateComponentAttributeDefinitionRange(document, tagName, attributeName)
+
+  if (!definitionRange) {
+    return null
+  }
+
+  if (definitionRange.kind === 'event') {
+    return newAttributeName.replace(/^bind:/u, '')
+  }
+
+  return definitionRange.sourceName.includes('-')
+    ? newAttributeName
+    : toCamelCase(newAttributeName)
 }
 
 export async function resolveTemplateResourceTarget(document: vscode.TextDocument, attributeValue: string) {
