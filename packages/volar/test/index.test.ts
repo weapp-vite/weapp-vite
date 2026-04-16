@@ -287,4 +287,33 @@ defineOptions({
     expect(generated).toContain('__VLS_ctx.mixedValue')
     expect(generated).toContain('__VLS_ctx.profile')
   })
+
+  it('infers defineOptions computed return types from getters and functions', () => {
+    const source = `<script setup lang="ts">
+defineOptions({
+  computed: {
+    total() {
+      return 1
+    },
+    title: (): string => 'demo',
+    get ready() {
+      return true
+    },
+  },
+})
+</script>
+<template>
+  <view>{{ total }}</view>
+  <view>{{ title }}</view>
+  <view>{{ ready ? 'yes' : 'no' }}</view>
+</template>`
+
+    const { generated } = getGeneratedServiceScript(source)
+    expect(generated).toContain('const total: number = null as any')
+    expect(generated).toContain('const title: string = null as any')
+    expect(generated).toContain('const ready: boolean = null as any')
+    expect(generated).toContain('__VLS_ctx.total')
+    expect(generated).toContain('__VLS_ctx.title')
+    expect(generated).toContain('__VLS_ctx.ready')
+  })
 })

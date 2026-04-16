@@ -174,23 +174,27 @@ function unwrapParenthesizedExpression(node: ts.Expression, tsModule: typeof ts)
   return current
 }
 
-function findReturnedObjectLiteral(node: ts.ConciseBody, tsModule: typeof ts) {
+function findReturnedExpression(node: ts.ConciseBody, tsModule: typeof ts) {
   if (tsModule.isObjectLiteralExpression(node)) {
     return node
   }
   if (!tsModule.isBlock(node)) {
-    return undefined
+    return node
   }
   for (const statement of node.statements) {
     if (!tsModule.isReturnStatement(statement) || !statement.expression) {
       continue
     }
-    const expression = unwrapParenthesizedExpression(statement.expression, tsModule)
-    if (tsModule.isObjectLiteralExpression(expression)) {
-      return expression
-    }
+    return unwrapParenthesizedExpression(statement.expression, tsModule)
   }
   return undefined
+}
+
+function findReturnedObjectLiteral(node: ts.ConciseBody, tsModule: typeof ts) {
+  const expression = findReturnedExpression(node, tsModule)
+  return expression && tsModule.isObjectLiteralExpression(expression)
+    ? expression
+    : undefined
 }
 
 function extractDefineOptionsObjectLiteral(node: ts.CallExpression, tsModule: typeof ts) {
@@ -395,6 +399,28 @@ function getExpressionTypeText(
   return 'any'
 }
 
+function getFunctionLikeReturnTypeText(
+  node: ts.FunctionLikeDeclaration | ts.GetAccessorDeclaration,
+  tsModule: typeof ts,
+  sourceFile: ts.SourceFile,
+) {
+  if (node.type) {
+    return node.type.getText(sourceFile)
+  }
+
+  if (!node.body) {
+    return 'any'
+  }
+
+  const returnedExpression = tsModule.isBlock(node.body)
+    ? findReturnedExpression(node.body, tsModule)
+    : findReturnedExpression(node.body, tsModule)
+
+  return returnedExpression
+    ? getExpressionTypeText(returnedExpression, tsModule, sourceFile)
+    : 'any'
+}
+
 function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts, lang: string) {
   const scriptKind = lang === TS_LANG ? TS_SCRIPT_KIND_TS : TS_SCRIPT_KIND_JS
   const sourceFile = tsModule.createSourceFile(
@@ -453,12 +479,26 @@ function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts,
                   continue
                 }
 
-                const typeText = sectionName === 'properties' && tsModule.isPropertyAssignment(entry)
-                  ? getMiniProgramPropertyType(
-                      unwrapParenthesizedExpression(entry.initializer, tsModule),
-                      tsModule,
-                    )
-                  : 'any'
+                let typeText = 'any'
+
+                if (sectionName === 'properties' && tsModule.isPropertyAssignment(entry)) {
+                  typeText = getMiniProgramPropertyType(
+                    unwrapParenthesizedExpression(entry.initializer, tsModule),
+                    tsModule,
+                  )
+                }
+                else if (sectionName === 'computed') {
+                  if (tsModule.isPropertyAssignment(entry)) {
+                    const initializer = unwrapParenthesizedExpression(entry.initializer, tsModule)
+
+                    if (tsModule.isArrowFunction(initializer) || tsModule.isFunctionExpression(initializer)) {
+                      typeText = getFunctionLikeReturnTypeText(initializer, tsModule, sourceFile)
+                    }
+                  }
+                  else if (tsModule.isMethodDeclaration(entry) || tsModule.isGetAccessorDeclaration(entry)) {
+                    typeText = getFunctionLikeReturnTypeText(entry, tsModule, sourceFile)
+                  }
+                }
 
                 setBindingType(valueBindings, name, typeText)
               }
