@@ -1,4 +1,5 @@
-import type { FileHandle, OpenMode, PathLike } from 'node:fs/promises'
+import type { OpenMode, PathLike } from 'node:fs'
+import type { FileHandle } from 'node:fs/promises'
 import { close as closeFd, closeSync, constants, Dirent, existsSync, mkdirSync, promises as nodeFs, openSync, readFileSync, Stats, unlinkSync, utimesSync, watch, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -35,7 +36,14 @@ function normalizeJsonText(source: string) {
 }
 
 function serializeJson(data: unknown, options?: JsonWriteOptions) {
-  return JSON.stringify(data, options?.replacer ?? null, options?.spaces)
+  const replacer = options?.replacer
+  if (typeof replacer === 'function') {
+    return JSON.stringify(data, replacer, options?.spaces)
+  }
+  if (Array.isArray(replacer)) {
+    return JSON.stringify(data, replacer, options?.spaces)
+  }
+  return JSON.stringify(data, null, options?.spaces)
 }
 
 async function pathExists(target: string) {
@@ -107,7 +115,7 @@ async function outputFile(file: string, data: string | NodeJS.ArrayBufferView, o
 
 async function appendFile(file: string, data: string | NodeJS.ArrayBufferView, options?: BufferEncoding) {
   await ensureDir(path.dirname(file))
-  await nodeFs.appendFile(file, data, options)
+  await nodeFs.appendFile(file, data as string | Uint8Array, options)
 }
 
 async function writeJson(file: string, data: unknown, options?: JsonWriteOptions) {

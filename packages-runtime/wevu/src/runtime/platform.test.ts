@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const GLOBAL_KEYS = ['wx', 'my', 'tt'] as const
+const GLOBAL_KEYS = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs'] as const
 
 function clearMiniProgramGlobals() {
   for (const key of GLOBAL_KEYS) {
@@ -39,6 +39,14 @@ describe('runtime platform', () => {
 
     const { getMiniProgramGlobalObject } = await loadPlatformModule()
     expect(getMiniProgramGlobalObject()).toBe((globalThis as any).tt)
+  })
+
+  it('continues scanning shared runtime globals after wx/my/tt', async () => {
+    ;(globalThis as any).swan = { name: 'swan-runtime' }
+
+    const { getMiniProgramGlobalObject, resolveCurrentMiniProgramPlatform } = await loadPlatformModule()
+    expect(getMiniProgramGlobalObject()).toBe((globalThis as any).swan)
+    expect(resolveCurrentMiniProgramPlatform()).toBe('swan')
   })
 
   it('returns undefined when no supported runtime global exists', async () => {

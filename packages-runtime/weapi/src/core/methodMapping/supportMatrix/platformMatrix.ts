@@ -1,28 +1,28 @@
 import type { WeapiPlatformSupportMatrixItem } from '../types'
+import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from '@weapp-core/shared'
 
-export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
-  {
-    platform: '微信小程序',
-    globalObject: '`wx`',
-    typeSource: '`miniprogram-api-typings`',
-    support: '✅ 全量',
-  },
-  {
-    platform: '支付宝小程序',
-    globalObject: '`my`',
-    typeSource: '`@mini-types/alipay`',
-    support: '✅ 全量',
-  },
-  {
-    platform: '抖音小程序',
-    globalObject: '`tt`',
-    typeSource: '`@douyin-microapp/typings`',
-    support: '✅ 全量',
-  },
-  {
-    platform: '其他平台（swan/jd/xhs 等）',
-    globalObject: '运行时宿主对象',
-    typeSource: '运行时透传',
-    support: '⚠️ 按宿主能力支持',
-  },
-]
+const PLATFORM_LABELS: Readonly<Record<string, string>> = {
+  weapp: '微信小程序',
+  alipay: '支付宝小程序',
+  tt: '抖音小程序',
+  swan: '百度智能小程序',
+  jd: '京东小程序',
+  xhs: '小红书小程序',
+}
+
+const PLATFORM_TYPE_SOURCE: Readonly<Record<string, string>> = {
+  wx: '`miniprogram-api-typings`',
+  my: '`@mini-types/alipay`',
+  tt: '`@douyin-microapp/typings`',
+}
+
+export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = MINI_PROGRAM_PLATFORM_DESCRIPTORS.map((descriptor) => {
+  const globalObject = descriptor.runtime.globalObjectKey
+  const isFullyTypedPlatform = globalObject in PLATFORM_TYPE_SOURCE
+  return {
+    platform: PLATFORM_LABELS[descriptor.id] ?? descriptor.displayName,
+    globalObject: `\`${globalObject}\``,
+    typeSource: PLATFORM_TYPE_SOURCE[globalObject] ?? '运行时透传',
+    support: isFullyTypedPlatform ? '✅ 全量' : '⚠️ 按宿主能力支持',
+  }
+})

@@ -1,8 +1,8 @@
+import { getMiniProgramRuntimeGlobalKey, normalizeMiniProgramPlatform, resolveMiniProgramPlatform } from '@weapp-core/shared'
 import { createNotSupportedError, isPlainObject } from '../../utils'
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
-  alipay: 'my',
-  douyin: 'tt',
+  kuaishou: 'ks',
 }
 
 export function mapSaveFileArgs(args: unknown[]) {
@@ -186,12 +186,13 @@ export function mapDouyinSaveFileResult(result: any) {
 }
 
 export function normalizePlatformName(value?: string) {
-  if (!value) {
-    return undefined
-  }
-  const normalized = value.trim().toLowerCase()
+  const normalized = normalizeMiniProgramPlatform(value)
   if (!normalized) {
     return undefined
+  }
+  const miniProgramPlatform = resolveMiniProgramPlatform(normalized)
+  if (miniProgramPlatform) {
+    return getMiniProgramRuntimeGlobalKey(miniProgramPlatform)
   }
   return PLATFORM_ALIASES[normalized] ?? normalized
 }

@@ -4,6 +4,7 @@ import { extname } from 'node:path'
 import { createDefu } from 'defu'
 
 export * from './fs'
+export * from './platforms'
 export { default as defu } from 'defu'
 export { default as get } from 'get-value'
 

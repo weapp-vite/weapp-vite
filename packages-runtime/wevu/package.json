@@ -114,6 +114,7 @@
   },
   "dependencies": {
     "@weapp-core/constants": "workspace:^",
+    "@weapp-core/shared": "workspace:*",
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
     "vue": "catalog:"

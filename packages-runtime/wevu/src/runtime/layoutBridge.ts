@@ -4,6 +4,7 @@ import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
 } from '@weapp-core/constants'
+import { resolveMiniProgramPageKeys } from '@weapp-core/shared'
 import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
 import { getTemplateRefMap } from './templateRefs/helpers'
@@ -28,7 +29,6 @@ interface LayoutHostResolveOptions<T = any> {
 }
 
 const pageLayoutBridges = new Map<string, Map<string, LayoutBridgeContext>>()
-const LEADING_SLASH_RE = /^\/+/
 
 function resolveCurrentPageInstance() {
   const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
@@ -45,27 +45,7 @@ function normalizeSelectors(selectors: string | string[]) {
 }
 
 function resolvePageKeys(page?: LayoutBridgeContext) {
-  const keys: string[] = []
-  if (!page || typeof page !== 'object') {
-    return keys
-  }
-
-  const webviewId = page.__wxWebviewId__
-  if (typeof webviewId === 'number' || typeof webviewId === 'string') {
-    keys.push(`webview:${String(webviewId)}`)
-  }
-
-  const exparserNodeId = page.__wxExparserNodeId__
-  if (typeof exparserNodeId === 'number' || typeof exparserNodeId === 'string') {
-    keys.push(`exparser:${String(exparserNodeId)}`)
-  }
-
-  const route = typeof page.route === 'string' ? page.route.replace(LEADING_SLASH_RE, '') : ''
-  if (route) {
-    keys.push(`route:${route}`)
-  }
-
-  return Array.from(new Set(keys))
+  return resolveMiniProgramPageKeys(page as Record<string, any> | undefined)
 }
 
 function resolvePageFromContext(context?: LayoutBridgeContext) {

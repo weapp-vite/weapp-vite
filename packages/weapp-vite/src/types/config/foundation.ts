@@ -1,4 +1,5 @@
 import type { GenerateType } from '@weapp-core/schematics'
+import type { MpPlatform as SharedMpPlatform } from '@weapp-core/shared'
 import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { InputOption } from 'rolldown'
 import type { Options as RolldownDtsOptions } from 'rolldown-plugin-dts'
@@ -6,6 +7,8 @@ import type { CompilerOptions } from 'typescript'
 import type { InlineConfig } from 'vite'
 
 export type NpmBuildOptions = InlineConfig
+
+export type MpPlatform = SharedMpPlatform
 
 /**
  * @description 支付宝平台本地 npm 输出模式
@@ -48,9 +51,6 @@ export interface AliasOptions {
    */
   entries?: readonly Alias[] | { [find: string]: string }
 }
-
-// 参考：https://nervjs.github.io/taro-docs/docs/GETTING-STARTED#%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C
-export type MpPlatform = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
 
 export interface SubPackage {
   /**

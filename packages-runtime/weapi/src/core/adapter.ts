@@ -1,4 +1,5 @@
 import type { WeapiAdapter } from './types'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 
 export interface DetectAdapterResult {
   adapter?: WeapiAdapter
@@ -6,14 +7,12 @@ export interface DetectAdapterResult {
 }
 
 const GLOBAL_ADAPTER_KEYS: Array<{ platform: string, key: string }> = [
-  { platform: 'wx', key: 'wx' },
-  { platform: 'my', key: 'my' },
-  { platform: 'tt', key: 'tt' },
+  ...getMiniProgramRuntimeGlobalKeys().map(key => ({
+    platform: key,
+    key,
+  })),
   { platform: 'qq', key: 'qq' },
-  { platform: 'swan', key: 'swan' },
   { platform: 'ks', key: 'ks' },
-  { platform: 'jd', key: 'jd' },
-  { platform: 'xhs', key: 'xhs' },
   { platform: 'dd', key: 'dd' },
   { platform: 'qa', key: 'qa' },
   { platform: 'qapp', key: 'qapp' },

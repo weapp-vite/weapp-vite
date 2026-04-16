@@ -1,3 +1,10 @@
+import {
+  getMiniProgramPlatformByRuntimeGlobalKey,
+  getMiniProgramRuntimeGlobalKey,
+  getMiniProgramRuntimeGlobalKeys,
+  resolveMiniProgramPlatform,
+} from '@weapp-core/shared'
+
 type MiniProgramGlobal = Record<string, any>
 type ImportMetaWithEnv = ImportMeta & {
   env?: {
@@ -12,29 +19,40 @@ function getGlobalRuntime() {
   return globalThis as MiniProgramGlobal
 }
 
-export function getMiniProgramGlobalObject(): MiniProgramGlobal | undefined {
+export function resolveCurrentMiniProgramPlatform() {
   const globalRuntime = getGlobalRuntime()
   const compiledPlatform = (import.meta as ImportMetaWithEnv).env?.PLATFORM
 
   // 优先命中编译期平台分支，便于构建阶段做 dead-code elimination。
-  if (compiledPlatform === 'tt') {
-    return globalRuntime?.tt as MiniProgramGlobal | undefined
-  }
-  if (compiledPlatform === 'alipay' || compiledPlatform === 'my') {
-    return globalRuntime?.my as MiniProgramGlobal | undefined
-  }
-  if (compiledPlatform === 'weapp' || compiledPlatform === 'wx') {
-    return globalRuntime?.wx as MiniProgramGlobal | undefined
+  const resolvedCompiledPlatform = resolveMiniProgramPlatform(compiledPlatform)
+  if (resolvedCompiledPlatform) {
+    return resolvedCompiledPlatform
   }
 
-  if (globalRuntime?.wx) {
-    return globalRuntime.wx as MiniProgramGlobal
+  for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
+    if (globalRuntime?.[globalKey]) {
+      return getMiniProgramPlatformByRuntimeGlobalKey(globalKey)
+    }
   }
-  if (globalRuntime?.my) {
-    return globalRuntime.my as MiniProgramGlobal
+
+  return undefined
+}
+
+export function getMiniProgramGlobalObject(platformInput?: string): MiniProgramGlobal | undefined {
+  const globalRuntime = getGlobalRuntime()
+  const compiledPlatform = platformInput ?? (import.meta as ImportMetaWithEnv).env?.PLATFORM
+  const resolvedCompiledPlatform = resolveMiniProgramPlatform(compiledPlatform)
+
+  if (resolvedCompiledPlatform) {
+    const globalKey = getMiniProgramRuntimeGlobalKey(resolvedCompiledPlatform)
+    return globalRuntime?.[globalKey] as MiniProgramGlobal | undefined
   }
-  if (globalRuntime?.tt) {
-    return globalRuntime.tt as MiniProgramGlobal
+
+  for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
+    const candidate = globalRuntime?.[globalKey]
+    if (candidate) {
+      return candidate as MiniProgramGlobal
+    }
   }
   return undefined
 }

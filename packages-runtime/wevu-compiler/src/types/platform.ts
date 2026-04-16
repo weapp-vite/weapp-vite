@@ -1,4 +1,1 @@
-/**
- * 小程序平台标识。
- */
-export type MpPlatform = 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
+export type { MpPlatform } from '@weapp-core/shared'

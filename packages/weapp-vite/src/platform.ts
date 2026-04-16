@@ -1,5 +1,11 @@
 import type { MiniProgramPlatformAdapter, OutputExtensions } from './platforms/types'
 import type { MpPlatform } from './types'
+import {
+  getSupportedMiniProgramPlatforms as getSharedSupportedMiniProgramPlatforms,
+  normalizeMiniProgramPlatform,
+  resolveMiniProgramPlatform,
+  MINI_PROGRAM_PLATFORM_ALIASES as SHARED_MINI_PROGRAM_PLATFORM_ALIASES,
+} from '@weapp-core/shared'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from './platforms/adapters'
 
 export const DEFAULT_MP_PLATFORM: MpPlatform = 'weapp'
@@ -76,12 +82,13 @@ export function createMiniProgramPlatformRegistry(adapters: readonly MiniProgram
 const { adapterById: PLATFORM_ADAPTER_BY_ID, aliasToId: PLATFORM_ALIAS_TO_ID } = createMiniProgramPlatformRegistry(
   MINI_PROGRAM_PLATFORM_ADAPTERS,
 )
-const SUPPORTED_MINI_PROGRAM_PLATFORMS = Object.freeze(
-  MINI_PROGRAM_PLATFORM_ADAPTERS.map(adapter => adapter.id),
-) as readonly MpPlatform[]
+const SUPPORTED_MINI_PROGRAM_PLATFORMS = getSharedSupportedMiniProgramPlatforms()
 
 export const MINI_PLATFORM_ALIASES: Readonly<Record<string, MpPlatform>> = Object.freeze(
-  Object.fromEntries(PLATFORM_ALIAS_TO_ID.entries()),
+  {
+    ...SHARED_MINI_PROGRAM_PLATFORM_ALIASES,
+    ...Object.fromEntries(PLATFORM_ALIAS_TO_ID.entries()),
+  },
 ) as Readonly<Record<string, MpPlatform>>
 
 export function getSupportedMiniProgramPlatforms(): readonly MpPlatform[] {
@@ -89,11 +96,14 @@ export function getSupportedMiniProgramPlatforms(): readonly MpPlatform[] {
 }
 
 export function normalizeMiniPlatform(input?: string | null): string | undefined {
-  const normalized = input?.trim().toLowerCase()
-  return normalized || undefined
+  return normalizeMiniProgramPlatform(input)
 }
 
 export function resolveMiniPlatform(input?: string | null): MpPlatform | undefined {
+  const resolved = resolveMiniProgramPlatform(input)
+  if (resolved) {
+    return resolved
+  }
   const normalized = normalizeMiniPlatform(input)
   if (!normalized) {
     return undefined

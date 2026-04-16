@@ -6,6 +6,7 @@ import type {
   WeapiMethodSupportQueryOptions,
   WeapiResolvedTarget,
 } from './types'
+import { getMiniProgramRuntimeGlobalKey, normalizeMiniProgramPlatform, resolveMiniProgramPlatform } from '@weapp-core/shared'
 import { detectGlobalAdapter } from './adapter'
 import { callMissingApi, callWithError, callWithPromise } from './callBridge'
 import { resolveMethodMappingWithMeta } from './methodMapping'
@@ -22,17 +23,17 @@ const INTERNAL_KEYS = new Set<PropertyKey>([
 ])
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
-  alipay: 'my',
-  douyin: 'tt',
+  kuaishou: 'ks',
 }
 
 function normalizePlatformName(value?: string) {
-  if (!value) {
-    return undefined
-  }
-  const normalized = value.trim().toLowerCase()
+  const normalized = normalizeMiniProgramPlatform(value)
   if (!normalized) {
     return undefined
+  }
+  const miniProgramPlatform = resolveMiniProgramPlatform(normalized)
+  if (miniProgramPlatform) {
+    return getMiniProgramRuntimeGlobalKey(miniProgramPlatform)
   }
   return PLATFORM_ALIASES[normalized] ?? normalized
 }

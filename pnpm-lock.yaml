@@ -1703,6 +1703,9 @@ importers:
       '@mini-types/alipay':
         specifier: 'catalog:'
         version: 3.0.14
+      '@weapp-core/shared':
+        specifier: workspace:*
+        version: link:../../@weapp-core/shared
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.1.2
@@ -1757,6 +1760,9 @@ importers:
       '@weapp-core/constants':
         specifier: workspace:^
         version: link:../../@weapp-core/constants
+      '@weapp-core/shared':
+        specifier: workspace:*
+        version: link:../../@weapp-core/shared
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi
@@ -21283,8 +21289,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.2)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.58.2(typescript@6.0.2)
+      '@typescript-eslint/types': 8.58.2
       debug: 4.4.3
       typescript: 6.0.2
     transitivePeerDependencies:

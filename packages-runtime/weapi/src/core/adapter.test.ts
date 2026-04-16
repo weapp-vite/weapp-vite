@@ -40,6 +40,16 @@ describe('detectGlobalAdapter', () => {
     })
   })
 
+  it('detects shared mini program globals that are not wechat-like', () => {
+    const swanAdapter = { request() {} }
+    ;(globalThis as any).swan = swanAdapter
+
+    expect(detectGlobalAdapter()).toEqual({
+      adapter: swanAdapter,
+      platform: 'swan',
+    })
+  })
+
   it('skips non-object adapter candidates', () => {
     ;(globalThis as any).wx = 1
     ;(globalThis as any).my = 'invalid'
