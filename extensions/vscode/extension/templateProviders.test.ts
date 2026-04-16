@@ -79,6 +79,7 @@ it('provides local component definitions and resource links for wxml documents',
       '  titleText?: string',
       '  count: number',
       '}>()',
+      'defineEmits([\'confirm\'])',
       'const active = defineModel<boolean>(\'active\')',
       '</script>',
       '<template><view /></template>',
@@ -177,6 +178,7 @@ it('provides local component definitions and resource links for wxml documents',
         Module: 1,
         Property: 2,
         Value: 3,
+        Event: 4,
       },
       SnippetString: class {
         value
@@ -241,6 +243,7 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(completionItems[0].label, 'card-user')
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'title-text'), true)
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'active'), true)
+  assert.equal(attributeCompletionItems.some((item: any) => item.label === 'bind:confirm'), true)
   assert.equal(classCompletionItems.some((item: any) => item.label === 'hero-title'), true)
   assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(classDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxss'))
@@ -353,6 +356,7 @@ it('provides style class completions and definitions inside vue template values'
         Module: 1,
         Property: 2,
         Value: 3,
+        Event: 4,
       },
       SnippetString: class {
         value

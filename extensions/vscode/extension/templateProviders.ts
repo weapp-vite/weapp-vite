@@ -28,6 +28,7 @@ import {
   toWxmlSourceOffset,
 } from './templateContext'
 import {
+  getTemplateComponentEvents,
   getTemplateComponentProps,
   getTemplateLocalComponents,
   getTemplateStyleClassMatches,
@@ -166,6 +167,16 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
 
     if (tagContext.tagName && (ATTRIBUTE_COMPLETION_TRIGGER.has(triggerCharacter) || VALUE_COMPLETION_TRIGGER.has(triggerCharacter) || COMPONENT_COMPLETION_TRIGGER.has(triggerCharacter))) {
       const existingAttributes = new Set(tagContext.attributes.map(attribute => attribute.name))
+      const componentEvents = await getTemplateComponentEvents(document, tagContext.tagName)
+      const componentEventItems = componentEvents
+        .filter(attribute => !existingAttributes.has(attribute.label))
+        .map((attribute, index) => {
+          const item = createCompletionItem(attribute.label, vscode.CompletionItemKind.Event)
+          item.insertText = new vscode.SnippetString(`${attribute.insertText}="$1"`)
+          item.detail = 'component event'
+          item.sortText = `1${index.toString().padStart(3, '0')}`
+          return item
+        })
       const componentProps = await getTemplateComponentProps(document, tagContext.tagName)
       const componentPropItems = componentProps
         .filter(attribute => !existingAttributes.has(attribute.label))
@@ -193,11 +204,11 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
             item.insertText = new vscode.SnippetString(`${attribute.name}="$1"`)
           }
 
-          item.sortText = `1${index.toString().padStart(3, '0')}`
+          item.sortText = `2${index.toString().padStart(3, '0')}`
           return item
         })
 
-      return [...componentPropItems, ...nativeAttributeItems]
+      return [...componentPropItems, ...componentEventItems, ...nativeAttributeItems]
     }
 
     return []

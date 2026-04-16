@@ -46,6 +46,11 @@ interface ComponentPropEntry {
   label: string
 }
 
+interface ComponentEventEntry {
+  insertText: string
+  label: string
+}
+
 function normalizeTagName(tagName: string) {
   return tagName.trim().toLowerCase()
 }
@@ -294,6 +299,77 @@ function collectDefineModelNames(sourceText: string) {
 
   if (sourceText.includes('defineModel(')) {
     names.add('modelValue')
+  }
+
+  return [...names]
+}
+
+function collectQuotedEventNames(sourceText: string) {
+  const names = new Set<string>()
+
+  for (const match of sourceText.matchAll(/['"]([A-Za-z_$][\w$:-]*)['"]/gu)) {
+    names.add(match[1])
+  }
+
+  return [...names]
+}
+
+function collectDefineEmitsNames(sourceText: string) {
+  const names = new Set<string>()
+  const callPattern = /defineEmits\s*(<|\()/gu
+
+  for (const match of sourceText.matchAll(callPattern)) {
+    const marker = match[1]
+    const offset = (match.index ?? 0) + match[0].length - 1
+
+    if (marker === '<') {
+      const section = findBalancedSection(sourceText, offset, '<', '>')
+
+      if (!section) {
+        continue
+      }
+
+      for (const name of collectObjectLikePropNames(section.text)) {
+        names.add(name)
+      }
+
+      for (const name of collectQuotedEventNames(section.text)) {
+        names.add(name)
+      }
+    }
+    else {
+      const section = findBalancedSection(sourceText, offset, '(', ')')
+
+      if (!section) {
+        continue
+      }
+
+      const trimmed = section.text.trim()
+
+      if (trimmed.startsWith('[')) {
+        for (const name of collectQuotedEventNames(trimmed)) {
+          names.add(name)
+        }
+
+        continue
+      }
+
+      const objectStart = trimmed.indexOf('{')
+
+      if (objectStart < 0) {
+        continue
+      }
+
+      const objectSection = findBalancedSection(trimmed, objectStart, '{', '}')
+
+      if (!objectSection) {
+        continue
+      }
+
+      for (const name of collectObjectLikePropNames(objectSection.text)) {
+        names.add(name)
+      }
+    }
   }
 
   return [...names]
@@ -663,6 +739,32 @@ export async function getTemplateComponentProps(document: vscode.TextDocument, t
         insertText: kebabName,
         label: kebabName,
       } satisfies ComponentPropEntry
+    })
+    .filter((entry, index, list) => list.findIndex(item => item.label === entry.label) === index)
+}
+
+export async function getTemplateComponentEvents(document: vscode.TextDocument, tagName: string) {
+  const componentTargetPath = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagName))?.targetPath ?? null
+
+  if (!componentTargetPath || !componentTargetPath.endsWith('.vue')) {
+    return []
+  }
+
+  const sourceText = componentTargetPath === document.uri.fsPath
+    ? document.getText()
+    : await readTextFile(componentTargetPath)
+
+  if (!sourceText) {
+    return []
+  }
+
+  return collectDefineEmitsNames(sourceText)
+    .filter(name => !name.startsWith('update:'))
+    .map((name) => {
+      return {
+        insertText: `bind:${name}`,
+        label: `bind:${name}`,
+      } satisfies ComponentEventEntry
     })
     .filter((entry, index, list) => list.findIndex(item => item.label === entry.label) === index)
 }
