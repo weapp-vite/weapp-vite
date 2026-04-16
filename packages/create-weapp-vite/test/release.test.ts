@@ -1,6 +1,6 @@
 import os from 'node:os'
 import path from 'node:path'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import { TemplateName } from '@/enums'

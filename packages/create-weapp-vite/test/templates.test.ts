@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { TemplateName } from '@/enums'
 import { main as syncTemplates } from '../scripts/shared'
 

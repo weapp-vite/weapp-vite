@@ -1,5 +1,5 @@
 import type { ResolvedConfig } from '../types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import logger, { colors } from '../logger'
 import { getDefaultCliPath } from '../runtime/platform'
 import { readCustomConfig } from './custom'

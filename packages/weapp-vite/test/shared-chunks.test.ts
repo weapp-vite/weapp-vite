@@ -1,5 +1,5 @@
 import type { CompilerContext } from '@/context'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
 import { getFixture, scanFiles } from './utils'

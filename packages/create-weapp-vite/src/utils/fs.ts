@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 
 /**
  * @description 文件读取错误

@@ -1,6 +1,6 @@
 import { stdin as input, stdout as output } from 'node:process'
 import { createInterface } from 'node:readline/promises'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { createCustomConfig } from '../config/custom'
 import { defaultCustomConfigFilePath } from '../config/paths'
 import logger, { colors } from '../logger'

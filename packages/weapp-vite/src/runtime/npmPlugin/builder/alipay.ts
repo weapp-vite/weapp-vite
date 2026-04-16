@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
 import { generate, parseJsLike, traverse } from '../../../utils'

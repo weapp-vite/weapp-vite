@@ -1,7 +1,7 @@
 import type { MutableCompilerContext } from '../../../context'
 import type { RuntimeState } from '../../runtimeState'
 import type { AutoRoutesPersistentCache } from './shared'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../../autoRoutesConfig'
 import { logger } from '../../../context/shared'

@@ -1,7 +1,7 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { addResolvedPageLayoutWatchFiles } from '../../../../utils/pageLayout'
 import { createCompileVueFileOptions } from '../../compileOptions'

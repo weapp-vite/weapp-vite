@@ -2,7 +2,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { confirm, input, select } from '@inquirer/prompts'
 import logger from '@weapp-core/logger'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { createProject, TemplateName } from './index'
 import { RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 

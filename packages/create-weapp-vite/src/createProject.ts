@@ -1,7 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { version as wevuVersion } from '../../../packages-runtime/wevu/package.json'
 import { version } from '../../weapp-vite/package.json'

@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 /* eslint-disable e18e/ban-dependencies -- 发布脚本需要 execa 调用 pnpm publish。 */
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { execa } from 'execa'
 import path, { dirname } from 'pathe'
 

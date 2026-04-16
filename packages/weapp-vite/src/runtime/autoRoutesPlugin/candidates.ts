@@ -1,5 +1,6 @@
-import type { FsDirent } from '@weapp-core/shared'
-import { fs, removeExtensionDeep } from '@weapp-core/shared'
+import type { FsDirent } from '@weapp-core/shared/fs'
+import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'

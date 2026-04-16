@@ -1,6 +1,6 @@
 import os from 'node:os'
 import path from 'node:path'
-import { fs } from '@/index'
+import { fs } from '@/fs'
 
 describe('shared fs', () => {
   it('supports output/read/write json helpers', async () => {

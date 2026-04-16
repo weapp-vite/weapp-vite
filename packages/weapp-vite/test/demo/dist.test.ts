@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { isCI } from 'ci-info'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'

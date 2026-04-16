@@ -1,6 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import os from 'node:os'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPackageBuilder } from './builder'

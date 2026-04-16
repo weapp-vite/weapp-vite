@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 
 const nodeRequire = createRequire(import.meta.url)

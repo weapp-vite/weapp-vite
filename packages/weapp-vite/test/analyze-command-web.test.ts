@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '@/analyze/subpackages'
 import { startAnalyzeDashboard } from '@/cli/analyze/dashboard'

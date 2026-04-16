@@ -1,5 +1,5 @@
 import type { BaseConfig } from '../types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { resolvePath } from '../utils/path'
 import { defaultCustomConfigDirPath, defaultCustomConfigFilePath } from './paths'
 

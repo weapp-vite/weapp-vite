@@ -6,7 +6,7 @@ import {
   WEVU_PAGE_LAYOUT_CURRENT_PROPS_IDENTIFIER,
   WEVU_PAGE_LAYOUT_NEXT_PROPS_IDENTIFIER,
 } from '@weapp-core/constants'
-import { fs as fsExtra } from '@weapp-core/shared'
+import { fs as fsExtra } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, invalidateResolvedPageLayoutsCache, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'

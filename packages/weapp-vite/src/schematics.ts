@@ -8,7 +8,8 @@ import type {
 } from './types'
 import process from 'node:process'
 import { generateJs, generateJson, generateWxml, generateWxss } from '@weapp-core/schematics'
-import { defu, fs } from '@weapp-core/shared'
+import { defu } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import logger from './logger'
 

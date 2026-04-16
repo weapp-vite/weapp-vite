@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
-import { fs, isObject, objectHash } from '@weapp-core/shared'
+import { isObject, objectHash } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { requireConfigService } from '../utils/requireConfigService'
 

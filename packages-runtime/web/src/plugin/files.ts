@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { extname } from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 

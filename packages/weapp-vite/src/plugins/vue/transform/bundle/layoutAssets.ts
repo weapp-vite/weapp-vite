@@ -1,6 +1,6 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import {
   emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded,
   resolveNativeLayoutOutputOptions,

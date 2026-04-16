@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { jsExtensions, vueExtensions } from '../constants'
 import { pathExists as pathExistsCached } from '../plugins/utils/cache'

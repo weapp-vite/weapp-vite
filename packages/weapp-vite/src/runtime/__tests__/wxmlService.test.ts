@@ -1,7 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { WxmlService } from '../wxmlPlugin'
 import { Buffer } from 'node:buffer'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
 import { createWxmlServicePlugin } from '../wxmlPlugin'

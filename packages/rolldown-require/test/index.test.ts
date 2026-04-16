@@ -1,5 +1,5 @@
 import { platform } from 'node:os'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { posix as path } from 'pathe'
 import { assert, expect, vi } from 'vitest'
 import { bundleRequire } from '@/index'

@@ -1,6 +1,6 @@
 import type { ChangeEvent, SubPackageMetaValue } from '../../../types'
 import type { CorePluginState } from '../helpers'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'

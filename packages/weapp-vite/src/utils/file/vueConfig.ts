@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'

@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { parseAst, parseAstAsync } from 'rollup/parseAst'

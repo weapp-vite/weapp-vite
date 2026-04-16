@@ -1,6 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { ManagedTsconfigFile } from './types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createAppTsconfig, createNodeTsconfig, createServerTsconfig, createSharedTsconfig } from './configs'
 import { getLegacyManagedTypeScriptConfig, resolveManagedDir, toJson } from './shared'

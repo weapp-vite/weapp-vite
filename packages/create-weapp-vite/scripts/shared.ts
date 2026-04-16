@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import fsPromises from 'node:fs/promises'
 import os from 'node:os'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { Templates } from './constants'
 

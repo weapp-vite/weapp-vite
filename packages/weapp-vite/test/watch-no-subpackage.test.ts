@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { isCI } from 'ci-info'
 import { sort } from 'fast-sort'
 import path from 'pathe'

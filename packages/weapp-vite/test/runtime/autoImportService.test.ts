@@ -1,7 +1,7 @@
 import type { Resolver } from '../../src/auto-import-components/resolvers'
 import type { CompilerContext } from '../../src/context'
 
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'

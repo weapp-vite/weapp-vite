@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createCompilerContext } from '@/createContext'

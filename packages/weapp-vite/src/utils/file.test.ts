@@ -1,7 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
 
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { describe, expect, it, vi } from 'vitest'
 import { jsExtensions } from '../constants'
 import {

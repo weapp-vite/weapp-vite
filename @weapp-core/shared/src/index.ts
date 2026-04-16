@@ -1,9 +1,5 @@
-import { Buffer } from 'node:buffer'
-import { createHash } from 'node:crypto'
-import { extname } from 'node:path'
 import { createDefu } from 'defu'
 
-export * from './fs'
 export * from './platforms'
 export { default as defu } from 'defu'
 export { default as get } from 'get-value'
@@ -12,6 +8,16 @@ const SPECIAL_CHARS_RE = /[|\\{}()[\]^$+*?.]/g
 const HYPHEN_RE = /-/g
 const LAST_EXT_RE = /\.[^/.]+$/
 const ALL_EXT_RE = /(\.[^/.]+)+$/
+const UTF8_ENCODER = new TextEncoder()
+const HASH_SEEDS = [0, 1, 2, 3] as const
+
+function bytesToHex(bytes: Uint8Array) {
+  let result = ''
+  for (const byte of bytes) {
+    result += byte.toString(16).padStart(2, '0')
+  }
+  return result
+}
 
 function stableSerialize(value: unknown, seen = new Map<object, number>()): string {
   if (value === null) {
@@ -53,11 +59,11 @@ function stableSerialize(value: unknown, seen = new Map<object, number>()): stri
   }
 
   if (ArrayBuffer.isView(value)) {
-    return `${value.constructor.name}:${Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('hex')}`
+    return `${value.constructor.name}:${bytesToHex(new Uint8Array(value.buffer, value.byteOffset, value.byteLength))}`
   }
 
   if (value instanceof ArrayBuffer) {
-    return `ArrayBuffer:${Buffer.from(value).toString('hex')}`
+    return `ArrayBuffer:${bytesToHex(new Uint8Array(value))}`
   }
 
   if (seen.has(value)) {
@@ -91,6 +97,24 @@ function stableSerialize(value: unknown, seen = new Map<object, number>()): stri
   return `{${entries.join(',')}}`
 }
 
+function hasExtension(filename: string) {
+  const lastSlashIndex = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'))
+  const baseName = lastSlashIndex >= 0 ? filename.slice(lastSlashIndex + 1) : filename
+  const lastDotIndex = baseName.lastIndexOf('.')
+  return lastDotIndex > 0
+}
+
+function xmur3(bytes: Uint8Array, seed: number) {
+  let hash = (1779033703 ^ bytes.length ^ seed) >>> 0
+  for (const byte of bytes) {
+    hash = Math.imul(hash ^ byte, 3432918353)
+    hash = (hash << 13) | (hash >>> 19)
+  }
+  hash = Math.imul(hash ^ (hash >>> 16), 2246822507)
+  hash = Math.imul(hash ^ (hash >>> 13), 3266489909)
+  return (hash ^ (hash >>> 16)) >>> 0
+}
+
 /**
  * @description 转义字符串中的正则特殊字符
  */
@@ -119,7 +143,7 @@ export function removeExtensionDeep(file: string) {
  */
 export function addExtension(filename: string, ext = '.js') {
   let result = `${filename}`
-  if (!extname(filename)) {
+  if (!hasExtension(filename)) {
     result += ext
   }
   return result
@@ -173,5 +197,8 @@ export function isEmptyObject(obj: unknown) {
  * @description 生成稳定对象哈希，避免依赖已被禁用的 object-hash 包
  */
 export function objectHash(value: unknown) {
-  return createHash('sha256').update(stableSerialize(value)).digest('hex')
+  const bytes = UTF8_ENCODER.encode(stableSerialize(value))
+  return HASH_SEEDS
+    .map(seed => xmur3(bytes, seed).toString(16).padStart(8, '0'))
+    .join('')
 }

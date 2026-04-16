@@ -1,5 +1,5 @@
 import os from 'node:os'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, vi } from 'vitest'
 import { __internal as createProjectInternal } from '@/createProject'

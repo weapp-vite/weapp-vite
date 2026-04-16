@@ -1,6 +1,6 @@
 import type { ConfigService } from '../../../../runtime/config/types'
 import type { DiscoveredLayoutFile, LayoutPropValue, NativeLayoutAssets, PageLayoutConfigService, ResolvedLayoutMeta, ResolvedPageLayout, ResolvedPageLayoutPlan } from './types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import picomatch from 'picomatch'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../../utils'

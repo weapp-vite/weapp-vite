@@ -1,5 +1,5 @@
 import type { Buffer } from 'node:buffer'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { LRUCache } from 'lru-cache'
 
 type HashInput = string | Buffer

@@ -1,4 +1,11 @@
+import * as shared from '@/index'
 import { removeExtension, removeExtensionDeep } from '@/index'
+
+describe('shared root entry', () => {
+  it('does not expose node-only fs helpers', () => {
+    expect('fs' in shared).toBe(false)
+  })
+})
 
 describe('removeExtension', () => {
   it('should remove all extensions from a file name', () => {

@@ -1,6 +1,6 @@
 import type { Resolver } from '../../../auto-import-components/resolvers'
 
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createResolverHelpers } from './resolver'

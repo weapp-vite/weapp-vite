@@ -1,6 +1,7 @@
 import type { ScanWxmlResult } from '../../../wxml'
 import type { WxmlServiceState } from './shared'
-import { fs, removeExtensionDeep } from '@weapp-core/shared'
+import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { isEmptyObject } from '../../../context/shared'
 import logger from '../../../logger'
 import { scanWxml } from '../../../wxml'

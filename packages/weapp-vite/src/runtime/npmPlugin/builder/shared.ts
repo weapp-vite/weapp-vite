@@ -1,5 +1,5 @@
 import type { PackageJson } from 'pkg-types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 
 export type PackageExportEntry = string | {

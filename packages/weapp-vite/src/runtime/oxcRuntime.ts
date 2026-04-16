@@ -1,6 +1,6 @@
 import type { Plugin as RolldownPlugin } from 'rolldown'
 import type { Plugin as VitePlugin } from 'vite'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { getPackageInfoSync } from 'local-pkg'
 import path from 'pathe'
 import logger from '../logger'

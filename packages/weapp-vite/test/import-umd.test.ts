@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import CI from 'ci-info'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'

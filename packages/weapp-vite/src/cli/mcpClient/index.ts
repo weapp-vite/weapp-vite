@@ -1,5 +1,5 @@
 import type { JsonMcpConfigFile, McpClientConfigPlan } from './types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { inspectMcpClientConfig } from './inspect'
 import { buildMcpClientConfigPlan, formatMcpQuickStart, resolveSupportedMcpClient } from './plan'

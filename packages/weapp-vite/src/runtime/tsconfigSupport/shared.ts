@@ -1,6 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { LegacyManagedTsconfigFile, LegacyManagedTypeScriptConfig, ManagedTypeScriptConfig } from './types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { parse as parseJson } from 'comment-json'
 import path from 'pathe'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from '../autoImport/config/base'

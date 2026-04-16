@@ -1,6 +1,6 @@
 import os from 'node:os'
 import process from 'node:process'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import logger from '../logger'
 

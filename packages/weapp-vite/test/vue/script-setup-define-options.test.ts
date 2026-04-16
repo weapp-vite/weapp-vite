@@ -1,6 +1,6 @@
 import { mkdtemp } from 'node:fs/promises'
 import os from 'node:os'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { compileVueFile } from '../../src/plugins/vue/transform'

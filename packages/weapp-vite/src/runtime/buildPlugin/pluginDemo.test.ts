@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { ensureWorkspacePackageLink } from '../../../test/utils'

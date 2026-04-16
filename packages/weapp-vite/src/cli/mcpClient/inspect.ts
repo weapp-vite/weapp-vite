@@ -1,6 +1,6 @@
 import type { McpClientDoctorResult, McpClientTransport, ResolvedMcpClientTarget, SupportedMcpClient } from './types'
 import { clearTimeout, setTimeout } from 'node:timers'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import {
   DEFAULT_HTTP_TIMEOUT_MS,

@@ -1,5 +1,5 @@
 import type { MpPlatform, ProjectConfig } from '@/types'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { getProjectPlatformOptions } from '../platform'
 
