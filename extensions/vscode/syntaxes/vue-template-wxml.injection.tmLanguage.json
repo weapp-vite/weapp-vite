@@ -1,0 +1,25 @@
+{
+  "scopeName": "text.html.vue.weapp-vite-wxml-template",
+  "injectionSelector": "L:text.html.vue -comment -string",
+  "patterns": [
+    {
+      "name": "meta.embedded.block.weapp-vite.template.wxml",
+      "begin": "(<)(template)\\b[^>]*(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(</)(template)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "text.html.wxml",
+      "patterns": [
+        { "include": "text.html.wxml" }
+      ]
+    }
+  ]
+}

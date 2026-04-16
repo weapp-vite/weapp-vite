@@ -151,6 +151,10 @@ export function isVueDocument(document: any) {
   return document.languageId === 'vue'
 }
 
+export function isWxmlDocument(document: any) {
+  return document?.languageId === 'wxml' || document?.uri?.fsPath?.endsWith('.wxml')
+}
+
 async function pathExists(filePath: string) {
   try {
     await vscode.workspace.fs.stat(vscode.Uri.file(filePath))

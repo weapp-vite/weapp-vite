@@ -105,8 +105,38 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
   assert.equal(properties['weapp-vite.enableAppJsonDiagnostics'].default, true)
   assert.equal(properties['weapp-vite.enableHover'].default, true)
   assert.equal(properties['weapp-vite.enableCompletion'].default, true)
+  assert.equal(properties['weapp-vite.enableWxmlEnhancements'].default, true)
+  assert.equal(properties['weapp-vite.enableWxmlDefinition'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)
   assert.equal(properties['weapp-vite.promptFileIcons'].default, true)
+})
+
+it('manifest contributes wxml language and grammars', () => {
+  assert.equal(
+    packageJson.contributes.languages.some(language =>
+      language.id === 'wxml'
+      && language.extensions.includes('.wxml')
+      && language.configuration === './syntaxes/wxml.language-configuration.json',
+    ),
+    true,
+  )
+
+  assert.equal(
+    packageJson.contributes.grammars.some(grammar =>
+      grammar.language === 'wxml'
+      && grammar.scopeName === 'text.html.wxml'
+      && grammar.path === './syntaxes/wxml.tmLanguage.json',
+    ),
+    true,
+  )
+
+  assert.equal(
+    packageJson.contributes.grammars.some(grammar =>
+      grammar.scopeName === 'text.html.vue.weapp-vite-wxml-template'
+      && grammar.path === './syntaxes/vue-template-wxml.injection.tmLanguage.json',
+    ),
+    true,
+  )
 })
 
 it('manifest contributes pages explorer view', () => {

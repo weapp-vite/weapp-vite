@@ -24,6 +24,14 @@ export function isCompletionEnabled() {
   return getExtensionConfiguration().get('enableCompletion', true)
 }
 
+export function isWxmlEnhancementEnabled() {
+  return getExtensionConfiguration().get('enableWxmlEnhancements', true)
+}
+
+export function isWxmlDefinitionEnabled() {
+  return getExtensionConfiguration().get('enableWxmlDefinition', true)
+}
+
 export function useWvAlias() {
   return getExtensionConfiguration().get('preferWvAlias', true)
 }

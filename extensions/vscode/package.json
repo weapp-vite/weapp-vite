@@ -51,6 +51,7 @@
     "vscode": "^1.88.0"
   },
   "activationEvents": [
+    "onLanguage:wxml",
     "workspaceContains:**/vite.config.ts",
     "workspaceContains:**/vite.config.mts",
     "workspaceContains:**/vite.config.js",
@@ -334,6 +335,16 @@
           "default": true,
           "description": "是否启用 package.json、vite.config.*、.vue 中的上下文补全。"
         },
+        "weapp-vite.enableWxmlEnhancements": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用 .wxml 与 weapp-vite 页面/组件 .vue <template> 的 WXML 增强能力。"
+        },
+        "weapp-vite.enableWxmlDefinition": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用 .wxml 与 weapp-vite 页面/组件 .vue <template> 中的点击跳转。"
+        },
         "weapp-vite.preferWvAlias": {
           "type": "boolean",
           "default": true,
@@ -346,6 +357,19 @@
         }
       }
     },
+    "languages": [
+      {
+        "id": "wxml",
+        "aliases": [
+          "WXML",
+          "wxml"
+        ],
+        "extensions": [
+          ".wxml"
+        ],
+        "configuration": "./syntaxes/wxml.language-configuration.json"
+      }
+    ],
     "snippets": [
       {
         "language": "vue",
@@ -362,6 +386,11 @@
     ],
     "grammars": [
       {
+        "language": "wxml",
+        "scopeName": "text.html.wxml",
+        "path": "./syntaxes/wxml.tmLanguage.json"
+      },
+      {
         "scopeName": "text.html.vue.weapp-vite-custom-blocks",
         "path": "./syntaxes/weapp-vite-custom-blocks.tmLanguage.json",
         "injectTo": [
@@ -373,6 +402,16 @@
           "source.json5": "json5",
           "source.js": "javascript",
           "source.ts": "typescript"
+        }
+      },
+      {
+        "scopeName": "text.html.vue.weapp-vite-wxml-template",
+        "path": "./syntaxes/vue-template-wxml.injection.tmLanguage.json",
+        "injectTo": [
+          "text.html.vue"
+        ],
+        "embeddedLanguages": {
+          "text.html.wxml": "wxml"
         }
       }
     ],

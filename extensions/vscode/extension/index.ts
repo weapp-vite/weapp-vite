@@ -75,6 +75,12 @@ import {
   WeappViteVueDocumentLinkProvider,
 } from './providers'
 import {
+  WeappTemplateCompletionProvider,
+  WeappTemplateDefinitionProvider,
+  WeappTemplateDocumentLinkProvider,
+  WeappTemplateHoverProvider,
+} from './templateProviders'
+import {
   WeappVitePagesTreeProvider,
 } from './tree'
 import {
@@ -381,6 +387,10 @@ export function activate(context: any) {
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
   const vueDocumentLinkProvider = new WeappViteVueDocumentLinkProvider()
+  const wxmlCompletionProvider = new WeappTemplateCompletionProvider()
+  const wxmlHoverProvider = new WeappTemplateHoverProvider()
+  const wxmlDocumentLinkProvider = new WeappTemplateDocumentLinkProvider()
+  const wxmlDefinitionProvider = new WeappTemplateDefinitionProvider()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
     showCollapseAll: true,
@@ -467,6 +477,13 @@ export function activate(context: any) {
       { language: 'vue', scheme: 'file' },
       vueDocumentLinkProvider,
     ),
+    vscode.languages.registerDocumentLinkProvider(
+      [
+        { language: 'vue', scheme: 'file' },
+        { language: 'wxml', scheme: 'file' },
+      ],
+      wxmlDocumentLinkProvider,
+    ),
     vscode.languages.registerCompletionItemProvider(
       [
         { language: 'json', scheme: 'file', pattern: '**/package.json' },
@@ -487,6 +504,21 @@ export function activate(context: any) {
       '{',
       '\n',
     ),
+    vscode.languages.registerCompletionItemProvider(
+      [
+        { language: 'vue', scheme: 'file' },
+        { language: 'wxml', scheme: 'file' },
+      ],
+      wxmlCompletionProvider,
+      '<',
+      ' ',
+      ':',
+      '@',
+      '.',
+      '-',
+      '"',
+      '\'',
+    ),
     vscode.languages.registerHoverProvider(
       [
         { language: 'json', scheme: 'file', pattern: '**/package.json' },
@@ -496,6 +528,20 @@ export function activate(context: any) {
         { language: 'vue', scheme: 'file' },
       ],
       hoverProvider,
+    ),
+    vscode.languages.registerHoverProvider(
+      [
+        { language: 'vue', scheme: 'file' },
+        { language: 'wxml', scheme: 'file' },
+      ],
+      wxmlHoverProvider,
+    ),
+    vscode.languages.registerDefinitionProvider(
+      [
+        { language: 'vue', scheme: 'file' },
+        { language: 'wxml', scheme: 'file' },
+      ],
+      wxmlDefinitionProvider,
     ),
     vscode.window.onDidChangeActiveTextEditor(() => {
       void refreshStatusBar()

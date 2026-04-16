@@ -162,6 +162,10 @@ function createMockVscode() {
         registeredProviders.push({ type: 'hover', selector })
         return { dispose() {} }
       },
+      registerDefinitionProvider(selector) {
+        registeredProviders.push({ type: 'definition', selector })
+        return { dispose() {} }
+      },
     },
     env: {
       openExternal: async () => true,
@@ -215,6 +219,7 @@ function createMockVscode() {
       Function: 3,
       Value: 4,
       File: 5,
+      Module: 6,
     },
     SnippetString: class {
       constructor(value) {
@@ -358,7 +363,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 8)
+    assert.equal(state.registeredProviders.length, 12)
     assert.equal(state.createdTreeViews.length, 1)
     assert.equal(state.createdTreeViews[0].viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)
