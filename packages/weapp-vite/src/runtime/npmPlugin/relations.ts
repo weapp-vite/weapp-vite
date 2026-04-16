@@ -29,11 +29,7 @@ export function resolvePlatformProjectRoot(configService: MutableCompilerContext
 
 export function getPackNpmRelationList(ctx: MutableCompilerContext) {
   const configService = requireConfigService(ctx, '解析 npm 关联列表前必须初始化 configService。')
-  const multiPlatformConfig = configService.weappViteConfig?.multiPlatform
-  const isMultiPlatformEnabled = Boolean(
-    multiPlatformConfig
-    && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
-  )
+  const isMultiPlatformEnabled = configService.multiPlatform.enabled
 
   const hasManualRelations = Boolean(
     configService.projectConfig.setting?.packNpmManually

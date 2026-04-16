@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MP_PLATFORM,
   getMiniProgramPlatformAdapter,
+  getSupportedMiniProgramPlatforms,
   MINI_PLATFORM_ALIASES,
   normalizeMiniPlatform,
   resolveMiniPlatform,
@@ -36,6 +37,10 @@ describe('platform utilities', () => {
 
   it('provides a default mini program platform constant', () => {
     expect(DEFAULT_MP_PLATFORM).toBe('weapp')
+  })
+
+  it('returns supported platforms in adapter order', () => {
+    expect(getSupportedMiniProgramPlatforms()).toEqual(['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'])
   })
 
   it('returns adapter metadata for supported platforms', () => {

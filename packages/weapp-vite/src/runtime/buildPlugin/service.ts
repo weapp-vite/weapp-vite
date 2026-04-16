@@ -294,11 +294,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       await cleanOutputs(configService)
     }
     const pluginOnly = configService.pluginOnly
-    const multiPlatformConfig = configService.weappViteConfig.multiPlatform
-    const isMultiPlatformEnabled = Boolean(
-      multiPlatformConfig
-      && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
-    )
+    const isMultiPlatformEnabled = configService.multiPlatform.enabled
     const isLibMode = configService.weappLibConfig?.enabled
     const shouldEmitLibDts = Boolean(
       isLibMode

@@ -86,6 +86,10 @@ export interface EnhanceOptions {
 export interface MultiPlatformConfig {
   enabled?: boolean
   projectConfigRoot?: string
+  /**
+   * @description 多平台模式下允许参与构建/开发的目标平台集合
+   */
+  targets?: 'all' | readonly MpPlatform[]
 }
 
 /**

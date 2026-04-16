@@ -16,6 +16,16 @@ const tsconfigPathsMock = vi.hoisted(() => vi.fn((options?: Record<string, unkno
 const getOutputExtensionsMock = vi.hoisted(() => vi.fn(() => ({ json: 'json' })))
 const getWeappViteConfigMock = vi.hoisted(() => vi.fn(() => ({})))
 const normalizeMiniPlatformMock = vi.hoisted(() => vi.fn((value?: string) => value))
+const resolveMiniPlatformMock = vi.hoisted(() => vi.fn((value?: string) => {
+  if (value === 'wechat') {
+    return 'weapp'
+  }
+  if (value === 'weapp' || value === 'alipay' || value === 'tt' || value === 'swan' || value === 'jd' || value === 'xhs') {
+    return value
+  }
+  return undefined
+}))
+const getSupportedMiniProgramPlatformsMock = vi.hoisted(() => vi.fn(() => ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs']))
 const resolveWeappConfigFileMock = vi.hoisted(() => vi.fn(async () => undefined))
 const createCjsConfigLoadErrorMock = vi.hoisted(() => vi.fn(() => null))
 const getAliasEntriesMock = vi.hoisted(() => vi.fn(() => []))
@@ -63,7 +73,9 @@ vi.mock('../../../logger', () => ({
 
 vi.mock('../../../platform', () => ({
   DEFAULT_MP_PLATFORM: 'weapp',
+  getSupportedMiniProgramPlatforms: getSupportedMiniProgramPlatformsMock,
   normalizeMiniPlatform: normalizeMiniPlatformMock,
+  resolveMiniPlatform: resolveMiniPlatformMock,
 }))
 
 vi.mock('../../../utils', () => ({
@@ -218,6 +230,33 @@ describe('runtime config internal loadConfig', () => {
       cliPlatform: undefined,
       configFile: '/project/vite.config.ts',
     } as any)).rejects.toThrow('请通过 --platform 指定目标小程序平台')
+  })
+
+  it('throws when platform is outside configured multiPlatform targets', async () => {
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'xhs',
+          multiPlatform: {
+            enabled: true,
+            targets: ['weapp', 'alipay'],
+          },
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'xhs',
+      configFile: '/project/vite.config.ts',
+    } as any)).rejects.toThrow('当前平台 "xhs" 不在 weapp.multiPlatform.targets 配置中')
   })
 
   it('resolves project config paths and injects rolldown/vite plugins on success path', async () => {

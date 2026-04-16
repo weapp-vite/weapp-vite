@@ -8,6 +8,7 @@ import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import logger, { configureLogger } from '../../logger'
+import { resolveMultiPlatformConfig } from '../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
@@ -198,6 +199,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       config: {},
       packageJson: {},
       platform: 'weapp',
+      multiPlatform: resolveMultiPlatformConfig(false),
       configFilePath: undefined,
       currentSubPackageRoot: undefined,
       weappWeb: undefined,
@@ -275,6 +277,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     get outDir() {
       return path.resolve(options.cwd, options.mpDistRoot ?? '')
+    },
+    get multiPlatform() {
+      return options.multiPlatform
     },
     get currentSubPackageRoot() {
       return options.currentSubPackageRoot

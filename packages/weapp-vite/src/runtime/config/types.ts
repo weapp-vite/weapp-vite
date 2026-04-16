@@ -2,6 +2,7 @@ import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
+import type { ResolvedMultiPlatformConfig } from '../../multiPlatform'
 import type { OutputExtensions } from '../../platforms/types'
 import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappLibComponentJson, WeappLibConfig, WeappLibDtsOptions, WeappLibFileName, WeappWebConfig } from '../../types'
 
@@ -32,6 +33,7 @@ export interface LoadConfigResult {
   projectConfigPath?: string
   projectPrivateConfigPath?: string
   mpDistRoot: string
+  multiPlatform: ResolvedMultiPlatformConfig
   weappLib?: ResolvedWeappLibConfig
   weappLibOutputMap?: Map<string, string>
   packageJsonPath: string
@@ -88,6 +90,7 @@ export interface ConfigService {
   readonly emitDefaultAutoImportOutputs: boolean
   readonly mpDistRoot: string
   readonly outDir: string
+  readonly multiPlatform: ResolvedMultiPlatformConfig
   readonly inlineConfig: InlineConfig
   readonly weappViteConfig: NonNullable<InlineConfig['weapp']>
   readonly packageJson: PackageJson

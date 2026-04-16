@@ -120,6 +120,11 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       absolutePluginRoot: undefined,
       absoluteSrcRoot: '/project/src',
       platform: 'weapp',
+      multiPlatform: {
+        enabled: false,
+        projectConfigRoot: 'config',
+        targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+      },
       packageJson: {},
       cwd: '/project',
       projectConfigPath: '/project/project.config.json',
@@ -324,6 +329,11 @@ describe('runtime buildPlugin service', () => {
         isDev: false,
         absolutePluginRoot: '/project/src/plugin',
         absolutePluginOutputRoot: '/project/dist-plugin',
+        multiPlatform: {
+          enabled: true,
+          projectConfigRoot: 'config',
+          targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+        },
         weappViteConfig: {
           multiPlatform: true,
         },

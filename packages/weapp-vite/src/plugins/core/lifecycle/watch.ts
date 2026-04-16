@@ -4,6 +4,7 @@ import { fs } from '@weapp-core/shared'
 import path from 'pathe'
 import { configExtensions, supportedCssLangs } from '../../../constants'
 import logger from '../../../logger'
+import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
@@ -143,20 +144,13 @@ export function createWatchChangeHook(state: CorePluginState) {
     }
 
     if (!subPackageMeta && !configService.weappLibConfig?.enabled) {
-      const multiPlatformConfig = configService.weappViteConfig?.multiPlatform
-      const isMultiPlatformEnabled = Boolean(
-        multiPlatformConfig
-        && (typeof multiPlatformConfig !== 'object' || multiPlatformConfig.enabled !== false),
-      )
+      const isMultiPlatformEnabled = configService.multiPlatform.enabled
       const platform = configService.platform ?? DEFAULT_MP_PLATFORM
       const projectConfigFileName = getProjectConfigFileName(platform)
       const projectPrivateConfigFileName = getProjectPrivateConfigFileName(platform)
       let shouldMarkProjectConfigDirty = relativeCwd === projectConfigFileName || relativeCwd === projectPrivateConfigFileName
       if (isMultiPlatformEnabled) {
-        const projectConfigRoot = typeof multiPlatformConfig === 'object' && multiPlatformConfig.projectConfigRoot?.trim()
-          ? multiPlatformConfig.projectConfigRoot.trim()
-          : 'config'
-        const platformConfigDir = path.join(projectConfigRoot, platform)
+        const platformConfigDir = resolveMultiPlatformProjectConfigDir(configService.multiPlatform, platform)
         const platformConfigPrefix = `${platformConfigDir}/`
         shouldMarkProjectConfigDirty = relativeCwd.startsWith(platformConfigPrefix)
       }

@@ -1,8 +1,13 @@
 import type { PackageJson } from 'pkg-types'
 import type { RolldownPluginOption } from 'rolldown'
+import type { ResolvedMultiPlatformConfig } from '../../../../multiPlatform'
 import type { MpPlatform } from '../../../../types'
 import fs from 'node:fs/promises'
 import path from 'pathe'
+import {
+  DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT,
+  resolveMultiPlatformProjectConfigDir,
+} from '../../../../multiPlatform'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../../utils'
 import { toPosixPath } from '../../../../utils/path'
 
@@ -21,37 +26,7 @@ export function pluginMatchesName(plugin: RolldownPluginOption<any>, targetName:
   return false
 }
 
-export interface ResolvedMultiPlatformConfig {
-  enabled: boolean
-  projectConfigRoot: string
-}
-
-export function resolveMultiPlatformConfig(value: unknown): ResolvedMultiPlatformConfig {
-  if (!value) {
-    return {
-      enabled: false,
-      projectConfigRoot: 'config',
-    }
-  }
-  if (value === true) {
-    return {
-      enabled: true,
-      projectConfigRoot: 'config',
-    }
-  }
-  if (typeof value === 'object' && value !== null) {
-    const record = value as { enabled?: boolean, projectConfigRoot?: string }
-    const root = record.projectConfigRoot?.trim()
-    return {
-      enabled: record.enabled !== false,
-      projectConfigRoot: root || 'config',
-    }
-  }
-  return {
-    enabled: false,
-    projectConfigRoot: 'config',
-  }
-}
+export { resolveMultiPlatformConfig } from '../../../../multiPlatform'
 
 export function resolveProjectConfigPaths(options: {
   platform: MpPlatform
@@ -78,10 +53,10 @@ export function resolveProjectConfigPaths(options: {
       privatePath: projectPrivateConfigFileName,
     }
   }
-  const rootDir = options.multiPlatform.projectConfigRoot || 'config'
+  const rootDir = resolveMultiPlatformProjectConfigDir(options.multiPlatform, options.platform)
   return {
-    basePath: path.join(rootDir, options.platform, projectConfigFileName),
-    privatePath: path.join(rootDir, options.platform, projectPrivateConfigFileName),
+    basePath: path.join(rootDir, projectConfigFileName),
+    privatePath: path.join(rootDir, projectPrivateConfigFileName),
   }
 }
 
@@ -98,6 +73,8 @@ export function normalizeRelativeDistRoot(value: string) {
   const normalized = toPosixPath(value).replace(TRAILING_SLASH_RE, '')
   return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
+
+export { DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT }
 
 export async function loadPackageJson(cwd: string) {
   const packageJsonPath = path.resolve(cwd, 'package.json')

@@ -93,6 +93,11 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
     projectConfigPath: '/project/project.config.json',
     projectPrivateConfigPath: '/project/project.private.config.json',
     platform: 'weapp',
+    multiPlatform: {
+      enabled: false,
+      projectConfigRoot: 'config',
+      targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+    },
     configFilePath: '/project/weapp-vite.config.ts',
     weappWeb: undefined,
     weappLib: undefined,

@@ -76,10 +76,17 @@ export function createMiniProgramPlatformRegistry(adapters: readonly MiniProgram
 const { adapterById: PLATFORM_ADAPTER_BY_ID, aliasToId: PLATFORM_ALIAS_TO_ID } = createMiniProgramPlatformRegistry(
   MINI_PROGRAM_PLATFORM_ADAPTERS,
 )
+const SUPPORTED_MINI_PROGRAM_PLATFORMS = Object.freeze(
+  MINI_PROGRAM_PLATFORM_ADAPTERS.map(adapter => adapter.id),
+) as readonly MpPlatform[]
 
 export const MINI_PLATFORM_ALIASES: Readonly<Record<string, MpPlatform>> = Object.freeze(
   Object.fromEntries(PLATFORM_ALIAS_TO_ID.entries()),
 ) as Readonly<Record<string, MpPlatform>>
+
+export function getSupportedMiniProgramPlatforms(): readonly MpPlatform[] {
+  return SUPPORTED_MINI_PROGRAM_PLATFORMS
+}
 
 export function normalizeMiniPlatform(input?: string | null): string | undefined {
   const normalized = input?.trim().toLowerCase()

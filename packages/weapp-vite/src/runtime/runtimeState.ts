@@ -12,6 +12,7 @@ import process from 'node:process'
 import PQueue from 'p-queue'
 import { FileCache } from '../cache'
 import { getOutputExtensions } from '../defaults'
+import { resolveMultiPlatformConfig } from '../multiPlatform'
 import { createAutoRoutesArtifacts, createEmptyAutoRoutesSnapshot } from './autoRoutesPlugin/service/shared'
 
 interface AutoRoutesCandidateState {
@@ -44,6 +45,7 @@ function createDefaultLoadConfigResult(): LoadConfigResult {
     projectConfigPath: undefined,
     projectPrivateConfigPath: undefined,
     mpDistRoot: '',
+    multiPlatform: resolveMultiPlatformConfig(false),
     weappLib: undefined,
     weappLibOutputMap: undefined,
     packageJsonPath: '',

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { normalizePath } from '../../../../utils/path'
 import {
+  DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT,
   formatProjectConfigPath,
   loadPackageJson,
   normalizeRelativeDistRoot,
@@ -28,25 +29,29 @@ describe('loadConfig shared', () => {
   it('resolves multi-platform config defaults and object overrides', () => {
     expect(resolveMultiPlatformConfig(undefined)).toEqual({
       enabled: false,
-      projectConfigRoot: 'config',
+      projectConfigRoot: DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT,
+      targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
     })
     expect(resolveMultiPlatformConfig(true)).toEqual({
       enabled: true,
-      projectConfigRoot: 'config',
+      projectConfigRoot: DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT,
+      targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
     })
     expect(resolveMultiPlatformConfig({
       enabled: false,
       projectConfigRoot: ' custom-root ',
+      targets: ['wechat', 'alipay', 'alipay'],
     })).toEqual({
       enabled: false,
       projectConfigRoot: 'custom-root',
+      targets: ['weapp', 'alipay'],
     })
   })
 
   it('resolves project config paths for explicit, default and multi-platform modes', () => {
     expect(resolveProjectConfigPaths({
       platform: 'weapp',
-      multiPlatform: { enabled: false, projectConfigRoot: 'config' },
+      multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] },
       projectConfigPath: 'custom/project.config.json',
       isWebRuntime: false,
     })).toEqual({
@@ -56,7 +61,7 @@ describe('loadConfig shared', () => {
 
     expect(resolveProjectConfigPaths({
       platform: 'weapp',
-      multiPlatform: { enabled: false, projectConfigRoot: 'config' },
+      multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] },
       isWebRuntime: false,
     })).toEqual({
       basePath: 'project.config.json',
@@ -65,7 +70,7 @@ describe('loadConfig shared', () => {
 
     expect(resolveProjectConfigPaths({
       platform: 'alipay',
-      multiPlatform: { enabled: true, projectConfigRoot: 'configs' },
+      multiPlatform: { enabled: true, projectConfigRoot: 'configs', targets: ['weapp', 'alipay'] },
       isWebRuntime: false,
     })).toEqual({
       basePath: 'configs/alipay/mini.project.json',
@@ -74,9 +79,21 @@ describe('loadConfig shared', () => {
 
     expect(resolveProjectConfigPaths({
       platform: 'weapp',
-      multiPlatform: { enabled: true, projectConfigRoot: 'config' },
+      multiPlatform: { enabled: true, projectConfigRoot: 'config', targets: ['weapp', 'alipay'] },
       isWebRuntime: true,
     })).toEqual({})
+  })
+
+  it('throws when multi-platform targets are empty or unsupported', () => {
+    expect(() => resolveMultiPlatformConfig({
+      enabled: true,
+      targets: [],
+    })).toThrow('至少需要包含一个目标平台')
+
+    expect(() => resolveMultiPlatformConfig({
+      enabled: true,
+      targets: ['weapp', 'unknown'],
+    })).toThrow('包含不支持的平台')
   })
 
   it('formats project config paths relative to cwd when possible', () => {

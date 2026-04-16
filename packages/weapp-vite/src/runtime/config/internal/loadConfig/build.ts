@@ -2,6 +2,7 @@ import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
 import type { LoadConfigResult } from '../../types'
 import logger from '../../../../logger'
+import { supportsMultiPlatformTarget } from '../../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform } from '../../../../platform'
 import { createLibEntryFileNameResolver } from '../../../lib'
 import { createLegacyEs5Plugin } from '../../legacyEs5'
@@ -22,7 +23,7 @@ export function resolveMultiPlatformProjectConfigHint(
   platform: string,
   projectConfigRoot = 'config',
 ) {
-  return `${projectConfigRoot}/${platform}/project.config.${platform}.json`
+  return `${projectConfigRoot}/${platform}/project.config.json`
 }
 
 export function configureBuildAndPlugins(options: {
@@ -150,10 +151,13 @@ export function configureBuildAndPlugins(options: {
   if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
     throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
   }
+  if (multiPlatform.enabled && !isWebRuntime && !supportsMultiPlatformTarget(multiPlatform, platform)) {
+    throw new Error(`当前平台 "${platform}" 不在 weapp.multiPlatform.targets 配置中，可选平台：${multiPlatform.targets.join(', ')}`)
+  }
   if (multiPlatform.enabled && !isWebRuntime && projectConfigPath) {
     const expectedPath = resolveMultiPlatformProjectConfigHint(
       platform,
-      multiPlatform.projectConfigRoot || 'config',
+      multiPlatform.projectConfigRoot,
     )
     throw new Error(`已开启 weapp.multiPlatform，--project-config 不再支持，请使用 ${formatProjectConfigPath(cwd, expectedPath)}`)
   }

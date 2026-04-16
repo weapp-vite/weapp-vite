@@ -370,6 +370,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       projectConfigPath: projectConfigPathResolved,
       projectPrivateConfigPath: projectPrivateConfigPathResolved,
       mpDistRoot,
+      multiPlatform,
       packageJsonPath,
       platform,
       srcRoot,

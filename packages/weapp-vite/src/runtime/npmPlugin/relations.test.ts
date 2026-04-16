@@ -13,11 +13,22 @@ function createContext(options: {
   multiPlatform?: boolean | { enabled?: boolean }
   projectConfig?: Record<string, any>
 }) {
+  const resolvedMultiPlatform = options.multiPlatform === true
+    ? { enabled: true, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] }
+    : options.multiPlatform === false || options.multiPlatform == null
+      ? { enabled: false, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] }
+      : {
+          enabled: options.multiPlatform.enabled !== false,
+          projectConfigRoot: 'config',
+          targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+        }
+
   return {
     configService: {
       absolutePluginOutputRoot: options.absolutePluginOutputRoot,
       outDir: '/project/dist',
       pluginOnly: options.pluginOnly ?? false,
+      multiPlatform: resolvedMultiPlatform,
       platform: options.platform ?? 'weapp',
       weappViteConfig: {
         multiPlatform: options.multiPlatform ?? false,
