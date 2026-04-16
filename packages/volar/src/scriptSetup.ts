@@ -215,23 +215,6 @@ function extractDefineOptionsObjectLiteral(node: ts.CallExpression, tsModule: ty
   return undefined
 }
 
-function collectObjectLiteralKeys(node: ts.ObjectLiteralExpression, tsModule: typeof ts) {
-  const keys: string[] = []
-  for (const property of node.properties) {
-    if (!tsModule.isPropertyAssignment(property)
-      && !tsModule.isMethodDeclaration(property)
-      && !tsModule.isShorthandPropertyAssignment(property)
-      && !tsModule.isGetAccessorDeclaration(property)) {
-      continue
-    }
-    const key = getPropertyNameText(property.name, tsModule)
-    if (key && isIdentifierName(key)) {
-      keys.push(key)
-    }
-  }
-  return keys
-}
-
 function setBindingType(map: Map<string, string>, name: string, typeText: string) {
   if (!map.has(name)) {
     map.set(name, typeText)
@@ -275,6 +258,25 @@ function getRuntimeConstructorType(node: ts.Expression, tsModule: typeof ts): st
   }
 
   return null
+}
+
+function getFunctionSignatureTypeText(
+  node: ts.FunctionLikeDeclaration | ts.MethodDeclaration,
+  sourceFile: ts.SourceFile,
+) {
+  const hasTypedSignature = node.parameters.some(parameter => Boolean(parameter.type))
+    || Boolean(node.type)
+
+  if (!hasTypedSignature) {
+    return '(...args: any[]) => any'
+  }
+
+  const paramsText = node.parameters
+    .map(parameter => parameter.getText(sourceFile))
+    .join(', ')
+  const returnTypeText = node.type?.getText(sourceFile) ?? 'any'
+
+  return `(${paramsText}) => ${returnTypeText}`
 }
 
 function getMiniProgramPropertyType(node: ts.Expression, tsModule: typeof ts) {
@@ -432,7 +434,7 @@ function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts,
   )
 
   const valueBindings = new Map<string, string>()
-  const functionBindings = new Set<string>()
+  const functionBindings = new Map<string, string>()
 
   const visit = (node: ts.Node) => {
     if (tsModule.isCallExpression(node)) {
@@ -453,8 +455,27 @@ function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts,
               ? unwrapParenthesizedExpression(property.initializer, tsModule)
               : undefined
             if (methodsObject && tsModule.isObjectLiteralExpression(methodsObject)) {
-              for (const name of collectObjectLiteralKeys(methodsObject, tsModule)) {
-                functionBindings.add(name)
+              for (const entry of methodsObject.properties) {
+                if (!tsModule.isPropertyAssignment(entry)
+                  && !tsModule.isMethodDeclaration(entry)
+                  && !tsModule.isShorthandPropertyAssignment(entry)) {
+                  continue
+                }
+
+                const name = getPropertyNameText(entry.name, tsModule)
+
+                if (!name || !isIdentifierName(name)) {
+                  continue
+                }
+
+                const typeText = tsModule.isPropertyAssignment(entry)
+                  && (tsModule.isArrowFunction(entry.initializer) || tsModule.isFunctionExpression(entry.initializer))
+                  ? getFunctionSignatureTypeText(entry.initializer, sourceFile)
+                  : tsModule.isMethodDeclaration(entry)
+                    ? getFunctionSignatureTypeText(entry, sourceFile)
+                    : '(...args: any[]) => any'
+
+                setBindingType(functionBindings, name, typeText)
               }
             }
             continue
@@ -572,11 +593,11 @@ export function createDefineOptionsTemplateDeclarations(
     declarations.push(`const ${name}: ${typeText} = null as any`)
   }
 
-  for (const name of bindings.functions) {
+  for (const [name, typeText] of bindings.functions) {
     if (topLevelBindings.has(name)) {
       continue
     }
-    declarations.push(`const ${name}: (...args: any[]) => any = null as any`)
+    declarations.push(`const ${name}: ${typeText} = null as any`)
   }
 
   return declarations.join('\n')

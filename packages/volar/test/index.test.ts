@@ -316,4 +316,29 @@ defineOptions({
     expect(generated).toContain('__VLS_ctx.title')
     expect(generated).toContain('__VLS_ctx.ready')
   })
+
+  it('preserves typed defineOptions method signatures in template bindings', () => {
+    const source = `<script setup lang="ts">
+defineOptions({
+  methods: {
+    onSubmit(event: CustomEvent<{ id: number }>): void {},
+    formatLabel: (count: number): string => String(count),
+    onReset() {},
+  },
+})
+</script>
+<template>
+  <view @tap="onSubmit" />
+  <view>{{ formatLabel(1) }}</view>
+  <view @tap="onReset" />
+</template>`
+
+    const { generated } = getGeneratedServiceScript(source)
+    expect(generated).toContain('const onSubmit: (event: CustomEvent<{ id: number }>) => void = null as any')
+    expect(generated).toContain('const formatLabel: (count: number) => string = null as any')
+    expect(generated).toContain('const onReset: (...args: any[]) => any = null as any')
+    expect(generated).toContain('__VLS_ctx.onSubmit')
+    expect(generated).toContain('__VLS_ctx.formatLabel')
+    expect(generated).toContain('__VLS_ctx.onReset')
+  })
 })
