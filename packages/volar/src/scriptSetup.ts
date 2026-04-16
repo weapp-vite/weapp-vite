@@ -228,6 +228,173 @@ function collectObjectLiteralKeys(node: ts.ObjectLiteralExpression, tsModule: ty
   return keys
 }
 
+function setBindingType(map: Map<string, string>, name: string, typeText: string) {
+  if (!map.has(name)) {
+    map.set(name, typeText)
+  }
+}
+
+function getRuntimeConstructorType(node: ts.Expression, tsModule: typeof ts): string | null {
+  if (tsModule.isIdentifier(node)) {
+    if (node.text === 'String') {
+      return 'string'
+    }
+    if (node.text === 'Number') {
+      return 'number'
+    }
+    if (node.text === 'Boolean') {
+      return 'boolean'
+    }
+    if (node.text === 'Array') {
+      return 'any[]'
+    }
+    if (node.text === 'Object') {
+      return 'Record<string, any>'
+    }
+  }
+
+  if (tsModule.isArrayLiteralExpression(node)) {
+    const types = [...new Set(
+      node.elements
+        .map((element) => {
+          if (tsModule.isSpreadElement(element)) {
+            return null
+          }
+          return getRuntimeConstructorType(element, tsModule)
+        })
+        .filter((typeText): typeText is string => Boolean(typeText)),
+    )]
+
+    return types.length > 0
+      ? types.join(' | ')
+      : null
+  }
+
+  return null
+}
+
+function getMiniProgramPropertyType(node: ts.Expression, tsModule: typeof ts) {
+  const runtimeType = getRuntimeConstructorType(node, tsModule)
+
+  if (runtimeType) {
+    return runtimeType
+  }
+
+  if (!tsModule.isObjectLiteralExpression(node)) {
+    return 'any'
+  }
+
+  for (const property of node.properties) {
+    if (!tsModule.isPropertyAssignment(property)) {
+      continue
+    }
+
+    const name = getPropertyNameText(property.name, tsModule)
+
+    if (name !== 'type') {
+      continue
+    }
+
+    return getRuntimeConstructorType(
+      unwrapParenthesizedExpression(property.initializer, tsModule),
+      tsModule,
+    ) ?? 'any'
+  }
+
+  return 'any'
+}
+
+function getExpressionTypeText(
+  node: ts.Expression,
+  tsModule: typeof ts,
+  sourceFile: ts.SourceFile,
+): string {
+  const expression = unwrapParenthesizedExpression(node, tsModule)
+
+  if (tsModule.isAsExpression(expression) || tsModule.isTypeAssertionExpression(expression)) {
+    return expression.type.getText(sourceFile)
+  }
+
+  if (tsModule.isStringLiteral(expression) || tsModule.isNoSubstitutionTemplateLiteral(expression)) {
+    return 'string'
+  }
+
+  if (tsModule.isNumericLiteral(expression)) {
+    return 'number'
+  }
+
+  if (expression.kind === tsModule.SyntaxKind.TrueKeyword || expression.kind === tsModule.SyntaxKind.FalseKeyword) {
+    return 'boolean'
+  }
+
+  if (tsModule.isPrefixUnaryExpression(expression) && tsModule.isNumericLiteral(expression.operand)) {
+    return 'number'
+  }
+
+  if (tsModule.isArrayLiteralExpression(expression)) {
+    const itemTypes = [...new Set(
+      expression.elements
+        .map((element) => {
+          if (tsModule.isSpreadElement(element)) {
+            return null
+          }
+          return getExpressionTypeText(element, tsModule, sourceFile)
+        })
+        .filter((typeText): typeText is string => Boolean(typeText) && typeText !== 'undefined'),
+    )]
+
+    if (itemTypes.length === 0) {
+      return 'any[]'
+    }
+
+    return itemTypes.length === 1
+      ? `${itemTypes[0]}[]`
+      : `(${itemTypes.join(' | ')})[]`
+  }
+
+  if (tsModule.isObjectLiteralExpression(expression)) {
+    const fields: string[] = []
+
+    for (const property of expression.properties) {
+      if (tsModule.isPropertyAssignment(property)) {
+        const name = getPropertyNameText(property.name, tsModule)
+
+        if (name) {
+          fields.push(`${name}: ${getExpressionTypeText(property.initializer, tsModule, sourceFile)}`)
+        }
+        continue
+      }
+
+      if (tsModule.isShorthandPropertyAssignment(property)) {
+        fields.push(`${property.name.text}: any`)
+        continue
+      }
+
+      if (tsModule.isMethodDeclaration(property) || tsModule.isGetAccessorDeclaration(property)) {
+        const name = getPropertyNameText(property.name, tsModule)
+
+        if (name) {
+          fields.push(`${name}: (...args: any[]) => any`)
+        }
+      }
+    }
+
+    return fields.length > 0
+      ? `{ ${fields.join('; ')} }`
+      : 'Record<string, any>'
+  }
+
+  if (tsModule.isArrowFunction(expression) || tsModule.isFunctionExpression(expression)) {
+    return '(...args: any[]) => any'
+  }
+
+  if (tsModule.isIdentifier(expression) && expression.text === 'undefined') {
+    return 'undefined'
+  }
+
+  return 'any'
+}
+
 function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts, lang: string) {
   const scriptKind = lang === TS_LANG ? TS_SCRIPT_KIND_TS : TS_SCRIPT_KIND_JS
   const sourceFile = tsModule.createSourceFile(
@@ -238,7 +405,7 @@ function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts,
     scriptKind,
   )
 
-  const valueBindings = new Set<string>()
+  const valueBindings = new Map<string, string>()
   const functionBindings = new Set<string>()
 
   const visit = (node: ts.Node) => {
@@ -272,8 +439,28 @@ function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts,
               ? unwrapParenthesizedExpression(property.initializer, tsModule)
               : undefined
             if (objectValue && tsModule.isObjectLiteralExpression(objectValue)) {
-              for (const name of collectObjectLiteralKeys(objectValue, tsModule)) {
-                valueBindings.add(name)
+              for (const entry of objectValue.properties) {
+                if (!tsModule.isPropertyAssignment(entry)
+                  && !tsModule.isMethodDeclaration(entry)
+                  && !tsModule.isShorthandPropertyAssignment(entry)
+                  && !tsModule.isGetAccessorDeclaration(entry)) {
+                  continue
+                }
+
+                const name = getPropertyNameText(entry.name, tsModule)
+
+                if (!name || !isIdentifierName(name)) {
+                  continue
+                }
+
+                const typeText = sectionName === 'properties' && tsModule.isPropertyAssignment(entry)
+                  ? getMiniProgramPropertyType(
+                      unwrapParenthesizedExpression(entry.initializer, tsModule),
+                      tsModule,
+                    )
+                  : 'any'
+
+                setBindingType(valueBindings, name, typeText)
               }
             }
             continue
@@ -294,8 +481,25 @@ function collectDefineOptionsTemplateBindings(code: string, tsModule: typeof ts,
               }
             }
             if (dataObject) {
-              for (const name of collectObjectLiteralKeys(dataObject, tsModule)) {
-                valueBindings.add(name)
+              for (const property of dataObject.properties) {
+                if (!tsModule.isPropertyAssignment(property)
+                  && !tsModule.isMethodDeclaration(property)
+                  && !tsModule.isShorthandPropertyAssignment(property)
+                  && !tsModule.isGetAccessorDeclaration(property)) {
+                  continue
+                }
+
+                const name = getPropertyNameText(property.name, tsModule)
+
+                if (!name || !isIdentifierName(name)) {
+                  continue
+                }
+
+                const typeText = tsModule.isPropertyAssignment(property)
+                  ? getExpressionTypeText(property.initializer, tsModule, sourceFile)
+                  : '(...args: any[]) => any'
+
+                setBindingType(valueBindings, name, typeText)
               }
             }
           }
@@ -321,11 +525,11 @@ export function createDefineOptionsTemplateDeclarations(
   const bindings = collectDefineOptionsTemplateBindings(code, tsModule, lang)
   const declarations: string[] = []
 
-  for (const name of bindings.values) {
+  for (const [name, typeText] of bindings.values) {
     if (topLevelBindings.has(name)) {
       continue
     }
-    declarations.push(`const ${name}: any = null as any`)
+    declarations.push(`const ${name}: ${typeText} = null as any`)
   }
 
   for (const name of bindings.functions) {

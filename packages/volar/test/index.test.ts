@@ -188,7 +188,7 @@ defineOptions({
   methods: {
     onOrderBtnTap() {},
   },
-})
+    })
 </script>
 <template>
   <view>{{ buttons.left.length }}</view>
@@ -197,8 +197,8 @@ defineOptions({
 </template>`
 
     const { generated } = getGeneratedServiceScript(source)
-    expect(generated).toContain('const buttons: any = null as any')
-    expect(generated).toContain('const isBtnMax: any = null as any')
+    expect(generated).toContain('const buttons: { left: any[]; right: any[] } = null as any')
+    expect(generated).toContain('const isBtnMax: boolean = null as any')
     expect(generated).toContain('const onOrderBtnTap: (...args: any[]) => any = null as any')
     expect(generated).toContain('__VLS_ctx.buttons')
     expect(generated).toContain('__VLS_ctx.isBtnMax')
@@ -254,10 +254,37 @@ defineOptions({
 </template>`
 
     const { generated } = getGeneratedServiceScript(source)
-    expect(generated).toContain('const total: any = null as any')
-    expect(generated).toContain('const loading: any = null as any')
+    expect(generated).toContain('const total: number = null as any')
+    expect(generated).toContain('const loading: boolean = null as any')
     expect(generated).toContain('__VLS_ctx.total')
     expect(generated).toContain('__VLS_ctx.loading')
     expect(generated).toContain('__VLS_ctx.onSubmit')
+  })
+
+  it('infers defineOptions property unions and nested data object types', () => {
+    const source = `<script setup lang="ts">
+defineOptions({
+  properties: {
+    mixedValue: [String, Number],
+  },
+  data: {
+    profile: {
+      name: 'demo',
+      tags: ['a'],
+    },
+  },
+})
+</script>
+<template>
+  <view>{{ mixedValue }}</view>
+  <view>{{ profile.name }}</view>
+  <view>{{ profile.tags.length }}</view>
+</template>`
+
+    const { generated } = getGeneratedServiceScript(source)
+    expect(generated).toContain('const mixedValue: string | number = null as any')
+    expect(generated).toContain('const profile: { name: string; tags: string[] } = null as any')
+    expect(generated).toContain('__VLS_ctx.mixedValue')
+    expect(generated).toContain('__VLS_ctx.profile')
   })
 })
