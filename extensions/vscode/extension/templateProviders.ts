@@ -319,7 +319,10 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
           return item
         })
 
-      const nativeAttributeItems = getMiniprogramComponentAttributes(tagContext.tagName)
+      const nativeAttributeItems = getMiniprogramComponentAttributes(
+        tagContext.tagName,
+        Object.fromEntries(tagContext.attributes.map(attribute => [attribute.name, attribute.value])),
+      )
         .filter(attribute => !existingAttributes.has(attribute.name))
         .map((attribute, index) => {
           const item = createCompletionItem(

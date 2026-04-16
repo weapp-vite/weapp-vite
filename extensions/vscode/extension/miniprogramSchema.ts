@@ -5,6 +5,11 @@ interface MiniprogramComponentAttributeValue {
   value: string
 }
 
+interface MiniprogramComponentAttributeConditionalValue {
+  attrs?: MiniprogramComponentAttribute[]
+  equal: string
+}
+
 interface MiniprogramComponentAttributeType {
   name?: string
 }
@@ -15,6 +20,7 @@ interface MiniprogramComponentAttribute {
   enum?: MiniprogramComponentAttributeValue[]
   name: string
   since?: string
+  subAttrs?: MiniprogramComponentAttributeConditionalValue[]
   type?: MiniprogramComponentAttributeType
 }
 
@@ -48,10 +54,13 @@ function joinMarkdownLines(lines?: string[]) {
 }
 
 function renderAttributeType(attribute: MiniprogramComponentAttribute) {
-  const enumValues = attribute.enum?.map(item => item.value).filter(Boolean) ?? []
+  const enumValues = [
+    ...(attribute.enum?.map(item => item.value).filter(Boolean) ?? []),
+    ...(attribute.subAttrs?.map(item => item.equal).filter(Boolean) ?? []),
+  ]
 
   if (enumValues.length > 0) {
-    return enumValues.map(value => `\`${value}\``).join(' | ')
+    return [...new Set(enumValues)].map(value => `\`${value}\``).join(' | ')
   }
 
   return attribute.type?.name ? `\`${attribute.type.name}\`` : ''
@@ -65,8 +74,62 @@ export function getMiniprogramComponentEntry(tagName: string) {
   return componentsByName.get(tagName) ?? null
 }
 
-export function getMiniprogramComponentAttributes(tagName: string) {
-  return getMiniprogramComponentEntry(tagName)?.attrs ?? []
+function getCurrentAttributeValue(currentAttributes: Record<string, string | boolean> | undefined, attributeName: string) {
+  return currentAttributes?.[attributeName]
+}
+
+function getAvailableAttributesFromList(
+  attributes: MiniprogramComponentAttribute[],
+  currentAttributes: Record<string, string | boolean> | undefined,
+) {
+  const results = attributes.filter(attribute => getCurrentAttributeValue(currentAttributes, attribute.name) == null)
+
+  for (const attribute of [...results]) {
+    for (const conditional of attribute.subAttrs ?? []) {
+      for (const subAttribute of conditional.attrs ?? []) {
+        if (
+          results.every(item => item.name !== subAttribute.name)
+          && getCurrentAttributeValue(currentAttributes, subAttribute.name) == null
+        ) {
+          results.push(subAttribute)
+        }
+      }
+    }
+  }
+
+  for (const attribute of attributes) {
+    const currentValue = getCurrentAttributeValue(currentAttributes, attribute.name)
+
+    if (currentValue == null) {
+      continue
+    }
+
+    const matchedConditional = attribute.subAttrs?.find(item => item.equal === currentValue)
+
+    if (!matchedConditional) {
+      continue
+    }
+
+    for (const subAttribute of matchedConditional.attrs ?? []) {
+      if (
+        results.every(item => item.name !== subAttribute.name)
+        && getCurrentAttributeValue(currentAttributes, subAttribute.name) == null
+      ) {
+        results.push(subAttribute)
+      }
+    }
+  }
+
+  return results
+}
+
+export function getMiniprogramComponentAttributes(
+  tagName: string,
+  currentAttributes?: Record<string, string | boolean>,
+) {
+  const attributes = getMiniprogramComponentEntry(tagName)?.attrs ?? []
+
+  return getAvailableAttributesFromList(attributes, currentAttributes)
 }
 
 export function getMiniprogramComponentAttribute(tagName: string, attributeName: string) {
@@ -74,7 +137,20 @@ export function getMiniprogramComponentAttribute(tagName: string, attributeName:
 }
 
 export function getMiniprogramAttributeValues(tagName: string, attributeName: string) {
-  return getMiniprogramComponentAttribute(tagName, attributeName)?.enum ?? []
+  const attribute = getMiniprogramComponentAttribute(tagName, attributeName)
+
+  if (!attribute) {
+    return []
+  }
+
+  if (attribute.enum?.length) {
+    return attribute.enum
+  }
+
+  return (attribute.subAttrs ?? []).map(item => ({
+    desc: undefined,
+    value: item.equal,
+  }))
 }
 
 export function getMiniprogramComponentHoverMarkdown(tagName: string) {

@@ -481,6 +481,141 @@ it('provides style class completions and definitions inside vue template values'
   assert.equal(definition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
 })
 
+it('filters native component attributes by current mode and completes conditional values', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), '{}'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      CompletionItem: class {
+        label
+        kind
+
+        constructor(label: string, kind: number) {
+          this.label = label
+          this.kind = kind
+        }
+      },
+      CompletionItemKind: {
+        Module: 1,
+        Property: 2,
+        Value: 3,
+        Event: 4,
+      },
+      SnippetString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
+      },
+      MarkdownString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateCompletionProvider,
+  } = await import('./templateProviders')
+
+  const completionProvider = new WeappTemplateCompletionProvider()
+  const modeValueDocument = createTextDocument(
+    'wxml',
+    '<picker mode=""></picker>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const modeValueText = modeValueDocument.getText()
+  const modeValuePosition = modeValueDocument.positionAt(modeValueText.indexOf('""') + 1)
+  const attrDocument = createTextDocument(
+    'wxml',
+    '<picker mode="time" ></picker>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const attrText = attrDocument.getText()
+  const attrPosition = attrDocument.positionAt(attrText.indexOf('></picker>') - 1)
+
+  const modeValueItems = await completionProvider.provideCompletionItems(modeValueDocument as any, modeValuePosition as any)
+  const attrItems = await completionProvider.provideCompletionItems(attrDocument as any, attrPosition as any)
+
+  assert.equal(modeValueItems.some((item: any) => item.label === 'time'), true)
+  assert.equal(modeValueItems.some((item: any) => item.label === 'region'), true)
+  assert.equal(attrItems.some((item: any) => item.label === 'start'), true)
+  assert.equal(attrItems.some((item: any) => item.label === 'end'), true)
+  assert.equal(attrItems.some((item: any) => item.label === 'range-key'), false)
+})
+
 it('highlights matching tags inside wxml documents', async () => {
   const files = new Map<string, string>([
     [path.normalize('/workspace/package.json'), JSON.stringify({
