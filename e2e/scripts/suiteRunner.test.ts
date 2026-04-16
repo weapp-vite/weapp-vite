@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
 import { createSuiteReport } from './suiteReport'
 import {
@@ -145,6 +146,20 @@ describe('suiteRunner', () => {
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.issue289.test.ts')
     expect(ideGithubIssuesLabels).toContain('ide/github-issues.runtime.lifecycle.test.ts')
     expect(ideGithubIssuesTasks.length).toBe(4)
+  })
+
+  it('uses env-based target file selection for suite vitest tasks', () => {
+    const [firstIdeSmokeTask] = getSuiteTasks('ide-smoke')
+
+    expect(firstIdeSmokeTask).toMatchObject({
+      label: 'ide/index.test.ts',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', expect.stringContaining('vitest.e2e.devtools.config.ts')],
+      env: {
+        [E2E_TARGET_FILE_ENV]: 'ide/index.test.ts',
+      },
+    })
+    expect(firstIdeSmokeTask?.args).toHaveLength(4)
   })
 
   it('lists suite metadata for layered ide execution', () => {

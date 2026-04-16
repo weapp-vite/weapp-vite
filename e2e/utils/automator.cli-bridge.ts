@@ -28,12 +28,25 @@ interface WaitForSocketReadyOptions {
   port: number
 }
 
+interface ResolvedCliSpawnOptions {
+  args: string[]
+  command: string
+  options: {
+    cwd?: string
+    detached?: boolean
+    stdio: ['ignore', 'pipe', 'pipe']
+    windowsHide?: boolean
+    windowsVerbatimArguments?: boolean
+  }
+}
+
 const FATAL_CLI_EARLY_EXIT_PATTERNS = [
   /ERR_INVALID_ARG_TYPE/i,
   /The ["']path["'] argument must be of type string/i,
   /Missing projectPath/i,
   /Failed to read project config/i,
 ]
+const WINDOWS_BATCH_CLI_RE = /\.(?:bat|cmd)$/i
 
 function summarizeTextOutput(value: string | undefined, maxLength = 400) {
   const normalized = typeof value === 'string' ? value.trim() : ''
@@ -189,6 +202,48 @@ function resolveCliPath(cliPath?: string) {
     return 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
   }
   return '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
+}
+
+function shouldUseWindowsCommandShell(cliPath: string) {
+  return process.platform === 'win32' && WINDOWS_BATCH_CLI_RE.test(cliPath)
+}
+
+function escapeWindowsCmdArg(arg: string) {
+  const escaped = arg
+    .replace(/"/g, '""')
+    .replace(/%/g, '%%')
+  return /[\s"&<>^|()]/.test(arg) ? `"${escaped}"` : escaped
+}
+
+export function resolveCliSpawnOptions(cliPath: string, args: string[], cwd?: string): ResolvedCliSpawnOptions {
+  if (shouldUseWindowsCommandShell(cliPath)) {
+    const comspec = process.env.ComSpec || 'cmd.exe'
+    const commandLine = [cliPath, ...args]
+      .map(escapeWindowsCmdArg)
+      .join(' ')
+
+    return {
+      command: comspec,
+      args: ['/d', '/s', '/c', `"${commandLine}"`],
+      options: {
+        cwd,
+        detached: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true,
+        windowsVerbatimArguments: true,
+      },
+    }
+  }
+
+  return {
+    command: cliPath,
+    args,
+    options: {
+      cwd,
+      detached: process.platform !== 'win32',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  }
 }
 
 async function reserveLoopbackPort() {
@@ -354,11 +409,8 @@ async function main() {
     args.push('--trust-project')
   }
 
-  const child = spawn(cliPath, args, {
-    cwd: payload.cwd,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    detached: process.platform !== 'win32',
-  })
+  const spawnOptions = resolveCliSpawnOptions(cliPath, args, payload.cwd)
+  const child = spawn(spawnOptions.command, spawnOptions.args, spawnOptions.options)
   child.unref()
 
   const wsEndpoint = `ws://127.0.0.1:${autoPort}`

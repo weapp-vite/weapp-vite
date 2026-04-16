@@ -1,0 +1,84 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const cleanupProcessesByCommandPatternsMock = vi.hoisted(() => vi.fn())
+const cleanupResidualDevProcessesMock = vi.hoisted(() => vi.fn())
+const execaMock = vi.hoisted(() => vi.fn())
+const fsRmMock = vi.hoisted(() => vi.fn())
+
+vi.mock('./dev-process', () => ({
+  cleanupProcessesByCommandPatterns: cleanupProcessesByCommandPatternsMock,
+}))
+
+vi.mock('./dev-process-cleanup', () => ({
+  cleanupResidualDevProcesses: cleanupResidualDevProcessesMock,
+}))
+
+vi.mock('execa', () => ({
+  execa: execaMock,
+}))
+
+vi.mock('node:fs/promises', () => ({
+  rm: fsRmMock,
+}))
+
+describe('cleanupResidualIdeProcesses', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    cleanupProcessesByCommandPatternsMock.mockReset()
+    cleanupProcessesByCommandPatternsMock.mockResolvedValue(undefined)
+    cleanupResidualDevProcessesMock.mockReset()
+    cleanupResidualDevProcessesMock.mockResolvedValue(undefined)
+    execaMock.mockReset()
+    execaMock.mockResolvedValue({ exitCode: 0 })
+    fsRmMock.mockReset()
+    fsRmMock.mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('returns unix devtools process patterns for macOS cleanup', async () => {
+    const { resolveIdeDevtoolsProcessPatterns } = await import('./ide-devtools-cleanup')
+
+    expect(resolveIdeDevtoolsProcessPatterns('darwin')).toEqual([
+      'e2e/utils/automator.cli-bridge.ts',
+      'wechatwebdevtools.app/Contents/MacOS/cli',
+      'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
+      'wechatwebdevtools',
+    ])
+  })
+
+  it('kills residual wechatdevtools processes on Windows and clears automator sessions', async () => {
+    const { cleanupResidualIdeProcesses } = await import('./ide-devtools-cleanup')
+
+    const task = cleanupResidualIdeProcesses('win32')
+    await vi.runAllTimersAsync()
+    await task
+
+    expect(cleanupResidualDevProcessesMock).toHaveBeenCalledTimes(1)
+    expect(execaMock).toHaveBeenCalledWith('taskkill', ['/F', '/IM', 'wechatdevtools.exe', '/T'], expect.objectContaining({
+      reject: false,
+    }))
+    expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
+    expect(fsRmMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('kills residual unix devtools processes by command pattern', async () => {
+    const { cleanupResidualIdeProcesses } = await import('./ide-devtools-cleanup')
+
+    const task = cleanupResidualIdeProcesses('darwin')
+    await vi.runAllTimersAsync()
+    await task
+
+    expect(cleanupResidualDevProcessesMock).toHaveBeenCalledTimes(1)
+    expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledWith([
+      'e2e/utils/automator.cli-bridge.ts',
+      'wechatwebdevtools.app/Contents/MacOS/cli',
+      'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
+      'wechatwebdevtools',
+    ], 2_500)
+    expect(execaMock).not.toHaveBeenCalled()
+    expect(fsRmMock).toHaveBeenCalledTimes(1)
+  })
+})

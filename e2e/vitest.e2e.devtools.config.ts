@@ -3,6 +3,7 @@ import process from 'node:process'
 import { defineConfig } from 'vitest/config'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport'
 import { resolveE2EMaxWorkers } from './utils/max-workers'
+import { resolveVitestIncludePatterns } from './utils/vitestTargetFile'
 
 const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
 const DEVTOOLS_SETUP_FILE = path.resolve(import.meta.dirname, './vitest.e2e.ide.setup.ts')
@@ -13,7 +14,9 @@ process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
 
 export default defineConfig({
   test: {
-    include: [path.resolve(import.meta.dirname, './ide/**/*.test.ts')],
+    include: resolveVitestIncludePatterns(import.meta.dirname, [
+      path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
+    ]),
     testTimeout: 36_000_000,
     globals: true,
     pool: 'threads',

@@ -3,8 +3,8 @@ import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
-import { afterEach, describe, expect, it } from 'vitest'
-import { extendProjectConfig, waitForSocketReady } from './automator.cli-bridge'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { extendProjectConfig, resolveCliSpawnOptions, waitForSocketReady } from './automator.cli-bridge'
 
 function createMockChild(spawnfile = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli') {
   const stdout = new PassThrough()
@@ -123,6 +123,66 @@ describe('waitForSocketReady', () => {
     child.emit('error', new Error('spawn /Applications/wechatwebdevtools.app/Contents/MacOS/cli ENOENT'))
 
     await expect(task).rejects.toThrow(/Failed to spawn WeChat DevTools CLI/)
+  })
+})
+
+describe('resolveCliSpawnOptions', () => {
+  let platformSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    platformSpy = vi.spyOn(process, 'platform', 'get')
+  })
+
+  afterEach(() => {
+    platformSpy.mockRestore()
+  })
+
+  it('launches batch cli through cmd.exe on Windows', () => {
+    platformSpy.mockReturnValue('win32')
+    process.env.ComSpec = 'C:\\Windows\\System32\\cmd.exe'
+
+    const result = resolveCliSpawnOptions(
+      'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat',
+      ['auto', '--project', 'C:/repo/demo app', '--auto-port', '9420'],
+      'C:/repo',
+    )
+
+    expect(result).toEqual({
+      command: 'C:\\Windows\\System32\\cmd.exe',
+      args: [
+        '/d',
+        '/s',
+        '/c',
+        '""C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat" auto --project "C:/repo/demo app" --auto-port 9420"',
+      ],
+      options: {
+        cwd: 'C:/repo',
+        detached: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true,
+        windowsVerbatimArguments: true,
+      },
+    })
+  })
+
+  it('keeps direct spawn on macOS', () => {
+    platformSpy.mockReturnValue('darwin')
+
+    const result = resolveCliSpawnOptions(
+      '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      ['auto', '--project', '/repo/demo', '--auto-port', '9420'],
+      '/repo',
+    )
+
+    expect(result).toEqual({
+      command: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+      args: ['auto', '--project', '/repo/demo', '--auto-port', '9420'],
+      options: {
+        cwd: '/repo',
+        detached: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    })
   })
 })
 

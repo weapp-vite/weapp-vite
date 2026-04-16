@@ -2,6 +2,7 @@ import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport'
 import { resolveE2EMaxWorkers } from './utils/max-workers'
+import { resolveVitestIncludePatterns } from './utils/vitestTargetFile'
 
 const RETAIL_PARITY_TEST_PATH = path.resolve(
   import.meta.dirname,
@@ -13,10 +14,10 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
-    include: [
+    include: resolveVitestIncludePatterns(import.meta.dirname, [
       path.resolve(import.meta.dirname, './ci/**/*.test.ts'),
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
-    ],
+    ]),
     exclude: [RETAIL_PARITY_TEST_PATH],
     testTimeout: 36_000_000,
     globals: true,

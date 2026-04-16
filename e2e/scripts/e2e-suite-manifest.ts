@@ -2,6 +2,7 @@
 import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import fg from 'fast-glob'
+import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_STABLE_TESTS } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
@@ -80,19 +81,25 @@ function toRelativeLabel(filePath: string) {
 }
 
 function createVitestTask(configPath: string, filePath: string, label = toRelativeLabel(filePath)): SuiteTask {
+  const targetFile = toRelativeLabel(filePath)
   return {
     label,
     command: 'pnpm',
-    args: ['vitest', 'run', '-c', configPath, filePath],
+    args: ['vitest', 'run', '-c', configPath],
+    env: {
+      [E2E_TARGET_FILE_ENV]: targetFile,
+    },
   }
 }
 
 function createHeadlessVitestTask(configPath: string, filePath: string, label = toRelativeLabel(filePath)): SuiteTask {
+  const targetFile = toRelativeLabel(filePath)
   return {
     label,
     command: 'pnpm',
-    args: ['vitest', 'run', '-c', configPath, filePath],
+    args: ['vitest', 'run', '-c', configPath],
     env: {
+      [E2E_TARGET_FILE_ENV]: targetFile,
       WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
     },
   }
