@@ -137,6 +137,15 @@ export interface MiniProgramPlatformDescriptor {
     defaultProjectRoot?: string
   }
   /**
+   * @description 构建流程相关的平台静态能力。
+   */
+  build?: {
+    /**
+     * @description 是否允许在自动模式下补齐 app 样式入口，以支持样式 HMR 等行为。
+     */
+    autoTouchAppStyle?: boolean
+  }
+  /**
    * @description 构建清理时需要保留的 npm 产物目录名。
    */
   resolvePreservedNpmDirNames: (options?: {

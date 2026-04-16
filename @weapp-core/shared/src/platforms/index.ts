@@ -14,6 +14,7 @@ export {
   normalizeMiniProgramPlatform,
   resolveMiniProgramPageKeys,
   resolveMiniProgramPlatform,
+  supportsMiniProgramAutoTouchAppStyle,
   supportsMiniProgramRuntimeCapability,
 } from './helpers'
 export type {

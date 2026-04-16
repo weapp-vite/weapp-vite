@@ -13,6 +13,7 @@ import {
   normalizeMiniProgramPlatform,
   resolveMiniProgramPageKeys,
   resolveMiniProgramPlatform,
+  supportsMiniProgramAutoTouchAppStyle,
   supportsMiniProgramRuntimeCapability,
 } from './index'
 
@@ -35,6 +36,8 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramTemplatePreset('jd')).toBe('wechat')
     expect(getMiniProgramTemplatePreset('xhs')).toBe('wechat')
     expect(getMiniProgramTemplatePreset('swan')).toBe('swan')
+    expect(supportsMiniProgramAutoTouchAppStyle('weapp')).toBe(true)
+    expect(supportsMiniProgramAutoTouchAppStyle('alipay')).toBe(false)
     expect(getMiniProgramPlatformDescriptor('alipay').runtime.globalObjectKey).toBe('my')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('xhs')).toBe('xhs')

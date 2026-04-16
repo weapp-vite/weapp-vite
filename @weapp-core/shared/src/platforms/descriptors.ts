@@ -44,6 +44,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
+    build: {
+      autoTouchAppStyle: true,
+    },
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
     json: {},
     npm: {
@@ -102,6 +105,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       requiresOpenPlatformArg: true,
       defaultProjectRoot: 'dist/alipay/dist',
     },
+    build: {
+      autoTouchAppStyle: false,
+    },
     resolvePreservedNpmDirNames: options => [options?.alipayNpmMode === 'miniprogram_npm' ? 'miniprogram_npm' : 'node_modules'],
     json: {
       normalizeUsingComponents: true,
@@ -157,6 +163,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     projectConfigFileName: 'project.swan.json',
     projectConfigRootKeys: ['smartProgramRoot', ...DEFAULT_PROJECT_CONFIG_ROOT_KEYS],
     ide: {},
+    build: {
+      autoTouchAppStyle: false,
+    },
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
     json: {},
     npm: {
@@ -193,6 +202,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
+    build: {
+      autoTouchAppStyle: false,
+    },
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
     json: {},
     npm: {
@@ -235,6 +247,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
+    build: {
+      autoTouchAppStyle: false,
+    },
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
     json: {},
     npm: {
@@ -272,6 +287,9 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     projectConfigFileName: 'project.config.json',
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
+    build: {
+      autoTouchAppStyle: false,
+    },
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
     json: {},
     npm: {

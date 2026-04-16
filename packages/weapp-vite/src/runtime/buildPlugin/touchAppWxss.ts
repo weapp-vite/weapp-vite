@@ -1,6 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import type { MpPlatform } from '../../types'
 import { createRequire } from 'node:module'
+import { supportsMiniProgramAutoTouchAppStyle } from '@weapp-core/shared'
 import path from 'pathe'
 
 export type TouchAppWxssOption = boolean | 'auto' | undefined
@@ -15,7 +16,7 @@ export function hasTailwindcssDependency(packageJson: PackageJson) {
 }
 
 export function shouldAutoTouchAppWxssForPlatform(platform: MpPlatform) {
-  return platform === 'weapp'
+  return supportsMiniProgramAutoTouchAppStyle(platform)
 }
 
 export function resolveTouchAppWxssEnabled(options: {

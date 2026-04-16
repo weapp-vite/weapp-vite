@@ -123,6 +123,16 @@ export function getMiniProgramTemplatePreset(platform?: MpPlatform): MiniProgram
 }
 
 /**
+ * @description 判断平台是否允许自动补齐 app 样式入口。
+ */
+export function supportsMiniProgramAutoTouchAppStyle(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformDescriptor(platform).build?.autoTouchAppStyle === true
+}
+
+/**
  * @description 获取宿主全局对象 key。
  */
 export function getMiniProgramRuntimeGlobalKey(platform: MpPlatform): string {
