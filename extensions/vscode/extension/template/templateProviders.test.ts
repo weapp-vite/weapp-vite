@@ -761,6 +761,314 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   assert.equal(pageTitleDefinition?.range.line, 1)
 })
 
+it('provides references and rename edits across template and companion script files', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), '{}'],
+    [path.normalize('/workspace/src/pages/home/index.ts'), [
+      'const list = []',
+      'const pageTitle = \'demo\'',
+      'console.log(pageTitle)',
+      'const handlers = {',
+      '  onTap(product, idx) {',
+      '    return pageTitle + \'-\' + product.id + \'-\' + idx',
+      '  },',
+      '}',
+    ].join('\n')],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      WorkspaceEdit: class {
+        edits
+
+        constructor() {
+          this.edits = []
+        }
+
+        replace(uri: any, range: any, newText: string) {
+          this.edits.push({ newText, range, uri })
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateReferenceProvider,
+    WeappTemplateRenameProvider,
+  } = await import('./templateProviders')
+
+  const referenceProvider = new WeappTemplateReferenceProvider()
+  const renameProvider = new WeappTemplateRenameProvider()
+  const document = createTextDocument(
+    'wxml',
+    [
+      '<view wx:for="{{ list }}" wx:for-item="product" wx:for-index="idx">',
+      '  <view bindtap="handlers.onTap(product, idx)">{{ product.name }} {{ idx }} {{ pageTitle }}</view>',
+      '</view>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const documentText = document.getText()
+  const pageTitlePosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
+  const onTapPosition = document.positionAt(documentText.indexOf('onTap') + 2)
+  const productPosition = document.positionAt(documentText.indexOf('product.name') + 2)
+
+  const pageTitleReferences = await referenceProvider.provideReferences(document as any, pageTitlePosition as any, { includeDeclaration: true } as any)
+  const onTapReferences = await referenceProvider.provideReferences(document as any, onTapPosition as any, { includeDeclaration: true } as any)
+  const productReferences = await referenceProvider.provideReferences(document as any, productPosition as any, { includeDeclaration: true } as any)
+  const pageTitleRename = await renameProvider.provideRenameEdits(document as any, pageTitlePosition as any, 'pageHeading')
+  const productRename = await renameProvider.provideRenameEdits(document as any, productPosition as any, 'goods')
+  const onTapPrepare = await renameProvider.prepareRename(document as any, onTapPosition as any)
+
+  assert.equal(pageTitleReferences.length, 4)
+  assert.equal(pageTitleReferences.filter((item: any) => item.uri.fsPath.endsWith('index.ts')).length, 3)
+  assert.equal(pageTitleReferences.filter((item: any) => item.uri.fsPath.endsWith('index.wxml')).length, 1)
+  assert.equal(onTapReferences.length, 2)
+  assert.equal(onTapReferences.every((item: any) => /index\.(?:ts|wxml)$/u.test(item.uri.fsPath)), true)
+  assert.equal(productReferences.length, 3)
+  assert.equal(productReferences.every((item: any) => item.uri.fsPath.endsWith('index.wxml')), true)
+  assert.equal(pageTitleRename?.edits.length, 4)
+  assert.equal(pageTitleRename?.edits.every((item: any) => item.newText === 'pageHeading'), true)
+  assert.equal(productRename?.edits.length, 3)
+  assert.equal(productRename?.edits.every((item: any) => item.newText === 'goods'), true)
+  assert.equal(onTapPrepare?.placeholder, 'onTap')
+})
+
+it('provides references and rename edits across recognized vue template and script blocks', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+      pages: ['pages/home/index'],
+    })],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      WorkspaceEdit: class {
+        edits
+
+        constructor() {
+          this.edits = []
+        }
+
+        replace(uri: any, range: any, newText: string) {
+          this.edits.push({ newText, range, uri })
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateReferenceProvider,
+    WeappTemplateRenameProvider,
+  } = await import('./templateProviders')
+
+  const referenceProvider = new WeappTemplateReferenceProvider()
+  const renameProvider = new WeappTemplateRenameProvider()
+  const document = createTextDocument(
+    'vue',
+    [
+      '<template>',
+      '  <view>{{ pageTitle }}</view>',
+      '  <button @tap="handlers.onTap(pageTitle)">ok</button>',
+      '</template>',
+      '<script setup lang="ts">',
+      'const pageTitle = \'demo\'',
+      'const handlers = {',
+      '  onTap(value) {',
+      '    return pageTitle + value',
+      '  },',
+      '}',
+      '</script>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.vue'),
+  )
+  const documentText = document.getText()
+  const pageTitlePosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
+  const handlerObjectPosition = document.positionAt(documentText.indexOf('handlers.onTap') + 2)
+
+  const pageTitleReferences = await referenceProvider.provideReferences(document as any, pageTitlePosition as any, { includeDeclaration: true } as any)
+  const pageTitleRename = await renameProvider.provideRenameEdits(document as any, pageTitlePosition as any, 'pageHeading')
+  const handlersRename = await renameProvider.provideRenameEdits(document as any, handlerObjectPosition as any, 'actions')
+
+  assert.equal(pageTitleReferences.length, 4)
+  assert.equal(pageTitleReferences.every((item: any) => item.uri.fsPath.endsWith('index.vue')), true)
+  assert.equal(pageTitleRename?.edits.length, 4)
+  assert.equal(pageTitleRename?.edits.every((item: any) => item.newText === 'pageHeading'), true)
+  assert.equal(handlersRename?.edits.length, 2)
+  assert.equal(handlersRename?.edits.every((item: any) => item.newText === 'actions'), true)
+})
+
 it('supports native custom component props and events in wxml documents', async () => {
   const files = new Map<string, string>([
     [path.normalize('/workspace/package.json'), JSON.stringify({

@@ -41,6 +41,12 @@ interface ScriptDefinitionMatch {
   offset: number
 }
 
+export interface TemplateScriptSymbolMatch {
+  end: number
+  filePath: string
+  start: number
+}
+
 interface StyleClassMatch {
   className: string
   filePath: string
@@ -357,6 +363,30 @@ function findScriptDefinitionOffset(sourceText: string, symbolName: string, defi
   return null
 }
 
+function collectScriptSymbolMatches(sourceText: string, filePath: string, symbolName: string) {
+  const escapedName = escapeRegExp(symbolName)
+  const pattern = new RegExp(`(^|[^$\\w])(${escapedName})(?![$\\w])`, 'gmu')
+  const matches: TemplateScriptSymbolMatch[] = []
+
+  for (const match of sourceText.matchAll(pattern)) {
+    const matchIndex = match.index ?? -1
+
+    if (matchIndex < 0) {
+      continue
+    }
+
+    const start = matchIndex + (match[1]?.length ?? 0)
+
+    matches.push({
+      end: start + symbolName.length,
+      filePath,
+      start,
+    })
+  }
+
+  return matches
+}
+
 async function getVueScriptBlocks(document: vscode.TextDocument) {
   const sourceText = document.getText()
   const openPattern = /<script\b[^>]*>/giu
@@ -430,6 +460,45 @@ async function resolveWxmlScriptDefinition(document: vscode.TextDocument, symbol
     filePath,
     offset,
   } satisfies ScriptDefinitionMatch
+}
+
+export async function getTemplateScriptSymbolMatches(document: vscode.TextDocument, symbolName: string) {
+  const normalizedSymbolName = symbolName.trim()
+
+  if (!normalizedSymbolName) {
+    return []
+  }
+
+  if (document.languageId === 'vue') {
+    const matches: TemplateScriptSymbolMatch[] = []
+
+    for (const block of await getVueScriptBlocks(document)) {
+      for (const match of collectScriptSymbolMatches(block.text, document.uri.fsPath, normalizedSymbolName)) {
+        matches.push({
+          ...match,
+          start: block.contentStart + match.start,
+          end: block.contentStart + match.end,
+        })
+      }
+    }
+
+    return matches
+  }
+
+  const companionPaths = resolveWxmlFileCompanionPaths(document.uri.fsPath)
+  const filePath = await resolveExistingFile([companionPaths.ts, companionPaths.js])
+
+  if (!filePath) {
+    return []
+  }
+
+  const sourceText = await readTextFile(filePath)
+
+  if (!sourceText) {
+    return []
+  }
+
+  return collectScriptSymbolMatches(sourceText, filePath, normalizedSymbolName)
 }
 
 async function getVueStyleClassMatches(document: vscode.TextDocument) {
