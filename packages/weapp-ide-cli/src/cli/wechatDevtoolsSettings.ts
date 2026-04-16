@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -12,6 +13,7 @@ export interface WechatDevtoolsSecuritySettings {
 
 export interface BootstrapWechatDevtoolsSettingsOptions {
   homeDir?: string
+  localAppDataDir?: string
   platform?: NodeJS.Platform
   projectPath?: string
   trustProject?: boolean
@@ -32,12 +34,20 @@ const DEFAULT_WECHAT_DEVTOOLS_SECURITY_SETTINGS: WechatDevtoolsSecuritySettings 
 
 const WECHAT_DEVTOOLS_SETTINGS_KEY = 'reduxPersist:settings'
 
-function resolveWechatDevtoolsBaseDir(homeDir: string, platform: NodeJS.Platform) {
-  if (platform !== 'darwin') {
-    return undefined
+function resolveWechatDevtoolsBaseDir(
+  homeDir: string,
+  platform: NodeJS.Platform,
+  localAppDataDir?: string,
+) {
+  if (platform === 'darwin') {
+    return path.join(homeDir, 'Library', 'Application Support', '微信开发者工具')
   }
 
-  return path.join(homeDir, 'Library', 'Application Support', '微信开发者工具')
+  if (platform === 'win32') {
+    return path.join(localAppDataDir ?? path.join(homeDir, 'AppData', 'Local'), '微信开发者工具', 'User Data')
+  }
+
+  return undefined
 }
 
 function createStorageHash(key: string) {
@@ -58,6 +68,9 @@ async function readJsonObject(filePath: string) {
     if (typedError.code === 'ENOENT') {
       return {}
     }
+    if (error instanceof SyntaxError) {
+      return {}
+    }
     throw error
   }
 }
@@ -71,21 +84,32 @@ async function resolveWechatDevtoolsInstanceDirs(baseDir: string) {
   try {
     const entries = await fs.readdir(baseDir, { withFileTypes: true })
     const instanceDirs: string[] = []
+    const seenDirs = new Set<string>()
+
+    const appendInstanceDir = async (instanceDir: string) => {
+      if (seenDirs.has(instanceDir)) {
+        return
+      }
+
+      try {
+        const stats = await fs.stat(path.join(instanceDir, 'WeappLocalData'))
+        if (stats.isDirectory()) {
+          instanceDirs.push(instanceDir)
+          seenDirs.add(instanceDir)
+        }
+      }
+      catch {
+      }
+    }
+
+    await appendInstanceDir(baseDir)
 
     for (const entry of entries) {
       if (!entry.isDirectory()) {
         continue
       }
 
-      const instanceDir = path.join(baseDir, entry.name)
-      try {
-        const stats = await fs.stat(path.join(instanceDir, 'WeappLocalData'))
-        if (stats.isDirectory()) {
-          instanceDirs.push(instanceDir)
-        }
-      }
-      catch {
-      }
+      await appendInstanceDir(path.join(baseDir, entry.name))
     }
 
     return instanceDirs
@@ -140,29 +164,36 @@ async function trustWechatDevtoolsProject(localDataDir: string, projectPath: str
   const normalizedProjectPath = path.resolve(projectPath)
   const projectKey = `project2_${normalizedProjectPath}`
   const projectHash = await syncHashKeyMap(localDataDir, projectKey)
-  const projectFilePath = path.join(localDataDir, `localstorage_${projectHash}.json`)
-  const current = await readJsonObject(projectFilePath)
+  const fileNames = [
+    `localstorage_${projectHash}.json`,
+    `ls_${projectHash}.json`,
+  ]
 
-  await writeJsonObject(projectFilePath, {
-    ...current,
-    projectid: typeof current.projectid === 'string' && current.projectid.length > 0
-      ? current.projectid
-      : normalizedProjectPath,
-    projectpath: typeof current.projectpath === 'string' && current.projectpath.length > 0
-      ? current.projectpath
-      : normalizedProjectPath,
-    isTrusted: true,
-  })
+  for (const fileName of fileNames) {
+    const projectFilePath = path.join(localDataDir, fileName)
+    const current = await readJsonObject(projectFilePath)
+
+    await writeJsonObject(projectFilePath, {
+      ...current,
+      projectid: typeof current.projectid === 'string' && current.projectid.length > 0
+        ? current.projectid
+        : normalizedProjectPath,
+      projectpath: typeof current.projectpath === 'string' && current.projectpath.length > 0
+        ? current.projectpath
+        : normalizedProjectPath,
+      isTrusted: true,
+    })
+  }
 }
 
 /**
- * @description 在微信开发者工具启动前，预写入服务端口与项目可信配置。
+ * @description 在微信开发者工具启动前，预写入服务端口与项目信任配置。
  */
 export async function bootstrapWechatDevtoolsSettings(
   options: BootstrapWechatDevtoolsSettingsOptions = {},
 ): Promise<BootstrapWechatDevtoolsSettingsResult> {
   const platform = options.platform ?? process.platform
-  const homeDir = options.homeDir ?? process.env.HOME
+  const homeDir = options.homeDir ?? process.env.USERPROFILE ?? process.env.HOME ?? os.homedir()
   if (!homeDir) {
     return {
       touchedInstanceCount: 0,
@@ -171,7 +202,8 @@ export async function bootstrapWechatDevtoolsSettings(
     }
   }
 
-  const baseDir = resolveWechatDevtoolsBaseDir(homeDir, platform)
+  const localAppDataDir = options.localAppDataDir ?? process.env.LOCALAPPDATA ?? path.join(homeDir, 'AppData', 'Local')
+  const baseDir = resolveWechatDevtoolsBaseDir(homeDir, platform, localAppDataDir)
   if (!baseDir) {
     return {
       touchedInstanceCount: 0,

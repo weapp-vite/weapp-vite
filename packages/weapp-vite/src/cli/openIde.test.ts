@@ -78,6 +78,7 @@ describe('openIde', () => {
     createInlineConfigMock.mockClear()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
+    delete process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
 
     parseMock.mockResolvedValue(undefined)
     isAutomatorLoginErrorMock.mockReturnValue(false)
@@ -234,11 +235,34 @@ describe('openIde', () => {
     await openIde('weapp', 'dist/dev/mp-weixin')
 
     expect(loggerMock.warn).toHaveBeenCalledWith('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
+    expect(loggerMock.error).not.toHaveBeenCalledWith(error)
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+  })
+
+  it('prints original automator error when fallback debug env is enabled', async () => {
+    process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN = '1'
+    const { openIde } = await import('./openIde')
+    const error = new Error('automator failed')
+    launchAutomatorMock.mockRejectedValueOnce(error)
+
+    try {
+      await openIde('weapp', 'dist/dev/mp-weixin')
+    }
+    finally {
+      delete process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
+    }
+
     expect(loggerMock.error).toHaveBeenCalledWith(error)
     expect(parseMock).toHaveBeenCalledWith([
       'open',
       '-p',
       'dist/dev/mp-weixin',
+      '--trust-project',
     ])
   })
 
@@ -256,6 +280,7 @@ describe('openIde', () => {
       'open',
       '-p',
       'dist/dev/mp-weixin',
+      '--trust-project',
     ])
   })
 

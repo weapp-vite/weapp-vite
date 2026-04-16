@@ -5,7 +5,7 @@ import path from 'pathe'
 import logger from '../logger'
 
 /**
- * @description 官方微信开发者工具只支持 Windows、macOS，Linux 只有社区版
+ * @description 官方微信开发者工具只支持 Windows、macOS，Linux 只有社区版。
  * https://github.com/msojocs/wechat-web-devtools-linux
  */
 export const SupportedPlatformsMap = {
@@ -15,12 +15,12 @@ export const SupportedPlatformsMap = {
 } as const
 
 /**
- * @description 支持的系统类型
+ * @description 支持的系统类型。
  */
 export type SupportedPlatform = (typeof SupportedPlatformsMap)[keyof typeof SupportedPlatformsMap]
 
 /**
- * @description 判断当前系统是否支持微信开发者工具
+ * @description 判断当前系统是否支持微信开发者工具。
  */
 export function isOperatingSystemSupported(osName: string = os.type()): osName is SupportedPlatform {
   return osName === SupportedPlatformsMap.Windows_NT
@@ -29,11 +29,25 @@ export function isOperatingSystemSupported(osName: string = os.type()): osName i
 }
 
 /**
- * @description 当前系统名称
+ * @description 当前系统名称。
  */
 export const operatingSystemName = os.type()
 
 type CliPathResolver = () => Promise<string | undefined>
+
+async function findFirstExistingPath(candidates: readonly string[]) {
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue
+    }
+
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+
+  return undefined
+}
 
 async function getFirstBinaryPath(command: string): Promise<string | undefined> {
   const envPath = process.env.PATH || ''
@@ -87,20 +101,59 @@ function createLinuxCliResolver(): CliPathResolver {
   }
 }
 
-const linuxCliResolver = createLinuxCliResolver()
+function createWindowsCliResolver(): CliPathResolver {
+  let resolvedPath: string | undefined
+  let attempted = false
+  let pending: Promise<string | undefined> | null = null
 
-const WINDOWS_DEFAULT_CLI
-  = 'C:\\Program Files (x86)\\Tencent\\微信web开发者工具\\cli.bat'
+  return async () => {
+    if (attempted) {
+      return resolvedPath
+    }
+
+    if (!pending) {
+      pending = (async () => {
+        const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'
+        const programFiles = process.env.ProgramFiles || 'C:\\Program Files'
+        const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local')
+        const candidates = [
+          path.join(programFilesX86, 'Tencent', '微信web开发者工具', 'cli.bat'),
+          path.join(programFiles, 'Tencent', '微信web开发者工具', 'cli.bat'),
+          path.join(localAppData, 'Programs', '微信开发者工具', 'cli.bat'),
+          path.join(localAppData, 'Tencent', '微信web开发者工具', 'cli.bat'),
+        ]
+
+        try {
+          resolvedPath = await findFirstExistingPath(candidates)
+        }
+        catch (error) {
+          const reason = error instanceof Error ? error.message : String(error)
+          logger.warn(`获取 Windows 微信开发者工具 CLI 路径失败：${reason}`)
+        }
+        finally {
+          attempted = true
+        }
+
+        return resolvedPath
+      })()
+    }
+
+    return pending
+  }
+}
+
+const linuxCliResolver = createLinuxCliResolver()
+const windowsCliResolver = createWindowsCliResolver()
 const DARWIN_DEFAULT_CLI = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 
 const cliPathResolvers: Record<SupportedPlatform, CliPathResolver> = {
-  [SupportedPlatformsMap.Windows_NT]: async () => WINDOWS_DEFAULT_CLI,
+  [SupportedPlatformsMap.Windows_NT]: windowsCliResolver,
   [SupportedPlatformsMap.Darwin]: async () => DARWIN_DEFAULT_CLI,
   [SupportedPlatformsMap.Linux]: linuxCliResolver,
 }
 
 /**
- * @description 获取默认 CLI 路径（按系统）
+ * @description 获取默认 CLI 路径（按系统）。
  */
 export async function getDefaultCliPath(targetOs: string = operatingSystemName) {
   if (!isOperatingSystemSupported(targetOs)) {

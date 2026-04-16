@@ -47,6 +47,11 @@ export interface OpenIdeOptions {
   reuseOpenedProject?: boolean
 }
 
+function shouldLogAutomatorFallbackError() {
+  const flag = process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
+  return flag === '1' || flag === 'true'
+}
+
 async function openWechatIdeByAutomator(projectPath: string) {
   const miniProgram = await launchAutomator({
     projectPath,
@@ -282,13 +287,18 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
         logger.warn(formatAutomatorLoginError(error))
       }
       logger.warn('通过 automator 启动微信开发者工具并自动信任项目失败，回退到普通 open 流程。')
-      logger.error(error)
+      if (shouldLogAutomatorFallbackError()) {
+        logger.error(error)
+      }
     }
   }
 
   const argv = ['open', '-p']
   if (projectPath) {
     argv.push(projectPath)
+  }
+  if (platform === 'weapp' && options.trustProject !== false) {
+    argv.push('--trust-project')
   }
   if (platform && shouldPassPlatformArgToIdeOpen(platform)) {
     argv.push('--platform', platform)

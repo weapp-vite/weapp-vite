@@ -15,6 +15,7 @@ const DEFAULT_TIMEOUT = 30000
 const DEFAULT_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_AUTOMATOR_RUNTIME_PROVIDER'
 const LEGACY_RUNTIME_PROVIDER_ENV = 'WEAPP_VITE_E2E_RUNTIME_PROVIDER'
 const EXTENSION_CONTEXT_INVALIDATED_RE = /Extension context invalidated/i
+const WINDOWS_BATCH_CLI_RE = /\.(?:bat|cmd)$/i
 let localhostListenPatched = false
 
 function isExtensionContextInvalidatedError(error: unknown) {
@@ -45,6 +46,29 @@ function patchNetListenToLoopback() {
   } as typeof net.Server.prototype.listen
 }
 /** IConnectOptions 的类型定义。 */
+function shouldUseWindowsCommandShell(cliPath: string) {
+  return isWindows && WINDOWS_BATCH_CLI_RE.test(cliPath)
+}
+
+function escapeWindowsCmdArg(arg: string) {
+  const escaped = arg
+    .replace(/"/g, '""')
+    .replace(/%/g, '%%')
+  return /[\s"&<>^|()]/.test(arg) ? `"${escaped}"` : escaped
+}
+
+function resolveWindowsBatchSpawn(cliPath: string, args: string[]) {
+  const comspec = process.env.ComSpec || 'cmd.exe'
+  const commandLine = [cliPath, ...args]
+    .map(escapeWindowsCmdArg)
+    .join(' ')
+
+  return {
+    file: comspec,
+    args: ['/d', '/s', '/c', `"${commandLine}"`],
+  }
+}
+
 export interface IConnectOptions {
   wsEndpoint: string
 }
@@ -110,7 +134,8 @@ export default class Launcher {
       await this.extendProjectConfig(projectConfig, projectPath)
     }
     let processError: unknown = null
-    let exited = false
+    let processExitCode: number | null = null
+    let processSignal: NodeJS.Signals | null = null
     args = [
       ...args,
       'auto',
@@ -129,17 +154,28 @@ export default class Launcher {
       args.push('--trust-project')
     }
     try {
-      const child = spawn(cliPath, args, {
+      const spawnTarget = shouldUseWindowsCommandShell(cliPath)
+        ? resolveWindowsBatchSpawn(cliPath, args)
+        : { file: cliPath, args }
+      const child = spawn(spawnTarget.file, spawnTarget.args, {
         stdio: 'ignore',
         cwd: cwd || undefined,
+        ...(shouldUseWindowsCommandShell(cliPath)
+          ? {
+              windowsHide: true,
+              windowsVerbatimArguments: true,
+            }
+          : {}),
       })
       child.on('error', (error) => {
         processError = error
       })
-      child.on('exit', () => {
-        setTimeout(() => {
-          exited = true
-        }, 15000)
+      child.on('exit', (code, signal) => {
+        processExitCode = code
+        processSignal = signal
+        if (code !== 0 || signal) {
+          processError = new Error(`DevTools cli exited unexpectedly with code ${code ?? 'null'}${signal ? ` and signal ${signal}` : ''}`)
+        }
       })
       child.unref()
     }
@@ -150,7 +186,7 @@ export default class Launcher {
     let lastConnectError: unknown = null
     await waitUntil(async () => {
       try {
-        if (processError || exited) {
+        if (processError) {
           return true
         }
         const candidate = await this.connectTool({
@@ -182,7 +218,7 @@ export default class Launcher {
       if (lastConnectError) {
         throw lastConnectError
       }
-      if (exited) {
+      if (processExitCode !== null || processSignal) {
         throw new Error('Failed to launch wechat web devTools, please make sure http port is open')
       }
       throw new Error('Failed connecting to devtools websocket endpoint')

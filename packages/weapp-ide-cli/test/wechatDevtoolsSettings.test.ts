@@ -97,6 +97,13 @@ describe('bootstrapWechatDevtoolsSettings', () => {
 
     const projectPath = '/Users/tester/Projects/demo-app'
     const normalizedProjectPath = path.resolve(projectPath)
+    const trustedProjectHash = createStorageHash(`project2_${normalizedProjectPath}`)
+    await fs.writeFile(
+      path.join(localDataDir, `localstorage_${trustedProjectHash}.json`),
+      `project2_${normalizedProjectPath}`,
+      'utf8',
+    )
+
     const result = await bootstrapWechatDevtoolsSettings({
       homeDir,
       platform: 'darwin',
@@ -110,14 +117,71 @@ describe('bootstrapWechatDevtoolsSettings', () => {
       trustedProjectCount: 1,
     })
 
-    const trustedProjectHash = createStorageHash(`project2_${normalizedProjectPath}`)
     const hashKeyMap = await readJson(path.join(localDataDir, 'hash_key_map_2.json'))
     expect(hashKeyMap).toMatchObject({
       [trustedProjectHash]: `project2_${normalizedProjectPath}`,
     })
 
     const trustedProject = await readJson(path.join(localDataDir, `localstorage_${trustedProjectHash}.json`))
+    const trustedProjectLs = await readJson(path.join(localDataDir, `ls_${trustedProjectHash}.json`))
     expect(trustedProject).toMatchObject({
+      projectid: normalizedProjectPath,
+      projectpath: normalizedProjectPath,
+      isTrusted: true,
+    })
+    expect(trustedProjectLs).toMatchObject({
+      projectid: normalizedProjectPath,
+      projectpath: normalizedProjectPath,
+      isTrusted: true,
+    })
+  })
+
+  it('supports Windows User Data root storage layout', async () => {
+    const homeDir = await createTempHomeDir()
+    tempDirs.push(homeDir)
+    const localAppDataDir = path.join(homeDir, 'AppData', 'Local')
+    const localDataDir = path.join(
+      localAppDataDir,
+      '微信开发者工具',
+      'User Data',
+      'WeappLocalData',
+    )
+    await fs.mkdir(localDataDir, { recursive: true })
+    await fs.writeFile(path.join(localDataDir, 'hash_key_map_2.json'), '{}\n', 'utf8')
+
+    const projectPath = 'C:/workspace/demo-app'
+    const normalizedProjectPath = path.resolve(projectPath)
+    const result = await bootstrapWechatDevtoolsSettings({
+      homeDir,
+      localAppDataDir,
+      platform: 'win32',
+      projectPath,
+      trustProject: true,
+    })
+
+    expect(result).toEqual({
+      touchedInstanceCount: 1,
+      updatedSecurityCount: 1,
+      trustedProjectCount: 1,
+    })
+
+    const settingsStorage = await readJson(path.join(localDataDir, 'localstorage_b72da75d79277d2f5f9c30c9177be57e.json'))
+    expect(settingsStorage.security).toEqual({
+      enableServicePort: true,
+      port: 21992,
+      allowGetTicket: true,
+      trustWhenAuto: true,
+    })
+
+    const trustedProjectHash = createStorageHash(`project2_${normalizedProjectPath}`)
+    const trustedProject = await readJson(path.join(localDataDir, `localstorage_${trustedProjectHash}.json`))
+    const trustedProjectLs = await readJson(path.join(localDataDir, `ls_${trustedProjectHash}.json`))
+    expect(trustedProject).toMatchObject({
+      projectid: normalizedProjectPath,
+      projectpath: normalizedProjectPath,
+      isTrusted: true,
+    })
+    expect(trustedProjectLs).toMatchObject({
       projectid: normalizedProjectPath,
       projectpath: normalizedProjectPath,
       isTrusted: true,
