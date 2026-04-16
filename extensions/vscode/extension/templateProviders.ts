@@ -117,6 +117,34 @@ function createProjectComponentHoverMarkdown(
   return lines.join('\n\n')
 }
 
+function renderProjectComponentMemberPreview(title: string, labels: string[]) {
+  if (labels.length === 0) {
+    return null
+  }
+
+  const visibleLabels = labels.slice(0, 6).map(label => `\`${label}\``)
+  const suffix = labels.length > visibleLabels.length
+    ? ` 等${labels.length}项`
+    : ''
+
+  return `### ${title}\n\n${visibleLabels.join('、')}${suffix}`
+}
+
+function createProjectComponentTagHoverMarkdown(
+  label: string,
+  targetPath: string,
+  componentProps: string[],
+  componentEvents: string[],
+) {
+  const lines = [
+    createProjectComponentHoverMarkdown('tag', label, targetPath),
+    renderProjectComponentMemberPreview('属性', componentProps),
+    renderProjectComponentMemberPreview('事件', componentEvents),
+  ].filter(Boolean)
+
+  return lines.join('\n\n')
+}
+
 function createSourceRange(document: vscode.TextDocument, sourceStart: number, sourceEnd: number) {
   const documentStart = toDocumentOffsetFromWxmlSource(document, sourceStart)
   const documentEnd = toDocumentOffsetFromWxmlSource(document, sourceEnd)
@@ -415,8 +443,16 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
 
     if (tagContext.tagNameStart != null && sourceOffset >= tagContext.tagNameStart && sourceOffset <= tagContext.tagNameEnd!) {
       if (resolvedMeta) {
+        const componentProps = await getTemplateComponentProps(document, tagContext.tagName)
+        const componentEvents = await getTemplateComponentEvents(document, tagContext.tagName)
+
         return new vscode.Hover(new vscode.MarkdownString(
-          createProjectComponentHoverMarkdown('tag', tagContext.tagName, resolvedMeta.targetPath),
+          createProjectComponentTagHoverMarkdown(
+            tagContext.tagName,
+            resolvedMeta.targetPath,
+            componentProps.map(item => item.label),
+            componentEvents.map(item => item.label),
+          ),
         ))
       }
 
