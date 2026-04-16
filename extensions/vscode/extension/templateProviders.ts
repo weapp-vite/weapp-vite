@@ -49,6 +49,10 @@ function isClassAttributeName(attributeName: string | null | undefined) {
   return attributeName === 'class' || Boolean(attributeName?.endsWith('-class'))
 }
 
+function normalizeTagName(tagName: string) {
+  return tagName.trim().toLowerCase()
+}
+
 async function isEnabledForDocument(document: vscode.TextDocument, position?: vscode.Position) {
   if (!isWxmlEnhancementEnabled()) {
     return false
@@ -81,6 +85,20 @@ function createCompletionItem(label: string, kind: vscode.CompletionItemKind, do
   }
 
   return item
+}
+
+function createProjectComponentHoverMarkdown(kind: 'tag' | 'prop' | 'event', label: string, targetPath: string) {
+  const title = kind === 'tag'
+    ? '项目组件'
+    : kind === 'prop'
+      ? '组件属性'
+      : '组件事件'
+
+  return [
+    `**${title}**`,
+    `\`${label}\``,
+    `来源: \`${targetPath}\``,
+  ].join('\n\n')
 }
 
 function createSourceRange(document: vscode.TextDocument, sourceStart: number, sourceEnd: number) {
@@ -318,12 +336,38 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
       return null
     }
 
+    const localComponent = (await getTemplateLocalComponents(document)).get(normalizeTagName(tagContext.tagName))
+
     if (tagContext.attribute && sourceOffset >= tagContext.attribute.nameStart && sourceOffset <= tagContext.attribute.nameEnd) {
+      if (localComponent?.targetPath) {
+        const componentProps = await getTemplateComponentProps(document, tagContext.tagName)
+
+        if (componentProps.some(attribute => attribute.label === tagContext.attribute?.name)) {
+          return new vscode.Hover(new vscode.MarkdownString(
+            createProjectComponentHoverMarkdown('prop', tagContext.attribute.name, localComponent.targetPath),
+          ))
+        }
+
+        const componentEvents = await getTemplateComponentEvents(document, tagContext.tagName)
+
+        if (componentEvents.some(attribute => attribute.label === tagContext.attribute?.name)) {
+          return new vscode.Hover(new vscode.MarkdownString(
+            createProjectComponentHoverMarkdown('event', tagContext.attribute.name, localComponent.targetPath),
+          ))
+        }
+      }
+
       const markdown = getMiniprogramAttributeHoverMarkdown(tagContext.tagName, tagContext.attribute.name)
       return markdown ? new vscode.Hover(new vscode.MarkdownString(markdown)) : null
     }
 
     if (tagContext.tagNameStart != null && sourceOffset >= tagContext.tagNameStart && sourceOffset <= tagContext.tagNameEnd!) {
+      if (localComponent?.targetPath) {
+        return new vscode.Hover(new vscode.MarkdownString(
+          createProjectComponentHoverMarkdown('tag', tagContext.tagName, localComponent.targetPath),
+        ))
+      }
+
       const markdown = getMiniprogramComponentHoverMarkdown(tagContext.tagName)
       return markdown ? new vscode.Hover(new vscode.MarkdownString(markdown)) : null
     }

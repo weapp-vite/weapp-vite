@@ -194,6 +194,13 @@ it('provides local component definitions and resource links for wxml documents',
           this.value = value
         }
       },
+      Hover: class {
+        contents
+
+        constructor(contents: any) {
+          this.contents = contents
+        }
+      },
       DocumentLink: class {
         range
         target
@@ -221,19 +228,30 @@ it('provides local component definitions and resource links for wxml documents',
     WeappTemplateCompletionProvider,
     WeappTemplateDefinitionProvider,
     WeappTemplateDocumentLinkProvider,
+    WeappTemplateHoverProvider,
   } = await import('./templateProviders')
 
   const completionProvider = new WeappTemplateCompletionProvider()
   const definitionProvider = new WeappTemplateDefinitionProvider()
   const linkProvider = new WeappTemplateDocumentLinkProvider()
+  const hoverProvider = new WeappTemplateHoverProvider()
   const document = createTextDocument(
     'wxml',
     '<card-user class="hero hero-title" bindtap="handleTap" src="/assets/banner.png">{{ pageTitle }}</card-user>',
     path.normalize('/workspace/src/pages/home/index.wxml'),
   )
+  const hoverDocument = createTextDocument(
+    'wxml',
+    '<card-user title-text="{{ pageTitle }}" bind:confirm="handleTap"></card-user>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
   const documentText = document.getText()
+  const hoverDocumentText = hoverDocument.getText()
   const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
   const attributePosition = document.positionAt(documentText.indexOf('bindtap') - 1)
+  const hoverTagPosition = hoverDocument.positionAt(hoverDocumentText.indexOf('card-user') + 2)
+  const propHoverPosition = hoverDocument.positionAt(hoverDocumentText.indexOf('title-text') + 2)
+  const eventHoverPosition = hoverDocument.positionAt(hoverDocumentText.indexOf('bind:confirm') + 2)
   const classValuePosition = document.positionAt(documentText.indexOf('hero-title') + 2)
   const methodPosition = document.positionAt(documentText.indexOf('handleTap') + 2)
   const interpolationPosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
@@ -246,6 +264,9 @@ it('provides local component definitions and resource links for wxml documents',
   const methodDefinition = await definitionProvider.provideDefinition(document as any, methodPosition as any)
   const interpolationDefinition = await definitionProvider.provideDefinition(document as any, interpolationPosition as any)
   const links = await linkProvider.provideDocumentLinks(document as any)
+  const tagHover = await hoverProvider.provideHover(hoverDocument as any, hoverTagPosition as any)
+  const propHover = await hoverProvider.provideHover(hoverDocument as any, propHoverPosition as any)
+  const eventHover = await hoverProvider.provideHover(hoverDocument as any, eventHoverPosition as any)
 
   assert.equal(completionItems[0].label, 'card-user')
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'title-text'), true)
@@ -258,6 +279,9 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
   assert.equal(links.length, 1)
   assert.equal(links[0].target.fsPath, path.normalize('/workspace/src/assets/banner.png'))
+  assert.equal(tagHover?.contents.value.includes('项目组件'), true)
+  assert.equal(propHover?.contents.value.includes('组件属性'), true)
+  assert.equal(eventHover?.contents.value.includes('组件事件'), true)
 })
 
 it('provides style class completions and definitions inside vue template values', async () => {
