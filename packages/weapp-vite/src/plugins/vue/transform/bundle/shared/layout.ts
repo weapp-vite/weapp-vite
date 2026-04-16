@@ -97,7 +97,9 @@ export async function handleCompiledEntryPageLayouts(options: {
   )
 
   if (resolvedLayoutPlan) {
-    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan)
+    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan, {
+      platform: options.configService.platform,
+    })
   }
 
   await options.emitLayouts(resolvedLayoutPlan?.layouts)

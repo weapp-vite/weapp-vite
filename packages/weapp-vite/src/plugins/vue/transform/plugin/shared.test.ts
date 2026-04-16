@@ -461,6 +461,9 @@ describe('vue transform plugin shared helpers', () => {
       result,
       '/project/src/pages/home/index.vue',
       resolved,
+      {
+        platform: undefined,
+      },
     )
     expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
       expect.anything(),

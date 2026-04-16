@@ -605,6 +605,51 @@ definePageMeta({
     })
   })
 
+  it('uses platform directive prefix for dynamic layout branches', () => {
+    const result = applyPageLayoutPlan(
+      {
+        script: 'export default {}',
+        template: '<view>content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '支付宝动态布局' }),
+      },
+      '/project/src/pages/home/index.vue',
+      {
+        dynamicSwitch: true,
+        currentLayout: {
+          file: '/project/src/layouts/admin.vue',
+          importPath: '/layouts/admin',
+          kind: 'vue',
+          layoutName: 'admin',
+          tagName: 'weapp-layout-admin',
+        },
+        layouts: [
+          {
+            file: '/project/src/layouts/admin.vue',
+            importPath: '/layouts/admin',
+            kind: 'vue',
+            layoutName: 'admin',
+            tagName: 'weapp-layout-admin',
+          },
+          {
+            file: '/project/src/layouts/dashboard.vue',
+            importPath: '/layouts/dashboard',
+            kind: 'vue',
+            layoutName: 'dashboard',
+            tagName: 'weapp-layout-dashboard',
+          },
+        ],
+        dynamicPropKeys: ['title'],
+      },
+      {
+        platform: 'alipay',
+      },
+    )
+
+    expect(result.template).toContain(`a:if="{{!__wv_page_layout_name || __wv_page_layout_name === 'admin'}}"`)
+    expect(result.template).toContain(`a:elif="{{__wv_page_layout_name === 'dashboard'}}"`)
+    expect(result.template).toContain('<block a:else><view>content</view></block>')
+  })
+
   it('wraps native page template with dynamic layout branches', () => {
     const result = applyPageLayoutPlanToNativePage(
       {
@@ -651,6 +696,51 @@ definePageMeta({
         'weapp-layout-admin': '/layouts/admin',
       },
     })
+  })
+
+  it('uses platform directive prefix for native page dynamic layout branches', () => {
+    const result = applyPageLayoutPlanToNativePage(
+      {
+        script: 'Page({})',
+        template: '<view>native content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '原生支付宝动态布局' }),
+      },
+      '/project/src/pages/home/index.ts',
+      {
+        dynamicSwitch: true,
+        currentLayout: {
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          kind: 'vue',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+        layouts: [
+          {
+            file: '/project/src/layouts/default.vue',
+            importPath: '/layouts/default',
+            kind: 'vue',
+            layoutName: 'default',
+            tagName: 'weapp-layout-default',
+          },
+          {
+            file: '/project/src/layouts/admin.vue',
+            importPath: '/layouts/admin',
+            kind: 'vue',
+            layoutName: 'admin',
+            tagName: 'weapp-layout-admin',
+          },
+        ],
+        dynamicPropKeys: ['title'],
+      },
+      {
+        platform: 'alipay',
+      },
+    )
+
+    expect(result.template).toContain(`a:if="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}"`)
+    expect(result.template).toContain(`a:elif="{{__wv_page_layout_name === 'admin'}}"`)
+    expect(result.template).toContain('<block a:else><view>native content</view></block>')
   })
 
   it('keeps dynamic layout wrapping idempotent when applied repeatedly', () => {

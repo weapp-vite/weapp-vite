@@ -24,7 +24,9 @@ export async function handleTransformEntryPageLayoutFlow(options: {
   }
 
   if (options.result) {
-    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan)
+    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan, {
+      platform: configService.platform,
+    })
   }
 
   await addResolvedPageLayoutWatchFiles(options.pluginCtx, resolvedLayoutPlan.layouts)

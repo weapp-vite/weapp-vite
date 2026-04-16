@@ -98,11 +98,16 @@ vi.mock('wevu/compiler', async (importOriginal) => {
   }
 })
 
-vi.mock('@weapp-core/shared', () => ({
-  fs: {
-    readFile: readFileMock,
-  },
-}))
+vi.mock('@weapp-core/shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+  return {
+    ...actual,
+    fs: {
+      ...actual.fs,
+      readFile: readFileMock,
+    },
+  }
+})
 
 describe('emitSharedVueEntryAssets', () => {
   beforeEach(() => {
@@ -501,6 +506,9 @@ describe('emitSharedVueEntryAssets', () => {
       '/project/src/pages/index/index.vue',
       {
         layouts: [{ kind: 'native', file: '/layouts/default/index' }],
+      },
+      {
+        platform: 'weapp',
       },
     )
     expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
@@ -1019,6 +1027,9 @@ describe('emitSharedVueEntryAssets', () => {
         layouts: [
           { kind: 'native', file: '/layouts/default/index' },
         ],
+      },
+      {
+        platform: undefined,
       },
     )
     expect(emitLayouts).toHaveBeenCalledWith([

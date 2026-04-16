@@ -1,3 +1,4 @@
+import type { MpPlatform } from '../../../../types'
 import type { LayoutPropValue, ResolvedPageLayout } from './types'
 import {
   WEVU_LAYOUT_BIND_PREFIX,
@@ -6,8 +7,8 @@ import {
 } from '@weapp-core/constants'
 import {
   escapeDoubleQuotedAttr,
-  getLayoutConditionalDirective,
-  getLayoutElseDirective,
+  getPlatformLayoutConditionalDirective,
+  getPlatformLayoutElseDirective,
   toKebabCase,
 } from './shared'
 
@@ -92,15 +93,16 @@ export function buildDynamicLayoutTemplate(
   currentLayout: ResolvedPageLayout | undefined,
   layouts: ResolvedPageLayout[],
   propKeys: string[],
+  platform?: MpPlatform,
 ) {
   const blocks = layouts.map((layout, index) => {
     const attrs = buildDynamicLayoutAttrs(propKeys, currentLayout)
     const condition = currentLayout?.layoutName === layout.layoutName
       ? `{{!${WEVU_PAGE_LAYOUT_NAME_KEY} || ${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`
       : `{{${WEVU_PAGE_LAYOUT_NAME_KEY} === '${layout.layoutName}'}}`
-    const directive = getLayoutConditionalDirective(index)
+    const directive = getPlatformLayoutConditionalDirective(index, platform)
     return `<block ${directive}="${condition}"><${layout.tagName}${attrs}>${innerTemplate}</${layout.tagName}></block>`
   })
 
-  return `${blocks.join('')}<block ${getLayoutElseDirective()}>${innerTemplate}</block>`
+  return `${blocks.join('')}<block ${getPlatformLayoutElseDirective(platform)}>${innerTemplate}</block>`
 }

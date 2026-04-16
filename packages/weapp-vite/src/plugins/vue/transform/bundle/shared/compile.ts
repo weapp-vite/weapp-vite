@@ -37,7 +37,9 @@ export async function compileVueLikeFile(options: {
     if (isPage && result.template) {
       const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
       if (resolvedLayoutPlan) {
-        applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
+        applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
+          platform: configService.platform,
+        })
         await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
       }
     }
@@ -47,7 +49,9 @@ export async function compileVueLikeFile(options: {
   if (isPage && result.template) {
     const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
     if (resolvedLayoutPlan) {
-      applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
+      applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
+        platform: configService.platform,
+      })
       await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
     }
   }

@@ -320,6 +320,9 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         },
         id,
         layoutPlan,
+        {
+          platform: configService.platform,
+        },
       )
 
       code = transformed.script ?? code

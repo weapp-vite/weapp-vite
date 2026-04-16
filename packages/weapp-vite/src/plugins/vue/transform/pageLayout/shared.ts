@@ -1,5 +1,7 @@
+import type { MpPlatform } from '../../../../types'
 import fsNative from 'node:fs'
 import path from 'pathe'
+import { getWxmlDirectivePrefix } from '../../../../platform'
 import { toPosixPath } from '../../../../utils/path'
 
 const CAMEL_TO_KEBAB_RE = /([a-z0-9])([A-Z])/g
@@ -7,7 +9,6 @@ const LAYOUT_NAME_SEPARATORS_RE = /[_\s]+/g
 const DUPLICATE_DASH_RE = /-+/g
 const EDGE_DASH_RE = /^-|-$/g
 const PATH_SEGMENT_RE = /[\\/]/
-const DEFAULT_LAYOUT_DIRECTIVE_PREFIX = 'wx'
 
 export function normalizeComparablePath(input: string) {
   const resolved = path.resolve(input)
@@ -78,10 +79,18 @@ export function removeFileExtension(filename: string) {
   return ext ? filename.slice(0, -ext.length) : filename
 }
 
-export function getLayoutConditionalDirective(index: number, directivePrefix = DEFAULT_LAYOUT_DIRECTIVE_PREFIX) {
+export function getLayoutConditionalDirective(index: number, directivePrefix = getWxmlDirectivePrefix()) {
   return `${directivePrefix}:${index === 0 ? 'if' : 'elif'}`
 }
 
-export function getLayoutElseDirective(directivePrefix = DEFAULT_LAYOUT_DIRECTIVE_PREFIX) {
+export function getLayoutElseDirective(directivePrefix = getWxmlDirectivePrefix()) {
   return `${directivePrefix}:else`
+}
+
+export function getPlatformLayoutConditionalDirective(index: number, platform?: MpPlatform) {
+  return getLayoutConditionalDirective(index, getWxmlDirectivePrefix(platform))
+}
+
+export function getPlatformLayoutElseDirective(platform?: MpPlatform) {
+  return getLayoutElseDirective(getWxmlDirectivePrefix(platform))
 }
