@@ -133,6 +133,16 @@ export function supportsMiniProgramAutoTouchAppStyle(platform?: MpPlatform): boo
 }
 
 /**
+ * @description 获取平台默认构建目标。
+ */
+export function getMiniProgramDefaultBuildTarget(platform?: MpPlatform): string | undefined {
+  if (!platform) {
+    return undefined
+  }
+  return getMiniProgramPlatformDescriptor(platform).build?.defaultBuildTarget
+}
+
+/**
  * @description 获取宿主全局对象 key。
  */
 export function getMiniProgramRuntimeGlobalKey(platform: MpPlatform): string {

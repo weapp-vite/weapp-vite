@@ -144,6 +144,10 @@ export interface MiniProgramPlatformDescriptor {
      * @description 是否允许在自动模式下补齐 app 样式入口，以支持样式 HMR 等行为。
      */
     autoTouchAppStyle?: boolean
+    /**
+     * @description 平台默认使用的构建目标。
+     */
+    defaultBuildTarget?: string
   }
   /**
    * @description 构建清理时需要保留的 npm 产物目录名。

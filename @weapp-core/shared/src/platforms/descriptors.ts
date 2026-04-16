@@ -46,6 +46,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     ide: {},
     build: {
       autoTouchAppStyle: true,
+      defaultBuildTarget: 'es2020',
     },
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
     json: {},
@@ -107,6 +108,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     build: {
       autoTouchAppStyle: false,
+      defaultBuildTarget: 'es2015',
     },
     resolvePreservedNpmDirNames: options => [options?.alipayNpmMode === 'miniprogram_npm' ? 'miniprogram_npm' : 'node_modules'],
     json: {

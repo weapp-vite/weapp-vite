@@ -1,4 +1,5 @@
 import type { MpPlatform } from '../../types'
+import { getMiniProgramDefaultBuildTarget } from '@weapp-core/shared'
 
 const ECMASCRIPT_SHORTHAND_YEAR_MAP: Record<number, number> = {
   6: 2015,
@@ -31,16 +32,8 @@ export interface SanitizedTargetResult {
   hasTarget: boolean
 }
 
-const PLATFORM_DEFAULT_BUILD_TARGETS: Partial<Record<MpPlatform, string>> = {
-  weapp: 'es2020',
-  alipay: 'es2015',
-}
-
 export function getDefaultBuildTarget(platform?: MpPlatform) {
-  if (!platform) {
-    return undefined
-  }
-  return PLATFORM_DEFAULT_BUILD_TARGETS[platform]
+  return getMiniProgramDefaultBuildTarget(platform)
 }
 
 export function isNonConcreteBuildTarget(target: string | string[] | false | undefined) {
