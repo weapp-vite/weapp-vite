@@ -49,3 +49,16 @@ it('exposes conditional attribute values and filtered attrs for picker mode', ()
   assert.equal(selectorAttributes.includes('range'), true)
   assert.equal(selectorAttributes.includes('range-key'), true)
 })
+
+it('renders conditional hover markdown for root and nested attrs', () => {
+  const modeMarkdown = getMiniprogramAttributeHoverMarkdown('picker', 'mode')
+  const startMarkdown = getMiniprogramAttributeHoverMarkdown('picker', 'start', {
+    mode: 'time',
+  })
+
+  assert.equal(modeMarkdown?.includes('### 条件分支'), true)
+  assert.equal(modeMarkdown?.includes('`time`'), true)
+  assert.equal(modeMarkdown?.includes('`start`'), true)
+  assert.equal(startMarkdown?.includes('条件：`mode="time"`'), true)
+  assert.equal(startMarkdown?.includes('## `picker.start`'), true)
+})

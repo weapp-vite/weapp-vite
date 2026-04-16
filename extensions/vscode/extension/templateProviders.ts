@@ -394,7 +394,11 @@ export class WeappTemplateHoverProvider implements vscode.HoverProvider {
         }
       }
 
-      const markdown = getMiniprogramAttributeHoverMarkdown(tagContext.tagName, tagContext.attribute.name)
+      const markdown = getMiniprogramAttributeHoverMarkdown(
+        tagContext.tagName,
+        tagContext.attribute.name,
+        Object.fromEntries(tagContext.attributes.map(attribute => [attribute.name, attribute.value])),
+      )
       return markdown ? new vscode.Hover(new vscode.MarkdownString(markdown)) : null
     }
 

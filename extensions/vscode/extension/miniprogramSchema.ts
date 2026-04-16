@@ -37,6 +37,14 @@ interface MiniprogramComponentIndexEntry extends MiniprogramComponentEntry {
   attrsByName: Map<string, MiniprogramComponentAttribute>
 }
 
+interface ResolvedMiniprogramAttributeMatch {
+  attribute: MiniprogramComponentAttribute
+  condition: {
+    attributeName: string
+    value: string
+  } | null
+}
+
 const componentEntries = (miniprogramComponents as MiniprogramComponentEntry[]).map((entry) => {
   return {
     ...entry,
@@ -136,6 +144,55 @@ export function getMiniprogramComponentAttribute(tagName: string, attributeName:
   return getMiniprogramComponentEntry(tagName)?.attrsByName.get(attributeName) ?? null
 }
 
+function resolveMiniprogramComponentAttribute(
+  tagName: string,
+  attributeName: string,
+  currentAttributes?: Record<string, string | boolean>,
+): ResolvedMiniprogramAttributeMatch | null {
+  const entry = getMiniprogramComponentEntry(tagName)
+
+  if (!entry) {
+    return null
+  }
+
+  const directAttribute = entry.attrsByName.get(attributeName)
+
+  if (directAttribute) {
+    return {
+      attribute: directAttribute,
+      condition: null,
+    }
+  }
+
+  const candidates: ResolvedMiniprogramAttributeMatch[] = []
+
+  for (const rootAttribute of entry.attrs ?? []) {
+    for (const conditional of rootAttribute.subAttrs ?? []) {
+      for (const nestedAttribute of conditional.attrs ?? []) {
+        if (nestedAttribute.name !== attributeName) {
+          continue
+        }
+
+        const candidate = {
+          attribute: nestedAttribute,
+          condition: {
+            attributeName: rootAttribute.name,
+            value: conditional.equal,
+          },
+        } satisfies ResolvedMiniprogramAttributeMatch
+
+        if (currentAttributes?.[rootAttribute.name] === conditional.equal) {
+          return candidate
+        }
+
+        candidates.push(candidate)
+      }
+    }
+  }
+
+  return candidates[0] ?? null
+}
+
 export function getMiniprogramAttributeValues(tagName: string, attributeName: string) {
   const attribute = getMiniprogramComponentAttribute(tagName, attributeName)
 
@@ -175,9 +232,31 @@ export function getMiniprogramComponentHoverMarkdown(tagName: string) {
   return parts.join('\n\n')
 }
 
-export function getMiniprogramAttributeHoverMarkdown(tagName: string, attributeName: string) {
+function renderConditionalAttributeSummary(attribute: MiniprogramComponentAttribute) {
+  if (!attribute.subAttrs?.length) {
+    return ''
+  }
+
+  const rows = attribute.subAttrs
+    .map((item) => {
+      const attributeNames = (item.attrs ?? []).map(attr => `\`${attr.name}\``).join('、')
+      return `- \`${item.equal}\`：${attributeNames || '无额外字段'}`
+    })
+    .filter(Boolean)
+
+  return rows.length > 0
+    ? `### 条件分支\n\n${rows.join('\n')}`
+    : ''
+}
+
+export function getMiniprogramAttributeHoverMarkdown(
+  tagName: string,
+  attributeName: string,
+  currentAttributes?: Record<string, string | boolean>,
+) {
   const entry = getMiniprogramComponentEntry(tagName)
-  const attribute = getMiniprogramComponentAttribute(tagName, attributeName)
+  const resolvedMatch = resolveMiniprogramComponentAttribute(tagName, attributeName, currentAttributes)
+  const attribute = resolvedMatch?.attribute ?? null
 
   if (!entry || !attribute) {
     return null
@@ -189,6 +268,10 @@ export function getMiniprogramAttributeHoverMarkdown(tagName: string, attributeN
     joinMarkdownLines(attribute.desc),
   ].filter(Boolean)
 
+  if (resolvedMatch?.condition) {
+    parts.push(`条件：\`${resolvedMatch.condition.attributeName}="${resolvedMatch.condition.value}"\``)
+  }
+
   if (attribute.defaultValue != null && attribute.defaultValue !== '') {
     parts.push(`默认值：\`${attribute.defaultValue}\``)
   }
@@ -199,6 +282,12 @@ export function getMiniprogramAttributeHoverMarkdown(tagName: string, attributeN
 
   if (entry.docLink) {
     parts.push(`[官方文档](${entry.docLink})`)
+  }
+
+  const conditionalSummary = renderConditionalAttributeSummary(attribute)
+
+  if (conditionalSummary) {
+    parts.push(conditionalSummary)
   }
 
   return parts.join('\n\n')

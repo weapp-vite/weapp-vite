@@ -616,6 +616,124 @@ it('filters native component attributes by current mode and completes conditiona
   assert.equal(attrItems.some((item: any) => item.label === 'range-key'), false)
 })
 
+it('renders native conditional hover details for root and nested attrs', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), '{}'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      MarkdownString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
+      },
+      Hover: class {
+        contents
+
+        constructor(contents: any) {
+          this.contents = contents
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateHoverProvider,
+  } = await import('./templateProviders')
+
+  const hoverProvider = new WeappTemplateHoverProvider()
+  const modeDocument = createTextDocument(
+    'wxml',
+    '<picker mode="time"></picker>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const startDocument = createTextDocument(
+    'wxml',
+    '<picker mode="time" start="09:00"></picker>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const modeText = modeDocument.getText()
+  const startText = startDocument.getText()
+  const modePosition = modeDocument.positionAt(modeText.indexOf('mode') + 2)
+  const startPosition = startDocument.positionAt(startText.indexOf('start') + 2)
+
+  const modeHover = await hoverProvider.provideHover(modeDocument as any, modePosition as any)
+  const startHover = await hoverProvider.provideHover(startDocument as any, startPosition as any)
+
+  assert.equal(modeHover?.contents.value.includes('### 条件分支'), true)
+  assert.equal(modeHover?.contents.value.includes('`time`'), true)
+  assert.equal(startHover?.contents.value.includes('条件：`mode="time"`'), true)
+})
+
 it('highlights matching tags inside wxml documents', async () => {
   const files = new Map<string, string>([
     [path.normalize('/workspace/package.json'), JSON.stringify({
