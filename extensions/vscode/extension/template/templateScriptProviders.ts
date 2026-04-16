@@ -10,6 +10,7 @@ import {
 } from '../shared/config'
 import {
   getTemplateComponentMemberReferenceAtOffset,
+  getTemplateComponentMemberRenameText,
   getTemplateComponentMemberUsageRanges,
   isRecognizedWeappVueDocument,
 } from './templateProjectIndex'
@@ -107,5 +108,99 @@ export class WeappTemplateScriptReferenceProvider implements vscode.ReferencePro
       new vscode.Location(vscode.Uri.file(document.uri.fsPath), document.positionAt(targetReference.definitionStart)),
       ...locations,
     ]
+  }
+}
+
+export class WeappTemplateScriptRenameProvider implements vscode.RenameProvider {
+  async prepareRename(document: vscode.TextDocument, position: vscode.Position) {
+    if (!(await isEnabledForScriptDocument(document))) {
+      return null
+    }
+
+    const targetReference = getTemplateComponentMemberReferenceAtOffset(
+      document.getText(),
+      document.offsetAt(position),
+    )
+
+    if (!targetReference) {
+      return null
+    }
+
+    return {
+      placeholder: targetReference.sourceName,
+      range: new vscode.Range(
+        document.positionAt(targetReference.definitionStart),
+        document.positionAt(targetReference.definitionEnd),
+      ),
+    }
+  }
+
+  async provideRenameEdits(document: vscode.TextDocument, position: vscode.Position, newName: string) {
+    if (!(await isEnabledForScriptDocument(document))) {
+      return null
+    }
+
+    const targetReference = getTemplateComponentMemberReferenceAtOffset(
+      document.getText(),
+      document.offsetAt(position),
+    )
+
+    if (!targetReference) {
+      return null
+    }
+
+    const isValidName = targetReference.kind === 'event'
+      ? /^[A-Za-z_$][\w$:-]*$/u.test(newName)
+      : /^[A-Za-z_$][\w$-]*$/u.test(newName)
+
+    if (!isValidName) {
+      return null
+    }
+
+    const {
+      definitionText,
+      templateText,
+    } = getTemplateComponentMemberRenameText(targetReference, newName)
+    const edit = new vscode.WorkspaceEdit()
+    const seenEdits = new Set<string>()
+    const addEdit = (targetDocument: vscode.TextDocument, start: number, end: number, text: string) => {
+      const filePath = targetDocument.uri.fsPath
+      const key = `${filePath}:${start}:${end}:${text}`
+
+      if (seenEdits.has(key)) {
+        return
+      }
+
+      seenEdits.add(key)
+      edit.replace(
+        vscode.Uri.file(filePath),
+        new vscode.Range(targetDocument.positionAt(start), targetDocument.positionAt(end)),
+        text,
+      )
+    }
+
+    addEdit(
+      document,
+      targetReference.definitionStart,
+      targetReference.definitionEnd,
+      definitionText,
+    )
+
+    const documentCache = new Map<string, vscode.TextDocument>([[document.uri.fsPath, document]])
+
+    for (const fileRange of await getTemplateComponentMemberUsageRanges(document, targetReference)) {
+      const targetDocument = fileRange.filePath === document.uri.fsPath
+        ? document
+        : await openDocumentByPath(fileRange.filePath, documentCache)
+
+      addEdit(
+        targetDocument,
+        fileRange.start,
+        fileRange.end,
+        templateText,
+      )
+    }
+
+    return edit
   }
 }

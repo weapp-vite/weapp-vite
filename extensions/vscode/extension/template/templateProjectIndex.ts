@@ -1126,6 +1126,23 @@ export function getTemplateComponentMemberReferenceAtOffset(documentText: string
     ?? null
 }
 
+export function getTemplateComponentMemberRenameText(
+  reference: TemplateComponentMemberReference,
+  newName: string,
+) {
+  if (reference.kind === 'event') {
+    return {
+      definitionText: newName,
+      templateText: `bind:${newName}`,
+    }
+  }
+
+  return {
+    definitionText: newName,
+    templateText: toKebabCase(newName),
+  }
+}
+
 async function getCurrentComponentTargetPaths(document: vscode.TextDocument) {
   const filePath = document.uri.fsPath
 

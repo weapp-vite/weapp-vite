@@ -67,6 +67,7 @@ import {
 } from './template/templateProviders'
 import {
   WeappTemplateScriptReferenceProvider,
+  WeappTemplateScriptRenameProvider,
 } from './template/templateScriptProviders'
 import {
   addCurrentPageToAppJson,
@@ -404,6 +405,7 @@ export function activate(context: any) {
   const wxmlReferenceProvider = new WeappTemplateReferenceProvider()
   const wxmlRenameProvider = new WeappTemplateRenameProvider()
   const wxmlScriptReferenceProvider = new WeappTemplateScriptReferenceProvider()
+  const wxmlScriptRenameProvider = new WeappTemplateScriptRenameProvider()
   const templateDecorationController = new TemplateDecorationController()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
@@ -585,6 +587,14 @@ export function activate(context: any) {
         { language: 'wxml', scheme: 'file' },
       ],
       wxmlRenameProvider,
+    ),
+    vscode.languages.registerRenameProvider(
+      [
+        { language: 'javascript', scheme: 'file' },
+        { language: 'typescript', scheme: 'file' },
+        { language: 'vue', scheme: 'file' },
+      ],
+      wxmlScriptRenameProvider,
     ),
     vscode.window.onDidChangeActiveTextEditor(() => {
       void refreshStatusBar()

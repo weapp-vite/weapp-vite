@@ -207,6 +207,17 @@ it('provides script-side prop and event references for vue component definitions
           this.end = end
         }
       },
+      WorkspaceEdit: class {
+        edits
+
+        constructor() {
+          this.edits = []
+        }
+
+        replace(uri: any, range: any, newText: string) {
+          this.edits.push({ newText, range, uri })
+        }
+      },
       Location: class {
         uri
         range
@@ -233,9 +244,11 @@ it('provides script-side prop and event references for vue component definitions
 
   const {
     WeappTemplateScriptReferenceProvider,
+    WeappTemplateScriptRenameProvider,
   } = await import('./templateScriptProviders')
 
   const provider = new WeappTemplateScriptReferenceProvider()
+  const renameProvider = new WeappTemplateScriptRenameProvider()
   const document = createTextDocument(
     'vue',
     files.get(path.normalize('/workspace/src/components/card/user/index.vue'))!,
@@ -247,6 +260,10 @@ it('provides script-side prop and event references for vue component definitions
 
   const propReferences = await provider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any)
   const eventReferences = await provider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any)
+  const propPrepare = await renameProvider.prepareRename(document as any, propPosition as any)
+  const eventPrepare = await renameProvider.prepareRename(document as any, eventPosition as any)
+  const propRename = await renameProvider.provideRenameEdits(document as any, propPosition as any, 'headingText')
+  const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'submit')
 
   assert.equal(propReferences.length, 3)
   assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
@@ -256,6 +273,14 @@ it('provides script-side prop and event references for vue component definitions
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(propPrepare?.placeholder, 'titleText')
+  assert.equal(eventPrepare?.placeholder, 'confirm')
+  assert.equal(propRename?.edits.length, 3)
+  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
+  assert.equal(eventRename?.edits.length, 3)
+  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
+  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
 })
 
 it('provides script-side prop and event references for native component scripts', async () => {
@@ -396,6 +421,17 @@ it('provides script-side prop and event references for native component scripts'
           this.end = end
         }
       },
+      WorkspaceEdit: class {
+        edits
+
+        constructor() {
+          this.edits = []
+        }
+
+        replace(uri: any, range: any, newText: string) {
+          this.edits.push({ newText, range, uri })
+        }
+      },
       Location: class {
         uri
         range
@@ -422,9 +458,11 @@ it('provides script-side prop and event references for native component scripts'
 
   const {
     WeappTemplateScriptReferenceProvider,
+    WeappTemplateScriptRenameProvider,
   } = await import('./templateScriptProviders')
 
   const provider = new WeappTemplateScriptReferenceProvider()
+  const renameProvider = new WeappTemplateScriptRenameProvider()
   const document = createTextDocument(
     'typescript',
     files.get(path.normalize('/workspace/src/components/card/native/index.ts'))!,
@@ -436,6 +474,10 @@ it('provides script-side prop and event references for native component scripts'
 
   const propReferences = await provider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any)
   const eventReferences = await provider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any)
+  const propPrepare = await renameProvider.prepareRename(document as any, propPosition as any)
+  const eventPrepare = await renameProvider.prepareRename(document as any, eventPosition as any)
+  const propRename = await renameProvider.provideRenameEdits(document as any, propPosition as any, 'headingText')
+  const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'submit')
 
   assert.equal(propReferences.length, 3)
   assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
@@ -445,4 +487,12 @@ it('provides script-side prop and event references for native component scripts'
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(propPrepare?.placeholder, 'titleText')
+  assert.equal(eventPrepare?.placeholder, 'confirm')
+  assert.equal(propRename?.edits.length, 3)
+  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'headingText')
+  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
+  assert.equal(eventRename?.edits.length, 3)
+  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'submit')
+  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
 })
