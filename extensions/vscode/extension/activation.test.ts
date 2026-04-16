@@ -392,7 +392,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 15)
+    assert.equal(state.registeredProviders.length, 16)
     assert.equal(state.createdTreeViews.length, 1)
     assert.equal(state.createdTreeViews[0].viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)

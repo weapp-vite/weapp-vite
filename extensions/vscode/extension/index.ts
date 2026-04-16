@@ -66,6 +66,9 @@ import {
   WeappTemplateRenameProvider,
 } from './template/templateProviders'
 import {
+  WeappTemplateScriptReferenceProvider,
+} from './template/templateScriptProviders'
+import {
   addCurrentPageToAppJson,
   addPageToAppJsonFromTreeItem,
   copyCurrentPageRoute,
@@ -400,6 +403,7 @@ export function activate(context: any) {
   const wxmlDefinitionProvider = new WeappTemplateDefinitionProvider()
   const wxmlReferenceProvider = new WeappTemplateReferenceProvider()
   const wxmlRenameProvider = new WeappTemplateRenameProvider()
+  const wxmlScriptReferenceProvider = new WeappTemplateScriptReferenceProvider()
   const templateDecorationController = new TemplateDecorationController()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
   const pagesTreeView = vscode.window.createTreeView('weapp-vite.pages', {
@@ -566,6 +570,14 @@ export function activate(context: any) {
         { language: 'wxml', scheme: 'file' },
       ],
       wxmlReferenceProvider,
+    ),
+    vscode.languages.registerReferenceProvider(
+      [
+        { language: 'javascript', scheme: 'file' },
+        { language: 'typescript', scheme: 'file' },
+        { language: 'vue', scheme: 'file' },
+      ],
+      wxmlScriptReferenceProvider,
     ),
     vscode.languages.registerRenameProvider(
       [

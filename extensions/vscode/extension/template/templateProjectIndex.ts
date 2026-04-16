@@ -58,6 +58,14 @@ export interface TemplateFileOffsetRange {
   start: number
 }
 
+export interface TemplateComponentMemberReference {
+  definitionEnd: number
+  definitionStart: number
+  kind: 'event' | 'prop'
+  sourceName: string
+  templateName: string
+}
+
 interface StyleClassMatch {
   className: string
   filePath: string
@@ -345,6 +353,49 @@ function getIdentifierRangeAtOffset(sourceText: string, offset: number) {
     end,
     start: safeOffset,
   }
+}
+
+function getTemplateComponentMemberReferences(sourceText: string) {
+  const meta = extractTemplateComponentMeta(sourceText)
+  const references: TemplateComponentMemberReference[] = []
+  const seen = new Set<string>()
+  const addReference = (
+    kind: 'event' | 'prop',
+    sourceName: string,
+    templateName: string,
+    offset: number,
+  ) => {
+    const range = getIdentifierRangeAtOffset(sourceText, offset)
+    const currentName = sourceText.slice(range.start, range.end)
+    const key = `${kind}:${sourceName}:${range.start}:${range.end}`
+
+    if (currentName !== sourceName || seen.has(key)) {
+      return
+    }
+
+    seen.add(key)
+    references.push({
+      definitionEnd: range.end,
+      definitionStart: range.start,
+      kind,
+      sourceName,
+      templateName,
+    })
+  }
+
+  for (const [name, offset] of meta.propOffsets) {
+    addReference('prop', name, toKebabCase(name), offset)
+  }
+
+  for (const [name, offset] of meta.modelOffsets) {
+    addReference('prop', name, toKebabCase(name), offset)
+  }
+
+  for (const [name, offset] of meta.emitOffsets) {
+    addReference('event', name, `bind:${name}`, offset)
+  }
+
+  return references
 }
 
 async function pathExists(filePath: string) {
@@ -1067,6 +1118,123 @@ export function getTemplateLocalComponentAttributeRanges(
       } satisfies TemplateFileOffsetRange
     })
     .filter((range): range is TemplateFileOffsetRange => Boolean(range))
+}
+
+export function getTemplateComponentMemberReferenceAtOffset(documentText: string, offset: number) {
+  return getTemplateComponentMemberReferences(documentText)
+    .find(reference => offset >= reference.definitionStart && offset <= reference.definitionEnd)
+    ?? null
+}
+
+async function getCurrentComponentTargetPaths(document: vscode.TextDocument) {
+  const filePath = document.uri.fsPath
+
+  if (filePath.endsWith('.vue') || filePath.endsWith('.wxml')) {
+    return [filePath]
+  }
+
+  if (!filePath.endsWith('.ts') && !filePath.endsWith('.js')) {
+    return []
+  }
+
+  const companionPaths = resolveWxmlFileCompanionPaths(filePath)
+  const targetPaths = [
+    filePath,
+  ]
+  const companionTargetPath = await resolveExistingFile([
+    companionPaths.wxml,
+    companionPaths.vue,
+  ])
+
+  if (companionTargetPath) {
+    targetPaths.push(companionTargetPath)
+  }
+
+  return targetPaths
+}
+
+async function getWorkspaceTemplateDocuments(document: vscode.TextDocument) {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+
+  if (!workspaceFolder) {
+    return []
+  }
+
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
+  const [vueFiles, wxmlFiles] = await Promise.all([
+    vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue')),
+    vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.wxml')),
+  ])
+  const files = [...vueFiles, ...wxmlFiles]
+  const seen = new Set<string>()
+  const documents: vscode.TextDocument[] = []
+
+  for (const file of files) {
+    const filePath = file.fsPath
+
+    if (seen.has(filePath)) {
+      continue
+    }
+
+    seen.add(filePath)
+
+    if (filePath === document.uri.fsPath) {
+      documents.push(document)
+      continue
+    }
+
+    try {
+      documents.push(await vscode.workspace.openTextDocument(file))
+    }
+    catch {
+    }
+  }
+
+  return documents
+}
+
+export async function getTemplateComponentMemberUsageRanges(
+  document: vscode.TextDocument,
+  reference: TemplateComponentMemberReference,
+) {
+  const targetPaths = new Set(await getCurrentComponentTargetPaths(document))
+
+  if (targetPaths.size === 0) {
+    return []
+  }
+
+  const ranges: TemplateFileOffsetRange[] = []
+  const seen = new Set<string>()
+
+  for (const templateDocument of await getWorkspaceTemplateDocuments(document)) {
+    const localComponents = await getTemplateLocalComponents(templateDocument)
+
+    for (const component of localComponents.values()) {
+      if (!component.targetPath || !targetPaths.has(component.targetPath)) {
+        continue
+      }
+
+      const componentRanges = getTemplateLocalComponentAttributeRanges(
+        templateDocument,
+        component.name,
+        reference.templateName,
+      )
+
+      for (const range of componentRanges) {
+        const key = `${range.filePath}:${range.start}:${range.end}`
+
+        if (seen.has(key)) {
+          continue
+        }
+
+        seen.add(key)
+        ranges.push(range)
+      }
+    }
+  }
+
+  return ranges
 }
 
 export async function getTemplateResolvedComponentMeta(document: vscode.TextDocument, tagName: string): Promise<ResolvedTemplateComponentMeta | null> {
