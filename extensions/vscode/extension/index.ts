@@ -77,6 +77,7 @@ import {
 import {
   WeappTemplateCompletionProvider,
   WeappTemplateDefinitionProvider,
+  WeappTemplateDocumentHighlightProvider,
   WeappTemplateDocumentLinkProvider,
   WeappTemplateHoverProvider,
 } from './templateProviders'
@@ -389,6 +390,7 @@ export function activate(context: any) {
   const vueDocumentLinkProvider = new WeappViteVueDocumentLinkProvider()
   const wxmlCompletionProvider = new WeappTemplateCompletionProvider()
   const wxmlHoverProvider = new WeappTemplateHoverProvider()
+  const wxmlDocumentHighlightProvider = new WeappTemplateDocumentHighlightProvider()
   const wxmlDocumentLinkProvider = new WeappTemplateDocumentLinkProvider()
   const wxmlDefinitionProvider = new WeappTemplateDefinitionProvider()
   const pagesTreeProvider = new WeappVitePagesTreeProvider()
@@ -535,6 +537,13 @@ export function activate(context: any) {
         { language: 'wxml', scheme: 'file' },
       ],
       wxmlHoverProvider,
+    ),
+    vscode.languages.registerDocumentHighlightProvider(
+      [
+        { language: 'vue', scheme: 'file' },
+        { language: 'wxml', scheme: 'file' },
+      ],
+      wxmlDocumentHighlightProvider,
     ),
     vscode.languages.registerDefinitionProvider(
       [

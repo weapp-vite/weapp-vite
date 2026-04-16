@@ -204,6 +204,13 @@ it('provides local component definitions and resource links for wxml documents',
           this.target = target
         }
       },
+      DocumentHighlight: class {
+        range
+
+        constructor(range: any) {
+          this.range = range
+        }
+      },
     }
 
     return createVscodeModule(mockVscode)
@@ -382,6 +389,13 @@ it('provides style class completions and definitions inside vue template values'
           this.target = target
         }
       },
+      DocumentHighlight: class {
+        range
+
+        constructor(range: any) {
+          this.range = range
+        }
+      },
       RelativePattern: class {
         base
         pattern
@@ -428,4 +442,239 @@ it('provides style class completions and definitions inside vue template values'
 
   assert.equal(completionItems.some((item: any) => item.label === 'page-desc'), true)
   assert.equal(definition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+})
+
+it('highlights matching tags inside wxml documents', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), '{}'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      DocumentHighlight: class {
+        range
+
+        constructor(range: any) {
+          this.range = range
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDocumentHighlightProvider,
+  } = await import('./templateProviders')
+
+  const document = createTextDocument(
+    'wxml',
+    '<view><card-user><view /></card-user></view>',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const documentText = document.getText()
+  const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
+  const provider = new WeappTemplateDocumentHighlightProvider()
+  const highlights = await provider.provideDocumentHighlights(document as any, tagPosition as any)
+
+  assert.equal(highlights.length, 2)
+  assert.deepEqual(highlights.map((item: any) => item.range.start.character), [7, 27])
+})
+
+it('highlights matching tags inside recognized vue templates', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+      pages: ['pages/home/index'],
+    })],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      DocumentHighlight: class {
+        range
+
+        constructor(range: any) {
+          this.range = range
+        }
+      },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDocumentHighlightProvider,
+  } = await import('./templateProviders')
+
+  const document = createTextDocument(
+    'vue',
+    [
+      '<template>',
+      '  <card-user><view /></card-user>',
+      '</template>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.vue'),
+  )
+  const documentText = document.getText()
+  const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
+  const provider = new WeappTemplateDocumentHighlightProvider()
+  const highlights = await provider.provideDocumentHighlights(document as any, tagPosition as any)
+
+  assert.equal(highlights.length, 2)
+  assert.deepEqual(highlights.map((item: any) => item.range.start.line), [1, 1])
 })

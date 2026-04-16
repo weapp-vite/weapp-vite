@@ -43,6 +43,7 @@ import {
 const COMPONENT_COMPLETION_TRIGGER = new Set(['<', '-', ':'])
 const ATTRIBUTE_COMPLETION_TRIGGER = new Set([' ', ':', '@', '.', '-'])
 const VALUE_COMPLETION_TRIGGER = new Set(['"', '\'', ' '])
+const TAG_REGEXP = /<([\w:-]+)|<\/([\w:-]+)>/gu
 
 function isClassAttributeName(attributeName: string | null | undefined) {
   return attributeName === 'class' || Boolean(attributeName?.endsWith('-class'))
@@ -80,6 +81,89 @@ function createCompletionItem(label: string, kind: vscode.CompletionItemKind, do
   }
 
   return item
+}
+
+function createSourceRange(document: vscode.TextDocument, sourceStart: number, sourceEnd: number) {
+  const documentStart = toDocumentOffsetFromWxmlSource(document, sourceStart)
+  const documentEnd = toDocumentOffsetFromWxmlSource(document, sourceEnd)
+
+  if (documentStart == null || documentEnd == null) {
+    return null
+  }
+
+  return new vscode.Range(
+    document.positionAt(documentStart),
+    document.positionAt(documentEnd),
+  )
+}
+
+function normalizeTemplateForTagMatch(sourceText: string) {
+  const replacer = (raw: string) => ' '.repeat(raw.length)
+
+  return sourceText
+    .replace(/<!--[\s\S]*?-->/gu, replacer)
+    .replace(/("[^"]*"|'[^']*')/gu, replacer)
+    .replace(/<[\w:-]+\s[^<>]*\/>/gu, replacer)
+}
+
+function findMatchingEndTagOffset(tagName: string, sourceText: string) {
+  TAG_REGEXP.lastIndex = 0
+  const stack: string[] = []
+
+  for (let match = TAG_REGEXP.exec(sourceText); match; match = TAG_REGEXP.exec(sourceText)) {
+    const [, startName, endName] = match
+
+    if (startName) {
+      stack.push(startName)
+      continue
+    }
+
+    const last = stack.pop()
+
+    if (!last) {
+      if (endName === tagName) {
+        return match.index + 2
+      }
+
+      continue
+    }
+
+    if (last !== endName) {
+      return null
+    }
+  }
+
+  return null
+}
+
+function findMatchingStartTagOffset(tagName: string, sourceText: string) {
+  TAG_REGEXP.lastIndex = 0
+  const stack: Array<{
+    name: string
+    offset: number
+  }> = []
+
+  for (let match = TAG_REGEXP.exec(sourceText); match; match = TAG_REGEXP.exec(sourceText)) {
+    const [, startName, endName] = match
+
+    if (startName) {
+      stack.push({
+        name: startName,
+        offset: match.index + 1,
+      })
+      continue
+    }
+
+    const last = stack.pop()
+
+    if (!last || last.name !== endName) {
+      return null
+    }
+  }
+
+  const last = stack.at(-1)
+
+  return last?.name === tagName ? last.offset : null
 }
 
 export class WeappTemplateCompletionProvider implements vscode.CompletionItemProvider {
@@ -362,5 +446,73 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
     }
 
     return null
+  }
+}
+
+export class WeappTemplateDocumentHighlightProvider implements vscode.DocumentHighlightProvider {
+  async provideDocumentHighlights(document: vscode.TextDocument, position: vscode.Position) {
+    if (!(await isEnabledForDocument(document, position))) {
+      return []
+    }
+
+    const sourceText = getWxmlSourceText(document)
+    const sourceOffset = toWxmlSourceOffset(document, position)
+
+    if (sourceOffset == null || !sourceText) {
+      return []
+    }
+
+    const tagContext = parseWxmlTagContext(sourceText, sourceOffset)
+
+    if (
+      !tagContext.isInsideTag
+      || !tagContext.tagName
+      || tagContext.tagNameStart == null
+      || sourceOffset < tagContext.tagNameStart
+      || sourceOffset > tagContext.tagNameEnd!
+    ) {
+      return []
+    }
+
+    const currentRange = createSourceRange(document, tagContext.tagNameStart, tagContext.tagNameEnd!)
+
+    if (!currentRange) {
+      return []
+    }
+
+    const normalizedSource = normalizeTemplateForTagMatch(sourceText)
+    const ranges = [currentRange]
+
+    if (tagContext.isClosingTag) {
+      const startOffset = findMatchingStartTagOffset(
+        tagContext.tagName,
+        normalizedSource.slice(0, Math.max(0, tagContext.tagNameStart - 2)),
+      )
+
+      if (startOffset != null) {
+        const startRange = createSourceRange(document, startOffset, startOffset + tagContext.tagName.length)
+
+        if (startRange) {
+          ranges.push(startRange)
+        }
+      }
+    }
+    else {
+      const endOffset = findMatchingEndTagOffset(
+        tagContext.tagName,
+        normalizedSource.slice(tagContext.tagNameEnd!),
+      )
+
+      if (endOffset != null) {
+        const startOffset = tagContext.tagNameEnd! + endOffset
+        const endRange = createSourceRange(document, startOffset, startOffset + tagContext.tagName.length)
+
+        if (endRange) {
+          ranges.push(endRange)
+        }
+      }
+    }
+
+    return ranges.map(range => new vscode.DocumentHighlight(range))
   }
 }
