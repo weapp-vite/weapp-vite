@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from './types'
 import { getCurrentInstance, onDetached, onUnload } from './hooks'
-import { getMiniProgramGlobalObject } from './platform'
+import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from './platform'
 
 export type UseIntersectionObserverOptions = WechatMiniprogram.CreateIntersectionObserverOption
 export type UseIntersectionObserverResult = WechatMiniprogram.IntersectionObserver
@@ -22,12 +22,17 @@ function createObserverFromGlobal(
   instance: InternalRuntimeState,
   options: UseIntersectionObserverOptions,
 ): UseIntersectionObserverResult | undefined {
+  if (!supportsCurrentMiniProgramRuntimeCapability('globalCreateIntersectionObserver')) {
+    return undefined
+  }
   const miniProgramGlobal = getMiniProgramGlobalObject()
   const creator = miniProgramGlobal?.createIntersectionObserver
   if (typeof creator !== 'function') {
     return undefined
   }
-  const observer = creator.call(miniProgramGlobal, instance, options)
+  const observer = getCurrentMiniProgramRuntimeCapabilities().intersectionObserverScopeByParameter
+    ? creator.call(miniProgramGlobal, instance, options)
+    : creator.call(miniProgramGlobal, options)
   return observer as UseIntersectionObserverResult | undefined
 }
 

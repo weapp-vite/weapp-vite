@@ -1,7 +1,12 @@
 import type { InternalRuntimeState } from '../../../types'
 import { WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY } from '@weapp-core/constants'
 import { callHookList } from '../../../hooks'
-import { getMiniProgramGlobalObject } from '../../../platform'
+import {
+  getCurrentMiniProgramPages,
+  getCurrentMiniProgramRuntimeCapabilities,
+  getMiniProgramGlobalObject,
+  supportsCurrentMiniProgramRuntimeCapability,
+} from '../../../platform'
 
 let wxPatched = false
 let currentPageInstance: InternalRuntimeState | undefined
@@ -44,13 +49,10 @@ export function resolvePageOptions(target: InternalRuntimeState) {
   if (direct && typeof direct === 'object') {
     return direct
   }
-  if (typeof getCurrentPages === 'function') {
-    const pages = getCurrentPages()
-    const page = Array.isArray(pages) ? pages.at(-1) : undefined
-    const options = page && typeof page === 'object' ? (page as any).options : undefined
-    if (options && typeof options === 'object') {
-      return options
-    }
+  const page = getCurrentMiniProgramPages().at(-1)
+  const options = page && typeof page === 'object' ? (page as any).options : undefined
+  if (options && typeof options === 'object') {
+    return options
   }
   return {}
 }
@@ -64,27 +66,31 @@ export function ensureWxPatched() {
   if (!wxGlobal || typeof wxGlobal !== 'object') {
     return
   }
-  const rawStartPullDownRefresh = wxGlobal.startPullDownRefresh as ((...args: any[]) => any) | undefined
-  if (typeof rawStartPullDownRefresh === 'function') {
-    wxGlobal.startPullDownRefresh = function startPullDownRefreshPatched(...args: any[]) {
-      const result = rawStartPullDownRefresh.apply(this, args)
-      if (currentPageInstance) {
-        callHookList(currentPageInstance, 'onPullDownRefresh', [])
+  if (supportsCurrentMiniProgramRuntimeCapability('pullDownRefreshApi')) {
+    const rawStartPullDownRefresh = wxGlobal.startPullDownRefresh as ((...args: any[]) => any) | undefined
+    if (typeof rawStartPullDownRefresh === 'function') {
+      wxGlobal.startPullDownRefresh = function startPullDownRefreshPatched(...args: any[]) {
+        const result = rawStartPullDownRefresh.apply(this, args)
+        if (currentPageInstance) {
+          callHookList(currentPageInstance, 'onPullDownRefresh', [])
+        }
+        return result
       }
-      return result
     }
   }
-  const rawPageScrollTo = wxGlobal.pageScrollTo as ((...args: any[]) => any) | undefined
-  if (typeof rawPageScrollTo === 'function') {
-    wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
-      const result = rawPageScrollTo.apply(this, [options, ...rest])
-      if (currentPageInstance) {
-        const pageInstance = currentPageInstance
-        runInPageScrollHook(pageInstance, () => {
-          callHookList(pageInstance, 'onPageScroll', [options ?? {}])
-        })
+  if (supportsCurrentMiniProgramRuntimeCapability('pageScrollApi')) {
+    const rawPageScrollTo = wxGlobal.pageScrollTo as ((...args: any[]) => any) | undefined
+    if (typeof rawPageScrollTo === 'function') {
+      wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
+        const result = rawPageScrollTo.apply(this, [options, ...rest])
+        if (currentPageInstance) {
+          const pageInstance = currentPageInstance
+          runInPageScrollHook(pageInstance, () => {
+            callHookList(pageInstance, 'onPageScroll', [options ?? {}])
+          })
+        }
+        return result
       }
-      return result
     }
   }
 }
@@ -95,6 +101,10 @@ export function ensurePageShareMenus(options: {
 }) {
   const { enableOnShareAppMessage, enableOnShareTimeline } = options
   if (!enableOnShareAppMessage && !enableOnShareTimeline) {
+    return
+  }
+
+  if (!supportsCurrentMiniProgramRuntimeCapability('pageShareMenu')) {
     return
   }
 
@@ -115,13 +125,19 @@ export function ensurePageShareMenus(options: {
     }
   }
 
-  // 官方要求：展示 shareTimeline 时必须同时展示 shareAppMessage
-  const shouldShowShareAppMessage = enableOnShareAppMessage || enableOnShareTimeline
-  if (!shouldShowShareAppMessage) {
+  const runtimeCapabilities = getCurrentMiniProgramRuntimeCapabilities()
+  const shouldShowShareAppMessage = runtimeCapabilities.shareTimelineRequiresShareAppMessage
+    ? (enableOnShareAppMessage || enableOnShareTimeline)
+    : enableOnShareAppMessage
+
+  if (!shouldShowShareAppMessage && !enableOnShareTimeline) {
     return
   }
 
-  const menus: Array<'shareAppMessage' | 'shareTimeline'> = ['shareAppMessage']
+  const menus: Array<'shareAppMessage' | 'shareTimeline'> = []
+  if (shouldShowShareAppMessage) {
+    menus.push('shareAppMessage')
+  }
   if (enableOnShareTimeline) {
     menus.push('shareTimeline')
   }

@@ -176,6 +176,28 @@ describe('runtime: features & hooks', () => {
     delete (globalThis as any).wx
   })
 
+  it('does not treat alipay host object as page share menu capability source', () => {
+    const showShareMenu = vi.fn()
+    ;(globalThis as any).my = {
+      showShareMenu,
+    }
+
+    defineComponent({
+      setup() {
+        onShareTimeline(() => ({ title: 'timeline-from-alipay-host' }))
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+
+    expect(showShareMenu).not.toHaveBeenCalled()
+
+    delete (globalThis as any).my
+  })
+
   it('auto shows share menu when page share features are enabled', () => {
     const showShareMenu = vi.fn()
     ;(globalThis as any).wx = {

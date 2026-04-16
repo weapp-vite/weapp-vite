@@ -6,6 +6,7 @@ import type {
   RouteQueryStringifier,
 } from '../router'
 import type { MiniProgramPageLike, RouteResolveCodec } from './types'
+import { getCurrentMiniProgramPages } from '../runtime/platform'
 import { createAbsoluteRoutePath, resolvePath } from './path'
 import { normalizeHash, normalizeQuery, parseQuery, stringifyQuery } from './query'
 
@@ -66,21 +67,11 @@ export function createRouteLocation(
 }
 
 function getCurrentMiniProgramPage(): MiniProgramPageLike | undefined {
-  const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
-  if (typeof getCurrentPagesFn !== 'function') {
+  const pages = getCurrentMiniProgramPages() as MiniProgramPageLike[]
+  if (!Array.isArray(pages) || pages.length === 0) {
     return undefined
   }
-
-  try {
-    const pages = getCurrentPagesFn() as MiniProgramPageLike[]
-    if (!Array.isArray(pages) || pages.length === 0) {
-      return undefined
-    }
-    return pages.at(-1)
-  }
-  catch {
-    return undefined
-  }
+  return pages.at(-1)
 }
 
 export function resolveCurrentRoute(queryOverride?: LocationQueryRaw): RouteLocationNormalizedLoaded {

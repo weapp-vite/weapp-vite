@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramPlatformDescriptor,
+  getMiniProgramRuntimeCapabilities,
   getMiniProgramRuntimeGlobalKeys,
   getMiniProgramTemplatePreset,
   getSupportedMiniProgramPlatforms,
@@ -9,6 +10,7 @@ import {
   normalizeMiniProgramPlatform,
   resolveMiniProgramPageKeys,
   resolveMiniProgramPlatform,
+  supportsMiniProgramRuntimeCapability,
 } from './index'
 
 describe('mini program platform registry', () => {
@@ -34,6 +36,9 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('xhs')).toBe('xhs')
     expect(getMiniProgramRuntimeGlobalKeys()).toEqual(['wx', 'my', 'swan', 'tt', 'jd', 'xhs'])
+    expect(supportsMiniProgramRuntimeCapability('weapp', 'pageShareMenu')).toBe(true)
+    expect(supportsMiniProgramRuntimeCapability('alipay', 'pageShareMenu')).toBe(false)
+    expect(getMiniProgramRuntimeCapabilities('alipay').shareTimelineRequiresShareAppMessage).toBe(true)
   })
 
   it('resolves page identity keys from route and host-specific fields', () => {

@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from '../types'
 import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
-import { getMiniProgramGlobalObject } from '../platform'
+import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
 // 仅供同步 setup() 调用期间使用的当前实例引用
 let __currentInstance: InternalRuntimeState | undefined
@@ -107,6 +107,9 @@ export function ensureSinglePageHookOnInstance(target: InternalRuntimeState, nam
 }
 
 export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
+  if (!supportsCurrentMiniProgramRuntimeCapability('pageShareMenu')) {
+    return
+  }
   const wxGlobal = getMiniProgramGlobalObject()
   if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
     return
@@ -120,7 +123,11 @@ export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
     return
   }
 
-  const menus: Array<'shareAppMessage' | 'shareTimeline'> = ['shareAppMessage']
+  const runtimeCapabilities = getCurrentMiniProgramRuntimeCapabilities()
+  const menus: Array<'shareAppMessage' | 'shareTimeline'> = []
+  if (hasShareAppMessage || (runtimeCapabilities.shareTimelineRequiresShareAppMessage && hasShareTimeline)) {
+    menus.push('shareAppMessage')
+  }
   if (hasShareTimeline) {
     menus.push('shareTimeline')
   }

@@ -27,6 +27,47 @@ export interface MiniProgramPageIdentityRule {
   field?: string
 }
 
+export interface MiniProgramRuntimeCapabilities {
+  /**
+   * @description 宿主是否支持全局 `getCurrentPages()` 页面栈读取。
+   */
+  globalPageStack: boolean
+  /**
+   * @description 宿主是否支持从全局对象创建 `SelectorQuery`。
+   */
+  globalCreateSelectorQuery: boolean
+  /**
+   * @description 全局 `createSelectorQuery()` 是否需要通过 `.in(instance)` 绑定作用域。
+   */
+  selectorQueryScopeByIn: boolean
+  /**
+   * @description 宿主是否支持从全局对象创建 `IntersectionObserver`。
+   */
+  globalCreateIntersectionObserver: boolean
+  /**
+   * @description 全局 `createIntersectionObserver()` 是否要求将实例作为首个参数传入。
+   */
+  intersectionObserverScopeByParameter: boolean
+  /**
+   * @description 宿主是否支持页面分享菜单能力。
+   */
+  pageShareMenu: boolean
+  /**
+   * @description 时间线分享是否要求同时展示 `shareAppMessage`。
+   */
+  shareTimelineRequiresShareAppMessage: boolean
+  /**
+   * @description 宿主是否支持通过全局 `pageScrollTo` 做页面滚动桥接。
+   */
+  pageScrollApi: boolean
+  /**
+   * @description 宿主是否支持通过全局 `startPullDownRefresh` 做下拉刷新桥接。
+   */
+  pullDownRefreshApi: boolean
+}
+
+export type MiniProgramRuntimeCapabilityName = keyof MiniProgramRuntimeCapabilities
+
 export interface MiniProgramPlatformDescriptor {
   /**
    * @description 构建流程中使用的标准平台标识。
@@ -126,5 +167,6 @@ export interface MiniProgramPlatformDescriptor {
   runtime: {
     globalObjectKey: string
     pageIdentityRules: readonly MiniProgramPageIdentityRule[]
+    capabilities: MiniProgramRuntimeCapabilities
   }
 }

@@ -1,6 +1,17 @@
-import type { MiniProgramPlatformDescriptor } from './types'
+import type { MiniProgramPlatformDescriptor, MiniProgramRuntimeCapabilities } from './types'
 
 const DEFAULT_PROJECT_CONFIG_ROOT_KEYS = ['miniprogramRoot', 'srcMiniprogramRoot'] as const
+export const DEFAULT_RUNTIME_CAPABILITIES: MiniProgramRuntimeCapabilities = Object.freeze({
+  globalPageStack: true,
+  globalCreateSelectorQuery: true,
+  selectorQueryScopeByIn: true,
+  globalCreateIntersectionObserver: true,
+  intersectionObserverScopeByParameter: true,
+  pageShareMenu: true,
+  shareTimelineRequiresShareAppMessage: true,
+  pageScrollApi: true,
+  pullDownRefreshApi: true,
+})
 const DEFAULT_PAGE_IDENTITY_RULES = [
   {
     prefix: 'route',
@@ -44,6 +55,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'wx',
+      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: [
         {
           prefix: 'webview',
@@ -110,6 +122,10 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'my',
+      capabilities: {
+        ...DEFAULT_RUNTIME_CAPABILITIES,
+        pageShareMenu: false,
+      },
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
   },
@@ -145,6 +161,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'swan',
+      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
   },
@@ -179,6 +196,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'tt',
+      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
   },
@@ -214,6 +232,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'jd',
+      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
   },
@@ -249,6 +268,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     runtime: {
       globalObjectKey: 'xhs',
+      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
   },

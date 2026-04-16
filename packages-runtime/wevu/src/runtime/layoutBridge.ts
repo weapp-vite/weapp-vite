@@ -7,6 +7,7 @@ import {
 import { resolveMiniProgramPageKeys } from '@weapp-core/shared'
 import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
+import { getCurrentMiniProgramPages } from './platform'
 import { getTemplateRefMap } from './templateRefs/helpers'
 
 type LayoutBridgeContext = Record<string, any>
@@ -31,12 +32,7 @@ interface LayoutHostResolveOptions<T = any> {
 const pageLayoutBridges = new Map<string, Map<string, LayoutBridgeContext>>()
 
 function resolveCurrentPageInstance() {
-  const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
-  if (typeof getCurrentPagesFn !== 'function') {
-    return undefined
-  }
-  const pages = getCurrentPagesFn() as Array<Record<string, any>>
-  return pages.at(-1)
+  return getCurrentMiniProgramPages().at(-1)
 }
 
 function normalizeSelectors(selectors: string | string[]) {

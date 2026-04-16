@@ -43,4 +43,14 @@ describe('native page layout runtime', () => {
       'setPageLayout() 未找到当前页面实例。请在页面生命周期、事件回调或当前页面上下文中调用。',
     )
   })
+
+  it('throws the same high-level error when host page stack access fails', () => {
+    vi.stubGlobal('getCurrentPages', () => {
+      throw new Error('host pages unavailable')
+    })
+
+    expect(() => setPageLayout('default')).toThrowError(
+      'setPageLayout() 未找到当前页面实例。请在页面生命周期、事件回调或当前页面上下文中调用。',
+    )
+  })
 })

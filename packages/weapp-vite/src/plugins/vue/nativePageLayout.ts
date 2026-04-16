@@ -1,5 +1,6 @@
 import type { WevuPageLayoutMap } from 'wevu'
 import { WEVU_PAGE_LAYOUT_SETTER_KEY } from '@weapp-core/constants'
+import { resolveMiniProgramPlatform, supportsMiniProgramRuntimeCapability } from '@weapp-core/shared'
 
 type PageLayoutSetter = (layout: string | false, props?: Record<string, any>) => void
 
@@ -11,14 +12,30 @@ type ResolveTypedPageLayoutProps<Name extends string> = Name extends keyof WevuP
   ? WevuPageLayoutMap[Name]
   : Record<string, any>
 
+type ImportMetaWithEnv = ImportMeta & {
+  env?: {
+    PLATFORM?: string
+  }
+}
+
 function resolveCurrentPageInstance() {
+  const compiledPlatform = resolveMiniProgramPlatform((import.meta as ImportMetaWithEnv).env?.PLATFORM)
+  if (!supportsMiniProgramRuntimeCapability(compiledPlatform, 'globalPageStack')) {
+    return undefined
+  }
+
   const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
   if (typeof getCurrentPagesFn !== 'function') {
     return undefined
   }
 
-  const pages = getCurrentPagesFn() as Array<Record<string, any>>
-  return pages.at(-1)
+  try {
+    const pages = getCurrentPagesFn() as Array<Record<string, any>>
+    return pages.at(-1)
+  }
+  catch {
+    return undefined
+  }
 }
 
 export function setPageLayout(layout: false): void

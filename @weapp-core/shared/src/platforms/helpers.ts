@@ -1,5 +1,12 @@
-import type { MiniProgramPageIdentityRule, MiniProgramPlatformDescriptor, MiniProgramTemplatePreset, MpPlatform } from './types'
-import { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from './descriptors'
+import type {
+  MiniProgramPageIdentityRule,
+  MiniProgramPlatformDescriptor,
+  MiniProgramRuntimeCapabilities,
+  MiniProgramRuntimeCapabilityName,
+  MiniProgramTemplatePreset,
+  MpPlatform,
+} from './types'
+import { DEFAULT_RUNTIME_CAPABILITIES, MINI_PROGRAM_PLATFORM_DESCRIPTORS } from './descriptors'
 
 const LEADING_SLASH_RE = /^\/+/
 
@@ -122,6 +129,26 @@ export function getMiniProgramRuntimeGlobalKeys(platform?: MpPlatform): readonly
     return [getMiniProgramRuntimeGlobalKey(platform)]
   }
   return ORDERED_RUNTIME_GLOBAL_KEYS
+}
+
+/**
+ * @description 获取平台 runtime 能力描述。
+ */
+export function getMiniProgramRuntimeCapabilities(platform?: MpPlatform): MiniProgramRuntimeCapabilities {
+  if (!platform) {
+    return DEFAULT_RUNTIME_CAPABILITIES
+  }
+  return getMiniProgramPlatformDescriptor(platform).runtime.capabilities
+}
+
+/**
+ * @description 判断平台是否支持指定 runtime 能力。
+ */
+export function supportsMiniProgramRuntimeCapability(
+  platform: MpPlatform | undefined,
+  capabilityName: MiniProgramRuntimeCapabilityName,
+): boolean {
+  return getMiniProgramRuntimeCapabilities(platform)[capabilityName] === true
 }
 
 function serializeMiniProgramPageIdentityRule(rule: MiniProgramPageIdentityRule) {

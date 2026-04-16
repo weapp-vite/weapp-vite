@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const GLOBAL_KEYS = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs'] as const
+const GLOBAL_KEYS = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs', 'getCurrentPages'] as const
 
 function clearMiniProgramGlobals() {
   for (const key of GLOBAL_KEYS) {
@@ -44,9 +44,28 @@ describe('runtime platform', () => {
   it('continues scanning shared runtime globals after wx/my/tt', async () => {
     ;(globalThis as any).swan = { name: 'swan-runtime' }
 
-    const { getMiniProgramGlobalObject, resolveCurrentMiniProgramPlatform } = await loadPlatformModule()
+    const { getMiniProgramGlobalObject, resolveCurrentMiniProgramPlatform, supportsCurrentMiniProgramRuntimeCapability } = await loadPlatformModule()
     expect(getMiniProgramGlobalObject()).toBe((globalThis as any).swan)
     expect(resolveCurrentMiniProgramPlatform()).toBe('swan')
+    expect(supportsCurrentMiniProgramRuntimeCapability('pageShareMenu')).toBe(true)
+  })
+
+  it('resolves current page stack through runtime capability gate', async () => {
+    ;(globalThis as any).wx = { name: 'wx-runtime' }
+    ;(globalThis as any).getCurrentPages = () => [{ route: 'pages/demo/index' }]
+
+    const { getCurrentMiniProgramPages } = await loadPlatformModule()
+    expect(getCurrentMiniProgramPages()).toEqual([{ route: 'pages/demo/index' }])
+  })
+
+  it('returns empty page stack when host getCurrentPages throws', async () => {
+    ;(globalThis as any).wx = { name: 'wx-runtime' }
+    ;(globalThis as any).getCurrentPages = () => {
+      throw new Error('host pages unavailable')
+    }
+
+    const { getCurrentMiniProgramPages } = await loadPlatformModule()
+    expect(getCurrentMiniProgramPages()).toEqual([])
   })
 
   it('returns undefined when no supported runtime global exists', async () => {

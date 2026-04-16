@@ -13,7 +13,7 @@ import {
 import { toRaw } from '../../../reactivity'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge'
 import { markNoSetData } from '../../noSetData'
-import { getMiniProgramGlobalObject } from '../../platform'
+import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
 
 type AdapterWithSetData = Required<MiniProgramAdapter> & {
   __wevu_enableSetData?: () => void
@@ -198,12 +198,22 @@ export function ensureSetupContextInstance(
     }
 
     const miniProgramGlobal = getMiniProgramGlobalObject()
-    if (!miniProgramGlobal || typeof miniProgramGlobal.createSelectorQuery !== 'function') {
+    if (
+      !supportsCurrentMiniProgramRuntimeCapability('globalCreateSelectorQuery')
+      || !miniProgramGlobal
+      || typeof miniProgramGlobal.createSelectorQuery !== 'function'
+    ) {
       return undefined
     }
 
     const query = miniProgramGlobal.createSelectorQuery()
-    if (!query || typeof query.in !== 'function') {
+    if (!query) {
+      return query
+    }
+    if (
+      !getCurrentMiniProgramRuntimeCapabilities().selectorQueryScopeByIn
+      || typeof query.in !== 'function'
+    ) {
       return query
     }
 
@@ -221,12 +231,19 @@ export function ensureSetupContextInstance(
       }
 
       const miniProgramGlobal = getMiniProgramGlobalObject()
-      if (!miniProgramGlobal || typeof miniProgramGlobal.createIntersectionObserver !== 'function') {
+      if (
+        !supportsCurrentMiniProgramRuntimeCapability('globalCreateIntersectionObserver')
+        || !miniProgramGlobal
+        || typeof miniProgramGlobal.createIntersectionObserver !== 'function'
+      ) {
         return undefined
       }
 
       const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
-      return miniProgramGlobal.createIntersectionObserver(scopedOwner as any, options ?? {})
+      if (getCurrentMiniProgramRuntimeCapabilities().intersectionObserverScopeByParameter) {
+        return miniProgramGlobal.createIntersectionObserver(scopedOwner as any, options ?? {})
+      }
+      return miniProgramGlobal.createIntersectionObserver(options ?? {})
     },
   )
 

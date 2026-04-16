@@ -2,6 +2,7 @@ export { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from './descriptors'
 export {
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramPlatformDescriptor,
+  getMiniProgramRuntimeCapabilities,
   getMiniProgramRuntimeGlobalKey,
   getMiniProgramRuntimeGlobalKeys,
   getMiniProgramTemplatePreset,
@@ -10,11 +11,14 @@ export {
   normalizeMiniProgramPlatform,
   resolveMiniProgramPageKeys,
   resolveMiniProgramPlatform,
+  supportsMiniProgramRuntimeCapability,
 } from './helpers'
 export type {
   MiniProgramPageIdentityRule,
   MiniProgramPlatformDescriptor,
   MiniProgramPlatformFamily,
+  MiniProgramRuntimeCapabilities,
+  MiniProgramRuntimeCapabilityName,
   MiniProgramTemplatePreset,
   MpPlatform,
   OutputExtensions,

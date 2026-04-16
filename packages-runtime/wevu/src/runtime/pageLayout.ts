@@ -6,6 +6,7 @@ import {
 } from '@weapp-core/constants'
 import { reactive, readonly } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext } from './hooks'
+import { getCurrentMiniProgramPages } from './platform'
 import { getCurrentPageInstance } from './register/component/lifecycle/platform'
 
 type PageLayoutSetter = (layout: string | false, props?: Record<string, any>) => void
@@ -48,13 +49,7 @@ function resolveCurrentPageInstance() {
   if (runtimeCurrentPage) {
     return runtimeCurrentPage
   }
-
-  const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
-  if (typeof getCurrentPagesFn !== 'function') {
-    return undefined
-  }
-  const pages = getCurrentPagesFn() as Array<Record<string, any>>
-  return pages.at(-1)
+  return getCurrentMiniProgramPages().at(-1)
 }
 
 function normalizeRuntimePageLayoutName(layout: string | undefined) {

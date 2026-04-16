@@ -1,8 +1,11 @@
+import type { MiniProgramRuntimeCapabilities, MiniProgramRuntimeCapabilityName } from '@weapp-core/shared'
 import {
   getMiniProgramPlatformByRuntimeGlobalKey,
+  getMiniProgramRuntimeCapabilities,
   getMiniProgramRuntimeGlobalKey,
   getMiniProgramRuntimeGlobalKeys,
   resolveMiniProgramPlatform,
+  supportsMiniProgramRuntimeCapability,
 } from '@weapp-core/shared'
 
 type MiniProgramGlobal = Record<string, any>
@@ -36,6 +39,31 @@ export function resolveCurrentMiniProgramPlatform() {
   }
 
   return undefined
+}
+
+export function getCurrentMiniProgramRuntimeCapabilities(): MiniProgramRuntimeCapabilities {
+  return getMiniProgramRuntimeCapabilities(resolveCurrentMiniProgramPlatform())
+}
+
+export function supportsCurrentMiniProgramRuntimeCapability(capabilityName: MiniProgramRuntimeCapabilityName): boolean {
+  return supportsMiniProgramRuntimeCapability(resolveCurrentMiniProgramPlatform(), capabilityName)
+}
+
+export function getCurrentMiniProgramPages(): Array<Record<string, any>> {
+  if (!supportsCurrentMiniProgramRuntimeCapability('globalPageStack')) {
+    return []
+  }
+  const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
+  if (typeof getCurrentPagesFn !== 'function') {
+    return []
+  }
+  try {
+    const pages = getCurrentPagesFn()
+    return Array.isArray(pages) ? pages as Array<Record<string, any>> : []
+  }
+  catch {
+    return []
+  }
 }
 
 export function getMiniProgramGlobalObject(platformInput?: string): MiniProgramGlobal | undefined {

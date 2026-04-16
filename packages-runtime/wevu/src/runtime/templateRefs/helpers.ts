@@ -8,7 +8,7 @@ import {
 } from '@weapp-core/constants'
 import { isRef } from '../../reactivity'
 import { markNoSetData } from '../noSetData'
-import { getMiniProgramGlobalObject } from '../platform'
+import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
 type TemplateRefTarget
   = | { type: 'function', fn: (value: any) => void }
@@ -206,9 +206,19 @@ export function createSelectorQuery(target: InternalRuntimeState): WechatMinipro
   if (instance && typeof instance.createSelectorQuery === 'function') {
     return instance.createSelectorQuery()
   }
+  if (!supportsCurrentMiniProgramRuntimeCapability('globalCreateSelectorQuery')) {
+    return null
+  }
   const miniProgramGlobal = getMiniProgramGlobalObject()
   if (miniProgramGlobal && typeof miniProgramGlobal.createSelectorQuery === 'function') {
-    return miniProgramGlobal.createSelectorQuery().in(instance)
+    const query = miniProgramGlobal.createSelectorQuery()
+    if (!query) {
+      return null
+    }
+    if (getCurrentMiniProgramRuntimeCapabilities().selectorQueryScopeByIn && typeof (query as any).in === 'function') {
+      return (query as any).in(instance)
+    }
+    return query
   }
   return null
 }
