@@ -276,6 +276,10 @@ it('provides local component definitions and resource links for wxml documents',
 
   assert.equal(completionItems[0].label, 'card-user')
   assert.equal(completionItems[0].documentation.value.includes('项目组件'), true)
+  assert.equal(completionItems[0].documentation.value.includes('### 属性'), true)
+  assert.equal(completionItems[0].documentation.value.includes('`title-text`'), true)
+  assert.equal(completionItems[0].documentation.value.includes('### 事件'), true)
+  assert.equal(completionItems[0].documentation.value.includes('`bind:confirm`'), true)
   assert.equal(completionItems.find((item: any) => item.label === 'view')?.detail, 'native component')
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'title-text'), true)
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'active'), true)
@@ -490,6 +494,7 @@ it('supports native custom component props and events in wxml documents', async 
   const eventPosition = usageDocument.positionAt(usageText.indexOf('bind:confirm') + 2)
 
   const attrItems = await completionProvider.provideCompletionItems(attrDocument as any, attrPosition as any)
+  const tagItems = await completionProvider.provideCompletionItems(usageDocument as any, tagPosition as any)
   const tagDefinition = await definitionProvider.provideDefinition(usageDocument as any, tagPosition as any)
   const propDefinition = await definitionProvider.provideDefinition(usageDocument as any, propPosition as any)
   const eventDefinition = await definitionProvider.provideDefinition(usageDocument as any, eventPosition as any)
@@ -499,6 +504,10 @@ it('supports native custom component props and events in wxml documents', async 
 
   assert.equal(attrItems.some((item: any) => item.label === 'title-text'), true)
   assert.equal(attrItems.some((item: any) => item.label === 'bind:confirm'), true)
+  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('### 属性'), true)
+  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('`title-text`'), true)
+  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('### 事件'), true)
+  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('`bind:confirm`'), true)
   assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.wxml'))
   assert.equal(tagHover?.contents.value.includes('### 属性'), true)
   assert.equal(tagHover?.contents.value.includes('`title-text`'), true)

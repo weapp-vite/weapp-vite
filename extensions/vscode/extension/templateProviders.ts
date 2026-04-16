@@ -255,19 +255,26 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
       const localComponentEntries = [...localComponents.values()]
         .filter(component => Boolean(component.name))
       const localSet = new Set(localComponentEntries.map(component => component.name.toLowerCase()))
-      const localItems = localComponentEntries.map((component, index) => {
+      const localItems = await Promise.all(localComponentEntries.map(async (component, index) => {
+        const componentProps = await getTemplateComponentProps(document, component.name)
+        const componentEvents = await getTemplateComponentEvents(document, component.name)
         const item = createCompletionItem(
           component.name,
           vscode.CompletionItemKind.Module,
           component.targetPath
-            ? createProjectComponentHoverMarkdown('tag', component.name, component.targetPath)
+            ? createProjectComponentTagHoverMarkdown(
+                component.name,
+                component.targetPath,
+                componentProps.map(entry => entry.label),
+                componentEvents.map(entry => entry.label),
+              )
             : undefined,
         )
         item.insertText = component.name
         item.detail = 'project component'
         item.sortText = `0${index.toString().padStart(3, '0')}`
         return item
-      })
+      }))
       const nativeItems = getMiniprogramComponentNames()
         .filter(tagName => !localSet.has(tagName.toLowerCase()))
         .map((tagName, index) => {
