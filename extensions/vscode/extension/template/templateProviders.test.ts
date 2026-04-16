@@ -77,6 +77,7 @@ it('provides local component definitions and resource links for wxml documents',
       '.hero { color: red; }',
       '.hero-title { color: blue; }',
     ].join('\n')],
+    [path.normalize('/workspace/src/pages/about/index.vue'), '<template><view /></template>'],
     [path.normalize('/workspace/src/components/card/user/index.vue'), [
       '<script setup lang="ts">',
       'defineProps<{',
@@ -91,6 +92,7 @@ it('provides local component definitions and resource links for wxml documents',
       '<template><view /></template>',
     ].join('\n')],
     [path.normalize('/workspace/src/assets/banner.png'), 'binary'],
+    [path.normalize('/workspace/src/templates/header.wxml'), '<view>header</view>'],
   ])
 
   vi.doMock('vscode', () => {
@@ -243,7 +245,7 @@ it('provides local component definitions and resource links for wxml documents',
   const hoverProvider = new WeappTemplateHoverProvider()
   const document = createTextDocument(
     'wxml',
-    '<card-user class="hero hero-title" style="height: {{ bottom }}rpx" bindtap="handlers.onTap" src="/assets/banner.png">{{ pageTitle }}</card-user>',
+    '<import src="/templates/header.wxml" /><navigator url="/pages/about/index?from=home" /><card-user class="hero hero-title" style="height: {{ bottom }}rpx" bindtap="handlers.onTap" src="/assets/banner.png">{{ pageTitle }}</card-user>',
     path.normalize('/workspace/src/pages/home/index.wxml'),
   )
   const hoverDocument = createTextDocument(
@@ -260,6 +262,7 @@ it('provides local component definitions and resource links for wxml documents',
   const eventHoverPosition = hoverDocument.positionAt(hoverDocumentText.indexOf('bind:confirm') + 2)
   const propNamePosition = hoverDocument.positionAt(hoverDocumentText.indexOf('title-text') + 2)
   const eventNamePosition = hoverDocument.positionAt(hoverDocumentText.indexOf('bind:confirm') + 2)
+  const routePosition = document.positionAt(documentText.indexOf('/pages/about/index') + 2)
   const classValuePosition = document.positionAt(documentText.indexOf('hero-title') + 2)
   const methodPosition = document.positionAt(documentText.indexOf('onTap') + 2)
   const interpolationPosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
@@ -273,6 +276,7 @@ it('provides local component definitions and resource links for wxml documents',
   const methodDefinition = await definitionProvider.provideDefinition(document as any, methodPosition as any)
   const interpolationDefinition = await definitionProvider.provideDefinition(document as any, interpolationPosition as any)
   const attrInterpolationDefinition = await definitionProvider.provideDefinition(document as any, attrInterpolationPosition as any)
+  const routeDefinition = await definitionProvider.provideDefinition(document as any, routePosition as any)
   const propNameDefinition = await definitionProvider.provideDefinition(hoverDocument as any, propNamePosition as any)
   const eventNameDefinition = await definitionProvider.provideDefinition(hoverDocument as any, eventNamePosition as any)
   const links = await linkProvider.provideDocumentLinks(document as any)
@@ -306,12 +310,20 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
   assert.equal(attrInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
   assert.equal(attrInterpolationDefinition?.range.line, 1)
+  assert.equal(routeDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/about/index.vue'))
   assert.equal(propNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(propNameDefinition?.range.line, 2)
   assert.equal(eventNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(eventNameDefinition?.range.line, 6)
-  assert.equal(links.length, 1)
-  assert.equal(links[0].target.fsPath, path.normalize('/workspace/src/assets/banner.png'))
+  assert.equal(links.length, 3)
+  assert.deepEqual(
+    links.map((link: any) => link.target.fsPath).sort(),
+    [
+      path.normalize('/workspace/src/assets/banner.png'),
+      path.normalize('/workspace/src/pages/about/index.vue'),
+      path.normalize('/workspace/src/templates/header.wxml'),
+    ].sort(),
+  )
   assert.equal(tagHover?.contents.value.includes('项目组件'), true)
   assert.equal(tagHover?.contents.value.includes('### 属性'), true)
   assert.equal(tagHover?.contents.value.includes('`title-text`'), true)
@@ -321,6 +333,146 @@ it('provides local component definitions and resource links for wxml documents',
   assert.equal(propHover?.contents.value.includes('类型: `string`'), true)
   assert.equal(eventHover?.contents.value.includes('组件事件'), true)
   assert.equal(eventHover?.contents.value.includes('参数: `value: number`'), true)
+})
+
+it('provides route links inside recognized vue template documents', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+      pages: ['pages/home/index', 'pages/about/index'],
+    })],
+    [path.normalize('/workspace/src/pages/about/index.vue'), '<template><view /></template>'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(_key: string, defaultValue: unknown) {
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      Location: class {
+        uri
+        range
+
+        constructor(uri: any, range: any) {
+          this.uri = uri
+          this.range = range
+        }
+      },
+      Range: class {
+        start
+        end
+
+        constructor(start: any, end: any) {
+          this.start = start
+          this.end = end
+        }
+      },
+      DocumentLink: class {
+        range
+        target
+        tooltip
+
+        constructor(range: any, target: any) {
+          this.range = range
+          this.target = target
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateDefinitionProvider,
+    WeappTemplateDocumentLinkProvider,
+  } = await import('./templateProviders')
+
+  const definitionProvider = new WeappTemplateDefinitionProvider()
+  const linkProvider = new WeappTemplateDocumentLinkProvider()
+  const document = createTextDocument(
+    'vue',
+    [
+      '<template>',
+      '  <navigator url="/pages/about/index?tab=detail" />',
+      '</template>',
+      '<script setup lang="ts">',
+      'const ok = true',
+      '</script>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.vue'),
+  )
+  const documentText = document.getText()
+  const routePosition = document.positionAt(documentText.indexOf('/pages/about/index') + 2)
+
+  const definition = await definitionProvider.provideDefinition(document as any, routePosition as any)
+  const links = await linkProvider.provideDocumentLinks(document as any)
+
+  assert.equal(definition?.uri.fsPath, path.normalize('/workspace/src/pages/about/index.vue'))
+  assert.equal(links.length, 1)
+  assert.equal(links[0].target.fsPath, path.normalize('/workspace/src/pages/about/index.vue'))
 })
 
 it('supports token-level script definitions inside recognized vue templates', async () => {

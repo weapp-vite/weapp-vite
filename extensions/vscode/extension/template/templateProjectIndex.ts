@@ -6,6 +6,9 @@ import {
   getVueJsonUsingComponentReferences,
 } from '../project/logic'
 import {
+  getPageFileCandidatePaths,
+} from '../project/navigation'
+import {
   readWeappGenerateConfigSnapshot,
 } from '../project/projectConfig'
 import {
@@ -827,6 +830,50 @@ export async function resolveTemplateResourceTarget(document: vscode.TextDocumen
     : [path.resolve(projectRoot, normalizedValue.replace(/^\/+/u, ''))]
 
   return resolveExistingFile(candidates)
+}
+
+async function resolveTemplateRouteTarget(document: vscode.TextDocument, attributeValue: string) {
+  const normalizedValue = attributeValue.trim()
+
+  if (!normalizedValue || normalizedValue.includes('://')) {
+    return null
+  }
+
+  const routeValue = normalizedValue
+    .replace(/[?#][\s\S]*$/u, '')
+    .replace(/^\/+|\/+$/gu, '')
+
+  if (!routeValue) {
+    return null
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
+  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
+
+  if (!appJsonPath) {
+    return null
+  }
+
+  const appJsonDir = path.dirname(appJsonPath)
+  const candidates = getPageFileCandidatePaths(routeValue).map(candidate => path.join(appJsonDir, candidate))
+
+  return resolveExistingFile(candidates)
+}
+
+export async function resolveTemplateLinkTarget(
+  document: vscode.TextDocument,
+  attributeName: string,
+  attributeValue: string,
+) {
+  if (attributeName === 'url') {
+    const routeTarget = await resolveTemplateRouteTarget(document, attributeValue)
+
+    if (routeTarget) {
+      return routeTarget
+    }
+  }
+
+  return resolveTemplateResourceTarget(document, attributeValue)
 }
 
 export async function resolveTemplateScriptDefinition(

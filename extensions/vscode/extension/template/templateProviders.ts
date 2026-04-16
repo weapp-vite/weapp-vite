@@ -40,7 +40,7 @@ import {
   isRecognizedWeappVueDocument,
   isRecognizedWeappWxmlDocument,
   resolveTemplateComponentAttributeDefinition,
-  resolveTemplateResourceTarget,
+  resolveTemplateLinkTarget,
   resolveTemplateScriptDefinition,
   resolveTemplateStyleDefinition,
   resolveTemplateTagTarget,
@@ -507,7 +507,7 @@ export class WeappTemplateDocumentLinkProvider implements vscode.DocumentLinkPro
       }
 
       const valueOffset = fullMatch.lastIndexOf(rawValue) + 1
-      const targetPath = await resolveTemplateResourceTarget(document, value)
+      const targetPath = await resolveTemplateLinkTarget(document, match[1], value)
 
       if (!targetPath) {
         continue
@@ -561,7 +561,7 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
     }
 
     if (tagContext.attribute && isLinkAttribute(tagContext.attribute.name) && isOffsetInsideAttributeValue(tagContext.attribute, sourceOffset)) {
-      const targetPath = await resolveTemplateResourceTarget(document, tagContext.attribute.value)
+      const targetPath = await resolveTemplateLinkTarget(document, tagContext.attribute.name, tagContext.attribute.value)
 
       if (targetPath) {
         return new vscode.Location(vscode.Uri.file(targetPath), new vscode.Position(0, 0))
