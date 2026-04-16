@@ -1,0 +1,13 @@
+{
+  "name": "weapp-vite-vscode-vsix-test-harness",
+  "displayName": "weapp-vite VSIX Test Harness",
+  "version": "0.0.1",
+  "publisher": "weapp-vite",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "*"
+  ]
+}

@@ -1,4 +1,4 @@
-import vscode from 'vscode'
+import * as vscode from 'vscode'
 
 export function getExtensionConfiguration() {
   return vscode.workspace.getConfiguration('weapp-vite')

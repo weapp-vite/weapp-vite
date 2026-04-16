@@ -3,6 +3,13 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { afterEach, it, vi } from 'vitest'
 
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  return {
+    ...mockVscode,
+    default: mockVscode,
+  }
+}
+
 afterEach(() => {
   vi.clearAllMocks()
   vi.doUnmock('vscode')
@@ -28,55 +35,55 @@ it('updates rooted usingComponents paths when a component file moves', async () 
   ])
 
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        workspace: {
-          fs: {
-            stat: async (uri: { fsPath: string }) => {
-              if (!fileContents.has(uri.fsPath)) {
-                throw new Error('not found')
-              }
+    const mockVscode = {
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
 
-              return {
-                type: 0,
-              }
-            },
-            readFile: async (uri: { fsPath: string }) => {
-              const content = fileContents.get(uri.fsPath)
-
-              if (content == null) {
-                throw new Error('not found')
-              }
-
-              return Buffer.from(content)
-            },
-          },
-          findFiles: async () => [
-            {
-              fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
-              path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
-            },
-          ],
-        },
-        Uri: {
-          file(fsPath: string) {
             return {
-              fsPath,
-              path: fsPath,
+              type: 0,
             }
           },
-        },
-        RelativePattern: class {
-          base
-          pattern
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
 
-          constructor(base: string, pattern: string) {
-            this.base = base
-            this.pattern = pattern
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        findFiles: async () => [
+          {
+            fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+            path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+          },
+        ],
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
           }
         },
       },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -129,55 +136,55 @@ it('updates rooted usingComponents paths when a component directory moves', asyn
   ])
 
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        workspace: {
-          fs: {
-            stat: async (uri: { fsPath: string }) => {
-              if (!fileContents.has(uri.fsPath)) {
-                throw new Error('not found')
-              }
+    const mockVscode = {
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
 
-              return {
-                type: 0,
-              }
-            },
-            readFile: async (uri: { fsPath: string }) => {
-              const content = fileContents.get(uri.fsPath)
-
-              if (content == null) {
-                throw new Error('not found')
-              }
-
-              return Buffer.from(content)
-            },
-          },
-          findFiles: async () => [
-            {
-              fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
-              path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
-            },
-          ],
-        },
-        Uri: {
-          file(fsPath: string) {
             return {
-              fsPath,
-              path: fsPath,
+              type: 0,
             }
           },
-        },
-        RelativePattern: class {
-          base
-          pattern
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
 
-          constructor(base: string, pattern: string) {
-            this.base = base
-            this.pattern = pattern
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        findFiles: async () => [
+          {
+            fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+            path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+          },
+        ],
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
           }
         },
       },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -216,55 +223,55 @@ it('removes usingComponents paths when a component directory is deleted', async 
   ])
 
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        workspace: {
-          fs: {
-            stat: async (uri: { fsPath: string }) => {
-              if (!fileContents.has(uri.fsPath)) {
-                throw new Error('not found')
-              }
+    const mockVscode = {
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
 
-              return {
-                type: 0,
-              }
-            },
-            readFile: async (uri: { fsPath: string }) => {
-              const content = fileContents.get(uri.fsPath)
-
-              if (content == null) {
-                throw new Error('not found')
-              }
-
-              return Buffer.from(content)
-            },
-          },
-          findFiles: async () => [
-            {
-              fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
-              path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
-            },
-          ],
-        },
-        Uri: {
-          file(fsPath: string) {
             return {
-              fsPath,
-              path: fsPath,
+              type: 0,
             }
           },
-        },
-        RelativePattern: class {
-          base
-          pattern
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
 
-          constructor(base: string, pattern: string) {
-            this.base = base
-            this.pattern = pattern
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        findFiles: async () => [
+          {
+            fsPath: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+            path: normalizeFsPath('/workspace/src/pages/home/index.vue'),
+          },
+        ],
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
           }
         },
       },
+      RelativePattern: class {
+        base
+        pattern
+
+        constructor(base: string, pattern: string) {
+          this.base = base
+          this.pattern = pattern
+        }
+      },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -298,40 +305,40 @@ it('updates app.json routes when a page directory moves', async () => {
   ])
 
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        workspace: {
-          fs: {
-            stat: async (uri: { fsPath: string }) => {
-              if (!fileContents.has(uri.fsPath)) {
-                throw new Error('not found')
-              }
-
-              return {
-                type: 0,
-              }
-            },
-            readFile: async (uri: { fsPath: string }) => {
-              const content = fileContents.get(uri.fsPath)
-
-              if (content == null) {
-                throw new Error('not found')
-              }
-
-              return Buffer.from(content)
-            },
-          },
-        },
-        Uri: {
-          file(fsPath: string) {
-            return {
-              fsPath,
-              path: fsPath,
+    const mockVscode = {
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
             }
+
+            return {
+              type: 0,
+            }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
           },
         },
       },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -366,40 +373,40 @@ it('removes app.json routes when a page directory is deleted', async () => {
   ])
 
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        workspace: {
-          fs: {
-            stat: async (uri: { fsPath: string }) => {
-              if (!fileContents.has(uri.fsPath)) {
-                throw new Error('not found')
-              }
-
-              return {
-                type: 0,
-              }
-            },
-            readFile: async (uri: { fsPath: string }) => {
-              const content = fileContents.get(uri.fsPath)
-
-              if (content == null) {
-                throw new Error('not found')
-              }
-
-              return Buffer.from(content)
-            },
-          },
-        },
-        Uri: {
-          file(fsPath: string) {
-            return {
-              fsPath,
-              path: fsPath,
+    const mockVscode = {
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
             }
+
+            return {
+              type: 0,
+            }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
           },
         },
       },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 

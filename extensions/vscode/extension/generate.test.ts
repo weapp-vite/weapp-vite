@@ -2,8 +2,15 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { it, vi } from 'vitest'
 
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  return {
+    ...mockVscode,
+    default: mockVscode,
+  }
+}
+
 async function loadGenerateModule() {
-  vi.doMock('vscode', () => ({ default: {} }))
+  vi.doMock('vscode', () => createVscodeModule({}))
   vi.resetModules()
   return import('./generate')
 }

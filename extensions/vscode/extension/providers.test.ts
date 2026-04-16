@@ -3,6 +3,13 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { afterEach, it, vi } from 'vitest'
 
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  return {
+    ...mockVscode,
+    default: mockVscode,
+  }
+}
+
 function createVueDocument(text: string, fsPath: string) {
   return {
     languageId: 'vue',
@@ -39,74 +46,74 @@ it('creates document links for existing local usingComponents paths', async () =
   ])
 
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        workspace: {
-          workspaceFolders: [
-            {
-              name: 'demo',
-              uri: {
-                fsPath: '/workspace',
-                path: '/workspace',
-              },
-            },
-          ],
-          fs: {
-            stat: async (uri: { fsPath: string }) => {
-              if (!existingFiles.has(uri.fsPath)) {
-                throw new Error('not found')
-              }
-
-              return {
-                type: 0,
-              }
-            },
-            readFile: async () => Buffer.from('{}\n'),
-          },
-          getWorkspaceFolder: () => ({
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
             name: 'demo',
             uri: {
               fsPath: '/workspace',
               path: '/workspace',
             },
-          }),
-        },
-        Uri: {
-          file(targetPath: string) {
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!existingFiles.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
+
             return {
-              fsPath: targetPath,
-              path: targetPath,
+              type: 0,
             }
           },
+          readFile: async () => Buffer.from('{}\n'),
         },
-        Range: class {
-          start
-          end
-
-          constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
-            this.start = { line: startLine, character: startCharacter }
-            this.end = { line: endLine, character: endCharacter }
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
           }
-        },
-        DocumentLink: class {
-          range
-          target
-          tooltip
-
-          constructor(range: any, target: any) {
-            this.range = range
-            this.target = target
-          }
-        },
-        CompletionItemKind: {
-          Property: 1,
-          Value: 2,
-          File: 3,
-          Function: 4,
-          Snippet: 5,
         },
       },
+      Range: class {
+        start
+        end
+
+        constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+          this.start = { line: startLine, character: startCharacter }
+          this.end = { line: endLine, character: endCharacter }
+        }
+      },
+      DocumentLink: class {
+        range
+        target
+        tooltip
+
+        constructor(range: any, target: any) {
+          this.range = range
+          this.target = target
+        }
+      },
+      CompletionItemKind: {
+        Property: 1,
+        Value: 2,
+        File: 3,
+        Function: 4,
+        Snippet: 5,
+      },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 

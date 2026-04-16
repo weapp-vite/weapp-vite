@@ -770,6 +770,7 @@
     "typecheck": "pnpm exec tsc -p tsconfig.json --noEmit",
     "test": "pnpm vitest run -c vitest.config.ts",
     "test:host:smoke": "node --import tsx scripts/vscode-host-smoke.ts",
+    "test:vsix:e2e": "pnpm run package:dry-run && node --import tsx scripts/vsix-e2e.ts",
     "smoke:dist": "node --import tsx scripts/smoke-test.ts",
     "check": "pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist",
     "check:package": "node --import tsx scripts/check-package.ts",

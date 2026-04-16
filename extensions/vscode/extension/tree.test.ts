@@ -6,6 +6,13 @@ import { afterEach, it, vi } from 'vitest'
 
 const treeModuleUrl = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'tree.ts')).href
 
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  return {
+    ...mockVscode,
+    default: mockVscode,
+  }
+}
+
 afterEach(() => {
   vi.clearAllMocks()
   vi.doUnmock('vscode')
@@ -15,45 +22,45 @@ afterEach(() => {
 
 it('builds pages tree nodes from weapp pages snapshot', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async () => Buffer.from(''),
-          },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {
@@ -150,45 +157,45 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
 
 it('marks current page in pages tree', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async () => Buffer.from(''),
-          },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {
@@ -236,62 +243,62 @@ it('marks current page in pages tree', async () => {
 
 it('marks config drift pages in tree', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async (uri: { fsPath: string }) => {
-              if (uri.fsPath.endsWith('index.vue')) {
-                return Buffer.from([
-                  '<script setup lang="ts">',
-                  'definePageJson({',
-                  '  navigationBarTitleText: \'Home\',',
-                  '})',
-                  '</script>',
-                  '<json lang="jsonc">',
-                  '{',
-                  '  "navigationBarTitleText": "Index"',
-                  '}',
-                  '</json>',
-                ].join('\n'))
-              }
+      },
+      workspace: {
+        fs: {
+          readFile: async (uri: { fsPath: string }) => {
+            if (uri.fsPath.endsWith('index.vue')) {
+              return Buffer.from([
+                '<script setup lang="ts">',
+                'definePageJson({',
+                '  navigationBarTitleText: \'Home\',',
+                '})',
+                '</script>',
+                '<json lang="jsonc">',
+                '{',
+                '  "navigationBarTitleText": "Index"',
+                '}',
+                '</json>',
+              ].join('\n'))
+            }
 
-              return Buffer.from('')
-            },
+            return Buffer.from('')
           },
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {
@@ -338,45 +345,45 @@ it('marks config drift pages in tree', async () => {
 
 it('prioritizes missing status over current state and sorts problem pages first', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async () => Buffer.from(''),
-          },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {
@@ -429,45 +436,45 @@ it('prioritizes missing status over current state and sorts problem pages first'
 
 it('resolves page node by route after refresh', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async () => Buffer.from(''),
-          },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {
@@ -512,45 +519,45 @@ it('resolves page node by route after refresh', async () => {
 
 it('filters current page nodes in tree', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async () => Buffer.from(''),
-          },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {
@@ -617,62 +624,62 @@ it('filters current page nodes in tree', async () => {
 
 it('filters problem and drift page nodes in tree', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async (uri: { fsPath: string }) => {
-              if (uri.fsPath.endsWith('/pages/drift/index.vue')) {
-                return Buffer.from([
-                  '<script setup lang="ts">',
-                  'definePageJson({',
-                  '  navigationBarTitleText: \'Drift\',',
-                  '})',
-                  '</script>',
-                  '<json lang="jsonc">',
-                  '{',
-                  '  "navigationBarTitleText": "Mismatch"',
-                  '}',
-                  '</json>',
-                ].join('\n'))
-              }
+      },
+      workspace: {
+        fs: {
+          readFile: async (uri: { fsPath: string }) => {
+            if (uri.fsPath.endsWith('/pages/drift/index.vue')) {
+              return Buffer.from([
+                '<script setup lang="ts">',
+                'definePageJson({',
+                '  navigationBarTitleText: \'Drift\',',
+                '})',
+                '</script>',
+                '<json lang="jsonc">',
+                '{',
+                '  "navigationBarTitleText": "Mismatch"',
+                '}',
+                '</json>',
+              ].join('\n'))
+            }
 
-              return Buffer.from('')
-            },
+            return Buffer.from('')
           },
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {
@@ -749,45 +756,45 @@ it('filters problem and drift page nodes in tree', async () => {
 
 it('shows empty filter node when no page matches current filter', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        EventEmitter: class {
-          event = () => ({ dispose() {} })
-          fire() {}
-          dispose() {}
-        },
-        TreeItem: class {
-          label
-          collapsibleState
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
 
-          constructor(label: string, collapsibleState: number) {
-            this.label = label
-            this.collapsibleState = collapsibleState
-          }
-        },
-        ThemeIcon: class {
-          id
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
 
-          constructor(id: string) {
-            this.id = id
-          }
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
         },
-        TreeItemCollapsibleState: {
-          None: 0,
-          Expanded: 2,
-        },
-        Uri: {
-          file(fsPath: string) {
-            return { fsPath, path: fsPath }
-          },
-        },
-        workspace: {
-          fs: {
-            readFile: async () => Buffer.from(''),
-          },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
         },
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.doMock('./workspace', () => {
     return {

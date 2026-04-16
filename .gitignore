@@ -77,6 +77,7 @@ packages/weapp-vite/test-d/.tmp-tsd
 .tmp
 .codex-tmp
 extensions/vscode/.artifacts/
+extensions/vscode/.vscode-test/
 
 # local ide e2e reports
 docs/reports/*-ide-warning-report/

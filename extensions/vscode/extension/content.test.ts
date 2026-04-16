@@ -3,6 +3,13 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { it, vi } from 'vitest'
 
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  return {
+    ...mockVscode,
+    default: mockVscode,
+  }
+}
+
 function createDocument(text: string, fsPath = '/workspace/package.json') {
   const lines = text.split('\n')
 
@@ -29,40 +36,40 @@ function normalizeFsPath(fsPath: string) {
 
 it('builds app.json diagnostics for missing page routes', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        Range: class {
-          start
-          end
+    const mockVscode = {
+      Range: class {
+        start
+        end
 
-          constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
-            this.start = { line: startLine, character: startCharacter }
-            this.end = { line: endLine, character: endCharacter }
-          }
-        },
-        Diagnostic: class {
-          range
-          message
-          severity
+        constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+          this.start = { line: startLine, character: startCharacter }
+          this.end = { line: endLine, character: endCharacter }
+        }
+      },
+      Diagnostic: class {
+        range
+        message
+        severity
 
-          constructor(range: any, message: string, severity: number) {
-            this.range = range
-            this.message = message
-            this.severity = severity
-          }
-        },
-        DiagnosticSeverity: {
-          Information: 1,
-        },
-        MarkdownString: class {
-          value
+        constructor(range: any, message: string, severity: number) {
+          this.range = range
+          this.message = message
+          this.severity = severity
+        }
+      },
+      DiagnosticSeverity: {
+        Information: 1,
+      },
+      MarkdownString: class {
+        value
 
-          constructor(value: string) {
-            this.value = value
-          }
-        },
+        constructor(value: string) {
+          this.value = value
+        }
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -457,17 +464,17 @@ it('builds app.json diagnostics for missing page routes', async () => {
 
 it('builds app.json route hover for existing page files', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        MarkdownString: class {
-          value
+    const mockVscode = {
+      MarkdownString: class {
+        value
 
-          constructor(value: string) {
-            this.value = value
-          }
-        },
+        constructor(value: string) {
+          this.value = value
+        }
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -493,17 +500,17 @@ it('builds app.json route hover for existing page files', async () => {
 
 it('builds app.json route hover for missing page files', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        MarkdownString: class {
-          value
+    const mockVscode = {
+      MarkdownString: class {
+        value
 
-          constructor(value: string) {
-            this.value = value
-          }
-        },
+        constructor(value: string) {
+          this.value = value
+        }
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -548,61 +555,61 @@ it('only builds package.json diagnostics for confirmed weapp-vite projects', asy
   ])
 
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        Range: class {
-          start
-          end
+    const mockVscode = {
+      Range: class {
+        start
+        end
 
-          constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
-            this.start = { line: startLine, character: startCharacter }
-            this.end = { line: endLine, character: endCharacter }
-          }
-        },
-        Diagnostic: class {
-          range
-          message
-          severity
+        constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+          this.start = { line: startLine, character: startCharacter }
+          this.end = { line: endLine, character: endCharacter }
+        }
+      },
+      Diagnostic: class {
+        range
+        message
+        severity
 
-          constructor(range: any, message: string, severity: number) {
-            this.range = range
-            this.message = message
-            this.severity = severity
-          }
-        },
-        DiagnosticSeverity: {
-          Information: 1,
-        },
-        workspace: {
-          fs: {
-            stat: async (uri: { fsPath: string }) => {
-              if (!files.has(uri.fsPath)) {
-                throw new TypeError('not found')
-              }
-
-              return {}
-            },
-            readFile: async (uri: { fsPath: string }) => {
-              const content = files.get(uri.fsPath)
-
-              if (typeof content !== 'string') {
-                throw new TypeError('not found')
-              }
-
-              return Buffer.from(content)
-            },
-          },
-        },
-        Uri: {
-          file(nextFsPath: string) {
-            return {
-              fsPath: nextFsPath,
-              path: nextFsPath,
+        constructor(range: any, message: string, severity: number) {
+          this.range = range
+          this.message = message
+          this.severity = severity
+        }
+      },
+      DiagnosticSeverity: {
+        Information: 1,
+      },
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(uri.fsPath)) {
+              throw new TypeError('not found')
             }
+
+            return {}
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(uri.fsPath)
+
+            if (typeof content !== 'string') {
+              throw new TypeError('not found')
+            }
+
+            return Buffer.from(content)
           },
         },
       },
+      Uri: {
+        file(nextFsPath: string) {
+          return {
+            fsPath: nextFsPath,
+            path: nextFsPath,
+          }
+        },
+      },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 
@@ -624,17 +631,17 @@ it('only builds package.json diagnostics for confirmed weapp-vite projects', asy
 
 it('builds definePageJson hover for vue page config keys', async () => {
   vi.doMock('vscode', () => {
-    return {
-      default: {
-        MarkdownString: class {
-          value
+    const mockVscode = {
+      MarkdownString: class {
+        value
 
-          constructor(value: string) {
-            this.value = value
-          }
-        },
+        constructor(value: string) {
+          this.value = value
+        }
       },
     }
+
+    return createVscodeModule(mockVscode)
   })
   vi.resetModules()
 

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import vscode from 'vscode'
+import * as vscode from 'vscode'
 
 import {
   APP_JSON_DIAGNOSTIC_SOURCE,

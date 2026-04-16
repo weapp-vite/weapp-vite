@@ -4,7 +4,7 @@ import type {
 
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
-import vscode from 'vscode'
+import * as vscode from 'vscode'
 import {
   addCurrentPageToAppJson,
   addPageToAppJsonFromTreeItem,

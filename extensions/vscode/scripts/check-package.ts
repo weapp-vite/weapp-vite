@@ -32,11 +32,15 @@ const requiredFiles = [
   'assets/weapp-vite-icon-theme.json',
   'scripts/vscode-host-smoke.ts',
   'scripts/vscode-host-smoke-runner.cjs',
+  'scripts/vsix-e2e.ts',
+  'scripts/vsix-e2e-runner.cjs',
   'snippets/weapp-vite.code-snippets',
   'scripts/fixtures/vscode-host-smoke/package.json',
   'scripts/fixtures/vscode-host-smoke/vite.config.ts',
   'scripts/fixtures/vscode-host-smoke/src/app.json',
   'scripts/fixtures/vscode-host-smoke/src/pages/home/index.vue',
+  'scripts/fixtures/vscode-vsix-test-harness/package.json',
+  'scripts/fixtures/vscode-vsix-test-harness/extension.js',
   'syntaxes/weapp-vite-custom-blocks.tmLanguage.json',
 ]
 

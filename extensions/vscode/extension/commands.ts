@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import vscode from 'vscode'
+import * as vscode from 'vscode'
 
 import {
   useWvAlias,

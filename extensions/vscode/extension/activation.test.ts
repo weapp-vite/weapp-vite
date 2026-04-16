@@ -6,6 +6,13 @@ import { afterEach, it, vi } from 'vitest'
 
 const extensionIndexUrl = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'index.ts')).href
 
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  return {
+    ...mockVscode,
+    default: mockVscode,
+  }
+}
+
 function createMockVscode() {
   const registeredCommands = []
   const registeredProviders = []
@@ -271,9 +278,7 @@ async function withMockedVscode(run: (state: ReturnType<typeof createMockVscode>
   const state = createMockVscode()
 
   vi.doMock('vscode', () => {
-    return {
-      default: state.mockVscode,
-    }
+    return createVscodeModule(state.mockVscode)
   })
   vi.resetModules()
 
