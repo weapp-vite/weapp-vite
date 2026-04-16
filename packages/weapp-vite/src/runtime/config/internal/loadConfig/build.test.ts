@@ -23,7 +23,8 @@ describe('loadConfig build helpers', () => {
   })
 
   it('builds multi-platform project config hint paths', () => {
-    expect(resolveMultiPlatformProjectConfigHint('weapp')).toBe('config/weapp/project.config.weapp.json')
-    expect(resolveMultiPlatformProjectConfigHint('alipay', 'configs')).toBe('configs/alipay/project.config.alipay.json')
+    expect(resolveMultiPlatformProjectConfigHint('weapp')).toBe('config/weapp/project.config.json')
+    expect(resolveMultiPlatformProjectConfigHint('alipay', 'configs')).toBe('configs/alipay/mini.project.json')
+    expect(resolveMultiPlatformProjectConfigHint('swan')).toBe('config/swan/project.swan.json')
   })
 })

@@ -1,9 +1,11 @@
 import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
+import type { MpPlatform } from '../../../../types'
 import type { LoadConfigResult } from '../../types'
 import logger from '../../../../logger'
 import { supportsMultiPlatformTarget } from '../../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM, normalizeMiniPlatform } from '../../../../platform'
+import { getProjectConfigFileName } from '../../../../utils'
 import { createLibEntryFileNameResolver } from '../../../lib'
 import { createLegacyEs5Plugin } from '../../legacyEs5'
 import { getDefaultBuildTarget, isNonConcreteBuildTarget, sanitizeBuildTarget } from '../../targets'
@@ -20,10 +22,10 @@ export function resolveCliPlatformRuntime(cliPlatform?: string) {
 }
 
 export function resolveMultiPlatformProjectConfigHint(
-  platform: string,
+  platform: MpPlatform,
   projectConfigRoot = 'config',
 ) {
-  return `${projectConfigRoot}/${platform}/project.config.json`
+  return `${projectConfigRoot}/${platform}/${getProjectConfigFileName(platform)}`
 }
 
 export function configureBuildAndPlugins(options: {
@@ -156,7 +158,7 @@ export function configureBuildAndPlugins(options: {
   }
   if (multiPlatform.enabled && !isWebRuntime && projectConfigPath) {
     const expectedPath = resolveMultiPlatformProjectConfigHint(
-      platform,
+      platform as MpPlatform,
       multiPlatform.projectConfigRoot,
     )
     throw new Error(`已开启 weapp.multiPlatform，--project-config 不再支持，请使用 ${formatProjectConfigPath(cwd, expectedPath)}`)

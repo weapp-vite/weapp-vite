@@ -762,7 +762,7 @@ describe('runtime config internal loadConfig', () => {
       cliPlatform: 'weapp',
       configFile: '/project/vite.config.ts',
       projectConfigPath: 'project.config.json',
-    } as any)).rejects.toThrow('已开启 weapp.multiPlatform，--project-config 不再支持')
+    } as any)).rejects.toThrow('已开启 weapp.multiPlatform，--project-config 不再支持，请使用 config/weapp/project.config.json')
   })
 
   it('reuses loaded config when resolved weapp config path equals loaded path', async () => {
