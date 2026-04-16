@@ -36,6 +36,7 @@ import {
   getTemplateStyleClassMatches,
   isRecognizedWeappVueDocument,
   isRecognizedWeappWxmlDocument,
+  resolveTemplateComponentAttributeDefinition,
   resolveTemplateResourceTarget,
   resolveTemplateScriptDefinition,
   resolveTemplateStyleDefinition,
@@ -515,6 +516,18 @@ export class WeappTemplateDefinitionProvider implements vscode.DefinitionProvide
 
       if (targetPath) {
         return new vscode.Location(vscode.Uri.file(targetPath), new vscode.Position(0, 0))
+      }
+    }
+
+    if (tagContext.tagName && tagContext.attribute && sourceOffset >= tagContext.attribute.nameStart && sourceOffset <= tagContext.attribute.nameEnd) {
+      const attributeLocation = await resolveTemplateComponentAttributeDefinition(
+        document,
+        tagContext.tagName,
+        tagContext.attribute.name,
+      )
+
+      if (attributeLocation) {
+        return attributeLocation
       }
     }
 

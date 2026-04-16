@@ -47,12 +47,14 @@ interface StyleClassMatch {
 interface ComponentPropEntry {
   insertText: string
   label: string
+  sourceName: string
   summary: string | null
 }
 
 interface ComponentEventEntry {
   insertText: string
   label: string
+  sourceName: string
   summary: string | null
 }
 
@@ -673,13 +675,7 @@ export async function getTemplateResolvedComponentMeta(document: vscode.TextDocu
   }
 }
 
-export async function getTemplateComponentProps(document: vscode.TextDocument, tagName: string) {
-  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
-
-  if (!resolvedMeta) {
-    return []
-  }
-
+function getResolvedTemplateComponentProps(resolvedMeta: ResolvedTemplateComponentMeta) {
   const { meta: astMeta, sourceText } = resolvedMeta
   const propNames = astMeta.props.size > 0 || astMeta.models.size > 0
     ? new Set([...astMeta.props, ...astMeta.models])
@@ -696,19 +692,14 @@ export async function getTemplateComponentProps(document: vscode.TextDocument, t
       return {
         insertText: kebabName,
         label: kebabName,
+        sourceName: name,
         summary,
       } satisfies ComponentPropEntry
     })
     .filter((entry, index, list) => list.findIndex(item => item.label === entry.label) === index)
 }
 
-export async function getTemplateComponentEvents(document: vscode.TextDocument, tagName: string) {
-  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
-
-  if (!resolvedMeta) {
-    return []
-  }
-
+function getResolvedTemplateComponentEvents(resolvedMeta: ResolvedTemplateComponentMeta) {
   const { meta: astMeta } = resolvedMeta
   const emitNames = astMeta.emits.size > 0
     ? [...astMeta.emits]
@@ -720,10 +711,31 @@ export async function getTemplateComponentEvents(document: vscode.TextDocument, 
       return {
         insertText: `bind:${name}`,
         label: `bind:${name}`,
+        sourceName: name,
         summary: astMeta.emitDetails.get(name) ?? null,
       } satisfies ComponentEventEntry
     })
     .filter((entry, index, list) => list.findIndex(item => item.label === entry.label) === index)
+}
+
+export async function getTemplateComponentProps(document: vscode.TextDocument, tagName: string) {
+  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
+
+  if (!resolvedMeta) {
+    return []
+  }
+
+  return getResolvedTemplateComponentProps(resolvedMeta)
+}
+
+export async function getTemplateComponentEvents(document: vscode.TextDocument, tagName: string) {
+  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
+
+  if (!resolvedMeta) {
+    return []
+  }
+
+  return getResolvedTemplateComponentEvents(resolvedMeta)
 }
 
 export async function getTemplateStyleClassMatches(document: vscode.TextDocument) {
@@ -737,6 +749,55 @@ export async function resolveTemplateTagTarget(document: vscode.TextDocument, ta
   const localComponents = await getTemplateLocalComponents(document)
 
   return localComponents.get(normalizedTagName)?.targetPath ?? null
+}
+
+export async function resolveTemplateComponentAttributeDefinition(
+  document: vscode.TextDocument,
+  tagName: string,
+  attributeName: string,
+) {
+  const normalizedAttributeName = attributeName.trim()
+
+  if (!normalizedAttributeName) {
+    return null
+  }
+
+  const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagName)
+
+  if (!resolvedMeta) {
+    return null
+  }
+
+  const propEntry = getResolvedTemplateComponentProps(resolvedMeta)
+    .find(item => item.label === normalizedAttributeName)
+
+  if (propEntry) {
+    const offset = resolvedMeta.meta.propOffsets.get(propEntry.sourceName)
+      ?? resolvedMeta.meta.modelOffsets.get(propEntry.sourceName)
+
+    if (offset != null) {
+      return new vscode.Location(
+        vscode.Uri.file(resolvedMeta.targetPath),
+        getPositionAtOffset(resolvedMeta.sourceText, offset),
+      )
+    }
+  }
+
+  const eventEntry = getResolvedTemplateComponentEvents(resolvedMeta)
+    .find(item => item.label === normalizedAttributeName)
+
+  if (eventEntry) {
+    const offset = resolvedMeta.meta.emitOffsets.get(eventEntry.sourceName)
+
+    if (offset != null) {
+      return new vscode.Location(
+        vscode.Uri.file(resolvedMeta.targetPath),
+        getPositionAtOffset(resolvedMeta.sourceText, offset),
+      )
+    }
+  }
+
+  return null
 }
 
 export async function resolveTemplateResourceTarget(document: vscode.TextDocument, attributeValue: string) {

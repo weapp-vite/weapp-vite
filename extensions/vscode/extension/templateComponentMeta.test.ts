@@ -29,6 +29,9 @@ it('extracts props, emits, and models from script setup generics', () => {
   assert.equal(meta.emitDetails.get('confirm'), 'value: number')
   assert.equal(meta.emitDetails.get('cancel'), '[]')
   assert.equal(meta.modelDetails.get('checked'), 'boolean')
+  assert.equal(typeof meta.propOffsets.get('titleText'), 'number')
+  assert.equal(typeof meta.emitOffsets.get('confirm'), 'number')
+  assert.equal(typeof meta.modelOffsets.get('checked'), 'number')
 })
 
 it('extracts props and emits from runtime object and array forms', () => {

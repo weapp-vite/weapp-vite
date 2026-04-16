@@ -3,10 +3,13 @@ import { BABEL_TS_MODULE_PARSER_OPTIONS, parse, traverse } from '@weapp-vite/ast
 
 export interface TemplateComponentMeta {
   emitDetails: Map<string, string | null>
+  emitOffsets: Map<string, number>
   emits: Set<string>
   modelDetails: Map<string, string | null>
+  modelOffsets: Map<string, number>
   models: Set<string>
   propDetails: Map<string, string | null>
+  propOffsets: Map<string, number>
   props: Set<string>
 }
 
@@ -64,11 +67,15 @@ function unwrapTypeAnnotation(
 
 function getSfcScriptSource(sourceText: string) {
   if (!sourceText.includes('<script')) {
-    return sourceText
+    return {
+      content: sourceText,
+      offset: 0,
+    }
   }
 
   const blocks: Array<{
     content: string
+    contentStart: number
     isSetup: boolean
   }> = []
   const openPattern = /<script\b([^>]*)>/giu
@@ -87,13 +94,19 @@ function getSfcScriptSource(sourceText: string) {
 
     blocks.push({
       content: sourceText.slice(openMatch.index + openMatch[0].length, closeMatch.index),
+      contentStart: openMatch.index + openMatch[0].length,
       isSetup: /\bsetup\b/iu.test(openMatch[1] ?? ''),
     })
 
     openMatch = openPattern.exec(sourceText)
   }
 
-  return blocks.find(block => block.isSetup)?.content ?? blocks[0]?.content ?? ''
+  const targetBlock = blocks.find(block => block.isSetup) ?? blocks[0]
+
+  return {
+    content: targetBlock?.content ?? '',
+    offset: targetBlock?.contentStart ?? 0,
+  }
 }
 
 function collectTypeReferences(ast: t.File) {
@@ -121,6 +134,14 @@ function setDetail(map: Map<string, string | null>, name: string, summary: strin
   }
 }
 
+function setOffset(map: Map<string, number>, name: string, offset: number | null | undefined) {
+  if (offset == null || map.has(name)) {
+    return
+  }
+
+  map.set(name, offset)
+}
+
 function collectPropDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: string) {
   const details = new Map<string, string | null>()
 
@@ -139,6 +160,24 @@ function collectPropDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: st
   return details
 }
 
+function collectPropOffsetsFromTypeLiteral(node: t.TSTypeLiteral) {
+  const offsets = new Map<string, number>()
+
+  for (const member of node.members) {
+    if (member.type !== 'TSPropertySignature') {
+      continue
+    }
+
+    const name = getPropertyName(member.key)
+
+    if (name) {
+      setOffset(offsets, name, member.key.start)
+    }
+  }
+
+  return offsets
+}
+
 function collectPropDetailsFromInterface(node: t.TSInterfaceDeclaration, sourceText: string) {
   const details = new Map<string, string | null>()
 
@@ -155,6 +194,24 @@ function collectPropDetailsFromInterface(node: t.TSInterfaceDeclaration, sourceT
   }
 
   return details
+}
+
+function collectPropOffsetsFromInterface(node: t.TSInterfaceDeclaration) {
+  const offsets = new Map<string, number>()
+
+  for (const member of node.body.body) {
+    if (member.type !== 'TSPropertySignature') {
+      continue
+    }
+
+    const name = getPropertyName(member.key)
+
+    if (name) {
+      setOffset(offsets, name, member.key.start)
+    }
+  }
+
+  return offsets
 }
 
 function getRuntimeConstructorSummary(node: t.Node | null | undefined): string | null {
@@ -243,6 +300,24 @@ function collectPropDetailsFromObjectExpression(node: t.ObjectExpression) {
   return details
 }
 
+function collectPropOffsetsFromObjectExpression(node: t.ObjectExpression) {
+  const offsets = new Map<string, number>()
+
+  for (const property of node.properties) {
+    if (property.type !== 'ObjectProperty' && property.type !== 'ObjectMethod') {
+      continue
+    }
+
+    const name = getPropertyName(property.key)
+
+    if (name) {
+      setOffset(offsets, name, property.key.start)
+    }
+  }
+
+  return offsets
+}
+
 function getFunctionParameterSummary(parameter: t.FunctionParameter, sourceText: string) {
   if (parameter.type === 'Identifier') {
     const typeSummary = getNodeSummary(unwrapTypeAnnotation(parameter.typeAnnotation), sourceText)
@@ -285,6 +360,30 @@ function collectEventDetailsFromTypeLiteral(node: t.TSTypeLiteral, sourceText: s
   return details
 }
 
+function collectEventOffsetsFromTypeLiteral(node: t.TSTypeLiteral) {
+  const offsets = new Map<string, number>()
+
+  for (const member of node.members) {
+    if (member.type !== 'TSCallSignatureDeclaration') {
+      continue
+    }
+
+    const parameter = member.parameters[0]
+
+    if (parameter?.type !== 'Identifier') {
+      continue
+    }
+
+    const type = unwrapTypeAnnotation(parameter.typeAnnotation)
+
+    if (type?.type === 'TSLiteralType' && type.literal.type === 'StringLiteral') {
+      setOffset(offsets, type.literal.value, type.literal.start)
+    }
+  }
+
+  return offsets
+}
+
 function collectEventDetailsFromObjectTypeLiteral(node: t.TSTypeLiteral, sourceText: string) {
   const details = new Map<string, string | null>()
 
@@ -303,6 +402,24 @@ function collectEventDetailsFromObjectTypeLiteral(node: t.TSTypeLiteral, sourceT
   return details
 }
 
+function collectEventOffsetsFromObjectTypeLiteral(node: t.TSTypeLiteral) {
+  const offsets = new Map<string, number>()
+
+  for (const member of node.members) {
+    if (member.type !== 'TSPropertySignature') {
+      continue
+    }
+
+    const name = getPropertyName(member.key)
+
+    if (name) {
+      setOffset(offsets, name, member.key.start)
+    }
+  }
+
+  return offsets
+}
+
 function collectEventDetailsFromArrayExpression(node: t.ArrayExpression) {
   const details = new Map<string, string | null>()
 
@@ -313,6 +430,18 @@ function collectEventDetailsFromArrayExpression(node: t.ArrayExpression) {
   }
 
   return details
+}
+
+function collectEventOffsetsFromArrayExpression(node: t.ArrayExpression) {
+  const offsets = new Map<string, number>()
+
+  for (const element of node.elements) {
+    if (element?.type === 'StringLiteral') {
+      setOffset(offsets, element.value, element.start)
+    }
+  }
+
+  return offsets
 }
 
 function collectModelDetails(ast: t.File, sourceText: string) {
@@ -340,6 +469,29 @@ function collectModelDetails(ast: t.File, sourceText: string) {
   return details
 }
 
+function collectModelOffsets(ast: t.File) {
+  const offsets = new Map<string, number>()
+
+  traverse(ast, {
+    CallExpression(path) {
+      if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'defineModel') {
+        return
+      }
+
+      const firstArgument = path.node.arguments[0]
+
+      if (firstArgument?.type === 'StringLiteral') {
+        setOffset(offsets, firstArgument.value, firstArgument.start)
+        return
+      }
+
+      setOffset(offsets, 'modelValue', path.node.callee.start)
+    },
+  })
+
+  return offsets
+}
+
 function addDetailEntries(
   names: Set<string>,
   targetMap: Map<string, string | null>,
@@ -351,19 +503,31 @@ function addDetailEntries(
   }
 }
 
+function addOffsetEntries(targetMap: Map<string, number>, sourceMap: Map<string, number>, baseOffset: number) {
+  for (const [name, offset] of sourceMap) {
+    setOffset(targetMap, name, baseOffset + offset)
+  }
+}
+
 function createEmptyTemplateComponentMeta(): TemplateComponentMeta {
   return {
     emitDetails: new Map<string, string | null>(),
+    emitOffsets: new Map<string, number>(),
     emits: new Set<string>(),
     modelDetails: new Map<string, string | null>(),
+    modelOffsets: new Map<string, number>(),
     models: new Set<string>(),
     propDetails: new Map<string, string | null>(),
+    propOffsets: new Map<string, number>(),
     props: new Set<string>(),
   }
 }
 
 export function extractTemplateComponentMeta(sourceText: string): TemplateComponentMeta {
-  const scriptSource = getSfcScriptSource(sourceText)
+  const {
+    content: scriptSource,
+    offset: scriptOffset,
+  } = getSfcScriptSource(sourceText)
   let ast: t.File
 
   try {
@@ -378,10 +542,13 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
 
   const { interfaces, typeAliases } = collectTypeReferences(ast)
   const emitDetails = new Map<string, string | null>()
+  const emitOffsets = new Map<string, number>()
   const props = new Set<string>()
   const propDetails = new Map<string, string | null>()
+  const propOffsets = new Map<string, number>()
   const emits = new Set<string>()
   const modelDetails = collectModelDetails(ast, scriptSource)
+  const modelOffsets = collectModelOffsets(ast)
   const models = new Set(modelDetails.keys())
 
   traverse(ast, {
@@ -395,6 +562,7 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
 
         if (typeParameter?.type === 'TSTypeLiteral') {
           addDetailEntries(props, propDetails, collectPropDetailsFromTypeLiteral(typeParameter, scriptSource))
+          addOffsetEntries(propOffsets, collectPropOffsetsFromTypeLiteral(typeParameter), scriptOffset)
         }
 
         if (typeParameter?.type === 'TSTypeReference' && typeParameter.typeName.type === 'Identifier') {
@@ -403,10 +571,12 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
 
           if (alias?.type === 'TSTypeLiteral') {
             addDetailEntries(props, propDetails, collectPropDetailsFromTypeLiteral(alias, scriptSource))
+            addOffsetEntries(propOffsets, collectPropOffsetsFromTypeLiteral(alias), scriptOffset)
           }
 
           if (iface) {
             addDetailEntries(props, propDetails, collectPropDetailsFromInterface(iface, scriptSource))
+            addOffsetEntries(propOffsets, collectPropOffsetsFromInterface(iface), scriptOffset)
           }
         }
 
@@ -414,6 +584,7 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
 
         if (firstArgument?.type === 'ObjectExpression') {
           addDetailEntries(props, propDetails, collectPropDetailsFromObjectExpression(firstArgument))
+          addOffsetEntries(propOffsets, collectPropOffsetsFromObjectExpression(firstArgument), scriptOffset)
         }
       }
 
@@ -422,28 +593,37 @@ export function extractTemplateComponentMeta(sourceText: string): TemplateCompon
 
         if (typeParameter?.type === 'TSTypeLiteral') {
           addDetailEntries(emits, emitDetails, collectEventDetailsFromTypeLiteral(typeParameter, scriptSource))
+          addOffsetEntries(emitOffsets, collectEventOffsetsFromTypeLiteral(typeParameter), scriptOffset)
           addDetailEntries(emits, emitDetails, collectEventDetailsFromObjectTypeLiteral(typeParameter, scriptSource))
+          addOffsetEntries(emitOffsets, collectEventOffsetsFromObjectTypeLiteral(typeParameter), scriptOffset)
         }
 
         const firstArgument = path.node.arguments[0]
 
         if (firstArgument?.type === 'ArrayExpression') {
           addDetailEntries(emits, emitDetails, collectEventDetailsFromArrayExpression(firstArgument))
+          addOffsetEntries(emitOffsets, collectEventOffsetsFromArrayExpression(firstArgument), scriptOffset)
         }
 
         if (firstArgument?.type === 'ObjectExpression') {
           addDetailEntries(emits, emitDetails, collectPropDetailsFromObjectExpression(firstArgument))
+          addOffsetEntries(emitOffsets, collectPropOffsetsFromObjectExpression(firstArgument), scriptOffset)
         }
       }
     },
   })
 
+  addOffsetEntries(propOffsets, modelOffsets, scriptOffset)
+
   return {
     emitDetails,
+    emitOffsets,
     emits,
     modelDetails,
+    modelOffsets: new Map([...modelOffsets].map(([name, offset]) => [name, scriptOffset + offset])),
     models,
     propDetails,
+    propOffsets,
     props,
   }
 }
