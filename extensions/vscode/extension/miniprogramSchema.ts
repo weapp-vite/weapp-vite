@@ -241,13 +241,39 @@ function renderConditionDetail(condition: ResolvedMiniprogramAttributeMatch['con
   return condition ? `${condition.attributeName}=${condition.value}` : undefined
 }
 
+export function getMiniprogramComponentCompletionDetail() {
+  return 'native component'
+}
+
 export function getMiniprogramAttributeCompletionDetail(
   tagName: string,
   attributeName: string,
   currentAttributes?: Record<string, string | boolean>,
 ) {
   const resolvedMatch = resolveMiniprogramComponentAttribute(tagName, attributeName, currentAttributes)
-  return renderConditionDetail(resolvedMatch?.condition ?? null)
+  const conditionDetail = renderConditionDetail(resolvedMatch?.condition ?? null)
+
+  if (conditionDetail) {
+    return conditionDetail
+  }
+
+  const attribute = resolvedMatch?.attribute
+
+  if (!attribute) {
+    return undefined
+  }
+
+  if (attribute.enum?.length || attribute.subAttrs?.length) {
+    return 'enum'
+  }
+
+  if (attribute.type?.name) {
+    return attribute.type.name
+  }
+
+  return attribute.defaultValue
+    ? `default=${attribute.defaultValue}`
+    : undefined
 }
 
 export function getMiniprogramComponentHoverMarkdown(tagName: string) {

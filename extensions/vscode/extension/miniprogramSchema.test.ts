@@ -6,6 +6,7 @@ import {
   getMiniprogramAttributeHoverMarkdown,
   getMiniprogramAttributeValues,
   getMiniprogramComponentAttributes,
+  getMiniprogramComponentCompletionDetail,
   getMiniprogramComponentHoverMarkdown,
   getMiniprogramComponentNames,
 } from './miniprogramSchema'
@@ -51,7 +52,9 @@ it('exposes conditional attribute values and filtered attrs for picker mode', ()
   assert.equal(timeAttributes.includes('range-key'), false)
   assert.equal(selectorAttributes.includes('range'), true)
   assert.equal(selectorAttributes.includes('range-key'), true)
+  assert.equal(getMiniprogramAttributeCompletionDetail('picker', 'mode'), 'enum')
   assert.equal(getMiniprogramAttributeCompletionDetail('picker', 'start', { mode: 'time' }), 'mode=time')
+  assert.equal(getMiniprogramComponentCompletionDetail(), 'native component')
 })
 
 it('renders conditional hover markdown for root and nested attrs', () => {

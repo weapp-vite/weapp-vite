@@ -11,6 +11,7 @@ import {
   getMiniprogramAttributeHoverMarkdown,
   getMiniprogramAttributeValues,
   getMiniprogramComponentAttributes,
+  getMiniprogramComponentCompletionDetail,
   getMiniprogramComponentHoverMarkdown,
   getMiniprogramComponentNames,
 } from './miniprogramSchema'
@@ -248,6 +249,7 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
             getMiniprogramComponentHoverMarkdown(tagName) ?? undefined,
           )
           item.insertText = tagName
+          item.detail = getMiniprogramComponentCompletionDetail()
           item.sortText = `1${index.toString().padStart(3, '0')}`
           return item
         })

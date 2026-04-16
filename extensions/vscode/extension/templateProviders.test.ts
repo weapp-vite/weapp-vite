@@ -276,6 +276,7 @@ it('provides local component definitions and resource links for wxml documents',
 
   assert.equal(completionItems[0].label, 'card-user')
   assert.equal(completionItems[0].documentation.value.includes('项目组件'), true)
+  assert.equal(completionItems.find((item: any) => item.label === 'view')?.detail, 'native component')
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'title-text'), true)
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'active'), true)
   assert.equal(attributeCompletionItems.some((item: any) => item.label === 'bind:confirm'), true)
