@@ -64,7 +64,8 @@ describe('automator helpers', () => {
     readCustomConfigMock.mockResolvedValue({})
     bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
       touchedInstanceCount: 1,
-      updatedSecurityCount: 1,
+      detectedSecurityCount: 1,
+      updatedSecurityCount: 0,
       trustedProjectCount: 1,
     })
     launchMock.mockResolvedValue({ connected: true })
@@ -262,6 +263,23 @@ describe('automator helpers', () => {
       expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({
         trustProject: false,
       }))
+    })
+
+    it('fails early when detected service port is disabled', async () => {
+      bootstrapWechatDevtoolsSettingsMock.mockResolvedValueOnce({
+        touchedInstanceCount: 1,
+        detectedSecurityCount: 1,
+        updatedSecurityCount: 0,
+        trustedProjectCount: 1,
+        servicePort: 21992,
+        servicePortEnabled: false,
+      })
+
+      await expect(launchAutomator({
+        projectPath: '/workspace/project',
+      })).rejects.toThrow('Detected WeChat DevTools service port is disabled in current settings. Please enable it manually; existing user settings were not modified.')
+
+      expect(launchMock).not.toHaveBeenCalled()
     })
 
     it('retries once for retryable startup jitter', async () => {

@@ -73,7 +73,8 @@ describe('ide logs command', () => {
     })
     bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
       touchedInstanceCount: 1,
-      updatedSecurityCount: 1,
+      detectedSecurityCount: 1,
+      updatedSecurityCount: 0,
       trustedProjectCount: 1,
     })
     startForwardConsoleBridgeMock.mockResolvedValue({
@@ -141,7 +142,7 @@ describe('ide logs command', () => {
     })
     expect(startForwardConsoleBridgeMock).not.toHaveBeenCalled()
     expect(openIdeMock).not.toHaveBeenCalled()
-    expect(loggerMock.info).toHaveBeenCalledWith('已完成微信开发者工具配置预热：扫描实例 1 个，更新安全设置 1 处，写入项目信任 1 处。')
+    expect(loggerMock.info).toHaveBeenCalledWith('已完成微信开发者工具配置预热：扫描实例 1 个，检测服务端口配置 1 处，写入项目信任 1 处。')
   })
 
   it('forwards trust-project override for setup action', async () => {

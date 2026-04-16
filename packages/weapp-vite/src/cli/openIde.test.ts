@@ -101,7 +101,8 @@ describe('openIde', () => {
     })
     bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
       touchedInstanceCount: 1,
-      updatedSecurityCount: 1,
+      detectedSecurityCount: 1,
+      updatedSecurityCount: 0,
       trustedProjectCount: 1,
     })
     miniProgramDisconnectMock.mockReset()
@@ -244,6 +245,29 @@ describe('openIde', () => {
     ])
   })
 
+  it('falls back to plain open when detected service port is disabled', async () => {
+    bootstrapWechatDevtoolsSettingsMock.mockResolvedValueOnce({
+      touchedInstanceCount: 1,
+      detectedSecurityCount: 1,
+      updatedSecurityCount: 0,
+      trustedProjectCount: 1,
+      servicePort: 21992,
+      servicePortEnabled: false,
+    })
+
+    const { openIde } = await import('./openIde')
+    await openIde('weapp', 'dist/dev/mp-weixin')
+
+    expect(loggerMock.warn).toHaveBeenCalledWith('检测到微信开发者工具服务端口当前处于关闭状态，已保留用户设置并回退到普通 open 流程。')
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
+    expect(parseMock).toHaveBeenCalledWith([
+      'open',
+      '-p',
+      'dist/dev/mp-weixin',
+      '--trust-project',
+    ])
+  })
+
   it('prints original automator error when fallback debug env is enabled', async () => {
     process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN = '1'
     const { openIde } = await import('./openIde')
@@ -291,7 +315,7 @@ describe('openIde', () => {
 
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
-    expect(loggerMock.warn).toHaveBeenCalledWith('预写入微信开发者工具安全设置或项目信任状态失败，继续执行 open 流程。')
+    expect(loggerMock.warn).toHaveBeenCalledWith('检测微信开发者工具服务端口或写入项目信任状态失败，继续执行 open 流程。')
     expect(loggerMock.error).toHaveBeenCalledWith(error)
     expect(parseMock).toHaveBeenCalledWith([
       'open',

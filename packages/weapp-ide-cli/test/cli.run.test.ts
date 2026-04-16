@@ -187,7 +187,8 @@ describe('cli parsing', () => {
     removeCustomConfigKeyMock.mockResolvedValue(undefined)
     bootstrapWechatDevtoolsSettingsMock.mockResolvedValue({
       touchedInstanceCount: 1,
-      updatedSecurityCount: 1,
+      detectedSecurityCount: 1,
+      updatedSecurityCount: 0,
       trustedProjectCount: 1,
     })
     fsMock.pathExists.mockResolvedValue(true)

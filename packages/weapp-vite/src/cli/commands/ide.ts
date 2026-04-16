@@ -66,7 +66,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
       projectPath: resolved.projectPath,
       trustProject: options.trustProject,
     })
-    logger.info(`已完成微信开发者工具配置预热：扫描实例 ${result.touchedInstanceCount} 个，更新安全设置 ${result.updatedSecurityCount} 处，写入项目信任 ${result.trustedProjectCount} 处。`)
+    logger.info(`已完成微信开发者工具配置预热：扫描实例 ${result.touchedInstanceCount} 个，检测服务端口配置 ${result.detectedSecurityCount} 处，写入项目信任 ${result.trustedProjectCount} 处。`)
     return
   }
 

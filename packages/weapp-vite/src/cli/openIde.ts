@@ -253,20 +253,26 @@ async function reopenOpenedWechatIde(projectPath: string) {
 }
 
 export async function openIde(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
+  let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
+
   if (platform === 'weapp' && projectPath) {
     try {
-      await bootstrapWechatDevtoolsSettings({
+      bootstrapResult = await bootstrapWechatDevtoolsSettings({
         projectPath,
         trustProject: options.trustProject,
       })
     }
     catch (error) {
-      logger.warn('预写入微信开发者工具安全设置或项目信任状态失败，继续执行 open 流程。')
+      logger.warn('检测微信开发者工具服务端口或写入项目信任状态失败，继续执行 open 流程。')
       logger.error(error)
     }
   }
 
-  if (platform === 'weapp' && projectPath && options.trustProject !== false) {
+  if (platform === 'weapp' && projectPath && bootstrapResult?.servicePortEnabled === false) {
+    logger.warn('检测到微信开发者工具服务端口当前处于关闭状态，已保留用户设置并回退到普通 open 流程。')
+  }
+
+  if (platform === 'weapp' && projectPath && options.trustProject !== false && bootstrapResult?.servicePortEnabled !== false) {
     try {
       if (options.reuseOpenedProject === false) {
         const reopened = await reopenOpenedWechatIde(projectPath)

@@ -245,12 +245,17 @@ export async function launchAutomator(options: AutomatorOptions) {
   const resolvedTrustProject = options.trustProject ?? config.autoTrustProject ?? false
   const launcher = new Launcher()
   let lastError: unknown = null
+  let bootstrapResult: Awaited<ReturnType<typeof bootstrapWechatDevtoolsSettings>> | undefined
 
   if (config.autoBootstrapDevtools !== false) {
-    await bootstrapWechatDevtoolsSettings({
+    bootstrapResult = await bootstrapWechatDevtoolsSettings({
       projectPath,
       trustProject: resolvedTrustProject,
     })
+  }
+
+  if (bootstrapResult?.servicePortEnabled === false) {
+    throw new Error('Detected WeChat DevTools service port is disabled in current settings. Please enable it manually; existing user settings were not modified.')
   }
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
