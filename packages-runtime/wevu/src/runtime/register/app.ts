@@ -7,7 +7,7 @@ import {
   WEVU_IS_APP_INSTANCE_KEY,
 } from '@weapp-core/constants'
 import { callHookList } from '../hooks'
-import { getMiniProgramGlobalObject } from '../platform'
+import { getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 import { runInlineExpression } from './inline'
 import { mountRuntimeInstance } from './runtimeInstance'
 
@@ -17,6 +17,10 @@ const MEMORY_WARNING_LISTENER_KEY = '__wevuOnMemoryWarningListener'
 function bindMemoryWarningListener(target: InternalRuntimeState) {
   const hooks = target[WEVU_HOOKS_KEY] as Record<string, any> | undefined
   const hasMemoryWarningHook = Boolean(hooks?.onMemoryWarning)
+  if (!supportsCurrentMiniProgramRuntimeCapability('appMemoryWarningListener')) {
+    delete (target as any)[MEMORY_WARNING_LISTENER_KEY]
+    return
+  }
   const wxGlobal = getMiniProgramGlobalObject()
   const onMemoryWarning = wxGlobal?.onMemoryWarning
   const offMemoryWarning = wxGlobal?.offMemoryWarning
@@ -50,16 +54,22 @@ function bindAppGlobalListener(target: InternalRuntimeState, options: {
   hookName: 'onError' | 'onPageNotFound' | 'onUnhandledRejection' | 'onThemeChange'
   onApiName: 'onError' | 'onPageNotFound' | 'onUnhandledRejection' | 'onThemeChange'
   offApiName: 'offError' | 'offPageNotFound' | 'offUnhandledRejection' | 'offThemeChange'
+  capabilityName: 'appErrorListener' | 'appPageNotFoundListener' | 'appUnhandledRejectionListener' | 'appThemeChangeListener'
   userHandler?: ((...args: any[]) => any) | undefined
 }) {
-  const { hookName, onApiName, offApiName, userHandler } = options
+  const { hookName, onApiName, offApiName, capabilityName, userHandler } = options
   const hooks = target[WEVU_HOOKS_KEY] as Record<string, any> | undefined
   const hasHook = Boolean(hooks?.[hookName])
+  const store = ((target as any)[APP_GLOBAL_LISTENER_STORE_KEY] ??= Object.create(null)) as Record<string, ((...args: any[]) => void) | undefined>
+  const existing = store[hookName]
+  if (!supportsCurrentMiniProgramRuntimeCapability(capabilityName)) {
+    delete store[hookName]
+    delete (target as any)[hookName]
+    return
+  }
   const wxGlobal = getMiniProgramGlobalObject()
   const onApi = wxGlobal?.[onApiName]
   const offApi = wxGlobal?.[offApiName]
-  const store = ((target as any)[APP_GLOBAL_LISTENER_STORE_KEY] ??= Object.create(null)) as Record<string, ((...args: any[]) => void) | undefined>
-  const existing = store[hookName]
 
   if (typeof existing === 'function' && typeof offApi === 'function') {
     try {
@@ -103,24 +113,28 @@ function bindAppGlobalListeners(
     hookName: 'onError',
     onApiName: 'onError',
     offApiName: 'offError',
+    capabilityName: 'appErrorListener',
     userHandler: handlers.onError,
   })
   bindAppGlobalListener(target, {
     hookName: 'onPageNotFound',
     onApiName: 'onPageNotFound',
     offApiName: 'offPageNotFound',
+    capabilityName: 'appPageNotFoundListener',
     userHandler: handlers.onPageNotFound,
   })
   bindAppGlobalListener(target, {
     hookName: 'onUnhandledRejection',
     onApiName: 'onUnhandledRejection',
     offApiName: 'offUnhandledRejection',
+    capabilityName: 'appUnhandledRejectionListener',
     userHandler: handlers.onUnhandledRejection,
   })
   bindAppGlobalListener(target, {
     hookName: 'onThemeChange',
     onApiName: 'onThemeChange',
     offApiName: 'offThemeChange',
+    capabilityName: 'appThemeChangeListener',
     userHandler: handlers.onThemeChange,
   })
 }

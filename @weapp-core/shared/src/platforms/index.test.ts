@@ -45,6 +45,9 @@ describe('mini program platform registry', () => {
     expect(supportsMiniProgramRuntimeCapability('weapp', 'pageShareMenu')).toBe(true)
     expect(supportsMiniProgramRuntimeCapability('alipay', 'pageShareMenu')).toBe(false)
     expect(supportsMiniProgramRuntimeCapability('weapp', 'globalRouterApi')).toBe(true)
+    expect(supportsMiniProgramRuntimeCapability('alipay', 'appThemeChangeListener')).toBe(false)
+    expect(supportsMiniProgramRuntimeCapability('tt', 'appThemeChangeListener')).toBe(false)
+    expect(supportsMiniProgramRuntimeCapability('weapp', 'appMemoryWarningListener')).toBe(true)
     expect(getMiniProgramRuntimeCapabilities('alipay').shareTimelineRequiresShareAppMessage).toBe(true)
   })
 

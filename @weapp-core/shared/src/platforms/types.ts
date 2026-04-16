@@ -68,6 +68,26 @@ export interface MiniProgramRuntimeCapabilities {
    * @description 宿主是否支持通过全局对象调用 `navigateTo` / `redirectTo` 等路由 API。
    */
   globalRouterApi: boolean
+  /**
+   * @description 宿主是否支持 App 级 `onError/offError` 监听。
+   */
+  appErrorListener: boolean
+  /**
+   * @description 宿主是否支持 App 级 `onPageNotFound/offPageNotFound` 监听。
+   */
+  appPageNotFoundListener: boolean
+  /**
+   * @description 宿主是否支持 App 级 `onUnhandledRejection/offUnhandledRejection` 监听。
+   */
+  appUnhandledRejectionListener: boolean
+  /**
+   * @description 宿主是否支持 App 级 `onThemeChange/offThemeChange` 监听。
+   */
+  appThemeChangeListener: boolean
+  /**
+   * @description 宿主是否支持 App 级 `onMemoryWarning/offMemoryWarning` 监听。
+   */
+  appMemoryWarningListener: boolean
 }
 
 export type MiniProgramRuntimeCapabilityName = keyof MiniProgramRuntimeCapabilities

@@ -12,6 +12,11 @@ export const DEFAULT_RUNTIME_CAPABILITIES: MiniProgramRuntimeCapabilities = Obje
   pageScrollApi: true,
   pullDownRefreshApi: true,
   globalRouterApi: true,
+  appErrorListener: true,
+  appPageNotFoundListener: true,
+  appUnhandledRejectionListener: true,
+  appThemeChangeListener: true,
+  appMemoryWarningListener: true,
 })
 const DEFAULT_PAGE_IDENTITY_RULES = [
   {
@@ -132,6 +137,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       capabilities: {
         ...DEFAULT_RUNTIME_CAPABILITIES,
         pageShareMenu: false,
+        appThemeChangeListener: false,
       },
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
@@ -207,7 +213,10 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       hostConfigKey: '__wxConfig',
       globalResolvePriority: 2,
       routeGlobalResolvePriority: 1,
-      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
+      capabilities: {
+        ...DEFAULT_RUNTIME_CAPABILITIES,
+        appThemeChangeListener: false,
+      },
       pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
     },
   },

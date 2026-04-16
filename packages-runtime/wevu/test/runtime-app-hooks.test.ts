@@ -23,6 +23,8 @@ beforeEach(() => {
 afterEach(() => {
   delete (globalThis as any).App
   delete (globalThis as any).wx
+  delete (globalThis as any).my
+  delete (globalThis as any).tt
 })
 
 describe('runtime: app-level hooks', () => {
@@ -157,5 +159,29 @@ describe('runtime: app-level hooks', () => {
 
     expect(registeredApps).toHaveLength(1)
     expect((globalThis as any).wx.__wevuAppRegistered).toBe(true)
+  })
+
+  it('does not bind theme change listener on alipay host even if host object exposes the method', async () => {
+    const onThemeChangeApi = vi.fn()
+    const offThemeChangeApi = vi.fn()
+    ;(globalThis as any).my = {
+      onThemeChange: onThemeChangeApi,
+      offThemeChange: offThemeChangeApi,
+    }
+
+    createApp({
+      data: () => ({}),
+      setup() {
+        onThemeChange(() => {})
+      },
+    })
+
+    expect(registeredApps).toHaveLength(1)
+    const appOptions = registeredApps[0]
+    const appInst: any = {}
+    appOptions.onLaunch.call(appInst, {})
+
+    expect(onThemeChangeApi).not.toHaveBeenCalled()
+    expect(offThemeChangeApi).not.toHaveBeenCalled()
   })
 })
