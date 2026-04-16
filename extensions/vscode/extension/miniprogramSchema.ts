@@ -61,6 +61,16 @@ function joinMarkdownLines(lines?: string[]) {
     .join('\n\n')
 }
 
+function createConditionalValueDescriptions(conditional: MiniprogramComponentAttributeConditionalValue) {
+  const attributeNames = (conditional.attrs ?? [])
+    .map(attribute => `\`${attribute.name}\``)
+    .filter(Boolean)
+
+  return attributeNames.length > 0
+    ? [`可用属性：${attributeNames.join('、')}`]
+    : undefined
+}
+
 function renderAttributeType(attribute: MiniprogramComponentAttribute) {
   const enumValues = [
     ...(attribute.enum?.map(item => item.value).filter(Boolean) ?? []),
@@ -205,7 +215,7 @@ export function getMiniprogramAttributeValues(tagName: string, attributeName: st
   }
 
   return (attribute.subAttrs ?? []).map(item => ({
-    desc: undefined,
+    desc: createConditionalValueDescriptions(item),
     value: item.equal,
   }))
 }

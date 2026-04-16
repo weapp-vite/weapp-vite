@@ -43,6 +43,7 @@ it('exposes conditional attribute values and filtered attrs for picker mode', ()
 
   assert.equal(values.some(item => item.value === 'time'), true)
   assert.equal(values.some(item => item.value === 'region'), true)
+  assert.equal(values.find(item => item.value === 'time')?.desc?.[0]?.includes('`start`'), true)
   assert.equal(timeAttributes.includes('start'), true)
   assert.equal(timeAttributes.includes('end'), true)
   assert.equal(timeAttributes.includes('range-key'), false)
