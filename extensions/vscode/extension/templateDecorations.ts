@@ -1,7 +1,9 @@
 import * as vscode from 'vscode'
 
 import {
+  isStandaloneWxmlEnhancementEnabled,
   isTemplateDecorationEnabled,
+  isVueTemplateWxmlEnhancementEnabled,
   isWxmlEnhancementEnabled,
 } from './config'
 import {
@@ -105,16 +107,24 @@ export function collectTemplateDecorationRanges(document: vscode.TextDocument) {
     .filter((range): range is vscode.Range => Boolean(range))
 }
 
-async function isDecorationEnabledForDocument(document: vscode.TextDocument) {
+export async function isDecorationEnabledForDocument(document: vscode.TextDocument) {
   if (!isWxmlEnhancementEnabled() || !isTemplateDecorationEnabled()) {
     return false
   }
 
   if (isWxmlDocument(document)) {
+    if (!isStandaloneWxmlEnhancementEnabled()) {
+      return false
+    }
+
     return isRecognizedWeappWxmlDocument(document)
   }
 
   if (document.languageId !== 'vue') {
+    return false
+  }
+
+  if (!isVueTemplateWxmlEnhancementEnabled()) {
     return false
   }
 
@@ -160,6 +170,8 @@ export class TemplateDecorationController implements vscode.Disposable {
         if (
           event.affectsConfiguration('weapp-vite.enableTemplateDecorations')
           || event.affectsConfiguration('weapp-vite.enableWxmlEnhancements')
+          || event.affectsConfiguration('weapp-vite.enableVueTemplateWxmlEnhancements')
+          || event.affectsConfiguration('weapp-vite.enableStandaloneWxmlEnhancements')
         ) {
           this.refreshVisibleEditors()
         }

@@ -1206,3 +1206,155 @@ it('highlights matching tags inside recognized vue templates', async () => {
   assert.equal(highlights.length, 2)
   assert.deepEqual(highlights.map((item: any) => item.range.start.line), [1, 1])
 })
+
+it('can disable vue template enhancements while keeping standalone wxml enhancements', async () => {
+  const files = new Map<string, string>([
+    [path.normalize('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+    })],
+    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+      pages: ['pages/home/index'],
+    })],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        workspaceFolders: [
+          {
+            name: 'demo',
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(path.normalize(uri.fsPath))) {
+              throw new Error('not found')
+            }
+
+            return { type: 0 }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(path.normalize(uri.fsPath))
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+        getWorkspaceFolder: () => ({
+          name: 'demo',
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(key: string, defaultValue: unknown) {
+            if (key === 'enableVueTemplateWxmlEnhancements') {
+              return false
+            }
+
+            if (key === 'enableStandaloneWxmlEnhancements') {
+              return true
+            }
+
+            return defaultValue
+          },
+        }),
+      },
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+      Position: class {
+        line
+        character
+
+        constructor(line: number, character: number) {
+          this.line = line
+          this.character = character
+        }
+      },
+      CompletionItem: class {
+        label
+        kind
+
+        constructor(label: string, kind: number) {
+          this.label = label
+          this.kind = kind
+        }
+      },
+      CompletionItemKind: {
+        Module: 1,
+        Property: 2,
+        Value: 3,
+        Event: 4,
+      },
+      SnippetString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
+      },
+      MarkdownString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    WeappTemplateCompletionProvider,
+  } = await import('./templateProviders')
+
+  const provider = new WeappTemplateCompletionProvider()
+  const vueDocument = createTextDocument(
+    'vue',
+    [
+      '<template>',
+      '  <view />',
+      '</template>',
+      '<script setup lang="ts">',
+      '</script>',
+    ].join('\n'),
+    path.normalize('/workspace/src/pages/home/index.vue'),
+  )
+  const wxmlDocument = createTextDocument(
+    'wxml',
+    '<view />',
+    path.normalize('/workspace/src/pages/home/index.wxml'),
+  )
+  const vueText = vueDocument.getText()
+  const wxmlText = wxmlDocument.getText()
+
+  const vueItems = await provider.provideCompletionItems(
+    vueDocument as any,
+    vueDocument.positionAt(vueText.indexOf('view') + 2) as any,
+  )
+  const wxmlItems = await provider.provideCompletionItems(
+    wxmlDocument as any,
+    wxmlDocument.positionAt(wxmlText.indexOf('view') + 2) as any,
+  )
+
+  assert.equal(vueItems.length, 0)
+  assert.equal(wxmlItems.some((item: any) => item.label === 'view'), true)
+})

@@ -340,6 +340,16 @@
           "default": true,
           "description": "是否启用 .wxml 与 weapp-vite 页面/组件 .vue <template> 的 WXML 增强能力。"
         },
+        "weapp-vite.enableVueTemplateWxmlEnhancements": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在 weapp-vite 页面/组件的 .vue <template> 中启用 WXML 增强能力。关闭后可降低与 Vue Official / Volar 的叠加。"
+        },
+        "weapp-vite.enableStandaloneWxmlEnhancements": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在独立 .wxml 文件中启用 WXML 增强能力。"
+        },
         "weapp-vite.enableWxmlDefinition": {
           "type": "boolean",
           "default": true,

@@ -28,6 +28,14 @@ export function isWxmlEnhancementEnabled() {
   return getExtensionConfiguration().get('enableWxmlEnhancements', true)
 }
 
+export function isVueTemplateWxmlEnhancementEnabled() {
+  return getExtensionConfiguration().get('enableVueTemplateWxmlEnhancements', true)
+}
+
+export function isStandaloneWxmlEnhancementEnabled() {
+  return getExtensionConfiguration().get('enableStandaloneWxmlEnhancements', true)
+}
+
 export function isWxmlDefinitionEnabled() {
   return getExtensionConfiguration().get('enableWxmlDefinition', true)
 }

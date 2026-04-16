@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { Buffer } from 'node:buffer'
 import { afterEach, it, vi } from 'vitest'
 
 function createVscodeModule(mockVscode: Record<string, unknown>) {
@@ -106,4 +107,81 @@ it('maps template decoration ranges back to vue document positions', async () =>
   assert.equal(ranges.length, 2)
   assert.deepEqual(ranges.map((range: any) => range.start.line), [1, 1])
   assert.deepEqual(ranges.map((range: any) => range.start.character), [17, 31])
+})
+
+it('can disable vue template decorations while keeping standalone wxml decorations enabled', async () => {
+  vi.doMock('vscode', () => {
+    return createVscodeModule({
+      workspace: {
+        workspaceFolders: [
+          {
+            uri: {
+              fsPath: '/workspace',
+              path: '/workspace',
+            },
+          },
+        ],
+        fs: {
+          stat: async () => ({ type: 0 }),
+          readFile: async () => Buffer.from(JSON.stringify({
+            dependencies: {
+              'weapp-vite': '^1.0.0',
+            },
+          })),
+        },
+        getWorkspaceFolder: () => ({
+          uri: {
+            fsPath: '/workspace',
+            path: '/workspace',
+          },
+        }),
+        getConfiguration: () => ({
+          get(key: string, defaultValue: unknown) {
+            if (key === 'enableVueTemplateWxmlEnhancements') {
+              return false
+            }
+
+            if (key === 'enableStandaloneWxmlEnhancements') {
+              return true
+            }
+
+            return defaultValue
+          },
+        }),
+        findFiles: async () => [],
+      },
+      Range: class {},
+      Uri: {
+        file(targetPath: string) {
+          return {
+            fsPath: targetPath,
+            path: targetPath,
+          }
+        },
+      },
+    })
+  })
+  vi.resetModules()
+
+  const {
+    isDecorationEnabledForDocument,
+  } = await import('./templateDecorations')
+
+  const vueDocument = createTextDocument(
+    'vue',
+    [
+      '<template>',
+      '  <view bindtap="handleTap">{{ titleText }}</view>',
+      '</template>',
+    ].join('\n'),
+    '/workspace/src/pages/home/index.vue',
+  )
+  const wxmlDocument = createTextDocument(
+    'wxml',
+    '<view bindtap="handleTap">{{ titleText }}</view>',
+    '/workspace/src/pages/home/index.wxml',
+  )
+
+  assert.equal(await isDecorationEnabledForDocument(vueDocument as any), false)
+  assert.equal(await isDecorationEnabledForDocument(wxmlDocument as any), true)
 })

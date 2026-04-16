@@ -3,6 +3,8 @@ import * as vscode from 'vscode'
 import {
   isCompletionEnabled,
   isHoverEnabled,
+  isStandaloneWxmlEnhancementEnabled,
+  isVueTemplateWxmlEnhancementEnabled,
   isWxmlDefinitionEnabled,
   isWxmlEnhancementEnabled,
 } from './config'
@@ -63,10 +65,18 @@ async function isEnabledForDocument(document: vscode.TextDocument, position?: vs
   }
 
   if (isWxmlDocument(document)) {
+    if (!isStandaloneWxmlEnhancementEnabled()) {
+      return false
+    }
+
     return isRecognizedWeappWxmlDocument(document)
   }
 
   if (document.languageId !== 'vue') {
+    return false
+  }
+
+  if (!isVueTemplateWxmlEnhancementEnabled()) {
     return false
   }
 
