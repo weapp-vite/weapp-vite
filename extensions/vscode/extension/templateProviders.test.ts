@@ -619,9 +619,11 @@ it('filters native component attributes by current mode and completes conditiona
     modeValueItems.find((item: any) => item.label === 'time')?.documentation.value.includes('`start`'),
     true,
   )
+  assert.equal(modeValueItems.find((item: any) => item.label === 'time')?.detail, '可用: value, start, end 等4项')
   assert.equal(attrItems.some((item: any) => item.label === 'start'), true)
   assert.equal(attrItems.some((item: any) => item.label === 'end'), true)
   assert.equal(attrItems.some((item: any) => item.label === 'range-key'), false)
+  assert.equal(attrItems.find((item: any) => item.label === 'start')?.detail, 'mode=time')
   assert.equal(
     attrItems.find((item: any) => item.label === 'start')?.documentation.value.includes('条件：`mode="time"`'),
     true,

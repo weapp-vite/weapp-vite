@@ -7,6 +7,7 @@ import {
   isWxmlEnhancementEnabled,
 } from './config'
 import {
+  getMiniprogramAttributeCompletionDetail,
   getMiniprogramAttributeHoverMarkdown,
   getMiniprogramAttributeValues,
   getMiniprogramComponentAttributes,
@@ -280,6 +281,7 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
           (value.desc ?? []).join('\n\n'),
         )
         item.insertText = value.value
+        item.detail = value.detail
         item.sortText = `0${index.toString().padStart(3, '0')}`
         return item
       })
@@ -339,6 +341,11 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
             item.insertText = new vscode.SnippetString(`${attribute.name}="$1"`)
           }
 
+          item.detail = getMiniprogramAttributeCompletionDetail(
+            tagContext.tagName!,
+            attribute.name,
+            currentAttributes,
+          )
           item.sortText = `2${index.toString().padStart(3, '0')}`
           return item
         })

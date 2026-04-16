@@ -2,6 +2,7 @@ import miniprogramComponents from './data/miniprogram-components.json'
 
 interface MiniprogramComponentAttributeValue {
   desc?: string[]
+  detail?: string
   value: string
 }
 
@@ -69,6 +70,21 @@ function createConditionalValueDescriptions(conditional: MiniprogramComponentAtt
   return attributeNames.length > 0
     ? [`可用属性：${attributeNames.join('、')}`]
     : undefined
+}
+
+function createConditionalValueDetail(conditional: MiniprogramComponentAttributeConditionalValue) {
+  const attributeNames = (conditional.attrs ?? [])
+    .map(attribute => attribute.name)
+    .filter(name => Boolean(name) && !name.startsWith('bind') && !name.startsWith('catch'))
+
+  if (attributeNames.length === 0) {
+    return undefined
+  }
+
+  const visibleNames = attributeNames.slice(0, 3)
+  return attributeNames.length > visibleNames.length
+    ? `可用: ${visibleNames.join(', ')} 等${attributeNames.length}项`
+    : `可用: ${visibleNames.join(', ')}`
 }
 
 function renderAttributeType(attribute: MiniprogramComponentAttribute) {
@@ -216,8 +232,22 @@ export function getMiniprogramAttributeValues(tagName: string, attributeName: st
 
   return (attribute.subAttrs ?? []).map(item => ({
     desc: createConditionalValueDescriptions(item),
+    detail: createConditionalValueDetail(item),
     value: item.equal,
   }))
+}
+
+function renderConditionDetail(condition: ResolvedMiniprogramAttributeMatch['condition']) {
+  return condition ? `${condition.attributeName}=${condition.value}` : undefined
+}
+
+export function getMiniprogramAttributeCompletionDetail(
+  tagName: string,
+  attributeName: string,
+  currentAttributes?: Record<string, string | boolean>,
+) {
+  const resolvedMatch = resolveMiniprogramComponentAttribute(tagName, attributeName, currentAttributes)
+  return renderConditionDetail(resolvedMatch?.condition ?? null)
 }
 
 export function getMiniprogramComponentHoverMarkdown(tagName: string) {

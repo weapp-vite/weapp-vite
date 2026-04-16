@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { it } from 'vitest'
 
 import {
+  getMiniprogramAttributeCompletionDetail,
   getMiniprogramAttributeHoverMarkdown,
   getMiniprogramAttributeValues,
   getMiniprogramComponentAttributes,
@@ -44,11 +45,13 @@ it('exposes conditional attribute values and filtered attrs for picker mode', ()
   assert.equal(values.some(item => item.value === 'time'), true)
   assert.equal(values.some(item => item.value === 'region'), true)
   assert.equal(values.find(item => item.value === 'time')?.desc?.[0]?.includes('`start`'), true)
+  assert.equal(values.find(item => item.value === 'time')?.detail, '可用: value, start, end 等4项')
   assert.equal(timeAttributes.includes('start'), true)
   assert.equal(timeAttributes.includes('end'), true)
   assert.equal(timeAttributes.includes('range-key'), false)
   assert.equal(selectorAttributes.includes('range'), true)
   assert.equal(selectorAttributes.includes('range-key'), true)
+  assert.equal(getMiniprogramAttributeCompletionDetail('picker', 'start', { mode: 'time' }), 'mode=time')
 })
 
 it('renders conditional hover markdown for root and nested attrs', () => {
