@@ -9,7 +9,6 @@
       "node",
       "vscode"
     ],
-    "allowImportingTsExtensions": true,
     "strict": false,
     "declaration": false,
     "outDir": "dist",
