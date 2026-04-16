@@ -1,16 +1,38 @@
 import * as vscode from 'vscode'
 
 import {
+  getDefinePageJsonCompletionContext,
+  getViteConfigObjectPath,
+  getVueJsonBlockCompletionContext,
+  getVueJsonUsingComponentReferenceAtOffset,
+  getVueJsonUsingComponentReferences,
+  getVuePageConfigState,
+} from '../project/logic'
+import {
+  getQuotedRouteRangesAtLine,
+  getQuotedRouteValueAtLine,
+} from '../project/navigation'
+import {
+  getAppJsonPageRouteSuggestions,
+  getAppJsonRouteFileStatus,
+  getCurrentPageRouteCandidate,
+  getVueUsingComponentFileStatus,
+  isAppJsonDocument,
+  isPackageJsonDocument,
+  isViteConfigDocument,
+  isVueDocument,
+} from '../project/workspace'
+import {
   isCompletionEnabled,
   isHoverEnabled,
-} from './config'
+} from '../shared/config'
 import {
   COMMON_SCRIPT_NAMES,
   DOCS_GENERATE_URL,
   PACKAGE_JSON_PROPERTY_PREFIX_PATTERN,
   SCRIPT_COMMAND_SUGGESTIONS,
   VUE_JSON_BLOCK_PATTERN,
-} from './constants'
+} from '../shared/constants'
 import {
   getAppJsonRouteCompletionContext,
   getAppJsonRouteHover,
@@ -25,28 +47,6 @@ import {
   getVuePageTitleConsistencyState,
   getVueUsingComponentHover,
 } from './content'
-import {
-  getDefinePageJsonCompletionContext,
-  getViteConfigObjectPath,
-  getVueJsonBlockCompletionContext,
-  getVueJsonUsingComponentReferenceAtOffset,
-  getVueJsonUsingComponentReferences,
-  getVuePageConfigState,
-} from './logic'
-import {
-  getQuotedRouteRangesAtLine,
-  getQuotedRouteValueAtLine,
-} from './navigation'
-import {
-  getAppJsonPageRouteSuggestions,
-  getAppJsonRouteFileStatus,
-  getCurrentPageRouteCandidate,
-  getVueUsingComponentFileStatus,
-  isAppJsonDocument,
-  isPackageJsonDocument,
-  isViteConfigDocument,
-  isVueDocument,
-} from './workspace'
 
 const QUOTED_STRING_PATTERN = /"([^"]+)"/u
 const VUE_JSON_BLOCK_COMPLETION_ITEMS = [

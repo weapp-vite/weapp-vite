@@ -3,7 +3,7 @@ import path from 'node:path'
 import {
   COMMON_SCRIPT_NAMES,
   SCRIPT_COMMAND_SUGGESTIONS,
-} from './constants'
+} from '../shared/constants'
 
 const APP_JSON_ROUTE_VALUE_PREFIX_PATTERN = /^\s*"[^"]*$/u
 const APP_JSON_PAGES_ARRAY_LINE_PATTERN = /^\s*"pages"\s*:\s*\[\s*$/u

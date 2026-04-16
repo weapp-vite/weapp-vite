@@ -5,13 +5,13 @@ import * as vscode from 'vscode'
 import {
   getComponentVueTemplate,
   getPageVueTemplate,
-} from './content'
+} from '../editor/content'
 import {
   getRouteFromPageFilePath,
-} from './navigation'
+} from '../project/navigation'
 import {
   readWeappGenerateConfigSnapshot,
-} from './projectConfig'
+} from '../project/projectConfig'
 import {
   findNearestWeappViteProjectWorkspaceFolder,
   getAppJsonDocumentUri,
@@ -20,7 +20,7 @@ import {
   getProjectAppJsonPath,
   getProjectContext,
   getProjectViteConfigPath,
-} from './workspace'
+} from '../project/workspace'
 
 export type BuiltInGenerateType = 'component' | 'page'
 

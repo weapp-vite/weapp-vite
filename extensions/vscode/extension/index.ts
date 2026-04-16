@@ -1,10 +1,68 @@
 import type {
   WeappPagesTreeFilterMode,
-} from './tree'
+} from './ui/tree'
 
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import * as vscode from 'vscode'
+import {
+  buildAppJsonDiagnostics,
+  buildPackageJsonDiagnostics,
+  buildVuePageConfigConsistencyDiagnostics,
+  buildVuePageDiagnostics,
+  buildVueUsingComponentDiagnostics,
+} from './editor/content'
+import {
+  WeappViteAppJsonCompletionProvider,
+  WeappViteAppJsonDocumentLinkProvider,
+  WeappViteCodeActionProvider,
+  WeappViteConfigCompletionProvider,
+  WeappViteHoverProvider,
+  WeappVitePackageJsonCompletionProvider,
+  WeappViteVueCompletionProvider,
+  WeappViteVueDocumentLinkProvider,
+} from './editor/providers'
+import {
+  getPageFileCandidatePaths,
+  getRouteFromPageFilePath,
+} from './project/navigation'
+import {
+  findNearestWeappViteProjectWorkspaceFolder,
+  getAppJsonTextWithMovedRoute,
+  getAppJsonTextWithMovedRoutes,
+  getAppJsonTextWithRemovedRoute,
+  getAppJsonTextWithRemovedRoutes,
+  getCurrentPageRouteCandidate,
+  getMissingAppJsonPageRoutes,
+  getMissingVueUsingComponents,
+  getProjectAppJsonPath,
+  getProjectContext,
+  getVueTextsWithMovedUsingComponentPath,
+  getVueTextsWithRemovedUsingComponentPath,
+  isAppJsonDocument,
+  isPackageJsonDocument,
+  isVueDocument,
+} from './project/workspace'
+import {
+  isAppJsonDiagnosticsEnabled,
+  isPackageJsonDiagnosticsEnabled,
+  isStatusBarEnabled,
+} from './shared/config'
+import {
+  OUTPUT_CHANNEL_NAME,
+  STATUS_BAR_PRIORITY,
+  VITE_CONFIG_FILE_PATTERN,
+} from './shared/constants'
+import {
+  TemplateDecorationController,
+} from './template/templateDecorations'
+import {
+  WeappTemplateCompletionProvider,
+  WeappTemplateDefinitionProvider,
+  WeappTemplateDocumentHighlightProvider,
+  WeappTemplateDocumentLinkProvider,
+  WeappTemplateHoverProvider,
+} from './template/templateProviders'
 import {
   addCurrentPageToAppJson,
   addPageToAppJsonFromTreeItem,
@@ -33,77 +91,19 @@ import {
   syncJsonFromDefinePageJsonInTreeItem,
   syncJsonTitleFromDefinePageJson,
   syncUnregisteredPagesToAppJson,
-} from './commands'
-import {
-  isAppJsonDiagnosticsEnabled,
-  isPackageJsonDiagnosticsEnabled,
-  isStatusBarEnabled,
-} from './config'
-import {
-  OUTPUT_CHANNEL_NAME,
-  STATUS_BAR_PRIORITY,
-  VITE_CONFIG_FILE_PATTERN,
-} from './constants'
-import {
-  buildAppJsonDiagnostics,
-  buildPackageJsonDiagnostics,
-  buildVuePageConfigConsistencyDiagnostics,
-  buildVuePageDiagnostics,
-  buildVueUsingComponentDiagnostics,
-} from './content'
+} from './ui/commands'
 import {
   generateComponentInExplorer,
   generatePageInExplorer,
   showGeneratePicker,
-} from './generate'
+} from './ui/generate'
 import {
   enableWeappViteFileIcons,
   maybePromptForWeappViteFileIcons,
-} from './icons'
-import {
-  getPageFileCandidatePaths,
-  getRouteFromPageFilePath,
-} from './navigation'
-import {
-  WeappViteAppJsonCompletionProvider,
-  WeappViteAppJsonDocumentLinkProvider,
-  WeappViteCodeActionProvider,
-  WeappViteConfigCompletionProvider,
-  WeappViteHoverProvider,
-  WeappVitePackageJsonCompletionProvider,
-  WeappViteVueCompletionProvider,
-  WeappViteVueDocumentLinkProvider,
-} from './providers'
-import {
-  TemplateDecorationController,
-} from './templateDecorations'
-import {
-  WeappTemplateCompletionProvider,
-  WeappTemplateDefinitionProvider,
-  WeappTemplateDocumentHighlightProvider,
-  WeappTemplateDocumentLinkProvider,
-  WeappTemplateHoverProvider,
-} from './templateProviders'
+} from './ui/icons'
 import {
   WeappVitePagesTreeProvider,
-} from './tree'
-import {
-  findNearestWeappViteProjectWorkspaceFolder,
-  getAppJsonTextWithMovedRoute,
-  getAppJsonTextWithMovedRoutes,
-  getAppJsonTextWithRemovedRoute,
-  getAppJsonTextWithRemovedRoutes,
-  getCurrentPageRouteCandidate,
-  getMissingAppJsonPageRoutes,
-  getMissingVueUsingComponents,
-  getProjectAppJsonPath,
-  getProjectContext,
-  getVueTextsWithMovedUsingComponentPath,
-  getVueTextsWithRemovedUsingComponentPath,
-  isAppJsonDocument,
-  isPackageJsonDocument,
-  isVueDocument,
-} from './workspace'
+} from './ui/tree'
 
 let outputChannel
 let statusBarItem

@@ -4,14 +4,14 @@ import * as vscode from 'vscode'
 
 import {
   getVuePageConfigDriftFields,
-} from './content'
-import {
-  getRelativeDisplayPath,
-} from './pathUtils'
+} from '../editor/content'
 import {
   getPrimaryWorkspaceFolder,
   getWeappPagesTreeSnapshot,
-} from './workspace'
+} from '../project/workspace'
+import {
+  getRelativeDisplayPath,
+} from '../shared/pathUtils'
 
 interface WeappPagesTreeBaseNode {
   description?: string

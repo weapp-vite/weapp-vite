@@ -5,7 +5,7 @@ import {
   isTemplateDecorationEnabled,
   isVueTemplateWxmlEnhancementEnabled,
   isWxmlEnhancementEnabled,
-} from './config'
+} from '../shared/config'
 import {
   getWxmlSourceText,
   isWxmlDocument,

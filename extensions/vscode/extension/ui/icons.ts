@@ -2,11 +2,11 @@ import * as vscode from 'vscode'
 
 import {
   getExtensionConfiguration,
-} from './config'
+} from '../shared/config'
 import {
   WEAPP_VITE_CONFIG_FILE_NAMES,
   WEAPP_VITE_FILE_ICON_THEME_ID,
-} from './constants'
+} from '../shared/constants'
 
 export function isWeappViteFileIconThemeActive() {
   return vscode.workspace.getConfiguration('workbench').get('iconTheme') === WEAPP_VITE_FILE_ICON_THEME_ID

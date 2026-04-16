@@ -16,7 +16,7 @@ function createVscodeModule(mockVscode: Record<string, unknown>) {
 afterEach(() => {
   vi.clearAllMocks()
   vi.doUnmock('vscode')
-  vi.doUnmock('./workspace')
+  vi.doUnmock('../project/workspace')
   vi.resetModules()
 })
 
@@ -62,7 +62,7 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {
@@ -197,7 +197,7 @@ it('marks current page in pages tree', async () => {
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {
@@ -300,7 +300,7 @@ it('marks config drift pages in tree', async () => {
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {
@@ -385,7 +385,7 @@ it('prioritizes missing status over current state and sorts problem pages first'
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {
@@ -476,7 +476,7 @@ it('resolves page node by route after refresh', async () => {
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {
@@ -559,7 +559,7 @@ it('filters current page nodes in tree', async () => {
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {
@@ -681,7 +681,7 @@ it('filters problem and drift page nodes in tree', async () => {
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {
@@ -796,7 +796,7 @@ it('shows empty filter node when no page matches current filter', async () => {
 
     return createVscodeModule(mockVscode)
   })
-  vi.doMock('./workspace', () => {
+  vi.doMock('../project/workspace', () => {
     return {
       getPrimaryWorkspaceFolder() {
         return {

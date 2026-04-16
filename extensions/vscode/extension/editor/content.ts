@@ -2,6 +2,14 @@ import path from 'node:path'
 import * as vscode from 'vscode'
 
 import {
+  getAppJsonRouteCompletionContext,
+  getAppJsonRouteInsertText,
+  getMissingCommonScripts,
+} from '../project/logic'
+import {
+  getWeappViteProjectSignals,
+} from '../project/workspace'
+import {
   APP_JSON_DIAGNOSTIC_SOURCE,
   COMMON_SCRIPT_NAMES,
   DOCS_GENERATE_URL,
@@ -13,18 +21,10 @@ import {
   VUE_JSON_BLOCK_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
   WEAPP_VITE_SCRIPT_PATTERN,
-} from './constants'
-import {
-  getAppJsonRouteCompletionContext,
-  getAppJsonRouteInsertText,
-  getMissingCommonScripts,
-} from './logic'
+} from '../shared/constants'
 import {
   getRelativeDisplayPath,
-} from './pathUtils'
-import {
-  getWeappViteProjectSignals,
-} from './workspace'
+} from '../shared/pathUtils'
 
 const PAGE_CONFIG_FIELD_DESCRIPTIONS: Record<string, string> = {
   navigationBarTitleText: '设置当前页面的导航栏标题文本。',

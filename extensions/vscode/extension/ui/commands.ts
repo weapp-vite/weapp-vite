@@ -2,14 +2,6 @@ import { Buffer } from 'node:buffer'
 import * as vscode from 'vscode'
 
 import {
-  useWvAlias,
-} from './config'
-import {
-  COMMAND_DEFINITIONS,
-  OUTPUT_CHANNEL_NAME,
-  TERMINAL_NAME,
-} from './constants'
-import {
   getComponentVueTemplate,
   getDefineConfigTemplate,
   getDefinePageJsonTemplate,
@@ -21,12 +13,12 @@ import {
   getVuePageTextWithSyncedDefinePageJsonTitle,
   getVuePageTextWithSyncedJsonFields,
   getVuePageTextWithSyncedJsonTitle,
-} from './content'
+} from '../editor/content'
 import {
   applySuggestedScripts,
   getCurrentPageRunActionItems,
   getVuePageConfigState,
-} from './logic'
+} from '../project/logic'
 import {
   getAppJsonDocumentUri,
   getAppJsonRouteFileStatus,
@@ -51,7 +43,15 @@ import {
   isVueDocument,
   resolveCommand,
   resolveCurrentPageRoute,
-} from './workspace'
+} from '../project/workspace'
+import {
+  useWvAlias,
+} from '../shared/config'
+import {
+  COMMAND_DEFINITIONS,
+  OUTPUT_CHANNEL_NAME,
+  TERMINAL_NAME,
+} from '../shared/constants'
 
 const TRAILING_FILE_SEGMENT_PATTERN = /\/[^/]+$/u
 

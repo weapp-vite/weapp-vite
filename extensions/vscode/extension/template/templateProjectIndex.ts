@@ -4,20 +4,10 @@ import * as vscode from 'vscode'
 
 import {
   getVueJsonUsingComponentReferences,
-} from './logic'
-import {
-  toPosixPath,
-} from './pathUtils'
+} from '../project/logic'
 import {
   readWeappGenerateConfigSnapshot,
-} from './projectConfig'
-import {
-  extractTemplateComponentMeta,
-} from './templateComponentMeta'
-import {
-  isWxmlDocument,
-  resolveWxmlFileCompanionPaths,
-} from './templateContext'
+} from '../project/projectConfig'
 import {
   getCurrentPageRouteCandidate,
   getPrimaryWorkspaceFolder,
@@ -25,7 +15,17 @@ import {
   getProjectContext,
   getProjectViteConfigPath,
   getVueUsingComponentFileStatus,
-} from './workspace'
+} from '../project/workspace'
+import {
+  toPosixPath,
+} from '../shared/pathUtils'
+import {
+  extractTemplateComponentMeta,
+} from './templateComponentMeta'
+import {
+  isWxmlDocument,
+  resolveWxmlFileCompanionPaths,
+} from './templateContext'
 
 interface ResolvedUsingComponentReference {
   name: string

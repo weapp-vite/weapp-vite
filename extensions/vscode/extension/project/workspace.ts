@@ -8,7 +8,11 @@ import {
   VITE_CONFIG_FILE_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
   WEAPP_VITE_SCRIPT_PATTERN,
-} from './constants'
+} from '../shared/constants'
+import {
+  getRelativeDisplayPath,
+  isSameOrDescendantPath,
+} from '../shared/pathUtils'
 import {
   applyPageRouteToAppJson,
   applyTextReplacements,
@@ -28,10 +32,6 @@ import {
   getPreferredPageFilePath,
   getRouteFromPageFilePath,
 } from './navigation'
-import {
-  getRelativeDisplayPath,
-  isSameOrDescendantPath,
-} from './pathUtils'
 
 function normalizeRoute(route: string) {
   return route.trim().replace(/^\/+|\/+$/g, '')

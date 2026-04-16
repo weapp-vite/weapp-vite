@@ -7,7 +7,7 @@ import {
   isVueTemplateWxmlEnhancementEnabled,
   isWxmlDefinitionEnabled,
   isWxmlEnhancementEnabled,
-} from './config'
+} from '../shared/config'
 import {
   getMiniprogramAttributeCompletionDetail,
   getMiniprogramAttributeHoverMarkdown,
