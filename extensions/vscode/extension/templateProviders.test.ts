@@ -614,6 +614,10 @@ it('filters native component attributes by current mode and completes conditiona
   assert.equal(attrItems.some((item: any) => item.label === 'start'), true)
   assert.equal(attrItems.some((item: any) => item.label === 'end'), true)
   assert.equal(attrItems.some((item: any) => item.label === 'range-key'), false)
+  assert.equal(
+    attrItems.find((item: any) => item.label === 'start')?.documentation.value.includes('条件：`mode="time"`'),
+    true,
+  )
 })
 
 it('renders native conditional hover details for root and nested attrs', async () => {

@@ -287,6 +287,7 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
 
     if (tagContext.tagName && (ATTRIBUTE_COMPLETION_TRIGGER.has(triggerCharacter) || VALUE_COMPLETION_TRIGGER.has(triggerCharacter) || COMPONENT_COMPLETION_TRIGGER.has(triggerCharacter))) {
       const existingAttributes = new Set(tagContext.attributes.map(attribute => attribute.name))
+      const currentAttributes = Object.fromEntries(tagContext.attributes.map(attribute => [attribute.name, attribute.value]))
       const resolvedMeta = await getTemplateResolvedComponentMeta(document, tagContext.tagName)
       const componentEvents = await getTemplateComponentEvents(document, tagContext.tagName)
       const componentEventItems = componentEvents
@@ -321,14 +322,14 @@ export class WeappTemplateCompletionProvider implements vscode.CompletionItemPro
 
       const nativeAttributeItems = getMiniprogramComponentAttributes(
         tagContext.tagName,
-        Object.fromEntries(tagContext.attributes.map(attribute => [attribute.name, attribute.value])),
+        currentAttributes,
       )
         .filter(attribute => !existingAttributes.has(attribute.name))
         .map((attribute, index) => {
           const item = createCompletionItem(
             attribute.name,
             vscode.CompletionItemKind.Property,
-            getMiniprogramAttributeHoverMarkdown(tagContext.tagName!, attribute.name) ?? undefined,
+            getMiniprogramAttributeHoverMarkdown(tagContext.tagName!, attribute.name, currentAttributes) ?? undefined,
           )
 
           if (attribute.type?.name === 'boolean') {
