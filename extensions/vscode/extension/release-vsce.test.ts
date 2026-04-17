@@ -24,13 +24,18 @@ it('publish manifest strips dev-only fields before invoking vsce', () => {
       displayName: 'Weapp Vite',
     },
   })
+  const publishManifestWithEngines = publishManifest as typeof publishManifest & {
+    engines?: {
+      vscode: string
+    }
+  }
 
   assert.equal(publishManifest.name, 'weapp-vite')
   assert.equal(publishManifest.displayName, 'Weapp Vite')
   assert.equal('devDependencies' in publishManifest, false)
   assert.equal('scripts' in publishManifest, false)
   assert.equal('private' in publishManifest, false)
-  assert.deepEqual(publishManifest.engines, {
+  assert.deepEqual(publishManifestWithEngines.engines, {
     vscode: '^1.88.0',
   })
 })

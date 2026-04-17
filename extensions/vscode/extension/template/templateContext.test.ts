@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import assert from 'node:assert/strict'
 import { it } from 'vitest'
 
@@ -53,10 +55,10 @@ it('extracts vue template content and offset mapping', () => {
   })
   assert.equal(getWxmlSourceText(document as any)?.includes('<view class="page">'), true)
 
-  const sourceOffset = toWxmlSourceOffset(document as any, { line: 4, character: 8 })
+  const sourceOffset = toWxmlSourceOffset(document as any, { line: 4, character: 8 } as any)
 
   assert.equal(typeof sourceOffset, 'number')
-  assert.equal(toDocumentOffsetFromWxmlSource(document as any, sourceOffset!), document.offsetAt({ line: 4, character: 8 }))
+  assert.equal(toDocumentOffsetFromWxmlSource(document as any, sourceOffset!), document.offsetAt({ line: 4, character: 8 } as any))
 })
 
 it('parses wxml tag context around tag names and attributes', () => {

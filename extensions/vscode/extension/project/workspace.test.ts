@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'

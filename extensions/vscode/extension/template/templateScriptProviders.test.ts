@@ -1,7 +1,35 @@
+/// <reference types="node" />
+
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { afterEach, it, vi } from 'vitest'
+
+interface MockUri {
+  fsPath: string
+  path: string
+}
+
+interface MockPosition {
+  line: number
+  character: number
+}
+
+interface MockRange {
+  start: MockPosition
+  end: MockPosition
+}
+
+interface MockLocation {
+  uri: MockUri
+  range: MockRange
+}
+
+interface MockWorkspaceEditEntry {
+  uri: MockUri
+  range: MockRange
+  newText: string
+}
 
 function createVscodeModule(mockVscode: Record<string, unknown>) {
   return {
@@ -63,6 +91,14 @@ function getLanguageIdFromPath(fsPath: string) {
   }
 
   return 'plaintext'
+}
+
+function getWorkspaceEditEntries(edit: unknown): MockWorkspaceEditEntry[] {
+  return ((edit as { edits?: MockWorkspaceEditEntry[] } | null | undefined)?.edits) ?? []
+}
+
+function getReferencePaths(locations: MockLocation[]) {
+  return locations.map(item => item.uri.fsPath)
 }
 
 afterEach(() => {
@@ -202,19 +238,19 @@ it('provides script-side prop and event references for vue component definitions
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
       },
       WorkspaceEdit: class {
-        edits
+        edits: MockWorkspaceEditEntry[]
 
         constructor() {
           this.edits = []
         }
 
-        replace(uri: any, range: any, newText: string) {
+        replace(uri: MockUri, range: MockRange, newText: string) {
           this.edits.push({ newText, range, uri })
         }
       },
@@ -222,7 +258,7 @@ it('provides script-side prop and event references for vue component definitions
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -258,29 +294,29 @@ it('provides script-side prop and event references for vue component definitions
   const propPosition = document.positionAt(documentText.indexOf('titleText') + 2)
   const eventPosition = document.positionAt(documentText.indexOf('confirm') + 2)
 
-  const propReferences = await provider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any)
-  const eventReferences = await provider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any)
+  const propReferences = await provider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any) as MockLocation[]
+  const eventReferences = await provider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any) as MockLocation[]
   const propPrepare = await renameProvider.prepareRename(document as any, propPosition as any)
   const eventPrepare = await renameProvider.prepareRename(document as any, eventPosition as any)
   const propRename = await renameProvider.provideRenameEdits(document as any, propPosition as any, 'headingText')
   const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'submit')
 
   assert.equal(propReferences.length, 3)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(eventReferences.length, 3)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(propPrepare?.placeholder, 'titleText')
   assert.equal(eventPrepare?.placeholder, 'confirm')
-  assert.equal(propRename?.edits.length, 3)
-  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
-  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
-  assert.equal(eventRename?.edits.length, 3)
-  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
-  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
+  assert.equal(getWorkspaceEditEntries(propRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(propRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(propRename).filter(item => item.newText === 'heading-text').length, 2)
+  assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(eventRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(eventRename).filter(item => item.newText === 'bind:submit').length, 2)
 })
 
 it('provides script-side prop and event references for native component scripts', async () => {
@@ -416,19 +452,19 @@ it('provides script-side prop and event references for native component scripts'
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
       },
       WorkspaceEdit: class {
-        edits
+        edits: MockWorkspaceEditEntry[]
 
         constructor() {
           this.edits = []
         }
 
-        replace(uri: any, range: any, newText: string) {
+        replace(uri: MockUri, range: MockRange, newText: string) {
           this.edits.push({ newText, range, uri })
         }
       },
@@ -436,7 +472,7 @@ it('provides script-side prop and event references for native component scripts'
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -472,27 +508,27 @@ it('provides script-side prop and event references for native component scripts'
   const propPosition = document.positionAt(documentText.indexOf('titleText') + 2)
   const eventPosition = document.positionAt(documentText.indexOf('confirm') + 2)
 
-  const propReferences = await provider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any)
-  const eventReferences = await provider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any)
+  const propReferences = await provider.provideReferences(document as any, propPosition as any, { includeDeclaration: true } as any) as MockLocation[]
+  const eventReferences = await provider.provideReferences(document as any, eventPosition as any, { includeDeclaration: true } as any) as MockLocation[]
   const propPrepare = await renameProvider.prepareRename(document as any, propPosition as any)
   const eventPrepare = await renameProvider.prepareRename(document as any, eventPosition as any)
   const propRename = await renameProvider.provideRenameEdits(document as any, propPosition as any, 'headingText')
   const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'submit')
 
   assert.equal(propReferences.length, 3)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(eventReferences.length, 3)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(propPrepare?.placeholder, 'titleText')
   assert.equal(eventPrepare?.placeholder, 'confirm')
-  assert.equal(propRename?.edits.length, 3)
-  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'headingText')
-  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
-  assert.equal(eventRename?.edits.length, 3)
-  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'submit')
-  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
+  assert.equal(getWorkspaceEditEntries(propRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(propRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(propRename).filter(item => item.newText === 'heading-text').length, 2)
+  assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(eventRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(eventRename).filter(item => item.newText === 'bind:submit').length, 2)
 })

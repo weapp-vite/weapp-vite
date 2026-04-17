@@ -1,7 +1,55 @@
+/// <reference types="node" />
+
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { afterEach, it, vi } from 'vitest'
+
+interface MockUri {
+  fsPath: string
+  path: string
+}
+
+interface MockPosition {
+  line: number
+  character: number
+}
+
+interface MockRange {
+  start: MockPosition
+  end: MockPosition
+}
+
+interface _MockLocation {
+  uri: MockUri
+  range: MockRange | { line?: number, start?: { line: number } }
+}
+
+interface _MockHover {
+  contents: unknown
+}
+
+interface _MockDocumentLink {
+  range: MockRange
+  target: MockUri
+  tooltip?: string
+}
+
+interface _MockDocumentHighlight {
+  range: MockRange
+}
+
+interface MockWorkspaceEditEntry {
+  uri: MockUri
+  range: MockRange
+  newText: string
+}
+
+interface CompletionLikeItem {
+  label: string
+  detail?: string
+  documentation?: unknown
+}
 
 function createVscodeModule(mockVscode: Record<string, unknown>) {
   return {
@@ -44,6 +92,50 @@ function createTextDocument(languageId: string, text: string, fsPath: string) {
       return offset + position.character
     },
   }
+}
+
+function getMarkdownValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => getMarkdownValue(item)).join('\n')
+  }
+
+  if (value && typeof value === 'object' && 'value' in value && typeof value.value === 'string') {
+    return value.value
+  }
+
+  return ''
+}
+
+function getLocationLine(location: { range?: { line?: number, start?: { line: number } } } | null | undefined) {
+  return location?.range?.line ?? location?.range?.start?.line
+}
+
+function getWorkspaceEditEntries(edit: unknown): MockWorkspaceEditEntry[] {
+  return ((edit as { edits?: MockWorkspaceEditEntry[] } | null | undefined)?.edits) ?? []
+}
+
+function hasLabel(items: CompletionLikeItem[], label: string) {
+  return items.some(item => item.label === label)
+}
+
+function findByLabel(items: CompletionLikeItem[], label: string) {
+  return items.find(item => item.label === label)
+}
+
+function getTargetPaths(links: _MockDocumentLink[]) {
+  return links.map(link => link.target.fsPath)
+}
+
+function getHighlightStartLines(highlights: _MockDocumentHighlight[]) {
+  return highlights.map(item => item.range.start.line)
+}
+
+function getHighlightStartCharacters(highlights: _MockDocumentHighlight[]) {
+  return highlights.map(item => item.range.start.character)
 }
 
 afterEach(() => {
@@ -159,7 +251,7 @@ it('provides local component definitions and resource links for wxml documents',
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -168,7 +260,7 @@ it('provides local component definitions and resource links for wxml documents',
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -205,7 +297,7 @@ it('provides local component definitions and resource links for wxml documents',
       Hover: class {
         contents
 
-        constructor(contents: any) {
+        constructor(contents: unknown) {
           this.contents = contents
         }
       },
@@ -214,7 +306,7 @@ it('provides local component definitions and resource links for wxml documents',
         target
         tooltip
 
-        constructor(range: any, target: any) {
+        constructor(range: MockRange, target: MockUri) {
           this.range = range
           this.target = target
         }
@@ -222,7 +314,7 @@ it('provides local component definitions and resource links for wxml documents',
       DocumentHighlight: class {
         range
 
-        constructor(range: any) {
+        constructor(range: MockRange) {
           this.range = range
         }
       },
@@ -268,9 +360,9 @@ it('provides local component definitions and resource links for wxml documents',
   const interpolationPosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
   const attrInterpolationPosition = document.positionAt(documentText.indexOf('bottom') + 2)
 
-  const completionItems = await completionProvider.provideCompletionItems(document as any, tagPosition as any)
-  const attributeCompletionItems = await completionProvider.provideCompletionItems(document as any, attributePosition as any)
-  const classCompletionItems = await completionProvider.provideCompletionItems(document as any, classValuePosition as any)
+  const completionItems = await completionProvider.provideCompletionItems(document as any, tagPosition as any) as CompletionLikeItem[]
+  const attributeCompletionItems = await completionProvider.provideCompletionItems(document as any, attributePosition as any) as CompletionLikeItem[]
+  const classCompletionItems = await completionProvider.provideCompletionItems(document as any, classValuePosition as any) as CompletionLikeItem[]
   const tagDefinition = await definitionProvider.provideDefinition(document as any, tagPosition as any)
   const classDefinition = await definitionProvider.provideDefinition(document as any, classValuePosition as any)
   const methodDefinition = await definitionProvider.provideDefinition(document as any, methodPosition as any)
@@ -279,60 +371,60 @@ it('provides local component definitions and resource links for wxml documents',
   const routeDefinition = await definitionProvider.provideDefinition(document as any, routePosition as any)
   const propNameDefinition = await definitionProvider.provideDefinition(hoverDocument as any, propNamePosition as any)
   const eventNameDefinition = await definitionProvider.provideDefinition(hoverDocument as any, eventNamePosition as any)
-  const links = await linkProvider.provideDocumentLinks(document as any)
-  const tagHover = await hoverProvider.provideHover(hoverDocument as any, hoverTagPosition as any)
-  const propHover = await hoverProvider.provideHover(hoverDocument as any, propHoverPosition as any)
-  const eventHover = await hoverProvider.provideHover(hoverDocument as any, eventHoverPosition as any)
+  const links = await linkProvider.provideDocumentLinks(document as any) as _MockDocumentLink[]
+  const tagHover = await hoverProvider.provideHover(hoverDocument as any, hoverTagPosition as any) as _MockHover | null | undefined
+  const propHover = await hoverProvider.provideHover(hoverDocument as any, propHoverPosition as any) as _MockHover | null | undefined
+  const eventHover = await hoverProvider.provideHover(hoverDocument as any, eventHoverPosition as any) as _MockHover | null | undefined
 
   assert.equal(completionItems[0].label, 'card-user')
-  assert.equal(completionItems[0].documentation.value.includes('项目组件'), true)
-  assert.equal(completionItems[0].documentation.value.includes('### 属性'), true)
-  assert.equal(completionItems[0].documentation.value.includes('`title-text`'), true)
-  assert.equal(completionItems[0].documentation.value.includes('### 事件'), true)
-  assert.equal(completionItems[0].documentation.value.includes('`bind:confirm`'), true)
-  assert.equal(completionItems.find((item: any) => item.label === 'view')?.detail, 'native component')
-  assert.equal(attributeCompletionItems.some((item: any) => item.label === 'title-text'), true)
-  assert.equal(attributeCompletionItems.some((item: any) => item.label === 'active'), true)
-  assert.equal(attributeCompletionItems.some((item: any) => item.label === 'bind:confirm'), true)
+  assert.equal(getMarkdownValue(completionItems[0].documentation).includes('项目组件'), true)
+  assert.equal(getMarkdownValue(completionItems[0].documentation).includes('### 属性'), true)
+  assert.equal(getMarkdownValue(completionItems[0].documentation).includes('`title-text`'), true)
+  assert.equal(getMarkdownValue(completionItems[0].documentation).includes('### 事件'), true)
+  assert.equal(getMarkdownValue(completionItems[0].documentation).includes('`bind:confirm`'), true)
+  assert.equal(findByLabel(completionItems, 'view')?.detail, 'native component')
+  assert.equal(hasLabel(attributeCompletionItems, 'title-text'), true)
+  assert.equal(hasLabel(attributeCompletionItems, 'active'), true)
+  assert.equal(hasLabel(attributeCompletionItems, 'bind:confirm'), true)
   assert.equal(
-    attributeCompletionItems.find((item: any) => item.label === 'title-text')?.documentation.value.includes('类型: `string`'),
+    getMarkdownValue(findByLabel(attributeCompletionItems, 'title-text')?.documentation).includes('类型: `string`'),
     true,
   )
   assert.equal(
-    attributeCompletionItems.find((item: any) => item.label === 'bind:confirm')?.documentation.value.includes('参数: `value: number`'),
+    getMarkdownValue(findByLabel(attributeCompletionItems, 'bind:confirm')?.documentation).includes('参数: `value: number`'),
     true,
   )
-  assert.equal(classCompletionItems.some((item: any) => item.label === 'hero-title'), true)
+  assert.equal(hasLabel(classCompletionItems, 'hero-title'), true)
   assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
   assert.equal(classDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxss'))
   assert.equal(methodDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
-  assert.equal(methodDefinition?.range.line, 3)
+  assert.equal(getLocationLine(methodDefinition), 3)
   assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
   assert.equal(attrInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
-  assert.equal(attrInterpolationDefinition?.range.line, 1)
+  assert.equal(getLocationLine(attrInterpolationDefinition), 1)
   assert.equal(routeDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/about/index.vue'))
   assert.equal(propNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
-  assert.equal(propNameDefinition?.range.line, 2)
+  assert.equal(getLocationLine(propNameDefinition), 2)
   assert.equal(eventNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
-  assert.equal(eventNameDefinition?.range.line, 6)
+  assert.equal(getLocationLine(eventNameDefinition), 6)
   assert.equal(links.length, 3)
   assert.deepEqual(
-    links.map((link: any) => link.target.fsPath).sort(),
+    getTargetPaths(links).sort(),
     [
       path.normalize('/workspace/src/assets/banner.png'),
       path.normalize('/workspace/src/pages/about/index.vue'),
       path.normalize('/workspace/src/templates/header.wxml'),
     ].sort(),
   )
-  assert.equal(tagHover?.contents.value.includes('项目组件'), true)
-  assert.equal(tagHover?.contents.value.includes('### 属性'), true)
-  assert.equal(tagHover?.contents.value.includes('`title-text`'), true)
-  assert.equal(tagHover?.contents.value.includes('### 事件'), true)
-  assert.equal(tagHover?.contents.value.includes('`bind:confirm`'), true)
-  assert.equal(propHover?.contents.value.includes('组件属性'), true)
-  assert.equal(propHover?.contents.value.includes('类型: `string`'), true)
-  assert.equal(eventHover?.contents.value.includes('组件事件'), true)
-  assert.equal(eventHover?.contents.value.includes('参数: `value: number`'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('项目组件'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('### 属性'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('`title-text`'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('### 事件'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('`bind:confirm`'), true)
+  assert.equal(getMarkdownValue(propHover?.contents).includes('组件属性'), true)
+  assert.equal(getMarkdownValue(propHover?.contents).includes('类型: `string`'), true)
+  assert.equal(getMarkdownValue(eventHover?.contents).includes('组件事件'), true)
+  assert.equal(getMarkdownValue(eventHover?.contents).includes('参数: `value: number`'), true)
 })
 
 it('provides route links inside recognized vue template documents', async () => {
@@ -415,7 +507,7 @@ it('provides route links inside recognized vue template documents', async () => 
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -424,7 +516,7 @@ it('provides route links inside recognized vue template documents', async () => 
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -434,7 +526,7 @@ it('provides route links inside recognized vue template documents', async () => 
         target
         tooltip
 
-        constructor(range: any, target: any) {
+        constructor(range: MockRange, target: MockUri) {
           this.range = range
           this.target = target
         }
@@ -554,7 +646,7 @@ it('supports token-level script definitions inside recognized vue templates', as
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -563,7 +655,7 @@ it('supports token-level script definitions inside recognized vue templates', as
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -606,11 +698,11 @@ it('supports token-level script definitions inside recognized vue templates', as
   const attrInterpolationDefinition = await definitionProvider.provideDefinition(document as any, attrInterpolationPosition as any)
 
   assert.equal(methodDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
-  assert.equal(methodDefinition?.range.line, 8)
+  assert.equal(getLocationLine(methodDefinition), 8)
   assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
-  assert.equal(interpolationDefinition?.range.line, 5)
+  assert.equal(getLocationLine(interpolationDefinition), 5)
   assert.equal(attrInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
-  assert.equal(attrInterpolationDefinition?.range.line, 6)
+  assert.equal(getLocationLine(attrInterpolationDefinition), 6)
 })
 
 it('resolves wx:for locals and event expression tokens precisely in wxml documents', async () => {
@@ -694,7 +786,7 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -703,7 +795,7 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -746,19 +838,19 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   const pageTitleDefinition = await definitionProvider.provideDefinition(document as any, pageTitlePosition as any)
 
   assert.equal(handlersDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
-  assert.equal(handlersDefinition?.range.line, 2)
+  assert.equal(getLocationLine(handlersDefinition), 2)
   assert.equal(onTapDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
-  assert.equal(onTapDefinition?.range.line, 3)
+  assert.equal(getLocationLine(onTapDefinition), 3)
   assert.equal(productArgDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
-  assert.equal(productArgDefinition?.range.line, 0)
+  assert.equal(getLocationLine(productArgDefinition), 0)
   assert.equal(idxArgDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
-  assert.equal(idxArgDefinition?.range.line, 0)
+  assert.equal(getLocationLine(idxArgDefinition), 0)
   assert.equal(productInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
-  assert.equal(productInterpolationDefinition?.range.line, 0)
+  assert.equal(getLocationLine(productInterpolationDefinition), 0)
   assert.equal(idxInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
-  assert.equal(idxInterpolationDefinition?.range.line, 0)
+  assert.equal(getLocationLine(idxInterpolationDefinition), 0)
   assert.equal(pageTitleDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
-  assert.equal(pageTitleDefinition?.range.line, 1)
+  assert.equal(getLocationLine(pageTitleDefinition), 1)
 })
 
 it('provides references and rename edits across template and companion script files', async () => {
@@ -845,7 +937,7 @@ it('provides references and rename edits across template and companion script fi
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -854,7 +946,7 @@ it('provides references and rename edits across template and companion script fi
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -866,7 +958,7 @@ it('provides references and rename edits across template and companion script fi
           this.edits = []
         }
 
-        replace(uri: any, range: any, newText: string) {
+        replace(uri: MockUri, range: MockRange, newText: string) {
           this.edits.push({ newText, range, uri })
         }
       },
@@ -911,10 +1003,10 @@ it('provides references and rename edits across template and companion script fi
   assert.equal(onTapReferences.every((item: any) => /index\.(?:ts|wxml)$/u.test(item.uri.fsPath)), true)
   assert.equal(productReferences.length, 3)
   assert.equal(productReferences.every((item: any) => item.uri.fsPath.endsWith('index.wxml')), true)
-  assert.equal(pageTitleRename?.edits.length, 4)
-  assert.equal(pageTitleRename?.edits.every((item: any) => item.newText === 'pageHeading'), true)
-  assert.equal(productRename?.edits.length, 3)
-  assert.equal(productRename?.edits.every((item: any) => item.newText === 'goods'), true)
+  assert.equal(getWorkspaceEditEntries(pageTitleRename).length, 4)
+  assert.equal(getWorkspaceEditEntries(pageTitleRename).every((item: any) => item.newText === 'pageHeading'), true)
+  assert.equal(getWorkspaceEditEntries(productRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(productRename).every((item: any) => item.newText === 'goods'), true)
   assert.equal(onTapPrepare?.placeholder, 'onTap')
 })
 
@@ -997,7 +1089,7 @@ it('provides references and rename edits across recognized vue template and scri
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -1006,7 +1098,7 @@ it('provides references and rename edits across recognized vue template and scri
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -1018,7 +1110,7 @@ it('provides references and rename edits across recognized vue template and scri
           this.edits = []
         }
 
-        replace(uri: any, range: any, newText: string) {
+        replace(uri: MockUri, range: MockRange, newText: string) {
           this.edits.push({ newText, range, uri })
         }
       },
@@ -1063,10 +1155,10 @@ it('provides references and rename edits across recognized vue template and scri
 
   assert.equal(pageTitleReferences.length, 4)
   assert.equal(pageTitleReferences.every((item: any) => item.uri.fsPath.endsWith('index.vue')), true)
-  assert.equal(pageTitleRename?.edits.length, 4)
-  assert.equal(pageTitleRename?.edits.every((item: any) => item.newText === 'pageHeading'), true)
-  assert.equal(handlersRename?.edits.length, 2)
-  assert.equal(handlersRename?.edits.every((item: any) => item.newText === 'actions'), true)
+  assert.equal(getWorkspaceEditEntries(pageTitleRename).length, 4)
+  assert.equal(getWorkspaceEditEntries(pageTitleRename).every((item: any) => item.newText === 'pageHeading'), true)
+  assert.equal(getWorkspaceEditEntries(handlersRename).length, 2)
+  assert.equal(getWorkspaceEditEntries(handlersRename).every((item: any) => item.newText === 'actions'), true)
 })
 
 it('provides component tag and member references and rename edits for standalone wxml documents', async () => {
@@ -1159,7 +1251,7 @@ it('provides component tag and member references and rename edits for standalone
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -1168,7 +1260,7 @@ it('provides component tag and member references and rename edits for standalone
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -1180,7 +1272,7 @@ it('provides component tag and member references and rename edits for standalone
           this.edits = []
         }
 
-        replace(uri: any, range: any, newText: string) {
+        replace(uri: MockUri, range: MockRange, newText: string) {
           this.edits.push({ newText, range, uri })
         }
       },
@@ -1226,14 +1318,14 @@ it('provides component tag and member references and rename edits for standalone
   assert.equal(eventReferences.length, 3)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath.endsWith('index.wxml')).length, 2)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue')).length, 1)
-  assert.equal(tagRename?.edits.length, 5)
-  assert.equal(tagRename?.edits.every((item: any) => item.newText === 'profile-card'), true)
-  assert.equal(propRename?.edits.length, 3)
-  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
-  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'headingText')
-  assert.equal(eventRename?.edits.length, 3)
-  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
-  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(tagRename).length, 5)
+  assert.equal(getWorkspaceEditEntries(tagRename).every((item: any) => item.newText === 'profile-card'), true)
+  assert.equal(getWorkspaceEditEntries(propRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(propRename).filter((item: any) => item.newText === 'heading-text').length, 2)
+  assert.equal(getWorkspaceEditEntries(propRename).find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(eventRename).filter((item: any) => item.newText === 'bind:submit').length, 2)
+  assert.equal(getWorkspaceEditEntries(eventRename).find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'submit')
 })
 
 it('provides component tag and member references and rename edits for recognized vue template documents', async () => {
@@ -1326,7 +1418,7 @@ it('provides component tag and member references and rename edits for recognized
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -1335,7 +1427,7 @@ it('provides component tag and member references and rename edits for recognized
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -1347,7 +1439,7 @@ it('provides component tag and member references and rename edits for recognized
           this.edits = []
         }
 
-        replace(uri: any, range: any, newText: string) {
+        replace(uri: MockUri, range: MockRange, newText: string) {
           this.edits.push({ newText, range, uri })
         }
       },
@@ -1404,14 +1496,14 @@ it('provides component tag and member references and rename edits for recognized
   assert.equal(eventReferences.length, 3)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 2)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
-  assert.equal(tagRename?.edits.length, 4)
-  assert.equal(tagRename?.edits.every((item: any) => item.newText === 'profile-card'), true)
-  assert.equal(propRename?.edits.length, 3)
-  assert.equal(propRename?.edits.filter((item: any) => item.newText === 'heading-text').length, 2)
-  assert.equal(propRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
-  assert.equal(eventRename?.edits.length, 3)
-  assert.equal(eventRename?.edits.filter((item: any) => item.newText === 'bind:submit').length, 2)
-  assert.equal(eventRename?.edits.find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(tagRename).length, 4)
+  assert.equal(getWorkspaceEditEntries(tagRename).every((item: any) => item.newText === 'profile-card'), true)
+  assert.equal(getWorkspaceEditEntries(propRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(propRename).filter((item: any) => item.newText === 'heading-text').length, 2)
+  assert.equal(getWorkspaceEditEntries(propRename).find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
+  assert.equal(getWorkspaceEditEntries(eventRename).filter((item: any) => item.newText === 'bind:submit').length, 2)
+  assert.equal(getWorkspaceEditEntries(eventRename).find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
 })
 
 it('supports native custom component props and events in wxml documents', async () => {
@@ -1511,7 +1603,7 @@ it('supports native custom component props and events in wxml documents', async 
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -1520,7 +1612,7 @@ it('supports native custom component props and events in wxml documents', async 
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -1557,7 +1649,7 @@ it('supports native custom component props and events in wxml documents', async 
       Hover: class {
         contents
 
-        constructor(contents: any) {
+        constructor(contents: unknown) {
           this.contents = contents
         }
       },
@@ -1604,21 +1696,21 @@ it('supports native custom component props and events in wxml documents', async 
 
   assert.equal(attrItems.some((item: any) => item.label === 'title-text'), true)
   assert.equal(attrItems.some((item: any) => item.label === 'bind:confirm'), true)
-  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('### 属性'), true)
-  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('`title-text`'), true)
-  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('### 事件'), true)
-  assert.equal(tagItems.find((item: any) => item.label === 'card-native')?.documentation.value.includes('`bind:confirm`'), true)
+  assert.equal(getMarkdownValue(tagItems.find((item: any) => item.label === 'card-native')?.documentation).includes('### 属性'), true)
+  assert.equal(getMarkdownValue(tagItems.find((item: any) => item.label === 'card-native')?.documentation).includes('`title-text`'), true)
+  assert.equal(getMarkdownValue(tagItems.find((item: any) => item.label === 'card-native')?.documentation).includes('### 事件'), true)
+  assert.equal(getMarkdownValue(tagItems.find((item: any) => item.label === 'card-native')?.documentation).includes('`bind:confirm`'), true)
   assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.wxml'))
-  assert.equal(tagHover?.contents.value.includes('### 属性'), true)
-  assert.equal(tagHover?.contents.value.includes('`title-text`'), true)
-  assert.equal(tagHover?.contents.value.includes('### 事件'), true)
-  assert.equal(tagHover?.contents.value.includes('`bind:confirm`'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('### 属性'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('`title-text`'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('### 事件'), true)
+  assert.equal(getMarkdownValue(tagHover?.contents).includes('`bind:confirm`'), true)
   assert.equal(propDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.ts'))
-  assert.equal(propDefinition?.range.line, 2)
+  assert.equal(getLocationLine(propDefinition), 2)
   assert.equal(eventDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.ts'))
-  assert.equal(eventDefinition?.range.line, 7)
-  assert.equal(propHover?.contents.value.includes('/workspace/src/components/card/native/index.ts'), true)
-  assert.equal(eventHover?.contents.value.includes('/workspace/src/components/card/native/index.ts'), true)
+  assert.equal(getLocationLine(eventDefinition), 7)
+  assert.equal(getMarkdownValue(propHover?.contents).includes('/workspace/src/components/card/native/index.ts'), true)
+  assert.equal(getMarkdownValue(eventHover?.contents).includes('/workspace/src/components/card/native/index.ts'), true)
 })
 
 it('provides style class completions and definitions inside vue template values', async () => {
@@ -1697,7 +1789,7 @@ it('provides style class completions and definitions inside vue template values'
         uri
         range
 
-        constructor(uri: any, range: any) {
+        constructor(uri: MockUri, range: MockRange) {
           this.uri = uri
           this.range = range
         }
@@ -1706,7 +1798,7 @@ it('provides style class completions and definitions inside vue template values'
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -1745,7 +1837,7 @@ it('provides style class completions and definitions inside vue template values'
         target
         tooltip
 
-        constructor(range: any, target: any) {
+        constructor(range: MockRange, target: MockUri) {
           this.range = range
           this.target = target
         }
@@ -1753,7 +1845,7 @@ it('provides style class completions and definitions inside vue template values'
       DocumentHighlight: class {
         range
 
-        constructor(range: any) {
+        constructor(range: MockRange) {
           this.range = range
         }
       },
@@ -1936,11 +2028,11 @@ it('filters native component attributes by current mode and completes conditiona
   assert.equal(modeValueItems.some((item: any) => item.label === 'time'), true)
   assert.equal(modeValueItems.some((item: any) => item.label === 'region'), true)
   assert.equal(
-    modeValueItems.find((item: any) => item.label === 'time')?.documentation.value.includes('可用属性：'),
+    getMarkdownValue(modeValueItems.find((item: any) => item.label === 'time')?.documentation).includes('可用属性：'),
     true,
   )
   assert.equal(
-    modeValueItems.find((item: any) => item.label === 'time')?.documentation.value.includes('`start`'),
+    getMarkdownValue(modeValueItems.find((item: any) => item.label === 'time')?.documentation).includes('`start`'),
     true,
   )
   assert.equal(modeValueItems.find((item: any) => item.label === 'time')?.detail, '可用: value, start, end 等4项')
@@ -1949,7 +2041,7 @@ it('filters native component attributes by current mode and completes conditiona
   assert.equal(attrItems.some((item: any) => item.label === 'range-key'), false)
   assert.equal(attrItems.find((item: any) => item.label === 'start')?.detail, 'mode=time')
   assert.equal(
-    attrItems.find((item: any) => item.label === 'start')?.documentation.value.includes('条件：`mode="time"`'),
+    getMarkdownValue(attrItems.find((item: any) => item.label === 'start')?.documentation).includes('条件：`mode="time"`'),
     true,
   )
 })
@@ -2034,7 +2126,7 @@ it('renders native conditional hover details for root and nested attrs', async (
       Hover: class {
         contents
 
-        constructor(contents: any) {
+        constructor(contents: unknown) {
           this.contents = contents
         }
       },
@@ -2067,9 +2159,9 @@ it('renders native conditional hover details for root and nested attrs', async (
   const modeHover = await hoverProvider.provideHover(modeDocument as any, modePosition as any)
   const startHover = await hoverProvider.provideHover(startDocument as any, startPosition as any)
 
-  assert.equal(modeHover?.contents.value.includes('### 条件分支'), true)
-  assert.equal(modeHover?.contents.value.includes('`time`'), true)
-  assert.equal(startHover?.contents.value.includes('条件：`mode="time"`'), true)
+  assert.equal(getMarkdownValue(modeHover?.contents).includes('### 条件分支'), true)
+  assert.equal(getMarkdownValue(modeHover?.contents).includes('`time`'), true)
+  assert.equal(getMarkdownValue(startHover?.contents).includes('条件：`mode="time"`'), true)
 })
 
 it('highlights matching tags inside wxml documents', async () => {
@@ -2146,7 +2238,7 @@ it('highlights matching tags inside wxml documents', async () => {
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -2154,7 +2246,7 @@ it('highlights matching tags inside wxml documents', async () => {
       DocumentHighlight: class {
         range
 
-        constructor(range: any) {
+        constructor(range: MockRange) {
           this.range = range
         }
       },
@@ -2176,10 +2268,10 @@ it('highlights matching tags inside wxml documents', async () => {
   const documentText = document.getText()
   const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
   const provider = new WeappTemplateDocumentHighlightProvider()
-  const highlights = await provider.provideDocumentHighlights(document as any, tagPosition as any)
+  const highlights = await provider.provideDocumentHighlights(document as any, tagPosition as any) as _MockDocumentHighlight[]
 
   assert.equal(highlights.length, 2)
-  assert.deepEqual(highlights.map((item: any) => item.range.start.character), [7, 27])
+  assert.deepEqual(getHighlightStartCharacters(highlights), [7, 27])
 })
 
 it('highlights matching tags inside recognized vue templates', async () => {
@@ -2258,7 +2350,7 @@ it('highlights matching tags inside recognized vue templates', async () => {
         start
         end
 
-        constructor(start: any, end: any) {
+        constructor(start: MockPosition, end: MockPosition) {
           this.start = start
           this.end = end
         }
@@ -2266,7 +2358,7 @@ it('highlights matching tags inside recognized vue templates', async () => {
       DocumentHighlight: class {
         range
 
-        constructor(range: any) {
+        constructor(range: MockRange) {
           this.range = range
         }
       },
@@ -2301,10 +2393,10 @@ it('highlights matching tags inside recognized vue templates', async () => {
   const documentText = document.getText()
   const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
   const provider = new WeappTemplateDocumentHighlightProvider()
-  const highlights = await provider.provideDocumentHighlights(document as any, tagPosition as any)
+  const highlights = await provider.provideDocumentHighlights(document as any, tagPosition as any) as _MockDocumentHighlight[]
 
   assert.equal(highlights.length, 2)
-  assert.deepEqual(highlights.map((item: any) => item.range.start.line), [1, 1])
+  assert.deepEqual(getHighlightStartLines(highlights), [1, 1])
 })
 
 it('can disable vue template enhancements while keeping standalone wxml enhancements', async () => {

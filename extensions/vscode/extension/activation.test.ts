@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
@@ -5,6 +7,79 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, it, vi } from 'vitest'
 
 const extensionIndexUrl = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'index.ts')).href
+
+interface Disposable {
+  dispose: () => void
+}
+type Handler = (...args: unknown[]) => unknown
+interface CommandRegistration {
+  command: string
+  handler: unknown
+}
+interface ProviderRegistration {
+  type: string
+  selector: unknown
+}
+interface TreeViewRecord {
+  viewId: string
+  options: unknown
+}
+interface DiagnosticCollectionRecord {
+  name: string
+  entries: unknown[]
+  set: () => void
+  delete: () => void
+  dispose: () => void
+}
+interface OutputChannelRecord {
+  name: string
+  lines: string[]
+  appendLine: (line: string) => void
+  clear: () => void
+  show: () => void
+  dispose: () => void
+}
+interface StatusBarItemRecord {
+  command: string | undefined
+  text: string
+  tooltip: string
+  showCalled: boolean
+  hideCalled: boolean
+  show: () => void
+  hide: () => void
+  dispose: () => void
+}
+interface MockUri {
+  fsPath?: string
+  path?: string
+  value?: string
+}
+interface MockPosition {
+  line: number
+  character: number
+}
+interface MockRangeValue {
+  start: MockPosition
+  end: MockPosition
+}
+interface MockTextDocument {
+  uri: { path: string }
+}
+interface MockExtensionContext {
+  subscriptions: Disposable[]
+}
+interface MockVscodeModule extends Record<string, unknown> {
+  default?: Record<string, unknown>
+}
+interface MockVscodeState {
+  mockVscode: Record<string, unknown>
+  registeredCommands: CommandRegistration[]
+  registeredProviders: ProviderRegistration[]
+  createdTreeViews: TreeViewRecord[]
+  diagnosticCollections: DiagnosticCollectionRecord[]
+  outputChannels: OutputChannelRecord[]
+  statusBarItems: StatusBarItemRecord[]
+}
 
 function createVscodeModule(mockVscode: Record<string, unknown>) {
   return {
@@ -14,30 +89,32 @@ function createVscodeModule(mockVscode: Record<string, unknown>) {
 }
 
 function createMockVscode() {
-  const registeredCommands = []
-  const registeredProviders = []
-  const createdTreeViews = []
-  const diagnosticCollections = []
-  const outputChannels = []
-  const statusBarItems = []
+  const registeredCommands: CommandRegistration[] = []
+  const registeredProviders: ProviderRegistration[] = []
+  const createdTreeViews: TreeViewRecord[] = []
+  const diagnosticCollections: DiagnosticCollectionRecord[] = []
+  const outputChannels: OutputChannelRecord[] = []
+  const statusBarItems: StatusBarItemRecord[] = []
 
   const mockVscode = {
     StatusBarAlignment: {
       Left: 1,
     },
     ThemeColor: class {
-      constructor(id) {
+      id: string
+
+      constructor(id: string) {
         this.id = id
       }
     },
     window: {
-      activeTextEditor: undefined,
-      visibleTextEditors: [],
-      createOutputChannel(name) {
-        const channel = {
+      activeTextEditor: undefined as unknown,
+      visibleTextEditors: [] as unknown[],
+      createOutputChannel(name: string) {
+        const channel: OutputChannelRecord = {
           name,
           lines: [],
-          appendLine(line) {
+          appendLine(line: string) {
             this.lines.push(line)
           },
           clear() {
@@ -77,8 +154,8 @@ function createMockVscode() {
           dispose() {},
         }
       },
-      createTreeView(viewId, options) {
-        const treeView = {
+      createTreeView(viewId: string, options: unknown) {
+        const treeView: TreeViewRecord & { reveal: () => Promise<boolean>, dispose: () => void } = {
           options,
           reveal: async () => true,
           viewId,
@@ -87,16 +164,16 @@ function createMockVscode() {
         createdTreeViews.push(treeView)
         return treeView
       },
-      onDidChangeActiveTextEditor(handler) {
+      onDidChangeActiveTextEditor(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidChangeVisibleTextEditors(handler) {
+      onDidChangeVisibleTextEditors(handler: Handler) {
         return { dispose() {}, handler }
       },
     },
     workspace: {
-      workspaceFolders: [],
-      textDocuments: [],
+      workspaceFolders: [] as unknown[],
+      textDocuments: [] as unknown[],
       fs: {
         stat: async () => {
           throw new Error('not found')
@@ -107,43 +184,43 @@ function createMockVscode() {
       },
       getWorkspaceFolder: () => undefined,
       getConfiguration: () => ({
-        get(_key, defaultValue) {
+        get<T>(_key: string, defaultValue: T) {
           return defaultValue
         },
         update: async () => true,
       }),
       findFiles: async () => [],
-      onDidChangeWorkspaceFolders(handler) {
+      onDidChangeWorkspaceFolders(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidChangeConfiguration(handler) {
+      onDidChangeConfiguration(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidSaveTextDocument(handler) {
+      onDidSaveTextDocument(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidOpenTextDocument(handler) {
+      onDidOpenTextDocument(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidChangeTextDocument(handler) {
+      onDidChangeTextDocument(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidCloseTextDocument(handler) {
+      onDidCloseTextDocument(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidRenameFiles(handler) {
+      onDidRenameFiles(handler: Handler) {
         return { dispose() {}, handler }
       },
-      onDidDeleteFiles(handler) {
+      onDidDeleteFiles(handler: Handler) {
         return { dispose() {}, handler }
       },
       applyEdit: async () => true,
-      openTextDocument: async () => ({
+      openTextDocument: async (): Promise<MockTextDocument> => ({
         uri: { path: '/tmp/demo.ts' },
       }),
     },
     commands: {
-      registerCommand(command, handler) {
+      registerCommand(command: string, handler: unknown) {
         registeredCommands.push({ command, handler })
         return { dispose() {} }
       },
@@ -152,8 +229,8 @@ function createMockVscode() {
       Global: 1,
     },
     languages: {
-      createDiagnosticCollection(name) {
-        const collection = {
+      createDiagnosticCollection(name: string) {
+        const collection: DiagnosticCollectionRecord = {
           name,
           entries: [],
           set() {},
@@ -163,35 +240,35 @@ function createMockVscode() {
         diagnosticCollections.push(collection)
         return collection
       },
-      registerCodeActionsProvider(selector) {
+      registerCodeActionsProvider(selector: unknown) {
         registeredProviders.push({ type: 'codeActions', selector })
         return { dispose() {} }
       },
-      registerCompletionItemProvider(selector) {
+      registerCompletionItemProvider(selector: unknown) {
         registeredProviders.push({ type: 'completion', selector })
         return { dispose() {} }
       },
-      registerDocumentLinkProvider(selector) {
+      registerDocumentLinkProvider(selector: unknown) {
         registeredProviders.push({ type: 'documentLink', selector })
         return { dispose() {} }
       },
-      registerHoverProvider(selector) {
+      registerHoverProvider(selector: unknown) {
         registeredProviders.push({ type: 'hover', selector })
         return { dispose() {} }
       },
-      registerDocumentHighlightProvider(selector) {
+      registerDocumentHighlightProvider(selector: unknown) {
         registeredProviders.push({ type: 'documentHighlight', selector })
         return { dispose() {} }
       },
-      registerDefinitionProvider(selector) {
+      registerDefinitionProvider(selector: unknown) {
         registeredProviders.push({ type: 'definition', selector })
         return { dispose() {} }
       },
-      registerReferenceProvider(selector) {
+      registerReferenceProvider(selector: unknown) {
         registeredProviders.push({ type: 'reference', selector })
         return { dispose() {} }
       },
-      registerRenameProvider(selector) {
+      registerRenameProvider(selector: unknown) {
         registeredProviders.push({ type: 'rename', selector })
         return { dispose() {} }
       },
@@ -203,21 +280,28 @@ function createMockVscode() {
       },
     },
     Uri: {
-      file(fsPath) {
+      file(fsPath: string): MockUri {
         return { fsPath, path: fsPath }
       },
-      parse(value) {
+      parse(value: string): MockUri {
         return { value }
       },
     },
     Range: class {
-      constructor(startLine, startCharacter, endLine, endCharacter) {
+      start: MockPosition
+      end: MockPosition
+
+      constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
         this.start = { line: startLine, character: startCharacter }
         this.end = { line: endLine, character: endCharacter }
       }
     },
     Diagnostic: class {
-      constructor(range, message, severity) {
+      range: MockRangeValue
+      message: string
+      severity: number
+
+      constructor(range: MockRangeValue, message: string, severity: number) {
         this.range = range
         this.message = message
         this.severity = severity
@@ -227,7 +311,10 @@ function createMockVscode() {
       Information: 1,
     },
     CodeAction: class {
-      constructor(title, kind) {
+      title: string
+      kind: string
+
+      constructor(title: string, kind: string) {
         this.title = title
         this.kind = kind
       }
@@ -237,7 +324,10 @@ function createMockVscode() {
       RefactorRewrite: 'RefactorRewrite',
     },
     CompletionItem: class {
-      constructor(label, kind) {
+      label: string
+      kind: number
+
+      constructor(label: string, kind: number) {
         this.label = label
         this.kind = kind
       }
@@ -251,22 +341,31 @@ function createMockVscode() {
       Module: 6,
     },
     SnippetString: class {
-      constructor(value) {
+      value: string
+
+      constructor(value: string) {
         this.value = value
       }
     },
     MarkdownString: class {
-      constructor(value) {
+      value: string
+
+      constructor(value: string) {
         this.value = value
       }
     },
     Hover: class {
-      constructor(contents) {
+      contents: unknown
+
+      constructor(contents: unknown) {
         this.contents = contents
       }
     },
     DocumentLink: class {
-      constructor(range, target) {
+      range: MockRangeValue
+      target: MockUri
+
+      constructor(range: MockRangeValue, target: MockUri) {
         this.range = range
         this.target = target
       }
@@ -275,18 +374,23 @@ function createMockVscode() {
       replace() {}
     },
     EventEmitter: class {
-      event = () => ({ dispose() {} })
+      event = (): Disposable => ({ dispose: () => {} })
       fire() {}
       dispose() {}
     },
     TreeItem: class {
-      constructor(label, collapsibleState) {
+      label: string
+      collapsibleState: number
+
+      constructor(label: string, collapsibleState: number) {
         this.label = label
         this.collapsibleState = collapsibleState
       }
     },
     ThemeIcon: class {
-      constructor(id) {
+      id: string
+
+      constructor(id: string) {
         this.id = id
       }
     },
@@ -308,11 +412,11 @@ function createMockVscode() {
   }
 }
 
-async function withMockedVscode(run: (state: ReturnType<typeof createMockVscode>) => Promise<void> | void) {
+async function withMockedVscode(run: (state: MockVscodeState) => Promise<void> | void) {
   const state = createMockVscode()
 
   vi.doMock('vscode', () => {
-    return createVscodeModule(state.mockVscode)
+    return createVscodeModule(state.mockVscode) satisfies MockVscodeModule
   })
   vi.resetModules()
 
@@ -341,9 +445,9 @@ it('extension index exports activate and deactivate', async () => {
 it('activate registers commands, providers, status bar and diagnostics', async () => {
   await withMockedVscode(async (state) => {
     const extension = await import(`${extensionIndexUrl}?t=${Date.now()}`)
-    const subscriptions = []
+    const subscriptions: Disposable[] = []
 
-    extension.activate({ subscriptions })
+    extension.activate({ subscriptions } satisfies MockExtensionContext)
 
     assert.equal(state.registeredCommands.length, 41)
     assert.deepEqual(

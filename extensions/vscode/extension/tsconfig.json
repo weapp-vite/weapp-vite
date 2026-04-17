@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "node",
+      "vscode",
+      "vitest/globals"
+    ],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "./**/*.ts",
+    "../scripts/**/*.ts",
+    "../extension.ts"
+  ],
+  "exclude": [
+    "../dist"
+  ]
+}
