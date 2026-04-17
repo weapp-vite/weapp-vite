@@ -1,4 +1,5 @@
 import type {
+  WeapiAlipayMiniProgramRawAdapterSource,
   WeapiDefaultMiniProgramRawAdapterSource,
   WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramBluetoothError,
@@ -18,6 +19,7 @@ import type {
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
   WeapiMiniProgramWxRawAdapter,
+  WeapiTtMiniProgramRawAdapterSource,
   WeapiWechatMiniProgramRawAdapterSource,
   WeapiWxRawAdapter,
 } from './miniProgramTypes'
@@ -35,6 +37,7 @@ import type { WeapiCrossPlatformMethodDocs } from './types/methodDocs'
 /// <reference types="@douyin-microapp/typings" />
 export type WeapiAdapter = Record<string, any>
 export type {
+  WeapiAlipayMiniProgramRawAdapterSource,
   WeapiAlipayRawAdapter,
   WeapiCrossPlatformRawAdapter,
   WeapiDefaultMiniProgramRawAdapterSource,
@@ -58,6 +61,7 @@ export type {
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
   WeapiMiniProgramWxRawAdapter,
+  WeapiTtMiniProgramRawAdapterSource,
   WeapiWechatMiniProgramRawAdapterSource,
   WeapiWxRawAdapter,
 }
@@ -71,7 +75,6 @@ type HasCallbackKey<T> = T extends object
         ? true
         : false
   : false
-
 type HasCallbackOption<T> = T extends { success: unknown }
   ? true
   : T extends { fail: unknown }

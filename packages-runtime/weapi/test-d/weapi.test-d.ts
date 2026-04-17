@@ -1,4 +1,5 @@
 import type {
+  WeapiAlipayMiniProgramRawAdapterSource,
   WeapiCrossPlatformRawAdapter,
   WeapiDefaultInstance,
   WeapiDefaultMiniProgramRawAdapterSource,
@@ -30,6 +31,7 @@ import type {
   WeapiMiniProgramWxRawAdapter,
   WeapiResolvedTarget,
   WeapiSupportLevel,
+  WeapiTtMiniProgramRawAdapterSource,
   WeapiWechatMiniProgramRawAdapterSource,
 } from '@wevu/api'
 import { createWeapi, wpi } from '@wevu/api'
@@ -70,8 +72,12 @@ expectType<WeapiMiniProgramWxRawAdapter>({} as WeapiMiniProgramRawAdapter)
 expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramWxRawAdapter)
 expectType<WeapiMiniProgramWxAdapter>(wpi as WeapiMiniProgramWxAdapter)
 expectType<WeapiMiniProgramAlipayRawAdapter>(my)
+expectType<WeapiAlipayMiniProgramRawAdapterSource>(my)
+expectType<WeapiMiniProgramAlipayRawAdapter>({} as WeapiAlipayMiniProgramRawAdapterSource)
 expectType<WeapiInstance<WeapiMiniProgramAlipayRawAdapter>>(createWeapi({ adapter: my }))
 expectType<WeapiMiniProgramDouyinRawAdapter>(tt)
+expectType<WeapiTtMiniProgramRawAdapterSource>(tt)
+expectType<WeapiMiniProgramDouyinRawAdapter>({} as WeapiTtMiniProgramRawAdapterSource)
 expectType<WeapiInstance<WeapiMiniProgramDouyinRawAdapter>>(createWeapi({ adapter: tt }))
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('default')
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('wechat')
