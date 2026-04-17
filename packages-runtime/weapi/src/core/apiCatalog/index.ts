@@ -21,10 +21,17 @@ export {
 }
 
 export const WEAPI_MINIPROGRAM_METHODS = WEAPI_WX_METHODS
+export const WEAPI_MINIPROGRAM_WECHAT_METHODS = WEAPI_WX_METHODS
+export const WEAPI_MINIPROGRAM_ALIPAY_METHODS = WEAPI_MY_METHODS
+export const WEAPI_MINIPROGRAM_DOUYIN_METHODS = WEAPI_TT_METHODS
 export type WeapiMiniProgramMethodName = (typeof WEAPI_MINIPROGRAM_METHODS)[number]
+export type WeapiMiniProgramWechatMethodName = (typeof WEAPI_MINIPROGRAM_WECHAT_METHODS)[number]
 export type WeapiMiniProgramWxMethodName = WeapiMiniProgramMethodName
+export type WeapiWechatMethodName = WeapiMiniProgramWechatMethodName
 export type WeapiWxMethodName = (typeof WEAPI_WX_METHODS)[number]
 export type WeapiMiniProgramAlipayMethodName = (typeof WEAPI_MY_METHODS)[number]
+export type WeapiAlipayMethodName = WeapiMiniProgramAlipayMethodName
 export type WeapiMyMethodName = (typeof WEAPI_MY_METHODS)[number]
 export type WeapiMiniProgramDouyinMethodName = (typeof WEAPI_TT_METHODS)[number]
+export type WeapiDouyinMethodName = WeapiMiniProgramDouyinMethodName
 export type WeapiTtMethodName = (typeof WEAPI_TT_METHODS)[number]

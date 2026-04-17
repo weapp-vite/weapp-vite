@@ -2,10 +2,14 @@
 import { createWeapi } from './core/createWeapi'
 
 export type {
+  WeapiAlipayMethodName,
+  WeapiDouyinMethodName,
   WeapiMiniProgramAlipayMethodName,
   WeapiMiniProgramDouyinMethodName,
   WeapiMiniProgramMethodName,
+  WeapiMiniProgramWechatMethodName,
   WeapiMiniProgramWxMethodName,
+  WeapiWechatMethodName,
   WeapiWxMethodName,
 } from './core/apiCatalog'
 export type {

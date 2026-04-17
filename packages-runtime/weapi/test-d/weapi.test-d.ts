@@ -1,8 +1,10 @@
 import type {
+  WeapiAlipayMethodName,
   WeapiAlipayMiniProgramRawAdapterSource,
   WeapiCrossPlatformRawAdapter,
   WeapiDefaultInstance,
   WeapiDefaultMiniProgramRawAdapterSource,
+  WeapiDouyinMethodName,
   WeapiDouyinRawAdapter,
   WeapiInstance,
   WeapiMethodSupportQueryOptions,
@@ -26,12 +28,14 @@ import type {
   WeapiMiniProgramSystemInfo,
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
+  WeapiMiniProgramWechatMethodName,
   WeapiMiniProgramWxAdapter,
   WeapiMiniProgramWxMethodName,
   WeapiMiniProgramWxRawAdapter,
   WeapiResolvedTarget,
   WeapiSupportLevel,
   WeapiTtMiniProgramRawAdapterSource,
+  WeapiWechatMethodName,
   WeapiWechatMiniProgramRawAdapterSource,
 } from '@wevu/api'
 import { createWeapi, wpi } from '@wevu/api'
@@ -51,17 +55,21 @@ type WeapiRawKeys = Extract<keyof WeapiCrossPlatformRawAdapter, string>
 type AlipayMethodKeys = WeapiMiniProgramAlipayMethodName
 type DouyinMethodKeys = WeapiMiniProgramDouyinMethodName
 type MiniProgramMethodKeys = WeapiMiniProgramMethodName
-type WechatMethodKeys = WeapiMiniProgramWxMethodName
+type WechatMethodKeys = WeapiMiniProgramWechatMethodName
 
 type _wxMethodCoverage = AssertTrue<IsNever<Exclude<WxMethodKeys, WeapiDefaultKeys>>>
+type _miniProgramWechatMethodCoverage = AssertTrue<IsNever<Exclude<WechatMethodKeys, MiniProgramMethodKeys>>>
 type _miniProgramAlipayMethodCoverage = AssertTrue<IsNever<Exclude<AlipayMethodKeys, WeapiRawKeys>>>
 type _miniProgramMethodCoverage = AssertTrue<IsNever<Exclude<MiniProgramMethodKeys, WeapiDefaultKeys>>>
-type _miniProgramWxMethodCoverage = AssertTrue<IsNever<Exclude<WechatMethodKeys, MiniProgramMethodKeys>>>
+type _miniProgramWxMethodCoverage = AssertTrue<IsNever<Exclude<WeapiMiniProgramWxMethodName, WechatMethodKeys>>>
 type _myMethodCoverage = AssertTrue<IsNever<Exclude<MyMethodKeys, WeapiRawKeys>>>
 type _ttMethodCoverage = AssertTrue<IsNever<Exclude<TtMethodKeys, WeapiRawKeys>>>
 
 expectType<string | undefined>(wpi.platform)
 expectType<DouyinMethodKeys>('showToast' as DouyinMethodKeys)
+expectType<WeapiWechatMethodName>('showToast' as WeapiWechatMethodName)
+expectType<WeapiAlipayMethodName>('alert' as WeapiAlipayMethodName)
+expectType<WeapiDouyinMethodName>('showToast' as WeapiDouyinMethodName)
 expectType<WeapiDefaultInstance>(wpi)
 expectType<WeapiMiniProgramAdapter>(wpi as WeapiMiniProgramAdapter)
 expectType<WeapiInstance<WeapiMiniProgramCrossPlatformRawAdapter>>(wpi)

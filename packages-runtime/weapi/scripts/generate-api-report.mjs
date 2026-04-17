@@ -101,9 +101,9 @@ async function run() {
 # weapi 三端 API 兼容报告（总览）
 
 - 类型来源：
-  - 微信：\`${WEAPI_TYPE_SOURCES.wx.package}@${WEAPI_TYPE_SOURCES.wx.version}\`
-  - 支付宝：\`${WEAPI_TYPE_SOURCES.my.package}@${WEAPI_TYPE_SOURCES.my.version}\`
-  - 抖音：\`${WEAPI_TYPE_SOURCES.tt.package}@${WEAPI_TYPE_SOURCES.tt.version}\`
+  - 微信：\`${WEAPI_TYPE_SOURCES.wechat.package}@${WEAPI_TYPE_SOURCES.wechat.version}\`
+  - 支付宝：\`${WEAPI_TYPE_SOURCES.alipay.package}@${WEAPI_TYPE_SOURCES.alipay.version}\`
+  - 抖音：\`${WEAPI_TYPE_SOURCES.douyin.package}@${WEAPI_TYPE_SOURCES.douyin.version}\`
 
 ## 全量统计
 
