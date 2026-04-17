@@ -7,7 +7,7 @@ import type {
   WeapiMethodSupportMatrixItem,
   WeapiResolvedMethodMapping,
 } from './types'
-import { WEAPI_MINIPROGRAM_METHODS, WEAPI_MY_METHODS, WEAPI_TT_METHODS } from '../apiCatalog'
+import { WEAPI_DOUYIN_METHODS, WEAPI_MINIPROGRAM_METHODS, WEAPI_MY_METHODS } from '../apiCatalog'
 import {
   formatCoverageRate,
   isSemanticSupportLevel,
@@ -35,11 +35,11 @@ export {
 
 const WEAPI_MINIPROGRAM_METHOD_SET = new Set<string>(WEAPI_MINIPROGRAM_METHODS)
 const WEAPI_MY_METHOD_SET = new Set<string>(WEAPI_MY_METHODS)
-const WEAPI_TT_METHOD_SET = new Set<string>(WEAPI_TT_METHODS)
+const WEAPI_DOUYIN_METHOD_SET = new Set<string>(WEAPI_DOUYIN_METHODS)
 
 const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
   my: WEAPI_MY_METHOD_SET,
-  tt: WEAPI_TT_METHOD_SET,
+  tt: WEAPI_DOUYIN_METHOD_SET,
 }
 
 function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): WeapiMethodMappingRule | undefined {
@@ -234,7 +234,7 @@ export function validateSupportMatrixConsistency() {
   const missingCatalogMethods = [...documentedMethods].filter(method =>
     !WEAPI_MINIPROGRAM_METHOD_SET.has(method)
     && !WEAPI_MY_METHOD_SET.has(method)
-    && !WEAPI_TT_METHOD_SET.has(method),
+    && !WEAPI_DOUYIN_METHOD_SET.has(method),
   )
   return {
     missingDocs,

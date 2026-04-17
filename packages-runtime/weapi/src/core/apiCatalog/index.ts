@@ -14,6 +14,9 @@ import {
 import { WEAPI_WX_NON_FUNCTION_MEMBERS } from './wxMembers'
 import { WEAPI_WX_METHODS } from './wxMethods'
 
+export const WEAPI_DOUYIN_METHODS = WEAPI_TT_METHODS
+export const WEAPI_DOUYIN_NON_FUNCTION_MEMBERS = WEAPI_TT_NON_FUNCTION_MEMBERS
+
 export {
   WEAPI_MY_METHODS,
   WEAPI_MY_NON_FUNCTION_MEMBERS,
@@ -29,7 +32,7 @@ export {
 export const WEAPI_MINIPROGRAM_METHODS = WEAPI_WX_METHODS
 export const WEAPI_MINIPROGRAM_WECHAT_METHODS = WEAPI_WX_METHODS
 export const WEAPI_MINIPROGRAM_ALIPAY_METHODS = WEAPI_MY_METHODS
-export const WEAPI_MINIPROGRAM_DOUYIN_METHODS = WEAPI_TT_METHODS
+export const WEAPI_MINIPROGRAM_DOUYIN_METHODS = WEAPI_DOUYIN_METHODS
 export type WeapiMiniProgramMethodName = (typeof WEAPI_MINIPROGRAM_METHODS)[number]
 export type WeapiPlatformTypeSourceName = 'default' | 'wechat' | 'alipay' | 'douyin'
 export type WeapiRuntimeTypeSourceName = 'wx' | 'my' | 'tt'
@@ -41,6 +44,6 @@ export type WeapiWxMethodName = (typeof WEAPI_WX_METHODS)[number]
 export type WeapiMiniProgramAlipayMethodName = (typeof WEAPI_MY_METHODS)[number]
 export type WeapiAlipayMethodName = WeapiMiniProgramAlipayMethodName
 export type WeapiMyMethodName = (typeof WEAPI_MY_METHODS)[number]
-export type WeapiMiniProgramDouyinMethodName = (typeof WEAPI_TT_METHODS)[number]
+export type WeapiMiniProgramDouyinMethodName = (typeof WEAPI_DOUYIN_METHODS)[number]
 export type WeapiDouyinMethodName = WeapiMiniProgramDouyinMethodName
 export type WeapiTtMethodName = (typeof WEAPI_TT_METHODS)[number]
