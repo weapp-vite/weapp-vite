@@ -5,11 +5,13 @@ import type {
   WeapiInstance,
   WeapiMethodSupportQueryOptions,
   WeapiMiniProgramAdapter,
+  WeapiMiniProgramAlipayMethodName,
   WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
   WeapiMiniProgramConnectSocketOption,
   WeapiMiniProgramCrossPlatformRawAdapter,
+  WeapiMiniProgramDouyinMethodName,
   WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramMethodName,
@@ -22,6 +24,7 @@ import type {
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
   WeapiMiniProgramWxAdapter,
+  WeapiMiniProgramWxMethodName,
   WeapiMiniProgramWxRawAdapter,
   WeapiResolvedTarget,
   WeapiSupportLevel,
@@ -40,14 +43,20 @@ type MyMethodKeys = ExtractMethodKeys<typeof my>
 type TtMethodKeys = ExtractMethodKeys<typeof tt>
 type WeapiDefaultKeys = Extract<keyof WeapiDefaultInstance, string>
 type WeapiRawKeys = Extract<keyof WeapiCrossPlatformRawAdapter, string>
+type AlipayMethodKeys = WeapiMiniProgramAlipayMethodName
+type DouyinMethodKeys = WeapiMiniProgramDouyinMethodName
 type MiniProgramMethodKeys = WeapiMiniProgramMethodName
+type WechatMethodKeys = WeapiMiniProgramWxMethodName
 
 type _wxMethodCoverage = AssertTrue<IsNever<Exclude<WxMethodKeys, WeapiDefaultKeys>>>
+type _miniProgramAlipayMethodCoverage = AssertTrue<IsNever<Exclude<AlipayMethodKeys, WeapiRawKeys>>>
 type _miniProgramMethodCoverage = AssertTrue<IsNever<Exclude<MiniProgramMethodKeys, WeapiDefaultKeys>>>
+type _miniProgramWxMethodCoverage = AssertTrue<IsNever<Exclude<WechatMethodKeys, MiniProgramMethodKeys>>>
 type _myMethodCoverage = AssertTrue<IsNever<Exclude<MyMethodKeys, WeapiRawKeys>>>
 type _ttMethodCoverage = AssertTrue<IsNever<Exclude<TtMethodKeys, WeapiRawKeys>>>
 
 expectType<string | undefined>(wpi.platform)
+expectType<DouyinMethodKeys>('showToast' as DouyinMethodKeys)
 expectType<WeapiDefaultInstance>(wpi)
 expectType<WeapiMiniProgramAdapter>(wpi as WeapiMiniProgramAdapter)
 expectType<WeapiInstance<WeapiMiniProgramCrossPlatformRawAdapter>>(wpi)
