@@ -1,4 +1,5 @@
 import type {
+  WeapiDefaultMiniProgramRawAdapterSource,
   WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
@@ -6,6 +7,7 @@ import type {
   WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramRawAdapter,
+  WeapiMiniProgramRawAdapterSourceName,
   WeapiMiniProgramRequestMethod,
   WeapiMiniProgramRequestOption,
   WeapiMiniProgramRequestSuccessResult,
@@ -16,6 +18,7 @@ import type {
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
   WeapiMiniProgramWxRawAdapter,
+  WeapiWechatMiniProgramRawAdapterSource,
   WeapiWxRawAdapter,
 } from './miniProgramTypes'
 import type { WeapiNonPromisifiedMethodName } from './nonPromisifiedMethods'
@@ -34,6 +37,7 @@ export type WeapiAdapter = Record<string, any>
 export type {
   WeapiAlipayRawAdapter,
   WeapiCrossPlatformRawAdapter,
+  WeapiDefaultMiniProgramRawAdapterSource,
   WeapiDouyinRawAdapter,
   WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramBluetoothError,
@@ -43,6 +47,7 @@ export type {
   WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramRawAdapter,
+  WeapiMiniProgramRawAdapterSourceName,
   WeapiMiniProgramRequestMethod,
   WeapiMiniProgramRequestOption,
   WeapiMiniProgramRequestSuccessResult,
@@ -53,6 +58,7 @@ export type {
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
   WeapiMiniProgramWxRawAdapter,
+  WeapiWechatMiniProgramRawAdapterSource,
   WeapiWxRawAdapter,
 }
 

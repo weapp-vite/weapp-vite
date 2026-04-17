@@ -15,6 +15,7 @@ export type {
   WeapiAlipayRawAdapter,
   WeapiCrossPlatformAdapter,
   WeapiCrossPlatformRawAdapter,
+  WeapiDefaultMiniProgramRawAdapterSource,
   WeapiDouyinAdapter,
   WeapiDouyinRawAdapter,
   WeapiInstance,
@@ -31,6 +32,7 @@ export type {
   WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramRawAdapter,
+  WeapiMiniProgramRawAdapterSourceName,
   WeapiMiniProgramRequestMethod,
   WeapiMiniProgramRequestOption,
   WeapiMiniProgramRequestSuccessResult,
@@ -47,6 +49,7 @@ export type {
   WeapiPromisify,
   WeapiResolvedTarget,
   WeapiSupportLevel,
+  WeapiWechatMiniProgramRawAdapterSource,
   WeapiWxAdapter,
   WeapiWxRawAdapter,
 } from './core/types'

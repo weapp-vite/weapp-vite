@@ -1,6 +1,7 @@
 import type {
   WeapiCrossPlatformRawAdapter,
   WeapiDefaultInstance,
+  WeapiDefaultMiniProgramRawAdapterSource,
   WeapiDouyinRawAdapter,
   WeapiInstance,
   WeapiMethodSupportQueryOptions,
@@ -16,6 +17,7 @@ import type {
   WeapiMiniProgramLogManager,
   WeapiMiniProgramMethodName,
   WeapiMiniProgramRawAdapter,
+  WeapiMiniProgramRawAdapterSourceName,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
   WeapiMiniProgramSelectorQuery,
@@ -28,9 +30,10 @@ import type {
   WeapiMiniProgramWxRawAdapter,
   WeapiResolvedTarget,
   WeapiSupportLevel,
+  WeapiWechatMiniProgramRawAdapterSource,
 } from '@wevu/api'
 import { createWeapi, wpi } from '@wevu/api'
-import { expectType } from 'tsd'
+import { expectAssignable, expectType } from 'tsd'
 
 type AssertTrue<T extends true> = T
 type IsNever<T> = [T] extends [never] ? true : false
@@ -38,7 +41,7 @@ type ExtractMethodKeys<T> = Extract<{
   [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never
 }[keyof T], string>
 
-type WxMethodKeys = ExtractMethodKeys<WechatMiniprogram.Wx>
+type WxMethodKeys = ExtractMethodKeys<WeapiWechatMiniProgramRawAdapterSource>
 type MyMethodKeys = ExtractMethodKeys<typeof my>
 type TtMethodKeys = ExtractMethodKeys<typeof tt>
 type WeapiDefaultKeys = Extract<keyof WeapiDefaultInstance, string>
@@ -61,13 +64,19 @@ expectType<WeapiDefaultInstance>(wpi)
 expectType<WeapiMiniProgramAdapter>(wpi as WeapiMiniProgramAdapter)
 expectType<WeapiInstance<WeapiMiniProgramCrossPlatformRawAdapter>>(wpi)
 expectType<WeapiMiniProgramRawAdapter>({} as WeapiMiniProgramRawAdapter)
+expectType<WeapiDefaultMiniProgramRawAdapterSource>({} as WeapiMiniProgramRawAdapter)
 expectType<WeapiMiniProgramCrossPlatformRawAdapter>({} as WeapiCrossPlatformRawAdapter)
 expectType<WeapiMiniProgramWxRawAdapter>({} as WeapiMiniProgramRawAdapter)
+expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramWxRawAdapter)
 expectType<WeapiMiniProgramWxAdapter>(wpi as WeapiMiniProgramWxAdapter)
 expectType<WeapiMiniProgramAlipayRawAdapter>(my)
 expectType<WeapiInstance<WeapiMiniProgramAlipayRawAdapter>>(createWeapi({ adapter: my }))
 expectType<WeapiMiniProgramDouyinRawAdapter>(tt)
 expectType<WeapiInstance<WeapiMiniProgramDouyinRawAdapter>>(createWeapi({ adapter: tt }))
+expectAssignable<WeapiMiniProgramRawAdapterSourceName>('default')
+expectAssignable<WeapiMiniProgramRawAdapterSourceName>('wechat')
+expectAssignable<WeapiMiniProgramRawAdapterSourceName>('alipay')
+expectAssignable<WeapiMiniProgramRawAdapterSourceName>('tt')
 expectType<WeapiDefaultInstance['raw']>(wpi.raw)
 expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)

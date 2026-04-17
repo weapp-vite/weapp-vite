@@ -1,9 +1,19 @@
 /// <reference types="miniprogram-api-typings" />
+import type {
+  WeapiDefaultMiniProgramRawAdapterSource,
+  WeapiWechatMiniProgramRawAdapterSource,
+} from './miniProgramTypeSources'
+
+export type {
+  WeapiDefaultMiniProgramRawAdapterSource,
+  WeapiMiniProgramRawAdapterSourceName,
+  WeapiWechatMiniProgramRawAdapterSource,
+} from './miniProgramTypeSources'
 
 /**
  * @description 微信小程序 API 原始适配器类型
  */
-export type WeapiWxRawAdapter = WechatMiniprogram.Wx
+export type WeapiWxRawAdapter = WeapiWechatMiniProgramRawAdapterSource
 
 /**
  * @description 微信小程序 API 原始适配器类型（宿主中立别名）
@@ -23,7 +33,7 @@ export type WeapiMiniProgramDouyinRawAdapter = typeof tt
 /**
  * @description 小程序主适配器类型（当前以微信 typings 作为基准）
  */
-export type WeapiMiniProgramRawAdapter = WeapiMiniProgramWxRawAdapter
+export type WeapiMiniProgramRawAdapter = WeapiDefaultMiniProgramRawAdapterSource
 
 type WeapiMiniProgramRawRequestOption = Parameters<WeapiMiniProgramRawAdapter['request']>[0]
 type WeapiMiniProgramRawConnectSocketOption = Parameters<WeapiMiniProgramRawAdapter['connectSocket']>[0]
