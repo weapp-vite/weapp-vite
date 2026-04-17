@@ -241,6 +241,50 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).not.toContain('.default.default')
   })
 
+  it('issue #466 computed: keeps build-npm cjs package output stable inside github-issues subpackage', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/index.json')
+    const componentJsPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/components/CjsProbe/index.js')
+    const componentWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/components/CjsProbe/index.wxml')
+    const computedPkgPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/miniprogram-computed/index.js')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJson(pageJsonPath)
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+    const computedPkg = await fs.readFile(computedPkgPath, 'utf-8')
+    const computedFastDeepEqualPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/fast-deep-equal/index.js')
+    const computedRfdcPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/rfdc/index.js')
+
+    expect(await fs.pathExists(computedPkgPath)).toBe(true)
+    expect(await fs.pathExists(computedFastDeepEqualPath)).toBe(true)
+    expect(await fs.pathExists(computedRfdcPath)).toBe(true)
+    expect(pageWxml).toContain('issue-466 computed cjs package')
+    expect(pageWxml).toContain('<issue466-computed-probe')
+    expect(pageJson.usingComponents).toMatchObject({
+      'issue466-computed-probe': './components/CjsProbe/index',
+    })
+    expect(pageJs).toContain('readProbeState')
+    expect(pageJs).toContain('applyNextE2E')
+    expect(pageJs).toContain('_runE2E')
+
+    expect(componentWxml).toContain('sum = {{sum}}')
+    expect(componentWxml).toContain('summary = {{summary}}')
+    expect(componentJs).toContain('ComponentWithComputed')
+    expect(componentJs).toContain('require("../../miniprogram_npm/miniprogram-computed/index")')
+    expect(componentJs).toContain('watchCount')
+    expect(componentJs).toContain('lastWatch')
+    expect(componentJs).toContain('summary(data)')
+    expect(componentJs).toContain('sum(data)')
+
+    expect(computedPkg).toContain('ComponentWithComputed')
+    expect(computedPkg).toContain('BehaviorWithComputed')
+    expect(computedPkg).toContain('require("rfdc")')
+  })
+
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {
     await runIssue393Build()
 

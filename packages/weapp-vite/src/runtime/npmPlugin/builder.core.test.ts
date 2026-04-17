@@ -404,6 +404,43 @@ describe('runtime npm package builder core', () => {
     expect(helperContent).toContain('exports["default"]')
   })
 
+  it('keeps copied cjs miniprogram package entry stable for build-npm packages like miniprogram-computed', async () => {
+    const root = await createTempDir()
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+    const pkgRoot = path.resolve(process.cwd(), 'node_modules/miniprogram-computed')
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'miniprogram-computed',
+        version: '8.0.0',
+        miniprogram: 'dist',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'miniprogram-computed',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    const entryPath = path.resolve(outRoot, 'miniprogram-computed/index.js')
+    const nestedDistEntryPath = path.resolve(outRoot, 'miniprogram-computed/dist/index.js')
+    const entryContent = await fs.readFile(entryPath, 'utf8')
+
+    expect(viteBuildMock).not.toHaveBeenCalled()
+    expect(await fs.pathExists(entryPath)).toBe(true)
+    expect(await fs.pathExists(nestedDistEntryPath)).toBe(false)
+    expect(entryContent).toContain('ComponentWithComputed')
+    expect(entryContent).toContain('BehaviorWithComputed')
+    expect(entryContent).not.toContain('export default')
+  })
+
   it('skips miniprogram copy build when cache is valid on weapp platform', async () => {
     const root = await createTempDir()
     const pkgRoot = path.resolve(root, 'mini-pkg')

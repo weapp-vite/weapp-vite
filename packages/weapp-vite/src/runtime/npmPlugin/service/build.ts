@@ -28,6 +28,34 @@ function hasSameDependencySet(source: string[], target: string[]) {
   return source.every(dep => target.includes(dep))
 }
 
+async function resolvePackageDependencyClosure(
+  dependencies: string[],
+  cwd?: string,
+) {
+  const visited = new Set<string>()
+
+  async function visit(dep: string) {
+    if (visited.has(dep)) {
+      return
+    }
+    visited.add(dep)
+
+    let packageInfo: Awaited<ReturnType<typeof getPackageInfo>> | null = null
+    try {
+      packageInfo = await getPackageInfo(dep, cwd ? { paths: [cwd] } : undefined)
+    }
+    catch {
+      packageInfo = null
+    }
+
+    const transitiveDependencies = Object.keys(packageInfo?.packageJson.dependencies ?? {})
+    await Promise.all(transitiveDependencies.map(childDep => visit(childDep)))
+  }
+
+  await Promise.all(dependencies.map(dep => visit(dep)))
+  return [...visited]
+}
+
 async function copyDirectoryWithFilter(
   sourceDir: string,
   targetDir: string,
@@ -188,15 +216,21 @@ export function createNpmBuildService(options: NpmBuildServiceOptions) {
       for (const meta of localSubPackageMetas) {
         const targetDir = path.resolve(localSubPackageOutRoot, meta.subPackage.root, npmDistDirName)
         const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
+        const subPackageDependencies = Array.isArray(meta.subPackage.dependencies)
+          ? await resolvePackageDependencyClosure(
+              resolveTargetDependencies(allDependencies, meta.subPackage.dependencies),
+              ctx.configService.cwd,
+            )
+          : []
         if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {
           await fs.remove(targetDir)
           await copyDirectoryWithFilter(sourceOutDir, targetDir, (sourcePath) => {
-            if (Array.isArray(meta.subPackage.dependencies)) {
+            if (subPackageDependencies.length > 0) {
               const relPath = resolveCopyFilterRelativePath(sourceOutDir, sourcePath)
               if (relPath === '') {
                 return true
               }
-              return matchDependencyCopyPath(meta.subPackage.dependencies, relPath)
+              return matchDependencyCopyPath(subPackageDependencies, relPath)
             }
             return true
           })

@@ -1,0 +1,6 @@
+<view class="issue466-computed-probe">
+  <text class="issue466-computed-probe-line">sum = {{sum}}</text>
+  <text class="issue466-computed-probe-line">summary = {{summary}}</text>
+  <text class="issue466-computed-probe-line">watchCount = {{watchCount}}</text>
+  <text class="issue466-computed-probe-line">lastWatch = {{lastWatch || 'none'}}</text>
+</view>
