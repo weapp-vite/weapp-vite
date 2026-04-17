@@ -1,48 +1,59 @@
-import type { MiniProgramHostNamespace } from './miniprogramHost'
+import type {
+  HostMiniProgramComponentAllFullProperty,
+  HostMiniProgramComponentEmptyArray,
+  HostMiniProgramComponentInstance,
+  HostMiniProgramComponentMethodOption,
+  HostMiniProgramComponentPropertyOption,
+  HostMiniProgramComponentPropertyValue,
+} from './miniprogramHost'
 
-export type NativeMiniProgramComponentBehaviorOptions = MiniProgramHostNamespace.Component.ComponentOptions
-export type NativeMiniProgramComponentTrivialOption = MiniProgramHostNamespace.Component.TrivialOption
-export type NativeMiniProgramBehaviorIdentifier = MiniProgramHostNamespace.Behavior.Identifier
-export type NativeMiniProgramLaunchOptions = MiniProgramHostNamespace.App.LaunchShowOption
-export type NativeMiniProgramPageNotFoundOptions = MiniProgramHostNamespace.App.PageNotFoundOption
-export type NativeMiniProgramUnhandledRejectionResult = MiniProgramHostNamespace.OnUnhandledRejectionListenerResult
-export type NativeMiniProgramThemeChangeResult = MiniProgramHostNamespace.OnThemeChangeListenerResult
-export type NativeMiniProgramMemoryWarningResult = MiniProgramHostNamespace.OnMemoryWarningListenerResult
-export type NativeMiniProgramPageScrollOption = MiniProgramHostNamespace.Page.IPageScrollOption
-export type NativeMiniProgramTabItemTapOption = MiniProgramHostNamespace.Page.ITabItemTapOption
-export type NativeMiniProgramPageResizeOption = MiniProgramHostNamespace.Page.IResizeOption
-export type NativeMiniProgramShareAppMessageOption = MiniProgramHostNamespace.Page.IShareAppMessageOption
-export type NativeMiniProgramAddToFavoritesOption = MiniProgramHostNamespace.Page.IAddToFavoritesOption
-export type NativeMiniProgramSaveExitState = MiniProgramHostNamespace.Page.ISaveExitState
-export type NativeMiniProgramRouter = MiniProgramHostNamespace.Component.Router
-export type NativeMiniProgramSwitchTabOption = MiniProgramHostNamespace.SwitchTabOption
-export type NativeMiniProgramReLaunchOption = MiniProgramHostNamespace.ReLaunchOption
-export type NativeMiniProgramRedirectToOption = MiniProgramHostNamespace.RedirectToOption
-export type NativeMiniProgramNavigateToOption = MiniProgramHostNamespace.NavigateToOption
-export type NativeMiniProgramPageLifetime = MiniProgramHostNamespace.Page.ILifetime
-export type NativeMiniProgramNodesRef = MiniProgramHostNamespace.NodesRef
-export type NativeMiniProgramNodesRefFields = Parameters<NativeMiniProgramNodesRef['fields']>[0]
-export type NativeMiniProgramBoundingClientRectResult = MiniProgramHostNamespace.BoundingClientRectCallbackResult
-export type NativeMiniProgramScrollOffsetResult = MiniProgramHostNamespace.ScrollOffsetCallbackResult
-export type NativeMiniProgramSelectorQuery = MiniProgramHostNamespace.SelectorQuery
-export type NativeMiniProgramIntersectionObserverOptions = MiniProgramHostNamespace.CreateIntersectionObserverOption
-export type NativeMiniProgramIntersectionObserver = MiniProgramHostNamespace.IntersectionObserver
-export type NativeMiniProgramComponentPropertyOption = MiniProgramHostNamespace.Component.PropertyOption
-export type NativeMiniProgramComponentMethodOption = MiniProgramHostNamespace.Component.MethodOption
-export type NativeMiniProgramComponentEmptyArray = MiniProgramHostNamespace.Component.IEmptyArray
-export type NativeMiniProgramComponentAllProperty = MiniProgramHostNamespace.Component.AllProperty
-export type NativeMiniProgramComponentAllFullProperty = MiniProgramHostNamespace.Component.AllFullProperty
-export type NativeMiniProgramComponentShortProperty = MiniProgramHostNamespace.Component.ShortProperty
-export type NativeMiniProgramComponentPropertyValue<TProperty extends NativeMiniProgramComponentAllFullProperty>
-  = MiniProgramHostNamespace.Component.PropertyToData<TProperty>
+export type {
+  HostMiniProgramAddToFavoritesOption as NativeMiniProgramAddToFavoritesOption,
+  HostMiniProgramAppOptions as NativeMiniProgramAppOptions,
+  HostMiniProgramAppTrivialInstance as NativeMiniProgramAppTrivialInstance,
+  HostMiniProgramBehaviorIdentifier as NativeMiniProgramBehaviorIdentifier,
+  HostMiniProgramBoundingClientRectResult as NativeMiniProgramBoundingClientRectResult,
+  HostMiniProgramComponentAllFullProperty as NativeMiniProgramComponentAllFullProperty,
+  HostMiniProgramComponentAllProperty as NativeMiniProgramComponentAllProperty,
+  HostMiniProgramComponentBehaviorOptions as NativeMiniProgramComponentBehaviorOptions,
+  HostMiniProgramComponentEmptyArray as NativeMiniProgramComponentEmptyArray,
+  HostMiniProgramComponentMethodOption as NativeMiniProgramComponentMethodOption,
+  HostMiniProgramComponentPropertyOption as NativeMiniProgramComponentPropertyOption,
+  HostMiniProgramComponentShortProperty as NativeMiniProgramComponentShortProperty,
+  HostMiniProgramComponentTrivialInstance as NativeMiniProgramComponentTrivialInstance,
+  HostMiniProgramComponentTrivialOption as NativeMiniProgramComponentTrivialOption,
+  HostMiniProgramIntersectionObserver as NativeMiniProgramIntersectionObserver,
+  HostMiniProgramIntersectionObserverOptions as NativeMiniProgramIntersectionObserverOptions,
+  HostMiniProgramLaunchOptions as NativeMiniProgramLaunchOptions,
+  HostMiniProgramMemoryWarningResult as NativeMiniProgramMemoryWarningResult,
+  HostMiniProgramNavigateToOption as NativeMiniProgramNavigateToOption,
+  HostMiniProgramNodesRef as NativeMiniProgramNodesRef,
+  HostMiniProgramNodesRefFields as NativeMiniProgramNodesRefFields,
+  HostMiniProgramPageLifetime as NativeMiniProgramPageLifetime,
+  HostMiniProgramPageNotFoundOptions as NativeMiniProgramPageNotFoundOptions,
+  HostMiniProgramPageResizeOption as NativeMiniProgramPageResizeOption,
+  HostMiniProgramPageScrollOption as NativeMiniProgramPageScrollOption,
+  HostMiniProgramPageTrivialInstance as NativeMiniProgramPageTrivialInstance,
+  HostMiniProgramRedirectToOption as NativeMiniProgramRedirectToOption,
+  HostMiniProgramReLaunchOption as NativeMiniProgramReLaunchOption,
+  HostMiniProgramRouter as NativeMiniProgramRouter,
+  HostMiniProgramSaveExitState as NativeMiniProgramSaveExitState,
+  HostMiniProgramScrollOffsetResult as NativeMiniProgramScrollOffsetResult,
+  HostMiniProgramSelectorQuery as NativeMiniProgramSelectorQuery,
+  HostMiniProgramShareAppMessageOption as NativeMiniProgramShareAppMessageOption,
+  HostMiniProgramSwitchTabOption as NativeMiniProgramSwitchTabOption,
+  HostMiniProgramTabItemTapOption as NativeMiniProgramTabItemTapOption,
+  HostMiniProgramThemeChangeResult as NativeMiniProgramThemeChangeResult,
+  HostMiniProgramTriggerEventOptions as NativeMiniProgramTriggerEventOptions,
+  HostMiniProgramUnhandledRejectionResult as NativeMiniProgramUnhandledRejectionResult,
+} from './miniprogramHost'
+
+export type NativeMiniProgramComponentPropertyValue<TProperty extends HostMiniProgramComponentAllFullProperty>
+  = HostMiniProgramComponentPropertyValue<TProperty>
+
 export type NativeMiniProgramComponentInstance<
   D extends object,
-  P extends NativeMiniProgramComponentPropertyOption,
-  M extends NativeMiniProgramComponentMethodOption,
-  B extends NativeMiniProgramComponentEmptyArray = NativeMiniProgramComponentEmptyArray,
-> = MiniProgramHostNamespace.Component.Instance<D, P, M, B>
-export type NativeMiniProgramTriggerEventOptions = MiniProgramHostNamespace.Component.TriggerEventOption
-export type NativeMiniProgramAppOptions<T extends Record<string, any>> = MiniProgramHostNamespace.App.Options<T>
-export type NativeMiniProgramComponentTrivialInstance = MiniProgramHostNamespace.Component.TrivialInstance
-export type NativeMiniProgramPageTrivialInstance = MiniProgramHostNamespace.Page.TrivialInstance
-export type NativeMiniProgramAppTrivialInstance = MiniProgramHostNamespace.App.TrivialInstance
+  P extends HostMiniProgramComponentPropertyOption,
+  M extends HostMiniProgramComponentMethodOption,
+  B extends HostMiniProgramComponentEmptyArray = HostMiniProgramComponentEmptyArray,
+> = HostMiniProgramComponentInstance<D, P, M, B>
