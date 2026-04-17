@@ -6,7 +6,9 @@ export { DefaultMiniProgramHostNamespace } from './miniprogramHostDefault'
 export { TtMiniProgramHostNamespace } from './miniprogramHostTt'
 export { WechatMiniProgramHostNamespace } from './miniprogramHostWechat'
 
-export type MiniProgramHostSourceName = 'default' | 'wechat' | 'alipay' | 'tt'
+export type MiniProgramPlatformHostSourceName = 'default' | 'wechat' | 'alipay' | 'douyin'
+export type MiniProgramRuntimeHostSourceName = 'wx' | 'my' | 'tt'
+export type MiniProgramHostSourceName = MiniProgramPlatformHostSourceName | MiniProgramRuntimeHostSourceName
 
 export interface DefaultMiniProgramHostSourceContract {
   BoundingClientRectCallbackResult: DefaultMiniProgramHostNamespace.BoundingClientRectCallbackResult
@@ -50,12 +52,28 @@ export interface AlipayMiniProgramHostSourceContract extends Record<never, never
  */
 export interface TtMiniProgramHostSourceContract extends Record<never, never> {}
 
-export interface MiniProgramHostSourceRegistry {
+export interface MiniProgramPlatformHostSourceRegistry {
   default: DefaultMiniProgramHostSourceContract
   wechat: WechatMiniProgramHostSourceContract
   alipay: AlipayMiniProgramHostSourceContract
+  douyin: TtMiniProgramHostSourceContract
+}
+
+export interface MiniProgramRuntimeHostSourceRegistry {
+  wx: WechatMiniProgramHostSourceContract
+  my: AlipayMiniProgramHostSourceContract
   tt: TtMiniProgramHostSourceContract
 }
+
+export interface MiniProgramHostSourceRegistry extends MiniProgramPlatformHostSourceRegistry, MiniProgramRuntimeHostSourceRegistry {}
+
+export type MiniProgramPlatformHostNamespaceBySource<
+  TSourceName extends MiniProgramPlatformHostSourceName = MiniProgramPlatformHostSourceName,
+> = MiniProgramPlatformHostSourceRegistry[TSourceName]
+
+export type MiniProgramRuntimeHostNamespaceBySource<
+  TSourceName extends MiniProgramRuntimeHostSourceName = MiniProgramRuntimeHostSourceName,
+> = MiniProgramRuntimeHostSourceRegistry[TSourceName]
 
 export type MiniProgramHostNamespaceBySource<TSourceName extends MiniProgramHostSourceName = MiniProgramHostSourceName>
   = MiniProgramHostSourceRegistry[TSourceName]

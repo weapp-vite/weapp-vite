@@ -12,6 +12,12 @@ export type {
   MiniProgramHostNamespaceBySource,
   MiniProgramHostSourceName,
   MiniProgramHostSourceRegistry,
+  MiniProgramPlatformHostNamespaceBySource,
+  MiniProgramPlatformHostSourceName,
+  MiniProgramPlatformHostSourceRegistry,
+  MiniProgramRuntimeHostNamespaceBySource,
+  MiniProgramRuntimeHostSourceName,
+  MiniProgramRuntimeHostSourceRegistry,
   TtMiniProgramHostSourceContract,
   WechatMiniProgramHostSourceContract,
 } from './miniprogramHostSources'
