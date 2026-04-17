@@ -183,6 +183,7 @@ describe('platform adapter registry', () => {
     expect(getPlatformAppTypesPackage()).toBe('miniprogram-api-typings')
     expect(getPlatformAppTypesPackage('weapp')).toBe('miniprogram-api-typings')
     expect(getPlatformAppTypesPackage('alipay')).toBe('@mini-types/alipay')
+    expect(getPlatformAppTypesPackage('tt')).toBe('@douyin-microapp/typings')
     expect(getPlatformNpmDistDirName('weapp')).toBe('miniprogram_npm')
     expect(getPlatformNpmDistDirName('alipay', { alipayNpmMode: 'node_modules' })).toBe('node_modules')
     expect(getNpmPlatformOptions()).toEqual({
@@ -244,6 +245,9 @@ describe('platform adapter registry', () => {
     })
     expect(getTypeScriptPlatformOptions('alipay')).toEqual({
       appTypesPackage: '@mini-types/alipay',
+    })
+    expect(getTypeScriptPlatformOptions('tt')).toEqual({
+      appTypesPackage: '@douyin-microapp/typings',
     })
     expect(getPreservedNpmDirNames('weapp')).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'miniprogram_npm' })).toEqual(['miniprogram_npm'])

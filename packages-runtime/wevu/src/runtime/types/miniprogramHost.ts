@@ -6,7 +6,15 @@ export {
   TtMiniProgramHostNamespace,
   WechatMiniProgramHostNamespace,
 } from './miniprogramHostSources'
-export type { MiniProgramHostSourceName } from './miniprogramHostSources'
+export type {
+  AlipayMiniProgramHostSourceContract,
+  DefaultMiniProgramHostSourceContract,
+  MiniProgramHostNamespaceBySource,
+  MiniProgramHostSourceName,
+  MiniProgramHostSourceRegistry,
+  TtMiniProgramHostSourceContract,
+  WechatMiniProgramHostSourceContract,
+} from './miniprogramHostSources'
 
 /* eslint-disable ts/no-namespace -- 通过单点 namespace 别名集中宿主类型入口，避免文件内重复散落宿主底座类型引用。 */
 export declare namespace MiniProgramHostNamespace {

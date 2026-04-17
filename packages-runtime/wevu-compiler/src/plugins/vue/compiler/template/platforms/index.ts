@@ -29,6 +29,14 @@ export const getDefaultMiniProgramPlatform = getDefaultMiniProgramTemplatePlatfo
  * 默认模板平台对象别名，便于调用方避免继续依赖具体宿主命名。
  */
 export const defaultMiniProgramTemplatePlatform = getDefaultMiniProgramTemplatePlatform()
+
+/**
+ * 微信模板平台兼容别名。
+ *
+ * 新代码应优先使用 defaultMiniProgramPlatform/defaultPlatform。
+ */
+export const wechatPlatform = defaultMiniProgramPlatform
+
 export { defaultMiniProgramPlatform, defaultPlatform }
 
 /**

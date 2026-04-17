@@ -35,8 +35,8 @@ export {
   getMiniProgramTemplatePlatform,
   swanPlatform,
   ttPlatform,
+  wechatPlatform,
 } from './template/platforms'
-export { wechatPlatform } from './template/platforms/wechat'
 export type { TemplateCompileResult } from './template/types'
 export type { TemplateCompileOptions } from './template/types'
 

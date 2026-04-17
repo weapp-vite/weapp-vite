@@ -259,6 +259,14 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
   return expectedPackageJson
 }
 
+describe('template catalog', () => {
+  it('includes cross-platform typing packages used by templates and generated configs', () => {
+    expect(TEMPLATE_CATALOG['miniprogram-api-typings']).toBeTruthy()
+    expect(TEMPLATE_CATALOG['@mini-types/alipay']).toBeTruthy()
+    expect(TEMPLATE_CATALOG['@douyin-microapp/typings']).toBeTruthy()
+  })
+})
+
 function expectNoUnresolvedDependencySpec(pkgJson: Record<string, any>) {
   for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
     const deps = pkgJson[field]

@@ -55,6 +55,7 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramDefaultBuildTarget('tt')).toBeUndefined()
     expect(getMiniProgramAppTypesPackage()).toBe('miniprogram-api-typings')
     expect(getMiniProgramAppTypesPackage('alipay')).toBe('@mini-types/alipay')
+    expect(getMiniProgramAppTypesPackage('tt')).toBe('@douyin-microapp/typings')
     expect(getMiniProgramPlatformDescriptor('alipay').runtime.globalObjectKey).toBe('my')
     expect(getDefaultMiniProgramRuntimeGlobalKey()).toBe('wx')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')

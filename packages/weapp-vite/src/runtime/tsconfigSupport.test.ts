@@ -80,6 +80,23 @@ describe('tsconfig support', () => {
     expect(app.include).toContain('../playground/**/*.ts')
   })
 
+  it('prefers platform-specific typings for tt projects when the package is installed', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      packageJson: {
+        devDependencies: {
+          '@douyin-microapp/typings': '^1.3.1',
+        },
+      },
+      weappViteConfig: {
+        platform: 'tt',
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['@douyin-microapp/typings', 'weapp-vite/client']))
+    expect(app.compilerOptions.types).not.toContain('miniprogram-api-typings')
+  })
+
   it('merges legacy root tsconfig files into managed outputs', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-legacy-tsconfig-'))
     await fs.writeFile(path.join(root, 'tsconfig.shared.json'), `{

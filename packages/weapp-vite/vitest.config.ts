@@ -153,6 +153,18 @@ export default defineProject({
         replacement: path.resolve(__dirname, '../wevu-compiler/src/index.ts'),
       },
       {
+        find: /^@weapp-core\/shared$/,
+        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/index.ts'),
+      },
+      {
+        find: /^@weapp-core\/shared\/node$/,
+        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/node.ts'),
+      },
+      {
+        find: /^@weapp-core\/shared\/fs$/,
+        replacement: path.resolve(__dirname, '../..', '@weapp-core/shared/src/fs/index.ts'),
+      },
+      {
         find: 'weapp-vite/auto-routes',
         replacement: path.resolve(__dirname, './src/auto-routes.ts'),
       },

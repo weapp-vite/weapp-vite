@@ -71,7 +71,9 @@ export type {
 } from './types/miniprogram'
 export type {
   AlipayMiniProgramHostNamespace,
+  AlipayMiniProgramHostSourceContract,
   DefaultMiniProgramHostNamespace,
+  DefaultMiniProgramHostSourceContract,
   HostMiniProgramAddToFavoritesOption,
   HostMiniProgramAppOptions,
   HostMiniProgramAppTrivialInstance,
@@ -113,9 +115,13 @@ export type {
   HostMiniProgramTriggerEventOptions,
   HostMiniProgramUnhandledRejectionResult,
   MiniProgramHostNamespace,
+  MiniProgramHostNamespaceBySource,
   MiniProgramHostSourceName,
+  MiniProgramHostSourceRegistry,
   TtMiniProgramHostNamespace,
+  TtMiniProgramHostSourceContract,
   WechatMiniProgramHostNamespace,
+  WechatMiniProgramHostSourceContract,
 } from './types/miniprogramHost'
 export type { CreateAppOptions, DataOption, DefineAppOptions, DefineComponentOptions, PageFeatures } from './types/options'
 export type {

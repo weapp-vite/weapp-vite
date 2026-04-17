@@ -11,18 +11,18 @@ const PLATFORM_LABELS: Readonly<Record<string, string>> = {
 }
 
 const PLATFORM_TYPE_SOURCE: Readonly<Record<string, string>> = {
-  wx: '`miniprogram-api-typings`',
-  my: '`@mini-types/alipay`',
+  weapp: '`miniprogram-api-typings`',
+  alipay: '`@mini-types/alipay`',
   tt: '`@douyin-microapp/typings`',
 }
 
 export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = MINI_PROGRAM_PLATFORM_DESCRIPTORS.map((descriptor) => {
   const globalObject = descriptor.runtime.globalObjectKey
-  const isFullyTypedPlatform = globalObject in PLATFORM_TYPE_SOURCE
+  const isFullyTypedPlatform = descriptor.id in PLATFORM_TYPE_SOURCE
   return {
     platform: PLATFORM_LABELS[descriptor.id] ?? descriptor.displayName,
     globalObject: `\`${globalObject}\``,
-    typeSource: PLATFORM_TYPE_SOURCE[globalObject] ?? '运行时透传',
+    typeSource: PLATFORM_TYPE_SOURCE[descriptor.id] ?? '运行时透传',
     support: isFullyTypedPlatform ? '✅ 全量' : '⚠️ 按宿主能力支持',
   }
 })

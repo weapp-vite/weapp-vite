@@ -220,7 +220,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
       templatePreset: 'tt',
     },
     typescript: {
-      appTypesPackage: 'miniprogram-api-typings',
+      appTypesPackage: '@douyin-microapp/typings',
     },
     runtime: {
       globalObjectKey: 'tt',

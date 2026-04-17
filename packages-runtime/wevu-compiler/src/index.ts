@@ -35,6 +35,7 @@ export {
   getMiniProgramTemplatePlatform,
   swanPlatform,
   ttPlatform,
+  wechatPlatform,
 } from './plugins/vue/compiler/template'
 export {
   buildClassStyleWxsTag,
@@ -43,7 +44,6 @@ export {
   getClassStyleWxsSource,
   resolveClassStyleWxsLocation,
 } from './plugins/vue/compiler/template/classStyleRuntime'
-export { wechatPlatform } from './plugins/vue/compiler/template/platforms/wechat'
 export type {
   ClassStyleBinding,
   ClassStyleRuntime,

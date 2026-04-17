@@ -407,6 +407,7 @@ describe('createProject', () => {
             'tdesign-miniprogram': 'catalog:tdesign-miniprogram-fixed',
           },
           devDependencies: {
+            '@douyin-microapp/typings': 'catalog:',
             'tailwindcss': 'catalog:tailwind4',
             'typescript': 'catalog:latest',
             'miniprogram-api-typings': 'catalog:',
@@ -427,6 +428,7 @@ describe('createProject', () => {
     expect(pkgJson.dependencies['tdesign-miniprogram']).toBe(
       TEMPLATE_NAMED_CATALOG['tdesign-miniprogram-fixed']['tdesign-miniprogram'],
     )
+    expect(pkgJson.devDependencies['@douyin-microapp/typings']).toBe(TEMPLATE_CATALOG['@douyin-microapp/typings'])
     expect(pkgJson.devDependencies['tailwindcss']).toBe(TEMPLATE_NAMED_CATALOG.tailwind4.tailwindcss)
     expect(pkgJson.devDependencies['typescript']).toBe(TEMPLATE_CATALOG.typescript)
     expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe(TEMPLATE_CATALOG['miniprogram-api-typings'])
