@@ -61,6 +61,12 @@ describe('core plugin watchChange', () => {
     const ctx = {
       configService: {
         isDev: true,
+        platform: 'weapp',
+        multiPlatform: {
+          enabled: false,
+          projectConfigRoot: 'config',
+          targets: ['weapp'],
+        },
         absoluteSrcRoot: '/project/src',
         relativeAbsoluteSrcRoot: (p: string) => path.relative('/project/src', p) || '.',
         relativeCwd: (p: string) => path.relative('/project', p) || '.',

@@ -27,7 +27,9 @@ export { compileVueTemplateToWxml as compileTemplate, compileVueTemplateToWxml }
 export type { MiniProgramPlatform, TemplateCompileOptions, TemplateCompileResult } from './plugins/vue/compiler/template'
 export {
   alipayPlatform,
+  defaultMiniProgramPlatform,
   defaultMiniProgramTemplatePlatform,
+  defaultPlatform,
   getDefaultMiniProgramTemplatePlatform,
   getMiniProgramTemplatePlatform,
   swanPlatform,

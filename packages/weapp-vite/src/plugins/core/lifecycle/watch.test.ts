@@ -50,6 +50,11 @@ function createState(overrides: Record<string, any> = {}) {
       },
       configService: {
         platform: 'weapp',
+        multiPlatform: {
+          enabled: false,
+          projectConfigRoot: 'config',
+          targets: ['weapp'],
+        },
         absoluteSrcRoot: '/project/src',
         relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         relativeCwd: (id: string) => id.replace('/project/', ''),

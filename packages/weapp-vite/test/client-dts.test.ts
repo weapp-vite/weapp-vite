@@ -15,6 +15,6 @@ describe('defineOptions typing', () => {
 
     expect(clientContent).not.toContain('ComponentCustomOptions')
     expect(wevuContent).toContain('ScriptSetupDefineOptions')
-    expect(wevuSharedContent).toContain('options?: WechatMiniprogram.Component.ComponentOptions')
+    expect(wevuSharedContent).toContain('options?: MiniProgramComponentBehaviorOptions')
   })
 })

@@ -12,8 +12,8 @@ const readFileMock = vi.hoisted(() => vi.fn())
 const preprocessCSSMock = vi.hoisted(() => vi.fn())
 const cssPostProcessMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@weapp-core/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
   return {
     ...actual,
     fs: {

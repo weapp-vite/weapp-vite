@@ -49,8 +49,8 @@ const cloneRoutesMock = vi.hoisted(() => vi.fn((routes: any) => ({
 const matchesRouteFileMock = vi.hoisted(() => vi.fn(() => true))
 const updateCandidateFromFileMock = vi.hoisted(() => vi.fn(async () => true))
 
-vi.mock('@weapp-core/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
   return {
     ...actual,
     fs: {

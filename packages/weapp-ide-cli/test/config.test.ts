@@ -24,7 +24,7 @@ const platformMock = vi.hoisted(() => ({
   getDefaultCliPath: vi.fn(),
 }))
 
-vi.mock('@weapp-core/shared', () => ({
+vi.mock('@weapp-core/shared/fs', () => ({
   fs: {
     ensureDir: fsMock.ensureDir,
     writeJSON: fsMock.writeJSON,

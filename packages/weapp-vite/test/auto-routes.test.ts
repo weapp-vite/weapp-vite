@@ -35,7 +35,7 @@ describe('auto-routes', () => {
       expect(module.subPackages).toBe(module.routes.subPackages)
       expect(module.pages).toContain('pages/index/index')
       expect(module.wxRouter).toBeTruthy()
-      expect(autoRoutesService.getModuleCode()).toContain('export { routes, pages, entries, subPackages, wxRouter };')
+      expect(autoRoutesService.getModuleCode()).toContain('export { routes, pages, entries, subPackages, wxRouter, miniProgramRouter };')
     }
     finally {
       await dispose()

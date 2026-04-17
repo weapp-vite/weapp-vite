@@ -14,8 +14,8 @@ const compileVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({
 const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
 const emitNativeLayoutScriptChunkIfNeededSharedMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@weapp-core/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
   return {
     ...actual,
     fs: {

@@ -43,22 +43,26 @@ describe('plugin-demo build regression', () => {
     expect(await fs.pathExists(path.join(DIST_ROOT, 'common.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'common.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js'))).toBe(true)
-    expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-src.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'app.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/index/index.js'))).toBe(false)
 
     const pluginIndexCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'index.js'))
     const pluginVendorCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js'))
+    const pluginFiles = await fs.readdir(PLUGIN_DIST_ROOT)
+    const pluginWevuRuntimeChunkName = pluginFiles.find(file => /^src-[\w-]+\.js$/.test(file))
     const pluginPageJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/hello-page/index.json')))
     const nativePlaygroundJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.json')))
     const pluginJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'plugin.json')))
 
+    expect(pluginWevuRuntimeChunkName).toBeTruthy()
+    const pluginWevuRuntimeCode = await readFile(path.join(PLUGIN_DIST_ROOT, pluginWevuRuntimeChunkName!))
     expect(pluginIndexCode).toContain('exports.sayHello')
     expect(pluginIndexCode).toContain('exports.answer')
     expect(pluginIndexCode).toContain('exports.getFeatureCards')
     expect(pluginVendorCode).toContain('miniprogram_npm/dayjs/index')
     expect(pluginVendorCode).toContain('2026-03-19T12:34:00')
     expect(pluginVendorCode).toContain('npm(dayjs) 构建标记')
+    expect(pluginWevuRuntimeCode).toContain('createWevuComponent')
     expect(pluginPageJson.usingComponents ?? {}).toEqual({})
     expect(nativePlaygroundJson.usingComponents).toMatchObject({
       'hello-showcase': '../../components/hello-component/index',

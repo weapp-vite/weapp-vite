@@ -40,15 +40,19 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'pages/index/vue.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-src\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.\w+\(\{/,
   ],
   'pages/index/vue-setup.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-src\.js["']\)\.\w+\(\{/,
+    /require\(["']\.\.\/\.\.\/(?:weapp-vendors\/wevu-src|src-[\w-]+)\.js["']\)\.\w+\(\{/,
   ],
   'weapp-vendors/wevu-defineProperty.js': [
     /__commonJS(?:Min)?/,
     /module\.exports/,
+  ],
+  'wevu-runtime.js': [
+    /require\(["']\.\/weapp-vendors\/wevu-defineProperty\.js["']\)/,
+    /\bcreateWevuComponent\b/,
   ],
   'weapp-vendors/wevu-src.js': [
     /require\(["']\.\/wevu-defineProperty\.js["']\)/,
@@ -58,6 +62,9 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
 }
 
 function normalizeDistFile(file: string) {
+  if (/^src-[\w-]+\.js$/.test(file)) {
+    return 'wevu-runtime.js'
+  }
   return file
 }
 

@@ -95,7 +95,7 @@ vi.mock('../src/logger', () => ({
   },
 }))
 
-vi.mock('@weapp-core/shared', () => ({
+vi.mock('@weapp-core/shared/fs', () => ({
   fs: fsMock,
 }))
 

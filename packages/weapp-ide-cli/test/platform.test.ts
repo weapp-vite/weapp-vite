@@ -9,7 +9,7 @@ function normalizeSlashes(value: string) {
   return value.replace(/\\/g, '/').toLowerCase()
 }
 
-vi.mock('@weapp-core/shared', () => ({
+vi.mock('@weapp-core/shared/fs', () => ({
   fs: {
     access: accessMock,
     pathExists: pathExistsMock,

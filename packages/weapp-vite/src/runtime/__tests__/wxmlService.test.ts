@@ -21,8 +21,8 @@ const mockFileSystem: Record<string, string> = {
   '/mock/project/header.wxml': initialHeaderContent,
 }
 
-vi.mock('@weapp-core/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
   const mockedFs = {
     ...actual.fs,
     pathExists: vi.fn(async (filePath: string) => (filePath in mockFileSystem) || await actual.fs.pathExists(filePath)),

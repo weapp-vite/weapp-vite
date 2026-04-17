@@ -136,8 +136,10 @@ export function registerWeapiIndexAliasPolicyAndMatrixConsistencyTests() {
     expect(WEAPI_PLATFORM_SUPPORT_MATRIX.map(item => item.platform)).toEqual([
       '微信小程序',
       '支付宝小程序',
+      '百度智能小程序',
       '抖音小程序',
-      '其他平台（swan/jd/xhs 等）',
+      '京东小程序',
+      '小红书小程序',
     ])
     const methodNames = WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method)
     const uniqueMethodNames = new Set(methodNames)

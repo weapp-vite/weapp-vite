@@ -22,8 +22,8 @@ const extractJsonPropMetadataMock = vi.hoisted(() => vi.fn())
 const mergePropMapsMock = vi.hoisted(() => vi.fn())
 const isBuiltinComponentMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@weapp-core/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@weapp-core/shared')>()
+vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@weapp-core/shared/fs')>()
   const mockedFs = {
     ...actual.fs,
     readFile: readFileMock,

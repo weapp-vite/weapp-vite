@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const outputJsonMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@weapp-core/shared', () => ({
+vi.mock('@weapp-core/shared/fs', () => ({
   fs: {
     outputJson: outputJsonMock,
   },
