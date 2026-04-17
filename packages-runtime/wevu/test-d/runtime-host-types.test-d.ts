@@ -1,13 +1,17 @@
 import type {
+  AlipayMiniProgramHostNamespace,
   DefaultMiniProgramHostNamespace,
   HostMiniProgramLaunchOptions,
   HostMiniProgramNavigateToOption,
   HostMiniProgramPageLifetime,
   HostMiniProgramRouter,
   MiniProgramHostNamespace,
+  MiniProgramHostSourceName,
   MiniProgramLaunchOptions,
   MiniProgramNavigateToOption,
   MiniProgramRouter,
+  TtMiniProgramHostNamespace,
+  WechatMiniProgramHostNamespace,
 } from '@/index'
 import { expectAssignable, expectType } from 'tsd'
 
@@ -24,3 +28,10 @@ expectType<DefaultMiniProgramHostNamespace.NavigateToOption>({} as HostMiniProgr
 expectType<MiniProgramHostNamespace.NavigateToOption>({} as HostMiniProgramNavigateToOption)
 expectType<DefaultMiniProgramHostNamespace.Page.ILifetime>({} as HostMiniProgramPageLifetime)
 expectType<MiniProgramHostNamespace.Page.ILifetime>({} as HostMiniProgramPageLifetime)
+expectType<MiniProgramHostSourceName>('default')
+expectType<MiniProgramHostSourceName>('wechat')
+expectType<MiniProgramHostSourceName>('alipay')
+expectType<MiniProgramHostSourceName>('tt')
+expectType<WechatMiniProgramHostNamespace.NavigateToOption>({} as HostMiniProgramNavigateToOption)
+expectType<AlipayMiniProgramHostNamespace>({} as AlipayMiniProgramHostNamespace)
+expectType<TtMiniProgramHostNamespace>({} as TtMiniProgramHostNamespace)

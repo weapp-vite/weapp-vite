@@ -70,6 +70,7 @@ export type {
   TriggerEventOptions,
 } from './types/miniprogram'
 export type {
+  AlipayMiniProgramHostNamespace,
   DefaultMiniProgramHostNamespace,
   HostMiniProgramAddToFavoritesOption,
   HostMiniProgramAppOptions,
@@ -112,6 +113,9 @@ export type {
   HostMiniProgramTriggerEventOptions,
   HostMiniProgramUnhandledRejectionResult,
   MiniProgramHostNamespace,
+  MiniProgramHostSourceName,
+  TtMiniProgramHostNamespace,
+  WechatMiniProgramHostNamespace,
 } from './types/miniprogramHost'
 export type { CreateAppOptions, DataOption, DefineAppOptions, DefineComponentOptions, PageFeatures } from './types/options'
 export type {

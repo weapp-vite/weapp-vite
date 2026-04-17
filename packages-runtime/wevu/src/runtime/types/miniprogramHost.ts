@@ -1,6 +1,12 @@
-import { DefaultMiniProgramHostNamespace } from './miniprogramHostDefault'
+import { DefaultMiniProgramHostNamespace } from './miniprogramHostSources'
 
-export { DefaultMiniProgramHostNamespace } from './miniprogramHostDefault'
+export {
+  AlipayMiniProgramHostNamespace,
+  DefaultMiniProgramHostNamespace,
+  TtMiniProgramHostNamespace,
+  WechatMiniProgramHostNamespace,
+} from './miniprogramHostSources'
+export type { MiniProgramHostSourceName } from './miniprogramHostSources'
 
 /* eslint-disable ts/no-namespace -- 通过单点 namespace 别名集中宿主类型入口，避免文件内重复散落宿主底座类型引用。 */
 export declare namespace MiniProgramHostNamespace {
