@@ -44,6 +44,6 @@ describe('subpackage npm without main output', () => {
 
     expect(files).toContain('packageB/miniprogram_npm/class-variance-authority/index.js')
     expect(files).toContain('packageB/miniprogram_npm/dayjs/index.js')
-    expect(files).not.toContain('packageB/miniprogram_npm/clsx/index.js')
+    expect(files).toContain('packageB/miniprogram_npm/clsx/index.js')
   })
 })

@@ -1,0 +1,10 @@
+<view class="issue466-computed-page">
+  <text class="issue466-computed-title">issue-466 computed cjs package</text>
+  <text class="issue466-computed-line">page a = {{a}}</text>
+  <text class="issue466-computed-line">page b = {{b}}</text>
+  <issue466-computed-probe
+    id="issue466-computed-probe"
+    a="{{a}}"
+    b="{{b}}"
+  />
+</view>

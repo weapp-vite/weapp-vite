@@ -4,6 +4,14 @@
     "rootDir": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "@weapp-vite/ast/babel": [
+        "../../packages/ast/src/babel.ts"
+      ],
+      "@weapp-vite/ast/babelTypes": [
+        "../../packages/ast/src/babelTypes.ts"
+      ]
+    },
     "resolveJsonModule": true,
     "types": [
       "node",

@@ -31,10 +31,66 @@ interface MockWorkspaceEditEntry {
   newText: string
 }
 
-function createVscodeModule(mockVscode: Record<string, unknown>) {
+function toUriPath(fsPath: string) {
+  return fsPath.replace(/\\/gu, '/')
+}
+
+function mockWorkspacePath(filePath: string) {
+  const workspaceRoot = path.resolve('/workspace')
+  const relativePath = filePath.replace(/^\/workspace(?:\/|$)/u, '')
+
+  return relativePath ? path.join(workspaceRoot, relativePath) : workspaceRoot
+}
+
+function normalizeMockUri<T extends MockUri>(uri: T): T {
+  const fsPath = path.normalize(uri.fsPath)
+
   return {
-    ...mockVscode,
-    default: mockVscode,
+    ...uri,
+    fsPath,
+    path: toUriPath(fsPath),
+  }
+}
+
+function normalizeWorkspaceFolder<T extends { uri: MockUri }>(workspaceFolder: T): T {
+  return {
+    ...workspaceFolder,
+    uri: normalizeMockUri(workspaceFolder.uri),
+  }
+}
+
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  const normalizedVscode = { ...mockVscode } as Record<string, any>
+
+  if (normalizedVscode.workspace && typeof normalizedVscode.workspace === 'object') {
+    normalizedVscode.workspace = { ...normalizedVscode.workspace }
+
+    if (Array.isArray(normalizedVscode.workspace.workspaceFolders)) {
+      normalizedVscode.workspace.workspaceFolders = normalizedVscode.workspace.workspaceFolders.map(normalizeWorkspaceFolder)
+    }
+
+    if (typeof normalizedVscode.workspace.getWorkspaceFolder === 'function') {
+      const originalGetWorkspaceFolder = normalizedVscode.workspace.getWorkspaceFolder.bind(normalizedVscode.workspace)
+      normalizedVscode.workspace.getWorkspaceFolder = (...args: any[]) => {
+        const workspaceFolder = originalGetWorkspaceFolder(...args)
+
+        return workspaceFolder ? normalizeWorkspaceFolder(workspaceFolder) : workspaceFolder
+      }
+    }
+  }
+
+  if (normalizedVscode.Uri && typeof normalizedVscode.Uri === 'object') {
+    normalizedVscode.Uri = { ...normalizedVscode.Uri }
+
+    if (typeof normalizedVscode.Uri.file === 'function') {
+      const originalFile = normalizedVscode.Uri.file.bind(normalizedVscode.Uri)
+      normalizedVscode.Uri.file = (targetPath: string) => normalizeMockUri(originalFile(targetPath))
+    }
+  }
+
+  return {
+    ...normalizedVscode,
+    default: normalizedVscode,
   }
 }
 
@@ -43,7 +99,7 @@ function createTextDocument(languageId: string, text: string, fsPath: string) {
     languageId,
     uri: {
       fsPath,
-      path: fsPath,
+      path: toUriPath(fsPath),
     },
     fileName: fsPath,
     getText() {
@@ -98,7 +154,7 @@ function getWorkspaceEditEntries(edit: unknown): MockWorkspaceEditEntry[] {
 }
 
 function getReferencePaths(locations: MockLocation[]) {
-  return locations.map(item => item.uri.fsPath)
+  return locations.map(item => path.normalize(item.uri.fsPath))
 }
 
 afterEach(() => {
@@ -109,15 +165,15 @@ afterEach(() => {
 
 it('provides script-side prop and event references for vue component definitions', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
-    [path.normalize('/workspace/src/components/card/user/index.vue'), [
+    [mockWorkspacePath('/workspace/src/components/card/user/index.vue'), [
       '<script setup lang="ts">',
       'defineProps<{',
       '  titleText?: string',
@@ -128,7 +184,7 @@ it('provides script-side prop and event references for vue component definitions
       '</script>',
       '<template><view /></template>',
     ].join('\n')],
-    [path.normalize('/workspace/src/pages/home/index.vue'), [
+    [mockWorkspacePath('/workspace/src/pages/home/index.vue'), [
       '<template>',
       '  <card-user title-text="a" bind:confirm="handleTap" />',
       '</template>',
@@ -140,8 +196,8 @@ it('provides script-side prop and event references for vue component definitions
       '}',
       '</json>',
     ].join('\n')],
-    [path.normalize('/workspace/src/pages/detail/index.wxml'), '<card-user title-text="b" bind:confirm="handleTap"></card-user>'],
-    [path.normalize('/workspace/src/pages/detail/index.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/pages/detail/index.wxml'), '<card-user title-text="b" bind:confirm="handleTap"></card-user>'],
+    [mockWorkspacePath('/workspace/src/pages/detail/index.json'), JSON.stringify({
       usingComponents: {
         'card-user': '/components/card/user/index',
       },
@@ -155,8 +211,8 @@ it('provides script-side prop and event references for vue component definitions
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -207,8 +263,8 @@ it('provides script-side prop and event references for vue component definitions
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -287,8 +343,8 @@ it('provides script-side prop and event references for vue component definitions
   const renameProvider = new WeappTemplateScriptRenameProvider()
   const document = createTextDocument(
     'vue',
-    files.get(path.normalize('/workspace/src/components/card/user/index.vue'))!,
-    path.normalize('/workspace/src/components/card/user/index.vue'),
+    files.get(mockWorkspacePath('/workspace/src/components/card/user/index.vue'))!,
+    mockWorkspacePath('/workspace/src/components/card/user/index.vue'),
   )
   const documentText = document.getText()
   const propPosition = document.positionAt(documentText.indexOf('titleText') + 2)
@@ -302,35 +358,35 @@ it('provides script-side prop and event references for vue component definitions
   const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'submit')
 
   assert.equal(propReferences.length, 3)
-  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
-  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === mockWorkspacePath('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(eventReferences.length, 3)
-  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
-  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === mockWorkspacePath('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(propPrepare?.placeholder, 'titleText')
   assert.equal(eventPrepare?.placeholder, 'confirm')
   assert.equal(getWorkspaceEditEntries(propRename).length, 3)
-  assert.equal(getWorkspaceEditEntries(propRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(propRename).find(item => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
   assert.equal(getWorkspaceEditEntries(propRename).filter(item => item.newText === 'heading-text').length, 2)
   assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
-  assert.equal(getWorkspaceEditEntries(eventRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(eventRename).find(item => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
   assert.equal(getWorkspaceEditEntries(eventRename).filter(item => item.newText === 'bind:submit').length, 2)
 })
 
 it('provides script-side prop and event references for native component scripts', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
-    [path.normalize('/workspace/src/components/card/native/index.wxml'), '<view />'],
-    [path.normalize('/workspace/src/components/card/native/index.ts'), [
+    [mockWorkspacePath('/workspace/src/components/card/native/index.wxml'), '<view />'],
+    [mockWorkspacePath('/workspace/src/components/card/native/index.ts'), [
       'Component({',
       '  properties: {',
       '    titleText: String,',
@@ -342,7 +398,7 @@ it('provides script-side prop and event references for native component scripts'
       '  },',
       '})',
     ].join('\n')],
-    [path.normalize('/workspace/src/pages/home/index.vue'), [
+    [mockWorkspacePath('/workspace/src/pages/home/index.vue'), [
       '<template>',
       '  <card-native title-text="a" bind:confirm="handleTap" />',
       '</template>',
@@ -354,8 +410,8 @@ it('provides script-side prop and event references for native component scripts'
       '}',
       '</json>',
     ].join('\n')],
-    [path.normalize('/workspace/src/pages/detail/index.wxml'), '<card-native title-text="b" bind:confirm="handleTap"></card-native>'],
-    [path.normalize('/workspace/src/pages/detail/index.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/pages/detail/index.wxml'), '<card-native title-text="b" bind:confirm="handleTap"></card-native>'],
+    [mockWorkspacePath('/workspace/src/pages/detail/index.json'), JSON.stringify({
       usingComponents: {
         'card-native': '/components/card/native/index',
       },
@@ -369,8 +425,8 @@ it('provides script-side prop and event references for native component scripts'
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -421,8 +477,8 @@ it('provides script-side prop and event references for native component scripts'
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -501,8 +557,8 @@ it('provides script-side prop and event references for native component scripts'
   const renameProvider = new WeappTemplateScriptRenameProvider()
   const document = createTextDocument(
     'typescript',
-    files.get(path.normalize('/workspace/src/components/card/native/index.ts'))!,
-    path.normalize('/workspace/src/components/card/native/index.ts'),
+    files.get(mockWorkspacePath('/workspace/src/components/card/native/index.ts'))!,
+    mockWorkspacePath('/workspace/src/components/card/native/index.ts'),
   )
   const documentText = document.getText()
   const propPosition = document.positionAt(documentText.indexOf('titleText') + 2)
@@ -516,19 +572,19 @@ it('provides script-side prop and event references for native component scripts'
   const eventRename = await renameProvider.provideRenameEdits(document as any, eventPosition as any, 'submit')
 
   assert.equal(propReferences.length, 3)
-  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
-  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(getReferencePaths(propReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === mockWorkspacePath('/workspace/src/components/card/native/index.ts')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(propReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(eventReferences.length, 3)
-  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/components/card/native/index.ts')).length, 1)
-  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/home/index.vue')).length, 1)
-  assert.equal(getReferencePaths(eventReferences).filter(item => item === path.normalize('/workspace/src/pages/detail/index.wxml')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === mockWorkspacePath('/workspace/src/components/card/native/index.ts')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/home/index.vue')).length, 1)
+  assert.equal(getReferencePaths(eventReferences).filter(item => item === mockWorkspacePath('/workspace/src/pages/detail/index.wxml')).length, 1)
   assert.equal(propPrepare?.placeholder, 'titleText')
   assert.equal(eventPrepare?.placeholder, 'confirm')
   assert.equal(getWorkspaceEditEntries(propRename).length, 3)
-  assert.equal(getWorkspaceEditEntries(propRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(propRename).find(item => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/native/index.ts'))?.newText, 'headingText')
   assert.equal(getWorkspaceEditEntries(propRename).filter(item => item.newText === 'heading-text').length, 2)
   assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
-  assert.equal(getWorkspaceEditEntries(eventRename).find(item => item.uri.fsPath === path.normalize('/workspace/src/components/card/native/index.ts'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(eventRename).find(item => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/native/index.ts'))?.newText, 'submit')
   assert.equal(getWorkspaceEditEntries(eventRename).filter(item => item.newText === 'bind:submit').length, 2)
 })

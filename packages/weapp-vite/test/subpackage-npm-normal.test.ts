@@ -43,7 +43,7 @@ describe('subpackage npm local outputs', () => {
     expect(await fs.pathExists(path.resolve(outDir, 'packageB/miniprogram_npm/dayjs/index.js'))).toBe(true)
     expect(await fs.pathExists(path.resolve(outDir, 'packageB/miniprogram_npm/tdesign-miniprogram/button/button.json'))).toBe(true)
     expect(await fs.pathExists(path.resolve(outDir, 'packageB/miniprogram_npm/class-variance-authority/index.js'))).toBe(true)
-    expect(await fs.pathExists(path.resolve(outDir, 'packageB/miniprogram_npm/clsx/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(outDir, 'packageB/miniprogram_npm/clsx/index.js'))).toBe(true)
 
     const packageAFooJs = await fs.readFile(path.resolve(outDir, 'packageA/pages/foo.js'), 'utf8')
     expect(packageAFooJs).toContain('require("../miniprogram_npm/dayjs/index")')

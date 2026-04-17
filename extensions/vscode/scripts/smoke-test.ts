@@ -18,8 +18,16 @@ function createMockVscode() {
     StatusBarAlignment: {
       Left: 1,
     },
+    ThemeColor: class {
+      id: string
+
+      constructor(id: string) {
+        this.id = id
+      }
+    },
     window: {
       activeTextEditor: undefined,
+      visibleTextEditors: [],
       createOutputChannel(name: string) {
         const channel = {
           name,
@@ -48,6 +56,11 @@ function createMockVscode() {
       showQuickPick: async () => undefined,
       showTextDocument: async () => undefined,
       setStatusBarMessage() {},
+      createTextEditorDecorationType() {
+        return {
+          dispose() {},
+        }
+      },
       createTreeView(viewId: string, options: unknown) {
         const treeView = {
           options,
@@ -59,6 +72,9 @@ function createMockVscode() {
         return treeView
       },
       onDidChangeActiveTextEditor() {
+        return { dispose() {} }
+      },
+      onDidChangeVisibleTextEditors() {
         return { dispose() {} }
       },
     },
@@ -93,6 +109,9 @@ function createMockVscode() {
         return { dispose() {} }
       },
       onDidChangeTextDocument() {
+        return { dispose() {} }
+      },
+      onDidCloseTextDocument() {
         return { dispose() {} }
       },
       onDidRenameFiles() {
@@ -137,6 +156,22 @@ function createMockVscode() {
       },
       registerHoverProvider(selector: unknown) {
         registeredProviders.push({ type: 'hover', selector })
+        return { dispose() {} }
+      },
+      registerDocumentHighlightProvider(selector: unknown) {
+        registeredProviders.push({ type: 'documentHighlight', selector })
+        return { dispose() {} }
+      },
+      registerDefinitionProvider(selector: unknown) {
+        registeredProviders.push({ type: 'definition', selector })
+        return { dispose() {} }
+      },
+      registerReferenceProvider(selector: unknown) {
+        registeredProviders.push({ type: 'reference', selector })
+        return { dispose() {} }
+      },
+      registerRenameProvider(selector: unknown) {
+        registeredProviders.push({ type: 'rename', selector })
         return { dispose() {} }
       },
     },
@@ -280,10 +315,16 @@ async function main() {
   try {
     await fs.access(path.join(distDirPath, 'extension.js'))
     const distFiles = await fs.readdir(distDirPath)
+    const vscodeModuleText = [
+      'const mock = globalThis.__WEAPP_VITE_VSCODE_MOCK__;',
+      'export default mock;',
+      ...Object.keys(state.mockVscode).map(key => `export const ${key} = mock.${key};`),
+      '',
+    ].join('\n')
 
     await fs.mkdir(tempDistDirPath, { recursive: true })
 
-    await fs.writeFile(tempVscodePath, 'export default globalThis.__WEAPP_VITE_VSCODE_MOCK__;\n')
+    await fs.writeFile(tempVscodePath, vscodeModuleText)
 
     for (const fileName of distFiles) {
       const sourcePath = path.join(distDirPath, fileName)
@@ -364,7 +405,7 @@ async function main() {
         'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 8)
+    assert.equal(state.registeredProviders.length, 17)
     assert.equal(state.createdTreeViews.length, 1)
     assert.equal(state.createdTreeViews[0]?.viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)

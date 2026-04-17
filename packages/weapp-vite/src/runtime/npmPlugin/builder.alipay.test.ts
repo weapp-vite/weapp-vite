@@ -188,6 +188,7 @@ describe('runtime npm builder alipay adaptation', () => {
     const noop = await fs.readFile(path.resolve(pkgRoot, 'noop.js'), 'utf8')
     const broken = await fs.readFile(path.resolve(pkgRoot, 'broken.js'), 'utf8')
 
+    expect(main).toContain('__esModule')
     expect(main).toContain('require("./side.js")')
     expect(main).toContain('const _imported = require("./dep.js")')
     expect(main).toContain('exports["default"]')
@@ -214,6 +215,7 @@ describe('runtime npm builder alipay adaptation', () => {
     await normalizeMiniprogramPackageForAlipay(pkgRoot)
 
     const main = await fs.readFile(path.resolve(pkgRoot, 'main.js'), 'utf8')
+    expect(main).toContain('__esModule')
     expect(main).toContain('const _imported = require("./dep.js")')
     expect(main).toContain('const _reExported = require("./dep.js")')
     expect(main).not.toContain('exports.namespaceAlias')

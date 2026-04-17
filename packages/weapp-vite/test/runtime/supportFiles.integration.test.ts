@@ -1,34 +1,16 @@
 import * as fs from 'node:fs/promises'
-import os from 'node:os'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../src/logger'
 import { syncProjectSupportFiles } from '../../src/runtime/supportFiles'
-import { createTestCompilerContext, getFixture } from '../utils'
+import { createTempFixtureProject, createTestCompilerContext, getFixture } from '../utils'
 
 const fixtureSource = getFixture('auto-import')
 
 async function createTempProject() {
-  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-support-files-'))
-  await fs.cp(fixtureSource, cwd, {
-    dereference: true,
-    recursive: true,
-    filter: (src) => {
-      const relative = path.relative(fixtureSource, src).replaceAll('\\', '/')
-      if (!relative) {
-        return true
-      }
-      return !(
-        relative === 'dist'
-        || relative.startsWith('dist/')
-        || relative === 'node_modules'
-        || relative.startsWith('node_modules/')
-        || relative === '.weapp-vite'
-        || relative.startsWith('.weapp-vite/')
-      )
-    },
-  })
+  const tempProject = await createTempFixtureProject(fixtureSource, 'support-files-integration')
+  const cwd = tempProject.tempDir
   const configPath = path.resolve(cwd, 'vite.config.ts')
   const configEntry = pathToFileURL(path.resolve(__dirname, '../../src/config.ts')).href
   const resolverEntry = pathToFileURL(path.resolve(__dirname, '../../src/auto-import-components/resolvers/index.ts')).href
@@ -44,23 +26,28 @@ async function createTempProject() {
   }
 
   await fs.writeFile(configPath, nextContent, 'utf8')
-  return cwd
+  return {
+    cleanup: tempProject.cleanup,
+    cwd,
+  }
 }
 
 describe('support files integration', () => {
   let cwd: string
+  let cleanupTempProject: (() => Promise<void>) | undefined
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(async () => {
-    cwd = await createTempProject()
+    const tempProject = await createTempProject()
+    cwd = tempProject.cwd
+    cleanupTempProject = tempProject.cleanup
     warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
   })
 
   afterEach(async () => {
     warnSpy.mockRestore()
-    if (cwd) {
-      await fs.rm(cwd, { recursive: true, force: true })
-    }
+    await cleanupTempProject?.()
+    cleanupTempProject = undefined
   })
 
   it('auto-syncs stale managed tsconfig during context creation', async () => {
@@ -117,7 +104,8 @@ describe('support files integration', () => {
       expect(manifest.HelloWorld).toBe('/components/HelloWorld/index')
       expect(manifest['van-button']).toBe('@vant/weapp/button')
       expect(manifest['van-action-sheet']).toBe('@vant/weapp/action-sheet')
-      expect(typedDefinition).toContain('\'van-action-sheet\': Record<string, any>;')
+      expect(typedDefinition).toContain('\'van-action-sheet\': {')
+      expect(typedDefinition).toContain('readonly show?: boolean;')
       expect(vueComponentsDefinition).toContain('VanActionSheet:')
       expect(tsconfig.compilerOptions.paths).toMatchObject({
         '@/*': ['../src/*'],

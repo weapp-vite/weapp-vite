@@ -4,6 +4,15 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@weapp-core/shared": [
+        "../../@weapp-core/shared/src/index.ts"
+      ],
+      "@weapp-core/shared/node": [
+        "../../@weapp-core/shared/src/node.ts"
+      ],
+      "@weapp-core/shared/fs": [
+        "../../@weapp-core/shared/src/fs/index.ts"
       ]
     },
     "types": [

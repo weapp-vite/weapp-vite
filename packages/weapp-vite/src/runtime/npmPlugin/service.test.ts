@@ -312,6 +312,90 @@ describe('runtime npm service', () => {
     }))
   })
 
+  it('copies transitive dependencies for local subpackage miniprogram packages', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        'miniprogram-computed': '^8.0.0',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    buildPackageMock.mockImplementation(async ({ dep, outDir }) => {
+      if (dep !== 'miniprogram-computed') {
+        return
+      }
+      await fs.outputFile(path.resolve(outDir, 'miniprogram-computed/index.js'), 'module.exports = require("rfdc")')
+      await fs.outputFile(path.resolve(outDir, 'rfdc/index.js'), 'module.exports = () => ({})')
+      await fs.outputFile(path.resolve(outDir, 'fast-deep-equal/index.js'), 'module.exports = (a, b) => a === b')
+    })
+    checkDependenciesCacheOutdateMock.mockResolvedValue(true)
+    getPackageInfoMock.mockImplementation(async (dep: string) => {
+      if (dep === 'miniprogram-computed') {
+        return {
+          packageJson: {
+            miniprogram: 'dist',
+            dependencies: {
+              'fast-deep-equal': '^3.1.3',
+              'rfdc': '^1.4.1',
+            },
+          },
+        }
+      }
+      if (dep === 'rfdc' || dep === 'fast-deep-equal') {
+        return {
+          packageJson: {
+            dependencies: {},
+          },
+        }
+      }
+      return null
+    })
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: ['miniprogram-computed'],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: ['miniprogram-computed'],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await service.build()
+
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm/miniprogram-computed/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/miniprogram-computed/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/rfdc/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/fast-deep-equal/index.js'))).toBe(true)
+    expect(buildPackageMock).toHaveBeenCalledTimes(1)
+  })
+
   it('builds cached npm source and removes main output when main output is disabled', async () => {
     const cwd = await createTempDir()
     const packageJson = {

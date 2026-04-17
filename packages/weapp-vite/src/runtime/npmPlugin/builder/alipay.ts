@@ -1,13 +1,12 @@
 import { fs } from '@weapp-core/shared/fs'
-import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
-import { generate, parseJsLike, traverse } from '../../../utils'
 import {
   ALIPAY_TEMPLATE_EXTENSION_MAP,
   containsIncompatibleAlipayTemplateSyntax,
   rewriteAlipayReferenceExtensions,
   transformTemplateForAlipay,
 } from './alipayTemplate'
+import { normalizeMiniprogramPackageJsModules } from './jsModule'
 import { collectFiles } from './shared'
 
 const WX_TEMPLATE_REFERENCE_RE = /\.wxml\b|\.wxss\b|\.wxs\b/
@@ -24,214 +23,6 @@ const ALIPAY_TEXT_FILE_EXTENSIONS = new Set([
   '.wxss',
   '.wxs',
 ])
-
-function hasEsmSyntax(source: string) {
-  return ESM_SYNTAX_RE.test(source)
-}
-
-function createExportsMember(name: string) {
-  return t.memberExpression(
-    t.identifier('exports'),
-    t.isValidIdentifier(name) ? t.identifier(name) : t.stringLiteral(name),
-    !t.isValidIdentifier(name),
-  )
-}
-
-function createExportsAssignment(name: string, value: t.Expression) {
-  return t.expressionStatement(
-    t.assignmentExpression(
-      '=',
-      createExportsMember(name),
-      value,
-    ),
-  )
-}
-
-function createRequireMemberExpression(base: t.Identifier, name: string) {
-  return t.memberExpression(
-    base,
-    t.isValidIdentifier(name) ? t.identifier(name) : t.stringLiteral(name),
-    !t.isValidIdentifier(name),
-  )
-}
-
-function getModuleExportName(name: t.Identifier | t.StringLiteral) {
-  return t.isIdentifier(name) ? name.name : name.value
-}
-
-async function transformJsModuleToCjsForAlipay(source: string) {
-  if (!hasEsmSyntax(source)) {
-    return source
-  }
-
-  try {
-    const ast = parseJsLike(source)
-    let transformed = false
-    const exportAssignments: t.Statement[] = []
-
-    traverse(ast as any, {
-      ImportDeclaration(path: any) {
-        const sourceLiteral = t.stringLiteral(path.node.source.value)
-        const specifiers = path.node.specifiers ?? []
-        if (specifiers.length === 0) {
-          path.replaceWith(
-            t.expressionStatement(
-              t.callExpression(t.identifier('require'), [sourceLiteral]),
-            ),
-          )
-          transformed = true
-          return
-        }
-
-        const requireId = path.scope.generateUidIdentifier('imported')
-        const statements: t.Statement[] = [
-          t.variableDeclaration('const', [
-            t.variableDeclarator(
-              requireId,
-              t.callExpression(t.identifier('require'), [sourceLiteral]),
-            ),
-          ]),
-        ]
-
-        for (const specifier of specifiers) {
-          if (t.isImportDefaultSpecifier(specifier)) {
-            statements.push(
-              t.variableDeclaration('const', [
-                t.variableDeclarator(
-                  specifier.local,
-                  t.conditionalExpression(
-                    t.binaryExpression(
-                      '!==',
-                      createRequireMemberExpression(requireId, 'default'),
-                      t.identifier('undefined'),
-                    ),
-                    createRequireMemberExpression(requireId, 'default'),
-                    requireId,
-                  ),
-                ),
-              ]),
-            )
-            continue
-          }
-
-          if (t.isImportNamespaceSpecifier(specifier)) {
-            statements.push(
-              t.variableDeclaration('const', [
-                t.variableDeclarator(specifier.local, requireId),
-              ]),
-            )
-            continue
-          }
-
-          const importedName = t.isIdentifier(specifier.imported)
-            ? specifier.imported.name
-            : specifier.imported.value
-          statements.push(
-            t.variableDeclaration('const', [
-              t.variableDeclarator(
-                specifier.local,
-                createRequireMemberExpression(requireId, importedName),
-              ),
-            ]),
-          )
-        }
-
-        path.replaceWithMultiple(statements)
-        transformed = true
-      },
-
-      ExportDefaultDeclaration(path: any) {
-        const declaration = path.node.declaration
-
-        if (t.isFunctionDeclaration(declaration) || t.isClassDeclaration(declaration)) {
-          const exportId = declaration.id ?? path.scope.generateUidIdentifier('defaultExport')
-          if (!declaration.id) {
-            declaration.id = exportId
-          }
-          path.replaceWith(declaration)
-          exportAssignments.push(createExportsAssignment('default', exportId))
-          transformed = true
-          return
-        }
-
-        const targetId = path.scope.generateUidIdentifier('defaultExport')
-        path.replaceWith(
-          t.variableDeclaration('const', [
-            t.variableDeclarator(targetId, declaration),
-          ]),
-        )
-        exportAssignments.push(createExportsAssignment('default', targetId))
-        transformed = true
-      },
-
-      ExportNamedDeclaration(path: any) {
-        const declaration = path.node.declaration
-        if (declaration) {
-          path.replaceWith(declaration)
-          const names = Object.keys(t.getBindingIdentifiers(declaration))
-          for (const name of names) {
-            exportAssignments.push(createExportsAssignment(name, t.identifier(name)))
-          }
-          transformed = true
-          return
-        }
-
-        const specifiers = path.node.specifiers ?? []
-        if (specifiers.length === 0) {
-          path.remove()
-          transformed = true
-          return
-        }
-
-        if (path.node.source) {
-          const requireId = path.scope.generateUidIdentifier('reExported')
-          const exportSpecifiers = specifiers.filter(t.isExportSpecifier)
-          const statements: t.Statement[] = [
-            t.variableDeclaration('const', [
-              t.variableDeclarator(
-                requireId,
-                t.callExpression(t.identifier('require'), [t.stringLiteral(path.node.source.value)]),
-              ),
-            ]),
-          ]
-          for (const specifier of exportSpecifiers) {
-            const localName = specifier.local.name
-            const exportedName = getModuleExportName(specifier.exported)
-            statements.push(createExportsAssignment(exportedName, createRequireMemberExpression(requireId, localName)))
-          }
-          path.replaceWithMultiple(statements)
-          transformed = true
-          return
-        }
-
-        const exportSpecifiers = specifiers.filter(t.isExportSpecifier)
-        const statements: t.Statement[] = []
-        for (const specifier of exportSpecifiers) {
-          const localName = specifier.local.name
-          const exportedName = getModuleExportName(specifier.exported)
-          statements.push(createExportsAssignment(exportedName, t.identifier(localName)))
-        }
-
-        path.replaceWithMultiple(statements)
-        transformed = true
-      },
-    })
-
-    if (exportAssignments.length > 0) {
-      ast.program.body.push(...exportAssignments)
-      transformed = true
-    }
-
-    if (!transformed) {
-      return source
-    }
-
-    return generate(ast as any).code
-  }
-  catch {
-    return source
-  }
-}
 
 export async function shouldRebuildCachedAlipayMiniprogramPackage(
   pkgRoot: string,
@@ -323,6 +114,10 @@ export async function normalizeMiniprogramPackageForAlipay(pkgRoot: string) {
     await fs.move(task.from, task.to, { overwrite: true })
   }
 
+  await normalizeMiniprogramPackageJsModules(pkgRoot, {
+    markEsModule: true,
+  })
+
   const normalizedFiles = await collectFiles(pkgRoot)
   for (const filePath of normalizedFiles) {
     const ext = path.extname(filePath)
@@ -332,10 +127,6 @@ export async function normalizeMiniprogramPackageForAlipay(pkgRoot: string) {
 
     const source = await fs.readFile(filePath, 'utf8')
     let nextSource = source
-
-    if (ext === '.js') {
-      nextSource = await transformJsModuleToCjsForAlipay(nextSource)
-    }
 
     if (ext === '.axml' || ext === '.wxml') {
       nextSource = transformTemplateForAlipay(nextSource)
