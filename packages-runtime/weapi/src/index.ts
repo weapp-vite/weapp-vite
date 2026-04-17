@@ -27,6 +27,8 @@ export type {
   WeapiMiniProgramPlatformRawAdapterSourceRegistry,
   WeapiMiniProgramRuntimeRawAdapterSourceName,
   WeapiMiniProgramRuntimeRawAdapterSourceRegistry,
+  WeapiMiniProgramWechatRawAdapter,
+  WeapiWechatRawAdapter,
 } from './core/miniProgramTypes'
 export type {
   CreateWeapiOptions,

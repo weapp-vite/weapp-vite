@@ -1,7 +1,7 @@
 import type {
   WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramDouyinRawAdapter,
-  WeapiMiniProgramWxRawAdapter,
+  WeapiMiniProgramWechatRawAdapter,
 } from './miniProgramTypes'
 import type { WeapiAdapter } from './types'
 
@@ -33,7 +33,7 @@ export type WeapiDouyinRawAdapter = WeapiMiniProgramDouyinRawAdapter
  * @generated weapi-platform-matrix:end
  */
 export type WeapiMiniProgramCrossPlatformRawAdapter = MergeAdapters<
-  MergeAdapters<WeapiMiniProgramWxRawAdapter, WeapiMiniProgramAlipayRawAdapter>,
+  MergeAdapters<WeapiMiniProgramWechatRawAdapter, WeapiMiniProgramAlipayRawAdapter>,
   WeapiMiniProgramDouyinRawAdapter
 >
 

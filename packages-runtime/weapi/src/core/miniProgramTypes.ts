@@ -22,12 +22,22 @@ export type {
 /**
  * @description 微信小程序 API 原始适配器类型
  */
-export type WeapiWxRawAdapter = WeapiWechatMiniProgramRawAdapterSource
+export type WeapiWechatRawAdapter = WeapiWechatMiniProgramRawAdapterSource
 
 /**
- * @description 微信小程序 API 原始适配器类型（宿主中立别名）
+ * @description 微信小程序 API 原始适配器类型（宿主中立主名）
  */
-export type WeapiMiniProgramWxRawAdapter = WeapiWxRawAdapter
+export type WeapiMiniProgramWechatRawAdapter = WeapiWechatRawAdapter
+
+/**
+ * @description `wx` 命名兼容入口，保持与微信宿主语义主名一致
+ */
+export type WeapiWxRawAdapter = WeapiWechatRawAdapter
+
+/**
+ * @description `wx` 命名兼容入口，保持与微信宿主语义主名一致
+ */
+export type WeapiMiniProgramWxRawAdapter = WeapiMiniProgramWechatRawAdapter
 
 /**
  * @description 支付宝小程序 API 原始适配器类型（宿主中立主名）

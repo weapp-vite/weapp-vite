@@ -34,6 +34,7 @@ import type {
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
   WeapiMiniProgramWechatMethodName,
+  WeapiMiniProgramWechatRawAdapter,
   WeapiMiniProgramWxAdapter,
   WeapiMiniProgramWxMethodName,
   WeapiMiniProgramWxRawAdapter,
@@ -45,6 +46,7 @@ import type {
   WeapiTypeSourceName,
   WeapiWechatMethodName,
   WeapiWechatMiniProgramRawAdapterSource,
+  WeapiWechatRawAdapter,
 } from '@wevu/api'
 import {
   createWeapi,
@@ -90,7 +92,10 @@ expectType<WeapiInstance<WeapiMiniProgramCrossPlatformRawAdapter>>(wpi)
 expectType<WeapiMiniProgramRawAdapter>({} as WeapiMiniProgramRawAdapter)
 expectType<WeapiDefaultMiniProgramRawAdapterSource>({} as WeapiMiniProgramRawAdapter)
 expectType<WeapiMiniProgramCrossPlatformRawAdapter>({} as WeapiCrossPlatformRawAdapter)
+expectType<WeapiWechatRawAdapter>({} as WeapiMiniProgramRawAdapter)
+expectType<WeapiMiniProgramWechatRawAdapter>({} as WeapiMiniProgramRawAdapter)
 expectType<WeapiMiniProgramWxRawAdapter>({} as WeapiMiniProgramRawAdapter)
+expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramWechatRawAdapter)
 expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramWxRawAdapter)
 expectType<WeapiMiniProgramWxAdapter>(wpi as WeapiMiniProgramWxAdapter)
 expectType<WeapiMiniProgramAlipayRawAdapter>(my)
