@@ -1,3 +1,4 @@
+import type { MiniProgramPageLifetime } from '../runtime/types'
 import type { SetupContextRouter } from '../runtime/types/props'
 import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
 import { reactive, readonly } from '../reactivity'
@@ -42,7 +43,7 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
     routeState.name = nextRoute.name
   }
 
-  onLoad((query) => {
+  onLoad((query: Parameters<NonNullable<MiniProgramPageLifetime['onLoad']>>[0]) => {
     syncRoute(query as unknown as LocationQueryRaw)
   })
   onShow(() => {

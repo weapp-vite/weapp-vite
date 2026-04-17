@@ -356,7 +356,7 @@ describe('runtime: features & hooks', () => {
     const logs: string[] = []
     defineComponent({
       setup() {
-        onLoad((query) => {
+        onLoad((query: { a?: string } | undefined) => {
           logs.push(`hook:${query?.a ?? ''}`)
         })
       },
