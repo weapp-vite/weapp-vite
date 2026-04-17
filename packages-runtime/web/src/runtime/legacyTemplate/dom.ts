@@ -6,6 +6,10 @@ import {
   normalizeAttributeName,
   resolveControlAttributeValue,
 } from '../../shared/wxml'
+import {
+  MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX,
+  MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX,
+} from '../component/constants'
 import { escapeAttribute, resolveAttributeValue } from './expression'
 
 const EVENT_PREFIX_RE = /^(bind|catch|mut-bind|capture-bind|capture-catch)([\w-]+)$/
@@ -68,13 +72,13 @@ export function buildAttributeString(
       }
       const runtimeEvent = EVENT_KIND_ALIAS[event] ?? event
       const flags = EVENT_PREFIX_FLAGS[prefix] ?? {}
-      result += ` data-wx-on-${runtimeEvent}="${escapeAttribute(handlerName)}"`
+      result += ` ${MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX}${runtimeEvent}="${escapeAttribute(handlerName)}"`
       const flagTokens = [
         flags.capture ? 'capture' : '',
         flags.catch ? 'catch' : '',
       ].filter(Boolean)
       if (flagTokens.length) {
-        result += ` data-wx-on-flags-${runtimeEvent}="${flagTokens.join(',')}"`
+        result += ` ${MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX}${runtimeEvent}="${flagTokens.join(',')}"`
       }
       continue
     }

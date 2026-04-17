@@ -697,12 +697,12 @@ describe('registerPage integration', () => {
     expect(currentPages.length).toBe(1)
 
     const renderedHTML = firstPage.shadowRoot?.innerHTML ?? ''
-    expect(renderedHTML).toContain('data-wx-on-click="increment"')
+    expect(renderedHTML).toContain('data-mp-on-click="increment"')
 
     const shadowRoot = firstPage.shadowRoot as any
     expect(shadowRoot).toBeTruthy()
     const trigger = (shadowRoot?.querySelectorAll('div') ?? [])
-      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     expect(trigger).toBeTruthy()
     trigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(2)
@@ -729,7 +729,7 @@ describe('registerPage integration', () => {
     expect(firstPage.data.count).toBe(2)
 
     const updatedTrigger = (shadowRoot?.querySelectorAll('div') ?? [])
-      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     updatedTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(firstPage.data.count).toBe(12)
 
@@ -778,7 +778,7 @@ describe('registerPage integration', () => {
     expect(onLoad).toHaveBeenCalledTimes(1)
 
     const firstTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     firstTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(1)
 
@@ -798,7 +798,7 @@ describe('registerPage integration', () => {
     expect(page.data.count).toBe(1)
 
     const secondTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     secondTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(6)
 
@@ -816,7 +816,7 @@ describe('registerPage integration', () => {
     expect(page.data.count).toBe(6)
 
     const thirdTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
-      .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
+      .find((node: HTMLElement) => node.getAttribute?.('data-mp-on-click') === 'increment') as HTMLElement | undefined
     thirdTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(8)
   })

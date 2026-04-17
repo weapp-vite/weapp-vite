@@ -1,5 +1,8 @@
 import type { ComponentPublicInstance } from './types'
-import { EVENT_FLAG_ATTRIBUTE_PREFIX } from './constants'
+import {
+  EVENT_ATTRIBUTE_PREFIXES,
+  EVENT_FLAG_ATTRIBUTE_PREFIXES,
+} from './constants'
 
 function parseEventFlags(value: string | null) {
   if (!value) {
@@ -25,7 +28,8 @@ export function bindRuntimeEvents(
   while (walker.nextNode()) {
     const element = walker.currentNode as HTMLElement
     for (const attribute of element.getAttributeNames()) {
-      if (!attribute.startsWith('data-wx-on-') || attribute.startsWith(EVENT_FLAG_ATTRIBUTE_PREFIX)) {
+      const matchedPrefix = EVENT_ATTRIBUTE_PREFIXES.find(prefix => attribute.startsWith(prefix))
+      if (!matchedPrefix || EVENT_FLAG_ATTRIBUTE_PREFIXES.some(prefix => attribute.startsWith(prefix))) {
         continue
       }
       const handlerName = element.getAttribute(attribute)
@@ -36,8 +40,11 @@ export function bindRuntimeEvents(
       if (!handler) {
         continue
       }
-      const eventName = attribute.slice('data-wx-on-'.length)
-      const flags = parseEventFlags(element.getAttribute(`${EVENT_FLAG_ATTRIBUTE_PREFIX}${eventName}`))
+      const eventName = attribute.slice(matchedPrefix.length)
+      const flagAttributeValue = EVENT_FLAG_ATTRIBUTE_PREFIXES
+        .map(prefix => element.getAttribute(`${prefix}${eventName}`))
+        .find(value => value !== null) ?? null
+      const flags = parseEventFlags(flagAttributeValue)
       element.addEventListener(eventName, (nativeEvent) => {
         if (flags.catch) {
           nativeEvent.stopPropagation()
