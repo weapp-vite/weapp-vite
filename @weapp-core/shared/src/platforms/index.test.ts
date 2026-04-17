@@ -13,6 +13,7 @@ import {
   getMiniProgramRuntimeGlobalKeysByResolvePriority,
   getMiniProgramRuntimeHostConfigKey,
   getMiniProgramTemplatePreset,
+  getSupportedMiniProgramDirectivePrefixes,
   getSupportedMiniProgramPlatforms,
   MINI_PROGRAM_PLATFORM_ALIASES,
   normalizeMiniProgramPlatform,
@@ -46,6 +47,7 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramDirectivePrefix('alipay')).toBe('a')
     expect(getMiniProgramDirectivePrefix('tt')).toBe('tt')
     expect(getMiniProgramDirectivePrefix('swan')).toBe('s')
+    expect(getSupportedMiniProgramDirectivePrefixes()).toEqual(['wx', 'a', 's', 'tt'])
     expect(supportsMiniProgramAutoTouchAppStyle('weapp')).toBe(true)
     expect(supportsMiniProgramAutoTouchAppStyle('alipay')).toBe(false)
     expect(getMiniProgramDefaultBuildTarget('weapp')).toBe('es2020')

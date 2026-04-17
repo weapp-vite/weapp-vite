@@ -18,6 +18,7 @@ describe('alipay npm builder template helpers', () => {
 
   it('detects template syntax that still requires alipay normalization', () => {
     expect(containsIncompatibleAlipayTemplateSyntax('<view wx:if="{{ok}}" else></view>')).toBe(true)
+    expect(containsIncompatibleAlipayTemplateSyntax('<view tt:if="{{ok}}"></view>')).toBe(true)
     expect(containsIncompatibleAlipayTemplateSyntax('<wxs module="helper" src="./helper.wxs" />')).toBe(true)
     expect(containsIncompatibleAlipayTemplateSyntax('<view a:if="{{ok}}"></view>')).toBe(false)
   })
@@ -38,5 +39,11 @@ describe('alipay npm builder template helpers', () => {
     expect(
       transformTemplateForAlipay('<view wx:if="{{ok}}" else><wxs module="helper" src="./helper.wxs"/></view><import src="./cell.wxml" />'),
     ).toBe('<view a:if="{{ok}}" a:else><import-sjs name="helper" from="./helper.sjs"/></view><import src="./cell.axml" />')
+  })
+
+  it('transforms other mini-program directive prefixes into alipay-compatible template code', () => {
+    expect(
+      transformTemplateForAlipay('<view tt:if="{{ok}}" s:for="{{list}}" tt:key="id"></view>'),
+    ).toBe('<view a:if="{{ok}}" a:for="{{list}}" a:key="id"></view>')
   })
 })

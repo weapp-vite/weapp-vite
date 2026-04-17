@@ -14,6 +14,7 @@ export {
   getMiniProgramRuntimeGlobalKeysByResolvePriority,
   getMiniProgramRuntimeHostConfigKey,
   getMiniProgramTemplatePreset,
+  getSupportedMiniProgramDirectivePrefixes,
   getSupportedMiniProgramPlatforms,
   MINI_PROGRAM_PLATFORM_ALIASES,
   normalizeMiniProgramPlatform,

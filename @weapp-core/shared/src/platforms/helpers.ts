@@ -44,6 +44,13 @@ const {
 const SUPPORTED_MINI_PROGRAM_PLATFORMS = Object.freeze(
   MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => descriptor.id),
 ) as readonly MpPlatform[]
+const SUPPORTED_MINI_PROGRAM_DIRECTIVE_PREFIXES = Object.freeze(
+  Array.from(new Set(
+    MINI_PROGRAM_PLATFORM_DESCRIPTORS
+      .map(descriptor => descriptor.wxml?.directivePrefix)
+      .filter((prefix): prefix is string => Boolean(prefix)),
+  )),
+) as readonly string[]
 
 const ORDERED_RUNTIME_GLOBAL_KEYS = Object.freeze(
   Array.from(new Set(MINI_PROGRAM_PLATFORM_DESCRIPTORS.map(descriptor => descriptor.runtime.globalObjectKey))),
@@ -99,6 +106,13 @@ export function resolveMiniProgramPlatform(input?: string | null): MpPlatform | 
  */
 export function getSupportedMiniProgramPlatforms(): readonly MpPlatform[] {
   return SUPPORTED_MINI_PROGRAM_PLATFORMS
+}
+
+/**
+ * @description 返回所有受支持的小程序模板指令前缀。
+ */
+export function getSupportedMiniProgramDirectivePrefixes(): readonly string[] {
+  return SUPPORTED_MINI_PROGRAM_DIRECTIVE_PREFIXES
 }
 
 /**

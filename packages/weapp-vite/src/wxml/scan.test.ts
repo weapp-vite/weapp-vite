@@ -217,6 +217,29 @@ describe('scanWxml', () => {
     ])
   })
 
+  it('should rewrite other mini-program directive prefixes for alipay', () => {
+    const wxml = '<view tt:if="ok" s:for="{{list}}" tt:key="id" />'
+    const result = scanWxml(wxml, { platform: 'alipay' })
+
+    expect(result.directiveTokens).toEqual([
+      {
+        start: 6,
+        end: 11,
+        value: 'a:if',
+      },
+      {
+        start: 17,
+        end: 22,
+        value: 'a:for',
+      },
+      {
+        start: 34,
+        end: 40,
+        value: 'a:key',
+      },
+    ])
+  })
+
   it('should rewrite pascal-case tags for alipay', () => {
     const wxml = '<HelloWorld><InnerItem /></HelloWorld>'
     const result = scanWxml(wxml, { platform: 'alipay' })

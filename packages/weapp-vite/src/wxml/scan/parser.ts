@@ -1,6 +1,7 @@
 import type { ComponentsMap, MpPlatform, WxmlDep } from '../../types'
 import type { Token } from '../shared'
 import type { RemovalRange, WxmlToken } from './types'
+import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
 import { Parser } from 'htmlparser2'
 import { jsExtensions } from '../../constants'
 import { getWxmlPlatformTransformOptions } from '../../platform'
@@ -22,6 +23,8 @@ const TAG_NAME_HAS_UPPER_RE = /[A-Z]/
 const SCRIPT_MODULE_IMPORT_RE = /\.(?:wxs|sjs)(?:\.[jt]s)?$/i
 const COMMENT_IFDEF_RE = /#ifdef\s+(\w+)/
 const COMMENT_ENDIF_RE = /#endif/
+const MP_DIRECTIVE_NAME_RE = /^([a-z]+):(if|elif|else|for|for-item|for-index|key)$/
+const SUPPORTED_MP_DIRECTIVE_PREFIXES = new Set(getSupportedMiniProgramDirectivePrefixes())
 
 interface ParserResult {
   token: WxmlToken
@@ -162,14 +165,17 @@ export function parseWxml(options: ParserOptions): ParserResult {
             })
           }
         }
-        if (directivePrefix !== 'wx' && name.startsWith('wx:')) {
-          const start = parser.startIndex
-          const end = parser.startIndex + name.length
-          directiveTokens.push({
-            start,
-            end,
-            value: `${directivePrefix}:${name.slice(3)}`,
-          })
+        {
+          const directiveMatch = MP_DIRECTIVE_NAME_RE.exec(name)
+          if (directiveMatch && directiveMatch[1] !== directivePrefix && SUPPORTED_MP_DIRECTIVE_PREFIXES.has(directiveMatch[1])) {
+            const start = parser.startIndex
+            const end = parser.startIndex + name.length
+            directiveTokens.push({
+              start,
+              end,
+              value: `${directivePrefix}:${directiveMatch[2]}`,
+            })
+          }
         }
         // 移除内联 wxs 的 lang
         if (currentTagName && isScriptModuleTagName(currentTagName) && name === 'lang' && jsExtensions.includes(value)) {

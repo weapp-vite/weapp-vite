@@ -6,6 +6,7 @@ import {
   WEVU_SLOT_PROPS_KEY,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import { parseBabelExpression } from './parse'
@@ -46,9 +47,9 @@ const JS_RUNTIME_GLOBALS = new Set([
   'arguments',
   'globalThis',
   '__wevuUnref',
-  'wx',
   'getApp',
   'getCurrentPages',
+  ...getMiniProgramRuntimeGlobalKeys(),
 ])
 
 function parseJsExpressionFile(exp: string): { ast: t.File, expression: t.Expression } | null {

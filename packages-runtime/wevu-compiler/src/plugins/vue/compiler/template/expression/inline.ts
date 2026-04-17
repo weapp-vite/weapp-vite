@@ -8,6 +8,7 @@ import {
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
   WEVU_SLOT_PROPS_DATA_KEY,
 } from '@weapp-core/constants'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../../../inlineDataset'
 import { traverse } from '../../../../../utils/babel'
@@ -49,7 +50,6 @@ const INLINE_GLOBALS = new Set([
   'clearTimeout',
   'setInterval',
   'clearInterval',
-  'wx',
   'Page',
   'App',
   'Component',
@@ -59,6 +59,7 @@ const INLINE_GLOBALS = new Set([
   'WechatMiniprogram',
   'ctx',
   'scope',
+  ...getMiniProgramRuntimeGlobalKeys(),
 ])
 
 const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
