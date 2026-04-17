@@ -1,6 +1,12 @@
 /// <reference types="miniprogram-api-typings" />
 import { createWeapi } from './core/createWeapi'
 
+export {
+  WEAPI_PLATFORM_TYPE_SOURCES,
+  WEAPI_RUNTIME_TYPE_SOURCES,
+  WEAPI_TYPE_SOURCES,
+} from './core/apiCatalog'
+
 export type {
   WeapiAlipayMethodName,
   WeapiDouyinMethodName,

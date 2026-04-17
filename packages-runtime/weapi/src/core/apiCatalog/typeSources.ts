@@ -32,3 +32,16 @@ export const WEAPI_TYPE_SOURCES = {
     version: '1.3.1',
   },
 } as const
+
+export const WEAPI_PLATFORM_TYPE_SOURCES = {
+  default: WEAPI_TYPE_SOURCES.default,
+  wechat: WEAPI_TYPE_SOURCES.wechat,
+  alipay: WEAPI_TYPE_SOURCES.alipay,
+  douyin: WEAPI_TYPE_SOURCES.douyin,
+} as const
+
+export const WEAPI_RUNTIME_TYPE_SOURCES = {
+  wx: WEAPI_TYPE_SOURCES.wx,
+  my: WEAPI_TYPE_SOURCES.my,
+  tt: WEAPI_TYPE_SOURCES.tt,
+} as const

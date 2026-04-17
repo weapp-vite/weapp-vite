@@ -6,13 +6,19 @@ import { WEAPI_MY_NON_FUNCTION_MEMBERS } from './myMembers'
 import { WEAPI_MY_METHODS } from './myMethods'
 import { WEAPI_TT_NON_FUNCTION_MEMBERS } from './ttMembers'
 import { WEAPI_TT_METHODS } from './ttMethods'
-import { WEAPI_TYPE_SOURCES } from './typeSources'
+import {
+  WEAPI_PLATFORM_TYPE_SOURCES,
+  WEAPI_RUNTIME_TYPE_SOURCES,
+  WEAPI_TYPE_SOURCES,
+} from './typeSources'
 import { WEAPI_WX_NON_FUNCTION_MEMBERS } from './wxMembers'
 import { WEAPI_WX_METHODS } from './wxMethods'
 
 export {
   WEAPI_MY_METHODS,
   WEAPI_MY_NON_FUNCTION_MEMBERS,
+  WEAPI_PLATFORM_TYPE_SOURCES,
+  WEAPI_RUNTIME_TYPE_SOURCES,
   WEAPI_TT_METHODS,
   WEAPI_TT_NON_FUNCTION_MEMBERS,
   WEAPI_TYPE_SOURCES,

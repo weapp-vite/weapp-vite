@@ -6,8 +6,8 @@ import prettier from 'prettier'
 import {
   WEAPI_MINIPROGRAM_METHODS,
   WEAPI_MY_METHODS,
+  WEAPI_PLATFORM_TYPE_SOURCES,
   WEAPI_TT_METHODS,
-  WEAPI_TYPE_SOURCES,
 } from '../src/core/apiCatalog.ts'
 import {
   generateApiSupportCoverageReport,
@@ -101,9 +101,9 @@ async function run() {
 # weapi 三端 API 兼容报告（总览）
 
 - 类型来源：
-  - 微信：\`${WEAPI_TYPE_SOURCES.wechat.package}@${WEAPI_TYPE_SOURCES.wechat.version}\`
-  - 支付宝：\`${WEAPI_TYPE_SOURCES.alipay.package}@${WEAPI_TYPE_SOURCES.alipay.version}\`
-  - 抖音：\`${WEAPI_TYPE_SOURCES.douyin.package}@${WEAPI_TYPE_SOURCES.douyin.version}\`
+  - 微信：\`${WEAPI_PLATFORM_TYPE_SOURCES.wechat.package}@${WEAPI_PLATFORM_TYPE_SOURCES.wechat.version}\`
+  - 支付宝：\`${WEAPI_PLATFORM_TYPE_SOURCES.alipay.package}@${WEAPI_PLATFORM_TYPE_SOURCES.alipay.version}\`
+  - 抖音：\`${WEAPI_PLATFORM_TYPE_SOURCES.douyin.package}@${WEAPI_PLATFORM_TYPE_SOURCES.douyin.version}\`
 
 ## 全量统计
 

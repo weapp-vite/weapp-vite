@@ -41,7 +41,13 @@ import type {
   WeapiWechatMethodName,
   WeapiWechatMiniProgramRawAdapterSource,
 } from '@wevu/api'
-import { createWeapi, wpi } from '@wevu/api'
+import {
+  createWeapi,
+  WEAPI_PLATFORM_TYPE_SOURCES,
+  WEAPI_RUNTIME_TYPE_SOURCES,
+  WEAPI_TYPE_SOURCES,
+  wpi,
+} from '@wevu/api'
 import { expectAssignable, expectType } from 'tsd'
 
 type AssertTrue<T extends true> = T
@@ -104,6 +110,15 @@ expectAssignable<WeapiRuntimeTypeSourceName>('tt')
 expectAssignable<WeapiTypeSourceName>('default')
 expectAssignable<WeapiTypeSourceName>('douyin')
 expectAssignable<WeapiTypeSourceName>('wx')
+expectType<'miniprogram-api-typings'>(WEAPI_PLATFORM_TYPE_SOURCES.default.package)
+expectType<'miniprogram-api-typings'>(WEAPI_PLATFORM_TYPE_SOURCES.wechat.package)
+expectType<'@mini-types/alipay'>(WEAPI_PLATFORM_TYPE_SOURCES.alipay.package)
+expectType<'@douyin-microapp/typings'>(WEAPI_PLATFORM_TYPE_SOURCES.douyin.package)
+expectType<'miniprogram-api-typings'>(WEAPI_RUNTIME_TYPE_SOURCES.wx.package)
+expectType<'@mini-types/alipay'>(WEAPI_RUNTIME_TYPE_SOURCES.my.package)
+expectType<'@douyin-microapp/typings'>(WEAPI_RUNTIME_TYPE_SOURCES.tt.package)
+expectType<typeof WEAPI_PLATFORM_TYPE_SOURCES.douyin>(WEAPI_TYPE_SOURCES.douyin)
+expectType<typeof WEAPI_RUNTIME_TYPE_SOURCES.wx>(WEAPI_TYPE_SOURCES.wx)
 expectType<WeapiDefaultInstance['raw']>(wpi.raw)
 expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)

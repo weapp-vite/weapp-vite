@@ -323,6 +323,19 @@ export const WEAPI_TYPE_SOURCES = {
     version: '${data.versions.tt}',
   },
 } as const
+
+export const WEAPI_PLATFORM_TYPE_SOURCES = {
+  default: WEAPI_TYPE_SOURCES.default,
+  wechat: WEAPI_TYPE_SOURCES.wechat,
+  alipay: WEAPI_TYPE_SOURCES.alipay,
+  douyin: WEAPI_TYPE_SOURCES.douyin,
+} as const
+
+export const WEAPI_RUNTIME_TYPE_SOURCES = {
+  wx: WEAPI_TYPE_SOURCES.wx,
+  my: WEAPI_TYPE_SOURCES.my,
+  tt: WEAPI_TYPE_SOURCES.tt,
+} as const
 `
   const wxMembersFile = `/**
  * @description 三端 API 名单（由 typings 自动提取，请勿手工修改）
@@ -356,13 +369,19 @@ import { WEAPI_MY_NON_FUNCTION_MEMBERS } from './myMembers'
 import { WEAPI_MY_METHODS } from './myMethods'
 import { WEAPI_TT_NON_FUNCTION_MEMBERS } from './ttMembers'
 import { WEAPI_TT_METHODS } from './ttMethods'
-import { WEAPI_TYPE_SOURCES } from './typeSources'
+import {
+  WEAPI_PLATFORM_TYPE_SOURCES,
+  WEAPI_RUNTIME_TYPE_SOURCES,
+  WEAPI_TYPE_SOURCES,
+} from './typeSources'
 import { WEAPI_WX_NON_FUNCTION_MEMBERS } from './wxMembers'
 import { WEAPI_WX_METHODS } from './wxMethods'
 
 export {
   WEAPI_MY_METHODS,
   WEAPI_MY_NON_FUNCTION_MEMBERS,
+  WEAPI_PLATFORM_TYPE_SOURCES,
+  WEAPI_RUNTIME_TYPE_SOURCES,
   WEAPI_TT_METHODS,
   WEAPI_TT_NON_FUNCTION_MEMBERS,
   WEAPI_TYPE_SOURCES,

@@ -61,6 +61,10 @@ import type {
   WeapiWxRawAdapter,
 } from '../dist/index.d.mts'
 
+export declare const WEAPI_PLATFORM_TYPE_SOURCES: typeof import('../dist/index.mjs').WEAPI_PLATFORM_TYPE_SOURCES
+export declare const WEAPI_RUNTIME_TYPE_SOURCES: typeof import('../dist/index.mjs').WEAPI_RUNTIME_TYPE_SOURCES
+export declare const WEAPI_TYPE_SOURCES: typeof import('../dist/index.mjs').WEAPI_TYPE_SOURCES
+
 export type {
   CreateWeapiOptions,
   WeapiAdapter,
