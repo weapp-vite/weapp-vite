@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { getSupportedMiniProgramPlatforms } from '../../../../platform'
 import { normalizePath } from '../../../../utils/path'
 import {
   DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT,
@@ -12,6 +13,8 @@ import {
   resolveMultiPlatformConfig,
   resolveProjectConfigPaths,
 } from './shared'
+
+const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
 
 describe('loadConfig shared', () => {
   const tempRoots: string[] = []
@@ -30,12 +33,12 @@ describe('loadConfig shared', () => {
     expect(resolveMultiPlatformConfig(undefined)).toEqual({
       enabled: false,
       projectConfigRoot: DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT,
-      targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+      targets: ALL_MP_PLATFORMS,
     })
     expect(resolveMultiPlatformConfig(true)).toEqual({
       enabled: true,
       projectConfigRoot: DEFAULT_MULTI_PLATFORM_PROJECT_CONFIG_ROOT,
-      targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+      targets: ALL_MP_PLATFORMS,
     })
     expect(resolveMultiPlatformConfig({
       enabled: false,
@@ -51,7 +54,7 @@ describe('loadConfig shared', () => {
   it('resolves project config paths for explicit, default and multi-platform modes', () => {
     expect(resolveProjectConfigPaths({
       platform: 'weapp',
-      multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] },
+      multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ALL_MP_PLATFORMS },
       projectConfigPath: 'custom/project.config.json',
       isWebRuntime: false,
     })).toEqual({
@@ -61,7 +64,7 @@ describe('loadConfig shared', () => {
 
     expect(resolveProjectConfigPaths({
       platform: 'weapp',
-      multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] },
+      multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ALL_MP_PLATFORMS },
       isWebRuntime: false,
     })).toEqual({
       basePath: 'project.config.json',

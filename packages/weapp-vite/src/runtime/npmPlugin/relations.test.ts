@@ -1,10 +1,13 @@
 import type { MutableCompilerContext } from '../../context'
 import { describe, expect, it } from 'vitest'
+import { getSupportedMiniProgramPlatforms } from '../../platform'
 import {
   getPackNpmRelationList,
   normalizeRelativeDir,
   resolvePlatformProjectRoot,
 } from './relations'
+
+const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
 
 function createContext(options: {
   pluginOnly?: boolean
@@ -14,13 +17,13 @@ function createContext(options: {
   projectConfig?: Record<string, any>
 }) {
   const resolvedMultiPlatform = options.multiPlatform === true
-    ? { enabled: true, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] }
+    ? { enabled: true, projectConfigRoot: 'config', targets: ALL_MP_PLATFORMS }
     : options.multiPlatform === false || options.multiPlatform == null
-      ? { enabled: false, projectConfigRoot: 'config', targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'] }
+      ? { enabled: false, projectConfigRoot: 'config', targets: ALL_MP_PLATFORMS }
       : {
           enabled: options.multiPlatform.enabled !== false,
           projectConfigRoot: 'config',
-          targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+          targets: ALL_MP_PLATFORMS,
         }
 
   return {

@@ -1,8 +1,11 @@
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getSupportedMiniProgramPlatforms } from '../../platform'
 
 import { createRuntimeState } from '../runtimeState'
 import { createBuildService } from './service'
+
+const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
 
 const buildMock = vi.hoisted(() => vi.fn())
 const cleanOutputsMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -123,7 +126,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       multiPlatform: {
         enabled: false,
         projectConfigRoot: 'config',
-        targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+        targets: ALL_MP_PLATFORMS,
       },
       packageJson: {},
       cwd: '/project',
@@ -332,7 +335,7 @@ describe('runtime buildPlugin service', () => {
         multiPlatform: {
           enabled: true,
           projectConfigRoot: 'config',
-          targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+          targets: ALL_MP_PLATFORMS,
         },
         weappViteConfig: {
           multiPlatform: true,

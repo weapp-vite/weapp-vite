@@ -1,7 +1,10 @@
 import fs from 'node:fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getSupportedMiniProgramPlatforms } from '../../platform'
 import { createConfigService } from './createConfigService'
+
+const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
 
 const {
   configureLoggerMock,
@@ -96,7 +99,7 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
     multiPlatform: {
       enabled: false,
       projectConfigRoot: 'config',
-      targets: ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'],
+      targets: ALL_MP_PLATFORMS,
     },
     configFilePath: '/project/weapp-vite.config.ts',
     weappWeb: undefined,
