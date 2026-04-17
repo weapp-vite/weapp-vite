@@ -1,10 +1,14 @@
+import type {
+  WeapiMiniProgramRequestSuccessResult,
+  WeapiMiniProgramRequestTask,
+} from '@wevu/api'
 import type { WevuFetchInit, WevuFetchInput } from './types'
 import { wpi } from '@wevu/api'
 import { resolveRequestMeta } from './body'
 import { createFetchResponse, normalizeResponseHeaders } from './response'
 import { createAbortError, isObject } from './shared'
 
-function isRequestTask(value: unknown): value is WechatMiniprogram.RequestTask {
+function isRequestTask(value: unknown): value is WeapiMiniProgramRequestTask {
   return isObject(value) && typeof value.abort === 'function'
 }
 
@@ -20,7 +24,7 @@ export function fetch(input: WevuFetchInput, init?: WevuFetchInit): Promise<Resp
     return new Promise<Response>((resolve, reject) => {
       let settled = false
       let aborted = false
-      let requestTask: WechatMiniprogram.RequestTask | undefined
+      let requestTask: WeapiMiniProgramRequestTask | undefined
 
       const onAbort = () => {
         if (settled) {
@@ -48,7 +52,7 @@ export function fetch(input: WevuFetchInput, init?: WevuFetchInit): Promise<Resp
         header: meta.headers,
         data: meta.body,
         responseType: 'arraybuffer',
-        success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        success: (res: WeapiMiniProgramRequestSuccessResult) => {
           if (settled) {
             return
           }

@@ -5,6 +5,10 @@ import type {
   WeapiMethodSupportQueryOptions,
   WeapiMiniProgramAdapter,
   WeapiMiniProgramRawAdapter,
+  WeapiMiniProgramRequestSuccessResult,
+  WeapiMiniProgramRequestTask,
+  WeapiMiniProgramSelectorQuery,
+  WeapiMiniProgramSystemInfo,
   WeapiResolvedTarget,
   WeapiSupportLevel,
 } from '@wevu/api'
@@ -40,10 +44,10 @@ expectType<boolean>(wpi.supports('showModal', { semantic: true } satisfies Weapi
 expectType<WeapiSupportLevel>(wpi.resolveTarget('showModal').supportLevel)
 expectType<boolean>(wpi.resolveTarget('showModal').semanticAligned)
 
-expectType<WechatMiniprogram.SystemInfo>(wpi.getSystemInfoSync())
+expectType<WeapiMiniProgramSystemInfo>(wpi.getSystemInfoSync())
 expectType<boolean>(wpi.canIUse('getUpdateManager'))
 expectType<ReturnType<WechatMiniprogram.Wx['getUpdateManager']>>(wpi.getUpdateManager())
-expectType<ReturnType<WechatMiniprogram.Wx['createSelectorQuery']>>(wpi.createSelectorQuery())
+expectType<WeapiMiniProgramSelectorQuery>(wpi.createSelectorQuery())
 expectType<ReturnType<WechatMiniprogram.Wx['getLogManager']>>(wpi.getLogManager({ level: 1 }))
 expectType<ReturnType<WechatMiniprogram.Wx['createVideoContext']>>(wpi.createVideoContext('demo'))
 expectType<WeapiDouyinRawAdapter>(tt)
@@ -238,9 +242,11 @@ expectType<WeapiDefaultInstance['offLocalServiceDiscoveryStop']>(wpi.offLocalSer
 
 const requestTask = wpi.request({
   url: 'https://example.com',
-  success: () => {},
+  success: (result) => {
+    expectType<WeapiMiniProgramRequestSuccessResult>(result)
+  },
 })
-expectType<WechatMiniprogram.RequestTask>(requestTask)
+expectType<WeapiMiniProgramRequestTask>(requestTask)
 
 const saveFilePromise = wpi.saveFile({
   apFilePath: '/tmp/demo.png',
@@ -259,7 +265,7 @@ const closeBleConnectionPromise = wpi.closeBLEConnection({
 expectType<Promise<WechatMiniprogram.BluetoothError>>(closeBleConnectionPromise)
 
 const getSystemInfoAsyncPromise = wpi.getSystemInfoAsync()
-expectType<Promise<WechatMiniprogram.SystemInfo>>(getSystemInfoAsyncPromise)
+expectType<Promise<WeapiMiniProgramSystemInfo>>(getSystemInfoAsyncPromise)
 
 const clipboardPromise = wpi.getClipboardData()
 expectType<Promise<WechatMiniprogram.GetClipboardDataSuccessCallbackOption>>(clipboardPromise)

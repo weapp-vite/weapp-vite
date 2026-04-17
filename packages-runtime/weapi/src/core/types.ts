@@ -16,6 +16,38 @@ export type WeapiWxRawAdapter = WechatMiniprogram.Wx
  */
 export type WeapiMiniProgramRawAdapter = WeapiWxRawAdapter
 
+type WeapiMiniProgramRawRequestOption = Parameters<WeapiMiniProgramRawAdapter['request']>[0]
+
+/**
+ * @description 小程序请求参数类型（宿主中立别名）
+ */
+export type WeapiMiniProgramRequestOption = WeapiMiniProgramRawRequestOption
+
+/**
+ * @description 小程序请求方法类型（宿主中立别名）
+ */
+export type WeapiMiniProgramRequestMethod = NonNullable<WeapiMiniProgramRequestOption['method']>
+
+/**
+ * @description 小程序请求任务类型（宿主中立别名）
+ */
+export type WeapiMiniProgramRequestTask = ReturnType<WeapiMiniProgramRawAdapter['request']>
+
+/**
+ * @description 小程序请求成功结果类型（宿主中立别名）
+ */
+export type WeapiMiniProgramRequestSuccessResult = Parameters<NonNullable<WeapiMiniProgramRequestOption['success']>>[0]
+
+/**
+ * @description 小程序系统信息类型（宿主中立别名）
+ */
+export type WeapiMiniProgramSystemInfo = ReturnType<WeapiMiniProgramRawAdapter['getSystemInfoSync']>
+
+/**
+ * @description 小程序选择器查询类型（宿主中立别名）
+ */
+export type WeapiMiniProgramSelectorQuery = ReturnType<WeapiMiniProgramRawAdapter['createSelectorQuery']>
+
 /**
  * @description 支付宝小程序 API 原始适配器类型
  */

@@ -1,3 +1,5 @@
+import type { WeapiMiniProgramRequestMethod } from '@wevu/api'
+
 export type HeaderPair = readonly [string, string]
 export type HeaderMap = Record<string, string>
 
@@ -26,7 +28,7 @@ export interface RequestLikeInput {
 }
 
 export type WevuFetchInput = string | URL | RequestLikeInput
-export type MiniProgramRequestMethod = NonNullable<WechatMiniprogram.RequestOption['method']>
+export type MiniProgramRequestMethod = WeapiMiniProgramRequestMethod
 export type WxRequestMethod = MiniProgramRequestMethod
 
 export const REQUEST_METHODS: ReadonlyArray<MiniProgramRequestMethod> = [
