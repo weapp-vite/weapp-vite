@@ -70,6 +70,7 @@ export type {
   TriggerEventOptions,
 } from './types/miniprogram'
 export type {
+  DefaultMiniProgramHostNamespace,
   HostMiniProgramAddToFavoritesOption,
   HostMiniProgramAppOptions,
   HostMiniProgramAppTrivialInstance,

@@ -1,4 +1,5 @@
 import type {
+  DefaultMiniProgramHostNamespace,
   HostMiniProgramLaunchOptions,
   HostMiniProgramNavigateToOption,
   HostMiniProgramPageLifetime,
@@ -19,5 +20,7 @@ expectAssignable<HostMiniProgramNavigateToOption>({} as MiniProgramNavigateToOpt
 expectAssignable<MiniProgramRouter>({} as HostMiniProgramRouter)
 expectAssignable<HostMiniProgramRouter>({} as MiniProgramRouter)
 
+expectType<DefaultMiniProgramHostNamespace.NavigateToOption>({} as HostMiniProgramNavigateToOption)
 expectType<MiniProgramHostNamespace.NavigateToOption>({} as HostMiniProgramNavigateToOption)
+expectType<DefaultMiniProgramHostNamespace.Page.ILifetime>({} as HostMiniProgramPageLifetime)
 expectType<MiniProgramHostNamespace.Page.ILifetime>({} as HostMiniProgramPageLifetime)
