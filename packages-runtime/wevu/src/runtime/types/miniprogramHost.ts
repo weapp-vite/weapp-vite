@@ -18,3 +18,50 @@ export declare namespace MiniProgramHostNamespace {
   export import RedirectToOption = WechatMiniprogram.RedirectToOption
   export import NavigateToOption = WechatMiniprogram.NavigateToOption
 }
+
+export type HostMiniProgramComponentBehaviorOptions = MiniProgramHostNamespace.Component.ComponentOptions
+export type HostMiniProgramComponentTrivialOption = MiniProgramHostNamespace.Component.TrivialOption
+export type HostMiniProgramBehaviorIdentifier = MiniProgramHostNamespace.Behavior.Identifier
+export type HostMiniProgramLaunchOptions = MiniProgramHostNamespace.App.LaunchShowOption
+export type HostMiniProgramPageNotFoundOptions = MiniProgramHostNamespace.App.PageNotFoundOption
+export type HostMiniProgramUnhandledRejectionResult = MiniProgramHostNamespace.OnUnhandledRejectionListenerResult
+export type HostMiniProgramThemeChangeResult = MiniProgramHostNamespace.OnThemeChangeListenerResult
+export type HostMiniProgramMemoryWarningResult = MiniProgramHostNamespace.OnMemoryWarningListenerResult
+export type HostMiniProgramPageScrollOption = MiniProgramHostNamespace.Page.IPageScrollOption
+export type HostMiniProgramTabItemTapOption = MiniProgramHostNamespace.Page.ITabItemTapOption
+export type HostMiniProgramPageResizeOption = MiniProgramHostNamespace.Page.IResizeOption
+export type HostMiniProgramShareAppMessageOption = MiniProgramHostNamespace.Page.IShareAppMessageOption
+export type HostMiniProgramAddToFavoritesOption = MiniProgramHostNamespace.Page.IAddToFavoritesOption
+export type HostMiniProgramSaveExitState = MiniProgramHostNamespace.Page.ISaveExitState
+export type HostMiniProgramRouter = MiniProgramHostNamespace.Component.Router
+export type HostMiniProgramSwitchTabOption = MiniProgramHostNamespace.SwitchTabOption
+export type HostMiniProgramReLaunchOption = MiniProgramHostNamespace.ReLaunchOption
+export type HostMiniProgramRedirectToOption = MiniProgramHostNamespace.RedirectToOption
+export type HostMiniProgramNavigateToOption = MiniProgramHostNamespace.NavigateToOption
+export type HostMiniProgramPageLifetime = MiniProgramHostNamespace.Page.ILifetime
+export type HostMiniProgramNodesRef = MiniProgramHostNamespace.NodesRef
+export type HostMiniProgramNodesRefFields = Parameters<HostMiniProgramNodesRef['fields']>[0]
+export type HostMiniProgramBoundingClientRectResult = MiniProgramHostNamespace.BoundingClientRectCallbackResult
+export type HostMiniProgramScrollOffsetResult = MiniProgramHostNamespace.ScrollOffsetCallbackResult
+export type HostMiniProgramSelectorQuery = MiniProgramHostNamespace.SelectorQuery
+export type HostMiniProgramIntersectionObserverOptions = MiniProgramHostNamespace.CreateIntersectionObserverOption
+export type HostMiniProgramIntersectionObserver = MiniProgramHostNamespace.IntersectionObserver
+export type HostMiniProgramComponentPropertyOption = MiniProgramHostNamespace.Component.PropertyOption
+export type HostMiniProgramComponentMethodOption = MiniProgramHostNamespace.Component.MethodOption
+export type HostMiniProgramComponentEmptyArray = MiniProgramHostNamespace.Component.IEmptyArray
+export type HostMiniProgramComponentAllProperty = MiniProgramHostNamespace.Component.AllProperty
+export type HostMiniProgramComponentAllFullProperty = MiniProgramHostNamespace.Component.AllFullProperty
+export type HostMiniProgramComponentShortProperty = MiniProgramHostNamespace.Component.ShortProperty
+export type HostMiniProgramComponentPropertyValue<TProperty extends HostMiniProgramComponentAllFullProperty>
+  = MiniProgramHostNamespace.Component.PropertyToData<TProperty>
+export type HostMiniProgramComponentInstance<
+  D extends object,
+  P extends HostMiniProgramComponentPropertyOption,
+  M extends HostMiniProgramComponentMethodOption,
+  B extends HostMiniProgramComponentEmptyArray = HostMiniProgramComponentEmptyArray,
+> = MiniProgramHostNamespace.Component.Instance<D, P, M, B>
+export type HostMiniProgramTriggerEventOptions = MiniProgramHostNamespace.Component.TriggerEventOption
+export type HostMiniProgramAppOptions<T extends Record<string, any>> = MiniProgramHostNamespace.App.Options<T>
+export type HostMiniProgramComponentTrivialInstance = MiniProgramHostNamespace.Component.TrivialInstance
+export type HostMiniProgramPageTrivialInstance = MiniProgramHostNamespace.Page.TrivialInstance
+export type HostMiniProgramAppTrivialInstance = MiniProgramHostNamespace.App.TrivialInstance
