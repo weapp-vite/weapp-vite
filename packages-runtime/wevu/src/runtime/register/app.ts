@@ -21,9 +21,9 @@ function bindMemoryWarningListener(target: InternalRuntimeState) {
     delete (target as any)[MEMORY_WARNING_LISTENER_KEY]
     return
   }
-  const wxGlobal = getMiniProgramGlobalObject()
-  const onMemoryWarning = wxGlobal?.onMemoryWarning
-  const offMemoryWarning = wxGlobal?.offMemoryWarning
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const onMemoryWarning = miniProgramGlobal?.onMemoryWarning
+  const offMemoryWarning = miniProgramGlobal?.offMemoryWarning
   if (typeof onMemoryWarning !== 'function') {
     return
   }
@@ -67,9 +67,9 @@ function bindAppGlobalListener(target: InternalRuntimeState, options: {
     delete (target as any)[hookName]
     return
   }
-  const wxGlobal = getMiniProgramGlobalObject()
-  const onApi = wxGlobal?.[onApiName]
-  const offApi = wxGlobal?.[offApiName]
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const onApi = miniProgramGlobal?.[onApiName]
+  const offApi = miniProgramGlobal?.[offApiName]
 
   if (typeof existing === 'function' && typeof offApi === 'function') {
     try {

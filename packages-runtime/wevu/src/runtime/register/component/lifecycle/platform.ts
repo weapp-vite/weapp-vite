@@ -8,7 +8,7 @@ import {
   supportsCurrentMiniProgramRuntimeCapability,
 } from '../../../platform'
 
-let wxPatched = false
+let miniProgramGlobalPatched = false
 let currentPageInstance: InternalRuntimeState | undefined
 type ShareMenuName = 'shareAppMessage' | 'shareTimeline'
 export function getCurrentPageInstance() {
@@ -58,19 +58,19 @@ export function resolvePageOptions(target: InternalRuntimeState) {
   return {}
 }
 
-export function ensureWxPatched() {
-  if (wxPatched) {
+export function ensureMiniProgramGlobalPatched() {
+  if (miniProgramGlobalPatched) {
     return
   }
-  wxPatched = true
-  const wxGlobal = getMiniProgramGlobalObject()
-  if (!wxGlobal || typeof wxGlobal !== 'object') {
+  miniProgramGlobalPatched = true
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  if (!miniProgramGlobal || typeof miniProgramGlobal !== 'object') {
     return
   }
   if (supportsCurrentMiniProgramRuntimeCapability('pullDownRefreshApi')) {
-    const rawStartPullDownRefresh = wxGlobal.startPullDownRefresh as ((...args: any[]) => any) | undefined
+    const rawStartPullDownRefresh = miniProgramGlobal.startPullDownRefresh as ((...args: any[]) => any) | undefined
     if (typeof rawStartPullDownRefresh === 'function') {
-      wxGlobal.startPullDownRefresh = function startPullDownRefreshPatched(...args: any[]) {
+      miniProgramGlobal.startPullDownRefresh = function startPullDownRefreshPatched(...args: any[]) {
         const result = rawStartPullDownRefresh.apply(this, args)
         if (currentPageInstance) {
           callHookList(currentPageInstance, 'onPullDownRefresh', [])
@@ -80,9 +80,9 @@ export function ensureWxPatched() {
     }
   }
   if (supportsCurrentMiniProgramRuntimeCapability('pageScrollApi')) {
-    const rawPageScrollTo = wxGlobal.pageScrollTo as ((...args: any[]) => any) | undefined
+    const rawPageScrollTo = miniProgramGlobal.pageScrollTo as ((...args: any[]) => any) | undefined
     if (typeof rawPageScrollTo === 'function') {
-      wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
+      miniProgramGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
         const result = rawPageScrollTo.apply(this, [options, ...rest])
         if (currentPageInstance) {
           const pageInstance = currentPageInstance

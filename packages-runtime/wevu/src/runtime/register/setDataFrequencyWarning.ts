@@ -79,8 +79,8 @@ export function resolveHighFrequencyWarningOptions(
  * 判断当前是否为开发态运行环境。
  */
 export function isDevelopmentRuntime(): boolean {
-  const wxConfig = getCurrentMiniProgramHostConfig()
-  if (wxConfig?.debug === true || wxConfig?.envVersion === 'develop') {
+  const miniProgramHostConfig = getCurrentMiniProgramHostConfig()
+  if (miniProgramHostConfig?.debug === true || miniProgramHostConfig?.envVersion === 'develop') {
     return true
   }
 

@@ -90,6 +90,9 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).Event
     delete (globalThis as Record<string, any>).CustomEvent
     delete (globalThis as Record<string, any>).wx
+    delete (globalThis as Record<string, any>).my
+    delete (globalThis as Record<string, any>).tt
+    delete (globalThis as Record<string, any>).swan
     delete (globalThis as Record<string, any>).global
     delete (globalThis as Record<string, any>).self
     delete (globalThis as Record<string, any>).window
@@ -210,6 +213,23 @@ describe('request globals runtime', () => {
     expect(typeof (globalThis as any).wx.TextDecoder).toBe('function')
     expect(typeof globalThis.Blob).toBe('function')
     expect(typeof globalThis.FormData).toBe('function')
+  })
+
+  it('installs request globals onto additional mini-program host globals discovered from shared platform registry', async () => {
+    ;(globalThis as Record<string, any>).swan = {}
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals({
+      targets: ['fetch', 'crypto'],
+    })
+
+    expect(typeof globalThis.fetch).toBe('function')
+    expect(typeof (globalThis as any).swan.fetch).toBe('function')
+    expect(typeof (globalThis as any).swan.URL).toBe('function')
+    expect(typeof (globalThis as any).swan.URLSearchParams).toBe('function')
+    expect(typeof (globalThis as any).swan.TextEncoder).toBe('function')
+    expect(typeof (globalThis as any).swan.TextDecoder).toBe('function')
+    expect(typeof (globalThis as any).swan.crypto?.getRandomValues).toBe('function')
   })
 
   it('installs text codec globals required by request runtime and preserves unicode roundtrip', async () => {
@@ -450,6 +470,40 @@ describe('request globals runtime', () => {
     expect(event.type).toBe('tick')
     expect(customEvent.detail).toEqual({ ok: true })
     expect(customEvent.defaultPrevented).toBe(true)
+  })
+
+  it('falls back to additional mini-program host getRandomValues implementations', async () => {
+    setGlobalValue('crypto', undefined)
+    ;(globalThis as Record<string, any>).swan = {
+      getRandomValues: (typedArray: Uint8Array) => {
+        typedArray.set([9, 8, 7, 6].slice(0, typedArray.length))
+        return typedArray
+      },
+    }
+
+    const { installWebRuntimeGlobals } = await import('../src')
+    installWebRuntimeGlobals({
+      targets: ['crypto'],
+    })
+
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(4))
+    expect([...bytes]).toEqual([9, 8, 7, 6])
+  })
+
+  it('falls back to additional mini-program host performance implementations', async () => {
+    setGlobalValue('performance', undefined)
+    ;(globalThis as Record<string, any>).swan = {
+      getPerformance: () => ({
+        now: () => 456.75,
+      }),
+    }
+
+    const { installWebRuntimeGlobals } = await import('../src')
+    installWebRuntimeGlobals({
+      targets: ['performance'],
+    })
+
+    expect(globalThis.performance.now()).toBe(456.75)
   })
 
   it('supports mini-program SocketTask through the injected WebSocket bridge', async () => {

@@ -1,3 +1,4 @@
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import { resolveTextDecoderConstructor, resolveTextEncoderConstructor } from './constructors'
 
 export interface RequestGlobalsEventLike {
@@ -80,7 +81,7 @@ export function resolveRequestGlobalsHosts() {
     pushRequestGlobalsHost(hosts, primaryHost[name])
   }
 
-  for (const key of ['wx', 'my', 'tt']) {
+  for (const key of getMiniProgramRuntimeGlobalKeys()) {
     pushRequestGlobalsHost(hosts, primaryHost[key])
   }
 

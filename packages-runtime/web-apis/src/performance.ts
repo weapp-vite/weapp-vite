@@ -1,3 +1,5 @@
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+
 const performanceTimeOrigin = Date.now()
 const PERFORMANCE_POLYFILL_MARKER = '__weappVitePerformancePolyfill'
 
@@ -11,7 +13,7 @@ function resolveNativePerformance() {
     return candidate
   }
 
-  for (const hostKey of ['wx', 'my', 'tt'] as const) {
+  for (const hostKey of getMiniProgramRuntimeGlobalKeys()) {
     const host = (globalThis as Record<string, any>)[hostKey]
     if (!host || typeof host.getPerformance !== 'function') {
       continue

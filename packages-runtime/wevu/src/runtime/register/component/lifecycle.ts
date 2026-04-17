@@ -9,7 +9,7 @@ import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'
-import { bindCurrentPageInstance, ensurePageShareMenus, ensureWxPatched, releaseCurrentPageInstance, resolvePageOptions } from './lifecycle/platform'
+import { bindCurrentPageInstance, ensureMiniProgramGlobalPatched, ensurePageShareMenus, releaseCurrentPageInstance, resolvePageOptions } from './lifecycle/platform'
 
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
@@ -108,7 +108,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     },
     onShow(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {
-        ensureWxPatched()
+        ensureMiniProgramGlobalPatched()
         bindCurrentPageInstance(this)
         if (!(this as any)[WEVU_ON_LOAD_CALLED_KEY]) {
           pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))

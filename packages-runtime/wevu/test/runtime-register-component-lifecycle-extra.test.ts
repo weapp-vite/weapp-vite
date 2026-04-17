@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => {
     attachOptionalPageLifecycleHooks: vi.fn((hooks: Record<string, any>, _options?: any) => hooks),
     bindCurrentPageInstance: vi.fn(),
     ensurePageShareMenus: vi.fn(),
-    ensureWxPatched: vi.fn(),
+    ensureMiniProgramGlobalPatched: vi.fn(),
     releaseCurrentPageInstance: vi.fn(),
     resolvePageOptions: vi.fn(() => ({ from: 'resolved-options' })),
   }
@@ -46,7 +46,7 @@ vi.mock('@/runtime/register/component/lifecycle/optionalHooks', () => ({
 vi.mock('@/runtime/register/component/lifecycle/platform', () => ({
   bindCurrentPageInstance: mocks.bindCurrentPageInstance,
   ensurePageShareMenus: mocks.ensurePageShareMenus,
-  ensureWxPatched: mocks.ensureWxPatched,
+  ensureMiniProgramGlobalPatched: mocks.ensureMiniProgramGlobalPatched,
   releaseCurrentPageInstance: mocks.releaseCurrentPageInstance,
   resolvePageOptions: mocks.resolvePageOptions,
 }))
@@ -113,7 +113,7 @@ describe('runtime: component page lifecycle extra', () => {
     expect(hooks.onUnload.call(instance, 'c')).toBe('unload-result')
 
     expect(mocks.attachOptionalPageLifecycleHooks).toHaveBeenCalledTimes(1)
-    expect(mocks.ensureWxPatched).not.toHaveBeenCalled()
+    expect(mocks.ensureMiniProgramGlobalPatched).not.toHaveBeenCalled()
     expect(mocks.bindCurrentPageInstance).not.toHaveBeenCalled()
     expect(mocks.releaseCurrentPageInstance).not.toHaveBeenCalled()
     expect(mocks.setRuntimeSetDataVisibility).toHaveBeenNthCalledWith(1, instance, true)
@@ -207,7 +207,7 @@ describe('runtime: component page lifecycle extra', () => {
     expect(hooks.onShow.call(instance, 'show')).toBe('show-result')
     expect(instance[WEVU_ON_LOAD_CALLED_KEY]).toBe(true)
     expect(instance[WEVU_ROUTE_DONE_CALLED_KEY]).toBe(false)
-    expect(mocks.ensureWxPatched).toHaveBeenCalledTimes(1)
+    expect(mocks.ensureMiniProgramGlobalPatched).toHaveBeenCalledTimes(1)
     expect(mocks.bindCurrentPageInstance).toHaveBeenCalledWith(instance)
     expect(mocks.resolvePageOptions).toHaveBeenCalledWith(instance)
     expect(mocks.mountRuntimeInstance).toHaveBeenCalledTimes(1)

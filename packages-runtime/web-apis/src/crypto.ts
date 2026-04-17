@@ -1,3 +1,5 @@
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+
 const MAX_RANDOM_VALUES_BYTE_LENGTH = 65536
 
 type IntegerTypedArray
@@ -39,7 +41,7 @@ function fillArrayWithMathRandom(target: IntegerTypedArray) {
 }
 
 function fillArrayWithHostRandomValues(target: IntegerTypedArray) {
-  for (const hostKey of ['wx', 'my', 'tt'] as const) {
+  for (const hostKey of getMiniProgramRuntimeGlobalKeys()) {
     const host = (globalThis as Record<string, any>)[hostKey]
     if (!host || typeof host.getRandomValues !== 'function') {
       continue
