@@ -34,11 +34,13 @@ export function createNavigationBarRuntimeBridge(
   getCurrentPages: () => PageLike[],
   emitWarning: RuntimeWarningEmitter,
 ) {
+  const navigationBarActionPrefix = 'miniProgram.'
+
   return {
     setNavigationBarTitle(options: { title: string }) {
       const bar = getActiveNavigationBar(getCurrentPages())
       if (!bar) {
-        warnNavigationBarMissing(emitWarning, 'wx.setNavigationBarTitle')
+        warnNavigationBarMissing(emitWarning, `${navigationBarActionPrefix}setNavigationBarTitle`)
         return Promise.resolve()
       }
       if (options?.title !== undefined) {
@@ -53,7 +55,7 @@ export function createNavigationBarRuntimeBridge(
     }) {
       const bar = getActiveNavigationBar(getCurrentPages())
       if (!bar) {
-        warnNavigationBarMissing(emitWarning, 'wx.setNavigationBarColor')
+        warnNavigationBarMissing(emitWarning, `${navigationBarActionPrefix}setNavigationBarColor`)
         return Promise.resolve()
       }
       if (options?.frontColor) {
@@ -79,7 +81,7 @@ export function createNavigationBarRuntimeBridge(
     showNavigationBarLoading() {
       const bar = getActiveNavigationBar(getCurrentPages())
       if (!bar) {
-        warnNavigationBarMissing(emitWarning, 'wx.showNavigationBarLoading')
+        warnNavigationBarMissing(emitWarning, `${navigationBarActionPrefix}showNavigationBarLoading`)
         return Promise.resolve()
       }
       bar.setAttribute('loading', 'true')
@@ -88,7 +90,7 @@ export function createNavigationBarRuntimeBridge(
     hideNavigationBarLoading() {
       const bar = getActiveNavigationBar(getCurrentPages())
       if (!bar) {
-        warnNavigationBarMissing(emitWarning, 'wx.hideNavigationBarLoading')
+        warnNavigationBarMissing(emitWarning, `${navigationBarActionPrefix}hideNavigationBarLoading`)
         return Promise.resolve()
       }
       bar.removeAttribute('loading')

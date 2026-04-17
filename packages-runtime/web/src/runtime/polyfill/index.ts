@@ -71,8 +71,23 @@ export {
 export * from './runtimeDataApi'
 export * from './uiMediaApi'
 
-const DEFAULT_MINI_PROGRAM_GLOBAL_KEY = 'wx'
+const MINI_PROGRAM_GLOBAL_KEYS = getMiniProgramRuntimeGlobalKeys()
+const DEFAULT_MINI_PROGRAM_GLOBAL_KEY = MINI_PROGRAM_GLOBAL_KEYS[0] ?? 'wx'
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
+
+function resolveMiniProgramBridge() {
+  for (const runtimeGlobalKey of MINI_PROGRAM_GLOBAL_KEYS) {
+    const candidate = globalTarget[runtimeGlobalKey]
+    if (candidate && typeof candidate === 'object') {
+      return candidate as Record<string, unknown>
+    }
+  }
+  const fallback = globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY]
+  if (fallback && typeof fallback === 'object') {
+    return fallback as Record<string, unknown>
+  }
+  return undefined
+}
 
 const navigationBarRuntimeBridge = createNavigationBarRuntimeBridge(
   () => getCurrentPagesInternal() as Array<HTMLElement & { renderRoot?: ShadowRoot | HTMLElement }>,
@@ -108,7 +123,7 @@ export function setBackgroundTextStyle(options?: SetBackgroundTextStyleOptions) 
 }
 
 export function canIUse(schema: string) {
-  return canIUseBridge(globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined, schema)
+  return canIUseBridge(resolveMiniProgramBridge(), schema)
 }
 
 const cloudBridge: CloudBridge = createCloudBridge(
@@ -184,7 +199,7 @@ if (globalTarget) {
     miniProgramEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
   }
   miniProgramBridge.env = miniProgramEnv
-  for (const runtimeGlobalKey of getMiniProgramRuntimeGlobalKeys()) {
+  for (const runtimeGlobalKey of MINI_PROGRAM_GLOBAL_KEYS) {
     globalTarget[runtimeGlobalKey] = miniProgramBridge
   }
   if (typeof globalTarget.getApp !== 'function') {

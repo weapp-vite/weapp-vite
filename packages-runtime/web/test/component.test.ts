@@ -1968,6 +1968,8 @@ describe('web runtime wx utility APIs', () => {
   it('supports canIUse api probing', () => {
     expect(canIUse('request')).toBe(true)
     expect(canIUse('wx.uploadFile')).toBe(true)
+    expect(canIUse('my.uploadFile')).toBe(true)
+    expect(canIUse('tt.uploadFile')).toBe(true)
     expect(canIUse('wx.downloadFile')).toBe(true)
     expect(canIUse('wx.chooseAddress')).toBe(true)
     expect(canIUse('wx.chooseLocation')).toBe(true)
@@ -2038,6 +2040,7 @@ describe('web runtime wx utility APIs', () => {
     expect(canIUse('wx.getLogManager')).toBe(true)
     expect(canIUse('wx.cloud')).toBe(true)
     expect(canIUse('wx.cloud.callFunction')).toBe(true)
+    expect(canIUse('my.cloud.callFunction')).toBe(true)
     expect(canIUse('wx.openDocument')).toBe(true)
     expect(canIUse('wx.reportAnalytics')).toBe(true)
     expect(canIUse('wx.getAppBaseInfo')).toBe(true)
