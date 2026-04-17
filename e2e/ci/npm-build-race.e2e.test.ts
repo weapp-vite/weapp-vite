@@ -1,5 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e launches the CLI with execa and uses shared fs test helpers. */
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'

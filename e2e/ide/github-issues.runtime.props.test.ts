@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import {

@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from 'node:timers/promises'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'

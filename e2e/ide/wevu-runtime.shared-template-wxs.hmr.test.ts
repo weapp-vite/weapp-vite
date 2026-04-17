@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'

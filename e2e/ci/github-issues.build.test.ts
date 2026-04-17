@@ -1,5 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- e2e build assertions reuse shared fs helpers to inspect generated artifacts. */
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { fdir } from 'fdir'
 import path from 'pathe'
@@ -314,13 +314,16 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(footerJs).toContain('__issue398FooterMounted')
     expect(footerJs).toContain('__issue398FooterLabel')
 
-    const sharedImportPattern = /require\((['"`])(\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-src\.js)\1\)/
+    const sharedImportPattern = /require\((['"`])(\.\.\/\.\.\/\.\.\/src-[^/"'`]+\.js)\1\)/
     const navbarSharedImport = navbarJs.match(sharedImportPattern)
     const footerSharedImport = footerJs.match(sharedImportPattern)
 
     expect(navbarSharedImport?.[2]).toBeTruthy()
     expect(footerSharedImport?.[2]).toBeTruthy()
     expect(navbarSharedImport?.[2]).toBe(footerSharedImport?.[2])
+
+    const sharedRuntimeChunkPath = path.join(DIST_ROOT, navbarSharedImport![2].replace(/^\.\.\//, '').replace(/^\.\.\//, '').replace(/^\.\.\//, ''))
+    expect(await fs.pathExists(sharedRuntimeChunkPath)).toBe(true)
   })
 
   it('issue #404: keeps onPageScroll page hooks enabled and exposes runtime probes in the page bundle', async () => {

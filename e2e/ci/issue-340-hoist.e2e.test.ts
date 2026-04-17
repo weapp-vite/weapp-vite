@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -37,7 +37,7 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
     const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
     const userRuntimePath = path.join(DIST_ROOT, 'subpackages/user/rolldown-runtime.js')
     const rootWevuDefinePropertyPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
-    const rootWevuSrcPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-src.js')
+    const rootWevuRouterPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-router.js')
 
     const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
     const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
@@ -46,8 +46,8 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
 
     expect(itemPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
     expect(userPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
-    expect(itemPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-[^/"'`]+\.js\1\)/)
-    expect(userPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-[^/"'`]+\.js\1\)/)
+    expect(itemPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-router\.js\1\)/)
+    expect(userPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-router\.js\1\)/)
     expect(itemPageJs).not.toMatch(/weapp-shared\/common(?:\.\d+)?\.js/)
     expect(userPageJs).not.toMatch(/weapp-shared\/common(?:\.\d+)?\.js/)
     expect(itemPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)/)
@@ -64,7 +64,7 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
     expect(await fs.pathExists(itemVendorsPath)).toBe(false)
     expect(await fs.pathExists(userVendorsPath)).toBe(false)
     expect(await fs.pathExists(rootWevuDefinePropertyPath)).toBe(true)
-    expect(await fs.pathExists(rootWevuSrcPath)).toBe(true)
+    expect(await fs.pathExists(rootWevuRouterPath)).toBe(true)
     expect(await fs.pathExists(itemRuntimePath)).toBe(false)
     expect(await fs.pathExists(userRuntimePath)).toBe(false)
   })

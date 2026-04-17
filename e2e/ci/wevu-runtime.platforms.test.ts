@@ -1,7 +1,7 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
 import process from 'node:process'
 
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'

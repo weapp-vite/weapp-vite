@@ -3,7 +3,7 @@ import {
   APP_PRELUDE_GUARD_KEY,
   REQUEST_GLOBAL_PRELUDE_MARKER,
 } from '@weapp-core/constants'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'

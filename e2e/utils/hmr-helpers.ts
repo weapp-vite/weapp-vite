@@ -1,5 +1,5 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { resolvePlatformMatrix } from './platform-matrix'
 

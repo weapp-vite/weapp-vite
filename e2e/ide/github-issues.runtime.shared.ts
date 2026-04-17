@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { expect } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'

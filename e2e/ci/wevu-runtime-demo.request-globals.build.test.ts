@@ -1,7 +1,7 @@
 import {
   REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
 } from '@weapp-core/constants'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../packages/weapp-vite/src/runtime/config/internal/injectRequestGlobals'

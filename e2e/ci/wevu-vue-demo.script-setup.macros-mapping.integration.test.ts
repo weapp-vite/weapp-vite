@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 // eslint-disable-next-line e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建
 import { execa } from 'execa'
 import path from 'pathe'

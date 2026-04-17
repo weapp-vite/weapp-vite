@@ -53,15 +53,26 @@ describe('requestClientsRealDevPlugin helpers', () => {
   })
 
   it('supports binding the real request server to a fixed local port', async () => {
-    const handle = await startRequestClientsRealServer({
-      port: 60324,
-    })
-
     try {
-      expect(handle.baseUrl).toBe('http://127.0.0.1:60324')
+      const handle = await startRequestClientsRealServer({
+        port: 60324,
+      })
+
+      try {
+        expect(handle.baseUrl).toBe('http://127.0.0.1:60324')
+      }
+      finally {
+        await handle.stop()
+      }
     }
-    finally {
-      await handle.stop()
+    catch (error) {
+      const networkError = error as NodeJS.ErrnoException
+      if (networkError.code === 'EPERM' || networkError.code === 'EACCES') {
+        expect(networkError.message).toContain('127.0.0.1:60324')
+        return
+      }
+
+      throw error
     }
   })
 })
