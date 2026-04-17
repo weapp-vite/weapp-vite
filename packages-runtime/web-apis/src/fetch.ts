@@ -1,3 +1,8 @@
+import type {
+  WeapiMiniProgramRequestMethod,
+  WeapiMiniProgramRequestSuccessResult,
+  WeapiMiniProgramRequestTask,
+} from '@wevu/api'
 import type { URLPolyfill } from './url'
 import { wpi } from '@wevu/api'
 import { isUrlInstance, isUrlSearchParamsInstance } from './constructors'
@@ -31,7 +36,7 @@ export interface RequestGlobalsFetchInit {
 }
 
 type RequestGlobalsFetchInput = string | URL | URLPolyfill | RequestLikeInput
-type MiniProgramRequestMethod = NonNullable<WechatMiniprogram.RequestOption['method']>
+type MiniProgramRequestMethod = WeapiMiniProgramRequestMethod
 
 const REQUEST_METHODS: ReadonlyArray<MiniProgramRequestMethod> = [
   'GET',
@@ -229,7 +234,7 @@ function createFetchResponse(data: unknown, status: number, headers: HeaderMap, 
   }) as unknown as Response
 }
 
-function isRequestTask(value: unknown): value is WechatMiniprogram.RequestTask {
+function isRequestTask(value: unknown): value is WeapiMiniProgramRequestTask {
   return isObject(value) && typeof value.abort === 'function'
 }
 
@@ -245,7 +250,7 @@ export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetc
     return new Promise<Response>((resolve, reject) => {
       let settled = false
       let aborted = false
-      let requestTask: WechatMiniprogram.RequestTask | undefined
+      let requestTask: WeapiMiniProgramRequestTask | undefined
 
       function onAbort() {
         if (settled) {
@@ -276,7 +281,7 @@ export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetc
         header: meta.headers,
         data: meta.body,
         responseType: 'arraybuffer',
-        success: (res: WechatMiniprogram.RequestSuccessCallbackResult) => {
+        success: (res: WeapiMiniProgramRequestSuccessResult) => {
           if (settled) {
             return
           }

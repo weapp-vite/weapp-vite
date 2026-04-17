@@ -1,3 +1,7 @@
+import type {
+  WeapiMiniProgramConnectSocketOption,
+  WeapiMiniProgramSocketTask,
+} from '@wevu/api'
 import { wpi } from '@wevu/api'
 import { resolveUrlConstructor as resolveHostUrlConstructor, resolveTextEncoderConstructor } from './constructors'
 import { cloneArrayBuffer, cloneArrayBufferView, RequestGlobalsEventTarget } from './shared'
@@ -112,11 +116,11 @@ function normalizeUrl(url: string) {
   return parsed.toString()
 }
 
-function isSocketTask(value: unknown): value is WechatMiniprogram.SocketTask {
+function isSocketTask(value: unknown): value is WeapiMiniProgramSocketTask {
   return typeof value === 'object'
     && value !== null
-    && typeof (value as WechatMiniprogram.SocketTask).send === 'function'
-    && typeof (value as WechatMiniprogram.SocketTask).close === 'function'
+    && typeof (value as WeapiMiniProgramSocketTask).send === 'function'
+    && typeof (value as WeapiMiniProgramSocketTask).close === 'function'
 }
 
 function toBinaryPayload(data: WebSocketSendData) {
@@ -174,7 +178,7 @@ function getRawConnectSocket() {
   }
   const method = (adapter as unknown as Record<string, unknown>)[target.target]
   return typeof method === 'function'
-    ? method.bind(adapter) as (options: WechatMiniprogram.ConnectSocketOption) => WechatMiniprogram.SocketTask
+    ? method.bind(adapter) as (options: WeapiMiniProgramConnectSocketOption) => WeapiMiniProgramSocketTask
     : undefined
 }
 
@@ -202,7 +206,7 @@ export class WebSocketPolyfill extends RequestGlobalsEventTarget {
   onmessage: ((event: WebSocketMessageEventLike) => void) | null = null
   onopen: ((event: { type: 'open' }) => void) | null = null
 
-  private socketTask?: WechatMiniprogram.SocketTask
+  private socketTask?: WeapiMiniProgramSocketTask
 
   constructor(url: string, protocols?: string | string[]) {
     super()

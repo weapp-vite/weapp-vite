@@ -2,7 +2,7 @@ import {
   createInterstitialAdImpl,
   createRewardedVideoAdImpl,
 } from './ad'
-import { callWxAsyncSuccess, scheduleMicrotask } from './async'
+import { callMiniProgramAsyncSuccess, scheduleMicrotask } from './async'
 import {
   createLogManagerBridge,
   createUpdateManagerBridge,
@@ -25,7 +25,7 @@ export function getExtConfigSyncBridge() {
 }
 
 export function getExtConfigBridge(options?: any): Promise<any> {
-  return Promise.resolve(callWxAsyncSuccess(options, {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, {
     errMsg: 'getExtConfig:ok',
     extConfig: getExtConfigSyncBridge(),
   }))

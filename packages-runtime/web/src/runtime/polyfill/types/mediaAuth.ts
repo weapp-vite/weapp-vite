@@ -1,20 +1,20 @@
-import type { WxAsyncOptions, WxBaseResult } from './base'
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from './base'
 
 export interface AuthSettingResult {
   authSetting: Record<string, boolean>
 }
 
-export interface GetSettingSuccessResult extends WxBaseResult, AuthSettingResult {}
+export interface GetSettingSuccessResult extends MiniProgramBaseResult, AuthSettingResult {}
 
-export interface GetSettingOptions extends WxAsyncOptions<GetSettingSuccessResult> {}
+export interface GetSettingOptions extends MiniProgramAsyncOptions<GetSettingSuccessResult> {}
 
-export interface AuthorizeOptions extends WxAsyncOptions<WxBaseResult> {
+export interface AuthorizeOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   scope?: string
 }
 
-export interface OpenSettingSuccessResult extends WxBaseResult, AuthSettingResult {}
+export interface OpenSettingSuccessResult extends MiniProgramBaseResult, AuthSettingResult {}
 
-export interface OpenSettingOptions extends WxAsyncOptions<OpenSettingSuccessResult> {}
+export interface OpenSettingOptions extends MiniProgramAsyncOptions<OpenSettingSuccessResult> {}
 
 export type ChooseMediaType = 'image' | 'video'
 
@@ -28,12 +28,12 @@ export interface ChooseMediaTempFile {
   duration: number
 }
 
-export interface ChooseMediaSuccessResult extends WxBaseResult {
+export interface ChooseMediaSuccessResult extends MiniProgramBaseResult {
   type: ChooseMediaType
   tempFiles: ChooseMediaTempFile[]
 }
 
-export interface ChooseMediaOptions extends WxAsyncOptions<ChooseMediaSuccessResult> {
+export interface ChooseMediaOptions extends MiniProgramAsyncOptions<ChooseMediaSuccessResult> {
   count?: number
   mediaType?: Array<'image' | 'video' | 'mix'>
   sourceType?: Array<'album' | 'camera'>
@@ -42,18 +42,18 @@ export interface ChooseMediaOptions extends WxAsyncOptions<ChooseMediaSuccessRes
   camera?: 'back' | 'front'
 }
 
-export interface CompressImageSuccessResult extends WxBaseResult {
+export interface CompressImageSuccessResult extends MiniProgramBaseResult {
   tempFilePath: string
 }
 
-export interface CompressImageOptions extends WxAsyncOptions<CompressImageSuccessResult> {
+export interface CompressImageOptions extends MiniProgramAsyncOptions<CompressImageSuccessResult> {
   src?: string
   quality?: number
   compressedWidth?: number
   compressedHeight?: number
 }
 
-export interface ChooseVideoSuccessResult extends WxBaseResult {
+export interface ChooseVideoSuccessResult extends MiniProgramBaseResult {
   tempFilePath: string
   duration: number
   size: number
@@ -61,14 +61,14 @@ export interface ChooseVideoSuccessResult extends WxBaseResult {
   width: number
 }
 
-export interface ChooseVideoOptions extends WxAsyncOptions<ChooseVideoSuccessResult> {
+export interface ChooseVideoOptions extends MiniProgramAsyncOptions<ChooseVideoSuccessResult> {
   sourceType?: Array<'album' | 'camera'>
   compressed?: boolean
   maxDuration?: number
   camera?: 'back' | 'front'
 }
 
-export interface GetVideoInfoSuccessResult extends WxBaseResult {
+export interface GetVideoInfoSuccessResult extends MiniProgramBaseResult {
   size: number
   duration: number
   width: number
@@ -79,11 +79,11 @@ export interface GetVideoInfoSuccessResult extends WxBaseResult {
   orientation: 'up'
 }
 
-export interface GetVideoInfoOptions extends WxAsyncOptions<GetVideoInfoSuccessResult> {
+export interface GetVideoInfoOptions extends MiniProgramAsyncOptions<GetVideoInfoSuccessResult> {
   src?: string
 }
 
-export interface CompressVideoSuccessResult extends WxBaseResult {
+export interface CompressVideoSuccessResult extends MiniProgramBaseResult {
   tempFilePath: string
   size: number
   duration: number
@@ -93,7 +93,7 @@ export interface CompressVideoSuccessResult extends WxBaseResult {
   fps: number
 }
 
-export interface CompressVideoOptions extends WxAsyncOptions<CompressVideoSuccessResult> {
+export interface CompressVideoOptions extends MiniProgramAsyncOptions<CompressVideoSuccessResult> {
   src?: string
   quality?: 'low' | 'medium' | 'high'
   bitrate?: number
@@ -105,43 +105,43 @@ export interface MediaPreviewSource {
   poster?: string
 }
 
-export interface PreviewMediaOptions extends WxAsyncOptions<WxBaseResult> {
+export interface PreviewMediaOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   sources?: MediaPreviewSource[]
   current?: number
 }
 
-export interface SaveVideoToPhotosAlbumOptions extends WxAsyncOptions<WxBaseResult> {
+export interface SaveVideoToPhotosAlbumOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   filePath?: string
 }
 
-export interface ChooseFileSuccessResult extends WxBaseResult {
+export interface ChooseFileSuccessResult extends MiniProgramBaseResult {
   tempFiles: ChooseMessageFileTempFile[]
 }
 
-export interface ChooseFileOptions extends WxAsyncOptions<ChooseFileSuccessResult> {
+export interface ChooseFileOptions extends MiniProgramAsyncOptions<ChooseFileSuccessResult> {
   count?: number
   type?: 'all' | 'video' | 'image' | 'file'
   extension?: string[]
 }
 
-export interface OpenVideoEditorSuccessResult extends WxBaseResult {
+export interface OpenVideoEditorSuccessResult extends MiniProgramBaseResult {
   tempFilePath: string
 }
 
-export interface OpenVideoEditorOptions extends WxAsyncOptions<OpenVideoEditorSuccessResult> {
+export interface OpenVideoEditorOptions extends MiniProgramAsyncOptions<OpenVideoEditorSuccessResult> {
   src?: string
 }
 
-export interface SaveFileSuccessResult extends WxBaseResult {
+export interface SaveFileSuccessResult extends MiniProgramBaseResult {
   savedFilePath: string
 }
 
-export interface SaveFileOptions extends WxAsyncOptions<SaveFileSuccessResult> {
+export interface SaveFileOptions extends MiniProgramAsyncOptions<SaveFileSuccessResult> {
   tempFilePath?: string
   filePath?: string
 }
 
-export interface SaveFileToDiskOptions extends WxAsyncOptions<WxBaseResult> {
+export interface SaveFileToDiskOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   filePath?: string
   fileName?: string
 }
@@ -154,20 +154,20 @@ export interface ChooseMessageFileTempFile {
   time: number
 }
 
-export interface ChooseMessageFileSuccessResult extends WxBaseResult {
+export interface ChooseMessageFileSuccessResult extends MiniProgramBaseResult {
   tempFiles: ChooseMessageFileTempFile[]
 }
 
-export interface ChooseMessageFileOptions extends WxAsyncOptions<ChooseMessageFileSuccessResult> {
+export interface ChooseMessageFileOptions extends MiniProgramAsyncOptions<ChooseMessageFileSuccessResult> {
   count?: number
   type?: 'all' | 'video' | 'image' | 'file'
 }
 
-export interface SaveImageToPhotosAlbumOptions extends WxAsyncOptions<WxBaseResult> {
+export interface SaveImageToPhotosAlbumOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   filePath?: string
 }
 
-export interface ScanCodeSuccessResult extends WxBaseResult {
+export interface ScanCodeSuccessResult extends MiniProgramBaseResult {
   result: string
   scanType: string
   charSet: string
@@ -175,7 +175,7 @@ export interface ScanCodeSuccessResult extends WxBaseResult {
   rawData: string
 }
 
-export interface ScanCodeOptions extends WxAsyncOptions<ScanCodeSuccessResult> {
+export interface ScanCodeOptions extends MiniProgramAsyncOptions<ScanCodeSuccessResult> {
   onlyFromCamera?: boolean
   scanType?: string[]
 }

@@ -2,19 +2,27 @@ import type {
   WeapiCrossPlatformRawAdapter,
   WeapiDefaultInstance,
   WeapiDouyinRawAdapter,
+  WeapiInstance,
   WeapiMethodSupportQueryOptions,
   WeapiMiniProgramAdapter,
+  WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
+  WeapiMiniProgramConnectSocketOption,
+  WeapiMiniProgramCrossPlatformRawAdapter,
+  WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramMethodName,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
   WeapiMiniProgramSelectorQuery,
+  WeapiMiniProgramSocketTask,
   WeapiMiniProgramSystemInfo,
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
+  WeapiMiniProgramWxAdapter,
+  WeapiMiniProgramWxRawAdapter,
   WeapiResolvedTarget,
   WeapiSupportLevel,
 } from '@wevu/api'
@@ -42,7 +50,15 @@ type _ttMethodCoverage = AssertTrue<IsNever<Exclude<TtMethodKeys, WeapiRawKeys>>
 expectType<string | undefined>(wpi.platform)
 expectType<WeapiDefaultInstance>(wpi)
 expectType<WeapiMiniProgramAdapter>(wpi as WeapiMiniProgramAdapter)
+expectType<WeapiInstance<WeapiMiniProgramCrossPlatformRawAdapter>>(wpi)
 expectType<WeapiMiniProgramRawAdapter>({} as WeapiMiniProgramRawAdapter)
+expectType<WeapiMiniProgramCrossPlatformRawAdapter>({} as WeapiCrossPlatformRawAdapter)
+expectType<WeapiMiniProgramWxRawAdapter>({} as WeapiMiniProgramRawAdapter)
+expectType<WeapiMiniProgramWxAdapter>(wpi as WeapiMiniProgramWxAdapter)
+expectType<WeapiMiniProgramAlipayRawAdapter>(my)
+expectType<WeapiInstance<WeapiMiniProgramAlipayRawAdapter>>(createWeapi({ adapter: my }))
+expectType<WeapiMiniProgramDouyinRawAdapter>(tt)
+expectType<WeapiInstance<WeapiMiniProgramDouyinRawAdapter>>(createWeapi({ adapter: tt }))
 expectType<WeapiDefaultInstance['raw']>(wpi.raw)
 expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)
@@ -255,6 +271,12 @@ const requestTask = wpi.request({
   },
 })
 expectType<WeapiMiniProgramRequestTask>(requestTask)
+
+const connectSocketOption = {} as WeapiMiniProgramConnectSocketOption
+expectType<WeapiMiniProgramConnectSocketOption>(connectSocketOption)
+
+const socketTask = ({} as WeapiMiniProgramRawAdapter).connectSocket(connectSocketOption)
+expectType<WeapiMiniProgramSocketTask>(socketTask)
 
 const saveFilePromise = wpi.saveFile({
   apFilePath: '/tmp/demo.png',

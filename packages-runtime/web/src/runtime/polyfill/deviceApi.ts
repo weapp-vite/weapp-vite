@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import {
   readBatteryInfoSnapshot,
@@ -11,11 +11,11 @@ import {
 export function vibrateShortBridge(options?: any) {
   try {
     vibrateDevice(options?.type)
-    return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'vibrateShort:ok' }))
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'vibrateShort:ok' }))
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `vibrateShort:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `vibrateShort:fail ${message}`)
     return Promise.reject(failure)
   }
 }
@@ -27,14 +27,14 @@ export function getBatteryInfoSyncBridge() {
 export async function getBatteryInfoBridge(options?: any) {
   try {
     const batteryInfo = await readBatteryInfoSnapshot()
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'getBatteryInfo:ok',
       ...batteryInfo,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `getBatteryInfo:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `getBatteryInfo:fail ${message}`)
     return Promise.reject(failure)
   }
 }

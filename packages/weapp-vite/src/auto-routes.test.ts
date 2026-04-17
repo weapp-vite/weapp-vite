@@ -144,7 +144,7 @@ describe('auto-routes module exports', () => {
     ])
   })
 
-  it('wxRouter proxies route methods to global mini-program object', async () => {
+  it('miniProgramRouter proxies route methods to global mini-program object', async () => {
     const callLog = {
       navigateTo: [] as Array<Record<string, any>>,
       redirectTo: [] as Array<Record<string, any>>,
@@ -183,7 +183,7 @@ describe('auto-routes module exports', () => {
     expect(callLog.navigateBack).toEqual([{ delta: 1 }])
   })
 
-  it.each(['swan', 'jd', 'xhs'])('wxRouter falls back to %s runtime globals', async (runtimeKey) => {
+  it.each(['swan', 'jd', 'xhs'])('miniProgramRouter falls back to %s runtime globals', async (runtimeKey) => {
     const navigateTo = vi.fn()
     ;(globalThis as Record<string, any>)[runtimeKey] = {
       navigateTo,
@@ -202,7 +202,7 @@ describe('auto-routes module exports', () => {
     delete (globalThis as Record<string, any>)[runtimeKey]
   })
 
-  it.skip('wxRouter throws when route capability is unavailable', async () => {
+  it.skip('miniProgramRouter throws when route capability is unavailable', async () => {
     delete (globalThis as Record<string | symbol, unknown>)[routeRuntimeOverrideKey]
     vi.stubGlobal('wx', undefined)
     vi.stubGlobal('tt', undefined)

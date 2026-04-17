@@ -1,9 +1,12 @@
-export interface WxBaseResult {
+export interface MiniProgramBaseResult {
   errMsg: string
 }
 
-export interface WxAsyncOptions<SuccessResult extends WxBaseResult> {
+export interface MiniProgramAsyncOptions<SuccessResult extends MiniProgramBaseResult> {
   success?: (result: SuccessResult) => void
-  fail?: (result: WxBaseResult) => void
-  complete?: (result: SuccessResult | WxBaseResult) => void
+  fail?: (result: MiniProgramBaseResult) => void
+  complete?: (result: SuccessResult | MiniProgramBaseResult) => void
 }
+
+export type WxBaseResult = MiniProgramBaseResult
+export type WxAsyncOptions<SuccessResult extends WxBaseResult> = MiniProgramAsyncOptions<SuccessResult>

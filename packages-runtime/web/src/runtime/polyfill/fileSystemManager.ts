@@ -18,38 +18,38 @@ interface FileReadOptionsLike {
 }
 
 export function createFileSystemManagerBridge(
-  callWxAsyncSuccess: AsyncSuccess,
-  callWxAsyncFailure: AsyncFailure,
+  callMiniProgramAsyncSuccess: AsyncSuccess,
+  callMiniProgramAsyncFailure: AsyncFailure,
 ) {
   return {
     writeFile(options?: FileWriteOptionsLike) {
       const filePath = normalizeFilePath(options?.filePath)
       if (!filePath) {
-        callWxAsyncFailure(options, 'writeFile:fail invalid filePath')
+        callMiniProgramAsyncFailure(options, 'writeFile:fail invalid filePath')
         return
       }
       try {
         writeFileSyncInternal(filePath, (options?.data ?? '') as string | ArrayBuffer | ArrayBufferView)
-        callWxAsyncSuccess(options, { errMsg: 'writeFile:ok' })
+        callMiniProgramAsyncSuccess(options, { errMsg: 'writeFile:ok' })
       }
       catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        callWxAsyncFailure(options, `writeFile:fail ${message}`)
+        callMiniProgramAsyncFailure(options, `writeFile:fail ${message}`)
       }
     },
     readFile(options?: FileReadOptionsLike) {
       const filePath = normalizeFilePath(options?.filePath)
       if (!filePath) {
-        callWxAsyncFailure(options, 'readFile:fail invalid filePath')
+        callMiniProgramAsyncFailure(options, 'readFile:fail invalid filePath')
         return
       }
       try {
         const data = readFileSyncInternal(filePath, options?.encoding)
-        callWxAsyncSuccess(options, { errMsg: 'readFile:ok', data })
+        callMiniProgramAsyncSuccess(options, { errMsg: 'readFile:ok', data })
       }
       catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        callWxAsyncFailure(options, `readFile:fail ${message}`)
+        callMiniProgramAsyncFailure(options, `readFile:fail ${message}`)
       }
     },
     writeFileSync(filePath: string, data: string | ArrayBuffer | ArrayBufferView, _encoding?: string) {

@@ -1,4 +1,4 @@
-import type { WxAsyncOptions, WxBaseResult } from './base'
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from './base'
 
 export interface SystemInfo {
   brand: string
@@ -82,19 +82,19 @@ export interface AppAuthorizeSetting {
   phoneCalendarAuthorized: AppAuthorizeStatus
 }
 
-export interface OpenAppAuthorizeSettingSuccessResult extends WxBaseResult, AppAuthorizeSetting {}
+export interface OpenAppAuthorizeSettingSuccessResult extends MiniProgramBaseResult, AppAuthorizeSetting {}
 
-export interface OpenAppAuthorizeSettingOptions extends WxAsyncOptions<OpenAppAuthorizeSettingSuccessResult> {}
+export interface OpenAppAuthorizeSettingOptions extends MiniProgramAsyncOptions<OpenAppAuthorizeSettingSuccessResult> {}
 
-export interface LoginSuccessResult extends WxBaseResult {
+export interface LoginSuccessResult extends MiniProgramBaseResult {
   code: string
 }
 
-export interface LoginOptions extends WxAsyncOptions<LoginSuccessResult> {
+export interface LoginOptions extends MiniProgramAsyncOptions<LoginSuccessResult> {
   timeout?: number
 }
 
-export interface CheckSessionOptions extends WxAsyncOptions<WxBaseResult> {}
+export interface CheckSessionOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {}
 
 export interface UserInfo {
   nickName: string
@@ -106,7 +106,7 @@ export interface UserInfo {
   language: string
 }
 
-export interface UserProfileSuccessResult extends WxBaseResult {
+export interface UserProfileSuccessResult extends MiniProgramBaseResult {
   userInfo: UserInfo
   rawData: string
   signature: string
@@ -114,11 +114,11 @@ export interface UserProfileSuccessResult extends WxBaseResult {
   iv: string
 }
 
-export interface GetUserInfoOptions extends WxAsyncOptions<UserProfileSuccessResult> {
+export interface GetUserInfoOptions extends MiniProgramAsyncOptions<UserProfileSuccessResult> {
   lang?: 'en' | 'zh_CN' | 'zh_TW'
 }
 
-export interface GetUserProfileOptions extends WxAsyncOptions<UserProfileSuccessResult> {
+export interface GetUserProfileOptions extends MiniProgramAsyncOptions<UserProfileSuccessResult> {
   desc?: string
   lang?: 'en' | 'zh_CN' | 'zh_TW'
 }
@@ -132,6 +132,6 @@ export interface AccountInfoSync {
   plugin: Record<string, unknown>
 }
 
-export interface GetSystemInfoSuccessResult extends WxBaseResult, SystemInfo {}
+export interface GetSystemInfoSuccessResult extends MiniProgramBaseResult, SystemInfo {}
 
-export interface GetSystemInfoOptions extends WxAsyncOptions<GetSystemInfoSuccessResult> {}
+export interface GetSystemInfoOptions extends MiniProgramAsyncOptions<GetSystemInfoSuccessResult> {}

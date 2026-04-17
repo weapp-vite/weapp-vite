@@ -1,4 +1,10 @@
-import type { MiniProgramRouter } from '../miniprogram'
+import type {
+  MiniProgramNavigateToOption,
+  MiniProgramRedirectToOption,
+  MiniProgramReLaunchOption,
+  MiniProgramRouter,
+  MiniProgramSwitchTabOption,
+} from '../miniprogram'
 
 /**
  * Router 路由类型映射（供声明合并扩展）。
@@ -30,22 +36,22 @@ type RouterPathUrl<Path extends string> = string extends Path ? string : Absolut
 export type TypedRouterUrl = RouterUrl<ResolveTypedRouterEntries>
 export type TypedRouterTabBarUrl = RouterPathUrl<ResolveTypedRouterTabBarEntries>
 
-export type MiniProgramRouterSwitchTabOption = Omit<WechatMiniprogram.SwitchTabOption, 'url'> & {
+export type MiniProgramRouterSwitchTabOption = Omit<MiniProgramSwitchTabOption, 'url'> & {
   url: TypedRouterTabBarUrl
 }
 export type RouterSwitchTabOption = MiniProgramRouterSwitchTabOption
 
-export type MiniProgramRouterReLaunchOption = Omit<WechatMiniprogram.ReLaunchOption, 'url'> & {
+export type MiniProgramRouterReLaunchOption = Omit<MiniProgramReLaunchOption, 'url'> & {
   url: TypedRouterUrl
 }
 export type RouterReLaunchOption = MiniProgramRouterReLaunchOption
 
-export type MiniProgramRouterRedirectToOption = Omit<WechatMiniprogram.RedirectToOption, 'url'> & {
+export type MiniProgramRouterRedirectToOption = Omit<MiniProgramRedirectToOption, 'url'> & {
   url: TypedRouterUrl
 }
 export type RouterRedirectToOption = MiniProgramRouterRedirectToOption
 
-export type MiniProgramRouterNavigateToOption = Omit<WechatMiniprogram.NavigateToOption, 'url'> & {
+export type MiniProgramRouterNavigateToOption = Omit<MiniProgramNavigateToOption, 'url'> & {
   url: TypedRouterUrl
 }
 export type RouterNavigateToOption = MiniProgramRouterNavigateToOption

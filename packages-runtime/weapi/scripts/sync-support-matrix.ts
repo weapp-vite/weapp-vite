@@ -183,15 +183,18 @@ function replacePlatformMatrixInComment(content: string, marker: Marker, withAli
 }
 
 async function syncTypeSources(check: boolean) {
+  const platformAdaptersPath = path.join(ROOT_DIR, 'src/core/platformAdapters.ts')
   const typesSourcePath = path.join(ROOT_DIR, 'src/core/types.ts')
   const indexSourcePath = path.join(ROOT_DIR, 'src/index.ts')
   const declarationPath = path.join(ROOT_DIR, 'types/index.d.ts')
+
+  const platformAdaptersOriginal = await fs.readFile(platformAdaptersPath, 'utf8')
+  const platformAdaptersNext = replacePlatformMatrixInComment(platformAdaptersOriginal, PLATFORM_MATRIX_MARKER, true)
 
   const typesSourceOriginal = await fs.readFile(typesSourcePath, 'utf8')
   const typesWithMethods = hasMarker(typesSourceOriginal, TYPES_METHOD_DOC_MARKER)
     ? replaceBetween(typesSourceOriginal, TYPES_METHOD_DOC_MARKER, formatMethodDocs('  '))
     : typesSourceOriginal
-  const typesNext = replacePlatformMatrixInComment(typesWithMethods, PLATFORM_MATRIX_MARKER, true)
 
   const indexSourceOriginal = await fs.readFile(indexSourcePath, 'utf8')
   const indexNext = replacePlatformMatrixInComment(indexSourceOriginal, PLATFORM_MATRIX_MARKER, false)
@@ -201,7 +204,8 @@ async function syncTypeSources(check: boolean) {
 
   if (check) {
     const outdated = [
-      { name: 'src/core/types.ts', changed: !isTextEquivalent(typesNext, typesSourceOriginal) },
+      { name: 'src/core/platformAdapters.ts', changed: !isTextEquivalent(platformAdaptersNext, platformAdaptersOriginal) },
+      { name: 'src/core/types.ts', changed: !isTextEquivalent(typesWithMethods, typesSourceOriginal) },
       { name: 'src/index.ts', changed: !isTextEquivalent(indexNext, indexSourceOriginal) },
       { name: 'types/index.d.ts', changed: !isTextEquivalent(declarationNext, declarationOriginal) },
     ].filter(item => item.changed)
@@ -211,8 +215,11 @@ async function syncTypeSources(check: boolean) {
     return
   }
 
-  if (typesNext !== typesSourceOriginal) {
-    await fs.writeFile(typesSourcePath, typesNext)
+  if (platformAdaptersNext !== platformAdaptersOriginal) {
+    await fs.writeFile(platformAdaptersPath, platformAdaptersNext)
+  }
+  if (typesWithMethods !== typesSourceOriginal) {
+    await fs.writeFile(typesSourcePath, typesWithMethods)
   }
   if (indexNext !== indexSourceOriginal) {
     await fs.writeFile(indexSourcePath, indexNext)

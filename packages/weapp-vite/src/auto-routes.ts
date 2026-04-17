@@ -61,7 +61,7 @@ function callRouteMethod(methodName: RouteMethodName, option?: RouteOption) {
   return routeMethod.call(miniProgramGlobal, option)
 }
 
-export interface AutoRoutesWxRouter {
+export interface AutoRoutesMiniProgramRouter {
   switchTab: (option: Record<string, any>) => unknown
   reLaunch: (option: Record<string, any>) => unknown
   redirectTo: (option: Record<string, any>) => unknown
@@ -69,9 +69,9 @@ export interface AutoRoutesWxRouter {
   navigateBack: (option?: Record<string, any>) => unknown
 }
 
-export type AutoRoutesMiniProgramRouter = AutoRoutesWxRouter
+export type AutoRoutesWxRouter = AutoRoutesMiniProgramRouter
 
-const wxRouter: AutoRoutesWxRouter = {
+const miniProgramRouter: AutoRoutesMiniProgramRouter = {
   switchTab(option) {
     return callRouteMethod('switchTab', option)
   },
@@ -89,7 +89,7 @@ const wxRouter: AutoRoutesWxRouter = {
   },
 }
 
-const miniProgramRouter: AutoRoutesMiniProgramRouter = wxRouter
+const wxRouter: AutoRoutesWxRouter = miniProgramRouter
 
 export type { AutoRoutes, AutoRoutesSubPackage }
 export { entries, miniProgramRouter, pages, routes, subPackages, wxRouter }

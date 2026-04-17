@@ -1,16 +1,16 @@
-import type { WxAsyncOptions, WxBaseResult } from './base'
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from './base'
 
 export interface CloudInitOptions {
   env?: string
   traceUser?: boolean
 }
 
-export interface CloudCallFunctionSuccessResult extends WxBaseResult {
+export interface CloudCallFunctionSuccessResult extends MiniProgramBaseResult {
   result: Record<string, unknown>
   requestID: string
 }
 
-export interface CloudCallFunctionOptions extends WxAsyncOptions<CloudCallFunctionSuccessResult> {
+export interface CloudCallFunctionOptions extends MiniProgramAsyncOptions<CloudCallFunctionSuccessResult> {
   name?: string
   data?: Record<string, unknown>
   config?: Record<string, unknown>
@@ -21,7 +21,7 @@ export interface CloudBridge {
   callFunction: (options?: CloudCallFunctionOptions) => Promise<CloudCallFunctionSuccessResult>
 }
 
-export interface VibrateShortOptions extends WxAsyncOptions<WxBaseResult> {
+export interface VibrateShortOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   type?: 'heavy' | 'medium' | 'light'
 }
 
@@ -30,20 +30,20 @@ export interface BatteryInfo {
   isCharging: boolean
 }
 
-export interface GetBatteryInfoSuccessResult extends WxBaseResult, BatteryInfo {}
+export interface GetBatteryInfoSuccessResult extends MiniProgramBaseResult, BatteryInfo {}
 
-export interface GetExtConfigSuccessResult extends WxBaseResult {
+export interface GetExtConfigSuccessResult extends MiniProgramBaseResult {
   extConfig: Record<string, any>
 }
 
-export interface GetExtConfigOptions extends WxAsyncOptions<GetExtConfigSuccessResult> {}
+export interface GetExtConfigOptions extends MiniProgramAsyncOptions<GetExtConfigSuccessResult> {}
 
-export interface ShowModalSuccessResult extends WxBaseResult {
+export interface ShowModalSuccessResult extends MiniProgramBaseResult {
   confirm: boolean
   cancel: boolean
 }
 
-export interface ShowModalOptions extends WxAsyncOptions<ShowModalSuccessResult> {
+export interface ShowModalOptions extends MiniProgramAsyncOptions<ShowModalSuccessResult> {
   title?: string
   content?: string
   showCancel?: boolean
@@ -51,23 +51,23 @@ export interface ShowModalOptions extends WxAsyncOptions<ShowModalSuccessResult>
   cancelText?: string
 }
 
-export interface ShowActionSheetSuccessResult extends WxBaseResult {
+export interface ShowActionSheetSuccessResult extends MiniProgramBaseResult {
   tapIndex: number
 }
 
-export interface ShowActionSheetOptions extends WxAsyncOptions<ShowActionSheetSuccessResult> {
+export interface ShowActionSheetOptions extends MiniProgramAsyncOptions<ShowActionSheetSuccessResult> {
   itemList?: string[]
   itemColor?: string
   alertText?: string
 }
 
-export interface OpenDocumentOptions extends WxAsyncOptions<WxBaseResult> {
+export interface OpenDocumentOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   filePath?: string
   fileType?: string
   showMenu?: boolean
 }
 
-export interface PageScrollToOptions extends WxAsyncOptions<WxBaseResult> {
+export interface PageScrollToOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   scrollTop?: number
   duration?: number
 }
@@ -174,8 +174,8 @@ export interface InterstitialAd {
 }
 
 export interface VkSession {
-  start: () => Promise<WxBaseResult>
-  stop: () => Promise<WxBaseResult>
+  start: () => Promise<MiniProgramBaseResult>
+  stop: () => Promise<MiniProgramBaseResult>
   destroy: () => void
   on: (eventName: string, callback: (payload: unknown) => void) => void
   off: (eventName?: string, callback?: (payload: unknown) => void) => void

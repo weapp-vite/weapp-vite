@@ -17,6 +17,7 @@ import type {
   GetUserProfileOptions,
   LoginOptions,
   MenuButtonBoundingClientRect,
+  MiniProgramAsyncOptions,
   NetworkStatusChangeCallback,
   OpenAppAuthorizeSettingOptions,
   OpenSettingOptions,
@@ -25,7 +26,6 @@ import type {
   VibrateShortOptions,
   WindowInfo,
   WindowResizeCallback,
-  WxAsyncOptions,
 } from './types'
 import {
   authorizeBridge,
@@ -97,7 +97,7 @@ export function getBatteryInfoSync(): BatteryInfo {
   return getBatteryInfoSyncBridge()
 }
 
-export async function getBatteryInfo(options?: WxAsyncOptions<GetBatteryInfoSuccessResult>) {
+export async function getBatteryInfo(options?: MiniProgramAsyncOptions<GetBatteryInfoSuccessResult>) {
   return getBatteryInfoBridge(options)
 }
 

@@ -1,7 +1,7 @@
 import type { SetBackgroundColorOptions, SetBackgroundTextStyleOptions } from './types/locationRuntime'
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 
 function normalizeBackgroundColorValue(color: unknown) {
@@ -28,17 +28,17 @@ export function setBackgroundColorBridge(options?: SetBackgroundColorOptions) {
       `linear-gradient(${backgroundColorTop}, ${backgroundColorBottom})`,
     )
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'setBackgroundColor:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'setBackgroundColor:ok' }))
 }
 
 export function setBackgroundTextStyleBridge(options?: SetBackgroundTextStyleOptions) {
   const textStyle = options?.textStyle
   if (textStyle !== undefined && textStyle !== 'dark' && textStyle !== 'light') {
-    const failure = callWxAsyncFailure(options, 'setBackgroundTextStyle:fail invalid textStyle')
+    const failure = callMiniProgramAsyncFailure(options, 'setBackgroundTextStyle:fail invalid textStyle')
     return Promise.reject(failure)
   }
   if (typeof document !== 'undefined' && document.documentElement && textStyle) {
     document.documentElement.setAttribute('data-weapp-background-text-style', textStyle)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'setBackgroundTextStyle:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'setBackgroundTextStyle:ok' }))
 }

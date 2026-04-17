@@ -1,8 +1,8 @@
-import type { WxAsyncOptions, WxBaseResult } from './types/base'
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from './types/base'
 import type { GetStorageOptions, RemoveStorageOptions, SetStorageOptions, StorageInfoResult } from './types/common'
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import {
   clearStorageSyncInternal,
@@ -17,7 +17,7 @@ import {
 export function setStorageBridge(options?: SetStorageOptions) {
   const key = normalizeStorageKey(options?.key)
   if (!key) {
-    const failure = callWxAsyncFailure(options, 'setStorage:fail invalid key')
+    const failure = callMiniProgramAsyncFailure(options, 'setStorage:fail invalid key')
     return Promise.reject(failure)
   }
   try {
@@ -25,30 +25,30 @@ export function setStorageBridge(options?: SetStorageOptions) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `setStorage:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `setStorage:fail ${message}`)
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'setStorage:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'setStorage:ok' }))
 }
 
 export function getStorageBridge(options?: GetStorageOptions) {
   const key = normalizeStorageKey(options?.key)
   if (!key) {
-    const failure = callWxAsyncFailure(options, 'getStorage:fail invalid key')
+    const failure = callMiniProgramAsyncFailure(options, 'getStorage:fail invalid key')
     return Promise.reject(failure)
   }
   if (!hasStorageKey(key)) {
-    const failure = callWxAsyncFailure(options, `getStorage:fail data not found for key ${key}`)
+    const failure = callMiniProgramAsyncFailure(options, `getStorage:fail data not found for key ${key}`)
     return Promise.reject(failure)
   }
   const data = getStorageSyncInternal(key)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'getStorage:ok', data }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'getStorage:ok', data }))
 }
 
 export function removeStorageBridge(options?: RemoveStorageOptions) {
   const key = normalizeStorageKey(options?.key)
   if (!key) {
-    const failure = callWxAsyncFailure(options, 'removeStorage:fail invalid key')
+    const failure = callMiniProgramAsyncFailure(options, 'removeStorage:fail invalid key')
     return Promise.reject(failure)
   }
   try {
@@ -56,19 +56,19 @@ export function removeStorageBridge(options?: RemoveStorageOptions) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `removeStorage:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `removeStorage:fail ${message}`)
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'removeStorage:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'removeStorage:ok' }))
 }
 
-export function clearStorageBridge(options?: WxAsyncOptions<WxBaseResult>) {
+export function clearStorageBridge(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
   clearStorageSyncInternal()
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'clearStorage:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'clearStorage:ok' }))
 }
 
-export function getStorageInfoBridge(options?: WxAsyncOptions<StorageInfoResult>) {
-  return Promise.resolve(callWxAsyncSuccess(options, {
+export function getStorageInfoBridge(options?: MiniProgramAsyncOptions<StorageInfoResult>) {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, {
     ...getStorageInfoSyncInternal(),
     errMsg: 'getStorageInfo:ok',
   }))

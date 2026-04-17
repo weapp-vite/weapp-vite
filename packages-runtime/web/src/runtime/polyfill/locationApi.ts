@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import {
   normalizeFuzzyCoordinate,
@@ -18,7 +18,7 @@ import { getGlobalDialogHandlers } from './ui'
 export function makePhoneCallBridge(options?: any) {
   const phoneNumber = typeof options?.phoneNumber === 'string' ? options.phoneNumber.trim() : ''
   if (!phoneNumber) {
-    const failure = callWxAsyncFailure(options, 'makePhoneCall:fail invalid phoneNumber')
+    const failure = callMiniProgramAsyncFailure(options, 'makePhoneCall:fail invalid phoneNumber')
     return Promise.reject(failure)
   }
   if (typeof window !== 'undefined' && typeof window.open === 'function') {
@@ -29,13 +29,13 @@ export function makePhoneCallBridge(options?: any) {
       // ignore browser restrictions and keep API-level success semantics
     }
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'makePhoneCall:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'makePhoneCall:ok' }))
 }
 
 export function chooseAddressBridge(options?: any) {
   const preset = readPresetChooseAddress()
   if (preset) {
-    return Promise.resolve(callWxAsyncSuccess(options, {
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseAddress:ok',
       ...preset,
     }))
@@ -44,27 +44,27 @@ export function chooseAddressBridge(options?: any) {
   if (typeof prompt === 'function') {
     const input = prompt('请输入地址（格式：省,市,区,详细地址,姓名,电话）', '')
     if (input == null) {
-      const failure = callWxAsyncFailure(options, 'chooseAddress:fail cancel')
+      const failure = callMiniProgramAsyncFailure(options, 'chooseAddress:fail cancel')
       return Promise.reject(failure)
     }
     const parsed = parseChooseAddressPromptInput(input)
     if (!parsed) {
-      const failure = callWxAsyncFailure(options, 'chooseAddress:fail invalid input')
+      const failure = callMiniProgramAsyncFailure(options, 'chooseAddress:fail invalid input')
       return Promise.reject(failure)
     }
-    return Promise.resolve(callWxAsyncSuccess(options, {
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseAddress:ok',
       ...parsed,
     }))
   }
-  const failure = callWxAsyncFailure(options, 'chooseAddress:fail address picker is unavailable')
+  const failure = callMiniProgramAsyncFailure(options, 'chooseAddress:fail address picker is unavailable')
   return Promise.reject(failure)
 }
 
 export function chooseLocationBridge(options?: any) {
   const preset = readPresetChooseLocation()
   if (preset) {
-    return Promise.resolve(callWxAsyncSuccess(options, {
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseLocation:ok',
       ...preset,
     }))
@@ -73,15 +73,15 @@ export function chooseLocationBridge(options?: any) {
   if (typeof prompt === 'function') {
     const input = prompt('请输入坐标（格式：latitude,longitude）', '')
     if (input == null) {
-      const failure = callWxAsyncFailure(options, 'chooseLocation:fail cancel')
+      const failure = callMiniProgramAsyncFailure(options, 'chooseLocation:fail cancel')
       return Promise.reject(failure)
     }
     const parsed = parseChooseLocationPromptInput(input)
     if (!parsed) {
-      const failure = callWxAsyncFailure(options, 'chooseLocation:fail invalid latitude/longitude')
+      const failure = callMiniProgramAsyncFailure(options, 'chooseLocation:fail invalid latitude/longitude')
       return Promise.reject(failure)
     }
-    return Promise.resolve(callWxAsyncSuccess(options, {
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseLocation:ok',
       name: '',
       address: '',
@@ -89,7 +89,7 @@ export function chooseLocationBridge(options?: any) {
       longitude: parsed.longitude,
     }))
   }
-  const failure = callWxAsyncFailure(options, 'chooseLocation:fail location picker is unavailable')
+  const failure = callMiniProgramAsyncFailure(options, 'chooseLocation:fail location picker is unavailable')
   return Promise.reject(failure)
 }
 
@@ -97,31 +97,31 @@ export function openLocationBridge(options?: any) {
   const latitude = options?.latitude
   const longitude = options?.longitude
   if (typeof latitude !== 'number' || Number.isNaN(latitude) || typeof longitude !== 'number' || Number.isNaN(longitude)) {
-    const failure = callWxAsyncFailure(options, 'openLocation:fail invalid latitude/longitude')
+    const failure = callMiniProgramAsyncFailure(options, 'openLocation:fail invalid latitude/longitude')
     return Promise.reject(failure)
   }
   const query = `${latitude},${longitude}`
   const target = `https://maps.google.com/?q=${encodeURIComponent(query)}`
   openTargetInNewWindow(target)
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openLocation:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'openLocation:ok' }))
 }
 
 export function getLocationBridge(options?: any) {
   try {
     return readCurrentLocation(options)
-      .then(location => callWxAsyncSuccess(options, {
+      .then(location => callMiniProgramAsyncSuccess(options, {
         errMsg: 'getLocation:ok',
         ...location,
       }))
       .catch((error) => {
         const message = error instanceof Error ? error.message : String(error)
-        const failure = callWxAsyncFailure(options, `getLocation:fail ${message}`)
+        const failure = callMiniProgramAsyncFailure(options, `getLocation:fail ${message}`)
         return Promise.reject(failure)
       })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `getLocation:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `getLocation:fail ${message}`)
     return Promise.reject(failure)
   }
 }
@@ -129,14 +129,14 @@ export function getLocationBridge(options?: any) {
 export async function getFuzzyLocationBridge(options?: any) {
   const preset = readPresetFuzzyLocation()
   if (preset) {
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'getFuzzyLocation:ok',
       ...preset,
     })
   }
   try {
     const location = await getLocationBridge()
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'getFuzzyLocation:ok',
       latitude: normalizeFuzzyCoordinate(location.latitude),
       longitude: normalizeFuzzyCoordinate(location.longitude),
@@ -149,7 +149,7 @@ export async function getFuzzyLocationBridge(options?: any) {
       : error instanceof Error
         ? error.message
         : String(error)
-    const failure = callWxAsyncFailure(options, `getFuzzyLocation:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `getFuzzyLocation:fail ${message}`)
     return Promise.reject(failure)
   }
 }

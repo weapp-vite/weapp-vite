@@ -1,7 +1,7 @@
 import type { AppAuthorizeStatusLike } from './auth'
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import {
   buildAuthSettingSnapshot,
@@ -18,7 +18,7 @@ import {
 type AuthState = Map<string, AppAuthorizeStatusLike>
 
 export function getSettingBridge(options: any, authState: AuthState) {
-  return Promise.resolve(callWxAsyncSuccess(options, {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, {
     errMsg: 'getSetting:ok',
     authSetting: buildAuthSettingSnapshot(authState),
   }))
@@ -27,26 +27,26 @@ export function getSettingBridge(options: any, authState: AuthState) {
 export function authorizeBridge(options: any, authState: AuthState, supportedScopes: Set<string>) {
   const scope = normalizeAuthScope(options?.scope)
   if (!scope) {
-    const failure = callWxAsyncFailure(options, 'authorize:fail invalid scope')
+    const failure = callMiniProgramAsyncFailure(options, 'authorize:fail invalid scope')
     return Promise.reject(failure)
   }
   if (!supportedScopes.has(scope)) {
-    const failure = callWxAsyncFailure(options, 'authorize:fail unsupported scope')
+    const failure = callMiniProgramAsyncFailure(options, 'authorize:fail unsupported scope')
     return Promise.reject(failure)
   }
   const decision = resolveAuthorizeDecision(scope)
   authState.set(scope, decision)
   if (decision !== 'authorized') {
     const reason = decision === 'denied' ? 'auth deny' : 'auth canceled'
-    const failure = callWxAsyncFailure(options, `authorize:fail ${reason}`)
+    const failure = callMiniProgramAsyncFailure(options, `authorize:fail ${reason}`)
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'authorize:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'authorize:ok' }))
 }
 
 export function openSettingBridge(options: any, authState: AuthState, supportedScopes: Set<string>) {
   syncOpenSettingPreset(authState, supportedScopes)
-  return Promise.resolve(callWxAsyncSuccess(options, {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, {
     errMsg: 'openSetting:ok',
     authSetting: buildAuthSettingSnapshot(authState),
   }))
@@ -59,7 +59,7 @@ export function openAppAuthorizeSettingBridge(
   resolveAppAuthorizeSetting: () => object,
 ) {
   syncOpenAppAuthorizeSettingPreset(authState, scopeMap)
-  return Promise.resolve(callWxAsyncSuccess(options, {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, {
     errMsg: 'openAppAuthorizeSetting:ok',
     ...resolveAppAuthorizeSetting(),
   }))
@@ -90,7 +90,7 @@ export function getAppAuthorizeSettingBridge(authState: AuthState) {
 }
 
 export function loginBridge(options: any) {
-  return Promise.resolve(callWxAsyncSuccess(options, {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, {
     errMsg: 'login:ok',
     code: generateLoginCode(),
   }))
@@ -98,33 +98,33 @@ export function loginBridge(options: any) {
 
 export function checkSessionBridge(options: any) {
   if (!resolveCheckSessionState()) {
-    const failure = callWxAsyncFailure(options, 'checkSession:fail session expired')
+    const failure = callMiniProgramAsyncFailure(options, 'checkSession:fail session expired')
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'checkSession:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'checkSession:ok' }))
 }
 
 export function getUserInfoBridge(options: any, authState: AuthState) {
   if (authState.get('scope.userInfo') === 'denied') {
-    const failure = callWxAsyncFailure(options, 'getUserInfo:fail auth deny')
+    const failure = callMiniProgramAsyncFailure(options, 'getUserInfo:fail auth deny')
     return Promise.reject(failure)
   }
   authState.set('scope.userInfo', 'authorized')
-  return Promise.resolve(callWxAsyncSuccess(options, buildUserProfilePayload('getUserInfo:ok', options?.lang)))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, buildUserProfilePayload('getUserInfo:ok', options?.lang)))
 }
 
 export function getUserProfileBridge(options: any, authState: AuthState) {
   const desc = typeof options?.desc === 'string' ? options.desc.trim() : ''
   if (!desc) {
-    const failure = callWxAsyncFailure(options, 'getUserProfile:fail invalid desc')
+    const failure = callMiniProgramAsyncFailure(options, 'getUserProfile:fail invalid desc')
     return Promise.reject(failure)
   }
   const decision = resolveUserProfileDecision()
   authState.set('scope.userInfo', decision)
   if (decision !== 'authorized') {
     const reason = decision === 'denied' ? 'auth deny' : 'auth canceled'
-    const failure = callWxAsyncFailure(options, `getUserProfile:fail ${reason}`)
+    const failure = callMiniProgramAsyncFailure(options, `getUserProfile:fail ${reason}`)
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, buildUserProfilePayload('getUserProfile:ok', options?.lang)))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, buildUserProfilePayload('getUserProfile:ok', options?.lang)))
 }

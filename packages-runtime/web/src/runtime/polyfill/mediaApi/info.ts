@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from '../async'
 import {
   inferImageTypeFromPath,
@@ -14,11 +14,11 @@ import {
 export function getImageInfoBridge(options?: any) {
   const src = typeof options?.src === 'string' ? options.src.trim() : ''
   if (!src) {
-    const failure = callWxAsyncFailure(options, 'getImageInfo:fail invalid src')
+    const failure = callMiniProgramAsyncFailure(options, 'getImageInfo:fail invalid src')
     return Promise.reject(failure)
   }
   return readImageInfoFromSource(src)
-    .then(({ width, height }) => callWxAsyncSuccess(options, {
+    .then(({ width, height }) => callMiniProgramAsyncSuccess(options, {
       errMsg: 'getImageInfo:ok',
       width,
       height,
@@ -28,7 +28,7 @@ export function getImageInfoBridge(options?: any) {
     }))
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error)
-      const failure = callWxAsyncFailure(options, `getImageInfo:fail ${message}`)
+      const failure = callMiniProgramAsyncFailure(options, `getImageInfo:fail ${message}`)
       return Promise.reject(failure)
     })
 }
@@ -36,7 +36,7 @@ export function getImageInfoBridge(options?: any) {
 export function getVideoInfoBridge(options?: any) {
   const src = typeof options?.src === 'string' ? options.src.trim() : ''
   if (!src) {
-    const failure = callWxAsyncFailure(options, 'getVideoInfo:fail invalid src')
+    const failure = callMiniProgramAsyncFailure(options, 'getVideoInfo:fail invalid src')
     return Promise.reject(failure)
   }
   const preset = readPresetVideoInfo(src)
@@ -53,7 +53,7 @@ export function getVideoInfoBridge(options?: any) {
       const height = normalizeVideoInfoNumber(result.height)
       const bitrate = normalizeVideoInfoNumber((result as Record<string, unknown>).bitrate)
       const fps = normalizeVideoInfoNumber((result as Record<string, unknown>).fps)
-      return callWxAsyncSuccess(options, {
+      return callMiniProgramAsyncSuccess(options, {
         errMsg: 'getVideoInfo:ok',
         orientation: 'up',
         type: inferVideoTypeFromPath(src),
@@ -67,7 +67,7 @@ export function getVideoInfoBridge(options?: any) {
     })
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error)
-      const failure = callWxAsyncFailure(options, `getVideoInfo:fail ${message}`)
+      const failure = callMiniProgramAsyncFailure(options, `getVideoInfo:fail ${message}`)
       return Promise.reject(failure)
     })
 }

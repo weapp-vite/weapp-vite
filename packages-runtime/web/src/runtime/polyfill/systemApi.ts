@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import {
   buildMenuButtonRect,
@@ -19,14 +19,14 @@ export function getSystemInfoSyncBridge() {
 export function getSystemInfoBridge(options?: any): Promise<any> {
   try {
     const info = getSystemInfoSyncBridge()
-    return Promise.resolve(callWxAsyncSuccess(options, {
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, {
       errMsg: 'getSystemInfo:ok',
       ...info,
     }))
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `getSystemInfo:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `getSystemInfo:fail ${message}`)
     return Promise.reject(failure)
   }
 }

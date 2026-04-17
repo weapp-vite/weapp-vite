@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import {
   readClipboardData,
@@ -19,17 +19,17 @@ export function openCustomerServiceChatBridge(options?: any) {
       // ignore browser popup restrictions
     }
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'openCustomerServiceChat:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'openCustomerServiceChat:ok' }))
 }
 
 export function scanCodeBridge(options?: any) {
   const { prompt } = getGlobalDialogHandlers()
   const resultText = resolveScanCodeResult(prompt)
   if (resultText == null) {
-    const failure = callWxAsyncFailure(options, 'scanCode:fail cancel')
+    const failure = callMiniProgramAsyncFailure(options, 'scanCode:fail cancel')
     return Promise.reject(failure)
   }
-  const result = callWxAsyncSuccess(options, {
+  const result = callMiniProgramAsyncSuccess(options, {
     errMsg: 'scanCode:ok',
     result: resultText,
     scanType: 'QR_CODE',
@@ -47,20 +47,20 @@ export async function setClipboardDataBridge(options?: any) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `setClipboardData:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `setClipboardData:fail ${message}`)
     return Promise.reject(failure)
   }
-  return callWxAsyncSuccess(options, { errMsg: 'setClipboardData:ok' })
+  return callMiniProgramAsyncSuccess(options, { errMsg: 'setClipboardData:ok' })
 }
 
 export async function getClipboardDataBridge(options?: any) {
   try {
     const data = await readClipboardData()
-    return callWxAsyncSuccess(options, { errMsg: 'getClipboardData:ok', data })
+    return callMiniProgramAsyncSuccess(options, { errMsg: 'getClipboardData:ok', data })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `getClipboardData:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `getClipboardData:fail ${message}`)
     return Promise.reject(failure)
   }
 }

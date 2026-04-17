@@ -1,7 +1,7 @@
 import type { DownloadFileOptions, RequestOptions, UploadFileOptions } from '../types/common'
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from '../async'
 import {
   performDownloadByFetch,
@@ -12,7 +12,7 @@ import {
 export async function requestByFetchBridge(options?: RequestOptions) {
   try {
     const response = await performRequestByFetch(options)
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'request:ok',
       data: response.data,
       statusCode: response.statusCode,
@@ -21,14 +21,14 @@ export async function requestByFetchBridge(options?: RequestOptions) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return Promise.reject(callWxAsyncFailure(options, `request:fail ${message}`))
+    return Promise.reject(callMiniProgramAsyncFailure(options, `request:fail ${message}`))
   }
 }
 
 export async function downloadFileByFetchBridge(options?: DownloadFileOptions) {
   try {
     const response = await performDownloadByFetch(options)
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'downloadFile:ok',
       tempFilePath: response.tempFilePath,
       statusCode: response.statusCode,
@@ -36,14 +36,14 @@ export async function downloadFileByFetchBridge(options?: DownloadFileOptions) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return Promise.reject(callWxAsyncFailure(options, `downloadFile:fail ${message}`))
+    return Promise.reject(callMiniProgramAsyncFailure(options, `downloadFile:fail ${message}`))
   }
 }
 
 export async function uploadFileByFetchBridge(options?: UploadFileOptions) {
   try {
     const response = await performUploadByFetch(options)
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'uploadFile:ok',
       data: response.data,
       statusCode: response.statusCode,
@@ -52,6 +52,6 @@ export async function uploadFileByFetchBridge(options?: UploadFileOptions) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return Promise.reject(callWxAsyncFailure(options, `uploadFile:fail ${message}`))
+    return Promise.reject(callMiniProgramAsyncFailure(options, `uploadFile:fail ${message}`))
   }
 }

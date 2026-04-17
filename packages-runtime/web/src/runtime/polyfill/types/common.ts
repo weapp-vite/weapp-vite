@@ -1,55 +1,55 @@
-import type { WxAsyncOptions, WxBaseResult } from './base'
+import type { MiniProgramAsyncOptions, MiniProgramBaseResult } from './base'
 
-export interface ShowToastOptions extends WxAsyncOptions<WxBaseResult> {
+export interface ShowToastOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   title?: string
   icon?: 'success' | 'error' | 'none'
   duration?: number
 }
 
-export interface SetClipboardDataOptions extends WxAsyncOptions<WxBaseResult> {
+export interface SetClipboardDataOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   data?: string
 }
 
-export interface GetClipboardDataSuccessResult extends WxBaseResult {
+export interface GetClipboardDataSuccessResult extends MiniProgramBaseResult {
   data: string
 }
 
-export interface GetClipboardDataOptions extends WxAsyncOptions<GetClipboardDataSuccessResult> {}
+export interface GetClipboardDataOptions extends MiniProgramAsyncOptions<GetClipboardDataSuccessResult> {}
 
-export interface SetStorageOptions extends WxAsyncOptions<WxBaseResult> {
+export interface SetStorageOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   key?: string
   data?: any
 }
 
-export interface GetStorageSuccessResult extends WxBaseResult {
+export interface GetStorageSuccessResult extends MiniProgramBaseResult {
   data: any
 }
 
-export interface GetStorageOptions extends WxAsyncOptions<GetStorageSuccessResult> {
+export interface GetStorageOptions extends MiniProgramAsyncOptions<GetStorageSuccessResult> {
   key?: string
 }
 
-export interface RemoveStorageOptions extends WxAsyncOptions<WxBaseResult> {
+export interface RemoveStorageOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   key?: string
 }
 
-export interface StorageInfoResult extends WxBaseResult {
+export interface StorageInfoResult extends MiniProgramBaseResult {
   keys: string[]
   currentSize: number
   limitSize: number
 }
 
-export interface FileReadResult extends WxBaseResult {
+export interface FileReadResult extends MiniProgramBaseResult {
   data: string | ArrayBuffer
 }
 
-export interface FileWriteOptions extends WxAsyncOptions<WxBaseResult> {
+export interface FileWriteOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   filePath?: string
   data?: string | ArrayBuffer | ArrayBufferView
   encoding?: string
 }
 
-export interface FileReadOptions extends WxAsyncOptions<FileReadResult> {
+export interface FileReadOptions extends MiniProgramAsyncOptions<FileReadResult> {
   filePath?: string
   encoding?: string
 }
@@ -73,13 +73,13 @@ export interface WorkerBridge {
   offError: (callback?: WorkerErrorCallback) => void
 }
 
-export interface RequestSuccessResult extends WxBaseResult {
+export interface RequestSuccessResult extends MiniProgramBaseResult {
   data: any
   statusCode: number
   header: Record<string, string>
 }
 
-export interface RequestOptions extends WxAsyncOptions<RequestSuccessResult> {
+export interface RequestOptions extends MiniProgramAsyncOptions<RequestSuccessResult> {
   url?: string
   method?: string
   data?: any
@@ -89,24 +89,24 @@ export interface RequestOptions extends WxAsyncOptions<RequestSuccessResult> {
   responseType?: 'text' | 'arraybuffer'
 }
 
-export interface DownloadFileSuccessResult extends WxBaseResult {
+export interface DownloadFileSuccessResult extends MiniProgramBaseResult {
   tempFilePath: string
   statusCode: number
 }
 
-export interface DownloadFileOptions extends WxAsyncOptions<DownloadFileSuccessResult> {
+export interface DownloadFileOptions extends MiniProgramAsyncOptions<DownloadFileSuccessResult> {
   url?: string
   header?: Record<string, string>
   timeout?: number
 }
 
-export interface UploadFileSuccessResult extends WxBaseResult {
+export interface UploadFileSuccessResult extends MiniProgramBaseResult {
   data: string
   statusCode: number
   header: Record<string, string>
 }
 
-export interface UploadFileOptions extends WxAsyncOptions<UploadFileSuccessResult> {
+export interface UploadFileOptions extends MiniProgramAsyncOptions<UploadFileSuccessResult> {
   url?: string
   filePath?: string
   name?: string
@@ -115,7 +115,7 @@ export interface UploadFileOptions extends WxAsyncOptions<UploadFileSuccessResul
   timeout?: number
 }
 
-export interface PreviewImageOptions extends WxAsyncOptions<WxBaseResult> {
+export interface PreviewImageOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   current?: string
   urls?: string[]
 }
@@ -127,12 +127,12 @@ export interface ChooseImageTempFile {
   name: string
 }
 
-export interface ChooseImageSuccessResult extends WxBaseResult {
+export interface ChooseImageSuccessResult extends MiniProgramBaseResult {
   tempFilePaths: string[]
   tempFiles: ChooseImageTempFile[]
 }
 
-export interface ChooseImageOptions extends WxAsyncOptions<ChooseImageSuccessResult> {
+export interface ChooseImageOptions extends MiniProgramAsyncOptions<ChooseImageSuccessResult> {
   count?: number
   sizeType?: Array<'original' | 'compressed'>
   sourceType?: Array<'album' | 'camera'>

@@ -4,6 +4,8 @@ import type {
   FileSystemManager,
   GetStorageOptions,
   LoadSubPackageOptions,
+  MiniProgramAsyncOptions,
+  MiniProgramBaseResult,
   NavigateToMiniProgramOptions,
   PageScrollToOptions,
   PreloadSubpackageOptions,
@@ -16,12 +18,10 @@ import type {
   VideoContext,
   VkSession,
   WorkerBridge,
-  WxAsyncOptions,
-  WxBaseResult,
 } from './types'
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import { createCanvasContextBridge } from './canvasContext'
 import {
@@ -59,12 +59,12 @@ import {
 import { createVideoContextBridge } from './videoContext'
 
 const fileSystemManagerBridge: FileSystemManager = createFileSystemManagerBridgeApi(
-  (options: any, result: any) => callWxAsyncSuccess(
-    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
-    result as WxBaseResult,
+  (options: any, result: any) => callMiniProgramAsyncSuccess(
+    options as unknown as MiniProgramAsyncOptions<MiniProgramBaseResult> | undefined,
+    result as MiniProgramBaseResult,
   ),
-  (options: any, errMsg: any) => callWxAsyncFailure(
-    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
+  (options: any, errMsg: any) => callMiniProgramAsyncFailure(
+    options as unknown as MiniProgramAsyncOptions<MiniProgramBaseResult> | undefined,
     errMsg,
   ),
 ) as FileSystemManager
@@ -72,29 +72,29 @@ const fileSystemManagerBridge: FileSystemManager = createFileSystemManagerBridge
 export function navigateToMiniProgram(options?: NavigateToMiniProgramOptions) {
   const appId = options?.appId?.trim() ?? ''
   if (!appId) {
-    const failure = callWxAsyncFailure(options, 'navigateToMiniProgram:fail invalid appId')
+    const failure = callMiniProgramAsyncFailure(options, 'navigateToMiniProgram:fail invalid appId')
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'navigateToMiniProgram:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'navigateToMiniProgram:ok' }))
 }
 
-export function exitMiniProgram(options?: WxAsyncOptions<WxBaseResult>) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'exitMiniProgram:ok' }))
+export function exitMiniProgram(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'exitMiniProgram:ok' }))
 }
 
 export function nextTick(callback?: () => void) {
   return nextTickBridge(callback)
 }
 
-export function startPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
+export function startPullDownRefresh(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
   return startPullDownRefreshBridge(options)
 }
 
-export function stopPullDownRefresh(options?: WxAsyncOptions<WxBaseResult>) {
+export function stopPullDownRefresh(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
   return stopPullDownRefreshBridge(options)
 }
 
-export function hideKeyboard(options?: WxAsyncOptions<WxBaseResult>) {
+export function hideKeyboard(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
   return hideKeyboardBridge(options)
 }
 
@@ -154,11 +154,11 @@ export function removeStorage(options?: RemoveStorageOptions) {
   return removeStorageBridge(options)
 }
 
-export function clearStorage(options?: WxAsyncOptions<WxBaseResult>) {
+export function clearStorage(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
   return clearStorageBridge(options)
 }
 
-export function getStorageInfo(options?: WxAsyncOptions<StorageInfoResult>) {
+export function getStorageInfo(options?: MiniProgramAsyncOptions<StorageInfoResult>) {
   return getStorageInfoBridge(options)
 }
 

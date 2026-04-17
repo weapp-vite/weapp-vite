@@ -1,6 +1,9 @@
 import type {
+  WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
+  WeapiMiniProgramConnectSocketOption,
+  WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRequestMethod,
@@ -8,12 +11,20 @@ import type {
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
   WeapiMiniProgramSelectorQuery,
+  WeapiMiniProgramSocketTask,
   WeapiMiniProgramSystemInfo,
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
+  WeapiMiniProgramWxRawAdapter,
   WeapiWxRawAdapter,
 } from './miniProgramTypes'
 import type { WeapiNonPromisifiedMethodName } from './nonPromisifiedMethods'
+import type {
+  WeapiAlipayRawAdapter,
+  WeapiCrossPlatformRawAdapter,
+  WeapiDouyinRawAdapter,
+  WeapiMiniProgramCrossPlatformRawAdapter,
+} from './platformAdapters'
 import type { WeapiCrossPlatformMethodDocs } from './types/methodDocs'
 
 /// <reference types="miniprogram-api-typings" />
@@ -21,8 +32,15 @@ import type { WeapiCrossPlatformMethodDocs } from './types/methodDocs'
 /// <reference types="@douyin-microapp/typings" />
 export type WeapiAdapter = Record<string, any>
 export type {
+  WeapiAlipayRawAdapter,
+  WeapiCrossPlatformRawAdapter,
+  WeapiDouyinRawAdapter,
+  WeapiMiniProgramAlipayRawAdapter,
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
+  WeapiMiniProgramConnectSocketOption,
+  WeapiMiniProgramCrossPlatformRawAdapter,
+  WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRequestMethod,
@@ -30,43 +48,13 @@ export type {
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
   WeapiMiniProgramSelectorQuery,
+  WeapiMiniProgramSocketTask,
   WeapiMiniProgramSystemInfo,
   WeapiMiniProgramUpdateManager,
   WeapiMiniProgramVideoContext,
+  WeapiMiniProgramWxRawAdapter,
   WeapiWxRawAdapter,
 }
-
-/**
- * @description 支付宝小程序 API 原始适配器类型
- */
-export type WeapiAlipayRawAdapter = typeof my
-
-/**
- * @description 抖音小程序 API 原始适配器类型
- */
-export type WeapiDouyinRawAdapter = typeof tt
-
-type MergeAdapters<Primary extends WeapiAdapter, Secondary extends WeapiAdapter>
-  = Primary & Omit<Secondary, keyof Primary>
-
-/**
- * @description weapi 对齐后的跨平台原始 API 类型
- *
- * @generated weapi-platform-matrix:start
- * | 平台 | 全局对象 | 类型来源 | 对齐状态 |
- * | --- | --- | --- | --- |
- * | 微信小程序 | `wx` | `miniprogram-api-typings` | ✅ 全量 |
- * | 支付宝小程序 | `my` | `@mini-types/alipay` | ✅ 全量 |
- * | 百度智能小程序 | `swan` | 运行时透传 | ⚠️ 按宿主能力支持 |
- * | 抖音小程序 | `tt` | `@douyin-microapp/typings` | ✅ 全量 |
- * | 京东小程序 | `jd` | 运行时透传 | ⚠️ 按宿主能力支持 |
- * | 小红书小程序 | `xhs` | 运行时透传 | ⚠️ 按宿主能力支持 |
- * @generated weapi-platform-matrix:end
- */
-export type WeapiCrossPlatformRawAdapter = MergeAdapters<
-  MergeAdapters<WeapiWxRawAdapter, WeapiAlipayRawAdapter>,
-  WeapiDouyinRawAdapter
->
 
 type HasCallbackKey<T> = T extends object
   ? 'success' extends keyof T
@@ -161,19 +149,39 @@ export type WeapiWxAdapter = WeapiPromisify<WeapiWxRawAdapter>
 export type WeapiMiniProgramAdapter = WeapiPromisify<WeapiMiniProgramRawAdapter>
 
 /**
+ * @description 微信小程序 API 适配器类型（宿主中立别名）
+ */
+export type WeapiMiniProgramWxAdapter = WeapiPromisify<WeapiMiniProgramWxRawAdapter>
+
+/**
  * @description 支付宝小程序 API 适配器类型
  */
-export type WeapiAlipayAdapter = WeapiPromisify<WeapiAlipayRawAdapter>
+export type WeapiMiniProgramAlipayAdapter = WeapiPromisify<WeapiMiniProgramAlipayRawAdapter>
+
+/**
+ * @description 支付宝小程序 API 适配器类型
+ */
+export type WeapiAlipayAdapter = WeapiMiniProgramAlipayAdapter
 
 /**
  * @description 抖音小程序 API 适配器类型
  */
-export type WeapiDouyinAdapter = WeapiPromisify<WeapiDouyinRawAdapter>
+export type WeapiMiniProgramDouyinAdapter = WeapiPromisify<WeapiMiniProgramDouyinRawAdapter>
+
+/**
+ * @description 抖音小程序 API 适配器类型
+ */
+export type WeapiDouyinAdapter = WeapiMiniProgramDouyinAdapter
 
 /**
  * @description weapi 默认导出的跨平台 API 适配器类型
  */
-export type WeapiCrossPlatformAdapter = WeapiPromisify<WeapiCrossPlatformRawAdapter>
+export type WeapiMiniProgramCrossPlatformAdapter = WeapiPromisify<WeapiMiniProgramCrossPlatformRawAdapter>
+
+/**
+ * @description weapi 默认导出的跨平台 API 适配器类型
+ */
+export type WeapiCrossPlatformAdapter = WeapiMiniProgramCrossPlatformAdapter
 
 /**
  * @description weapi 核心映射 API 的平台支持度说明

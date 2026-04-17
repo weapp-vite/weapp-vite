@@ -5,18 +5,18 @@ import type {
   InterstitialAd,
   LogManager,
   LogManagerOptions,
+  MiniProgramAsyncOptions,
+  MiniProgramBaseResult,
   RewardedVideoAd,
   SetBackgroundColorOptions,
   SetBackgroundTextStyleOptions,
   UpdateManager,
-  WxAsyncOptions,
-  WxBaseResult,
 } from './types'
 import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import { emitRuntimeWarning } from '../warning'
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from './async'
 import {
   setBackgroundColorBridge,
@@ -127,12 +127,12 @@ export function canIUse(schema: string) {
 }
 
 const cloudBridge: CloudBridge = createCloudBridge(
-  (options, result) => callWxAsyncSuccess(
-    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
-    result as WxBaseResult,
+  (options, result) => callMiniProgramAsyncSuccess(
+    options as unknown as MiniProgramAsyncOptions<MiniProgramBaseResult> | undefined,
+    result as MiniProgramBaseResult,
   ),
-  (options, errMsg) => callWxAsyncFailure(
-    options as unknown as WxAsyncOptions<WxBaseResult> | undefined,
+  (options, errMsg) => callMiniProgramAsyncFailure(
+    options as unknown as MiniProgramAsyncOptions<MiniProgramBaseResult> | undefined,
     errMsg,
   ),
 ) as CloudBridge

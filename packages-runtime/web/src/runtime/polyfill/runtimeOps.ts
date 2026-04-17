@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
   normalizeDuration,
   scheduleMicrotask,
 } from './async'
@@ -34,11 +34,11 @@ export function nextTickBridge(callback?: () => void) {
 }
 
 export function startPullDownRefreshBridge(options?: any) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'startPullDownRefresh:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'startPullDownRefresh:ok' }))
 }
 
 export function stopPullDownRefreshBridge(options?: any) {
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'stopPullDownRefresh:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'stopPullDownRefresh:ok' }))
 }
 
 export function hideKeyboardBridge(options?: any) {
@@ -48,25 +48,25 @@ export function hideKeyboardBridge(options?: any) {
   if (activeElement && typeof activeElement.blur === 'function') {
     activeElement.blur()
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideKeyboard:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideKeyboard:ok' }))
 }
 
 export function loadSubPackageBridge(options?: any) {
   const name = resolveSubPackageName(options)
   if (!name) {
-    const failure = callWxAsyncFailure(options, 'loadSubPackage:fail invalid name')
+    const failure = callMiniProgramAsyncFailure(options, 'loadSubPackage:fail invalid name')
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'loadSubPackage:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'loadSubPackage:ok' }))
 }
 
 export function preloadSubpackageBridge(options?: any) {
   const name = resolveSubPackageName(options)
   if (!name) {
-    const failure = callWxAsyncFailure(options, 'preloadSubpackage:fail invalid name')
+    const failure = callMiniProgramAsyncFailure(options, 'preloadSubpackage:fail invalid name')
     return Promise.reject(failure)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'preloadSubpackage:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'preloadSubpackage:ok' }))
 }
 
 export function pageScrollToBridge(options?: any) {
@@ -76,13 +76,13 @@ export function pageScrollToBridge(options?: any) {
 
   if (duration <= 0) {
     run()
-    return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
+    return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
   }
 
   return new Promise((resolve) => {
     setTimeout(() => {
       run()
-      resolve(callWxAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
+      resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'pageScrollTo:ok' }))
     }, duration)
   })
 }

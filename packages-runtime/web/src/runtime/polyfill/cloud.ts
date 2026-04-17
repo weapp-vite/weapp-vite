@@ -1,4 +1,4 @@
-interface WxBaseResult {
+interface MiniProgramBaseResult {
   errMsg: string
 }
 
@@ -17,16 +17,16 @@ interface CloudBridge {
   callFunction: (options?: CloudCallFunctionOptions) => Promise<unknown>
 }
 
-type CallWxAsyncSuccess = (options: unknown, result: Record<string, unknown> & WxBaseResult) => unknown
-type CallWxAsyncFailure = (options: unknown, errMsg: string) => WxBaseResult
+type CallMiniProgramAsyncSuccess = (options: unknown, result: Record<string, unknown> & MiniProgramBaseResult) => unknown
+type CallMiniProgramAsyncFailure = (options: unknown, errMsg: string) => MiniProgramBaseResult
 
 function createCloudRequestId() {
   return `web_cloud_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
 }
 
 export function createCloudBridge(
-  callWxAsyncSuccess: CallWxAsyncSuccess,
-  callWxAsyncFailure: CallWxAsyncFailure,
+  callMiniProgramAsyncSuccess: CallMiniProgramAsyncSuccess,
+  callMiniProgramAsyncFailure: CallMiniProgramAsyncFailure,
 ): CloudBridge {
   const cloudRuntimeState = {
     env: '',
@@ -40,10 +40,10 @@ export function createCloudBridge(
     callFunction(options?: CloudCallFunctionOptions) {
       const name = typeof options?.name === 'string' ? options.name.trim() : ''
       if (!name) {
-        const failure = callWxAsyncFailure(options, 'cloud.callFunction:fail invalid function name')
+        const failure = callMiniProgramAsyncFailure(options, 'cloud.callFunction:fail invalid function name')
         return Promise.reject(failure)
       }
-      const result = callWxAsyncSuccess(options, {
+      const result = callMiniProgramAsyncSuccess(options, {
         errMsg: 'cloud.callFunction:ok',
         result: {
           name,

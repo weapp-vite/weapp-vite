@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from '../async'
 import { readPresetCompressVideo } from '../mediaInfo'
 import {
@@ -11,20 +11,20 @@ import {
 export async function compressImageBridge(options?: any) {
   const src = typeof options?.src === 'string' ? options.src.trim() : ''
   if (!src) {
-    const failure = callWxAsyncFailure(options, 'compressImage:fail invalid src')
+    const failure = callMiniProgramAsyncFailure(options, 'compressImage:fail invalid src')
     return Promise.reject(failure)
   }
   const quality = normalizeCompressImageQuality(options?.quality)
   try {
     const tempFilePath = await compressImageByCanvas(src, quality)
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'compressImage:ok',
       tempFilePath,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `compressImage:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `compressImage:fail ${message}`)
     return Promise.reject(failure)
   }
 }
@@ -32,7 +32,7 @@ export async function compressImageBridge(options?: any) {
 export function compressVideoBridge(options?: any) {
   const src = typeof options?.src === 'string' ? options.src.trim() : ''
   if (!src) {
-    const failure = callWxAsyncFailure(options, 'compressVideo:fail invalid src')
+    const failure = callMiniProgramAsyncFailure(options, 'compressVideo:fail invalid src')
     return Promise.reject(failure)
   }
   const preset = readPresetCompressVideo(src)
@@ -45,7 +45,7 @@ export function compressVideoBridge(options?: any) {
     bitrate: 0,
     fps: 0,
   }
-  return Promise.resolve(callWxAsyncSuccess(options, {
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, {
     errMsg: 'compressVideo:ok',
     ...result,
   }))

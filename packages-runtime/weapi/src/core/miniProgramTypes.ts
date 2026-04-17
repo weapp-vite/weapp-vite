@@ -6,11 +6,27 @@
 export type WeapiWxRawAdapter = WechatMiniprogram.Wx
 
 /**
+ * @description 微信小程序 API 原始适配器类型（宿主中立别名）
+ */
+export type WeapiMiniProgramWxRawAdapter = WeapiWxRawAdapter
+
+/**
+ * @description 支付宝小程序 API 原始适配器类型（宿主中立主名）
+ */
+export type WeapiMiniProgramAlipayRawAdapter = typeof my
+
+/**
+ * @description 抖音小程序 API 原始适配器类型（宿主中立主名）
+ */
+export type WeapiMiniProgramDouyinRawAdapter = typeof tt
+
+/**
  * @description 小程序主适配器类型（当前以微信 typings 作为基准）
  */
-export type WeapiMiniProgramRawAdapter = WeapiWxRawAdapter
+export type WeapiMiniProgramRawAdapter = WeapiMiniProgramWxRawAdapter
 
 type WeapiMiniProgramRawRequestOption = Parameters<WeapiMiniProgramRawAdapter['request']>[0]
+type WeapiMiniProgramRawConnectSocketOption = Parameters<WeapiMiniProgramRawAdapter['connectSocket']>[0]
 type WeapiMiniProgramCreateBleConnectionOption = Parameters<WeapiMiniProgramRawAdapter['createBLEConnection']>[0]
 type WeapiMiniProgramClipboardOption = Parameters<WeapiMiniProgramRawAdapter['getClipboardData']>[0]
 
@@ -33,6 +49,16 @@ export type WeapiMiniProgramRequestTask = ReturnType<WeapiMiniProgramRawAdapter[
  * @description 小程序请求成功结果类型（宿主中立别名）
  */
 export type WeapiMiniProgramRequestSuccessResult = Parameters<NonNullable<WeapiMiniProgramRequestOption['success']>>[0]
+
+/**
+ * @description 小程序连接 WebSocket 参数类型（宿主中立别名）
+ */
+export type WeapiMiniProgramConnectSocketOption = WeapiMiniProgramRawConnectSocketOption
+
+/**
+ * @description 小程序 WebSocket 任务类型（宿主中立别名）
+ */
+export type WeapiMiniProgramSocketTask = ReturnType<WeapiMiniProgramRawAdapter['connectSocket']>
 
 /**
  * @description 小程序系统信息类型（宿主中立别名）

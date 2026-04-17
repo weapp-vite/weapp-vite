@@ -12,6 +12,8 @@ import type {
   GetImageInfoOptions,
   GetVideoInfoOptions,
   MakePhoneCallOptions,
+  MiniProgramAsyncOptions,
+  MiniProgramBaseResult,
   OpenCustomerServiceChatOptions,
   OpenDocumentOptions,
   OpenLocationOptions,
@@ -33,8 +35,6 @@ import type {
   ShowModalOptions,
   ShowToastOptions,
   TabBarOptions,
-  WxAsyncOptions,
-  WxBaseResult,
 } from './types'
 import {
   getClipboardDataBridge,
@@ -91,7 +91,7 @@ export function showLoading(options?: ShowLoadingOptions) {
   return showLoadingBridge(options)
 }
 
-export function hideLoading(options?: WxAsyncOptions<WxBaseResult>) {
+export function hideLoading(options?: MiniProgramAsyncOptions<MiniProgramBaseResult>) {
   return hideLoadingBridge(options)
 }
 

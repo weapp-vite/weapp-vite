@@ -1,6 +1,6 @@
 import {
-  callWxAsyncFailure,
-  callWxAsyncSuccess,
+  callMiniProgramAsyncFailure,
+  callMiniProgramAsyncSuccess,
 } from '../async'
 import {
   normalizeChooseFileExtensions,
@@ -30,7 +30,7 @@ export async function chooseImageBridge(options?: any) {
     const files = await pickChooseImageFiles(count)
     const tempFiles = files.map(file => normalizeChooseImageFile(file))
     const tempFilePaths = tempFiles.map(item => item.path)
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseImage:ok',
       tempFilePaths,
       tempFiles,
@@ -38,7 +38,7 @@ export async function chooseImageBridge(options?: any) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseImage:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `chooseImage:fail ${message}`)
     return Promise.reject(failure)
   }
 }
@@ -50,7 +50,7 @@ export async function chooseMediaBridge(options?: any) {
     const files = await pickChooseMediaFiles(count, types)
     const tempFiles = files.map(file => normalizeChooseMediaFile(file))
     const defaultType = types.has('video') && !types.has('image') ? 'video' : 'image'
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseMedia:ok',
       type: tempFiles[0]?.fileType ?? defaultType,
       tempFiles,
@@ -58,7 +58,7 @@ export async function chooseMediaBridge(options?: any) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseMedia:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `chooseMedia:fail ${message}`)
     return Promise.reject(failure)
   }
 }
@@ -73,14 +73,14 @@ export async function chooseVideoBridge(options?: any) {
     if (!normalized) {
       throw new TypeError('selected file is not a video')
     }
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseVideo:ok',
       ...normalized,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseVideo:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `chooseVideo:fail ${message}`)
     return Promise.reject(failure)
   }
 }
@@ -91,14 +91,14 @@ export async function chooseMessageFileBridge(options?: any) {
   try {
     const files = await pickChooseMessageFiles(count, type)
     const tempFiles = files.map(file => normalizeChooseMessageFile(file))
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseMessageFile:ok',
       tempFiles,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseMessageFile:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `chooseMessageFile:fail ${message}`)
     return Promise.reject(failure)
   }
 }
@@ -110,14 +110,14 @@ export async function chooseFileBridge(options?: any) {
   try {
     const files = await pickChooseFileFiles(count, type, extensions)
     const tempFiles = files.map(file => normalizeChooseMessageFile(file))
-    return callWxAsyncSuccess(options, {
+    return callMiniProgramAsyncSuccess(options, {
       errMsg: 'chooseFile:ok',
       tempFiles,
     })
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const failure = callWxAsyncFailure(options, `chooseFile:fail ${message}`)
+    const failure = callMiniProgramAsyncFailure(options, `chooseFile:fail ${message}`)
     return Promise.reject(failure)
   }
 }

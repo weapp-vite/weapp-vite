@@ -1,5 +1,5 @@
 import {
-  callWxAsyncSuccess,
+  callMiniProgramAsyncSuccess,
   normalizeDuration,
 } from './async'
 import {
@@ -28,7 +28,7 @@ export function showToastBridge(options?: any): Promise<any> {
       toastHideTimer = undefined
     }, duration)
   }
-  const result = callWxAsyncSuccess(options, { errMsg: 'showToast:ok' })
+  const result = callMiniProgramAsyncSuccess(options, { errMsg: 'showToast:ok' })
   return Promise.resolve(result)
 }
 
@@ -42,7 +42,7 @@ export function showLoadingBridge(options?: any): Promise<any> {
       Boolean(options?.mask),
     )
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'showLoading:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'showLoading:ok' }))
 }
 
 export function hideLoadingBridge(options?: any): Promise<any> {
@@ -50,5 +50,5 @@ export function hideLoadingBridge(options?: any): Promise<any> {
   if (loading) {
     setLoadingVisible(loading, false, loading.textContent ?? '', false)
   }
-  return Promise.resolve(callWxAsyncSuccess(options, { errMsg: 'hideLoading:ok' }))
+  return Promise.resolve(callMiniProgramAsyncSuccess(options, { errMsg: 'hideLoading:ok' }))
 }

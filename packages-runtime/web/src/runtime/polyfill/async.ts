@@ -1,15 +1,15 @@
-interface WxBaseResultLike {
+interface MiniProgramBaseResultLike {
   errMsg: string
 }
 
-interface WxAsyncOptionsLike<SuccessResult extends WxBaseResultLike> {
+interface MiniProgramAsyncOptionsLike<SuccessResult extends MiniProgramBaseResultLike> {
   success?: (result: SuccessResult) => void
-  fail?: (result: WxBaseResultLike) => void
-  complete?: (result: SuccessResult | WxBaseResultLike) => void
+  fail?: (result: MiniProgramBaseResultLike) => void
+  complete?: (result: SuccessResult | MiniProgramBaseResultLike) => void
 }
 
-export function callWxAsyncSuccess<SuccessResult extends WxBaseResultLike>(
-  options: WxAsyncOptionsLike<SuccessResult> | undefined,
+export function callMiniProgramAsyncSuccess<SuccessResult extends MiniProgramBaseResultLike>(
+  options: MiniProgramAsyncOptionsLike<SuccessResult> | undefined,
   result: SuccessResult,
 ) {
   options?.success?.(result)
@@ -17,15 +17,18 @@ export function callWxAsyncSuccess<SuccessResult extends WxBaseResultLike>(
   return result
 }
 
-export function callWxAsyncFailure<SuccessResult extends WxBaseResultLike>(
-  options: WxAsyncOptionsLike<SuccessResult> | undefined,
+export function callMiniProgramAsyncFailure<SuccessResult extends MiniProgramBaseResultLike>(
+  options: MiniProgramAsyncOptionsLike<SuccessResult> | undefined,
   errMsg: string,
 ) {
-  const result: WxBaseResultLike = { errMsg }
+  const result: MiniProgramBaseResultLike = { errMsg }
   options?.fail?.(result)
   options?.complete?.(result)
   return result
 }
+
+export const callWxAsyncSuccess = callMiniProgramAsyncSuccess
+export const callWxAsyncFailure = callMiniProgramAsyncFailure
 
 export function normalizeDuration(duration: number | undefined, fallback: number) {
   if (typeof duration !== 'number' || Number.isNaN(duration)) {
