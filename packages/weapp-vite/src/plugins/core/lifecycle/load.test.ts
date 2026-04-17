@@ -313,7 +313,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('Page({ response })')
   })
 
-  it('injects wpi and replaces wx/my/platform global when replaceWx is enabled', async () => {
+  it('injects wpi and replaces all supported runtime globals when replaceWx is enabled', async () => {
     const loadEntry = vi.fn(async () => ({
       code: 'App({})',
     }))
@@ -352,6 +352,10 @@ describe('core lifecycle load hook injectWeapi', () => {
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
     expect(code).toContain('__weappGlobal.wx = __weappInstance')
     expect(code).toContain('__weappGlobal.my = __weappInstance')
+    expect(code).toContain('__weappGlobal.tt = __weappInstance')
+    expect(code).toContain('__weappGlobal.swan = __weappInstance')
+    expect(code).toContain('__weappGlobal.jd = __weappInstance')
+    expect(code).toContain('__weappGlobal.xhs = __weappInstance')
     expect(code).toContain('__weappGlobal[__weappPlatformKey] = __weappInstance')
     expect(code).toContain('const __weappRawApi = (__weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined) ?? ((__weappGlobal.my ?? __weappGlobal.wx ?? __weappGlobal.tt ?? __weappGlobal.swan ?? __weappGlobal.jd ?? __weappGlobal.xhs)')
     expect(code).not.toContain('Function(')

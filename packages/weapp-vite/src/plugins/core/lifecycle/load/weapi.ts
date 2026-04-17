@@ -1,4 +1,4 @@
-import { removeExtensionDeep } from '@weapp-core/shared'
+import { getMiniProgramRuntimeGlobalKeys, removeExtensionDeep } from '@weapp-core/shared'
 import { createMiniProgramHostOrTopLevelResolveExpression } from '../../../../utils/miniProgramGlobals'
 import { createWeapiHostExpression } from '../../../../utils/weapi'
 import { rewriteMiniProgramPlatformApiAccess } from '../platformApiRewrite'
@@ -52,8 +52,7 @@ export function createWeapiInjectionCode(options: {
   })
   const replaceLines = options.replaceWx
     ? [
-        `  __weappGlobal.wx = __weappInstance`,
-        `  __weappGlobal.my = __weappInstance`,
+        ...getMiniProgramRuntimeGlobalKeys().map(globalKey => `  __weappGlobal.${globalKey} = __weappInstance`),
         `  if (__weappPlatformKey) {`,
         `    __weappGlobal[__weappPlatformKey] = __weappInstance`,
         `  }`,
