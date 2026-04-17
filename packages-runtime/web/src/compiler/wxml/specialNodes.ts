@@ -7,6 +7,7 @@ import type {
 } from './types'
 
 import { dirname, relative } from 'pathe'
+import { TEMPLATE_IMPORT_TAG_NAMES, TEMPLATE_INCLUDE_TAG_NAMES } from '../../shared/wxml'
 
 export function shouldMarkWxsImport(pathname: string) {
   const lower = pathname.toLowerCase()
@@ -40,7 +41,7 @@ export function collectSpecialNodes(nodes: RenderNode[], context: CollectSpecial
         })
         continue
       }
-      if ((name === 'import' || name === 'wx-import') && node.attribs?.src) {
+      if (TEMPLATE_IMPORT_TAG_NAMES.includes(name) && node.attribs?.src) {
         const resolved = context.resolveTemplate(node.attribs.src)
         if (resolved) {
           context.imports.push({
@@ -53,7 +54,7 @@ export function collectSpecialNodes(nodes: RenderNode[], context: CollectSpecial
         }
         continue
       }
-      if ((name === 'include' || name === 'wx-include') && node.attribs?.src) {
+      if (TEMPLATE_INCLUDE_TAG_NAMES.includes(name) && node.attribs?.src) {
         const resolved = context.resolveTemplate(node.attribs.src)
         if (resolved) {
           context.includes.push({
@@ -109,6 +110,10 @@ export function collectSpecialNodes(nodes: RenderNode[], context: CollectSpecial
   return renderable
 }
 
+export function normalizeTemplatePath(pathname: string) {
+  return pathname.split('\\').join('/')
+}
+
 export function toRelativeImport(from: string, target: string) {
   const fromDir = dirname(from)
   const rel = relative(fromDir, target)
@@ -117,8 +122,4 @@ export function toRelativeImport(from: string, target: string) {
     return rel || `./${fallback}`
   }
   return `./${rel}`
-}
-
-export function normalizeTemplatePath(pathname: string) {
-  return pathname.split('\\').join('/')
 }

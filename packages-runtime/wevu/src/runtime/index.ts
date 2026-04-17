@@ -1,7 +1,13 @@
 export type {
+  MiniProgramCSSProperties,
+  MiniProgramDatasetAttributes,
+  MiniProgramHtmlAliasIntrinsicElements,
   MiniProgramIntrinsicElementBaseAttributes,
   MiniProgramIntrinsicElements,
   MiniProgramIntrinsicEventHandler,
+  WeappCSSProperties,
+  WeappDatasetAttributes,
+  WeappHtmlAliasIntrinsicElements,
   WeappIntrinsicElementBaseAttributes,
   WeappIntrinsicElements,
   WeappIntrinsicEventHandler,

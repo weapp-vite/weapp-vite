@@ -16,6 +16,16 @@ export const CONTROL_ATTR_PREFIXES = Array.from(new Set(
   getSupportedMiniProgramPlatforms().map(platform => getMiniProgramDirectivePrefix(platform)),
 ))
 
+export const TEMPLATE_IMPORT_TAG_NAMES = Array.from(new Set([
+  'import',
+  ...CONTROL_ATTR_PREFIXES.map(prefix => `${prefix}-import`),
+]))
+
+export const TEMPLATE_INCLUDE_TAG_NAMES = Array.from(new Set([
+  'include',
+  ...CONTROL_ATTR_PREFIXES.map(prefix => `${prefix}-include`),
+]))
+
 export const CONTROL_ATTRS = new Set([
   ...CONTROL_ATTR_PREFIXES.flatMap(prefix => CONTROL_ATTR_SUFFIXES.map(suffix => `${prefix}:${suffix}`)),
 ])

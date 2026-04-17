@@ -16,16 +16,8 @@ const tsconfigPathsMock = vi.hoisted(() => vi.fn((options?: Record<string, unkno
 const getOutputExtensionsMock = vi.hoisted(() => vi.fn(() => ({ json: 'json' })))
 const getWeappViteConfigMock = vi.hoisted(() => vi.fn(() => ({})))
 const normalizeMiniPlatformMock = vi.hoisted(() => vi.fn((value?: string) => value))
-const resolveMiniPlatformMock = vi.hoisted(() => vi.fn((value?: string) => {
-  if (value === 'wechat') {
-    return 'weapp'
-  }
-  if (value === 'weapp' || value === 'alipay' || value === 'tt' || value === 'swan' || value === 'jd' || value === 'xhs') {
-    return value
-  }
-  return undefined
-}))
-const getSupportedMiniProgramPlatformsMock = vi.hoisted(() => vi.fn(() => ['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs']))
+const resolveMiniPlatformMock = vi.hoisted(() => vi.fn())
+const getSupportedMiniProgramPlatformsMock = vi.hoisted(() => vi.fn())
 const resolveWeappConfigFileMock = vi.hoisted(() => vi.fn(async () => undefined))
 const createCjsConfigLoadErrorMock = vi.hoisted(() => vi.fn(() => null))
 const getAliasEntriesMock = vi.hoisted(() => vi.fn(() => []))
@@ -71,12 +63,18 @@ vi.mock('../../../logger', () => ({
   },
 }))
 
-vi.mock('../../../platform', () => ({
-  DEFAULT_MP_PLATFORM: 'weapp',
-  getSupportedMiniProgramPlatforms: getSupportedMiniProgramPlatformsMock,
-  normalizeMiniPlatform: normalizeMiniPlatformMock,
-  resolveMiniPlatform: resolveMiniPlatformMock,
-}))
+vi.mock('../../../platform', async () => {
+  const actual = await vi.importActual<typeof import('../../../platform')>('../../../platform')
+  getSupportedMiniProgramPlatformsMock.mockImplementation(actual.getSupportedMiniProgramPlatforms)
+  normalizeMiniPlatformMock.mockImplementation(actual.normalizeMiniPlatform)
+  resolveMiniPlatformMock.mockImplementation(actual.resolveMiniPlatform)
+  return {
+    ...actual,
+    getSupportedMiniProgramPlatforms: getSupportedMiniProgramPlatformsMock,
+    normalizeMiniPlatform: normalizeMiniPlatformMock,
+    resolveMiniPlatform: resolveMiniPlatformMock,
+  }
+})
 
 vi.mock('../../../utils', () => ({
   createCjsConfigLoadError: createCjsConfigLoadErrorMock,
