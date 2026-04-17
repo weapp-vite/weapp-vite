@@ -7,6 +7,18 @@ export type MiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.Co
 type MpComponentOptions = WechatMiniprogram.Component.TrivialOption
 
 export type MiniProgramBehaviorIdentifier = WechatMiniprogram.Behavior.Identifier | string
+export type MiniProgramLaunchOptions = WechatMiniprogram.App.LaunchShowOption
+export type MiniProgramPageNotFoundOptions = WechatMiniprogram.App.PageNotFoundOption
+export type MiniProgramUnhandledRejectionResult = WechatMiniprogram.OnUnhandledRejectionListenerResult
+export type MiniProgramThemeChangeResult = WechatMiniprogram.OnThemeChangeListenerResult
+export type MiniProgramMemoryWarningResult = WechatMiniprogram.OnMemoryWarningListenerResult
+export type MiniProgramPageScrollOption = WechatMiniprogram.Page.IPageScrollOption
+export type MiniProgramTabItemTapOption = WechatMiniprogram.Page.ITabItemTapOption
+export type MiniProgramPageResizeOption = WechatMiniprogram.Page.IResizeOption
+export type MiniProgramShareAppMessageOption = WechatMiniprogram.Page.IShareAppMessageOption
+export type MiniProgramAddToFavoritesOption = WechatMiniprogram.Page.IAddToFavoritesOption
+export type MiniProgramSaveExitState = WechatMiniprogram.Page.ISaveExitState
+export type MiniProgramRouter = WechatMiniprogram.Component.Router
 
 export interface MiniProgramComponentOptions {
   /**

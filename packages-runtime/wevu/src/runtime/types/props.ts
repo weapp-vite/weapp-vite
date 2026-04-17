@@ -16,6 +16,10 @@ export type {
   PropType,
 } from './props/propTypes'
 export type {
+  MiniProgramRouterNavigateToOption,
+  MiniProgramRouterRedirectToOption,
+  MiniProgramRouterReLaunchOption,
+  MiniProgramRouterSwitchTabOption,
   RouterNavigateToOption,
   RouterRedirectToOption,
   RouterReLaunchOption,

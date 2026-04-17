@@ -1,3 +1,16 @@
+import type {
+  MiniProgramAddToFavoritesOption,
+  MiniProgramLaunchOptions,
+  MiniProgramMemoryWarningResult,
+  MiniProgramPageNotFoundOptions,
+  MiniProgramPageResizeOption,
+  MiniProgramPageScrollOption,
+  MiniProgramSaveExitState,
+  MiniProgramShareAppMessageOption,
+  MiniProgramTabItemTapOption,
+  MiniProgramThemeChangeResult,
+  MiniProgramUnhandledRejectionResult,
+} from '../types'
 import { assertInSetup, ensurePageHookOnInstance, ensurePageShareMenusOnSetup, ensureSinglePageHookOnInstance, pushHook } from './base'
 
 function registerHook(name: string, handler: (...args: any[]) => any, options?: { single?: boolean }) {
@@ -5,28 +18,28 @@ function registerHook(name: string, handler: (...args: any[]) => any, options?: 
 }
 
 // 生命周期注册辅助方法：必须在 setup() 同步执行阶段调用
-export function onLaunch(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void) {
+export function onLaunch(handler: (options: MiniProgramLaunchOptions) => void) {
   registerHook('onLaunch', handler as any)
 }
 
-export function onPageNotFound(handler: (options: WechatMiniprogram.App.PageNotFoundOption) => void) {
+export function onPageNotFound(handler: (options: MiniProgramPageNotFoundOptions) => void) {
   registerHook('onPageNotFound', handler as any)
 }
 
-export function onUnhandledRejection(handler: WechatMiniprogram.OnUnhandledRejectionCallback) {
+export function onUnhandledRejection(handler: (options: MiniProgramUnhandledRejectionResult) => void) {
   registerHook('onUnhandledRejection', handler as any)
 }
 
-export function onThemeChange(handler: WechatMiniprogram.OnThemeChangeCallback) {
+export function onThemeChange(handler: (options: MiniProgramThemeChangeResult) => void) {
   registerHook('onThemeChange', handler as any)
 }
 
-export function onMemoryWarning(handler: WechatMiniprogram.OnMemoryWarningCallback) {
+export function onMemoryWarning(handler: (options: MiniProgramMemoryWarningResult) => void) {
   registerHook('onMemoryWarning', handler as any)
 }
 
 export function onShow(handler: () => void): void
-export function onShow(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void): void
+export function onShow(handler: (options: MiniProgramLaunchOptions) => void): void
 export function onShow(handler: ((options?: any) => void)) {
   registerHook('onShow', handler as any)
 }
@@ -55,7 +68,7 @@ export function onReachBottom(handler: WechatMiniprogram.Page.ILifetime['onReach
   registerHook('onReachBottom', handler as any)
 }
 
-export function onPageScroll(handler: (opt: WechatMiniprogram.Page.IPageScrollOption) => void) {
+export function onPageScroll(handler: (opt: MiniProgramPageScrollOption) => void) {
   const instance = assertInSetup('onPageScroll')
   pushHook(instance, 'onPageScroll', handler as any)
   ensurePageHookOnInstance(instance, 'onPageScroll')
@@ -65,11 +78,11 @@ export function onRouteDone(handler: WechatMiniprogram.Page.ILifetime['onRouteDo
   registerHook('onRouteDone', handler as any)
 }
 
-export function onTabItemTap(handler: (opt: WechatMiniprogram.Page.ITabItemTapOption) => void) {
+export function onTabItemTap(handler: (opt: MiniProgramTabItemTapOption) => void) {
   registerHook('onTabItemTap', handler as any)
 }
 
-export function onResize(handler: (opt: WechatMiniprogram.Page.IResizeOption) => void) {
+export function onResize(handler: (opt: MiniProgramPageResizeOption) => void) {
   registerHook('onResize', handler as any)
 }
 
@@ -89,11 +102,11 @@ export function onError(handler: (err: any) => void) {
   registerHook('onError', handler as any)
 }
 
-export function onSaveExitState(handler: () => WechatMiniprogram.Page.ISaveExitState) {
+export function onSaveExitState(handler: () => MiniProgramSaveExitState) {
   registerHook('onSaveExitState', handler as any, { single: true })
 }
 
-export function onShareAppMessage(handler: WechatMiniprogram.Page.ILifetime['onShareAppMessage']) {
+export function onShareAppMessage(handler: (options: MiniProgramShareAppMessageOption) => Record<string, any> | void) {
   const instance = assertInSetup('onShareAppMessage')
   pushHook(instance, 'onShareAppMessage', handler as any, { single: true } as any)
   ensureSinglePageHookOnInstance(instance, 'onShareAppMessage')
@@ -107,7 +120,7 @@ export function onShareTimeline(handler: WechatMiniprogram.Page.ILifetime['onSha
   ensurePageShareMenusOnSetup(instance)
 }
 
-export function onAddToFavorites(handler: WechatMiniprogram.Page.ILifetime['onAddToFavorites']) {
+export function onAddToFavorites(handler: (options: MiniProgramAddToFavoritesOption) => Record<string, any> | void) {
   const instance = assertInSetup('onAddToFavorites')
   pushHook(instance, 'onAddToFavorites', handler as any, { single: true } as any)
   ensureSinglePageHookOnInstance(instance, 'onAddToFavorites')

@@ -1,7 +1,17 @@
 import type {
   ComponentOptionsMixin,
   DefineComponent,
+  MiniProgramAddToFavoritesOption,
   MiniProgramIntersectionObserver,
+  MiniProgramLaunchOptions,
+  MiniProgramMemoryWarningResult,
+  MiniProgramPageNotFoundOptions,
+  MiniProgramPageResizeOption,
+  MiniProgramPageScrollOption,
+  MiniProgramShareAppMessageOption,
+  MiniProgramTabItemTapOption,
+  MiniProgramThemeChangeResult,
+  MiniProgramUnhandledRejectionResult,
   ModelBindingPayload,
   PublicProps,
   RuntimeApp,
@@ -119,7 +129,7 @@ defineComponent({
     show() {},
     hide() {},
     resize(size) {
-      expectType<WechatMiniprogram.Page.IResizeOption>(size)
+      expectType<MiniProgramPageResizeOption>(size)
     },
     routeDone() {},
   },
@@ -159,20 +169,20 @@ defineComponent({
     onHide(() => {})
     onReady(() => {})
     onPageScroll((opt) => {
-      expectType<WechatMiniprogram.Page.IPageScrollOption>(opt)
+      expectType<MiniProgramPageScrollOption>(opt)
     })
     onRouteDone(() => {})
     onTabItemTap((opt) => {
-      expectType<WechatMiniprogram.Page.ITabItemTapOption>(opt)
+      expectType<MiniProgramTabItemTapOption>(opt)
     })
     onSaveExitState(() => ({ data: {} }))
     onShareAppMessage((opt) => {
-      expectType<WechatMiniprogram.Page.IShareAppMessageOption>(opt)
+      expectType<MiniProgramShareAppMessageOption>(opt)
       return {}
     })
     onShareTimeline(() => ({}))
     onAddToFavorites((opt) => {
-      expectType<WechatMiniprogram.Page.IAddToFavoritesOption>(opt)
+      expectType<MiniProgramAddToFavoritesOption>(opt)
       return {}
     })
     onUpdated(() => {})
@@ -259,19 +269,19 @@ createApp({
 createApp({
   setup() {
     onLaunch((opt) => {
-      expectType<WechatMiniprogram.App.LaunchShowOption>(opt)
+      expectType<MiniProgramLaunchOptions>(opt)
     })
     onPageNotFound((opt) => {
-      expectType<WechatMiniprogram.App.PageNotFoundOption>(opt)
+      expectType<MiniProgramPageNotFoundOptions>(opt)
     })
     onUnhandledRejection((opt) => {
-      expectType<WechatMiniprogram.OnUnhandledRejectionListenerResult>(opt)
+      expectType<MiniProgramUnhandledRejectionResult>(opt)
     })
     onThemeChange((opt) => {
-      expectType<WechatMiniprogram.OnThemeChangeListenerResult>(opt)
+      expectType<MiniProgramThemeChangeResult>(opt)
     })
     onMemoryWarning((opt) => {
-      expectType<WechatMiniprogram.OnMemoryWarningListenerResult>(opt)
+      expectType<MiniProgramMemoryWarningResult>(opt)
     })
   },
 })

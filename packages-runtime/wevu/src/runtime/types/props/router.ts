@@ -1,3 +1,5 @@
+import type { MiniProgramRouter } from '../miniprogram'
+
 /**
  * Router 路由类型映射（供声明合并扩展）。
  *
@@ -28,30 +30,34 @@ type RouterPathUrl<Path extends string> = string extends Path ? string : Absolut
 export type TypedRouterUrl = RouterUrl<ResolveTypedRouterEntries>
 export type TypedRouterTabBarUrl = RouterPathUrl<ResolveTypedRouterTabBarEntries>
 
-export type RouterSwitchTabOption = Omit<WechatMiniprogram.SwitchTabOption, 'url'> & {
+export type MiniProgramRouterSwitchTabOption = Omit<WechatMiniprogram.SwitchTabOption, 'url'> & {
   url: TypedRouterTabBarUrl
 }
+export type RouterSwitchTabOption = MiniProgramRouterSwitchTabOption
 
-export type RouterReLaunchOption = Omit<WechatMiniprogram.ReLaunchOption, 'url'> & {
+export type MiniProgramRouterReLaunchOption = Omit<WechatMiniprogram.ReLaunchOption, 'url'> & {
   url: TypedRouterUrl
 }
+export type RouterReLaunchOption = MiniProgramRouterReLaunchOption
 
-export type RouterRedirectToOption = Omit<WechatMiniprogram.RedirectToOption, 'url'> & {
+export type MiniProgramRouterRedirectToOption = Omit<WechatMiniprogram.RedirectToOption, 'url'> & {
   url: TypedRouterUrl
 }
+export type RouterRedirectToOption = MiniProgramRouterRedirectToOption
 
-export type RouterNavigateToOption = Omit<WechatMiniprogram.NavigateToOption, 'url'> & {
+export type MiniProgramRouterNavigateToOption = Omit<WechatMiniprogram.NavigateToOption, 'url'> & {
   url: TypedRouterUrl
 }
+export type RouterNavigateToOption = MiniProgramRouterNavigateToOption
 
 /**
  * setup 场景下推荐使用的 Router 类型。
  * 默认行为与原生 Router 一致；声明合并后可获得更精确的 `url` 类型提示。
  */
 export interface SetupContextRouter {
-  switchTab: (option: RouterSwitchTabOption) => ReturnType<WechatMiniprogram.Component.Router['switchTab']>
-  reLaunch: (option: RouterReLaunchOption) => ReturnType<WechatMiniprogram.Component.Router['reLaunch']>
-  redirectTo: (option: RouterRedirectToOption) => ReturnType<WechatMiniprogram.Component.Router['redirectTo']>
-  navigateTo: (option: RouterNavigateToOption) => ReturnType<WechatMiniprogram.Component.Router['navigateTo']>
-  navigateBack: WechatMiniprogram.Component.Router['navigateBack']
+  switchTab: (option: MiniProgramRouterSwitchTabOption) => ReturnType<MiniProgramRouter['switchTab']>
+  reLaunch: (option: MiniProgramRouterReLaunchOption) => ReturnType<MiniProgramRouter['reLaunch']>
+  redirectTo: (option: MiniProgramRouterRedirectToOption) => ReturnType<MiniProgramRouter['redirectTo']>
+  navigateTo: (option: MiniProgramRouterNavigateToOption) => ReturnType<MiniProgramRouter['navigateTo']>
+  navigateBack: MiniProgramRouter['navigateBack']
 }
