@@ -12,7 +12,7 @@ import type {
   SetBackgroundTextStyleOptions,
   UpdateManager,
 } from './types'
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { getDefaultMiniProgramRuntimeGlobalKey, getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import { emitRuntimeWarning } from '../warning'
 import {
   callMiniProgramAsyncFailure,
@@ -72,7 +72,7 @@ export * from './runtimeDataApi'
 export * from './uiMediaApi'
 
 const MINI_PROGRAM_GLOBAL_KEYS = getMiniProgramRuntimeGlobalKeys()
-const DEFAULT_MINI_PROGRAM_GLOBAL_KEY = MINI_PROGRAM_GLOBAL_KEYS[0] ?? 'wx'
+const DEFAULT_MINI_PROGRAM_GLOBAL_KEY = getDefaultMiniProgramRuntimeGlobalKey()
 const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
 
 function resolveMiniProgramBridge() {

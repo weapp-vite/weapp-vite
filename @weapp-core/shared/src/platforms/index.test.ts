@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getDefaultMiniProgramRuntimeGlobalKey,
   getMiniProgramDefaultBuildTarget,
   getMiniProgramDirectivePrefix,
   getMiniProgramPlatformByRuntimeGlobalKey,
@@ -48,6 +49,7 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramDefaultBuildTarget('alipay')).toBe('es2015')
     expect(getMiniProgramDefaultBuildTarget('tt')).toBeUndefined()
     expect(getMiniProgramPlatformDescriptor('alipay').runtime.globalObjectKey).toBe('my')
+    expect(getDefaultMiniProgramRuntimeGlobalKey()).toBe('wx')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('xhs')).toBe('xhs')
     expect(getMiniProgramRuntimeGlobalKeys()).toEqual(['wx', 'my', 'swan', 'tt', 'jd', 'xhs'])

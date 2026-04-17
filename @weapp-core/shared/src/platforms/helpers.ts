@@ -160,6 +160,13 @@ export function getMiniProgramRuntimeGlobalKey(platform: MpPlatform): string {
 }
 
 /**
+ * @description 获取默认宿主全局对象 key。
+ */
+export function getDefaultMiniProgramRuntimeGlobalKey(): string {
+  return ORDERED_RUNTIME_GLOBAL_KEYS[0] ?? 'wx'
+}
+
+/**
  * @description 解析宿主全局对象 key 对应的平台。
  */
 export function getMiniProgramPlatformByRuntimeGlobalKey(globalObjectKey?: string | null): MpPlatform | undefined {
