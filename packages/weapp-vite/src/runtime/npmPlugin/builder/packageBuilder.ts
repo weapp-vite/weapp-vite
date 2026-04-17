@@ -25,6 +25,7 @@ import {
   normalizeMiniprogramPackageForAlipay,
   shouldRebuildCachedAlipayMiniprogramPackage,
 } from './alipay'
+import { normalizeMiniprogramPackageJsModules } from './jsModule'
 import { resolvePreferredPackageEntry } from './shared'
 
 export interface PackageBuilder {
@@ -234,6 +235,9 @@ export function createPackageBuilder(
       }
 
       if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
+        await normalizeMiniprogramPackageJsModules(destOutDir, {
+          markEsModule: true,
+        })
         const platformNpmDistDirName = getPlatformNpmDistDirName(ctx.configService.platform, {
           alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
         }) as 'miniprogram_npm' | 'node_modules'
@@ -249,6 +253,9 @@ export function createPackageBuilder(
         from: sourceDir,
         to: destOutDir,
         name: dep,
+      })
+      await normalizeMiniprogramPackageJsModules(destOutDir, {
+        markEsModule: true,
       })
 
       if (shouldNormalizeMiniprogramPackage(ctx.configService.platform)) {

@@ -357,6 +357,53 @@ describe('runtime npm package builder core', () => {
     expect(await fs.pathExists(path.resolve(defaultOutRoot, 'mini-pkg/button/index.js'))).toBe(false)
   })
 
+  it('normalizes esm js files inside copied miniprogram packages for weapp interop', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'mini-pkg')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram/dialog'))
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram/dialog/helper.js'),
+      'export default function confirm() { return true }',
+      'utf8',
+    )
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram/dialog/index.js'),
+      'import confirm from "./helper.js"; export default { confirm }',
+      'utf8',
+    )
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'mini-pkg',
+        version: '0.0.0',
+        miniprogram: 'miniprogram',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'mini-pkg',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    const indexContent = await fs.readFile(path.resolve(outRoot, 'mini-pkg/dialog/index.js'), 'utf8')
+    const helperContent = await fs.readFile(path.resolve(outRoot, 'mini-pkg/dialog/helper.js'), 'utf8')
+
+    expect(indexContent).toContain('__esModule')
+    expect(indexContent).toContain('require("./helper.js")')
+    expect(indexContent).toContain('exports["default"]')
+    expect(helperContent).toContain('__esModule')
+    expect(helperContent).toContain('exports["default"]')
+  })
+
   it('skips miniprogram copy build when cache is valid on weapp platform', async () => {
     const root = await createTempDir()
     const pkgRoot = path.resolve(root, 'mini-pkg')
@@ -387,6 +434,50 @@ describe('runtime npm package builder core', () => {
     })
 
     expect(copySpy).not.toHaveBeenCalled()
+  })
+
+  it('normalizes cached miniprogram js modules before skipping weapp rebuild', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'mini-pkg')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+    const outPkgRoot = path.resolve(outRoot, 'mini-pkg')
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram/dialog'))
+    await fs.ensureDir(path.resolve(outPkgRoot, 'dialog'))
+    await fs.writeFile(
+      path.resolve(outPkgRoot, 'dialog/index.js'),
+      'import confirm from "./helper.js"; export default { confirm }',
+      'utf8',
+    )
+    await fs.writeFile(
+      path.resolve(outPkgRoot, 'dialog/helper.js'),
+      'export default function confirm() { return true }',
+      'utf8',
+    )
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'mini-pkg',
+        version: '0.0.0',
+        miniprogram: 'miniprogram',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'mini-pkg',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: false,
+    })
+
+    const indexContent = await fs.readFile(path.resolve(outPkgRoot, 'dialog/index.js'), 'utf8')
+    expect(indexContent).toContain('__esModule')
+    expect(indexContent).toContain('require("./helper.js")')
+    expect(indexContent).toContain('exports["default"]')
   })
 
   it('normalizes alipay miniprogram package and hoists nested dependencies', async () => {
