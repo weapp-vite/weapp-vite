@@ -108,7 +108,7 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
-    "@vercel/detect-agent": "^1.2.2",
+    "@vercel/detect-agent": "^1.2.3",
     "@volar/typescript": "^2.4.28",
     "@vue/language-core": "catalog:",
     "@weapp-core/constants": "workspace:^",
