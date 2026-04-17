@@ -18,6 +18,7 @@ import type {
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
   WeapiMiniProgramLogManager,
+  WeapiMiniProgramMethodName,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRequestMethod,
   WeapiMiniProgramRequestOption,
@@ -31,6 +32,7 @@ import type {
   WeapiResolvedTarget,
   WeapiSupportLevel,
   WeapiWxAdapter,
+  WeapiWxMethodName,
   WeapiWxRawAdapter,
 } from '../dist/index.d.mts'
 
@@ -49,6 +51,7 @@ export type {
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
   WeapiMiniProgramLogManager,
+  WeapiMiniProgramMethodName,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRequestMethod,
   WeapiMiniProgramRequestOption,
@@ -62,6 +65,7 @@ export type {
   WeapiResolvedTarget,
   WeapiSupportLevel,
   WeapiWxAdapter,
+  WeapiWxMethodName,
   WeapiWxRawAdapter,
 }
 

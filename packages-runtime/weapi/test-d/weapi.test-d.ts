@@ -7,6 +7,7 @@ import type {
   WeapiMiniProgramBluetoothError,
   WeapiMiniProgramClipboardDataResult,
   WeapiMiniProgramLogManager,
+  WeapiMiniProgramMethodName,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
@@ -31,8 +32,10 @@ type MyMethodKeys = ExtractMethodKeys<typeof my>
 type TtMethodKeys = ExtractMethodKeys<typeof tt>
 type WeapiDefaultKeys = Extract<keyof WeapiDefaultInstance, string>
 type WeapiRawKeys = Extract<keyof WeapiCrossPlatformRawAdapter, string>
+type MiniProgramMethodKeys = WeapiMiniProgramMethodName
 
 type _wxMethodCoverage = AssertTrue<IsNever<Exclude<WxMethodKeys, WeapiDefaultKeys>>>
+type _miniProgramMethodCoverage = AssertTrue<IsNever<Exclude<MiniProgramMethodKeys, WeapiDefaultKeys>>>
 type _myMethodCoverage = AssertTrue<IsNever<Exclude<MyMethodKeys, WeapiRawKeys>>>
 type _ttMethodCoverage = AssertTrue<IsNever<Exclude<TtMethodKeys, WeapiRawKeys>>>
 

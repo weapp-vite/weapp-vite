@@ -352,6 +352,7 @@ export {
   WEAPI_WX_NON_FUNCTION_MEMBERS,
 }
 
+export type WeapiMiniProgramMethodName = (typeof WEAPI_WX_METHODS)[number]
 export type WeapiWxMethodName = (typeof WEAPI_WX_METHODS)[number]
 export type WeapiMyMethodName = (typeof WEAPI_MY_METHODS)[number]
 export type WeapiTtMethodName = (typeof WEAPI_TT_METHODS)[number]

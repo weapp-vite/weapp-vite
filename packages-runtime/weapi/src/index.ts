@@ -1,6 +1,7 @@
 /// <reference types="miniprogram-api-typings" />
 import { createWeapi } from './core/createWeapi'
 
+export type { WeapiMiniProgramMethodName, WeapiWxMethodName } from './core/apiCatalog'
 export type {
   CreateWeapiOptions,
   WeapiAdapter,
