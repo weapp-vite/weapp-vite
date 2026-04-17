@@ -7,7 +7,11 @@ import type {
   WeapiMethodSupportMatrixItem,
   WeapiResolvedMethodMapping,
 } from './types'
-import { WEAPI_DOUYIN_METHODS, WEAPI_MINIPROGRAM_METHODS, WEAPI_MY_METHODS } from '../apiCatalog'
+import {
+  WEAPI_ALIPAY_METHODS,
+  WEAPI_DOUYIN_METHODS,
+  WEAPI_MINIPROGRAM_METHODS,
+} from '../apiCatalog'
 import {
   formatCoverageRate,
   isSemanticSupportLevel,
@@ -34,11 +38,11 @@ export {
 }
 
 const WEAPI_MINIPROGRAM_METHOD_SET = new Set<string>(WEAPI_MINIPROGRAM_METHODS)
-const WEAPI_MY_METHOD_SET = new Set<string>(WEAPI_MY_METHODS)
+const WEAPI_ALIPAY_METHOD_SET = new Set<string>(WEAPI_ALIPAY_METHODS)
 const WEAPI_DOUYIN_METHOD_SET = new Set<string>(WEAPI_DOUYIN_METHODS)
 
 const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
-  my: WEAPI_MY_METHOD_SET,
+  my: WEAPI_ALIPAY_METHOD_SET,
   tt: WEAPI_DOUYIN_METHOD_SET,
 }
 
@@ -233,7 +237,7 @@ export function validateSupportMatrixConsistency() {
   const extraDouyinMappings = [...douyinMappedMethods].filter(method => !mappedMethods.has(method))
   const missingCatalogMethods = [...documentedMethods].filter(method =>
     !WEAPI_MINIPROGRAM_METHOD_SET.has(method)
-    && !WEAPI_MY_METHOD_SET.has(method)
+    && !WEAPI_ALIPAY_METHOD_SET.has(method)
     && !WEAPI_DOUYIN_METHOD_SET.has(method),
   )
   return {
