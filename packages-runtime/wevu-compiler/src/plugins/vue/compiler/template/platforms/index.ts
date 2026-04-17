@@ -2,9 +2,9 @@ import type { MpPlatform } from '../../../../../types/platform'
 import type { MiniProgramPlatform } from '../platform'
 import { getMiniProgramTemplatePreset } from '@weapp-core/shared'
 import { alipayPlatform } from './alipay'
+import { defaultMiniProgramPlatform, defaultPlatform } from './default'
 import { swanPlatform } from './swan'
 import { ttPlatform } from './tt'
-import { wechatPlatform as defaultMiniProgramPlatform } from './wechat'
 
 const TEMPLATE_PRESET_PLATFORMS: Record<ReturnType<typeof getMiniProgramTemplatePreset>, MiniProgramPlatform> = {
   wechat: defaultMiniProgramPlatform,
@@ -24,16 +24,7 @@ export function getDefaultMiniProgramTemplatePlatform(): MiniProgramPlatform {
  * 默认模板平台对象别名，便于调用方避免继续依赖具体宿主命名。
  */
 export const defaultMiniProgramTemplatePlatform = getDefaultMiniProgramTemplatePlatform()
-
-/**
- * 默认模板平台对象别名，便于调用方按“默认平台”语义接入。
- */
-export const defaultPlatform = defaultMiniProgramPlatform
-
-/**
- * 默认小程序模板平台实现，当前与微信模板实现保持一致。
- */
-export { defaultMiniProgramPlatform }
+export { defaultMiniProgramPlatform, defaultPlatform }
 
 /**
  * 获取指定平台的模板适配器，默认回退到默认模板平台。
