@@ -3,7 +3,7 @@ import type { WechatMiniProgramHostNamespace } from './miniprogramHostWechat'
 
 export { AlipayMiniProgramHostNamespace } from './miniprogramHostAlipay'
 export { DefaultMiniProgramHostNamespace } from './miniprogramHostDefault'
-export { TtMiniProgramHostNamespace } from './miniprogramHostTt'
+export { DouyinMiniProgramHostNamespace, TtMiniProgramHostNamespace } from './miniprogramHostTt'
 export { WechatMiniProgramHostNamespace } from './miniprogramHostWechat'
 
 export type MiniProgramPlatformHostSourceName = 'default' | 'wechat' | 'alipay' | 'douyin'
@@ -50,13 +50,18 @@ export interface AlipayMiniProgramHostSourceContract extends Record<never, never
 /**
  * @description 抖音宿主类型契约占位；后续接入稳定 typings 时在此扩展。
  */
-export interface TtMiniProgramHostSourceContract extends Record<never, never> {}
+export interface DouyinMiniProgramHostSourceContract extends Record<never, never> {}
+
+/**
+ * @description `tt` 命名兼容入口，保持与抖音宿主语义主名一致。
+ */
+export interface TtMiniProgramHostSourceContract extends DouyinMiniProgramHostSourceContract {}
 
 export interface MiniProgramPlatformHostSourceRegistry {
   default: DefaultMiniProgramHostSourceContract
   wechat: WechatMiniProgramHostSourceContract
   alipay: AlipayMiniProgramHostSourceContract
-  douyin: TtMiniProgramHostSourceContract
+  douyin: DouyinMiniProgramHostSourceContract
 }
 
 export interface MiniProgramRuntimeHostSourceRegistry {

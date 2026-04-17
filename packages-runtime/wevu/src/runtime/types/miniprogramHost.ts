@@ -3,12 +3,14 @@ import { DefaultMiniProgramHostNamespace } from './miniprogramHostSources'
 export {
   AlipayMiniProgramHostNamespace,
   DefaultMiniProgramHostNamespace,
+  DouyinMiniProgramHostNamespace,
   TtMiniProgramHostNamespace,
   WechatMiniProgramHostNamespace,
 } from './miniprogramHostSources'
 export type {
   AlipayMiniProgramHostSourceContract,
   DefaultMiniProgramHostSourceContract,
+  DouyinMiniProgramHostSourceContract,
   MiniProgramHostNamespaceBySource,
   MiniProgramHostSourceName,
   MiniProgramHostSourceRegistry,

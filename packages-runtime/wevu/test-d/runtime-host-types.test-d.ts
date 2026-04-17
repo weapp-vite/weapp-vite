@@ -3,6 +3,8 @@ import type {
   AlipayMiniProgramHostSourceContract,
   DefaultMiniProgramHostNamespace,
   DefaultMiniProgramHostSourceContract,
+  DouyinMiniProgramHostNamespace,
+  DouyinMiniProgramHostSourceContract,
   HostMiniProgramLaunchOptions,
   HostMiniProgramNavigateToOption,
   HostMiniProgramPageLifetime,
@@ -56,26 +58,28 @@ expectType<MiniProgramRuntimeHostSourceName>('my')
 expectType<MiniProgramRuntimeHostSourceName>('tt')
 expectType<MiniProgramHostNamespaceBySource<'default'>['NavigateToOption']>({} as HostMiniProgramNavigateToOption)
 expectType<MiniProgramHostNamespaceBySource<'wechat'>['NavigateToOption']>({} as HostMiniProgramNavigateToOption)
-expectType<MiniProgramHostNamespaceBySource<'douyin'>>({} as TtMiniProgramHostSourceContract)
+expectType<MiniProgramHostNamespaceBySource<'douyin'>>({} as DouyinMiniProgramHostSourceContract)
 expectType<MiniProgramHostNamespaceBySource<'wx'>>({} as WechatMiniProgramHostSourceContract)
 expectType<MiniProgramHostNamespaceBySource<'my'>>({} as AlipayMiniProgramHostSourceContract)
 expectType<MiniProgramHostNamespaceBySource<'alipay'>>({} as AlipayMiniProgramHostSourceContract)
 expectType<MiniProgramHostNamespaceBySource<'tt'>>({} as TtMiniProgramHostSourceContract)
 expectType<MiniProgramPlatformHostNamespaceBySource<'wechat'>>({} as WechatMiniProgramHostSourceContract)
-expectType<MiniProgramPlatformHostNamespaceBySource<'douyin'>>({} as TtMiniProgramHostSourceContract)
+expectType<MiniProgramPlatformHostNamespaceBySource<'douyin'>>({} as DouyinMiniProgramHostSourceContract)
 expectType<MiniProgramRuntimeHostNamespaceBySource<'wx'>>({} as WechatMiniProgramHostSourceContract)
 expectType<MiniProgramRuntimeHostNamespaceBySource<'my'>>({} as AlipayMiniProgramHostSourceContract)
 expectType<MiniProgramRuntimeHostNamespaceBySource<'tt'>>({} as TtMiniProgramHostSourceContract)
 expectType<MiniProgramHostSourceRegistry['default']>({} as DefaultMiniProgramHostSourceContract)
 expectType<MiniProgramHostSourceRegistry['wechat']>({} as WechatMiniProgramHostSourceContract)
 expectType<MiniProgramHostSourceRegistry['alipay']>({} as AlipayMiniProgramHostSourceContract)
-expectType<MiniProgramHostSourceRegistry['douyin']>({} as TtMiniProgramHostSourceContract)
+expectType<MiniProgramHostSourceRegistry['douyin']>({} as DouyinMiniProgramHostSourceContract)
 expectType<MiniProgramHostSourceRegistry['wx']>({} as WechatMiniProgramHostSourceContract)
 expectType<MiniProgramHostSourceRegistry['my']>({} as AlipayMiniProgramHostSourceContract)
 expectType<MiniProgramHostSourceRegistry['tt']>({} as TtMiniProgramHostSourceContract)
-expectType<MiniProgramPlatformHostSourceRegistry['douyin']>({} as TtMiniProgramHostSourceContract)
+expectType<MiniProgramPlatformHostSourceRegistry['douyin']>({} as DouyinMiniProgramHostSourceContract)
 expectType<MiniProgramRuntimeHostSourceRegistry['wx']>({} as WechatMiniProgramHostSourceContract)
 expectType<MiniProgramRuntimeHostSourceRegistry['my']>({} as AlipayMiniProgramHostSourceContract)
 expectType<WechatMiniProgramHostNamespace.NavigateToOption>({} as HostMiniProgramNavigateToOption)
 expectType<AlipayMiniProgramHostNamespace>({} as AlipayMiniProgramHostNamespace)
+expectType<DouyinMiniProgramHostNamespace>({} as DouyinMiniProgramHostNamespace)
+expectType<DouyinMiniProgramHostSourceContract>({} as TtMiniProgramHostSourceContract)
 expectType<TtMiniProgramHostNamespace>({} as TtMiniProgramHostNamespace)

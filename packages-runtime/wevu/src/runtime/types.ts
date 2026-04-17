@@ -74,6 +74,8 @@ export type {
   AlipayMiniProgramHostSourceContract,
   DefaultMiniProgramHostNamespace,
   DefaultMiniProgramHostSourceContract,
+  DouyinMiniProgramHostNamespace,
+  DouyinMiniProgramHostSourceContract,
   HostMiniProgramAddToFavoritesOption,
   HostMiniProgramAppOptions,
   HostMiniProgramAppTrivialInstance,
