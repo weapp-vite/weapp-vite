@@ -1,22 +1,24 @@
+import { WechatMiniProgramHostNamespace } from './miniprogramHostWechat'
+
 /* eslint-disable ts/no-namespace -- 通过单点 namespace 别名集中宿主类型入口，避免文件内重复散落宿主底座类型引用。 */
 export declare namespace MiniProgramHostNamespace {
-  export import App = WechatMiniprogram.App
-  export import Behavior = WechatMiniprogram.Behavior
-  export import Component = WechatMiniprogram.Component
-  export import Page = WechatMiniprogram.Page
-  export import BoundingClientRectCallbackResult = WechatMiniprogram.BoundingClientRectCallbackResult
-  export import ScrollOffsetCallbackResult = WechatMiniprogram.ScrollOffsetCallbackResult
-  export import NodesRef = WechatMiniprogram.NodesRef
-  export import SelectorQuery = WechatMiniprogram.SelectorQuery
-  export import CreateIntersectionObserverOption = WechatMiniprogram.CreateIntersectionObserverOption
-  export import IntersectionObserver = WechatMiniprogram.IntersectionObserver
-  export import OnUnhandledRejectionListenerResult = WechatMiniprogram.OnUnhandledRejectionListenerResult
-  export import OnThemeChangeListenerResult = WechatMiniprogram.OnThemeChangeListenerResult
-  export import OnMemoryWarningListenerResult = WechatMiniprogram.OnMemoryWarningListenerResult
-  export import SwitchTabOption = WechatMiniprogram.SwitchTabOption
-  export import ReLaunchOption = WechatMiniprogram.ReLaunchOption
-  export import RedirectToOption = WechatMiniprogram.RedirectToOption
-  export import NavigateToOption = WechatMiniprogram.NavigateToOption
+  export import App = WechatMiniProgramHostNamespace.App
+  export import Behavior = WechatMiniProgramHostNamespace.Behavior
+  export import Component = WechatMiniProgramHostNamespace.Component
+  export import Page = WechatMiniProgramHostNamespace.Page
+  export import BoundingClientRectCallbackResult = WechatMiniProgramHostNamespace.BoundingClientRectCallbackResult
+  export import ScrollOffsetCallbackResult = WechatMiniProgramHostNamespace.ScrollOffsetCallbackResult
+  export import NodesRef = WechatMiniProgramHostNamespace.NodesRef
+  export import SelectorQuery = WechatMiniProgramHostNamespace.SelectorQuery
+  export import CreateIntersectionObserverOption = WechatMiniProgramHostNamespace.CreateIntersectionObserverOption
+  export import IntersectionObserver = WechatMiniProgramHostNamespace.IntersectionObserver
+  export import OnUnhandledRejectionListenerResult = WechatMiniProgramHostNamespace.OnUnhandledRejectionListenerResult
+  export import OnThemeChangeListenerResult = WechatMiniProgramHostNamespace.OnThemeChangeListenerResult
+  export import OnMemoryWarningListenerResult = WechatMiniProgramHostNamespace.OnMemoryWarningListenerResult
+  export import SwitchTabOption = WechatMiniProgramHostNamespace.SwitchTabOption
+  export import ReLaunchOption = WechatMiniProgramHostNamespace.ReLaunchOption
+  export import RedirectToOption = WechatMiniProgramHostNamespace.RedirectToOption
+  export import NavigateToOption = WechatMiniProgramHostNamespace.NavigateToOption
 }
 
 export type HostMiniProgramComponentBehaviorOptions = MiniProgramHostNamespace.Component.ComponentOptions
