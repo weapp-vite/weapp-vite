@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { cleanOutputs, isOutputRootInsideOutDir, syncExternalPluginOutputs } from './outputs'
 
+const DEFAULT_TEST_PLATFORM = 'weapp'
+
 const debugMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   success: vi.fn(),
@@ -40,7 +42,7 @@ vi.mock('../../platform', () => {
 
 function createConfigService(overrides: Record<string, unknown> = {}) {
   return {
-    platform: 'wechat',
+    platform: DEFAULT_TEST_PLATFORM,
     weappViteConfig: {},
     outDir: '/project/dist',
     mpDistRoot: '/project/dist',
@@ -73,7 +75,7 @@ describe('buildPlugin outputs', () => {
     expect(isOutputRootInsideOutDir('/project/dist', '/project/dist-plugin')).toBe(false)
   })
 
-  it('cleans mp output and keeps miniprogram_npm for wechat', async () => {
+  it('cleans mp output and keeps miniprogram_npm for default mini-program platform', async () => {
     const configService = createConfigService()
     readdirMock.mockResolvedValue([
       { name: 'pages' },
