@@ -9,7 +9,11 @@ import type {
 export type {
   WeapiAlipayMiniProgramRawAdapterSource,
   WeapiDefaultMiniProgramRawAdapterSource,
+  WeapiMiniProgramPlatformRawAdapterSourceName,
+  WeapiMiniProgramPlatformRawAdapterSourceRegistry,
   WeapiMiniProgramRawAdapterSourceName,
+  WeapiMiniProgramRuntimeRawAdapterSourceName,
+  WeapiMiniProgramRuntimeRawAdapterSourceRegistry,
   WeapiTtMiniProgramRawAdapterSource,
   WeapiWechatMiniProgramRawAdapterSource,
 } from './miniProgramTypeSources'

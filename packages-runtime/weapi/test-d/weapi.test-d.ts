@@ -19,10 +19,14 @@ import type {
   WeapiMiniProgramDouyinRawAdapter,
   WeapiMiniProgramLogManager,
   WeapiMiniProgramMethodName,
+  WeapiMiniProgramPlatformRawAdapterSourceName,
+  WeapiMiniProgramPlatformRawAdapterSourceRegistry,
   WeapiMiniProgramRawAdapter,
   WeapiMiniProgramRawAdapterSourceName,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
+  WeapiMiniProgramRuntimeRawAdapterSourceName,
+  WeapiMiniProgramRuntimeRawAdapterSourceRegistry,
   WeapiMiniProgramSelectorQuery,
   WeapiMiniProgramSocketTask,
   WeapiMiniProgramSystemInfo,
@@ -99,7 +103,17 @@ expectType<WeapiInstance<WeapiMiniProgramDouyinRawAdapter>>(createWeapi({ adapte
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('default')
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('wechat')
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('alipay')
+expectAssignable<WeapiMiniProgramRawAdapterSourceName>('douyin')
+expectAssignable<WeapiMiniProgramRawAdapterSourceName>('wx')
+expectAssignable<WeapiMiniProgramRawAdapterSourceName>('my')
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('tt')
+expectAssignable<WeapiMiniProgramPlatformRawAdapterSourceName>('default')
+expectAssignable<WeapiMiniProgramPlatformRawAdapterSourceName>('wechat')
+expectAssignable<WeapiMiniProgramPlatformRawAdapterSourceName>('alipay')
+expectAssignable<WeapiMiniProgramPlatformRawAdapterSourceName>('douyin')
+expectAssignable<WeapiMiniProgramRuntimeRawAdapterSourceName>('wx')
+expectAssignable<WeapiMiniProgramRuntimeRawAdapterSourceName>('my')
+expectAssignable<WeapiMiniProgramRuntimeRawAdapterSourceName>('tt')
 expectAssignable<WeapiPlatformTypeSourceName>('default')
 expectAssignable<WeapiPlatformTypeSourceName>('wechat')
 expectAssignable<WeapiPlatformTypeSourceName>('alipay')
@@ -119,6 +133,12 @@ expectType<'@mini-types/alipay'>(WEAPI_RUNTIME_TYPE_SOURCES.my.package)
 expectType<'@douyin-microapp/typings'>(WEAPI_RUNTIME_TYPE_SOURCES.tt.package)
 expectType<typeof WEAPI_PLATFORM_TYPE_SOURCES.douyin>(WEAPI_TYPE_SOURCES.douyin)
 expectType<typeof WEAPI_RUNTIME_TYPE_SOURCES.wx>(WEAPI_TYPE_SOURCES.wx)
+expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramPlatformRawAdapterSourceRegistry['wechat'])
+expectType<WeapiAlipayMiniProgramRawAdapterSource>({} as WeapiMiniProgramPlatformRawAdapterSourceRegistry['alipay'])
+expectType<WeapiTtMiniProgramRawAdapterSource>({} as WeapiMiniProgramPlatformRawAdapterSourceRegistry['douyin'])
+expectType<WeapiWechatMiniProgramRawAdapterSource>({} as WeapiMiniProgramRuntimeRawAdapterSourceRegistry['wx'])
+expectType<WeapiAlipayMiniProgramRawAdapterSource>({} as WeapiMiniProgramRuntimeRawAdapterSourceRegistry['my'])
+expectType<WeapiTtMiniProgramRawAdapterSource>({} as WeapiMiniProgramRuntimeRawAdapterSourceRegistry['tt'])
 expectType<WeapiDefaultInstance['raw']>(wpi.raw)
 expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)
