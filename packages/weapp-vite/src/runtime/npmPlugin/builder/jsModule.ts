@@ -40,6 +40,18 @@ function getModuleExportName(name: t.Identifier | t.StringLiteral) {
   return t.isIdentifier(name) ? name.name : name.value
 }
 
+function getExportedDeclarationNames(declaration: t.Declaration) {
+  if (t.isFunctionDeclaration(declaration) || t.isClassDeclaration(declaration)) {
+    return declaration.id ? [declaration.id.name] : []
+  }
+
+  if (t.isVariableDeclaration(declaration)) {
+    return declaration.declarations.flatMap(item => Object.keys(t.getBindingIdentifiers(item.id)))
+  }
+
+  return Object.keys(t.getBindingIdentifiers(declaration))
+}
+
 function createEsModuleMarker() {
   return t.expressionStatement(
     t.callExpression(
@@ -178,7 +190,7 @@ export async function transformJsModuleToCjs(
         if (declaration) {
           hasConvertedExport = true
           path.replaceWith(declaration)
-          const names = Object.keys(t.getBindingIdentifiers(declaration))
+          const names = getExportedDeclarationNames(declaration)
           for (const name of names) {
             exportAssignments.push(createExportsAssignment(name, t.identifier(name)))
           }

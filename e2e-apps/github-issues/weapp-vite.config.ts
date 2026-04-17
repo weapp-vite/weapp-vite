@@ -21,6 +21,11 @@ export default defineConfig({
             /^tdesign-miniprogram$/,
           ],
         },
+        'subpackages/issue-466': {
+          dependencies: [
+            /^tdesign-miniprogram$/,
+          ],
+        },
         'subpackages/item': {
           dependencies: [
             'camelcase',

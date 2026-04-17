@@ -309,6 +309,13 @@
           "launchMode": "default"
         },
         {
+          "name": "subpackages/issue-466/index",
+          "pathName": "subpackages/issue-466/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/user/index",
           "pathName": "subpackages/user/index",
           "query": "",

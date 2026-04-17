@@ -212,6 +212,35 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('issue-459')
   })
 
+  it('issue #466: keeps tdesign Dialog.confirm callable in github-issues app output', async () => {
+    await runBuild()
+
+    const pageJsPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.wxml')
+    const pageJsonPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.json')
+    const dialogIndexPath = path.join(DIST_ROOT, 'subpackages/issue-466/miniprogram_npm/tdesign-miniprogram/dialog/index.js')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJson = await fs.readJson(pageJsonPath)
+
+    expect(await fs.pathExists(dialogIndexPath)).toBe(true)
+    expect(pageWxml).toContain('issue-466 tdesign Dialog.confirm runtime')
+    expect(pageWxml).toContain('confirmType = {{confirmType}}')
+    expect(pageWxml).toContain('defaultConfirmType = {{defaultConfirmType}}')
+    expect(pageWxml).toContain('<t-dialog id="issue466-dialog" />')
+    expect(pageJson.usingComponents).toMatchObject({
+      't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    })
+    expect(pageJs).toContain('_openDialogE2E')
+    expect(pageJs).toContain('_confirmDialogE2E')
+    expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('_resetE2E')
+    expect(pageJs).toContain('#issue466-dialog')
+    expect(pageJs).toContain('require("./miniprogram_npm/tdesign-miniprogram/dialog/index")')
+    expect(pageJs).toContain('issue-466 confirm title')
+    expect(pageJs).not.toContain('.default.default')
+  })
+
   it('issue #393: keeps path-mode devDependency chunks out of dist/node_modules', async () => {
     await runIssue393Build()
 
