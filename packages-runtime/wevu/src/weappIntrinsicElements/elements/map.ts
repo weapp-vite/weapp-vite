@@ -1,12 +1,12 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/map.html
  */
-export type WeappIntrinsicElementMap = WeappIntrinsicElementBaseAttributes & {
+export type MiniProgramIntrinsicElementMap = MiniProgramIntrinsicElementBaseAttributes & {
   alpha?: number
   anchor?: Record<string, unknown>
   anchorX?: number
@@ -15,20 +15,20 @@ export type WeappIntrinsicElementMap = WeappIntrinsicElementBaseAttributes & {
   arrowIconPath?: string
   arrowLine?: boolean
   bgColor?: string
-  bindabilityfail?: WeappIntrinsicEventHandler<unknown>
-  bindabilitysuccess?: WeappIntrinsicEventHandler<unknown>
-  bindauthsuccess?: WeappIntrinsicEventHandler<unknown>
-  bindcallouttap?: WeappIntrinsicEventHandler<unknown>
-  bindcontroltap?: WeappIntrinsicEventHandler<unknown>
-  binderror?: WeappIntrinsicEventHandler<unknown>
-  bindinterpolatepoint?: WeappIntrinsicEventHandler<unknown>
-  bindlabeltap?: WeappIntrinsicEventHandler<unknown>
-  bindmarkertap?: WeappIntrinsicEventHandler<unknown>
-  bindpoitap?: WeappIntrinsicEventHandler<unknown>
-  bindpolylinetap?: WeappIntrinsicEventHandler<unknown>
-  bindregionchange?: WeappIntrinsicEventHandler<unknown>
-  bindtap?: WeappIntrinsicEventHandler<unknown>
-  bindupdated?: WeappIntrinsicEventHandler<unknown>
+  bindabilityfail?: MiniProgramIntrinsicEventHandler<unknown>
+  bindabilitysuccess?: MiniProgramIntrinsicEventHandler<unknown>
+  bindauthsuccess?: MiniProgramIntrinsicEventHandler<unknown>
+  bindcallouttap?: MiniProgramIntrinsicEventHandler<unknown>
+  bindcontroltap?: MiniProgramIntrinsicEventHandler<unknown>
+  binderror?: MiniProgramIntrinsicEventHandler<unknown>
+  bindinterpolatepoint?: MiniProgramIntrinsicEventHandler<unknown>
+  bindlabeltap?: MiniProgramIntrinsicEventHandler<unknown>
+  bindmarkertap?: MiniProgramIntrinsicEventHandler<unknown>
+  bindpoitap?: MiniProgramIntrinsicEventHandler<unknown>
+  bindpolylinetap?: MiniProgramIntrinsicEventHandler<unknown>
+  bindregionchange?: MiniProgramIntrinsicEventHandler<unknown>
+  bindtap?: MiniProgramIntrinsicEventHandler<unknown>
+  bindupdated?: MiniProgramIntrinsicEventHandler<unknown>
   borderColor?: string
   borderRadius?: number
   borderWidth?: number
@@ -104,3 +104,5 @@ export type WeappIntrinsicElementMap = WeappIntrinsicElementBaseAttributes & {
   y?: number
   zIndex?: number
 }
+
+export type WeappIntrinsicElementMap = MiniProgramIntrinsicElementMap

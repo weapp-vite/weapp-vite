@@ -1,28 +1,28 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/scroll-view.html
  */
-export type WeappIntrinsicElementScrollView = WeappIntrinsicElementBaseAttributes & {
+export type MiniProgramIntrinsicElementScrollView = MiniProgramIntrinsicElementBaseAttributes & {
   'associative-container'?: 'draggable-sheet' | 'nested-scroll-view' | 'pop-gesture'
-  'bind:refresherstatuschange'?: WeappIntrinsicEventHandler<unknown>
-  'bind:refresherwillrefresh'?: WeappIntrinsicEventHandler<unknown>
-  'bind:scroll'?: WeappIntrinsicEventHandler<unknown>
-  'bind:scrollend'?: WeappIntrinsicEventHandler<unknown>
-  'bind:scrollstart'?: WeappIntrinsicEventHandler<unknown>
-  binddragend?: WeappIntrinsicEventHandler<unknown>
-  binddragging?: WeappIntrinsicEventHandler<unknown>
-  binddragstart?: WeappIntrinsicEventHandler<unknown>
-  bindrefresherabort?: WeappIntrinsicEventHandler<unknown>
-  bindrefresherpulling?: WeappIntrinsicEventHandler<unknown>
-  bindrefresherrefresh?: WeappIntrinsicEventHandler<unknown>
-  bindrefresherrestore?: WeappIntrinsicEventHandler<unknown>
-  bindscroll?: WeappIntrinsicEventHandler<unknown>
-  bindscrolltolower?: WeappIntrinsicEventHandler<unknown>
-  bindscrolltoupper?: WeappIntrinsicEventHandler<unknown>
+  'bind:refresherstatuschange'?: MiniProgramIntrinsicEventHandler<unknown>
+  'bind:refresherwillrefresh'?: MiniProgramIntrinsicEventHandler<unknown>
+  'bind:scroll'?: MiniProgramIntrinsicEventHandler<unknown>
+  'bind:scrollend'?: MiniProgramIntrinsicEventHandler<unknown>
+  'bind:scrollstart'?: MiniProgramIntrinsicEventHandler<unknown>
+  binddragend?: MiniProgramIntrinsicEventHandler<unknown>
+  binddragging?: MiniProgramIntrinsicEventHandler<unknown>
+  binddragstart?: MiniProgramIntrinsicEventHandler<unknown>
+  bindrefresherabort?: MiniProgramIntrinsicEventHandler<unknown>
+  bindrefresherpulling?: MiniProgramIntrinsicEventHandler<unknown>
+  bindrefresherrefresh?: MiniProgramIntrinsicEventHandler<unknown>
+  bindrefresherrestore?: MiniProgramIntrinsicEventHandler<unknown>
+  bindscroll?: MiniProgramIntrinsicEventHandler<unknown>
+  bindscrolltolower?: MiniProgramIntrinsicEventHandler<unknown>
+  bindscrolltoupper?: MiniProgramIntrinsicEventHandler<unknown>
   bounces?: boolean
   'cache-extent'?: number
   clip?: boolean
@@ -62,8 +62,10 @@ export type WeappIntrinsicElementScrollView = WeappIntrinsicElementBaseAttribute
   type?: 'list' | 'custom' | 'nested'
   'upper-threshold'?: number | string
   'using-sticky'?: boolean
-  'worklet:adjust-deceleration-velocity'?: WeappIntrinsicEventHandler<unknown>
-  'worklet:onscrollend'?: WeappIntrinsicEventHandler<unknown>
-  'worklet:onscrollstart'?: WeappIntrinsicEventHandler<unknown>
-  'worklet:onscrollupdate'?: WeappIntrinsicEventHandler<unknown>
+  'worklet:adjust-deceleration-velocity'?: MiniProgramIntrinsicEventHandler<unknown>
+  'worklet:onscrollend'?: MiniProgramIntrinsicEventHandler<unknown>
+  'worklet:onscrollstart'?: MiniProgramIntrinsicEventHandler<unknown>
+  'worklet:onscrollupdate'?: MiniProgramIntrinsicEventHandler<unknown>
 }
+
+export type WeappIntrinsicElementScrollView = MiniProgramIntrinsicElementScrollView

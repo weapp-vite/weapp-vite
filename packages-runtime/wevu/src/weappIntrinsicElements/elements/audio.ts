@@ -1,20 +1,22 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/audio.html
  */
-export type WeappIntrinsicElementAudio = WeappIntrinsicElementBaseAttributes & {
+export type MiniProgramIntrinsicElementAudio = MiniProgramIntrinsicElementBaseAttributes & {
   author?: string
-  bindended?: WeappIntrinsicEventHandler<unknown>
-  binderror?: WeappIntrinsicEventHandler<unknown>
-  bindpause?: WeappIntrinsicEventHandler<unknown>
-  bindplay?: WeappIntrinsicEventHandler<unknown>
-  bindtimeupdate?: WeappIntrinsicEventHandler<unknown>
+  bindended?: MiniProgramIntrinsicEventHandler<unknown>
+  binderror?: MiniProgramIntrinsicEventHandler<unknown>
+  bindpause?: MiniProgramIntrinsicEventHandler<unknown>
+  bindplay?: MiniProgramIntrinsicEventHandler<unknown>
+  bindtimeupdate?: MiniProgramIntrinsicEventHandler<unknown>
   controls?: boolean
   loop?: boolean
   name?: string
   poster?: string
   src?: string
 }
+
+export type WeappIntrinsicElementAudio = MiniProgramIntrinsicElementAudio

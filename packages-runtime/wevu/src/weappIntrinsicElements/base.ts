@@ -1,28 +1,32 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 
-export type WeappIntrinsicEventHandler<TReturn = void> = (...args: unknown[]) => TReturn
-export type MiniProgramIntrinsicEventHandler<TReturn = void> = WeappIntrinsicEventHandler<TReturn>
+export type MiniProgramIntrinsicEventHandler<TReturn = void> = (...args: unknown[]) => TReturn
+export type WeappIntrinsicEventHandler<TReturn = void> = MiniProgramIntrinsicEventHandler<TReturn>
 
-export type WeappClassValue = string | Record<string, unknown> | WeappClassValue[] | null | undefined | false
-export type WeappStyleValue = false | null | undefined | string | WeappCSSProperties | WeappStyleValue[]
-export type WeappDatasetValue = unknown
+export type MiniProgramClassValue = string | Record<string, unknown> | MiniProgramClassValue[] | null | undefined | false
+export type WeappClassValue = MiniProgramClassValue
 
-export interface WeappCSSProperties {
+export type MiniProgramStyleValue = false | null | undefined | string | MiniProgramCSSProperties | MiniProgramStyleValue[]
+export type WeappStyleValue = MiniProgramStyleValue
+
+export type MiniProgramDatasetValue = unknown
+export type WeappDatasetValue = MiniProgramDatasetValue
+
+export interface MiniProgramCSSProperties {
   [key: string]: string | number | undefined
   [v: `--${string}`]: string | number | undefined
 }
-export interface MiniProgramCSSProperties extends WeappCSSProperties {}
+export interface WeappCSSProperties extends MiniProgramCSSProperties {}
 
-export type WeappDatasetAttributes = {
-  [key in `data-${string}`]?: WeappDatasetValue
+export type MiniProgramDatasetAttributes = {
+  [key in `data-${string}`]?: MiniProgramDatasetValue
 }
-export type MiniProgramDatasetAttributes = WeappDatasetAttributes
+export type WeappDatasetAttributes = MiniProgramDatasetAttributes
 
-export type WeappIntrinsicElementBaseAttributes = {
+export type MiniProgramIntrinsicElementBaseAttributes = {
   id?: string | number
-  class?: WeappClassValue
-  style?: WeappStyleValue
+  class?: MiniProgramClassValue
+  style?: MiniProgramStyleValue
   hidden?: boolean
-} & WeappDatasetAttributes & Record<string, unknown>
-
-export type MiniProgramIntrinsicElementBaseAttributes = WeappIntrinsicElementBaseAttributes
+} & MiniProgramDatasetAttributes & Record<string, unknown>
+export type WeappIntrinsicElementBaseAttributes = MiniProgramIntrinsicElementBaseAttributes

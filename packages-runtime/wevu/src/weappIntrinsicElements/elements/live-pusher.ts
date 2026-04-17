@@ -1,12 +1,12 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/live-pusher.html
  */
-export type WeappIntrinsicElementLivePusher = WeappIntrinsicElementBaseAttributes & {
+export type MiniProgramIntrinsicElementLivePusher = MiniProgramIntrinsicElementBaseAttributes & {
   aspect?: string
   'audio-quality'?: string
   'audio-reverb-type'?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7'
@@ -16,15 +16,15 @@ export type WeappIntrinsicElementLivePusher = WeappIntrinsicElementBaseAttribute
   'background-mute'?: boolean
   beauty?: number
   'beauty-style'?: 'smooth' | 'nature'
-  bindaudiovolumenotify?: WeappIntrinsicEventHandler<unknown>
-  bindbgmcomplete?: WeappIntrinsicEventHandler<unknown>
-  bindbgmprogress?: WeappIntrinsicEventHandler<unknown>
-  bindbgmstart?: WeappIntrinsicEventHandler<unknown>
-  bindenterpictureinpicture?: WeappIntrinsicEventHandler<unknown>
-  binderror?: WeappIntrinsicEventHandler<unknown>
-  bindleavepictureinpicture?: WeappIntrinsicEventHandler<unknown>
-  bindnetstatus?: WeappIntrinsicEventHandler<unknown>
-  bindstatechange?: WeappIntrinsicEventHandler<unknown>
+  bindaudiovolumenotify?: MiniProgramIntrinsicEventHandler<unknown>
+  bindbgmcomplete?: MiniProgramIntrinsicEventHandler<unknown>
+  bindbgmprogress?: MiniProgramIntrinsicEventHandler<unknown>
+  bindbgmstart?: MiniProgramIntrinsicEventHandler<unknown>
+  bindenterpictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
+  binderror?: MiniProgramIntrinsicEventHandler<unknown>
+  bindleavepictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
+  bindnetstatus?: MiniProgramIntrinsicEventHandler<unknown>
+  bindstatechange?: MiniProgramIntrinsicEventHandler<unknown>
   'custom-effect'?: boolean
   'device-position'?: string
   'enable-agc'?: boolean
@@ -56,3 +56,5 @@ export type WeappIntrinsicElementLivePusher = WeappIntrinsicElementBaseAttribute
   whiteness?: number
   zoom?: boolean
 }
+
+export type WeappIntrinsicElementLivePusher = MiniProgramIntrinsicElementLivePusher

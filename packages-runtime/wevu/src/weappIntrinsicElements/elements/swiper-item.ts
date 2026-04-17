@@ -1,16 +1,16 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/swiper.html
  */
-export type WeappIntrinsicElementSwiperItem = WeappIntrinsicElementBaseAttributes & {
+export type MiniProgramIntrinsicElementSwiperItem = MiniProgramIntrinsicElementBaseAttributes & {
   autoplay?: boolean
-  bindanimationfinish?: WeappIntrinsicEventHandler<unknown>
-  bindchange?: WeappIntrinsicEventHandler<unknown>
-  bindtransition?: WeappIntrinsicEventHandler<unknown>
+  bindanimationfinish?: MiniProgramIntrinsicEventHandler<unknown>
+  bindchange?: MiniProgramIntrinsicEventHandler<unknown>
+  bindtransition?: MiniProgramIntrinsicEventHandler<unknown>
   'cache-extent'?: number
   circular?: boolean
   current?: number
@@ -37,7 +37,9 @@ export type WeappIntrinsicElementSwiperItem = WeappIntrinsicElementBaseAttribute
   'snap-to-edge'?: boolean
   'transformer-type'?: 'scaleAndFade' | 'accordion' | 'threeD' | 'zoomIn' | 'zoomOut' | 'deepthPage'
   vertical?: boolean
-  'worklet:onscrollend'?: WeappIntrinsicEventHandler<unknown>
-  'worklet:onscrollstart'?: WeappIntrinsicEventHandler<unknown>
-  'worklet:onscrollupdate'?: WeappIntrinsicEventHandler<unknown>
+  'worklet:onscrollend'?: MiniProgramIntrinsicEventHandler<unknown>
+  'worklet:onscrollstart'?: MiniProgramIntrinsicEventHandler<unknown>
+  'worklet:onscrollupdate'?: MiniProgramIntrinsicEventHandler<unknown>
 }
+
+export type WeappIntrinsicElementSwiperItem = MiniProgramIntrinsicElementSwiperItem

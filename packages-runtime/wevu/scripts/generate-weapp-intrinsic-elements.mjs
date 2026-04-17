@@ -27,7 +27,8 @@ const TYPE_ALIASES = new Map([
   ['undefined', 'undefined'],
 ])
 
-const EVENT_HANDLER_TYPE = 'WeappIntrinsicEventHandler'
+const PRIMARY_EVENT_HANDLER_TYPE = 'MiniProgramIntrinsicEventHandler'
+const LEGACY_EVENT_HANDLER_TYPE = 'WeappIntrinsicEventHandler'
 const IDENTIFIER_RE = /^[a-z_$][\w$]*$/i
 const SLASH_SEPARATOR_RE = /\s*\/\s*/g
 const RECORD_ANY_RE = /^Record<\s*string\s*,\s*any\s*>$/
@@ -39,8 +40,8 @@ const TS_EXT_RE = /\.ts$/
 
 const BASE_ATTRIBUTE_TYPES = {
   id: 'string | number',
-  class: 'WeappClassValue',
-  style: 'WeappStyleValue',
+  class: 'MiniProgramClassValue',
+  style: 'MiniProgramStyleValue',
   hidden: 'boolean',
 }
 
@@ -146,6 +147,10 @@ function toPascalCase(value) {
 }
 
 function toElementTypeName(componentName) {
+  return `MiniProgramIntrinsicElement${toPascalCase(componentName)}`
+}
+
+function toLegacyElementTypeName(componentName) {
   return `WeappIntrinsicElement${toPascalCase(componentName)}`
 }
 
@@ -187,9 +192,9 @@ function resolveAttributeType(attr) {
   if (lowered === 'function' || lowered === 'eventhandle') {
     if (lowered === 'function' && returnName) {
       const returns = normalizeTypeName(returnName) ?? 'unknown'
-      return `${EVENT_HANDLER_TYPE}<${returns}>`
+      return `${PRIMARY_EVENT_HANDLER_TYPE}<${returns}>`
     }
-    return EVENT_HANDLER_TYPE
+    return PRIMARY_EVENT_HANDLER_TYPE
   }
   const normalized = normalizeTypeName(typeName)
   return normalized ?? 'unknown'
@@ -218,6 +223,7 @@ function buildElementFile(component) {
     return undefined
   }
   const typeName = toElementTypeName(name)
+  const legacyTypeName = toLegacyElementTypeName(name)
   const attrs = Array.isArray(component.attrs) ? component.attrs : []
   const sortedAttrs = attrs
     .map(attr => ({
@@ -241,7 +247,7 @@ function buildElementFile(component) {
     }
     const enumType = resolveEnumType(attr.enum)
     const type = enumType ?? resolveAttributeType(attr)
-    if (type.includes(EVENT_HANDLER_TYPE)) {
+    if (type.includes(PRIMARY_EVENT_HANDLER_TYPE)) {
       usesEventHandler = true
     }
     const propertyKey = formatPropertyKey(attrName)
@@ -253,9 +259,9 @@ function buildElementFile(component) {
     }
     propLines.push(`  ${propertyKey}?: ${type}`)
   }
-  const importNames = ['WeappIntrinsicElementBaseAttributes']
+  const importNames = ['MiniProgramIntrinsicElementBaseAttributes']
   if (usesEventHandler) {
-    importNames.push(EVENT_HANDLER_TYPE)
+    importNames.push(PRIMARY_EVENT_HANDLER_TYPE)
   }
   const lines = [GENERATED_FILE_HEADER]
   if (usesQuotedProps && usesUnquotedProps) {
@@ -270,14 +276,15 @@ function buildElementFile(component) {
     ' */',
   )
   if (propLines.length > 0) {
-    lines.push(`export type ${typeName} = WeappIntrinsicElementBaseAttributes & {`)
+    lines.push(`export type ${typeName} = MiniProgramIntrinsicElementBaseAttributes & {`)
     lines.push(...propLines)
     lines.push('}')
   }
   else {
-    lines.push(`export type ${typeName} = WeappIntrinsicElementBaseAttributes`)
+    lines.push(`export type ${typeName} = MiniProgramIntrinsicElementBaseAttributes`)
   }
-  return { fileName: `${name}.ts`, typeName, lines }
+  lines.push('', `export type ${legacyTypeName} = ${typeName}`)
+  return { fileName: `${name}.ts`, typeName, legacyTypeName, lines }
 }
 
 await fs.remove(outputDir)
@@ -287,27 +294,36 @@ await fs.ensureDir(elementsDir)
 const baseLines = [
   GENERATED_FILE_HEADER,
   '',
-  `export type ${EVENT_HANDLER_TYPE}<TReturn = void> = (...args: unknown[]) => TReturn`,
+  `export type ${PRIMARY_EVENT_HANDLER_TYPE}<TReturn = void> = (...args: unknown[]) => TReturn`,
+  `export type ${LEGACY_EVENT_HANDLER_TYPE}<TReturn = void> = ${PRIMARY_EVENT_HANDLER_TYPE}<TReturn>`,
   '',
-  'export type WeappClassValue = string | Record<string, unknown> | WeappClassValue[] | null | undefined | false',
-  'export type WeappStyleValue = false | null | undefined | string | WeappCSSProperties | WeappStyleValue[]',
-  'export type WeappDatasetValue = unknown',
+  'export type MiniProgramClassValue = string | Record<string, unknown> | MiniProgramClassValue[] | null | undefined | false',
+  'export type WeappClassValue = MiniProgramClassValue',
   '',
-  'export interface WeappCSSProperties {',
+  'export type MiniProgramStyleValue = false | null | undefined | string | MiniProgramCSSProperties | MiniProgramStyleValue[]',
+  'export type WeappStyleValue = MiniProgramStyleValue',
+  '',
+  'export type MiniProgramDatasetValue = unknown',
+  'export type WeappDatasetValue = MiniProgramDatasetValue',
+  '',
+  'export interface MiniProgramCSSProperties {',
   '  [key: string]: string | number | undefined',
   '  [v: `--${string}`]: string | number | undefined',
   '}',
+  'export interface WeappCSSProperties extends MiniProgramCSSProperties {}',
   '',
-  'export type WeappDatasetAttributes = {',
-  '  [key in `data-${string}`]?: WeappDatasetValue',
+  'export type MiniProgramDatasetAttributes = {',
+  '  [key in `data-${string}`]?: MiniProgramDatasetValue',
   '}',
+  'export type WeappDatasetAttributes = MiniProgramDatasetAttributes',
   '',
-  'export type WeappIntrinsicElementBaseAttributes = {',
+  'export type MiniProgramIntrinsicElementBaseAttributes = {',
   `  id?: ${BASE_ATTRIBUTE_TYPES.id}`,
-  '  class?: WeappClassValue',
-  '  style?: WeappStyleValue',
+  '  class?: MiniProgramClassValue',
+  '  style?: MiniProgramStyleValue',
   '  hidden?: boolean',
-  '} & WeappDatasetAttributes & Record<string, unknown>',
+  '} & MiniProgramDatasetAttributes & Record<string, unknown>',
+  'export type WeappIntrinsicElementBaseAttributes = MiniProgramIntrinsicElementBaseAttributes',
 ]
 
 await fs.outputFile(baseOutputPath, `${baseLines.join('\n')}\n`, 'utf8')
@@ -328,11 +344,21 @@ const indexLines = [
   '',
   ...elementFiles.map(file => `import type { ${file.typeName} } from './weappIntrinsicElements/elements/${file.fileName.replace(TS_EXT_RE, '')}'`),
   '',
-  'export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from \'./weappIntrinsicElements/base\'',
+  'export type {',
+  '  MiniProgramCSSProperties,',
+  '  MiniProgramDatasetAttributes,',
+  '  MiniProgramIntrinsicElementBaseAttributes,',
+  `  ${PRIMARY_EVENT_HANDLER_TYPE},`,
+  '  WeappCSSProperties,',
+  '  WeappDatasetAttributes,',
+  '  WeappIntrinsicElementBaseAttributes,',
+  `  ${LEGACY_EVENT_HANDLER_TYPE},`,
+  '} from \'./weappIntrinsicElements/base\'',
 ]
 
 if (elementFiles.length === 0) {
-  indexLines.push('', 'export interface WeappIntrinsicElements extends Record<string, never> {}')
+  indexLines.push('', 'export interface MiniProgramIntrinsicElements extends Record<string, never> {}')
+  indexLines.push('export interface WeappIntrinsicElements extends MiniProgramIntrinsicElements {}')
 }
 else {
   const htmlAliasLines = HTML_ALIAS_TAG_MAPPINGS
@@ -346,20 +372,22 @@ else {
     .filter(Boolean)
 
   if (htmlAliasLines.length > 0) {
-    indexLines.push('', 'export interface WeappHtmlAliasIntrinsicElements {')
+    indexLines.push('', 'export interface MiniProgramHtmlAliasIntrinsicElements {')
     indexLines.push(...htmlAliasLines)
     indexLines.push('}')
+    indexLines.push('export interface WeappHtmlAliasIntrinsicElements extends MiniProgramHtmlAliasIntrinsicElements {}')
   }
 
-  indexLines.push('', 'export interface WeappIntrinsicElements {')
+  indexLines.push('', 'export interface MiniProgramIntrinsicElements {')
   if (htmlAliasLines.length > 0) {
-    indexLines[indexLines.length - 1] = 'export interface WeappIntrinsicElements extends WeappHtmlAliasIntrinsicElements {'
+    indexLines[indexLines.length - 1] = 'export interface MiniProgramIntrinsicElements extends MiniProgramHtmlAliasIntrinsicElements {'
   }
   for (const file of elementFiles) {
     const tagName = file.fileName.replace(TS_EXT_RE, '')
     indexLines.push(`  ${formatPropertyKey(tagName)}: ${file.typeName}`)
   }
   indexLines.push('}')
+  indexLines.push('export interface WeappIntrinsicElements extends MiniProgramIntrinsicElements {}')
 }
 
 await fs.outputFile(indexOutputPath, `${indexLines.join('\n')}\n`, 'utf8')

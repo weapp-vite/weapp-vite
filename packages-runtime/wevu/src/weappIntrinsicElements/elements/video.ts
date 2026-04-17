@@ -1,33 +1,33 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/video.html
  */
-export type WeappIntrinsicElementVideo = WeappIntrinsicElementBaseAttributes & {
+export type MiniProgramIntrinsicElementVideo = MiniProgramIntrinsicElementBaseAttributes & {
   'ad-unit-id'?: string
   'auto-pause-if-navigate'?: boolean
   'auto-pause-if-open-native'?: boolean
   autoplay?: boolean
   'background-poster'?: string
-  bindcastinginterrupt?: WeappIntrinsicEventHandler<unknown>
-  bindcastingstatechange?: WeappIntrinsicEventHandler<unknown>
-  bindcastinguserselect?: WeappIntrinsicEventHandler<unknown>
-  bindcontrolstoggle?: WeappIntrinsicEventHandler<unknown>
-  bindended?: WeappIntrinsicEventHandler<unknown>
-  bindenterpictureinpicture?: WeappIntrinsicEventHandler<unknown>
-  binderror?: WeappIntrinsicEventHandler<unknown>
-  bindfullscreenchange?: WeappIntrinsicEventHandler<unknown>
-  bindleavepictureinpicture?: WeappIntrinsicEventHandler<unknown>
-  bindloadedmetadata?: WeappIntrinsicEventHandler<unknown>
-  bindpause?: WeappIntrinsicEventHandler<unknown>
-  bindplay?: WeappIntrinsicEventHandler<unknown>
-  bindprogress?: WeappIntrinsicEventHandler<unknown>
-  bindseekcomplete?: WeappIntrinsicEventHandler<unknown>
-  bindtimeupdate?: WeappIntrinsicEventHandler<unknown>
-  bindwaiting?: WeappIntrinsicEventHandler<unknown>
+  bindcastinginterrupt?: MiniProgramIntrinsicEventHandler<unknown>
+  bindcastingstatechange?: MiniProgramIntrinsicEventHandler<unknown>
+  bindcastinguserselect?: MiniProgramIntrinsicEventHandler<unknown>
+  bindcontrolstoggle?: MiniProgramIntrinsicEventHandler<unknown>
+  bindended?: MiniProgramIntrinsicEventHandler<unknown>
+  bindenterpictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
+  binderror?: MiniProgramIntrinsicEventHandler<unknown>
+  bindfullscreenchange?: MiniProgramIntrinsicEventHandler<unknown>
+  bindleavepictureinpicture?: MiniProgramIntrinsicEventHandler<unknown>
+  bindloadedmetadata?: MiniProgramIntrinsicEventHandler<unknown>
+  bindpause?: MiniProgramIntrinsicEventHandler<unknown>
+  bindplay?: MiniProgramIntrinsicEventHandler<unknown>
+  bindprogress?: MiniProgramIntrinsicEventHandler<unknown>
+  bindseekcomplete?: MiniProgramIntrinsicEventHandler<unknown>
+  bindtimeupdate?: MiniProgramIntrinsicEventHandler<unknown>
+  bindwaiting?: MiniProgramIntrinsicEventHandler<unknown>
   'certificate-url'?: string
   controls?: boolean
   'danmu-btn'?: boolean
@@ -70,3 +70,5 @@ export type WeappIntrinsicElementVideo = WeappIntrinsicElementBaseAttributes & {
   'vslide-gesture'?: boolean
   'vslide-gesture-in-fullscreen'?: boolean
 }
+
+export type WeappIntrinsicElementVideo = MiniProgramIntrinsicElementVideo

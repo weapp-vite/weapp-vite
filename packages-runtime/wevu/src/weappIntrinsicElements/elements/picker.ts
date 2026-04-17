@@ -1,15 +1,15 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/picker.html
  */
-export type WeappIntrinsicElementPicker = WeappIntrinsicElementBaseAttributes & {
-  bindcancel?: WeappIntrinsicEventHandler<unknown>
-  bindchange?: WeappIntrinsicEventHandler<unknown>
-  bindcolumnchange?: WeappIntrinsicEventHandler<unknown>
+export type MiniProgramIntrinsicElementPicker = MiniProgramIntrinsicElementBaseAttributes & {
+  bindcancel?: MiniProgramIntrinsicEventHandler<unknown>
+  bindchange?: MiniProgramIntrinsicEventHandler<unknown>
+  bindcolumnchange?: MiniProgramIntrinsicEventHandler<unknown>
   'custom-item'?: string
   disabled?: boolean
   end?: string
@@ -22,3 +22,5 @@ export type WeappIntrinsicElementPicker = WeappIntrinsicElementBaseAttributes & 
   start?: string
   value?: unknown[]
 }
+
+export type WeappIntrinsicElementPicker = MiniProgramIntrinsicElementPicker

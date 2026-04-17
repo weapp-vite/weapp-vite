@@ -1,164 +1,165 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementAd } from './weappIntrinsicElements/elements/ad'
-import type { WeappIntrinsicElementAdCustom } from './weappIntrinsicElements/elements/ad-custom'
-import type { WeappIntrinsicElementAudio } from './weappIntrinsicElements/elements/audio'
-import type { WeappIntrinsicElementBlock } from './weappIntrinsicElements/elements/block'
-import type { WeappIntrinsicElementButton } from './weappIntrinsicElements/elements/button'
-import type { WeappIntrinsicElementCamera } from './weappIntrinsicElements/elements/camera'
-import type { WeappIntrinsicElementCanvas } from './weappIntrinsicElements/elements/canvas'
-import type { WeappIntrinsicElementCheckbox } from './weappIntrinsicElements/elements/checkbox'
-import type { WeappIntrinsicElementCheckboxGroup } from './weappIntrinsicElements/elements/checkbox-group'
-import type { WeappIntrinsicElementCoverImage } from './weappIntrinsicElements/elements/cover-image'
-import type { WeappIntrinsicElementCoverView } from './weappIntrinsicElements/elements/cover-view'
-import type { WeappIntrinsicElementEditor } from './weappIntrinsicElements/elements/editor'
-import type { WeappIntrinsicElementForm } from './weappIntrinsicElements/elements/form'
-import type { WeappIntrinsicElementFunctionalPageNavigator } from './weappIntrinsicElements/elements/functional-page-navigator'
-import type { WeappIntrinsicElementIcon } from './weappIntrinsicElements/elements/icon'
-import type { WeappIntrinsicElementImage } from './weappIntrinsicElements/elements/image'
-import type { WeappIntrinsicElementImport } from './weappIntrinsicElements/elements/import'
-import type { WeappIntrinsicElementInclude } from './weappIntrinsicElements/elements/include'
-import type { WeappIntrinsicElementInput } from './weappIntrinsicElements/elements/input'
-import type { WeappIntrinsicElementKeyboardAccessory } from './weappIntrinsicElements/elements/keyboard-accessory'
-import type { WeappIntrinsicElementLabel } from './weappIntrinsicElements/elements/label'
-import type { WeappIntrinsicElementLivePlayer } from './weappIntrinsicElements/elements/live-player'
-import type { WeappIntrinsicElementLivePusher } from './weappIntrinsicElements/elements/live-pusher'
-import type { WeappIntrinsicElementMap } from './weappIntrinsicElements/elements/map'
-import type { WeappIntrinsicElementMatchMedia } from './weappIntrinsicElements/elements/match-media'
-import type { WeappIntrinsicElementMovableArea } from './weappIntrinsicElements/elements/movable-area'
-import type { WeappIntrinsicElementMovableView } from './weappIntrinsicElements/elements/movable-view'
-import type { WeappIntrinsicElementNavigationBar } from './weappIntrinsicElements/elements/navigation-bar'
-import type { WeappIntrinsicElementNavigator } from './weappIntrinsicElements/elements/navigator'
-import type { WeappIntrinsicElementOfficialAccount } from './weappIntrinsicElements/elements/official-account'
-import type { WeappIntrinsicElementOpenData } from './weappIntrinsicElements/elements/open-data'
-import type { WeappIntrinsicElementPageContainer } from './weappIntrinsicElements/elements/page-container'
-import type { WeappIntrinsicElementPageMeta } from './weappIntrinsicElements/elements/page-meta'
-import type { WeappIntrinsicElementPicker } from './weappIntrinsicElements/elements/picker'
-import type { WeappIntrinsicElementPickerView } from './weappIntrinsicElements/elements/picker-view'
-import type { WeappIntrinsicElementPickerViewColumn } from './weappIntrinsicElements/elements/picker-view-column'
-import type { WeappIntrinsicElementProgress } from './weappIntrinsicElements/elements/progress'
-import type { WeappIntrinsicElementRadio } from './weappIntrinsicElements/elements/radio'
-import type { WeappIntrinsicElementRadioGroup } from './weappIntrinsicElements/elements/radio-group'
-import type { WeappIntrinsicElementRichText } from './weappIntrinsicElements/elements/rich-text'
-import type { WeappIntrinsicElementScrollView } from './weappIntrinsicElements/elements/scroll-view'
-import type { WeappIntrinsicElementShareElement } from './weappIntrinsicElements/elements/share-element'
-import type { WeappIntrinsicElementSlider } from './weappIntrinsicElements/elements/slider'
-import type { WeappIntrinsicElementSlot } from './weappIntrinsicElements/elements/slot'
-import type { WeappIntrinsicElementSwiper } from './weappIntrinsicElements/elements/swiper'
-import type { WeappIntrinsicElementSwiperItem } from './weappIntrinsicElements/elements/swiper-item'
-import type { WeappIntrinsicElementSwitch } from './weappIntrinsicElements/elements/switch'
-import type { WeappIntrinsicElementTemplate } from './weappIntrinsicElements/elements/template'
-import type { WeappIntrinsicElementText } from './weappIntrinsicElements/elements/text'
-import type { WeappIntrinsicElementTextarea } from './weappIntrinsicElements/elements/textarea'
-import type { WeappIntrinsicElementVideo } from './weappIntrinsicElements/elements/video'
-import type { WeappIntrinsicElementView } from './weappIntrinsicElements/elements/view'
-import type { WeappIntrinsicElementVoipRoom } from './weappIntrinsicElements/elements/voip-room'
-import type { WeappIntrinsicElementWebView } from './weappIntrinsicElements/elements/web-view'
+import type { MiniProgramIntrinsicElementAd } from './weappIntrinsicElements/elements/ad'
+import type { MiniProgramIntrinsicElementAdCustom } from './weappIntrinsicElements/elements/ad-custom'
+import type { MiniProgramIntrinsicElementAudio } from './weappIntrinsicElements/elements/audio'
+import type { MiniProgramIntrinsicElementBlock } from './weappIntrinsicElements/elements/block'
+import type { MiniProgramIntrinsicElementButton } from './weappIntrinsicElements/elements/button'
+import type { MiniProgramIntrinsicElementCamera } from './weappIntrinsicElements/elements/camera'
+import type { MiniProgramIntrinsicElementCanvas } from './weappIntrinsicElements/elements/canvas'
+import type { MiniProgramIntrinsicElementCheckbox } from './weappIntrinsicElements/elements/checkbox'
+import type { MiniProgramIntrinsicElementCheckboxGroup } from './weappIntrinsicElements/elements/checkbox-group'
+import type { MiniProgramIntrinsicElementCoverImage } from './weappIntrinsicElements/elements/cover-image'
+import type { MiniProgramIntrinsicElementCoverView } from './weappIntrinsicElements/elements/cover-view'
+import type { MiniProgramIntrinsicElementEditor } from './weappIntrinsicElements/elements/editor'
+import type { MiniProgramIntrinsicElementForm } from './weappIntrinsicElements/elements/form'
+import type { MiniProgramIntrinsicElementFunctionalPageNavigator } from './weappIntrinsicElements/elements/functional-page-navigator'
+import type { MiniProgramIntrinsicElementIcon } from './weappIntrinsicElements/elements/icon'
+import type { MiniProgramIntrinsicElementImage } from './weappIntrinsicElements/elements/image'
+import type { MiniProgramIntrinsicElementImport } from './weappIntrinsicElements/elements/import'
+import type { MiniProgramIntrinsicElementInclude } from './weappIntrinsicElements/elements/include'
+import type { MiniProgramIntrinsicElementInput } from './weappIntrinsicElements/elements/input'
+import type { MiniProgramIntrinsicElementKeyboardAccessory } from './weappIntrinsicElements/elements/keyboard-accessory'
+import type { MiniProgramIntrinsicElementLabel } from './weappIntrinsicElements/elements/label'
+import type { MiniProgramIntrinsicElementLivePlayer } from './weappIntrinsicElements/elements/live-player'
+import type { MiniProgramIntrinsicElementLivePusher } from './weappIntrinsicElements/elements/live-pusher'
+import type { MiniProgramIntrinsicElementMap } from './weappIntrinsicElements/elements/map'
+import type { MiniProgramIntrinsicElementMatchMedia } from './weappIntrinsicElements/elements/match-media'
+import type { MiniProgramIntrinsicElementMovableArea } from './weappIntrinsicElements/elements/movable-area'
+import type { MiniProgramIntrinsicElementMovableView } from './weappIntrinsicElements/elements/movable-view'
+import type { MiniProgramIntrinsicElementNavigationBar } from './weappIntrinsicElements/elements/navigation-bar'
+import type { MiniProgramIntrinsicElementNavigator } from './weappIntrinsicElements/elements/navigator'
+import type { MiniProgramIntrinsicElementOfficialAccount } from './weappIntrinsicElements/elements/official-account'
+import type { MiniProgramIntrinsicElementOpenData } from './weappIntrinsicElements/elements/open-data'
+import type { MiniProgramIntrinsicElementPageContainer } from './weappIntrinsicElements/elements/page-container'
+import type { MiniProgramIntrinsicElementPageMeta } from './weappIntrinsicElements/elements/page-meta'
+import type { MiniProgramIntrinsicElementPicker } from './weappIntrinsicElements/elements/picker'
+import type { MiniProgramIntrinsicElementPickerView } from './weappIntrinsicElements/elements/picker-view'
+import type { MiniProgramIntrinsicElementPickerViewColumn } from './weappIntrinsicElements/elements/picker-view-column'
+import type { MiniProgramIntrinsicElementProgress } from './weappIntrinsicElements/elements/progress'
+import type { MiniProgramIntrinsicElementRadio } from './weappIntrinsicElements/elements/radio'
+import type { MiniProgramIntrinsicElementRadioGroup } from './weappIntrinsicElements/elements/radio-group'
+import type { MiniProgramIntrinsicElementRichText } from './weappIntrinsicElements/elements/rich-text'
+import type { MiniProgramIntrinsicElementScrollView } from './weappIntrinsicElements/elements/scroll-view'
+import type { MiniProgramIntrinsicElementShareElement } from './weappIntrinsicElements/elements/share-element'
+import type { MiniProgramIntrinsicElementSlider } from './weappIntrinsicElements/elements/slider'
+import type { MiniProgramIntrinsicElementSlot } from './weappIntrinsicElements/elements/slot'
+import type { MiniProgramIntrinsicElementSwiper } from './weappIntrinsicElements/elements/swiper'
+import type { MiniProgramIntrinsicElementSwiperItem } from './weappIntrinsicElements/elements/swiper-item'
+import type { MiniProgramIntrinsicElementSwitch } from './weappIntrinsicElements/elements/switch'
+import type { MiniProgramIntrinsicElementTemplate } from './weappIntrinsicElements/elements/template'
+import type { MiniProgramIntrinsicElementText } from './weappIntrinsicElements/elements/text'
+import type { MiniProgramIntrinsicElementTextarea } from './weappIntrinsicElements/elements/textarea'
+import type { MiniProgramIntrinsicElementVideo } from './weappIntrinsicElements/elements/video'
+import type { MiniProgramIntrinsicElementView } from './weappIntrinsicElements/elements/view'
+import type { MiniProgramIntrinsicElementVoipRoom } from './weappIntrinsicElements/elements/voip-room'
+import type { MiniProgramIntrinsicElementWebView } from './weappIntrinsicElements/elements/web-view'
 
-export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from './weappIntrinsicElements/base'
 export type {
   MiniProgramCSSProperties,
   MiniProgramDatasetAttributes,
   MiniProgramIntrinsicElementBaseAttributes,
   MiniProgramIntrinsicEventHandler,
+  WeappCSSProperties,
+  WeappDatasetAttributes,
+  WeappIntrinsicElementBaseAttributes,
+  WeappIntrinsicEventHandler,
 } from './weappIntrinsicElements/base'
 
-export interface WeappHtmlAliasIntrinsicElements {
-  a: WeappIntrinsicElementNavigator
-  article: WeappIntrinsicElementView
-  aside: WeappIntrinsicElementView
-  b: WeappIntrinsicElementText
-  blockquote: WeappIntrinsicElementView
-  code: WeappIntrinsicElementText
-  dd: WeappIntrinsicElementView
-  div: WeappIntrinsicElementView
-  dl: WeappIntrinsicElementView
-  dt: WeappIntrinsicElementView
-  em: WeappIntrinsicElementText
-  figcaption: WeappIntrinsicElementView
-  figure: WeappIntrinsicElementView
-  footer: WeappIntrinsicElementView
-  h1: WeappIntrinsicElementView
-  h2: WeappIntrinsicElementView
-  h3: WeappIntrinsicElementView
-  h4: WeappIntrinsicElementView
-  h5: WeappIntrinsicElementView
-  h6: WeappIntrinsicElementView
-  header: WeappIntrinsicElementView
-  i: WeappIntrinsicElementText
-  img: WeappIntrinsicElementImage
-  li: WeappIntrinsicElementView
-  main: WeappIntrinsicElementView
-  nav: WeappIntrinsicElementView
-  ol: WeappIntrinsicElementView
-  p: WeappIntrinsicElementView
-  pre: WeappIntrinsicElementView
-  section: WeappIntrinsicElementView
-  small: WeappIntrinsicElementText
-  span: WeappIntrinsicElementText
-  strong: WeappIntrinsicElementText
-  u: WeappIntrinsicElementText
-  ul: WeappIntrinsicElementView
+export interface MiniProgramHtmlAliasIntrinsicElements {
+  a: MiniProgramIntrinsicElementNavigator
+  article: MiniProgramIntrinsicElementView
+  aside: MiniProgramIntrinsicElementView
+  b: MiniProgramIntrinsicElementText
+  blockquote: MiniProgramIntrinsicElementView
+  code: MiniProgramIntrinsicElementText
+  dd: MiniProgramIntrinsicElementView
+  div: MiniProgramIntrinsicElementView
+  dl: MiniProgramIntrinsicElementView
+  dt: MiniProgramIntrinsicElementView
+  em: MiniProgramIntrinsicElementText
+  figcaption: MiniProgramIntrinsicElementView
+  figure: MiniProgramIntrinsicElementView
+  footer: MiniProgramIntrinsicElementView
+  h1: MiniProgramIntrinsicElementView
+  h2: MiniProgramIntrinsicElementView
+  h3: MiniProgramIntrinsicElementView
+  h4: MiniProgramIntrinsicElementView
+  h5: MiniProgramIntrinsicElementView
+  h6: MiniProgramIntrinsicElementView
+  header: MiniProgramIntrinsicElementView
+  i: MiniProgramIntrinsicElementText
+  img: MiniProgramIntrinsicElementImage
+  li: MiniProgramIntrinsicElementView
+  main: MiniProgramIntrinsicElementView
+  nav: MiniProgramIntrinsicElementView
+  ol: MiniProgramIntrinsicElementView
+  p: MiniProgramIntrinsicElementView
+  pre: MiniProgramIntrinsicElementView
+  section: MiniProgramIntrinsicElementView
+  small: MiniProgramIntrinsicElementText
+  span: MiniProgramIntrinsicElementText
+  strong: MiniProgramIntrinsicElementText
+  u: MiniProgramIntrinsicElementText
+  ul: MiniProgramIntrinsicElementView
 }
+export interface WeappHtmlAliasIntrinsicElements extends MiniProgramHtmlAliasIntrinsicElements {}
 
-export interface MiniProgramHtmlAliasIntrinsicElements extends WeappHtmlAliasIntrinsicElements {}
-
-export interface WeappIntrinsicElements extends WeappHtmlAliasIntrinsicElements {
-  ad: WeappIntrinsicElementAd
-  'ad-custom': WeappIntrinsicElementAdCustom
-  audio: WeappIntrinsicElementAudio
-  block: WeappIntrinsicElementBlock
-  button: WeappIntrinsicElementButton
-  camera: WeappIntrinsicElementCamera
-  canvas: WeappIntrinsicElementCanvas
-  checkbox: WeappIntrinsicElementCheckbox
-  'checkbox-group': WeappIntrinsicElementCheckboxGroup
-  'cover-image': WeappIntrinsicElementCoverImage
-  'cover-view': WeappIntrinsicElementCoverView
-  editor: WeappIntrinsicElementEditor
-  form: WeappIntrinsicElementForm
-  'functional-page-navigator': WeappIntrinsicElementFunctionalPageNavigator
-  icon: WeappIntrinsicElementIcon
-  image: WeappIntrinsicElementImage
-  import: WeappIntrinsicElementImport
-  include: WeappIntrinsicElementInclude
-  input: WeappIntrinsicElementInput
-  'keyboard-accessory': WeappIntrinsicElementKeyboardAccessory
-  label: WeappIntrinsicElementLabel
-  'live-player': WeappIntrinsicElementLivePlayer
-  'live-pusher': WeappIntrinsicElementLivePusher
-  map: WeappIntrinsicElementMap
-  'match-media': WeappIntrinsicElementMatchMedia
-  'movable-area': WeappIntrinsicElementMovableArea
-  'movable-view': WeappIntrinsicElementMovableView
-  'navigation-bar': WeappIntrinsicElementNavigationBar
-  navigator: WeappIntrinsicElementNavigator
-  'official-account': WeappIntrinsicElementOfficialAccount
-  'open-data': WeappIntrinsicElementOpenData
-  'page-container': WeappIntrinsicElementPageContainer
-  'page-meta': WeappIntrinsicElementPageMeta
-  picker: WeappIntrinsicElementPicker
-  'picker-view': WeappIntrinsicElementPickerView
-  'picker-view-column': WeappIntrinsicElementPickerViewColumn
-  progress: WeappIntrinsicElementProgress
-  radio: WeappIntrinsicElementRadio
-  'radio-group': WeappIntrinsicElementRadioGroup
-  'rich-text': WeappIntrinsicElementRichText
-  'scroll-view': WeappIntrinsicElementScrollView
-  'share-element': WeappIntrinsicElementShareElement
-  slider: WeappIntrinsicElementSlider
-  slot: WeappIntrinsicElementSlot
-  swiper: WeappIntrinsicElementSwiper
-  'swiper-item': WeappIntrinsicElementSwiperItem
-  switch: WeappIntrinsicElementSwitch
-  template: WeappIntrinsicElementTemplate
-  text: WeappIntrinsicElementText
-  textarea: WeappIntrinsicElementTextarea
-  video: WeappIntrinsicElementVideo
-  view: WeappIntrinsicElementView
-  'voip-room': WeappIntrinsicElementVoipRoom
-  'web-view': WeappIntrinsicElementWebView
+export interface MiniProgramIntrinsicElements extends MiniProgramHtmlAliasIntrinsicElements {
+  ad: MiniProgramIntrinsicElementAd
+  'ad-custom': MiniProgramIntrinsicElementAdCustom
+  audio: MiniProgramIntrinsicElementAudio
+  block: MiniProgramIntrinsicElementBlock
+  button: MiniProgramIntrinsicElementButton
+  camera: MiniProgramIntrinsicElementCamera
+  canvas: MiniProgramIntrinsicElementCanvas
+  checkbox: MiniProgramIntrinsicElementCheckbox
+  'checkbox-group': MiniProgramIntrinsicElementCheckboxGroup
+  'cover-image': MiniProgramIntrinsicElementCoverImage
+  'cover-view': MiniProgramIntrinsicElementCoverView
+  editor: MiniProgramIntrinsicElementEditor
+  form: MiniProgramIntrinsicElementForm
+  'functional-page-navigator': MiniProgramIntrinsicElementFunctionalPageNavigator
+  icon: MiniProgramIntrinsicElementIcon
+  image: MiniProgramIntrinsicElementImage
+  import: MiniProgramIntrinsicElementImport
+  include: MiniProgramIntrinsicElementInclude
+  input: MiniProgramIntrinsicElementInput
+  'keyboard-accessory': MiniProgramIntrinsicElementKeyboardAccessory
+  label: MiniProgramIntrinsicElementLabel
+  'live-player': MiniProgramIntrinsicElementLivePlayer
+  'live-pusher': MiniProgramIntrinsicElementLivePusher
+  map: MiniProgramIntrinsicElementMap
+  'match-media': MiniProgramIntrinsicElementMatchMedia
+  'movable-area': MiniProgramIntrinsicElementMovableArea
+  'movable-view': MiniProgramIntrinsicElementMovableView
+  'navigation-bar': MiniProgramIntrinsicElementNavigationBar
+  navigator: MiniProgramIntrinsicElementNavigator
+  'official-account': MiniProgramIntrinsicElementOfficialAccount
+  'open-data': MiniProgramIntrinsicElementOpenData
+  'page-container': MiniProgramIntrinsicElementPageContainer
+  'page-meta': MiniProgramIntrinsicElementPageMeta
+  picker: MiniProgramIntrinsicElementPicker
+  'picker-view': MiniProgramIntrinsicElementPickerView
+  'picker-view-column': MiniProgramIntrinsicElementPickerViewColumn
+  progress: MiniProgramIntrinsicElementProgress
+  radio: MiniProgramIntrinsicElementRadio
+  'radio-group': MiniProgramIntrinsicElementRadioGroup
+  'rich-text': MiniProgramIntrinsicElementRichText
+  'scroll-view': MiniProgramIntrinsicElementScrollView
+  'share-element': MiniProgramIntrinsicElementShareElement
+  slider: MiniProgramIntrinsicElementSlider
+  slot: MiniProgramIntrinsicElementSlot
+  swiper: MiniProgramIntrinsicElementSwiper
+  'swiper-item': MiniProgramIntrinsicElementSwiperItem
+  switch: MiniProgramIntrinsicElementSwitch
+  template: MiniProgramIntrinsicElementTemplate
+  text: MiniProgramIntrinsicElementText
+  textarea: MiniProgramIntrinsicElementTextarea
+  video: MiniProgramIntrinsicElementVideo
+  view: MiniProgramIntrinsicElementView
+  'voip-room': MiniProgramIntrinsicElementVoipRoom
+  'web-view': MiniProgramIntrinsicElementWebView
 }
-
-export interface MiniProgramIntrinsicElements extends WeappIntrinsicElements {}
+export interface WeappIntrinsicElements extends MiniProgramIntrinsicElements {}

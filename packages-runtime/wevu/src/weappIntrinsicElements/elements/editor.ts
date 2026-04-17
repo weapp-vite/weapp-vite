@@ -1,17 +1,17 @@
 // 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from '../base'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/editor.html
  */
-export type WeappIntrinsicElementEditor = WeappIntrinsicElementBaseAttributes & {
-  bindblur?: WeappIntrinsicEventHandler<unknown>
-  bindfocus?: WeappIntrinsicEventHandler<unknown>
-  bindinput?: WeappIntrinsicEventHandler<unknown>
-  bindready?: WeappIntrinsicEventHandler<unknown>
-  bindstatuschange?: WeappIntrinsicEventHandler<unknown>
+export type MiniProgramIntrinsicElementEditor = MiniProgramIntrinsicElementBaseAttributes & {
+  bindblur?: MiniProgramIntrinsicEventHandler<unknown>
+  bindfocus?: MiniProgramIntrinsicEventHandler<unknown>
+  bindinput?: MiniProgramIntrinsicEventHandler<unknown>
+  bindready?: MiniProgramIntrinsicEventHandler<unknown>
+  bindstatuschange?: MiniProgramIntrinsicEventHandler<unknown>
   'confirm-hold'?: boolean
   'enable-formats'?: string[]
   enterkeyhint?: string
@@ -21,3 +21,5 @@ export type WeappIntrinsicElementEditor = WeappIntrinsicElementBaseAttributes & 
   'show-img-size'?: boolean
   'show-img-toolbar'?: boolean
 }
+
+export type WeappIntrinsicElementEditor = MiniProgramIntrinsicElementEditor
