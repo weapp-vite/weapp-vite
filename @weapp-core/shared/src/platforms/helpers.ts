@@ -102,6 +102,13 @@ export function getSupportedMiniProgramPlatforms(): readonly MpPlatform[] {
 }
 
 /**
+ * @description 返回默认小程序平台。
+ */
+export function getDefaultMiniProgramPlatform(): MpPlatform {
+  return SUPPORTED_MINI_PROGRAM_PLATFORMS[0] ?? 'weapp'
+}
+
+/**
  * @description 获取平台描述。
  */
 export function getMiniProgramPlatformDescriptor(platform: MpPlatform): MiniProgramPlatformDescriptor {
@@ -140,6 +147,13 @@ export function getMiniProgramDefaultBuildTarget(platform?: MpPlatform): string 
     return undefined
   }
   return getMiniProgramPlatformDescriptor(platform).build?.defaultBuildTarget
+}
+
+/**
+ * @description 获取平台默认使用的类型包。
+ */
+export function getMiniProgramAppTypesPackage(platform?: MpPlatform): string {
+  return getMiniProgramPlatformDescriptor(platform ?? getDefaultMiniProgramPlatform()).typescript?.appTypesPackage ?? 'miniprogram-api-typings'
 }
 
 /**

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getDefaultMiniProgramPlatform,
   getDefaultMiniProgramRuntimeGlobalKey,
+  getMiniProgramAppTypesPackage,
   getMiniProgramDefaultBuildTarget,
   getMiniProgramDirectivePrefix,
   getMiniProgramPlatformByRuntimeGlobalKey,
@@ -30,6 +32,7 @@ describe('mini program platform registry', () => {
     expect(resolveMiniProgramPlatform('baidu')).toBe('swan')
     expect(resolveMiniProgramPlatform('jingdong')).toBe('jd')
     expect(resolveMiniProgramPlatform('red')).toBe('xhs')
+    expect(getDefaultMiniProgramPlatform()).toBe('weapp')
     expect(MINI_PROGRAM_PLATFORM_ALIASES.wx).toBe('weapp')
     expect(getSupportedMiniProgramPlatforms()).toEqual(['weapp', 'alipay', 'swan', 'tt', 'jd', 'xhs'])
   })
@@ -48,6 +51,8 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramDefaultBuildTarget('weapp')).toBe('es2020')
     expect(getMiniProgramDefaultBuildTarget('alipay')).toBe('es2015')
     expect(getMiniProgramDefaultBuildTarget('tt')).toBeUndefined()
+    expect(getMiniProgramAppTypesPackage()).toBe('miniprogram-api-typings')
+    expect(getMiniProgramAppTypesPackage('alipay')).toBe('@mini-types/alipay')
     expect(getMiniProgramPlatformDescriptor('alipay').runtime.globalObjectKey).toBe('my')
     expect(getDefaultMiniProgramRuntimeGlobalKey()).toBe('wx')
     expect(getMiniProgramPlatformByRuntimeGlobalKey('wx')).toBe('weapp')

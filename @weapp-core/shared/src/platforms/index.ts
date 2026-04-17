@@ -1,6 +1,8 @@
 export { MINI_PROGRAM_PLATFORM_DESCRIPTORS } from './descriptors'
 export {
+  getDefaultMiniProgramPlatform,
   getDefaultMiniProgramRuntimeGlobalKey,
+  getMiniProgramAppTypesPackage,
   getMiniProgramDefaultBuildTarget,
   getMiniProgramDirectivePrefix,
   getMiniProgramPlatformByRuntimeGlobalKey,

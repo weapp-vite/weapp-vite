@@ -47,7 +47,7 @@ export function getWeappViteConfig(): WeappViteConfig {
       wxml: true,
       wxs: true,
     },
-    platform: 'weapp',
+    platform: DEFAULT_MP_PLATFORM,
     multiPlatform: false,
     // 已废弃：保留默认关闭，仅兼容旧配置。
     es5: false,

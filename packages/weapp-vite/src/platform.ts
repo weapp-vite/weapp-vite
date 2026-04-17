@@ -1,6 +1,8 @@
 import type { MiniProgramPlatformAdapter, OutputExtensions } from './platforms/types'
 import type { MpPlatform } from './types'
 import {
+  getDefaultMiniProgramPlatform,
+  getMiniProgramAppTypesPackage,
   getMiniProgramDirectivePrefix,
   getSupportedMiniProgramPlatforms as getSharedSupportedMiniProgramPlatforms,
   normalizeMiniProgramPlatform,
@@ -9,7 +11,7 @@ import {
 } from '@weapp-core/shared'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from './platforms/adapters'
 
-export const DEFAULT_MP_PLATFORM: MpPlatform = 'weapp'
+export const DEFAULT_MP_PLATFORM: MpPlatform = getDefaultMiniProgramPlatform()
 const NPM_PROTOCOL_RE = /^npm:/
 const EXPLICIT_NPM_DIR_RE = /^\/(?:miniprogram_npm|node_modules)\//
 const LEADING_SLASH_RE = /^\/+/
@@ -316,8 +318,8 @@ export function shouldUseProjectRootNpmDir(platform: MpPlatform): boolean {
 export function getTypeScriptPlatformOptions(platform?: MpPlatform): TypeScriptPlatformOptions {
   return {
     appTypesPackage: platform
-      ? (getMiniProgramPlatformAdapter(platform).typescript?.appTypesPackage ?? 'miniprogram-api-typings')
-      : 'miniprogram-api-typings',
+      ? (getMiniProgramPlatformAdapter(platform).typescript?.appTypesPackage ?? getMiniProgramAppTypesPackage(platform))
+      : getMiniProgramAppTypesPackage(),
   }
 }
 
