@@ -30,6 +30,7 @@ export {
   defaultMiniProgramPlatform,
   defaultMiniProgramTemplatePlatform,
   defaultPlatform,
+  getDefaultMiniProgramPlatform,
   getDefaultMiniProgramTemplatePlatform,
   getMiniProgramTemplatePlatform,
   swanPlatform,
