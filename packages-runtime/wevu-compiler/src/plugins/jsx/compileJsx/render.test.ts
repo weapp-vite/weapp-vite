@@ -5,7 +5,7 @@ import { compileRenderableExpression } from './render'
 import { createJsxCompileContext } from './template'
 
 describe('compileJsx render helpers', () => {
-  const defaultPlatform = getMiniProgramTemplatePlatform('weapp')
+  const defaultPlatform = getMiniProgramTemplatePlatform()
 
   it('renders array expressions while skipping null and boolean branches', () => {
     const context = createJsxCompileContext()

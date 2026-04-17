@@ -5,7 +5,7 @@ const WHITESPACE_RE = /\s/g
 const INLINE_OBJECT_PROP_RE = /prop="\{\{\s*\{[^}]+\}\s*\}\}"/
 const DATA_TITLE_BIND_RE = /data-title="\{\{__wv_bind_\d+\}\}"/
 const INTERPOLATION_BIND_INDEX_RE = /\{\{__wv_bind_\d+\[[^\]]+\]\}\}/
-const DEFAULT_TEMPLATE_PLATFORM = getMiniProgramTemplatePlatform('weapp')
+const DEFAULT_TEMPLATE_PLATFORM = getMiniProgramTemplatePlatform()
 const DEFAULT_DIRECTIVES = DEFAULT_TEMPLATE_PLATFORM.directives
 const IF_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.ifAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)
 const FOR_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.forAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)

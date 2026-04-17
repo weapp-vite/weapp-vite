@@ -3,7 +3,7 @@ import { getMiniProgramTemplatePlatform } from '../vue/compiler/template/platfor
 import { compileJsxFile } from './compileJsxFile'
 
 describe('compileJsxFile', () => {
-  const defaultPlatform = getMiniProgramTemplatePlatform('weapp')
+  const defaultPlatform = getMiniProgramTemplatePlatform()
 
   it('compiles render JSX to wxml template and script wrapper', async () => {
     const source = `

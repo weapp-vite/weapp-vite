@@ -25,7 +25,14 @@ export { compileVueStyleToWxss as compileStyle, compileVueStyleToWxss } from './
 export type { StyleCompileOptions, StyleCompileResult } from './plugins/vue/compiler/style'
 export { compileVueTemplateToWxml as compileTemplate, compileVueTemplateToWxml } from './plugins/vue/compiler/template'
 export type { MiniProgramPlatform, TemplateCompileOptions, TemplateCompileResult } from './plugins/vue/compiler/template'
-export { alipayPlatform, getMiniProgramTemplatePlatform, swanPlatform, ttPlatform, wechatPlatform } from './plugins/vue/compiler/template'
+export {
+  alipayPlatform,
+  getDefaultMiniProgramTemplatePlatform,
+  getMiniProgramTemplatePlatform,
+  swanPlatform,
+  ttPlatform,
+  wechatPlatform,
+} from './plugins/vue/compiler/template'
 export {
   buildClassStyleWxsTag,
   CLASS_STYLE_WXS_FILE,

@@ -14,11 +14,18 @@ const TEMPLATE_PRESET_PLATFORMS: Record<ReturnType<typeof getMiniProgramTemplate
 }
 
 /**
- * 获取指定平台的模板适配器，默认回退到 wechat。
+ * 获取默认模板适配器。
+ */
+export function getDefaultMiniProgramTemplatePlatform(): MiniProgramPlatform {
+  return TEMPLATE_PRESET_PLATFORMS[getMiniProgramTemplatePreset()]
+}
+
+/**
+ * 获取指定平台的模板适配器，默认回退到默认模板平台。
  */
 export function getMiniProgramTemplatePlatform(platform?: MpPlatform): MiniProgramPlatform {
   const preset = getMiniProgramTemplatePreset(platform)
-  return TEMPLATE_PRESET_PLATFORMS[preset] ?? wechatPlatform
+  return TEMPLATE_PRESET_PLATFORMS[preset] ?? getDefaultMiniProgramTemplatePlatform()
 }
 
 export {

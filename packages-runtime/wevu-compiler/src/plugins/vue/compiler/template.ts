@@ -25,7 +25,14 @@ const HTML_VOID_TAGS = new Set([
 ])
 
 export type { MiniProgramPlatform } from './template/platform'
-export { alipayPlatform, getMiniProgramTemplatePlatform, swanPlatform, ttPlatform, wechatPlatform } from './template/platforms'
+export {
+  alipayPlatform,
+  getDefaultMiniProgramTemplatePlatform,
+  getMiniProgramTemplatePlatform,
+  swanPlatform,
+  ttPlatform,
+  wechatPlatform,
+} from './template/platforms'
 export type { TemplateCompileResult } from './template/types'
 export type { TemplateCompileOptions } from './template/types'
 
