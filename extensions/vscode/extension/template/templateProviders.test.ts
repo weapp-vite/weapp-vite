@@ -51,10 +51,59 @@ interface CompletionLikeItem {
   documentation?: unknown
 }
 
-function createVscodeModule(mockVscode: Record<string, unknown>) {
+function toUriPath(fsPath: string) {
+  return fsPath.replace(/\\/gu, '/')
+}
+
+function normalizeMockUri<T extends MockUri>(uri: T): T {
+  const fsPath = path.normalize(uri.fsPath)
+
   return {
-    ...mockVscode,
-    default: mockVscode,
+    ...uri,
+    fsPath,
+    path: toUriPath(fsPath),
+  }
+}
+
+function normalizeWorkspaceFolder<T extends { uri: MockUri }>(workspaceFolder: T): T {
+  return {
+    ...workspaceFolder,
+    uri: normalizeMockUri(workspaceFolder.uri),
+  }
+}
+
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  const normalizedVscode = { ...mockVscode } as Record<string, any>
+
+  if (normalizedVscode.workspace && typeof normalizedVscode.workspace === 'object') {
+    normalizedVscode.workspace = { ...normalizedVscode.workspace }
+
+    if (Array.isArray(normalizedVscode.workspace.workspaceFolders)) {
+      normalizedVscode.workspace.workspaceFolders = normalizedVscode.workspace.workspaceFolders.map(normalizeWorkspaceFolder)
+    }
+
+    if (typeof normalizedVscode.workspace.getWorkspaceFolder === 'function') {
+      const originalGetWorkspaceFolder = normalizedVscode.workspace.getWorkspaceFolder.bind(normalizedVscode.workspace)
+      normalizedVscode.workspace.getWorkspaceFolder = (...args: any[]) => {
+        const workspaceFolder = originalGetWorkspaceFolder(...args)
+
+        return workspaceFolder ? normalizeWorkspaceFolder(workspaceFolder) : workspaceFolder
+      }
+    }
+  }
+
+  if (normalizedVscode.Uri && typeof normalizedVscode.Uri === 'object') {
+    normalizedVscode.Uri = { ...normalizedVscode.Uri }
+
+    if (typeof normalizedVscode.Uri.file === 'function') {
+      const originalFile = normalizedVscode.Uri.file.bind(normalizedVscode.Uri)
+      normalizedVscode.Uri.file = (targetPath: string) => normalizeMockUri(originalFile(targetPath))
+    }
+  }
+
+  return {
+    ...normalizedVscode,
+    default: normalizedVscode,
   }
 }
 
@@ -63,7 +112,7 @@ function createTextDocument(languageId: string, text: string, fsPath: string) {
     languageId,
     uri: {
       fsPath,
-      path: fsPath,
+      path: toUriPath(fsPath),
     },
     fileName: fsPath,
     getText() {
