@@ -21,6 +21,11 @@ export function getDefaultMiniProgramTemplatePlatform(): MiniProgramPlatform {
 }
 
 /**
+ * 默认模板平台对象别名，便于调用方避免继续依赖具体宿主命名。
+ */
+export const defaultMiniProgramTemplatePlatform = getDefaultMiniProgramTemplatePlatform()
+
+/**
  * 获取指定平台的模板适配器，默认回退到默认模板平台。
  */
 export function getMiniProgramTemplatePlatform(platform?: MpPlatform): MiniProgramPlatform {

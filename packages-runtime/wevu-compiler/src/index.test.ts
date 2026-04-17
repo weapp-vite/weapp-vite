@@ -15,6 +15,7 @@ describe('compiler package entry', () => {
       compileSfc: expect.any(Function),
       compileStyle: expect.any(Function),
       compileTemplate: expect.any(Function),
+      defaultMiniProgramTemplatePlatform: expect.any(Object),
       generateScopedId: expect.any(Function),
       getMiniProgramTemplatePlatform: expect.any(Function),
       isAutoImportCandidateTag: expect.any(Function),
@@ -29,6 +30,7 @@ describe('compiler package entry', () => {
     expect(compiler.compileSfc).toBe(compiler.compileVueFile)
     expect(compiler.compileStyle).toBe(compiler.compileVueStyleToWxss)
     expect(compiler.compileTemplate).toBe(compiler.compileVueTemplateToWxml)
+    expect(compiler.defaultMiniProgramTemplatePlatform).toBe(compiler.getDefaultMiniProgramTemplatePlatform())
     expect(compiler.transformSfcScript).toBe(compiler.transformScript)
   })
 })

@@ -27,6 +27,7 @@ const HTML_VOID_TAGS = new Set([
 export type { MiniProgramPlatform } from './template/platform'
 export {
   alipayPlatform,
+  defaultMiniProgramTemplatePlatform,
   getDefaultMiniProgramTemplatePlatform,
   getMiniProgramTemplatePlatform,
   swanPlatform,
