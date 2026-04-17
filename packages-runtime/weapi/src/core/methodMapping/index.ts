@@ -33,7 +33,7 @@ export {
   WEAPI_PLATFORM_SUPPORT_MATRIX,
 }
 
-const WEAPI_WX_METHOD_SET = new Set<string>(WEAPI_MINIPROGRAM_METHODS)
+const WEAPI_MINIPROGRAM_METHOD_SET = new Set<string>(WEAPI_MINIPROGRAM_METHODS)
 const WEAPI_MY_METHOD_SET = new Set<string>(WEAPI_MY_METHODS)
 const WEAPI_TT_METHOD_SET = new Set<string>(WEAPI_TT_METHODS)
 
@@ -232,7 +232,9 @@ export function validateSupportMatrixConsistency() {
   const missingDouyinMappings = [...mappedMethods].filter(method => !douyinMappedMethods.has(method))
   const extraDouyinMappings = [...douyinMappedMethods].filter(method => !mappedMethods.has(method))
   const missingCatalogMethods = [...documentedMethods].filter(method =>
-    !WEAPI_WX_METHOD_SET.has(method) && !WEAPI_MY_METHOD_SET.has(method) && !WEAPI_TT_METHOD_SET.has(method),
+    !WEAPI_MINIPROGRAM_METHOD_SET.has(method)
+    && !WEAPI_MY_METHOD_SET.has(method)
+    && !WEAPI_TT_METHOD_SET.has(method),
   )
   return {
     missingDocs,

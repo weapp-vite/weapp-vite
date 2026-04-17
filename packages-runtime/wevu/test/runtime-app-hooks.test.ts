@@ -1,3 +1,4 @@
+import type { MiniProgramMemoryWarningResult } from '@/index'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createApp,
@@ -113,10 +114,10 @@ describe('runtime: app-level hooks', () => {
     expect(offThemeChange).toHaveBeenCalledTimes(1)
   })
 
-  it('binds wx.onMemoryWarning and dispatches onMemoryWarning hook', async () => {
+  it('binds mini-program onMemoryWarning bridge and dispatches onMemoryWarning hook', async () => {
     const logs: string[] = []
-    let listener: ((res: WechatMiniprogram.OnMemoryWarningListenerResult) => void) | undefined
-    const onMemoryWarningApi = vi.fn((fn: (res: WechatMiniprogram.OnMemoryWarningListenerResult) => void) => {
+    let listener: ((res: MiniProgramMemoryWarningResult) => void) | undefined
+    const onMemoryWarningApi = vi.fn((fn: (res: MiniProgramMemoryWarningResult) => void) => {
       listener = fn
     })
     const offMemoryWarningApi = vi.fn()
@@ -138,7 +139,7 @@ describe('runtime: app-level hooks', () => {
 
     appOptions.onLaunch.call(appInst, {})
     expect(onMemoryWarningApi).toHaveBeenCalledTimes(1)
-    listener?.({ level: 10 } as WechatMiniprogram.OnMemoryWarningListenerResult)
+    listener?.({ level: 10 } as MiniProgramMemoryWarningResult)
     expect(logs).toEqual(['memoryWarning'])
 
     // 重复绑定时会先注销旧监听，避免内存告警监听累积。

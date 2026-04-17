@@ -21,7 +21,7 @@ export {
 }
 
 export const WEAPI_MINIPROGRAM_METHODS = WEAPI_WX_METHODS
-export type WeapiMiniProgramMethodName = (typeof WEAPI_WX_METHODS)[number]
+export type WeapiMiniProgramMethodName = (typeof WEAPI_MINIPROGRAM_METHODS)[number]
 export type WeapiWxMethodName = (typeof WEAPI_WX_METHODS)[number]
 export type WeapiMyMethodName = (typeof WEAPI_MY_METHODS)[number]
 export type WeapiTtMethodName = (typeof WEAPI_TT_METHODS)[number]

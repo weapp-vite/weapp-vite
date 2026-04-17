@@ -6,7 +6,7 @@
 - 支持 `wx` / `a` / `tt` / `s` 前缀的条件与循环指令，以及插值语法等常见模板语法糖
 - 将小程序 `Page` / `Component` 映射为自定义元素，Shadow DOM 隔离样式与事件
 - 事件桥接（如 `bindtap` → `click`），保留 `this.setData`、`this.triggerEvent` 等调用体验
-- `wx.navigateTo` / `wx.navigateBack` / `getCurrentPages` 等路由 API，以及 `onLoad`、`onShow`、`onHide`、`onUnload` 生命周期
+- 提供宿主中立的小程序桥，并兼容 `wx.navigateTo` / `my.navigateTo` / `tt.navigateTo` 等路由调用，以及 `getCurrentPages`、`onLoad`、`onShow`、`onHide`、`onUnload` 生命周期
 - `App` 级别的 `onLaunch` / `onShow` 回调、`getApp` 全局实例访问
 - `wxss` → `css` 的基础转换，默认按 `1rpx = 0.5px`
 - 提供 Vite 插件，自动把 `.wxml` / `.wxss` 转换为 Web 侧模块

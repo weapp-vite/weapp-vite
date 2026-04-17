@@ -1,3 +1,7 @@
+import type {
+  WeapiMiniProgramRequestSuccessResult,
+  WeapiMiniProgramRequestTask,
+} from '@wevu/api'
 import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createWeapi, wpi } from '@/api'
@@ -13,7 +17,7 @@ interface MockRequestOptions {
   header?: Record<string, string>
   data?: unknown
   responseType?: 'text' | 'arraybuffer'
-  success?: (res: WechatMiniprogram.RequestSuccessCallbackResult) => void
+  success?: (res: WeapiMiniProgramRequestSuccessResult) => void
 }
 
 function createRouterContext() {
@@ -134,10 +138,10 @@ describe('subpath usage integration', () => {
           'content-type': 'application/json',
           'x-source': 'unit-adapter',
         },
-      } as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
+      } as unknown as WeapiMiniProgramRequestSuccessResult)
       return {
         abort: vi.fn(),
-      } as unknown as WechatMiniprogram.RequestTask
+      } as unknown as WeapiMiniProgramRequestTask
     })
 
     const adapter = {

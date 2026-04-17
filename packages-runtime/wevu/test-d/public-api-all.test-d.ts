@@ -256,7 +256,7 @@ expectType<WevuApiEntry>(apiEntry)
 declare const fetchEntry: WevuFetchEntry
 expectType<WevuFetchEntry>(fetchEntry)
 expectType<MiniProgramRequestMethod>('GET')
-expectType<WxRequestMethod>('POST')
+expectType<MiniProgramRequestMethod>('POST')
 expectType<MiniProgramRequestMethod>({} as WxRequestMethod)
 
 declare const routerEntry: WevuRouterEntry

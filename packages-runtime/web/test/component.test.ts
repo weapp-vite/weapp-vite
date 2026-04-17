@@ -1197,15 +1197,15 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('supports getFileSystemManager read/write and USER_DATA_PATH', () => {
-    const wxBridge = (globalThis as any).wx as {
+    const miniProgramBridge = (globalThis as any).wx as {
       env?: {
         USER_DATA_PATH?: string
       }
     }
-    expect(typeof wxBridge?.env?.USER_DATA_PATH).toBe('string')
+    expect(typeof miniProgramBridge?.env?.USER_DATA_PATH).toBe('string')
 
     const fsManager = getFileSystemManager()
-    const filePath = `${wxBridge.env?.USER_DATA_PATH ?? ''}/demo.txt`
+    const filePath = `${miniProgramBridge.env?.USER_DATA_PATH ?? ''}/demo.txt`
     const writeSuccess = vi.fn()
     const writeComplete = vi.fn()
     fsManager.writeFile({
@@ -1237,7 +1237,7 @@ describe('web runtime wx utility APIs', () => {
     expect(Array.from(new Uint8Array(binary))).toEqual([65, 66, 67])
 
     const fail = vi.fn()
-    const missingFile = `${wxBridge.env?.USER_DATA_PATH ?? ''}/missing.txt`
+    const missingFile = `${miniProgramBridge.env?.USER_DATA_PATH ?? ''}/missing.txt`
     fsManager.readFile({
       filePath: missingFile,
       fail,
@@ -1248,12 +1248,12 @@ describe('web runtime wx utility APIs', () => {
   })
 
   it('aliases web mini-program runtime bridge onto additional host globals', () => {
-    const wxBridge = (globalThis as any).wx as Record<string, any>
+    const miniProgramBridge = (globalThis as any).wx as Record<string, any>
     const myBridge = (globalThis as any).my as Record<string, any>
     const swanBridge = (globalThis as any).swan as Record<string, any>
 
-    expect(myBridge).toBe(wxBridge)
-    expect(swanBridge).toBe(wxBridge)
+    expect(myBridge).toBe(miniProgramBridge)
+    expect(swanBridge).toBe(miniProgramBridge)
     expect(typeof myBridge?.navigateTo).toBe('function')
     expect(typeof swanBridge?.getFileSystemManager).toBe('function')
     expect(typeof myBridge?.env?.USER_DATA_PATH).toBe('string')
@@ -2681,8 +2681,8 @@ describe('web runtime wx utility APIs', () => {
     await expect(session.start()).rejects.toThrow(/createVKSession:fail/)
   })
 
-  it('supports wx.cloud init and callFunction bridge', async () => {
-    const wxBridge = (globalThis as any).wx as {
+  it('supports mini-program cloud bridge through wx compatibility alias', async () => {
+    const miniProgramBridge = (globalThis as any).wx as {
       cloud?: {
         init?: (options?: { env?: string, traceUser?: boolean }) => void
         callFunction?: (options?: {
@@ -2694,17 +2694,17 @@ describe('web runtime wx utility APIs', () => {
         }) => Promise<any>
       }
     }
-    expect(typeof wxBridge.cloud?.init).toBe('function')
-    expect(typeof wxBridge.cloud?.callFunction).toBe('function')
+    expect(typeof miniProgramBridge.cloud?.init).toBe('function')
+    expect(typeof miniProgramBridge.cloud?.callFunction).toBe('function')
 
-    wxBridge.cloud?.init?.({
+    miniProgramBridge.cloud?.init?.({
       env: 'test-env',
       traceUser: true,
     })
 
     const success = vi.fn()
     const complete = vi.fn()
-    const result = await wxBridge.cloud?.callFunction?.({
+    const result = await miniProgramBridge.cloud?.callFunction?.({
       name: 'demo',
       data: { from: 'wevu' },
       success,
@@ -2726,7 +2726,7 @@ describe('web runtime wx utility APIs', () => {
     expect(complete).toHaveBeenCalledWith(expect.objectContaining({ errMsg: 'cloud.callFunction:ok' }))
 
     const fail = vi.fn()
-    await expect(wxBridge.cloud?.callFunction?.({
+    await expect(miniProgramBridge.cloud?.callFunction?.({
       name: '',
       fail,
     })).rejects.toMatchObject({

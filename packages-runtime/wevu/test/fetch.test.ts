@@ -1,3 +1,7 @@
+import type {
+  WeapiMiniProgramRequestSuccessResult,
+  WeapiMiniProgramRequestTask,
+} from '@wevu/api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetch } from '@/fetch'
 
@@ -7,12 +11,12 @@ interface MockRequestOptions {
   header?: Record<string, string>
   data?: unknown
   responseType?: 'text' | 'arraybuffer'
-  success?: (res: WechatMiniprogram.RequestSuccessCallbackResult) => void
+  success?: (res: WeapiMiniProgramRequestSuccessResult) => void
   fail?: (error: unknown) => void
 }
 
 const { requestMock } = vi.hoisted(() => ({
-  requestMock: vi.fn<(options: MockRequestOptions) => WechatMiniprogram.RequestTask | undefined>(),
+  requestMock: vi.fn<(options: MockRequestOptions) => WeapiMiniProgramRequestTask | undefined>(),
 }))
 
 vi.mock('@wevu/api', () => ({
@@ -39,10 +43,10 @@ describe('wevu/fetch', () => {
           'content-type': 'application/json',
           'x-trace-id': 'trace-1',
         },
-      } as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
+      } as unknown as WeapiMiniProgramRequestSuccessResult)
       return {
         abort: vi.fn(),
-      } as unknown as WechatMiniprogram.RequestTask
+      } as unknown as WeapiMiniProgramRequestTask
     })
 
     const response = await fetch('https://example.com/user', {
@@ -76,10 +80,10 @@ describe('wevu/fetch', () => {
         data: new TextEncoder().encode('not found').buffer,
         statusCode: 404,
         header: {},
-      } as WechatMiniprogram.RequestSuccessCallbackResult)
+      } as WeapiMiniProgramRequestSuccessResult)
       return {
         abort: vi.fn(),
-      } as unknown as WechatMiniprogram.RequestTask
+      } as unknown as WeapiMiniProgramRequestTask
     })
 
     const response = await fetch('https://example.com/not-found')
@@ -96,7 +100,7 @@ describe('wevu/fetch', () => {
       })
       return {
         abort: vi.fn(),
-      } as unknown as WechatMiniprogram.RequestTask
+      } as unknown as WeapiMiniProgramRequestTask
     })
 
     await expect(fetch('https://example.com/fail')).rejects.toMatchObject({
@@ -110,7 +114,7 @@ describe('wevu/fetch', () => {
     requestMock.mockImplementation(() => {
       return {
         abort: abortSpy,
-      } as unknown as WechatMiniprogram.RequestTask
+      } as unknown as WeapiMiniProgramRequestTask
     })
 
     const controller = new AbortController()
