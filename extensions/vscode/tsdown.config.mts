@@ -1,6 +1,11 @@
+import path from 'node:path'
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
+  alias: {
+    '@weapp-vite/ast/babel': path.resolve(import.meta.dirname, '../../packages/ast/src/babel.ts'),
+    '@weapp-vite/ast/babelTypes': path.resolve(import.meta.dirname, '../../packages/ast/src/babelTypes.ts'),
+  },
   clean: true,
   deps: {
     neverBundle: ['vscode'],
