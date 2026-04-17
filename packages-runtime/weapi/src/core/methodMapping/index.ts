@@ -7,7 +7,7 @@ import type {
   WeapiMethodSupportMatrixItem,
   WeapiResolvedMethodMapping,
 } from './types'
-import { WEAPI_MY_METHODS, WEAPI_TT_METHODS, WEAPI_WX_METHODS } from '../apiCatalog'
+import { WEAPI_MINIPROGRAM_METHODS, WEAPI_MY_METHODS, WEAPI_TT_METHODS } from '../apiCatalog'
 import {
   formatCoverageRate,
   isSemanticSupportLevel,
@@ -33,7 +33,7 @@ export {
   WEAPI_PLATFORM_SUPPORT_MATRIX,
 }
 
-const WEAPI_WX_METHOD_SET = new Set<string>(WEAPI_WX_METHODS)
+const WEAPI_WX_METHOD_SET = new Set<string>(WEAPI_MINIPROGRAM_METHODS)
 const WEAPI_MY_METHOD_SET = new Set<string>(WEAPI_MY_METHODS)
 const WEAPI_TT_METHOD_SET = new Set<string>(WEAPI_TT_METHODS)
 
@@ -106,7 +106,7 @@ function resolvePlatformCompatibility(platform: 'my' | 'tt', methodName: string)
  * @description 生成 API 支持覆盖率报告
  */
 export function generateApiSupportCoverageReport(): WeapiApiCoverageReport {
-  const methodNames = WEAPI_WX_METHODS as readonly string[]
+  const methodNames = WEAPI_MINIPROGRAM_METHODS as readonly string[]
   const totalApis = methodNames.length
   let alipaySupportedApis = 0
   let douyinSupportedApis = 0
@@ -200,7 +200,7 @@ export function generateMethodCompatibilityMatrix(): readonly WeapiMethodCompati
     WEAPI_METHOD_SUPPORT_MATRIX.map(item => [item.method, item]),
   )
 
-  return (WEAPI_WX_METHODS as readonly string[]).map((methodName) => {
+  return (WEAPI_MINIPROGRAM_METHODS as readonly string[]).map((methodName) => {
     const alipay = resolvePlatformCompatibility('my', methodName)
     const douyin = resolvePlatformCompatibility('tt', methodName)
     const detail = detailByMethod.get(methodName)

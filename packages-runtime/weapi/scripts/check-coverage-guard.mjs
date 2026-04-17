@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { WEAPI_MY_METHODS, WEAPI_TT_METHODS, WEAPI_WX_METHODS } from '../src/core/apiCatalog.ts'
+import { WEAPI_MINIPROGRAM_METHODS, WEAPI_MY_METHODS, WEAPI_TT_METHODS } from '../src/core/apiCatalog.ts'
 import { generateMethodCompatibilityMatrix } from '../src/core/methodMapping.ts'
 
 const MIN_FULLY_ALIGNED_APIS = 117
@@ -15,7 +15,7 @@ function formatCoverageRate(supportedApis, totalApis) {
 
 function run() {
   const matrix = generateMethodCompatibilityMatrix()
-  const wxMethods = new Set(WEAPI_WX_METHODS)
+  const wxMethods = new Set(WEAPI_MINIPROGRAM_METHODS)
   const myMethods = new Set(WEAPI_MY_METHODS)
   const ttMethods = new Set(WEAPI_TT_METHODS)
 

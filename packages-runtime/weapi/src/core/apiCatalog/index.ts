@@ -20,6 +20,7 @@ export {
   WEAPI_WX_NON_FUNCTION_MEMBERS,
 }
 
+export const WEAPI_MINIPROGRAM_METHODS = WEAPI_WX_METHODS
 export type WeapiMiniProgramMethodName = (typeof WEAPI_WX_METHODS)[number]
 export type WeapiWxMethodName = (typeof WEAPI_WX_METHODS)[number]
 export type WeapiMyMethodName = (typeof WEAPI_MY_METHODS)[number]

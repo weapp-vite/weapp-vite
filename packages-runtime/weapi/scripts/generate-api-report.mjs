@@ -4,10 +4,10 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import prettier from 'prettier'
 import {
+  WEAPI_MINIPROGRAM_METHODS,
   WEAPI_MY_METHODS,
   WEAPI_TT_METHODS,
   WEAPI_TYPE_SOURCES,
-  WEAPI_WX_METHODS,
 } from '../src/core/apiCatalog.ts'
 import {
   generateApiSupportCoverageReport,
@@ -39,7 +39,7 @@ function formatCoverageRate(supportedApis, totalApis) {
 function createIntersectionCoverageReport(matrix) {
   const myMethodSet = new Set(WEAPI_MY_METHODS)
   const ttMethodSet = new Set(WEAPI_TT_METHODS)
-  const intersectionMethods = WEAPI_WX_METHODS.filter(method =>
+  const intersectionMethods = WEAPI_MINIPROGRAM_METHODS.filter(method =>
     myMethodSet.has(method) && ttMethodSet.has(method),
   )
   const intersectionMethodSet = new Set(intersectionMethods)
@@ -89,13 +89,13 @@ async function run() {
   const fullyAlignedMethods = matrix.filter(item => item.alipaySupported && item.douyinSupported)
   const fullySemanticAlignedMethods = matrix.filter(item => item.alipaySemanticallyAligned && item.douyinSemanticallyAligned)
   const intersectionCoverage = createIntersectionCoverageReport(matrix)
-  const wxMethodSet = new Set(WEAPI_WX_METHODS)
-  const myOnlyMethods = WEAPI_MY_METHODS.filter(method => !wxMethodSet.has(method))
-  const ttOnlyMethods = WEAPI_TT_METHODS.filter(method => !wxMethodSet.has(method))
+  const miniProgramMethodSet = new Set(WEAPI_MINIPROGRAM_METHODS)
+  const myOnlyMethods = WEAPI_MY_METHODS.filter(method => !miniProgramMethodSet.has(method))
+  const ttOnlyMethods = WEAPI_TT_METHODS.filter(method => !miniProgramMethodSet.has(method))
 
   const coreMethodsNotInWx = WEAPI_METHOD_SUPPORT_MATRIX
     .map(item => item.method)
-    .filter(method => !WEAPI_WX_METHODS.includes(method))
+    .filter(method => !WEAPI_MINIPROGRAM_METHODS.includes(method))
 
   const overview = `
 # weapi 三端 API 兼容报告（总览）
@@ -109,7 +109,7 @@ async function run() {
 
 | 指标 | 数值 |
 | --- | ---: |
-| 微信方法数（基准命名） | ${WEAPI_WX_METHODS.length} |
+| 小程序方法数（基准命名） | ${WEAPI_MINIPROGRAM_METHODS.length} |
 | 支付宝方法数 | ${WEAPI_MY_METHODS.length} |
 | 抖音方法数 | ${WEAPI_TT_METHODS.length} |
 | 支付宝独有方法数（不在 wx 命名） | ${myOnlyMethods.length} |
@@ -163,7 +163,7 @@ ${WEAPI_METHOD_SUPPORT_MATRIX.map(item => `| \`${item.method}\` | ${escapePipe(i
 
 ## 覆盖结论
 
-- 微信基准命名方法总数：${WEAPI_WX_METHODS.length}
+- 小程序基准命名方法总数：${WEAPI_MINIPROGRAM_METHODS.length}
 - 支付宝可调用兼容方法数：${alipaySupportedMethods.length}
 - 支付宝语义对齐方法数：${alipaySemanticAlignedMethods.length}
 - 支付宝 fallback 方法数：${alipayFallbackMethods.length}
@@ -197,15 +197,15 @@ ${douyinUnsupportedMethods.slice(0, 40).map(item => `- \`${item.method}\` -> 目
   const wxList = `
 # 02 微信基准 API 全量清单
 
-总计：${WEAPI_WX_METHODS.length}
+总计：${WEAPI_MINIPROGRAM_METHODS.length}
 
-${WEAPI_WX_METHODS.map(method => `- \`${method}\``).join('\n')}
+${WEAPI_MINIPROGRAM_METHODS.map(method => `- \`${method}\``).join('\n')}
 `
 
   const alipayMatrix = `
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：${WEAPI_WX_METHODS.length}，支持：${alipaySupportedMethods.length}，不支持：${alipayUnsupportedMethods.length}
+总计：${WEAPI_MINIPROGRAM_METHODS.length}，支持：${alipaySupportedMethods.length}，不支持：${alipayUnsupportedMethods.length}
 
 | 微信 API | 支付宝目标 API | 支持 | 支持级别 | 语义对齐 | 策略 |
 | --- | --- | --- | --- | --- | --- |
@@ -215,7 +215,7 @@ ${matrix.map(item => `| \`${item.method}\` | \`${item.alipayTarget}\` | ${format
   const douyinMatrix = `
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：${WEAPI_WX_METHODS.length}，支持：${douyinSupportedMethods.length}，不支持：${douyinUnsupportedMethods.length}
+总计：${WEAPI_MINIPROGRAM_METHODS.length}，支持：${douyinSupportedMethods.length}，不支持：${douyinUnsupportedMethods.length}
 
 | 微信 API | 抖音目标 API | 支持 | 支持级别 | 语义对齐 | 策略 |
 | --- | --- | --- | --- | --- | --- |

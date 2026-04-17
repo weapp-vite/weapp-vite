@@ -1,4 +1,4 @@
-import { WEAPI_WX_METHODS } from '@/core/apiCatalog'
+import { WEAPI_MINIPROGRAM_METHODS } from '@/core/apiCatalog'
 import {
   generateApiSupportCoverageReport,
   generateMethodCompatibilityMatrix,
@@ -161,7 +161,7 @@ export function registerWeapiIndexDouyinResultMappingAndCoverageTests() {
   it('generates api coverage report from mapping matrix', () => {
     const report = generateApiSupportCoverageReport()
     const compatibilityMatrix = generateMethodCompatibilityMatrix()
-    const wxTotal = WEAPI_WX_METHODS.length
+    const wxTotal = WEAPI_MINIPROGRAM_METHODS.length
     const alipaySupported = compatibilityMatrix.filter(item => item.alipaySupported).length
     const alipaySemanticAligned = compatibilityMatrix.filter(item => item.alipaySemanticallyAligned).length
     const alipayFallback = compatibilityMatrix.filter(item => item.alipaySupportLevel === 'fallback').length

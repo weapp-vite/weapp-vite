@@ -1,9 +1,9 @@
 import {
+  WEAPI_MINIPROGRAM_METHODS,
   WEAPI_MY_METHODS,
   WEAPI_MY_NON_FUNCTION_MEMBERS,
   WEAPI_TT_METHODS,
   WEAPI_TT_NON_FUNCTION_MEMBERS,
-  WEAPI_WX_METHODS,
   WEAPI_WX_NON_FUNCTION_MEMBERS,
 } from '@/core/apiCatalog'
 import { resolveMethodMapping } from '@/core/methodMapping'
@@ -42,18 +42,18 @@ function createMockAdapter(methods: readonly string[], nonFunctionMembers: reado
 }
 
 describe('weapi full api compatibility', () => {
-  const wxMethodSet = new Set<string>(WEAPI_WX_METHODS)
+  const wxMethodSet = new Set<string>(WEAPI_MINIPROGRAM_METHODS)
   const myOnlyMethods = WEAPI_MY_METHODS.filter(method => !wxMethodSet.has(method))
   const ttOnlyMethods = WEAPI_TT_METHODS.filter(method => !wxMethodSet.has(method))
 
   it('routes all wx methods to wx adapter directly', () => {
-    const { adapter, methodSpies } = createMockAdapter(WEAPI_WX_METHODS, WEAPI_WX_NON_FUNCTION_MEMBERS)
+    const { adapter, methodSpies } = createMockAdapter(WEAPI_MINIPROGRAM_METHODS, WEAPI_WX_NON_FUNCTION_MEMBERS)
     const api = createTestWeapi({
       adapter,
       platform: 'wx',
     }) as Record<string, any>
 
-    for (const methodName of WEAPI_WX_METHODS) {
+    for (const methodName of WEAPI_MINIPROGRAM_METHODS) {
       const fail = vi.fn()
       const complete = vi.fn()
       const success = vi.fn()
@@ -82,7 +82,7 @@ describe('weapi full api compatibility', () => {
       platform: 'my',
     }) as Record<string, any>
 
-    for (const wxMethodName of WEAPI_WX_METHODS) {
+    for (const wxMethodName of WEAPI_MINIPROGRAM_METHODS) {
       const fail = vi.fn()
       const complete = vi.fn()
       const success = vi.fn()
@@ -116,7 +116,7 @@ describe('weapi full api compatibility', () => {
       platform: 'tt',
     }) as Record<string, any>
 
-    for (const wxMethodName of WEAPI_WX_METHODS) {
+    for (const wxMethodName of WEAPI_MINIPROGRAM_METHODS) {
       const fail = vi.fn()
       const complete = vi.fn()
       const success = vi.fn()
