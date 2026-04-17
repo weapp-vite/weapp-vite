@@ -1,92 +1,68 @@
 import type {
-  NativeMiniProgramAddToFavoritesOption,
   NativeMiniProgramAppOptions,
   NativeMiniProgramAppTrivialInstance,
   NativeMiniProgramBehaviorIdentifier,
-  NativeMiniProgramBoundingClientRectResult,
   NativeMiniProgramComponentAllFullProperty,
-  NativeMiniProgramComponentAllProperty,
-  NativeMiniProgramComponentBehaviorOptions,
   NativeMiniProgramComponentEmptyArray,
   NativeMiniProgramComponentInstance,
   NativeMiniProgramComponentMethodOption,
   NativeMiniProgramComponentPropertyOption,
   NativeMiniProgramComponentPropertyValue,
-  NativeMiniProgramComponentShortProperty,
   NativeMiniProgramComponentTrivialInstance,
   NativeMiniProgramComponentTrivialOption,
-  NativeMiniProgramIntersectionObserver,
-  NativeMiniProgramIntersectionObserverOptions,
-  NativeMiniProgramLaunchOptions,
-  NativeMiniProgramMemoryWarningResult,
-  NativeMiniProgramNavigateToOption,
-  NativeMiniProgramNodesRef,
-  NativeMiniProgramNodesRefFields,
   NativeMiniProgramPageLifetime,
-  NativeMiniProgramPageNotFoundOptions,
-  NativeMiniProgramPageResizeOption,
-  NativeMiniProgramPageScrollOption,
   NativeMiniProgramPageTrivialInstance,
-  NativeMiniProgramRedirectToOption,
-  NativeMiniProgramReLaunchOption,
-  NativeMiniProgramRouter,
-  NativeMiniProgramSaveExitState,
-  NativeMiniProgramScrollOffsetResult,
-  NativeMiniProgramSelectorQuery,
-  NativeMiniProgramShareAppMessageOption,
-  NativeMiniProgramSwitchTabOption,
-  NativeMiniProgramTabItemTapOption,
-  NativeMiniProgramThemeChangeResult,
-  NativeMiniProgramTriggerEventOptions,
-  NativeMiniProgramUnhandledRejectionResult,
+} from './miniprogramNative'
+
+export type {
+  NativeMiniProgramAddToFavoritesOption as MiniProgramAddToFavoritesOption,
+  NativeMiniProgramBoundingClientRectResult as MiniProgramBoundingClientRectResult,
+  NativeMiniProgramComponentAllFullProperty as MiniProgramComponentAllFullProperty,
+  NativeMiniProgramComponentAllProperty as MiniProgramComponentAllProperty,
+  NativeMiniProgramComponentBehaviorOptions as MiniProgramComponentBehaviorOptions,
+  NativeMiniProgramComponentEmptyArray as MiniProgramComponentEmptyArray,
+  NativeMiniProgramComponentMethodOption as MiniProgramComponentMethodOption,
+  NativeMiniProgramComponentPropertyOption as MiniProgramComponentPropertyOption,
+  NativeMiniProgramComponentShortProperty as MiniProgramComponentShortProperty,
+  NativeMiniProgramIntersectionObserver as MiniProgramIntersectionObserver,
+  NativeMiniProgramIntersectionObserverOptions as MiniProgramIntersectionObserverOptions,
+  NativeMiniProgramLaunchOptions as MiniProgramLaunchOptions,
+  NativeMiniProgramMemoryWarningResult as MiniProgramMemoryWarningResult,
+  NativeMiniProgramNavigateToOption as MiniProgramNavigateToOption,
+  NativeMiniProgramNodesRef as MiniProgramNodesRef,
+  NativeMiniProgramNodesRefFields as MiniProgramNodesRefFields,
+  NativeMiniProgramPageLifetime as MiniProgramPageLifetime,
+  NativeMiniProgramPageNotFoundOptions as MiniProgramPageNotFoundOptions,
+  NativeMiniProgramPageResizeOption as MiniProgramPageResizeOption,
+  NativeMiniProgramPageScrollOption as MiniProgramPageScrollOption,
+  NativeMiniProgramRedirectToOption as MiniProgramRedirectToOption,
+  NativeMiniProgramReLaunchOption as MiniProgramReLaunchOption,
+  NativeMiniProgramRouter as MiniProgramRouter,
+  NativeMiniProgramSaveExitState as MiniProgramSaveExitState,
+  NativeMiniProgramScrollOffsetResult as MiniProgramScrollOffsetResult,
+  NativeMiniProgramSelectorQuery as MiniProgramSelectorQuery,
+  NativeMiniProgramShareAppMessageOption as MiniProgramShareAppMessageOption,
+  NativeMiniProgramSwitchTabOption as MiniProgramSwitchTabOption,
+  NativeMiniProgramTabItemTapOption as MiniProgramTabItemTapOption,
+  NativeMiniProgramThemeChangeResult as MiniProgramThemeChangeResult,
+  NativeMiniProgramUnhandledRejectionResult as MiniProgramUnhandledRejectionResult,
+  NativeMiniProgramTriggerEventOptions as TriggerEventOptions,
 } from './miniprogramNative'
 
 export interface MiniProgramAdapter {
   setData?: (payload: Record<string, any>) => void | Promise<void>
 }
 
-export type MiniProgramComponentBehaviorOptions = NativeMiniProgramComponentBehaviorOptions
-
 type MpComponentOptions = NativeMiniProgramComponentTrivialOption
 
 export type MiniProgramBehaviorIdentifier = NativeMiniProgramBehaviorIdentifier | string
-export type MiniProgramLaunchOptions = NativeMiniProgramLaunchOptions
-export type MiniProgramPageNotFoundOptions = NativeMiniProgramPageNotFoundOptions
-export type MiniProgramUnhandledRejectionResult = NativeMiniProgramUnhandledRejectionResult
-export type MiniProgramThemeChangeResult = NativeMiniProgramThemeChangeResult
-export type MiniProgramMemoryWarningResult = NativeMiniProgramMemoryWarningResult
-export type MiniProgramPageScrollOption = NativeMiniProgramPageScrollOption
-export type MiniProgramTabItemTapOption = NativeMiniProgramTabItemTapOption
-export type MiniProgramPageResizeOption = NativeMiniProgramPageResizeOption
-export type MiniProgramShareAppMessageOption = NativeMiniProgramShareAppMessageOption
-export type MiniProgramAddToFavoritesOption = NativeMiniProgramAddToFavoritesOption
-export type MiniProgramSaveExitState = NativeMiniProgramSaveExitState
-export type MiniProgramRouter = NativeMiniProgramRouter
-export type MiniProgramSwitchTabOption = NativeMiniProgramSwitchTabOption
-export type MiniProgramReLaunchOption = NativeMiniProgramReLaunchOption
-export type MiniProgramRedirectToOption = NativeMiniProgramRedirectToOption
-export type MiniProgramNavigateToOption = NativeMiniProgramNavigateToOption
-export type MiniProgramPageLifetime = NativeMiniProgramPageLifetime
-export type MiniProgramNodesRefFields = NativeMiniProgramNodesRefFields
-export type MiniProgramBoundingClientRectResult = NativeMiniProgramBoundingClientRectResult
-export type MiniProgramScrollOffsetResult = NativeMiniProgramScrollOffsetResult
-export type MiniProgramSelectorQuery = NativeMiniProgramSelectorQuery
-export type MiniProgramNodesRef = NativeMiniProgramNodesRef
-export type MiniProgramIntersectionObserverOptions = NativeMiniProgramIntersectionObserverOptions
-export type MiniProgramIntersectionObserver = NativeMiniProgramIntersectionObserver
-export type MiniProgramComponentPropertyOption = NativeMiniProgramComponentPropertyOption
-export type MiniProgramComponentMethodOption = NativeMiniProgramComponentMethodOption
-export type MiniProgramComponentEmptyArray = NativeMiniProgramComponentEmptyArray
-export type MiniProgramComponentAllProperty = NativeMiniProgramComponentAllProperty
-export type MiniProgramComponentAllFullProperty = NativeMiniProgramComponentAllFullProperty
-export type MiniProgramComponentShortProperty = NativeMiniProgramComponentShortProperty
-export type MiniProgramComponentPropertyValue<TProperty extends MiniProgramComponentAllFullProperty>
+export type MiniProgramComponentPropertyValue<TProperty extends NativeMiniProgramComponentAllFullProperty>
   = NativeMiniProgramComponentPropertyValue<TProperty>
 export type MiniProgramComponentInstance<
   D extends object,
-  P extends MiniProgramComponentPropertyOption,
-  M extends MiniProgramComponentMethodOption,
-  B extends MiniProgramComponentEmptyArray = MiniProgramComponentEmptyArray,
+  P extends NativeMiniProgramComponentPropertyOption,
+  M extends NativeMiniProgramComponentMethodOption,
+  B extends NativeMiniProgramComponentEmptyArray = NativeMiniProgramComponentEmptyArray,
 > = NativeMiniProgramComponentInstance<D, P, M, B>
 
 export interface MiniProgramComponentOptions {
@@ -165,8 +141,6 @@ export interface MiniProgramComponentOptions {
 
 export type MiniProgramAppOptions<T extends Record<string, any> = Record<string, any>>
   = NativeMiniProgramAppOptions<T>
-
-export type TriggerEventOptions = NativeMiniProgramTriggerEventOptions
 
 export type MiniProgramInstance
   = | NativeMiniProgramComponentTrivialInstance
