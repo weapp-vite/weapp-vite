@@ -1247,6 +1247,51 @@ describe('web runtime wx utility APIs', () => {
     }))
   })
 
+  it('aliases web mini-program runtime bridge onto additional host globals', () => {
+    const wxBridge = (globalThis as any).wx as Record<string, any>
+    const myBridge = (globalThis as any).my as Record<string, any>
+    const swanBridge = (globalThis as any).swan as Record<string, any>
+
+    expect(myBridge).toBe(wxBridge)
+    expect(swanBridge).toBe(wxBridge)
+    expect(typeof myBridge?.navigateTo).toBe('function')
+    expect(typeof swanBridge?.getFileSystemManager).toBe('function')
+    expect(typeof myBridge?.env?.USER_DATA_PATH).toBe('string')
+  })
+
+  it('supports route and file system bridge through aliased host globals', () => {
+    const myBridge = (globalThis as any).my as {
+      env?: {
+        USER_DATA_PATH?: string
+      }
+      navigateTo?: (options: { url: string }) => unknown
+      getFileSystemManager?: () => ReturnType<typeof getFileSystemManager>
+    }
+
+    registerPage({}, {
+      id: 'pages/home/index',
+      template: createTemplate('<view>home</view>'),
+    })
+    registerPage({}, {
+      id: 'pages/detail/index',
+      template: createTemplate('<view>detail</view>'),
+    })
+    initializePageRoutes([
+      'pages/home/index',
+      'pages/detail/index',
+    ])
+
+    myBridge.navigateTo?.({ url: '/pages/detail/index' })
+    const currentPages = (globalThis as any).getCurrentPages?.() ?? []
+    expect(currentPages).toHaveLength(1)
+    expect(currentPages[0]).toBeTruthy()
+
+    const fsManager = myBridge.getFileSystemManager?.()
+    const filePath = `${myBridge.env?.USER_DATA_PATH ?? ''}/alias.txt`
+    fsManager?.writeFileSync(filePath, 'alias-host')
+    expect(fsManager?.readFileSync(filePath, 'utf8')).toBe('alias-host')
+  })
+
   it('supports createWorker with browser worker bridge', () => {
     class WorkerMock {
       static instances: WorkerMock[] = []

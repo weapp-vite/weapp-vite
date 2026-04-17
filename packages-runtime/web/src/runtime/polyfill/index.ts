@@ -12,6 +12,7 @@ import type {
   WxAsyncOptions,
   WxBaseResult,
 } from './types'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
 import { emitRuntimeWarning } from '../warning'
 import {
   callWxAsyncFailure,
@@ -70,6 +71,9 @@ export {
 export * from './runtimeDataApi'
 export * from './uiMediaApi'
 
+const DEFAULT_MINI_PROGRAM_GLOBAL_KEY = 'wx'
+const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
+
 const navigationBarRuntimeBridge = createNavigationBarRuntimeBridge(
   () => getCurrentPagesInternal() as Array<HTMLElement & { renderRoot?: ShadowRoot | HTMLElement }>,
   emitRuntimeWarning,
@@ -104,7 +108,7 @@ export function setBackgroundTextStyle(options?: SetBackgroundTextStyleOptions) 
 }
 
 export function canIUse(schema: string) {
-  return canIUseBridge(globalTarget.wx as Record<string, unknown> | undefined, schema)
+  return canIUseBridge(globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined, schema)
 }
 
 const cloudBridge: CloudBridge = createCloudBridge(
@@ -146,11 +150,9 @@ export function reportAnalytics(eventName: string, data?: Record<string, unknown
   reportAnalyticsBridge(eventName, data)
 }
 
-const globalTarget = typeof globalThis !== 'undefined' ? (globalThis as Record<string, unknown>) : {}
-
 if (globalTarget) {
-  const wxBridge = (globalTarget.wx as Record<string, unknown> | undefined) ?? {}
-  Object.assign(wxBridge, {
+  const miniProgramBridge = (globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined) ?? {}
+  Object.assign(miniProgramBridge, {
     navigateTo,
     navigateBack,
     redirectTo,
@@ -177,12 +179,14 @@ if (globalTarget) {
     canIUse,
     cloud: cloudBridge,
   })
-  const wxEnv = (wxBridge.env as Record<string, unknown> | undefined) ?? {}
-  if (typeof wxEnv.USER_DATA_PATH !== 'string' || !wxEnv.USER_DATA_PATH.trim()) {
-    wxEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
+  const miniProgramEnv = (miniProgramBridge.env as Record<string, unknown> | undefined) ?? {}
+  if (typeof miniProgramEnv.USER_DATA_PATH !== 'string' || !miniProgramEnv.USER_DATA_PATH.trim()) {
+    miniProgramEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
   }
-  wxBridge.env = wxEnv
-  globalTarget.wx = wxBridge
+  miniProgramBridge.env = miniProgramEnv
+  for (const runtimeGlobalKey of getMiniProgramRuntimeGlobalKeys()) {
+    globalTarget[runtimeGlobalKey] = miniProgramBridge
+  }
   if (typeof globalTarget.getApp !== 'function') {
     globalTarget.getApp = getAppInstance
   }

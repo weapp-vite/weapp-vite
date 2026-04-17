@@ -30,6 +30,6 @@ export function offWindowResizeBridge(callback?: any) {
   removeWindowResizeCallback(callback)
 }
 
-export function canIUseBridge(wxBridge: Record<string, unknown> | undefined, schema: string) {
-  return checkRuntimeCapability(wxBridge, schema)
+export function canIUseBridge(miniProgramBridge: Record<string, unknown> | undefined, schema: string) {
+  return checkRuntimeCapability(miniProgramBridge, schema)
 }
