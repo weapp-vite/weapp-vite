@@ -5,7 +5,7 @@ import {
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
-import { wechatPlatform } from './template/platforms'
+import { getMiniProgramTemplatePlatform } from './template/platforms'
 
 const HTML_VOID_TAGS = new Set([
   'area',
@@ -65,7 +65,7 @@ export function compileVueTemplateToWxml(
       source: template,
       filename,
       warnings,
-      platform: options?.platform ?? wechatPlatform,
+      platform: options?.platform ?? getMiniProgramTemplatePlatform(),
       htmlTagToWxmlMap,
       htmlTagToWxmlTagClass: options?.htmlTagToWxmlTagClass ?? true,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',

@@ -2,13 +2,13 @@ import type { File } from '@weapp-vite/ast/babelTypes'
 import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/types'
 import type { JsxCompileContext } from './types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
-import { wechatPlatform } from '../../vue/compiler/template/platforms'
+import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
 import * as analysis from './analysis'
 import { compileRenderableExpression } from './render'
 
 export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCompileContext {
   return {
-    platform: options?.template?.platform ?? wechatPlatform,
+    platform: options?.template?.platform ?? getMiniProgramTemplatePlatform(),
     mustacheInterpolation: options?.template?.mustacheInterpolation ?? 'compact',
     warnings: [],
     inlineExpressions: [],
