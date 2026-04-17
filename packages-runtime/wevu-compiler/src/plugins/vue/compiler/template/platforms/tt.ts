@@ -1,4 +1,5 @@
 import type { MiniProgramPlatform } from '../platform'
+import { createMiniProgramDirectiveAttrs } from '../platform'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -47,26 +48,29 @@ function shouldUseColonEventBinding(name: string) {
 /**
  * 抖音小程序平台适配器。
  */
+const directives = createMiniProgramDirectiveAttrs('tt')
+
 export const ttPlatform: MiniProgramPlatform = {
   name: 'tt',
+  directives,
 
-  wrapIf: (exp, content, renderMustache) => `<block tt:if="${renderMustache(exp)}">${content}</block>`,
-  wrapElseIf: (exp, content, renderMustache) => `<block tt:elif="${renderMustache(exp)}">${content}</block>`,
-  wrapElse: content => `<block tt:else>${content}</block>`,
+  wrapIf: (exp, content, renderMustache) => `<block ${directives.ifAttr}="${renderMustache(exp)}">${content}</block>`,
+  wrapElseIf: (exp, content, renderMustache) => `<block ${directives.elifAttr}="${renderMustache(exp)}">${content}</block>`,
+  wrapElse: content => `<block ${directives.elseAttr}>${content}</block>`,
 
   forAttrs: (listExp, renderMustache, item, index) => {
-    const attrs = [`tt:for="${renderMustache(listExp)}"`]
+    const attrs = [`${directives.forAttr}="${renderMustache(listExp)}"`]
     if (item) {
-      attrs.push(`tt:for-item="${item}"`)
+      attrs.push(`${directives.forItemAttr}="${item}"`)
     }
     if (index) {
-      attrs.push(`tt:for-index="${index}"`)
+      attrs.push(`${directives.forIndexAttr}="${index}"`)
     }
     return attrs
   },
 
   keyThisValue: '*this',
-  keyAttr: value => `tt:key="${value}"`,
+  keyAttr: value => `${directives.keyAttr}="${value}"`,
 
   mapEventName: eventName => eventMap[eventName] || eventName,
   eventBindingAttr: (eventName) => {

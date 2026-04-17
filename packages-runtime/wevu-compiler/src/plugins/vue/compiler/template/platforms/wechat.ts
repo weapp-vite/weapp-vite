@@ -1,4 +1,5 @@
 import type { MiniProgramPlatform } from '../platform'
+import { createMiniProgramDirectiveAttrs } from '../platform'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -47,26 +48,29 @@ function shouldUseColonEventBinding(name: string) {
 /**
  * 微信小程序平台适配器。
  */
+const directives = createMiniProgramDirectiveAttrs('wx')
+
 export const wechatPlatform: MiniProgramPlatform = {
   name: 'wechat',
+  directives,
 
-  wrapIf: (exp, content, renderMustache) => `<block wx:if="${renderMustache(exp)}">${content}</block>`,
-  wrapElseIf: (exp, content, renderMustache) => `<block wx:elif="${renderMustache(exp)}">${content}</block>`,
-  wrapElse: content => `<block wx:else>${content}</block>`,
+  wrapIf: (exp, content, renderMustache) => `<block ${directives.ifAttr}="${renderMustache(exp)}">${content}</block>`,
+  wrapElseIf: (exp, content, renderMustache) => `<block ${directives.elifAttr}="${renderMustache(exp)}">${content}</block>`,
+  wrapElse: content => `<block ${directives.elseAttr}>${content}</block>`,
 
   forAttrs: (listExp, renderMustache, item, index) => {
-    const attrs = [`wx:for="${renderMustache(listExp)}"`]
+    const attrs = [`${directives.forAttr}="${renderMustache(listExp)}"`]
     if (item) {
-      attrs.push(`wx:for-item="${item}"`)
+      attrs.push(`${directives.forItemAttr}="${item}"`)
     }
     if (index) {
-      attrs.push(`wx:for-index="${index}"`)
+      attrs.push(`${directives.forIndexAttr}="${index}"`)
     }
     return attrs
   },
 
   keyThisValue: '*this',
-  keyAttr: value => `wx:key="${value}"`,
+  keyAttr: value => `${directives.keyAttr}="${value}"`,
 
   mapEventName: eventName => eventMap[eventName] || eventName,
   eventBindingAttr: (eventName) => {

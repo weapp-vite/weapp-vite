@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
+import { getMiniProgramTemplatePlatform } from '../vue/compiler/template/platforms'
 import { compileJsxFile } from './compileJsxFile'
 
 describe('compileJsxFile', () => {
+  const defaultPlatform = getMiniProgramTemplatePlatform('weapp')
+
   it('compiles render JSX to wxml template and script wrapper', async () => {
     const source = `
 import { defineComponent } from 'wevu'
@@ -71,7 +74,7 @@ export default defineComponent({
       isPage: true,
     })
 
-    expect(result.template).toContain('wx:for=')
+    expect(result.template).toContain(`${defaultPlatform.directives.forAttr}=`)
     expect(result.template).toContain('data-wi-tap=')
     expect(result.script).toContain('__weapp_vite_inline_map')
     expect(result.script).not.toContain('<view')
@@ -102,8 +105,38 @@ export default defineComponent({
     })
 
     expect(result.template).toContain('hidden="{{ this.ok }}"')
-    expect(result.template).toContain('wx:for="{{ this.list }}"')
+    expect(result.template).toContain(`${defaultPlatform.directives.forAttr}="{{ this.list }}"`)
     expect(result.template).toContain('{{ item }}')
+  })
+
+  it.each([
+    ['alipay', 'a:for', 'a:key'],
+    ['tt', 'tt:for', 'tt:key'],
+  ])('renders %s structural directives for tsx templates', async (platform, forAttr, keyAttr) => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  data() {
+    return {
+      list: [1, 2],
+    }
+  },
+  render() {
+    return <view>{this.list.map((item, index) => <text key={index}>{item}</text>)}</view>
+  },
+})
+`
+
+    const result = await compileJsxFile(source, `/project/src/pages/${platform}/index.tsx`, {
+      isPage: true,
+      template: {
+        platform: getMiniProgramTemplatePlatform(platform as any),
+      },
+    })
+
+    expect(result.template).toContain(`${forAttr}="{{this.list}}"`)
+    expect(result.template).toContain(`${keyAttr}="index"`)
   })
 
   it('extracts json macro config from tsx source', async () => {

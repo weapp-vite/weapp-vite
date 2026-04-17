@@ -69,7 +69,7 @@ export function transformBindDirective(
         return
       }
       context.warnings.push(
-        `v-for :key "${trimmed}" ${reason}，已降级为 wx:key="${context.platform.keyThisValue}"。`
+        `v-for :key "${trimmed}" ${reason}，已降级为 ${context.platform.keyAttr(context.platform.keyThisValue)}。`
         + '建议使用稳定的基础类型 key（例如 item.id）。',
       )
     }

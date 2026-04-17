@@ -10,6 +10,7 @@ import { fs as fsExtra } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, invalidateResolvedPageLayoutsCache, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
+import { getPlatformLayoutConditionalDirective, getPlatformLayoutElseDirective } from './pageLayout/shared'
 
 const tempDirs: string[] = []
 
@@ -591,11 +592,14 @@ definePageMeta({
       },
     )
 
+    const conditionalDirective = getPlatformLayoutConditionalDirective(0, 'weapp')
+    const elseifDirective = getPlatformLayoutConditionalDirective(1, 'weapp')
+    const elseDirective = getPlatformLayoutElseDirective('weapp')
     expect(result.template).toContain(`sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}"`)
     expect(result.template).toContain(`title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"`)
-    expect(result.template).toContain(`wx:if="{{!__wv_page_layout_name || __wv_page_layout_name === 'admin'}}"`)
-    expect(result.template).toContain(`wx:elif="{{__wv_page_layout_name === 'dashboard'}}"`)
-    expect(result.template).toContain('<block wx:else><view>content</view></block>')
+    expect(result.template).toContain(`${conditionalDirective}="{{!__wv_page_layout_name || __wv_page_layout_name === 'admin'}}"`)
+    expect(result.template).toContain(`${elseifDirective}="{{__wv_page_layout_name === 'dashboard'}}"`)
+    expect(result.template).toContain(`<block ${elseDirective}><view>content</view></block>`)
     expect(JSON.parse(result.config!)).toEqual({
       navigationBarTitleText: '动态布局',
       usingComponents: {
@@ -687,8 +691,10 @@ definePageMeta({
       },
     )
 
-    expect(result.template).toContain(`wx:if="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}"`)
-    expect(result.template).toContain(`wx:elif="{{__wv_page_layout_name === 'admin'}}"`)
+    const conditionalDirective = getPlatformLayoutConditionalDirective(0, 'weapp')
+    const elseifDirective = getPlatformLayoutConditionalDirective(1, 'weapp')
+    expect(result.template).toContain(`${conditionalDirective}="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}"`)
+    expect(result.template).toContain(`${elseifDirective}="{{__wv_page_layout_name === 'admin'}}"`)
     expect(JSON.parse(result.config!)).toEqual({
       navigationBarTitleText: '原生动态布局',
       usingComponents: {

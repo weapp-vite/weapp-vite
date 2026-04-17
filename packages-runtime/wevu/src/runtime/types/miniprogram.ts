@@ -54,7 +54,7 @@ export interface MiniProgramComponentOptions {
   definitionFilter?: MpComponentOptions['definitionFilter']
 
   /**
-   * 组件自定义导出：当使用 `behavior: wx://component-export` 时，
+   * 组件自定义导出：当使用组件导出 behavior（例如微信中的 `wx://component-export`）时，
    * 可用于指定组件被 selectComponent 调用时的返回值。
    *
    * wevu 默认会将 setup() 中通过 `expose()` 写入的内容作为 export() 返回值，

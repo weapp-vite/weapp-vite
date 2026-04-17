@@ -1,10 +1,13 @@
 import type {
   ComponentOptionsMixin,
   DefineComponent,
+  MiniProgramIntersectionObserver,
   ModelBindingPayload,
   PublicProps,
   RuntimeApp,
+  SetupContextIntersectionObserver,
   SetupContextRouter,
+  SetupContextSelectorQuery,
 } from '@/index'
 import { expectAssignable, expectType } from 'tsd'
 import {
@@ -134,8 +137,8 @@ defineComponent({
     expectType<void>(ctx.emit('customevent', {}, { bubbles: true, composed: true, capturePhase: true }))
     expectType<void>(ctx.emit('multi-args', 1, 2, 3))
     expectType<void>(ctx.instance.triggerEvent('update', props.count))
-    expectType<WechatMiniprogram.SelectorQuery | undefined>(ctx.instance.createSelectorQuery())
-    expectType<WechatMiniprogram.IntersectionObserver | undefined>(ctx.instance.createIntersectionObserver())
+    expectType<SetupContextSelectorQuery | undefined>(ctx.instance.createSelectorQuery())
+    expectType<SetupContextIntersectionObserver | undefined>(ctx.instance.createIntersectionObserver())
     expectType<void | Promise<void> | undefined>(ctx.instance.setData({ count: props.count }))
     expectType<void | undefined>(ctx.instance.setUpdatePerformanceListener(() => {}))
     expectAssignable<SetupContextRouter | undefined>(ctx.instance.router)
@@ -196,7 +199,7 @@ defineComponent({
     router.navigateTo({ url: '/pages/demo/index' })
     pageRouter.navigateBack({ delta: 1 })
     const io = useIntersectionObserver()
-    expectType<WechatMiniprogram.IntersectionObserver>(io)
+    expectType<MiniProgramIntersectionObserver>(io)
     const stopPerfListen = useUpdatePerformanceListener((_result) => {})
     expectType<() => void>(stopPerfListen)
     const bag = useDisposables()

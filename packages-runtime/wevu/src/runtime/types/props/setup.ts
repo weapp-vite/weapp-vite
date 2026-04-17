@@ -4,6 +4,10 @@ import type { InternalRuntimeState, RuntimeInstance } from '../runtime'
 import type { ComponentPropsOptions, InferProps } from './propTypes'
 import type { SetupContextRouter } from './router'
 
+export type SetupContextSelectorQuery = WechatMiniprogram.SelectorQuery
+export type SetupContextIntersectionObserverOptions = WechatMiniprogram.CreateIntersectionObserverOption
+export type SetupContextIntersectionObserver = WechatMiniprogram.IntersectionObserver
+
 export type SetupFunction<
   P extends ComponentPropsOptions,
   D extends object,
@@ -24,14 +28,14 @@ export type SetupContextNativeInstance = InternalRuntimeState & {
   /**
    * 创建选择器查询对象（不可用时返回 undefined）
    */
-  createSelectorQuery: () => WechatMiniprogram.SelectorQuery | undefined
+  createSelectorQuery: () => SetupContextSelectorQuery | undefined
 
   /**
    * 创建交叉观察器（不可用时返回 undefined）
    */
   createIntersectionObserver: (
-    options?: WechatMiniprogram.CreateIntersectionObserverOption,
-  ) => WechatMiniprogram.IntersectionObserver | undefined
+    options?: SetupContextIntersectionObserverOptions,
+  ) => SetupContextIntersectionObserver | undefined
 
   /**
    * 提交视图层更新

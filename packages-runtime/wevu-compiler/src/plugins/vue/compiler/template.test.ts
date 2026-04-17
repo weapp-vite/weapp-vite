@@ -4,9 +4,11 @@ import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './temp
 const WHITESPACE_RE = /\s/g
 const INLINE_OBJECT_PROP_RE = /prop="\{\{\s*\{[^}]+\}\s*\}\}"/
 const DATA_TITLE_BIND_RE = /data-title="\{\{__wv_bind_\d+\}\}"/
-const IF_BIND_RE = /wx:if="\{\{__wv_bind_\d+\}\}"/
-const FOR_BIND_RE = /wx:for="\{\{__wv_bind_\d+\}\}"/
 const INTERPOLATION_BIND_INDEX_RE = /\{\{__wv_bind_\d+\[[^\]]+\]\}\}/
+const DEFAULT_TEMPLATE_PLATFORM = getMiniProgramTemplatePlatform('weapp')
+const DEFAULT_DIRECTIVES = DEFAULT_TEMPLATE_PLATFORM.directives
+const IF_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.ifAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)
+const FOR_BIND_RE = new RegExp(`${DEFAULT_TEMPLATE_PLATFORM.directives.forAttr}="\\{\\{__wv_bind_\\d+\\}\\}"`)
 
 describe('compileVueTemplateToWxml', () => {
   it('rewrites nullish coalescing in bindings', () => {
@@ -130,7 +132,7 @@ describe('compileVueTemplateToWxml', () => {
       { mustacheInterpolation: 'spaced' },
     )
 
-    expect(code).toContain('wx:if="{{ ok }}"')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.ifAttr}="{{ ok }}"`)
     expect(code).toContain('prop="{{ value }}"')
     expect(code).toContain('class="{{ __wv_cls_0 }}"')
     expect(code).toContain('style="{{ __wv_style_0 }}"')
@@ -148,7 +150,7 @@ describe('compileVueTemplateToWxml', () => {
       { mustacheInterpolation: 'spaced' },
     )
 
-    expect(code).toContain('wx:if="{{ ok }}"')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.ifAttr}="{{ ok }}"`)
     expect(code).toContain('title="a & b"')
     expect(code).toContain('{{ label }}')
     expect(code).not.toContain('v-if="ok"')
@@ -244,8 +246,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('<block wx:if="{{ok}}"><view class="div">')
-    expect(code).toContain('<text class="span" wx:for="{{list}}" wx:for-item="item"')
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{ok}}"><view class="div">`)
+    expect(code).toContain(`<text class="span" ${DEFAULT_DIRECTIVES.forAttr}="{{list}}" ${DEFAULT_DIRECTIVES.forItemAttr}="item"`)
     expect(code).toContain('{{item}}</text>')
     expect(code).not.toContain('<div ')
     expect(code).not.toContain('<span ')
@@ -379,8 +381,8 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('wx:if="{{__wv_bind_0}}"')
-    expect(code).toContain('wx:for="{{__wv_bind_1}}"')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.ifAttr}="{{__wv_bind_0}}"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{__wv_bind_1}}"`)
     expect(classStyleBindings?.some(binding => binding.exp === 'isVisible()')).toBe(true)
     expect(classStyleBindings?.some(binding => binding.exp === 'getItems()')).toBe(true)
   })
@@ -417,10 +419,10 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('wx:for="{{entries}}"')
-    expect(code).toContain('wx:for-item="__wv_item_0"')
-    expect(code).toContain('wx:for-index="index"')
-    expect(code).toContain('wx:key="index"')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{entries}}"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forItemAttr}="__wv_item_0"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="index"`)
+    expect(code).toContain(DEFAULT_TEMPLATE_PLATFORM.keyAttr('index'))
     expect(code).toContain('{{__wv_item_0[0]}}')
     expect(code).toContain('{{__wv_item_0[1]}}')
     expect(code).not.toContain('{{key}}')
@@ -451,9 +453,9 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('wx:for="{{rows}}"')
-    expect(code).toContain('wx:for-item="__wv_item_0"')
-    expect(code).toContain('wx:for-index="index"')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{rows}}"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forItemAttr}="__wv_item_0"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="index"`)
     expect(code).toContain('{{__wv_item_0.key}}')
     expect(code).toContain('{{__wv_item_0.value}}')
     expect(code).not.toContain('{{ key }}')
@@ -469,10 +471,10 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toContain('wx:for="{{summaryMap}}"')
-    expect(code).toContain('wx:for-item="value"')
-    expect(code).toContain('wx:for-index="key"')
-    expect(code).toContain('wx:key="key"')
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forAttr}="{{summaryMap}}"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forItemAttr}="value"`)
+    expect(code).toContain(`${DEFAULT_DIRECTIVES.forIndexAttr}="key"`)
+    expect(code).toContain(DEFAULT_TEMPLATE_PLATFORM.keyAttr('key'))
     expect(code).toContain('{{key}} = {{value}}')
   })
 
@@ -603,73 +605,13 @@ describe('compileVueTemplateToWxml', () => {
   })
 
   it.each([
-    [
-      'weapp',
-      {
-        ifAttr: 'wx:if',
-        elifAttr: 'wx:elif',
-        elseAttr: 'wx:else',
-        forAttr: 'wx:for',
-        keyAttr: 'wx:key',
-        eventAttr: 'bindtap',
-      },
-    ],
-    [
-      'alipay',
-      {
-        ifAttr: 'a:if',
-        elifAttr: 'a:elif',
-        elseAttr: 'a:else',
-        forAttr: 'a:for',
-        keyAttr: 'a:key',
-        eventAttr: 'onTap',
-      },
-    ],
-    [
-      'tt',
-      {
-        ifAttr: 'tt:if',
-        elifAttr: 'tt:elif',
-        elseAttr: 'tt:else',
-        forAttr: 'tt:for',
-        keyAttr: 'tt:key',
-        eventAttr: 'bindtap',
-      },
-    ],
-    [
-      'swan',
-      {
-        ifAttr: 's-if',
-        elifAttr: 's-elif',
-        elseAttr: 's-else',
-        forAttr: 's-for',
-        keyAttr: 's-key',
-        eventAttr: 'bindtap',
-      },
-    ],
-    [
-      'jd',
-      {
-        ifAttr: 'wx:if',
-        elifAttr: 'wx:elif',
-        elseAttr: 'wx:else',
-        forAttr: 'wx:for',
-        keyAttr: 'wx:key',
-        eventAttr: 'bindtap',
-      },
-    ],
-    [
-      'xhs',
-      {
-        ifAttr: 'wx:if',
-        elifAttr: 'wx:elif',
-        elseAttr: 'wx:else',
-        forAttr: 'wx:for',
-        keyAttr: 'wx:key',
-        eventAttr: 'bindtap',
-      },
-    ],
-  ])('applies platform template attrs for %s', (platform, expected) => {
+    ['weapp', 'bindtap'],
+    ['alipay', 'onTap'],
+    ['tt', 'bindtap'],
+    ['swan', 'bindtap'],
+    ['jd', 'bindtap'],
+    ['xhs', 'bindtap'],
+  ])('applies platform template attrs for %s', (platform, expectedEventAttr) => {
     const template = `
 <view v-if="ok">A</view>
 <view v-else-if="other">B</view>
@@ -677,18 +619,19 @@ describe('compileVueTemplateToWxml', () => {
 <view v-for="(item, index) in list" :key="item.id" @tap="onTap">{{ item.name }}</view>
     `.trim()
 
+    const templatePlatform = getMiniProgramTemplatePlatform(platform as any)
     const { code } = compileVueTemplateToWxml(
       template,
       '/project/src/pages/index/index.vue',
-      { platform: getMiniProgramTemplatePlatform(platform as any) },
+      { platform: templatePlatform },
     )
 
-    expect(code).toContain(expected.ifAttr)
-    expect(code).toContain(expected.elifAttr)
-    expect(code).toContain(expected.elseAttr)
-    expect(code).toContain(expected.forAttr)
-    expect(code).toContain(expected.keyAttr)
-    expect(code).toContain(expected.eventAttr)
+    expect(code).toContain(templatePlatform.directives.ifAttr)
+    expect(code).toContain(templatePlatform.directives.elifAttr)
+    expect(code).toContain(templatePlatform.directives.elseAttr)
+    expect(code).toContain(templatePlatform.directives.forAttr)
+    expect(code).toContain(templatePlatform.directives.keyAttr)
+    expect(code).toContain(expectedEventAttr)
   })
 
   it.each([
@@ -825,14 +768,14 @@ describe('compileVueTemplateToWxml', () => {
       `<template v-for="item in list"><view>{{ item }}</view></template>`,
       '/project/src/pages/index/index.vue',
     )
-    expect(forTemplate.code).toContain('wx:for="{{list}}"')
+    expect(forTemplate.code).toContain(`${DEFAULT_TEMPLATE_PLATFORM.directives.forAttr}="{{list}}"`)
     expect(forTemplate.code).toContain('<block')
 
     const conditionalTemplate = compileVueTemplateToWxml(
       `<template v-if="ok"><view>B</view></template>`,
       '/project/src/pages/index/index.vue',
     )
-    expect(conditionalTemplate.code).toContain('wx:if="{{ok}}"')
+    expect(conditionalTemplate.code).toContain(`${DEFAULT_TEMPLATE_PLATFORM.directives.ifAttr}="{{ok}}"`)
   })
 
   it('supports dynamic component fallback and :is rendering branches', () => {

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import { getWxmlDirectivePrefix } from '../../../platform'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs } from './injectSetDataPick'
+
+const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
 
 describe('inject setData.pick', () => {
   it('collects top-level keys from template expressions and skips loop aliases', () => {
     const template = `
-<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i">
+<view ${DEFAULT_WXML_DIRECTIVE_PREFIX}:for="{{ list }}" ${DEFAULT_WXML_DIRECTIVE_PREFIX}:for-item="row" ${DEFAULT_WXML_DIRECTIVE_PREFIX}:for-index="i">
   <text>{{ row.name }}</text>
   <text>{{ __wv_bind_0[i] }}</text>
 </view>

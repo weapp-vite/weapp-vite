@@ -1,4 +1,5 @@
 import type { MiniProgramPlatform } from '../platform'
+import { createMiniProgramDirectiveAttrs } from '../platform'
 
 const eventMap: Record<string, string> = {
   click: 'tap',
@@ -70,26 +71,29 @@ function toAlipayDirectiveEvent(prefix: string, eventName: string) {
 /**
  * 支付宝小程序平台适配器。
  */
+const directives = createMiniProgramDirectiveAttrs('a')
+
 export const alipayPlatform: MiniProgramPlatform = {
   name: 'alipay',
+  directives,
 
-  wrapIf: (exp, content, renderMustache) => `<block a:if="${renderMustache(exp)}">${content}</block>`,
-  wrapElseIf: (exp, content, renderMustache) => `<block a:elif="${renderMustache(exp)}">${content}</block>`,
-  wrapElse: content => `<block a:else>${content}</block>`,
+  wrapIf: (exp, content, renderMustache) => `<block ${directives.ifAttr}="${renderMustache(exp)}">${content}</block>`,
+  wrapElseIf: (exp, content, renderMustache) => `<block ${directives.elifAttr}="${renderMustache(exp)}">${content}</block>`,
+  wrapElse: content => `<block ${directives.elseAttr}>${content}</block>`,
 
   forAttrs: (listExp, renderMustache, item, index) => {
-    const attrs = [`a:for="${renderMustache(listExp)}"`]
+    const attrs = [`${directives.forAttr}="${renderMustache(listExp)}"`]
     if (item) {
-      attrs.push(`a:for-item="${item}"`)
+      attrs.push(`${directives.forItemAttr}="${item}"`)
     }
     if (index) {
-      attrs.push(`a:for-index="${index}"`)
+      attrs.push(`${directives.forIndexAttr}="${index}"`)
     }
     return attrs
   },
 
   keyThisValue: '*this',
-  keyAttr: value => `a:key="${value}"`,
+  keyAttr: value => `${directives.keyAttr}="${value}"`,
 
   mapEventName: eventName => eventMap[eventName] || eventName,
   eventBindingAttr: (eventName) => {

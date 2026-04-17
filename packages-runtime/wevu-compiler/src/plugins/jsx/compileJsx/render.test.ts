@@ -5,6 +5,8 @@ import { compileRenderableExpression } from './render'
 import { createJsxCompileContext } from './template'
 
 describe('compileJsx render helpers', () => {
+  const defaultPlatform = getMiniProgramTemplatePlatform('weapp')
+
   it('renders array expressions while skipping null and boolean branches', () => {
     const context = createJsxCompileContext()
     const rendered = compileRenderableExpression(
@@ -80,7 +82,7 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(fallback).toContain('wx:if="{{!(ready)}}"')
+    expect(fallback).toContain(`${defaultPlatform.directives.ifAttr}="{{!(ready)}}"`)
     expect(fallback).toContain('<text>fallback</text>')
 
     const list = compileRenderableExpression(
@@ -110,8 +112,8 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(list).toContain('wx:for="{{list}}"')
-    expect(list).toContain('wx:key="index"')
+    expect(list).toContain(`${defaultPlatform.directives.forAttr}="{{list}}"`)
+    expect(list).toContain(`${defaultPlatform.directives.keyAttr}="index"`)
     expect(list).toContain('{{item}}')
   })
 
@@ -152,9 +154,9 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(conditional).toContain('wx:if="{{ready}}"')
+    expect(conditional).toContain(`${defaultPlatform.directives.ifAttr}="{{ready}}"`)
     expect(conditional).toContain('<view />')
-    expect(logicalAnd).toContain('wx:if="{{visible}}"')
+    expect(logicalAnd).toContain(`${defaultPlatform.directives.ifAttr}="{{visible}}"`)
     expect(logicalAnd).toContain('<text>shown</text>')
     expect(fallbackCall).toContain('{{renderItem(item)}}')
     expect(fallbackLogical).toContain('{{value!=null?value:other}}')
@@ -218,7 +220,7 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(mappedText).toContain('wx:key="index"')
+    expect(mappedText).toContain(`${defaultPlatform.directives.keyAttr}="index"`)
     expect(mappedText).toContain('{{item}}')
     expect(emptyBody).toBe('')
     expect(sparseArray).toContain('{{"tail"}}')
@@ -263,9 +265,9 @@ describe('compileJsx render helpers', () => {
       context,
     )
 
-    expect(list).toContain('wx:key="index"')
-    expect(conditional).toContain('wx:if="{{ready}}"')
-    expect(conditional).toContain('wx:else')
+    expect(list).toContain(`${defaultPlatform.directives.keyAttr}="index"`)
+    expect(conditional).toContain(`${defaultPlatform.directives.ifAttr}="{{ready}}"`)
+    expect(conditional).toContain(defaultPlatform.directives.elseAttr)
     expect(conditional).toContain('<text>no</text>')
   })
 

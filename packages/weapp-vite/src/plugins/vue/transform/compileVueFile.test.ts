@@ -3,10 +3,15 @@ import os from 'node:os'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
+import { getWxmlDirectivePrefix } from '../../../platform'
 
 async function createTempProject() {
   return await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-compile-vue-'))
 }
+
+const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
+const IF_BIND_RE = new RegExp(`${DEFAULT_WXML_DIRECTIVE_PREFIX}:if="\\{\\{__wv_bind_\\d+\\}\\}"`)
+const FOR_BIND_RE = new RegExp(`${DEFAULT_WXML_DIRECTIVE_PREFIX}:for="\\{\\{__wv_bind_\\d+\\}\\}"`)
 
 describe('compileVueFile - auto import tags', () => {
   it('collects PascalCase tags for autoImportTags', async () => {
@@ -369,8 +374,8 @@ const getRows = () => [{ id: 'a', label: 'Alpha' }]
     )
 
     expect(result.template).toMatch(/data-title="\{\{__wv_bind_\d+\}\}"/)
-    expect(result.template).toMatch(/wx:if="\{\{__wv_bind_\d+\}\}"/)
-    expect(result.template).toMatch(/wx:for="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.template).toMatch(IF_BIND_RE)
+    expect(result.template).toMatch(FOR_BIND_RE)
     expect(result.template).toMatch(/\{\{__wv_bind_\d+\[[^\]]+\]\}\}/)
     expect(result.template).not.toContain('sayHello(1, item.label, dasd)')
     expect(result.script).toContain('Object.prototype.hasOwnProperty.call(this.$state, "sayHello")')

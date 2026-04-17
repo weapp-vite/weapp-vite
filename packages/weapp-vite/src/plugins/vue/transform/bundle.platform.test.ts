@@ -21,6 +21,7 @@ import {
   shouldEmitAlipayGenericPlaceholder,
 } from './bundle/platform'
 import { resetEmittedAssetSourceCacheForTest } from './emitAssets'
+import { getPlatformLayoutConditionalDirective } from './pageLayout/shared'
 
 const collectFallbackPageEntryIdsMock = vi.hoisted(() => vi.fn(async () => new Set<string>()))
 const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
@@ -1418,8 +1419,8 @@ export default {
     }
 
     const template = assets.get('pages/dynamic-layout/index.wxml')!
-    expect(template).toContain(`wx:if="{{__wv_page_layout_name === 'admin'}}"`)
-    expect(template).toContain(`wx:elif="{{__wv_page_layout_name === 'dashboard'}}"`)
+    expect(template).toContain(`${getPlatformLayoutConditionalDirective(0, 'weapp')}="{{__wv_page_layout_name === 'admin'}}"`)
+    expect(template).toContain(`${getPlatformLayoutConditionalDirective(1, 'weapp')}="{{__wv_page_layout_name === 'dashboard'}}"`)
     expect(template).toContain('<weapp-layout-dashboard title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}">')
     expect(template).toContain(`title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"`)
     expect(template).toContain(`sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}"`)

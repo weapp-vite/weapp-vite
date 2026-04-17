@@ -27,6 +27,9 @@ export type {
 } from './props/router'
 export type {
   SetupContext,
+  SetupContextIntersectionObserver,
+  SetupContextIntersectionObserverOptions,
   SetupContextNativeInstance,
+  SetupContextSelectorQuery,
   SetupFunction,
 } from './props/setup'

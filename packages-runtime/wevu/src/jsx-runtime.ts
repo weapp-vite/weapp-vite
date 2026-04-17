@@ -1,6 +1,6 @@
 /// <reference types="miniprogram-api-typings" />
 import type { GlobalComponents } from 'wevu'
-import type { WeappIntrinsicElements } from './weappIntrinsicElements'
+import type { MiniProgramIntrinsicElements } from './weappIntrinsicElements'
 
 // eslint-disable-next-line ts/no-namespace -- JSX 命名空间用于 jsxImportSource 类型推导。
 export declare namespace JSX {
@@ -16,5 +16,5 @@ export declare namespace JSX {
 
   export interface IntrinsicAttributes {}
 
-  export interface IntrinsicElements extends GlobalComponents, WeappIntrinsicElements {}
+  export interface IntrinsicElements extends GlobalComponents, MiniProgramIntrinsicElements {}
 }

@@ -1,5 +1,5 @@
 import type { ComponentOptionsMixin, ComponentProvideOptions, DefineComponent, PublicProps } from 'vue'
-import type { TemplateRef, TemplateRefValue } from '@/index'
+import type { MiniProgramTemplateRefValue, TemplateRef, TemplateRefValue } from '@/index'
 import { expectError, expectType } from 'tsd'
 import { ref, useTemplateRef } from '@/index'
 
@@ -43,6 +43,7 @@ expectError(header.value = { title: 'next' })
 
 const view = useTemplateRef('viewRef')
 expectType<TemplateRefValue | null>(view.value)
+expectType<MiniProgramTemplateRefValue | null>(view.value)
 
 const child = useTemplateRef('childRef')
 expectType<(() => void) | undefined>(child.value?.open)
@@ -57,3 +58,4 @@ expectType<TemplateRef<unknown>>(unknownRef)
 
 type ViewElement = HTMLElementTagNameMap['view']
 expectType<TemplateRefValue>({} as ViewElement)
+expectType<MiniProgramTemplateRefValue>({} as ViewElement)

@@ -69,14 +69,20 @@ export interface GlobalComponents extends WevuGlobalComponents {}
 export interface GlobalDirectives extends WevuGlobalDirectives {}
 export interface TemplateRefs {}
 
-type NodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
+export type MiniProgramNodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
+export type MiniProgramBoundingClientRectResult = WechatMiniprogram.BoundingClientRectCallbackResult
+export type MiniProgramScrollOffsetResult = WechatMiniprogram.ScrollOffsetCallbackResult
+export type MiniProgramSelectorQuery = WechatMiniprogram.SelectorQuery
+export type MiniProgramNodesRef = WechatMiniprogram.NodesRef
 
 export interface TemplateRefValue {
   selector: string
-  boundingClientRect: (cb?: (value: WechatMiniprogram.BoundingClientRectCallbackResult | null) => void) => Promise<WechatMiniprogram.BoundingClientRectCallbackResult | null>
-  scrollOffset: (cb?: (value: WechatMiniprogram.ScrollOffsetCallbackResult | null) => void) => Promise<WechatMiniprogram.ScrollOffsetCallbackResult | null>
-  fields: (fields: NodesRefFields, cb?: (value: any) => void) => Promise<any | null>
+  boundingClientRect: (cb?: (value: MiniProgramBoundingClientRectResult | null) => void) => Promise<MiniProgramBoundingClientRectResult | null>
+  scrollOffset: (cb?: (value: MiniProgramScrollOffsetResult | null) => void) => Promise<MiniProgramScrollOffsetResult | null>
+  fields: (fields: MiniProgramNodesRefFields, cb?: (value: any) => void) => Promise<any | null>
   node: (cb?: (value: any) => void) => Promise<any | null>
 }
+
+export type MiniProgramTemplateRefValue = TemplateRefValue
 
 export type { SetDataDebugInfo, SetDataSnapshotOptions } from './types/setData'

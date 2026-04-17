@@ -3,7 +3,7 @@
 实验性的 H5 运行时与工具集，为 `weapp-vite` 工程提供最小化的浏览器适配能力：
 
 - 将 `wxml` 模板编译为渲染函数，并在 Web Components 中渲染
-- 支持 `wx:if` / `wx:elif` / `wx:else`、`wx:for`、插值语法等常见语法糖
+- 支持 `wx` / `a` / `tt` / `s` 前缀的条件与循环指令，以及插值语法等常见模板语法糖
 - 将小程序 `Page` / `Component` 映射为自定义元素，Shadow DOM 隔离样式与事件
 - 事件桥接（如 `bindtap` → `click`），保留 `this.setData`、`this.triggerEvent` 等调用体验
 - `wx.navigateTo` / `wx.navigateBack` / `getCurrentPages` 等路由 API，以及 `onLoad`、`onShow`、`onHide`、`onUnload` 生命周期
