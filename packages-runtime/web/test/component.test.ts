@@ -1127,6 +1127,36 @@ describe('component selector helpers', () => {
       height: 30,
     }))
   })
+
+  it('falls back to non-wechat mini-program globals for scoped selector query', () => {
+    const originalWx = (globalThis as any).wx
+    const originalMy = (globalThis as any).my
+    const scopedQuery = {
+      in: vi.fn(() => 'scoped-query'),
+    }
+    ;(globalThis as any).wx = undefined
+    ;(globalThis as any).my = {
+      createSelectorQuery: vi.fn(() => scopedQuery),
+    }
+
+    try {
+      defineComponent('wv-selector-host-my', {
+        template: createTemplate('<view class="inner"></view>'),
+        component: {},
+      })
+      const host = document.createElement('wv-selector-host-my') as HTMLElement & {
+        createSelectorQuery: () => unknown
+      }
+      document.body.append(host)
+
+      expect(host.createSelectorQuery()).toBe('scoped-query')
+      expect(scopedQuery.in).toHaveBeenCalledWith(host)
+    }
+    finally {
+      ;(globalThis as any).wx = originalWx
+      ;(globalThis as any).my = originalMy
+    }
+  })
 })
 
 describe('web runtime wx utility APIs', () => {
