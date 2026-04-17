@@ -9,6 +9,9 @@ export type {
   WeapiMiniProgramMethodName,
   WeapiMiniProgramWechatMethodName,
   WeapiMiniProgramWxMethodName,
+  WeapiPlatformTypeSourceName,
+  WeapiRuntimeTypeSourceName,
+  WeapiTypeSourceName,
   WeapiWechatMethodName,
   WeapiWxMethodName,
 } from './core/apiCatalog'

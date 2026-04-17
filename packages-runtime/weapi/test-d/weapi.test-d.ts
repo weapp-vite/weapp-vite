@@ -32,9 +32,12 @@ import type {
   WeapiMiniProgramWxAdapter,
   WeapiMiniProgramWxMethodName,
   WeapiMiniProgramWxRawAdapter,
+  WeapiPlatformTypeSourceName,
   WeapiResolvedTarget,
+  WeapiRuntimeTypeSourceName,
   WeapiSupportLevel,
   WeapiTtMiniProgramRawAdapterSource,
+  WeapiTypeSourceName,
   WeapiWechatMethodName,
   WeapiWechatMiniProgramRawAdapterSource,
 } from '@wevu/api'
@@ -91,6 +94,16 @@ expectAssignable<WeapiMiniProgramRawAdapterSourceName>('default')
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('wechat')
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('alipay')
 expectAssignable<WeapiMiniProgramRawAdapterSourceName>('tt')
+expectAssignable<WeapiPlatformTypeSourceName>('default')
+expectAssignable<WeapiPlatformTypeSourceName>('wechat')
+expectAssignable<WeapiPlatformTypeSourceName>('alipay')
+expectAssignable<WeapiPlatformTypeSourceName>('douyin')
+expectAssignable<WeapiRuntimeTypeSourceName>('wx')
+expectAssignable<WeapiRuntimeTypeSourceName>('my')
+expectAssignable<WeapiRuntimeTypeSourceName>('tt')
+expectAssignable<WeapiTypeSourceName>('default')
+expectAssignable<WeapiTypeSourceName>('douyin')
+expectAssignable<WeapiTypeSourceName>('wx')
 expectType<WeapiDefaultInstance['raw']>(wpi.raw)
 expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)
