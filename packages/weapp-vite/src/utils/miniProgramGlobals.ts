@@ -13,6 +13,15 @@ export function getRouteRuntimeGlobalKeys() {
   return [...getSharedMiniProgramRouteRuntimeGlobalKeys()]
 }
 
+export function createMiniProgramGlobalValueMap<T>(value: T, options?: {
+  globalKeys?: readonly string[]
+}) {
+  const globalKeys = options?.globalKeys ?? getMiniProgramGlobalKeys()
+  return Object.fromEntries(
+    globalKeys.map(key => [key, value]),
+  ) as Record<string, T>
+}
+
 export function getMiniProgramPlatformGlobalKey(platform?: string) {
   if (!platform) {
     return undefined

@@ -1,3 +1,4 @@
+import { createMiniProgramGlobalValueMap } from '../../../utils/miniProgramGlobals'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
 
 export function isInjectWeapiReplaceEnabled(injectWeapi: unknown): boolean {
@@ -27,12 +28,5 @@ export function createInjectWeapiDefine(injectWeapi: unknown): Record<string, st
   const globalName = resolveInjectWeapiGlobalName(injectWeapi)
   const expression = createWeapiAccessExpression(globalName)
 
-  return {
-    wx: expression,
-    my: expression,
-    tt: expression,
-    swan: expression,
-    jd: expression,
-    xhs: expression,
-  }
+  return createMiniProgramGlobalValueMap(expression)
 }

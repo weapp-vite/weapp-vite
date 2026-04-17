@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createMiniProgramGlobalResolveExpression,
+  createMiniProgramGlobalValueMap,
   createMiniProgramHostOrTopLevelResolveExpression,
   createMiniProgramTopLevelAccessChecks,
   createMiniProgramTopLevelResolveExpression,
@@ -13,6 +14,14 @@ import {
 describe('miniProgramGlobals utils', () => {
   it('exposes shared mini-program global keys and platform mappings', () => {
     expect(getMiniProgramGlobalKeys()).toEqual(['my', 'wx', 'tt', 'swan', 'jd', 'xhs'])
+    expect(createMiniProgramGlobalValueMap('demo')).toEqual({
+      my: 'demo',
+      wx: 'demo',
+      tt: 'demo',
+      swan: 'demo',
+      jd: 'demo',
+      xhs: 'demo',
+    })
     expect(getRouteRuntimeGlobalKeys()).toEqual(['wx', 'tt', 'my', 'swan', 'jd', 'xhs'])
     expect(getMiniProgramPlatformGlobalKey()).toBeUndefined()
     expect(getMiniProgramPlatformGlobalKey('weapp')).toBe('wx')
