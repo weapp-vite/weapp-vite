@@ -475,9 +475,9 @@ it('provides local component definitions and resource links for wxml documents',
   assert.deepEqual(
     getTargetPaths(links).sort(),
     [
-      mockWorkspacePath('/workspace/src/assets/banner.png'),
-      mockWorkspacePath('/workspace/src/pages/about/index.vue'),
-      mockWorkspacePath('/workspace/src/templates/header.wxml'),
+      normalizeFsPath(mockWorkspacePath('/workspace/src/assets/banner.png')),
+      normalizeFsPath(mockWorkspacePath('/workspace/src/pages/about/index.vue')),
+      normalizeFsPath(mockWorkspacePath('/workspace/src/templates/header.wxml')),
     ].sort(),
   )
   assert.equal(getMarkdownValue(tagHover?.contents).includes('项目组件'), true)
