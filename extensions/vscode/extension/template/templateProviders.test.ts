@@ -55,6 +55,21 @@ function toUriPath(fsPath: string) {
   return fsPath.replace(/\\/gu, '/')
 }
 
+function mockWorkspacePath(filePath: string) {
+  const workspaceRoot = path.resolve('/workspace')
+  const relativePath = filePath.replace(/^\/workspace(?:\/|$)/u, '')
+
+  return relativePath ? path.join(workspaceRoot, relativePath) : workspaceRoot
+}
+
+function normalizeFsPath(fsPath: string) {
+  return toUriPath(path.normalize(fsPath))
+}
+
+function hasFsPathSuffix(fsPath: string, suffix: string) {
+  return normalizeFsPath(fsPath).endsWith(suffix)
+}
+
 function normalizeMockUri<T extends MockUri>(uri: T): T {
   const fsPath = path.normalize(uri.fsPath)
 
@@ -176,7 +191,7 @@ function findByLabel(items: CompletionLikeItem[], label: string) {
 }
 
 function getTargetPaths(links: _MockDocumentLink[]) {
-  return links.map(link => link.target.fsPath)
+  return links.map(link => normalizeFsPath(link.target.fsPath))
 }
 
 function getHighlightStartLines(highlights: _MockDocumentHighlight[]) {
@@ -195,18 +210,18 @@ afterEach(() => {
 
 it('provides local component definitions and resource links for wxml documents', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
-    [path.normalize('/workspace/src/pages/home/index.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/pages/home/index.json'), JSON.stringify({
       usingComponents: {
         'card-user': '/components/card/user/index',
       },
     })],
-    [path.normalize('/workspace/src/pages/home/index.ts'), [
+    [mockWorkspacePath('/workspace/src/pages/home/index.ts'), [
       'const pageTitle = \'demo\'',
       'const bottom = 24',
       'const handlers = {',
@@ -214,12 +229,12 @@ it('provides local component definitions and resource links for wxml documents',
       '}',
       'function handleTap() {}',
     ].join('\n')],
-    [path.normalize('/workspace/src/pages/home/index.wxss'), [
+    [mockWorkspacePath('/workspace/src/pages/home/index.wxss'), [
       '.hero { color: red; }',
       '.hero-title { color: blue; }',
     ].join('\n')],
-    [path.normalize('/workspace/src/pages/about/index.vue'), '<template><view /></template>'],
-    [path.normalize('/workspace/src/components/card/user/index.vue'), [
+    [mockWorkspacePath('/workspace/src/pages/about/index.vue'), '<template><view /></template>'],
+    [mockWorkspacePath('/workspace/src/components/card/user/index.vue'), [
       '<script setup lang="ts">',
       'defineProps<{',
       '  titleText?: string',
@@ -232,8 +247,8 @@ it('provides local component definitions and resource links for wxml documents',
       '</script>',
       '<template><view /></template>',
     ].join('\n')],
-    [path.normalize('/workspace/src/assets/banner.png'), 'binary'],
-    [path.normalize('/workspace/src/templates/header.wxml'), '<view>header</view>'],
+    [mockWorkspacePath('/workspace/src/assets/banner.png'), 'binary'],
+    [mockWorkspacePath('/workspace/src/templates/header.wxml'), '<view>header</view>'],
   ])
 
   vi.doMock('vscode', () => {
@@ -243,8 +258,8 @@ it('provides local component definitions and resource links for wxml documents',
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -269,8 +284,8 @@ it('provides local component definitions and resource links for wxml documents',
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -387,12 +402,12 @@ it('provides local component definitions and resource links for wxml documents',
   const document = createTextDocument(
     'wxml',
     '<import src="/templates/header.wxml" /><navigator url="/pages/about/index?from=home" /><card-user class="hero hero-title" style="height: {{ bottom }}rpx" bindtap="handlers.onTap" src="/assets/banner.png">{{ pageTitle }}</card-user>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const hoverDocument = createTextDocument(
     'wxml',
     '<card-user title-text="{{ pageTitle }}" bind:confirm="handleTap"></card-user>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const documentText = document.getText()
   const hoverDocumentText = hoverDocument.getText()
@@ -444,25 +459,25 @@ it('provides local component definitions and resource links for wxml documents',
     true,
   )
   assert.equal(hasLabel(classCompletionItems, 'hero-title'), true)
-  assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
-  assert.equal(classDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxss'))
-  assert.equal(methodDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(tagDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/card/user/index.vue'))
+  assert.equal(classDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.wxss'))
+  assert.equal(methodDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
   assert.equal(getLocationLine(methodDefinition), 3)
-  assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
-  assert.equal(attrInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(interpolationDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
+  assert.equal(attrInterpolationDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
   assert.equal(getLocationLine(attrInterpolationDefinition), 1)
-  assert.equal(routeDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/about/index.vue'))
-  assert.equal(propNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
+  assert.equal(routeDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/about/index.vue'))
+  assert.equal(propNameDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/card/user/index.vue'))
   assert.equal(getLocationLine(propNameDefinition), 2)
-  assert.equal(eventNameDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
+  assert.equal(eventNameDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/card/user/index.vue'))
   assert.equal(getLocationLine(eventNameDefinition), 6)
   assert.equal(links.length, 3)
   assert.deepEqual(
     getTargetPaths(links).sort(),
     [
-      path.normalize('/workspace/src/assets/banner.png'),
-      path.normalize('/workspace/src/pages/about/index.vue'),
-      path.normalize('/workspace/src/templates/header.wxml'),
+      mockWorkspacePath('/workspace/src/assets/banner.png'),
+      mockWorkspacePath('/workspace/src/pages/about/index.vue'),
+      mockWorkspacePath('/workspace/src/templates/header.wxml'),
     ].sort(),
   )
   assert.equal(getMarkdownValue(tagHover?.contents).includes('项目组件'), true)
@@ -478,15 +493,15 @@ it('provides local component definitions and resource links for wxml documents',
 
 it('provides route links inside recognized vue template documents', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index', 'pages/about/index'],
     })],
-    [path.normalize('/workspace/src/pages/about/index.vue'), '<template><view /></template>'],
+    [mockWorkspacePath('/workspace/src/pages/about/index.vue'), '<template><view /></template>'],
   ])
 
   vi.doMock('vscode', () => {
@@ -499,8 +514,8 @@ it('provides route links inside recognized vue template documents', async () => 
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -525,8 +540,8 @@ it('provides route links inside recognized vue template documents', async () => 
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -603,7 +618,7 @@ it('provides route links inside recognized vue template documents', async () => 
       'const ok = true',
       '</script>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.vue'),
+    mockWorkspacePath('/workspace/src/pages/home/index.vue'),
   )
   const documentText = document.getText()
   const routePosition = document.positionAt(documentText.indexOf('/pages/about/index') + 2)
@@ -611,19 +626,19 @@ it('provides route links inside recognized vue template documents', async () => 
   const definition = await definitionProvider.provideDefinition(document as any, routePosition as any)
   const links = await linkProvider.provideDocumentLinks(document as any)
 
-  assert.equal(definition?.uri.fsPath, path.normalize('/workspace/src/pages/about/index.vue'))
+  assert.equal(definition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/about/index.vue'))
   assert.equal(links.length, 1)
-  assert.equal(links[0].target.fsPath, path.normalize('/workspace/src/pages/about/index.vue'))
+  assert.equal(links[0].target.fsPath, mockWorkspacePath('/workspace/src/pages/about/index.vue'))
 })
 
 it('supports token-level script definitions inside recognized vue templates', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
   ])
@@ -638,8 +653,8 @@ it('supports token-level script definitions inside recognized vue templates', as
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -664,8 +679,8 @@ it('supports token-level script definitions inside recognized vue templates', as
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -735,7 +750,7 @@ it('supports token-level script definitions inside recognized vue templates', as
       '}',
       '</script>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.vue'),
+    mockWorkspacePath('/workspace/src/pages/home/index.vue'),
   )
   const documentText = document.getText()
   const methodPosition = document.positionAt(documentText.indexOf('onTap') + 2)
@@ -746,23 +761,23 @@ it('supports token-level script definitions inside recognized vue templates', as
   const interpolationDefinition = await definitionProvider.provideDefinition(document as any, interpolationPosition as any)
   const attrInterpolationDefinition = await definitionProvider.provideDefinition(document as any, attrInterpolationPosition as any)
 
-  assert.equal(methodDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+  assert.equal(methodDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.vue'))
   assert.equal(getLocationLine(methodDefinition), 8)
-  assert.equal(interpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+  assert.equal(interpolationDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.vue'))
   assert.equal(getLocationLine(interpolationDefinition), 5)
-  assert.equal(attrInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+  assert.equal(attrInterpolationDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.vue'))
   assert.equal(getLocationLine(attrInterpolationDefinition), 6)
 })
 
 it('resolves wx:for locals and event expression tokens precisely in wxml documents', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
-    [path.normalize('/workspace/src/pages/home/index.ts'), [
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/pages/home/index.ts'), [
       'const list = []',
       'const pageTitle = \'demo\'',
       'const handlers = {',
@@ -778,8 +793,8 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -804,8 +819,8 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -867,7 +882,7 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
       '  <view bindtap="handlers.onTap(product, idx)">{{ product.name }} {{ idx }} {{ pageTitle }}</view>',
       '</view>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const documentText = document.getText()
   const handlersPosition = document.positionAt(documentText.indexOf('handlers') + 2)
@@ -886,31 +901,31 @@ it('resolves wx:for locals and event expression tokens precisely in wxml documen
   const idxInterpolationDefinition = await definitionProvider.provideDefinition(document as any, idxInterpolationPosition as any)
   const pageTitleDefinition = await definitionProvider.provideDefinition(document as any, pageTitlePosition as any)
 
-  assert.equal(handlersDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(handlersDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
   assert.equal(getLocationLine(handlersDefinition), 2)
-  assert.equal(onTapDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(onTapDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
   assert.equal(getLocationLine(onTapDefinition), 3)
-  assert.equal(productArgDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(productArgDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.wxml'))
   assert.equal(getLocationLine(productArgDefinition), 0)
-  assert.equal(idxArgDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(idxArgDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.wxml'))
   assert.equal(getLocationLine(idxArgDefinition), 0)
-  assert.equal(productInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(productInterpolationDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.wxml'))
   assert.equal(getLocationLine(productInterpolationDefinition), 0)
-  assert.equal(idxInterpolationDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.wxml'))
+  assert.equal(idxInterpolationDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.wxml'))
   assert.equal(getLocationLine(idxInterpolationDefinition), 0)
-  assert.equal(pageTitleDefinition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.ts'))
+  assert.equal(pageTitleDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.ts'))
   assert.equal(getLocationLine(pageTitleDefinition), 1)
 })
 
 it('provides references and rename edits across template and companion script files', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
-    [path.normalize('/workspace/src/pages/home/index.ts'), [
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/pages/home/index.ts'), [
       'const list = []',
       'const pageTitle = \'demo\'',
       'console.log(pageTitle)',
@@ -929,8 +944,8 @@ it('provides references and rename edits across template and companion script fi
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -955,8 +970,8 @@ it('provides references and rename edits across template and companion script fi
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -1031,7 +1046,7 @@ it('provides references and rename edits across template and companion script fi
       '  <view bindtap="handlers.onTap(product, idx)">{{ product.name }} {{ idx }} {{ pageTitle }}</view>',
       '</view>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const documentText = document.getText()
   const pageTitlePosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
@@ -1061,12 +1076,12 @@ it('provides references and rename edits across template and companion script fi
 
 it('provides references and rename edits across recognized vue template and script blocks', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
   ])
@@ -1081,8 +1096,8 @@ it('provides references and rename edits across recognized vue template and scri
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -1107,8 +1122,8 @@ it('provides references and rename edits across recognized vue template and scri
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -1192,7 +1207,7 @@ it('provides references and rename edits across recognized vue template and scri
       '}',
       '</script>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.vue'),
+    mockWorkspacePath('/workspace/src/pages/home/index.vue'),
   )
   const documentText = document.getText()
   const pageTitlePosition = document.positionAt(documentText.indexOf('pageTitle') + 2)
@@ -1212,18 +1227,18 @@ it('provides references and rename edits across recognized vue template and scri
 
 it('provides component tag and member references and rename edits for standalone wxml documents', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
-    [path.normalize('/workspace/src/pages/home/index.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/pages/home/index.json'), JSON.stringify({
       usingComponents: {
         'card-user': '/components/card/user/index',
       },
     })],
-    [path.normalize('/workspace/src/components/card/user/index.vue'), [
+    [mockWorkspacePath('/workspace/src/components/card/user/index.vue'), [
       '<script setup lang="ts">',
       'defineProps<{',
       '  titleText?: string',
@@ -1243,8 +1258,8 @@ it('provides component tag and member references and rename edits for standalone
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -1269,8 +1284,8 @@ it('provides component tag and member references and rename edits for standalone
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -1344,7 +1359,7 @@ it('provides component tag and member references and rename edits for standalone
       '<card-user title-text="a" bind:confirm="handleTap"></card-user>',
       '<card-user title-text="b" bind:confirm="handleTap"></card-user>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const documentText = document.getText()
   const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
@@ -1363,31 +1378,31 @@ it('provides component tag and member references and rename edits for standalone
   assert.equal(tagReferences.filter((item: any) => item.uri.fsPath.endsWith('index.json')).length, 1)
   assert.equal(propReferences.length, 3)
   assert.equal(propReferences.filter((item: any) => item.uri.fsPath.endsWith('index.wxml')).length, 2)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue')).length, 1)
+  assert.equal(propReferences.filter((item: any) => hasFsPathSuffix(item.uri.fsPath, 'components/card/user/index.vue')).length, 1)
   assert.equal(eventReferences.length, 3)
   assert.equal(eventReferences.filter((item: any) => item.uri.fsPath.endsWith('index.wxml')).length, 2)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue')).length, 1)
+  assert.equal(eventReferences.filter((item: any) => hasFsPathSuffix(item.uri.fsPath, 'components/card/user/index.vue')).length, 1)
   assert.equal(getWorkspaceEditEntries(tagRename).length, 5)
   assert.equal(getWorkspaceEditEntries(tagRename).every((item: any) => item.newText === 'profile-card'), true)
   assert.equal(getWorkspaceEditEntries(propRename).length, 3)
   assert.equal(getWorkspaceEditEntries(propRename).filter((item: any) => item.newText === 'heading-text').length, 2)
-  assert.equal(getWorkspaceEditEntries(propRename).find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(propRename).find((item: any) => hasFsPathSuffix(item.uri.fsPath, 'components/card/user/index.vue'))?.newText, 'headingText')
   assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
   assert.equal(getWorkspaceEditEntries(eventRename).filter((item: any) => item.newText === 'bind:submit').length, 2)
-  assert.equal(getWorkspaceEditEntries(eventRename).find((item: any) => item.uri.fsPath.endsWith('components/card/user/index.vue'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(eventRename).find((item: any) => hasFsPathSuffix(item.uri.fsPath, 'components/card/user/index.vue'))?.newText, 'submit')
 })
 
 it('provides component tag and member references and rename edits for recognized vue template documents', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
-    [path.normalize('/workspace/src/components/card/user/index.vue'), [
+    [mockWorkspacePath('/workspace/src/components/card/user/index.vue'), [
       '<script setup lang="ts">',
       'defineProps<{',
       '  titleText?: string',
@@ -1410,8 +1425,8 @@ it('provides component tag and member references and rename edits for recognized
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -1436,8 +1451,8 @@ it('provides component tag and member references and rename edits for recognized
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -1523,7 +1538,7 @@ it('provides component tag and member references and rename edits for recognized
       'function handleTap() {}',
       '</script>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.vue'),
+    mockWorkspacePath('/workspace/src/pages/home/index.vue'),
   )
   const documentText = document.getText()
   const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
@@ -1540,40 +1555,40 @@ it('provides component tag and member references and rename edits for recognized
   assert.equal(tagReferences.length, 4)
   assert.equal(tagReferences.every((item: any) => item.uri.fsPath.endsWith('index.vue')), true)
   assert.equal(propReferences.length, 3)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 2)
-  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === mockWorkspacePath('/workspace/src/pages/home/index.vue')).length, 2)
+  assert.equal(propReferences.filter((item: any) => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/user/index.vue')).length, 1)
   assert.equal(eventReferences.length, 3)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/pages/home/index.vue')).length, 2)
-  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue')).length, 1)
+  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === mockWorkspacePath('/workspace/src/pages/home/index.vue')).length, 2)
+  assert.equal(eventReferences.filter((item: any) => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/user/index.vue')).length, 1)
   assert.equal(getWorkspaceEditEntries(tagRename).length, 4)
   assert.equal(getWorkspaceEditEntries(tagRename).every((item: any) => item.newText === 'profile-card'), true)
   assert.equal(getWorkspaceEditEntries(propRename).length, 3)
   assert.equal(getWorkspaceEditEntries(propRename).filter((item: any) => item.newText === 'heading-text').length, 2)
-  assert.equal(getWorkspaceEditEntries(propRename).find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
+  assert.equal(getWorkspaceEditEntries(propRename).find((item: any) => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/user/index.vue'))?.newText, 'headingText')
   assert.equal(getWorkspaceEditEntries(eventRename).length, 3)
   assert.equal(getWorkspaceEditEntries(eventRename).filter((item: any) => item.newText === 'bind:submit').length, 2)
-  assert.equal(getWorkspaceEditEntries(eventRename).find((item: any) => item.uri.fsPath === path.normalize('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
+  assert.equal(getWorkspaceEditEntries(eventRename).find((item: any) => item.uri.fsPath === mockWorkspacePath('/workspace/src/components/card/user/index.vue'))?.newText, 'submit')
 })
 
 it('supports native custom component props and events in wxml documents', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
-    [path.normalize('/workspace/src/pages/home/index.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/pages/home/index.json'), JSON.stringify({
       usingComponents: {
         'card-native': '/components/card/native/index',
       },
     })],
-    [path.normalize('/workspace/src/pages/home/index.ts'), [
+    [mockWorkspacePath('/workspace/src/pages/home/index.ts'), [
       'const pageTitle = \'demo\'',
       'function handleTap() {}',
     ].join('\n')],
-    [path.normalize('/workspace/src/components/card/native/index.wxml'), '<view />'],
-    [path.normalize('/workspace/src/components/card/native/index.ts'), [
+    [mockWorkspacePath('/workspace/src/components/card/native/index.wxml'), '<view />'],
+    [mockWorkspacePath('/workspace/src/components/card/native/index.ts'), [
       'Component({',
       '  properties: {',
       '    titleText: String,',
@@ -1595,8 +1610,8 @@ it('supports native custom component props and events in wxml documents', async 
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -1621,8 +1636,8 @@ it('supports native custom component props and events in wxml documents', async 
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -1720,12 +1735,12 @@ it('supports native custom component props and events in wxml documents', async 
   const attrDocument = createTextDocument(
     'wxml',
     '<card-native dummy="" foo=""></card-native>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const usageDocument = createTextDocument(
     'wxml',
     '<card-native title-text="{{ pageTitle }}" bind:confirm="handleTap"></card-native>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const attrText = attrDocument.getText()
   const usageText = usageDocument.getText()
@@ -1749,27 +1764,33 @@ it('supports native custom component props and events in wxml documents', async 
   assert.equal(getMarkdownValue(tagItems.find((item: any) => item.label === 'card-native')?.documentation).includes('`title-text`'), true)
   assert.equal(getMarkdownValue(tagItems.find((item: any) => item.label === 'card-native')?.documentation).includes('### 事件'), true)
   assert.equal(getMarkdownValue(tagItems.find((item: any) => item.label === 'card-native')?.documentation).includes('`bind:confirm`'), true)
-  assert.equal(tagDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.wxml'))
+  assert.equal(tagDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/card/native/index.wxml'))
   assert.equal(getMarkdownValue(tagHover?.contents).includes('### 属性'), true)
   assert.equal(getMarkdownValue(tagHover?.contents).includes('`title-text`'), true)
   assert.equal(getMarkdownValue(tagHover?.contents).includes('### 事件'), true)
   assert.equal(getMarkdownValue(tagHover?.contents).includes('`bind:confirm`'), true)
-  assert.equal(propDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.ts'))
+  assert.equal(propDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/card/native/index.ts'))
   assert.equal(getLocationLine(propDefinition), 2)
-  assert.equal(eventDefinition?.uri.fsPath, path.normalize('/workspace/src/components/card/native/index.ts'))
+  assert.equal(eventDefinition?.uri.fsPath, mockWorkspacePath('/workspace/src/components/card/native/index.ts'))
   assert.equal(getLocationLine(eventDefinition), 7)
-  assert.equal(getMarkdownValue(propHover?.contents).includes('/workspace/src/components/card/native/index.ts'), true)
-  assert.equal(getMarkdownValue(eventHover?.contents).includes('/workspace/src/components/card/native/index.ts'), true)
+  assert.equal(
+    normalizeFsPath(getMarkdownValue(propHover?.contents)).includes(normalizeFsPath(mockWorkspacePath('/workspace/src/components/card/native/index.ts'))),
+    true,
+  )
+  assert.equal(
+    normalizeFsPath(getMarkdownValue(eventHover?.contents)).includes(normalizeFsPath(mockWorkspacePath('/workspace/src/components/card/native/index.ts'))),
+    true,
+  )
 })
 
 it('provides style class completions and definitions inside vue template values', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
   ])
@@ -1781,8 +1802,8 @@ it('provides style class completions and definitions inside vue template values'
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -1807,8 +1828,8 @@ it('provides style class completions and definitions inside vue template values'
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -1932,7 +1953,7 @@ it('provides style class completions and definitions inside vue template values'
       '.page-desc { color: blue; }',
       '</style>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.vue'),
+    mockWorkspacePath('/workspace/src/pages/home/index.vue'),
   )
   const documentText = document.getText()
   const classPosition = document.positionAt(documentText.indexOf('page-title') + 2)
@@ -1943,17 +1964,17 @@ it('provides style class completions and definitions inside vue template values'
   const definition = await definitionProvider.provideDefinition(document as any, classPosition as any)
 
   assert.equal(completionItems.some((item: any) => item.label === 'page-desc'), true)
-  assert.equal(definition?.uri.fsPath, path.normalize('/workspace/src/pages/home/index.vue'))
+  assert.equal(definition?.uri.fsPath, mockWorkspacePath('/workspace/src/pages/home/index.vue'))
 })
 
 it('filters native component attributes by current mode and completes conditional values', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
   ])
 
   vi.doMock('vscode', () => {
@@ -1963,8 +1984,8 @@ it('filters native component attributes by current mode and completes conditiona
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -1989,8 +2010,8 @@ it('filters native component attributes by current mode and completes conditiona
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -2059,14 +2080,14 @@ it('filters native component attributes by current mode and completes conditiona
   const modeValueDocument = createTextDocument(
     'wxml',
     '<picker mode=""></picker>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const modeValueText = modeValueDocument.getText()
   const modeValuePosition = modeValueDocument.positionAt(modeValueText.indexOf('""') + 1)
   const attrDocument = createTextDocument(
     'wxml',
     '<picker mode="time" ></picker>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const attrText = attrDocument.getText()
   const attrPosition = attrDocument.positionAt(attrText.indexOf('></picker>') - 1)
@@ -2097,12 +2118,12 @@ it('filters native component attributes by current mode and completes conditiona
 
 it('renders native conditional hover details for root and nested attrs', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
   ])
 
   vi.doMock('vscode', () => {
@@ -2112,8 +2133,8 @@ it('renders native conditional hover details for root and nested attrs', async (
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -2138,8 +2159,8 @@ it('renders native conditional hover details for root and nested attrs', async (
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -2193,12 +2214,12 @@ it('renders native conditional hover details for root and nested attrs', async (
   const modeDocument = createTextDocument(
     'wxml',
     '<picker mode="time"></picker>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const startDocument = createTextDocument(
     'wxml',
     '<picker mode="time" start="09:00"></picker>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const modeText = modeDocument.getText()
   const startText = startDocument.getText()
@@ -2215,12 +2236,12 @@ it('renders native conditional hover details for root and nested attrs', async (
 
 it('highlights matching tags inside wxml documents', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), '{}'],
+    [mockWorkspacePath('/workspace/src/app.json'), '{}'],
   ])
 
   vi.doMock('vscode', () => {
@@ -2230,8 +2251,8 @@ it('highlights matching tags inside wxml documents', async () => {
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -2256,8 +2277,8 @@ it('highlights matching tags inside wxml documents', async () => {
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -2312,7 +2333,7 @@ it('highlights matching tags inside wxml documents', async () => {
   const document = createTextDocument(
     'wxml',
     '<view><card-user><view /></card-user></view>',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const documentText = document.getText()
   const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
@@ -2325,12 +2346,12 @@ it('highlights matching tags inside wxml documents', async () => {
 
 it('highlights matching tags inside recognized vue templates', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
   ])
@@ -2342,8 +2363,8 @@ it('highlights matching tags inside recognized vue templates', async () => {
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -2368,8 +2389,8 @@ it('highlights matching tags inside recognized vue templates', async () => {
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -2437,7 +2458,7 @@ it('highlights matching tags inside recognized vue templates', async () => {
       '  <card-user><view /></card-user>',
       '</template>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.vue'),
+    mockWorkspacePath('/workspace/src/pages/home/index.vue'),
   )
   const documentText = document.getText()
   const tagPosition = document.positionAt(documentText.indexOf('card-user') + 2)
@@ -2450,12 +2471,12 @@ it('highlights matching tags inside recognized vue templates', async () => {
 
 it('can disable vue template enhancements while keeping standalone wxml enhancements', async () => {
   const files = new Map<string, string>([
-    [path.normalize('/workspace/package.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/package.json'), JSON.stringify({
       dependencies: {
         'weapp-vite': '^1.0.0',
       },
     })],
-    [path.normalize('/workspace/src/app.json'), JSON.stringify({
+    [mockWorkspacePath('/workspace/src/app.json'), JSON.stringify({
       pages: ['pages/home/index'],
     })],
   ])
@@ -2467,8 +2488,8 @@ it('can disable vue template enhancements while keeping standalone wxml enhancem
           {
             name: 'demo',
             uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
+              fsPath: mockWorkspacePath('/workspace'),
+              path: toUriPath(mockWorkspacePath('/workspace')),
             },
           },
         ],
@@ -2493,8 +2514,8 @@ it('can disable vue template enhancements while keeping standalone wxml enhancem
         getWorkspaceFolder: () => ({
           name: 'demo',
           uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
+            fsPath: mockWorkspacePath('/workspace'),
+            path: toUriPath(mockWorkspacePath('/workspace')),
           },
         }),
         getConfiguration: () => ({
@@ -2577,12 +2598,12 @@ it('can disable vue template enhancements while keeping standalone wxml enhancem
       '<script setup lang="ts">',
       '</script>',
     ].join('\n'),
-    path.normalize('/workspace/src/pages/home/index.vue'),
+    mockWorkspacePath('/workspace/src/pages/home/index.vue'),
   )
   const wxmlDocument = createTextDocument(
     'wxml',
     '<view />',
-    path.normalize('/workspace/src/pages/home/index.wxml'),
+    mockWorkspacePath('/workspace/src/pages/home/index.wxml'),
   )
   const vueText = vueDocument.getText()
   const wxmlText = wxmlDocument.getText()
