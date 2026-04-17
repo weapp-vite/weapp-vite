@@ -1,5 +1,15 @@
 # 更新日志
 
+## 0.2.0
+
+### Minor Changes
+
+- ✨ **增强 VS Code 扩展的 WXML 与 weapp-vite 模板开发体验：新增 WXML 语言支持，并完善原生组件、本地组件与原生自定义组件的元数据提取、补全、Hover、条件属性展示、标签/属性/事件预览、定义跳转、引用查询、重命名、链接跳转、模板变量装饰与标签高亮能力；同时拆分 `.vue <template>` 与独立 `.wxml` 的增强开关，补充安装态 `.vsix` 真实宿主 e2e 校验并修复真实 VS Code 宿主中的激活兼容问题。相关模板初始化能力也随原生组件条件补全一起同步更新到 `create-weapp-vite`。** [`cd33619`](https://github.com/weapp-vite/weapp-vite/commit/cd336193b4cd6c7002e574d1eeb9031c14755484) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复 VS Code 扩展在独立检查环境下缺少 `@weapp-vite/ast` 依赖导致模板增强测试无法解析 AST 模块的问题，并补齐跨平台 URI mock 的测试覆盖。** [#467](https://github.com/weapp-vite/weapp-vite/pull/467) by @sonofmagic
+
 ## 0.1.3
 
 ### Patch Changes

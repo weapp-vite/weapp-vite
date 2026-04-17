@@ -1,5 +1,29 @@
 # @wevu/api
 
+## 0.2.4
+
+### Patch Changes
+
+- 🐛 **继续收敛多平台接入链路：统一默认平台与微信兼容别名导出，补充宿主 source registry/contract 类型入口，并让抖音 typings 元数据、tsconfig 生成与脚手架模板依赖池保持一致。** [`1f76780`](https://github.com/weapp-vite/weapp-vite/commit/1f76780d69a3e0a7f8d9d197f50865c7d6d0c3b3) by @sonofmagic
+
+- 🐛 **补充 weapi 抖音 raw adapter source 的 `Douyin*` 语义主名，并保留 `Tt*` 兼容别名，减少多平台类型扩展继续依赖运行时缩写命名。** [`18d34af`](https://github.com/weapp-vite/weapp-vite/commit/18d34afd6ed8b62a5027a7d788acf2a08b786fc6) by @sonofmagic
+
+- 🐛 **补充 weapi 的类型源元数据视图导出，拆分平台语义视图与运行时兼容视图，减少内部和外部继续直接依赖 `wx`/`my`/`tt` 原始键名的必要。** [`e0eb293`](https://github.com/weapp-vite/weapp-vite/commit/e0eb2935876f5e33e141b21f6c38282d01951af8) by @sonofmagic
+
+- 🐛 **继续收敛多平台小程序适配的共享 contract 与宿主中立命名。`@weapp-core/shared` 现在提供更安全的运行时根入口与独立的 Node 子入口，统一平台 registry、宿主全局对象、模板指令前缀、路由与 capability 描述，避免小程序环境误入 Node-only 能力；`weapp-vite`、`@weapp-vite/ast`、`@wevu/compiler`、`wevu`、`@wevu/api`、`@weapp-vite/web` 与 `weapp-ide-cli` 则统一消费这套 contract，补齐 `a` / `tt` / `s` 等结构指令识别、默认平台回退、配置读取与多宿主 bridge 挂载逻辑，减少核心链路里散落的 `wx` 单宿主假设。** [`27c655f`](https://github.com/weapp-vite/weapp-vite/commit/27c655f20e4f033cbefa0920a1b60a55343a22f1) by @sonofmagic
+  - 同时继续扩展公共 API 与运行时类型面的宿主中立别名，包括 `miniProgramRouter`、`AutoRoutesMiniProgramRouter`、`WeapiMiniProgramMethodName`、`WeapiMiniProgramAdapter`、`WeapiMiniProgramRequestTask`、`WeapiMiniProgramRequestSuccessResult`、`MiniProgramRequestMethod`、`MiniProgramSelectorQuery`、`MiniProgramIntersectionObserver`、`MiniProgramRouter`、`MiniProgramLaunchOptions` 等，并保持原有 `wx` / `WeapiWx*` 兼容导出不变。这样后续接入支付宝小程序、抖音小程序、百度小程序等宿主时，可以逐步迁移到统一的小程序命名与共享平台能力，而不需要继续把公共类型和内部模板协议绑定到微信前缀。
+  - 在 Web 运行时侧，也继续把多平台桥接协议做成宿主中立模型：`canIUse` 支持解析 `wx.*`、`my.*`、`tt.*` 等前缀，模板事件属性默认输出 `data-mp-on-*` / `data-mp-on-flags-*`，并把 bridge 同步挂到 `wx`、`my`、`tt`、`swan`、`jd`、`xhs` 等宿主全局对象上。这样同一套运行时与工具链在多小程序平台之间更容易复用，也为后续平台接入继续收窄改造面。
+
+- 🐛 **补充 weapi 微信 raw adapter 的 `Wechat*` 语义主名，并保留 `Wx*` 兼容别名，减少公开类型继续围绕运行时缩写命名扩展。** [`78b9112`](https://github.com/weapp-vite/weapp-vite/commit/78b9112d0607c84134955481f0ab68583e00d3b2) by @sonofmagic
+
+- 🐛 **继续收敛 weapi 的多平台原始适配器类型入口，拆分平台语义名称与运行时别名名称，并补充对应的 raw adapter source registry 类型，减少新平台接入时继续围绕 `wx` / `my` / `tt` 混用命名。** [`604b518`](https://github.com/weapp-vite/weapp-vite/commit/604b51815d754007c68a8337698ba4c18d1e55d5) by @sonofmagic
+
+- 🐛 **为 `@wevu/api` 补充平台语义化与运行时兼容两层的 type source key 类型别名，方便多平台 metadata 接入时区分 `wechat/alipay/douyin` 与 `wx/my/tt` 两类命名。** [`da287fb`](https://github.com/weapp-vite/weapp-vite/commit/da287fb2c0ed219f27925cbd2d3e003f06ae5700) by @sonofmagic
+
+- 🐛 **为 `@wevu/api` 补充支付宝与抖音小程序 raw adapter source 类型导出，并新增宿主中立的 API catalog 类型别名与类型来源键名，方便后续继续扩展多平台类型入口。** [`ce99193`](https://github.com/weapp-vite/weapp-vite/commit/ce99193ea285bcb5c09169b6b8fc37fd44dd5543) by @sonofmagic
+- 📦 **Dependencies** [`1f76780`](https://github.com/weapp-vite/weapp-vite/commit/1f76780d69a3e0a7f8d9d197f50865c7d6d0c3b3)
+  → `@weapp-core/shared@3.0.4`
+
 ## 0.2.3
 
 ### Patch Changes
