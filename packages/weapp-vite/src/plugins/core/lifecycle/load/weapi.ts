@@ -2,7 +2,8 @@ import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../utils/babel'
-import { createNativeApiFallbackExpression, createWeapiAccessExpression, createWeapiHostExpression } from '../../../../utils/weapi'
+import { createMiniProgramHostOrTopLevelResolveExpression } from '../../../../utils/miniProgramGlobals'
+import { createWeapiAccessExpression, createWeapiHostExpression } from '../../../../utils/weapi'
 
 export interface InjectWeapiOptions {
   globalName: string
@@ -48,7 +49,9 @@ export function createWeapiInjectionCode(options: {
   const globalKey = JSON.stringify(options.globalName)
   const platform = JSON.stringify(options.platform)
   const hostExpression = createWeapiHostExpression()
-  const nativeApiFallbackExpression = createNativeApiFallbackExpression()
+  const nativeApiFallbackExpression = createMiniProgramHostOrTopLevelResolveExpression({
+    hostExpression: '__weappGlobal',
+  })
   const replaceLines = options.replaceWx
     ? [
         `  __weappGlobal.wx = __weappInstance`,
@@ -66,7 +69,7 @@ export function createWeapiInjectionCode(options: {
     `  const __weappExistingWpi = __weappGlobal[${globalKey}]`,
     `  const __weappInstance = __weappExistingWpi || __weappWpi`,
     `  if (!__weappExistingWpi) {`,
-    `    const __weappRawApi = ${nativeApiFallbackExpression} || (__weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined) || __weappGlobal.wx || __weappGlobal.my`,
+    `    const __weappRawApi = (__weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined) ?? ${nativeApiFallbackExpression}`,
     `    if (__weappRawApi && __weappRawApi !== __weappWpi) {`,
     `      __weappWpi.setAdapter(__weappRawApi, __weappPlatformKey)`,
     `    }`,

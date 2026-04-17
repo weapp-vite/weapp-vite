@@ -353,7 +353,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code).toContain('__weappGlobal.wx = __weappInstance')
     expect(code).toContain('__weappGlobal.my = __weappInstance')
     expect(code).toContain('__weappGlobal[__weappPlatformKey] = __weappInstance')
-    expect(code).toContain('const __weappRawApi = ((typeof my !== \'undefined\' && my)')
+    expect(code).toContain('const __weappRawApi = (__weappPlatformKey ? __weappGlobal[__weappPlatformKey] : undefined) ?? ((__weappGlobal.my ?? __weappGlobal.wx ?? __weappGlobal.tt ?? __weappGlobal.swan ?? __weappGlobal.jd ?? __weappGlobal.xhs)')
     expect(code).not.toContain('Function(')
   })
 

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   createMiniProgramGlobalResolveExpression,
+  createMiniProgramHostOrTopLevelResolveExpression,
+  createMiniProgramTopLevelAccessChecks,
+  createMiniProgramTopLevelResolveExpression,
   getMiniProgramGlobalKeys,
   getMiniProgramPlatformGlobalKey,
   getRouteRuntimeGlobalKeys,
@@ -26,5 +29,26 @@ describe('miniProgramGlobals utils', () => {
       globalKeys: ['wx', 'tt', 'my'],
       hostExpression: '__host',
     })).toBe('(__host.wx ?? __host.tt ?? __host.my)')
+  })
+
+  it('creates top-level global guard expressions for host fallbacks', () => {
+    expect(createMiniProgramTopLevelAccessChecks()).toEqual([
+      `((typeof my !== 'undefined' && my)`,
+      ` || (typeof wx !== 'undefined' && wx)`,
+      ` || (typeof tt !== 'undefined' && tt)`,
+      ` || (typeof swan !== 'undefined' && swan)`,
+      ` || (typeof jd !== 'undefined' && jd)`,
+      ` || (typeof xhs !== 'undefined' && xhs)`,
+    ])
+    expect(createMiniProgramTopLevelResolveExpression()).toBe(`((typeof my !== 'undefined' && my) || (typeof wx !== 'undefined' && wx) || (typeof tt !== 'undefined' && tt) || (typeof swan !== 'undefined' && swan) || (typeof jd !== 'undefined' && jd) || (typeof xhs !== 'undefined' && xhs) || undefined)`)
+    expect(createMiniProgramTopLevelResolveExpression({
+      globalKeys: ['wx', 'tt'],
+      fallbackExpression: 'null',
+    })).toBe(`((typeof wx !== 'undefined' && wx) || (typeof tt !== 'undefined' && tt) || null)`)
+    expect(createMiniProgramHostOrTopLevelResolveExpression({
+      globalKeys: ['wx', 'tt'],
+      hostExpression: '__host',
+      fallbackExpression: 'null',
+    })).toBe(`((__host.wx ?? __host.tt) ?? ((typeof wx !== 'undefined' && wx) || (typeof tt !== 'undefined' && tt) || null))`)
   })
 })

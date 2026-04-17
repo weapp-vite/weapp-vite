@@ -1,4 +1,8 @@
-import { getMiniProgramGlobalKeys } from './miniProgramGlobals'
+import {
+  createMiniProgramTopLevelAccessChecks,
+  createMiniProgramTopLevelResolveExpression,
+  getMiniProgramGlobalKeys,
+} from './miniProgramGlobals'
 
 export function getWeapiGlobalHostCandidates() {
   const miniProgramHostCandidates = getMiniProgramGlobalKeys().map((key) => {
@@ -19,17 +23,15 @@ export function createGlobalHostExpression() {
 }
 
 export function getNativeApiFallbackChecks() {
-  return getMiniProgramGlobalKeys().map((key, index) => {
-    const prefix = index === 0 ? '((' : ' || ('
-    return `${prefix}typeof ${key} !== 'undefined' && ${key})`
+  return createMiniProgramTopLevelAccessChecks({
+    globalKeys: getMiniProgramGlobalKeys(),
   })
 }
 
 export function createNativeApiFallbackExpression() {
-  return [
-    ...getNativeApiFallbackChecks(),
-    ` || undefined)`,
-  ].join('')
+  return createMiniProgramTopLevelResolveExpression({
+    globalKeys: getMiniProgramGlobalKeys(),
+  })
 }
 
 export function createWeapiHostExpression() {
