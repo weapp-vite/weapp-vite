@@ -59,6 +59,7 @@ describe('auto-routes module exports', () => {
     expect(module.entries).toBe(reference.entries)
     expect(module.subPackages).toBe(reference.subPackages)
     expect(module.wxRouter).toBeTruthy()
+    expect(module.miniProgramRouter).toBe(module.wxRouter)
 
     reference.pages.push('pages/about/index')
     expect(module.pages).toContain('pages/about/index')
@@ -88,12 +89,13 @@ describe('auto-routes module exports', () => {
       }
     })
 
-    const { default: autoRoutes, entries, pages, routes, subPackages } = await import(modulePath)
+    const { default: autoRoutes, entries, miniProgramRouter, pages, routes, subPackages, wxRouter } = await import(modulePath)
 
     expect(autoRoutes).toBe(routes)
     expect(autoRoutes.pages).toBe(pages)
     expect(autoRoutes.entries).toBe(entries)
     expect(autoRoutes.subPackages).toBe(subPackages)
+    expect(miniProgramRouter).toBe(wxRouter)
     expect(autoRoutes).toEqual({
       pages: ['pages/home/index', 'pages/detail/index'],
       entries: ['pages/home/index', 'pages/detail/index', 'packageA/pages/foo'],
@@ -174,8 +176,9 @@ describe('auto-routes module exports', () => {
     module.wxRouter.navigateTo({ url: '/pages/index/index' })
     module.wxRouter.redirectTo({ url: '/pages/about/index' })
     module.wxRouter.navigateBack({ delta: 1 })
+    module.miniProgramRouter.navigateTo({ url: '/pages/alias/index' })
 
-    expect(callLog.navigateTo).toEqual([{ url: '/pages/index/index' }])
+    expect(callLog.navigateTo).toEqual([{ url: '/pages/index/index' }, { url: '/pages/alias/index' }])
     expect(callLog.redirectTo).toEqual([{ url: '/pages/about/index' }])
     expect(callLog.navigateBack).toEqual([{ delta: 1 }])
   })
@@ -193,7 +196,7 @@ describe('auto-routes module exports', () => {
     })
 
     const module = await import(modulePath)
-    module.wxRouter.navigateTo({ url: '/pages/index/index' })
+    module.miniProgramRouter.navigateTo({ url: '/pages/index/index' })
 
     expect(navigateTo).toHaveBeenCalledWith({ url: '/pages/index/index' })
     delete (globalThis as Record<string, any>)[runtimeKey]

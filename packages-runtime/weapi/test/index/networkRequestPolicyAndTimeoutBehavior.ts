@@ -1,19 +1,24 @@
+import { getMiniProgramRuntimeHostConfigKey } from '@weapp-core/shared'
 import { createTestWeapi } from '../helpers/createTestWeapi'
 
-function setHostNetworkTimeout(timeout?: Partial<Record<'request' | 'uploadFile' | 'downloadFile' | 'connectSocket', number>>) {
+function setHostNetworkTimeout(
+  timeout?: Partial<Record<'request' | 'uploadFile' | 'downloadFile' | 'connectSocket', number>>,
+  platform: string = 'weapp',
+) {
   const hostGlobal = globalThis as any
+  const hostConfigKey = getMiniProgramRuntimeHostConfigKey(platform)
   if (!timeout) {
-    delete hostGlobal.__wxConfig
+    delete hostGlobal[hostConfigKey]
     return
   }
-  hostGlobal.__wxConfig = {
+  hostGlobal[hostConfigKey] = {
     networkTimeout: timeout,
   }
 }
 
 export function registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests() {
   afterEach(() => {
-    setHostNetworkTimeout(undefined)
+    setHostNetworkTimeout(undefined, 'weapp')
     vi.useRealTimers()
   })
 
@@ -33,7 +38,7 @@ export function registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests() 
     }))
   })
 
-  it('reads network timeout from __wxConfig.networkTimeout', async () => {
+  it('reads network timeout from host runtime config networkTimeout', async () => {
     setHostNetworkTimeout({
       downloadFile: 15_000,
     })

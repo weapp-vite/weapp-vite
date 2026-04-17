@@ -60,7 +60,8 @@ function createAutoRoutesRuntimeLines() {
     '  navigateTo(option) { return callRouteMethod("navigateTo", option); },',
     '  navigateBack(option) { return callRouteMethod("navigateBack", option); },',
     '};',
-    'export { routes, pages, entries, subPackages, wxRouter };',
+    'const miniProgramRouter = wxRouter;',
+    'export { routes, pages, entries, subPackages, wxRouter, miniProgramRouter };',
     'export default routes;',
   ]
 }

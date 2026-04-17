@@ -21,7 +21,8 @@ describe('auto routes shared artifacts', () => {
     expect(artifacts.moduleCode).toBe(createAutoRoutesModuleCode(artifacts.serialized))
     expect(artifacts.moduleCode).toContain('const routes = ')
     expect(artifacts.moduleCode).toContain('globalThis.wx ?? globalThis.tt ?? globalThis.my ?? globalThis.swan ?? globalThis.jd ?? globalThis.xhs')
-    expect(artifacts.moduleCode).toContain('export { routes, pages, entries, subPackages, wxRouter };')
+    expect(artifacts.moduleCode).toContain('const miniProgramRouter = wxRouter;')
+    expect(artifacts.moduleCode).toContain('export { routes, pages, entries, subPackages, wxRouter, miniProgramRouter };')
     expect(artifacts.typedDefinition).toContain('AutoRoutesWxRouter')
   })
 

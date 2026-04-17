@@ -10,8 +10,8 @@ export {
   REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
   REQUEST_GLOBAL_PRELUDE_MARKER,
 } from '@weapp-core/constants'
+export { platformApiIdentifiers } from '@weapp-vite/ast'
 
-export const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
 export const NPM_PROTOCOL_RE = /^npm:/
 export const ABSOLUTE_NPM_PREFIX_RE = /^\/(?:miniprogram_npm|node_modules)\//
 export const PRETTY_NODE_MODULES_RE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/

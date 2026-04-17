@@ -147,7 +147,7 @@ describe('runtime: app-level hooks', () => {
     expect(onMemoryWarningApi).toHaveBeenCalledTimes(2)
   })
 
-  it('avoids duplicate App registration when host global exists without __wxConfig', async () => {
+  it('avoids duplicate App registration when host global exists without runtime host config', async () => {
     ;(globalThis as any).wx = {}
 
     createApp({

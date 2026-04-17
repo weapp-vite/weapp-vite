@@ -69,6 +69,8 @@ export interface AutoRoutesWxRouter {
   navigateBack: (option?: Record<string, any>) => unknown
 }
 
+export type AutoRoutesMiniProgramRouter = AutoRoutesWxRouter
+
 const wxRouter: AutoRoutesWxRouter = {
   switchTab(option) {
     return callRouteMethod('switchTab', option)
@@ -87,6 +89,8 @@ const wxRouter: AutoRoutesWxRouter = {
   },
 }
 
+const miniProgramRouter: AutoRoutesMiniProgramRouter = wxRouter
+
 export type { AutoRoutes, AutoRoutesSubPackage }
-export { entries, pages, routes, subPackages, wxRouter }
+export { entries, miniProgramRouter, pages, routes, subPackages, wxRouter }
 export default routes

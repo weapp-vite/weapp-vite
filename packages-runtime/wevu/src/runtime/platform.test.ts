@@ -1,6 +1,11 @@
+import { getMiniProgramRuntimeGlobalKeys, getMiniProgramRuntimeHostConfigKey } from '@weapp-core/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const GLOBAL_KEYS = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs', 'getCurrentPages', '__wxConfig'] as const
+const GLOBAL_KEYS = [
+  ...getMiniProgramRuntimeGlobalKeys(),
+  'getCurrentPages',
+  getMiniProgramRuntimeHostConfigKey('weapp'),
+] as const
 
 function clearMiniProgramGlobals() {
   for (const key of GLOBAL_KEYS) {
@@ -70,7 +75,7 @@ describe('runtime platform', () => {
 
   it('reads current host config through shared runtime descriptor', async () => {
     ;(globalThis as any).wx = { name: 'wx-runtime' }
-    ;(globalThis as any).__wxConfig = {
+    ;(globalThis as any)[getMiniProgramRuntimeHostConfigKey('weapp')] = {
       debug: true,
       networkTimeout: {
         request: 12_000,
