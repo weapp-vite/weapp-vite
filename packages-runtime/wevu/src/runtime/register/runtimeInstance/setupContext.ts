@@ -2,6 +2,7 @@ import type { WatchStopHandle } from '../../../reactivity'
 import type {
   InternalRuntimeState,
   MiniProgramAdapter,
+  MiniProgramIntersectionObserverOptions,
   RuntimeInstance,
   SetupContextNativeInstance,
   TriggerEventOptions,
@@ -224,7 +225,7 @@ export function ensureSetupContextInstance(
   defineSetupInstanceMethod(
     setupInstanceBridge,
     'createIntersectionObserver',
-    (options?: WechatMiniprogram.CreateIntersectionObserverOption) => {
+    (options?: MiniProgramIntersectionObserverOptions) => {
       const nativeOwner = resolveSetupBridgeOwner('createIntersectionObserver')
       if (nativeOwner && typeof (nativeOwner as any).createIntersectionObserver === 'function') {
         return (nativeOwner as any).createIntersectionObserver(options ?? {})

@@ -7,6 +7,7 @@ import type {
   DefineComponentOptions,
   InferProps,
   MethodDefinitions,
+  MiniProgramComponentPropertyOption,
   MiniProgramComponentRawOptions,
   ShallowUnwrapRef,
 } from './types'
@@ -232,7 +233,7 @@ export function createWevuComponent<
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
 >(
-  options: DefineComponentOptions<P, D, C, M> & { properties?: WechatMiniprogram.Component.PropertyOption },
+  options: DefineComponentOptions<P, D, C, M> & { properties?: MiniProgramComponentPropertyOption },
 ): void {
   ensureScopedSlotComponentGlobal()
   const {

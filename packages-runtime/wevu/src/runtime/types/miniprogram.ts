@@ -19,6 +19,28 @@ export type MiniProgramShareAppMessageOption = WechatMiniprogram.Page.IShareAppM
 export type MiniProgramAddToFavoritesOption = WechatMiniprogram.Page.IAddToFavoritesOption
 export type MiniProgramSaveExitState = WechatMiniprogram.Page.ISaveExitState
 export type MiniProgramRouter = WechatMiniprogram.Component.Router
+export type MiniProgramPageLifetime = WechatMiniprogram.Page.ILifetime
+export type MiniProgramNodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
+export type MiniProgramBoundingClientRectResult = WechatMiniprogram.BoundingClientRectCallbackResult
+export type MiniProgramScrollOffsetResult = WechatMiniprogram.ScrollOffsetCallbackResult
+export type MiniProgramSelectorQuery = WechatMiniprogram.SelectorQuery
+export type MiniProgramNodesRef = WechatMiniprogram.NodesRef
+export type MiniProgramIntersectionObserverOptions = WechatMiniprogram.CreateIntersectionObserverOption
+export type MiniProgramIntersectionObserver = WechatMiniprogram.IntersectionObserver
+export type MiniProgramComponentPropertyOption = WechatMiniprogram.Component.PropertyOption
+export type MiniProgramComponentMethodOption = WechatMiniprogram.Component.MethodOption
+export type MiniProgramComponentEmptyArray = WechatMiniprogram.Component.IEmptyArray
+export type MiniProgramComponentAllProperty = WechatMiniprogram.Component.AllProperty
+export type MiniProgramComponentAllFullProperty = WechatMiniprogram.Component.AllFullProperty
+export type MiniProgramComponentShortProperty = WechatMiniprogram.Component.ShortProperty
+export type MiniProgramComponentPropertyValue<TProperty extends MiniProgramComponentAllFullProperty>
+  = WechatMiniprogram.Component.PropertyToData<TProperty>
+export type MiniProgramComponentInstance<
+  D extends object,
+  P extends MiniProgramComponentPropertyOption,
+  M extends MiniProgramComponentMethodOption,
+  B extends MiniProgramComponentEmptyArray = MiniProgramComponentEmptyArray,
+> = WechatMiniprogram.Component.Instance<D, P, M, B>
 
 export interface MiniProgramComponentOptions {
   /**

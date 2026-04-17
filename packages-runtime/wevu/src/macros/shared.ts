@@ -1,4 +1,19 @@
-import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InferProps, MethodDefinitions } from '../runtime'
+import type {
+  ComponentPropsOptions,
+  ComputedDefinitions,
+  DefineComponentOptions,
+  InferProps,
+  MethodDefinitions,
+  MiniProgramComponentAllFullProperty,
+  MiniProgramComponentAllProperty,
+  MiniProgramComponentBehaviorOptions,
+  MiniProgramComponentEmptyArray,
+  MiniProgramComponentInstance,
+  MiniProgramComponentMethodOption,
+  MiniProgramComponentPropertyOption,
+  MiniProgramComponentPropertyValue,
+  TriggerEventOptions,
+} from '../runtime'
 
 export type Prettify<T> = {
   [K in keyof T]: T[K]
@@ -58,7 +73,7 @@ export type UnionToIntersection<U> = (U extends any ? (arg: U) => any : never) e
   ? I
   : never
 
-type ScriptSetupTriggerEventOptions = WechatMiniprogram.Component.TriggerEventOption
+type ScriptSetupTriggerEventOptions = TriggerEventOptions
 
 type EmitArgsWithTriggerEventOptions<Args extends any[]> = Args extends []
   ? [] | [detail: undefined, options: ScriptSetupTriggerEventOptions]
@@ -86,33 +101,33 @@ export type ShortEmits<T extends Record<string, any>> = UnionToIntersection<Reco
   [K in keyof T]: (evt: K, ...args: EmitArgsWithTriggerEventOptions<T[K]>) => void
 }>>
 
-type ScriptSetupNativePropertyOption = WechatMiniprogram.Component.PropertyOption
-type ScriptSetupNativeMethodOption = WechatMiniprogram.Component.MethodOption
-type ScriptSetupNativeBehaviorOption = WechatMiniprogram.Component.IEmptyArray
+type ScriptSetupNativePropertyOption = MiniProgramComponentPropertyOption
+type ScriptSetupNativeMethodOption = MiniProgramComponentMethodOption
+type ScriptSetupNativeBehaviorOption = MiniProgramComponentEmptyArray
 
 type ScriptSetupNativeInstance<
   D extends object,
   P extends ScriptSetupNativePropertyOption,
   M extends ScriptSetupNativeMethodOption,
-> = WechatMiniprogram.Component.Instance<D, P, M, ScriptSetupNativeBehaviorOption>
+> = MiniProgramComponentInstance<D, P, M, ScriptSetupNativeBehaviorOption>
 
 type ScriptSetupObservedProperty<
-  TProperty extends WechatMiniprogram.Component.AllFullProperty,
+  TProperty extends MiniProgramComponentAllFullProperty,
   TInstance,
 > = Omit<TProperty, 'observer'> & {
   observer?: string | ((
     this: TInstance,
-    newVal: WechatMiniprogram.Component.PropertyToData<TProperty>,
-    oldVal: WechatMiniprogram.Component.PropertyToData<TProperty>,
+    newVal: MiniProgramComponentPropertyValue<TProperty>,
+    oldVal: MiniProgramComponentPropertyValue<TProperty>,
     changedPath: Array<string | number>,
   ) => void)
 }
 
 type ScriptSetupPropertyObserver<
-  TProperty extends WechatMiniprogram.Component.AllProperty,
+  TProperty extends MiniProgramComponentAllProperty,
   TInstance,
 >
-  = TProperty extends infer TCurrent extends WechatMiniprogram.Component.AllFullProperty
+  = TProperty extends infer TCurrent extends MiniProgramComponentAllFullProperty
     ? ScriptSetupObservedProperty<TCurrent, TInstance>
     : TProperty
 
@@ -165,7 +180,7 @@ export type ScriptSetupDefineOptions<
   /**
    * 小程序 Component 选项（multipleSlots/styleIsolation 等）。
    */
-  options?: WechatMiniprogram.Component.ComponentOptions
+  options?: MiniProgramComponentBehaviorOptions
   /**
    * 小程序原生 properties。
    */

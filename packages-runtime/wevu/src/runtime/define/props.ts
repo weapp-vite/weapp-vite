@@ -1,4 +1,8 @@
-import type { ComponentPropsOptions } from '../types'
+import type {
+  ComponentPropsOptions,
+  MiniProgramComponentPropertyOption,
+  MiniProgramComponentShortProperty,
+} from '../types'
 import {
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
@@ -7,7 +11,7 @@ import {
 const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
 const PUBLIC_ALLOW_NULL_PROP_INPUT_KEY = 'allowNullPropInput'
 
-const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, WechatMiniprogram.Component.ShortProperty | null>([
+const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, MiniProgramComponentShortProperty | null>([
   [String, String],
   [Number, Number],
   [Boolean, Boolean],
@@ -32,7 +36,7 @@ function normalizeTypeCandidates(raw: unknown) {
     return []
   }
   const source = Array.isArray(raw) ? raw : [raw]
-  const normalized: Array<WechatMiniprogram.Component.ShortProperty | null> = []
+  const normalized: Array<MiniProgramComponentShortProperty | null> = []
   source.forEach((item) => {
     const mapped = toNativePropertyType(item)
     if (mapped === undefined) {
@@ -42,7 +46,7 @@ function normalizeTypeCandidates(raw: unknown) {
       normalized.push(mapped)
     }
   })
-  const requiredNativeTypes = normalized.filter((item): item is WechatMiniprogram.Component.ShortProperty => item !== null)
+  const requiredNativeTypes = normalized.filter((item): item is MiniProgramComponentShortProperty => item !== null)
   if (requiredNativeTypes.length > 0) {
     return requiredNativeTypes
   }
@@ -90,7 +94,7 @@ function normalizeOptionalTypeCandidates(raw: unknown) {
   if (!Array.isArray(raw)) {
     return []
   }
-  const normalized: WechatMiniprogram.Component.ShortProperty[] = []
+  const normalized: MiniProgramComponentShortProperty[] = []
   raw.forEach((item) => {
     const mapped = toNativePropertyType(item)
     if (mapped === undefined || mapped === null || normalized.includes(mapped)) {
@@ -159,7 +163,7 @@ function normalizeExplicitPropertyDefinition(
 }
 
 function normalizeExplicitProperties(
-  properties: WechatMiniprogram.Component.PropertyOption,
+  properties: MiniProgramComponentPropertyOption,
   allowNullPropInput: boolean,
 ) {
   const normalizedProperties: Record<string, any> = {}
@@ -175,7 +179,7 @@ function normalizeExplicitProperties(
 export function normalizeProps(
   baseOptions: Record<string, any>,
   props?: ComponentPropsOptions,
-  explicitProperties?: WechatMiniprogram.Component.PropertyOption,
+  explicitProperties?: MiniProgramComponentPropertyOption,
 ) {
   const allowNullPropInput = Boolean(
     (baseOptions as any)[ALLOW_NULL_PROP_INPUT_KEY]
@@ -248,7 +252,7 @@ export function normalizeProps(
         applyTypeOptions(propOptions, (definition as any).type)
       }
       if (Array.isArray((definition as any).optionalTypes)) {
-        const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item: unknown): item is WechatMiniprogram.Component.ShortProperty => item !== undefined && item !== null)
+        const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item: unknown): item is MiniProgramComponentShortProperty => item !== undefined && item !== null)
         if (optionalTypes.length > 0) {
           const existingOptionalTypes = Array.isArray(propOptions.optionalTypes)
             ? propOptions.optionalTypes as any[]

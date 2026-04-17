@@ -1,3 +1,9 @@
+import type {
+  MiniProgramBoundingClientRectResult,
+  MiniProgramNodesRefFields,
+  MiniProgramScrollOffsetResult,
+} from './types/miniprogram'
+
 export type {
   AllowedComponentProps,
   ComponentCustomProps,
@@ -25,18 +31,34 @@ export type {
   MiniProgramAddToFavoritesOption,
   MiniProgramAppOptions,
   MiniProgramBehaviorIdentifier,
+  MiniProgramBoundingClientRectResult,
+  MiniProgramComponentAllFullProperty,
+  MiniProgramComponentAllProperty,
   MiniProgramComponentBehaviorOptions,
+  MiniProgramComponentEmptyArray,
+  MiniProgramComponentInstance,
+  MiniProgramComponentMethodOption,
   MiniProgramComponentOptions,
+  MiniProgramComponentPropertyOption,
+  MiniProgramComponentPropertyValue,
   MiniProgramComponentRawOptions,
+  MiniProgramComponentShortProperty,
   MiniProgramInstance,
+  MiniProgramIntersectionObserver,
+  MiniProgramIntersectionObserverOptions,
   MiniProgramLaunchOptions,
   MiniProgramMemoryWarningResult,
+  MiniProgramNodesRef,
+  MiniProgramNodesRefFields,
+  MiniProgramPageLifetime,
   MiniProgramPageLifetimes,
   MiniProgramPageNotFoundOptions,
   MiniProgramPageResizeOption,
   MiniProgramPageScrollOption,
   MiniProgramRouter,
   MiniProgramSaveExitState,
+  MiniProgramScrollOffsetResult,
+  MiniProgramSelectorQuery,
   MiniProgramShareAppMessageOption,
   MiniProgramTabItemTapOption,
   MiniProgramThemeChangeResult,
@@ -84,12 +106,6 @@ export interface WevuGlobalDirectives {}
 export interface GlobalComponents extends WevuGlobalComponents {}
 export interface GlobalDirectives extends WevuGlobalDirectives {}
 export interface TemplateRefs {}
-
-export type MiniProgramNodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
-export type MiniProgramBoundingClientRectResult = WechatMiniprogram.BoundingClientRectCallbackResult
-export type MiniProgramScrollOffsetResult = WechatMiniprogram.ScrollOffsetCallbackResult
-export type MiniProgramSelectorQuery = WechatMiniprogram.SelectorQuery
-export type MiniProgramNodesRef = WechatMiniprogram.NodesRef
 
 export interface TemplateRefValue {
   selector: string

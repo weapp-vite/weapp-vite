@@ -14,7 +14,12 @@ import type {
   ShortEmits,
 } from './macros/shared'
 import type { Ref } from './reactivity'
-import type { ComponentPropsOptions, ComputedDefinitions, MethodDefinitions } from './runtime'
+import type {
+  ComponentPropsOptions,
+  ComputedDefinitions,
+  MethodDefinitions,
+  MiniProgramComponentPropertyOption,
+} from './runtime'
 
 export type {
   ComponentTypeEmits,
@@ -66,13 +71,13 @@ export declare function defineOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-  P extends WechatMiniprogram.Component.PropertyOption = WechatMiniprogram.Component.PropertyOption,
+  P extends MiniProgramComponentPropertyOption = MiniProgramComponentPropertyOption,
 >(options?: ScriptSetupDefineOptions<D, C, M, P>): void
 export declare function defineOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-  P extends WechatMiniprogram.Component.PropertyOption = WechatMiniprogram.Component.PropertyOption,
+  P extends MiniProgramComponentPropertyOption = MiniProgramComponentPropertyOption,
 >(options?: () => ScriptSetupDefineOptions<D, C, M, P> | Promise<ScriptSetupDefineOptions<D, C, M, P>>): void
 
 /**

@@ -1,12 +1,17 @@
 import type { ComputedDefinitions, MethodDefinitions } from '../core'
-import type { TriggerEventOptions } from '../miniprogram'
+import type {
+  MiniProgramIntersectionObserver,
+  MiniProgramIntersectionObserverOptions,
+  MiniProgramSelectorQuery,
+  TriggerEventOptions,
+} from '../miniprogram'
 import type { InternalRuntimeState, RuntimeInstance } from '../runtime'
 import type { ComponentPropsOptions, InferProps } from './propTypes'
 import type { SetupContextRouter } from './router'
 
-export type SetupContextSelectorQuery = WechatMiniprogram.SelectorQuery
-export type SetupContextIntersectionObserverOptions = WechatMiniprogram.CreateIntersectionObserverOption
-export type SetupContextIntersectionObserver = WechatMiniprogram.IntersectionObserver
+export type SetupContextSelectorQuery = MiniProgramSelectorQuery
+export type SetupContextIntersectionObserverOptions = MiniProgramIntersectionObserverOptions
+export type SetupContextIntersectionObserver = MiniProgramIntersectionObserver
 
 export type SetupFunction<
   P extends ComponentPropsOptions,

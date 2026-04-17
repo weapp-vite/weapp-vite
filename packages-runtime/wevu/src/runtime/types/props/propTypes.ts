@@ -1,3 +1,8 @@
+import type {
+  MiniProgramComponentAllProperty,
+  MiniProgramComponentShortProperty,
+} from '../miniprogram'
+
 type PropMethod<T, TConstructor = any> = [T] extends
   | [((...args: any) => any) | undefined]
   ? { new (): TConstructor, (): T, readonly prototype: TConstructor }
@@ -15,21 +20,21 @@ export interface NativeTypeHint<T = any> {
   readonly __wevuNativeType?: T
 }
 
-export type NativePropsOptions = Record<string, WechatMiniprogram.Component.AllProperty | NativeTypeHint<any>>
+export type NativePropsOptions = Record<string, MiniProgramComponentAllProperty | NativeTypeHint<any>>
 
 export type NativePropType<
   T = any,
-  C extends WechatMiniprogram.Component.ShortProperty = StringConstructor,
+  C extends MiniProgramComponentShortProperty = StringConstructor,
 > = C & NativeTypeHint<T>
 
 export type NativeTypedProperty<
   T = any,
-  P extends WechatMiniprogram.Component.AllProperty = WechatMiniprogram.Component.AllProperty,
+  P extends MiniProgramComponentAllProperty = MiniProgramComponentAllProperty,
 > = P & NativeTypeHint<T>
 
 export interface PropOptions<T = any, D = T> {
   type?: PropType<T> | true | null
-  optionalTypes?: Array<WechatMiniprogram.Component.ShortProperty | PropConstructor<any>>
+  optionalTypes?: Array<MiniProgramComponentShortProperty | PropConstructor<any>>
   /**
    * 默认值（对齐 Vue 的 `default`；会被赋给小程序 property 的 `value`）
    */

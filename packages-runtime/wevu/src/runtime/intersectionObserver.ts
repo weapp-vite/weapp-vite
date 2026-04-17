@@ -1,9 +1,11 @@
-import type { InternalRuntimeState } from './types'
+import type {
+  InternalRuntimeState,
+  MiniProgramIntersectionObserver,
+  MiniProgramIntersectionObserverOptions,
+} from './types'
 import { getCurrentInstance, onDetached, onUnload } from './hooks'
 import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from './platform'
 
-export type MiniProgramIntersectionObserverOptions = WechatMiniprogram.CreateIntersectionObserverOption
-export type MiniProgramIntersectionObserver = WechatMiniprogram.IntersectionObserver
 export type UseIntersectionObserverOptions = MiniProgramIntersectionObserverOptions
 export type UseIntersectionObserverResult = MiniProgramIntersectionObserver
 

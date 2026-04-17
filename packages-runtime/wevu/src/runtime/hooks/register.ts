@@ -2,6 +2,7 @@ import type {
   MiniProgramAddToFavoritesOption,
   MiniProgramLaunchOptions,
   MiniProgramMemoryWarningResult,
+  MiniProgramPageLifetime,
   MiniProgramPageNotFoundOptions,
   MiniProgramPageResizeOption,
   MiniProgramPageScrollOption,
@@ -44,7 +45,7 @@ export function onShow(handler: ((options?: any) => void)) {
   registerHook('onShow', handler as any)
 }
 
-export function onLoad(handler: WechatMiniprogram.Page.ILifetime['onLoad']) {
+export function onLoad(handler: MiniProgramPageLifetime['onLoad']) {
   registerHook('onLoad', handler as any)
 }
 
@@ -60,11 +61,11 @@ export function onReady(handler: () => void) {
   registerHook('onReady', handler as any)
 }
 
-export function onPullDownRefresh(handler: WechatMiniprogram.Page.ILifetime['onPullDownRefresh']) {
+export function onPullDownRefresh(handler: MiniProgramPageLifetime['onPullDownRefresh']) {
   registerHook('onPullDownRefresh', handler as any)
 }
 
-export function onReachBottom(handler: WechatMiniprogram.Page.ILifetime['onReachBottom']) {
+export function onReachBottom(handler: MiniProgramPageLifetime['onReachBottom']) {
   registerHook('onReachBottom', handler as any)
 }
 
@@ -74,7 +75,7 @@ export function onPageScroll(handler: (opt: MiniProgramPageScrollOption) => void
   ensurePageHookOnInstance(instance, 'onPageScroll')
 }
 
-export function onRouteDone(handler: WechatMiniprogram.Page.ILifetime['onRouteDone'] | ((opt?: unknown) => void)) {
+export function onRouteDone(handler: MiniProgramPageLifetime['onRouteDone'] | ((opt?: unknown) => void)) {
   registerHook('onRouteDone', handler as any)
 }
 
@@ -113,7 +114,7 @@ export function onShareAppMessage(handler: (options: MiniProgramShareAppMessageO
   ensurePageShareMenusOnSetup(instance)
 }
 
-export function onShareTimeline(handler: WechatMiniprogram.Page.ILifetime['onShareTimeline']) {
+export function onShareTimeline(handler: MiniProgramPageLifetime['onShareTimeline']) {
   const instance = assertInSetup('onShareTimeline')
   pushHook(instance, 'onShareTimeline', handler as any, { single: true } as any)
   ensureSinglePageHookOnInstance(instance, 'onShareTimeline')

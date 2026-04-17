@@ -1,4 +1,12 @@
-import type { ComputedDefinitions, DefineAppOptions, InternalRuntimeState, MethodDefinitions, MiniProgramAppOptions, RuntimeApp } from '../types'
+import type {
+  ComputedDefinitions,
+  DefineAppOptions,
+  InternalRuntimeState,
+  MethodDefinitions,
+  MiniProgramAppOptions,
+  MiniProgramMemoryWarningResult,
+  RuntimeApp,
+} from '../types'
 import type { WatchMap } from './watch'
 import {
   WEVU_HOOKS_KEY,
@@ -43,7 +51,7 @@ function bindMemoryWarningListener(target: InternalRuntimeState) {
     return
   }
 
-  const listener = (result: WechatMiniprogram.OnMemoryWarningListenerResult) => {
+  const listener = (result: MiniProgramMemoryWarningResult) => {
     callHookList(target, 'onMemoryWarning', [result])
   }
   ;(target as any)[MEMORY_WARNING_LISTENER_KEY] = listener

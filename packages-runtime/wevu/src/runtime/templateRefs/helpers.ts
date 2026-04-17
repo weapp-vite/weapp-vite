@@ -1,6 +1,11 @@
 import type { Ref } from '../../reactivity'
 import type { TemplateRefBinding } from '../templateRefs'
-import type { InternalRuntimeState } from '../types'
+import type {
+  InternalRuntimeState,
+  MiniProgramNodesRef,
+  MiniProgramNodesRefFields,
+  MiniProgramSelectorQuery,
+} from '../types'
 import {
   WEVU_EXPOSED_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
@@ -17,7 +22,6 @@ type TemplateRefTarget
     | { type: 'skip' }
 
 export type TemplateRefMap = Map<string, Ref<any>>
-type NodesRefFields = Parameters<WechatMiniprogram.NodesRef['fields']>[0]
 
 export function isComponentRef(binding: TemplateRefBinding) {
   return binding.kind === 'component'
@@ -201,7 +205,7 @@ export function ensureRefsContainer(target: InternalRuntimeState): Record<string
   return refs
 }
 
-export function createSelectorQuery(target: InternalRuntimeState): WechatMiniprogram.SelectorQuery | null {
+export function createSelectorQuery(target: InternalRuntimeState): MiniProgramSelectorQuery | null {
   const instance = target as any
   if (instance && typeof instance.createSelectorQuery === 'function') {
     return instance.createSelectorQuery()
@@ -227,7 +231,7 @@ function runQuery<T>(
   target: InternalRuntimeState,
   selector: string,
   options: { multiple: boolean, index?: number },
-  apply: (nodesRef: WechatMiniprogram.NodesRef) => void,
+  apply: (nodesRef: MiniProgramNodesRef) => void,
   cb?: (value: T | null) => void,
 ): Promise<T | null> {
   const query = createSelectorQuery(target)
@@ -267,7 +271,7 @@ function createTemplateRefWrapper(
     scrollOffset: (cb?: (value: any) => void) => {
       return runQuery(target, selector, options, ref => ref.scrollOffset(), cb)
     },
-    fields: (fields: NodesRefFields, cb?: (value: any) => void) => {
+    fields: (fields: MiniProgramNodesRefFields, cb?: (value: any) => void) => {
       return runQuery(target, selector, options, ref => ref.fields(fields as any), cb)
     },
     node: (cb?: (value: any) => void) => {

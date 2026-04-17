@@ -1,3 +1,7 @@
+import type {
+  MiniProgramComponentAllProperty,
+  MiniProgramComponentInstance,
+} from '@/index'
 import { expectType } from 'tsd'
 import { defineEmits, defineModel, defineOptions, defineProps, withDefaults } from '@/index'
 
@@ -123,7 +127,7 @@ interface ScriptSetupMacroData {
   label: string
 }
 
-type ScriptSetupMacroProperties = Record<string, WechatMiniprogram.Component.AllProperty> & {
+type ScriptSetupMacroProperties = Record<string, MiniProgramComponentAllProperty> & {
   count: {
     type: NumberConstructor
   }
@@ -133,7 +137,7 @@ type ScriptSetupMacroMethods = Record<string, (...args: any[]) => any> & {
   onTap: (this: ScriptSetupMacroInstance) => void
 }
 
-type ScriptSetupMacroInstance = WechatMiniprogram.Component.Instance<
+type ScriptSetupMacroInstance = MiniProgramComponentInstance<
   ScriptSetupMacroData,
   ScriptSetupMacroProperties,
   ScriptSetupMacroMethods,

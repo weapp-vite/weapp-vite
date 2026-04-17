@@ -1,3 +1,4 @@
+import type { MiniProgramPageScrollOption } from './types'
 import { getCurrentInstance, onDetached, onPageScroll, onUnload } from './hooks'
 
 export interface UsePageScrollThrottleOptions {
@@ -40,7 +41,7 @@ function resolveMaxWait(maxWait: number | undefined): number | undefined {
  * 在 setup 中注册节流后的 onPageScroll 监听，并在卸载时自动清理。
  */
 export function usePageScrollThrottle(
-  handler: (opt: WechatMiniprogram.Page.IPageScrollOption) => void,
+  handler: (opt: MiniProgramPageScrollOption) => void,
   options: UsePageScrollThrottleOptions = {},
 ): UsePageScrollThrottleStopHandle {
   if (!getCurrentInstance()) {
@@ -59,7 +60,7 @@ export function usePageScrollThrottle(
   let maxWaitTimer: ReturnType<typeof setTimeout> | undefined
   let stopped = false
   let lastInvokeTime = 0
-  let trailingEvent: WechatMiniprogram.Page.IPageScrollOption | undefined
+  let trailingEvent: MiniProgramPageScrollOption | undefined
 
   const clearTrailingTimer = () => {
     if (!trailingTimer) {
@@ -77,7 +78,7 @@ export function usePageScrollThrottle(
     maxWaitTimer = undefined
   }
 
-  const invoke = (event: WechatMiniprogram.Page.IPageScrollOption) => {
+  const invoke = (event: MiniProgramPageScrollOption) => {
     clearTrailingTimer()
     clearMaxWaitTimer()
     trailingEvent = undefined
@@ -126,7 +127,7 @@ export function usePageScrollThrottle(
     maxWaitTimer = setTimeout(flushMaxWait, remaining)
   }
 
-  const register = (event: WechatMiniprogram.Page.IPageScrollOption) => {
+  const register = (event: MiniProgramPageScrollOption) => {
     if (stopped) {
       return
     }
