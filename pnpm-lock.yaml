@@ -510,7 +510,7 @@ importers:
         version: 0.33.0
       tsdown:
         specifier: 0.21.9
-        version: 0.21.9(oxc-resolver@11.6.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2))(synckit@0.11.12)(typescript@6.0.3)(vue-tsc@3.2.6(typescript@6.0.3))
+        version: 0.21.9(synckit@0.11.12)(typescript@6.0.3)(vue-tsc@3.2.6(typescript@6.0.3))
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -1594,6 +1594,9 @@ importers:
       '@vscode/test-electron':
         specifier: ^2.5.2
         version: 2.5.2
+      '@weapp-vite/ast':
+        specifier: workspace:*
+        version: link:../../packages/ast
 
   mpcore/demos/web:
     dependencies:
@@ -21295,8 +21298,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.58.2(typescript@6.0.3)
+      '@typescript-eslint/types': 8.58.2
       debug: 4.4.3
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -30085,7 +30088,7 @@ snapshots:
       path-exists: 4.0.0
       read-pkg-up: 7.0.1
 
-  tsdown@0.21.9(oxc-resolver@11.6.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2))(synckit@0.11.12)(typescript@6.0.3)(vue-tsc@3.2.6(typescript@6.0.3)):
+  tsdown@0.21.9(synckit@0.11.12)(typescript@6.0.3)(vue-tsc@3.2.6(typescript@6.0.3)):
     dependencies:
       ansis: 4.2.0
       cac: 7.0.0
