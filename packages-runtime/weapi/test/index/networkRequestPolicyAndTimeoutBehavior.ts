@@ -1,9 +1,10 @@
+import type { MpPlatform } from '@weapp-core/shared'
 import { getMiniProgramRuntimeHostConfigKey } from '@weapp-core/shared'
 import { createTestWeapi } from '../helpers/createTestWeapi'
 
 function setHostNetworkTimeout(
   timeout?: Partial<Record<'request' | 'uploadFile' | 'downloadFile' | 'connectSocket', number>>,
-  platform: string = 'weapp',
+  platform: MpPlatform = 'weapp',
 ) {
   const hostGlobal = globalThis as any
   const hostConfigKey = getMiniProgramRuntimeHostConfigKey(platform)

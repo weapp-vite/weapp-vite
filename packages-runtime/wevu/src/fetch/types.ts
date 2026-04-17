@@ -26,9 +26,10 @@ export interface RequestLikeInput {
 }
 
 export type WevuFetchInput = string | URL | RequestLikeInput
-export type WxRequestMethod = NonNullable<WechatMiniprogram.RequestOption['method']>
+export type MiniProgramRequestMethod = NonNullable<WechatMiniprogram.RequestOption['method']>
+export type WxRequestMethod = MiniProgramRequestMethod
 
-export const REQUEST_METHODS: ReadonlyArray<WxRequestMethod> = [
+export const REQUEST_METHODS: ReadonlyArray<MiniProgramRequestMethod> = [
   'GET',
   'HEAD',
   'OPTIONS',

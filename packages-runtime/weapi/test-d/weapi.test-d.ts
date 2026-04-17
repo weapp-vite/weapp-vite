@@ -3,6 +3,8 @@ import type {
   WeapiDefaultInstance,
   WeapiDouyinRawAdapter,
   WeapiMethodSupportQueryOptions,
+  WeapiMiniProgramAdapter,
+  WeapiMiniProgramRawAdapter,
   WeapiResolvedTarget,
   WeapiSupportLevel,
 } from '@wevu/api'
@@ -27,6 +29,8 @@ type _ttMethodCoverage = AssertTrue<IsNever<Exclude<TtMethodKeys, WeapiRawKeys>>
 
 expectType<string | undefined>(wpi.platform)
 expectType<WeapiDefaultInstance>(wpi)
+expectType<WeapiMiniProgramAdapter>(wpi as WeapiMiniProgramAdapter)
+expectType<WeapiMiniProgramRawAdapter>({} as WeapiMiniProgramRawAdapter)
 expectType<WeapiDefaultInstance['raw']>(wpi.raw)
 expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)

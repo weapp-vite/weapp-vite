@@ -74,6 +74,7 @@ import type {
   WevuTypedRouterRouteMap,
 } from 'wevu'
 import type * as wevu from 'wevu'
+import type { MiniProgramRequestMethod, WxRequestMethod } from 'wevu/fetch'
 import { expectType } from 'tsd'
 
 type CompilerEntry = typeof import('wevu/compiler')
@@ -235,6 +236,9 @@ expectType<WevuApiEntry>(apiEntry)
 
 declare const fetchEntry: WevuFetchEntry
 expectType<WevuFetchEntry>(fetchEntry)
+expectType<MiniProgramRequestMethod>('GET')
+expectType<WxRequestMethod>('POST')
+expectType<MiniProgramRequestMethod>({} as WxRequestMethod)
 
 declare const routerEntry: WevuRouterEntry
 expectType<WevuRouterEntry>(routerEntry)

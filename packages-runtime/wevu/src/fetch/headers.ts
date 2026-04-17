@@ -1,11 +1,11 @@
-import type { HeaderLike, HeaderMap, HeaderPair, WxRequestMethod } from './types'
+import type { HeaderLike, HeaderMap, HeaderPair, MiniProgramRequestMethod } from './types'
 import { isObject } from './shared'
 import { REQUEST_METHODS } from './types'
 
-export function normalizeMethod(method?: string): WxRequestMethod {
+export function normalizeMethod(method?: string): MiniProgramRequestMethod {
   const normalized = (method ?? 'GET').toUpperCase()
-  if (REQUEST_METHODS.includes(normalized as WxRequestMethod)) {
-    return normalized as WxRequestMethod
+  if (REQUEST_METHODS.includes(normalized as MiniProgramRequestMethod)) {
+    return normalized as MiniProgramRequestMethod
   }
   return 'GET'
 }

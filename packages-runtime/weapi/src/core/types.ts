@@ -12,6 +12,11 @@ export type WeapiAdapter = Record<string, any>
 export type WeapiWxRawAdapter = WechatMiniprogram.Wx
 
 /**
+ * @description 小程序主适配器类型（当前以微信 typings 作为基准）
+ */
+export type WeapiMiniProgramRawAdapter = WeapiWxRawAdapter
+
+/**
  * @description 支付宝小程序 API 原始适配器类型
  */
 export type WeapiAlipayRawAdapter = typeof my
@@ -129,6 +134,11 @@ export type WeapiPromisify<TAdapter extends WeapiAdapter> = {
  * @description 微信小程序 API 适配器类型
  */
 export type WeapiWxAdapter = WeapiPromisify<WeapiWxRawAdapter>
+
+/**
+ * @description 小程序主适配器类型（当前以微信 typings 作为基准）
+ */
+export type WeapiMiniProgramAdapter = WeapiPromisify<WeapiMiniProgramRawAdapter>
 
 /**
  * @description 支付宝小程序 API 适配器类型

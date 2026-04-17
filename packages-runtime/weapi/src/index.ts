@@ -12,6 +12,8 @@ export type {
   WeapiDouyinRawAdapter,
   WeapiInstance,
   WeapiMethodSupportQueryOptions,
+  WeapiMiniProgramAdapter,
+  WeapiMiniProgramRawAdapter,
   WeapiNetworkOptions,
   WeapiNetworkOverflowPolicy,
   WeapiPromisify,
