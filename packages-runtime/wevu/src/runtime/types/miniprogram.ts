@@ -1,53 +1,49 @@
+import type {
+  NativeMiniProgramAddToFavoritesOption,
+  NativeMiniProgramAppOptions,
+  NativeMiniProgramAppTrivialInstance,
+  NativeMiniProgramBehaviorIdentifier,
+  NativeMiniProgramBoundingClientRectResult,
+  NativeMiniProgramComponentAllFullProperty,
+  NativeMiniProgramComponentAllProperty,
+  NativeMiniProgramComponentBehaviorOptions,
+  NativeMiniProgramComponentEmptyArray,
+  NativeMiniProgramComponentInstance,
+  NativeMiniProgramComponentMethodOption,
+  NativeMiniProgramComponentPropertyOption,
+  NativeMiniProgramComponentPropertyValue,
+  NativeMiniProgramComponentShortProperty,
+  NativeMiniProgramComponentTrivialInstance,
+  NativeMiniProgramComponentTrivialOption,
+  NativeMiniProgramIntersectionObserver,
+  NativeMiniProgramIntersectionObserverOptions,
+  NativeMiniProgramLaunchOptions,
+  NativeMiniProgramMemoryWarningResult,
+  NativeMiniProgramNavigateToOption,
+  NativeMiniProgramNodesRef,
+  NativeMiniProgramNodesRefFields,
+  NativeMiniProgramPageLifetime,
+  NativeMiniProgramPageNotFoundOptions,
+  NativeMiniProgramPageResizeOption,
+  NativeMiniProgramPageScrollOption,
+  NativeMiniProgramPageTrivialInstance,
+  NativeMiniProgramRedirectToOption,
+  NativeMiniProgramReLaunchOption,
+  NativeMiniProgramRouter,
+  NativeMiniProgramSaveExitState,
+  NativeMiniProgramScrollOffsetResult,
+  NativeMiniProgramSelectorQuery,
+  NativeMiniProgramShareAppMessageOption,
+  NativeMiniProgramSwitchTabOption,
+  NativeMiniProgramTabItemTapOption,
+  NativeMiniProgramThemeChangeResult,
+  NativeMiniProgramTriggerEventOptions,
+  NativeMiniProgramUnhandledRejectionResult,
+} from './miniprogramNative'
+
 export interface MiniProgramAdapter {
   setData?: (payload: Record<string, any>) => void | Promise<void>
 }
-
-type NativeMiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions
-type NativeMiniProgramComponentTrivialOption = WechatMiniprogram.Component.TrivialOption
-type NativeMiniProgramBehaviorIdentifier = WechatMiniprogram.Behavior.Identifier
-type NativeMiniProgramLaunchOptions = WechatMiniprogram.App.LaunchShowOption
-type NativeMiniProgramPageNotFoundOptions = WechatMiniprogram.App.PageNotFoundOption
-type NativeMiniProgramUnhandledRejectionResult = WechatMiniprogram.OnUnhandledRejectionListenerResult
-type NativeMiniProgramThemeChangeResult = WechatMiniprogram.OnThemeChangeListenerResult
-type NativeMiniProgramMemoryWarningResult = WechatMiniprogram.OnMemoryWarningListenerResult
-type NativeMiniProgramPageScrollOption = WechatMiniprogram.Page.IPageScrollOption
-type NativeMiniProgramTabItemTapOption = WechatMiniprogram.Page.ITabItemTapOption
-type NativeMiniProgramPageResizeOption = WechatMiniprogram.Page.IResizeOption
-type NativeMiniProgramShareAppMessageOption = WechatMiniprogram.Page.IShareAppMessageOption
-type NativeMiniProgramAddToFavoritesOption = WechatMiniprogram.Page.IAddToFavoritesOption
-type NativeMiniProgramSaveExitState = WechatMiniprogram.Page.ISaveExitState
-type NativeMiniProgramRouter = WechatMiniprogram.Component.Router
-type NativeMiniProgramSwitchTabOption = WechatMiniprogram.SwitchTabOption
-type NativeMiniProgramReLaunchOption = WechatMiniprogram.ReLaunchOption
-type NativeMiniProgramRedirectToOption = WechatMiniprogram.RedirectToOption
-type NativeMiniProgramNavigateToOption = WechatMiniprogram.NavigateToOption
-type NativeMiniProgramPageLifetime = WechatMiniprogram.Page.ILifetime
-type NativeMiniProgramNodesRef = WechatMiniprogram.NodesRef
-type NativeMiniProgramNodesRefFields = Parameters<NativeMiniProgramNodesRef['fields']>[0]
-type NativeMiniProgramBoundingClientRectResult = WechatMiniprogram.BoundingClientRectCallbackResult
-type NativeMiniProgramScrollOffsetResult = WechatMiniprogram.ScrollOffsetCallbackResult
-type NativeMiniProgramSelectorQuery = WechatMiniprogram.SelectorQuery
-type NativeMiniProgramIntersectionObserverOptions = WechatMiniprogram.CreateIntersectionObserverOption
-type NativeMiniProgramIntersectionObserver = WechatMiniprogram.IntersectionObserver
-type NativeMiniProgramComponentPropertyOption = WechatMiniprogram.Component.PropertyOption
-type NativeMiniProgramComponentMethodOption = WechatMiniprogram.Component.MethodOption
-type NativeMiniProgramComponentEmptyArray = WechatMiniprogram.Component.IEmptyArray
-type NativeMiniProgramComponentAllProperty = WechatMiniprogram.Component.AllProperty
-type NativeMiniProgramComponentAllFullProperty = WechatMiniprogram.Component.AllFullProperty
-type NativeMiniProgramComponentShortProperty = WechatMiniprogram.Component.ShortProperty
-type NativeMiniProgramComponentPropertyValue<TProperty extends NativeMiniProgramComponentAllFullProperty>
-  = WechatMiniprogram.Component.PropertyToData<TProperty>
-type NativeMiniProgramComponentInstance<
-  D extends object,
-  P extends NativeMiniProgramComponentPropertyOption,
-  M extends NativeMiniProgramComponentMethodOption,
-  B extends NativeMiniProgramComponentEmptyArray = NativeMiniProgramComponentEmptyArray,
-> = WechatMiniprogram.Component.Instance<D, P, M, B>
-type NativeMiniProgramTriggerEventOptions = WechatMiniprogram.Component.TriggerEventOption
-type NativeMiniProgramAppOptions<T extends Record<string, any>> = WechatMiniprogram.App.Options<T>
-type NativeMiniProgramComponentTrivialInstance = WechatMiniprogram.Component.TrivialInstance
-type NativeMiniProgramPageTrivialInstance = WechatMiniprogram.Page.TrivialInstance
-type NativeMiniProgramAppTrivialInstance = WechatMiniprogram.App.TrivialInstance
 
 export type MiniProgramComponentBehaviorOptions = NativeMiniProgramComponentBehaviorOptions
 

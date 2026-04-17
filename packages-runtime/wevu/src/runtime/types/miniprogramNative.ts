@@ -1,0 +1,46 @@
+export type NativeMiniProgramComponentBehaviorOptions = WechatMiniprogram.Component.ComponentOptions
+export type NativeMiniProgramComponentTrivialOption = WechatMiniprogram.Component.TrivialOption
+export type NativeMiniProgramBehaviorIdentifier = WechatMiniprogram.Behavior.Identifier
+export type NativeMiniProgramLaunchOptions = WechatMiniprogram.App.LaunchShowOption
+export type NativeMiniProgramPageNotFoundOptions = WechatMiniprogram.App.PageNotFoundOption
+export type NativeMiniProgramUnhandledRejectionResult = WechatMiniprogram.OnUnhandledRejectionListenerResult
+export type NativeMiniProgramThemeChangeResult = WechatMiniprogram.OnThemeChangeListenerResult
+export type NativeMiniProgramMemoryWarningResult = WechatMiniprogram.OnMemoryWarningListenerResult
+export type NativeMiniProgramPageScrollOption = WechatMiniprogram.Page.IPageScrollOption
+export type NativeMiniProgramTabItemTapOption = WechatMiniprogram.Page.ITabItemTapOption
+export type NativeMiniProgramPageResizeOption = WechatMiniprogram.Page.IResizeOption
+export type NativeMiniProgramShareAppMessageOption = WechatMiniprogram.Page.IShareAppMessageOption
+export type NativeMiniProgramAddToFavoritesOption = WechatMiniprogram.Page.IAddToFavoritesOption
+export type NativeMiniProgramSaveExitState = WechatMiniprogram.Page.ISaveExitState
+export type NativeMiniProgramRouter = WechatMiniprogram.Component.Router
+export type NativeMiniProgramSwitchTabOption = WechatMiniprogram.SwitchTabOption
+export type NativeMiniProgramReLaunchOption = WechatMiniprogram.ReLaunchOption
+export type NativeMiniProgramRedirectToOption = WechatMiniprogram.RedirectToOption
+export type NativeMiniProgramNavigateToOption = WechatMiniprogram.NavigateToOption
+export type NativeMiniProgramPageLifetime = WechatMiniprogram.Page.ILifetime
+export type NativeMiniProgramNodesRef = WechatMiniprogram.NodesRef
+export type NativeMiniProgramNodesRefFields = Parameters<NativeMiniProgramNodesRef['fields']>[0]
+export type NativeMiniProgramBoundingClientRectResult = WechatMiniprogram.BoundingClientRectCallbackResult
+export type NativeMiniProgramScrollOffsetResult = WechatMiniprogram.ScrollOffsetCallbackResult
+export type NativeMiniProgramSelectorQuery = WechatMiniprogram.SelectorQuery
+export type NativeMiniProgramIntersectionObserverOptions = WechatMiniprogram.CreateIntersectionObserverOption
+export type NativeMiniProgramIntersectionObserver = WechatMiniprogram.IntersectionObserver
+export type NativeMiniProgramComponentPropertyOption = WechatMiniprogram.Component.PropertyOption
+export type NativeMiniProgramComponentMethodOption = WechatMiniprogram.Component.MethodOption
+export type NativeMiniProgramComponentEmptyArray = WechatMiniprogram.Component.IEmptyArray
+export type NativeMiniProgramComponentAllProperty = WechatMiniprogram.Component.AllProperty
+export type NativeMiniProgramComponentAllFullProperty = WechatMiniprogram.Component.AllFullProperty
+export type NativeMiniProgramComponentShortProperty = WechatMiniprogram.Component.ShortProperty
+export type NativeMiniProgramComponentPropertyValue<TProperty extends NativeMiniProgramComponentAllFullProperty>
+  = WechatMiniprogram.Component.PropertyToData<TProperty>
+export type NativeMiniProgramComponentInstance<
+  D extends object,
+  P extends NativeMiniProgramComponentPropertyOption,
+  M extends NativeMiniProgramComponentMethodOption,
+  B extends NativeMiniProgramComponentEmptyArray = NativeMiniProgramComponentEmptyArray,
+> = WechatMiniprogram.Component.Instance<D, P, M, B>
+export type NativeMiniProgramTriggerEventOptions = WechatMiniprogram.Component.TriggerEventOption
+export type NativeMiniProgramAppOptions<T extends Record<string, any>> = WechatMiniprogram.App.Options<T>
+export type NativeMiniProgramComponentTrivialInstance = WechatMiniprogram.Component.TrivialInstance
+export type NativeMiniProgramPageTrivialInstance = WechatMiniprogram.Page.TrivialInstance
+export type NativeMiniProgramAppTrivialInstance = WechatMiniprogram.App.TrivialInstance
