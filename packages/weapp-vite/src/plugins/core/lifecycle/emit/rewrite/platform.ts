@@ -1,6 +1,5 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { MpPlatform } from '../../../../../types'
-import { WEAPP_VITE_INJECTED_API_IDENTIFIER } from '@weapp-core/constants'
 import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral } from '../../../../../ast'
 import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import {
@@ -9,11 +8,10 @@ import {
   normalizeNpmImportPathByPlatform,
   resolveNpmDependencyId,
 } from '../../../../../utils/npmImport'
-import { createWeapiAccessExpression } from '../../../../../utils/weapi'
+import { rewriteMiniProgramPlatformApiAccess } from '../../platformApiRewrite'
 import {
   BROWSER_GLOBAL_HOST_TERNARY_RE,
   DYNAMIC_GLOBAL_RESOLUTION_RE,
-  platformApiIdentifiers,
 } from '../constants'
 import { getRequireImportLiteral, setRequireImportLiteral } from './literals'
 
@@ -24,51 +22,12 @@ export function replacePlatformApiAccess(
     astEngine?: 'babel' | 'oxc'
   },
 ) {
-  const injectedApiIdentifier = WEAPP_VITE_INJECTED_API_IDENTIFIER
-
   if (!mayContainPlatformApiAccess(code, { engine: options?.astEngine })) {
     return code
   }
-
-  try {
-    const ast = parseJsLike(code)
-    let mutated = false
-
-    const rewritePath = (path: any) => {
-      const object = path.node?.object
-      if (!object || object.type !== 'Identifier') {
-        return
-      }
-      const identifierName = object.name
-      if (!platformApiIdentifiers.has(identifierName)) {
-        return
-      }
-      if (path.scope?.hasBinding?.(identifierName)) {
-        return
-      }
-      path.node.object = {
-        type: 'Identifier',
-        name: injectedApiIdentifier,
-      }
-      mutated = true
-    }
-
-    traverse(ast as any, {
-      MemberExpression: rewritePath,
-      OptionalMemberExpression: rewritePath,
-    })
-
-    if (!mutated) {
-      return code
-    }
-
-    const transformedCode = generate(ast as any).code
-    const aliasCode = `var ${injectedApiIdentifier} = ${createWeapiAccessExpression(globalName)};`
-    return `${aliasCode}\n${transformedCode}`
-  }
-  catch {
-    return code
-  }
+  return rewriteMiniProgramPlatformApiAccess(code, globalName, {
+    engine: options?.astEngine,
+  })
 }
 
 export function normalizeNpmImportByPlatform(
