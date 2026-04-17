@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_MP_PLATFORM } from '../../../../platform'
 import { emitCompiledVueEntryAssets, emitResolvedCompiledVueEntryAssets } from './emitCompiledEntry'
+
+const DEFAULT_PLATFORM_ASSET_OPTIONS = {
+  platform: DEFAULT_MP_PLATFORM,
+  templateExtension: 'wxml',
+  scriptModuleExtension: 'wxs',
+}
 
 const addBundleWatchFileMock = vi.hoisted(() => vi.fn())
 const emitCompiledEntryBundleAssetsMock = vi.hoisted(() => vi.fn(() => ({
@@ -15,11 +22,7 @@ const resolveVueBundleAssetContextMock = vi.hoisted(() => vi.fn(() => ({
   jsonExtension: 'json',
   scriptExtension: 'js',
   scriptModuleExtension: 'wxs',
-  platformAssetOptions: {
-    platform: 'wechat',
-    templateExtension: 'wxml',
-    scriptModuleExtension: 'wxs',
-  },
+  platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
 })))
 const emitBundlePageLayoutsIfNeededMock = vi.hoisted(() => vi.fn(async () => {}))
 const emitScriptlessComponentJsFallbackIfMissingMock = vi.hoisted(() => vi.fn())
@@ -57,11 +60,7 @@ describe('emitCompiledEntry helpers', () => {
       jsonExtension: 'json',
       scriptExtension: 'js',
       scriptModuleExtension: 'wxs',
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
     emitBundlePageLayoutsIfNeededMock.mockReset()
     emitBundlePageLayoutsIfNeededMock.mockResolvedValue(undefined)
@@ -72,7 +71,7 @@ describe('emitCompiledEntry helpers', () => {
     const bundle = {}
     const state = {
       ctx: {
-        configService: { platform: 'wechat' },
+        configService: { platform: DEFAULT_MP_PLATFORM },
       },
       pluginCtx: {},
     } as any
@@ -99,11 +98,7 @@ describe('emitCompiledEntry helpers', () => {
       jsonExtension: 'json',
       scriptExtension: 'js',
       scriptModuleExtension: 'wxs',
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
 
     expect(handleCompiledEntryPageLayoutsMock).toHaveBeenCalledTimes(1)
@@ -129,11 +124,7 @@ describe('emitCompiledEntry helpers', () => {
       jsonExtension: 'json',
       scriptModuleExtension: 'wxs',
       outputExtensions: { wxml: 'wxml' },
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
     expect(emitScriptlessComponentJsFallbackIfMissingMock).not.toHaveBeenCalled()
   })
@@ -147,7 +138,7 @@ describe('emitCompiledEntry helpers', () => {
       bundle: {},
       state: {
         ctx: {
-          configService: { platform: 'wechat' },
+          configService: { platform: DEFAULT_MP_PLATFORM },
         },
         pluginCtx: {},
       } as any,
@@ -169,11 +160,7 @@ describe('emitCompiledEntry helpers', () => {
       jsonExtension: 'json',
       scriptExtension: 'js',
       scriptModuleExtension: 'wxs',
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
 
     expect(handleCompiledEntryPageLayoutsMock).not.toHaveBeenCalled()
@@ -210,11 +197,7 @@ describe('emitCompiledEntry helpers', () => {
       jsonExtension: 'json',
       scriptExtension: 'js',
       scriptModuleExtension: 'wxs',
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
 
     expect(handleCompiledEntryPageLayoutsMock).not.toHaveBeenCalled()
@@ -237,7 +220,7 @@ describe('emitCompiledEntry helpers', () => {
   it('skips compiled entries when emit state cannot be resolved', async () => {
     const state = {
       ctx: {
-        configService: { platform: 'wechat' },
+        configService: { platform: DEFAULT_MP_PLATFORM },
       },
       pluginCtx: {},
       reExportResolutionCache: new Map(),
@@ -262,7 +245,7 @@ describe('emitCompiledEntry helpers', () => {
   it('dispatches compiled entries through shared resolved entry helper flow', async () => {
     const state = {
       ctx: {
-        configService: { platform: 'wechat' },
+        configService: { platform: DEFAULT_MP_PLATFORM },
       },
       pluginCtx: {},
       reExportResolutionCache: new Map(),

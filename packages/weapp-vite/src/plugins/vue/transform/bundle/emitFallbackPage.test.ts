@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_MP_PLATFORM } from '../../../../platform'
 import { emitFallbackPageAssets, emitResolvedFallbackPageEntryAssets } from './emitFallbackPage'
+
+const DEFAULT_PLATFORM_ASSET_OPTIONS = {
+  platform: DEFAULT_MP_PLATFORM,
+  templateExtension: 'wxml',
+  scriptModuleExtension: 'wxs',
+}
 
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 const collectFallbackPageEntryIdsMock = vi.hoisted(() => vi.fn(async () => []))
@@ -20,11 +27,7 @@ const resolveVueBundleAssetContextMock = vi.hoisted(() => vi.fn(() => ({
   styleExtension: 'wxss',
   jsonExtension: 'json',
   scriptModuleExtension: 'wxs',
-  platformAssetOptions: {
-    platform: 'wechat',
-    templateExtension: 'wxml',
-    scriptModuleExtension: 'wxs',
-  },
+  platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
 })))
 const emitBundlePageLayoutsIfNeededMock = vi.hoisted(() => vi.fn(async () => {}))
 const getPathExistsTtlMsMock = vi.hoisted(() => vi.fn(() => 50))
@@ -87,11 +90,7 @@ describe('emitFallbackPage helpers', () => {
       styleExtension: 'wxss',
       jsonExtension: 'json',
       scriptModuleExtension: 'wxs',
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
     emitBundlePageLayoutsIfNeededMock.mockReset()
     emitBundlePageLayoutsIfNeededMock.mockResolvedValue(undefined)
@@ -103,7 +102,7 @@ describe('emitFallbackPage helpers', () => {
     const bundle = {}
     const pluginCtx = { emitFile: vi.fn() }
     const ctx = {}
-    const configService = { platform: 'wechat' }
+    const configService = { platform: DEFAULT_MP_PLATFORM }
     const compileOptionsState = {
       reExportResolutionCache: new Map(),
       classStyleRuntimeWarned: { value: false },
@@ -122,11 +121,7 @@ describe('emitFallbackPage helpers', () => {
       styleExtension: 'wxss',
       jsonExtension: 'json',
       scriptModuleExtension: 'wxs',
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
 
     expect(loadFallbackPageEntryCompilationMock).toHaveBeenCalledWith({
@@ -159,18 +154,14 @@ describe('emitFallbackPage helpers', () => {
       jsonExtension: 'json',
       scriptModuleExtension: 'wxs',
       outputExtensions: { wxml: 'wxml' },
-      platformAssetOptions: {
-        platform: 'wechat',
-        templateExtension: 'wxml',
-        scriptModuleExtension: 'wxs',
-      },
+      platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
   })
 
   it('iterates resolved fallback pages through the shared entry emitter', async () => {
     const state = {
       ctx: {
-        configService: { platform: 'wechat' },
+        configService: { platform: DEFAULT_MP_PLATFORM },
         scanService: {},
       },
       pluginCtx: {},
@@ -201,7 +192,7 @@ describe('emitFallbackPage helpers', () => {
   it('skips unresolved fallback page entries', async () => {
     const state = {
       ctx: {
-        configService: { platform: 'wechat' },
+        configService: { platform: DEFAULT_MP_PLATFORM },
         scanService: {},
       },
       pluginCtx: {},
@@ -222,7 +213,7 @@ describe('emitFallbackPage helpers', () => {
   it('logs fallback page compilation failures and continues', async () => {
     const state = {
       ctx: {
-        configService: { platform: 'wechat' },
+        configService: { platform: DEFAULT_MP_PLATFORM },
         scanService: {},
       },
       pluginCtx: {},
