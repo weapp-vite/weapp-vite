@@ -43,5 +43,4 @@ export {
   alipayPlatform,
   swanPlatform,
   ttPlatform,
-  defaultMiniProgramPlatform as wechatPlatform,
 }
