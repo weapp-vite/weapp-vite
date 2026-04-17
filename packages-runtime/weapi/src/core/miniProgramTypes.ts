@@ -2,13 +2,14 @@
 import type {
   WeapiAlipayMiniProgramRawAdapterSource,
   WeapiDefaultMiniProgramRawAdapterSource,
-  WeapiTtMiniProgramRawAdapterSource,
+  WeapiDouyinMiniProgramRawAdapterSource,
   WeapiWechatMiniProgramRawAdapterSource,
 } from './miniProgramTypeSources'
 
 export type {
   WeapiAlipayMiniProgramRawAdapterSource,
   WeapiDefaultMiniProgramRawAdapterSource,
+  WeapiDouyinMiniProgramRawAdapterSource,
   WeapiMiniProgramPlatformRawAdapterSourceName,
   WeapiMiniProgramPlatformRawAdapterSourceRegistry,
   WeapiMiniProgramRawAdapterSourceName,
@@ -36,7 +37,7 @@ export type WeapiMiniProgramAlipayRawAdapter = WeapiAlipayMiniProgramRawAdapterS
 /**
  * @description 抖音小程序 API 原始适配器类型（宿主中立主名）
  */
-export type WeapiMiniProgramDouyinRawAdapter = WeapiTtMiniProgramRawAdapterSource
+export type WeapiMiniProgramDouyinRawAdapter = WeapiDouyinMiniProgramRawAdapterSource
 
 /**
  * @description 小程序主适配器类型（当前以微信 typings 作为基准）

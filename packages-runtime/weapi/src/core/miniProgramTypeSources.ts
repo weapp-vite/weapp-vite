@@ -20,7 +20,12 @@ export type WeapiAlipayMiniProgramRawAdapterSource = typeof my
 /**
  * @description 抖音小程序 API 原始适配器类型源
  */
-export type WeapiTtMiniProgramRawAdapterSource = typeof tt
+export type WeapiDouyinMiniProgramRawAdapterSource = typeof tt
+
+/**
+ * @description `tt` 命名兼容入口，保持与抖音宿主语义主名一致
+ */
+export type WeapiTtMiniProgramRawAdapterSource = WeapiDouyinMiniProgramRawAdapterSource
 
 /**
  * @description 小程序平台语义原始适配器类型源 registry
@@ -29,7 +34,7 @@ export interface WeapiMiniProgramPlatformRawAdapterSourceRegistry {
   default: WeapiDefaultMiniProgramRawAdapterSource
   wechat: WeapiWechatMiniProgramRawAdapterSource
   alipay: WeapiAlipayMiniProgramRawAdapterSource
-  douyin: WeapiTtMiniProgramRawAdapterSource
+  douyin: WeapiDouyinMiniProgramRawAdapterSource
 }
 
 /**

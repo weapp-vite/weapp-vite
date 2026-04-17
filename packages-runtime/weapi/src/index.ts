@@ -22,6 +22,7 @@ export type {
   WeapiWxMethodName,
 } from './core/apiCatalog'
 export type {
+  WeapiDouyinMiniProgramRawAdapterSource,
   WeapiMiniProgramPlatformRawAdapterSourceName,
   WeapiMiniProgramPlatformRawAdapterSourceRegistry,
   WeapiMiniProgramRuntimeRawAdapterSourceName,
