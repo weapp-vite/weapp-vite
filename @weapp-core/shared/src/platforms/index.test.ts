@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getMiniProgramDefaultBuildTarget,
+  getMiniProgramDirectivePrefix,
   getMiniProgramPlatformByRuntimeGlobalKey,
   getMiniProgramPlatformDescriptor,
   getMiniProgramRouteRuntimeGlobalKeys,
@@ -37,6 +38,10 @@ describe('mini program platform registry', () => {
     expect(getMiniProgramTemplatePreset('jd')).toBe('wechat')
     expect(getMiniProgramTemplatePreset('xhs')).toBe('wechat')
     expect(getMiniProgramTemplatePreset('swan')).toBe('swan')
+    expect(getMiniProgramDirectivePrefix('weapp')).toBe('wx')
+    expect(getMiniProgramDirectivePrefix('alipay')).toBe('a')
+    expect(getMiniProgramDirectivePrefix('tt')).toBe('tt')
+    expect(getMiniProgramDirectivePrefix('swan')).toBe('s')
     expect(supportsMiniProgramAutoTouchAppStyle('weapp')).toBe(true)
     expect(supportsMiniProgramAutoTouchAppStyle('alipay')).toBe(false)
     expect(getMiniProgramDefaultBuildTarget('weapp')).toBe('es2020')

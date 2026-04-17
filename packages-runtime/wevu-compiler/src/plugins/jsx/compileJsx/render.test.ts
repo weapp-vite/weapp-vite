@@ -1,5 +1,6 @@
 import * as t from '@weapp-vite/ast/babelTypes'
 import { describe, expect, it } from 'vitest'
+import { getMiniProgramTemplatePlatform } from '../../vue/compiler/template/platforms'
 import { compileRenderableExpression } from './render'
 import { createJsxCompileContext } from './template'
 
@@ -266,5 +267,60 @@ describe('compileJsx render helpers', () => {
     expect(conditional).toContain('wx:if="{{ready}}"')
     expect(conditional).toContain('wx:else')
     expect(conditional).toContain('<text>no</text>')
+  })
+
+  it('renders structural directives with the selected mini program platform prefix', () => {
+    const ttContext = createJsxCompileContext({
+      template: {
+        platform: getMiniProgramTemplatePlatform('tt'),
+      },
+    } as any)
+    const alipayContext = createJsxCompileContext({
+      template: {
+        platform: getMiniProgramTemplatePlatform('alipay'),
+      },
+    } as any)
+    const swanContext = createJsxCompileContext({
+      template: {
+        platform: getMiniProgramTemplatePlatform('swan'),
+      },
+    } as any)
+
+    const listExpression = t.callExpression(
+      t.memberExpression(t.identifier('list'), t.identifier('map')),
+      [
+        t.arrowFunctionExpression(
+          [t.identifier('item'), t.identifier('index')],
+          t.jsxElement(
+            t.jsxOpeningElement(t.jsxIdentifier('view'), [], false),
+            t.jsxClosingElement(t.jsxIdentifier('view')),
+            [t.jsxExpressionContainer(t.identifier('item'))],
+            false,
+          ),
+        ),
+      ],
+    )
+    const conditionalExpression = t.conditionalExpression(
+      t.identifier('ready'),
+      t.jsxElement(
+        t.jsxOpeningElement(t.jsxIdentifier('text'), [], false),
+        t.jsxClosingElement(t.jsxIdentifier('text')),
+        [t.jsxText('yes')],
+        false,
+      ),
+      t.jsxElement(
+        t.jsxOpeningElement(t.jsxIdentifier('text'), [], false),
+        t.jsxClosingElement(t.jsxIdentifier('text')),
+        [t.jsxText('no')],
+        false,
+      ),
+    )
+
+    expect(compileRenderableExpression(listExpression, ttContext)).toContain('tt:for="{{list}}"')
+    expect(compileRenderableExpression(listExpression, alipayContext)).toContain('a:for="{{list}}"')
+    expect(compileRenderableExpression(listExpression, swanContext)).toContain('s-for="{{list}}"')
+    expect(compileRenderableExpression(conditionalExpression, ttContext)).toContain('tt:if="{{ready}}"')
+    expect(compileRenderableExpression(conditionalExpression, alipayContext)).toContain('a:if="{{ready}}"')
+    expect(compileRenderableExpression(conditionalExpression, swanContext)).toContain('s-if="{{ready}}"')
   })
 })

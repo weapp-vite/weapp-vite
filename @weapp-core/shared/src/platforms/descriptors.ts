@@ -175,7 +175,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'default',
-      directivePrefix: 'wx',
+      directivePrefix: 's',
     },
     compiler: {
       templatePreset: 'swan',
@@ -214,7 +214,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'default',
-      directivePrefix: 'wx',
+      directivePrefix: 'tt',
     },
     compiler: {
       templatePreset: 'tt',

@@ -1249,6 +1249,26 @@ const page = {
     expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual(['__wv_bind_0', 'count', 'list'])
   })
 
+  it('supports cross-platform structural directives in setData pick analysis', () => {
+    const alipayTemplate = `
+<view a:for="{{ list }}" a:for-item="row" a:for-index="i">
+  <text>{{ row.name }}</text>
+</view>
+<text>{{ count }}</text>
+    `.trim()
+    const swanTemplate = `
+<view s-for="{{ list }}" s-for-item="row" s-for-index="i">
+  <text>{{ row.name }}</text>
+</view>
+<text>{{ count }}</text>
+    `.trim()
+
+    expect(collectSetDataPickKeysFromTemplateCode(alipayTemplate, { astEngine: 'babel' })).toEqual(['count', 'list'])
+    expect(collectSetDataPickKeysFromTemplateCode(alipayTemplate, { astEngine: 'oxc' })).toEqual(['count', 'list'])
+    expect(collectSetDataPickKeysFromTemplateCode(swanTemplate, { astEngine: 'babel' })).toEqual(['count', 'list'])
+    expect(collectSetDataPickKeysFromTemplateCode(swanTemplate, { astEngine: 'oxc' })).toEqual(['count', 'list'])
+  })
+
   it('keeps setData pick scope analysis aligned across engines', () => {
     const template = `
 <text>{{ list.map((item, index) => item.name + index + count + this.extra) }}</text>
@@ -1285,6 +1305,9 @@ const page = {
     expect(hasBindingInScopes([new Set(['foo']), new Set(['bar'])], 'baz')).toBe(false)
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}"></view>')]).toEqual(['item', 'index'])
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i"></view>')]).toEqual(['row', 'i'])
+    expect([...collectLoopScopeAliases('<view a:for="{{ list }}" a:for-item="row" a:for-index="i"></view>')]).toEqual(['row', 'i'])
+    expect([...collectLoopScopeAliases('<view tt:for="{{ list }}" tt:for-item="row" tt:for-index="i"></view>')]).toEqual(['row', 'i'])
+    expect([...collectLoopScopeAliases('<view s-for="{{ list }}" s-for-item="row" s-for-index="i"></view>')]).toEqual(['row', 'i'])
     expect(collectSetDataPickKeysWithBabel('<view>static</view>')).toEqual([])
     expect(collectSetDataPickKeysWithOxc('<view>static</view>')).toEqual([])
     expect(collectSetDataPickKeysWithBabel('<text>{{ list.map(item => item.name) + count }}</text>')).toEqual(['count', 'list'])

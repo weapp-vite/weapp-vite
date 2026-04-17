@@ -118,6 +118,7 @@
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
     "@oxc-project/types": "^0.126.0",
+    "@weapp-core/shared": "workspace:*",
     "oxc-parser": "catalog:",
     "oxc-walker": "catalog:"
   },

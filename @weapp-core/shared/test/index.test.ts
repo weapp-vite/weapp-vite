@@ -5,6 +5,10 @@ describe('shared root entry', () => {
   it('does not expose node-only fs helpers', () => {
     expect('fs' in shared).toBe(false)
   })
+
+  it('does not expose node-only hash helpers', () => {
+    expect('objectHash' in shared).toBe(false)
+  })
 })
 
 describe('removeExtension', () => {

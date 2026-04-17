@@ -21,6 +21,10 @@
         "types": "./src/index.ts",
         "default": "./src/index.ts"
       },
+      "./node": {
+        "types": "./src/node.ts",
+        "default": "./src/node.ts"
+      },
       "./fs": {
         "types": "./src/fs/index.ts",
         "default": "./src/fs/index.ts"
@@ -34,6 +38,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
     },
     "./fs": {
       "types": "./dist/fs/index.d.ts",
@@ -65,6 +73,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./node": {
+        "types": "./dist/node.d.ts",
+        "import": "./dist/node.js"
       },
       "./fs": {
         "types": "./dist/fs/index.d.ts",

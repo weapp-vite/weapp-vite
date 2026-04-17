@@ -176,6 +176,38 @@ describe('runtime: features & hooks', () => {
     delete (globalThis as any).wx
   })
 
+  it('falls back to simpler share menu payloads for non-wechat-compatible hosts', () => {
+    const showShareMenu = vi.fn()
+      .mockImplementationOnce(() => {
+        throw new Error('menus unsupported')
+      })
+      .mockImplementationOnce(() => {})
+    ;(globalThis as any).tt = {
+      showShareMenu,
+    }
+
+    defineComponent({
+      setup() {
+        onShareTimeline(() => ({ title: 'timeline-from-tt-host' }))
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+
+    expect(showShareMenu).toHaveBeenNthCalledWith(1, {
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    })
+    expect(showShareMenu).toHaveBeenNthCalledWith(2, {
+      menus: ['shareAppMessage', 'shareTimeline'],
+    })
+
+    delete (globalThis as any).tt
+  })
+
   it('does not treat alipay host object as page share menu capability source', () => {
     const showShareMenu = vi.fn()
     ;(globalThis as any).my = {

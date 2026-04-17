@@ -44,6 +44,52 @@ function ensureHookBucket(target: InternalRuntimeState): Record<string, any> {
   return target[WEVU_HOOKS_KEY] as Record<string, any>
 }
 
+type ShareMenuName = 'shareAppMessage' | 'shareTimeline'
+
+function buildShareMenus(
+  enableOnShareAppMessage: boolean,
+  enableOnShareTimeline: boolean,
+): ShareMenuName[] {
+  const runtimeCapabilities = getCurrentMiniProgramRuntimeCapabilities()
+  const shouldShowShareAppMessage = runtimeCapabilities.shareTimelineRequiresShareAppMessage
+    ? (enableOnShareAppMessage || enableOnShareTimeline)
+    : enableOnShareAppMessage
+
+  const menus: ShareMenuName[] = []
+  if (shouldShowShareAppMessage) {
+    menus.push('shareAppMessage')
+  }
+  if (enableOnShareTimeline) {
+    menus.push('shareTimeline')
+  }
+  return menus
+}
+
+function tryShowShareMenu(showShareMenu: (...args: any[]) => unknown, menus: ShareMenuName[]) {
+  const payloads = [
+    { withShareTicket: true, menus },
+    { menus },
+    menus.includes('shareTimeline') ? { withShareTicket: true } : undefined,
+    menus.includes('shareTimeline') ? {} : undefined,
+    undefined,
+  ]
+
+  for (const payload of payloads) {
+    try {
+      if (payload === undefined) {
+        showShareMenu()
+      }
+      else {
+        showShareMenu(payload as any)
+      }
+      return
+    }
+    catch {
+      // 继续尝试更保守的 payload，兼容不同宿主的 showShareMenu 参数形态。
+    }
+  }
+}
+
 export function pushHook(
   target: InternalRuntimeState,
   name: string,
@@ -110,8 +156,8 @@ export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
   if (!supportsCurrentMiniProgramRuntimeCapability('pageShareMenu')) {
     return
   }
-  const wxGlobal = getMiniProgramGlobalObject()
-  if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  if (!miniProgramGlobal || typeof miniProgramGlobal.showShareMenu !== 'function') {
     return
   }
 
@@ -123,24 +169,12 @@ export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
     return
   }
 
-  const runtimeCapabilities = getCurrentMiniProgramRuntimeCapabilities()
-  const menus: Array<'shareAppMessage' | 'shareTimeline'> = []
-  if (hasShareAppMessage || (runtimeCapabilities.shareTimelineRequiresShareAppMessage && hasShareTimeline)) {
-    menus.push('shareAppMessage')
-  }
-  if (hasShareTimeline) {
-    menus.push('shareTimeline')
+  const menus = buildShareMenus(hasShareAppMessage, hasShareTimeline)
+  if (!menus.length) {
+    return
   }
 
-  try {
-    wxGlobal.showShareMenu({
-      withShareTicket: true,
-      menus,
-    } as any)
-  }
-  catch {
-    // 忽略平台差异导致的菜单能力异常，避免影响页面主流程
-  }
+  tryShowShareMenu(miniProgramGlobal.showShareMenu.bind(miniProgramGlobal), menus)
 }
 
 /**

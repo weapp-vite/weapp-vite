@@ -143,6 +143,16 @@ export function getMiniProgramDefaultBuildTarget(platform?: MpPlatform): string 
 }
 
 /**
+ * @description 获取平台模板指令前缀。
+ */
+export function getMiniProgramDirectivePrefix(platform?: MpPlatform): string {
+  if (!platform) {
+    return 'wx'
+  }
+  return getMiniProgramPlatformDescriptor(platform).wxml?.directivePrefix ?? 'wx'
+}
+
+/**
  * @description 获取宿主全局对象 key。
  */
 export function getMiniProgramRuntimeGlobalKey(platform: MpPlatform): string {

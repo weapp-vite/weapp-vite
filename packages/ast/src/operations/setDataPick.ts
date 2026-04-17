@@ -1,12 +1,28 @@
 import type * as t from '@babel/types'
 import type { AstEngineName } from '../types'
+import { getMiniProgramDirectivePrefix, getSupportedMiniProgramPlatforms } from '@weapp-core/shared'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse, traverse } from '../babel'
 import { parseJsLikeWithEngine } from '../engine'
 
 const TEMPLATE_MUSTACHE_RE = /\{\{([\s\S]*?)\}\}/g
-const WX_FOR_TAG_RE = /<[^>]*\bwx:for\s*=\s*(?:"[^"]*"|'[^']*')[^>]*>/g
-const WX_FOR_ITEM_RE = /\bwx:for-item\s*=\s*(?:"([^"]+)"|'([^']+)')/
-const WX_FOR_INDEX_RE = /\bwx:for-index\s*=\s*(?:"([^"]+)"|'([^']+)')/
+const SUPPORTED_FOR_DIRECTIVE_PREFIXES = Array.from(new Set([
+  's',
+  ...getSupportedMiniProgramPlatforms().map(platform => getMiniProgramDirectivePrefix(platform)),
+])).sort((left, right) => right.length - left.length)
+const FOR_DIRECTIVE_PREFIX_PATTERN = SUPPORTED_FOR_DIRECTIVE_PREFIXES
+  .map(prefix => prefix.replace(/[|\\{}()[\]^$+*?.-]/g, '\\$&'))
+  .join('|')
+const FOR_DIRECTIVE_SEPARATOR_PATTERN = '[:-]'
+const FOR_TAG_RE = new RegExp(
+  `<[^>]*\\b(?:${FOR_DIRECTIVE_PREFIX_PATTERN})${FOR_DIRECTIVE_SEPARATOR_PATTERN}for\\s*=\\s*(?:\"[^\"]*\"|'[^']*')[^>]*>`,
+  'g',
+)
+const FOR_ITEM_RE = new RegExp(
+  `\\b(?:${FOR_DIRECTIVE_PREFIX_PATTERN})${FOR_DIRECTIVE_SEPARATOR_PATTERN}for-item\\s*=\\s*(?:\"([^\"]+)\"|'([^']+)')`,
+)
+const FOR_INDEX_RE = new RegExp(
+  `\\b(?:${FOR_DIRECTIVE_PREFIX_PATTERN})${FOR_DIRECTIVE_SEPARATOR_PATTERN}for-index\\s*=\\s*(?:\"([^\"]+)\"|'([^']+)')`,
+)
 
 const JS_GLOBAL_IDENTIFIERS = new Set([
   'undefined',
@@ -38,9 +54,9 @@ const JS_GLOBAL_IDENTIFIERS = new Set([
 
 export function collectLoopScopeAliases(template: string): Set<string> {
   const aliases = new Set<string>()
-  const tagMatches = template.match(WX_FOR_TAG_RE) ?? []
+  const tagMatches = template.match(FOR_TAG_RE) ?? []
   for (const tag of tagMatches) {
-    const itemMatch = tag.match(WX_FOR_ITEM_RE)
+    const itemMatch = tag.match(FOR_ITEM_RE)
     if (itemMatch) {
       const itemAlias = (itemMatch[1] ?? itemMatch[2] ?? '').trim()
       if (itemAlias) {
@@ -51,7 +67,7 @@ export function collectLoopScopeAliases(template: string): Set<string> {
       aliases.add('item')
     }
 
-    const indexMatch = tag.match(WX_FOR_INDEX_RE)
+    const indexMatch = tag.match(FOR_INDEX_RE)
     if (indexMatch) {
       const indexAlias = (indexMatch[1] ?? indexMatch[2] ?? '').trim()
       if (indexAlias) {

@@ -3,12 +3,14 @@
 ## 简介
 
 `@weapp-core/shared` 汇总 weapp-vite 生态内的通用工具函数与依赖封装，供多个包复用。
+根入口默认保持小程序运行时安全；Node 专用能力通过独立子入口导出。
 
 ## 特性
 
 - 常用字符串与路径处理工具
 - 对象合并与判定工具
-- 统一导出常用第三方工具（`defu`、`get`、`set`、`object-hash`）
+- 统一导出常用第三方工具（`defu`、`get`、`set`）
+- 通过 `@weapp-core/shared/node` 提供 Node 专用哈希能力
 
 ## 安装
 
@@ -23,9 +25,9 @@ import {
   addExtension,
   defu,
   escapeStringRegexp,
-  objectHash,
   removeExtension,
 } from '@weapp-core/shared'
+import { objectHash } from '@weapp-core/shared/node'
 
 const name = addExtension('pages/index/index')
 const cleaned = removeExtension('app.json')

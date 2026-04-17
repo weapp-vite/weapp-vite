@@ -1,4 +1,4 @@
-import { objectHash } from '@/index'
+import { objectHash } from '@/node'
 
 describe('hash', () => {
   it('x', () => {

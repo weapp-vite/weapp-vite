@@ -10,6 +10,7 @@ import {
 
 let wxPatched = false
 let currentPageInstance: InternalRuntimeState | undefined
+type ShareMenuName = 'shareAppMessage' | 'shareTimeline'
 export function getCurrentPageInstance() {
   return currentPageInstance
 }
@@ -108,21 +109,9 @@ export function ensurePageShareMenus(options: {
     return
   }
 
-  const wxGlobal = getMiniProgramGlobalObject()
-  if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  if (!miniProgramGlobal || typeof miniProgramGlobal.showShareMenu !== 'function') {
     return
-  }
-
-  const showMenu = (payload: {
-    menus: Array<'shareAppMessage' | 'shareTimeline'>
-    withShareTicket?: boolean
-  }) => {
-    try {
-      wxGlobal.showShareMenu(payload as any)
-    }
-    catch {
-      // 忽略平台差异导致的菜单能力异常，避免影响页面主流程
-    }
   }
 
   const runtimeCapabilities = getCurrentMiniProgramRuntimeCapabilities()
@@ -134,7 +123,7 @@ export function ensurePageShareMenus(options: {
     return
   }
 
-  const menus: Array<'shareAppMessage' | 'shareTimeline'> = []
+  const menus: ShareMenuName[] = []
   if (shouldShowShareAppMessage) {
     menus.push('shareAppMessage')
   }
@@ -142,8 +131,26 @@ export function ensurePageShareMenus(options: {
     menus.push('shareTimeline')
   }
 
-  showMenu({
-    withShareTicket: true,
-    menus,
-  })
+  const payloads = [
+    { withShareTicket: true, menus },
+    { menus },
+    enableOnShareTimeline ? { withShareTicket: true } : undefined,
+    enableOnShareTimeline ? {} : undefined,
+    undefined,
+  ]
+
+  for (const payload of payloads) {
+    try {
+      if (payload === undefined) {
+        miniProgramGlobal.showShareMenu()
+      }
+      else {
+        miniProgramGlobal.showShareMenu(payload as any)
+      }
+      break
+    }
+    catch {
+      // 继续尝试更保守的 payload，兼容不同宿主的 showShareMenu 参数形态。
+    }
+  }
 }
