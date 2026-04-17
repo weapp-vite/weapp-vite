@@ -1,6 +1,6 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))

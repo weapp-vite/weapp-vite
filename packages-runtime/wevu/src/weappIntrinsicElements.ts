@@ -57,6 +57,12 @@ import type { WeappIntrinsicElementVoipRoom } from './weappIntrinsicElements/ele
 import type { WeappIntrinsicElementWebView } from './weappIntrinsicElements/elements/web-view'
 
 export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from './weappIntrinsicElements/base'
+export type {
+  MiniProgramCSSProperties,
+  MiniProgramDatasetAttributes,
+  MiniProgramIntrinsicElementBaseAttributes,
+  MiniProgramIntrinsicEventHandler,
+} from './weappIntrinsicElements/base'
 
 export interface WeappHtmlAliasIntrinsicElements {
   a: WeappIntrinsicElementNavigator
@@ -95,6 +101,8 @@ export interface WeappHtmlAliasIntrinsicElements {
   u: WeappIntrinsicElementText
   ul: WeappIntrinsicElementView
 }
+
+export interface MiniProgramHtmlAliasIntrinsicElements extends WeappHtmlAliasIntrinsicElements {}
 
 export interface WeappIntrinsicElements extends WeappHtmlAliasIntrinsicElements {
   ad: WeappIntrinsicElementAd
@@ -152,3 +160,5 @@ export interface WeappIntrinsicElements extends WeappHtmlAliasIntrinsicElements 
   'voip-room': WeappIntrinsicElementVoipRoom
   'web-view': WeappIntrinsicElementWebView
 }
+
+export interface MiniProgramIntrinsicElements extends WeappIntrinsicElements {}

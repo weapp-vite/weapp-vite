@@ -6,11 +6,15 @@ import type {
 } from './types'
 import { parseDocument } from 'htmlparser2'
 import {
+  hasControlAttribute,
+  normalizeTagName,
+  resolveControlAttributeValue,
+  SELF_CLOSING_TAGS,
+} from '../../shared/wxml'
+import {
   buildAttributeString,
   extractFor,
   isConditionalElement,
-  normalizeTagName,
-  SELF_CLOSING_TAGS,
   stripControlAttributes,
 } from './dom'
 import {
@@ -64,15 +68,15 @@ function renderConditionalSequence(
     }
     const element = candidate as Element
     const attribs = element.attribs ?? {}
-    if (branches.length === 0 && !('wx:if' in attribs)) {
+    if (branches.length === 0 && !hasControlAttribute(attribs, 'if')) {
       break
     }
-    if (branches.length > 0 && !('wx:elif' in attribs) && !('wx:else' in attribs)) {
+    if (branches.length > 0 && !hasControlAttribute(attribs, 'elif') && !hasControlAttribute(attribs, 'else')) {
       break
     }
     branches.push({ node: element, attribs })
     cursor += 1
-    if ('wx:else' in attribs) {
+    if (hasControlAttribute(attribs, 'else')) {
       break
     }
   }
@@ -86,8 +90,9 @@ function renderConditionalSequence(
   }
 
   for (const { node, attribs } of branches) {
-    if ('wx:else' in attribs) {
+    if (hasControlAttribute(attribs, 'else')) {
       return {
+        // eslint-disable-next-line ts/no-use-before-define -- 条件分支与普通节点复用同一元素渲染逻辑。
         rendered: renderElement(
           node,
           scope,
@@ -97,13 +102,15 @@ function renderConditionalSequence(
         endIndex: startIndex + branches.length - 1,
       }
     }
-    const conditionExpr = attribs['wx:if'] ?? attribs['wx:elif']
+    const conditionExpr = resolveControlAttributeValue(attribs, 'if')
+      ?? resolveControlAttributeValue(attribs, 'elif')
     if (!conditionExpr) {
       continue
     }
     const condition = evaluateExpression(conditionExpr, scope)
     if (condition) {
       return {
+        // eslint-disable-next-line ts/no-use-before-define -- 条件分支与普通节点复用同一元素渲染逻辑。
         rendered: renderElement(
           node,
           scope,

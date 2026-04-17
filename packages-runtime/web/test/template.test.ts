@@ -53,6 +53,25 @@ describe('createTemplate', () => {
     expect(render({ visible: true })).toBe('<div>hidden</div>')
   })
 
+  it('supports non-wechat structural directive prefixes at runtime', () => {
+    const render = createTemplate(`
+<view>
+  <view a:if="{{visible}}">
+    <text tt:for="{{items}}" tt:key="id">{{item.label}}</text>
+  </view>
+  <view s:else>fallback</view>
+</view>`)
+
+    expect(render({
+      visible: true,
+      items: [
+        { id: 1, label: 'one' },
+        { id: 2, label: 'two' },
+      ],
+    })).toContain('<span>one</span><span>two</span>')
+    expect(render({ visible: false, items: [] })).toContain('<div>fallback</div>')
+  })
+
   it('renders wx:elif branches when previous conditions fail', () => {
     const render = createTemplate(`
 <view>

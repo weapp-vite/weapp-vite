@@ -1,12 +1,12 @@
-import type { WeappIntrinsicElements } from '../weappIntrinsicElements'
+import type { MiniProgramIntrinsicElements } from '../weappIntrinsicElements'
 import type { TemplateRefValue } from './types'
 
-type WeappTemplateRefElements = {
-  [K in keyof WeappIntrinsicElements]: TemplateRefValue
+type MiniProgramTemplateRefElements = {
+  [K in keyof MiniProgramIntrinsicElements]: TemplateRefValue
 }
 
 declare global {
-  interface HTMLElementTagNameMap extends WeappTemplateRefElements {}
+  interface HTMLElementTagNameMap extends MiniProgramTemplateRefElements {}
 }
 
 export {}

@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import path from 'pathe'

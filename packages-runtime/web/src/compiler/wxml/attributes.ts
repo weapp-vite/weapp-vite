@@ -1,12 +1,19 @@
 import type { RenderElementNode, RenderNode } from './types'
-import { CONTROL_ATTRS, EVENT_KIND_ALIAS, EVENT_PREFIX_RE, normalizeAttributeName } from '../../shared/wxml'
+import {
+  CONTROL_ATTRS,
+  EVENT_KIND_ALIAS,
+  EVENT_PREFIX_RE,
+  hasControlAttribute,
+  normalizeAttributeName,
+  resolveControlAttributeValue,
+} from '../../shared/wxml'
 import { buildExpression, parseInterpolations } from './interpolation'
 
 export function extractFor(attribs: Record<string, string>) {
-  const expr = attribs['wx:for']
-  const itemName = attribs['wx:for-item']?.trim() || 'item'
-  let indexName = attribs['wx:for-index']?.trim() || 'index'
-  const key = attribs['wx:key']
+  const expr = resolveControlAttributeValue(attribs, 'for')
+  const itemName = resolveControlAttributeValue(attribs, 'for-item')?.trim() || 'item'
+  let indexName = resolveControlAttributeValue(attribs, 'for-index')?.trim() || 'index'
+  const key = resolveControlAttributeValue(attribs, 'key')
   const restAttribs: Record<string, string> = {}
   for (const [name, value] of Object.entries(attribs)) {
     if (CONTROL_ATTRS.has(name)) {
@@ -25,7 +32,9 @@ export function isConditionalElement(node: RenderNode): node is RenderElementNod
     return false
   }
   const attribs = node.attribs ?? {}
-  return 'wx:if' in attribs || 'wx:elif' in attribs || 'wx:else' in attribs
+  return hasControlAttribute(attribs, 'if')
+    || hasControlAttribute(attribs, 'elif')
+    || hasControlAttribute(attribs, 'else')
 }
 
 export function stripControlAttributes(attribs: Record<string, string>) {

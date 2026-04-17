@@ -40,7 +40,7 @@ function createObserverFromGlobal(
  * 在 setup 中创建 IntersectionObserver，并在卸载时自动断开。
  *
  * - 优先使用 `ctx.instance.createIntersectionObserver(options)`。
- * - 不可用时回退到 `wx.createIntersectionObserver(instance, options)`。
+ * - 不可用时回退到宿主全局对象的 `createIntersectionObserver(...)`。
  */
 export function useIntersectionObserver(
   options: UseIntersectionObserverOptions = {},

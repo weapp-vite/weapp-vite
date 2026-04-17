@@ -10,7 +10,7 @@
 - 常用字符串与路径处理工具
 - 对象合并与判定工具
 - 统一导出常用第三方工具（`defu`、`get`、`set`）
-- 通过 `@weapp-core/shared/node` 提供 Node 专用哈希能力
+- 通过 `@weapp-core/shared/node` 提供 Node 专用哈希与文件系统能力
 
 ## 安装
 
@@ -27,11 +27,12 @@ import {
   escapeStringRegexp,
   removeExtension,
 } from '@weapp-core/shared'
-import { objectHash } from '@weapp-core/shared/node'
+import { fs, objectHash } from '@weapp-core/shared/node'
 
 const name = addExtension('pages/index/index')
 const cleaned = removeExtension('app.json')
 const hash = objectHash({ foo: 'bar' })
+const exists = await fs.pathExists('app.json')
 ```
 
 ## 配置

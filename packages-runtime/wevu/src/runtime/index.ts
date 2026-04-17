@@ -1,5 +1,9 @@
 export type {
+  MiniProgramIntrinsicElementBaseAttributes,
+  MiniProgramIntrinsicElements,
+  MiniProgramIntrinsicEventHandler,
   WeappIntrinsicElementBaseAttributes,
+  WeappIntrinsicElements,
   WeappIntrinsicEventHandler,
 } from '../weappIntrinsicElements'
 export * from './app'

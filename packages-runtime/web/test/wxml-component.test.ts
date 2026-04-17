@@ -35,6 +35,26 @@ describe('compileWxml component mapping', () => {
     expect(result.code).toContain('</slot>')
   })
 
+  it('normalizes structural directives from multiple mini program hosts', () => {
+    const result = compileWxml({
+      id: '/src/pages/index/index.wxml',
+      source: `
+<view a:if="{{ready}}">
+  <text tt:for="{{list}}" tt:key="id">{{item.label}}</text>
+</view>
+<view s:else>fallback</view>`,
+      resolveTemplatePath: () => undefined,
+      resolveWxsPath: () => undefined,
+    })
+
+    expect(result.code).toContain('ctx.normalizeList(')
+    expect(result.code).toContain('ready')
+    expect(result.code).toContain('"fallback"')
+    expect(result.code).not.toContain('a:if')
+    expect(result.code).not.toContain('tt:for')
+    expect(result.code).not.toContain('s:else')
+  })
+
   it('preserves slot attribute binding for custom components', () => {
     const result = compileWxml({
       id: '/src/pages/index/index.wxml',

@@ -1,3 +1,13 @@
+export { fs } from './fs'
+export type {
+  CopyOptions,
+  FsDirent,
+  FsStats,
+  JsonReadOptions,
+  JsonWriteOptions,
+  MoveOptions,
+} from './fs'
+
 const UTF8_ENCODER = new TextEncoder()
 const HASH_SEEDS = [0, 1, 2, 3] as const
 

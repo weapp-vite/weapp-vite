@@ -1,11 +1,23 @@
+import { getMiniProgramDirectivePrefix, getSupportedMiniProgramPlatforms } from '@weapp-core/shared'
+
+const CONTROL_ATTR_SUFFIXES = [
+  'if',
+  'elif',
+  'else',
+  'for',
+  'for-item',
+  'for-index',
+  'key',
+] as const
+
+export type ControlAttrSuffix = typeof CONTROL_ATTR_SUFFIXES[number]
+
+export const CONTROL_ATTR_PREFIXES = Array.from(new Set(
+  getSupportedMiniProgramPlatforms().map(platform => getMiniProgramDirectivePrefix(platform)),
+))
+
 export const CONTROL_ATTRS = new Set([
-  'wx:if',
-  'wx:elif',
-  'wx:else',
-  'wx:for',
-  'wx:for-item',
-  'wx:for-index',
-  'wx:key',
+  ...CONTROL_ATTR_PREFIXES.flatMap(prefix => CONTROL_ATTR_SUFFIXES.map(suffix => `${prefix}:${suffix}`)),
 ])
 
 export const EVENT_PREFIX_RE = /^(?:bind|catch|mut-bind|capture-bind|capture-catch)([\w-]+)$/
@@ -30,6 +42,34 @@ export const SELF_CLOSING_TAGS = new Set([
   'track',
   'wbr',
 ])
+
+export function resolveControlAttributeName(
+  attribs: Record<string, string>,
+  suffix: ControlAttrSuffix,
+): string | undefined {
+  for (const prefix of CONTROL_ATTR_PREFIXES) {
+    const name = `${prefix}:${suffix}`
+    if (name in attribs) {
+      return name
+    }
+  }
+  return undefined
+}
+
+export function resolveControlAttributeValue(
+  attribs: Record<string, string>,
+  suffix: ControlAttrSuffix,
+): string | undefined {
+  const name = resolveControlAttributeName(attribs, suffix)
+  return name ? attribs[name] : undefined
+}
+
+export function hasControlAttribute(
+  attribs: Record<string, string>,
+  suffix: ControlAttrSuffix,
+): boolean {
+  return resolveControlAttributeName(attribs, suffix) !== undefined
+}
 
 export function normalizeTagName(name: string) {
   switch (name) {

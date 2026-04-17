@@ -1,4 +1,4 @@
-import type { WeappIntrinsicElements } from '@/weappIntrinsicElements'
+import type { MiniProgramIntrinsicElements, WeappIntrinsicElements } from '@/weappIntrinsicElements'
 import { expectError, expectType } from 'tsd'
 
 type ButtonAttrs = WeappIntrinsicElements['button']
@@ -42,6 +42,7 @@ type DivAttrs = WeappIntrinsicElements['div']
 type SpanAttrs = WeappIntrinsicElements['span']
 type ImageAliasAttrs = WeappIntrinsicElements['img']
 type AnchorAliasAttrs = WeappIntrinsicElements['a']
+type MiniProgramButtonAttrs = MiniProgramIntrinsicElements['button']
 
 declare const mapAttrs: MapAttrs
 expectType<string | number | undefined>(mapAttrs.id)
@@ -49,6 +50,8 @@ expectType<WeappIntrinsicElements['view']>({} as DivAttrs)
 expectType<WeappIntrinsicElements['text']>({} as SpanAttrs)
 expectType<WeappIntrinsicElements['image']>({} as ImageAliasAttrs)
 expectType<WeappIntrinsicElements['navigator']>({} as AnchorAliasAttrs)
+expectType<MiniProgramButtonAttrs>(liveActivityButton)
+expectType<MiniProgramIntrinsicElements['view']>({} as WeappIntrinsicElements['view'])
 
 expectType<MapAttrs>({
   id: 'map-1',

@@ -1,6 +1,6 @@
 import type { ProjectConfig } from '@/types'
 import os from 'node:os'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createOrUpdateProjectConfig } from '@/projectConfig'

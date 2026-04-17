@@ -1,5 +1,10 @@
 import type { RenderElementNode, RenderNode } from './types'
-import { normalizeTagName, SELF_CLOSING_TAGS } from '../../shared/wxml'
+import {
+  hasControlAttribute,
+  normalizeTagName,
+  resolveControlAttributeValue,
+  SELF_CLOSING_TAGS,
+} from '../../shared/wxml'
 import {
   extractFor,
   isConditionalElement,
@@ -62,15 +67,15 @@ export class Renderer {
         break
       }
       const attribs = candidate.attribs ?? {}
-      if (branches.length === 0 && !('wx:if' in attribs)) {
+      if (branches.length === 0 && !hasControlAttribute(attribs, 'if')) {
         break
       }
-      if (branches.length > 0 && !('wx:elif' in attribs) && !('wx:else' in attribs)) {
+      if (branches.length > 0 && !hasControlAttribute(attribs, 'elif') && !hasControlAttribute(attribs, 'else')) {
         break
       }
       branches.push({ node: candidate, attribs })
       cursor += 1
-      if ('wx:else' in attribs) {
+      if (hasControlAttribute(attribs, 'else')) {
         break
       }
     }
@@ -85,11 +90,13 @@ export class Renderer {
     for (let index = branches.length - 1; index >= 0; index -= 1) {
       const { node, attribs } = branches[index]!
       const cleanedAttribs = stripControlAttributes(attribs)
-      if ('wx:else' in attribs) {
+      if (hasControlAttribute(attribs, 'else')) {
         expr = this.renderElement(node, scopeVar, wxsVar, componentTags, { overrideAttribs: cleanedAttribs })
         continue
       }
-      const conditionExpr = attribs['wx:if'] ?? attribs['wx:elif'] ?? ''
+      const conditionExpr = resolveControlAttributeValue(attribs, 'if')
+        ?? resolveControlAttributeValue(attribs, 'elif')
+        ?? ''
       const rendered = this.renderElement(node, scopeVar, wxsVar, componentTags, { overrideAttribs: cleanedAttribs })
       const condition = buildExpression(parseInterpolations(conditionExpr), scopeVar, wxsVar)
       expr = `(${condition} ? ${rendered} : ${expr})`
