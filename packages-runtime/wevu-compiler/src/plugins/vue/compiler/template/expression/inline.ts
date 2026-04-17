@@ -56,8 +56,6 @@ const INLINE_GLOBALS = new Set([
   'requirePlugin',
   'getApp',
   'getCurrentPages',
-  'MiniProgramNative',
-  'WechatMiniprogram',
   'ctx',
   'scope',
   ...getMiniProgramRuntimeGlobalKeys(),

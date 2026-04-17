@@ -40,4 +40,22 @@ describe('template expression globals', () => {
       },
     ])
   })
+
+  it('does not preserve wechat-centric pseudo globals in inline expressions', () => {
+    const context = createContext()
+    const result = registerInlineExpression('MiniProgramNative.foo + WechatMiniprogram.bar + count', context)
+
+    expect(result).toEqual({
+      id: 'i0',
+      scopeBindings: [],
+      indexBindings: [],
+    })
+    expect(context.inlineExpressions).toEqual([
+      {
+        id: 'i0',
+        expression: 'ctx.MiniProgramNative.foo+ctx.WechatMiniprogram.bar+ctx.count',
+        scopeKeys: [],
+      },
+    ])
+  })
 })
