@@ -1,6 +1,7 @@
 import type { MiniProgramPlatformAdapter, OutputExtensions } from './platforms/types'
 import type { MpPlatform } from './types'
 import {
+  getMiniProgramDirectivePrefix,
   getSupportedMiniProgramPlatforms as getSharedSupportedMiniProgramPlatforms,
   normalizeMiniProgramPlatform,
   resolveMiniProgramPlatform,
@@ -274,7 +275,7 @@ export function getWxmlPlatformTransformOptions(platform?: MpPlatform): WxmlPlat
 
   return {
     eventBindingStyle: wxml?.eventBindingStyle ?? 'default',
-    directivePrefix: wxml?.directivePrefix ?? 'wx',
+    directivePrefix: wxml?.directivePrefix ?? getMiniProgramDirectivePrefix(platform),
     normalizeComponentTagName: wxml?.normalizeComponentTagName === true,
     normalizeVueTemplate: wxml?.normalizeVueTemplate === true,
     emitGenericPlaceholder: wxml?.emitGenericPlaceholder === true,
