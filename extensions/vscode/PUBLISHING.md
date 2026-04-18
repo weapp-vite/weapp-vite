@@ -20,6 +20,7 @@
 - 当 `extensions/vscode` 有需要发布的改动时，新增一条指向 `@weapp-vite/vscode` 的 changeset
 - release PR 由仓库统一的 changeset 流程生成，扩展版本号与 `CHANGELOG.md` 也由该流程统一写入
 - release PR 合并到 `main` 后，会触发 `.github/workflows/release.yml`
+- `release.yml` 只允许在 `main` ref 上执行实际发布；即使手动 dispatch 到 `changeset-release/main` 这类未合并分支，也不会发布 Marketplace
 - `release.yml` 会先执行现有 npm release 流程，再查询 VS Code Marketplace 当前线上版本
 - 如果 `extensions/vscode/package.json` 当前版本高于 Marketplace 线上版本，且对应 tag 尚不存在，则执行 `pnpm --dir extensions/vscode run publish:vsce`
 - 这样即使某次首次发布失败，只要线上版本仍然落后，后续成功的 release run 也会自动补发

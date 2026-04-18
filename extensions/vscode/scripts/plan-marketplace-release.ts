@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 
 export interface MarketplaceReleasePlan {
   currentVersion: string
+  currentRef: null | string
+  isMainRef: boolean
   marketplaceVersion: null | string
   previousVersion: null | string
   releaseTag: string
@@ -25,6 +27,7 @@ interface MarketplaceQueryResponse {
 
 const extensionRoot = path.resolve(process.cwd())
 const packageJsonPath = path.join(extensionRoot, 'package.json')
+const mainBranchRef = 'refs/heads/main'
 const releaseTagPrefix = 'vscode-extension-v'
 const marketplaceApiUrl = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery'
 
@@ -175,6 +178,13 @@ export function compareSemverVersions(left: string, right: string) {
 }
 
 /**
+ * 判断当前 ref 是否为主分支发布 ref。
+ */
+export function isMainReleaseRef(ref: null | string | undefined) {
+  return ref === mainBranchRef
+}
+
+/**
  * 从 Marketplace 查询结果里提取最新版本号。
  */
 export function readMarketplaceLatestVersion(response: MarketplaceQueryResponse) {
@@ -231,14 +241,18 @@ export function createMarketplaceReleasePlan(
   previousVersion: null | string,
   marketplaceVersion: null | string,
   tagExists: boolean,
+  currentRef: null | string,
 ): MarketplaceReleasePlan {
   const releaseTag = `${releaseTagPrefix}${currentVersion}`
-  const shouldPublish = marketplaceVersion === null
+  const isMainRef = isMainReleaseRef(currentRef)
+  const shouldPublish = isMainRef && (marketplaceVersion === null
     ? !tagExists
-    : compareSemverVersions(currentVersion, marketplaceVersion) > 0 && !tagExists
+    : compareSemverVersions(currentVersion, marketplaceVersion) > 0 && !tagExists)
 
   return {
     currentVersion,
+    currentRef,
+    isMainRef,
     marketplaceVersion,
     previousVersion,
     releaseTag,
@@ -261,17 +275,36 @@ function readPreviousVersion() {
 }
 
 /**
+ * 解析当前 release 运行所在的 git ref。
+ */
+function resolveCurrentReleaseRef() {
+  const githubRef = process.env.GITHUB_REF?.trim()
+
+  if (githubRef) {
+    return githubRef
+  }
+
+  const branchName = runGit(['rev-parse', '--abbrev-ref', 'HEAD'], true)
+  if (!branchName || branchName === 'HEAD') {
+    return null
+  }
+
+  return `refs/heads/${branchName}`
+}
+
+/**
  * 读取当前发布计划。
  */
 async function loadMarketplaceReleasePlan() {
   const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8')
   const currentVersion = readVersionFromPackageJson(packageJsonContent)
+  const currentRef = resolveCurrentReleaseRef()
   const previousVersion = readPreviousVersion()
   const { extensionName, publisher } = readMarketplaceIdentity(packageJsonContent)
   const marketplaceVersion = await fetchMarketplaceLatestVersion(publisher, extensionName)
   const tagExists = runGit(['tag', '--list', `${releaseTagPrefix}${currentVersion}`], true).length > 0
 
-  return createMarketplaceReleasePlan(currentVersion, previousVersion, marketplaceVersion, tagExists)
+  return createMarketplaceReleasePlan(currentVersion, previousVersion, marketplaceVersion, tagExists, currentRef)
 }
 
 /**
@@ -286,6 +319,8 @@ function writeGitHubOutput(plan: MarketplaceReleasePlan) {
 
   const lines = [
     `current_version=${plan.currentVersion}`,
+    `current_ref=${plan.currentRef ?? ''}`,
+    `is_main_ref=${String(plan.isMainRef)}`,
     `marketplace_version=${plan.marketplaceVersion ?? ''}`,
     `previous_version=${plan.previousVersion ?? ''}`,
     `release_tag=${plan.releaseTag}`,
