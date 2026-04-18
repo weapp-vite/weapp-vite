@@ -38,6 +38,7 @@ jobs:
     needs:
       - vscode-extension
       - vscode-extension-host-smoke
+      - vscode-extension-vsix-e2e
     steps:
       - name: Check out code
         uses: actions/checkout@v6
@@ -75,3 +76,19 @@ jobs:
 
       - name: Run VS Code host smoke test
         run: pnpm --dir extensions/vscode run test:host:smoke
+
+  vscode-extension-vsix-e2e:
+    name: VSCode Extension VSIX E2E (Node 20)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    needs: vscode-extension
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: 20
+
+      - name: Run VSIX install-mode e2e
+        run: pnpm --dir extensions/vscode run test:vsix:e2e

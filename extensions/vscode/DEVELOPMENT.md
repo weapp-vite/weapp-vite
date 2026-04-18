@@ -35,6 +35,10 @@ pnpm --dir extensions/vscode run build
 pnpm --dir extensions/vscode run test
 pnpm --dir extensions/vscode run test:host:smoke
 pnpm --dir extensions/vscode run test:vsix:e2e
+pnpm --dir extensions/vscode run test:vsix:e2e:standalone
+pnpm --dir extensions/vscode run test:vsix:e2e:vue-official
+pnpm --dir extensions/vscode run open:vsix:e2e:standalone
+pnpm --dir extensions/vscode run open:vsix:e2e:vue-official
 pnpm --dir extensions/vscode run smoke:dist
 pnpm --dir extensions/vscode run check:package
 pnpm --dir extensions/vscode run check:vsix
@@ -53,7 +57,10 @@ pnpm --dir extensions/vscode run release:marketplace:plan
 
 - `smoke:dist` 会用模拟的 VS Code API 加载编译产物 `dist/extension.js`
 - `test:host:smoke` 会在真实 VS Code 宿主中运行最小 smoke 测试
-- `test:vsix:e2e` 会先生成本地 `.vsix`，再以“已安装扩展”的方式验证激活与命令链路
+- `test:vsix:e2e` 会顺序执行两个安装态 e2e 场景：仅安装 `weapp-vite`，以及安装 `weapp-vite` + `Vue Official`
+- `test:vsix:e2e:standalone` 只验证“仅安装 `weapp-vite`”场景
+- `test:vsix:e2e:vue-official` 只验证“安装 `weapp-vite` + `Vue Official`”场景
+- `open:vsix:e2e:standalone` / `open:vsix:e2e:vue-official` 会直接拉起对应场景的独立 VS Code，便于手工复现和联调
 
 ### 4.3 打包校验
 

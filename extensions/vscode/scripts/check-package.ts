@@ -30,6 +30,8 @@ const requiredFiles = [
   'LICENSE',
   'assets/logo.svg',
   'assets/weapp-vite-icon-theme.json',
+  'scripts/launch-vsix-vscode.ts',
+  'scripts/vscode-e2e-shared.ts',
   'scripts/vscode-host-smoke.ts',
   'scripts/vscode-host-smoke-runner.cjs',
   'scripts/vsix-e2e.ts',
