@@ -336,11 +336,6 @@
           "type": "boolean",
           "default": true,
           "description": "终端命令和脚本模板是否优先使用 wv 别名而不是 weapp-vite 全称。"
-        },
-        "weapp-vite.promptFileIcons": {
-          "type": "boolean",
-          "default": true,
-          "description": "检测到 weapp-vite.config.* 但当前未启用 weapp-vite File Icons 时，是否提示一键切换文件图标主题。"
         }
       }
     },

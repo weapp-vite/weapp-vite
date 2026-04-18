@@ -3,9 +3,6 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import {
-  WEAPP_VITE_FILE_ICON_THEME_ID,
-} from '../extension/shared/constants'
 
 export type VscodeE2EScenarioId = 'standalone' | 'vue-official'
 
@@ -42,7 +39,6 @@ const SCENARIOS: Record<VscodeE2EScenarioId, VscodeE2EScenario> = {
 
 export const DEFAULT_VSCODE_USER_SETTINGS = {
   'security.workspace.trust.enabled': false,
-  'workbench.iconTheme': WEAPP_VITE_FILE_ICON_THEME_ID,
 }
 
 function isScenarioId(value: string): value is VscodeE2EScenarioId {

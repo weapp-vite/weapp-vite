@@ -46,7 +46,6 @@ it('preserves unrelated settings while applying weapp-vite defaults', async () =
   assert.deepEqual(settings, {
     'editor.fontSize': 16,
     'security.workspace.trust.enabled': false,
-    'workbench.iconTheme': 'weapp-vite-file-icons',
     'files.autoSave': 'afterDelay',
   })
 })

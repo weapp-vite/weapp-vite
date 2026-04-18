@@ -136,13 +136,11 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
   assert.equal(properties['weapp-vite.enableWxmlDefinition'].default, true)
   assert.equal(properties['weapp-vite.enableTemplateDecorations'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)
-  assert.equal(properties['weapp-vite.promptFileIcons'].default, true)
 })
 
-it('isolated vscode sessions default to weapp-vite file icons and trusted workspaces', () => {
+it('isolated vscode sessions default to trusted workspaces only', () => {
   assert.deepEqual(DEFAULT_VSCODE_USER_SETTINGS, {
     'security.workspace.trust.enabled': false,
-    'workbench.iconTheme': 'weapp-vite-file-icons',
   })
 })
 

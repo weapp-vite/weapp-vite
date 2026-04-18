@@ -57,21 +57,22 @@
 - 为 `.vue` 中的 `<json>` 自定义块提供语法高亮
 - 为 `app.json`、`vite.config.*` / `weapp-vite.config.*`、页面 `<json>`、`definePageJson(...)` 提供补全、悬浮和轻量诊断
 - 支持本地 `usingComponents` 路径校验、跳转和缺失组件创建
-- 内置 `weapp-vite File Icons` 文件图标主题
+- 内置 `weapp-vite File Icons` 文件图标主题，可按需手动启用
 
 ## 4. 常用命令
 
 你通常只需要记住这几个高频命令：
 
-| 命令                        | 用途                                 |
-| --------------------------- | ------------------------------------ |
-| `weapp-vite: Run Action`    | 统一入口，按当前上下文推荐可执行动作 |
-| `weapp-vite: Dev`           | 启动开发流程                         |
-| `weapp-vite: Build`         | 执行构建                             |
-| `weapp-vite: Generate`      | 创建页面或组件骨架                   |
-| `weapp-vite: Open DevTools` | 打开开发者工具                       |
-| `weapp-vite: Show Output`   | 查看扩展输出日志                     |
-| `weapp-vite: Open Docs`     | 打开相关文档入口                     |
+| 命令                                    | 用途                                 |
+| --------------------------------------- | ------------------------------------ |
+| `weapp-vite: Run Action`                | 统一入口，按当前上下文推荐可执行动作 |
+| `weapp-vite: Dev`                       | 启动开发流程                         |
+| `weapp-vite: Build`                     | 执行构建                             |
+| `weapp-vite: Generate`                  | 创建页面或组件骨架                   |
+| `weapp-vite: Open DevTools`             | 打开开发者工具                       |
+| `weapp-vite: Use weapp-vite File Icons` | 手动启用 weapp-vite 文件图标主题     |
+| `weapp-vite: Show Output`               | 查看扩展输出日志                     |
+| `weapp-vite: Open Docs`                 | 打开相关文档入口                     |
 
 页面维护相关命令：
 
@@ -109,7 +110,6 @@
 | `weapp-vite.enableWxmlEnhancements`       | 控制 WXML 相关增强能力                |
 | `weapp-vite.enableTemplateDecorations`    | 控制模板装饰提示                      |
 | `weapp-vite.preferWvAlias`                | 控制命令更偏向 `wv` 还是 `weapp-vite` |
-| `weapp-vite.promptFileIcons`              | 控制是否提示切换文件图标主题          |
 
 > **说明**：如果你更偏好显式命令名，可以关闭 `weapp-vite.preferWvAlias`，扩展会优先生成 `weapp-vite dev` 这一类命令形式，而不是 `wv dev`。
 

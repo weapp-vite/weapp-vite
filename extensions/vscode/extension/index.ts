@@ -100,7 +100,6 @@ import {
 } from './ui/generate'
 import {
   enableWeappViteFileIcons,
-  maybePromptForWeappViteFileIcons,
 } from './ui/icons'
 import {
   WeappVitePagesTreeProvider,
@@ -705,7 +704,6 @@ export function activate(context: any) {
 
   void refreshStatusBar()
   void syncPagesTreeState(pagesTreeProvider, pagesTreeView)
-  void maybePromptForWeappViteFileIcons()
 
   for (const document of vscode.workspace.textDocuments) {
     void refreshPackageJsonDiagnostics(document)
