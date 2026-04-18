@@ -1,5 +1,6 @@
 /* eslint-disable e18e/ban-dependencies, ts/no-use-before-define -- 脚本需要 execa，同文件工具函数按阅读顺序组织。 */
 import { Buffer } from 'node:buffer'
+import nodePath from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { fs } from '@weapp-core/shared'
@@ -77,6 +78,23 @@ const IMAGE_ROLE_OVERRIDES: Record<number, Record<string, ExtractedAssetCandidat
   4109843504: {
     'https://github.com/user-attachments/assets/dbb57d5c-41d7-4d37-ac4a-55e4e4113110': 'qrcode',
   },
+}
+
+function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
+  if (!entryArg) {
+    return false
+  }
+
+  const resolvedEntryPath = nodePath.isAbsolute(entryArg)
+    ? entryArg
+    : nodePath.resolve(entryArg)
+
+  try {
+    return moduleUrl === pathToFileURL(resolvedEntryPath).href
+  }
+  catch {
+    return false
+  }
 }
 
 const DEFAULT_OPTIONS: SyncOptions = {
@@ -769,7 +787,7 @@ async function main() {
   console.log(`[sync-community-showcase] synced ${entries.length} showcase entries from issue #${options.issueNumber}`)
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
   main().catch((error) => {
     console.error('[sync-community-showcase] failed:', error)
     process.exitCode = 1

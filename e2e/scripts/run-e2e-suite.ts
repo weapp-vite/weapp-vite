@@ -1,8 +1,26 @@
+import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
 import { runTaskSuite } from './suiteRunner'
+
+function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
+  if (!entryArg) {
+    return false
+  }
+
+  const resolvedEntryPath = path.isAbsolute(entryArg)
+    ? entryArg
+    : path.resolve(entryArg)
+
+  try {
+    return moduleUrl === pathToFileURL(resolvedEntryPath).href
+  }
+  catch {
+    return false
+  }
+}
 
 export function shouldCleanupIdeBeforeEachTask(mode: string) {
   return /^ide(?:$|-|:)(?!headless)/.test(mode)
@@ -45,6 +63,6 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   })
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
   await runE2ESuiteCli()
 }

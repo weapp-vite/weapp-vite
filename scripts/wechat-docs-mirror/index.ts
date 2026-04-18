@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
+import nodePath from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import * as cheerio from 'cheerio'
@@ -53,6 +54,23 @@ const FETCH_TIMEOUT_MS = 30_000
 const ASSET_SAFE_NAME_RE = /[^\w-]+/g
 const TRIM_DASH_RE = /^-+|-+$/g
 const LEADING_HEADING_MARK_RE = /^#\s*/
+
+function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
+  if (!entryArg) {
+    return false
+  }
+
+  const resolvedEntryPath = nodePath.isAbsolute(entryArg)
+    ? entryArg
+    : nodePath.resolve(entryArg)
+
+  try {
+    return moduleUrl === pathToFileURL(resolvedEntryPath).href
+  }
+  catch {
+    return false
+  }
+}
 
 function parseCliArgs(argv: string[]): MirrorCliOptions {
   const options: MirrorCliOptions = {
@@ -461,8 +479,7 @@ async function main() {
   )
 }
 
-const isMainModule
-  = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+const isMainModule = isCurrentModuleEntry(process.argv[1], import.meta.url)
 
 if (isMainModule) {
   main().catch((error) => {

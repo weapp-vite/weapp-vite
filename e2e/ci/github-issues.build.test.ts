@@ -33,6 +33,14 @@ async function scanFiles(root: string) {
   return (await fd.crawl(root).withPromise()).sort()
 }
 
+function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) {
+  const requireMatches = [...sourceCode.matchAll(/require\((['"`])([^"'`]+)\1\)/g)]
+
+  return requireMatches
+    .map(match => path.resolve(path.dirname(sourceFilePath), match[2]!))
+    .find(candidate => candidate.startsWith(DIST_ROOT) && path.extname(candidate) === '.js')
+}
+
 async function runIssue393Build() {
   await fs.remove(ISSUE_393_DIST_ROOT)
 
@@ -387,16 +395,19 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(footerJs).toContain('__issue398FooterMounted')
     expect(footerJs).toContain('__issue398FooterLabel')
 
-    const sharedImportPattern = /require\((['"`])(\.\.\/\.\.\/\.\.\/src-[^/"'`]+\.js)\1\)/
-    const navbarSharedImport = navbarJs.match(sharedImportPattern)
-    const footerSharedImport = footerJs.match(sharedImportPattern)
+    const pageSharedRuntimePath = resolveSharedRuntimeImport(pageJsPath, pageJs)
+    const layoutSharedRuntimePath = resolveSharedRuntimeImport(layoutJsPath, layoutJs)
+    const navbarSharedRuntimePath = resolveSharedRuntimeImport(navbarJsPath, navbarJs)
+    const footerSharedRuntimePath = resolveSharedRuntimeImport(footerJsPath, footerJs)
 
-    expect(navbarSharedImport?.[2]).toBeTruthy()
-    expect(footerSharedImport?.[2]).toBeTruthy()
-    expect(navbarSharedImport?.[2]).toBe(footerSharedImport?.[2])
-
-    const sharedRuntimeChunkPath = path.join(DIST_ROOT, navbarSharedImport![2].replace(/^\.\.\//, '').replace(/^\.\.\//, '').replace(/^\.\.\//, ''))
-    expect(await fs.pathExists(sharedRuntimeChunkPath)).toBe(true)
+    expect(pageSharedRuntimePath).toBeTruthy()
+    expect(layoutSharedRuntimePath).toBeTruthy()
+    expect(navbarSharedRuntimePath).toBeTruthy()
+    expect(footerSharedRuntimePath).toBeTruthy()
+    expect(pageSharedRuntimePath).toBe(layoutSharedRuntimePath)
+    expect(pageSharedRuntimePath).toBe(navbarSharedRuntimePath)
+    expect(pageSharedRuntimePath).toBe(footerSharedRuntimePath)
+    expect(await fs.pathExists(pageSharedRuntimePath!)).toBe(true)
   })
 
   it('issue #404: keeps onPageScroll page hooks enabled and exposes runtime probes in the page bundle', async () => {
