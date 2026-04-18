@@ -24,11 +24,8 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.showProjectInfo',
     'weapp-vite.showOutput',
     'weapp-vite.runAction',
-    'weapp-vite.insertJsonBlockTemplate',
     'weapp-vite.insertDefineConfigTemplate',
     'weapp-vite.insertDefinePageJsonTemplate',
-    'weapp-vite.syncDefinePageJsonTitleFromJson',
-    'weapp-vite.syncJsonTitleFromDefinePageJson',
     'weapp-vite.insertCommonScripts',
     'weapp-vite.createPageFromRoute',
     'weapp-vite.createPageFromTreeItem',
@@ -46,15 +43,12 @@ it('manifest exposes practical command set', () => {
     'weapp-vite.refreshPagesTree',
     'weapp-vite.filterProblemPagesInTree',
     'weapp-vite.filterCurrentPageInTree',
-    'weapp-vite.filterDriftPagesInTree',
     'weapp-vite.clearPagesTreeFilter',
     'weapp-vite.repairProjectIssues',
     'weapp-vite.generateMissingComponentsFromProject',
     'weapp-vite.generateMissingPagesFromAppJson',
     'weapp-vite.syncUnregisteredPagesToAppJson',
     'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
-    'weapp-vite.syncDefinePageJsonFromJsonInTreeItem',
-    'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
   ])
 })
 
@@ -176,16 +170,6 @@ it('manifest exposes current-page explorer quick actions', () => {
 
   assert.equal(
     treeMenus.some(item =>
-      item.command === 'weapp-vite.syncJsonFromDefinePageJsonInTreeItem'
-      && item.group === 'inline'
-      && item.when.includes('weappPage.exists.drift.current')
-      && item.when.includes('weappPage.unregistered.drift.current'),
-    ),
-    true,
-  )
-
-  assert.equal(
-    treeMenus.some(item =>
       item.command === 'weapp-vite.createPageFromTreeItem'
       && item.group === 'inline'
       && item.when === 'view == weapp-vite.pages && viewItem == weappPage.missing.current',
@@ -198,7 +182,7 @@ it('manifest exposes current-page explorer quick actions', () => {
       item.command === 'weapp-vite.addPageToAppJsonFromTreeItem'
       && item.group === 'inline'
       && item.when.includes('weappPage.unregistered.current')
-      && item.when.includes('weappPage.unregistered.drift.current'),
+      && !item.when.includes('drift'),
     ),
     true,
   )
@@ -240,11 +224,6 @@ it('manifest exposes pages explorer title action for current page reveal', () =>
     },
     {
       command: 'weapp-vite.filterCurrentPageInTree',
-      group: 'navigation',
-      when: 'view == weapp-vite.pages',
-    },
-    {
-      command: 'weapp-vite.filterDriftPagesInTree',
       group: 'navigation',
       when: 'view == weapp-vite.pages',
     },

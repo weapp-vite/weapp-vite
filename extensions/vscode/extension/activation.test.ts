@@ -449,7 +449,7 @@ it('activate registers commands, providers, status bar and diagnostics', async (
 
     extension.activate({ subscriptions } satisfies MockExtensionContext)
 
-    assert.equal(state.registeredCommands.length, 41)
+    assert.equal(state.registeredCommands.length, 35)
     assert.deepEqual(
       state.registeredCommands.map(item => item.command),
       [
@@ -462,11 +462,8 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.showProjectInfo',
         'weapp-vite.showOutput',
         'weapp-vite.runAction',
-        'weapp-vite.insertJsonBlockTemplate',
         'weapp-vite.insertDefineConfigTemplate',
         'weapp-vite.insertDefinePageJsonTemplate',
-        'weapp-vite.syncDefinePageJsonTitleFromJson',
-        'weapp-vite.syncJsonTitleFromDefinePageJson',
         'weapp-vite.insertCommonScripts',
         'weapp-vite.createPageFromRoute',
         'weapp-vite.createComponentFromUsingComponents',
@@ -485,15 +482,12 @@ it('activate registers commands, providers, status bar and diagnostics', async (
         'weapp-vite.refreshPagesTree',
         'weapp-vite.filterProblemPagesInTree',
         'weapp-vite.filterCurrentPageInTree',
-        'weapp-vite.filterDriftPagesInTree',
         'weapp-vite.clearPagesTreeFilter',
         'weapp-vite.repairProjectIssues',
         'weapp-vite.generateMissingComponentsFromProject',
         'weapp-vite.generateMissingPagesFromAppJson',
         'weapp-vite.syncUnregisteredPagesToAppJson',
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
-        'weapp-vite.syncDefinePageJsonFromJsonInTreeItem',
-        'weapp-vite.syncJsonFromDefinePageJsonInTreeItem',
       ],
     )
     assert.equal(state.registeredProviders.length, 17)

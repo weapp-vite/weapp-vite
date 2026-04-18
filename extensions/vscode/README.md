@@ -46,11 +46,11 @@
 - 支持从 `app.json` 的 route 直接打开页面或创建缺失页面
 - 页面文件或目录重命名、移动、删除后，会尽量自动同步 `app.json` 中的 route
 
-### 3.4 页面配置同步
+### 3.4 页面配置约定
 
-- 检查页面 `definePageJson(...)` 与 `<json>` 自定义块是否一致
-- 对标题、`navigationStyle`、`enablePullDownRefresh` 等常见字段提供双向 quick fix
-- 在 `weapp-vite Pages` 视图里直接标记配置漂移页面，并支持整页同步
+- 新增页面默认使用 `definePageJson(...)`
+- 如果历史页面里仍然保留 `<json>` 自定义块，扩展会给出兼容提示，帮助你逐步收敛到 `definePageJson`
+- 不把 `<json>` 双写当作默认工作流，避免继续扩大历史兼容写法
 
 ### 3.5 编辑器增强
 
@@ -134,10 +134,10 @@
 2. 使用 `Cmd/Ctrl + Click`，或执行 `weapp-vite: Open Page From Route`。
 3. 扩展会直接跳转到对应页面文件。
 
-### 7.4 同步页面配置双写
+### 7.4 收敛历史 `<json>` 页面
 
-1. 在页面同时使用 `definePageJson(...)` 与 `<json>` 时，扩展会检查两者是否一致。
-2. 如果发现漂移，直接使用 quick fix 或 `weapp-vite Pages` 视图里的同步动作。
+1. 如果旧页面同时使用了 `definePageJson(...)` 与 `<json>`，扩展会提示这是历史兼容写法。
+2. 建议把页面配置统一迁移到 `definePageJson(...)`，逐步移除重复的 `<json>` 块。
 
 ## 8. 问题反馈
 

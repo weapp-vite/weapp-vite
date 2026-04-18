@@ -65,11 +65,8 @@
     "onCommand:weapp-vite.showProjectInfo",
     "onCommand:weapp-vite.showOutput",
     "onCommand:weapp-vite.runAction",
-    "onCommand:weapp-vite.insertJsonBlockTemplate",
     "onCommand:weapp-vite.insertDefineConfigTemplate",
     "onCommand:weapp-vite.insertDefinePageJsonTemplate",
-    "onCommand:weapp-vite.syncDefinePageJsonTitleFromJson",
-    "onCommand:weapp-vite.syncJsonTitleFromDefinePageJson",
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
     "onCommand:weapp-vite.createPageFromTreeItem",
@@ -87,15 +84,12 @@
     "onCommand:weapp-vite.refreshPagesTree",
     "onCommand:weapp-vite.filterProblemPagesInTree",
     "onCommand:weapp-vite.filterCurrentPageInTree",
-    "onCommand:weapp-vite.filterDriftPagesInTree",
     "onCommand:weapp-vite.clearPagesTreeFilter",
     "onCommand:weapp-vite.repairProjectIssues",
     "onCommand:weapp-vite.generateMissingComponentsFromProject",
     "onCommand:weapp-vite.generateMissingPagesFromAppJson",
     "onCommand:weapp-vite.syncUnregisteredPagesToAppJson",
-    "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
-    "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-    "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
+    "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem"
   ],
   "contributes": {
     "iconThemes": [
@@ -152,11 +146,6 @@
         "category": "weapp-vite"
       },
       {
-        "command": "weapp-vite.insertJsonBlockTemplate",
-        "title": "Insert <json> Block Template",
-        "category": "weapp-vite"
-      },
-      {
         "command": "weapp-vite.insertDefineConfigTemplate",
         "title": "Insert defineConfig Template",
         "category": "weapp-vite"
@@ -164,16 +153,6 @@
       {
         "command": "weapp-vite.insertDefinePageJsonTemplate",
         "title": "Insert definePageJson Template",
-        "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
-        "title": "Sync definePageJson Title From <json>",
-        "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncJsonTitleFromDefinePageJson",
-        "title": "Sync <json> Title From definePageJson",
         "category": "weapp-vite"
       },
       {
@@ -262,11 +241,6 @@
         "category": "weapp-vite"
       },
       {
-        "command": "weapp-vite.filterDriftPagesInTree",
-        "title": "Filter Drift Pages In Explorer",
-        "category": "weapp-vite"
-      },
-      {
         "command": "weapp-vite.clearPagesTreeFilter",
         "title": "Clear Pages Explorer Filter",
         "category": "weapp-vite"
@@ -294,16 +268,6 @@
       {
         "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
         "title": "Reveal Page Route In app.json From Explorer Item",
-        "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-        "title": "Sync definePageJson From <json> In Explorer Item",
-        "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
-        "title": "Sync <json> From definePageJson In Explorer Item",
         "category": "weapp-vite"
       }
     ],
@@ -474,23 +438,11 @@
           "when": "workspaceFolderCount > 0"
         },
         {
-          "command": "weapp-vite.insertJsonBlockTemplate",
-          "when": "editorLangId == vue"
-        },
-        {
           "command": "weapp-vite.insertDefineConfigTemplate",
           "when": "resourceFilename =~ /^vite\\.config\\./"
         },
         {
           "command": "weapp-vite.insertDefinePageJsonTemplate",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncJsonTitleFromDefinePageJson",
           "when": "editorLangId == vue"
         },
         {
@@ -542,10 +494,6 @@
           "when": "workspaceFolderCount > 0"
         },
         {
-          "command": "weapp-vite.filterDriftPagesInTree",
-          "when": "workspaceFolderCount > 0"
-        },
-        {
           "command": "weapp-vite.clearPagesTreeFilter",
           "when": "workspaceFolderCount > 0"
         }
@@ -581,52 +529,32 @@
         {
           "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
           "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.missing.current)"
         },
         {
           "command": "weapp-vite.copyPageRouteFromTreeItem",
           "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
-          "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-          "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
-          "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-          "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered.current)"
         },
         {
           "command": "weapp-vite.addPageToAppJsonFromTreeItem",
           "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && viewItem == weappPage.unregistered.current"
         },
         {
           "command": "weapp-vite.addPageToAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current)"
         },
         {
           "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current)"
         },
         {
           "command": "weapp-vite.copyPageRouteFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current)"
         }
       ],
       "view/title": [
@@ -642,11 +570,6 @@
         },
         {
           "command": "weapp-vite.filterCurrentPageInTree",
-          "group": "navigation",
-          "when": "view == weapp-vite.pages"
-        },
-        {
-          "command": "weapp-vite.filterDriftPagesInTree",
           "group": "navigation",
           "when": "view == weapp-vite.pages"
         },
@@ -673,27 +596,12 @@
       ],
       "editor/context": [
         {
-          "command": "weapp-vite.insertJsonBlockTemplate",
-          "group": "navigation",
-          "when": "editorLangId == vue"
-        },
-        {
           "command": "weapp-vite.insertDefineConfigTemplate",
           "group": "navigation",
           "when": "resourceFilename =~ /^vite\\.config\\./"
         },
         {
           "command": "weapp-vite.insertDefinePageJsonTemplate",
-          "group": "navigation",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
-          "group": "navigation",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncJsonTitleFromDefinePageJson",
           "group": "navigation",
           "when": "editorLangId == vue"
         },
@@ -765,15 +673,14 @@
           {
             "id": "weapp-vite.insert-config",
             "title": "插入配置模板",
-            "description": "在 `vite.config.*` 或 `.vue` 文件中使用上下文命令插入 `defineConfig` 模板和 `<json>` 自定义块。",
+            "description": "在 `vite.config.*` 或 `.vue` 文件中使用上下文命令插入 `defineConfig` 与 `definePageJson` 模板。",
             "media": {
               "image": "assets/logo.png",
               "altText": "weapp-vite"
             },
             "completionEvents": [
               "onCommand:weapp-vite.insertDefineConfigTemplate",
-              "onCommand:weapp-vite.insertDefinePageJsonTemplate",
-              "onCommand:weapp-vite.insertJsonBlockTemplate"
+              "onCommand:weapp-vite.insertDefinePageJsonTemplate"
             ]
           },
           {

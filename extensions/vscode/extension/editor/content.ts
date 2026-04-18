@@ -201,12 +201,6 @@ export function getPageVueTemplate(route: string) {
     '  </view>',
     '</template>',
     '',
-    '<json lang="jsonc">',
-    '{',
-    `  "navigationBarTitleText": "${title}"`,
-    '}',
-    '</json>',
-    '',
     '<style scoped>',
     '.page {',
     '  padding: 32rpx;',
@@ -367,65 +361,21 @@ export function buildVueUsingComponentDiagnostics(documentText: string, referenc
 
 export function buildVuePageConfigConsistencyDiagnostics(document: any) {
   const documentText = document.getText()
-  const diagnostics = []
+  const hasDefinePageJson = DEFINE_PAGE_JSON_BLOCK_PATTERN.test(documentText)
+  const hasJsonBlock = VUE_JSON_BLOCK_PATTERN.test(documentText)
 
-  for (const fieldDefinition of PAGE_CONFIG_SYNC_FIELDS) {
-    const state = getVuePageConfigConsistencyState(documentText, fieldDefinition.key)
-
-    if (!state || state.matches) {
-      continue
-    }
-
-    if (state.hasDefinePageJson && state.hasJsonBlock && state.definePageJsonValue && !state.jsonBlockValue) {
-      const diagnostic = new vscode.Diagnostic(
-        new vscode.Range(0, 0, 0, 1),
-        `<json> 缺少 ${fieldDefinition.label}，可从 definePageJson 同步。`,
-        vscode.DiagnosticSeverity.Information,
-      )
-
-      diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
-      diagnostics.push(diagnostic)
-      continue
-    }
-
-    if (state.hasDefinePageJson && state.hasJsonBlock && !state.definePageJsonValue && state.jsonBlockValue) {
-      const diagnostic = new vscode.Diagnostic(
-        new vscode.Range(0, 0, 0, 1),
-        `definePageJson 缺少 ${fieldDefinition.label}，可从 <json> 同步。`,
-        vscode.DiagnosticSeverity.Information,
-      )
-
-      diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
-      diagnostics.push(diagnostic)
-      continue
-    }
-
-    const definePageJsonFieldMatch = fieldDefinition.defineFieldPattern.exec(documentText)
-
-    if (!definePageJsonFieldMatch || definePageJsonFieldMatch.index == null) {
-      continue
-    }
-
-    const start = definePageJsonFieldMatch.index
-    const end = start + definePageJsonFieldMatch[0].length
-    const startPosition = getPositionFromOffset(documentText, start)
-    const endPosition = getPositionFromOffset(documentText, end)
-    const diagnostic = new vscode.Diagnostic(
-      new vscode.Range(
-        startPosition.line,
-        startPosition.character,
-        endPosition.line,
-        endPosition.character,
-      ),
-      `definePageJson 与 <json> 中的 ${fieldDefinition.label} 不一致：'${state.definePageJsonValue}' / '${state.jsonBlockValue}'`,
-      vscode.DiagnosticSeverity.Information,
-    )
-
-    diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
-    diagnostics.push(diagnostic)
+  if (!hasDefinePageJson || !hasJsonBlock) {
+    return []
   }
 
-  return diagnostics
+  const diagnostic = new vscode.Diagnostic(
+    new vscode.Range(0, 0, 0, 1),
+    '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。',
+    vscode.DiagnosticSeverity.Information,
+  )
+
+  diagnostic.source = PAGE_FILE_DIAGNOSTIC_SOURCE
+  return [diagnostic]
 }
 
 export function getVuePageConfigDriftFields(documentText: string) {

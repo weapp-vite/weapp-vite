@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const process = require('node:process')
 
 async function waitForCommand(commandId, timeoutMs = 15000) {
   const startTime = Date.now()
@@ -36,5 +37,5 @@ exports.run = async function run() {
 
   assert.equal(extension.isActive, true)
   assert.equal(commands.includes('weapp-vite.revealCurrentPageInPagesTree'), true)
-  assert.equal(commands.includes('weapp-vite.filterDriftPagesInTree'), true)
+  assert.equal(commands.includes('weapp-vite.filterCurrentPageInTree'), true)
 }

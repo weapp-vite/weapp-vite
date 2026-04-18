@@ -31,7 +31,6 @@ import {
   DOCS_GENERATE_URL,
   PACKAGE_JSON_PROPERTY_PREFIX_PATTERN,
   SCRIPT_COMMAND_SUGGESTIONS,
-  VUE_JSON_BLOCK_PATTERN,
 } from '../shared/constants'
 import {
   getAppJsonRouteCompletionContext,
@@ -40,11 +39,7 @@ import {
   getPackageJsonScriptHover,
   getViteConfigHover,
   getVueCustomBlockHover,
-  getVuePageConfigConsistencyState,
   getVuePageConfigHover,
-  getVuePageTextWithSyncedDefinePageJsonField,
-  getVuePageTextWithSyncedJsonField,
-  getVuePageTitleConsistencyState,
   getVueUsingComponentHover,
 } from './content'
 
@@ -182,47 +177,6 @@ const PAGE_CONFIG_BOOLEAN_VALUE_COMPLETION_ITEMS: Record<string, Array<{
       detail: '关闭下拉刷新',
     },
   ],
-}
-
-function createReplaceDocumentCodeAction(document: any, title: string, nextText: string) {
-  const action = new vscode.CodeAction(title, vscode.CodeActionKind.QuickFix)
-  const edit = new vscode.WorkspaceEdit()
-  const fullRange = new vscode.Range(
-    document.positionAt(0),
-    document.positionAt(document.getText().length),
-  )
-
-  edit.replace(document.uri, fullRange, nextText)
-  action.edit = edit
-  return action
-}
-
-function pushPageConfigSyncActions(actions: any[], document: any, documentText: string, field: string) {
-  const consistencyState = getVuePageConfigConsistencyState(documentText, field)
-
-  if (!consistencyState || consistencyState.matches) {
-    return
-  }
-
-  const nextJsonText = getVuePageTextWithSyncedJsonField(documentText, field)
-
-  if (nextJsonText) {
-    actions.push(createReplaceDocumentCodeAction(
-      document,
-      `将 <json> ${field} 同步为 definePageJson`,
-      nextJsonText,
-    ))
-  }
-
-  const nextDefinePageJsonText = getVuePageTextWithSyncedDefinePageJsonField(documentText, field)
-
-  if (nextDefinePageJsonText) {
-    actions.push(createReplaceDocumentCodeAction(
-      document,
-      `将 definePageJson ${field} 同步为 <json>`,
-      nextDefinePageJsonText,
-    ))
-  }
 }
 
 const VITE_CONFIG_COMPLETION_SETS: Record<string, Array<{
@@ -458,7 +412,6 @@ export class WeappViteCodeActionProvider {
     if (isVueDocument(document)) {
       const documentText = document.getText()
       const pageConfigState = getVuePageConfigState(documentText)
-      const titleConsistencyState = getVuePageTitleConsistencyState(documentText)
       const currentPageCandidate = await getCurrentPageRouteCandidate(document)
 
       if (currentPageCandidate && !currentPageCandidate.declared) {
@@ -473,8 +426,6 @@ export class WeappViteCodeActionProvider {
         actions.push(addPageToAppJsonAction)
       }
 
-      const lineText = document.lineAt(range.start.line).text
-
       if (!pageConfigState.hasDefinePageJson) {
         const definePageJsonAction = new vscode.CodeAction(
           '插入 definePageJson 模板',
@@ -486,45 +437,6 @@ export class WeappViteCodeActionProvider {
         }
         actions.push(definePageJsonAction)
       }
-
-      if (!pageConfigState.hasJsonBlock && !VUE_JSON_BLOCK_PATTERN.test(lineText)) {
-        const jsonBlockAction = new vscode.CodeAction(
-          '插入 weapp-vite <json> 自定义块',
-          vscode.CodeActionKind.RefactorRewrite,
-        )
-        jsonBlockAction.command = {
-          command: 'weapp-vite.insertJsonBlockTemplate',
-          title: '插入 weapp-vite <json> 自定义块',
-        }
-        actions.push(jsonBlockAction)
-      }
-
-      if (titleConsistencyState && !titleConsistencyState.matches) {
-        const syncTitleAction = new vscode.CodeAction(
-          '将 <json> 标题同步为 definePageJson',
-          vscode.CodeActionKind.QuickFix,
-        )
-        syncTitleAction.command = {
-          command: 'weapp-vite.syncJsonTitleFromDefinePageJson',
-          title: '将 <json> 标题同步为 definePageJson',
-          arguments: [document],
-        }
-        actions.push(syncTitleAction)
-
-        const syncDefinePageJsonTitleAction = new vscode.CodeAction(
-          '将 definePageJson 标题同步为 <json>',
-          vscode.CodeActionKind.QuickFix,
-        )
-        syncDefinePageJsonTitleAction.command = {
-          command: 'weapp-vite.syncDefinePageJsonTitleFromJson',
-          title: '将 definePageJson 标题同步为 <json>',
-          arguments: [document],
-        }
-        actions.push(syncDefinePageJsonTitleAction)
-      }
-
-      pushPageConfigSyncActions(actions, document, documentText, 'enablePullDownRefresh')
-      pushPageConfigSyncActions(actions, document, documentText, 'navigationStyle')
 
       const usingComponentReference = getVueJsonUsingComponentReferenceAtOffset(
         documentText,

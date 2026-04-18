@@ -489,15 +489,6 @@ export function getCurrentPageRunActionItems(
     })
   }
 
-  if (!currentPage.hasJsonBlock) {
-    items.push({
-      label: '$(json) 插入 <json> 模板',
-      description: `为当前页面补齐 <json> 配置块 ${currentPage.route}`,
-      detail: '向当前 .vue 页面插入 <json lang="jsonc"> 自定义块。',
-      commandId: 'insertJsonBlockTemplate',
-    })
-  }
-
   return items
 }
 

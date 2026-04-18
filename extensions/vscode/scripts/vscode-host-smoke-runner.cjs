@@ -30,5 +30,5 @@ exports.run = async function run() {
   const commands = await vscode.commands.getCommands(true)
 
   assert.equal(commands.includes('weapp-vite.revealCurrentPageInPagesTree'), true)
-  assert.equal(commands.includes('weapp-vite.filterDriftPagesInTree'), true)
+  assert.equal(commands.includes('weapp-vite.filterCurrentPageInTree'), true)
 }

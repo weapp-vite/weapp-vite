@@ -565,6 +565,5 @@ it('prioritizes undeclared current page run actions', () => {
   }).map(item => item.commandId), [
     'addCurrentPageToAppJson',
     'insertDefinePageJsonTemplate',
-    'insertJsonBlockTemplate',
   ])
 })
