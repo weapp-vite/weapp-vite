@@ -91,6 +91,10 @@ function getPageNodeIconId(baseStatus: WeappPagesTreePageNode['baseStatus'], cur
   return 'file'
 }
 
+function getWxmlTreeItemResourceUri(targetUri: any) {
+  return vscode.Uri.file(targetUri.fsPath.replace(/\.wxml$/u, '.html'))
+}
+
 function getPageNodeBadges(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean) {
   const badges = []
 
@@ -223,6 +227,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
 
     if (element.kind === 'page') {
       const targetUri = vscode.Uri.file(element.pageFilePath ?? element.appJsonPath)
+      const useWxmlFileIcon = Boolean(element.pageFilePath?.endsWith('.wxml'))
 
       item.command = {
         command: 'vscode.open',
@@ -231,8 +236,12 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       }
       item.description = element.description
       item.contextValue = element.contextValue
-      item.iconPath = new vscode.ThemeIcon(element.iconId)
-      item.resourceUri = element.pageFilePath ? targetUri : undefined
+      item.iconPath = useWxmlFileIcon ? vscode.ThemeIcon.File : new vscode.ThemeIcon(element.iconId)
+      item.resourceUri = element.pageFilePath
+        ? useWxmlFileIcon
+          ? getWxmlTreeItemResourceUri(targetUri)
+          : targetUri
+        : undefined
       item.tooltip = element.tooltip
     }
     else if (element.kind === 'empty') {

@@ -78,6 +78,7 @@ function getLaunchArgs(
     fixturePath,
     `--extensions-dir=${extensionsDir}`,
     `--user-data-dir=${userDataDir}`,
+    '--disable-workspace-trust',
     '--skip-welcome',
     '--skip-release-notes',
     ...extraArgs,

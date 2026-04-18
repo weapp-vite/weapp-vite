@@ -41,6 +41,9 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
       },
       ThemeIcon: class {
         id
+        static File = {
+          id: 'file',
+        }
 
         constructor(id: string) {
           this.id = id
@@ -155,6 +158,93 @@ it('builds pages tree nodes from weapp pages snapshot', async () => {
 
   assert.equal(unregisteredPageItem.contextValue, 'weappPage.unregistered')
   assert.equal(unregisteredPageItem.iconPath?.id, 'circle-outline')
+})
+
+it('uses html-like file icon resource for existing wxml pages in tree', async () => {
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      EventEmitter: class {
+        event = () => ({ dispose() {} })
+        fire() {}
+        dispose() {}
+      },
+      TreeItem: class {
+        label
+        collapsibleState
+
+        constructor(label: string, collapsibleState: number) {
+          this.label = label
+          this.collapsibleState = collapsibleState
+        }
+      },
+      ThemeIcon: class {
+        id
+        static File = {
+          id: 'file',
+        }
+
+        constructor(id: string) {
+          this.id = id
+        }
+      },
+      TreeItemCollapsibleState: {
+        None: 0,
+        Expanded: 2,
+      },
+      Uri: {
+        file(fsPath: string) {
+          return { fsPath, path: fsPath }
+        },
+      },
+      workspace: {
+        fs: {
+          readFile: async () => Buffer.from(''),
+        },
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.doMock('../project/workspace', () => {
+    return {
+      getPrimaryWorkspaceFolder() {
+        return {
+          uri: {
+            fsPath: '/workspace',
+          },
+        }
+      },
+      getWeappPagesTreeSnapshot: async () => {
+        return {
+          appJsonPath: '/workspace/src/app.json',
+          subpackages: [],
+          topLevelPages: [
+            {
+              pageFilePath: '/workspace/src/pages/native/index.wxml',
+              route: 'pages/native/index',
+            },
+          ],
+          unregisteredPages: [],
+          workspaceFolder: {
+            uri: {
+              fsPath: '/workspace',
+            },
+          },
+        }
+      },
+    }
+  })
+  vi.resetModules()
+
+  const { WeappVitePagesTreeProvider } = await import(`${treeModuleUrl}?t=${Date.now()}`)
+  const provider = new WeappVitePagesTreeProvider()
+  const rootNodes = await provider.getChildren()
+  const appPages = await provider.getChildren(rootNodes[0])
+  const wxmlPageItem = provider.getTreeItem(appPages[0])
+
+  assert.equal(wxmlPageItem.iconPath?.id, 'file')
+  assert.equal(wxmlPageItem.resourceUri?.fsPath, '/workspace/src/pages/native/index.html')
+  assert.equal(wxmlPageItem.command?.arguments?.[0]?.fsPath, '/workspace/src/pages/native/index.wxml')
 })
 
 it('marks current page in pages tree', async () => {

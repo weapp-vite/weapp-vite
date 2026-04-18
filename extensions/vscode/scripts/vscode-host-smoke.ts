@@ -36,6 +36,7 @@ async function main() {
       launchArgs: [
         fixturePath,
         '--disable-extensions',
+        '--disable-workspace-trust',
         '--skip-welcome',
         '--skip-release-notes',
       ],
