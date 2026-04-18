@@ -633,6 +633,93 @@ it('only builds package.json diagnostics for confirmed weapp-vite projects', asy
   vi.resetModules()
 })
 
+it('package.json diagnostics respect existing candidate script aliases', async () => {
+  const files = new Map<string, string>([
+    [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
+      name: 'demo-app',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+      scripts: {
+        dev: 'wv dev',
+        g: 'weapp-vite generate',
+      },
+    })],
+    [normalizeFsPath('/workspace/app/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      Range: class {
+        start
+        end
+
+        constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+          this.start = { line: startLine, character: startCharacter }
+          this.end = { line: endLine, character: endCharacter }
+        }
+      },
+      Diagnostic: class {
+        range
+        message
+        severity
+
+        constructor(range: any, message: string, severity: number) {
+          this.range = range
+          this.message = message
+          this.severity = severity
+        }
+      },
+      DiagnosticSeverity: {
+        Information: 1,
+      },
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(uri.fsPath)) {
+              throw new TypeError('not found')
+            }
+
+            return {}
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(uri.fsPath)
+
+            if (typeof content !== 'string') {
+              throw new TypeError('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+      },
+      Uri: {
+        file(nextFsPath: string) {
+          return {
+            fsPath: nextFsPath,
+            path: nextFsPath,
+          }
+        },
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    buildPackageJsonDiagnostics,
+  } = await import('./content')
+  const packageJsonPath = normalizeFsPath('/workspace/app/package.json')
+  const diagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(packageJsonPath)!, packageJsonPath))
+
+  assert.equal(diagnostics.length, 1)
+  assert.equal(diagnostics[0].message, '建议补齐常用 weapp-vite 脚本：build, open')
+
+  vi.doUnmock('vscode')
+  vi.resetModules()
+})
+
 it('builds definePageJson hover for vue page config keys', async () => {
   vi.doMock('vscode', () => {
     const mockVscode = {

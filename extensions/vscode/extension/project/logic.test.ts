@@ -53,6 +53,15 @@ it('finds missing common scripts', () => {
   }), ['build', 'generate', 'open'])
 })
 
+it('treats candidate aliases as existing common scripts', () => {
+  assert.deepEqual(getMissingCommonScripts({
+    scripts: {
+      'dev:open': 'wv dev --open',
+      'g': 'weapp-vite generate',
+    },
+  }), ['build', 'open'])
+})
+
 it('applies only missing scripts', () => {
   const result = applySuggestedScripts({
     name: 'demo',
@@ -68,6 +77,26 @@ it('applies only missing scripts', () => {
     open: 'wv open',
     generate: 'wv generate',
   })
+})
+
+it('does not insert duplicated common scripts when candidate aliases already exist', () => {
+  const result = applySuggestedScripts({
+    name: 'demo',
+    scripts: {
+      'dev:open': 'wv dev --open',
+      'g': 'weapp-vite generate',
+    },
+  })
+
+  assert.equal(result.changed, true)
+  assert.deepEqual(result.packageJson.scripts, {
+    'dev:open': 'wv dev --open',
+    'g': 'weapp-vite generate',
+    'build': 'wv build',
+    'open': 'wv open',
+  })
+  assert.equal('dev' in result.packageJson.scripts, false)
+  assert.equal('generate' in result.packageJson.scripts, false)
 })
 
 it('prefers package scripts before fallback commands', () => {

@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import {
+  COMMAND_DEFINITIONS,
   COMMON_SCRIPT_NAMES,
   SCRIPT_COMMAND_SUGGESTIONS,
 } from '../shared/constants'
@@ -701,7 +702,13 @@ export function getMissingCommonScripts(packageJson: Record<string, any>) {
     : {}
 
   return COMMON_SCRIPT_NAMES.filter((scriptName) => {
-    return typeof scripts[scriptName] !== 'string'
+    const commandDefinition = COMMAND_DEFINITIONS[scriptName]
+
+    if (!commandDefinition) {
+      return typeof scripts[scriptName] !== 'string'
+    }
+
+    return !commandDefinition.scriptCandidates.some(candidate => typeof scripts[candidate] === 'string')
   })
 }
 
@@ -716,7 +723,12 @@ export function applySuggestedScripts(packageJson: Record<string, any>, preferWv
   let changed = false
 
   for (const [scriptName, command] of Object.entries(suggestions)) {
-    if (typeof nextPackageJson.scripts[scriptName] !== 'string') {
+    const commandDefinition = COMMAND_DEFINITIONS[scriptName]
+    const hasExistingCandidate = commandDefinition
+      ? commandDefinition.scriptCandidates.some(candidate => typeof nextPackageJson.scripts[candidate] === 'string')
+      : typeof nextPackageJson.scripts[scriptName] === 'string'
+
+    if (!hasExistingCandidate) {
       nextPackageJson.scripts[scriptName] = command
       changed = true
     }
