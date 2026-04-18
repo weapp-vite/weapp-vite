@@ -4,7 +4,6 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
 ".wevu-features-app-root {
   color: inherit;
 }
-/*$vite$:1*/
 "
 `;
 

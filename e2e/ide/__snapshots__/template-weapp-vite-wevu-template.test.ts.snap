@@ -2,10 +2,9 @@
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::app.wxss 1`] = `
 "page {
-  color: #0f172a;
   background: #f3f6fb;
+  color: #0f172a;
 }
-/*$vite$:1*/
 "
 `;
 
