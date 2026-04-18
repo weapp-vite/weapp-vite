@@ -16,11 +16,15 @@ function normalizeFsPath(fsPath: string) {
   return path.normalize(fsPath)
 }
 
+function toUriPath(fsPath: string) {
+  return fsPath.replaceAll('\\', '/')
+}
+
 function createDocument(text: string, fsPath: string) {
   return {
     uri: {
       fsPath,
-      path: fsPath,
+      path: toUriPath(fsPath),
     },
     getText() {
       return text
@@ -84,7 +88,7 @@ it('only offers package.json script quick fix when common scripts are actually m
         file(nextFsPath: string) {
           return {
             fsPath: nextFsPath,
-            path: nextFsPath,
+            path: toUriPath(nextFsPath),
           }
         },
       },

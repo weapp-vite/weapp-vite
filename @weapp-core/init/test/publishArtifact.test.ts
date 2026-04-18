@@ -7,7 +7,8 @@ describe('publish artifact', () => {
   it('keeps fs imports on the @weapp-core/shared/node subpath in the built artifact', async () => {
     const packageRoot = path.resolve(import.meta.dirname, '..')
     const workspaceRoot = path.resolve(import.meta.dirname, '../../..')
-    execFileSync('pnpm', ['--dir', workspaceRoot, '--filter', '@weapp-core/init', 'build'], {
+    const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+    execFileSync(pnpmCommand, ['--dir', workspaceRoot, '--filter', '@weapp-core/init', 'build'], {
       cwd: workspaceRoot,
       encoding: 'utf8',
       stdio: 'pipe',
