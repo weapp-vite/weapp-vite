@@ -12,6 +12,21 @@ async function readFile(filePath: string) {
   return await fs.readFile(filePath, 'utf8')
 }
 
+async function resolvePluginWevuRuntimePath(pluginDistRoot: string) {
+  const stableRuntimePath = path.join(pluginDistRoot, 'weapp-vendors/wevu-src.js')
+  if (await fs.pathExists(stableRuntimePath)) {
+    return stableRuntimePath
+  }
+
+  const pluginFiles = await fs.readdir(pluginDistRoot)
+  const legacyRuntimeChunkName = pluginFiles.find(file => /^src-[\w-]+\.js$/.test(file))
+  if (!legacyRuntimeChunkName) {
+    return undefined
+  }
+
+  return path.join(pluginDistRoot, legacyRuntimeChunkName)
+}
+
 describe('plugin-demo build regression', () => {
   afterAll(async () => {
     await fs.remove(DIST_ROOT)
@@ -48,14 +63,13 @@ describe('plugin-demo build regression', () => {
 
     const pluginIndexCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'index.js'))
     const pluginVendorCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js'))
-    const pluginFiles = await fs.readdir(PLUGIN_DIST_ROOT)
-    const pluginWevuRuntimeChunkName = pluginFiles.find(file => /^src-[\w-]+\.js$/.test(file))
+    const pluginWevuRuntimePath = await resolvePluginWevuRuntimePath(PLUGIN_DIST_ROOT)
     const pluginPageJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/hello-page/index.json')))
     const nativePlaygroundJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.json')))
     const pluginJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'plugin.json')))
 
-    expect(pluginWevuRuntimeChunkName).toBeTruthy()
-    const pluginWevuRuntimeCode = await readFile(path.join(PLUGIN_DIST_ROOT, pluginWevuRuntimeChunkName!))
+    expect(pluginWevuRuntimePath).toBeTruthy()
+    const pluginWevuRuntimeCode = await readFile(pluginWevuRuntimePath!)
     expect(pluginIndexCode).toContain('exports.sayHello')
     expect(pluginIndexCode).toContain('exports.answer')
     expect(pluginIndexCode).toContain('exports.getFeatureCards')
