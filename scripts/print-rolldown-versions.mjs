@@ -647,8 +647,24 @@ function collectRolldownExpectedPublishedSpecs(packageJson, workspaceManifest, w
   return expectedSpecs
 }
 
-function resolvePnpmExecutable(platform = process.platform) {
-  return platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+function resolvePnpmCommand({
+  execPath = process.execPath,
+  npmExecpath = process.env.npm_execpath,
+  platform = process.platform,
+} = {}) {
+  if (typeof npmExecpath === 'string' && npmExecpath.length > 0) {
+    return {
+      args: [npmExecpath],
+      command: execPath,
+      shell: false,
+    }
+  }
+
+  return {
+    args: [],
+    command: 'pnpm',
+    shell: platform === 'win32',
+  }
 }
 
 function packWorkspacePackageJson(
@@ -662,12 +678,14 @@ function packWorkspacePackageJson(
 ) {
   const packDir = mkdtempSyncImpl(path.join(os.tmpdir(), 'rolldown-pack-'))
   try {
+    const pnpmCommand = resolvePnpmCommand()
     const stdout = execFileSyncImpl(
-      resolvePnpmExecutable(),
-      ['--dir', packageRoot, 'pack', '--pack-destination', packDir, '--json'],
+      pnpmCommand.command,
+      [...pnpmCommand.args, '--dir', packageRoot, 'pack', '--pack-destination', packDir, '--json'],
       {
         cwd: packageRoot,
         encoding: 'utf8',
+        shell: pnpmCommand.shell,
       },
     )
     const parsed = JSON.parse(stdout)
@@ -833,6 +851,7 @@ export {
   resolveCatalogDependencyVersion,
   resolveDependencySpecVersion,
   resolveMode,
+  resolvePnpmCommand,
   resolveWorkspacePackageSpecVersion,
   stripPeerSuffix,
   syncRolldownCatalogReferences,
