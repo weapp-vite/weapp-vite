@@ -1,8 +1,15 @@
 {
+  "showLanguageModeIcons": true,
   "iconDefinitions": {
     "_weappViteConfig": {
       "iconPath": "./logo.svg"
+    },
+    "_wxml": {
+      "iconPath": "./wxml.svg"
     }
+  },
+  "fileExtensions": {
+    "wxml": "_wxml"
   },
   "fileNames": {
     "weapp-vite.config.ts": "_weappViteConfig",

@@ -3,6 +3,9 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import {
+  WEAPP_VITE_FILE_ICON_THEME_ID,
+} from '../extension/shared/constants'
 
 export type VscodeE2EScenarioId = 'standalone' | 'vue-official'
 
@@ -35,6 +38,11 @@ const SCENARIOS: Record<VscodeE2EScenarioId, VscodeE2EScenario> = {
     label: '安装 weapp-vite 扩展 + Vue Official',
     extensions: [VUE_OFFICIAL_EXTENSION_ID],
   },
+}
+
+export const DEFAULT_VSCODE_USER_SETTINGS = {
+  'security.workspace.trust.enabled': false,
+  'workbench.iconTheme': WEAPP_VITE_FILE_ICON_THEME_ID,
 }
 
 function isScenarioId(value: string): value is VscodeE2EScenarioId {
@@ -113,6 +121,33 @@ function installExtension(
   }
 }
 
+export async function ensureVscodeUserSettings(userDataDir: string, overrides: Record<string, unknown> = {}) {
+  const settingsPath = path.join(userDataDir, 'User', 'settings.json')
+  let existingSettings: Record<string, unknown> = {}
+
+  try {
+    existingSettings = JSON.parse(await fs.readFile(settingsPath, 'utf8'))
+  }
+  catch (error) {
+    const nodeError = error as NodeJS.ErrnoException
+
+    if (nodeError.code !== 'ENOENT') {
+      throw error
+    }
+  }
+
+  await fs.mkdir(path.dirname(settingsPath), { recursive: true })
+  await fs.writeFile(
+    settingsPath,
+    `${JSON.stringify({
+      ...existingSettings,
+      ...DEFAULT_VSCODE_USER_SETTINGS,
+      ...overrides,
+    }, null, 2)}\n`,
+    'utf8',
+  )
+}
+
 export async function prepareVscodeScenario(scenarioId: VscodeE2EScenarioId): Promise<PreparedVscodeScenario> {
   const scenario = SCENARIOS[scenarioId]
   const extensionRoot = path.resolve(process.cwd())
@@ -136,6 +171,7 @@ export async function prepareVscodeScenario(scenarioId: VscodeE2EScenarioId): Pr
       reuseMachineInstall: true,
     })
 
+    await ensureVscodeUserSettings(userDataDir)
     installExtension(cliPath, cliBaseArgs, extensionsDir, userDataDir, vsixPath)
 
     for (const extensionReference of scenario.extensions) {

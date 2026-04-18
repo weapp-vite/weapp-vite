@@ -29,6 +29,7 @@ const requiredFiles = [
   'CHANGELOG.md',
   'LICENSE',
   'assets/logo.svg',
+  'assets/wxml.svg',
   'assets/weapp-vite-icon-theme.json',
   'scripts/launch-vsix-vscode.ts',
   'scripts/vscode-e2e-shared.ts',

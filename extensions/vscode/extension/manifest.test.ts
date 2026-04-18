@@ -3,9 +3,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
+import {
+  DEFAULT_VSCODE_USER_SETTINGS,
+} from '../scripts/vscode-e2e-shared'
 
 const packageJsonPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+const extensionRoot = path.dirname(packageJsonPath)
+const fileIconTheme = JSON.parse(fs.readFileSync(path.join(extensionRoot, 'assets', 'weapp-vite-icon-theme.json'), 'utf8'))
 
 it('manifest exposes practical command set', () => {
   assert.equal(packageJson.name, '@weapp-vite/vscode')
@@ -90,6 +95,12 @@ it('manifest contributes weapp-vite file icon theme for dedicated config files',
   ])
 })
 
+it('file icon theme keeps language fallbacks and covers standalone wxml files', () => {
+  assert.equal(fileIconTheme.showLanguageModeIcons, true)
+  assert.equal(fileIconTheme.fileExtensions.wxml, '_wxml')
+  assert.equal(fileIconTheme.iconDefinitions._wxml.iconPath, './wxml.svg')
+})
+
 it('manifest exposes local verification scripts', () => {
   assert.equal(packageJson.scripts.build, 'pnpm exec tsdown --config tsdown.config.mts')
   assert.equal(packageJson.scripts.lint, 'pnpm eslint extension.ts extension/**/*.ts scripts/**/*.ts tsdown.config.mts')
@@ -126,6 +137,13 @@ it('manifest config defaults stay enabled for core ergonomics', () => {
   assert.equal(properties['weapp-vite.enableTemplateDecorations'].default, true)
   assert.equal(properties['weapp-vite.preferWvAlias'].default, true)
   assert.equal(properties['weapp-vite.promptFileIcons'].default, true)
+})
+
+it('isolated vscode sessions default to weapp-vite file icons and trusted workspaces', () => {
+  assert.deepEqual(DEFAULT_VSCODE_USER_SETTINGS, {
+    'security.workspace.trust.enabled': false,
+    'workbench.iconTheme': 'weapp-vite-file-icons',
+  })
 })
 
 it('manifest contributes wxml language and grammars', () => {

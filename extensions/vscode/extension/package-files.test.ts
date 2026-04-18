@@ -50,6 +50,7 @@ it('package output keeps runtime entry files on disk', () => {
     'scripts/vsix-e2e.ts',
     'scripts/vsix-e2e-runner.cjs',
     'assets/logo.svg',
+    'assets/wxml.svg',
     'assets/weapp-vite-icon-theme.json',
     'scripts/fixtures/vscode-host-smoke/package.json',
     'scripts/fixtures/vscode-host-smoke/vite.config.ts',

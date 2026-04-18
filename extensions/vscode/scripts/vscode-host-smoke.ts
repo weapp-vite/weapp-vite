@@ -2,6 +2,9 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import {
+  ensureVscodeUserSettings,
+} from './vscode-e2e-shared'
 
 async function resolveVscodeTestElectron() {
   const moduleName = '@vscode/test-electron'
@@ -28,6 +31,7 @@ async function main() {
   try {
     await fs.access(distEntryPath)
     await fs.access(runnerPath)
+    await ensureVscodeUserSettings(userDataDir)
     const { runTests } = await resolveVscodeTestElectron()
 
     await runTests({
