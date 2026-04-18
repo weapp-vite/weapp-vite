@@ -430,3 +430,125 @@ it('removes app.json routes when a page directory is deleted', async () => {
   assert.equal(updates[0].nextText.includes('pages/card/user/index'), false)
   assert.equal(updates[0].nextText.includes('pages/home/index'), true)
 })
+
+it('treats weapp-vite.config files as vite config documents', async () => {
+  vi.doMock('vscode', () => {
+    return createVscodeModule({})
+  })
+  vi.resetModules()
+
+  const {
+    isViteConfigDocument,
+  } = await import('./workspace')
+
+  assert.equal(isViteConfigDocument({ fileName: '/workspace/weapp-vite.config.ts' }), true)
+  assert.equal(isViteConfigDocument({ fileName: '/workspace/nested/weapp-vite.config.mjs' }), true)
+  assert.equal(isViteConfigDocument({ fileName: '/workspace/src/main.ts' }), false)
+})
+
+it('finds dedicated weapp-vite config files when resolving project config path', async () => {
+  const existingPaths = new Set<string>([
+    normalizeFsPath('/workspace/weapp-vite.config.ts'),
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!existingPaths.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
+
+            return {
+              type: 0,
+            }
+          },
+        },
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    getProjectViteConfigPath,
+  } = await import('./workspace')
+
+  const viteConfigPath = await getProjectViteConfigPath({
+    uri: {
+      fsPath: '/workspace',
+      path: '/workspace',
+    },
+  })
+
+  assert.equal(viteConfigPath, normalizeFsPath('/workspace/weapp-vite.config.ts'))
+})
+
+it('collects weapp-vite project signals from dedicated config files', async () => {
+  const fileContents = new Map<string, string>([
+    [normalizeFsPath('/workspace/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': '^0.0.0',
+      },
+    })],
+    [normalizeFsPath('/workspace/weapp-vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
+
+            return {
+              type: 0,
+            }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    getWeappViteProjectSignals,
+  } = await import('./workspace')
+
+  const signals = await getWeappViteProjectSignals('/workspace')
+
+  assert.equal(signals.hasWeappViteConfigSignal, true)
+  assert.equal(signals.fileSignals.includes('weapp-vite.config.ts 引用了 weapp-vite'), true)
+  assert.equal(signals.isConfirmedWeappViteProject, true)
+})

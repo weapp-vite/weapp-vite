@@ -72,7 +72,7 @@ export async function insertDefineConfigTemplate() {
   const editor = vscode.window.activeTextEditor
 
   if (!editor || !isViteConfigDocument(editor.document)) {
-    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 vite.config.* 文件后再插入模板。')
+    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 vite.config.* 或 weapp-vite.config.* 文件后再插入模板。')
     return
   }
 
@@ -836,7 +836,7 @@ export async function showCommandPalette(state: any) {
     },
     {
       label: '$(go-to-file) 打开关键文件 / 页面',
-      description: '快速打开 vite.config、app.json、package.json 和页面文件',
+      description: '快速打开 vite.config、weapp-vite.config、app.json、package.json 和页面文件',
       detail: currentPage
         ? `当前页面 ${currentPage.route}。从 weapp-vite 项目关键入口中直接跳转。`
         : '从 weapp-vite 项目关键入口中直接跳转。',

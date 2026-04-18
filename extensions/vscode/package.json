@@ -54,8 +54,16 @@
     "onLanguage:wxml",
     "workspaceContains:**/vite.config.ts",
     "workspaceContains:**/vite.config.mts",
+    "workspaceContains:**/vite.config.cts",
     "workspaceContains:**/vite.config.js",
     "workspaceContains:**/vite.config.mjs",
+    "workspaceContains:**/vite.config.cjs",
+    "workspaceContains:**/weapp-vite.config.ts",
+    "workspaceContains:**/weapp-vite.config.mts",
+    "workspaceContains:**/weapp-vite.config.cts",
+    "workspaceContains:**/weapp-vite.config.js",
+    "workspaceContains:**/weapp-vite.config.mjs",
+    "workspaceContains:**/weapp-vite.config.cjs",
     "workspaceContains:**/package.json",
     "onCommand:weapp-vite.generate",
     "onCommand:weapp-vite.dev",
@@ -292,12 +300,12 @@
         "weapp-vite.enableHover": {
           "type": "boolean",
           "default": true,
-          "description": "是否启用 package.json、vite.config.*、.vue 中的轻量 Hover 提示。"
+          "description": "是否启用 package.json、vite.config.* / weapp-vite.config.*、.vue 中的轻量 Hover 提示。"
         },
         "weapp-vite.enableCompletion": {
           "type": "boolean",
           "default": true,
-          "description": "是否启用 package.json、vite.config.*、.vue 中的上下文补全。"
+          "description": "是否启用 package.json、vite.config.* / weapp-vite.config.*、.vue 中的上下文补全。"
         },
         "weapp-vite.enableWxmlEnhancements": {
           "type": "boolean",
@@ -673,7 +681,7 @@
           {
             "id": "weapp-vite.insert-config",
             "title": "插入配置模板",
-            "description": "在 `vite.config.*` 或 `.vue` 文件中使用上下文命令插入 `defineConfig` 与 `definePageJson` 模板。",
+            "description": "在 `vite.config.*`、`weapp-vite.config.*` 或 `.vue` 文件中使用上下文命令插入 `defineConfig` 与 `definePageJson` 模板。",
             "media": {
               "image": "assets/logo.png",
               "altText": "weapp-vite"
@@ -698,7 +706,7 @@
           {
             "id": "weapp-vite.open-project-file",
             "title": "快速打开关键文件和页面",
-            "description": "运行 `weapp-vite: Open Project File`，快速跳转到 `package.json`、`vite.config.*`、`app.json` 和已声明页面。",
+            "description": "运行 `weapp-vite: Open Project File`，快速跳转到 `package.json`、`vite.config.*`、`weapp-vite.config.*`、`app.json` 和已声明页面。",
             "media": {
               "image": "assets/logo.png",
               "altText": "weapp-vite"

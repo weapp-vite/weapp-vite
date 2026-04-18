@@ -23,7 +23,7 @@
 3. 打开命令面板，执行 `weapp-vite: Run Action`。
 4. 按需选择 `Dev`、`Build`、`Generate`、`Open DevTools` 等动作。
 
-> **提示**：如果没有识别到项目，可以先确认工作区内的 `package.json`、`vite.config.*`、`app.json` 是否已经建立基本 `weapp-vite` 结构。
+> **提示**：如果没有识别到项目，可以先确认工作区内的 `package.json`、`vite.config.*` / `weapp-vite.config.*`、`app.json` 是否已经建立基本 `weapp-vite` 结构。
 
 ## 3. 核心能力
 
@@ -55,7 +55,7 @@
 ### 3.5 编辑器增强
 
 - 为 `.vue` 中的 `<json>` 自定义块提供语法高亮
-- 为 `app.json`、`vite.config.*`、页面 `<json>`、`definePageJson(...)` 提供补全、悬浮和轻量诊断
+- 为 `app.json`、`vite.config.*` / `weapp-vite.config.*`、页面 `<json>`、`definePageJson(...)` 提供补全、悬浮和轻量诊断
 - 支持本地 `usingComponents` 路径校验、跳转和缺失组件创建
 - 内置 `weapp-vite File Icons` 文件图标主题
 
@@ -90,7 +90,7 @@
 
 - `package.json` 依赖中包含 `weapp-vite`
 - `package.json` scripts 中调用了 `wv` 或 `weapp-vite`
-- `vite.config.*` 中引用了 `weapp-vite`
+- `vite.config.*` 或 `weapp-vite.config.*` 中引用了 `weapp-vite`
 - `src/app.json` 或 `app.json` 存在
 
 识别成功后，状态栏会显示 `weapp-vite` 入口。

@@ -5,6 +5,7 @@ import * as vscode from 'vscode'
 import {
   APP_JSON_FILE_PATTERN,
   PACKAGE_JSON_FILE_PATTERN,
+  PROJECT_VITE_CONFIG_FILE_NAMES,
   VITE_CONFIG_FILE_PATTERN,
   WEAPP_VITE_CONFIG_PATTERN,
   WEAPP_VITE_SCRIPT_PATTERN,
@@ -200,24 +201,14 @@ export async function getProjectViteConfigPath(workspaceFolder = getPrimaryWorks
     return null
   }
 
-  return getExistingProjectFile([
-    'vite.config.ts',
-    'vite.config.mts',
-    'vite.config.js',
-    'vite.config.mjs',
-    'vite.config.cjs',
-  ].map(fileName => path.join(workspaceFolder.uri.fsPath, fileName)))
+  return getExistingProjectFile(
+    PROJECT_VITE_CONFIG_FILE_NAMES.map(fileName => path.join(workspaceFolder.uri.fsPath, fileName)),
+  )
 }
 
 export async function getWeappViteProjectSignals(folderPath: string, packageJson?: Record<string, any> | null) {
   const resolvedPackageJson = packageJson ?? await readJsonFile(path.join(folderPath, 'package.json'))
-  const viteConfigCandidates = [
-    'vite.config.ts',
-    'vite.config.mts',
-    'vite.config.js',
-    'vite.config.mjs',
-    'vite.config.cjs',
-  ].map(fileName => path.join(folderPath, fileName))
+  const viteConfigCandidates = PROJECT_VITE_CONFIG_FILE_NAMES.map(fileName => path.join(folderPath, fileName))
   const appJsonCandidates = [
     path.join(folderPath, 'src', 'app.json'),
     path.join(folderPath, 'app.json'),
@@ -452,8 +443,12 @@ export async function getProjectNavigationItems(workspaceFolder = getPrimaryWork
   }
 
   if (viteConfigPath) {
+    const viteConfigLabel = path.basename(viteConfigPath).startsWith('weapp-vite.')
+      ? '$(settings-gear) weapp-vite.config'
+      : '$(settings-gear) vite.config'
+
     items.push({
-      label: '$(settings-gear) vite.config',
+      label: viteConfigLabel,
       description: 'weapp-vite 配置入口',
       detail: getRelativeDisplayPath(workspacePath, viteConfigPath),
       uri: vscode.Uri.file(viteConfigPath),

@@ -110,6 +110,13 @@ let outputChannel
 let statusBarItem
 let diagnostics
 
+const viteConfigDocumentSelectors = [
+  { language: 'javascript', scheme: 'file', pattern: '**/vite.config.*' },
+  { language: 'typescript', scheme: 'file', pattern: '**/vite.config.*' },
+  { language: 'javascript', scheme: 'file', pattern: '**/weapp-vite.config.*' },
+  { language: 'typescript', scheme: 'file', pattern: '**/weapp-vite.config.*' },
+]
+
 function getOutputChannel() {
   outputChannel ??= vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME)
   return outputChannel
@@ -499,10 +506,7 @@ export function activate(context: any) {
       ':',
     ),
     vscode.languages.registerCompletionItemProvider(
-      [
-        { language: 'javascript', scheme: 'file', pattern: '**/vite.config.*' },
-        { language: 'typescript', scheme: 'file', pattern: '**/vite.config.*' },
-      ],
+      viteConfigDocumentSelectors,
       viteConfigCompletionProvider,
       'g',
       'p',
@@ -528,8 +532,7 @@ export function activate(context: any) {
       [
         { language: 'json', scheme: 'file', pattern: '**/package.json' },
         { language: 'jsonc', scheme: 'file', pattern: '**/package.json' },
-        { language: 'javascript', scheme: 'file', pattern: '**/vite.config.*' },
-        { language: 'typescript', scheme: 'file', pattern: '**/vite.config.*' },
+        ...viteConfigDocumentSelectors,
         { language: 'vue', scheme: 'file' },
       ],
       hoverProvider,
