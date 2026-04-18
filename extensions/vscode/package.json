@@ -3,7 +3,7 @@
   "name": "@weapp-vite/vscode",
   "displayName": "weapp-vite",
   "type": "module",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "为 weapp-vite 项目提供命令入口、状态栏、代码片段、自定义块高亮与轻量编辑器增强的 VS Code 扩展。",
   "license": "MIT",
