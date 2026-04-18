@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.2.1
+
+### Patch Changes
+
+- 🐛 **为 VS Code 扩展补充一次 patch changeset，确保后续 release PR 会递增扩展版本，并重新触发 Marketplace 发布流程。** [`c7eb853`](https://github.com/weapp-vite/weapp-vite/commit/c7eb853ce93b85fa5dc5759b1aa8ea58a5ed3d28) by @sonofmagic
+
 ## 0.2.0
 
 ### Minor Changes
