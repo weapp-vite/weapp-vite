@@ -1,3 +1,4 @@
+---
 "@weapp-core/init": patch
 "weapp-vite": patch
 "create-weapp-vite": patch
