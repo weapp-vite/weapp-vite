@@ -1,21 +1,15 @@
-import path from 'node:path'
 import * as vscode from 'vscode'
 
 import {
   getAppJsonRouteCompletionContext,
   getAppJsonRouteInsertText,
-  getMissingCommonScripts,
 } from '../project/logic'
-import {
-  getWeappViteProjectSignals,
-} from '../project/workspace'
 import {
   APP_JSON_DIAGNOSTIC_SOURCE,
   COMMON_SCRIPT_NAMES,
   DOCS_GENERATE_URL,
   DOCS_GUIDE_URL,
   DOCS_VSCODE_URL,
-  PACKAGE_JSON_DIAGNOSTIC_SOURCE,
   PAGE_FILE_DIAGNOSTIC_SOURCE,
   SCRIPT_COMMAND_SUGGESTIONS,
   VUE_JSON_BLOCK_PATTERN,
@@ -243,45 +237,8 @@ export function getComponentVueTemplate(name: string) {
   ].join('\n')
 }
 
-export async function buildPackageJsonDiagnostics(document: any) {
-  const diagnostics = []
-  let packageJson
-
-  try {
-    packageJson = JSON.parse(document.getText())
-  }
-  catch {
-    return diagnostics
-  }
-
-  const packageJsonPath = document.uri?.fsPath
-
-  if (typeof packageJsonPath !== 'string' || packageJsonPath.length === 0) {
-    return diagnostics
-  }
-
-  const projectSignals = await getWeappViteProjectSignals(path.dirname(packageJsonPath), packageJson)
-
-  if (!projectSignals.isConfirmedWeappViteProject) {
-    return diagnostics
-  }
-
-  const missingScripts = getMissingCommonScripts(packageJson)
-
-  if (missingScripts.length === 0) {
-    return diagnostics
-  }
-
-  const range = new vscode.Range(0, 0, 0, 1)
-  const diagnostic = new vscode.Diagnostic(
-    range,
-    `建议补齐常用 weapp-vite 脚本：${missingScripts.join(', ')}`,
-    vscode.DiagnosticSeverity.Information,
-  )
-  diagnostic.source = PACKAGE_JSON_DIAGNOSTIC_SOURCE
-  diagnostics.push(diagnostic)
-
-  return diagnostics
+export async function buildPackageJsonDiagnostics(_document: any) {
+  return []
 }
 
 export function buildAppJsonDiagnostics(document: any, missingRoutes: string[]) {

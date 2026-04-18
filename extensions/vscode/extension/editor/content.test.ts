@@ -538,7 +538,7 @@ it('builds app.json route hover for missing page files', async () => {
   vi.resetModules()
 })
 
-it('only builds package.json diagnostics for confirmed weapp-vite projects', async () => {
+it('does not emit package.json problems for weapp-vite script suggestions', async () => {
   const files = new Map<string, string>([
     [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
       name: 'demo-app',
@@ -625,15 +625,14 @@ it('only builds package.json diagnostics for confirmed weapp-vite projects', asy
   const confirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(confirmedPackageJsonPath)!, confirmedPackageJsonPath))
   const unconfirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(unconfirmedPackageJsonPath)!, unconfirmedPackageJsonPath))
 
-  assert.equal(confirmedDiagnostics.length, 1)
-  assert.equal(confirmedDiagnostics[0].message, '建议补齐常用 weapp-vite 脚本：build, generate, open')
+  assert.equal(confirmedDiagnostics.length, 0)
   assert.equal(unconfirmedDiagnostics.length, 0)
 
   vi.doUnmock('vscode')
   vi.resetModules()
 })
 
-it('package.json diagnostics respect existing candidate script aliases', async () => {
+it('does not emit package.json problems when candidate script aliases already exist', async () => {
   const files = new Map<string, string>([
     [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
       name: 'demo-app',
@@ -713,8 +712,7 @@ it('package.json diagnostics respect existing candidate script aliases', async (
   const packageJsonPath = normalizeFsPath('/workspace/app/package.json')
   const diagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(packageJsonPath)!, packageJsonPath))
 
-  assert.equal(diagnostics.length, 1)
-  assert.equal(diagnostics[0].message, '建议补齐常用 weapp-vite 脚本：build, open')
+  assert.equal(diagnostics.length, 0)
 
   vi.doUnmock('vscode')
   vi.resetModules()

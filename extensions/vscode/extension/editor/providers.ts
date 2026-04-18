@@ -1,7 +1,9 @@
+import path from 'node:path'
 import * as vscode from 'vscode'
 
 import {
   getDefinePageJsonCompletionContext,
+  getMissingCommonScripts,
   getViteConfigObjectPath,
   getVueJsonBlockCompletionContext,
   getVueJsonUsingComponentReferenceAtOffset,
@@ -17,6 +19,7 @@ import {
   getAppJsonRouteFileStatus,
   getCurrentPageRouteCandidate,
   getVueUsingComponentFileStatus,
+  getWeappViteProjectSignals,
   isAppJsonDocument,
   isPackageJsonDocument,
   isViteConfigDocument,
@@ -342,16 +345,33 @@ export class WeappViteCodeActionProvider {
     const actions = []
 
     if (isPackageJsonDocument(document)) {
-      const insertScriptsAction = new vscode.CodeAction(
-        '补齐常用 weapp-vite scripts',
-        vscode.CodeActionKind.QuickFix,
-      )
-      insertScriptsAction.command = {
-        command: 'weapp-vite.insertCommonScripts',
-        title: '补齐常用 weapp-vite scripts',
-        arguments: [document],
+      let packageJson = null
+
+      try {
+        packageJson = JSON.parse(document.getText())
       }
-      actions.push(insertScriptsAction)
+      catch {
+        packageJson = null
+      }
+
+      const packageJsonPath = document.uri?.fsPath
+
+      if (packageJson && typeof packageJsonPath === 'string' && packageJsonPath.length > 0) {
+        const projectSignals = await getWeappViteProjectSignals(path.dirname(packageJsonPath), packageJson)
+
+        if (projectSignals.isConfirmedWeappViteProject && getMissingCommonScripts(packageJson).length > 0) {
+          const insertScriptsAction = new vscode.CodeAction(
+            '补齐常用 weapp-vite scripts',
+            vscode.CodeActionKind.QuickFix,
+          )
+          insertScriptsAction.command = {
+            command: 'weapp-vite.insertCommonScripts',
+            title: '补齐常用 weapp-vite scripts',
+            arguments: [document],
+          }
+          actions.push(insertScriptsAction)
+        }
+      }
     }
 
     if (isAppJsonDocument(document)) {
