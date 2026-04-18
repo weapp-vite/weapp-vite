@@ -73,7 +73,7 @@ VSCE_PAT=your_token pnpm run publish:vsce
 - `pnpm run smoke:dist` 会加载编译后的 `dist/extension.js`，并用模拟的 VS Code Host 验证扩展激活
 - `pnpm run test:host:smoke` 会下载并启动真实 VS Code 宿主，执行最小插件烟测，适合放在 CI 中兜底安装后行为
 - `pnpm run test:vsix:e2e` 会先生成本地 `.vsix`，再分别验证“仅安装 weapp-vite”和“安装 weapp-vite + Vue Official”两种安装态场景
-- `pnpm run open:vsix:e2e:standalone` / `pnpm run open:vsix:e2e:vue-official` 可直接拉起对应安装态 VS Code，便于发布前手工检查
+- `pnpm run open:vsix:e2e:standalone` / `pnpm run open:vsix:e2e:vue-official` 可直接拉起对应安装态 VS Code，便于发布前手工检查；打开的工作区已经预置配置文件、分包、缺失页、未注册页、legacy `<json>` 页面、缺失组件和 `.wxml` 文件，适合集中回归插件入口
 - `pnpm run check:vsix` 会打出本地 `.vsix`，并校验最终归档里的文件列表
 - `check:publish` 已经包含 `lint`、`test` 和打包校验，是最稳妥的发布前关卡
 - `release:marketplace:plan` 会检测当前版本是否高于 Marketplace 线上版本，并在 CI 中写入 GitHub Actions 输出变量

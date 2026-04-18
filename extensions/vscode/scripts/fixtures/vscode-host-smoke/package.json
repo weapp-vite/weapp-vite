@@ -1,7 +1,14 @@
 {
-  "name": "vscode-host-smoke-fixture",
+  "name": "vscode-feature-coverage-fixture",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "wv dev",
+    "build": "wv build",
+    "open": "wv open",
+    "doctor": "wv info",
+    "generate": "wv generate"
+  },
   "dependencies": {
     "weapp-vite": "workspace:*"
   }

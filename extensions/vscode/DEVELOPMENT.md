@@ -61,6 +61,7 @@ pnpm --dir extensions/vscode run release:marketplace:plan
 - `test:vsix:e2e:standalone` 只验证“仅安装 `weapp-vite`”场景
 - `test:vsix:e2e:vue-official` 只验证“安装 `weapp-vite` + `Vue Official`”场景
 - `open:vsix:e2e:standalone` / `open:vsix:e2e:vue-official` 会直接拉起对应场景的独立 VS Code，便于手工复现和联调
+- 这些命令打开的是同一个“覆盖型” `weapp-vite` fixture：里面同时包含 `package.json` scripts、`vite.config.ts`、`weapp-vite.config.ts`、`src/app.json`、已注册页面、缺失页面、未注册页面、分包页面、legacy `<json>` 页面、现存/缺失 `usingComponents`、以及独立 `.wxml` 文件
 
 ### 4.3 打包校验
 
