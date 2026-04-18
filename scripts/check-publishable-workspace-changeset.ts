@@ -107,6 +107,23 @@ function getDiffFiles(baseRef: string, pathSpec?: string) {
   return output ? output.split('\n').filter(Boolean) : []
 }
 
+export function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
+  if (!entryArg) {
+    return false
+  }
+
+  const resolvedEntryPath = path.isAbsolute(entryArg)
+    ? entryArg
+    : path.resolve(entryArg)
+
+  try {
+    return moduleUrl === pathToFileURL(resolvedEntryPath).href
+  }
+  catch {
+    return false
+  }
+}
+
 export function extractChangesetPackages(content: string) {
   const lines = content.split('\n')
   let start = -1
@@ -327,6 +344,6 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
   await main()
 }

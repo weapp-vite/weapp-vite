@@ -1,13 +1,16 @@
 import type { PublishableWorkspacePackageEntry } from './check-publishable-workspace-changeset'
 import assert from 'node:assert/strict'
-import test from 'vitest'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { it } from 'vitest'
 import {
   collectPublishableWorkspaceChangesetIssues,
   extractChangesetPackages,
+  isCurrentModuleEntry,
   isReleaseWorthyWorkspaceFile,
 } from './check-publishable-workspace-changeset'
 
-test('extractChangesetPackages reads package names from frontmatter', () => {
+it('extractChangesetPackages reads package names from frontmatter', () => {
   const packages = extractChangesetPackages([
     '---',
     '"weapp-vite": patch',
@@ -20,7 +23,16 @@ test('extractChangesetPackages reads package names from frontmatter', () => {
   assert.deepEqual(packages, ['weapp-vite', '@weapp-core/init'])
 })
 
-test('isReleaseWorthyWorkspaceFile ignores test and docs noise', () => {
+it('isCurrentModuleEntry resolves relative argv paths without throwing', () => {
+  const entryArg = path.relative(process.cwd(), path.resolve(process.cwd(), 'scripts/check-publishable-workspace-changeset.ts'))
+  const moduleUrl = pathToFileURL(path.resolve(process.cwd(), entryArg)).href
+
+  assert.equal(isCurrentModuleEntry(entryArg, moduleUrl), true)
+  assert.equal(isCurrentModuleEntry('scripts/other-script.ts', moduleUrl), false)
+  assert.equal(isCurrentModuleEntry(undefined, moduleUrl), false)
+})
+
+it('isReleaseWorthyWorkspaceFile ignores test and docs noise', () => {
   assert.equal(isReleaseWorthyWorkspaceFile('packages/demo/src/index.ts', 'packages/demo'), true)
   assert.equal(isReleaseWorthyWorkspaceFile('packages/demo/bin/cli.js', 'packages/demo'), true)
   assert.equal(isReleaseWorthyWorkspaceFile('packages/demo/test/index.test.ts', 'packages/demo'), false)
@@ -28,7 +40,7 @@ test('isReleaseWorthyWorkspaceFile ignores test and docs noise', () => {
   assert.equal(isReleaseWorthyWorkspaceFile('packages/demo/vitest.config.ts', 'packages/demo'), false)
 })
 
-test('collectPublishableWorkspaceChangesetIssues reports missing changed packages and releasing dependents', () => {
+it('collectPublishableWorkspaceChangesetIssues reports missing changed packages and releasing dependents', () => {
   const packages: PublishableWorkspacePackageEntry[] = [
     {
       dir: '@weapp-core/init',
@@ -54,7 +66,7 @@ test('collectPublishableWorkspaceChangesetIssues reports missing changed package
   assert.match(issues[1]!, /weapp-vite -> @weapp-core\/init/)
 })
 
-test('collectPublishableWorkspaceChangesetIssues accepts complete release sets', () => {
+it('collectPublishableWorkspaceChangesetIssues accepts complete release sets', () => {
   const packages: PublishableWorkspacePackageEntry[] = [
     {
       dir: '@weapp-core/init',
