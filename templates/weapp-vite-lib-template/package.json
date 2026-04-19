@@ -32,12 +32,12 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "@icebreakers/eslint-config": "^4.0.6",
-    "@icebreakers/stylelint-config": "^3.0.5",
-    "eslint": "^10.2.1",
+    "@icebreakers/eslint-config": "catalog:",
+    "@icebreakers/stylelint-config": "catalog:",
+    "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
-    "stylelint": "^17.8.0",
+    "stylelint": "catalog:",
     "typescript": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
