@@ -7,7 +7,7 @@ import { createHmrMarker, replaceFileByRename, resolvePlatforms, waitForFileCont
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const SHARED_STORE_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/store.ts')
-const SHARED_RUNTIME_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
+const SHARED_RUNTIME_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
 const STORE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store/index.js')
 const STORE_SHARE_PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/store-share/index.js')
 const PLATFORM_LIST = resolvePlatforms()
@@ -75,8 +75,8 @@ describe.sequential('HMR shared runtime dependencies (dev watch)', () => {
         fs.readFile(STORE_SHARE_PAGE_JS_PATH, 'utf8'),
       ])
 
-      expect(storePageJs).toContain('require("../../weapp-vendors/wevu-defineProperty.js")')
-      expect(storeSharePageJs).toContain('require("../../weapp-vendors/wevu-defineProperty.js")')
+      expect(storePageJs).toContain('require("../../weapp-vendors/wevu-ref.js")')
+      expect(storeSharePageJs).toContain('require("../../weapp-vendors/wevu-ref.js")')
       expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {

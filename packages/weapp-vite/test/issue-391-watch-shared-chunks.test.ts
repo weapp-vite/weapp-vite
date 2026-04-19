@@ -80,6 +80,21 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
   throw new Error(`watch build timed out, output missing marker: ${marker}`)
 }
 
+async function resolveIssue391SharedRuntimeOutputPath(outDir: string) {
+  const candidates = [
+    path.resolve(outDir, 'weapp-vendors/wevu-ref.js'),
+    path.resolve(outDir, 'weapp-vendors/wevu-defineProperty.js'),
+  ]
+
+  for (const candidate of candidates) {
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+
+  return candidates[0]
+}
+
 describe.sequential('issue #391 watch shared chunk rebuild', () => {
   it('keeps the shared runtime chunk import after editing one importer page', async () => {
     const fixtureSource = path.resolve(__dirname, '../../../e2e-apps/github-issues')
@@ -113,9 +128,9 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       const outDir = ctxResult.ctx.configService.outDir
       const pageOutputPath = path.resolve(outDir, 'pages/issue-391/index.js')
       const peerOutputPath = path.resolve(outDir, 'pages/issue-391-peer/index.js')
-      const sharedRuntimeOutputPath = path.resolve(outDir, 'weapp-vendors/wevu-defineProperty.js')
+      const sharedRuntimeOutputPath = await resolveIssue391SharedRuntimeOutputPath(outDir)
       const pageSourcePath = path.resolve(cwd, 'src/pages/issue-391/index.ts')
-      const sharedImportPattern = /require\((['"])\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/
+      const sharedImportPattern = /require\((['"])\.\.\/\.\.\/weapp-vendors\/(?:wevu-ref|wevu-defineProperty)\.js\1\)/
 
       await waitForFileContains(pageOutputPath, 'issue-391-initial-marker')
       await waitForFileContains(sharedRuntimeOutputPath, 'issue-391-shared-sentinel')

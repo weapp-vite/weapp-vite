@@ -637,7 +637,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-294/index.json')
     const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
-    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
+    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
     const wevuRuntime = await fs.readFile(wevuRuntimePath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-294 share hooks')
@@ -898,8 +898,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
 
@@ -919,7 +919,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
     const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
     const invalidSharedPageWxmlPath = path.join(DIST_ROOT, 'subpackages/item/issue-340-shared.wxml')
-    const rootSharedRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
+    const rootSharedRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
     const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
     const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
     const itemInvalidCommonPath = path.join(DIST_ROOT, 'subpackages/item/common.js')
@@ -949,8 +949,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemShared).toContain('issue-340')
     expect(userShared).toContain('issue-340')
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(itemShared).not.toMatch(/subpackages_item.*subpackages_user\/common\.js/)
@@ -1117,7 +1117,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const launchPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.js')
     const resultPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.wxml')
     const resultPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.js')
-    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
+    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
 
     const launchPageWxml = await fs.readFile(launchPageWxmlPath, 'utf-8')
     const launchPageJs = await fs.readFile(launchPageJsPath, 'utf-8')

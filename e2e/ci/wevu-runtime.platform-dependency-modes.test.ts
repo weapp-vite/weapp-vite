@@ -64,7 +64,7 @@ async function runBuild(appRoot: string, platform: RuntimePlatform) {
   const output = result.all ?? `${result.stdout}\n${result.stderr}`
   expect(output).not.toContain('未安装 wevu')
 
-  const runtimeScriptPath = path.join(distRoot, 'weapp-vendors/wevu-defineProperty.js')
+  const runtimeScriptPath = path.join(distRoot, 'weapp-vendors/wevu-ref.js')
   expect(await fs.pathExists(runtimeScriptPath)).toBe(true)
   return await fs.readFile(runtimeScriptPath, 'utf8')
 }

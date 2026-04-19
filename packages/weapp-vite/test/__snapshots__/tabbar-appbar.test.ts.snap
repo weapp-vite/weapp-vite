@@ -177,8 +177,8 @@ exports[`tabbar-appbar > dist 1`] = `
   "pages/index/vue.wxss",
   "rolldown-runtime.js",
   "sitemap.json",
-  "wevu-runtime.js",
   "theme.json",
   "weapp-vendors/wevu-defineProperty.js",
+  "wevu-runtime.js",
 ]
 `;

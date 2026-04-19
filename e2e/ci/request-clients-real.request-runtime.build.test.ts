@@ -58,6 +58,7 @@ async function resolveRuntimeChunkPath(distRoot: string) {
   }
 
   const fallbackPaths = [
+    path.join(distRoot, 'weapp-vendors/wevu-ref.js'),
     path.join(distRoot, 'weapp-vendors/wevu-defineProperty.js'),
     path.join(distRoot, 'weapp-vendors/web-apis-shared.js'),
   ]
@@ -119,7 +120,7 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
         const entryJs = await fs.readFile(path.join(distRoot, entryFile), 'utf8')
 
         expect(entryJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-        expect(entryJs).toMatch(/require\((['"`])\.\.\/\.\.\/(?:request-globals-runtime|weapp-vendors\/(?:wevu-defineProperty|web-apis-shared))\.js\1\)/)
+        expect(entryJs).toMatch(/require\((['"`])\.\.\/\.\.\/(?:request-globals-runtime|weapp-vendors\/(?:wevu-ref|wevu-defineProperty|web-apis-shared))\.js\1\)/)
         expect(entryJs).toContain('var fetch =')
         expect(entryJs).toContain('.fetch')
         expect(entryJs).toContain('var XMLHttpRequest =')

@@ -27,6 +27,20 @@ async function resolvePluginWevuRuntimePath(pluginDistRoot: string) {
   return path.join(pluginDistRoot, legacyRuntimeChunkName)
 }
 
+async function resolvePluginWevuSupportPath(pluginDistRoot: string) {
+  const stableSupportPath = path.join(pluginDistRoot, 'weapp-vendors/wevu-ref.js')
+  if (await fs.pathExists(stableSupportPath)) {
+    return stableSupportPath
+  }
+
+  const legacySupportPath = path.join(pluginDistRoot, 'weapp-vendors/wevu-defineProperty.js')
+  if (await fs.pathExists(legacySupportPath)) {
+    return legacySupportPath
+  }
+
+  return undefined
+}
+
 describe('plugin-demo build regression', () => {
   afterAll(async () => {
     await fs.remove(DIST_ROOT)
@@ -57,13 +71,14 @@ describe('plugin-demo build regression', () => {
 
     expect(await fs.pathExists(path.join(DIST_ROOT, 'common.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'common.js'))).toBe(false)
-    expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'app.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/index/index.js'))).toBe(false)
 
     const pluginIndexCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'index.js'))
-    const pluginVendorCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js'))
+    const pluginSupportPath = await resolvePluginWevuSupportPath(PLUGIN_DIST_ROOT)
     const pluginWevuRuntimePath = await resolvePluginWevuRuntimePath(PLUGIN_DIST_ROOT)
+    expect(pluginSupportPath).toBeTruthy()
+    const pluginVendorCode = await readFile(pluginSupportPath!)
     const pluginPageJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/hello-page/index.json')))
     const nativePlaygroundJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.json')))
     const pluginJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'plugin.json')))
