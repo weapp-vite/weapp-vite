@@ -130,6 +130,28 @@ describe('request globals third-party integration', () => {
     expect(wpiRequestMock).toHaveBeenCalledTimes(3)
   })
 
+  it('forwards axios fetchOptions miniProgram extensions to the underlying request bridge', async () => {
+    installRequestGlobals()
+
+    const axiosPayload = await axios.get('https://request-globals.invalid/axios', {
+      adapter: 'fetch',
+      fetchOptions: {
+        miniProgram: {
+          enableHttp2: true,
+          timeout: 4_321,
+        },
+      },
+    })
+
+    expect(axiosPayload.data.transport).toBe('axios')
+    expect(wpiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://request-globals.invalid/axios',
+      method: 'GET',
+      enableHttp2: true,
+      timeout: 4_321,
+    }))
+  })
+
   it('replaces broken host URL constructors before graphql-request and axios use them', async () => {
     setGlobalValue('URL', () => undefined)
     setGlobalValue('URLSearchParams', () => undefined)

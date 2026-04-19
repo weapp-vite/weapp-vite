@@ -153,6 +153,46 @@ describe('request globals runtime', () => {
     expect(await response.json()).toEqual({ ok: true })
   })
 
+  it('forwards whitelisted mini-program request options through fetch init extensions', async () => {
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const { installRequestGlobals } = await import('../src')
+    installRequestGlobals()
+
+    const response = await globalThis.fetch('https://request-globals.invalid/data', {
+      method: 'POST',
+      body: JSON.stringify({ ok: true }),
+      miniProgram: {
+        enableHttp2: true,
+        timeout: 4_321,
+      },
+      miniprogram: {
+        enableChunked: true,
+      },
+    })
+
+    expect(wpiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://request-globals.invalid/data',
+      method: 'POST',
+      responseType: 'arraybuffer',
+      enableHttp2: true,
+      enableChunked: true,
+      timeout: 4_321,
+    }))
+    expect(await response.json()).toEqual({ ok: true })
+  })
+
   it('supports axios-style xhr requests through the injected fetch bridge', async () => {
     wpiRequestMock.mockImplementation((options: Record<string, any>) => {
       options.success?.({

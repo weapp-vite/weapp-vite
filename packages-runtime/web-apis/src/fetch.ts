@@ -1,5 +1,6 @@
 import type {
   WeapiMiniProgramRequestMethod,
+  WeapiMiniProgramRequestOption,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
 } from '@wevu/api'
@@ -27,12 +28,43 @@ interface RequestLikeInput {
   }
 }
 
+const MINI_PROGRAM_REQUEST_OPTION_KEYS = [
+  'enableCache',
+  'enableChunked',
+  'enableHttp2',
+  'enableHttpDNS',
+  'enableProfile',
+  'enableQuic',
+  'forceCellularNetwork',
+  'httpDNSServiceId',
+  'httpDNSTimeout',
+  'redirect',
+  'timeout',
+  'useHighPerformanceMode',
+] as const
+
+type RequestGlobalsMiniProgramOptionKey = typeof MINI_PROGRAM_REQUEST_OPTION_KEYS[number]
+
+export type RequestGlobalsMiniProgramOptions = Pick<
+  Partial<WeapiMiniProgramRequestOption>,
+  RequestGlobalsMiniProgramOptionKey
+>
+
 export interface RequestGlobalsFetchInit {
   method?: string
   headers?: unknown
   body?: unknown
   signal?: AbortSignal | null
+  miniProgram?: RequestGlobalsMiniProgramOptions
+  miniprogram?: RequestGlobalsMiniProgramOptions
   [key: string]: unknown
+}
+
+declare global {
+  interface RequestInit {
+    miniProgram?: RequestGlobalsMiniProgramOptions
+    miniprogram?: RequestGlobalsMiniProgramOptions
+  }
 }
 
 type RequestGlobalsFetchInput = string | URL | URLPolyfill | RequestLikeInput
@@ -188,6 +220,29 @@ async function normalizeRequestBody(body: unknown, headers: HeaderMap) {
   return String(body)
 }
 
+function resolveMiniProgramRequestOptions(init: RequestGlobalsFetchInit) {
+  const options = {} as RequestGlobalsMiniProgramOptions
+
+  for (const source of [init.miniProgram, init.miniprogram]) {
+    if (!isObject(source)) {
+      continue
+    }
+
+    const candidate = source as Partial<Record<RequestGlobalsMiniProgramOptionKey, unknown>>
+    for (const key of MINI_PROGRAM_REQUEST_OPTION_KEYS) {
+      if (!hasOwn.call(candidate, key)) {
+        continue
+      }
+      const value = candidate[key]
+      if (value !== undefined) {
+        options[key] = value as never
+      }
+    }
+  }
+
+  return options
+}
+
 async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: RequestGlobalsFetchInit = {}) {
   const requestInput = isRequestLikeInput(input) ? input : undefined
   const url = typeof input === 'string'
@@ -218,6 +273,7 @@ async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: Request
   }
 
   return {
+    miniProgram: resolveMiniProgramRequestOptions(init),
     url,
     method,
     headers,
@@ -276,6 +332,7 @@ export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetc
       }
 
       const requestResult = wpi.request({
+        ...meta.miniProgram,
         url: meta.url,
         method: meta.method,
         header: meta.headers,
