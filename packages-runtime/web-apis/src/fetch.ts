@@ -1,14 +1,17 @@
 import type {
   WeapiMiniProgramRequestMethod,
-  WeapiMiniProgramRequestOption,
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
 } from '@wevu/api'
+import type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 import type { URLPolyfill } from './url'
 import { wpi } from '@wevu/api'
 import { isUrlInstance, isUrlSearchParamsInstance } from './constructors'
 import { HeadersPolyfill, ResponsePolyfill } from './http'
+import { resolveRequestMiniProgramOptions } from './networkDefaults'
 import { cloneArrayBuffer, cloneArrayBufferView, normalizeHeaderName } from './shared'
+
+export type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 
 type HeaderPair = readonly [string, string]
 type HeaderMap = Record<string, string>
@@ -27,28 +30,6 @@ interface RequestLikeInput {
     text?: () => Promise<string>
   }
 }
-
-const MINI_PROGRAM_REQUEST_OPTION_KEYS = [
-  'enableCache',
-  'enableChunked',
-  'enableHttp2',
-  'enableHttpDNS',
-  'enableProfile',
-  'enableQuic',
-  'forceCellularNetwork',
-  'httpDNSServiceId',
-  'httpDNSTimeout',
-  'redirect',
-  'timeout',
-  'useHighPerformanceMode',
-] as const
-
-type RequestGlobalsMiniProgramOptionKey = typeof MINI_PROGRAM_REQUEST_OPTION_KEYS[number]
-
-export type RequestGlobalsMiniProgramOptions = Pick<
-  Partial<WeapiMiniProgramRequestOption>,
-  RequestGlobalsMiniProgramOptionKey
->
 
 export interface RequestGlobalsFetchInit {
   method?: string
@@ -220,29 +201,6 @@ async function normalizeRequestBody(body: unknown, headers: HeaderMap) {
   return String(body)
 }
 
-function resolveMiniProgramRequestOptions(init: RequestGlobalsFetchInit) {
-  const options = {} as RequestGlobalsMiniProgramOptions
-
-  for (const source of [init.miniProgram, init.miniprogram]) {
-    if (!isObject(source)) {
-      continue
-    }
-
-    const candidate = source as Partial<Record<RequestGlobalsMiniProgramOptionKey, unknown>>
-    for (const key of MINI_PROGRAM_REQUEST_OPTION_KEYS) {
-      if (!hasOwn.call(candidate, key)) {
-        continue
-      }
-      const value = candidate[key]
-      if (value !== undefined) {
-        options[key] = value as never
-      }
-    }
-  }
-
-  return options
-}
-
 async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: RequestGlobalsFetchInit = {}) {
   const requestInput = isRequestLikeInput(input) ? input : undefined
   const url = typeof input === 'string'
@@ -273,7 +231,7 @@ async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: Request
   }
 
   return {
-    miniProgram: resolveMiniProgramRequestOptions(init),
+    miniProgram: resolveRequestMiniProgramOptions(init.miniProgram, init.miniprogram),
     url,
     method,
     headers,

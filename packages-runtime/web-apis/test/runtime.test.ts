@@ -68,7 +68,7 @@ function createMockSocketTask() {
 }
 
 describe('request globals runtime', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     wpiRequestMock.mockReset()
     delete (globalThis as Record<string, any>).fetch
     delete (globalThis as Record<string, any>).Headers
@@ -98,6 +98,8 @@ describe('request globals runtime', () => {
     delete (globalThis as Record<string, any>).window
     delete (globalThis as Record<string, any>)[REQUEST_GLOBAL_ACTUALS_KEY]
     wpiConnectSocketMock.mockReset()
+    const { resetMiniProgramNetworkDefaults } = await import('../src')
+    resetMiniProgramNetworkDefaults()
   })
 
   it('installs missing globals without overwriting existing ones', async () => {
@@ -191,6 +193,50 @@ describe('request globals runtime', () => {
       timeout: 4_321,
     }))
     expect(await response.json()).toEqual({ ok: true })
+  })
+
+  it('applies runtime mini-program request defaults to fetch and xhr callers', async () => {
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+
+    const {
+      installRequestGlobals,
+      setMiniProgramNetworkDefaults,
+    } = await import('../src')
+    installRequestGlobals()
+    setMiniProgramNetworkDefaults({
+      request: {
+        enableHttp2: true,
+        timeout: 4_321,
+      },
+    })
+
+    await globalThis.fetch('https://request-globals.invalid/default-fetch')
+
+    const xhr = new globalThis.XMLHttpRequest()
+    xhr.open('GET', 'https://request-globals.invalid/default-xhr')
+    await xhr.send()
+
+    expect(wpiRequestMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      enableHttp2: true,
+      timeout: 4_321,
+      url: 'https://request-globals.invalid/default-fetch',
+    }))
+    expect(wpiRequestMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      enableHttp2: true,
+      timeout: 4_321,
+      url: 'https://request-globals.invalid/default-xhr',
+    }))
   })
 
   it('supports axios-style xhr requests through the injected fetch bridge', async () => {
@@ -618,6 +664,53 @@ describe('request globals runtime', () => {
       reason: 'done',
       type: 'close',
       wasClean: true,
+    }))
+  })
+
+  it('applies runtime mini-program websocket defaults and supports init-object overrides', async () => {
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const {
+      installRequestGlobals,
+      setMiniProgramNetworkDefaults,
+    } = await import('../src')
+    installRequestGlobals({
+      targets: ['WebSocket'],
+    })
+    setMiniProgramNetworkDefaults({
+      socket: {
+        timeout: 6_789,
+        forceCellularNetwork: true,
+      },
+    })
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/socket-default')
+    const socketWithOverrides = new globalThis.WebSocket('wss://request-globals.invalid/socket-override', {
+      protocols: ['chat'],
+      miniProgram: {
+        timeout: 1_234,
+        header: {
+          'x-socket-client': 'socket.io-client',
+        },
+      },
+    } as any)
+
+    expect(socket).toBeTruthy()
+    expect(socketWithOverrides).toBeTruthy()
+    expect(wpiConnectSocketMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      forceCellularNetwork: true,
+      timeout: 6_789,
+      url: 'wss://request-globals.invalid/socket-default',
+    }))
+    expect(wpiConnectSocketMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      forceCellularNetwork: true,
+      timeout: 1_234,
+      protocols: ['chat'],
+      header: {
+        'x-socket-client': 'socket.io-client',
+      },
+      url: 'wss://request-globals.invalid/socket-override',
     }))
   })
 

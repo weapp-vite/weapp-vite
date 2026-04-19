@@ -1,16 +1,21 @@
 import type {
   InstallWebRuntimeGlobalsOptions,
+  MiniProgramNetworkDefaults,
+  RequestGlobalsMiniProgramOptions,
   WeappInjectRequestGlobalsTarget,
   WeappInjectWebRuntimeGlobalsTarget,
+  WebSocketMiniProgramOptions,
 } from '@wevu/web-apis'
 import type {
   RequestGlobalsFetchInit,
-  RequestGlobalsMiniProgramOptions,
 } from '@wevu/web-apis/fetch'
 import {
+  getMiniProgramNetworkDefaults,
   installRequestGlobals,
   installWebRuntimeGlobals,
   RequestPolyfill,
+  resetMiniProgramNetworkDefaults,
+  setMiniProgramNetworkDefaults,
   TextDecoderPolyfill,
   TextEncoderPolyfill,
   URLPolyfill,
@@ -41,6 +46,14 @@ const miniProgramOptions: RequestGlobalsMiniProgramOptions = {
   enableHttp2: true,
   timeout: 3_000,
 }
+const socketMiniProgramOptions: WebSocketMiniProgramOptions = {
+  forceCellularNetwork: true,
+  timeout: 5_000,
+}
+const networkDefaults: MiniProgramNetworkDefaults = {
+  request: miniProgramOptions,
+  socket: socketMiniProgramOptions,
+}
 expectType<RequestGlobalsFetchInit>({
   miniProgram: miniProgramOptions,
   miniprogram: {
@@ -54,6 +67,9 @@ expectType<RequestInit>({
     enableCache: true,
   },
 })
+expectType<MiniProgramNetworkDefaults>(setMiniProgramNetworkDefaults(networkDefaults))
+expectType<MiniProgramNetworkDefaults>(getMiniProgramNetworkDefaults())
+expectType<MiniProgramNetworkDefaults>(resetMiniProgramNetworkDefaults())
 
 expectError<WeappInjectWebRuntimeGlobalsTarget>('URL')
 expectError<InstallWebRuntimeGlobalsOptions>({

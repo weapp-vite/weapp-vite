@@ -1,3 +1,4 @@
+import type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 import { AbortControllerPolyfill } from './abort'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, headersToObject } from './http'
@@ -49,6 +50,7 @@ export class XMLHttpRequestPolyfill extends RequestGlobalsEventTarget {
   statusText = ''
   timeout = 0
   withCredentials = false
+  miniProgram: RequestGlobalsMiniProgramOptions | null = null
   onreadystatechange: ((event: { type: string }) => void) | null = null
   onabort: ((event: { type: string }) => void) | null = null
   onerror: ((event: { type: string }) => void) | null = null
@@ -136,6 +138,7 @@ export class XMLHttpRequestPolyfill extends RequestGlobalsEventTarget {
         method: this.method,
         headers: headersToObject(this.requestHeaders),
         body: body as BodyInit | undefined,
+        miniProgram: this.miniProgram ?? undefined,
         signal: controller.signal,
       }) as Response
 

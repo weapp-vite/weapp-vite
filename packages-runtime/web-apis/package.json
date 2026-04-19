@@ -39,6 +39,10 @@
       "types": "./dist/http.d.mts",
       "import": "./dist/http.mjs"
     },
+    "./network-defaults": {
+      "types": "./dist/networkDefaults.d.mts",
+      "import": "./dist/networkDefaults.mjs"
+    },
     "./shared": {
       "types": "./dist/shared.d.mts",
       "import": "./dist/shared.mjs"

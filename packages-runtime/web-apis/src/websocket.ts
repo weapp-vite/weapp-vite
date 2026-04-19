@@ -2,8 +2,13 @@ import type {
   WeapiMiniProgramConnectSocketOption,
   WeapiMiniProgramSocketTask,
 } from '@wevu/api'
+import type { WebSocketMiniProgramOptions } from './networkDefaults'
 import { wpi } from '@wevu/api'
 import { resolveUrlConstructor as resolveHostUrlConstructor, resolveTextEncoderConstructor } from './constructors'
+import {
+  resolveWebSocketMiniProgramOptions,
+
+} from './networkDefaults'
 import { cloneArrayBuffer, cloneArrayBufferView, RequestGlobalsEventTarget } from './shared'
 import { URLPolyfill } from './url'
 import { BlobPolyfill } from './web'
@@ -31,6 +36,12 @@ interface WebSocketMessageEventLike {
   data: WebSocketMessageData
   origin: string
   type: 'message'
+}
+
+export interface WebSocketPolyfillInit {
+  protocols?: string | string[]
+  miniProgram?: WebSocketMiniProgramOptions
+  miniprogram?: WebSocketMiniProgramOptions
 }
 
 function isValidProtocol(protocol: string) {
@@ -102,6 +113,24 @@ function normalizeProtocols(protocols?: string | string[]) {
   }
 
   return normalized
+}
+
+function isWebSocketPolyfillInit(value: unknown): value is WebSocketPolyfillInit {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function resolveWebSocketProtocols(protocols?: string | string[] | WebSocketPolyfillInit) {
+  if (isWebSocketPolyfillInit(protocols)) {
+    return normalizeProtocols(protocols.protocols)
+  }
+  return normalizeProtocols(protocols)
+}
+
+function resolveWebSocketMiniProgramConfig(protocols?: string | string[] | WebSocketPolyfillInit) {
+  if (!isWebSocketPolyfillInit(protocols)) {
+    return resolveWebSocketMiniProgramOptions()
+  }
+  return resolveWebSocketMiniProgramOptions(protocols.miniProgram, protocols.miniprogram)
 }
 
 function normalizeUrl(url: string) {
@@ -208,7 +237,7 @@ export class WebSocketPolyfill extends RequestGlobalsEventTarget {
 
   private socketTask?: WeapiMiniProgramSocketTask
 
-  constructor(url: string, protocols?: string | string[]) {
+  constructor(url: string, protocols?: string | string[] | WebSocketPolyfillInit) {
     super()
     this.url = normalizeUrl(url)
     const connectSocket = getRawConnectSocket()
@@ -217,8 +246,10 @@ export class WebSocketPolyfill extends RequestGlobalsEventTarget {
       throw createDomLikeError('NotSupportedError', 'WebSocket is not supported in the current mini-program runtime')
     }
 
-    const normalizedProtocols = normalizeProtocols(protocols)
+    const normalizedProtocols = resolveWebSocketProtocols(protocols)
+    const miniProgramOptions = resolveWebSocketMiniProgramConfig(protocols)
     const task = connectSocket({
+      ...miniProgramOptions,
       url: this.url,
       protocols: normalizedProtocols,
       fail: (error) => {

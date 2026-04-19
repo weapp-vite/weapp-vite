@@ -1,7 +1,5 @@
-import axios from 'axios'
-import { request as gqlRequest } from 'graphql-request'
+import { request as gqlRequest, GraphQLClient } from 'graphql-request'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { installRequestGlobals } from '../src'
 
 const wpiRequestMock = vi.hoisted(() => vi.fn())
 
@@ -21,6 +19,16 @@ const GLOBAL_KEYS = [
   'XMLHttpRequest',
   'URL',
   'URLSearchParams',
+] as const
+
+const RUNTIME_RESET_KEYS = [
+  'fetch',
+  'Headers',
+  'Request',
+  'Response',
+  'AbortController',
+  'AbortSignal',
+  'XMLHttpRequest',
 ] as const
 
 const originalGlobals = new Map<string, unknown>()
@@ -75,10 +83,12 @@ function createMockResponse(url: string, data: unknown) {
 }
 
 describe('request globals third-party integration', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     wpiRequestMock.mockReset()
     for (const key of GLOBAL_KEYS) {
       originalGlobals.set(key, (globalThis as Record<string, unknown>)[key])
+    }
+    for (const key of RUNTIME_RESET_KEYS) {
       setGlobalValue(key, undefined)
     }
 
@@ -90,6 +100,9 @@ describe('request globals third-party integration', () => {
         abort: vi.fn(),
       }
     })
+
+    const { resetMiniProgramNetworkDefaults } = await import('../src')
+    resetMiniProgramNetworkDefaults()
   })
 
   afterEach(() => {
@@ -100,7 +113,9 @@ describe('request globals third-party integration', () => {
   })
 
   it('supports fetch, graphql-request and axios through installed request globals', async () => {
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals()
+    const { default: axios } = await import('axios')
 
     const fetchResponse = await fetch('https://request-globals.invalid/fetch', {
       method: 'POST',
@@ -131,7 +146,9 @@ describe('request globals third-party integration', () => {
   })
 
   it('forwards axios fetchOptions miniProgram extensions to the underlying request bridge', async () => {
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals()
+    const { default: axios } = await import('axios')
 
     const axiosPayload = await axios.get('https://request-globals.invalid/axios', {
       adapter: 'fetch',
@@ -152,11 +169,62 @@ describe('request globals third-party integration', () => {
     }))
   })
 
+  it('supports graphql-request fetchOptions and axios xhr defaults through runtime defaults', async () => {
+    const {
+      installRequestGlobals,
+      setMiniProgramNetworkDefaults,
+    } = await import('../src')
+    installRequestGlobals()
+    setMiniProgramNetworkDefaults({
+      request: {
+        enableHttp2: true,
+        timeout: 4_321,
+      },
+    })
+    const { default: axios } = await import('axios')
+
+    const client = new GraphQLClient('https://request-globals.invalid/graphql', {
+      miniProgram: {
+        enableChunked: true,
+      },
+    })
+
+    const graphqlPayload = await client.request<{ transport: { client: string } }>(
+      /* GraphQL */ `
+        query RequestGlobalsTransport {
+          transport {
+            client
+          }
+        }
+      `,
+    )
+    expect(graphqlPayload.transport.client).toBe('graphql-request')
+
+    const axiosPayload = await axios.get('https://request-globals.invalid/axios', {
+      adapter: 'xhr',
+    })
+    expect(axiosPayload.data.transport).toBe('axios')
+
+    expect(wpiRequestMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      enableChunked: true,
+      enableHttp2: true,
+      timeout: 4_321,
+      url: 'https://request-globals.invalid/graphql',
+    }))
+    expect(wpiRequestMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      enableHttp2: true,
+      timeout: 4_321,
+      url: 'https://request-globals.invalid/axios',
+    }))
+  })
+
   it('replaces broken host URL constructors before graphql-request and axios use them', async () => {
     setGlobalValue('URL', () => undefined)
     setGlobalValue('URLSearchParams', () => undefined)
 
+    const { installRequestGlobals } = await import('../src')
     installRequestGlobals()
+    const { default: axios } = await import('axios')
 
     const graphqlPayload = await gqlRequest<{ transport: { client: string } }>(
       'https://request-globals.invalid/graphql',

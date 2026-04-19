@@ -5,6 +5,11 @@ import { cryptoPolyfill } from './crypto'
 import { CustomEventPolyfill, EventPolyfill } from './events'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
+import {
+  getMiniProgramNetworkDefaults,
+  resetMiniProgramNetworkDefaults,
+  setMiniProgramNetworkDefaults,
+} from './networkDefaults'
 import { performancePolyfill } from './performance'
 import {
   installRequestGlobalBinding,
@@ -45,6 +50,11 @@ export interface InstallWebRuntimeGlobalsOptions {
 }
 
 export interface InstallRequestGlobalsOptions extends InstallWebRuntimeGlobalsOptions {}
+export type {
+  MiniProgramNetworkDefaults,
+  RequestGlobalsMiniProgramOptions,
+  WebSocketMiniProgramOptions,
+} from './networkDefaults'
 
 type WeappRequestGlobalActualTarget = WeappInjectWebRuntimeGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
 
@@ -369,12 +379,15 @@ export {
   EventPolyfill,
   requestGlobalsFetch as fetch,
   FormDataPolyfill,
+  getMiniProgramNetworkDefaults,
   HeadersPolyfill,
   performancePolyfill,
   queueMicrotaskPolyfill,
   RequestGlobalsEventTarget,
   RequestPolyfill,
+  resetMiniProgramNetworkDefaults,
   ResponsePolyfill,
+  setMiniProgramNetworkDefaults,
   TextDecoderPolyfill,
   TextEncoderPolyfill,
   URLPolyfill,

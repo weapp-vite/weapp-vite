@@ -2,4 +2,4 @@
 '@wevu/web-apis': patch
 ---
 
-修复小程序 Web Runtime 的 `fetch` 请求桥接不支持透传宿主请求扩展参数的问题。现在可以通过 `fetch(url, { miniProgram: { ... } })` 或 `fetch(url, { miniprogram: { ... } })` 传入白名单内的小程序请求选项；在 `axios` 的 fetch adapter 场景下，也可以通过 `fetchOptions.miniProgram` 把这些配置继续转发到底层 `wpi.request`。同时保持 `url`、`method`、`header`、`data`、`responseType` 等由兼容层接管的标准字段不被宿主扩展覆盖。
+修复小程序 Web Runtime 的网络兼容层不支持把宿主扩展参数稳定传到底层请求与 Socket 能力的问题。现在除了 `fetch(url, { miniProgram: { ... } })` / `fetch(url, { miniprogram: { ... } })` 和 `axios` 的 `fetchOptions.miniProgram` 之外，还新增了运行时级默认配置能力，可统一作用于 `fetch`、`XMLHttpRequest`、`WebSocket` 以及依赖这些全局对象的 `graphql-request`、`axios(xhr)`、`socket.io-client` 等库。显式请求参数会覆盖默认配置，同时仍保持 `url`、`method`、`header`、`data`、`responseType` 等标准字段由兼容层接管，不允许被宿主扩展项破坏。
