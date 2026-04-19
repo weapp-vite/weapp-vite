@@ -1,5 +1,7 @@
+import * as webApis from '@wevu/web-apis'
 import { describe, expect, it } from 'vitest'
 import * as api from '@/api'
+import * as fetchEntry from '@/fetch'
 import * as root from '@/index'
 import * as reactivity from '@/reactivity'
 import * as router from '@/router'
@@ -175,6 +177,19 @@ describe('export barrels', () => {
 
   it('covers all runtime exports of root entry', () => {
     const keys = Object.keys(root).sort()
-    expect(keys).toEqual(ROOT_RUNTIME_EXPORTS)
+    expect(keys).toEqual([...new Set([
+      ...ROOT_RUNTIME_EXPORTS,
+      ...Object.keys(webApis),
+    ])].sort())
+  })
+
+  it('re-exports web api helpers from fetch entry', () => {
+    expect(fetchEntry.installWebRuntimeGlobals).toBe(webApis.installWebRuntimeGlobals)
+    expect(fetchEntry.installAbortGlobals).toBe(webApis.installAbortGlobals)
+    expect(fetchEntry.HeadersPolyfill).toBe(webApis.HeadersPolyfill)
+    expect(fetchEntry.RequestPolyfill).toBe(webApis.RequestPolyfill)
+    expect(fetchEntry.ResponsePolyfill).toBe(webApis.ResponsePolyfill)
+    expect(fetchEntry.setMiniProgramNetworkDefaults).toBe(webApis.setMiniProgramNetworkDefaults)
+    expect(fetchEntry.WebSocketPolyfill).toBe(webApis.WebSocketPolyfill)
   })
 })

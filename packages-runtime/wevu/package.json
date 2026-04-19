@@ -117,6 +117,7 @@
     "@weapp-core/shared": "workspace:*",
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
+    "@wevu/web-apis": "workspace:*",
     "vue": "catalog:"
   }
 }
