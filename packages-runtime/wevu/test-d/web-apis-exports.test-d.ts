@@ -44,3 +44,8 @@ expectType<MiniProgramNetworkDefaults>(setFetchMiniProgramNetworkDefaults({
 }))
 expectType<typeof RootHeadersPolyfill>(WevuWebApisHeadersPolyfill)
 expectType<typeof fetch>(wevuFetch)
+expectType<Promise<Response>>(wevuFetch('https://example.com/request', {
+  miniProgram: {
+    timeout: 3_000,
+  },
+}))

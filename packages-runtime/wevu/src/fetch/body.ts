@@ -1,4 +1,5 @@
 import type { HeaderMap, RequestLikeInput, WevuFetchInit, WevuFetchInput } from './types'
+import { resolveRequestMiniProgramOptions } from '@wevu/web-apis/network-defaults'
 import { hasHeader, mergeHeaderSource, normalizeMethod, toHeaderMap } from './headers'
 import { cloneBuffer, cloneViewBuffer, hasOwn, isRequestLikeInput } from './shared'
 
@@ -81,6 +82,7 @@ export async function resolveRequestMeta(input: WevuFetchInput, init: WevuFetchI
     method,
     headers,
     body: await normalizeRequestBody(rawBody, headers),
+    miniProgram: resolveRequestMiniProgramOptions(init.miniProgram, init.miniprogram),
     signal: init.signal ?? requestInput?.signal ?? null,
   }
 }

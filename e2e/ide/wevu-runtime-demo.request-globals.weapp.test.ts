@@ -6,18 +6,30 @@ const CASES = [
   {
     expectedPayload: '"transport":"fetch"',
     expectedRequestPath: '/fetch',
+    expectedRequestTrace: [
+      'timeout=3500',
+      'enableHttp2=true',
+    ],
     route: '/pages/request-globals/fetch',
     title: 'fetch',
   },
   {
     expectedPayload: '"client":"graphql-request"',
     expectedRequestPath: '/graphql',
+    expectedRequestTrace: [
+      'timeout=4800',
+      'enableChunked=true',
+    ],
     route: '/pages/request-globals/graphql-request',
     title: 'graphql-request',
   },
   {
     expectedPayload: '"transport":"axios"',
     expectedRequestPath: '/axios',
+    expectedRequestTrace: [
+      'timeout=4200',
+      'enableHttp2=true',
+    ],
     route: '/pages/request-globals/axios',
     title: 'axios',
   },
@@ -150,17 +162,17 @@ describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
     })
     expect(entries).toEqual([
       {
-        desc: '验证 request globals 注入后的 fetch 能力',
+        desc: '使用 wevu/fetch + wevu/web-apis，验证全局 fetch 与宿主默认参数',
         route: '/pages/request-globals/fetch',
         title: 'fetch',
       },
       {
-        desc: '验证 graphql-request 对 URL / fetch 的依赖链路',
+        desc: '使用 wevu/web-apis 安装 web runtime，验证 graphql-request 对 URL / fetch 的依赖链路',
         route: '/pages/request-globals/graphql-request',
         title: 'graphql-request',
       },
       {
-        desc: '验证 axios 在小程序中的请求适配能力',
+        desc: '使用 wevu/web-apis 安装 web runtime，验证 axios 在小程序中的请求适配能力',
         route: '/pages/request-globals/axios',
         title: 'axios',
       },
@@ -186,6 +198,9 @@ describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
 
       expect(initialState.payload).toContain(testCase.expectedPayload)
       expect(initialState.requestLog[0]).toContain(testCase.expectedRequestPath)
+      for (const expectedTrace of testCase.expectedRequestTrace) {
+        expect(initialState.requestLog[0]).toContain(expectedTrace)
+      }
 
       await invokeOrTap(page, 'runChecks', 0)
 
@@ -199,6 +214,9 @@ describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
 
       expect(rerunState.payload).toContain(testCase.expectedPayload)
       expect(rerunState.requestLog[0]).toContain(testCase.expectedRequestPath)
+      for (const expectedTrace of testCase.expectedRequestTrace) {
+        expect(rerunState.requestLog[0]).toContain(expectedTrace)
+      }
     }
   })
 })

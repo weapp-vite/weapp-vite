@@ -2,6 +2,7 @@ import type {
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
 } from '@wevu/api'
+import { resetMiniProgramNetworkDefaults, setMiniProgramNetworkDefaults } from '@wevu/web-apis'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetch } from '@/fetch'
 
@@ -32,6 +33,7 @@ function encodeJson(value: unknown) {
 describe('wevu/fetch', () => {
   beforeEach(() => {
     requestMock.mockReset()
+    resetMiniProgramNetworkDefaults()
   })
 
   it('resolves Response and keeps fetch status semantics', async () => {
@@ -150,5 +152,39 @@ describe('wevu/fetch', () => {
       body: 'x=1',
     })).rejects.toThrow('GET/HEAD request cannot have body')
     expect(requestMock).not.toHaveBeenCalled()
+  })
+
+  it('merges mini-program defaults and request-level miniProgram options into wpi.request', async () => {
+    requestMock.mockImplementation((options) => {
+      options.success?.({
+        data: encodeJson({ ok: true }),
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      } as unknown as WeapiMiniProgramRequestSuccessResult)
+      return {
+        abort: vi.fn(),
+      } as unknown as WeapiMiniProgramRequestTask
+    })
+
+    setMiniProgramNetworkDefaults({
+      request: {
+        timeout: 1_000,
+      },
+    })
+
+    await fetch('https://example.com/runtime-defaults', {
+      miniProgram: {
+        enableHttp2: true,
+        timeout: 2_000,
+      },
+    })
+
+    expect(requestMock).toHaveBeenCalledWith(expect.objectContaining({
+      enableHttp2: true,
+      timeout: 2_000,
+      url: 'https://example.com/runtime-defaults',
+    }))
   })
 })

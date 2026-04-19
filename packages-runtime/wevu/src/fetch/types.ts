@@ -1,4 +1,5 @@
 import type { WeapiMiniProgramRequestMethod } from '@wevu/api'
+import type { RequestGlobalsMiniProgramOptions } from '@wevu/web-apis'
 
 export type HeaderPair = readonly [string, string]
 export type HeaderMap = Record<string, string>
@@ -12,6 +13,8 @@ export interface WevuFetchInit {
   headers?: unknown
   body?: unknown
   signal?: AbortSignal | null
+  miniProgram?: RequestGlobalsMiniProgramOptions
+  miniprogram?: RequestGlobalsMiniProgramOptions
   [key: string]: unknown
 }
 

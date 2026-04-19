@@ -47,6 +47,7 @@ export function fetch(input: WevuFetchInput, init?: WevuFetchInit): Promise<Resp
       }
 
       const requestResult = wpi.request({
+        ...meta.miniProgram,
         url: meta.url,
         method: meta.method,
         header: meta.headers,

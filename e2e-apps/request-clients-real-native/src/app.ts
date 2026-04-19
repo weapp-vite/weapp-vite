@@ -1,3 +1,4 @@
+import { createRequestClientsRealHostTraceStore } from '../../../e2e/utils/requestClientsRealHostTraceRuntime'
 import { REQUEST_CLIENTS_REAL_DEV_BASE_URL } from './shared/requestClientsRealDevBaseUrl'
 
 function hasFunction(value: unknown) {
@@ -38,9 +39,12 @@ const requestGlobalsProbe = {
   xmlHttpRequestAvailable: hasPrototypeMethods(XMLHttpRequest, ['open', 'send']),
 }
 
+const requestHostTrace = createRequestClientsRealHostTraceStore()
+
 App({
   globalData: {
     requestClientsRealBaseUrl: REQUEST_CLIENTS_REAL_DEV_BASE_URL,
     requestGlobalsProbe,
+    requestHostTrace,
   },
 })
