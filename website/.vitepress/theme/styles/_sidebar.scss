@@ -1,4 +1,4 @@
-/* stylelint-disable selector-class-pattern, order/properties-order, rule-empty-line-before, comment-empty-line-before */
+/* stylelint-disable selector-class-pattern, order/properties-order, rule-empty-line-before, comment-empty-line-before, at-rule-no-unknown, tailwindcss/no-atomic-class, unocss/no-atomic-class */
 @use "sass:color";
 @use "./vars" as *;
 
@@ -260,6 +260,14 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   --guide-icon-border: rgb(245 158 11 / 22%);
   --guide-icon: #{guide-icon(
       "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23b45309%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 8 5 12l4 4%22/%3E%3Cpath d=%22m15 8 4 4-4 4%22/%3E%3Cpath d=%22M13 6 11 18%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href="/guide/vscode-extension.html"] .text::before {
+  --guide-icon-bg: rgb(59 130 246 / 11%);
+  --guide-icon-border: rgb(59 130 246 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Cpath fill=%22%230078d4%22 d=%22M17.764 2.141 6.496 13.01l-3.01-2.283A1.298 1.298 0 0 0 1.42 11.77a1.319 1.319 0 0 0 .001.783 1.308 1.308 0 0 0 .412.637l2.459 1.873-2.46 1.873a1.308 1.308 0 0 0-.412.637 1.319 1.319 0 0 0-.001.783 1.298 1.298 0 0 0 2.067 1.044l3.01-2.283 11.268 10.869a.872.872 0 0 0 1.48-.627V2.768a.872.872 0 0 0-1.48-.627Z%22/%3E%3Cpath fill=%22%230078d4%22 d=%22m6.495 13.01 8.748 3.834V9.177l-8.748 3.833Zm0 0 8.748 3.834V9.177l-8.748 3.833Zm0 0-3.01-2.283A1.298 1.298 0 0 0 1.42 11.77a1.319 1.319 0 0 0 .001.783 1.308 1.308 0 0 0 .412.637l2.459 1.873-2.46 1.873a1.308 1.308 0 0 0-.412.637 1.319 1.319 0 0 0-.001.783 1.298 1.298 0 0 0 2.067 1.044l3.01-2.283Z%22 opacity=%22.25%22/%3E%3C/svg%3E"
     )};
 }
 
