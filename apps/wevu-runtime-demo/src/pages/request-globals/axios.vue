@@ -1,7 +1,12 @@
 <script setup lang="ts">
-/* eslint-disable e18e/ban-dependencies */
 import axios from 'axios'
-import { onLoad, onUnload, ref } from 'wevu'
+import {
+  installWebRuntimeGlobals,
+  onLoad,
+  onUnload,
+  ref,
+  resetMiniProgramNetworkDefaults,
+} from 'wevu'
 import {
   createErrorState,
   createInitialState,
@@ -46,10 +51,20 @@ async function runChecks() {
 
 onLoad(() => {
   installMockRequest(pushRequestLog)
+  installWebRuntimeGlobals({
+    networkDefaults: {
+      request: {
+        enableHttp2: true,
+        timeout: 4_200,
+      },
+    },
+    targets: ['fetch', 'Headers', 'Request', 'Response', 'XMLHttpRequest'],
+  })
   void runChecks()
 })
 
 onUnload(() => {
+  resetMiniProgramNetworkDefaults()
   restoreMockRequest()
 })
 </script>
@@ -58,7 +73,7 @@ onUnload(() => {
   <view class="page">
     <view class="hero">
       <text class="hero-title">axios 验证</text>
-      <text class="hero-desc">验证 axios 在 request globals 环境中的请求适配能力。</text>
+      <text class="hero-desc">验证 `wevu` 根导出的 web runtime installer 与 axios 请求适配能力。</text>
     </view>
 
     <view class="panel">

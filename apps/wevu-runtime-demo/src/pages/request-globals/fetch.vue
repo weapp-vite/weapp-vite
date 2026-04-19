@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { onLoad, onUnload, ref } from 'wevu'
+import {
+  onLoad,
+  onUnload,
+  ref,
+  resetMiniProgramNetworkDefaults,
+  setMiniProgramNetworkDefaults,
+} from 'wevu'
+import { installWebRuntimeGlobals } from 'wevu/fetch'
 import {
   createErrorState,
   createInitialState,
@@ -48,10 +55,20 @@ async function runChecks() {
 
 onLoad(() => {
   installMockRequest(pushRequestLog)
+  installWebRuntimeGlobals({
+    targets: ['fetch', 'Headers', 'Request', 'Response'],
+  })
+  setMiniProgramNetworkDefaults({
+    request: {
+      enableHttp2: true,
+      timeout: 3_500,
+    },
+  })
   void runChecks()
 })
 
 onUnload(() => {
+  resetMiniProgramNetworkDefaults()
   restoreMockRequest()
 })
 </script>
@@ -60,7 +77,7 @@ onUnload(() => {
   <view class="page">
     <view class="hero">
       <text class="hero-title">fetch 验证</text>
-      <text class="hero-desc">验证 request globals 注入后的原生 fetch 能力。</text>
+      <text class="hero-desc">验证 `wevu/fetch` 暴露的 installer 与原生 fetch 宿主参数透传。</text>
     </view>
 
     <view class="panel">

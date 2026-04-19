@@ -11,6 +11,28 @@ export interface RequestGlobalsDemoState {
 
 let originalRequest: typeof wx.request | undefined
 
+function formatRequestLog(options: WechatMiniprogram.RequestOption) {
+  const entries = [
+    String(options.method ?? 'GET').toUpperCase(),
+    String(options.url ?? ''),
+  ]
+
+  const miniProgramFields = [
+    ['timeout', (options as WechatMiniprogram.RequestOption & { timeout?: number }).timeout],
+    ['enableHttp2', (options as WechatMiniprogram.RequestOption & { enableHttp2?: boolean }).enableHttp2],
+    ['enableChunked', (options as WechatMiniprogram.RequestOption & { enableChunked?: boolean }).enableChunked],
+    ['forceCellularNetwork', (options as WechatMiniprogram.RequestOption & { forceCellularNetwork?: boolean }).forceCellularNetwork],
+  ] as const
+
+  for (const [key, value] of miniProgramFields) {
+    if (value !== undefined) {
+      entries.push(`${key}=${String(value)}`)
+    }
+  }
+
+  return entries.join(' ')
+}
+
 function createMockResponse(url: string, data: unknown) {
   if (url.endsWith('/fetch')) {
     return {
@@ -72,14 +94,13 @@ export function installMockRequest(onLog: (entry: string) => void) {
 
   originalRequest = wx.request
   ;(wx as typeof wx & { request: typeof wx.request }).request = ((options: WechatMiniprogram.RequestOption) => {
-    const method = String(options.method ?? 'GET').toUpperCase()
     const url = String(options.url ?? '')
-    onLog(`${method} ${url}`)
+    onLog(formatRequestLog(options))
 
     const timer = setTimeout(() => {
       const result = createMockResponse(url, options.data)
-      options.success?.(result as WechatMiniprogram.RequestSuccessCallbackResult)
-      options.complete?.(result as WechatMiniprogram.RequestSuccessCallbackResult)
+      options.success?.(result as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
+      options.complete?.(result as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
     }, 18)
 
     return {
@@ -88,12 +109,14 @@ export function installMockRequest(onLog: (entry: string) => void) {
         const aborted = {
           errMsg: 'request:fail abort',
         }
-        options.fail?.(aborted)
-        options.complete?.(aborted)
+        options.fail?.(aborted as unknown as WechatMiniprogram.RequestFailCallbackErr)
+        options.complete?.(aborted as unknown as WechatMiniprogram.GeneralCallbackResult)
       },
       offChunkReceived() {},
+      offHeadersReceived() {},
       onChunkReceived() {},
-    } as WechatMiniprogram.RequestTask
+      onHeadersReceived() {},
+    } as unknown as WechatMiniprogram.RequestTask
   }) as typeof wx.request
 }
 

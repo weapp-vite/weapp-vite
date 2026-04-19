@@ -1,17 +1,17 @@
 <script setup lang="ts">
 const entries = [
   {
-    desc: '验证 request globals 注入后的 fetch 能力',
+    desc: '使用 wevu/fetch 暴露的 installer，验证全局 fetch 与宿主默认参数',
     route: '/pages/request-globals/fetch',
     title: 'fetch',
   },
   {
-    desc: '验证 graphql-request 对 URL / fetch 的依赖链路',
+    desc: '使用 wevu 根导出安装 web runtime，验证 graphql-request 对 URL / fetch 的依赖链路',
     route: '/pages/request-globals/graphql-request',
     title: 'graphql-request',
   },
   {
-    desc: '验证 axios 在小程序中的请求适配能力',
+    desc: '使用 wevu 根导出安装 web runtime，验证 axios 在小程序中的请求适配能力',
     route: '/pages/request-globals/axios',
     title: 'axios',
   },
@@ -23,7 +23,7 @@ const entries = [
     <view class="hero">
       <text class="hero-title">Request Globals 验证导航</text>
       <text class="hero-desc">
-        将 fetch、graphql-request、axios 拆到独立页面，分别验证注入结果
+        将 fetch、graphql-request、axios 拆到独立页面，分别验证 `wevu` / `wevu/fetch` 的导出入口与注入结果
       </text>
     </view>
 
