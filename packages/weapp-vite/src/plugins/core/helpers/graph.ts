@@ -88,6 +88,7 @@ function appendSharedChunkImporters(
   state: CorePluginState,
   onlyEntryIds?: Set<string>,
   previousImporters?: Map<string, Set<string>>,
+  previousDependencies?: Map<string, Set<string>>,
 ) {
   const bundleChunks = new Map<string, OutputChunk>()
   const resolveImportedChunkId = (importerFileName: string, imported: string) => {
@@ -98,6 +99,20 @@ function appendSharedChunkImporters(
       return path.normalize(path.join(path.dirname(importerFileName), imported))
     }
     return imported
+  }
+  const collectChunkImports = (chunk: OutputChunk) => {
+    const imports = new Set<string>()
+    if (Array.isArray(chunk.imports)) {
+      for (const imported of chunk.imports) {
+        imports.add(resolveImportedChunkId(chunk.fileName, imported))
+      }
+    }
+    if (Array.isArray(chunk.dynamicImports)) {
+      for (const imported of chunk.dynamicImports) {
+        imports.add(resolveImportedChunkId(chunk.fileName, imported))
+      }
+    }
+    return imports
   }
 
   const getTrackedImporterIds = (chunk: OutputChunk) => {
@@ -122,17 +137,27 @@ function appendSharedChunkImporters(
     return trackedImporterIds
   }
 
-  for (const output of Object.values(bundle)) {
+  for (const [bundleKey, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
     const chunk = output as OutputChunk
+    if (!chunk.fileName) {
+      chunk.fileName = bundleKey
+    }
     bundleChunks.set(chunk.fileName, chunk)
   }
 
   const trackedImporterIdsByChunk = new Map<string, Set<string>>()
   for (const [fileName, chunk] of bundleChunks) {
     trackedImporterIdsByChunk.set(fileName, getTrackedImporterIds(chunk))
+    const imports = collectChunkImports(chunk)
+    if (imports.size) {
+      state.hmrSharedChunkDependencies.set(fileName, imports)
+    }
+    else {
+      state.hmrSharedChunkDependencies.delete(fileName)
+    }
   }
 
   const addSharedChunkImporter = (chunkId: string, entryId: string) => {
@@ -142,6 +167,32 @@ function appendSharedChunkImporters(
     }
     else {
       state.hmrSharedChunkImporters.set(chunkId, new Set([entryId]))
+    }
+  }
+
+  const restoreMissingChunkImporters = (
+    entryId: string,
+    chunkId: string,
+    visited: Set<string>,
+  ) => {
+    if (visited.has(chunkId)) {
+      return
+    }
+    visited.add(chunkId)
+
+    if (!previousImporters?.get(chunkId)?.has(entryId)) {
+      return
+    }
+
+    addSharedChunkImporter(chunkId, entryId)
+
+    const nestedImports = previousDependencies?.get(chunkId)
+    if (!nestedImports?.size) {
+      return
+    }
+
+    for (const nestedImport of nestedImports) {
+      restoreMissingChunkImporters(entryId, nestedImport, visited)
     }
   }
 
@@ -157,9 +208,8 @@ function appendSharedChunkImporters(
 
     const targetChunk = bundleChunks.get(importedChunkId)
     if (!targetChunk) {
-      if (previousImporters?.get(importedChunkId)?.has(entryId)) {
-        addSharedChunkImporter(importedChunkId, entryId)
-      }
+      visited.delete(importedChunkId)
+      restoreMissingChunkImporters(entryId, importedChunkId, visited)
       return
     }
 
@@ -169,24 +219,14 @@ function appendSharedChunkImporters(
 
     addSharedChunkImporter(importedChunkId, entryId)
 
-    const nestedImports = new Set<string>()
-    if (Array.isArray(targetChunk.imports)) {
-      for (const nestedImport of targetChunk.imports) {
-        nestedImports.add(resolveImportedChunkId(targetChunk.fileName, nestedImport))
-      }
-    }
-    if (Array.isArray(targetChunk.dynamicImports)) {
-      for (const nestedImport of targetChunk.dynamicImports) {
-        nestedImports.add(resolveImportedChunkId(targetChunk.fileName, nestedImport))
-      }
-    }
+    const nestedImports = state.hmrSharedChunkDependencies.get(importedChunkId) ?? new Set<string>()
 
     for (const nestedImport of nestedImports) {
       propagateSharedChunkImporter(entryId, nestedImport, visited)
     }
   }
 
-  for (const [fileName, chunk] of bundleChunks) {
+  for (const [fileName] of bundleChunks) {
     const trackedImporterIds = trackedImporterIdsByChunk.get(fileName) ?? new Set<string>()
     if (!trackedImporterIds.size) {
       continue
@@ -197,17 +237,7 @@ function appendSharedChunkImporters(
         continue
       }
 
-      const imports = new Set<string>()
-      if (Array.isArray(chunk.imports)) {
-        for (const imported of chunk.imports) {
-          imports.add(resolveImportedChunkId(chunk.fileName, imported))
-        }
-      }
-      if (Array.isArray(chunk.dynamicImports)) {
-        for (const imported of chunk.dynamicImports) {
-          imports.add(resolveImportedChunkId(chunk.fileName, imported))
-        }
-      }
+      const imports = state.hmrSharedChunkDependencies.get(fileName) ?? new Set<string>()
       if (!imports.size) {
         continue
       }
@@ -221,6 +251,7 @@ function appendSharedChunkImporters(
 
 export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePluginState) {
   state.hmrSharedChunkImporters.clear()
+  state.hmrSharedChunkDependencies.clear()
   appendSharedChunkImporters(bundle, state)
 }
 
@@ -261,6 +292,10 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
   for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
     previousImporters.set(chunkId, new Set(importers))
   }
+  const previousDependencies = new Map<string, Set<string>>()
+  for (const [chunkId, imports] of state.hmrSharedChunkDependencies) {
+    previousDependencies.set(chunkId, new Set(imports))
+  }
 
   for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
     for (const entryId of refreshedEntryIds) {
@@ -268,8 +303,9 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     }
     if (importers.size === 0) {
       state.hmrSharedChunkImporters.delete(chunkId)
+      state.hmrSharedChunkDependencies.delete(chunkId)
     }
   }
 
-  appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters)
+  appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies)
 }

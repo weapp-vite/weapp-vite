@@ -33,6 +33,7 @@ export interface CorePluginState {
   }
   hmrSharedChunksMode: 'full' | 'auto' | 'off'
   hmrSharedChunkImporters: Map<string, Set<string>>
+  hmrSharedChunkDependencies: Map<string, Set<string>>
 }
 
 export interface RemoveImplicitPagePreloadOptions {
