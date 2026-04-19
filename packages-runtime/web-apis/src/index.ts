@@ -1,3 +1,4 @@
+import type { MiniProgramNetworkDefaults } from './networkDefaults'
 import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 import { atobPolyfill, btoaPolyfill } from './base64'
@@ -47,6 +48,7 @@ export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
 
 export interface InstallWebRuntimeGlobalsOptions {
   targets?: WeappInjectWebRuntimeGlobalsTarget[]
+  networkDefaults?: MiniProgramNetworkDefaults
 }
 
 export interface InstallRequestGlobalsOptions extends InstallWebRuntimeGlobalsOptions {}
@@ -303,6 +305,10 @@ function syncWeappViteRequestGlobalsActuals(
  * @description 按需向小程序全局环境注入缺失的 Web Runtime 对象。
  */
 export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOptions = {}) {
+  if (options.networkDefaults !== undefined) {
+    setMiniProgramNetworkDefaults(options.networkDefaults)
+  }
+
   const targets = resolveInstallTargets(options.targets ?? [
     'fetch',
     'Headers',

@@ -239,6 +239,77 @@ describe('request globals runtime', () => {
     }))
   })
 
+  it('accepts mini-program network defaults directly in installWebRuntimeGlobals options', async () => {
+    wpiRequestMock.mockImplementation((options: Record<string, any>) => {
+      options.success?.({
+        data: '{"ok":true}',
+        statusCode: 200,
+        header: {
+          'content-type': 'application/json',
+        },
+      })
+      return {
+        abort: vi.fn(),
+      }
+    })
+    const mockSocket = createMockSocketTask()
+    wpiConnectSocketMock.mockImplementation(() => mockSocket.task)
+
+    const {
+      getMiniProgramNetworkDefaults,
+      installWebRuntimeGlobals,
+    } = await import('../src')
+
+    installWebRuntimeGlobals({
+      targets: ['fetch', 'XMLHttpRequest', 'WebSocket'],
+      networkDefaults: {
+        request: {
+          enableHttp2: true,
+          timeout: 4_321,
+        },
+        socket: {
+          timeout: 6_789,
+          forceCellularNetwork: true,
+        },
+      },
+    })
+
+    await globalThis.fetch('https://request-globals.invalid/default-fetch')
+
+    const xhr = new globalThis.XMLHttpRequest()
+    xhr.open('GET', 'https://request-globals.invalid/default-xhr')
+    await xhr.send()
+
+    const socket = new globalThis.WebSocket('wss://request-globals.invalid/socket-default')
+
+    expect(socket).toBeTruthy()
+    expect(getMiniProgramNetworkDefaults()).toEqual({
+      request: {
+        enableHttp2: true,
+        timeout: 4_321,
+      },
+      socket: {
+        timeout: 6_789,
+        forceCellularNetwork: true,
+      },
+    })
+    expect(wpiRequestMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      enableHttp2: true,
+      timeout: 4_321,
+      url: 'https://request-globals.invalid/default-fetch',
+    }))
+    expect(wpiRequestMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      enableHttp2: true,
+      timeout: 4_321,
+      url: 'https://request-globals.invalid/default-xhr',
+    }))
+    expect(wpiConnectSocketMock).toHaveBeenCalledWith(expect.objectContaining({
+      forceCellularNetwork: true,
+      timeout: 6_789,
+      url: 'wss://request-globals.invalid/socket-default',
+    }))
+  })
+
   it('supports axios-style xhr requests through the injected fetch bridge', async () => {
     wpiRequestMock.mockImplementation((options: Record<string, any>) => {
       options.success?.({

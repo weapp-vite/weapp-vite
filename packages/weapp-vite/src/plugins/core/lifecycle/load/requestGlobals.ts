@@ -1,3 +1,4 @@
+import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
@@ -45,6 +46,7 @@ export function injectRequestGlobalsIntoLoadResult(
   targets: string[],
   options?: {
     localBindings?: boolean
+    networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
   },
 ) {

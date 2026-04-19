@@ -1325,6 +1325,74 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(appCode.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(appCode.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 
+  it('serializes web runtime network defaults into app prelude installer options', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['app', { type: 'app', path: 'app' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              axios: '^1.8.0',
+            },
+          },
+          weappViteConfig: {
+            appPrelude: {
+              mode: 'entry',
+              webRuntime: {
+                enabled: true,
+                networkDefaults: {
+                  request: {
+                    enableHttp2: true,
+                    timeout: 5_000,
+                  },
+                  socket: {
+                    timeout: 6_000,
+                    forceCellularNetwork: true,
+                  },
+                },
+              },
+            },
+          },
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        scanService: {
+          subPackageMap: new Map(),
+          appEntry: {
+            preludePath: '/project/src/app.prelude.ts',
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: [
+          'function vn(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URL: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return vn}})',
+        ].join(''),
+        imports: [],
+        dynamicImports: [],
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        isEntry: true,
+        code: 'const e=require("./common.js");App({})',
+        imports: ['common.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['app.js'].code).toContain('networkDefaults: {"request":{"enableHttp2":true,"timeout":5000},"socket":{"timeout":6000,"forceCellularNetwork":true}}')
+  })
+
   it('emits request globals prelude into app.prelude.js when mode is require', async () => {
     const state = createState({
       subPackageMeta: undefined,

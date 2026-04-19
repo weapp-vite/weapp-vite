@@ -1,3 +1,4 @@
+import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import type { InlineConfig } from 'vite'
 import type { PageLayoutMeta, WevuDefaults } from 'wevu'
 import type {
@@ -170,6 +171,12 @@ export interface WeappInjectWebRuntimeGlobalsConfig {
   targets?: WeappInjectWebRuntimeGlobalsTarget[]
   dependencies?: (string | RegExp)[]
   prelude?: boolean
+  /**
+   * @description Web Runtime 网络兼容层的宿主默认参数。
+   * @description 会透传给 `fetch` / `XMLHttpRequest` / `WebSocket` 对应的小程序底层能力。
+   * @description 显式调用时传入的 `miniProgram` / `miniprogram` 参数优先级更高。
+   */
+  networkDefaults?: MiniProgramNetworkDefaults
 }
 
 /**

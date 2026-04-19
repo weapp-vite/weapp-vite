@@ -133,6 +133,42 @@ describe('injectRequestGlobals helpers', () => {
     })
   })
 
+  it('treats configured network defaults as explicit web runtime enablement', () => {
+    expect(resolveRequestRuntimeOptions({
+      appPrelude: {
+        webRuntime: {
+          networkDefaults: {
+            request: {
+              enableHttp2: true,
+              timeout: 5_000,
+            },
+            socket: {
+              timeout: 6_000,
+            },
+          },
+        },
+      },
+    }, {
+      dependencies: {
+        dayjs: '^1.0.0',
+      },
+    })).toEqual({
+      mode: 'explicit',
+      dependencyPatterns: ['axios', 'graphql-request', 'socket.io-client', 'engine.io-client'],
+      networkDefaults: {
+        request: {
+          enableHttp2: true,
+          timeout: 5_000,
+        },
+        socket: {
+          timeout: 6_000,
+        },
+      },
+      prelude: true,
+      targets: [...fullWebRuntimeTargets],
+    })
+  })
+
   it('prefers appPrelude.webRuntime over legacy injectRequestGlobals and warns', () => {
     const warn = vi.fn()
 
@@ -256,6 +292,25 @@ describe('injectRequestGlobals helpers', () => {
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('weapp-vite/web-apis')
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('"XMLHttpRequest"')
     expect(createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'])).toContain('"WebSocket"')
+  })
+
+  it('serializes network defaults into generated injection code', () => {
+    const code = createInjectRequestGlobalsCode(['fetch', 'XMLHttpRequest', 'WebSocket'], {
+      networkDefaults: {
+        request: {
+          enableHttp2: true,
+          timeout: 5_000,
+        },
+        socket: {
+          timeout: 6_000,
+          forceCellularNetwork: true,
+        },
+      },
+    })
+
+    expect(code).toContain('networkDefaults')
+    expect(code).toContain('"enableHttp2":true')
+    expect(code).toContain('"forceCellularNetwork":true')
   })
 
   it('can create local binding injection code for script modules', () => {

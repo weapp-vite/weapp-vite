@@ -31,8 +31,17 @@ expectType<WeappInjectWebRuntimeGlobalsTarget>('queueMicrotask')
 
 const options: InstallWebRuntimeGlobalsOptions = {
   targets: ['fetch', 'Request', 'XMLHttpRequest', 'performance', 'crypto'],
+  networkDefaults: {
+    request: {
+      timeout: 3_000,
+    },
+    socket: {
+      timeout: 5_000,
+    },
+  },
 }
 expectType<WeappInjectWebRuntimeGlobalsTarget[] | undefined>(options.targets)
+expectType<MiniProgramNetworkDefaults | undefined>(options.networkDefaults)
 expectType<void>(installWebRuntimeGlobals(options))
 expectType<void>(installWebRuntimeGlobals())
 expectType<void>(installRequestGlobals(options))
