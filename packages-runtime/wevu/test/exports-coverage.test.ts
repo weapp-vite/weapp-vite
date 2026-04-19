@@ -1,4 +1,5 @@
 import * as webApis from '@wevu/web-apis'
+import { fetch as webApisFetch } from '@wevu/web-apis/fetch'
 import { describe, expect, it } from 'vitest'
 import * as api from '@/api'
 import * as fetchEntry from '@/fetch'
@@ -186,6 +187,7 @@ describe('export barrels', () => {
 
   it('keeps fetch entry focused on local fetch exports', () => {
     expect(fetchEntry.fetch).toBeTypeOf('function')
+    expect(fetchEntry.fetch).toBe(webApisFetch)
     expect('installWebRuntimeGlobals' in fetchEntry).toBe(false)
     expect('setMiniProgramNetworkDefaults' in fetchEntry).toBe(false)
   })
