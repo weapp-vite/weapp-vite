@@ -33,7 +33,7 @@ describe('runtime package aliases', () => {
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(9)
+    expect(aliases).toHaveLength(10)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: 'class-variance-authority',
@@ -46,6 +46,10 @@ describe('runtime package aliases', () => {
       {
         find: 'wevu/router',
         replacement: '/project/node_modules/wevu/dist/router.mjs',
+      },
+      {
+        find: 'wevu/web-apis',
+        replacement: '/project/node_modules/wevu/dist/web-apis.mjs',
       },
       {
         find: 'vue-demi',
@@ -64,12 +68,12 @@ describe('runtime package aliases', () => {
     existsSyncMock.mockImplementation((filePath: string) =>
       filePath === '/project/node_modules/class-variance-authority/dist/index.js'
       || filePath.endsWith('/pnpm-workspace.yaml')
-      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|jsx-runtime|store|api|fetch|router|vue-demi)\.mjs$/.test(filePath),
+      || /\/packages-runtime\/wevu\/dist\/(?:index|compiler|jsx-runtime|store|api|fetch|router|web-apis|vue-demi)\.mjs$/.test(filePath),
     )
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(9)
+    expect(aliases).toHaveLength(10)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: 'class-variance-authority',
@@ -82,6 +86,10 @@ describe('runtime package aliases', () => {
       expect.objectContaining({
         find: 'wevu/api',
         replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/api\.mjs$/),
+      }),
+      expect.objectContaining({
+        find: 'wevu/web-apis',
+        replacement: expect.stringMatching(/packages-runtime\/wevu\/dist\/web-apis\.mjs$/),
       }),
       expect.objectContaining({
         find: 'vue-demi',

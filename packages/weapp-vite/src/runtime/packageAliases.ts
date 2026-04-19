@@ -60,6 +60,12 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
   },
   {
+    find: 'wevu/web-apis',
+    packageName: 'wevu',
+    distEntry: 'dist/web-apis.mjs',
+    fallbackWorkspacePackagePath: WEVU_WORKSPACE_PACKAGE_PATH,
+  },
+  {
     find: 'wevu/router',
     packageName: 'wevu',
     distEntry: 'dist/router.mjs',

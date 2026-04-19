@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { request as gqlRequest } from 'graphql-request'
+import { onLoad, onUnload, ref } from 'wevu'
 import {
   installWebRuntimeGlobals,
-  onLoad,
-  onUnload,
-  ref,
   resetMiniProgramNetworkDefaults,
-} from 'wevu'
+} from 'wevu/web-apis'
 import {
   createErrorState,
   createInitialState,
@@ -83,7 +81,7 @@ onUnload(() => {
   <view class="page">
     <view class="hero">
       <text class="hero-title">graphql-request 验证</text>
-      <text class="hero-desc">验证 `wevu` 根导出的 web runtime installer 与 URL / fetch 组合兼容。</text>
+      <text class="hero-desc">验证 `wevu/web-apis` 子路径导出的 web runtime installer 与 URL / fetch 组合兼容。</text>
     </view>
 
     <view class="panel">

@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import axios from 'axios'
+import { onLoad, onUnload, ref } from 'wevu'
 import {
   installWebRuntimeGlobals,
-  onLoad,
-  onUnload,
-  ref,
   resetMiniProgramNetworkDefaults,
-} from 'wevu'
+} from 'wevu/web-apis'
 import {
   createErrorState,
   createInitialState,
@@ -73,7 +71,7 @@ onUnload(() => {
   <view class="page">
     <view class="hero">
       <text class="hero-title">axios 验证</text>
-      <text class="hero-desc">验证 `wevu` 根导出的 web runtime installer 与 axios 请求适配能力。</text>
+      <text class="hero-desc">验证 `wevu/web-apis` 子路径导出的 web runtime installer 与 axios 请求适配能力。</text>
     </view>
 
     <view class="panel">
