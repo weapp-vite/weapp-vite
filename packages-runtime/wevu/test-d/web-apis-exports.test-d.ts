@@ -9,10 +9,13 @@ import {
   setMiniProgramNetworkDefaults,
 } from 'wevu'
 import {
-  HeadersPolyfill as FetchHeadersPolyfill,
+  fetch as wevuFetch,
+} from 'wevu/fetch'
+import {
   installWebRuntimeGlobals as installFetchWebRuntimeGlobals,
   setMiniProgramNetworkDefaults as setFetchMiniProgramNetworkDefaults,
-} from 'wevu/fetch'
+  HeadersPolyfill as WevuWebApisHeadersPolyfill,
+} from 'wevu/web-apis'
 
 const installOptions: InstallWebRuntimeGlobalsOptions = {
   targets: ['fetch', 'XMLHttpRequest', 'WebSocket'],
@@ -39,4 +42,5 @@ expectType<MiniProgramNetworkDefaults>(setFetchMiniProgramNetworkDefaults({
     timeout: 2_000,
   },
 }))
-expectType<typeof RootHeadersPolyfill>(FetchHeadersPolyfill)
+expectType<typeof RootHeadersPolyfill>(WevuWebApisHeadersPolyfill)
+expectType<typeof fetch>(wevuFetch)

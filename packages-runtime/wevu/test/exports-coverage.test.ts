@@ -7,6 +7,7 @@ import * as reactivity from '@/reactivity'
 import * as router from '@/router'
 import * as runtime from '@/runtime'
 import * as store from '@/store'
+import * as webApisEntry from '@/web-apis'
 
 const ROOT_RUNTIME_EXPORTS = [
   'addMutationRecorder',
@@ -183,13 +184,19 @@ describe('export barrels', () => {
     ])].sort())
   })
 
-  it('re-exports web api helpers from fetch entry', () => {
-    expect(fetchEntry.installWebRuntimeGlobals).toBe(webApis.installWebRuntimeGlobals)
-    expect(fetchEntry.installAbortGlobals).toBe(webApis.installAbortGlobals)
-    expect(fetchEntry.HeadersPolyfill).toBe(webApis.HeadersPolyfill)
-    expect(fetchEntry.RequestPolyfill).toBe(webApis.RequestPolyfill)
-    expect(fetchEntry.ResponsePolyfill).toBe(webApis.ResponsePolyfill)
-    expect(fetchEntry.setMiniProgramNetworkDefaults).toBe(webApis.setMiniProgramNetworkDefaults)
-    expect(fetchEntry.WebSocketPolyfill).toBe(webApis.WebSocketPolyfill)
+  it('keeps fetch entry focused on local fetch exports', () => {
+    expect(fetchEntry.fetch).toBeTypeOf('function')
+    expect('installWebRuntimeGlobals' in fetchEntry).toBe(false)
+    expect('setMiniProgramNetworkDefaults' in fetchEntry).toBe(false)
+  })
+
+  it('re-exports web api helpers from web-apis entry', () => {
+    expect(webApisEntry.installWebRuntimeGlobals).toBe(webApis.installWebRuntimeGlobals)
+    expect(webApisEntry.installAbortGlobals).toBe(webApis.installAbortGlobals)
+    expect(webApisEntry.HeadersPolyfill).toBe(webApis.HeadersPolyfill)
+    expect(webApisEntry.RequestPolyfill).toBe(webApis.RequestPolyfill)
+    expect(webApisEntry.ResponsePolyfill).toBe(webApis.ResponsePolyfill)
+    expect(webApisEntry.setMiniProgramNetworkDefaults).toBe(webApis.setMiniProgramNetworkDefaults)
+    expect(webApisEntry.WebSocketPolyfill).toBe(webApis.WebSocketPolyfill)
   })
 })
