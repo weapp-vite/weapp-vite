@@ -2,17 +2,33 @@ import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  relaunchPage,
   releaseSharedMiniProgram,
+  waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
-async function waitForComputedProbeState(page: any, timeoutMs = 20_000) {
+const ROUTE = '/subpackages/issue-466-computed/index'
+
+async function getComputedPage(miniProgram: any, timeoutMs = 12_000) {
+  return await waitForCurrentPagePath(miniProgram, ROUTE, timeoutMs)
+}
+
+async function callCurrentComputedPageMethod(miniProgram: any, methodName: string) {
+  const page = await getComputedPage(miniProgram)
+  if (!page) {
+    throw new Error(`Failed to resolve current computed page before calling ${methodName}`)
+  }
+  return await page.callMethod(methodName)
+}
+
+async function waitForComputedProbeState(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   let lastRuntime: Record<string, any> | null = null
 
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await page.callMethod('_runE2E')
+      const runtime = await callCurrentComputedPageMethod(miniProgram, '_runE2E')
       lastRuntime = runtime
       if (
         runtime?.probe?.sum === 3
@@ -25,6 +41,10 @@ async function waitForComputedProbeState(page: any, timeoutMs = 20_000) {
     }
 
     try {
+      const page = await getComputedPage(miniProgram, 3_000)
+      if (!page) {
+        continue
+      }
       await page.waitFor(220)
     }
     catch {
@@ -34,13 +54,13 @@ async function waitForComputedProbeState(page: any, timeoutMs = 20_000) {
   throw new Error(`Timed out waiting for miniprogram-computed runtime: ${JSON.stringify(lastRuntime, null, 2)}`)
 }
 
-async function waitForUpdatedComputedProbeState(page: any, timeoutMs = 20_000) {
+async function waitForUpdatedComputedProbeState(miniProgram: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   let lastRuntime: Record<string, any> | null = null
 
   while (Date.now() - startedAt <= timeoutMs) {
     try {
-      const runtime = await page.callMethod('_runE2E')
+      const runtime = await callCurrentComputedPageMethod(miniProgram, '_runE2E')
       lastRuntime = runtime
       if (
         runtime?.probe?.sum === 7
@@ -56,6 +76,10 @@ async function waitForUpdatedComputedProbeState(page: any, timeoutMs = 20_000) {
     }
 
     try {
+      const page = await getComputedPage(miniProgram, 3_000)
+      if (!page) {
+        continue
+      }
       await page.waitFor(220)
     }
     catch {
@@ -75,15 +99,18 @@ describe.sequential('github-issues runtime miniprogram-computed', () => {
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {
-      const page = await miniProgram.reLaunch('/subpackages/issue-466-computed/index')
+      const page = await relaunchPage(
+        miniProgram,
+        ROUTE,
+        undefined,
+        20_000,
+      )
       if (!page) {
         throw new Error('Failed to launch issue-466-computed page')
       }
 
-      await page.waitFor(600)
-
       const initialMarker = collector.mark()
-      const initialRuntime = await waitForComputedProbeState(page)
+      const initialRuntime = await waitForComputedProbeState(miniProgram)
       expect(initialRuntime).toMatchObject({
         pageData: {
           a: 1,
@@ -98,9 +125,9 @@ describe.sequential('github-issues runtime miniprogram-computed', () => {
       })
       expect(collector.getSince(initialMarker)).toEqual([])
 
-      await page.callMethod('applyNextE2E')
+      await callCurrentComputedPageMethod(miniProgram, 'applyNextE2E')
       const updatedMarker = collector.mark()
-      const updatedRuntime = await waitForUpdatedComputedProbeState(page)
+      const updatedRuntime = await waitForUpdatedComputedProbeState(miniProgram)
       expect(updatedRuntime).toMatchObject({
         pageData: {
           a: 3,

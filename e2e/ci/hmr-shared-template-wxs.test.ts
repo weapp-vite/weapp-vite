@@ -5,6 +5,8 @@ import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import {
+  buildOriginalHmrPageWxml,
+  buildOriginalHmrVueSource,
   buildSharedHmrPageWxml,
   buildSharedHmrVueSource,
   buildSharedImportTemplate,
@@ -38,6 +40,9 @@ async function waitForFileContainsWithRetry(
 
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
+  await fs.writeFile(SHARED_HMR_PATHS.hmrPageWxml, buildOriginalHmrPageWxml(), 'utf8')
+  await fs.writeFile(SHARED_HMR_PATHS.hmrSfcVue, buildOriginalHmrVueSource(), 'utf8')
+  await fs.remove(SHARED_HMR_PATHS.sharedDir)
 })
 
 afterEach(async () => {

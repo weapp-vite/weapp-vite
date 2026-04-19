@@ -3,10 +3,15 @@ import path from 'pathe'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
-import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import {
+  cleanDevtoolsCache,
+  cleanupResidualDevtoolsProcesses,
+  cleanupResidualIdeProcesses,
+} from '../utils/ide-devtools-cleanup'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile } from '../wevu-runtime.utils'
+import { relaunchPage } from './github-issues.runtime.shared'
 
 const DEFAULT_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/default/index.wxml')
 const ADMIN_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/admin/index.wxml')
@@ -17,6 +22,7 @@ const SHARED_WXS = path.join(SHARED_DIR, 'layout-helper.wxs')
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
+let hasLaunchedIdeSession = false
 
 function buildSharedImportTemplate(marker: string) {
   return [
@@ -40,6 +46,18 @@ function buildSharedWxs(marker: string) {
     '}',
     '',
   ].join('\n')
+}
+
+function buildOriginalSharedImportTemplate() {
+  return buildSharedImportTemplate('LAYOUT-SHARED-TEMPLATE-BASE')
+}
+
+function buildOriginalSharedIncludeTemplate() {
+  return buildSharedIncludeTemplate('LAYOUT-SHARED-INCLUDE-BASE')
+}
+
+function buildOriginalSharedWxs() {
+  return buildSharedWxs('LAYOUT-SHARED-WXS-BASE')
 }
 
 function buildDefaultLayoutWxml() {
@@ -75,33 +93,11 @@ function buildAdminLayoutWxml() {
   ].join('\n')
 }
 
-async function captureOriginalSharedFiles() {
-  const existed = await fs.pathExists(SHARED_DIR)
-  return {
-    existed,
-    template: await fs.readFile(SHARED_IMPORT_TEMPLATE, 'utf8').catch(() => undefined),
-    include: await fs.readFile(SHARED_INCLUDE_TEMPLATE, 'utf8').catch(() => undefined),
-    wxs: await fs.readFile(SHARED_WXS, 'utf8').catch(() => undefined),
-  }
-}
-
-async function restoreOriginalSharedFiles(snapshot: Awaited<ReturnType<typeof captureOriginalSharedFiles>>) {
-  if (!snapshot.existed) {
-    await fs.remove(SHARED_DIR)
-    return
-  }
-
+async function restoreOriginalSharedFiles() {
   await fs.ensureDir(SHARED_DIR)
-
-  if (snapshot.template !== undefined) {
-    await fs.writeFile(SHARED_IMPORT_TEMPLATE, snapshot.template, 'utf8')
-  }
-  if (snapshot.include !== undefined) {
-    await fs.writeFile(SHARED_INCLUDE_TEMPLATE, snapshot.include, 'utf8')
-  }
-  if (snapshot.wxs !== undefined) {
-    await fs.writeFile(SHARED_WXS, snapshot.wxs, 'utf8')
-  }
+  await fs.writeFile(SHARED_IMPORT_TEMPLATE, buildOriginalSharedImportTemplate(), 'utf8')
+  await fs.writeFile(SHARED_INCLUDE_TEMPLATE, buildOriginalSharedIncludeTemplate(), 'utf8')
+  await fs.writeFile(SHARED_WXS, buildOriginalSharedWxs(), 'utf8')
 }
 
 async function readPageWxml(page: any) {
@@ -153,32 +149,62 @@ async function getSharedMiniProgram() {
 }
 
 async function relaunchIdeSession(route: string) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  if (!hasLaunchedIdeSession) {
+    const miniProgram = await getSharedMiniProgram()
+    const page = await relaunchPage(miniProgram, route, undefined, 20_000)
+    if (page) {
+      hasLaunchedIdeSession = true
+      return page
+    }
+  }
+
+  const cacheCleanTypes = ['compile', 'all'] as const
+  let lastError: unknown
+
+  for (const cleanType of cacheCleanTypes) {
     if (sharedMiniProgram) {
-      await sharedMiniProgram.close()
+      await sharedMiniProgram.close().catch(() => {})
       sharedMiniProgram = null
     }
 
+    await cleanupResidualDevtoolsProcesses()
+    await cleanDevtoolsCache(cleanType)
+    await waitForIdeRecompileSettled(cleanType === 'compile' ? 1_200 : 1_600)
+
     try {
       const miniProgram = await getSharedMiniProgram()
-      return await miniProgram.reLaunch(route)
+      const page = await relaunchPage(miniProgram, route, undefined, 20_000)
+      if (page) {
+        hasLaunchedIdeSession = true
+        return page
+      }
     }
     catch (error) {
+      lastError = error
       const message = error instanceof Error ? error.message : String(error)
-      if (attempt === 1 || (!message.includes('Timeout in launch automator') && !message.includes('startsWith'))) {
+      if (
+        !message.includes('Timeout in launch automator')
+        && !message.includes('startsWith')
+        && !message.includes('DevTools did not respond to protocol method App.getCurrentPage')
+      ) {
         throw error
       }
     }
   }
 
+  if (lastError) {
+    throw lastError
+  }
   throw new Error(`Failed to relaunch IDE session for route: ${route}`)
 }
 
 beforeEach(async () => {
-  await cleanupResidualDevProcesses()
+  hasLaunchedIdeSession = false
+  await cleanupResidualIdeProcesses()
 })
 
 afterAll(async () => {
+  hasLaunchedIdeSession = false
   if (sharedMiniProgram) {
     await sharedMiniProgram.close()
     sharedMiniProgram = null
@@ -187,16 +213,15 @@ afterAll(async () => {
     await sharedDev.stop(5_000)
     sharedDev = null
   }
-  await cleanupResidualDevProcesses()
+  await cleanupResidualIdeProcesses()
 })
 
 describe.sequential('wevu runtime layout shared template/wxs hmr (ide)', () => {
   it('updates layout runtime output in DevTools after shared template/include/wxs edits', async () => {
     await fs.remove(DIST_ROOT)
 
-    const originalDefaultLayout = await fs.readFile(DEFAULT_LAYOUT_WXML, 'utf8')
-    const originalAdminLayout = await fs.readFile(ADMIN_LAYOUT_WXML, 'utf8')
-    const originalSharedFiles = await captureOriginalSharedFiles()
+    const originalDefaultLayout = buildDefaultLayoutWxml()
+    const originalAdminLayout = buildAdminLayoutWxml()
 
     const initialTemplateMarker = createHmrMarker('IDE-LAYOUT-SHARED-TEMPLATE-INIT', 'weapp')
     const updatedTemplateMarker = createHmrMarker('IDE-LAYOUT-SHARED-TEMPLATE-UPDATE', 'weapp')
@@ -223,6 +248,9 @@ describe.sequential('wevu runtime layout shared template/wxs hmr (ide)', () => {
 
     try {
       await sharedDev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), 'weapp app.json generated for layout ide hmr')
+      await waitForFileContains(sharedImportOutput, initialTemplateMarker, 90_000)
+      await waitForFileContains(sharedIncludeOutput, initialIncludeMarker, 90_000)
+      await waitForFileContains(sharedWxsOutput, initialWxsMarker, 90_000)
 
       let page = await relaunchIdeSession('/pages/layouts/index')
       if (!page) {
@@ -275,7 +303,7 @@ describe.sequential('wevu runtime layout shared template/wxs hmr (ide)', () => {
       }
       await fs.writeFile(DEFAULT_LAYOUT_WXML, originalDefaultLayout, 'utf8')
       await fs.writeFile(ADMIN_LAYOUT_WXML, originalAdminLayout, 'utf8')
-      await restoreOriginalSharedFiles(originalSharedFiles)
+      await restoreOriginalSharedFiles()
     }
   })
 })

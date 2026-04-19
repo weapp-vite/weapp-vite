@@ -4,6 +4,7 @@ import path from 'pathe'
 import { expect } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const WHITESPACE_RE = /\s+/g
@@ -140,6 +141,33 @@ export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => v
     }
   }
   return sharedMiniProgram
+}
+
+export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  if (sharedLaunchInfraUnavailableMessage) {
+    ctx?.skip(sharedLaunchInfraUnavailableMessage)
+    throw new Error(sharedLaunchInfraUnavailableMessage)
+  }
+
+  await cleanupResidualIdeProcesses()
+
+  if (!sharedBuildPrepared) {
+    await runBuild()
+    sharedBuildPrepared = true
+  }
+
+  try {
+    return await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+  }
+  catch (error) {
+    if (ctx && isDevtoolsHttpPortError(error)) {
+      sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
+      ctx.skip(sharedLaunchInfraUnavailableMessage)
+    }
+    throw error
+  }
 }
 
 export async function releaseSharedMiniProgram(miniProgram: any) {

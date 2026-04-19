@@ -9,6 +9,8 @@ import { cleanupResidualDevProcesses } from './dev-process-cleanup'
 
 const AUTOMATOR_SESSION_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-sessions')
 const IDE_PROCESS_SETTLE_DELAY = 1_000
+const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
+const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 
 const UNIX_DEVTOOLS_PROCESS_PATTERNS = [
   'e2e/utils/automator.cli-bridge.ts',
@@ -16,6 +18,8 @@ const UNIX_DEVTOOLS_PROCESS_PATTERNS = [
   'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
   'wechatwebdevtools',
 ] as const
+
+type DevtoolsCacheCleanType = 'compile' | 'network' | 'all'
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -29,9 +33,26 @@ export function resolveIdeDevtoolsProcessPatterns(platform = process.platform) {
   return [...UNIX_DEVTOOLS_PROCESS_PATTERNS]
 }
 
-export async function cleanupResidualIdeProcesses(platform = process.platform) {
-  await cleanupResidualDevProcesses()
+function resolveWechatCliPath(cliPath?: string) {
+  if (typeof cliPath === 'string' && cliPath.trim()) {
+    return cliPath.trim()
+  }
+  if (process.platform === 'win32') {
+    return DEFAULT_WECHAT_CLI_WINDOWS_PATH
+  }
+  return DEFAULT_WECHAT_CLI_MACOS_PATH
+}
 
+async function cleanupAutomatorSessionArtifacts() {
+  await fs.rm(AUTOMATOR_SESSION_DIR, {
+    recursive: true,
+    force: true,
+  }).catch(() => {})
+
+  await sleep(IDE_PROCESS_SETTLE_DELAY)
+}
+
+export async function cleanupResidualDevtoolsProcesses(platform = process.platform) {
   if (platform === 'win32') {
     await execa('taskkill', ['/F', '/IM', 'wechatdevtools.exe', '/T'], {
       reject: false,
@@ -50,10 +71,33 @@ export async function cleanupResidualIdeProcesses(platform = process.platform) {
     }
   }
 
-  await fs.rm(AUTOMATOR_SESSION_DIR, {
-    recursive: true,
-    force: true,
-  }).catch(() => {})
+  await cleanupAutomatorSessionArtifacts()
+}
 
-  await sleep(IDE_PROCESS_SETTLE_DELAY)
+export async function cleanDevtoolsCache(
+  cleanType: DevtoolsCacheCleanType,
+  options: {
+    cliPath?: string
+    cwd?: string
+  } = {},
+) {
+  const result = await execa(resolveWechatCliPath(options.cliPath), ['cache', '--clean', cleanType], {
+    cwd: options.cwd,
+    reject: false,
+    stdin: 'ignore',
+    timeout: 20_000,
+  })
+
+  if ((result.exitCode ?? 1) === 0) {
+    return
+  }
+
+  const stderr = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+  const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : ''
+  throw new Error(stderr || stdout || `Failed to clean DevTools cache: ${cleanType}`)
+}
+
+export async function cleanupResidualIdeProcesses(platform = process.platform) {
+  await cleanupResidualDevProcesses()
+  await cleanupResidualDevtoolsProcesses(platform)
 }

@@ -70,6 +70,17 @@ export function buildSharedHmrPageWxml(importTemplatePath: string, includeTempla
   ].join('\n')
 }
 
+export function buildOriginalHmrPageWxml() {
+  return [
+    '<view class="page">',
+    '  <view class="title">HMR</view>',
+    '  <view class="summary">ok: {{__e2e.ok}}</view>',
+    '  <text class="details" selectable>{{__e2eText}}</text>',
+    '</view>',
+    '',
+  ].join('\n')
+}
+
 export function buildSharedHmrVueSource(importTemplatePath: string, helperPath: string) {
   return [
     '<script lang="ts">',
@@ -90,6 +101,51 @@ export function buildSharedHmrVueSource(importTemplatePath: string, helperPath: 
     '    <view class="title">HMR-SFC</view>',
     '    <view class="marker">{{ marker }}</view>',
     '    <template is="hmrSharedCard" data="{{ label: hmrShared.label() }}" />',
+    '  </view>',
+    '</template>',
+    '',
+    '<style>',
+    '/* HMR-SFC-STYLE */',
+    '.hmr-sfc-page {',
+    '  padding: 24rpx;',
+    '}',
+    '',
+    '.title {',
+    '  font-weight: 600;',
+    '  margin-bottom: 16rpx;',
+    '}',
+    '',
+    '.marker {',
+    '  font-size: 28rpx;',
+    '}',
+    '</style>',
+    '',
+    '<json>',
+    '{',
+    '  "component": false',
+    '}',
+    '</json>',
+    '',
+  ].join('\n')
+}
+
+export function buildOriginalHmrVueSource() {
+  return [
+    '<script lang="ts">',
+    '/* HMR-SFC-SCRIPT */',
+    'import { defineComponent } from \'wevu\'',
+    '',
+    'export default defineComponent({',
+    '  data: () => ({',
+    '    marker: \'HMR-SFC-SCRIPT\',',
+    '  }),',
+    '})',
+    '</script>',
+    '',
+    '<template>',
+    '  <view class="hmr-sfc-page">',
+    '    <view class="title">HMR-SFC</view>',
+    '    <view class="marker">{{ marker }}</view>',
     '  </view>',
     '</template>',
     '',

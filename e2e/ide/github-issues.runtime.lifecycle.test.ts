@@ -1,13 +1,12 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
-  closeSharedMiniProgram,
   DIST_ROOT,
-  getSharedMiniProgram,
+  launchFreshMiniProgram,
   readPageWxml,
   relaunchPage,
-  releaseSharedMiniProgram,
   waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
 
@@ -229,11 +228,11 @@ async function waitForIssue446Runtime(page: any, timeoutMs = 20_000) {
 
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
-    await closeSharedMiniProgram()
+    await cleanupResidualIdeProcesses()
   })
 
   it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async (ctx) => {
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-309/index')
       if (!issuePage) {
@@ -245,12 +244,12 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(await issuePage.data('loadCount')).toBeGreaterThanOrEqual(1)
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
   it('issue #309: triggers onLoad with created setupLifecycle and no pull-down hook', async (ctx) => {
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-309-created/index')
       if (!issuePage) {
@@ -262,7 +261,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(await issuePage.data('loadCount')).toBeGreaterThanOrEqual(1)
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -277,7 +276,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(issuePageWxml).toContain('issue312-btn-dec')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-312/index', 'data-current-label="选项1"')
       if (!issuePage) {
@@ -307,7 +306,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(afterDecRuntime?.label).toBe('选项1')
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -318,7 +317,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(issuePageWxml).toContain('bind:overlay-click="__weapp_vite_inline"')
     expect(issuePageWxml).not.toContain('bindoverlay-click=')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-316/index', 'overlay clicks: 0')
       if (!issuePage) {
@@ -334,7 +333,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(renderedWxml).toContain('overlay clicks: 1')
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -346,7 +345,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(issuePageWxml).toContain('issue-318 auto setData pick from template')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-318/index', 'count: 1')
       if (!issuePage) {
@@ -363,7 +362,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(renderedWxml).toContain('size: 3')
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -375,7 +374,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(issuePageWxml).toContain('issue-320 dynamic route alias + redirect')
     expect(issuePageJs).toContain('runRedirectNavigationE2E')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-320/index', 'ready for runtime e2e')
       if (!issuePage) {
@@ -387,12 +386,12 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(redirectedPage).toBeTruthy()
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
   it('issue #380: keeps custom tab bar out of default layout at runtime', async (ctx) => {
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-380/index')
       if (!issuePage) {
@@ -404,7 +403,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.tabBarRuntime?.layoutWrapperDetected).toBe(false)
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -414,7 +413,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<attach-probe id="attach-probe" />')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('componentAttachCount')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-385/index', 'attach-probe')
       if (!issuePage) {
@@ -426,7 +425,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.componentAttachCount).toBe(1)
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -441,7 +440,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(await fs.readFile(navbarJsPath, 'utf-8')).toContain('issue-398 navbar')
     expect(await fs.readFile(footerJsPath, 'utf-8')).toContain('issue-398 footer')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-398/index')
       if (!issuePage) {
@@ -464,7 +463,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.footerLabel).toBe('issue-398 footer')
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -475,7 +474,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-404 onPageScroll bridge')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-404/index')
       if (!issuePage) {
@@ -495,7 +494,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(Number(runtimeResult?.latestScrollTop ?? -1)).toBeGreaterThan(0)
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -510,7 +509,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('descriptorConfigurable')
     expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('../../components/issue-418-419/NativeRefProbe/index')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-418-419/index')
       if (!issuePage) {
@@ -526,7 +525,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(runtimeResult?.runtimeError).toBeNull()
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -542,7 +541,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('issue-446-short-bind')
     expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"ShortBindProbe": "/components/issue-446/ShortBindProbe/index"')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-446/index')
       if (!issuePage) {
@@ -563,7 +562,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       })
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 
@@ -578,7 +577,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     expect(await fs.readFile(launchPageJsPath, 'utf-8')).toContain('runRelaunch')
     expect(await fs.readFile(resultPageJsPath, 'utf-8')).toContain('increment')
 
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
     try {
       const launchPage = await relaunchPage(miniProgram, '/pages/issue-373/launch/index')
       if (!launchPage) {
@@ -610,7 +609,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(updatedWxml).toContain('data-doubled="4"')
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 })

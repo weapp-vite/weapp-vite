@@ -93,6 +93,9 @@ export default async function setupIdeE2E() {
   process.env[AUTOMATOR_LAUNCH_MODE_ENV] = 'bridge'
   process.env[AUTOMATOR_SKIP_WARMUP_ENV] = '1'
 
+  const { cleanupResidualIdeProcesses } = await import('./utils/ide-devtools-cleanup')
+  await cleanupResidualIdeProcesses()
+
   const {
     assertDevtoolsLoggedIn,
     isDevtoolsLoginRequiredError,

@@ -3,6 +3,8 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { relaunchPage } from './github-issues.runtime.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-native')
@@ -30,42 +32,45 @@ async function runBuild(root: string) {
   })
 }
 
-const sharedMiniProgramByRoot = new Map<string, any>()
 const sharedBuildPreparedRoots = new Set<string>()
 
-async function getSharedMiniProgram(root: string) {
+async function launchFreshMiniProgram(root: string) {
+  await cleanupResidualIdeProcesses()
+
   if (!sharedBuildPreparedRoots.has(root)) {
     await runBuild(root)
     sharedBuildPreparedRoots.add(root)
   }
 
-  let miniProgram = sharedMiniProgramByRoot.get(root)
-  if (!miniProgram) {
-    miniProgram = await launchAutomator({
-      projectPath: root,
-    })
-    sharedMiniProgramByRoot.set(root, miniProgram)
-  }
-  return miniProgram
+  return await launchAutomator({
+    projectPath: root,
+  })
 }
 
 async function closeSharedMiniPrograms() {
-  const sessions = Array.from(sharedMiniProgramByRoot.values())
-  sharedMiniProgramByRoot.clear()
-  await Promise.allSettled(sessions.map(miniProgram => miniProgram.close()))
+  await cleanupResidualIdeProcesses()
 }
 
 async function collectAppLogs(root: string) {
-  const miniProgram = await getSharedMiniProgram(root)
-  await miniProgram.reLaunch('/pages/index/index')
-  const logs = await miniProgram.evaluate(() => {
-    const app = getApp()
-    if (typeof app?.finalizeLifecycleLogs === 'function') {
-      app.finalizeLifecycleLogs()
+  const miniProgram = await launchFreshMiniProgram(root)
+  try {
+    const page = await relaunchPage(miniProgram, '/pages/index/index', undefined, 30_000)
+    if (!page) {
+      throw new Error('Failed to launch /pages/index/index')
     }
-    return app?.globalData?.__lifecycleLogs ?? []
-  })
-  return logs ?? []
+    await page.waitFor(300)
+    const logs = await miniProgram.evaluate(() => {
+      const app = getApp()
+      if (typeof app?.finalizeLifecycleLogs === 'function') {
+        app.finalizeLifecycleLogs()
+      }
+      return app?.globalData?.__lifecycleLogs ?? []
+    })
+    return logs ?? []
+  }
+  finally {
+    await miniProgram.close().catch(() => {})
+  }
 }
 
 function normalizeEntries(entries: any[]) {

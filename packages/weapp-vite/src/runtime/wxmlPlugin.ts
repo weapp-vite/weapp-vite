@@ -11,9 +11,9 @@ export function createWxmlServicePlugin(ctx: MutableCompilerContext): Plugin {
   return {
     name: 'weapp-runtime:wxml-service',
     buildStart() {
-      service.clearAll({
-        clearEmittedCode: !ctx.configService?.isDev,
-      })
+      if (!ctx.configService?.isDev) {
+        service.clearAll()
+      }
     },
   }
 }

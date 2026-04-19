@@ -1,5 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { CorePluginState } from './types'
+import path from 'pathe'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 
 export function collectAffectedEntries(state: CorePluginState, startId: string) {
@@ -88,6 +89,17 @@ function appendSharedChunkImporters(
   onlyEntryIds?: Set<string>,
   previousImporters?: Map<string, Set<string>>,
 ) {
+  const bundleChunks = new Map<string, OutputChunk>()
+  const resolveImportedChunkId = (importerFileName: string, imported: string) => {
+    if (bundleChunks.has(imported)) {
+      return imported
+    }
+    if (imported.startsWith('.')) {
+      return path.normalize(path.join(path.dirname(importerFileName), imported))
+    }
+    return imported
+  }
+
   const getTrackedImporterIds = (chunk: OutputChunk) => {
     const trackedImporterIds = new Set<string>()
 
@@ -110,68 +122,98 @@ function appendSharedChunkImporters(
     return trackedImporterIds
   }
 
-  const entryChunks: Array<{ entryId: string, chunk: OutputChunk }> = []
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
     const chunk = output as OutputChunk
-    const trackedImporterIds = getTrackedImporterIds(chunk)
+    bundleChunks.set(chunk.fileName, chunk)
+  }
+
+  const trackedImporterIdsByChunk = new Map<string, Set<string>>()
+  for (const [fileName, chunk] of bundleChunks) {
+    trackedImporterIdsByChunk.set(fileName, getTrackedImporterIds(chunk))
+  }
+
+  const addSharedChunkImporter = (chunkId: string, entryId: string) => {
+    const current = state.hmrSharedChunkImporters.get(chunkId)
+    if (current) {
+      current.add(entryId)
+    }
+    else {
+      state.hmrSharedChunkImporters.set(chunkId, new Set([entryId]))
+    }
+  }
+
+  const propagateSharedChunkImporter = (
+    entryId: string,
+    importedChunkId: string,
+    visited: Set<string>,
+  ) => {
+    if (visited.has(importedChunkId)) {
+      return
+    }
+    visited.add(importedChunkId)
+
+    const targetChunk = bundleChunks.get(importedChunkId)
+    if (!targetChunk) {
+      if (previousImporters?.get(importedChunkId)?.has(entryId)) {
+        addSharedChunkImporter(importedChunkId, entryId)
+      }
+      return
+    }
+
+    if ((trackedImporterIdsByChunk.get(importedChunkId)?.size ?? 0) > 0) {
+      return
+    }
+
+    addSharedChunkImporter(importedChunkId, entryId)
+
+    const nestedImports = new Set<string>()
+    if (Array.isArray(targetChunk.imports)) {
+      for (const nestedImport of targetChunk.imports) {
+        nestedImports.add(resolveImportedChunkId(targetChunk.fileName, nestedImport))
+      }
+    }
+    if (Array.isArray(targetChunk.dynamicImports)) {
+      for (const nestedImport of targetChunk.dynamicImports) {
+        nestedImports.add(resolveImportedChunkId(targetChunk.fileName, nestedImport))
+      }
+    }
+
+    for (const nestedImport of nestedImports) {
+      propagateSharedChunkImporter(entryId, nestedImport, visited)
+    }
+  }
+
+  for (const [fileName, chunk] of bundleChunks) {
+    const trackedImporterIds = trackedImporterIdsByChunk.get(fileName) ?? new Set<string>()
     if (!trackedImporterIds.size) {
       continue
     }
+
     for (const trackedImporterId of trackedImporterIds) {
       if (onlyEntryIds && !onlyEntryIds.has(trackedImporterId)) {
         continue
       }
-      entryChunks.push({ entryId: trackedImporterId, chunk })
-    }
-  }
 
-  if (!entryChunks.length) {
-    return
-  }
-
-  for (const { chunk, entryId } of entryChunks) {
-    const imports = new Set<string>()
-    if (Array.isArray(chunk.imports)) {
-      for (const imported of chunk.imports) {
-        imports.add(imported)
-      }
-    }
-    if (Array.isArray(chunk.dynamicImports)) {
-      for (const imported of chunk.dynamicImports) {
-        imports.add(imported)
-      }
-    }
-    if (!imports.size) {
-      continue
-    }
-
-    for (const imported of imports) {
-      const target = bundle[imported]
-      if (!target || target.type !== 'chunk') {
-        if (previousImporters?.get(imported)?.has(entryId)) {
-          const current = state.hmrSharedChunkImporters.get(imported)
-          if (current) {
-            current.add(entryId)
-          }
-          else {
-            state.hmrSharedChunkImporters.set(imported, new Set([entryId]))
-          }
+      const imports = new Set<string>()
+      if (Array.isArray(chunk.imports)) {
+        for (const imported of chunk.imports) {
+          imports.add(resolveImportedChunkId(chunk.fileName, imported))
         }
+      }
+      if (Array.isArray(chunk.dynamicImports)) {
+        for (const imported of chunk.dynamicImports) {
+          imports.add(resolveImportedChunkId(chunk.fileName, imported))
+        }
+      }
+      if (!imports.size) {
         continue
       }
-      const targetChunk = target as OutputChunk
-      if (getTrackedImporterIds(targetChunk).size) {
-        continue
-      }
-      const current = state.hmrSharedChunkImporters.get(imported)
-      if (current) {
-        current.add(entryId)
-      }
-      else {
-        state.hmrSharedChunkImporters.set(imported, new Set([entryId]))
+
+      for (const imported of imports) {
+        propagateSharedChunkImporter(trackedImporterId, imported, new Set())
       }
     }
   }
@@ -187,13 +229,41 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     return
   }
 
+  const refreshedEntryIds = new Set<string>()
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'chunk') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    if (chunk.facadeModuleId) {
+      const entryId = normalizeFsResolvedId(chunk.facadeModuleId)
+      if ((chunk.isEntry || state.resolvedEntryMap.has(entryId)) && entryIds.has(entryId)) {
+        refreshedEntryIds.add(entryId)
+      }
+    }
+
+    if (Array.isArray(chunk.moduleIds)) {
+      for (const moduleId of chunk.moduleIds) {
+        const normalizedModuleId = normalizeFsResolvedId(moduleId)
+        if (state.resolvedEntryMap.has(normalizedModuleId) && entryIds.has(normalizedModuleId)) {
+          refreshedEntryIds.add(normalizedModuleId)
+        }
+      }
+    }
+  }
+
+  if (!refreshedEntryIds.size) {
+    return
+  }
+
   const previousImporters = new Map<string, Set<string>>()
   for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
     previousImporters.set(chunkId, new Set(importers))
   }
 
   for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
-    for (const entryId of entryIds) {
+    for (const entryId of refreshedEntryIds) {
       importers.delete(entryId)
     }
     if (importers.size === 0) {
@@ -201,5 +271,5 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     }
   }
 
-  appendSharedChunkImporters(bundle, state, entryIds, previousImporters)
+  appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters)
 }

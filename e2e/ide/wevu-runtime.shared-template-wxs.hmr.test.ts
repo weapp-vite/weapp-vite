@@ -2,10 +2,16 @@ import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
-import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import {
+  cleanDevtoolsCache,
+  cleanupResidualDevtoolsProcesses,
+  cleanupResidualIdeProcesses,
+} from '../utils/ide-devtools-cleanup'
+import {
+  buildOriginalHmrPageWxml,
+  buildOriginalHmrVueSource,
   buildSharedHmrPageWxml,
   buildSharedHmrVueSource,
   buildSharedImportTemplate,
@@ -15,6 +21,7 @@ import {
   resolveSharedHmrRelativeImports,
 } from '../utils/shared-hmr-fixture'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, normalizeAutomatorWxml, waitForFile } from '../wevu-runtime.utils'
+import { readPageWxml as readAutomatorPageWxml, relaunchPage } from './github-issues.runtime.shared'
 
 const SHARED_HMR_PATHS = resolveSharedHmrPaths(APP_ROOT)
 const SHARED_HMR_IMPORTS = resolveSharedHmrRelativeImports()
@@ -25,11 +32,7 @@ let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
 
 async function readPageWxml(page: any) {
-  const root = await page.$('page')
-  if (!root) {
-    return null
-  }
-  return normalizeAutomatorWxml(await root.wxml())
+  return normalizeAutomatorWxml(await readAutomatorPageWxml(page))
 }
 
 async function waitForPageWxmlContains(page: any, marker: string, timeoutMs = 20_000) {
@@ -67,59 +70,52 @@ async function waitForIdeRecompileSettled(delayMs = 1200) {
   await new Promise(resolve => setTimeout(resolve, delayMs))
 }
 
-async function relaunchIdeSession(route: string) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+async function getSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+  }
+  return sharedMiniProgram
+}
+
+async function relaunchIdeSession(route: string, readyText?: string) {
+  const cacheCleanTypes = ['compile', 'all'] as const
+  let lastError: unknown
+
+  for (const cleanType of cacheCleanTypes) {
     if (sharedMiniProgram) {
-      await sharedMiniProgram.close()
+      await sharedMiniProgram.close().catch(() => {})
       sharedMiniProgram = null
     }
 
+    await cleanupResidualDevtoolsProcesses()
+    await cleanDevtoolsCache(cleanType)
+    await waitForIdeRecompileSettled(cleanType === 'compile' ? 1_200 : 1_600)
+
     try {
-      sharedMiniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
-      })
-      return await sharedMiniProgram.reLaunch(route)
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      if (attempt === 1 || (!message.includes('Timeout in launch automator') && !message.includes('startsWith'))) {
-        throw error
+      const miniProgram = await getSharedMiniProgram()
+      const page = await relaunchPage(miniProgram, route, readyText, 20_000)
+      if (page) {
+        return page
       }
-    }
-  }
-
-  throw new Error(`Failed to relaunch IDE session for route: ${route}`)
-}
-
-async function relaunchRouteUntilContains(
-  route: string,
-  marker: string,
-  recover: () => Promise<void>,
-  timeoutMs = 45_000,
-) {
-  const start = Date.now()
-  let lastError: unknown
-
-  while (Date.now() - start < timeoutMs) {
-    const page = await relaunchIdeSession(route)
-
-    try {
-      return await waitForPageWxmlContains(page, marker, 8_000)
     }
     catch (error) {
       lastError = error
-      await recover()
-      await waitForIdeRecompileSettled()
     }
   }
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error(`Timed out waiting IDE route ${route} to contain marker: ${marker}`)
+  if (lastError) {
+    throw lastError
+  }
+  throw new Error(`Failed to relaunch IDE session for route: ${route}`)
 }
 
 beforeEach(async () => {
-  await cleanupResidualDevProcesses()
+  await cleanupResidualIdeProcesses()
+  await fs.writeFile(SHARED_HMR_PATHS.hmrPageWxml, buildOriginalHmrPageWxml(), 'utf8')
+  await fs.writeFile(SHARED_HMR_PATHS.hmrSfcVue, buildOriginalHmrVueSource(), 'utf8')
+  await fs.remove(SHARED_HMR_PATHS.sharedDir)
 })
 
 afterAll(async () => {
@@ -131,15 +127,15 @@ afterAll(async () => {
     await sharedDev.stop(5_000)
     sharedDev = null
   }
-  await cleanupResidualDevProcesses()
+  await cleanupResidualIdeProcesses()
 })
 
 describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
   it('updates runtime pages in DevTools after shared template/include/wxs edits', async () => {
     await fs.remove(DIST_ROOT)
 
-    const originalPageWxml = await fs.readFile(SHARED_HMR_PATHS.hmrPageWxml, 'utf8')
-    const originalVueSource = await fs.readFile(SHARED_HMR_PATHS.hmrSfcVue, 'utf8')
+    const originalPageWxml = buildOriginalHmrPageWxml()
+    const originalVueSource = buildOriginalHmrVueSource()
 
     const initialTemplateMarker = createHmrMarker('IDE-SHARED-TEMPLATE-INIT', 'weapp')
     const pageUpdatedTemplateMarker = createHmrMarker('IDE-SHARED-TEMPLATE-PAGE', 'weapp')
@@ -170,6 +166,15 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       buildSharedHmrVueSource(SHARED_HMR_IMPORTS.importTemplateRelative, SHARED_HMR_IMPORTS.helperRelative),
       'utf8',
     )
+    const sharedPageWxmlSource = buildSharedHmrPageWxml(
+      SHARED_HMR_IMPORTS.importTemplateRelative,
+      SHARED_HMR_IMPORTS.includeTemplateRelative,
+      SHARED_HMR_IMPORTS.helperRelative,
+    )
+    const sharedVueSource = buildSharedHmrVueSource(
+      SHARED_HMR_IMPORTS.importTemplateRelative,
+      SHARED_HMR_IMPORTS.helperRelative,
+    )
 
     sharedDev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       env: createDevProcessEnv(),
@@ -182,7 +187,7 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
       await waitForFileContains(sharedIncludeOutputPath, initialIncludeMarker, 90_000)
       await waitForFileContains(sharedWxsOutputPath, initialWxsMarker, 90_000)
 
-      let page = await relaunchIdeSession('/pages/hmr/index')
+      let page = await relaunchIdeSession('/pages/hmr/index', initialTemplateMarker)
       if (!page) {
         throw new Error('Failed to launch /pages/hmr/index')
       }
@@ -199,32 +204,34 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
         SHARED_HMR_PATHS.sharedImportTemplate,
         pageUpdatedTemplateSource,
       )
+      await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
       // DevTools 在 dev 重编译后继续复用旧 automator 会话做 reLaunch 不稳定，
       // 这里重建会话，确保仍然是 IDE 实际运行态验证而不是仅看 dist。
-      page = await relaunchIdeSession('/pages/hmr/index')
-      runtimeWxml = await waitForPageWxmlContains(page, pageUpdatedTemplateMarker)
+      page = await relaunchIdeSession('/pages/hmr/index', pageUpdatedTemplateMarker)
+      runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(pageUpdatedTemplateMarker)
 
       const updatedIncludeSource = buildSharedIncludeTemplate(updatedIncludeMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedIncludeTemplate, updatedIncludeSource)
-      await waitForIdeRecompileSettled()
-      runtimeWxml = await relaunchRouteUntilContains(
-        '/pages/hmr/index',
+      await waitForFileContainsWithRetry(
+        sharedIncludeOutputPath,
         updatedIncludeMarker,
-        async () => {
-          await replaceFileByRename(SHARED_HMR_PATHS.sharedIncludeTemplate, `${updatedIncludeSource}\n`)
-          await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, originalPageWxml)
-        },
+        SHARED_HMR_PATHS.sharedIncludeTemplate,
+        updatedIncludeSource,
       )
+      await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
+      await waitForIdeRecompileSettled()
+      page = await relaunchIdeSession('/pages/hmr/index', updatedIncludeMarker)
+      runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(updatedIncludeMarker)
 
-      page = await relaunchIdeSession('/pages/hmr-sfc/index')
+      page = await relaunchIdeSession('/pages/hmr-sfc/index', pageUpdatedTemplateMarker)
       if (!page) {
         throw new Error('Failed to launch /pages/hmr-sfc/index')
       }
 
-      runtimeWxml = await waitForPageWxmlContains(page, pageUpdatedTemplateMarker)
+      runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(initialWxsMarker)
 
       const vueUpdatedTemplateSource = buildSharedImportTemplate(vueUpdatedTemplateMarker)
@@ -235,9 +242,10 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
         SHARED_HMR_PATHS.sharedImportTemplate,
         vueUpdatedTemplateSource,
       )
+      await replaceFileByRename(SHARED_HMR_PATHS.hmrSfcVue, `${sharedVueSource}\n`)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeSession('/pages/hmr-sfc/index')
-      runtimeWxml = await waitForPageWxmlContains(page, vueUpdatedTemplateMarker)
+      page = await relaunchIdeSession('/pages/hmr-sfc/index', vueUpdatedTemplateMarker)
+      runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(vueUpdatedTemplateMarker)
 
       const updatedWxsSource = buildSharedWxs(updatedWxsMarker)
@@ -248,16 +256,19 @@ describe.sequential('wevu runtime shared template/wxs hmr (ide)', () => {
         SHARED_HMR_PATHS.sharedWxs,
         updatedWxsSource,
       )
+      await replaceFileByRename(SHARED_HMR_PATHS.hmrSfcVue, `${sharedVueSource}\n`)
       await waitForIdeRecompileSettled()
-      page = await relaunchIdeSession('/pages/hmr-sfc/index')
-      runtimeWxml = await waitForPageWxmlContains(page, updatedWxsMarker)
+      page = await relaunchIdeSession('/pages/hmr-sfc/index', updatedWxsMarker)
+      runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(updatedWxsMarker)
 
-      page = await relaunchIdeSession('/pages/hmr/index')
+      await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
+      await waitForIdeRecompileSettled()
+      page = await relaunchIdeSession('/pages/hmr/index', updatedWxsMarker)
       if (!page) {
         throw new Error('Failed to relaunch /pages/hmr/index for final wxs check')
       }
-      runtimeWxml = await waitForPageWxmlContains(page, updatedWxsMarker)
+      runtimeWxml = await readPageWxml(page)
       expect(runtimeWxml).toContain(vueUpdatedTemplateMarker)
       expect(runtimeWxml).toContain(updatedIncludeMarker)
     }
