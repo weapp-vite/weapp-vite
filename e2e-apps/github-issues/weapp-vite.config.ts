@@ -40,6 +40,7 @@ export default defineConfig({
         'subpackages/issue-466-computed': {
           dependencies: [
             'miniprogram-computed',
+            /^tdesign-miniprogram$/,
           ],
         },
         'subpackages/item': {

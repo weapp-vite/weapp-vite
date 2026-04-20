@@ -353,6 +353,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const componentJsPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/components/CjsProbe/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/components/CjsProbe/index.wxml')
     const computedPkgPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/miniprogram-computed/index.js')
+    const computedDialogComponentPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/tdesign-miniprogram/dialog/dialog.js')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath)
@@ -365,6 +366,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(computedPkgPath)).toBe(true)
     expect(await fs.pathExists(computedFastDeepEqualPath)).toBe(true)
     expect(await fs.pathExists(computedRfdcPath)).toBe(true)
+    expect(await fs.pathExists(computedDialogComponentPath)).toBe(true)
     expect(pageWxml).toContain('issue-466 computed cjs package')
     expect(pageWxml).toContain('alertType = {{alertType}}')
     expect(pageWxml).toContain('confirmType = {{confirmType}}')
@@ -374,7 +376,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('<t-dialog id="issue466-computed-dialog" />')
     expect(pageJson.usingComponents).toMatchObject({
       'issue466-computed-probe': './components/CjsProbe/index',
-      't-dialog': 'tdesign-miniprogram/dialog/dialog',
+      't-dialog': './miniprogram_npm/tdesign-miniprogram/dialog/dialog',
     })
     expect(pageJs).toContain('readProbeState')
     expect(pageJs).toContain('applyNextE2E')
