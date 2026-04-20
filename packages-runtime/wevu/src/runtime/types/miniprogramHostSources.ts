@@ -85,21 +85,10 @@ export interface DefaultMiniProgramHostSourceContract {
   NavigateToOption: DefaultMiniProgramHostNamespace.NavigateToOption
 }
 
-export interface WechatMiniProgramHostSourceContract {
-  BoundingClientRectCallbackResult: WechatMiniProgramHostNamespace.BoundingClientRectCallbackResult
-  ScrollOffsetCallbackResult: WechatMiniProgramHostNamespace.ScrollOffsetCallbackResult
-  NodesRef: WechatMiniProgramHostNamespace.NodesRef
-  SelectorQuery: WechatMiniProgramHostNamespace.SelectorQuery
-  CreateIntersectionObserverOption: WechatMiniProgramHostNamespace.CreateIntersectionObserverOption
-  IntersectionObserver: WechatMiniProgramHostNamespace.IntersectionObserver
-  OnUnhandledRejectionListenerResult: WechatMiniProgramHostNamespace.OnUnhandledRejectionListenerResult
-  OnThemeChangeListenerResult: WechatMiniProgramHostNamespace.OnThemeChangeListenerResult
-  OnMemoryWarningListenerResult: WechatMiniProgramHostNamespace.OnMemoryWarningListenerResult
-  SwitchTabOption: WechatMiniProgramHostNamespace.SwitchTabOption
-  ReLaunchOption: WechatMiniProgramHostNamespace.ReLaunchOption
-  RedirectToOption: WechatMiniProgramHostNamespace.RedirectToOption
-  NavigateToOption: WechatMiniProgramHostNamespace.NavigateToOption
-}
+/**
+ * @description 微信平台命名兼容契约；当前默认宿主语义仍复用微信底座，但上层主链路应优先依赖 default。
+ */
+export interface WechatMiniProgramHostSourceContract extends DefaultMiniProgramHostSourceContract {}
 
 /**
  * @description 支付宝宿主类型契约占位；后续接入稳定 typings 时在此扩展。
@@ -124,7 +113,7 @@ export interface MiniProgramPlatformHostSourceRegistry {
 }
 
 export interface MiniProgramRuntimeHostSourceRegistry {
-  wx: WechatMiniProgramHostSourceContract
+  wx: DefaultMiniProgramHostSourceContract
   my: AlipayMiniProgramHostSourceContract
   tt: TtMiniProgramHostSourceContract
 }
