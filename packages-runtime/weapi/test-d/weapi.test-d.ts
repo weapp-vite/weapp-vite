@@ -389,6 +389,18 @@ expectType<Promise<WeapiMiniProgramSystemInfo>>(getSystemInfoAsyncPromise)
 const clipboardPromise = wpi.getClipboardData()
 expectType<Promise<WeapiMiniProgramClipboardDataResult>>(clipboardPromise)
 
+const getSettingPromise = wpi.getSetting()
+expectType<Promise<WechatMiniprogram.GetSettingSuccessCallbackResult>>(getSettingPromise)
+
+const scanCodePromise = wpi.scanCode()
+expectType<Promise<WechatMiniprogram.ScanCodeSuccessCallbackResult>>(scanCodePromise)
+
+const scanCodePromiseWithOption = wpi.scanCode({})
+expectType<Promise<WechatMiniprogram.ScanCodeSuccessCallbackResult>>(scanCodePromiseWithOption)
+
+const stopPullDownRefreshPromise = wpi.stopPullDownRefresh()
+expectType<Promise<WechatMiniprogram.GeneralCallbackResult>>(stopPullDownRefreshPromise)
+
 interface CustomAdapter {
   foo: (option: { success?: (res: { ok: true }) => void }) => number
   bazSync: (value: string) => number

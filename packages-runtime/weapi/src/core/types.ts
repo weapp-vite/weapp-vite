@@ -83,9 +83,7 @@ type HasCallbackOption<T> = T extends { success: unknown }
       ? true
       : false
 
-type ExtractSuccessResult<T> = T extends { success?: (...args: infer A) => unknown }
-  ? A[0]
-  : void
+type ExtractSuccessResult<T> = T extends { success?: (...args: infer A) => unknown } ? A[0] : void
 
 type PromisifyOptionMethod<
   Prefix extends any[],
@@ -106,21 +104,14 @@ type PromisifyOptionMethod<
     }
 
 type NormalizePromisifyReturn<T> = T extends Promise<any> ? T : Promise<T>
-
-type NormalizeTupleArgs<Args extends any[]> = {
-  [Key in keyof Args]-?: Args[Key]
-}
-
-type DecomposeTrailingArg<Args extends any[]> = NormalizeTupleArgs<Args> extends [...infer Prefix, infer Last]
-  ? {
-      prefix: Prefix
-      last: Last
-    }
-  : never
-
-type IsOptionalTrailingArg<Args extends any[], Prefix extends any[]> = Record<never, never> extends Pick<Args, Prefix['length']>
-  ? true
-  : false
+type NormalizeTupleArgs<Args extends any[]> = { [Key in keyof Args]-?: Args[Key] }
+type DecomposeTrailingArg<Args extends any[]> = NormalizeTupleArgs<Args> extends [...infer Prefix, infer Last] ? { prefix: Prefix, last: Last } : never
+type IsOptionalTrailingArg<Args extends any[], Prefix extends any[]> = Record<never, never> extends Pick<Args, Prefix['length']> ? true : false
+type RequiredObjectKeys<T extends object> = {
+  [Key in keyof T]-?: Pick<T, Key> extends Required<Pick<T, Key>> ? Key : never
+}[keyof T]
+type IsStructurallyOmittableObject<T> = T extends object ? (RequiredObjectKeys<T> extends never ? true : false) : false
+type IsOmittableTrailingArg<Args extends any[], Prefix extends any[], Last> = IsOptionalTrailingArg<Args, Prefix> extends true ? true : IsStructurallyOmittableObject<NonNullable<Last>>
 
 type PromisifyMethod<TMethod> = TMethod extends (...args: infer Args) => infer Result
   ? Args extends []
@@ -130,7 +121,7 @@ type PromisifyMethod<TMethod> = TMethod extends (...args: infer Args) => infer R
       last: infer Last
     }
       ? true extends HasCallbackKey<NonNullable<Last>>
-        ? PromisifyOptionMethod<Prefix, NonNullable<Last>, Result, IsOptionalTrailingArg<Args, Prefix>>
+        ? PromisifyOptionMethod<Prefix, NonNullable<Last>, Result, IsOmittableTrailingArg<Args, Prefix, Last>>
         : (...args: Args) => NormalizePromisifyReturn<Result>
       : (...args: Args) => NormalizePromisifyReturn<Result>
   : TMethod
