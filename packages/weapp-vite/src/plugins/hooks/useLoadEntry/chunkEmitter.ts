@@ -8,6 +8,7 @@ export function createChunkEmitter(
   configService: CompilerContext['configService'],
   loadedEntrySet: Set<string>,
   debug?: (...args: any[]) => void,
+  trackEmittedEntryId?: (entryId: string) => void,
 ) {
   return function emitEntriesChunks(this: PluginContext, resolvedIds: (ResolvedId | null)[]) {
     return resolvedIds.map(async (resolvedId) => {
@@ -33,6 +34,7 @@ export function createChunkEmitter(
         // @ts-ignore
         preserveSignature: 'exports-only',
       })
+      trackEmittedEntryId?.(normalizedId)
 
       if (shouldPreload) {
         debug?.(`load ${fileName} 耗时 ${(performance.now() - start).toFixed(2)}ms`)

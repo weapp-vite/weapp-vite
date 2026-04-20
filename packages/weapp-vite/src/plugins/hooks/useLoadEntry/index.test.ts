@@ -168,6 +168,28 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
   })
 
+  it('records only entries that were actually emitted during hmr', async () => {
+    const ctx = createContext()
+    const setDidEmitAllEntries = vi.fn()
+    const setLastEmittedEntries = vi.fn()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        setDidEmitAllEntries,
+        setLastEmittedEntries,
+      },
+    })
+
+    hook.markEntryDirty('/project/src/components/HotCard/index.vue')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).not.toHaveBeenCalled()
+    expect(setDidEmitAllEntries).toHaveBeenLastCalledWith(false)
+    expect(setLastEmittedEntries).toHaveBeenLastCalledWith(new Set())
+  })
+
   it('expands dependency-driven updates across all affected shared chunk importers', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
