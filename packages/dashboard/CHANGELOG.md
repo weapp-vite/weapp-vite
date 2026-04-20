@@ -1,5 +1,7 @@
 # @weapp-vite/dashboard
 
+## 6.15.10
+
 ## 6.15.9
 
 ### Patch Changes
