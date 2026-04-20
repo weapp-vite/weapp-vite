@@ -1,3 +1,4 @@
+import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
 import { injectWevuPageFeaturesInJsWithResolver } from 'wevu/compiler'
 import { readFile as readFileCached } from '../../utils/cache'
 import { createViteResolverAdapter } from '../../utils/viteResolverAdapter'
@@ -11,7 +12,7 @@ export async function injectWevuPageFeaturesInJsWithViteResolver(
   source: string,
   id: string,
   options?: { checkMtime?: boolean },
-): Promise<{ code: string, transformed: boolean }> {
+): Promise<{ code: string, transformed: boolean, map?: EncodedSourceMapLike | null }> {
   const checkMtime = options?.checkMtime ?? true
   return injectWevuPageFeaturesInJsWithResolver(source, {
     id,

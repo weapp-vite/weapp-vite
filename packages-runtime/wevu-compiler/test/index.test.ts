@@ -99,4 +99,22 @@ export default {
       pages: [],
     })
   })
+
+  it('returns script sourcemap chained back to the original vue file', async () => {
+    const source = `
+<script setup lang="ts">
+const title = 'hello'
+console.log(title)
+</script>
+<template>
+  <view>{{ title }}</view>
+</template>
+    `.trim()
+
+    const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
+
+    expect(result.scriptMap).toBeTruthy()
+    expect(result.scriptMap?.sources).toEqual(['/project/src/pages/index/index.vue'])
+    expect(result.scriptMap?.sourcesContent?.[0]).toBe(source)
+  })
 })

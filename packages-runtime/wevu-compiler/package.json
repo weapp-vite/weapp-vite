@@ -51,6 +51,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@jridgewell/remapping": "^2.3.5",
     "@vue/compiler-core": "catalog:",
     "@vue/compiler-dom": "catalog:",
     "@weapp-core/constants": "workspace:^",

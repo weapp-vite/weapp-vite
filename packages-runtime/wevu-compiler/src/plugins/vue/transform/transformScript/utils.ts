@@ -1,5 +1,6 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { WevuDefaults } from '../../../../types/wevu'
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { ClassStyleBinding, ClassStyleRuntime, InlineExpressionAsset, LayoutHostBinding, TemplateRefBinding } from '../../compiler/template/types'
 import * as t from '@weapp-vite/ast/babelTypes'
 
@@ -10,6 +11,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 export interface TransformResult {
   code: string
   transformed: boolean
+  map?: EncodedSourceMapLike | null
 }
 
 export interface TransformScriptOptions {

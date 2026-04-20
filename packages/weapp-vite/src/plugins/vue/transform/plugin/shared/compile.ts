@@ -1,8 +1,11 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
+import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
+import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
+import { composeSourceMaps } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../../injectSetDataPick'
@@ -16,8 +19,12 @@ import {
   resolveScriptlessVueEntryStub,
 } from './state'
 
+type VueTransformResultWithScriptMap = VueTransformResult & {
+  scriptMap?: EncodedSourceMapLike | null
+}
+
 export async function finalizeTransformEntryScript(options: {
-  result: VueTransformResult
+  result: VueTransformResultWithScriptMap
   filename: string
   pluginCtx: any
   configService: NonNullable<CompilerContext['configService']>
@@ -41,6 +48,7 @@ export async function finalizeTransformEntryScript(options: {
       })
       if (injected.transformed) {
         result.script = injected.code
+        result.scriptMap = composeSourceMaps(injected.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
       }
     }
   }
@@ -60,6 +68,7 @@ export async function finalizeTransformEntryScript(options: {
     const injectedPick = injectSetDataPickInJs(result.script, keys)
     if (injectedPick.transformed) {
       result.script = injectedPick.code
+      result.scriptMap = composeSourceMaps(injectedPick.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
     }
   }
 
@@ -67,7 +76,7 @@ export async function finalizeTransformEntryScript(options: {
 }
 
 export function finalizeTransformEntryCode(options: {
-  result: VueTransformResult
+  result: VueTransformResultWithScriptMap
   filename: string
   styleBlocks?: SFCStyleBlock[]
   isPage: boolean
@@ -75,7 +84,9 @@ export function finalizeTransformEntryCode(options: {
   isDev: boolean
 }) {
   const { result, filename, styleBlocks, isPage, isApp, isDev } = options
-  let returnedCode = result.script ?? ''
+  const script = result.script ?? ''
+  const returned = new MagicString(script)
+  let hasMutation = false
 
   if (styleBlocks?.length) {
     const styleImports = styleBlocks
@@ -84,24 +95,40 @@ export function finalizeTransformEntryCode(options: {
         return `import ${JSON.stringify(request)};\n`
       })
       .join('')
-    returnedCode = styleImports + returnedCode
+    returned.prepend(styleImports)
+    hasMutation = true
   }
 
   if (!isApp && !result.script?.trim()) {
-    returnedCode += resolveScriptlessVueEntryStub(isPage)
+    returned.append(resolveScriptlessVueEntryStub(isPage))
+    hasMutation = true
   }
 
   const macroHash = result.meta?.jsonMacroHash
   if (macroHash && isDev) {
-    returnedCode += `\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`
+    returned.append(`\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`)
+    hasMutation = true
   }
 
   const defineOptionsHash = result.meta?.defineOptionsHash
   if (defineOptionsHash && isDev) {
-    returnedCode += `\n;Object.defineProperty({}, '__weappViteDefineOptionsHash', { value: ${JSON.stringify(defineOptionsHash)} })\n`
+    returned.append(`\n;Object.defineProperty({}, '__weappViteDefineOptionsHash', { value: ${JSON.stringify(defineOptionsHash)} })\n`)
+    hasMutation = true
   }
 
-  return returnedCode
+  const generatedMap = hasMutation
+    ? returned.generateMap({
+      hires: true,
+      includeContent: true,
+      source: filename,
+      file: filename,
+    }) as unknown as EncodedSourceMapLike
+    : null
+
+  return {
+    code: returned.toString(),
+    map: composeSourceMaps(generatedMap as EncodedSourceMapLike | null, result.scriptMap),
+  }
 }
 
 export async function compileTransformEntryResult(options: {
@@ -154,6 +181,7 @@ export async function finalizeTransformCompiledResult(options: {
     addWatchFile,
     emitScopedSlotChunks,
   } = options
+  const transformResult = result as VueTransformResultWithScriptMap
 
   if (isPage && result.template) {
     await handleTransformEntryPageLayoutFlow({
@@ -174,7 +202,7 @@ export async function finalizeTransformCompiledResult(options: {
   }
 
   await finalizeTransformEntryScript({
-    result,
+    result: transformResult,
     filename,
     pluginCtx,
     configService,
@@ -189,7 +217,7 @@ export async function finalizeTransformCompiledResult(options: {
     emitScopedSlotChunks(pluginCtx, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
   }
 
-  return result
+  return transformResult
 }
 
 export function logTransformFileError(filename: string, error: unknown) {

@@ -1799,6 +1799,9 @@ importers:
 
   packages-runtime/wevu-compiler:
     dependencies:
+      '@jridgewell/remapping':
+        specifier: ^2.3.5
+        version: 2.3.5
       '@vue/compiler-core':
         specifier: 'catalog:'
         version: 3.5.32
@@ -2011,6 +2014,9 @@ importers:
 
   packages/weapp-vite:
     dependencies:
+      '@jridgewell/remapping':
+        specifier: ^2.3.5
+        version: 2.3.5
       '@vercel/detect-agent':
         specifier: ^1.2.3
         version: 1.2.3

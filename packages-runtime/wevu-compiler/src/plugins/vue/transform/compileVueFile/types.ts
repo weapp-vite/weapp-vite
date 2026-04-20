@@ -1,6 +1,7 @@
 import type { AstEngineName } from '../../../../ast/types'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
 import type { WevuDefaults } from '../../../../types/wevu'
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 
@@ -9,6 +10,7 @@ import type { TemplateCompileOptions, TemplateCompileResult } from '../../compil
  */
 export interface VueTransformResult {
   script?: string
+  scriptMap?: EncodedSourceMapLike | null
   template?: string
   style?: string
   config?: string
