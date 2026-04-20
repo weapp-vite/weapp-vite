@@ -4,7 +4,7 @@ import { execa } from 'execa'
 import { fdir } from 'fdir'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
-import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { runWeappViteBuildWithLogCapture, sanitizeBuildCommandEnv } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
@@ -21,6 +21,24 @@ async function runBuild() {
     cwd: APP_ROOT,
     label: 'ci:github-issues',
     skipNpm: true,
+  })
+}
+
+async function runBuildWithSourcemap() {
+  await fs.remove(DIST_ROOT)
+
+  await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--sourcemap',
+  ], {
+    cwd: APP_ROOT,
+    extendEnv: false,
+    env: sanitizeBuildCommandEnv(),
+    stdio: 'inherit',
   })
 }
 
@@ -203,6 +221,26 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('"btoa"')
     expect(pageJs).toContain('const encoded = btoa("issue-457");')
     expect(lineCount).toBeGreaterThan(5)
+  })
+
+  it('issue #475: keeps emitted github-issues js traceable back to vue page and component sources', async () => {
+    await runBuildWithSourcemap()
+
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-475/index.js')
+    const componentJsPath = path.join(DIST_ROOT, 'components/issue-475/SourceMapProbe/index.js')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-475/index.wxml')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const componentJs = await fs.readFile(componentJsPath, 'utf-8')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('class="issue475-page"')
+    expect(pageWxml).toContain('{{pageLabel}}')
+    expect(pageWxml).toContain('{{pageTraceLabel}}')
+    expect(pageWxml).toContain('<SourceMapProbe />')
+    expect(pageJs).toContain('//#region src/pages/issue-475/index.vue')
+    expect(pageJs).toContain('issue-475 page marker')
+    expect(componentJs).toContain('//#region src/components/issue-475/SourceMapProbe/index.vue')
+    expect(componentJs).toContain('issue-475 component marker')
   })
 
   it('issue #459: keeps directly imported web-apis polyfills interoperable in github-issues app', async () => {
