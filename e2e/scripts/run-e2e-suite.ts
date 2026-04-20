@@ -31,7 +31,7 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   const mode = args.find(arg => !arg.startsWith('--')) ?? 'full'
 
   if (mode === 'list') {
-    const suites = listE2ESuites()
+    const suites = await listE2ESuites()
     for (const suite of suites) {
       console.log(`${suite.name} (${suite.taskCount})`)
       console.log(`  ${suite.description}`)
@@ -39,11 +39,11 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
     process.exit(0)
   }
 
-  const tasks = getSuiteTasks(mode)
+  const tasks = await getSuiteTasks(mode)
 
   if (tasks.length === 0) {
     console.error(`Unknown e2e suite: ${mode}`)
-    console.error(`Available suites: ${listE2ESuites().map(suite => suite.name).join(', ')}, list`)
+    console.error(`Available suites: ${(await listE2ESuites()).map(suite => suite.name).join(', ')}, list`)
     process.exitCode = 1
     return
   }

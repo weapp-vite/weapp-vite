@@ -118,12 +118,12 @@ describe('suiteRunner', () => {
     vi.useRealTimers()
   })
 
-  it('keeps ide gate smaller than ide full and includes core runtime coverage', () => {
-    const ideSmokeTasks = getSuiteTasks('ide-smoke')
-    const ideGateTasks = getSuiteTasks('ide-gate')
-    const ideFullTasks = getSuiteTasks('ide-full')
-    const ideChunkModesTasks = getSuiteTasks('ide-full:chunk-modes')
-    const ideGithubIssuesTasks = getSuiteTasks('ide-full:github-issues')
+  it('keeps ide gate smaller than ide full and includes core runtime coverage', async () => {
+    const ideSmokeTasks = await getSuiteTasks('ide-smoke')
+    const ideGateTasks = await getSuiteTasks('ide-gate')
+    const ideFullTasks = await getSuiteTasks('ide-full')
+    const ideChunkModesTasks = await getSuiteTasks('ide-full:chunk-modes')
+    const ideGithubIssuesTasks = await getSuiteTasks('ide-full:github-issues')
     const ideSmokeLabels = ideSmokeTasks.map(task => task.label)
     const ideGateLabels = ideGateTasks.map(task => task.label)
     const ideFullLabels = ideFullTasks.map(task => task.label)
@@ -148,8 +148,8 @@ describe('suiteRunner', () => {
     expect(ideGithubIssuesTasks.length).toBe(4)
   })
 
-  it('uses env-based target file selection for suite vitest tasks', () => {
-    const [firstIdeSmokeTask] = getSuiteTasks('ide-smoke')
+  it('uses env-based target file selection for suite vitest tasks', async () => {
+    const [firstIdeSmokeTask] = await getSuiteTasks('ide-smoke')
 
     expect(firstIdeSmokeTask).toMatchObject({
       label: 'ide/index.test.ts',
@@ -162,8 +162,8 @@ describe('suiteRunner', () => {
     expect(firstIdeSmokeTask?.args).toHaveLength(4)
   })
 
-  it('lists suite metadata for layered ide execution', () => {
-    const suites = listE2ESuites()
+  it('lists suite metadata for layered ide execution', async () => {
+    const suites = await listE2ESuites()
     const ideSmoke = suites.find(suite => suite.name === 'ide-smoke')
     const ideGate = suites.find(suite => suite.name === 'ide-gate')
     const ideFull = suites.find(suite => suite.name === 'ide-full')
