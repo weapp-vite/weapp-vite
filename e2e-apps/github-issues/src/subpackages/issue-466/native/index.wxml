@@ -1,0 +1,10 @@
+<view class="issue466-native-page">
+  <text class="issue466-native-title">issue-466 native Dialog.confirm runtime</text>
+  <text class="issue466-native-line">confirmType = {{confirmType}}</text>
+  <text class="issue466-native-line">defaultConfirmType = {{defaultConfirmType}}</text>
+  <text class="issue466-native-line">lastAction = {{lastAction}}</text>
+  <text class="issue466-native-line">lastError = {{lastError || 'none'}}</text>
+  <text class="issue466-native-line">dialogVisible = {{dialogVisible}}</text>
+  <text class="issue466-native-line">lastTitle = {{lastTitle || 'none'}}</text>
+  <t-dialog id="issue466-native-dialog" />
+</view>

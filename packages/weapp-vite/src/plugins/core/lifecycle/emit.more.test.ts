@@ -1,3 +1,4 @@
+import path from 'node:path'
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
@@ -708,6 +709,54 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['packageA/pages/keep.js'].code).toBe('const value = 1')
     expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/tdesign-miniprogram/button/index')
     expect(bundle['packageA/pages/foo.json'].source).toContain('"t-button": "../miniprogram_npm/tdesign-miniprogram/button/index"')
+  })
+
+  it('localizes aliased absolute miniprogram package imports back to subpackage miniprogram_npm paths', async () => {
+    const state = createState({
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['packageA', {
+              subPackage: {
+                root: 'packageA',
+                dependencies: [/^tdesign-miniprogram$/],
+              },
+            }],
+          ]),
+        },
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const aliasedDialogIndex = path.join(
+      process.cwd(),
+      'node_modules',
+      'tdesign-miniprogram',
+      'miniprogram_dist',
+      'dialog',
+      'index.js',
+    )
+    const bundle = {
+      'packageA/pages/foo.js': {
+        type: 'chunk',
+        fileName: 'packageA/pages/foo.js',
+        code: `const dialog = require(${JSON.stringify(aliasedDialogIndex)})`,
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/tdesign-miniprogram/dialog/index')
+    expect(bundle['packageA/pages/foo.js'].code).not.toContain('miniprogram_dist/dialog/index.js')
   })
 
   it('handles non-logging shared chunk duplicates and empty watch files gracefully', async () => {

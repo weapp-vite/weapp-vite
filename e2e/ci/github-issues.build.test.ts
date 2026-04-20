@@ -216,10 +216,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     await runBuild()
 
     const pageJsPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.js')
+    const nativePageJsPath = path.join(DIST_ROOT, 'subpackages/issue-466/native/index.js')
     const pageWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.wxml')
     const pageJsonPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.json')
     const dialogIndexPath = path.join(DIST_ROOT, 'subpackages/issue-466/miniprogram_npm/tdesign-miniprogram/dialog/index.js')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const nativePageJs = await fs.readFile(nativePageJsPath, 'utf-8')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath)
 
@@ -239,6 +241,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('require("./miniprogram_npm/tdesign-miniprogram/dialog/index")')
     expect(pageJs).toContain('issue-466 confirm title')
     expect(pageJs).not.toContain('.default.default')
+    expect(nativePageJs).toContain('require("../miniprogram_npm/tdesign-miniprogram/dialog/index")')
+    expect(nativePageJs).toContain('issue-466 native confirm title')
+    expect(nativePageJs).not.toContain('miniprogram_dist/dialog/index.js')
+    expect(nativePageJs).not.toContain('.default.default')
   })
 
   it('issue #466 computed: keeps build-npm cjs package output stable inside github-issues subpackage', async () => {

@@ -7,6 +7,17 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     autoRoutes: true,
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            'tdesign-miniprogram/*': [
+              './node_modules/tdesign-miniprogram/miniprogram_dist/*',
+            ],
+          },
+        },
+      },
+    },
     wevu: {
       autoSetDataPick: true,
     },

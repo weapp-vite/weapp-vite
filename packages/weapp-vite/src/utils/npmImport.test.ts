@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   hasNpmDependencyPrefix,
@@ -14,6 +15,16 @@ describe('utils/npmImport', () => {
     expect(normalizeNpmImportLookupPath('npm:tdesign-miniprogram/button/button')).toBe('tdesign-miniprogram/button/button')
     expect(normalizeNpmImportLookupPath('/node_modules/tdesign-miniprogram/button/button')).toBe('tdesign-miniprogram/button/button')
     expect(normalizeNpmImportLookupPath('\\miniprogram_npm\\tdesign-miniprogram\\button\\button')).toBe('tdesign-miniprogram/button/button')
+
+    const aliasedMiniprogramEntry = path.join(
+      process.cwd(),
+      'node_modules',
+      'tdesign-miniprogram',
+      'miniprogram_dist',
+      'dialog',
+      'index.js',
+    )
+    expect(normalizeNpmImportLookupPath(aliasedMiniprogramEntry)).toBe('tdesign-miniprogram/dialog/index')
   })
 
   it('resolves dependency ids for scoped and unscoped packages', () => {
@@ -52,6 +63,14 @@ describe('utils/npmImport', () => {
 
     expect(hasNpmDependencyPrefix(dependencies, 'npm:tdesign-miniprogram/button')).toBe(true)
     expect(hasNpmDependencyPrefix(dependencies, '/node_modules/@scope/pkg/card')).toBe(true)
+    expect(hasNpmDependencyPrefix(dependencies, path.join(
+      process.cwd(),
+      'node_modules',
+      'tdesign-miniprogram',
+      'miniprogram_dist',
+      'dialog',
+      'index.js',
+    ))).toBe(true)
     expect(hasNpmDependencyPrefix(dependencies, 'custom-lib/card')).toBe(false)
     expect(hasNpmDependencyPrefix(undefined, 'dayjs')).toBe(false)
   })

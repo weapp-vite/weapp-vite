@@ -1,13 +1,12 @@
 import path from 'pathe'
 import { toPosixPath } from '../../../../../utils'
+import { normalizeNpmImportLookupPath } from '../../../../../utils/npmImport'
 import {
-  ABSOLUTE_NPM_PREFIX_RE,
   DIRECTIVE_PROLOGUE_RE,
-  NPM_PROTOCOL_RE,
 } from '../constants'
 
 export function normalizeWeappLocalNpmImport(importee: string) {
-  const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(ABSOLUTE_NPM_PREFIX_RE, '')
+  const normalized = normalizeNpmImportLookupPath(importee)
   const segments = normalized.split('/').filter(Boolean)
   if (segments.length === 1 || (segments.length === 2 && normalized.startsWith('@'))) {
     return `${normalized}/index`
