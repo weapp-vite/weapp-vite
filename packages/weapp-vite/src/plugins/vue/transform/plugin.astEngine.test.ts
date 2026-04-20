@@ -244,10 +244,11 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       addWatchFile: vi.fn(),
     } as any, '<template><view /></template>', '/project/src/components/empty-shell.vue')
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       code: 'Component({})',
-      map: null,
     })
+    expect(result?.map).toBeTruthy()
+    expect(result?.map?.sources).toEqual(['empty-shell.vue'])
     expect(readAndParseSfcMock).not.toHaveBeenCalled()
     expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
   })
