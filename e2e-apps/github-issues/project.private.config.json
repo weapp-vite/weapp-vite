@@ -323,6 +323,13 @@
           "launchMode": "default"
         },
         {
+          "name": "subpackages/issue-466/native/index",
+          "pathName": "subpackages/issue-466/native/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/issue-466-computed/index",
           "pathName": "subpackages/issue-466-computed/index",
           "query": "",

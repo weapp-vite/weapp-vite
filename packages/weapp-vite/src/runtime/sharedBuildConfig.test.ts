@@ -96,9 +96,9 @@ describe('sharedBuildConfig', () => {
   })
 
   it('normalizes node_modules paths without leaking the node_modules segment', () => {
-    expect(resolveNodeModulesSharedPath('/project/node_modules/fake-pkg/index.js')).toBe('fake-pkg/index.js')
+    expect(resolveNodeModulesSharedPath('/project/node_modules/fake-pkg/index.js')).toBe('fake-pkg/index')
     expect(resolveNodeModulesSharedPath('/project/node_modules/.pnpm/@scope+pkg@1.0.0/node_modules/@scope/pkg/dist/index.mjs'))
-      .toBe('@scope/pkg/dist/index.mjs')
+      .toBe('@scope/pkg/dist/index')
     expect(resolveNodeModulesSharedPath('/project/src/shared/feature.ts')).toBeUndefined()
   })
 

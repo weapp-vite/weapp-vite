@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "issue-466-native",
+  "usingComponents": {
+    "t-dialog": "tdesign-miniprogram/dialog/dialog"
+  }
+}

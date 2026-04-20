@@ -73,6 +73,27 @@ function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) 
     .find(candidate => candidate.startsWith(DIST_ROOT) && path.extname(candidate) === '.js')
 }
 
+async function findWevuVendorRuntimePath(expectedSnippet: string) {
+  const vendorRoot = path.join(DIST_ROOT, 'weapp-vendors')
+  const files = await scanFiles(vendorRoot)
+
+  for (const relativeFile of files) {
+    if (!relativeFile.endsWith('.js')) {
+      continue
+    }
+    const absoluteFile = path.join(vendorRoot, relativeFile)
+    const code = await fs.readFile(absoluteFile, 'utf-8')
+    if (code.includes(expectedSnippet)) {
+      return {
+        path: absoluteFile,
+        code,
+      }
+    }
+  }
+
+  throw new Error(`Failed to resolve wevu vendor runtime containing snippet: ${expectedSnippet}`)
+}
+
 async function runIssue393Build() {
   await fs.remove(ISSUE_393_DIST_ROOT)
 
@@ -92,6 +113,9 @@ async function runIssue393Build() {
       WEAPP_GITHUB_ISSUE_393: 'true',
     },
   })
+
+  standardBuildPromise = null
+  distVariant = null
 }
 
 describe.sequential('e2e app: github-issues (build)', () => {
@@ -276,10 +300,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     await runBuild()
 
     const pageJsPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.js')
+    const nativePageJsPath = path.join(DIST_ROOT, 'subpackages/issue-466/native/index.js')
     const pageWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.wxml')
     const pageJsonPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.json')
     const dialogIndexPath = path.join(DIST_ROOT, 'subpackages/issue-466/miniprogram_npm/tdesign-miniprogram/dialog/index.js')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const nativePageJs = await fs.readFile(nativePageJsPath, 'utf-8')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath)
 
@@ -312,6 +338,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('issue-466 action title')
     expect(pageJs).toContain('issue-466 close title')
     expect(pageJs).not.toContain('.default.default')
+    expect(nativePageJs).toContain('require("../miniprogram_npm/tdesign-miniprogram/dialog/index")')
+    expect(nativePageJs).toContain('issue-466 native confirm title')
+    expect(nativePageJs).not.toContain('miniprogram_dist/dialog/index.js')
+    expect(nativePageJs).not.toContain('.default.default')
   })
 
   it('issue #466 computed: keeps build-npm cjs package output stable inside github-issues subpackage', async () => {
@@ -323,6 +353,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const componentJsPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/components/CjsProbe/index.js')
     const componentWxmlPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/components/CjsProbe/index.wxml')
     const computedPkgPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/miniprogram-computed/index.js')
+    const computedDialogComponentPath = path.join(DIST_ROOT, 'subpackages/issue-466-computed/miniprogram_npm/tdesign-miniprogram/dialog/dialog.js')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJson = await fs.readJson(pageJsonPath)
@@ -335,6 +366,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(computedPkgPath)).toBe(true)
     expect(await fs.pathExists(computedFastDeepEqualPath)).toBe(true)
     expect(await fs.pathExists(computedRfdcPath)).toBe(true)
+    expect(await fs.pathExists(computedDialogComponentPath)).toBe(true)
     expect(pageWxml).toContain('issue-466 computed cjs package')
     expect(pageWxml).toContain('alertType = {{alertType}}')
     expect(pageWxml).toContain('confirmType = {{confirmType}}')
@@ -344,7 +376,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('<t-dialog id="issue466-computed-dialog" />')
     expect(pageJson.usingComponents).toMatchObject({
       'issue466-computed-probe': './components/CjsProbe/index',
-      't-dialog': 'tdesign-miniprogram/dialog/dialog',
+      't-dialog': './miniprogram_npm/tdesign-miniprogram/dialog/dialog',
     })
     expect(pageJs).toContain('readProbeState')
     expect(pageJs).toContain('applyNextE2E')
@@ -721,8 +753,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-294/index.json')
     const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
-    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
-    const wevuRuntime = await fs.readFile(wevuRuntimePath, 'utf-8')
+    const { code: wevuRuntime } = await findWevuVendorRuntimePath('showShareMenu')
 
     expect(issuePageWxml).toContain('issue-294 share hooks')
     expect(issuePageJs).toContain('enableOnShareAppMessage: true')
@@ -979,16 +1010,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     const itemShared = await fs.readFile(itemSharedPath, 'utf-8')
     const userShared = await fs.readFile(userSharedPath, 'utf-8')
+    const itemVendorRuntimePath = resolveSharedRuntimeImport(itemSharedPath, itemShared)
+    const userVendorRuntimePath = resolveSharedRuntimeImport(userSharedPath, userShared)
 
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
 
     expect(itemShared).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
+    expect(itemVendorRuntimePath).toBeDefined()
+    expect(userVendorRuntimePath).toBeDefined()
+    expect(itemVendorRuntimePath).toContain(`${path.sep}weapp-vendors${path.sep}`)
+    expect(userVendorRuntimePath).toContain(`${path.sep}weapp-vendors${path.sep}`)
 
     expect(await fs.pathExists(fallbackUnderscorePath)).toBe(false)
     expect(await fs.pathExists(fallbackPlusPath)).toBe(false)
@@ -1003,7 +1040,6 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
     const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
     const invalidSharedPageWxmlPath = path.join(DIST_ROOT, 'subpackages/item/issue-340-shared.wxml')
-    const rootSharedRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
     const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
     const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
     const itemInvalidCommonPath = path.join(DIST_ROOT, 'subpackages/item/common.js')
@@ -1018,6 +1054,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
     const itemShared = await fs.readFile(itemSharedPath, 'utf-8')
     const userShared = await fs.readFile(userSharedPath, 'utf-8')
+    const itemVendorRuntimePath = resolveSharedRuntimeImport(itemSharedPath, itemShared)
+    const userVendorRuntimePath = resolveSharedRuntimeImport(userSharedPath, userShared)
     const itemSubPackage = (appJson.subPackages ?? appJson.subpackages ?? []).find((entry: any) => entry?.root === 'subpackages/item')
 
     expect(itemPageJs).toContain('item-login-required:issue-340:shared')
@@ -1033,19 +1071,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemShared).toContain('issue-340')
     expect(userShared).toContain('issue-340')
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(itemShared).not.toMatch(/subpackages_item.*subpackages_user\/common\.js/)
     expect(userShared).not.toMatch(/subpackages_item.*subpackages_user\/common\.js/)
+    expect(itemVendorRuntimePath).toBeDefined()
+    expect(userVendorRuntimePath).toBeDefined()
+    expect(itemVendorRuntimePath).toContain(`${path.sep}weapp-vendors${path.sep}`)
+    expect(userVendorRuntimePath).toContain(`${path.sep}weapp-vendors${path.sep}`)
 
     expect(itemSubPackage?.pages).toEqual([
       'index',
       'login-required/index',
     ])
     expect(await fs.pathExists(invalidSharedPageWxmlPath)).toBe(false)
-    expect(await fs.pathExists(rootSharedRuntimePath)).toBe(true)
     expect(await fs.pathExists(itemInvalidCommonPath)).toBe(false)
     expect(await fs.pathExists(userInvalidCommonPath)).toBe(false)
     expect(await fs.pathExists(itemVendorsPath)).toBe(false)
@@ -1201,13 +1242,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const launchPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.js')
     const resultPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.wxml')
     const resultPageJsPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.js')
-    const wevuRuntimePath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
 
     const launchPageWxml = await fs.readFile(launchPageWxmlPath, 'utf-8')
     const launchPageJs = await fs.readFile(launchPageJsPath, 'utf-8')
     const resultPageWxml = await fs.readFile(resultPageWxmlPath, 'utf-8')
     const resultPageJs = await fs.readFile(resultPageJsPath, 'utf-8')
-    const wevuRuntime = await fs.readFile(wevuRuntimePath, 'utf-8')
+    const { code: wevuRuntime } = await findWevuVendorRuntimePath('storeToRefs')
 
     expect(launchPageWxml).toContain('issue-373 store computed survives reLaunch')
     expect(launchPageWxml).toContain('launch count: {{count}}')

@@ -7,6 +7,17 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     autoRoutes: true,
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            'tdesign-miniprogram/*': [
+              './node_modules/tdesign-miniprogram/miniprogram_dist/*',
+            ],
+          },
+        },
+      },
+    },
     wevu: {
       autoSetDataPick: true,
     },
@@ -29,6 +40,7 @@ export default defineConfig({
         'subpackages/issue-466-computed': {
           dependencies: [
             'miniprogram-computed',
+            /^tdesign-miniprogram$/,
           ],
         },
         'subpackages/item': {
