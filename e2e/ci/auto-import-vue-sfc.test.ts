@@ -176,6 +176,39 @@ async function waitForTaskWithSourceHeartbeat<T>(
   return await task()
 }
 
+async function waitForTaskWithSourceHeartbeats<T>(
+  task: () => Promise<T>,
+  heartbeatInputs: Array<{
+    touchContent: string
+    touchFilePath: string
+  }>,
+  timeoutMs = 60_000,
+  heartbeatMs = 2_000,
+) {
+  const deadline = Date.now() + timeoutMs
+  let nextTouchAt = Date.now() + heartbeatMs
+
+  while (Date.now() < deadline) {
+    try {
+      return await task()
+    }
+    catch {
+      if (Date.now() >= nextTouchAt) {
+        for (const heartbeatInput of heartbeatInputs) {
+          await replaceFileByRename(
+            heartbeatInput.touchFilePath,
+            heartbeatInput.touchContent,
+          )
+        }
+        nextTouchAt = Date.now() + heartbeatMs
+      }
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  return await task()
+}
+
 function detectEol(source: string) {
   return source.includes('\r\n') ? '\r\n' : '\n'
 }
@@ -724,11 +757,19 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
         )
 
         await devProcess.waitFor(
-          waitForTaskWithSourceHeartbeat(
+          waitForTaskWithSourceHeartbeats(
             () =>
               waitForFileContains(hotCardTemplatePath, ['hot-card-e2e'], 1_000),
-            HOT_COMPONENT_SOURCE_PATH,
-            hotCardSource,
+            [
+              {
+                touchFilePath: PAGE_SOURCE_PATH,
+                touchContent: pageSourceWithHotCard,
+              },
+              {
+                touchFilePath: HOT_COMPONENT_SOURCE_PATH,
+                touchContent: hotCardSource,
+              },
+            ],
           ),
           `${platform} hotCard template output`,
         )
