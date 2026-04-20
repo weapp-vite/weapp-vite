@@ -307,6 +307,9 @@ describe('autoImport plugin', () => {
 
     const ctx = {
       runtimeState: {
+        autoImport: {
+          pendingEntriesByImporter: new Map(),
+        },
         watcher: {
           sidecarWatcherMap: new Map(),
         },
@@ -368,6 +371,9 @@ describe('autoImport plugin', () => {
 
     const ctx = {
       runtimeState: {
+        autoImport: {
+          pendingEntriesByImporter: new Map(),
+        },
         watcher: {
           sidecarWatcherMap: new Map(),
         },
@@ -423,7 +429,7 @@ describe('autoImport plugin', () => {
     }
   })
 
-  it('touches importer sources after registering a newly added component file', async () => {
+  it('queues importer pending entries after registering a newly added component file', async () => {
     const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
     await fs.ensureDir(tempRoot)
     const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-touch-importers-'))
@@ -442,6 +448,9 @@ describe('autoImport plugin', () => {
 
     const ctx = {
       runtimeState: {
+        autoImport: {
+          pendingEntriesByImporter: new Map(),
+        },
         watcher: {
           sidecarWatcherMap: new Map(),
         },
@@ -471,7 +480,12 @@ describe('autoImport plugin', () => {
         filter: (target: string) => target.includes('components/'),
         registerPotentialComponent,
         removePotentialComponent: vi.fn(),
-        resolve: vi.fn(),
+        resolve: vi.fn(() => ({
+          value: {
+            name: 'HotCard',
+            from: '/components/HotCard/index',
+          },
+        })),
         getRegisteredLocalComponents: vi.fn(),
       },
     } as any
@@ -490,6 +504,9 @@ describe('autoImport plugin', () => {
         expect(registerPotentialComponent).toHaveBeenCalledWith(hotCardFile)
         const nextPageStat = await fs.stat(pageVueFile)
         expect(nextPageStat.mtimeMs).toBeGreaterThan(initialPageStat.mtimeMs)
+        expect(ctx.runtimeState.autoImport.pendingEntriesByImporter.get(pageVueFile.replace(/\.vue$/, ''))).toEqual(
+          new Set(['/components/HotCard/index']),
+        )
       })
     }
     finally {

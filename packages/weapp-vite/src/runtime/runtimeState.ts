@@ -95,6 +95,7 @@ export interface RuntimeState {
     matcher?: (input: string) => boolean
     matcherKey: string
     version: number
+    pendingEntriesByImporter: Map<string, Set<string>>
   }
   build: {
     queue: PQueue
@@ -173,6 +174,7 @@ export function createRuntimeState(): RuntimeState {
       resolvedResolverComponents: new Map<string, string>(),
       matcherKey: '',
       version: 0,
+      pendingEntriesByImporter: new Map<string, Set<string>>(),
     },
     build: {
       queue: new PQueue({ autoStart: false }),
