@@ -490,6 +490,37 @@ describe('createEntryLoader', () => {
     expect(watched).toContain('/project/src/components/hello/index.vue')
   })
 
+  it('merges pending auto-import entries for the current importer once', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/home.json',
+      predictions: [],
+    })
+
+    const { loader, jsonService, emitEntriesChunks, runtimeState } = createLoader({
+      normalizeEntry: entry => entry.replace(/^\//, ''),
+    })
+
+    runtimeState.autoImport.pendingEntriesByImporter.set(
+      '/project/src/pages/home',
+      new Set(['/components/HotCard/index']),
+    )
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        hello: 'components/hello/index.vue',
+      },
+    })
+
+    await loader.call(createPluginContext(), pageScript, 'page')
+
+    const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
+      ([resolvedIds]) => resolvedIds.map((resolvedId: any) => resolvedId?.id),
+    )
+
+    expect(emittedResolvedIds).toContain('/project/src/components/HotCard/index')
+    expect(runtimeState.autoImport.pendingEntriesByImporter.has('/project/src/pages/home')).toBe(false)
+  })
+
   it('marks custom tab bar and app bar app entries as components', async () => {
     mockFindJsonEntry.mockResolvedValue({
       path: '/project/src/app.json',

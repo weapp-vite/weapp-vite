@@ -258,7 +258,7 @@ function registerAutoImportWatchTargets(
 }
 
 async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath: string) {
-  const { wxmlService, configService } = ctx
+  const { wxmlService, configService, autoImportService } = ctx
   if (!wxmlService || !configService) {
     return
   }
@@ -273,6 +273,15 @@ async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath:
   for (const [baseName, components] of entries) {
     if (!Object.hasOwn(components, componentName)) {
       continue
+    }
+
+    const pendingEntriesByImporter = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
+    const resolvedComponent = autoImportService?.resolve(componentName, baseName)
+    const pendingEntry = resolvedComponent?.value.from
+    if (pendingEntriesByImporter && pendingEntry) {
+      const pendingEntries = pendingEntriesByImporter.get(baseName) ?? new Set<string>()
+      pendingEntries.add(pendingEntry)
+      pendingEntriesByImporter.set(baseName, pendingEntries)
     }
 
     const vueEntry = await findVueEntry(baseName)

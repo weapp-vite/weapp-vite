@@ -300,8 +300,18 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       await ctx.autoImportService?.awaitPendingRegistrations?.()
       applyAutoImports(baseName, json)
       const componentEntries = analyzeCommonJson(json)
-      entries.push(...componentEntries)
-      for (const componentEntry of componentEntries) {
+      const pendingAutoImportEntries = Array.from(
+        ctx.runtimeState?.autoImport?.pendingEntriesByImporter.get(baseName) ?? [],
+      )
+      if (pendingAutoImportEntries.length) {
+        ctx.runtimeState?.autoImport?.pendingEntriesByImporter.delete(baseName)
+      }
+      const mergedComponentEntries = Array.from(new Set([
+        ...componentEntries,
+        ...pendingAutoImportEntries,
+      ]))
+      entries.push(...mergedComponentEntries)
+      for (const componentEntry of mergedComponentEntries) {
         explicitEntryTypes.set(normalizeEntry(componentEntry, jsonPath), 'component')
       }
     }
