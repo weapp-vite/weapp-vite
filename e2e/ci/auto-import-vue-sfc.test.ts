@@ -150,6 +150,25 @@ async function waitForMissingUsingComponent(
   )
 }
 
+function detectEol(source: string) {
+  return source.includes('\r\n') ? '\r\n' : '\n'
+}
+
+async function rewriteVueSourceForWatch(
+  sourcePath: string,
+  targetSource: string,
+) {
+  const eol = detectEol(targetSource)
+  const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
+  await fs.writeFile(
+    sourcePath,
+    `${targetSource}${eol}${marker}${eol}`,
+    'utf8',
+  )
+  await new Promise(resolve => setTimeout(resolve, 120))
+  await fs.writeFile(sourcePath, targetSource, 'utf8')
+}
+
 async function waitForTaskWithSourceHeartbeat<T>(
   task: () => Promise<T>,
   touchFilePath: string,
@@ -166,7 +185,7 @@ async function waitForTaskWithSourceHeartbeat<T>(
     }
     catch {
       if (Date.now() >= nextTouchAt) {
-        await replaceFileByRename(touchFilePath, touchContent)
+        await rewriteVueSourceForWatch(touchFilePath, touchContent)
         nextTouchAt = Date.now() + heartbeatMs
       }
       await new Promise(resolve => setTimeout(resolve, 250))
@@ -195,7 +214,7 @@ async function waitForTaskWithSourceHeartbeats<T>(
     catch {
       if (Date.now() >= nextTouchAt) {
         for (const heartbeatInput of heartbeatInputs) {
-          await replaceFileByRename(
+          await rewriteVueSourceForWatch(
             heartbeatInput.touchFilePath,
             heartbeatInput.touchContent,
           )
@@ -207,25 +226,6 @@ async function waitForTaskWithSourceHeartbeats<T>(
   }
 
   return await task()
-}
-
-function detectEol(source: string) {
-  return source.includes('\r\n') ? '\r\n' : '\n'
-}
-
-async function rewritePageSourceForWatch(
-  pageSourcePath: string,
-  targetSource: string,
-) {
-  const eol = detectEol(targetSource)
-  const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
-  await fs.writeFile(
-    pageSourcePath,
-    `${targetSource}${eol}${marker}${eol}`,
-    'utf8',
-  )
-  await new Promise(resolve => setTimeout(resolve, 120))
-  await fs.writeFile(pageSourcePath, targetSource, 'utf8')
 }
 
 function createHotCardSfc() {
@@ -482,7 +482,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithoutAutoCard,
           )
@@ -509,7 +509,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithAutoCard,
           )
@@ -622,7 +622,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithoutAutoCard,
           )
@@ -649,7 +649,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithAutoCard,
           )
