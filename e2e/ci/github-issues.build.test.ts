@@ -10,21 +10,33 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const ISSUE_393_DIST_ROOT = path.join(APP_ROOT, 'dist-issue-393')
+let standardBuildPromise: Promise<void> | null = null
+let distVariant: 'standard' | 'sourcemap' | null = null
 
 async function runBuild() {
-  await fs.remove(DIST_ROOT)
+  if (distVariant !== 'standard') {
+    standardBuildPromise = null
+  }
 
-  await runWeappViteBuildWithLogCapture({
-    cliPath: CLI_PATH,
-    projectRoot: APP_ROOT,
-    platform: 'weapp',
-    cwd: APP_ROOT,
-    label: 'ci:github-issues',
-    skipNpm: true,
-  })
+  standardBuildPromise ??= (async () => {
+    await fs.remove(DIST_ROOT)
+
+    await runWeappViteBuildWithLogCapture({
+      cliPath: CLI_PATH,
+      projectRoot: APP_ROOT,
+      platform: 'weapp',
+      cwd: APP_ROOT,
+      label: 'ci:github-issues',
+      skipNpm: true,
+    })
+  })()
+
+  await standardBuildPromise
+  distVariant = 'standard'
 }
 
 async function runBuildWithSourcemap() {
+  standardBuildPromise = null
   await fs.remove(DIST_ROOT)
 
   await execa('node', [
@@ -40,6 +52,8 @@ async function runBuildWithSourcemap() {
     env: sanitizeBuildCommandEnv(),
     stdio: 'inherit',
   })
+
+  distVariant = 'sourcemap'
 }
 
 async function scanFiles(root: string) {
@@ -258,7 +272,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('issue-459')
   })
 
-  it('issue #466: keeps tdesign Dialog.confirm callable in github-issues app output', async () => {
+  it('issue #466: keeps all tdesign Dialog methods callable in github-issues app output', async () => {
     await runBuild()
 
     const pageJsPath = path.join(DIST_ROOT, 'subpackages/issue-466/index.js')
@@ -271,19 +285,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(await fs.pathExists(dialogIndexPath)).toBe(true)
     expect(pageWxml).toContain('issue-466 tdesign Dialog.confirm runtime')
+    expect(pageWxml).toContain('alertType = {{alertType}}')
     expect(pageWxml).toContain('confirmType = {{confirmType}}')
+    expect(pageWxml).toContain('actionType = {{actionType}}')
+    expect(pageWxml).toContain('closeType = {{closeType}}')
     expect(pageWxml).toContain('defaultConfirmType = {{defaultConfirmType}}')
     expect(pageWxml).toContain('<t-dialog id="issue466-dialog" />')
     expect(pageJson.usingComponents).toMatchObject({
       't-dialog': 'tdesign-miniprogram/dialog/dialog',
     })
+    expect(pageJs).toContain('_openAlertE2E')
     expect(pageJs).toContain('_openDialogE2E')
+    expect(pageJs).toContain('_openConfirmE2E')
+    expect(pageJs).toContain('_openActionE2E')
     expect(pageJs).toContain('_confirmDialogE2E')
+    expect(pageJs).toContain('_cancelDialogE2E')
+    expect(pageJs).toContain('_selectSecondActionE2E')
+    expect(pageJs).toContain('_prepareCloseHostE2E')
+    expect(pageJs).toContain('_closeDialogE2E')
     expect(pageJs).toContain('_runE2E')
     expect(pageJs).toContain('_resetE2E')
     expect(pageJs).toContain('#issue466-dialog')
     expect(pageJs).toContain('require("./miniprogram_npm/tdesign-miniprogram/dialog/index")')
+    expect(pageJs).toContain('issue-466 alert title')
     expect(pageJs).toContain('issue-466 confirm title')
+    expect(pageJs).toContain('issue-466 action title')
+    expect(pageJs).toContain('issue-466 close title')
     expect(pageJs).not.toContain('.default.default')
   })
 
@@ -309,13 +336,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(computedFastDeepEqualPath)).toBe(true)
     expect(await fs.pathExists(computedRfdcPath)).toBe(true)
     expect(pageWxml).toContain('issue-466 computed cjs package')
+    expect(pageWxml).toContain('alertType = {{alertType}}')
+    expect(pageWxml).toContain('confirmType = {{confirmType}}')
+    expect(pageWxml).toContain('actionType = {{actionType}}')
+    expect(pageWxml).toContain('closeType = {{closeType}}')
     expect(pageWxml).toContain('<issue466-computed-probe')
+    expect(pageWxml).toContain('<t-dialog id="issue466-computed-dialog" />')
     expect(pageJson.usingComponents).toMatchObject({
       'issue466-computed-probe': './components/CjsProbe/index',
+      't-dialog': 'tdesign-miniprogram/dialog/dialog',
     })
     expect(pageJs).toContain('readProbeState')
     expect(pageJs).toContain('applyNextE2E')
+    expect(pageJs).toContain('_openAlertE2E')
+    expect(pageJs).toContain('_openConfirmE2E')
+    expect(pageJs).toContain('_openActionE2E')
+    expect(pageJs).toContain('_confirmDialogE2E')
+    expect(pageJs).toContain('_cancelDialogE2E')
+    expect(pageJs).toContain('_selectSecondActionE2E')
+    expect(pageJs).toContain('_prepareCloseHostE2E')
+    expect(pageJs).toContain('_closeDialogE2E')
     expect(pageJs).toContain('_runE2E')
+    expect(pageJs).toContain('tdesign-miniprogram/dialog/index')
+    expect(pageJs).toContain('issue-466-computed alert title')
+    expect(pageJs).toContain('issue-466-computed confirm title')
+    expect(pageJs).toContain('issue-466-computed action title')
+    expect(pageJs).toContain('issue-466-computed close title')
 
     expect(componentWxml).toContain('sum = {{sum}}')
     expect(componentWxml).toContain('summary = {{summary}}')

@@ -2,9 +2,32 @@
   <text class="issue466-computed-title">issue-466 computed cjs package</text>
   <text class="issue466-computed-line">page a = {{a}}</text>
   <text class="issue466-computed-line">page b = {{b}}</text>
+  <text class="issue466-computed-line">alertType = {{alertType}}</text>
+  <text class="issue466-computed-line">confirmType = {{confirmType}}</text>
+  <text class="issue466-computed-line">actionType = {{actionType}}</text>
+  <text class="issue466-computed-line">closeType = {{closeType}}</text>
+  <text class="issue466-computed-line">defaultConfirmType = {{defaultConfirmType}}</text>
+  <text class="issue466-computed-line">lastMethod = {{lastMethod}}</text>
+  <text class="issue466-computed-line">lastAction = {{lastAction}}</text>
+  <text class="issue466-computed-line">lastPayload = {{lastPayload || 'none'}}</text>
+  <text class="issue466-computed-line">lastError = {{lastError || 'none'}}</text>
+  <text class="issue466-computed-line">dialogVisible = {{dialogVisible}}</text>
+  <text class="issue466-computed-line">lastTitle = {{lastTitle || 'none'}}</text>
+  <text class="issue466-computed-line">counts = open {{openCount}}, settle {{settleCount}}</text>
+  <text class="issue466-computed-line">methodCounts = alert {{alertCount}}, confirm {{confirmCount}}, action {{actionCount}}, close {{closeCount}}</text>
+  <button bindtap="_openAlertE2E">打开 alert</button>
+  <button bindtap="_openConfirmE2E">打开 confirm</button>
+  <button bindtap="_openActionE2E">打开 action</button>
+  <button bindtap="_confirmDialogE2E">触发 confirm</button>
+  <button bindtap="_cancelDialogE2E">触发 cancel</button>
+  <button bindtap="_selectSecondActionE2E">选择 action[1]</button>
+  <button bindtap="_prepareCloseHostE2E">准备 close 宿主</button>
+  <button bindtap="_closeDialogE2E">调用 Dialog.close</button>
+  <button bindtap="_resetDialogE2E">重置 dialog 状态</button>
   <issue466-computed-probe
     id="issue466-computed-probe"
     a="{{a}}"
     b="{{b}}"
   />
+  <t-dialog id="issue466-computed-dialog" />
 </view>

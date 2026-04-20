@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "issue-466-computed",
   "usingComponents": {
-    "issue466-computed-probe": "./components/CjsProbe/index"
+    "issue466-computed-probe": "./components/CjsProbe/index",
+    "t-dialog": "tdesign-miniprogram/dialog/dialog"
   }
 }
