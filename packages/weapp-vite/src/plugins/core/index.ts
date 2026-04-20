@@ -13,6 +13,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   const buildTarget = ctx.currentBuildTarget ?? 'app'
   const hmrSharedChunksMode = ctx.configService?.weappViteConfig?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = new Map<string, Set<string>>()
+  const hmrSharedChunkDependencies = new Map<string, Set<string>>()
   const hmrState = { didEmitAllEntries: false, hasBuiltOnce: false, lastEmittedEntryIds: new Set<string>() }
   const {
     loadEntry,
@@ -56,6 +57,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     hmrState,
     hmrSharedChunksMode,
     hmrSharedChunkImporters,
+    hmrSharedChunkDependencies,
   }
 
   return [

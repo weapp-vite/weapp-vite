@@ -37,8 +37,9 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     const normalDetailJsPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/pages/detail/index.js')
     const independentEntryJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/entry/index.js')
     const independentDetailJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/detail/index.js')
-    const mainSharedChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-defineProperty.js')
-    const normalSharedChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-store.js')
+    const mainSharedChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
+    const mainRuntimeChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-src.js')
+    const normalSharedChunkPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/common.js')
     const independentSharedChunkPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/independentState.js')
 
     expect(await fs.pathExists(appJsonPath)).toBe(true)
@@ -53,6 +54,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     expect(await fs.pathExists(independentEntryJsPath)).toBe(true)
     expect(await fs.pathExists(independentDetailJsPath)).toBe(true)
     expect(await fs.pathExists(mainSharedChunkPath)).toBe(true)
+    expect(await fs.pathExists(mainRuntimeChunkPath)).toBe(true)
     expect(await fs.pathExists(normalSharedChunkPath)).toBe(true)
     expect(await fs.pathExists(independentSharedChunkPath)).toBe(true)
 
@@ -67,6 +69,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     const independentEntryJs = await fs.readFile(independentEntryJsPath, 'utf8')
     const independentDetailJs = await fs.readFile(independentDetailJsPath, 'utf8')
     const mainSharedChunk = await fs.readFile(mainSharedChunkPath, 'utf8')
+    const mainRuntimeChunk = await fs.readFile(mainRuntimeChunkPath, 'utf8')
     const normalSharedChunk = await fs.readFile(normalSharedChunkPath, 'utf8')
     const independentSharedChunk = await fs.readFile(independentSharedChunkPath, 'utf8')
 
@@ -87,7 +90,8 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       'MainVueCard': '/components/main-vue-card/index',
       'native-badge': '/native/native-badge/index',
     })
-    expect(mainPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/)
+    expect(mainPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
+    expect(mainPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/weapp-vendors\/wevu-src\.js\1\)/)
     expect(mainPageJs).toContain('runE2E')
     expect(mainPageJs).toContain('MainVueCard')
     expect(mainPageWxml).toContain('__WSP_MAIN_VUE__')
@@ -101,13 +105,16 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
 
     expect(mainSharedChunk).toContain('onLaunch')
     expect(mainSharedChunk).toContain('Object.defineProperty(exports,')
+    expect(mainRuntimeChunk).toContain('createWevuComponent')
 
     expect(mainPageJs).toContain('/subpackages/normal-wevu/pages/entry/index')
     expect(mainPageJs).toContain('/subpackages/independent-wevu/pages/entry/index')
 
-    expect(normalEntryJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-store\.js\1\)/)
+    expect(normalEntryJs).toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
+    expect(normalEntryJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-src\.js\1\)/)
     expect(normalEntryJs).toContain('goIndependent')
-    expect(normalDetailJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-store\.js\1\)/)
+    expect(normalDetailJs).toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
+    expect(normalDetailJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-src\.js\1\)/)
     expect(normalDetailJs).toContain('from.value')
 
     expect(independentEntryJs).toMatch(/require\((['"`])\.\.\/\.\.\/independentState\.js\1\)/)
@@ -116,6 +123,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     expect(independentDetailJs).toContain('from.value')
 
     expect(normalSharedChunk).toContain('var count = ')
+    expect(normalSharedChunk).toContain('require("../../weapp-vendors/wevu-ref.js")')
     expect(normalSharedChunk).toContain('.ref(0)')
     expect(normalSharedChunk).toContain('from:')
     expect(normalSharedChunk).toMatch(/ref\(\s*['"`]direct['"`]\s*\)/)
@@ -131,8 +139,9 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
       .filter(file => typeof file === 'string' && file.endsWith('.js'))
       .map(file => toPosixPath(file))
 
-    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-defineProperty.js'))).toBe(true)
-    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-store.js'))).toBe(true)
+    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-ref.js'))).toBe(true)
+    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-src.js'))).toBe(true)
+    expect(distJsFiles.some(file => file.includes('subpackages/normal-wevu/common.js'))).toBe(true)
     expect(distJsFiles.some(file => file.includes('subpackages/independent-wevu/independentState.js'))).toBe(true)
     expect(distJsFiles.includes('pages/index/index.js')).toBe(true)
   })

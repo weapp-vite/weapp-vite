@@ -1,5 +1,19 @@
 {
   "pages": [
-    "pages/home/index"
-  ]
+    "pages/home/index",
+    "pages/legacy/index",
+    "pages/reports/index"
+  ],
+  "subPackages": [
+    {
+      "root": "packageA",
+      "pages": [
+        "profile/index",
+        "missing/index"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTitleText": "VSCode Fixture"
+  }
 }

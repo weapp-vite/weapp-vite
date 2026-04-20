@@ -73,10 +73,13 @@ export function transformScript(source: string, options?: TransformScriptOptions
 
   const generated = generate(ast, {
     retainLines: true,
-  })
+    sourceMaps: true,
+    sourceFileName: 'inline.ts',
+  }, source)
 
   return {
     code: generated.code,
+    map: generated.map as TransformResult['map'],
     transformed: state.transformed,
   }
 }

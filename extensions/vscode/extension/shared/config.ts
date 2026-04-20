@@ -47,7 +47,3 @@ export function isTemplateDecorationEnabled() {
 export function useWvAlias() {
   return getExtensionConfiguration().get('preferWvAlias', true)
 }
-
-export function shouldPromptFileIcons() {
-  return getExtensionConfiguration().get('promptFileIcons', true)
-}

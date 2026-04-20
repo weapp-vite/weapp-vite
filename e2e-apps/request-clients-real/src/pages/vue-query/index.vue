@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useQuery } from '@tanstack/vue-query'
+import { QueryClient, useQuery } from '@tanstack/vue-query'
 import { computed, onLoad, ref } from 'wevu'
 import { resolveBaseUrl, wait } from '../../shared/runtime'
 
@@ -14,6 +14,17 @@ interface QueryPayload {
 const baseUrl = ref('')
 const selectedTab = ref<'overview' | 'detail'>('overview')
 const refreshSeed = ref(0)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 5 * 60 * 1000,
+      retry: false,
+      staleTime: 0,
+    },
+  },
+})
+
+queryClient.mount()
 
 const queryKey = computed(() => ['request-clients-real', selectedTab.value, refreshSeed.value] as const)
 
@@ -30,7 +41,7 @@ const query = useQuery({
     return await response.json()
   },
   retry: false,
-})
+}, queryClient)
 
 const statusText = computed(() => {
   if (query.isPending.value) {

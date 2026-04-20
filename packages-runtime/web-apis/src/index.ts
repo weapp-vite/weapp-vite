@@ -1,3 +1,4 @@
+import type { MiniProgramNetworkDefaults } from './networkDefaults'
 import { REQUEST_GLOBAL_ACTUALS_KEY, REQUEST_GLOBAL_PLACEHOLDER_KEY } from '@weapp-core/constants'
 import { AbortControllerPolyfill, AbortSignalPolyfill } from './abort'
 import { atobPolyfill, btoaPolyfill } from './base64'
@@ -5,6 +6,11 @@ import { cryptoPolyfill } from './crypto'
 import { CustomEventPolyfill, EventPolyfill } from './events'
 import { fetch as requestGlobalsFetch } from './fetch'
 import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
+import {
+  getMiniProgramNetworkDefaults,
+  resetMiniProgramNetworkDefaults,
+  setMiniProgramNetworkDefaults,
+} from './networkDefaults'
 import { performancePolyfill } from './performance'
 import {
   installRequestGlobalBinding,
@@ -42,9 +48,15 @@ export type WeappInjectRequestGlobalsTarget = WeappInjectWebRuntimeGlobalsTarget
 
 export interface InstallWebRuntimeGlobalsOptions {
   targets?: WeappInjectWebRuntimeGlobalsTarget[]
+  networkDefaults?: MiniProgramNetworkDefaults
 }
 
 export interface InstallRequestGlobalsOptions extends InstallWebRuntimeGlobalsOptions {}
+export type {
+  MiniProgramNetworkDefaults,
+  RequestGlobalsMiniProgramOptions,
+  WebSocketMiniProgramOptions,
+} from './networkDefaults'
 
 type WeappRequestGlobalActualTarget = WeappInjectWebRuntimeGlobalsTarget | 'URL' | 'URLSearchParams' | 'Blob' | 'FormData'
 
@@ -293,6 +305,10 @@ function syncWeappViteRequestGlobalsActuals(
  * @description 按需向小程序全局环境注入缺失的 Web Runtime 对象。
  */
 export function installWebRuntimeGlobals(options: InstallWebRuntimeGlobalsOptions = {}) {
+  if (options.networkDefaults !== undefined) {
+    setMiniProgramNetworkDefaults(options.networkDefaults)
+  }
+
   const targets = resolveInstallTargets(options.targets ?? [
     'fetch',
     'Headers',
@@ -369,12 +385,15 @@ export {
   EventPolyfill,
   requestGlobalsFetch as fetch,
   FormDataPolyfill,
+  getMiniProgramNetworkDefaults,
   HeadersPolyfill,
   performancePolyfill,
   queueMicrotaskPolyfill,
   RequestGlobalsEventTarget,
   RequestPolyfill,
+  resetMiniProgramNetworkDefaults,
   ResponsePolyfill,
+  setMiniProgramNetworkDefaults,
   TextDecoderPolyfill,
   TextEncoderPolyfill,
   URLPolyfill,

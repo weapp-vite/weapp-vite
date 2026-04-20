@@ -88,6 +88,7 @@ export function createLoadHook(state: CorePluginState) {
       }
       return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
         localBindings: true,
+        networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
       })
     }
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
@@ -103,23 +104,27 @@ export function createLoadHook(state: CorePluginState) {
         : []
       if (requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, passiveRequestGlobalsTargets, {
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
           passiveLocalBindings: true,
         })
       }
       if (!injectOptions || configService.weappLibConfig?.enabled) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
           localBindings: true,
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         })
       }
       const available = await ensureWeapiAvailable(this, sourceId)
       if (!available) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
           localBindings: true,
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         })
       }
       if (result && typeof result === 'object' && 'code' in result) {
         const requestGlobalsInjectedResult = injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
           localBindings: true,
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         })
         const platform = getMiniProgramPlatformGlobalKey(configService.platform) ?? ''
         const injectedCode = createWeapiInjectionCode({
@@ -150,18 +155,21 @@ export function createLoadHook(state: CorePluginState) {
         : []
       if (requestGlobalsTargets.length === 0 && passiveRequestGlobalsTargets.length > 0) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, passiveRequestGlobalsTargets, {
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
           passiveLocalBindings: true,
         })
       }
       if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
           localBindings: true,
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         })
       }
       const available = await ensureWeapiAvailable(this, sourceId)
       if (!available) {
         return injectRequestGlobalsIntoLoadResult(result, sourceId, requestGlobalsTargets, {
           localBindings: true,
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         })
       }
       return injectRequestGlobalsIntoLoadResult(
@@ -170,6 +178,7 @@ export function createLoadHook(state: CorePluginState) {
         requestGlobalsTargets,
         {
           localBindings: true,
+          networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         },
       )
     }

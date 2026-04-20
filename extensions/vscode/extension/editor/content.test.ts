@@ -80,6 +80,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     buildVuePageConfigConsistencyDiagnostics,
     buildVuePageDiagnostics,
     buildVueUsingComponentDiagnostics,
+    getPageVueTemplate,
     getVueUsingComponentHover,
     getVuePageConfigDriftFields,
     getVuePageConfigConsistencyState,
@@ -142,7 +143,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '  "navigationBarTitleText": "Index"',
     '}',
     '</json>',
-  ].join('\n')))[0]?.message, 'definePageJson 与 <json> 中的 navigationBarTitleText 不一致：\'Home\' / \'Index\'')
+  ].join('\n')))[0]?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(getVuePageTitleConsistencyState([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -199,7 +200,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '{',
     '}',
     '</json>',
-  ].join('\n')))[0]?.message, '<json> 缺少 navigationBarTitleText，可从 definePageJson 同步。')
+  ].join('\n')))[0]?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -210,7 +211,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '  "navigationBarTitleText": "Index"',
     '}',
     '</json>',
-  ].join('\n')))[0]?.message, 'definePageJson 缺少 navigationBarTitleText，可从 <json> 同步。')
+  ].join('\n')))[0]?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(getVuePageTextWithSyncedJsonTitle([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -256,7 +257,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '  "navigationStyle": "default"',
     '}',
     '</json>',
-  ].join('\n'))).at(-1)?.message, 'definePageJson 与 <json> 中的 navigationStyle 不一致：\'custom\' / \'default\'')
+  ].join('\n'))).at(-1)?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -267,7 +268,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '{',
     '}',
     '</json>',
-  ].join('\n'))).at(-1)?.message, '<json> 缺少 navigationStyle，可从 definePageJson 同步。')
+  ].join('\n'))).at(-1)?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -278,7 +279,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '  "navigationStyle": "custom"',
     '}',
     '</json>',
-  ].join('\n'))).at(-1)?.message, 'definePageJson 缺少 navigationStyle，可从 <json> 同步。')
+  ].join('\n'))).at(-1)?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(getVuePageTextWithSyncedJsonField([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -348,7 +349,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '  "enablePullDownRefresh": false',
     '}',
     '</json>',
-  ].join('\n'))).at(-1)?.message, 'definePageJson 与 <json> 中的 enablePullDownRefresh 不一致：\'true\' / \'false\'')
+  ].join('\n'))).at(-1)?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -359,7 +360,7 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '{',
     '}',
     '</json>',
-  ].join('\n'))).at(-1)?.message, '<json> 缺少 enablePullDownRefresh，可从 definePageJson 同步。')
+  ].join('\n'))).at(-1)?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
   assert.equal(buildVuePageConfigConsistencyDiagnostics(createDocument([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -370,7 +371,8 @@ it('builds app.json diagnostics for missing page routes', async () => {
     '  "enablePullDownRefresh": true',
     '}',
     '</json>',
-  ].join('\n'))).at(-1)?.message, 'definePageJson 缺少 enablePullDownRefresh，可从 <json> 同步。')
+  ].join('\n'))).at(-1)?.message, '当前页面同时使用了 definePageJson 与 <json>。新增页面推荐只保留 definePageJson，<json> 仅用于兼容历史代码。')
+  assert.equal(getPageVueTemplate('pages/home/index').includes('<json'), false)
   assert.equal(getVuePageTextWithSyncedJsonField([
     '<script setup lang="ts">',
     'definePageJson({',
@@ -536,7 +538,7 @@ it('builds app.json route hover for missing page files', async () => {
   vi.resetModules()
 })
 
-it('only builds package.json diagnostics for confirmed weapp-vite projects', async () => {
+it('does not emit package.json problems for weapp-vite script suggestions', async () => {
   const files = new Map<string, string>([
     [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
       name: 'demo-app',
@@ -623,9 +625,94 @@ it('only builds package.json diagnostics for confirmed weapp-vite projects', asy
   const confirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(confirmedPackageJsonPath)!, confirmedPackageJsonPath))
   const unconfirmedDiagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(unconfirmedPackageJsonPath)!, unconfirmedPackageJsonPath))
 
-  assert.equal(confirmedDiagnostics.length, 1)
-  assert.equal(confirmedDiagnostics[0].message, '建议补齐常用 weapp-vite 脚本：build, generate, open')
+  assert.equal(confirmedDiagnostics.length, 0)
   assert.equal(unconfirmedDiagnostics.length, 0)
+
+  vi.doUnmock('vscode')
+  vi.resetModules()
+})
+
+it('does not emit package.json problems when candidate script aliases already exist', async () => {
+  const files = new Map<string, string>([
+    [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
+      name: 'demo-app',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+      scripts: {
+        dev: 'wv dev',
+        g: 'weapp-vite generate',
+      },
+    })],
+    [normalizeFsPath('/workspace/app/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      Range: class {
+        start
+        end
+
+        constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+          this.start = { line: startLine, character: startCharacter }
+          this.end = { line: endLine, character: endCharacter }
+        }
+      },
+      Diagnostic: class {
+        range
+        message
+        severity
+
+        constructor(range: any, message: string, severity: number) {
+          this.range = range
+          this.message = message
+          this.severity = severity
+        }
+      },
+      DiagnosticSeverity: {
+        Information: 1,
+      },
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(uri.fsPath)) {
+              throw new TypeError('not found')
+            }
+
+            return {}
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(uri.fsPath)
+
+            if (typeof content !== 'string') {
+              throw new TypeError('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+      },
+      Uri: {
+        file(nextFsPath: string) {
+          return {
+            fsPath: nextFsPath,
+            path: nextFsPath,
+          }
+        },
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    buildPackageJsonDiagnostics,
+  } = await import('./content')
+  const packageJsonPath = normalizeFsPath('/workspace/app/package.json')
+  const diagnostics = await buildPackageJsonDiagnostics(createDocument(files.get(packageJsonPath)!, packageJsonPath))
+
+  assert.equal(diagnostics.length, 0)
 
   vi.doUnmock('vscode')
   vi.resetModules()

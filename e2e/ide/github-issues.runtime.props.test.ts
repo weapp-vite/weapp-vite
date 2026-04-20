@@ -1,6 +1,6 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { afterAll, afterEach, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -14,10 +14,6 @@ import {
 } from './github-issues.runtime.shared'
 
 describe.sequential('e2e app: github-issues / props', () => {
-  afterEach(async () => {
-    await closeSharedMiniProgram()
-  })
-
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

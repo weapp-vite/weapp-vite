@@ -47,6 +47,18 @@ describe('package exports', () => {
     })
   })
 
+  it('declares web-apis subpath export', () => {
+    const exportsField = readExports()
+
+    expect(exportsField['./web-apis']).toEqual({
+      types: './dist/web-apis.d.mts',
+      import: {
+        types: './dist/web-apis.d.mts',
+        default: './dist/web-apis.mjs',
+      },
+    })
+  })
+
   it('declares router subpath export', () => {
     const exportsField = readExports()
 

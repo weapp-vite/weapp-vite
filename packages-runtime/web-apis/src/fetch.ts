@@ -3,11 +3,15 @@ import type {
   WeapiMiniProgramRequestSuccessResult,
   WeapiMiniProgramRequestTask,
 } from '@wevu/api'
+import type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 import type { URLPolyfill } from './url'
 import { wpi } from '@wevu/api'
 import { isUrlInstance, isUrlSearchParamsInstance } from './constructors'
 import { HeadersPolyfill, ResponsePolyfill } from './http'
+import { resolveRequestMiniProgramOptions } from './networkDefaults'
 import { cloneArrayBuffer, cloneArrayBufferView, normalizeHeaderName } from './shared'
+
+export type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 
 type HeaderPair = readonly [string, string]
 type HeaderMap = Record<string, string>
@@ -32,7 +36,16 @@ export interface RequestGlobalsFetchInit {
   headers?: unknown
   body?: unknown
   signal?: AbortSignal | null
+  miniProgram?: RequestGlobalsMiniProgramOptions
+  miniprogram?: RequestGlobalsMiniProgramOptions
   [key: string]: unknown
+}
+
+declare global {
+  interface RequestInit {
+    miniProgram?: RequestGlobalsMiniProgramOptions
+    miniprogram?: RequestGlobalsMiniProgramOptions
+  }
 }
 
 type RequestGlobalsFetchInput = string | URL | URLPolyfill | RequestLikeInput
@@ -218,6 +231,7 @@ async function resolveRequestMeta(input: RequestGlobalsFetchInput, init: Request
   }
 
   return {
+    miniProgram: resolveRequestMiniProgramOptions(init.miniProgram, init.miniprogram),
     url,
     method,
     headers,
@@ -276,6 +290,7 @@ export function fetch(input: RequestGlobalsFetchInput, init?: RequestGlobalsFetc
       }
 
       const requestResult = wpi.request({
+        ...meta.miniProgram,
         url: meta.url,
         method: meta.method,
         header: meta.headers,

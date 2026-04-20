@@ -1,0 +1,3 @@
+<view class="raw-banner">
+  <view wx:for="{{items}}" wx:key="id" bindtap="handleTap">{{item.label}}</view>
+</view>

@@ -3,15 +3,34 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const HMR_SOURCE_TEMPLATE_PATH = path.join(APP_ROOT, 'src/pages/hmr/index.wxml')
 
 const PLATFORM_LIST = resolvePlatforms()
 
-async function waitForFileWithSourceHeartbeat(
-  task: () => Promise<void>,
+function detectEol(source: string) {
+  return source.includes('\r\n') ? '\r\n' : '\n'
+}
+
+async function rewriteTemplateSourceForWatch(
+  templatePath: string,
+  targetSource: string,
+) {
+  const eol = detectEol(targetSource)
+  const marker = `<!-- wevu-runtime-hmr-retry-${Date.now()} -->`
+  await fs.writeFile(
+    templatePath,
+    `${targetSource}${eol}${marker}${eol}`,
+    'utf8',
+  )
+  await new Promise(resolve => setTimeout(resolve, 120))
+  await fs.writeFile(templatePath, targetSource, 'utf8')
+}
+
+async function waitForFileWithSourceHeartbeat<T>(
+  task: () => Promise<T>,
   touchFilePath: string,
   touchContent: string,
   timeoutMs = 60_000,
@@ -22,19 +41,18 @@ async function waitForFileWithSourceHeartbeat(
 
   while (Date.now() < deadline) {
     try {
-      await task()
-      return
+      return await task()
     }
     catch {
       if (Date.now() >= nextTouchAt) {
-        await replaceFileByRename(touchFilePath, touchContent)
+        await rewriteTemplateSourceForWatch(touchFilePath, touchContent)
         nextTouchAt = Date.now() + heartbeatMs
       }
       await new Promise(resolve => setTimeout(resolve, 250))
     }
   }
 
-  await task()
+  return await task()
 }
 
 beforeEach(async () => {
@@ -74,10 +92,14 @@ describe.sequential('wevu runtime hmr (dev watch)', () => {
       )
       await dev.waitFor(waitForFileContains(distTemplatePath, 'HMR'), `${platform} initial hmr template`)
 
-      await replaceFileByRename(HMR_SOURCE_TEMPLATE_PATH, updatedSource)
+      await rewriteTemplateSourceForWatch(HMR_SOURCE_TEMPLATE_PATH, updatedSource)
 
       const nextTemplate = await dev.waitFor(
-        waitForFileContains(distTemplatePath, marker),
+        waitForFileWithSourceHeartbeat(
+          () => waitForFileContains(distTemplatePath, marker),
+          HMR_SOURCE_TEMPLATE_PATH,
+          updatedSource,
+        ),
         `${platform} updated hmr marker`,
       )
       expect(nextTemplate).toContain(marker)

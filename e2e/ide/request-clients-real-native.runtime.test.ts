@@ -3,6 +3,10 @@ import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import {
+  REQUEST_CLIENTS_REAL_REQUEST_DEFAULTS,
+  REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS,
+} from '../utils/requestClientsRealHostTraceRuntime'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -67,6 +71,52 @@ function withBaseUrl(route: string) {
   return `${route}?baseUrl=${encodeURIComponent(baseUrl)}`
 }
 
+async function readHostTrace(miniProgram: any) {
+  return await miniProgram.evaluate(() => {
+    const trace = getApp<{
+      globalData?: {
+        requestHostTrace?: {
+          requestCalls?: Record<string, unknown>[]
+          socketCalls?: Record<string, unknown>[]
+        }
+      }
+    }>()?.globalData?.requestHostTrace
+
+    return {
+      requestCalls: Array.isArray(trace?.requestCalls) ? trace.requestCalls : [],
+      socketCalls: Array.isArray(trace?.socketCalls) ? trace.socketCalls : [],
+    }
+  }) as {
+    requestCalls: Array<Record<string, unknown>>
+    socketCalls: Array<Record<string, unknown>>
+  }
+}
+
+function findLatestTrace(calls: Array<Record<string, unknown>>, urlFragment: string) {
+  return [...calls].reverse().find(call => typeof call.url === 'string' && call.url.includes(urlFragment))
+}
+
+function expectRequestTrace(calls: Array<Record<string, unknown>>, urlFragment: string) {
+  const trace = findLatestTrace(calls, urlFragment)
+  expect(trace, `missing request trace for ${urlFragment}: ${JSON.stringify(calls)}`).toBeTruthy()
+  expect(trace).toMatchObject({
+    timeout: REQUEST_CLIENTS_REAL_REQUEST_DEFAULTS.timeout,
+  })
+}
+
+function expectSocketTrace(
+  calls: Array<Record<string, unknown>>,
+  urlFragment: string,
+  expected: {
+    perMessageDeflate: boolean
+    timeout?: number
+  },
+) {
+  const trace = findLatestTrace(calls, urlFragment)
+  expect(trace, `missing socket trace for ${urlFragment}: ${JSON.stringify(calls)}`).toBeTruthy()
+  expect(trace).toMatchObject(expected)
+}
+
 beforeAll(async () => {
   try {
     serverHandle = await startRequestClientsRealServer()
@@ -118,16 +168,20 @@ describe.sequential('e2e app: request-clients-real-native', () => {
       ctx.skip(sharedInfraUnavailableMessage)
     }
     const miniProgram = await getMiniProgram(ctx)
+    const baselineTrace = await readHostTrace(miniProgram)
     const page = await miniProgram.reLaunch(withBaseUrl('/pages/fetch/index'))
     if (!page) {
       throw new Error('Failed to launch /pages/fetch/index')
     }
 
     const result = await page.callMethod('runE2E')
+    const currentTrace = await readHostTrace(miniProgram)
+    const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
     expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.snapshot?.requestPath).toBe('/fetch')
     expect(result?.snapshot?.payload).toContain('"transport":"fetch"')
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
+    expectRequestTrace(newRequestCalls, '/fetch')
   })
 
   it('covers axios against a local real server', async (ctx) => {
@@ -135,16 +189,20 @@ describe.sequential('e2e app: request-clients-real-native', () => {
       ctx.skip(sharedInfraUnavailableMessage)
     }
     const miniProgram = await getMiniProgram(ctx)
+    const baselineTrace = await readHostTrace(miniProgram)
     const page = await miniProgram.reLaunch(withBaseUrl('/pages/axios/index'))
     if (!page) {
       throw new Error('Failed to launch /pages/axios/index')
     }
 
     const result = await page.callMethod('runE2E')
+    const currentTrace = await readHostTrace(miniProgram)
+    const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
     expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.snapshot?.requestPath).toBe('/axios')
     expect(result?.snapshot?.payload).toContain('"transport":"axios"')
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
+    expectRequestTrace(newRequestCalls, '/axios')
   })
 
   it('covers graphql-request against a local real server', async (ctx) => {
@@ -152,16 +210,20 @@ describe.sequential('e2e app: request-clients-real-native', () => {
       ctx.skip(sharedInfraUnavailableMessage)
     }
     const miniProgram = await getMiniProgram(ctx)
+    const baselineTrace = await readHostTrace(miniProgram)
     const page = await miniProgram.reLaunch(withBaseUrl('/pages/graphql-request/index'))
     if (!page) {
       throw new Error('Failed to launch /pages/graphql-request/index')
     }
 
     const result = await page.callMethod('runE2E')
+    const currentTrace = await readHostTrace(miniProgram)
+    const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
     expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.snapshot?.requestPath).toBe('/graphql')
     expect(result?.snapshot?.payload).toContain('"client":"graphql-request"')
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
+    expectRequestTrace(newRequestCalls, '/graphql')
   })
 
   it('covers socket.io-client against a local real realtime server', async (ctx) => {
@@ -169,12 +231,15 @@ describe.sequential('e2e app: request-clients-real-native', () => {
       ctx.skip(sharedInfraUnavailableMessage)
     }
     const miniProgram = await getMiniProgram(ctx)
+    const baselineTrace = await readHostTrace(miniProgram)
     const page = await miniProgram.reLaunch(withBaseUrl('/pages/socket-io/index'))
     if (!page) {
       throw new Error('Failed to launch /pages/socket-io/index')
     }
 
     const result = await page.callMethod('runE2E')
+    const currentTrace = await readHostTrace(miniProgram)
+    const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
     expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.snapshot?.requestPath).toBe('/socket.io')
     expect(result?.snapshot?.payload).toContain('"client":"socket.io-client"')
@@ -186,6 +251,9 @@ describe.sequential('e2e app: request-clients-real-native', () => {
     expect(result?.websocketOnlyTransportName).toBe('websocket')
     expect(serverHandle?.requestCounts.socketIo).toBeGreaterThan(0)
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
+    expectSocketTrace(newSocketCalls, '/socket.io', {
+      perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
+    })
   })
 
   it('covers native WebSocket against a local real realtime server', async (ctx) => {
@@ -193,12 +261,15 @@ describe.sequential('e2e app: request-clients-real-native', () => {
       ctx.skip(sharedInfraUnavailableMessage)
     }
     const miniProgram = await getMiniProgram(ctx)
+    const baselineTrace = await readHostTrace(miniProgram)
     const page = await miniProgram.reLaunch(withBaseUrl('/pages/websocket/index'))
     if (!page) {
       throw new Error('Failed to launch /pages/websocket/index')
     }
 
     const result = await page.callMethod('runE2E')
+    const currentTrace = await readHostTrace(miniProgram)
+    const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
     expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
     expect(result?.snapshot?.requestPath).toBe('/ws')
     expect(result?.snapshot?.payload).toContain('"client":"native-websocket"')
@@ -208,5 +279,9 @@ describe.sequential('e2e app: request-clients-real-native', () => {
     expect(result?.latestRandomMessage).toBeTruthy()
     expect(result?.randomPushCount).toBeGreaterThan(0)
     expect(result?.snapshot?.pageStatus).toBe('全部通过')
+    expectSocketTrace(newSocketCalls, '/ws', {
+      perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
+      timeout: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.timeout,
+    })
   })
 })

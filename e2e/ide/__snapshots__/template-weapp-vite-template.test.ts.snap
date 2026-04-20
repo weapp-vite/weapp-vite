@@ -1,9 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`template e2e: weapp-vite-template > renders all pages from app config > weapp-vite-template::app.wxss 1`] = `
-"/*$vite$:1*/
-"
-`;
+exports[`template e2e: weapp-vite-template > renders all pages from app config > weapp-vite-template::app.wxss 1`] = `""`;
 
 exports[`template e2e: weapp-vite-template > renders all pages from app config > weapp-vite-template::pages/index/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">

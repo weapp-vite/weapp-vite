@@ -1,3 +1,3 @@
-import { defineConfig } from 'weapp-vite'
+import config from './weapp-vite.config'
 
-export default defineConfig({})
+export default config

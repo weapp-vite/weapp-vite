@@ -1,14 +1,16 @@
 import type { Plugin, ResolvedConfig } from 'vite'
+import type { ComponentsMap } from '../types'
 import type { CompilerContext } from '@/context'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import chokidar from 'chokidar'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
 import { configExtensions, jsExtensions, templateExtensions, vueExtensions } from '../constants'
-import { logger } from '../context/shared'
+import { logger, resolvedComponentName } from '../context/shared'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
-import { toPosixPath } from '../utils'
+import { findJsEntry, findVueEntry, toPosixPath, touch } from '../utils'
 
 interface AutoImportState {
   ctx: CompilerContext
@@ -255,6 +257,59 @@ function registerAutoImportWatchTargets(
   return watchTargets
 }
 
+async function refreshAutoImportImporters(ctx: AutoImportState['ctx'], filePath: string) {
+  const { wxmlService, configService, autoImportService } = ctx
+  if (!wxmlService || !configService) {
+    return
+  }
+
+  const { componentName } = resolvedComponentName(removeExtensionDeep(filePath))
+  if (!componentName) {
+    return
+  }
+
+  const touchedImporters = new Set<string>()
+  const entries = Array.from(wxmlService.wxmlComponentsMap.entries()) as Array<[string, ComponentsMap]>
+  for (const [baseName, components] of entries) {
+    if (!Object.hasOwn(components, componentName)) {
+      continue
+    }
+
+    const pendingEntriesByImporter = ctx.runtimeState?.autoImport?.pendingEntriesByImporter
+    const resolvedComponent = autoImportService?.resolve(componentName, baseName)
+    const pendingEntry = resolvedComponent?.value.from
+    if (pendingEntriesByImporter && pendingEntry) {
+      const pendingEntries = pendingEntriesByImporter.get(baseName) ?? new Set<string>()
+      pendingEntries.add(pendingEntry)
+      pendingEntriesByImporter.set(baseName, pendingEntries)
+    }
+
+    const vueEntry = await findVueEntry(baseName)
+    if (vueEntry) {
+      touchedImporters.add(vueEntry)
+      continue
+    }
+
+    const scriptEntry = await findJsEntry(baseName)
+    if (scriptEntry.path) {
+      touchedImporters.add(scriptEntry.path)
+    }
+  }
+
+  if (touchedImporters.size === 0) {
+    return
+  }
+
+  for (const importer of touchedImporters) {
+    try {
+      await touch(importer)
+    }
+    catch {}
+  }
+
+  logger.info(`[auto-import:watch] 刷新组件引用方 ${Array.from(touchedImporters, importer => configService.relativeCwd(importer)).join(', ')}`)
+}
+
 function createAutoImportPlugin(state: AutoImportState): Plugin {
   const { ctx } = state
   const { configService, autoImportService } = ctx
@@ -290,6 +345,9 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
       logger.info(`[auto-import:watch] 新增组件文件 ${configService.relativeCwd(filePath)}`)
       void autoImportService.registerPotentialComponent(filePath)
+        .then(async () => {
+          await refreshAutoImportImporters(ctx, filePath)
+        })
     })
 
     watcher.on('unlink', (filePath) => {
@@ -301,6 +359,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
       logger.info(`[auto-import:watch] 删除组件文件 ${configService.relativeCwd(filePath)}`)
       autoImportService.removePotentialComponent(filePath)
+      void refreshAutoImportImporters(ctx, filePath)
     })
 
     const sidecarWatcherMap = ctx.runtimeState?.watcher?.sidecarWatcherMap

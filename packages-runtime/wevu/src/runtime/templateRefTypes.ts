@@ -1,4 +1,4 @@
-import type { MiniProgramIntrinsicElements } from '../weappIntrinsicElements'
+import type { MiniProgramIntrinsicElements } from '../miniprogramIntrinsicElements'
 import type { TemplateRefValue } from './types'
 
 type MiniProgramTemplateRefElements = {

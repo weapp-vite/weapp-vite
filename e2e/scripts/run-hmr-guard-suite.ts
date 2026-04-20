@@ -7,6 +7,11 @@ import {
   HMR_GUARD_SPECIAL_CASES,
   HMR_GUARD_STABLE_TESTS,
 } from './hmr-guard-manifest'
+import {
+  FORCE_HMR_GUARD_ENV,
+  shouldForceDiskBackedMiniProgramDevChecks,
+  supportsDiskBackedMiniProgramDev,
+} from './mini-program-dev-support'
 import { runTaskSuite } from './suiteRunner'
 
 const VITEST_CONFIG_PATH = path.resolve(import.meta.dirname, '../vitest.e2e.ci.config.ts')
@@ -38,6 +43,17 @@ function formatLabel(testPath: string) {
 
 async function runSuite(name: SuiteName) {
   const suite = SUITES[name]
+  if (!shouldForceDiskBackedMiniProgramDevChecks()) {
+    const hasDiskBackedDevOutput = await supportsDiskBackedMiniProgramDev()
+    if (!hasDiskBackedDevOutput) {
+      console.warn(
+        `[hmr-guard:${name}] skip: 当前 CLI 级 dev watch 已就绪但未落盘 dist 产物；`
+        + `现有文件系统型 HMR 护栏在该环境下不稳定。若需强制运行，请设置 ${FORCE_HMR_GUARD_ENV}=1。`,
+      )
+      return
+    }
+  }
+
   await runTaskSuite(`hmr-guard:${name}`, suite.tests.map(testPath => ({
     label: formatLabel(testPath),
     command: 'pnpm',

@@ -2,6 +2,10 @@
 import { request as gqlRequest } from 'graphql-request'
 import { onLoad, onUnload, ref } from 'wevu'
 import {
+  installWebRuntimeGlobals,
+  resetMiniProgramNetworkDefaults,
+} from 'wevu/web-apis'
+import {
   createErrorState,
   createInitialState,
   createSuccessState,
@@ -55,10 +59,20 @@ async function runChecks() {
 
 onLoad(() => {
   installMockRequest(pushRequestLog)
+  installWebRuntimeGlobals({
+    networkDefaults: {
+      request: {
+        enableChunked: true,
+        timeout: 4_800,
+      },
+    },
+    targets: ['fetch', 'Headers', 'Request', 'Response', 'AbortController', 'AbortSignal'],
+  })
   void runChecks()
 })
 
 onUnload(() => {
+  resetMiniProgramNetworkDefaults()
   restoreMockRequest()
 })
 </script>
@@ -67,7 +81,7 @@ onUnload(() => {
   <view class="page">
     <view class="hero">
       <text class="hero-title">graphql-request 验证</text>
-      <text class="hero-desc">验证 URL / URLSearchParams / fetch 组合兼容。</text>
+      <text class="hero-desc">验证 `wevu/web-apis` 子路径导出的 web runtime installer 与 URL / fetch 组合兼容。</text>
     </view>
 
     <view class="panel">

@@ -1,10 +1,5 @@
-import { Buffer } from 'node:buffer'
-import path from 'node:path'
 import * as vscode from 'vscode'
 
-import {
-  getVuePageConfigDriftFields,
-} from '../editor/content'
 import {
   getPrimaryWorkspaceFolder,
   getWeappPagesTreeSnapshot,
@@ -23,7 +18,7 @@ interface WeappPagesTreeGroupNode extends WeappPagesTreeBaseNode {
   kind: 'group' | 'subpackage'
 }
 
-export type WeappPagesTreeFilterMode = 'all' | 'current' | 'drift' | 'problems'
+export type WeappPagesTreeFilterMode = 'all' | 'current' | 'problems'
 
 interface WeappPagesTreeEmptyNode extends WeappPagesTreeBaseNode {
   contextValue: string
@@ -36,7 +31,6 @@ interface WeappPagesTreePageNode extends WeappPagesTreeBaseNode {
   badges: string[]
   baseStatus: 'exists' | 'missing' | 'unregistered'
   contextValue: string
-  driftFields: string[]
   current: boolean
   iconId: string
   kind: 'page'
@@ -51,10 +45,6 @@ type WeappPagesTreeNode = WeappPagesTreeEmptyNode | WeappPagesTreeGroupNode | We
 function getFilterModeLabel(filterMode: WeappPagesTreeFilterMode) {
   if (filterMode === 'current') {
     return '仅当前页'
-  }
-
-  if (filterMode === 'drift') {
-    return '仅配置漂移页'
   }
 
   if (filterMode === 'problems') {
@@ -72,30 +62,11 @@ function getPageNodeDescription(pageFilePath: string | null, workspacePath: stri
   return getRelativeDisplayPath(workspacePath, pageFilePath)
 }
 
-async function getPageDriftFields(pageFilePath: string | null) {
-  if (!pageFilePath || path.extname(pageFilePath) !== '.vue') {
-    return []
-  }
-
-  try {
-    const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(pageFilePath))
-    return getVuePageConfigDriftFields(Buffer.from(bytes).toString('utf8'))
-  }
-  catch {
-    return []
-  }
-}
-
 function getPageNodeContextValue(
   baseStatus: WeappPagesTreePageNode['baseStatus'],
   current: boolean,
-  driftFields: string[],
 ) {
   const parts = ['weappPage', baseStatus]
-
-  if (driftFields.length > 0) {
-    parts.push('drift')
-  }
 
   if (current) {
     parts.push('current')
@@ -104,17 +75,13 @@ function getPageNodeContextValue(
   return parts.join('.')
 }
 
-function getPageNodeIconId(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean, driftFields: string[]) {
+function getPageNodeIconId(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean) {
   if (baseStatus === 'missing') {
     return 'warning'
   }
 
   if (baseStatus === 'unregistered') {
     return 'circle-outline'
-  }
-
-  if (driftFields.length > 0) {
-    return 'alert'
   }
 
   if (current) {
@@ -124,7 +91,11 @@ function getPageNodeIconId(baseStatus: WeappPagesTreePageNode['baseStatus'], cur
   return 'file'
 }
 
-function getPageNodeBadges(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean, driftFields: string[]) {
+function getWxmlTreeItemResourceUri(targetUri: any) {
+  return vscode.Uri.file(targetUri.fsPath.replace(/\.wxml$/u, '.html'))
+}
+
+function getPageNodeBadges(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean) {
   const badges = []
 
   if (baseStatus === 'missing') {
@@ -134,10 +105,6 @@ function getPageNodeBadges(baseStatus: WeappPagesTreePageNode['baseStatus'], cur
     badges.push('未声明')
   }
 
-  if (driftFields.length > 0) {
-    badges.push('配置漂移')
-  }
-
   if (current) {
     badges.push('当前页面')
   }
@@ -145,16 +112,14 @@ function getPageNodeBadges(baseStatus: WeappPagesTreePageNode['baseStatus'], cur
   return badges
 }
 
-function getPageNodeSortKey(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean, driftFields: string[], route: string) {
+function getPageNodeSortKey(baseStatus: WeappPagesTreePageNode['baseStatus'], current: boolean, route: string) {
   const priority = baseStatus === 'missing'
     ? 0
     : baseStatus === 'unregistered'
       ? 1
-      : driftFields.length > 0
+      : current
         ? 2
-        : current
-          ? 3
-          : 4
+        : 3
 
   return `${priority}-${route}`
 }
@@ -170,10 +135,9 @@ function createPageNode(
   workspacePath: string,
   baseStatus: WeappPagesTreePageNode['baseStatus'],
   current: boolean,
-  driftFields: string[],
 ): WeappPagesTreeNode {
   const primaryDescription = getPageNodeDescription(pageFilePath, workspacePath)
-  const badges = getPageNodeBadges(baseStatus, current, driftFields)
+  const badges = getPageNodeBadges(baseStatus, current)
 
   return {
     kind: 'page',
@@ -181,21 +145,19 @@ function createPageNode(
     appJsonPath,
     badges,
     baseStatus,
-    contextValue: getPageNodeContextValue(baseStatus, current, driftFields),
-    driftFields,
+    contextValue: getPageNodeContextValue(baseStatus, current),
     current,
     description: [primaryDescription, ...badges.filter(badge => badge !== primaryDescription)].filter(Boolean).join(' · '),
-    iconId: getPageNodeIconId(baseStatus, current, driftFields),
+    iconId: getPageNodeIconId(baseStatus, current),
     pageFilePath,
     route,
-    sortKey: getPageNodeSortKey(baseStatus, current, driftFields, route),
+    sortKey: getPageNodeSortKey(baseStatus, current, route),
     tooltip: [
       `route: ${route}`,
       pageFilePath
         ? `页面文件: ${getRelativeDisplayPath(workspacePath, pageFilePath)}`
         : '页面文件缺失，点击后打开 app.json',
       baseStatus === 'unregistered' ? '声明状态: 未加入 app.json' : '',
-      driftFields.length > 0 ? `配置漂移: ${driftFields.join(', ')}` : '',
       current ? '当前页面: 是' : '',
     ].filter(Boolean).join('\n'),
   }
@@ -265,6 +227,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
 
     if (element.kind === 'page') {
       const targetUri = vscode.Uri.file(element.pageFilePath ?? element.appJsonPath)
+      const useWxmlFileIcon = Boolean(element.pageFilePath?.endsWith('.wxml'))
 
       item.command = {
         command: 'vscode.open',
@@ -273,8 +236,12 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       }
       item.description = element.description
       item.contextValue = element.contextValue
-      item.iconPath = new vscode.ThemeIcon(element.iconId)
-      item.resourceUri = element.pageFilePath ? targetUri : undefined
+      item.iconPath = useWxmlFileIcon ? vscode.ThemeIcon.File : new vscode.ThemeIcon(element.iconId)
+      item.resourceUri = element.pageFilePath
+        ? useWxmlFileIcon
+          ? getWxmlTreeItemResourceUri(targetUri)
+          : targetUri
+        : undefined
       item.tooltip = element.tooltip
     }
     else if (element.kind === 'empty') {
@@ -318,7 +285,6 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
       pageFilePath: string | null,
       baseStatus: WeappPagesTreePageNode['baseStatus'],
     ) => {
-      const driftFields = await getPageDriftFields(pageFilePath)
       const node = createPageNode(
         route,
         pageFilePath,
@@ -326,7 +292,6 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
         workspacePath,
         baseStatus,
         route === this.currentRoute,
-        driftFields,
       ) as WeappPagesTreePageNode
 
       this.pageNodesByRoute.set(route, node)
@@ -342,11 +307,7 @@ export class WeappVitePagesTreeProvider implements vscode.TreeDataProvider<Weapp
           return node.current
         }
 
-        if (this.filterMode === 'drift') {
-          return node.driftFields.length > 0
-        }
-
-        return node.baseStatus !== 'exists' || node.driftFields.length > 0
+        return node.baseStatus !== 'exists'
       })
     }
     const createPageGroupNode = (label: string, descriptionLabel: string, children: WeappPagesTreePageNode[]): WeappPagesTreeGroupNode | null => {

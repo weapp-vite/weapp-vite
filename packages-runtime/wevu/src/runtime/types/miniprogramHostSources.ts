@@ -1,10 +1,69 @@
-import type { DefaultMiniProgramHostNamespace } from './miniprogramHostDefault'
-import type { WechatMiniProgramHostNamespace } from './miniprogramHostWechat'
+/* eslint-disable ts/no-namespace -- 通过单点 namespace 兼容宿主类型源，避免纯类型 namespace 在多文件间转发时被 bundler 误判为运行时导出。 */
+export declare namespace WechatMiniProgramHostNamespace {
+  export import App = WechatMiniprogram.App
+  export import Behavior = WechatMiniprogram.Behavior
+  export import Component = WechatMiniprogram.Component
+  export import Page = WechatMiniprogram.Page
+  export import BoundingClientRectCallbackResult = WechatMiniprogram.BoundingClientRectCallbackResult
+  export import ScrollOffsetCallbackResult = WechatMiniprogram.ScrollOffsetCallbackResult
+  export import NodesRef = WechatMiniprogram.NodesRef
+  export import SelectorQuery = WechatMiniprogram.SelectorQuery
+  export import CreateIntersectionObserverOption = WechatMiniprogram.CreateIntersectionObserverOption
+  export import IntersectionObserver = WechatMiniprogram.IntersectionObserver
+  export import OnUnhandledRejectionListenerResult = WechatMiniprogram.OnUnhandledRejectionListenerResult
+  export import OnThemeChangeListenerResult = WechatMiniprogram.OnThemeChangeListenerResult
+  export import OnMemoryWarningListenerResult = WechatMiniprogram.OnMemoryWarningListenerResult
+  export import SwitchTabOption = WechatMiniprogram.SwitchTabOption
+  export import ReLaunchOption = WechatMiniprogram.ReLaunchOption
+  export import RedirectToOption = WechatMiniprogram.RedirectToOption
+  export import NavigateToOption = WechatMiniprogram.NavigateToOption
+}
 
-export { AlipayMiniProgramHostNamespace } from './miniprogramHostAlipay'
-export { DefaultMiniProgramHostNamespace } from './miniprogramHostDefault'
-export { DouyinMiniProgramHostNamespace, TtMiniProgramHostNamespace } from './miniprogramHostTt'
-export { WechatMiniProgramHostNamespace } from './miniprogramHostWechat'
+export declare namespace AlipayMiniProgramHostNamespace {}
+
+export declare namespace DouyinMiniProgramHostNamespace {}
+
+export declare namespace TtMiniProgramHostNamespace {}
+
+export declare namespace DefaultMiniProgramHostNamespace {
+  export import App = WechatMiniProgramHostNamespace.App
+  export import Behavior = WechatMiniProgramHostNamespace.Behavior
+  export import Component = WechatMiniProgramHostNamespace.Component
+  export import Page = WechatMiniProgramHostNamespace.Page
+  export import BoundingClientRectCallbackResult = WechatMiniProgramHostNamespace.BoundingClientRectCallbackResult
+  export import ScrollOffsetCallbackResult = WechatMiniProgramHostNamespace.ScrollOffsetCallbackResult
+  export import NodesRef = WechatMiniProgramHostNamespace.NodesRef
+  export import SelectorQuery = WechatMiniProgramHostNamespace.SelectorQuery
+  export import CreateIntersectionObserverOption = WechatMiniProgramHostNamespace.CreateIntersectionObserverOption
+  export import IntersectionObserver = WechatMiniProgramHostNamespace.IntersectionObserver
+  export import OnUnhandledRejectionListenerResult = WechatMiniProgramHostNamespace.OnUnhandledRejectionListenerResult
+  export import OnThemeChangeListenerResult = WechatMiniProgramHostNamespace.OnThemeChangeListenerResult
+  export import OnMemoryWarningListenerResult = WechatMiniProgramHostNamespace.OnMemoryWarningListenerResult
+  export import SwitchTabOption = WechatMiniProgramHostNamespace.SwitchTabOption
+  export import ReLaunchOption = WechatMiniProgramHostNamespace.ReLaunchOption
+  export import RedirectToOption = WechatMiniProgramHostNamespace.RedirectToOption
+  export import NavigateToOption = WechatMiniProgramHostNamespace.NavigateToOption
+}
+
+export declare namespace MiniProgramHostNamespace {
+  export import App = DefaultMiniProgramHostNamespace.App
+  export import Behavior = DefaultMiniProgramHostNamespace.Behavior
+  export import Component = DefaultMiniProgramHostNamespace.Component
+  export import Page = DefaultMiniProgramHostNamespace.Page
+  export import BoundingClientRectCallbackResult = DefaultMiniProgramHostNamespace.BoundingClientRectCallbackResult
+  export import ScrollOffsetCallbackResult = DefaultMiniProgramHostNamespace.ScrollOffsetCallbackResult
+  export import NodesRef = DefaultMiniProgramHostNamespace.NodesRef
+  export import SelectorQuery = DefaultMiniProgramHostNamespace.SelectorQuery
+  export import CreateIntersectionObserverOption = DefaultMiniProgramHostNamespace.CreateIntersectionObserverOption
+  export import IntersectionObserver = DefaultMiniProgramHostNamespace.IntersectionObserver
+  export import OnUnhandledRejectionListenerResult = DefaultMiniProgramHostNamespace.OnUnhandledRejectionListenerResult
+  export import OnThemeChangeListenerResult = DefaultMiniProgramHostNamespace.OnThemeChangeListenerResult
+  export import OnMemoryWarningListenerResult = DefaultMiniProgramHostNamespace.OnMemoryWarningListenerResult
+  export import SwitchTabOption = DefaultMiniProgramHostNamespace.SwitchTabOption
+  export import ReLaunchOption = DefaultMiniProgramHostNamespace.ReLaunchOption
+  export import RedirectToOption = DefaultMiniProgramHostNamespace.RedirectToOption
+  export import NavigateToOption = DefaultMiniProgramHostNamespace.NavigateToOption
+}
 
 export type MiniProgramPlatformHostSourceName = 'default' | 'wechat' | 'alipay' | 'douyin'
 export type MiniProgramRuntimeHostSourceName = 'wx' | 'my' | 'tt'
@@ -26,21 +85,10 @@ export interface DefaultMiniProgramHostSourceContract {
   NavigateToOption: DefaultMiniProgramHostNamespace.NavigateToOption
 }
 
-export interface WechatMiniProgramHostSourceContract {
-  BoundingClientRectCallbackResult: WechatMiniProgramHostNamespace.BoundingClientRectCallbackResult
-  ScrollOffsetCallbackResult: WechatMiniProgramHostNamespace.ScrollOffsetCallbackResult
-  NodesRef: WechatMiniProgramHostNamespace.NodesRef
-  SelectorQuery: WechatMiniProgramHostNamespace.SelectorQuery
-  CreateIntersectionObserverOption: WechatMiniProgramHostNamespace.CreateIntersectionObserverOption
-  IntersectionObserver: WechatMiniProgramHostNamespace.IntersectionObserver
-  OnUnhandledRejectionListenerResult: WechatMiniProgramHostNamespace.OnUnhandledRejectionListenerResult
-  OnThemeChangeListenerResult: WechatMiniProgramHostNamespace.OnThemeChangeListenerResult
-  OnMemoryWarningListenerResult: WechatMiniProgramHostNamespace.OnMemoryWarningListenerResult
-  SwitchTabOption: WechatMiniProgramHostNamespace.SwitchTabOption
-  ReLaunchOption: WechatMiniProgramHostNamespace.ReLaunchOption
-  RedirectToOption: WechatMiniProgramHostNamespace.RedirectToOption
-  NavigateToOption: WechatMiniProgramHostNamespace.NavigateToOption
-}
+/**
+ * @description 微信平台命名兼容契约；当前默认宿主语义仍复用微信底座，但上层主链路应优先依赖 default。
+ */
+export interface WechatMiniProgramHostSourceContract extends DefaultMiniProgramHostSourceContract {}
 
 /**
  * @description 支付宝宿主类型契约占位；后续接入稳定 typings 时在此扩展。
@@ -65,7 +113,7 @@ export interface MiniProgramPlatformHostSourceRegistry {
 }
 
 export interface MiniProgramRuntimeHostSourceRegistry {
-  wx: WechatMiniProgramHostSourceContract
+  wx: DefaultMiniProgramHostSourceContract
   my: AlipayMiniProgramHostSourceContract
   tt: TtMiniProgramHostSourceContract
 }

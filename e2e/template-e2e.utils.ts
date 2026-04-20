@@ -1,6 +1,8 @@
+import type { Declaration, Rule } from 'postcss'
 import { access, readFile, rm } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
+import postcss from 'postcss'
 import prettier from 'prettier'
 import { expect } from 'vitest'
 import { extractConfigFromVue } from '../packages/weapp-vite/src/utils/file'
@@ -19,6 +21,12 @@ const INVALID_INPUT_RE = /<input\b([^>]*)>([\s\S]*?)<\/input>/gi
 const LEADING_SLASH_RE = /^\/+/
 const TRAILING_SLASH_RE = /\/+$/
 const CSS_DECLARATION_START_RE = /^(\s*)([a-z-]+):(?:\s.*)?$/
+const LEGACY_PSEUDO_ELEMENT_RE = /(^|[^:]):(before|after)\b/g
+const ZERO_UNIT_RE = /(^|[^\w.-])0(?:px|rpx|rem|em|vh|vw|vmin|vmax|ch|ex|cm|mm|in|pt|pc|q|%)\b/g
+const SECOND_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)s(?=($|[\s),]))/g
+const MS_TIME_RE = /(^|[\s,(])(\d+\.\d+|\d+|\.\d+)ms(?=($|[\s),]))/g
+const RGBA_RE = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([+-]?(\d+\.\d+|\d+|\.\d+)))?\s*\)/gi
+const VITE_MARKER_COMMENT_RE = /^\$vite\$:\d+$/
 
 async function pathExists(filePath: string) {
   try {
@@ -187,6 +195,122 @@ export function normalizeWxmlForSnapshot(wxml: string) {
   return normalizedTabs
 }
 
+function normalizeCssSelector(selector: string) {
+  return selector
+    .split(',')
+    .map(segment => segment.trim().replace(LEGACY_PSEUDO_ELEMENT_RE, '$1::$2'))
+    .join(',\n')
+}
+
+function clampCssChannel(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+  return Math.min(255, Math.max(0, Math.round(value)))
+}
+
+function clampCssAlpha(value: number) {
+  if (!Number.isFinite(value)) {
+    return Number.NaN
+  }
+  return Math.min(1, Math.max(0, value))
+}
+
+function toHex(value: number) {
+  return value.toString(16).padStart(2, '0')
+}
+
+function stripTrailingZeros(value: number) {
+  const normalized = `${value}`
+  if (!normalized.includes('.')) {
+    return normalized
+  }
+  return normalized.replace(/0+$/, '').replace(/\.$/, '')
+}
+
+function normalizeCssColorFunctions(value: string) {
+  return value.replace(RGBA_RE, (match, rawR: string, rawG: string, rawB: string, rawAlpha?: string) => {
+    const red = clampCssChannel(Number(rawR))
+    const green = clampCssChannel(Number(rawG))
+    const blue = clampCssChannel(Number(rawB))
+
+    if (rawAlpha == null) {
+      return match
+    }
+
+    const alpha = clampCssAlpha(Number(rawAlpha))
+    if (!Number.isFinite(alpha)) {
+      return match
+    }
+    if (alpha === 0) {
+      return 'transparent'
+    }
+
+    const alphaByte = Math.round(alpha * 255)
+    if (alphaByte === 255) {
+      return `#${toHex(red)}${toHex(green)}${toHex(blue)}`
+    }
+
+    return `#${toHex(red)}${toHex(green)}${toHex(blue)}${toHex(alphaByte)}`
+  })
+}
+
+function normalizeCssValue(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  return normalizeCssColorFunctions(
+    trimmed
+      .replace(SECOND_TIME_RE, (_match, prefix: string, rawValue: string) => {
+        const parsed = Number(rawValue)
+        if (!Number.isFinite(parsed)) {
+          return `${prefix}${rawValue}s`
+        }
+        return `${prefix}${stripTrailingZeros(parsed * 1000)}ms`
+      })
+      .replace(MS_TIME_RE, (_match, prefix: string, rawValue: string) => {
+        const parsed = Number(rawValue)
+        if (!Number.isFinite(parsed)) {
+          return `${prefix}${rawValue}ms`
+        }
+        return `${prefix}${stripTrailingZeros(parsed)}ms`
+      })
+      .replace(ZERO_UNIT_RE, '$10')
+      .replace(/\btransparent\b/gi, 'transparent'),
+  )
+}
+
+function sortRuleDeclarations(rule: Rule) {
+  const nodes = rule.nodes ?? []
+  if (nodes.length < 2 || nodes.some(node => node.type !== 'decl')) {
+    return
+  }
+
+  const declarations = nodes as Declaration[]
+  const propSet = new Set<string>()
+  for (const declaration of declarations) {
+    if (propSet.has(declaration.prop)) {
+      return
+    }
+    propSet.add(declaration.prop)
+  }
+
+  const sorted = [...declarations].sort((left, right) => {
+    const propCompare = left.prop.localeCompare(right.prop)
+    if (propCompare !== 0) {
+      return propCompare
+    }
+    return left.value.localeCompare(right.value)
+  })
+
+  rule.removeAll()
+  for (const declaration of sorted) {
+    rule.append(declaration)
+  }
+}
+
 function normalizeWxssForSnapshot(wxss: string) {
   const lines = wxss.split('\n')
   const normalized: string[] = []
@@ -223,7 +347,28 @@ function normalizeWxssForSnapshot(wxss: string) {
     normalized.push(...block)
   }
 
-  return normalized.join('\n')
+  const ast = postcss.parse(normalized.join('\n'))
+
+  ast.walkComments((comment) => {
+    if (VITE_MARKER_COMMENT_RE.test(comment.text.trim())) {
+      comment.remove()
+    }
+  })
+
+  ast.walkRules((rule) => {
+    rule.selector = normalizeCssSelector(rule.selector)
+
+    for (const node of rule.nodes ?? []) {
+      if (node.type !== 'decl') {
+        continue
+      }
+      node.value = normalizeCssValue(node.value)
+    }
+
+    sortRuleDeclarations(rule)
+  })
+
+  return ast.toString()
 }
 
 export async function formatWxss(wxss: string) {

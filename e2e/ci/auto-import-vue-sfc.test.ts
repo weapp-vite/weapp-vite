@@ -150,6 +150,25 @@ async function waitForMissingUsingComponent(
   )
 }
 
+function detectEol(source: string) {
+  return source.includes('\r\n') ? '\r\n' : '\n'
+}
+
+async function rewriteVueSourceForWatch(
+  sourcePath: string,
+  targetSource: string,
+) {
+  const eol = detectEol(targetSource)
+  const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
+  await fs.writeFile(
+    sourcePath,
+    `${targetSource}${eol}${marker}${eol}`,
+    'utf8',
+  )
+  await new Promise(resolve => setTimeout(resolve, 120))
+  await fs.writeFile(sourcePath, targetSource, 'utf8')
+}
+
 async function waitForTaskWithSourceHeartbeat<T>(
   task: () => Promise<T>,
   touchFilePath: string,
@@ -166,7 +185,7 @@ async function waitForTaskWithSourceHeartbeat<T>(
     }
     catch {
       if (Date.now() >= nextTouchAt) {
-        await replaceFileByRename(touchFilePath, touchContent)
+        await rewriteVueSourceForWatch(touchFilePath, touchContent)
         nextTouchAt = Date.now() + heartbeatMs
       }
       await new Promise(resolve => setTimeout(resolve, 250))
@@ -176,23 +195,37 @@ async function waitForTaskWithSourceHeartbeat<T>(
   return await task()
 }
 
-function detectEol(source: string) {
-  return source.includes('\r\n') ? '\r\n' : '\n'
-}
-
-async function rewritePageSourceForWatch(
-  pageSourcePath: string,
-  targetSource: string,
+async function waitForTaskWithSourceHeartbeats<T>(
+  task: () => Promise<T>,
+  heartbeatInputs: Array<{
+    touchContent: string
+    touchFilePath: string
+  }>,
+  timeoutMs = 60_000,
+  heartbeatMs = 2_000,
 ) {
-  const eol = detectEol(targetSource)
-  const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
-  await fs.writeFile(
-    pageSourcePath,
-    `${targetSource}${eol}${marker}${eol}`,
-    'utf8',
-  )
-  await new Promise(resolve => setTimeout(resolve, 120))
-  await fs.writeFile(pageSourcePath, targetSource, 'utf8')
+  const deadline = Date.now() + timeoutMs
+  let nextTouchAt = Date.now() + heartbeatMs
+
+  while (Date.now() < deadline) {
+    try {
+      return await task()
+    }
+    catch {
+      if (Date.now() >= nextTouchAt) {
+        for (const heartbeatInput of heartbeatInputs) {
+          await rewriteVueSourceForWatch(
+            heartbeatInput.touchFilePath,
+            heartbeatInput.touchContent,
+          )
+        }
+        nextTouchAt = Date.now() + heartbeatMs
+      }
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  return await task()
 }
 
 function createHotCardSfc() {
@@ -449,7 +482,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithoutAutoCard,
           )
@@ -476,7 +509,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithAutoCard,
           )
@@ -589,7 +622,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithoutAutoCard,
           )
@@ -616,7 +649,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           )
         }
         catch {
-          await rewritePageSourceForWatch(
+          await rewriteVueSourceForWatch(
             PAGE_SOURCE_PATH,
             pageSourceWithAutoCard,
           )
@@ -724,11 +757,19 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
         )
 
         await devProcess.waitFor(
-          waitForTaskWithSourceHeartbeat(
+          waitForTaskWithSourceHeartbeats(
             () =>
               waitForFileContains(hotCardTemplatePath, ['hot-card-e2e'], 1_000),
-            HOT_COMPONENT_SOURCE_PATH,
-            hotCardSource,
+            [
+              {
+                touchFilePath: PAGE_SOURCE_PATH,
+                touchContent: pageSourceWithHotCard,
+              },
+              {
+                touchFilePath: HOT_COMPONENT_SOURCE_PATH,
+                touchContent: hotCardSource,
+              },
+            ],
           ),
           `${platform} hotCard template output`,
         )

@@ -45,6 +45,23 @@ const TEMPLATE_DIR_MAP = {
   'vant': 'weapp-vite-tailwindcss-vant-template',
 }
 
+function isCurrentModuleEntry(entryArg, moduleUrl) {
+  if (!entryArg) {
+    return false
+  }
+
+  const resolvedEntryPath = path.isAbsolute(entryArg)
+    ? entryArg
+    : path.resolve(entryArg)
+
+  try {
+    return moduleUrl === pathToFileURL(resolvedEntryPath).href
+  }
+  catch {
+    return false
+  }
+}
+
 function resolveEnabledScenarioNames() {
   const names = new Set(REQUESTED_SCENARIO_NAMES)
 
@@ -761,7 +778,7 @@ async function main() {
   console.log('\nAll create-weapp-vite smoke scenarios passed.')
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
   await main()
 }
 

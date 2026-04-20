@@ -13,7 +13,14 @@ export const TERMINAL_NAME = 'weapp-vite'
 export const WEAPP_VITE_FILE_ICON_THEME_ID = 'weapp-vite-file-icons'
 export const WEAPP_VITE_SCRIPT_PATTERN = /\b(?:wv|weapp-vite)\b/
 export const WEAPP_VITE_CONFIG_PATTERN = /\bweapp-vite\b/
-export const VITE_CONFIG_FILE_PATTERN = /vite\.config\./
+export const VITE_CONFIG_FILE_NAMES = [
+  'vite.config.ts',
+  'vite.config.mts',
+  'vite.config.cts',
+  'vite.config.js',
+  'vite.config.mjs',
+  'vite.config.cjs',
+]
 export const WEAPP_VITE_CONFIG_FILE_NAMES = [
   'weapp-vite.config.ts',
   'weapp-vite.config.mts',
@@ -22,6 +29,11 @@ export const WEAPP_VITE_CONFIG_FILE_NAMES = [
   'weapp-vite.config.mjs',
   'weapp-vite.config.cjs',
 ]
+export const PROJECT_VITE_CONFIG_FILE_NAMES = [
+  ...VITE_CONFIG_FILE_NAMES,
+  ...WEAPP_VITE_CONFIG_FILE_NAMES,
+]
+export const VITE_CONFIG_FILE_PATTERN = /(?:^|[\\/])(?:weapp-)?vite\.config\.(?:[cm]?ts|[cm]?js)$/u
 export const APP_JSON_FILE_PATTERN = /(?:^|\/)app\.json$/
 export const PACKAGE_JSON_FILE_PATTERN = /(?:^|\/)package\.json$/
 export const VUE_JSON_BLOCK_PATTERN = /<json(?:\s+lang="(?:json|jsonc|json5)")?\s*>/u

@@ -1,30 +1,25 @@
-<script lang="ts">
-import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import { pages, subPackages } from 'weapp-vite/auto-routes'
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      gcTime: 5 * 60 * 1000,
-      retry: false,
-      staleTime: 0,
-    },
-  },
-})
-
-queryClient.mount()
-</script>
-
 <script setup lang="ts">
+import { createRequestClientsRealHostTraceStore } from './shared/requestHostTrace'
+
+const requestHostTrace = createRequestClientsRealHostTraceStore()
+
 defineAppSetup((app) => {
-  app.use(VueQueryPlugin, {
-    queryClient,
-  })
+  app.globalData = {
+    ...(app.globalData ?? {}),
+    requestHostTrace,
+  }
 })
 
 defineAppJson({
-  pages,
-  subPackages,
+  pages: [
+    'pages/index/index',
+    'pages/fetch/index',
+    'pages/axios/index',
+    'pages/graphql-request/index',
+    'pages/vue-query/index',
+    'pages/socket-io/index',
+    'pages/websocket/index',
+  ],
   window: {
     navigationBarTitleText: 'request-clients-real',
     navigationBarBackgroundColor: '#0f172a',

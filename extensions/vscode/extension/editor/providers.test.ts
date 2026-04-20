@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
-import { afterEach, it, vi } from 'vitest'
+import { it, vi } from 'vitest'
 
 function createVscodeModule(mockVscode: Record<string, unknown>) {
   return {
@@ -12,106 +12,112 @@ function createVscodeModule(mockVscode: Record<string, unknown>) {
   }
 }
 
-function createVueDocument(text: string, fsPath: string) {
+function normalizeFsPath(fsPath: string) {
+  return path.normalize(fsPath)
+}
+
+function toUriPath(fsPath: string) {
+  return fsPath.replaceAll('\\', '/')
+}
+
+function createDocument(text: string, fsPath: string) {
   return {
-    languageId: 'vue',
     uri: {
       fsPath,
-      path: fsPath,
+      path: toUriPath(fsPath),
     },
     getText() {
       return text
     },
-    positionAt(offset: number) {
-      const lines = text.slice(0, offset).split('\n')
-      const line = lines.length - 1
-      const character = lines.at(-1)?.length ?? 0
-
-      return {
-        line,
-        character,
-      }
+    lineAt() {
+      return { text: '' }
     },
   }
 }
 
-afterEach(() => {
-  vi.clearAllMocks()
-  vi.doUnmock('vscode')
-  vi.resetModules()
-})
-
-it('creates document links for existing local usingComponents paths', async () => {
-  const existingFiles = new Set([
-    path.normalize('/workspace/src/app.json'),
-    path.normalize('/workspace/src/components/card/user/index.vue'),
+it('only offers package.json script quick fix when common scripts are actually missing', async () => {
+  const files = new Map<string, string>([
+    [normalizeFsPath('/workspace/app/package.json'), JSON.stringify({
+      name: 'demo-app',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+      scripts: {
+        dev: 'wv dev',
+      },
+    })],
+    [normalizeFsPath('/workspace/app-complete/package.json'), JSON.stringify({
+      name: 'demo-app-complete',
+      dependencies: {
+        'weapp-vite': '^1.0.0',
+      },
+      scripts: {
+        'build': 'wv build',
+        'dev:open': 'wv dev --open',
+        'g': 'weapp-vite generate',
+        'open': 'wv open',
+      },
+    })],
+    [normalizeFsPath('/workspace/app/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
+    [normalizeFsPath('/workspace/app-complete/vite.config.ts'), 'import { defineConfig } from \'weapp-vite\'\nexport default defineConfig({})\n'],
   ])
 
   vi.doMock('vscode', () => {
     const mockVscode = {
-      workspace: {
-        workspaceFolders: [
-          {
-            name: 'demo',
-            uri: {
-              fsPath: '/workspace',
-              path: '/workspace',
-            },
-          },
-        ],
-        fs: {
-          stat: async (uri: { fsPath: string }) => {
-            if (!existingFiles.has(uri.fsPath)) {
-              throw new Error('not found')
-            }
+      CodeAction: class {
+        title
+        kind
 
-            return {
-              type: 0,
-            }
-          },
-          readFile: async () => Buffer.from('{}\n'),
-        },
-        getWorkspaceFolder: () => ({
-          name: 'demo',
-          uri: {
-            fsPath: '/workspace',
-            path: '/workspace',
-          },
-        }),
+        constructor(title: string, kind: string) {
+          this.title = title
+          this.kind = kind
+        }
+      },
+      CodeActionKind: {
+        QuickFix: 'QuickFix',
+        RefactorRewrite: 'RefactorRewrite',
+      },
+      CompletionItemKind: {
+        File: 1,
+        Function: 2,
+        Property: 3,
+        Snippet: 4,
+        Value: 5,
       },
       Uri: {
-        file(targetPath: string) {
+        file(nextFsPath: string) {
           return {
-            fsPath: targetPath,
-            path: targetPath,
+            fsPath: nextFsPath,
+            path: toUriPath(nextFsPath),
           }
         },
       },
-      Range: class {
-        start
-        end
+      workspace: {
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!files.has(uri.fsPath)) {
+              throw new TypeError('not found')
+            }
 
-        constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
-          this.start = { line: startLine, character: startCharacter }
-          this.end = { line: endLine, character: endCharacter }
-        }
-      },
-      DocumentLink: class {
-        range
-        target
-        tooltip
+            return {}
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = files.get(uri.fsPath)
 
-        constructor(range: any, target: any) {
-          this.range = range
-          this.target = target
-        }
+            if (typeof content !== 'string') {
+              throw new TypeError('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
       },
-      CompletionItemKind: {
-        Property: 1,
-        Value: 2,
-        File: 3,
-        Function: 4,
-        Snippet: 5,
+      MarkdownString: class {
+        value
+
+        constructor(value: string) {
+          this.value = value
+        }
       },
     }
 
@@ -120,24 +126,22 @@ it('creates document links for existing local usingComponents paths', async () =
   vi.resetModules()
 
   const {
-    WeappViteVueDocumentLinkProvider,
+    WeappViteCodeActionProvider,
   } = await import('./providers')
+  const provider = new WeappViteCodeActionProvider()
+  const missingActions = await provider.provideCodeActions(
+    createDocument(files.get(normalizeFsPath('/workspace/app/package.json'))!, normalizeFsPath('/workspace/app/package.json')),
+    { start: { line: 0 } },
+  )
+  const completeActions = await provider.provideCodeActions(
+    createDocument(files.get(normalizeFsPath('/workspace/app-complete/package.json'))!, normalizeFsPath('/workspace/app-complete/package.json')),
+    { start: { line: 0 } },
+  )
 
-  const provider = new WeappViteVueDocumentLinkProvider()
-  const document = createVueDocument([
-    '<json lang="jsonc">',
-    '{',
-    '  "usingComponents": {',
-    '    "card-user": "/components/card/user/index",',
-    '    "remote-demo": "plugin://demo/component",',
-    '    "missing-demo": "/components/missing/index"',
-    '  }',
-    '}',
-    '</json>',
-  ].join('\n'), path.normalize('/workspace/src/pages/home/index.vue'))
-  const links = await provider.provideDocumentLinks(document)
+  assert.equal(missingActions.length, 1)
+  assert.equal(missingActions[0].title, '补齐常用 weapp-vite scripts')
+  assert.equal(completeActions.length, 0)
 
-  assert.equal(links.length, 1)
-  assert.equal(links[0].target.fsPath, path.normalize('/workspace/src/components/card/user/index.vue'))
-  assert.equal(links[0].tooltip, '打开组件文件 /components/card/user/index')
+  vi.doUnmock('vscode')
+  vi.resetModules()
 })

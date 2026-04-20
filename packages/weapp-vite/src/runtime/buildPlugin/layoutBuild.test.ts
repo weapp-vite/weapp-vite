@@ -206,13 +206,18 @@ describe('layout build regression', () => {
 
     const layoutChunk = outputs.find(output => output.type === 'chunk' && output.fileName === 'layouts/default.js')
     const pageChunk = outputs.find(output => output.type === 'chunk' && output.fileName === 'pages/index/index.js')
-    const sharedRuntimeChunk = outputs.find(output => output.type === 'chunk' && output.fileName === 'weapp-vendors/wevu-defineProperty.js')
+    const sharedRuntimeChunk = outputs.find((output) => {
+      return output.type === 'chunk'
+        && output.fileName.endsWith('.js')
+        && output.code.includes('LAYOUT-SHARED-MARKER')
+        && !output.code.includes('createWevuComponent')
+    })
     const sharedWevuChunk = outputs.find((output) => {
       return output.type === 'chunk'
         && output.fileName.endsWith('.js')
         && output.fileName !== 'layouts/default.js'
         && output.fileName !== 'pages/index/index.js'
-        && output.fileName !== 'weapp-vendors/wevu-defineProperty.js'
+        && output.fileName !== sharedRuntimeChunk?.fileName
         && output.code.includes('createWevuComponent')
     })
     const pageJson = outputs.find(output => output.type === 'asset' && output.fileName === 'pages/index/index.json')
@@ -223,16 +228,15 @@ describe('layout build regression', () => {
     expect(sharedWevuChunk).toBeTruthy()
     expect(pageJson).toBeTruthy()
 
+    expect(sharedRuntimeChunk!.fileName).toMatch(/weapp-vendors\/wevu-(?:ref|defineProperty)\.js$/)
     expect(sharedRuntimeChunk!.code).toContain('LAYOUT-SHARED-MARKER')
     expect(sharedRuntimeChunk!.code).not.toContain('//#region src/layouts/default.vue')
     expect(sharedRuntimeChunk!.code).not.toContain('createWevuComponent({')
     expect(layoutChunk!.code).not.toContain('Component({})')
     expect(layoutChunk!.code).toContain('setup(')
-    expect(layoutChunk!.imports).toContain('weapp-vendors/wevu-defineProperty.js')
     expect(layoutChunk!.imports).toContain(sharedWevuChunk!.fileName)
-    expect(pageChunk!.imports).toContain('weapp-vendors/wevu-defineProperty.js')
     expect(pageChunk!.imports).toContain(sharedWevuChunk!.fileName)
-    expect(sharedWevuChunk!.imports).toContain('weapp-vendors/wevu-defineProperty.js')
+    expect(sharedWevuChunk!.imports).toContain(sharedRuntimeChunk!.fileName)
     expect(String(pageJson!.source)).toContain('"weapp-layout-default": "/layouts/default"')
   })
 

@@ -145,7 +145,17 @@ describe('vue transform plugin', () => {
   }
 
   it('transform() resolves shared class style wxs path by default', async () => {
-    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      scriptMap: {
+        version: 3,
+        names: [],
+        sources: [vuePath!],
+        sourcesContent: ['export default {}'],
+        mappings: 'AAAA',
+      },
+      meta: {},
+    })
 
     const nestedVue = path.join(tmpDir!, 'pages/index/page.vue')
     await fs.ensureDir(path.dirname(nestedVue))
@@ -176,7 +186,17 @@ describe('vue transform plugin', () => {
   })
 
   it('transform() defaults classStyleRuntime to js even when wxs is available', async () => {
-    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      scriptMap: {
+        version: 3,
+        names: [],
+        sources: [vuePath!],
+        sourcesContent: ['export default {}'],
+        mappings: 'AAAA',
+      },
+      meta: {},
+    })
 
     const nestedVue = path.join(tmpDir!, 'pages/index/page.vue')
     await fs.ensureDir(path.dirname(nestedVue))
@@ -201,7 +221,17 @@ describe('vue transform plugin', () => {
   })
 
   it('transform() passes objectLiteralBindMode from config', async () => {
-    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      scriptMap: {
+        version: 3,
+        names: [],
+        sources: [vuePath!],
+        sourcesContent: ['export default {}'],
+        mappings: 'AAAA',
+      },
+      meta: {},
+    })
 
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const ctx = createCtx({
@@ -228,7 +258,17 @@ describe('vue transform plugin', () => {
   })
 
   it('transform() passes mustacheInterpolation from config', async () => {
-    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      scriptMap: {
+        version: 3,
+        names: [],
+        sources: [vuePath!],
+        sourcesContent: ['export default {}'],
+        mappings: 'AAAA',
+      },
+      meta: {},
+    })
 
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
     const ctx = createCtx({
@@ -252,6 +292,31 @@ describe('vue transform plugin', () => {
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(options.template.mustacheInterpolation).toBe('spaced')
+  })
+
+  it('transform() preserves vue entry sourcemap after injecting style imports', async () => {
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      scriptMap: {
+        version: 3,
+        names: [],
+        sources: [vuePath!],
+        sourcesContent: [await fs.readFile(vuePath!, 'utf8')],
+        mappings: 'AAAA',
+      },
+      meta: {},
+    })
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const plugin = createVueTransformPlugin(createCtx() as any)
+
+    const result = await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+
+    expect(result).toBeTruthy()
+    expect(result?.code).toContain('weapp-vite:vue-style:')
+    expect(result?.map).toBeTruthy()
+    expect(typeof result?.map).not.toBe('string')
+    expect((result?.map as any).sources).toEqual([vuePath!])
   })
 
   it('transform() uses local class style wxs path when sharing is disabled', async () => {

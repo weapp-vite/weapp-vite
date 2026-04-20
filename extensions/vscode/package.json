@@ -3,7 +3,7 @@
   "name": "@weapp-vite/vscode",
   "displayName": "weapp-vite",
   "type": "module",
-  "version": "0.1.3",
+  "version": "0.2.1",
   "private": true,
   "description": "为 weapp-vite 项目提供命令入口、状态栏、代码片段、自定义块高亮与轻量编辑器增强的 VS Code 扩展。",
   "license": "MIT",
@@ -54,8 +54,16 @@
     "onLanguage:wxml",
     "workspaceContains:**/vite.config.ts",
     "workspaceContains:**/vite.config.mts",
+    "workspaceContains:**/vite.config.cts",
     "workspaceContains:**/vite.config.js",
     "workspaceContains:**/vite.config.mjs",
+    "workspaceContains:**/vite.config.cjs",
+    "workspaceContains:**/weapp-vite.config.ts",
+    "workspaceContains:**/weapp-vite.config.mts",
+    "workspaceContains:**/weapp-vite.config.cts",
+    "workspaceContains:**/weapp-vite.config.js",
+    "workspaceContains:**/weapp-vite.config.mjs",
+    "workspaceContains:**/weapp-vite.config.cjs",
     "workspaceContains:**/package.json",
     "onCommand:weapp-vite.generate",
     "onCommand:weapp-vite.dev",
@@ -65,11 +73,8 @@
     "onCommand:weapp-vite.showProjectInfo",
     "onCommand:weapp-vite.showOutput",
     "onCommand:weapp-vite.runAction",
-    "onCommand:weapp-vite.insertJsonBlockTemplate",
     "onCommand:weapp-vite.insertDefineConfigTemplate",
     "onCommand:weapp-vite.insertDefinePageJsonTemplate",
-    "onCommand:weapp-vite.syncDefinePageJsonTitleFromJson",
-    "onCommand:weapp-vite.syncJsonTitleFromDefinePageJson",
     "onCommand:weapp-vite.insertCommonScripts",
     "onCommand:weapp-vite.createPageFromRoute",
     "onCommand:weapp-vite.createPageFromTreeItem",
@@ -87,15 +92,12 @@
     "onCommand:weapp-vite.refreshPagesTree",
     "onCommand:weapp-vite.filterProblemPagesInTree",
     "onCommand:weapp-vite.filterCurrentPageInTree",
-    "onCommand:weapp-vite.filterDriftPagesInTree",
     "onCommand:weapp-vite.clearPagesTreeFilter",
     "onCommand:weapp-vite.repairProjectIssues",
     "onCommand:weapp-vite.generateMissingComponentsFromProject",
     "onCommand:weapp-vite.generateMissingPagesFromAppJson",
     "onCommand:weapp-vite.syncUnregisteredPagesToAppJson",
-    "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem",
-    "onCommand:weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-    "onCommand:weapp-vite.syncJsonFromDefinePageJsonInTreeItem"
+    "onCommand:weapp-vite.revealPageRouteInAppJsonFromTreeItem"
   ],
   "contributes": {
     "iconThemes": [
@@ -152,11 +154,6 @@
         "category": "weapp-vite"
       },
       {
-        "command": "weapp-vite.insertJsonBlockTemplate",
-        "title": "Insert <json> Block Template",
-        "category": "weapp-vite"
-      },
-      {
         "command": "weapp-vite.insertDefineConfigTemplate",
         "title": "Insert defineConfig Template",
         "category": "weapp-vite"
@@ -164,16 +161,6 @@
       {
         "command": "weapp-vite.insertDefinePageJsonTemplate",
         "title": "Insert definePageJson Template",
-        "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
-        "title": "Sync definePageJson Title From <json>",
-        "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncJsonTitleFromDefinePageJson",
-        "title": "Sync <json> Title From definePageJson",
         "category": "weapp-vite"
       },
       {
@@ -262,11 +249,6 @@
         "category": "weapp-vite"
       },
       {
-        "command": "weapp-vite.filterDriftPagesInTree",
-        "title": "Filter Drift Pages In Explorer",
-        "category": "weapp-vite"
-      },
-      {
         "command": "weapp-vite.clearPagesTreeFilter",
         "title": "Clear Pages Explorer Filter",
         "category": "weapp-vite"
@@ -295,16 +277,6 @@
         "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
         "title": "Reveal Page Route In app.json From Explorer Item",
         "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-        "title": "Sync definePageJson From <json> In Explorer Item",
-        "category": "weapp-vite"
-      },
-      {
-        "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
-        "title": "Sync <json> From definePageJson In Explorer Item",
-        "category": "weapp-vite"
       }
     ],
     "configuration": {
@@ -328,12 +300,12 @@
         "weapp-vite.enableHover": {
           "type": "boolean",
           "default": true,
-          "description": "是否启用 package.json、vite.config.*、.vue 中的轻量 Hover 提示。"
+          "description": "是否启用 package.json、vite.config.* / weapp-vite.config.*、.vue 中的轻量 Hover 提示。"
         },
         "weapp-vite.enableCompletion": {
           "type": "boolean",
           "default": true,
-          "description": "是否启用 package.json、vite.config.*、.vue 中的上下文补全。"
+          "description": "是否启用 package.json、vite.config.* / weapp-vite.config.*、.vue 中的上下文补全。"
         },
         "weapp-vite.enableWxmlEnhancements": {
           "type": "boolean",
@@ -364,11 +336,6 @@
           "type": "boolean",
           "default": true,
           "description": "终端命令和脚本模板是否优先使用 wv 别名而不是 weapp-vite 全称。"
-        },
-        "weapp-vite.promptFileIcons": {
-          "type": "boolean",
-          "default": true,
-          "description": "检测到 weapp-vite.config.* 但当前未启用 weapp-vite File Icons 时，是否提示一键切换文件图标主题。"
         }
       }
     },
@@ -474,23 +441,11 @@
           "when": "workspaceFolderCount > 0"
         },
         {
-          "command": "weapp-vite.insertJsonBlockTemplate",
-          "when": "editorLangId == vue"
-        },
-        {
           "command": "weapp-vite.insertDefineConfigTemplate",
           "when": "resourceFilename =~ /^vite\\.config\\./"
         },
         {
           "command": "weapp-vite.insertDefinePageJsonTemplate",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncJsonTitleFromDefinePageJson",
           "when": "editorLangId == vue"
         },
         {
@@ -542,10 +497,6 @@
           "when": "workspaceFolderCount > 0"
         },
         {
-          "command": "weapp-vite.filterDriftPagesInTree",
-          "when": "workspaceFolderCount > 0"
-        },
-        {
           "command": "weapp-vite.clearPagesTreeFilter",
           "when": "workspaceFolderCount > 0"
         }
@@ -581,52 +532,32 @@
         {
           "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
           "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.missing.current)"
         },
         {
           "command": "weapp-vite.copyPageRouteFromTreeItem",
           "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
-          "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-          "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncJsonFromDefinePageJsonInTreeItem",
-          "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonFromJsonInTreeItem",
-          "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists.current || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered.current)"
         },
         {
           "command": "weapp-vite.addPageToAppJsonFromTreeItem",
           "group": "inline",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && viewItem == weappPage.unregistered.current"
         },
         {
           "command": "weapp-vite.addPageToAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current)"
         },
         {
           "command": "weapp-vite.revealPageRouteInAppJsonFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current)"
         },
         {
           "command": "weapp-vite.copyPageRouteFromTreeItem",
           "group": "navigation",
-          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.exists.drift || viewItem == weappPage.exists.drift.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current || viewItem == weappPage.unregistered.drift || viewItem == weappPage.unregistered.drift.current)"
+          "when": "view == weapp-vite.pages && (viewItem == weappPage.exists || viewItem == weappPage.exists.current || viewItem == weappPage.missing || viewItem == weappPage.missing.current || viewItem == weappPage.unregistered || viewItem == weappPage.unregistered.current)"
         }
       ],
       "view/title": [
@@ -642,11 +573,6 @@
         },
         {
           "command": "weapp-vite.filterCurrentPageInTree",
-          "group": "navigation",
-          "when": "view == weapp-vite.pages"
-        },
-        {
-          "command": "weapp-vite.filterDriftPagesInTree",
           "group": "navigation",
           "when": "view == weapp-vite.pages"
         },
@@ -673,27 +599,12 @@
       ],
       "editor/context": [
         {
-          "command": "weapp-vite.insertJsonBlockTemplate",
-          "group": "navigation",
-          "when": "editorLangId == vue"
-        },
-        {
           "command": "weapp-vite.insertDefineConfigTemplate",
           "group": "navigation",
           "when": "resourceFilename =~ /^vite\\.config\\./"
         },
         {
           "command": "weapp-vite.insertDefinePageJsonTemplate",
-          "group": "navigation",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncDefinePageJsonTitleFromJson",
-          "group": "navigation",
-          "when": "editorLangId == vue"
-        },
-        {
-          "command": "weapp-vite.syncJsonTitleFromDefinePageJson",
           "group": "navigation",
           "when": "editorLangId == vue"
         },
@@ -765,15 +676,14 @@
           {
             "id": "weapp-vite.insert-config",
             "title": "插入配置模板",
-            "description": "在 `vite.config.*` 或 `.vue` 文件中使用上下文命令插入 `defineConfig` 模板和 `<json>` 自定义块。",
+            "description": "在 `vite.config.*`、`weapp-vite.config.*` 或 `.vue` 文件中使用上下文命令插入 `defineConfig` 与 `definePageJson` 模板。",
             "media": {
               "image": "assets/logo.png",
               "altText": "weapp-vite"
             },
             "completionEvents": [
               "onCommand:weapp-vite.insertDefineConfigTemplate",
-              "onCommand:weapp-vite.insertDefinePageJsonTemplate",
-              "onCommand:weapp-vite.insertJsonBlockTemplate"
+              "onCommand:weapp-vite.insertDefinePageJsonTemplate"
             ]
           },
           {
@@ -791,7 +701,7 @@
           {
             "id": "weapp-vite.open-project-file",
             "title": "快速打开关键文件和页面",
-            "description": "运行 `weapp-vite: Open Project File`，快速跳转到 `package.json`、`vite.config.*`、`app.json` 和已声明页面。",
+            "description": "运行 `weapp-vite: Open Project File`，快速跳转到 `package.json`、`vite.config.*`、`weapp-vite.config.*`、`app.json` 和已声明页面。",
             "media": {
               "image": "assets/logo.png",
               "altText": "weapp-vite"
@@ -824,7 +734,11 @@
     "typecheck": "pnpm exec tsc -p tsconfig.json --noEmit",
     "test": "pnpm vitest run -c vitest.config.ts",
     "test:host:smoke": "node --import tsx scripts/vscode-host-smoke.ts",
-    "test:vsix:e2e": "pnpm run package:dry-run && node --import tsx scripts/vsix-e2e.ts",
+    "test:vsix:e2e": "pnpm run package:dry-run && node --import tsx scripts/vsix-e2e.ts all",
+    "test:vsix:e2e:standalone": "pnpm run package:dry-run && node --import tsx scripts/vsix-e2e.ts standalone",
+    "test:vsix:e2e:vue-official": "pnpm run package:dry-run && node --import tsx scripts/vsix-e2e.ts vue-official",
+    "open:vsix:e2e:standalone": "pnpm run package:dry-run && node --import tsx scripts/launch-vsix-vscode.ts standalone",
+    "open:vsix:e2e:vue-official": "pnpm run package:dry-run && node --import tsx scripts/launch-vsix-vscode.ts vue-official",
     "smoke:dist": "node --import tsx scripts/smoke-test.ts",
     "check": "pnpm run lint && pnpm run test && pnpm run build && pnpm run smoke:dist",
     "check:package": "node --import tsx scripts/check-package.ts",

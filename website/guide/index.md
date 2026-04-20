@@ -36,11 +36,11 @@ keywords:
 1. 下载并安装最新版 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)。
 2. 启动开发者工具，并先确认当前账号已登录。`weapp-ide-cli` / `weapp-vite` 现在会在调用前自动尝试预热 DevTools 安全设置，但首次仍建议手动确认开发者工具可正常工作。
 3. 如果你希望命令行默认自动信任项目，可执行：
-
-```sh
-weapp config set autoBootstrapDevtools true
-weapp config set autoTrustProject true
-```
+   ```sh
+   weapp config set autoBootstrapDevtools true
+   weapp config set autoTrustProject true
+   ```
+4. 如果你使用 VS Code，建议安装扩展市场里的 `weapp-vite` 扩展，获得命令入口、页面树、生成器、配置提示和 WXML 编辑器增强。详见 [VS Code 扩展](/guide/vscode-extension)。
 
 ## 1. 使用官方模板
 

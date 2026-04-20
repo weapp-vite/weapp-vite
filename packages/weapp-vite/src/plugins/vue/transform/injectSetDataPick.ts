@@ -2,6 +2,7 @@ import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type * as t from '@weapp-vite/ast/babelTypes'
 import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
+import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
 import { collectSetDataPickKeysFromTemplateCode } from '../../../ast'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { isAutoSetDataPickEnabledWithPreset } from './wevuPreset'
@@ -213,7 +214,7 @@ export function collectSetDataPickKeysFromTemplate(
 export function injectSetDataPickInJs(
   source: string,
   pickKeys: string[],
-): { code: string, transformed: boolean } {
+): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
   if (!pickKeys.length) {
     return { code: source, transformed: false }
   }
@@ -248,6 +249,10 @@ export function injectSetDataPickInJs(
     return { code: source, transformed: false }
   }
 
-  const generated = generate(ast, { retainLines: true })
-  return { code: generated.code, transformed: true }
+  const generated = generate(ast, {
+    retainLines: true,
+    sourceMaps: true,
+    sourceFileName: 'inline.js',
+  }, source)
+  return { code: generated.code, transformed: true, map: generated.map as EncodedSourceMapLike }
 }

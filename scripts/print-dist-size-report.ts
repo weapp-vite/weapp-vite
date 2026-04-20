@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { gzipSync } from 'node:zlib'
 import { colors } from '@weapp-core/logger'
 
 interface WorkspacePackage {
@@ -13,6 +14,7 @@ interface WorkspacePackage {
 
 interface DistSizeEntry extends WorkspacePackage {
   bytes: number
+  gzipBytes: number
   fileCount: number
 }
 
@@ -24,13 +26,13 @@ interface PublishSizeEntry extends WorkspacePackage {
 }
 
 interface SizeGroup<TEntry> {
-  key: 'packages' | 'e2e-apps'
+  key: 'packages' | 'packages-runtime' | 'e2e-apps'
   label: string
   entries: TEntry[]
 }
 
 const ROOT = process.cwd()
-const WORKSPACE_DIRS = ['packages', '@weapp-core', 'e2e-apps', 'extensions']
+const WORKSPACE_DIRS = ['packages', 'packages-runtime', '@weapp-core', 'e2e-apps', 'extensions']
 const INFO_COLOR = colors.cyan
 const MUTED_COLOR = colors.dim
 const NPM_PACK_CACHE_DIR = path.join(ROOT, '.cache', 'npm-pack-report')
@@ -54,8 +56,9 @@ function formatBytes(bytes: number) {
   return `${value.toFixed(precision)} ${units[unitIndex]}`
 }
 
-async function getDirectorySize(dir: string): Promise<{ bytes: number, fileCount: number }> {
+async function getDirectorySize(dir: string): Promise<{ bytes: number, gzipBytes: number, fileCount: number }> {
   let bytes = 0
+  let gzipBytes = 0
   let fileCount = 0
   const entries = await readdir(dir, { withFileTypes: true })
 
@@ -64,6 +67,7 @@ async function getDirectorySize(dir: string): Promise<{ bytes: number, fileCount
     if (entry.isDirectory()) {
       const child = await getDirectorySize(target)
       bytes += child.bytes
+      gzipBytes += child.gzipBytes
       fileCount += child.fileCount
       continue
     }
@@ -73,11 +77,13 @@ async function getDirectorySize(dir: string): Promise<{ bytes: number, fileCount
     }
 
     const fileStat = await stat(target)
+    const content = await readFile(target)
     bytes += fileStat.size
+    gzipBytes += gzipSync(content, { level: 9 }).byteLength
     fileCount += 1
   }
 
-  return { bytes, fileCount }
+  return { bytes, gzipBytes, fileCount }
 }
 
 function resolveSizeColor(bytes: number) {
@@ -91,6 +97,9 @@ function resolveSizeColor(bytes: number) {
 }
 
 function resolveGroupKey(relativeDir: string): SizeGroup<unknown>['key'] {
+  if (relativeDir.startsWith('packages-runtime/')) {
+    return 'packages-runtime'
+  }
   return relativeDir.startsWith('e2e-apps/') ? 'e2e-apps' : 'packages'
 }
 
@@ -188,10 +197,11 @@ async function collectDistEntries(workspacePackages: WorkspacePackage[]) {
       if (!distStat.isDirectory()) {
         continue
       }
-      const { bytes, fileCount } = await getDirectorySize(distDir)
+      const { bytes, gzipBytes, fileCount } = await getDirectorySize(distDir)
       entries.push({
         ...item,
         bytes,
+        gzipBytes,
         fileCount,
       })
     }
@@ -266,12 +276,18 @@ function collectPublishEntries(workspacePackages: WorkspacePackage[]) {
 async function printDistSizeReport(workspacePackages: WorkspacePackage[]) {
   const entries = await collectDistEntries(workspacePackages)
   const totalBytes = entries.reduce((sum, item) => sum + item.bytes, 0)
+  const totalGzipBytes = entries.reduce((sum, item) => sum + item.gzipBytes, 0)
   const totalFiles = entries.reduce((sum, item) => sum + item.fileCount, 0)
   const groups: Array<SizeGroup<DistSizeEntry>> = [
     {
       key: 'packages',
       label: 'Packages',
       entries: entries.filter(item => resolveGroupKey(item.relativeDir) === 'packages'),
+    },
+    {
+      key: 'packages-runtime',
+      label: 'Runtime Packages',
+      entries: entries.filter(item => resolveGroupKey(item.relativeDir) === 'packages-runtime'),
     },
     {
       key: 'e2e-apps',
@@ -287,11 +303,15 @@ async function printDistSizeReport(workspacePackages: WorkspacePackage[]) {
     printGroup(group, totalBytes, {
       title: 'Dist Size',
       getSize: entry => entry.bytes,
+      renderSuffix: entry => `gzip ${formatBytes(entry.gzipBytes)}`,
     })
   }
   console.log('')
   console.log(
     `${colors.bold('Total')}  ${colors.bold(formatBytes(totalBytes))}  ${MUTED_COLOR(`${totalFiles} files`)}`,
+  )
+  console.log(
+    `${colors.bold('Total (gzip)')}  ${colors.bold(formatBytes(totalGzipBytes))}  ${MUTED_COLOR(`${totalFiles} files`)}`,
   )
 }
 

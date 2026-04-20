@@ -1,6 +1,28 @@
 import { REQUEST_CLIENTS_REAL_DEV_BASE_URL } from './requestClientsRealDevBaseUrl'
+import { createRequestClientsRealHostTraceStore } from './requestHostTrace'
 
 const TRAILING_SLASH_RE = /\/+$/
+const requestHostTrace = createRequestClientsRealHostTraceStore()
+
+function syncRequestHostTraceToApp() {
+  if (typeof getApp !== 'function') {
+    return
+  }
+
+  try {
+    const app = getApp<{ globalData?: Record<string, unknown> }>()
+    if (!app) {
+      return
+    }
+
+    app.globalData = app.globalData ?? {}
+    app.globalData.requestHostTrace = requestHostTrace
+  }
+  catch {
+  }
+}
+
+syncRequestHostTraceToApp()
 
 export interface RequestCaseState {
   pageStatus: string
@@ -33,6 +55,7 @@ export function createRequestCaseState(): RequestCaseState {
 }
 
 export function resolveBaseUrl(query: Record<string, unknown> | undefined) {
+  syncRequestHostTraceToApp()
   const queryBaseUrl = typeof query?.baseUrl === 'string' ? query.baseUrl : ''
   const fallbackBaseUrl = REQUEST_CLIENTS_REAL_DEV_BASE_URL
   const raw = queryBaseUrl || fallbackBaseUrl

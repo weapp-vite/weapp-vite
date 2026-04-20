@@ -4,6 +4,10 @@ import path from 'node:path'
 import fg from 'fast-glob'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_STABLE_TESTS } from './hmr-guard-manifest'
+import {
+  shouldForceDiskBackedMiniProgramDevChecks,
+  supportsDiskBackedMiniProgramDev,
+} from './mini-program-dev-support'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
@@ -64,7 +68,11 @@ const BUILD_ONLY_EXCLUDES = new Set([
   'ci/wevu-runtime.hmr.test.ts',
 ])
 
-type SuiteFactory = () => SuiteTask[]
+interface SuiteTaskFactoryOptions {
+  skipDiskBackedDevProbe?: boolean
+}
+
+type SuiteFactory = (options?: SuiteTaskFactoryOptions) => SuiteTask[] | Promise<SuiteTask[]>
 
 export interface E2ESuiteDefinition {
   description: string
@@ -113,7 +121,7 @@ function createCommandTask(label: string, args: string[]): SuiteTask {
   }
 }
 
-export function getCiTasks() {
+export async function getCiTasks(options: SuiteTaskFactoryOptions = {}) {
   const buildOnlyFiles = fg.sync('ci/**/*.test.ts', {
     cwd: ROOT,
     absolute: true,
@@ -121,13 +129,23 @@ export function getCiTasks() {
     ignore: Array.from(BUILD_ONLY_EXCLUDES),
   }).sort()
 
-  return [
+  const tasks = [
     ...buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
     createCommandTask('hmr-guard:full', ['full']),
     createCommandTask('hmr-guard:shared-chunks-auto', ['shared-chunks-auto']),
-    createVitestTask(CI_CONFIG_PATH, HMR_GUARD_STABLE_TESTS.find(filePath => filePath.endsWith('/auto-import-vue-sfc.test.ts'))!, 'ci/auto-import-vue-sfc.test.ts (rerun)'),
-    createVitestTask(CI_CONFIG_PATH, path.resolve(ROOT, 'ci/style-import-vue.test.ts')),
   ]
+
+  if (
+    !options.skipDiskBackedDevProbe
+    && (shouldForceDiskBackedMiniProgramDevChecks() || await supportsDiskBackedMiniProgramDev())
+  ) {
+    tasks.push(
+      createVitestTask(CI_CONFIG_PATH, HMR_GUARD_STABLE_TESTS.find(filePath => filePath.endsWith('/auto-import-vue-sfc.test.ts'))!, 'ci/auto-import-vue-sfc.test.ts (rerun)'),
+      createVitestTask(CI_CONFIG_PATH, path.resolve(ROOT, 'ci/style-import-vue.test.ts')),
+    )
+  }
+
+  return tasks
 }
 
 export function getIdeTasks() {
@@ -281,18 +299,18 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
   },
 }
 
-export function listE2ESuites() {
-  return Object.values(E2E_SUITES).map((suite) => {
-    const tasks = suite.tasks()
+export async function listE2ESuites() {
+  return await Promise.all(Object.values(E2E_SUITES).map(async (suite) => {
+    const tasks = await suite.tasks({ skipDiskBackedDevProbe: true })
     return {
       name: suite.name,
       description: suite.description,
       taskCount: tasks.length,
       labels: tasks.map(task => task.label),
     }
-  })
+  }))
 }
 
-export function getSuiteTasks(mode: string) {
-  return E2E_SUITES[mode]?.tasks() ?? []
+export async function getSuiteTasks(mode: string) {
+  return await E2E_SUITES[mode]?.tasks() ?? []
 }

@@ -6,13 +6,7 @@ import {
   getDefineConfigTemplate,
   getDefinePageJsonTemplate,
   getDocItems,
-  getJsonBlockSnippet,
   getPageVueTemplate,
-  getVuePageConfigDriftFields,
-  getVuePageTextWithSyncedDefinePageJsonFields,
-  getVuePageTextWithSyncedDefinePageJsonTitle,
-  getVuePageTextWithSyncedJsonFields,
-  getVuePageTextWithSyncedJsonTitle,
 } from '../editor/content'
 import {
   applySuggestedScripts,
@@ -63,21 +57,6 @@ function getTreePageNodeAppJsonPath(item: any) {
   return typeof item?.appJsonPath === 'string' && item.appJsonPath.trim() ? item.appJsonPath : null
 }
 
-function getTreePageFilePath(item: any) {
-  return typeof item?.pageFilePath === 'string' && item.pageFilePath.trim() ? item.pageFilePath : null
-}
-
-async function applyFullDocumentText(document: any, nextText: string) {
-  const fullRange = new vscode.Range(
-    document.positionAt(0),
-    document.positionAt(document.getText().length),
-  )
-  const edit = new vscode.WorkspaceEdit()
-
-  edit.replace(document.uri, fullRange, nextText)
-  await vscode.workspace.applyEdit(edit)
-}
-
 async function insertSnippetToActiveEditor(snippetText: string) {
   const editor = vscode.window.activeTextEditor
 
@@ -89,22 +68,11 @@ async function insertSnippetToActiveEditor(snippetText: string) {
   await editor.insertSnippet(new vscode.SnippetString(snippetText), editor.selection.active)
 }
 
-export async function insertJsonBlockTemplate() {
-  const editor = vscode.window.activeTextEditor
-
-  if (!editor || !isVueDocument(editor.document)) {
-    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 .vue 文件后再插入 <json> 模板。')
-    return
-  }
-
-  await insertSnippetToActiveEditor(getJsonBlockSnippet())
-}
-
 export async function insertDefineConfigTemplate() {
   const editor = vscode.window.activeTextEditor
 
   if (!editor || !isViteConfigDocument(editor.document)) {
-    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 vite.config.* 文件后再插入模板。')
+    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 vite.config.* 或 weapp-vite.config.* 文件后再插入模板。')
     return
   }
 
@@ -127,72 +95,6 @@ export async function insertDefinePageJsonTemplate() {
   }
 
   await insertSnippetToActiveEditor(getDefinePageJsonTemplate())
-}
-
-export async function syncJsonTitleFromDefinePageJson(editorOrDocument: any) {
-  const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
-  const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
-
-  if (!document || !isVueDocument(document)) {
-    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 .vue 文件后再同步页面标题。')
-    return
-  }
-
-  const nextText = getVuePageTextWithSyncedJsonTitle(document.getText())
-
-  if (!nextText) {
-    void vscode.window.showInformationMessage('weapp-vite: 当前页面标题配置已同步。')
-    return
-  }
-
-  const fullRange = new vscode.Range(
-    document.positionAt(0),
-    document.positionAt(document.getText().length),
-  )
-
-  if (editor && editor.document === document) {
-    await editor.edit((editBuilder) => {
-      editBuilder.replace(fullRange, nextText)
-    })
-  }
-  else {
-    const edit = new vscode.WorkspaceEdit()
-    edit.replace(document.uri, fullRange, nextText)
-    await vscode.workspace.applyEdit(edit)
-  }
-}
-
-export async function syncDefinePageJsonTitleFromJson(editorOrDocument: any) {
-  const editor = getEditor(editorOrDocument ?? vscode.window.activeTextEditor)
-  const document = editor?.document ?? editorOrDocument?.document ?? editorOrDocument
-
-  if (!document || !isVueDocument(document)) {
-    void vscode.window.showWarningMessage('weapp-vite: 请先打开一个 .vue 文件后再同步页面标题。')
-    return
-  }
-
-  const nextText = getVuePageTextWithSyncedDefinePageJsonTitle(document.getText())
-
-  if (!nextText) {
-    void vscode.window.showInformationMessage('weapp-vite: 当前页面标题配置已同步。')
-    return
-  }
-
-  const fullRange = new vscode.Range(
-    document.positionAt(0),
-    document.positionAt(document.getText().length),
-  )
-
-  if (editor && editor.document === document) {
-    await editor.edit((editBuilder) => {
-      editBuilder.replace(fullRange, nextText)
-    })
-  }
-  else {
-    const edit = new vscode.WorkspaceEdit()
-    edit.replace(document.uri, fullRange, nextText)
-    await vscode.workspace.applyEdit(edit)
-  }
 }
 
 export async function insertCommonScripts(editorOrDocument: any, refreshPackageJsonDiagnostics: (document: any) => void) {
@@ -866,50 +768,6 @@ export async function copyPageRouteFromTreeItem(item: any, state: any) {
   void vscode.window.showInformationMessage(`weapp-vite: 已复制页面路由 ${route}`)
 }
 
-export async function syncJsonFromDefinePageJsonInTreeItem(item: any) {
-  const pageFilePath = getTreePageFilePath(item)
-
-  if (!pageFilePath) {
-    void vscode.window.showWarningMessage('weapp-vite: 当前树节点没有可同步的页面文件。')
-    return
-  }
-
-  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(pageFilePath))
-  const driftFields = getVuePageConfigDriftFields(document.getText())
-  const nextText = getVuePageTextWithSyncedJsonFields(document.getText(), driftFields)
-
-  if (!nextText) {
-    void vscode.window.showInformationMessage('weapp-vite: 当前页面配置已同步。')
-    return
-  }
-
-  await applyFullDocumentText(document, nextText)
-  await document.save()
-  await vscode.window.showTextDocument(document, { preview: false })
-}
-
-export async function syncDefinePageJsonFromJsonInTreeItem(item: any) {
-  const pageFilePath = getTreePageFilePath(item)
-
-  if (!pageFilePath) {
-    void vscode.window.showWarningMessage('weapp-vite: 当前树节点没有可同步的页面文件。')
-    return
-  }
-
-  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(pageFilePath))
-  const driftFields = getVuePageConfigDriftFields(document.getText())
-  const nextText = getVuePageTextWithSyncedDefinePageJsonFields(document.getText(), driftFields)
-
-  if (!nextText) {
-    void vscode.window.showInformationMessage('weapp-vite: 当前页面配置已同步。')
-    return
-  }
-
-  await applyFullDocumentText(document, nextText)
-  await document.save()
-  await vscode.window.showTextDocument(document, { preview: false })
-}
-
 export async function showCommandPalette(state: any) {
   const context = await ensureProjectContext('打开命令面板')
 
@@ -978,7 +836,7 @@ export async function showCommandPalette(state: any) {
     },
     {
       label: '$(go-to-file) 打开关键文件 / 页面',
-      description: '快速打开 vite.config、app.json、package.json 和页面文件',
+      description: '快速打开 vite.config、weapp-vite.config、app.json、package.json 和页面文件',
       detail: currentPage
         ? `当前页面 ${currentPage.route}。从 weapp-vite 项目关键入口中直接跳转。`
         : '从 weapp-vite 项目关键入口中直接跳转。',
@@ -1071,11 +929,6 @@ export async function showCommandPalette(state: any) {
 
   if (selected.commandId === 'insertDefinePageJsonTemplate') {
     await insertDefinePageJsonTemplate()
-    return
-  }
-
-  if (selected.commandId === 'insertJsonBlockTemplate') {
-    await insertJsonBlockTemplate()
     return
   }
 

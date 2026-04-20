@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite-lib-template",
   "type": "module",
-  "version": "6.0.6",
+  "version": "6.0.8",
   "private": true,
   "description": "weapp-vite 组件库（lib 模式）模板",
   "author": "ice breaker <1324318532@qq.com>",
@@ -32,12 +32,12 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "@icebreakers/eslint-config": "^4.0.5",
-    "@icebreakers/stylelint-config": "^3.0.4",
-    "eslint": "^10.2.0",
+    "@icebreakers/eslint-config": "catalog:",
+    "@icebreakers/stylelint-config": "catalog:",
+    "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
-    "stylelint": "^17.8.0",
+    "stylelint": "catalog:",
     "typescript": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"

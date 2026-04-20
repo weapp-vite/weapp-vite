@@ -1,9 +1,10 @@
-import { DefaultMiniProgramHostNamespace } from './miniprogramHostSources'
+import type { MiniProgramHostNamespace } from './miniprogramHostSources'
 
-export {
+export type {
   AlipayMiniProgramHostNamespace,
   DefaultMiniProgramHostNamespace,
   DouyinMiniProgramHostNamespace,
+  MiniProgramHostNamespace,
   TtMiniProgramHostNamespace,
   WechatMiniProgramHostNamespace,
 } from './miniprogramHostSources'
@@ -23,27 +24,6 @@ export type {
   TtMiniProgramHostSourceContract,
   WechatMiniProgramHostSourceContract,
 } from './miniprogramHostSources'
-
-/* eslint-disable ts/no-namespace -- 通过单点 namespace 别名集中宿主类型入口，避免文件内重复散落宿主底座类型引用。 */
-export declare namespace MiniProgramHostNamespace {
-  export import App = DefaultMiniProgramHostNamespace.App
-  export import Behavior = DefaultMiniProgramHostNamespace.Behavior
-  export import Component = DefaultMiniProgramHostNamespace.Component
-  export import Page = DefaultMiniProgramHostNamespace.Page
-  export import BoundingClientRectCallbackResult = DefaultMiniProgramHostNamespace.BoundingClientRectCallbackResult
-  export import ScrollOffsetCallbackResult = DefaultMiniProgramHostNamespace.ScrollOffsetCallbackResult
-  export import NodesRef = DefaultMiniProgramHostNamespace.NodesRef
-  export import SelectorQuery = DefaultMiniProgramHostNamespace.SelectorQuery
-  export import CreateIntersectionObserverOption = DefaultMiniProgramHostNamespace.CreateIntersectionObserverOption
-  export import IntersectionObserver = DefaultMiniProgramHostNamespace.IntersectionObserver
-  export import OnUnhandledRejectionListenerResult = DefaultMiniProgramHostNamespace.OnUnhandledRejectionListenerResult
-  export import OnThemeChangeListenerResult = DefaultMiniProgramHostNamespace.OnThemeChangeListenerResult
-  export import OnMemoryWarningListenerResult = DefaultMiniProgramHostNamespace.OnMemoryWarningListenerResult
-  export import SwitchTabOption = DefaultMiniProgramHostNamespace.SwitchTabOption
-  export import ReLaunchOption = DefaultMiniProgramHostNamespace.ReLaunchOption
-  export import RedirectToOption = DefaultMiniProgramHostNamespace.RedirectToOption
-  export import NavigateToOption = DefaultMiniProgramHostNamespace.NavigateToOption
-}
 
 export type HostMiniProgramComponentBehaviorOptions = MiniProgramHostNamespace.Component.ComponentOptions
 export type HostMiniProgramComponentTrivialOption = MiniProgramHostNamespace.Component.TrivialOption

@@ -27,14 +27,14 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'custom-tab-bar/index.js': [
     /require\(["']\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/weapp-vendors\/wevu-defineProperty\.js["']\)/,
+    /require\(["']\.\.\/weapp-vendors\/wevu-ref\.js["']\)/,
     /\bComponent\(/,
     /require\.async\(["']\.\.\/pages\/index\/async\.js["']\)/,
   ],
   'pages/index/async.js': [/exports\.async/, /exports\.default/],
   'pages/index/index.js': [
     /require\(["']\.\.\/\.\.\/rolldown-runtime\.js["']\)/,
-    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js["']\)/,
+    /require\(["']\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js["']\)/,
     /\bPage\(/,
     /require\.async\(["']\.\/async["']\)/,
   ],
@@ -48,20 +48,26 @@ const jsExpectations: Record<string, Array<RegExp | string>> = {
   ],
   'weapp-vendors/wevu-defineProperty.js': [
     /__commonJS(?:Min)?/,
-    /module\.exports/,
+    /\bnextTick\b/,
   ],
   'wevu-runtime.js': [
-    /require\(["']\.\/weapp-vendors\/wevu-defineProperty\.js["']\)/,
+    /require\(["']\.\/(?:weapp-vendors\/)?wevu-ref\.js["']\)/,
     /\bcreateWevuComponent\b/,
   ],
   'weapp-vendors/wevu-src.js': [
-    /require\(["']\.\/wevu-defineProperty\.js["']\)/,
+    /require\(["']\.\/wevu-ref\.js["']\)/,
     /\bcreateWevuComponent\b/,
   ],
   'rolldown-runtime.js': [/Object\.defineProperty/],
 }
 
 function normalizeDistFile(file: string) {
+  if (/^weapp-vendors\/wevu-ref\.js$/.test(file)) {
+    return 'weapp-vendors/wevu-defineProperty.js'
+  }
+  if (/^weapp-vendors\/wevu-src\.js$/.test(file)) {
+    return 'wevu-runtime.js'
+  }
   if (/^src-[\w-]+\.js$/.test(file)) {
     return 'wevu-runtime.js'
   }
@@ -115,7 +121,7 @@ describe.skipIf(CI.isCI)('tabbar-appbar', () => {
     expect(await stat(path.resolve(distDir)).then(() => true, () => false)).toBe(true)
 
     const files = await scanFiles(distDir)
-    expect(files.map(normalizeDistFile)).toMatchSnapshot()
+    expect(files.map(normalizeDistFile).sort()).toMatchSnapshot()
     for (const file of files) {
       const content = await readFile(path.resolve(distDir, file), 'utf-8')
       if (path.extname(file) === '.js') {

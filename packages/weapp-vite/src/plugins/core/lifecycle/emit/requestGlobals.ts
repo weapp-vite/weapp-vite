@@ -1,3 +1,4 @@
+import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { WeappInjectRequestGlobalsTarget } from '../../../../types'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@weapp-core/constants'
 import path from 'pathe'
 import {
+  createRequestGlobalsInstallerOptionsCode,
   createRequestGlobalsPassiveBindingsCode,
   FULL_REQUEST_GLOBAL_TARGETS,
   resolveAutoRequestGlobalsTargets,
@@ -166,6 +168,7 @@ export function injectRequestGlobalsBundleRuntime(
   bundle: OutputBundle,
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
+  networkDefaults?: MiniProgramNetworkDefaults,
 ) {
   const installerChunks = new Map<string, string>()
   if (targets.length === 0) {
@@ -200,8 +203,9 @@ export function injectRequestGlobalsBundleRuntime(
     const syntheticExportCode = exportName
       ? ''
       : `Object.defineProperty(exports,${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)},{enumerable:false,get:function(){return ${installerName}}});`
+    const installerOptionsCode = createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)
     const runtimeBindingCode = [
-      `const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = ${installerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`,
+      `const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = ${installerName}(${installerOptionsCode}) || globalThis`,
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}}catch{}`),
       ...bindingTargets.map(target => `${target} = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
@@ -267,6 +271,7 @@ export function injectRequestGlobalsLocalBindings(
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
   entriesMap: Map<string, { type?: string } | undefined> | undefined,
+  networkDefaults?: MiniProgramNetworkDefaults,
 ) {
   if (targets.length === 0) {
     return
@@ -309,10 +314,11 @@ export function injectRequestGlobalsLocalBindings(
       requireImportLiteral = requireMatch[2] ?? null
       break
     }
+    const installerOptionsCode = createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)
     const installerHostExpression = inlineInstallerName
-      ? `${inlineInstallerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
+      ? `${inlineInstallerName}(${installerOptionsCode}) || globalThis`
       : requireImportLiteral && exportName
-        ? `${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
+        ? `${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}](${installerOptionsCode}) || globalThis`
         : null
     if (!installerHostExpression) {
       const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
@@ -372,6 +378,7 @@ export function createRequestGlobalsPreludeCode(
   installerChunks: Map<string, string>,
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
+  networkDefaults?: MiniProgramNetworkDefaults,
 ) {
   const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
   if (chunkTargets.length === 0 || chunk.code.includes(REQUEST_GLOBAL_PRELUDE_MARKER)) {
@@ -387,14 +394,14 @@ export function createRequestGlobalsPreludeCode(
   let installerHostCode: string | undefined
 
   if (installerName && exportName) {
-    installerHostCode = `${installerName}({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
+    installerHostCode = `${installerName}(${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
   }
   else {
     const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
     if (!installerImport?.requireImportLiteral || !installerImport.exportName) {
       return undefined
     }
-    installerHostCode = `require(${installerImport.requireImportLiteral})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
+    installerHostCode = `require(${installerImport.requireImportLiteral})[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
   }
 
   return [
@@ -418,6 +425,7 @@ export function createRequestGlobalsPreludeAssetCode(
   installerChunks: Map<string, string>,
   targets: WeappInjectRequestGlobalsTarget[],
   mode: 'auto' | 'explicit',
+  networkDefaults?: MiniProgramNetworkDefaults,
 ) {
   const chunkTargets = resolveChunkRequestGlobalsTargets(chunk.code, targets, mode)
   if (chunkTargets.length === 0) {
@@ -433,7 +441,7 @@ export function createRequestGlobalsPreludeAssetCode(
     return undefined
   }
 
-  const installerHostCode = `require(${JSON.stringify(toRequireRequestPath(preludeFileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}]({ targets: ${JSON.stringify(chunkTargets)} }) || globalThis`
+  const installerHostCode = `require(${JSON.stringify(toRequireRequestPath(preludeFileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
 
   return [
     `/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`,

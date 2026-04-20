@@ -9,6 +9,7 @@ export default defineConfig({
     './src/api',
     './src/fetch',
     './src/router',
+    './src/web-apis',
     './src/vue-demi',
   ],
   format: ['esm'],

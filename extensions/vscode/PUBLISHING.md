@@ -20,6 +20,7 @@
 - 当 `extensions/vscode` 有需要发布的改动时，新增一条指向 `@weapp-vite/vscode` 的 changeset
 - release PR 由仓库统一的 changeset 流程生成，扩展版本号与 `CHANGELOG.md` 也由该流程统一写入
 - release PR 合并到 `main` 后，会触发 `.github/workflows/release.yml`
+- `release.yml` 只允许在 `main` ref 上执行实际发布；即使手动 dispatch 到 `changeset-release/main` 这类未合并分支，也不会发布 Marketplace
 - `release.yml` 会先执行现有 npm release 流程，再查询 VS Code Marketplace 当前线上版本
 - 如果 `extensions/vscode/package.json` 当前版本高于 Marketplace 线上版本，且对应 tag 尚不存在，则执行 `pnpm --dir extensions/vscode run publish:vsce`
 - 这样即使某次首次发布失败，只要线上版本仍然落后，后续成功的 release run 也会自动补发
@@ -71,6 +72,8 @@ VSCE_PAT=your_token pnpm run publish:vsce
 - `pnpm run test` 通过 Vitest 执行 TypeScript 单元测试
 - `pnpm run smoke:dist` 会加载编译后的 `dist/extension.js`，并用模拟的 VS Code Host 验证扩展激活
 - `pnpm run test:host:smoke` 会下载并启动真实 VS Code 宿主，执行最小插件烟测，适合放在 CI 中兜底安装后行为
+- `pnpm run test:vsix:e2e` 会先生成本地 `.vsix`，再分别验证“仅安装 weapp-vite”和“安装 weapp-vite + Vue Official”两种安装态场景
+- `pnpm run open:vsix:e2e:standalone` / `pnpm run open:vsix:e2e:vue-official` 可直接拉起对应安装态 VS Code，便于发布前手工检查；打开的工作区已经预置配置文件、分包、缺失页、未注册页、legacy `<json>` 页面、缺失组件和 `.wxml` 文件，适合集中回归插件入口
 - `pnpm run check:vsix` 会打出本地 `.vsix`，并校验最终归档里的文件列表
 - `check:publish` 已经包含 `lint`、`test` 和打包校验，是最稳妥的发布前关卡
 - `release:marketplace:plan` 会检测当前版本是否高于 Marketplace 线上版本，并在 CI 中写入 GitHub Actions 输出变量
@@ -94,6 +97,7 @@ pnpm --dir extensions/vscode run test:host:smoke
 
 ```bash
 pnpm --dir extensions/vscode run package:dry-run
+pnpm --dir extensions/vscode run test:vsix:e2e
 ```
 
 这个仓库目前包含以下相关工作流：

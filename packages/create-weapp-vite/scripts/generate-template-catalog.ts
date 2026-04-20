@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import nodePath from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { inspect } from 'node:util'
@@ -8,6 +9,23 @@ import { parse } from 'yaml'
 interface WorkspaceCatalog {
   catalog?: Record<string, unknown>
   catalogs?: Record<string, Record<string, unknown>>
+}
+
+function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
+  if (!entryArg) {
+    return false
+  }
+
+  const resolvedEntryPath = nodePath.isAbsolute(entryArg)
+    ? entryArg
+    : nodePath.resolve(entryArg)
+
+  try {
+    return moduleUrl === pathToFileURL(resolvedEntryPath).href
+  }
+  catch {
+    return false
+  }
 }
 
 function normalizeCatalog(catalog?: Record<string, unknown>): Record<string, string> {
@@ -86,6 +104,6 @@ export async function main() {
   return true
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
   await main()
 }

@@ -1,10 +1,14 @@
+import * as webApis from '@wevu/web-apis'
+import { fetch as webApisFetch } from '@wevu/web-apis/fetch'
 import { describe, expect, it } from 'vitest'
 import * as api from '@/api'
+import * as fetchEntry from '@/fetch'
 import * as root from '@/index'
 import * as reactivity from '@/reactivity'
 import * as router from '@/router'
 import * as runtime from '@/runtime'
 import * as store from '@/store'
+import * as webApisEntry from '@/web-apis'
 
 const ROOT_RUNTIME_EXPORTS = [
   'addMutationRecorder',
@@ -175,6 +179,26 @@ describe('export barrels', () => {
 
   it('covers all runtime exports of root entry', () => {
     const keys = Object.keys(root).sort()
-    expect(keys).toEqual(ROOT_RUNTIME_EXPORTS)
+    expect(keys).toEqual([...new Set([
+      ...ROOT_RUNTIME_EXPORTS,
+      ...Object.keys(webApis),
+    ])].sort())
+  })
+
+  it('keeps fetch entry focused on local fetch exports', () => {
+    expect(fetchEntry.fetch).toBeTypeOf('function')
+    expect(fetchEntry.fetch).toBe(webApisFetch)
+    expect('installWebRuntimeGlobals' in fetchEntry).toBe(false)
+    expect('setMiniProgramNetworkDefaults' in fetchEntry).toBe(false)
+  })
+
+  it('re-exports web api helpers from web-apis entry', () => {
+    expect(webApisEntry.installWebRuntimeGlobals).toBe(webApis.installWebRuntimeGlobals)
+    expect(webApisEntry.installAbortGlobals).toBe(webApis.installAbortGlobals)
+    expect(webApisEntry.HeadersPolyfill).toBe(webApis.HeadersPolyfill)
+    expect(webApisEntry.RequestPolyfill).toBe(webApis.RequestPolyfill)
+    expect(webApisEntry.ResponsePolyfill).toBe(webApis.ResponsePolyfill)
+    expect(webApisEntry.setMiniProgramNetworkDefaults).toBe(webApis.setMiniProgramNetworkDefaults)
+    expect(webApisEntry.WebSocketPolyfill).toBe(webApis.WebSocketPolyfill)
   })
 })

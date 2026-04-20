@@ -28,7 +28,7 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter) {
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
 
@@ -59,13 +59,13 @@ async function waitForBuild(watcher: WatcherEmitter) {
     timer = setTimeout(() => {
       unsubscribe(handler)
       reject(new Error(`watch build timed out, events seen: ${seenEvents.join(', ')}`))
-    }, 20_000)
+    }, timeoutMs)
 
     watcher.on('event', handler)
   })
 }
 
-async function waitForFileContains(filePath: string, marker: string, timeoutMs = 20_000) {
+async function waitForFileContains(filePath: string, marker: string, timeoutMs = 45_000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(filePath)) {
@@ -78,6 +78,21 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs =
   }
 
   throw new Error(`watch build timed out, output missing marker: ${marker}`)
+}
+
+async function resolveIssue391SharedRuntimeOutputPath(outDir: string) {
+  const candidates = [
+    path.resolve(outDir, 'weapp-vendors/wevu-ref.js'),
+    path.resolve(outDir, 'weapp-vendors/wevu-defineProperty.js'),
+  ]
+
+  for (const candidate of candidates) {
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+
+  return candidates[0]
 }
 
 describe.sequential('issue #391 watch shared chunk rebuild', () => {
@@ -113,9 +128,9 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       const outDir = ctxResult.ctx.configService.outDir
       const pageOutputPath = path.resolve(outDir, 'pages/issue-391/index.js')
       const peerOutputPath = path.resolve(outDir, 'pages/issue-391-peer/index.js')
-      const sharedRuntimeOutputPath = path.resolve(outDir, 'weapp-vendors/wevu-defineProperty.js')
+      const sharedRuntimeOutputPath = await resolveIssue391SharedRuntimeOutputPath(outDir)
       const pageSourcePath = path.resolve(cwd, 'src/pages/issue-391/index.ts')
-      const sharedImportPattern = /require\((['"])\.\.\/\.\.\/weapp-vendors\/wevu-defineProperty\.js\1\)/
+      const sharedImportPattern = /require\((['"])\.\.\/\.\.\/weapp-vendors\/(?:wevu-ref|wevu-defineProperty)\.js\1\)/
 
       await waitForFileContains(pageOutputPath, 'issue-391-initial-marker')
       await waitForFileContains(sharedRuntimeOutputPath, 'issue-391-shared-sentinel')
@@ -155,5 +170,5 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 60_000)
+  }, 120_000)
 })

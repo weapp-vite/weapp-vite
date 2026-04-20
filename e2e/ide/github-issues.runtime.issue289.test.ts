@@ -1,4 +1,4 @@
-import { afterAll, afterEach, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
@@ -21,10 +21,6 @@ async function runIssue289Step<T>(label: string, task: () => Promise<T>, timeout
 }
 
 describe.sequential('e2e app: github-issues / issue-289', () => {
-  afterEach(async () => {
-    await closeSharedMiniProgram()
-  })
-
   afterAll(async () => {
     await closeSharedMiniProgram()
   })

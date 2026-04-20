@@ -1,5 +1,35 @@
 # create-weapp-vite
 
+## 2.3.1
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite` 发布链路中对 `@weapp-core/init` 的旧产物依赖，避免 `pnpm dev:open` 等命令在安装最新依赖后因 `@weapp-core/shared` 根入口不再导出 `fs` 而直接崩溃。同时为 `@weapp-core/*` 增加 changeset 守卫，并为 `@weapp-core/init` 增加打包产物回归测试，防止类似的内部依赖版本漂移再次进入发布结果。** [#470](https://github.com/weapp-vite/weapp-vite/pull/470) by @sonofmagic
+
+## 2.3.0
+
+### Minor Changes
+
+- ✨ **增强 VS Code 扩展的 WXML 与 weapp-vite 模板开发体验：新增 WXML 语言支持，并完善原生组件、本地组件与原生自定义组件的元数据提取、补全、Hover、条件属性展示、标签/属性/事件预览、定义跳转、引用查询、重命名、链接跳转、模板变量装饰与标签高亮能力；同时拆分 `.vue <template>` 与独立 `.wxml` 的增强开关，补充安装态 `.vsix` 真实宿主 e2e 校验并修复真实 VS Code 宿主中的激活兼容问题。相关模板初始化能力也随原生组件条件补全一起同步更新到 `create-weapp-vite`。** [`cd33619`](https://github.com/weapp-vite/weapp-vite/commit/cd336193b4cd6c7002e574d1eeb9031c14755484) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复本地分包按依赖列表复制 `miniprogram_npm` 产物时遗漏 copied `miniprogram` 包传递依赖的问题。像 `miniprogram-computed` 这类通过 build-npm 复制的 CJS 小程序包，声明在分包后会继续把 `rfdc`、`fast-deep-equal` 等运行时依赖一并带入分包产物，避免真实 DevTools 运行时报模块缺失。** [#467](https://github.com/weapp-vite/weapp-vite/pull/467) by @sonofmagic
+
+- 🐛 **继续收敛多平台接入链路：统一默认平台与微信兼容别名导出，补充宿主 source registry/contract 类型入口，并让抖音 typings 元数据、tsconfig 生成与脚手架模板依赖池保持一致。** [`1f76780`](https://github.com/weapp-vite/weapp-vite/commit/1f76780d69a3e0a7f8d9d197f50865c7d6d0c3b3) by @sonofmagic
+
+- 🐛 **改进微信开发者工具打开项目的兼容性：启动前会检测并尊重用户当前的服务端口配置，不再盲目覆盖已有设置；当用户关闭服务端口时，会保留原配置并回退到普通打开流程。同时补齐 Windows 下的默认 CLI 路径探测、批处理启动兼容、项目信任预写入与调试回退错误定位，降低 automator 打开项目时的启动与信任失败概率。** [`cd33619`](https://github.com/weapp-vite/weapp-vite/commit/cd336193b4cd6c7002e574d1eeb9031c14755484) by @sonofmagic
+
+- 🐛 **修复原生小程序构建中复制型 `miniprogram` npm 包的 ESM `default` 互操作问题：当 `tdesign-miniprogram/dialog` 这类依赖以 `export default` 形式发布时，构建产物现在会在缓存与输出阶段统一归一化为带 `__esModule` 标记的 CommonJS，避免页面侧 `require + __toESM` 再次包裹默认导出，导致 `Dialog.confirm is not a function` 一类双层 `default` 报错。** [#467](https://github.com/weapp-vite/weapp-vite/pull/467) by @sonofmagic
+
+- 🐛 **继续收敛多平台小程序适配的共享 contract 与宿主中立命名。`@weapp-core/shared` 现在提供更安全的运行时根入口与独立的 Node 子入口，统一平台 registry、宿主全局对象、模板指令前缀、路由与 capability 描述，避免小程序环境误入 Node-only 能力；`weapp-vite`、`@weapp-vite/ast`、`@wevu/compiler`、`wevu`、`@wevu/api`、`@weapp-vite/web` 与 `weapp-ide-cli` 则统一消费这套 contract，补齐 `a` / `tt` / `s` 等结构指令识别、默认平台回退、配置读取与多宿主 bridge 挂载逻辑，减少核心链路里散落的 `wx` 单宿主假设。** [`27c655f`](https://github.com/weapp-vite/weapp-vite/commit/27c655f20e4f033cbefa0920a1b60a55343a22f1) by @sonofmagic
+  - 同时继续扩展公共 API 与运行时类型面的宿主中立别名，包括 `miniProgramRouter`、`AutoRoutesMiniProgramRouter`、`WeapiMiniProgramMethodName`、`WeapiMiniProgramAdapter`、`WeapiMiniProgramRequestTask`、`WeapiMiniProgramRequestSuccessResult`、`MiniProgramRequestMethod`、`MiniProgramSelectorQuery`、`MiniProgramIntersectionObserver`、`MiniProgramRouter`、`MiniProgramLaunchOptions` 等，并保持原有 `wx` / `WeapiWx*` 兼容导出不变。这样后续接入支付宝小程序、抖音小程序、百度小程序等宿主时，可以逐步迁移到统一的小程序命名与共享平台能力，而不需要继续把公共类型和内部模板协议绑定到微信前缀。
+  - 在 Web 运行时侧，也继续把多平台桥接协议做成宿主中立模型：`canIUse` 支持解析 `wx.*`、`my.*`、`tt.*` 等前缀，模板事件属性默认输出 `data-mp-on-*` / `data-mp-on-flags-*`，并把 bridge 同步挂到 `wx`、`my`、`tt`、`swan`、`jd`、`xhs` 等宿主全局对象上。这样同一套运行时与工具链在多小程序平台之间更容易复用，也为后续平台接入继续收窄改造面。
+
+- 🐛 **增强多平台模板兼容处理。`weapp-vite` 现在会按已支持的小程序平台指令前缀集合统一重写模板指令，支付宝 npm 模板转换也能识别并转换来自微信、百度、抖音等平台的条件与循环指令，`injectWeapi.replaceWx` 也会同步挂载所有已支持宿主全局；`@wevu/compiler` 同步放宽模板表达式里的宿主全局白名单，避免 `my`、`tt`、`swan`、`xhs` 等平台全局被误当成本地变量改写，降低支付宝和抖音小程序接入成本。** [`8d69179`](https://github.com/weapp-vite/weapp-vite/commit/8d691793607fe7806095b0db6d3b7514388bc408) by @sonofmagic
+- 📦 **Dependencies** [`1f76780`](https://github.com/weapp-vite/weapp-vite/commit/1f76780d69a3e0a7f8d9d197f50865c7d6d0c3b3)
+  → `@weapp-core/shared@3.0.4`
+
 ## 2.2.3
 
 ### Patch Changes

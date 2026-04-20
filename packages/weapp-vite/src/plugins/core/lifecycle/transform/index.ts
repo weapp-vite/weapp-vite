@@ -62,12 +62,14 @@ export function createTransformHook(state: CorePluginState) {
     if (sourceId.endsWith('.vue') && code.includes('<')) {
       return injectRequestGlobalsIntoSfc(code, requestGlobalsTargets as any, {
         localBindings: !passiveLocalBindings,
+        networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
         passiveLocalBindings,
       })
     }
 
     return `${createInjectRequestGlobalsCode(requestGlobalsTargets as any, {
       localBindings: !passiveLocalBindings,
+      networkDefaults: injectRequestGlobalsOptions?.networkDefaults,
       passiveLocalBindings,
     })}${code}`
   }

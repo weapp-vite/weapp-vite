@@ -1,5 +1,31 @@
 # 更新日志
 
+## 0.2.1
+
+### Patch Changes
+
+- 🐛 **为 VS Code 扩展补充一次 patch changeset，确保后续 release PR 会递增扩展版本，并重新触发 Marketplace 发布流程。** [`c7eb853`](https://github.com/weapp-vite/weapp-vite/commit/c7eb853ce93b85fa5dc5759b1aa8ea58a5ed3d28) by @sonofmagic
+
+## 0.2.0
+
+### Minor Changes
+
+- ✨ **增强 VS Code 扩展的 WXML 与 weapp-vite 模板开发体验：新增 WXML 语言支持，并完善原生组件、本地组件与原生自定义组件的元数据提取、补全、Hover、条件属性展示、标签/属性/事件预览、定义跳转、引用查询、重命名、链接跳转、模板变量装饰与标签高亮能力；同时拆分 `.vue <template>` 与独立 `.wxml` 的增强开关，补充安装态 `.vsix` 真实宿主 e2e 校验并修复真实 VS Code 宿主中的激活兼容问题。相关模板初始化能力也随原生组件条件补全一起同步更新到 `create-weapp-vite`。** [`cd33619`](https://github.com/weapp-vite/weapp-vite/commit/cd336193b4cd6c7002e574d1eeb9031c14755484) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **为 VS Code 扩展补上独立 `.wxml` 文件的 Explorer 图标映射与更接近 HTML 文件图标的视觉样式，并保留 `weapp-vite File Icons` 的手动启用能力：现在用户可按需切换到该文件图标主题，让 `weapp-vite.config.*` 显示专属图标、`index.wxml` 等 WXML 文件显示更清晰的折角文件图标；同时安装态 smoke / VSIX 校验会覆盖对应资源与启动配置，避免发布后再次出现图标缺失。** [`0ea8330`](https://github.com/weapp-vite/weapp-vite/commit/0ea83302c921ccda7ec422f04321a2686731fa9b) by @sonofmagic
+
+- 🐛 **修复 VS Code 扩展对 `weapp-vite.config.*` 的识别与激活链路：现在工作区仅存在 `weapp-vite.config.ts`、`weapp-vite.config.mts`、`weapp-vite.config.cts`、`weapp-vite.config.js`、`weapp-vite.config.mjs` 或 `weapp-vite.config.cjs` 时，也会触发扩展激活，并让配置文件补全、悬浮、项目探测与关键文件跳转保持一致；同时补齐 `vite.config.cts` / `vite.config.cjs` 的 manifest 激活覆盖，减少配置文件命名或后缀不同导致的能力缺失。** [`4dbde4b`](https://github.com/weapp-vite/weapp-vite/commit/4dbde4b0cd66dc8f98eb69f90042e63fdefabd26) by @sonofmagic
+
+- 🐛 **修复 VS Code 扩展对常用 `weapp-vite` 脚本的缺失诊断与自动补齐逻辑：现在会按命令候选名识别已有脚本，例如 `scripts.g = "weapp-vite generate"` 或 `scripts["dev:open"] = "wv dev --open"` 不会再被误判为缺少 `generate` / `dev`，插入常用脚本时也不会重复补出等价命令。** [`bc4ddc3`](https://github.com/weapp-vite/weapp-vite/commit/bc4ddc39513b318bf8beb81fe36083887bcdcc3e) by @sonofmagic
+
+- 🐛 **调整 VS Code 扩展对 `package.json` 常用脚本建议的呈现方式：不再把“建议补齐常用 weapp-vite 脚本”作为 Problems 诊断展示，避免在问题面板里产生噪音；相关补齐能力仍保留为按需触发的 Quick Fix，并且只会在确认缺少常用脚本时出现。** [`e3819eb`](https://github.com/weapp-vite/weapp-vite/commit/e3819eb25c0d3471ba8c4b79b5209e4bfb20c7d3) by @sonofmagic
+
+- 🐛 **收敛 VS Code 扩展中的页面配置工作流，新增页面与模板入口默认只推荐 `definePageJson`，不再把 `<json>` 双写同步、配置漂移筛选和相关快捷命令作为常规能力暴露；同时保留对历史 `<json>` 页面文件的兼容解析，并在同页同时存在 `definePageJson` 与 `<json>` 时给出兼容提示，帮助项目逐步迁移到单一的 `definePageJson` 配置写法。** [`b969584`](https://github.com/weapp-vite/weapp-vite/commit/b969584ac93c269272394a7ae83b5edc3bbbc144) by @sonofmagic
+
+- 🐛 **修复 VS Code 扩展在独立检查环境下缺少 `@weapp-vite/ast` 依赖导致模板增强测试无法解析 AST 模块的问题，并补齐跨平台 URI mock 的测试覆盖。** [#467](https://github.com/weapp-vite/weapp-vite/pull/467) by @sonofmagic
+
 ## 0.1.3
 
 ### Patch Changes

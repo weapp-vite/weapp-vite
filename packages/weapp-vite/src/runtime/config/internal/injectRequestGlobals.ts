@@ -1,3 +1,4 @@
+import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import type { PackageJson } from 'pkg-types'
 import type {
   WeappAppPreludeConfig,
@@ -89,6 +90,7 @@ export interface ResolvedInjectRequestGlobalsOptions {
   mode: 'auto' | 'explicit'
   targets: WeappInjectWebRuntimeGlobalsTarget[]
   dependencyPatterns?: (string | RegExp)[]
+  networkDefaults?: MiniProgramNetworkDefaults
   prelude: boolean
 }
 
@@ -202,6 +204,14 @@ function hasCustomAutoRuleConfig(config?: boolean | WeappInjectRequestGlobalsCon
   )
 }
 
+function hasConfiguredNetworkDefaults(config?: boolean | WeappInjectRequestGlobalsConfig) {
+  return Boolean(
+    config
+    && typeof config === 'object'
+    && Object.hasOwn(config, 'networkDefaults'),
+  )
+}
+
 function resolveAutoRules(config?: boolean | WeappInjectRequestGlobalsConfig): InjectRequestGlobalsAutoRule[] {
   if (hasCustomAutoRuleConfig(config)) {
     return [{
@@ -241,11 +251,16 @@ export function resolveInjectRequestGlobalsOptions(
     ? config.enabled
     : config
 
-  if (enabled === true) {
+  const networkDefaults = config && typeof config === 'object'
+    ? config.networkDefaults
+    : undefined
+
+  if (enabled === true || hasConfiguredNetworkDefaults(config)) {
     return {
       mode: 'explicit',
       targets: resolveTargets(config),
       dependencyPatterns: resolveDependencyPatterns(config),
+      ...(networkDefaults !== undefined ? { networkDefaults } : {}),
       prelude: config && typeof config === 'object' ? config.prelude === true : false,
     }
   }
@@ -329,6 +344,20 @@ export function resolveRequestGlobalsBindingTargets(targets: WeappInjectRequestG
   }
 
   return [...new Set(bindingTargets)].filter(target => REQUEST_GLOBAL_FREE_BINDING_TARGETS.has(target))
+}
+
+/**
+ * @description 生成运行时 installer 的选项代码。
+ */
+export function createRequestGlobalsInstallerOptionsCode(
+  targets: WeappInjectRequestGlobalsTarget[],
+  networkDefaults?: MiniProgramNetworkDefaults,
+) {
+  const options = [`targets: ${JSON.stringify(targets)}`]
+  if (networkDefaults !== undefined) {
+    options.push(`networkDefaults: ${JSON.stringify(networkDefaults)}`)
+  }
+  return `{ ${options.join(', ')} }`
 }
 
 /**
@@ -679,6 +708,7 @@ export function createInjectRequestGlobalsCode(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
   },
 ) {
@@ -690,6 +720,7 @@ export function createInjectRequestGlobalsCode(
   }
 
   const runtimeModuleId = resolveRequestGlobalsRuntimeModuleId()
+  const installerOptionsCode = createRequestGlobalsInstallerOptionsCode(targets, options?.networkDefaults)
   const lines = [
     `import { installWebRuntimeGlobals as __weappViteInstallRequestGlobals } from ${JSON.stringify(runtimeModuleId)}`,
   ]
@@ -697,12 +728,12 @@ export function createInjectRequestGlobalsCode(
   if (options?.localBindings) {
     const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
     lines.push(
-      `const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = __weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} }) || globalThis`,
+      `const ${REQUEST_GLOBAL_INSTALLER_HOST_REF} = __weappViteInstallRequestGlobals(${installerOptionsCode}) || globalThis`,
       ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_INSTALLER_HOST_REF}.${target}`),
     )
   }
   else {
-    lines.push(`__weappViteInstallRequestGlobals({ targets: ${JSON.stringify(targets)} })`)
+    lines.push(`__weappViteInstallRequestGlobals(${installerOptionsCode})`)
   }
 
   lines.push('')
@@ -716,6 +747,7 @@ export function createInjectRequestGlobalsSfcCode(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
     setup?: boolean
   },
@@ -736,6 +768,7 @@ export function injectRequestGlobalsIntoSfc(
   targets: WeappInjectRequestGlobalsTarget[],
   options?: {
     localBindings?: boolean
+    networkDefaults?: MiniProgramNetworkDefaults
     passiveLocalBindings?: boolean
   },
 ) {

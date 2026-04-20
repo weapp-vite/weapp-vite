@@ -407,7 +407,18 @@ describe('runtime npm package builder core', () => {
   it('keeps copied cjs miniprogram package entry stable for build-npm packages like miniprogram-computed', async () => {
     const root = await createTempDir()
     const outRoot = path.resolve(root, 'dist/miniprogram_npm')
-    const pkgRoot = path.resolve(process.cwd(), 'node_modules/miniprogram-computed')
+    const pkgRoot = path.resolve(root, 'miniprogram-computed')
+    const pkgDistRoot = path.resolve(pkgRoot, 'dist')
+    await fs.ensureDir(pkgDistRoot)
+    await fs.writeFile(
+      path.resolve(pkgDistRoot, 'index.js'),
+      [
+        'function ComponentWithComputed() { return true }',
+        'function BehaviorWithComputed() { return true }',
+        'module.exports = { ComponentWithComputed, BehaviorWithComputed }',
+      ].join('\n'),
+      'utf8',
+    )
 
     const ctx = createMockContext({
       platform: 'weapp',

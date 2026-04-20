@@ -1,5 +1,6 @@
 import { defineConfig } from 'weapp-vite'
 import { requestClientsRealDevPlugin } from '../../e2e/utils/requestClientsRealDevPlugin'
+import { REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS } from '../../e2e/utils/requestClientsRealHostTraceRuntime'
 
 export default defineConfig(async (env) => {
   const devSetup = env.command === 'serve'
@@ -13,10 +14,11 @@ export default defineConfig(async (env) => {
     plugins: devSetup ? [devSetup.plugin] : [],
     weapp: {
       appPrelude: {
-        webRuntime: true,
+        webRuntime: {
+          networkDefaults: REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS,
+        },
       },
       srcRoot: 'src',
-      autoRoutes: true,
     },
   }
 })

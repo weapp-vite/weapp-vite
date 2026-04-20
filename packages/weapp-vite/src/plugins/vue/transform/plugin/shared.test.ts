@@ -8,11 +8,13 @@ const emitNativeLayoutScriptChunkIfNeededMock = vi.hoisted(() => vi.fn(async () 
 const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
   transformed: false,
   code,
+  map: null,
 })))
 const collectSetDataPickKeysFromTemplateMock = vi.hoisted(() => vi.fn(() => ['count']))
 const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   transformed: false,
   code,
+  map: null,
 })))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
@@ -97,6 +99,7 @@ describe('vue transform plugin shared helpers', () => {
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: false,
       code: 'Page({})',
+      map: null,
     })
     collectSetDataPickKeysFromTemplateMock.mockReset()
     collectSetDataPickKeysFromTemplateMock.mockReturnValue(['count'])
@@ -104,6 +107,7 @@ describe('vue transform plugin shared helpers', () => {
     injectSetDataPickInJsMock.mockImplementation((code: string) => ({
       transformed: false,
       code,
+      map: null,
     }))
     isAutoSetDataPickEnabledMock.mockReset()
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
@@ -529,11 +533,25 @@ describe('vue transform plugin shared helpers', () => {
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: true,
       code: 'Page({ enhanced: true })',
+      map: {
+        version: 3,
+        names: [],
+        sources: ['/project/src/pages/home/index.vue'],
+        sourcesContent: ['Page({ onPageScroll() {}, onReachBottom() {} })'],
+        mappings: 'AAAA',
+      },
     })
     isAutoSetDataPickEnabledMock.mockReturnValue(true)
     injectSetDataPickInJsMock.mockReturnValue({
       transformed: true,
       code: 'Page({ enhanced: true, __setDataPick: ["count"] })',
+      map: {
+        version: 3,
+        names: [],
+        sources: ['/project/src/pages/home/index.vue'],
+        sourcesContent: ['Page({ enhanced: true })'],
+        mappings: 'AAAA',
+      },
     })
 
     const result = await finalizeTransformEntryScript({
@@ -566,6 +584,13 @@ describe('vue transform plugin shared helpers', () => {
     injectSetDataPickInJsMock.mockReturnValue({
       transformed: true,
       code: 'Page({ __setDataPick: ["count"] })',
+      map: {
+        version: 3,
+        names: [],
+        sources: ['/project/src/pages/home/index.vue'],
+        sourcesContent: ['Page({})'],
+        mappings: 'AAAA',
+      },
     })
 
     const result = await finalizeTransformEntryScript({
@@ -616,7 +641,7 @@ describe('vue transform plugin shared helpers', () => {
   })
 
   it('finalizes transform entry code with style imports, scriptless stubs, and dev hashes', () => {
-    const code = finalizeTransformEntryCode({
+    const output = finalizeTransformEntryCode({
       result: {
         script: '',
         meta: {
@@ -632,19 +657,28 @@ describe('vue transform plugin shared helpers', () => {
     })
 
     expect(buildWeappVueStyleRequestMock).toHaveBeenCalledTimes(2)
-    expect(code).toContain('import "/project/src/pages/home/index.vue?style=0";')
-    expect(code).toContain('import "/project/src/pages/home/index.vue?style=1";')
-    expect(code).toContain('Page({})')
-    expect(code).toContain('__weappViteJsonMacroHash')
-    expect(code).toContain('"json-hash"')
-    expect(code).toContain('__weappViteDefineOptionsHash')
-    expect(code).toContain('"define-options-hash"')
+    expect(output.code).toContain('import "/project/src/pages/home/index.vue?style=0";')
+    expect(output.code).toContain('import "/project/src/pages/home/index.vue?style=1";')
+    expect(output.code).toContain('Page({})')
+    expect(output.code).toContain('__weappViteJsonMacroHash')
+    expect(output.code).toContain('"json-hash"')
+    expect(output.code).toContain('__weappViteDefineOptionsHash')
+    expect(output.code).toContain('"define-options-hash"')
+    expect(output.map).toBeTruthy()
+    expect(output.map?.sources).toEqual(['index.vue'])
   })
 
   it('returns original entry code when finalize transform entry code has nothing extra to inject', () => {
-    const code = finalizeTransformEntryCode({
+    const output = finalizeTransformEntryCode({
       result: {
         script: 'App({})',
+        scriptMap: {
+          version: 3,
+          names: [],
+          sources: ['/project/src/app.vue'],
+          sourcesContent: ['App({})'],
+          mappings: 'AAAA',
+        },
         meta: {
           jsonMacroHash: 'json-hash',
           defineOptionsHash: 'define-options-hash',
@@ -657,7 +691,8 @@ describe('vue transform plugin shared helpers', () => {
     })
 
     expect(buildWeappVueStyleRequestMock).not.toHaveBeenCalled()
-    expect(code).toBe('App({})')
+    expect(output.code).toBe('App({})')
+    expect(output.map?.sources).toEqual(['/project/src/app.vue'])
   })
 
   it('inlines auto routes imports and dynamic imports through shared helper', async () => {

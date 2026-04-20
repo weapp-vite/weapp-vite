@@ -1,5 +1,9 @@
+import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import type { OutputBundle, OutputChunk } from 'rolldown'
-import type { WeappAppPreludeMode, WeappInjectRequestGlobalsTarget } from '../../../../types'
+import type {
+  WeappAppPreludeMode,
+  WeappInjectRequestGlobalsTarget,
+} from '../../../../types'
 import type { CorePluginState } from '../../helpers'
 import { readFile } from 'node:fs/promises'
 import path from 'pathe'
@@ -131,6 +135,7 @@ export function emitAppPreludeRequireAssets(
     enabled: boolean
     installerChunks: Map<string, string>
     mode: 'auto' | 'explicit'
+    networkDefaults?: MiniProgramNetworkDefaults
     targets: WeappInjectRequestGlobalsTarget[]
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
@@ -159,7 +164,14 @@ export function emitAppPreludeRequireAssets(
     })
     const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled
       ? scopeChunks
-          .map(chunk => createRequestGlobalsPreludeAssetCode(fileName, chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets, requestGlobalsPreludeOptions.mode))
+          .map(chunk => createRequestGlobalsPreludeAssetCode(
+            fileName,
+            chunk,
+            requestGlobalsPreludeOptions.installerChunks,
+            requestGlobalsPreludeOptions.targets,
+            requestGlobalsPreludeOptions.mode,
+            requestGlobalsPreludeOptions.networkDefaults,
+          ))
           .find(Boolean)
       : undefined
     const source = [requestGlobalsPreludeCode, appPreludeCode].filter(Boolean).join('\n')
@@ -176,6 +188,7 @@ export function injectAppPreludeCode(
     enabled: boolean
     installerChunks: Map<string, string>
     mode: 'auto' | 'explicit'
+    networkDefaults?: MiniProgramNetworkDefaults
     targets: WeappInjectRequestGlobalsTarget[]
   },
   emitFile?: (asset: { type: 'asset', fileName: string, source: string }) => void,
@@ -200,7 +213,13 @@ export function injectAppPreludeCode(
       continue
     }
     const requestGlobalsPreludeCode = requestGlobalsPreludeOptions.enabled && options.mode !== 'require'
-      ? createRequestGlobalsPreludeCode(chunk, requestGlobalsPreludeOptions.installerChunks, requestGlobalsPreludeOptions.targets, requestGlobalsPreludeOptions.mode)
+      ? createRequestGlobalsPreludeCode(
+          chunk,
+          requestGlobalsPreludeOptions.installerChunks,
+          requestGlobalsPreludeOptions.targets,
+          requestGlobalsPreludeOptions.mode,
+          requestGlobalsPreludeOptions.networkDefaults,
+        )
       : undefined
     const injectedCode = [
       requestGlobalsPreludeCode,

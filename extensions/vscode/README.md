@@ -2,231 +2,152 @@
 
 面向 `weapp-vite` 项目的 VS Code 官方扩展。
 
-它把日常高频动作直接放进编辑器里：识别项目、展示状态栏入口、执行 `dev/build/open`、内置生成页面/组件、补齐常用脚本、增强 `vite.config.*` / `package.json` / `.vue` 的编辑体验，并为 weapp-vite 的 `<json>` 自定义块提供语法高亮与代码片段。
+它把 `weapp-vite` 的常用操作和常见页面维护动作直接放进编辑器里，减少在终端、资源管理器、`app.json` 和页面文件之间来回切换。
 
-## 官方入口
-
-- 官方仓库：https://github.com/weapp-vite/weapp-vite
-- 插件目录：https://github.com/weapp-vite/weapp-vite/tree/main/extensions/vscode
-- 使用文档：https://github.com/weapp-vite/weapp-vite/tree/main/website
-- 问题反馈：https://github.com/weapp-vite/weapp-vite/issues
-
-## 适合谁
+## 1. 适合谁
 
 - 正在使用 `weapp-vite` 开发微信小程序或多端小程序项目的开发者
-- 希望在 VS Code 里直接触发 `weapp-vite` 常用命令的团队
-- 需要更顺手地编写 `.vue`、`vite.config.*`、`package.json` 的项目成员
+- 希望在 VS Code 中直接执行 `dev`、`build`、`open` 等工作流命令的团队
+- 想把页面创建、页面声明维护、页面配置同步放进编辑器内完成的项目成员
 
-## 核心能力
+## 2. 安装与开始使用
 
-- `.vue` 文件中 weapp-vite `<json>` 自定义块的语法高亮
-- 识别到 weapp-vite 工作区后的状态栏入口
-- `dev` / `build` / `open` / `info` 等常用工作区命令
-- 内置 `generate` 页面 / 组件骨架，不依赖 `wv` CLI
-- 内置生成会读取 `vite.config.*` 中常见的 `weapp.generate.dirs` / `filenames` 配置
-- `<json>` 块和 `defineConfig` 的代码片段
-- 面向 `package.json`、`vite.config.*`、`.vue` 的代码操作
-- 对常用脚本缺失情况的轻量 `package.json` 诊断
-- 在关键 weapp-vite 文件中的悬浮信息、上下文补全和文档快捷入口
-- 状态栏、诊断、悬浮、补全和 CLI 别名偏好的用户配置
-- 最近命令执行日志输出面板
+### 2.1 安装
 
-## 快速开始
+在 VS Code 扩展市场中搜索 `weapp-vite` 并安装。
 
-1. 在 VS Code 中安装 `Weapp Vite` 扩展。
-2. 打开一个 `weapp-vite` 项目。
-3. 看到状态栏出现 `weapp-vite` 入口后，打开命令面板执行 `weapp-vite: Run Action`。
-4. 按需执行 `Dev`、`Build`、`Generate`、`Open DevTools` 等常用动作。
+### 2.2 开始使用
 
-如果你正在从仓库本地调试，也可以直接使用下面的方式安装：
+1. 用 VS Code 打开你的 `weapp-vite` 项目。
+2. 等扩展识别工作区后，状态栏会出现 `weapp-vite` 入口。
+3. 打开命令面板，执行 `weapp-vite: Run Action`。
+4. 按需选择 `Dev`、`Build`、`Generate`、`Open DevTools` 等动作。
 
-## 从仓库安装
+> **提示**：如果没有识别到项目，可以先确认工作区内的 `package.json`、`vite.config.*` / `weapp-vite.config.*`、`app.json` 是否已经建立基本 `weapp-vite` 结构。
 
-1. 打开 VS Code 命令面板，执行 `Developer: Install Extension from Location...`
-2. 选择 `extensions/vscode`
-3. 重新加载窗口
+## 3. 核心能力
 
-## 验证
+### 3.1 项目命令入口
 
-在 `.vue` 文件的 `<json>` 块内执行 `Developer: Inspect Editor Tokens and Scopes`。
+- 在状态栏直接看到 `weapp-vite` 入口
+- 在命令面板里快速执行 `Dev`、`Build`、`Open DevTools`、`Doctor / Info`
+- 支持输出面板查看最近命令日志
 
-- 预期 `textmate scopes` 中包含 `source.json.comments`（适用于 `<json>`、`lang="json"`、`lang="jsonc"`、`lang="json5"`）。
+### 3.2 页面与组件生成
 
-## 项目识别
+- 内置 `Generate`，可直接创建页面或组件骨架
+- 支持在资源管理器中右键目录或文件，直接创建页面或组件
+- 生成页面后可直接选择是否同步加入 `app.json`
 
-扩展会在工作区中检测以下一种或多种信号，并将其识别为 weapp-vite 项目：
+### 3.3 页面结构维护
+
+- 提供 `weapp-vite Pages` 侧边栏，按顶层页面、分包页面、未声明页面分组查看
+- 支持从当前页面快速复制 route、定位到 `app.json`、补齐页面声明
+- 支持从 `app.json` 的 route 直接打开页面或创建缺失页面
+- 页面文件或目录重命名、移动、删除后，会尽量自动同步 `app.json` 中的 route
+
+### 3.4 页面配置约定
+
+- 新增页面默认使用 `definePageJson(...)`
+- 如果历史页面里仍然保留 `<json>` 自定义块，扩展会给出兼容提示，帮助你逐步收敛到 `definePageJson`
+- 不把 `<json>` 双写当作默认工作流，避免继续扩大历史兼容写法
+
+### 3.5 编辑器增强
+
+- 为 `.vue` 中的 `<json>` 自定义块提供语法高亮
+- 为 `app.json`、`vite.config.*` / `weapp-vite.config.*`、页面 `<json>`、`definePageJson(...)` 提供补全、悬浮和轻量诊断
+- 支持本地 `usingComponents` 路径校验、跳转和缺失组件创建
+- 内置 `weapp-vite File Icons` 文件图标主题，可按需手动启用
+
+## 4. 常用命令
+
+你通常只需要记住这几个高频命令：
+
+| 命令                                    | 用途                                 |
+| --------------------------------------- | ------------------------------------ |
+| `weapp-vite: Run Action`                | 统一入口，按当前上下文推荐可执行动作 |
+| `weapp-vite: Dev`                       | 启动开发流程                         |
+| `weapp-vite: Build`                     | 执行构建                             |
+| `weapp-vite: Generate`                  | 创建页面或组件骨架                   |
+| `weapp-vite: Open DevTools`             | 打开开发者工具                       |
+| `weapp-vite: Use weapp-vite File Icons` | 手动启用 weapp-vite 文件图标主题     |
+| `weapp-vite: Show Output`               | 查看扩展输出日志                     |
+| `weapp-vite: Open Docs`                 | 打开相关文档入口                     |
+
+页面维护相关命令：
+
+| 命令                                          | 用途                                   |
+| --------------------------------------------- | -------------------------------------- |
+| `weapp-vite: Copy Current Page Route`         | 复制当前页面 route                     |
+| `weapp-vite: Reveal Current Page In app.json` | 定位当前页面在 `app.json` 中的声明     |
+| `weapp-vite: Add Current Page To app.json`    | 把当前页面加入 `app.json`              |
+| `weapp-vite: Open Page From Route`            | 从 `app.json` route 直接跳转到页面文件 |
+| `weapp-vite: Create Page From Route`          | 根据 `app.json` route 创建缺失页面     |
+| `weapp-vite: Insert definePageJson Template`  | 快速插入页面配置骨架                   |
+
+## 5. 扩展如何识别项目
+
+扩展会综合以下信号判断当前工作区是否是 `weapp-vite` 项目：
 
 - `package.json` 依赖中包含 `weapp-vite`
 - `package.json` scripts 中调用了 `wv` 或 `weapp-vite`
-- 本地 `vite.config.*` 中引用了 `weapp-vite`
-- `src/app.json` 或 `app.json` 作为补充上下文存在
+- `vite.config.*` 或 `weapp-vite.config.*` 中引用了 `weapp-vite`
+- `src/app.json` 或 `app.json` 存在
 
-识别成功后，状态栏会显示 `weapp-vite` 入口按钮。
+识别成功后，状态栏会显示 `weapp-vite` 入口。
 
-## 为什么推荐安装
+## 6. 配置项
 
-- 把常用 CLI 动作前移到编辑器内，减少反复切换终端
-- 对 `weapp-vite` 项目的关键文件提供更贴近场景的补全与提示
-- 新成员进入项目时，可以更快找到命令入口、文档入口和基础配置骨架
+扩展提供了几组常用配置，适合按团队偏好微调：
 
-## 命令
+| 配置项                                    | 作用                                  |
+| ----------------------------------------- | ------------------------------------- |
+| `weapp-vite.showStatusBar`                | 控制是否显示状态栏入口                |
+| `weapp-vite.enablePackageJsonDiagnostics` | 控制 `package.json` 相关诊断          |
+| `weapp-vite.enableAppJsonDiagnostics`     | 控制 `app.json` 相关诊断              |
+| `weapp-vite.enableHover`                  | 控制悬浮提示                          |
+| `weapp-vite.enableCompletion`             | 控制补全能力                          |
+| `weapp-vite.enableWxmlEnhancements`       | 控制 WXML 相关增强能力                |
+| `weapp-vite.enableTemplateDecorations`    | 控制模板装饰提示                      |
+| `weapp-vite.preferWvAlias`                | 控制命令更偏向 `wv` 还是 `weapp-vite` |
 
-打开命令面板后可以执行：
+> **说明**：如果你更偏好显式命令名，可以关闭 `weapp-vite.preferWvAlias`，扩展会优先生成 `weapp-vite dev` 这一类命令形式，而不是 `wv dev`。
 
-- `weapp-vite: Run Action`
-- `weapp-vite: Dev`
-- `weapp-vite: Build`
-- `weapp-vite: Generate`
-- `weapp-vite: Open DevTools`
-- `weapp-vite: Doctor / Info`
-- `weapp-vite: Show Project Info`
-- `weapp-vite: Show Output`
-- `weapp-vite: Open Docs`
-- `weapp-vite: Open Project File`
-- `weapp-vite: Copy Current Page Route`
-- `weapp-vite: Reveal Current Page In app.json`
-- `weapp-vite: Create Page From Route`
-- `weapp-vite: Open Page From Route`
-- `weapp-vite: Add Current Page To app.json`
-- `weapp-vite: Insert definePageJson Template`
+## 7. 常见使用场景
 
-扩展会按以下顺序解析命令：
+### 7.1 新建页面
 
-1. `dev` / `build` / `open` / `doctor` 优先使用匹配的 `package.json` scripts，例如 `dev`、`build`、`open`、`doctor`、`info`
-2. 如果未命中，则回退到 `wv <command>`
-3. `generate` 为扩展内置能力，直接生成页面 / 组件 `.vue` 骨架，不依赖 CLI，并会读取 `weapp.generate.dirs` / `filenames`
+1. 执行 `weapp-vite: Generate`。
+2. 选择创建页面。
+3. 选择目标目录。
+4. 按提示决定是否同步加入 `app.json`。
 
-终端工作目录会优先取当前活动编辑器所在的工作区目录，否则取第一个打开的工作区目录。
+### 7.2 修复页面声明缺失
 
-## 代码片段
+1. 打开页面文件。
+2. 执行 `weapp-vite: Add Current Page To app.json`。
+3. 或者在 `weapp-vite Pages` 视图中直接对未声明页面执行修复动作。
 
-- `wv-json`：插入 `<json lang="jsonc">...</json>` 自定义块
-- `wv-config`：插入 `defineConfig` 基础骨架
-- `wv-scripts`：向 `package.json` 插入 weapp-vite 常用脚本
+### 7.3 从 route 跳回源码
 
-## 编辑器能力
+1. 在 `app.json` 中把光标放到页面 route 上。
+2. 使用 `Cmd/Ctrl + Click`，或执行 `weapp-vite: Open Page From Route`。
+3. 扩展会直接跳转到对应页面文件。
 
-扩展还提供了以下实用编辑器能力：
+### 7.4 收敛历史 `<json>` 页面
 
-- 在 `.vue` 中通过代码操作或补全插入 `weapp-vite` `<json>` 块
-- 在 `.vue` 中执行 `weapp-vite: Insert definePageJson Template`，快速插入页面配置骨架
-- 在 `vite.config.*` 中执行 `weapp-vite: Insert defineConfig Template`
-- 在 `package.json` 中执行 `weapp-vite: Insert Common Scripts`
-- 在资源管理器中右键目录或文件，可直接执行 `Create Page Here` / `Create Component Here`
-- 通过内置 `Generate` 创建页面后，可直接选择是否同步加入 `app.json`
-- `weapp-vite Pages` 标题栏支持一键把未注册页面批量同步进 `app.json`
-- `weapp-vite Pages` 标题栏也支持一键为 `app.json` 中缺失文件的页面批量生成页面骨架
-- 当已声明页面文件在资源管理器中被重命名或移动时，扩展会自动同步更新 `app.json` 里的 route，减少手工改路径
-- 当已声明页面文件被删除，且同 route 的其他候选页面文件也不存在时，扩展会自动从 `app.json` 清理对应 route，减少残留脏配置
-- 上述页面 route 同步与清理同样覆盖页面目录整体重命名、移动和删除的场景，不只限于单个页面文件
-- `Run Action` 里新增“修复项目问题”入口，可集中扫描并批量处理缺失页面、未注册页面和缺失组件
-- 在任意 weapp-vite 工作区中执行 `weapp-vite: Open Project File`，快速跳到 `package.json`、`vite.config.*`、`app.json` 和已声明页面
-- Explorer 侧边栏新增 `weapp-vite Pages` 视图，按顶层页面、分包页面、未声明页面分组浏览项目页面结构
-- 在 `weapp-vite Pages` 视图中点击页面节点时，可直接打开页面文件；若页面声明存在但文件缺失，则直接打开 `app.json`
-- `weapp-vite Pages` 视图右键可直接执行页面修复动作，包括创建缺失页面、把未声明页面加入 `app.json`、定位声明和复制 route
-- `weapp-vite Pages` 视图会自动跟随当前活动页面，并在树节点上标记当前页面和页面状态，减少手动查找
-- 当节点对应当前活动页面时，`weapp-vite Pages` 会直接在节点上提供行内快捷动作；当前页若缺少页面文件或尚未声明到 `app.json`，也可直接在树上完成创建或补声明
-- `weapp-vite Pages` 视图标题栏也提供了“定位当前页面”动作，当前页跟随失焦或树节点刚刷新后也能一键重新聚焦
-- `weapp-vite Pages` 视图标题栏提供独立刷新动作，文件系统或 `app.json` 结构变更后可立即重建页面树并重新对齐当前页
-- `weapp-vite Pages` 视图标题栏支持问题聚焦筛选，可快速切到“仅问题页”“仅当前页”“仅配置漂移页”，并一键清除筛选
-- 当某个筛选条件下没有命中任何页面时，`weapp-vite Pages` 会显示可点击的空状态节点，并允许直接清除筛选恢复完整视图
-- 当页面 `definePageJson` 与 `<json>` 存在配置漂移时，`weapp-vite Pages` 也会直接在节点上标记出来
-- 对存在配置漂移的页面节点，可直接在 `weapp-vite Pages` 里右键执行整页同步，把 `<json>` 或 `definePageJson` 一次性同步到一致状态
-- 页面节点状态现在会按优先级组合展示，像“缺少页面文件 + 当前页面”这类复合状态会直接体现在节点描述和排序上
-- 在页面文件中执行 `weapp-vite: Copy Current Page Route`，快速复制当前页面 route
-- 在页面文件中执行 `weapp-vite: Reveal Current Page In app.json`，直接跳到 `app.json` 中的声明位置
-- 在 `app.json` 的缺失页面路由上执行 `weapp-vite: Create Page From Route`，直接生成对应 `.vue` 页面骨架
-- 在 `app.json` 的已存在页面路由上执行 `weapp-vite: Open Page From Route`，直接跳到对应页面文件
-- 在页面文件中执行 `weapp-vite: Add Current Page To app.json`，直接把当前页面加入顶层或匹配的分包页面声明
-- 在 `app.json` 的 `pages` / `subPackages` / `subpackages` 中补全已有页面 route，减少手动输入和路径拼写错误
-- 悬浮在 `app.json` 的页面 route 上时，可直接看到对应页面文件是否存在，以及扩展实际尝试匹配的页面文件路径
-- 在 `app.json` 里可直接 `Cmd/Ctrl + Click` 已存在的页面 route，跳转到对应页面文件
-- 当页面 `.vue` 已能识别为页面文件但尚未声明到 `app.json` 时，编辑器会直接在当前页面给出诊断和补齐入口
-- 当页面同时使用 `definePageJson` 和 `<json>` 且关键配置不一致时，编辑器会直接在当前页面提示不一致诊断
-- 检测到 `definePageJson` 与 `<json>` 的标题配置不一致时，可直接通过 quick fix 把 `<json>` 标题同步为 `definePageJson`
-- 同样也支持反向 quick fix，把 `definePageJson` 标题同步为 `<json>`，避免只能单向修复
-- 如果其中一侧缺少 `navigationBarTitleText`，同步 quick fix 也会自动补齐，而不只是覆盖已有值
-- `navigationStyle` 也会参与双写一致性检查，并提供双向同步 quick fix，减少页面配置漂移
-- `enablePullDownRefresh` 这类布尔页面字段现在也会做双写一致性诊断和双向同步
-- 在 `.vue` 的 `<json>` 里声明 `usingComponents` 时，扩展会解析本地组件路径，悬浮展示解析结果，并对缺失组件给出诊断
-- 当 `usingComponents` 指向的本地组件文件不存在时，可直接通过 quick fix 创建缺失组件文件，减少手动补目录和骨架
-- 对已存在的本地 `usingComponents` 组件路径，也支持 `Cmd/Ctrl + Click` 直接跳转到组件文件，和 `app.json` 页面路由保持一致的导航体验
-- 当本地组件文件在资源管理器中被重命名或移动时，扩展也会自动同步更新引用它们的 `usingComponents` 路径，减少手工改 JSON
-- 当本地组件文件被删除，且同一路径的其他候选组件文件也不存在时，扩展会自动清理失效的 `usingComponents` 引用，避免残留脏配置
-- 上述同步与清理同样覆盖组件目录整体重命名、移动和删除的场景，不只限于单个组件文件
-- 在 `vite.config.*` 中按所在层级补全 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
-- 在页面 `.vue` 的 `<json>` 自定义块中补全常用页面字段，如 `navigationBarTitleText`、`enablePullDownRefresh`、`backgroundColor`
-- 在页面 `.vue` 的 `definePageJson({...})` 中也可补全常用页面字段，减少在脚本配置里手写键名
-- 在页面 `.vue` 的 `definePageJson({...})` 和 `<json>` 配置里，常用枚举值与布尔值也会给出上下文补全
-- 悬浮到 `definePageJson` 或常用页面配置键时，可直接查看字段说明，减少来回翻文档
-- 在页面 `.vue` 中，只有缺少 `definePageJson(...)` 或缺少 `<json>` 块时，才会出现对应的补齐 code action，减少重复提示
-- 在页面文件里执行 `weapp-vite: Run Action` 时，会优先展示当前页面相关动作，并带出当前 route 与声明状态，减少在通用命令中来回筛选
-- 当 `package.json` 已明显是 weapp-vite 项目但缺少常用脚本时，编辑器会给出信息级诊断
-- 当 `app.json` 声明了不存在的页面路径时，编辑器会提示缺失的页面文件
-- 悬浮到常用脚本项、`defineConfig`、`generate` 或 `<json>` 块时，可看到轻量提示
-- 在 `package.json` 中，补全会建议常用 script key 和 `wv` 命令值
-- 在 `vite.config.*` 中，补全会建议 `defineConfig` 以及 `weapp`、`generate`、`dirs`、`extensions`、`filenames` 等常用配置骨架
-- 扩展内置 `weapp-vite File Icons` 文件图标主题，可为 `weapp-vite.config.*` 显示 weapp-vite logo；如果你当前使用的是其他第三方 icon theme，Explorer 仍会按该主题自己的规则显示图标
+1. 如果旧页面同时使用了 `definePageJson(...)` 与 `<json>`，扩展会提示这是历史兼容写法。
+2. 建议把页面配置统一迁移到 `definePageJson(...)`，逐步移除重复的 `<json>` 块。
 
-## 配置项
+## 8. 问题反馈
 
-扩展暴露了一组简洁的配置：
+- 仓库主页：https://github.com/weapp-vite/weapp-vite
+- 插件源码目录：https://github.com/weapp-vite/weapp-vite/tree/main/extensions/vscode
+- 问题反馈：https://github.com/weapp-vite/weapp-vite/issues
 
-- `weapp-vite.showStatusBar`
-- `weapp-vite.enablePackageJsonDiagnostics`
-- `weapp-vite.enableAppJsonDiagnostics`
-- `weapp-vite.enableHover`
-- `weapp-vite.enableCompletion`
-- `weapp-vite.preferWvAlias`
+## 9. 开发与维护说明
 
-如果你更偏好显式 CLI 名称而不是别名，可以关闭 `weapp-vite.preferWvAlias`，此时扩展会生成 `weapp-vite dev` 风格的命令，而不是 `wv dev`。
+如果你是扩展维护者，或需要本地调试、打包和发布，请改看下面两份文档：
 
-## 打包
-
-扩展清单目前包含：
-
-- 面向发布的 `files` 白名单
-- 输出到 `dist/extension.js` 的 `tsdown` 构建配置
-- 本地 `lint`、`vitest` 与 `check` 脚本
-- 用于发布前校验的 `check:publish`
-- 用于在 release 流程中判断是否需要发布 Marketplace 的 `release:marketplace:plan`
-- 用于校验运行时入口和打包排除项的 `check:package`
-- 用于本地生成 `.vsix` 产物的 `package:dry-run`
-- 面向 Marketplace 手动发布的 `publish:vsce`
-- 首次使用的简洁上手说明
-- 用于减少无关命令暴露的命令面板可见性规则
-- 独立的 VS Code 扩展 GitHub Actions 工作流
-
-## TypeScript
-
-扩展运行时代码与单元测试都使用 TypeScript：
-
-- 源码入口：`extensions/vscode/extension.ts`
-- 运行时模块：`extensions/vscode/extension/**/*.ts`
-- 单元测试：`extensions/vscode/extension/**/*.test.ts`
-- 脚本文件：`extensions/vscode/scripts/*.ts`
-
-常用本地命令：
-
-```bash
-pnpm --dir extensions/vscode run build
-pnpm --dir extensions/vscode run test
-pnpm --dir extensions/vscode run test:host:smoke
-pnpm --dir extensions/vscode run test:vsix:e2e
-pnpm --dir extensions/vscode run release:marketplace:plan
-pnpm --dir extensions/vscode run smoke:dist
-pnpm --dir extensions/vscode run check:package
-pnpm --dir extensions/vscode run check:vsix
-```
-
-`build` 会通过 `tsdown` 将扩展运行时打成单个 CommonJS 入口，测试则继续通过 Vitest 直接执行 TypeScript 源码。
-构建完成后，`smoke:dist` 会使用模拟的 VS Code API 加载编译产物 `dist/extension.js`，确认激活链路仍然正常。
-`test:host:smoke` 则用于在真实 VS Code 宿主中跑一条最小 smoke 链路；首次使用前需要安装 `@vscode/test-electron`。
-`test:vsix:e2e` 会先生成本地 `.vsix`，再用一个最小 harness 扩展启动真实 VS Code 宿主，并以“已安装扩展”的方式验证 Marketplace 产物的激活与命令链路。
-如果要检查最终 Marketplace 产物内容，可执行 `check:vsix`，它会生成本地 `.vsix` 并校验归档文件列表。
-源码 `package.json` 使用 workspace 包名 `@weapp-vite/vscode`，而 `publish:vsce` / `package:dry-run` 会在临时目录中把发布 manifest 重写成 Marketplace 使用的 `weapp-vite` 与 `Weapp Vite`。
-
-## 发布
-
-扩展版本现在通过 changeset 驱动，合并 release PR 后会在仓库统一的 `release.yml` 中自动查询 VS Code Marketplace 当前线上版本；只要仓库中的扩展版本高于线上版本，且对应发布 tag 尚不存在，就会自动发布到 Marketplace。
-详见 `extensions/vscode/PUBLISHING.md`。
+- [DEVELOPMENT.md](./DEVELOPMENT.md)
+- [PUBLISHING.md](./PUBLISHING.md)

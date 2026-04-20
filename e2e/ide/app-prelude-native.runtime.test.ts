@@ -3,11 +3,17 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { relaunchPage } from './github-issues.runtime.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const APP_PRELUDE_IDE_LAUNCH_TIMEOUT = 180_000
+
+async function delay(ms: number) {
+  await new Promise(resolve => setTimeout(resolve, ms))
+}
 
 async function runBuild(
   mode?: 'inline',
@@ -30,13 +36,14 @@ async function runBuild(
   })
 }
 
-const sharedMiniProgramByMode = new Map<string, any>()
 const sharedBuildPreparedModes = new Set<string>()
 
-async function getSharedMiniProgram(
+async function launchFreshMiniProgram(
   ctx: { skip: (message?: string) => void },
   mode: 'default' | 'inline' | 'default-request-runtime',
 ) {
+  await cleanupResidualIdeProcesses()
+
   if (!sharedBuildPreparedModes.has(mode)) {
     await runBuild(
       mode === 'inline' ? 'inline' : undefined,
@@ -45,30 +52,22 @@ async function getSharedMiniProgram(
     sharedBuildPreparedModes.add(mode)
   }
 
-  let sharedMiniProgram = sharedMiniProgramByMode.get(mode)
-  if (!sharedMiniProgram) {
-    try {
-      sharedMiniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
-        timeout: APP_PRELUDE_IDE_LAUNCH_TIMEOUT,
-      })
-      sharedMiniProgramByMode.set(mode, sharedMiniProgram)
-    }
-    catch (error) {
-      if (isDevtoolsHttpPortError(error)) {
-        ctx.skip('WeChat DevTools 服务端口未开启，跳过 app-prelude-native IDE 自动化用例。')
-      }
-      throw error
-    }
+  try {
+    return await launchAutomator({
+      projectPath: APP_ROOT,
+      timeout: APP_PRELUDE_IDE_LAUNCH_TIMEOUT,
+    })
   }
-
-  return sharedMiniProgram
+  catch (error) {
+    if (isDevtoolsHttpPortError(error)) {
+      ctx.skip('WeChat DevTools 服务端口未开启，跳过 app-prelude-native IDE 自动化用例。')
+    }
+    throw error
+  }
 }
 
 async function closeSharedMiniProgram() {
-  const miniPrograms = [...sharedMiniProgramByMode.values()]
-  sharedMiniProgramByMode.clear()
-  await Promise.allSettled(miniPrograms.map((miniProgram: any) => miniProgram.close()))
+  await cleanupResidualIdeProcesses()
 }
 
 async function collectPreludeLogs(
@@ -76,15 +75,32 @@ async function collectPreludeLogs(
   route: string,
   mode: 'default' | 'inline' | 'default-request-runtime',
 ) {
-  const miniProgram = await getSharedMiniProgram(ctx, mode)
-  const page = await miniProgram.reLaunch(route)
-  if (!page) {
-    throw new Error(`Failed to launch ${route}`)
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const miniProgram = await launchFreshMiniProgram(ctx, mode)
+    try {
+      const page = await relaunchPage(miniProgram, route, undefined, 30_000)
+      if (!page) {
+        throw new Error(`Failed to launch ${route}`)
+      }
+      await page.waitFor(500)
+      return await miniProgram.evaluate(() => {
+        return getApp<{ getPreludeLog?: () => string[] }>()?.getPreludeLog?.() ?? []
+      })
+    }
+    catch (error) {
+      lastError = error
+      if (attempt < 3) {
+        await delay(600)
+      }
+    }
+    finally {
+      await miniProgram.close().catch(() => {})
+    }
   }
-  await page.waitFor(500)
-  return await miniProgram.evaluate(() => {
-    return getApp<{ getPreludeLog?: () => string[] }>()?.getPreludeLog?.() ?? []
-  })
+
+  throw lastError
 }
 
 async function collectRequestRuntimeState(
@@ -92,26 +108,43 @@ async function collectRequestRuntimeState(
   route: string,
   mode: 'default-request-runtime',
 ) {
-  const miniProgram = await getSharedMiniProgram(ctx, mode)
-  const page = await miniProgram.reLaunch(route)
-  if (!page) {
-    throw new Error(`Failed to launch ${route}`)
-  }
-  await page.waitFor(500)
-  return await miniProgram.evaluate(() => {
-    return {
-      fetch: typeof fetch,
-      headers: typeof Headers,
-      request: typeof Request,
-      response: typeof Response,
-      xmlHttpRequest: typeof XMLHttpRequest,
-      webSocket: typeof WebSocket,
-      url: typeof URL,
-      urlSearchParams: typeof URLSearchParams,
-      blob: typeof Blob,
-      formData: typeof FormData,
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const miniProgram = await launchFreshMiniProgram(ctx, mode)
+    try {
+      const page = await relaunchPage(miniProgram, route, undefined, 30_000)
+      if (!page) {
+        throw new Error(`Failed to launch ${route}`)
+      }
+      await page.waitFor(500)
+      return await miniProgram.evaluate(() => {
+        return {
+          fetch: typeof fetch,
+          headers: typeof Headers,
+          request: typeof Request,
+          response: typeof Response,
+          xmlHttpRequest: typeof XMLHttpRequest,
+          webSocket: typeof WebSocket,
+          url: typeof URL,
+          urlSearchParams: typeof URLSearchParams,
+          blob: typeof Blob,
+          formData: typeof FormData,
+        }
+      })
     }
-  })
+    catch (error) {
+      lastError = error
+      if (attempt < 3) {
+        await delay(600)
+      }
+    }
+    finally {
+      await miniProgram.close().catch(() => {})
+    }
+  }
+
+  throw lastError
 }
 
 describe.sequential('e2e app: app-prelude-native runtime', () => {

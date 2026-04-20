@@ -35,6 +35,7 @@ function createState() {
     entryModuleIds: new Set<string>(),
     resolvedEntryMap: new Map<string, any>(),
     hmrSharedChunkImporters: new Map<string, Set<string>>(),
+    hmrSharedChunkDependencies: new Map<string, Set<string>>(),
   } as any
 }
 
@@ -181,6 +182,38 @@ describe('core helpers graph', () => {
     expect(state.hmrSharedChunkImporters.has('chunks/missing.js')).toBe(false)
   })
 
+  it('propagates shared chunk importers through intermediate shared chunks', () => {
+    const state = createState()
+    state.resolvedEntryMap.set('/project/src/app.ts', { value: true })
+    state.resolvedEntryMap.set('/project/src/pages/hmr/index.ts', { value: true })
+
+    const bundle: OutputBundle = {
+      'app.js': createChunk('app.js', {
+        isEntry: true,
+        facadeModuleId: '/project/src/app.ts',
+        imports: ['./weapp-vendors/wevu-ref.js'],
+      }),
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: '/project/src/pages/hmr/index.ts',
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        imports: ['./weapp-vendors/wevu-ref.js'],
+      }),
+      'weapp-vendors/wevu-ref.js': createChunk('weapp-vendors/wevu-ref.js'),
+    }
+
+    refreshSharedChunkImporters(bundle, state)
+
+    expect(state.hmrSharedChunkImporters.get('common.js')).toEqual(
+      new Set(['/project/src/pages/hmr/index.ts']),
+    )
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/wevu-ref.js')).toEqual(
+      new Set(['/project/src/app.ts', '/project/src/pages/hmr/index.ts']),
+    )
+  })
+
   it('preserves existing shared chunk importers when partial emits omit unchanged shared chunks', () => {
     const state = createState()
     state.resolvedEntryMap.set('/project/src/pages/issue-398.vue', { value: true })
@@ -207,6 +240,83 @@ describe('core helpers graph', () => {
         '/project/src/components/base-navbar.vue',
         '/project/src/components/base-footer.vue',
       ]),
+    )
+  })
+
+  it('preserves transitive shared chunk importers when partial emits omit nested shared chunks', () => {
+    const state = createState()
+    const appEntry = '/project/src/app.ts'
+    const pageEntry = '/project/src/pages/hmr/index.ts'
+    state.resolvedEntryMap.set(appEntry, { value: true })
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.hmrSharedChunkImporters.set('common.js', new Set([pageEntry]))
+    state.hmrSharedChunkImporters.set('weapp-vendors/wevu-ref.js', new Set([appEntry, pageEntry]))
+
+    const partialBundle: OutputBundle = {
+      'pages/hmr/index.js': createChunk('pages/hmr/index.js', {
+        isEntry: true,
+        facadeModuleId: pageEntry,
+        imports: ['../../common.js'],
+      }),
+      'common.js': createChunk('common.js', {
+        imports: ['./weapp-vendors/wevu-ref.js'],
+      }),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([pageEntry]))
+
+    expect(state.hmrSharedChunkImporters.get('common.js')).toEqual(new Set([pageEntry]))
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/wevu-ref.js')).toEqual(
+      new Set([appEntry, pageEntry]),
+    )
+  })
+
+  it('preserves nested shared chunk importers when partial emits omit the intermediate shared chunk', () => {
+    const state = createState()
+    const appEntry = '/project/src/app.ts'
+    const componentEntry = '/project/src/components/issue-446/ShortBindProbe/index.vue'
+    state.resolvedEntryMap.set(appEntry, { value: true })
+    state.resolvedEntryMap.set(componentEntry, { value: true })
+    state.hmrSharedChunkImporters.set('weapp-vendors/wevu-src.js', new Set([componentEntry]))
+    state.hmrSharedChunkImporters.set('weapp-vendors/wevu-ref.js', new Set([appEntry, componentEntry]))
+    state.hmrSharedChunkDependencies.set(
+      'weapp-vendors/wevu-src.js',
+      new Set(['weapp-vendors/wevu-ref.js']),
+    )
+
+    const partialBundle: OutputBundle = {
+      'components/issue-446/ShortBindProbe/index.js': createChunk('components/issue-446/ShortBindProbe/index.js', {
+        moduleIds: [componentEntry],
+        imports: ['../../../weapp-vendors/wevu-src.js'],
+      }),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([componentEntry]))
+
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/wevu-src.js')).toEqual(
+      new Set([componentEntry]),
+    )
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/wevu-ref.js')).toEqual(
+      new Set([appEntry, componentEntry]),
+    )
+  })
+
+  it('keeps existing shared chunk importers when partial bundle omits unchanged entry chunks', () => {
+    const state = createState()
+    const appEntry = '/project/src/app.ts'
+    const pageEntry = '/project/src/pages/hmr/index.ts'
+    state.resolvedEntryMap.set(appEntry, { value: true })
+    state.resolvedEntryMap.set(pageEntry, { value: true })
+    state.hmrSharedChunkImporters.set('weapp-vendors/wevu-ref.js', new Set([appEntry, pageEntry]))
+
+    const partialBundle: OutputBundle = {
+      'weapp-vendors/wevu-ref.js': createChunk('weapp-vendors/wevu-ref.js'),
+    }
+
+    refreshPartialSharedChunkImporters(partialBundle, state, new Set([pageEntry]))
+
+    expect(state.hmrSharedChunkImporters.get('weapp-vendors/wevu-ref.js')).toEqual(
+      new Set([appEntry, pageEntry]),
     )
   })
 })

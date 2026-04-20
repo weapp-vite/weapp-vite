@@ -23,28 +23,67 @@ async function runBuild() {
   })
 }
 
+const PAGE_CASES = [
+  {
+    expectedFragments: [
+      'timeout',
+      '3500',
+      'enableHttp2',
+      'installWebRuntimeGlobals',
+      'setMiniProgramNetworkDefaults',
+    ],
+    fileName: 'pages/request-globals/fetch.js',
+    requestLiteral: 'https://request-globals.invalid/fetch',
+    title: 'fetch',
+  },
+  {
+    expectedFragments: [
+      'timeout',
+      '4200',
+      'enableHttp2',
+      'installWebRuntimeGlobals',
+      'XMLHttpRequest',
+    ],
+    fileName: 'pages/request-globals/axios.js',
+    requestLiteral: 'https://request-globals.invalid/axios',
+    title: 'axios',
+  },
+  {
+    expectedFragments: [
+      'timeout',
+      '4800',
+      'enableChunked',
+      'installWebRuntimeGlobals',
+      'AbortController',
+    ],
+    fileName: 'pages/request-globals/graphql-request.js',
+    requestLiteral: 'https://request-globals.invalid/graphql',
+    title: 'graphql-request',
+  },
+] as const
+
 describe.sequential('e2e app: wevu-runtime-demo request globals (build)', () => {
-  it('keeps top-level request globals bindings when the installer is inlined into the entry chunk', async () => {
+  it('keeps top-level request globals bindings and resolves wevu/web-apis usage for request-globals pages', async () => {
     await runBuild()
 
-    const runtimeJsPath = path.join(DIST_ROOT, 'request-globals-runtime.js')
-    const pageJsPath = path.join(DIST_ROOT, 'pages/request-globals/fetch.js')
+    const runtimeJsPath = path.join(DIST_ROOT, 'weapp-vendors/web-apis-shared.js')
     const runtimeJs = await fs.readFile(runtimeJsPath, 'utf8')
-    const pageJs = await fs.readFile(pageJsPath, 'utf8')
 
     expect(runtimeJs).toContain('Object.defineProperty(exports,')
     expect(runtimeJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
-    expect(pageJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
-    expect(pageJs).toMatch(/require\((['"`])\.\.\/\.\.\/request-globals-runtime\.js\1\)/)
-    expect(pageJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
-    expect(pageJs).toContain('var fetch =')
-    expect(pageJs).toContain('.fetch')
-    expect(pageJs).toContain('var URL =')
-    expect(pageJs).toContain('.URL')
-    expect(pageJs).toContain('var XMLHttpRequest =')
-    expect(pageJs).toContain('.XMLHttpRequest')
-    expect(pageJs).toContain('var WebSocket =')
-    expect(pageJs).toContain('.WebSocket')
-    expect(pageJs.indexOf('var fetch =')).toBeLessThan(pageJs.indexOf('https://request-globals.invalid/fetch'))
+
+    for (const testCase of PAGE_CASES) {
+      const pageJs = await fs.readFile(path.join(DIST_ROOT, testCase.fileName), 'utf8')
+
+      expect(pageJs).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
+      expect(pageJs).toMatch(/require\((['"`])\.\.\/\.\.\/weapp-vendors\/web-apis-shared\.js\1\)/)
+      expect(pageJs).toContain(FULL_REQUEST_GLOBAL_TARGETS_SERIALIZED)
+      expect(pageJs).toContain(testCase.requestLiteral)
+      expect(pageJs).not.toContain('wevu/web-apis')
+
+      for (const fragment of testCase.expectedFragments) {
+        expect(pageJs, `${testCase.title}: missing fragment ${fragment}`).toContain(fragment)
+      }
+    }
   })
 })

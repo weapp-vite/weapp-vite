@@ -20,6 +20,7 @@ import {
   resolveCatalogDependencyVersion,
   resolveDependencySpecVersion,
   resolveMode,
+  resolvePnpmCommand,
   resolveWorkspacePackageSpecVersion,
   syncRolldownCatalogReferences,
   verifyRolldownCatalogReferences,
@@ -390,10 +391,16 @@ it('readPackedPackageJsonFromTarball reads package/package.json from a pnpm pack
   const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'rolldown-pack-test-'))
 
   try {
-    const stdout = execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['--dir', packageRoot, 'pack', '--pack-destination', tmpDir, '--json'], {
-      cwd: packageRoot,
-      encoding: 'utf8',
-    })
+    const pnpmCommand = resolvePnpmCommand()
+    const stdout = execFileSync(
+      pnpmCommand.command,
+      [...pnpmCommand.args, '--dir', packageRoot, 'pack', '--pack-destination', tmpDir, '--json'],
+      {
+        cwd: packageRoot,
+        encoding: 'utf8',
+        shell: pnpmCommand.shell,
+      },
+    )
     const parsed = JSON.parse(stdout)
     const tarballPath = Array.isArray(parsed) ? parsed[0].filename : parsed.filename
     const packedPackageJson = readPackedPackageJsonFromTarball(tarballPath)
