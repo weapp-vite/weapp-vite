@@ -1,5 +1,6 @@
 import type { MpPlatform } from '../types'
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import {
   normalizePlatformNpmImportPath,
@@ -16,6 +17,8 @@ const NODE_MODULES_SEGMENT = '/node_modules/'
 const STRIP_SCRIPT_EXTENSION_RE = /\.[cm]?[jt]sx?$/
 
 const miniprogramRootCache = new Map<string, string | undefined>()
+const packageRootCache = new Map<string, string | undefined>()
+const resolveFromCurrentModule = createRequire(import.meta.url)
 
 function stripScriptExtension(value: string) {
   return value.replace(STRIP_SCRIPT_EXTENSION_RE, '')
@@ -47,6 +50,27 @@ function readMiniprogramRoot(packageRoot: string) {
   }
 }
 
+function resolveInstalledPackageRoot(packageName: string, basedir: string) {
+  const cacheKey = `${basedir}::${packageName}`
+  const cached = packageRootCache.get(cacheKey)
+  if (cached !== undefined || packageRootCache.has(cacheKey)) {
+    return cached
+  }
+
+  try {
+    const packageJsonPath = resolveFromCurrentModule.resolve(`${packageName}/package.json`, {
+      paths: [basedir],
+    })
+    const resolvedPackageRoot = path.dirname(packageJsonPath)
+    packageRootCache.set(cacheKey, resolvedPackageRoot)
+    return resolvedPackageRoot
+  }
+  catch {
+    packageRootCache.set(cacheKey, undefined)
+    return undefined
+  }
+}
+
 function normalizeAbsoluteNodeModulesImport(importee: string) {
   const nodeModulesIndex = importee.lastIndexOf(NODE_MODULES_SEGMENT)
   if (nodeModulesIndex === -1) {
@@ -66,7 +90,10 @@ function normalizeAbsoluteNodeModulesImport(importee: string) {
   }
 
   const packageName = packageTokens.slice(0, packageTokenCount).join('/')
-  const packageRoot = `${importee.slice(0, packageStart)}${packageName}`
+  const inferredPackageRoot = `${importee.slice(0, packageStart)}${packageName}`
+  const packageRoot = existsSync(path.join(inferredPackageRoot, 'package.json'))
+    ? inferredPackageRoot
+    : resolveInstalledPackageRoot(packageName, path.dirname(importee)) ?? inferredPackageRoot
   let subPath = packageTokens.slice(packageTokenCount).join('/')
   const miniprogramRoot = readMiniprogramRoot(packageRoot)
   if (miniprogramRoot && (subPath === miniprogramRoot || subPath.startsWith(`${miniprogramRoot}/`))) {
