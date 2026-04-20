@@ -1787,6 +1787,9 @@ importers:
       '@wevu/compiler':
         specifier: workspace:*
         version: link:../wevu-compiler
+      '@wevu/web-apis':
+        specifier: workspace:*
+        version: link:../web-apis
       miniprogram-api-typings:
         specifier: ^5.0.0
         version: 5.0.0
