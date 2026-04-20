@@ -1,5 +1,33 @@
 # weapp-vite
 
+## 6.15.9
+
+### Patch Changes
+
+- 🐛 **修复开发模式下自动导入新建组件时，只更新页面 `usingComponents`、但未补发组件产物的问题。** [#474](https://github.com/weapp-vite/weapp-vite/pull/474) by @sonofmagic
+
+- 🐛 **修复本地分包按依赖列表复制 `miniprogram_npm` 产物时遗漏 copied `miniprogram` 包传递依赖的问题。像 `miniprogram-computed` 这类通过 build-npm 复制的 CJS 小程序包，声明在分包后会继续把 `rfdc`、`fast-deep-equal` 等运行时依赖一并带入分包产物，避免真实 DevTools 运行时报模块缺失。** [#477](https://github.com/weapp-vite/weapp-vite/pull/477) by @sonofmagic
+
+- 🐛 **修复原生小程序构建中复制型 `miniprogram` npm 包的 ESM `default` 互操作问题：当 `tdesign-miniprogram/dialog` 这类依赖以 `export default` 形式发布时，构建产物现在会在缓存与输出阶段统一归一化为带 `__esModule` 标记的 CommonJS，避免页面侧 `require + __toESM` 再次包裹默认导出，导致 `Dialog.confirm is not a function` 一类双层 `default` 报错。** [#477](https://github.com/weapp-vite/weapp-vite/pull/477) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 在共享 WXML/WXS 依赖与 WeChat DevTools 运行态下的两类稳定性问题。现在共享模板/脚本模块的 importer 传播和产物引用路径会更稳定，避免构建结果里出现错误的共享依赖落位，`wevu-runtime-e2e` 的 shared template/WXS HMR 场景也会在进入用例前主动恢复基线，避免中断后的脏状态把 `shared-hmr/helper.wxs` 之类的临时依赖残留到后续运行。与此同时，IDE 侧长链路 e2e 用例会在关键场景改用 fresh launch 与更明确的残留清理，减少 DevTools automator bridge 重启和页面 relaunch 失稳导致的误报。** [`209f263`](https://github.com/weapp-vite/weapp-vite/commit/209f263b19afea01e9c2fe9be21bcc4d8bcf66a7) by @sonofmagic
+
+- 🐛 **修复小程序 Web Runtime 的网络兼容层不支持把宿主扩展参数稳定传到底层请求与 Socket 能力的问题。现在除了 `fetch(url, { miniProgram: { ... } })` / `fetch(url, { miniprogram: { ... } })` 和 `axios` 的 `fetchOptions.miniProgram` 之外，还新增了运行时级默认配置能力，可统一作用于 `fetch`、`XMLHttpRequest`、`WebSocket` 以及依赖这些全局对象的 `graphql-request`、`axios(xhr)`、`socket.io-client` 等库。`weapp-vite` 现在也支持直接在 `vite.config.ts` 的 `weapp.appPrelude.webRuntime.networkDefaults` 或 `weapp.injectWebRuntimeGlobals.networkDefaults` 中声明这些默认参数，让 app prelude、bundle runtime 与源码注入链路都能在安装 Web Runtime 时同步下发。显式请求参数会覆盖默认配置，同时仍保持 `url`、`method`、`header`、`data`、`responseType` 等标准字段由兼容层接管，不允许被宿主扩展项破坏。** [`c9c1da1`](https://github.com/weapp-vite/weapp-vite/commit/c9c1da16e3c59a43b6b0fd42ac7f078174447f5f) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` / `@wevu/compiler` 在 `.vue` 文件源码调试链路中丢失脚本 sourcemap 的问题。现在 Vue SFC 的 `compileScript`、wevu 脚本重写、页面特性注入、`setData.pick` 注入以及最终入口代码拼装会连续传递并组合 sourcemap，避免 `app.vue`、页面与组件在开发者工具里出现不同程度的断点行号偏移。** [#476](https://github.com/weapp-vite/weapp-vite/pull/476) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 在 dev/HMR 增量产物里刷新 shared chunk importer 关系时，对“当前 partial emit 缺失中间 shared chunk，但该 chunk 仍继续依赖更深层 vendor helper”的场景处理不完整的问题。现在会同时保留这类缺席 chunk 的嵌套依赖关系，避免 `computed is not a function`、`createComponent is not a function` 这类由 wevu 共享运行时 helper 丢失或未联动重编译导致的偶发报错。** [#474](https://github.com/weapp-vite/weapp-vite/pull/474) by @sonofmagic
+
+- 🐛 **修复 `tdesign-miniprogram/*` 通过 TypeScript alias 指向 `node_modules/.../miniprogram_dist/*` 时的小程序 npm 本地化兼容问题。`weapp-vite` 现在会把 alias 展开的绝对 `node_modules` 文件路径还原成稳定的 npm specifier，再继续走分包 `miniprogram_npm` 重写逻辑，避免 `Dialog.confirm` 这类命令式 API 在产物里落成错误的双层 `default` 访问或错误的 `miniprogram_dist` 路径。** [#477](https://github.com/weapp-vite/weapp-vite/pull/477) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 对 `wevu/web-apis` 子路径的工作区包解析与别名映射，避免在本地 workspace / demo app 中引用该子路径时被错误拼接成 `dist/index.mjs/web-apis` 一类无效路径。现在 `wevu/web-apis` 可以和 `wevu`、`wevu/fetch`、`wevu/router` 等子路径一样被稳定解析到对应 dist 入口，便于在小程序项目里直接引入新的 Web Runtime 安装函数与兼容层导出。** [`0741a97`](https://github.com/weapp-vite/weapp-vite/commit/0741a97d2d402de3e172b2550bdf40098ae446ad) by @sonofmagic
+- 📦 Updated 6 dependencies [`624f9ee`](https://github.com/weapp-vite/weapp-vite/commit/624f9ee0bf09d9cf5a5d0815cbff1aa094cdd702)
+  <details><summary>Details</summary>
+
+  `rolldown-require@2.0.14`, `wevu@6.15.9`, `@wevu/web-apis@1.2.9`, `@wevu/api@0.2.5`, `@weapp-vite/web@1.3.18`, `@weapp-vite/ast@6.15.9`
+
+  </details>
+
 ## 6.15.8
 
 ### Patch Changes
