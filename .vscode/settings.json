@@ -88,14 +88,45 @@
     "**/dist/**": true,
     "**/coverage/**": true,
     "**/.turbo/**": true,
-    "**/.playwright-cli/**": true
+    "**/.playwright-cli/**": true,
+    "**/.codex-tmp/**": true,
+    "**/.weapp-vite/**": true,
+    "**/docs/reports/**": true
+  },
+  "files.exclude": {
+    "**/.codex-tmp": true,
+    "**/.weapp-vite": true,
+    "**/docs/reports": true
   },
   "search.exclude": {
     "**/dist/**": true,
     "**/coverage/**": true,
     "**/.turbo/**": true,
-    "**/.playwright-cli/**": true
+    "**/.playwright-cli/**": true,
+    "**/.codex-tmp/**": true,
+    "**/.weapp-vite/**": true,
+    "**/docs/reports/**": true
   },
+  "tailwindCSS.files.exclude": [
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/.hg/**",
+    "**/.svn/**",
+    "**/.codex-tmp/**",
+    "**/.weapp-vite/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/docs/reports/**"
+  ],
+  "i18n-ally.usage.scanningIgnore": [
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/.codex-tmp/**",
+    "**/.weapp-vite/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/docs/reports/**"
+  ],
   "stylelint.validate": [
     "vue",
     "css",
