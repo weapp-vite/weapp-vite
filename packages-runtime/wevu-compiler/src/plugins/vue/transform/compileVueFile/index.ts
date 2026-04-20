@@ -52,6 +52,7 @@ export async function compileVueFile(
     parsed.isAppFile,
   )
   result.script = scriptPhase.script
+  result.scriptMap = scriptPhase.scriptMap
 
   compileStylePhase(parsed.descriptor, filename, result)
 

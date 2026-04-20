@@ -142,8 +142,8 @@ export async function transformVueLikeFile(options: {
     reportTiming(filename, isPage)
 
     return {
-      code: returnedCode,
-      map: null,
+      code: returnedCode.code,
+      map: returnedCode.map,
     }
   }
   catch (error) {

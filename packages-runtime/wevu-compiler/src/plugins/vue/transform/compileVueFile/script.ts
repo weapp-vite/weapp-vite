@@ -1,11 +1,13 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { TemplateCompileResult } from '../../compiler/template'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
+import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { collectVueTemplateTags, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
@@ -15,6 +17,7 @@ const TYPE_ONLY_DEFINE_PROPS_RE = /\bdefineProps\s*</
 
 export interface ScriptPhaseResult {
   script?: string
+  scriptMap?: EncodedSourceMapLike | null
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
 }
@@ -113,6 +116,7 @@ export async function compileScriptPhase(
   }
 
   let scriptCode: string | undefined
+  let scriptMap: EncodedSourceMapLike | null = null
   if (descriptor.script || descriptor.scriptSetup) {
     const scriptCompiled = compileScript(descriptorForCompile, {
       id: filename,
@@ -120,6 +124,9 @@ export async function compileScriptPhase(
     })
 
     scriptCode = scriptCompiled.content
+    scriptMap = scriptCompiled.map && typeof scriptCompiled.map === 'object'
+      ? scriptCompiled.map
+      : null
 
     if (
       scriptCode.includes('defineAppJson')
@@ -152,8 +159,13 @@ export async function compileScriptPhase(
       inlineExpressions: templateCompiled?.inlineExpressions,
       relaxStructuredTypeOnlyProps,
     })
-    return { script: transformed.code, autoUsingComponentsMap, autoComponentMeta }
+    return {
+      script: transformed.code,
+      scriptMap: composeSourceMaps(transformed.map ?? null, scriptMap),
+      autoUsingComponentsMap,
+      autoComponentMeta,
+    }
   }
 
-  return { script: scriptCode, autoUsingComponentsMap, autoComponentMeta }
+  return { script: scriptCode, scriptMap: null, autoUsingComponentsMap, autoComponentMeta }
 }

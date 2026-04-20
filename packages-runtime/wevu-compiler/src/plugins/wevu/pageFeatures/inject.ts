@@ -1,4 +1,5 @@
 import type { AstEngineName } from '../../../ast/types'
+import type { EncodedSourceMapLike } from '../../../utils/sourcemap'
 import type { ModuleAnalysis } from './analysis'
 import type { ModuleResolver, WevuPageFeatureFlag } from './types'
 import { collectWevuPageFeatureFlagsFromCode } from '../../../ast/operations/pageFeatures'
@@ -14,7 +15,7 @@ export function injectWevuPageFeaturesInJs(
   options?: {
     astEngine?: AstEngineName
   },
-): { code: string, transformed: boolean } {
+): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
   const enabled = collectWevuPageFeatureFlagsFromCode(source, options)
   if (!enabled.size) {
     return { code: source, transformed: false }
@@ -35,8 +36,12 @@ export function injectWevuPageFeaturesInJs(
     return { code: source, transformed: false }
   }
 
-  const generated = generate(ast, { retainLines: true })
-  return { code: generated.code, transformed: true }
+  const generated = generate(ast, {
+    retainLines: true,
+    sourceMaps: true,
+    sourceFileName: 'inline.js',
+  }, source)
+  return { code: generated.code, transformed: true, map: generated.map as EncodedSourceMapLike }
 }
 
 /**
@@ -45,7 +50,7 @@ export function injectWevuPageFeaturesInJs(
 export async function injectWevuPageFeaturesInJsWithResolver(
   source: string,
   options: { id: string, resolver: ModuleResolver, astEngine?: AstEngineName },
-): Promise<{ code: string, transformed: boolean }> {
+): Promise<{ code: string, transformed: boolean, map?: EncodedSourceMapLike | null }> {
   const preflight = collectTargetOptionsObjectsFromCode(source, options.id, {
     astEngine: options.astEngine,
   })
@@ -92,6 +97,10 @@ export async function injectWevuPageFeaturesInJsWithResolver(
     return { code: source, transformed: false }
   }
 
-  const generated = generate(ast, { retainLines: true })
-  return { code: generated.code, transformed: true }
+  const generated = generate(ast, {
+    retainLines: true,
+    sourceMaps: true,
+    sourceFileName: 'inline.js',
+  }, source)
+  return { code: generated.code, transformed: true, map: generated.map as EncodedSourceMapLike }
 }
