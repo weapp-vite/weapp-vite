@@ -52,4 +52,29 @@ describe('createEntryResolver', () => {
 
     await expect(resolver.resolveEntryWithCache(pluginCtx, entryPath)).resolves.toBeNull()
   })
+
+  it('does not cache missing entries in dev so newly created files can resolve later', async () => {
+    await fs.ensureDir(TEMP_ROOT)
+    const tempDir = await fs.mkdtemp(path.join(TEMP_ROOT, 'load-entry-resolve-dev-miss-'))
+    const entryPath = path.join(tempDir, 'components/HotCard/index.vue')
+
+    try {
+      const resolver = createEntryResolver({ isDev: true })
+      const pluginCtx = {
+        resolve: async () => null,
+      } as any
+
+      await expect(resolver.resolveEntryWithCache(pluginCtx, entryPath)).resolves.toBeNull()
+
+      await fs.ensureDir(path.dirname(entryPath))
+      await fs.writeFile(entryPath, '<template><view>hot</view></template>', 'utf8')
+
+      await expect(resolver.resolveEntryWithCache(pluginCtx, entryPath)).resolves.toEqual({
+        id: entryPath,
+      })
+    }
+    finally {
+      await fs.remove(tempDir)
+    }
+  })
 })
