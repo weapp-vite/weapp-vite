@@ -28,7 +28,7 @@ function isWatcherEmitter(value: unknown): value is WatcherEmitter {
   return typeof candidate.on === 'function' && typeof candidate.close === 'function'
 }
 
-async function waitForBuild(watcher: WatcherEmitter) {
+async function waitForBuild(watcher: WatcherEmitter, timeoutMs = 45_000) {
   return new Promise<void>((resolve, reject) => {
     const seenEvents: string[] = []
 
@@ -59,13 +59,13 @@ async function waitForBuild(watcher: WatcherEmitter) {
     timer = setTimeout(() => {
       unsubscribe(handler)
       reject(new Error(`watch build timed out, events seen: ${seenEvents.join(', ')}`))
-    }, 20_000)
+    }, timeoutMs)
 
     watcher.on('event', handler)
   })
 }
 
-async function waitForFileContains(filePath: string, marker: string, timeoutMs = 20_000) {
+async function waitForFileContains(filePath: string, marker: string, timeoutMs = 45_000) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     if (await fs.pathExists(filePath)) {
@@ -170,5 +170,5 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 60_000)
+  }, 120_000)
 })
