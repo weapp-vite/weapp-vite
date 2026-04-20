@@ -1,6 +1,6 @@
 import type { LoadConfigOptions } from '../src/context'
 import { existsSync } from 'node:fs'
-import { cp, lstat, mkdir, mkdtemp, readdir, readlink, rm, symlink } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink } from 'node:fs/promises'
 import { fdir } from 'fdir'
 import path from 'pathe'
 import { resetCompilerContext } from '../src/context/getInstance'
@@ -110,6 +110,63 @@ export async function ensureWorkspacePackageLink(projectRoot: string, packageNam
   await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
 }
 
+const RELATIVE_CONFIG_EXTENDS_RE = /"extends"\s*:\s*"([^"]+)"/
+
+function resolveJsonConfigPath(baseDir: string, extendsPath: string) {
+  const resolved = path.resolve(baseDir, extendsPath)
+  return path.extname(resolved) ? resolved : `${resolved}.json`
+}
+
+function isPathInside(root: string, target: string) {
+  const relative = path.relative(root, target)
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+}
+
+async function syncExternalConfigExtends(
+  sourceFile: string,
+  tempFile: string,
+  fixtureRoot: string,
+  visited: Set<string>,
+) {
+  const visitKey = `${sourceFile}::${tempFile}`
+  if (visited.has(visitKey) || !existsSync(sourceFile)) {
+    return
+  }
+  visited.add(visitKey)
+
+  const content = await readFile(sourceFile, 'utf8').catch(() => '')
+  const extendsPath = content.match(RELATIVE_CONFIG_EXTENDS_RE)?.[1]
+  if (!extendsPath?.startsWith('.')) {
+    return
+  }
+
+  const sourceTarget = resolveJsonConfigPath(path.dirname(sourceFile), extendsPath)
+  const tempTarget = resolveJsonConfigPath(path.dirname(tempFile), extendsPath)
+  if (!existsSync(sourceTarget)) {
+    return
+  }
+
+  if (!isPathInside(fixtureRoot, sourceTarget) && !existsSync(tempTarget)) {
+    await mkdir(path.dirname(tempTarget), { recursive: true })
+    await cp(sourceTarget, tempTarget, { force: true })
+  }
+
+  if (existsSync(tempTarget)) {
+    await syncExternalConfigExtends(sourceTarget, tempTarget, fixtureRoot, visited)
+  }
+}
+
+async function syncExternalTempConfigChain(fixtureRoot: string, tempDir: string) {
+  const visited = new Set<string>()
+  for (const entry of ['tsconfig.json', 'jsconfig.json']) {
+    const sourceFile = path.join(fixtureRoot, entry)
+    if (!existsSync(sourceFile)) {
+      continue
+    }
+    await syncExternalConfigExtends(sourceFile, path.join(tempDir, entry), fixtureRoot, visited)
+  }
+}
+
 export async function createTempFixtureProject(
   fixtureSource: string,
   prefix: string,
@@ -140,6 +197,7 @@ export async function createTempFixtureProject(
     },
   })
 
+  await syncExternalTempConfigChain(fixtureSource, tempDir)
   await ensureWorkspacePackageLink(tempDir)
 
   return {
