@@ -30,7 +30,9 @@ export function createEntryResolver(configService?: { isDev?: boolean }) {
       ?? (path.isAbsolute(resolvedSource) && await fs.pathExists(resolvedSource)
         ? { id: resolvedSource } as ResolvedId
         : null)
-    entryResolutionCache.set(normalized, resolvedId)
+    if (resolvedId || !configService?.isDev) {
+      entryResolutionCache.set(normalized, resolvedId)
+    }
     return resolvedId
   }
 
