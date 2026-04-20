@@ -10,7 +10,9 @@ const WAIT_INTERVAL_MS = 300
 const WAIT_TIMEOUT_MS = 5 * 60 * 1000
 const PNPM_COMMAND_PATTERN = /\bpnpm(?:\.cjs)?\b/
 const INSTALL_COMMAND_PATTERN = /\b(?:i|install)\b/
+const LIFECYCLE_COMMAND_PATTERN = /\b(?:preinstall|install|postinstall|prepare)\b/
 const PS_COMMAND_PATTERN = /\bps\s+-eo\b/
+const MAX_WAIT_LOG_COMMANDS = 3
 
 function parseProcessLine(line) {
   const trimmedLine = line.trimStart()
@@ -82,6 +84,10 @@ function isInstallCommand(command) {
   return PNPM_COMMAND_PATTERN.test(command) && INSTALL_COMMAND_PATTERN.test(command)
 }
 
+function isLifecycleCommand(command) {
+  return LIFECYCLE_COMMAND_PATTERN.test(command)
+}
+
 function findInstallAncestor(ancestors) {
   return ancestors.find(processInfo => isInstallCommand(processInfo.command)) ?? null
 }
@@ -122,32 +128,49 @@ function collectDescendantPids(processes, rootPid) {
   return descendants
 }
 
-function hasOtherLifecycleProcesses(processes, installAncestorPid, lifecycleRootPid) {
-  const installDescendants = collectDescendantPids(processes, installAncestorPid)
-  const ignoredDescendants = new Set([
-    lifecycleRootPid,
-    ...collectDescendantPids(processes, lifecycleRootPid),
-  ])
-
-  for (const pid of installDescendants) {
-    if (ignoredDescendants.has(pid)) {
-      continue
-    }
-    const processInfo = processes.find(item => item.pid === pid)
-    if (!processInfo) {
-      continue
+function listSiblingLifecycleProcesses(processes, installAncestorPid, lifecycleRootPid) {
+  return processes.filter((processInfo) => {
+    if (processInfo.ppid !== installAncestorPid || processInfo.pid === lifecycleRootPid) {
+      return false
     }
     if (PS_COMMAND_PATTERN.test(processInfo.command)) {
-      continue
+      return false
     }
-    return true
+    return isLifecycleCommand(processInfo.command)
+  })
+}
+
+function hasOtherLifecycleProcesses(processes, installAncestorPid, lifecycleRootPid) {
+  return listSiblingLifecycleProcesses(processes, installAncestorPid, lifecycleRootPid).length > 0
+}
+
+function summarizeLifecycleCommand(command) {
+  const shellCommandSeparator = ' -c '
+  const shellCommandIndex = command.indexOf(shellCommandSeparator)
+
+  if (shellCommandIndex === -1) {
+    return command.trim()
   }
 
-  return false
+  return command.slice(shellCommandIndex + shellCommandSeparator.length).trim()
+}
+
+function logWaitForInstallTail(pendingLifecycleProcesses) {
+  const summarizedCommands = pendingLifecycleProcesses
+    .slice(0, MAX_WAIT_LOG_COMMANDS)
+    .map(processInfo => summarizeLifecycleCommand(processInfo.command))
+  const remainingCount = pendingLifecycleProcesses.length - summarizedCommands.length
+  const remainingLabel = remainingCount > 0 ? ` 等 ${remainingCount} 个` : ''
+
+  console.log([
+    `[workspace] waiting for remaining workspace lifecycle scripts before rolldown report (${pendingLifecycleProcesses.length})${remainingLabel}:`,
+    ...summarizedCommands.map(command => `- ${command}`),
+  ].join('\n'))
 }
 
 async function waitForInstallTail() {
   const startedAt = Date.now()
+  let hasLoggedWait = false
 
   while (Date.now() - startedAt < WAIT_TIMEOUT_MS) {
     const processes = listProcesses()
@@ -163,8 +186,13 @@ async function waitForInstallTail() {
     }
 
     const lifecycleRootPid = findLifecycleRootPid(ancestors, installAncestor.pid)
-    if (!hasOtherLifecycleProcesses(processes, installAncestor.pid, lifecycleRootPid)) {
+    const pendingLifecycleProcesses = listSiblingLifecycleProcesses(processes, installAncestor.pid, lifecycleRootPid)
+    if (pendingLifecycleProcesses.length === 0) {
       return
+    }
+    if (!hasLoggedWait) {
+      logWaitForInstallTail(pendingLifecycleProcesses)
+      hasLoggedWait = true
     }
 
     await sleep(WAIT_INTERVAL_MS)
@@ -184,9 +212,13 @@ export {
   findLifecycleRootPid,
   hasOtherLifecycleProcesses,
   isInstallCommand,
+  isLifecycleCommand,
   listProcesses,
+  listSiblingLifecycleProcesses,
+  logWaitForInstallTail,
   main,
   parseProcessLine,
+  summarizeLifecycleCommand,
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
