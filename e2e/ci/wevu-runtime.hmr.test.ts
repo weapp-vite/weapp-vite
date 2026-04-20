@@ -29,8 +29,8 @@ async function rewriteTemplateSourceForWatch(
   await fs.writeFile(templatePath, targetSource, 'utf8')
 }
 
-async function waitForFileWithSourceHeartbeat(
-  task: () => Promise<void>,
+async function waitForFileWithSourceHeartbeat<T>(
+  task: () => Promise<T>,
   touchFilePath: string,
   touchContent: string,
   timeoutMs = 60_000,
@@ -41,8 +41,7 @@ async function waitForFileWithSourceHeartbeat(
 
   while (Date.now() < deadline) {
     try {
-      await task()
-      return
+      return await task()
     }
     catch {
       if (Date.now() >= nextTouchAt) {
@@ -53,7 +52,7 @@ async function waitForFileWithSourceHeartbeat(
     }
   }
 
-  await task()
+  return await task()
 }
 
 beforeEach(async () => {
