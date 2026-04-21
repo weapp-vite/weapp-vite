@@ -47,6 +47,7 @@ describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
     expect(barePageJs).toContain('issue-dialog-bare confirm title')
     expect(barePageJs).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
     expect(barePageJs).not.toContain('.default.default')
+    expect(barePageJs).not.toMatch(/__toESM\([^)]*,\s*1\)/)
     expect(barePageJson).toContain('"t-dialog": "../../miniprogram_npm/tdesign-miniprogram/dialog/dialog"')
 
     expect(indexPageWxml).toContain('tdesign Dialog /index import')
@@ -54,6 +55,7 @@ describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
     expect(indexPageJs).toContain('issue-dialog-index confirm title')
     expect(indexPageJs).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
     expect(indexPageJs).not.toContain('.default.default')
+    expect(indexPageJs).not.toMatch(/__toESM\([^)]*,\s*1\)/)
     expect(indexPageJson).toContain('"t-dialog": "../../miniprogram_npm/tdesign-miniprogram/dialog/dialog"')
 
     expect(dialogIndexJs).toContain('__esModule')

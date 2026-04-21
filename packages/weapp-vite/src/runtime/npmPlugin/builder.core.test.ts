@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import os from 'node:os'
+import vm from 'node:vm'
 
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -25,6 +27,59 @@ async function createTempDir() {
   const dir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'weapp-vite-builder-core-'))
   tempDirs.push(dir)
   return dir
+}
+
+function loadCommonJsModule(entryPath: string) {
+  const cache = new Map<string, { exports: any }>()
+
+  const load = (filePath: string): any => {
+    const resolved = path.extname(filePath) ? filePath : `${filePath}.js`
+    const cached = cache.get(resolved)
+    if (cached) {
+      return cached.exports
+    }
+
+    const module = {
+      exports: {},
+    }
+    cache.set(resolved, module)
+
+    const source = readFileSync(resolved, 'utf8')
+    const filename = resolved
+    const dirname = path.dirname(filename)
+
+    const localRequire = (specifier: string) => {
+      if (!specifier.startsWith('.')) {
+        throw new Error(`Unsupported test require: ${specifier}`)
+      }
+      return load(path.resolve(dirname, specifier))
+    }
+
+    const wrapper = vm.runInNewContext(
+      `(function (require, module, exports) { ${source}\n})`,
+      {
+        Object,
+      },
+      {
+        filename,
+      },
+    ) as (require: (specifier: string) => any, module: { exports: any }, exports: any) => void
+
+    wrapper(localRequire, module, module.exports)
+    return module.exports
+  }
+
+  return load(entryPath)
+}
+
+function wrapAsPageDefaultImport<T>(mod: T): T extends { __esModule: true } ? T : T & { default: T } {
+  if (mod && typeof mod === 'object' && '__esModule' in (mod as Record<string, unknown>)) {
+    return mod as T extends { __esModule: true } ? T : T & { default: T }
+  }
+
+  return {
+    default: mod,
+  } as T extends { __esModule: true } ? T : T & { default: T }
 }
 
 function createMockContext(overrides: Record<string, unknown> = {}) {
@@ -407,6 +462,50 @@ describe('runtime npm package builder core', () => {
     expect(helperContent).toContain('exports["default"]')
   })
 
+  it('keeps copied miniprogram package default exports callable through page-side __toESM wrapping', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'mini-pkg')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram/dialog'))
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram/dialog/helper.js'),
+      'export default function confirm() { return true }',
+      'utf8',
+    )
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram/dialog/index.js'),
+      'import confirm from "./helper.js"; export default { confirm }',
+      'utf8',
+    )
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'mini-pkg',
+        version: '0.0.0',
+        miniprogram: 'miniprogram',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'mini-pkg',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    const dialogModule = loadCommonJsModule(path.resolve(outRoot, 'mini-pkg/dialog/index.js'))
+    const wrappedDialogModule = wrapAsPageDefaultImport(dialogModule) as { default: { confirm: () => boolean, default?: unknown } }
+
+    expect(wrappedDialogModule.default.default).toBeUndefined()
+    expect(wrappedDialogModule.default.confirm()).toBe(true)
+  })
+
   it('keeps tdesign dialog index entry interoperable after copying miniprogram_dist packages', async () => {
     const root = await createTempDir()
     const pkgRoot = path.resolve(root, 'tdesign-miniprogram')
@@ -449,6 +548,50 @@ describe('runtime npm package builder core', () => {
     expect(dialogIndexContent).toContain('__esModule')
     expect(dialogIndexContent).toContain('require("./helper.js")')
     expect(dialogIndexContent).toContain('exports["default"]')
+  })
+
+  it('keeps copied miniprogram_dist package default exports callable through page-side __toESM wrapping', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'tdesign-miniprogram')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram_dist/dialog'))
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram_dist/dialog/helper.js'),
+      'export default function confirm() { return true }',
+      'utf8',
+    )
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram_dist/dialog/index.js'),
+      'import confirm from "./helper.js"; export default { confirm }',
+      'utf8',
+    )
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'tdesign-miniprogram',
+        version: '1.0.0',
+        miniprogram: 'miniprogram_dist',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'tdesign-miniprogram',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    const dialogModule = loadCommonJsModule(path.resolve(outRoot, 'tdesign-miniprogram/dialog/index.js'))
+    const wrappedDialogModule = wrapAsPageDefaultImport(dialogModule) as { default: { confirm: () => boolean, default?: unknown } }
+
+    expect(wrappedDialogModule.default.default).toBeUndefined()
+    expect(wrappedDialogModule.default.confirm()).toBe(true)
   })
 
   it('keeps copied cjs miniprogram package entry stable for build-npm packages like miniprogram-computed', async () => {

@@ -379,10 +379,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('issue-466 action title')
     expect(pageJs).toContain('issue-466 close title')
     expect(pageJs).not.toContain('.default.default')
+    expect(pageJs).not.toMatch(/__toESM\([^)]*,\s*1\)/)
     expect(nativePageJs).toContain('require("../miniprogram_npm/tdesign-miniprogram/dialog/index")')
     expect(nativePageJs).toContain('issue-466 native confirm title')
     expect(nativePageJs).not.toContain('miniprogram_dist/dialog/index.js')
     expect(nativePageJs).not.toContain('.default.default')
+    expect(nativePageJs).not.toMatch(/__toESM\([^)]*,\s*1\)/)
   })
 
   it('issue #466 computed: keeps build-npm cjs package output stable inside github-issues subpackage', async () => {

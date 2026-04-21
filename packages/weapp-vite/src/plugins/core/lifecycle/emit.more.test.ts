@@ -747,7 +747,7 @@ describe('core lifecycle emit hook extra branches', () => {
       'packageA/pages/foo.js': {
         type: 'chunk',
         fileName: 'packageA/pages/foo.js',
-        code: `const dialog = require(${JSON.stringify(aliasedDialogIndex)})`,
+        code: `let dialog = require(${JSON.stringify(aliasedDialogIndex)});dialog = __toESM(dialog, 1);dialog.default.confirm()`,
         imports: [],
         dynamicImports: [],
       },
@@ -757,6 +757,8 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/tdesign-miniprogram/dialog/index')
     expect(bundle['packageA/pages/foo.js'].code).not.toContain('miniprogram_dist/dialog/index.js')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('__toESM(dialog)')
+    expect(bundle['packageA/pages/foo.js'].code).not.toContain('__toESM(dialog, 1)')
   })
 
   it('localizes aliased relative miniprogram package imports back to subpackage miniprogram_npm paths', async () => {
@@ -787,7 +789,7 @@ describe('core lifecycle emit hook extra branches', () => {
       'packageA/pages/foo.js': {
         type: 'chunk',
         fileName: 'packageA/pages/foo.js',
-        code: 'const dialog = require("../node_modules/tdesign-miniprogram/miniprogram_dist/dialog/index.js")',
+        code: 'let dialog = require("../node_modules/tdesign-miniprogram/miniprogram_dist/dialog/index.js");dialog = __toESM(dialog, 1);dialog.default.confirm()',
         imports: [],
         dynamicImports: [],
       },
@@ -797,6 +799,8 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/tdesign-miniprogram/dialog/index')
     expect(bundle['packageA/pages/foo.js'].code).not.toContain('miniprogram_dist/dialog/index.js')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('__toESM(dialog)')
+    expect(bundle['packageA/pages/foo.js'].code).not.toContain('__toESM(dialog, 1)')
   })
 
   it('handles non-logging shared chunk duplicates and empty watch files gracefully', async () => {

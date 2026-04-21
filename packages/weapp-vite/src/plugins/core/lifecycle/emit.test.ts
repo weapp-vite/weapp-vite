@@ -296,7 +296,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
       'pages/dialog-index/index.js': {
         type: 'chunk',
         fileName: 'pages/dialog-index/index.js',
-        code: 'const dialog = require("tdesign-miniprogram/dialog/index")',
+        code: 'let dialog = require("tdesign-miniprogram/dialog/index");dialog = __toESM(dialog, 1);dialog.default.confirm()',
         imports: [],
         dynamicImports: [],
       },
@@ -316,6 +316,8 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['pages/dialog-bare/index.js'].code).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
     expect(bundle['pages/dialog-bare/index.js'].code).not.toContain('require("tdesign-miniprogram/dialog")')
     expect(bundle['pages/dialog-index/index.js'].code).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
+    expect(bundle['pages/dialog-index/index.js'].code).toContain('__toESM(dialog)')
+    expect(bundle['pages/dialog-index/index.js'].code).not.toContain('__toESM(dialog, 1)')
     expect(bundle['pages/dialog-bare/index.json'].source).toContain('"t-dialog": "../../miniprogram_npm/tdesign-miniprogram/dialog/dialog"')
   })
 

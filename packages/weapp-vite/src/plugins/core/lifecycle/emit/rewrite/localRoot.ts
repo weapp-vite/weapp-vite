@@ -10,6 +10,33 @@ import {
 } from './literals'
 import { matchesSubPackageDependency } from './platform'
 
+function isRelativeMiniprogramNpmImport(importee: string) {
+  return importee === 'miniprogram_npm'
+    || importee.startsWith('./miniprogram_npm/')
+    || importee.startsWith('../miniprogram_npm/')
+    || importee.includes('/miniprogram_npm/')
+}
+
+function isToEsmCall(node: any) {
+  const callee = node?.callee
+  if (!callee) {
+    return false
+  }
+
+  if (callee.type === 'Identifier') {
+    return callee.name === '__toESM'
+  }
+
+  return callee.type === 'MemberExpression'
+    && !callee.computed
+    && callee.property?.type === 'Identifier'
+    && callee.property.name === '__toESM'
+}
+
+function isNumericOneLiteral(node: any) {
+  return (node?.type === 'NumericLiteral' || node?.type === 'Literal') && node.value === 1
+}
+
 export function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string, basedir?: string) {
   const normalized = normalizeWeappLocalNpmImport(importee, basedir)
   const target = root
@@ -36,10 +63,17 @@ export function rewriteChunkNpmImportsToLocalRoot(
   try {
     const ast = parseJsLike(chunk.code)
     let mutated = false
+    const localizedRequireBindings = new Set<string>()
 
     traverse(ast as any, {
-      CallExpression(path: any) {
-        const callee = path.node?.callee
+      VariableDeclarator(path: any) {
+        const id = path.node?.id
+        const init = path.node?.init
+        if (!id || id.type !== 'Identifier' || !init || init.type !== 'CallExpression') {
+          return
+        }
+
+        const callee = init.callee
         if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
           return
         }
@@ -47,23 +81,90 @@ export function rewriteChunkNpmImportsToLocalRoot(
           return
         }
 
+        const currentValue = getRequireImportLiteral(init.arguments?.[0])
+        if (typeof currentValue === 'string' && isRelativeMiniprogramNpmImport(currentValue)) {
+          localizedRequireBindings.add(id.name)
+        }
+      },
+
+      AssignmentExpression(path: any) {
+        const left = path.node?.left
+        const right = path.node?.right
+        if (!left || left.type !== 'Identifier' || !right || right.type !== 'CallExpression') {
+          return
+        }
+
+        const callee = right.callee
+        if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
+          return
+        }
+        if (path.scope?.hasBinding?.('require')) {
+          return
+        }
+
+        const currentValue = getRequireImportLiteral(right.arguments?.[0])
+        if (typeof currentValue === 'string' && isRelativeMiniprogramNpmImport(currentValue)) {
+          localizedRequireBindings.add(left.name)
+        }
+      },
+
+      CallExpression(path: any) {
+        const callee = path.node?.callee
+        if (callee?.type === 'Identifier' && callee.name === 'require') {
+          if (path.scope?.hasBinding?.('require')) {
+            return
+          }
+
+          const args = path.node.arguments
+          if (!Array.isArray(args) || args.length === 0) {
+            return
+          }
+
+          const firstArg = args[0]
+          const currentValue = getRequireImportLiteral(firstArg)
+          if (typeof currentValue !== 'string' || !matchesSubPackageDependency(dependencyPatterns, currentValue, dependencies)) {
+            return
+          }
+
+          const nextValue = toRelativeRuntimeNpmImport(chunk.fileName, root, currentValue, options?.basedir)
+          if (nextValue === currentValue) {
+            return
+          }
+
+          setRequireImportLiteral(firstArg, nextValue)
+          if (isRelativeMiniprogramNpmImport(nextValue) && path.parentPath?.node?.type === 'VariableDeclarator' && path.parentPath.node.id?.type === 'Identifier') {
+            localizedRequireBindings.add(path.parentPath.node.id.name)
+          }
+          if (isRelativeMiniprogramNpmImport(nextValue) && path.parentPath?.node?.type === 'AssignmentExpression' && path.parentPath.node.left?.type === 'Identifier') {
+            localizedRequireBindings.add(path.parentPath.node.left.name)
+          }
+          mutated = true
+          return
+        }
+
+        if (!isToEsmCall(path.node)) {
+          return
+        }
+
         const args = path.node.arguments
-        if (!Array.isArray(args) || args.length === 0) {
+        if (!Array.isArray(args) || args.length < 2 || !isNumericOneLiteral(args[1])) {
           return
         }
 
         const firstArg = args[0]
-        const currentValue = getRequireImportLiteral(firstArg)
-        if (typeof currentValue !== 'string' || !matchesSubPackageDependency(dependencyPatterns, currentValue, dependencies)) {
+        const shouldDropNodeInterop = firstArg?.type === 'Identifier'
+          ? localizedRequireBindings.has(firstArg.name)
+          : firstArg?.type === 'CallExpression'
+            && firstArg.callee?.type === 'Identifier'
+            && firstArg.callee.name === 'require'
+            && typeof getRequireImportLiteral(firstArg.arguments?.[0]) === 'string'
+            && isRelativeMiniprogramNpmImport(String(getRequireImportLiteral(firstArg.arguments?.[0])))
+
+        if (!shouldDropNodeInterop) {
           return
         }
 
-        const nextValue = toRelativeRuntimeNpmImport(chunk.fileName, root, currentValue, options?.basedir)
-        if (nextValue === currentValue) {
-          return
-        }
-
-        setRequireImportLiteral(firstArg, nextValue)
+        path.node.arguments = [firstArg]
         mutated = true
       },
     })
