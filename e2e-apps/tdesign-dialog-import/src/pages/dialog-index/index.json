@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "dialog-index",
   "usingComponents": {
-    "t-dialog": "tdesign-miniprogram/dialog/dialog"
+    "t-dialog": "tdesign-miniprogram/dialog/dialog",
+    "t-toast": "tdesign-miniprogram/toast/toast"
   }
 }

@@ -175,6 +175,28 @@ async function verifyDialogPageFlow(
   expect(collector.getSince(confirmMarker)).toEqual([])
 }
 
+async function verifyToastPageFlow(
+  page: any,
+  collector: ReturnType<typeof attachRuntimeErrorCollector>,
+  options: {
+    toastSelector: string
+    message: string
+  },
+) {
+  const toastMarker = collector.mark()
+  await tapElement(page, options.toastSelector)
+  const shown = await page.callMethod('_runE2E')
+  expect(shown).toMatchObject({
+    toastType: 'function',
+    toastCount: 1,
+    lastToastAction: 'shown',
+    lastToastTrigger: 'user-tap',
+    lastToastError: '',
+    lastToastMessage: options.message,
+  })
+  expect(collector.getSince(toastMarker)).toEqual([])
+}
+
 afterAll(async () => {
   if (miniProgram) {
     await miniProgram.close()
@@ -198,6 +220,10 @@ describe.sequential('e2e app: tdesign-dialog-import (runtime)', () => {
         openSelector: '#dialog-bare-open',
         title: 'issue-dialog-bare confirm title',
       })
+      await verifyToastPageFlow(page, collector, {
+        toastSelector: '#dialog-bare-toast',
+        message: 'issue-dialog-bare toast user-tap',
+      })
     }
     finally {
       collector.dispose()
@@ -219,6 +245,10 @@ describe.sequential('e2e app: tdesign-dialog-import (runtime)', () => {
       await verifyDialogPageFlow(page, collector, {
         openSelector: '#dialog-index-open',
         title: 'issue-dialog-index confirm title',
+      })
+      await verifyToastPageFlow(page, collector, {
+        toastSelector: '#dialog-index-toast',
+        message: 'issue-dialog-index toast user-tap',
       })
     }
     finally {

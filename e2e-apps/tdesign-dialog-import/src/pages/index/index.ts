@@ -8,12 +8,12 @@ const cards: ProbeCard[] = [
   {
     title: 'dialog bare import',
     route: '/pages/dialog-bare/index',
-    desc: '验证 import Dialog from tdesign-miniprogram/dialog',
+    desc: '验证 import Dialog/Toast from tdesign-miniprogram/*',
   },
   {
     title: 'dialog index import',
     route: '/pages/dialog-index/index',
-    desc: '验证 import Dialog from tdesign-miniprogram/dialog/index',
+    desc: '验证 import Dialog/Toast from tdesign-miniprogram/*/index',
   },
 ]
 
