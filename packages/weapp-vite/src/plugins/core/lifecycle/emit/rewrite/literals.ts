@@ -1,16 +1,69 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'pathe'
 import { toPosixPath } from '../../../../../utils'
-import { normalizeNpmImportLookupPath } from '../../../../../utils/npmImport'
+import { normalizeNpmImportLookupPath, parseNpmPackageSpecifier } from '../../../../../utils/npmImport'
 import {
   DIRECTIVE_PROLOGUE_RE,
 } from '../constants'
 
-export function normalizeWeappLocalNpmImport(importee: string) {
+const SCRIPT_ENTRY_CANDIDATES = ['index.js', 'index.mjs', 'index.cjs'] as const
+const SCRIPT_FILE_EXTENSIONS = ['.js', '.mjs', '.cjs'] as const
+const SCRIPT_FILE_RE = /\.[cm]?js$/i
+const resolvePackageJson = createRequire(import.meta.url)
+
+function resolveInstalledPackageEntryRoot(importee: string, basedir?: string) {
+  const parsed = parseNpmPackageSpecifier(importee)
+  if (!parsed) {
+    return undefined
+  }
+
+  try {
+    const packageJsonPath = resolvePackageJson.resolve(`${parsed.packageName}/package.json`, {
+      paths: basedir ? [basedir] : undefined,
+    })
+    const packageRoot = path.dirname(packageJsonPath)
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
+      miniprogram?: string
+    }
+    const miniprogramRoot = typeof packageJson.miniprogram === 'string' && packageJson.miniprogram
+      ? packageJson.miniprogram
+      : undefined
+
+    return {
+      ...parsed,
+      entryRoot: miniprogramRoot ? path.resolve(packageRoot, miniprogramRoot) : packageRoot,
+    }
+  }
+  catch {
+    return undefined
+  }
+}
+
+export function normalizeWeappLocalNpmImport(importee: string, basedir?: string) {
   const normalized = normalizeNpmImportLookupPath(importee)
   const segments = normalized.split('/').filter(Boolean)
   if (segments.length === 1 || (segments.length === 2 && normalized.startsWith('@'))) {
     return `${normalized}/index`
   }
+
+  if (SCRIPT_FILE_RE.test(normalized)) {
+    return normalized
+  }
+
+  const resolved = resolveInstalledPackageEntryRoot(normalized, basedir)
+  if (!resolved?.subPath) {
+    return normalized
+  }
+
+  const targetPath = path.resolve(resolved.entryRoot, resolved.subPath)
+  if (SCRIPT_FILE_EXTENSIONS.some(ext => existsSync(`${targetPath}${ext}`))) {
+    return normalized
+  }
+  if (SCRIPT_ENTRY_CANDIDATES.some(candidate => existsSync(path.resolve(targetPath, candidate)))) {
+    return `${normalized}/index`
+  }
+
   return normalized
 }
 

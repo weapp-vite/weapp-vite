@@ -1,0 +1,32 @@
+.page {
+  min-height: 100vh;
+  padding: 32rpx;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #fff7ed 0%, #fffbeb 100%);
+}
+
+.title,
+.line {
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #7c2d12;
+}
+
+.line {
+  font-size: 24rpx;
+  color: #9a3412;
+}
+
+.button {
+  margin-bottom: 16rpx;
+}
+
+.button-secondary {
+  color: #7c2d12;
+  background: #fed7aa;
+}

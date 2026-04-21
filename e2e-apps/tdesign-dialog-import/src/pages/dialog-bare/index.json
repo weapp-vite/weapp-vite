@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "dialog-bare",
+  "usingComponents": {
+    "t-dialog": "tdesign-miniprogram/dialog/dialog"
+  }
+}

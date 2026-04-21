@@ -1,0 +1,16 @@
+<view class="page">
+  <text class="title">tdesign Dialog bare import</text>
+  <text class="line">confirmType = {{confirmType}}</text>
+  <text class="line">defaultType = {{defaultType}}</text>
+  <text class="line">defaultConfirmType = {{defaultConfirmType}}</text>
+  <text class="line">lastAction = {{lastAction}}</text>
+  <text class="line">lastTrigger = {{lastTrigger}}</text>
+  <text class="line">lastPayload = {{lastPayload || 'none'}}</text>
+  <text class="line">lastError = {{lastError || 'none'}}</text>
+  <text class="line">dialogVisible = {{dialogVisible}}</text>
+  <text class="line">lastTitle = {{lastTitle || 'none'}}</text>
+  <text class="line">counts = open {{openCount}}, settle {{settleCount}}</text>
+  <button id="dialog-bare-open" class="button" bindtap="onOpenDialog">打开 confirm</button>
+  <button class="button button-secondary" bindtap="_resetE2E">重置状态</button>
+  <t-dialog id="t-dialog" />
+</view>

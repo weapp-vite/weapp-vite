@@ -66,10 +66,13 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       if (!shouldRewriteBundleNpmImports(configService.platform)) {
         for (const output of Object.values(rolldownBundle)) {
           if (output?.type === 'chunk') {
-            rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, { astEngine })
+            rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
+              astEngine,
+              basedir: configService.cwd,
+            })
           }
         }
-        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies)
+        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies, configService.cwd)
       }
       return
     }
@@ -264,6 +267,26 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
       const localSubPackageMetas = [...subPackageMap.values()]
         .filter(meta => Array.isArray(meta?.subPackage?.dependencies) && meta.subPackage.dependencies.length > 0)
+      const localSubPackageRoots = localSubPackageMetas
+        .map(meta => meta.subPackage.root)
+        .filter(Boolean)
+
+      for (const output of Object.values(rolldownBundle)) {
+        if (output?.type !== 'chunk') {
+          continue
+        }
+        if (localSubPackageRoots.some(root => output.fileName === root || output.fileName.startsWith(`${root}/`))) {
+          continue
+        }
+        rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
+          astEngine,
+          basedir: configService.cwd,
+        })
+      }
+      rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies, configService.cwd, {
+        excludeRoots: localSubPackageRoots,
+      })
+
       for (const meta of localSubPackageMetas) {
         for (const output of Object.values(rolldownBundle)) {
           if (output?.type !== 'chunk') {
@@ -273,9 +296,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           if (chunk.fileName === meta.subPackage.root || !chunk.fileName.startsWith(`${meta.subPackage.root}/`)) {
             continue
           }
-          rewriteChunkNpmImportsToLocalRoot(chunk, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies, { astEngine })
+          rewriteChunkNpmImportsToLocalRoot(chunk, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies, {
+            astEngine,
+            basedir: configService.cwd,
+          })
         }
-        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies)
+        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, meta.subPackage.root, meta.subPackage.dependencies, npmBuildCandidateDependencies, configService.cwd)
       }
     }
 

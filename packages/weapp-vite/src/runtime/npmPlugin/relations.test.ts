@@ -73,7 +73,7 @@ describe('runtime npmPlugin relations', () => {
     expect(getPackNpmRelationList(ctx)).toEqual([
       {
         packageJsonPath: './package.json',
-        miniprogramNpmDistDir: '.',
+        miniprogramNpmDistDir: '/project/dist',
       },
     ])
   })

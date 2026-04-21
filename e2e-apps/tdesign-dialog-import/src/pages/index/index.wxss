@@ -1,0 +1,54 @@
+.page {
+  min-height: 100vh;
+  padding: 32rpx;
+  background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 100%);
+  box-sizing: border-box;
+}
+
+.hero {
+  margin-bottom: 24rpx;
+}
+
+.title {
+  display: block;
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.desc {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  box-shadow: 0 18rpx 40rpx rgb(15 23 42 / 0.08);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.card-desc,
+.card-route {
+  display: block;
+  font-size: 24rpx;
+  color: #475569;
+}

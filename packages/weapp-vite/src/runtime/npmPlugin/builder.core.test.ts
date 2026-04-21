@@ -407,6 +407,50 @@ describe('runtime npm package builder core', () => {
     expect(helperContent).toContain('exports["default"]')
   })
 
+  it('keeps tdesign dialog index entry interoperable after copying miniprogram_dist packages', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'tdesign-miniprogram')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram_dist/dialog'))
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram_dist/dialog/helper.js'),
+      'export default function confirm() { return true }',
+      'utf8',
+    )
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram_dist/dialog/index.js'),
+      'import confirm from "./helper.js"; export default { confirm }',
+      'utf8',
+    )
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'tdesign-miniprogram',
+        version: '1.0.0',
+        miniprogram: 'miniprogram_dist',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'tdesign-miniprogram',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    const dialogIndexContent = await fs.readFile(path.resolve(outRoot, 'tdesign-miniprogram/dialog/index.js'), 'utf8')
+
+    expect(dialogIndexContent).toContain('__esModule')
+    expect(dialogIndexContent).toContain('require("./helper.js")')
+    expect(dialogIndexContent).toContain('exports["default"]')
+  })
+
   it('keeps copied cjs miniprogram package entry stable for build-npm packages like miniprogram-computed', async () => {
     const root = await createTempDir()
     const outRoot = path.resolve(root, 'dist/miniprogram_npm')

@@ -1556,6 +1556,19 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  e2e-apps/tdesign-dialog-import:
+    dependencies:
+      tdesign-miniprogram:
+        specifier: 'catalog:'
+        version: 1.13.2
+    devDependencies:
+      '@weapp-vite/dashboard':
+        specifier: workspace:*
+        version: link:../../packages/dashboard
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   e2e-apps/wevu-features:
     devDependencies:
       '@weapp-vite/dashboard':
