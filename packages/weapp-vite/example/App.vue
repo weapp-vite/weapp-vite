@@ -58,11 +58,11 @@ import StyleShowcase from './components/StyleShowcase.vue'
 
 <style scoped>
 .page {
-  padding: 32rpx;
-  background: #f5f7fb;
   display: flex;
   flex-direction: column;
   gap: 28rpx;
+  padding: 32rpx;
+  background: #f5f7fb;
 }
 
 .page-title {
@@ -72,9 +72,9 @@ import StyleShowcase from './components/StyleShowcase.vue'
 }
 
 .page-desc {
+  margin-bottom: 8rpx;
   font-size: 26rpx;
   color: #4a5568;
-  margin-bottom: 8rpx;
 }
 </style>
 

@@ -60,7 +60,7 @@ function reverse() {
 .pill {
   padding: 12rpx;
   border-radius: 12rpx;
-  background: #ffffff;
+  background: #fff;
   border: 1rpx solid #e2e8f0;
 }
 /* stylelint-enable order/properties-order */

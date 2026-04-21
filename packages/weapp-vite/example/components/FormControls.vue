@@ -112,10 +112,10 @@ function reset() {
 
 <style scoped>
 .card {
-  background: #ffffff;
-  border-radius: 16rpx;
   padding: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 32rpx rgb(0 0 0 / 6%);
 }
 
 .card-title {
@@ -126,16 +126,16 @@ function reset() {
 
 .hint {
   display: block;
-  color: #718096;
-  font-size: 24rpx;
   margin-bottom: 16rpx;
+  font-size: 24rpx;
+  color: #718096;
 }
 
 .field {
-  margin-bottom: 18rpx;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
+  margin-bottom: 18rpx;
 }
 
 .field.inline {
@@ -151,20 +151,20 @@ function reset() {
 
 .picker-display {
   padding: 12rpx 16rpx;
-  border-radius: 12rpx;
-  background: #f7fafc;
   color: #2d3748;
+  background: #f7fafc;
+  border-radius: 12rpx;
 }
 
 .summary {
-  background: #f7fafc;
-  border-radius: 12rpx;
-  padding: 14rpx;
   display: flex;
   flex-direction: column;
   gap: 6rpx;
-  color: #2d3748;
+  padding: 14rpx;
   font-size: 24rpx;
+  color: #2d3748;
+  background: #f7fafc;
+  border-radius: 12rpx;
 }
 
 .actions {

@@ -11,132 +11,142 @@
 }
 
 .order-goods-card-footer {
-  display: flex;
-  width: calc(100% - 190rpx);
-  justify-content: space-between;
   position: absolute;
   bottom: 20rpx;
   left: 190rpx;
+  display: flex;
+  justify-content: space-between;
+  width: calc(100% - 190rpx);
 }
 
 .order-goods-card-footer-num {
-  color: #999;
   line-height: 40rpx;
+  color: #999;
 }
 
 .service-detail .order-goods-card-footer .order-goods-card-footer-price-class {
+  font-family: "DIN Alternate";
   font-size: 36rpx;
   color: #333;
-  font-family: DIN Alternate;
 }
 
 .service-detail .order-goods-card-footer .order-goods-card-footer-price-decimal {
+  font-family: "DIN Alternate";
   font-size: 28rpx;
   color: #333;
-  font-family: DIN Alternate;
 }
 
 .service-detail .order-goods-card-footer .order-goods-card-footer-price-symbol {
-  color: #333;
+  font-family: "DIN Alternate";
   font-size: 24rpx;
-  font-family: DIN Alternate;
+  color: #333;
 }
 
 .service-detail .service-detail__header {
-  padding: 60rpx 0 48rpx 40rpx;
   box-sizing: border-box;
   height: 220rpx;
+  padding: 60rpx 0 48rpx 40rpx;
   background-color: #fff;
 }
+
 .service-detail .service-detail__header .title,
 .service-detail .service-detail__header .desc {
-  overflow: hidden;
   display: -webkit-box;
+  overflow: hidden;
   -webkit-box-orient: vertical;
 }
 
 .service-detail .service-detail__header .title {
+  display: flex;
   -webkit-line-clamp: 1;
   font-size: 48rpx;
   font-weight: bold;
   color: #333;
-  display: flex;
 }
 
 .service-detail .service-detail__header .desc {
-  -webkit-line-clamp: 2;
   margin-top: 10rpx;
+  -webkit-line-clamp: 2;
   font-size: 28rpx;
   color: #999;
 }
 
 .service-detail .service-detail__header .desc .count-down {
-  color: #fff185;
   display: inline;
+  color: #fff185;
 }
 
 .service-detail .service-section {
-  margin: 20rpx 0 20rpx 0;
   /* padding: 30rpx 32rpx; */
   width: auto;
-  border-radius: 8rpx;
-  background-color: white;
+  margin: 20rpx 0;
   overflow: hidden;
+  background-color: white;
+  border-radius: 8rpx;
 }
+
 .service-section__pay {
-  margin: 0 0 20rpx 0;
   width: auto;
-  border-radius: 8rpx;
-  background-color: white;
+  margin: 0 0 20rpx;
   overflow: hidden;
+  background-color: white;
+  border-radius: 8rpx;
 }
+
 .service-section__pay.credential_desc {
   padding: 0 24rpx;
 }
+
 .service-section__pay .t-grid-item__content {
   padding: 0 0 24rpx;
 }
+
 .service-detail .service-section__title {
-  color: #333333;
-  margin-bottom: 10rpx;
-  padding-bottom: 18rpx;
-  height: 224rpx;
   position: relative;
+  height: 224rpx;
+  padding-bottom: 18rpx;
+  margin-bottom: 10rpx;
+  color: #333;
 }
+
 .service-detail .service-section__title .icon {
   margin-right: 16rpx;
   font-size: 40rpx !important;
 }
+
 .service-detail .service-section__title .right {
   flex: none;
-  font-weight: normal;
   font-size: 26rpx;
+  font-weight: normal;
 }
+
 .service-detail .section-content {
   margin: 16rpx 0 0 52rpx;
 }
 
 .service-detail .main {
   font-size: 28rpx;
-  color: #222427;
   font-weight: bold;
+  color: #222427;
 }
 
 .service-detail .main .phone-num {
-  margin-left: 16rpx;
   display: inline;
+  margin-left: 16rpx;
 }
+
 .service-detail .label {
-  color: #999999;
   font-size: 26rpx;
+  color: #999;
 }
 
 .service-detail .custom-remark {
   font-size: 26rpx;
   line-height: 36rpx;
-  color: #333333;
-  word-wrap: break-word;
+  color: #333;
+  overflow-wrap: break-word;
 }
+
 .service-detail .proofs {
   margin-top: 20rpx;
 }
@@ -149,8 +159,8 @@
 
 .service-detail .pay-result .t-cell-title,
 .service-detail .pay-result .t-cell-value {
-  color: #666666;
   font-size: 28rpx;
+  color: #666;
 }
 
 .t-class-wrapper {
@@ -164,10 +174,11 @@
 .service-detail .pay-result .wr-cell__value {
   font-weight: bold;
 }
+
 .service-detail .right {
   font-size: 36rpx;
-  color: #fa550f;
   font-weight: bold;
+  color: #fa550f;
 }
 
 .service-detail .title {
@@ -177,19 +188,20 @@
 .service-detail .pay-result .service-section__title .right.integer {
   font-size: 48rpx;
 }
+
 .service-detail .pay-result .split-line {
   position: relative;
 }
 
 .service-detail .pay-result .split-line::after {
   position: absolute;
-  display: block;
-  content: ' ';
-  height: 1px;
-  left: -50%;
   right: -50%;
-  transform: scale(0.5);
+  left: -50%;
+  display: block;
+  height: 1px;
+  content: ' ';
   background-color: #e6e6e6;
+  transform: scale(0.5);
 }
 
 .service-detail .pay-result .section-content {
@@ -197,8 +209,8 @@
 }
 
 .service-detail .pay-result .section-content .label {
-  color: #999999;
   font-size: 24rpx;
+  color: #999;
 }
 
 .service-detail .pay-result .wr-cell::after {
@@ -211,30 +223,31 @@
 
 .service-detail .footer-bar-wrapper .footer-bar {
   position: fixed;
-  left: 0;
   bottom: 0;
-  height: 100rpx;
-  width: 100vw;
+  left: 0;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100vw;
+  height: 100rpx;
   padding: 0 20rpx;
   background-color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .service-detail .text-btn {
-  display: inline;
   box-sizing: border-box;
+  display: inline;
+  padding: 0 16rpx;
+  margin-left: 10rpx;
+  font-size: 24rpx;
+  font-weight: normal;
+  line-height: 32rpx;
   color: #333;
   border: 2rpx solid #ddd;
   border-radius: 32rpx;
-  margin-left: 10rpx;
-  padding: 0 16rpx;
-  font-weight: normal;
-  font-size: 24rpx;
-  line-height: 32rpx;
 }
+
 .service-detail .text-btn--active {
   opacity: 0.5;
 }
@@ -242,6 +255,7 @@
 .service-detail .specs-popup .bottom-btn {
   color: #fa550f;
 }
+
 .service-detail .specs-popup .bottom-btn::after {
   color: #fa550f;
 }
@@ -251,25 +265,25 @@
 }
 
 .page-container .order-goods-card > wr-goods-card .wr-goods-card__bottom .price {
+  position: absolute;
   top: 100rpx;
   left: 10rpx;
-  position: absolute;
   color: #333;
 }
 
 .page-container .order-goods-card > wr-goods-card .wr-goods-card__num {
+  position: absolute;
   top: 100rpx;
   right: 0;
-  position: absolute;
 }
 
 .page-container .order-goods-card > wr-goods-card .wr-goods-card__bottom .price::before {
   display: inline;
-  content: '退款金额:';
   margin-right: 1em;
   font-size: 24rpx;
-  color: #333333;
   font-weight: normal;
+  color: #333;
+  content: '退款金额:';
 }
 
 .page-container .wr-goods-card__specs {
@@ -277,68 +291,71 @@
 }
 
 .page-container .order-goods-card > wr-goods-card .wr-goods-card__title {
-  margin-right: 0;
-  -webkit-line-clamp: 1;
   display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   width: 80%;
+  margin-right: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .page-container .order-card .header .store-name {
-  -webkit-line-clamp: 1;
   display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   width: 80%;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .page-container .status-desc {
   box-sizing: border-box;
   padding: 22rpx 20rpx;
-  font-size: 26rpx;
-  line-height: 1.3;
-  text-align: left;
-  color: #333333;
-  background-color: #f5f5f5;
-  border-radius: 8rpx;
-  word-wrap: break-word;
   margin-top: 40rpx;
   margin-bottom: 20rpx;
+  font-size: 26rpx;
+  line-height: 1.3;
+  color: #333;
+  text-align: left;
+  overflow-wrap: break-word;
+  background-color: #f5f5f5;
+  border-radius: 8rpx;
 }
 
 .page-container .header__right {
-  font-size: 24rpx;
-  color: #333333;
   display: flex;
   align-items: center;
+  font-size: 24rpx;
+  color: #333;
 }
 
 .page-container .header__right__icon {
-  color: #d05b27;
-  font-size: 16px !important;
   margin-right: 10rpx;
+  font-size: 16px !important;
+  color: #d05b27;
 }
 
 .page-container .wr-goods-card__thumb {
   width: 140rpx;
 }
+
 .page-container .page-background {
   position: absolute;
-  z-index: -1;
   top: 0;
   left: 0;
+  z-index: -1;
   width: 100vw;
-  color: #fff;
   overflow: hidden;
+  color: #fff;
 }
+
 .page-container .page-background-img {
   width: 100%;
   height: 320rpx !important;
 }
+
 .page-container .navbar-bg .nav-back,
 .page-container .navbar-bg .page-background {
-  background: linear-gradient(to right, rgba(250, 85, 15, 1) 0%, rgba(250, 85, 15, 0.6) 100%) !important;
+  background: linear-gradient(to right, rgb(250 85 15 / 100%) 0%, rgb(250 85 15 / 60%) 100%) !important;
 }
 
 .page-container .navigation-bar__btn {
@@ -381,8 +398,8 @@
 
 .t-refund-title {
   font-size: 28rpx;
-  color: #333;
   font-weight: bold;
+  color: #333;
 }
 
 .t-refund-note {
@@ -392,16 +409,16 @@
 
 .service-detail .logistics {
   padding-top: 0;
-  padding-bottom: 0;
   padding-right: 0;
+  padding-bottom: 0;
 }
 
 .service-section__title__header {
   display: flex;
   align-items: center;
-  color: #333;
-  font-weight: normal;
   font-size: 32rpx;
+  font-weight: normal;
+  color: #333;
 }
 
 .safe-bottom {
@@ -410,10 +427,10 @@
 
 .service-section-logistics {
   display: flex;
-  justify-content: center;
-  color: #fa4126;
   align-items: center;
+  justify-content: center;
   margin-top: 24rpx;
+  color: #fa4126;
 }
 
 .t-class-indicator {

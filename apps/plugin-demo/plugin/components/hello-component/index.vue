@@ -50,17 +50,17 @@ const safeEntries = computed(() => props.entries ?? [])
 
 <style lang="scss">
 .showcase-card {
-  margin-top: 24rpx;
   padding: 28rpx;
-  border-radius: 28rpx;
+  margin-top: 24rpx;
   background: linear-gradient(180deg, #fff 0%, #f6f8fc 100%);
+  border-radius: 28rpx;
   box-shadow: 0 14rpx 30rpx rgb(63 78 107 / 10%);
 
   &__head {
     display: flex;
-    justify-content: space-between;
     gap: 20rpx;
     align-items: flex-start;
+    justify-content: space-between;
   }
 
   &__eyebrow,
@@ -80,23 +80,23 @@ const safeEntries = computed(() => props.entries ?? [])
   }
 
   &__eyebrow {
-    letter-spacing: 2rpx;
     text-transform: uppercase;
+    letter-spacing: 2rpx;
   }
 
   &__title {
     margin-top: 10rpx;
     font-size: 32rpx;
     font-weight: 700;
-    color: #1c2e4b;
     line-height: 1.35;
+    color: #1c2e4b;
   }
 
   &__note {
     margin-top: 16rpx;
     font-size: 24rpx;
-    color: #52627f;
     line-height: 1.7;
+    color: #52627f;
   }
 
   &__list {
@@ -107,33 +107,33 @@ const safeEntries = computed(() => props.entries ?? [])
 
   &__item {
     padding: 22rpx;
+    background: rgb(255 255 255 / 92%);
     border: 2rpx solid #e7edf8;
     border-radius: 22rpx;
-    background: rgb(255 255 255 / 92%);
   }
 
   &__item-head,
   &__score-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     gap: 16rpx;
+    align-items: center;
+    justify-content: space-between;
   }
 
   &__item-title {
     flex: 1;
     font-size: 28rpx;
     font-weight: 600;
-    color: #20324d;
     line-height: 1.45;
+    color: #20324d;
   }
 
   &__badge {
     padding: 8rpx 16rpx;
-    border-radius: 999rpx;
-    background: #203d70;
-    color: #fff;
     font-size: 22rpx;
+    color: #fff;
+    background: #203d70;
+    border-radius: 999rpx;
   }
 
   &__item-summary {
@@ -148,9 +148,9 @@ const safeEntries = computed(() => props.entries ?? [])
   }
 
   &__score-value {
-    color: #1e4f8d;
     font-size: 24rpx;
     font-weight: 700;
+    color: #1e4f8d;
   }
 }
 </style>

@@ -152,8 +152,8 @@ const _runE2E = runE2E
 
 <style scoped>
 .use-attrs-page {
-  min-height: 100vh;
   box-sizing: border-box;
+  min-height: 100vh;
   padding: 24rpx;
   background: #f8fafc;
 }
@@ -171,20 +171,20 @@ const _runE2E = runE2E
 }
 
 .use-attrs-page__toolbar {
-  margin-top: 16rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 16rpx;
 }
 
 .use-attrs-page__btn {
-  margin: 6rpx;
   min-height: 58rpx;
-  line-height: 58rpx;
   padding: 0 16rpx;
-  border-radius: 9999rpx;
-  background: #e2e8f0;
-  color: #1f2937;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 58rpx;
+  color: #1f2937;
+  background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 
 .ctrl-on {

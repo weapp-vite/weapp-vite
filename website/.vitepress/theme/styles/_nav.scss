@@ -13,7 +13,7 @@
 }
 
 /* Mobile nav screen: ensure it expands even if theme JS fails to set height var */
-@media (width <= 960px) {
+@media (max-width: 960px) {
   .VPNavScreen {
     /* use dynamic viewport units to avoid iOS 100vh issues; fallback to 100vh */
     --vp-nav-vh: 100dvh;

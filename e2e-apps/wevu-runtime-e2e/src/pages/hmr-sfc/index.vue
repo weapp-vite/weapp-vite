@@ -11,8 +11,12 @@ export default defineComponent({
 
 <template>
   <view class="hmr-sfc-page">
-    <view class="title">HMR-SFC</view>
-    <view class="marker">{{ marker }}</view>
+    <view class="title">
+      HMR-SFC
+    </view>
+    <view class="marker">
+      {{ marker }}
+    </view>
   </view>
 </template>
 
@@ -23,8 +27,8 @@ export default defineComponent({
 }
 
 .title {
-  font-weight: 600;
   margin-bottom: 16rpx;
+  font-weight: 600;
 }
 
 .marker {

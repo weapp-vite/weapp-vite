@@ -1,22 +1,25 @@
 .component-theme {
   color: #4169e1;
-  border: 2px solid rgba(65, 105, 225, 0.5);
-  background: linear-gradient(145deg, rgba(65, 105, 225, 0.16), rgba(255, 255, 255, 0.55));
-  box-shadow: 0 8px 24px rgba(65, 105, 225, 0.28);
+  background: linear-gradient(145deg, rgb(65 105 225 / 16%), rgb(255 255 255 / 55%));
+  border: 2px solid rgb(65 105 225 / 50%);
+  box-shadow: 0 8px 24px rgb(65 105 225 / 28%);
 }
+
 .component-theme--primary {
-  background: rgba(65, 105, 225, 0.18);
+  padding: 6px 10px;
+  background: rgb(65 105 225 / 18%);
   border-color: #5b7ee5;
-  padding: 6px 10px;
 }
+
 .component-theme--muted {
-  background: #ffffff;
+  padding: 6px 10px;
+  background: #fff;
+  border-color: rgb(65 105 225 / 45%);
   border-style: dashed;
-  border-color: rgba(65, 105, 225, 0.45);
-  padding: 6px 10px;
 }
+
 .component-theme--warning {
-  background: rgba(246, 173, 85, 0.25);
-  border-color: #f39625;
   padding: 6px 10px;
+  background: rgb(246 173 85 / 25%);
+  border-color: #f39625;
 }

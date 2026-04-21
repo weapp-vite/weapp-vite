@@ -131,10 +131,10 @@ function clear() {
 }
 
 .section {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16rpx;
   padding: 18rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .section-title {
@@ -164,17 +164,17 @@ function clear() {
 
 .btn-primary {
   background: #111827;
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-success {
   background: #2563eb;
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-info {
   background: #0ea5e9;
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-warning {
@@ -206,13 +206,13 @@ function clear() {
 .inner {
   padding: 16rpx;
   border-radius: 12rpx;
-  background: #ffffff;
+  background: #fff;
   border: 1rpx dashed #c7d2fe;
 }
 
 .input {
   padding: 14rpx 16rpx;
-  background: #ffffff;
+  background: #fff;
   border-radius: 12rpx;
   border: 1rpx solid #e2e8f0;
   font-size: 26rpx;
@@ -221,7 +221,7 @@ function clear() {
 .log {
   padding: 12rpx;
   border-radius: 12rpx;
-  background: #ffffff;
+  background: #fff;
   border: 1rpx solid #e2e8f0;
   font-size: 24rpx;
   color: #0f172a;

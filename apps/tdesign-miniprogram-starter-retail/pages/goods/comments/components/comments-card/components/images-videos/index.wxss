@@ -17,18 +17,18 @@
 }
 
 .resource-container-single {
-  padding-left: 0;
   padding-top: 0;
+  padding-left: 0;
 }
 
 .resource-container-double {
-  padding-left: 18rpx;
   padding-top: 18rpx;
+  padding-left: 18rpx;
 }
 
 .resource-container-multiple {
-  padding-left: 16rpx;
   padding-top: 16rpx;
+  padding-left: 16rpx;
 }
 
 .container-single {
@@ -36,13 +36,13 @@
 }
 
 .container-double {
-  margin-left: -18rpx;
   margin-top: -18rpx;
+  margin-left: -18rpx;
 }
 
 .container-multiple {
-  margin-left: -16rpx;
   margin-top: -16rpx;
+  margin-left: -16rpx;
 }
 
 .resource-container {

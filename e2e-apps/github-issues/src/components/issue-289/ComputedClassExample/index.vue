@@ -77,8 +77,8 @@ const computedListClass = computed(() => [
 .a,
 .b {
   padding: 14rpx 20rpx;
-  border-radius: 12rpx;
   font-size: 24rpx;
+  border-radius: 12rpx;
 }
 
 .a {
@@ -92,10 +92,10 @@ const computedListClass = computed(() => [
 }
 
 .computed-list {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
   gap: 10rpx;
+  margin-top: 12rpx;
 }
 
 .computed-list-enabled {
@@ -108,10 +108,10 @@ const computedListClass = computed(() => [
 
 .computed-item {
   min-height: 52rpx;
-  line-height: 52rpx;
   padding: 0 14rpx;
-  border-radius: 9999rpx;
   font-size: 22rpx;
+  line-height: 52rpx;
+  border-radius: 9999rpx;
 }
 
 .computed-item-active {
@@ -133,10 +133,10 @@ const computedListClass = computed(() => [
 }
 
 .computed-empty {
-  margin-top: 10rpx;
   padding: 10rpx 14rpx;
-  border-radius: 12rpx;
+  margin-top: 10rpx;
   font-size: 22rpx;
+  border-radius: 12rpx;
 }
 
 .computed-empty-a {

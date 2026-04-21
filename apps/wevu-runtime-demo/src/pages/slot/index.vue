@@ -141,10 +141,10 @@ const checklist = [
 }
 
 .card {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16rpx;
   padding: 20rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .card-title {

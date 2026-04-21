@@ -35,13 +35,13 @@ const emit = defineEmits<{
 
 <style scoped>
 .panel {
-  background: #f0fff4;
-  border-radius: 12rpx;
-  padding: 14rpx;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
+  padding: 14rpx;
+  background: #f0fff4;
   border: 1rpx solid #9ae6b4;
+  border-radius: 12rpx;
 }
 
 .name {

@@ -101,10 +101,10 @@ function increment() {
 }
 
 .section {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16rpx;
   padding: 18rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .section-title {
@@ -134,12 +134,12 @@ function increment() {
 
 .btn-primary {
   background: #111827;
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-success {
   background: #2563eb;
-  color: #ffffff;
+  color: #fff;
 }
 
 .slot-box {

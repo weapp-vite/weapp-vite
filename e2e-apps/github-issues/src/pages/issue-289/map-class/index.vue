@@ -167,10 +167,10 @@ const _runE2E = runE2E
 
 <style scoped>
 .issue289-sub-page {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 24rpx;
   background: #f8fafc;
-  box-sizing: border-box;
 }
 
 .issue289-sub-title {
@@ -180,28 +180,28 @@ const _runE2E = runE2E
 }
 
 .issue289-sub-toolbar {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 12rpx;
 }
 
 .issue289-sub-btn {
-  margin: 6rpx;
-  min-height: 56rpx;
   height: 56rpx;
-  line-height: 56rpx;
+  min-height: 56rpx;
   padding: 0 16rpx;
-  border-radius: 9999rpx;
-  border: 0;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 56rpx;
   color: #1f2937;
   background: #e2e8f0;
+  border: 0;
+  border-radius: 9999rpx;
 }
 
 .issue289-switch-row {
-  margin-top: 8rpx;
   display: flex;
   gap: 20rpx;
+  margin-top: 8rpx;
 }
 
 .issue289-switch-item {

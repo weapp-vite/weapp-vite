@@ -1,56 +1,67 @@
 .order-group {
   margin-bottom: 24rpx;
-  background-color: #ffffff;
+  background-color: #fff;
   border-radius: 16rpx 16rpx 0 0;
 }
+
 .order-group .order-group__top {
   padding: 24rpx 18rpx 24rpx 32rpx;
   border-radius: 16rpx 16rpx 0 0;
 }
+
 .order-group__top___title {
   font-size: 32rpx;
-  line-height: 48rpx;
   font-weight: bold;
+  line-height: 48rpx;
 }
+
 .order-group__top__note {
   font-size: 28rpx;
 }
+
 .order-group__content {
-  overflow: hidden;
+  display: flex;
   width: 100%;
   height: 164rpx;
-  display: flex;
+  overflow: hidden;
   background-color: #fff;
   border-radius: 0 0 16rpx 16rpx;
 }
+
 .order-group__item {
-  overflow: hidden;
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  overflow: hidden;
 }
+
 .order-group__item:first-child {
   border-radius: 0 0 0 16rpx;
 }
+
 .order-group__item:last-child {
-  border-radius: 0 0 16rpx 0;
+  border-radius: 0 0 16rpx;
 }
+
 .order-group__item__title {
   font-size: 24rpx;
-  color: #666;
   line-height: 32rpx;
+  color: #666;
 }
+
 .order-group__item__icon {
-  margin-bottom: 20rpx;
+  position: relative;
   width: 56rpx;
   height: 56rpx;
-  position: relative;
+  margin-bottom: 20rpx;
 }
+
 .order-group__top__title {
   font-weight: bold;
 }
+
 .order-group .order-group__left {
   margin-right: 0;
 }

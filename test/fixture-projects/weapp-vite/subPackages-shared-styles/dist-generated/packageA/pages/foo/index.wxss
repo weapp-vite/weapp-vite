@@ -2,7 +2,9 @@
 @import '../../styles/pages.wxss';
 @import '../../index.wxss';
 @import '../../pages.wxss';
+
 .foo-page {
   padding: 8px;
 }
-/*$vite$:1*/
+
+/* $vite$:1 */

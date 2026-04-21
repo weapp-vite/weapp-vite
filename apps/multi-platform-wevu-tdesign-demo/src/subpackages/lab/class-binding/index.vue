@@ -231,23 +231,23 @@ const dynamicKeyClass = computed(() => ({ [activeClass.value]: isActive.value })
   align-items: center;
   justify-content: space-between;
   padding: 20rpx;
-  border: 2rpx solid #d7d9f2;
-  background: #ffffff;
   color: #1f1a3f;
+  background: #fff;
+  border: 2rpx solid #d7d9f2;
   border-radius: 18rpx;
   transition: all 0.2s ease;
 }
 
 .demo-chip {
   padding: 6rpx 16rpx;
-  border-radius: 999rpx;
   font-size: 18rpx;
-  border: 2rpx solid currentColor;
   letter-spacing: 0.5rpx;
+  border: 2rpx solid currentcolor;
+  border-radius: 999rpx;
 }
 
 .demo-subtext {
-  color: currentColor;
+  color: currentcolor;
   opacity: 0.82;
 }
 
@@ -261,17 +261,17 @@ const dynamicKeyClass = computed(() => ({ [activeClass.value]: isActive.value })
 }
 
 .demo-active {
+  color: #fff;
   background: linear-gradient(135deg, #2563eb, #6366f1);
   border-color: #1e40af;
-  color: #ffffff;
-  box-shadow: 0 18rpx 32rpx rgba(37, 99, 235, 0.35);
+  box-shadow: 0 18rpx 32rpx rgb(37 99 235 / 35%);
   transform: translateY(-4rpx);
 }
 
 .text-danger {
+  color: #b91c1c;
   background: #fff1f2;
   border-color: #ef4444;
-  color: #b91c1c;
-  box-shadow: 0 18rpx 32rpx rgba(239, 68, 68, 0.2);
+  box-shadow: 0 18rpx 32rpx rgb(239 68 68 / 20%);
 }
 </style>

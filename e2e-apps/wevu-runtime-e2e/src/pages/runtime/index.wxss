@@ -3,8 +3,8 @@
 }
 
 .title {
-  font-weight: 600;
   margin-bottom: 16rpx;
+  font-weight: 600;
 }
 
 .summary {
@@ -13,8 +13,8 @@
 
 .ref-target {
   padding: 8rpx;
-  background: #f5f5f5;
   margin-bottom: 12rpx;
+  background: #f5f5f5;
 }
 
 .details {

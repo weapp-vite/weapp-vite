@@ -6,24 +6,24 @@
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx 32rpx;
-  box-shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+  padding: 28rpx 32rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 32rpx rgb(15 23 42 / 8%);
 }
 
 .hero {
-  background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%);
   color: #fff;
+  background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%);
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
 .card-title {
@@ -53,9 +53,9 @@
 
 .stat-item {
   flex: 1;
+  padding: 20rpx;
   background: #f9fafb;
   border-radius: 12rpx;
-  padding: 20rpx;
 }
 
 .stat-label {
@@ -79,8 +79,8 @@
 
 .field {
   display: flex;
-  align-items: center;
   gap: 12rpx;
+  align-items: center;
 }
 
 .field-label {
@@ -92,10 +92,10 @@
 .field-input {
   flex: 1;
   padding: 16rpx 18rpx;
-  border-radius: 12rpx;
-  border: 1rpx solid #e5e7eb;
-  background: #f9fafb;
   font-size: 26rpx;
+  background: #f9fafb;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 12rpx;
 }
 
 .hint {
@@ -119,27 +119,27 @@
 
 .log-list {
   max-height: 520rpx;
+  padding: 12rpx;
   background: #f8fafc;
   border-radius: 12rpx;
-  padding: 12rpx;
 }
 
 .log-item {
   padding: 14rpx 16rpx;
-  background: #fff;
-  border-radius: 10rpx;
+  margin-bottom: 12rpx;
   font-size: 26rpx;
   color: #111827;
-  margin-bottom: 12rpx;
-  box-shadow: 0 6rpx 14rpx rgba(17, 24, 39, 0.08);
+  background: #fff;
+  border-radius: 10rpx;
+  box-shadow: 0 6rpx 14rpx rgb(17 24 39 / 8%);
 }
 
 .hook-row {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
-  color: #374151;
   font-size: 26rpx;
+  color: #374151;
 }
 
 .hook {
@@ -147,10 +147,10 @@
 }
 
 .empty {
-  text-align: center;
-  color: #9ca3af;
   padding: 24rpx 0;
   font-size: 26rpx;
+  color: #9ca3af;
+  text-align: center;
 }
 
 .spacer {

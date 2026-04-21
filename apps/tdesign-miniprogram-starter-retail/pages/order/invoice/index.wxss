@@ -3,9 +3,9 @@
 }
 
 .invoice-detail .invoice-detail-box {
-  background-color: #fff;
   padding: 24rpx 32rpx;
   margin-top: 24rpx;
+  background-color: #fff;
 }
 
 .invoice-detail-title {
@@ -19,13 +19,13 @@
 }
 
 .invoice-detail-box-title {
-  font-size: 13px;
-  color: #666666;
   width: 156rpx;
   margin-right: 32rpx;
+  font-size: 13px;
+  color: #666;
 }
 
 .invoice-detail-box-value {
   font-size: 13px;
-  color: #333333;
+  color: #333;
 }

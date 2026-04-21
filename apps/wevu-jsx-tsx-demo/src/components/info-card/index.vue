@@ -21,17 +21,17 @@ defineProps<Props>()
 <style>
 .card-wrap {
   padding: 20rpx;
-  border-radius: 16rpx;
-  border: 2rpx dashed #38bdf8;
-  background: #f0f9ff;
   margin-bottom: 16rpx;
+  background: #f0f9ff;
+  border: 2rpx dashed #38bdf8;
+  border-radius: 16rpx;
 }
 
 .card-title {
   display: block;
+  margin-bottom: 8rpx;
   font-size: 30rpx;
   font-weight: 600;
-  margin-bottom: 8rpx;
 }
 
 .card-desc {

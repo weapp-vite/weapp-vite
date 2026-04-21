@@ -3,9 +3,9 @@ page {
 }
 
 .content-wrapper {
-  margin-top: 340rpx;
   position: relative;
   padding: 0 30rpx;
+  margin-top: 340rpx;
 }
 
 .main-content {
@@ -21,66 +21,69 @@ page {
 }
 
 .cell-box {
-  border-radius: 10rpx;
-  overflow: hidden;
   margin-bottom: 20rpx;
+  overflow: hidden;
+  border-radius: 10rpx;
 }
+
 .icon-color {
   color: #aaa;
 }
+
 .cell-class {
-  height: 100rpx;
   display: flex;
   align-items: center;
+  height: 100rpx;
 }
 
 .order-content {
-  overflow: hidden;
-  width: 100%;
   display: flex;
+  width: 100%;
+  overflow: hidden;
   background-color: #fff;
   border-radius: 16rpx;
 }
 
 .order-item {
+  position: relative;
   flex: 1;
   height: 180rpx;
   overflow: hidden;
-  position: relative;
   text-align: center;
 }
 
 .order-content-box {
-  margin: auto;
   position: absolute;
-  width: 100%;
   top: 50%;
   left: 50%;
-  -webkit-transform: translate(-50%, -50%);
-  -ms-transform: translate(-50%, -50%);
+  width: 100%;
+  margin: auto;
+  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
 }
+
 .order-content-t {
   margin-top: 10rpx;
   font-size: 24rpx;
   color: #333;
-  letter-spacing: 0;
   text-align: center;
+  letter-spacing: 0;
 }
 
 .popup-content {
-  background: #f5f5f5;
   margin-bottom: env(safe-area-inset-bottom);
+  background: #f5f5f5;
   border-radius: 16rpx 16rpx 0 0;
 }
+
 .popup-content .popup-title {
-  background: #fff;
-  text-align: center;
-  font-size: 24rpx;
-  color: #999;
   height: 112rpx;
-  text-align: center;
+  font-size: 24rpx;
   line-height: 112rpx;
+  color: #999;
+  text-align: center;
+  background: #fff;
   border-radius: 16rpx 16rpx 0 0;
 }
 
@@ -90,40 +93,44 @@ page {
 
 .border-bottom-1px::after {
   position: absolute;
-  display: block;
-  content: '';
-  box-sizing: border-box;
   top: 0;
   left: 0;
+  box-sizing: border-box;
+  display: block;
   width: 200%;
   height: 200%;
+  content: '';
+  border-bottom: 2rpx solid #e5e5e5;
   transform: scale(0.5);
   transform-origin: left top;
-  border-bottom: 2rpx solid #e5e5e5;
 }
+
 .popup-content .popup-phone,
 .popup-content .popup-close {
-  background: #fff;
-  height: 100rpx;
   display: flex;
-  justify-content: center;
   align-items: center;
-  text-align: center;
+  justify-content: center;
+  height: 100rpx;
+  font-family: PingFangSC-Regular, "PingFang SC";
   font-size: 30rpx;
-  font-family: PingFangSC-Regular, PingFang SC;
   font-weight: 400;
   color: #333;
+  text-align: center;
+  background: #fff;
 }
+
 .popup-content .popup-phone.online {
   margin-bottom: 20rpx;
 }
+
 .popup-content .popup-phone.online::after {
   content: none;
 }
+
 .popup-content .popup-close {
+  margin-top: 16rpx;
   color: #333;
   border: 0;
-  margin-top: 16rpx;
 }
 
 .my-order {
@@ -131,16 +138,18 @@ page {
 }
 
 .footer__version {
-  text-align: center;
   margin-top: 50rpx;
-  color: #999;
   margin-bottom: 4rpx;
   font-size: 24rpx;
   line-height: 32rpx;
+  color: #999;
+  text-align: center;
 }
+
 .cell-box .order-group__left {
   margin-right: 0;
 }
+
 .cell-box .t-cell-padding {
   padding: 24rpx 18rpx 24rpx 32rpx;
 }

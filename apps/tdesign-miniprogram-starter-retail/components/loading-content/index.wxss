@@ -1,23 +1,26 @@
 .loading-content {
+  position: relative;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  position: relative;
+  background-color: rgb(0 0 0 / 60%);
 }
+
 .loading-content.absolute {
   position: absolute;
-  z-index: 1;
-  left: 0;
   top: 0;
+  left: 0;
+  z-index: 1;
 }
+
 .loading-content.fixed {
   position: fixed;
-  z-index: 1;
-  left: 0;
   top: 0;
+  left: 0;
+  z-index: 1;
 }
+
 .loading-content .loading {
+  visibility: visible;
   width: 100%;
   height: 100%;
-  visibility: visible;
 }

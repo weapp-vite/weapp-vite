@@ -89,7 +89,7 @@ function onChange(value: string) {
   padding: 20rpx;
   border-radius: 18rpx;
   background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
-  color: #ffffff;
+  color: #fff;
 }
 
 .hero-title {
@@ -129,8 +129,8 @@ function onChange(value: string) {
   gap: 12rpx;
   padding: 20rpx;
   border-radius: 18rpx;
-  background: #ffffff;
-  box-shadow: 0 10rpx 28rpx rgba(15, 23, 42, 0.06);
+  background: #fff;
+  box-shadow: 0 10rpx 28rpx rgb(15 23 42 / 6%);
 }
 
 .panel-title {

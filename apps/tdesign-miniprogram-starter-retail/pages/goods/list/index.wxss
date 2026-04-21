@@ -23,14 +23,13 @@ page {
 
 .goods-list-container .t-search__input {
   font-size: 28rpx !important;
-  color: rgb(116, 116, 116) !important;
+  color: rgb(116 116 116) !important;
 }
 
 .goods-list-container .category-goods-list {
-  background-color: #f2f2f2;
-  overflow-y: scroll;
-  -webkit-overflow-scrolling: touch;
   padding: 20rpx 24rpx;
+  overflow-y: scroll;
+  background-color: #f2f2f2;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -43,9 +42,9 @@ page {
 }
 
 .goods-list-container .empty-wrap {
+  height: 300rpx;
   margin-top: 184rpx;
   margin-bottom: 120rpx;
-  height: 300rpx;
 }
 
 .goods-list-container .empty-wrap .empty-tips .empty-content .content-text {
@@ -53,28 +52,28 @@ page {
 }
 
 .goods-list-container .price-container {
-  padding: 32rpx;
-  height: 100vh;
+  box-sizing: border-box;
   max-width: 632rpx;
+  height: 100vh;
+  padding: 32rpx;
   background-color: #fff;
   border-radius: 30rpx 0 0 30rpx;
-  box-sizing: border-box;
 }
 
 .goods-list-container .price-between {
   font-size: 26rpx;
   font-weight: 500;
-  color: rgba(51, 51, 51, 1);
+  color: rgb(51 51 51 / 100%);
 }
 
 .goods-list-container .price-ipts-wrap {
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-around;
+  width: 100%;
   margin-top: 24rpx;
 
-  --td-input-bg-color: rgba(245, 245, 245, 1);
+  --td-input-bg-color: rgb(245 245 245 / 100%);
   --td-input-vertical-padding: 4rpx;
   --td-input-border-color: transparent;
 }
@@ -82,7 +81,7 @@ page {
 .goods-list-container .price-ipts-wrap .price-divided {
   width: 16rpx;
   margin: 0 24rpx;
-  color: #333333;
+  color: #333;
 }
 
 .goods-list-container .price-ipts-wrap .t-input__wrapper {

@@ -79,10 +79,10 @@ function toggleActive() {
 
 <style scoped>
 .card {
-  background: #ffffff;
-  border-radius: 16rpx;
   padding: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 32rpx rgb(0 0 0 / 6%);
 }
 
 .card-title {
@@ -93,9 +93,9 @@ function toggleActive() {
 
 .hint {
   display: block;
-  color: #718096;
-  font-size: 24rpx;
   margin-bottom: 16rpx;
+  font-size: 24rpx;
+  color: #718096;
 }
 
 .row {
@@ -105,13 +105,13 @@ function toggleActive() {
 }
 
 .label {
-  color: #2d3748;
   font-size: 26rpx;
+  color: #2d3748;
 }
 
 .value {
-  color: #4a5568;
   font-size: 26rpx;
+  color: #4a5568;
 }
 
 .buttons {
@@ -121,15 +121,15 @@ function toggleActive() {
 }
 
 .chip {
-  background: #edf2f7;
   padding: 14rpx 18rpx;
-  border-radius: 999rpx;
   color: #2d3748;
+  background: #edf2f7;
+  border-radius: 999rpx;
   transition: all 0.2s ease;
 }
 
 .chip.active {
+  color: #fff;
   background: #3182ce;
-  color: #ffffff;
 }
 </style>

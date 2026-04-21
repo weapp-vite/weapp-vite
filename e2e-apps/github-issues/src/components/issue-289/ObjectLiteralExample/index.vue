@@ -75,9 +75,9 @@ const listClass = computed(() => [
 }
 
 .object-list {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 12rpx;
 }
 
 .object-list-loose {
@@ -93,8 +93,8 @@ const listClass = computed(() => [
   align-items: center;
   min-height: 54rpx;
   padding: 0 14rpx;
-  border-radius: 9999rpx;
   font-size: 22rpx;
+  border-radius: 9999rpx;
 }
 
 .object-item-idle {
@@ -116,29 +116,29 @@ const listClass = computed(() => [
 }
 
 .object-item-badge {
-  margin-left: 10rpx;
   padding: 2rpx 10rpx;
-  border-radius: 9999rpx;
+  margin-left: 10rpx;
   font-size: 20rpx;
+  border-radius: 9999rpx;
 }
 
 .object-item-badge-primary {
-  color: #ffffff;
+  color: #fff;
   background: #0f766e;
 }
 
 .object-item-badge-warning {
-  color: #ffffff;
+  color: #fff;
   background: #c2410c;
 }
 
 .object-empty {
-  margin-top: 10rpx;
   padding: 10rpx 14rpx;
-  border-radius: 12rpx;
+  margin-top: 10rpx;
   font-size: 22rpx;
   color: #475569;
   background: #f1f5f9;
+  border-radius: 12rpx;
 }
 
 .object-empty-loose {

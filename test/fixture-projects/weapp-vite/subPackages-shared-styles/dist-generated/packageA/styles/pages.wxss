@@ -1,42 +1,44 @@
 .page-scope {
-  margin: 0;
-  padding: 16px;
-  border-radius: 18px;
   position: relative;
+  padding: 16px;
+  margin: 0;
+  border-radius: 18px;
 }
 
 .page-scope {
+  color: #2a1230;
   background: linear-gradient(135deg, #ff9ec7 0%, #f96fa3 100%);
   border: 1px solid #f96fa3;
-  color: #2a1230;
 }
+
 .page-scope::before {
-  content: "[page]";
   position: absolute;
   top: -12px;
   right: 12px;
   font-size: 12px;
+  color: rgb(42 18 48 / 45%);
   letter-spacing: 0.08em;
-  color: rgba(42, 18, 48, 0.45);
+  content: "[page]";
 }
+
 .page-scope {
-  box-shadow: 0 16px 32px rgba(58, 26, 45, 0.24);
+  box-shadow: 0 16px 32px rgb(58 26 45 / 24%);
 }
 
 .page-ribbon--hero {
-  background: rgba(255, 158, 199, 0.35);
-  border-left: 3px solid #ff9ec7;
   padding: 4px 10px;
+  background: rgb(255 158 199 / 35%);
+  border-left: 3px solid #ff9ec7;
 }
 
 .page-ribbon--accent {
-  background: rgba(249, 111, 163, 0.35);
-  border-left: 3px solid #f96fa3;
   padding: 4px 10px;
+  background: rgb(249 111 163 / 35%);
+  border-left: 3px solid #f96fa3;
 }
 
 .page-ribbon--subtle {
-  background: rgba(255, 227, 238, 0.35);
-  border-left: 3px solid #ffe3ee;
   padding: 4px 10px;
+  background: rgb(255 227 238 / 35%);
+  border-left: 3px solid #ffe3ee;
 }

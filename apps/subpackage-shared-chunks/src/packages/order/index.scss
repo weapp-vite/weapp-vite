@@ -1,9 +1,9 @@
 .order-page {
-  min-height: 100vh;
-  padding: 40rpx 32rpx 64rpx;
   display: flex;
   flex-direction: column;
   gap: 32rpx;
+  min-height: 100vh;
+  padding: 40rpx 32rpx 64rpx;
 }
 
 .order-shortcuts {
@@ -13,10 +13,10 @@
 
   &__item {
     height: 96rpx;
-    line-height: 96rpx;
-    border-radius: 20rpx;
-    background-color: var(--order-primary);
-    color: #ffffff;
     font-size: 30rpx;
+    line-height: 96rpx;
+    color: #fff;
+    background-color: var(--order-primary);
+    border-radius: 20rpx;
   }
 }

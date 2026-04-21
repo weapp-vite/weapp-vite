@@ -39,19 +39,19 @@ const emit = defineEmits<{
 
 <style scoped>
 .panel {
-  background: #f7fafc;
-  border-radius: 12rpx;
-  padding: 14rpx;
   display: flex;
   flex-direction: column;
   gap: 10rpx;
+  padding: 14rpx;
+  background: #f7fafc;
+  border-radius: 12rpx;
 }
 
 .panel-row {
-  background: #ffffff;
-  border-radius: 10rpx;
   padding: 12rpx;
-  box-shadow: 0 6rpx 12rpx rgba(0, 0, 0, 0.04);
+  background: #fff;
+  border-radius: 10rpx;
+  box-shadow: 0 6rpx 12rpx rgb(0 0 0 / 4%);
 }
 
 .name {

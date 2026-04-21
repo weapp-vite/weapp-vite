@@ -11,8 +11,8 @@
 
 <style scoped>
 .page {
-  min-height: 100vh;
   box-sizing: border-box;
+  min-height: 100vh;
   padding: 36rpx;
   background-color: #f4f8ff;
 }

@@ -1,10 +1,10 @@
 .detail {
-  min-height: 100vh;
-  padding: 32rpx 24rpx 64rpx;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  min-height: 100vh;
+  padding: 32rpx 24rpx 64rpx;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
@@ -13,13 +13,13 @@
 }
 
 .detail__header {
-  padding: 24rpx;
-  border-radius: 24rpx;
-  background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
-  box-shadow: 0 16rpx 40rpx rgba(15, 23, 42, 0.08);
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 40rpx rgb(15 23 42 / 8%);
 }
 
 .detail__title {
@@ -40,14 +40,14 @@
 
 .detail__card {
   padding: 24rpx;
-  border-radius: 24rpx;
+  color: #fff;
   background: #111827;
-  color: #ffffff;
+  border-radius: 24rpx;
 }
 
 .detail__card-title {
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgb(255 255 255 / 70%);
 }
 
 .detail__card-body {
@@ -57,12 +57,12 @@
 }
 
 .detail__steps {
-  padding: 24rpx;
-  border-radius: 24rpx;
-  background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
 }
 
 .detail__section-title {
@@ -72,23 +72,23 @@
 }
 
 .detail__step {
-  padding: 16rpx 20rpx;
-  border-radius: 18rpx;
-  background: #f8fafc;
-  border: 1rpx solid transparent;
   display: flex;
   flex-direction: column;
   gap: 6rpx;
+  padding: 16rpx 20rpx;
+  background: #f8fafc;
+  border: 1rpx solid transparent;
+  border-radius: 18rpx;
 }
 
 .detail__step.is-done {
-  border-color: rgba(16, 185, 129, 0.6);
-  background: rgba(16, 185, 129, 0.12);
+  background: rgb(16 185 129 / 12%);
+  border-color: rgb(16 185 129 / 60%);
 }
 
 .detail__step.is-active {
-  border-color: rgba(59, 130, 246, 0.6);
-  background: rgba(59, 130, 246, 0.12);
+  background: rgb(59 130 246 / 12%);
+  border-color: rgb(59 130 246 / 60%);
 }
 
 .detail__step-title {
@@ -104,8 +104,8 @@
 
 .detail__empty {
   padding: 24rpx;
-  border-radius: 24rpx;
-  background: rgba(15, 23, 42, 0.06);
-  color: #475569;
   font-size: 24rpx;
+  color: #475569;
+  background: rgb(15 23 42 / 6%);
+  border-radius: 24rpx;
 }

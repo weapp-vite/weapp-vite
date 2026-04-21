@@ -362,8 +362,8 @@ syncMetricsView()
 
 <style scoped>
 .use-store-page {
-  min-height: 100vh;
   box-sizing: border-box;
+  min-height: 100vh;
   padding: 24rpx;
   background: #f8fafc;
 }
@@ -388,10 +388,10 @@ syncMetricsView()
 }
 
 .use-store-page__section {
-  margin-top: 16rpx;
   padding: 16rpx;
-  border-radius: 14rpx;
+  margin-top: 16rpx;
   border: 2rpx solid #cbd5e1;
+  border-radius: 14rpx;
 }
 
 .use-store-page__section-title {
@@ -407,20 +407,20 @@ syncMetricsView()
 }
 
 .use-store-page__toolbar {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 12rpx;
 }
 
 .use-store-page__btn {
-  margin: 6rpx;
   min-height: 56rpx;
-  line-height: 56rpx;
   padding: 0 14rpx;
-  border-radius: 9999rpx;
-  background: #e2e8f0;
-  color: #1f2937;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 56rpx;
+  color: #1f2937;
+  background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 
 .panel-calm {

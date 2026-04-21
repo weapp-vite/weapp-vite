@@ -1,4 +1,4 @@
 .button-example {
-  margin: 32rpx;
   display: flex;
+  margin: 32rpx;
 }

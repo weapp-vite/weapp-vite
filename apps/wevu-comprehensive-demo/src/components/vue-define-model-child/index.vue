@@ -41,7 +41,7 @@ defineExpose({
 .wrap {
   padding: 16rpx;
   border-radius: 16rpx;
-  background: #ffffff;
+  background: #fff;
   border: 1rpx solid #e2e8f0;
   display: flex;
   flex-direction: column;

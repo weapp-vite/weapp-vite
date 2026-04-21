@@ -27,7 +27,7 @@ function open() { visible.value = true }
         打开
       </t-button>
       <t-popover :visible="visible" content="t-popover" @close="visible = false">
-        <view style="padding: 12rpx 16rpx; background: #111827; color: #fff; border-radius: 12rpx">
+        <view style="padding: 12rpx 16rpx; color: #fff; background: #111827; border-radius: 12rpx">
           anchor
         </view>
       </t-popover>

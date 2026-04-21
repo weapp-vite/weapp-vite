@@ -3,12 +3,14 @@ page {
 }
 
 .coupon-card-wrap {
-  background-color: #fff;
   padding: 32rpx 32rpx 1rpx;
+  background-color: #fff;
 }
+
 .desc-wrap {
   margin-top: 24rpx;
 }
+
 .desc-wrap .button-wrap {
   margin: 50rpx 32rpx 0;
 }
@@ -18,24 +20,24 @@ page {
 }
 
 .desc-group-wrap .t-class-title {
-  font-size: 26rpx;
-  width: 140rpx;
   flex: none;
+  width: 140rpx;
+  font-size: 26rpx;
   color: #888;
 }
 
 .desc-group-wrap .t-class-note {
+  justify-content: flex-start;
+  width: 440rpx;
   font-size: 26rpx;
+  color: #333;
   word-break: break-all;
   white-space: pre-line;
-  justify-content: flex-start;
-  color: #333;
-  width: 440rpx;
 }
 
 .desc-group-wrap {
-  border-radius: 8rpx;
   overflow: hidden;
+  border-radius: 8rpx;
 
   --cell-label-font-size: 26rpx;
   --cell-label-line-height: 36rpx;
@@ -43,14 +45,14 @@ page {
 }
 
 .desc-group-wrap.in-popup {
-  border-radius: 0;
-  overflow: auto;
   max-height: 828rpx;
+  overflow: auto;
+  border-radius: 0;
 }
 
 .desc-group-wrap .wr-cell__title {
-  color: #333;
   font-size: 28rpx;
+  color: #333;
 }
 
 /* .desc-group-wrap .max-width-cell {
@@ -75,14 +77,12 @@ page {
 }
 
 .popup-content-title {
-  font-size: 32rpx;
-  color: #333;
-
-  text-align: center;
-  height: 104rpx;
-  line-height: 104rpx;
-
   position: relative;
+  height: 104rpx;
+  font-size: 32rpx;
+  line-height: 104rpx;
+  color: #333;
+  text-align: center;
 }
 
 .popup-content-title .close-icon {

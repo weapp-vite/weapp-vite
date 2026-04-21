@@ -436,7 +436,7 @@ const scopeLabelMap: Record<'app' | 'page' | 'component', string> = {
   border-color: #fdba74;
 }
 
-@media (width <= 1100px) {
+@media (max-width: 1100px) {
   .wevu-api-reference__columns {
     grid-template-columns: 1fr;
   }

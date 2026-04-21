@@ -32,6 +32,7 @@ function increment() {
 .counter {
   padding: 20rpx;
 }
+
 text {
   display: block;
   margin: 10rpx 0;

@@ -116,11 +116,11 @@ const attrRows = computed(() => {
 
 <style scoped>
 .use-attrs-feature {
-  margin-top: 22rpx;
   padding: 20rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid #cbd5e1;
+  margin-top: 22rpx;
   background: #fff;
+  border: 2rpx solid #cbd5e1;
+  border-radius: 16rpx;
 }
 
 .use-attrs-feature__title {
@@ -131,10 +131,10 @@ const attrRows = computed(() => {
 
 .use-attrs-feature__badge {
   margin-top: 14rpx;
-  border-radius: 9999rpx;
   font-size: 22rpx;
   color: #1e293b;
   background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 
 .use-attrs-feature__flag {
@@ -154,10 +154,10 @@ const attrRows = computed(() => {
 }
 
 .use-attrs-feature__rows {
-  margin-top: 12rpx;
   padding: 12rpx;
-  border-radius: 10rpx;
+  margin-top: 12rpx;
   background: #f1f5f9;
+  border-radius: 10rpx;
 }
 
 .use-attrs-feature__row {

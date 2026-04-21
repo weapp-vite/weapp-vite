@@ -1,9 +1,9 @@
 .load-more {
-  font-size: 24rpx;
-  height: 100rpx;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  height: 100rpx;
+  font-size: 24rpx;
 }
 
 .load-more .t-class-loading {
@@ -14,13 +14,14 @@
 }
 
 .load-more .t-class-loading-text {
-  color: #bbbbbb;
+  color: #bbb;
 }
 
 .t-class-divider-content {
   margin: 0 10rpx;
-  color: #bbbbbb;
+  color: #bbb;
 }
+
 .load-more .t-class-indicator {
   color: #b9b9b9 !important;
 }

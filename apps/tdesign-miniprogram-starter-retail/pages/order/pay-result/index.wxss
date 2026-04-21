@@ -6,24 +6,26 @@
 }
 
 .pay-result .pay-status {
-  margin-top: 100rpx;
-  font-size: 48rpx;
-  line-height: 72rpx;
-  font-weight: bold;
-  color: #333333;
   display: flex;
   align-items: center;
+  margin-top: 100rpx;
+  font-size: 48rpx;
+  font-weight: bold;
+  line-height: 72rpx;
+  color: #333;
 }
+
 .pay-result .pay-status text {
   padding-left: 12rpx;
 }
+
 .pay-result .pay-money {
-  color: #666666;
-  font-size: 28rpx;
-  line-height: 48rpx;
-  margin-top: 28rpx;
   display: flex;
   align-items: baseline;
+  margin-top: 28rpx;
+  font-size: 28rpx;
+  line-height: 48rpx;
+  color: #666;
 }
 
 .pay-result .pay-money .pay-money__price {
@@ -31,24 +33,25 @@
   line-height: 48rpx;
   color: #fa4126;
 }
+
 .pay-result .btn-wrapper {
-  margin-top: 48rpx;
-  padding: 12rpx 32rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  box-sizing: border-box;
+  padding: 12rpx 32rpx;
+  margin-top: 48rpx;
 }
 
 .pay-result .btn-wrapper .status-btn {
-  height: 88rpx;
   width: 334rpx;
-  border-radius: 44rpx;
-  border: 2rpx solid #fa4126;
-  color: #fa4126;
+  height: 88rpx;
   font-size: 28rpx;
   font-weight: bold;
   line-height: 88rpx;
+  color: #fa4126;
   text-align: center;
+  border: 2rpx solid #fa4126;
+  border-radius: 44rpx;
 }

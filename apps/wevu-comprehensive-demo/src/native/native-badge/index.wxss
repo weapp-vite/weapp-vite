@@ -1,11 +1,11 @@
 .native-badge {
-  padding: 12rpx 20rpx;
-  border-radius: 999rpx;
   display: inline-flex;
   align-items: center;
+  padding: 12rpx 20rpx;
   font-size: 24rpx;
   font-weight: 600;
   color: #fff;
+  border-radius: 999rpx;
 }
 
 .native-badge__text {

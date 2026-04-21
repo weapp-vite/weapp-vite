@@ -4,45 +4,49 @@
   left: 0;
   width: 100%;
   height: 480rpx;
-  background-image: url('https://tdesign.gtimg.com/miniprogram/template/retail/template/user-center-bg-v1.png');
-  background-size: cover;
-  background-repeat: no-repeat;
   padding: 0 24rpx;
+  background-image: url('https://tdesign.gtimg.com/miniprogram/template/retail/template/user-center-bg-v1.png');
+  background-repeat: no-repeat;
+  background-size: cover;
 }
+
 .user-center-card__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 96rpx;
   margin-top: 192rpx;
   margin-bottom: 48rpx;
-  height: 96rpx;
   line-height: 48rpx;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
   color: #333;
-  position: relative;
 }
+
 .user-center-card__header__avatar {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 48rpx;
   overflow: hidden;
+  border-radius: 48rpx;
 }
 
 .user-center-card__header__name {
+  margin-right: 16rpx;
+  margin-left: 24rpx;
   font-size: 36rpx;
+  font-weight: bold;
   line-height: 48rpx;
   color: #333;
-  font-weight: bold;
-  margin-left: 24rpx;
-  margin-right: 16rpx;
 }
+
 .user-center-card__header__transparent {
   position: absolute;
-  left: 0;
   top: 0;
-  background-color: transparent;
-  height: 100%;
+  left: 0;
   width: 100%;
+  height: 100%;
+  background-color: transparent;
 }
+
 .user-center-card__icon {
   line-height: 96rpx;
 }

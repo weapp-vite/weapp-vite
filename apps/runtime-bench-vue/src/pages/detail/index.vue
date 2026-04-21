@@ -111,9 +111,9 @@ export default defineComponent({
 
 .hero,
 .card {
-  background: #ffffff;
+  background: #fff;
   border-radius: 24rpx;
-  box-shadow: 0 12rpx 30rpx rgba(15, 23, 42, 0.06);
+  box-shadow: 0 12rpx 30rpx rgb(15 23 42 / 6%);
 }
 
 .hero {
@@ -135,15 +135,15 @@ export default defineComponent({
 }
 
 .card {
-  margin-top: 12rpx;
   padding: 22rpx;
+  margin-top: 12rpx;
 }
 
 .card__row {
   display: flex;
+  gap: 12rpx;
   align-items: center;
   justify-content: space-between;
-  gap: 12rpx;
 }
 
 .card__title {
@@ -153,14 +153,14 @@ export default defineComponent({
 
 .card__badge {
   padding: 4rpx 14rpx;
-  border-radius: 999rpx;
   font-size: 22rpx;
-  background: #ccfbf1;
   color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 999rpx;
 }
 
 .card__badge--active {
-  background: #dcfce7;
   color: #15803d;
+  background: #dcfce7;
 }
 </style>

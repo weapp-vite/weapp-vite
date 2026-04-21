@@ -1,18 +1,18 @@
 .poster-page {
-  min-height: 100vh;
-  padding: 48rpx 32rpx;
   display: flex;
   flex-direction: column;
   gap: 40rpx;
   align-items: stretch;
+  min-height: 100vh;
+  padding: 48rpx 32rpx;
 }
 
 .poster-preview {
   padding: 40rpx 32rpx 80rpx;
-  border-radius: 32rpx;
-  background: linear-gradient(180deg, #ffe7ba 0%, #ffd591 100%);
-  text-align: center;
   color: #2f1f07;
+  text-align: center;
+  background: linear-gradient(180deg, #ffe7ba 0%, #ffd591 100%);
+  border-radius: 32rpx;
 
   &__title {
     font-size: 40rpx;
@@ -26,18 +26,18 @@
   }
 
   &__qr {
-    margin-top: 48rpx;
     padding: 24rpx;
-    border-radius: 20rpx;
-    background-color: rgba(255, 255, 255, 0.9);
+    margin-top: 48rpx;
     font-size: 24rpx;
+    background-color: rgb(255 255 255 / 90%);
+    border-radius: 20rpx;
   }
 }
 
 .poster-generate {
   height: 96rpx;
-  border-radius: 24rpx;
-  background-color: #fa541c;
-  color: #fff;
   font-size: 32rpx;
+  color: #fff;
+  background-color: #fa541c;
+  border-radius: 24rpx;
 }

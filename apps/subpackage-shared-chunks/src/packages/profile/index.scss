@@ -7,15 +7,15 @@
   &__meta {
     margin-top: 12rpx;
     font-size: 26rpx;
-    color: rgba(29, 33, 41, 0.5);
+    color: rgb(29 33 41 / 50%);
   }
 }
 
 .profile-entry {
-  margin-bottom: 16rpx;
   padding: 28rpx;
-  border-radius: 16rpx;
-  background-color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 16rpx;
   font-size: 30rpx;
   color: #283143;
+  background-color: rgb(255 255 255 / 95%);
+  border-radius: 16rpx;
 }

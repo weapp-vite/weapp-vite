@@ -43,10 +43,10 @@ const slotProps = computed(() => ({
 <style>
 /* stylelint-disable order/properties-order */
 .slot-card {
-  background: #ffffff;
+  background: #fff;
   border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 12rpx 32rpx rgb(0 0 0 / 6%);
 }
 
 .slot-card__header {
@@ -60,7 +60,7 @@ const slotProps = computed(() => ({
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
   background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
-  color: #ffffff;
+  color: #fff;
   font-size: 22rpx;
 }
 

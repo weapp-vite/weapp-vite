@@ -1,36 +1,36 @@
 .content .filter-btns-wrap {
-  width: 100%;
   position: absolute;
   bottom: calc(20rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
-  border-radius: 10rpx 0 0 10rpx;
+  width: 100%;
   padding: 16rpx 32rpx;
   border-top: 1rpx solid #e5e5e5;
-  box-sizing: border-box;
+  border-radius: 10rpx 0 0 10rpx;
 }
 
 .filter-btn {
-  flex: 1;
   display: flex;
-  justify-content: center;
+  flex: 1;
   align-items: center;
+  justify-content: center;
+  height: 80rpx;
   font-size: 28rpx;
   font-weight: 500;
-  height: 80rpx;
 }
 
 .btn-reset {
-  color: #fa4126;
-  background: rgba(255, 255, 255, 1);
   position: relative;
+  color: #fa4126;
+  background: rgb(255 255 255 / 100%);
   border: 1rpx solid #fa4126;
   border-radius: 84rpx 0 0 84rpx;
 }
 
 .btn-confirm {
-  border-radius: 0 84rpx 84rpx 0;
   border: 1rpx solid #fa4126;
+  border-radius: 0 84rpx 84rpx 0;
 }
 
 .btn-confirm {

@@ -50,11 +50,11 @@ const entries = [
 }
 
 .hero {
-  margin-bottom: 24rpx;
   padding: 28rpx;
+  margin-bottom: 24rpx;
+  background: rgb(255 255 255 / 88%);
   border: 2rpx solid rgb(251 191 36 / 24%);
   border-radius: 28rpx;
-  background: rgb(255 255 255 / 88%);
 }
 
 .hero-title {
@@ -74,11 +74,11 @@ const entries = [
 
 .card {
   display: block;
-  margin-top: 20rpx;
   padding: 28rpx;
+  margin-top: 20rpx;
+  background: rgb(255 255 255 / 90%);
   border: 2rpx solid rgb(249 115 22 / 15%);
   border-radius: 24rpx;
-  background: rgb(255 255 255 / 90%);
 }
 
 .card-title {

@@ -66,8 +66,8 @@ function _runE2E() {
 }
 
 .issue328-toggle {
-  margin-top: 18rpx;
   padding: 16rpx 20rpx;
+  margin-top: 18rpx;
   font-size: 24rpx;
   font-weight: 600;
   color: #1d4ed8;

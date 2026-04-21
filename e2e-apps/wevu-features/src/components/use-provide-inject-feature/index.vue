@@ -68,11 +68,11 @@ function toggleThemeFromInject() {
 
 <style scoped>
 .provide-inject-feature {
-  margin-top: 20rpx;
   padding: 20rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid #cbd5e1;
+  margin-top: 20rpx;
   background: #fff;
+  border: 2rpx solid #cbd5e1;
+  border-radius: 16rpx;
 }
 
 .provide-inject-feature__title {
@@ -82,10 +82,10 @@ function toggleThemeFromInject() {
 }
 
 .provide-inject-feature__panel {
-  margin-top: 14rpx;
   padding: 10rpx 16rpx;
-  border-radius: 9999rpx;
+  margin-top: 14rpx;
   font-size: 22rpx;
+  border-radius: 9999rpx;
 }
 
 .provide-inject-feature__line {
@@ -95,20 +95,20 @@ function toggleThemeFromInject() {
 }
 
 .provide-inject-feature__actions {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 12rpx;
 }
 
 .provide-inject-feature__btn {
-  margin: 6rpx;
   min-height: 56rpx;
-  line-height: 56rpx;
   padding: 0 16rpx;
-  border-radius: 9999rpx;
-  background: #e2e8f0;
-  color: #1f2937;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 56rpx;
+  color: #1f2937;
+  background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 
 .theme-teal {

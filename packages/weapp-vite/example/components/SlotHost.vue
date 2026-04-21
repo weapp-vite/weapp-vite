@@ -59,29 +59,29 @@ function toggle() {
 
 <style scoped>
 .shell {
-  border: 1rpx dashed #cbd5e0;
-  border-radius: 12rpx;
-  padding: 16rpx;
-  background: #f8fafc;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
+  padding: 16rpx;
+  background: #f8fafc;
+  border: 1rpx dashed #cbd5e0;
+  border-radius: 12rpx;
 }
 
 .shell-header,
 .shell-footer {
-  color: #2d3748;
   font-size: 24rpx;
+  color: #2d3748;
 }
 
 .shell-body {
-  background: #ffffff;
-  border-radius: 8rpx;
   padding: 12rpx;
+  background: #fff;
+  border-radius: 8rpx;
 }
 
 .placeholder {
-  color: #a0aec0;
   font-size: 22rpx;
+  color: #a0aec0;
 }
 </style>

@@ -1,5 +1,6 @@
 .layout-admin {
   --layout-admin-style-marker: 'ADMIN-LAYOUT-STYLE-BASE';
+
   min-height: 100%;
   background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
 }

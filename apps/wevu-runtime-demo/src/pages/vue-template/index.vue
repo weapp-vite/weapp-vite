@@ -194,10 +194,10 @@ function refreshTime() {
 }
 
 .section {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16rpx;
   padding: 18rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .section-title {
@@ -227,17 +227,17 @@ function refreshTime() {
 
 .btn-primary {
   background: #111827;
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-success {
   background: #2563eb;
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-info {
   background: #0ea5e9;
-  color: #ffffff;
+  color: #fff;
 }
 
 .card {
@@ -275,7 +275,7 @@ function refreshTime() {
   flex: 1;
   margin-left: 16rpx;
   padding: 14rpx 16rpx;
-  background: #ffffff;
+  background: #fff;
   border-radius: 12rpx;
   border: 1rpx solid #e2e8f0;
   font-size: 26rpx;

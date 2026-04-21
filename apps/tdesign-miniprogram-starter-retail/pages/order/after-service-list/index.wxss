@@ -11,35 +11,35 @@
 }
 
 .page-container .order-goods-card-footer {
-  display: flex;
-  width: calc(100% - 190rpx);
-  justify-content: space-between;
   position: absolute;
   bottom: 20rpx;
   left: 190rpx;
+  display: flex;
+  justify-content: space-between;
+  width: calc(100% - 190rpx);
 }
 
 .page-container .order-goods-card-footer .order-goods-card-footer-num {
-  color: #999;
   line-height: 40rpx;
+  color: #999;
 }
 
 .page-container .order-goods-card-footer .order-goods-card-footer-price-class {
+  font-family: "DIN Alternate";
   font-size: 36rpx;
   color: #333;
-  font-family: DIN Alternate;
 }
 
 .page-container .order-goods-card-footer .order-goods-card-footer-price-decimal {
+  font-family: "DIN Alternate";
   font-size: 28rpx;
   color: #333;
-  font-family: DIN Alternate;
 }
 
 .page-container .order-goods-card-footer .order-goods-card-footer-price-symbol {
-  color: #333;
+  font-family: "DIN Alternate";
   font-size: 24rpx;
-  font-family: DIN Alternate;
+  color: #333;
 }
 
 .page-container .wr-goods-card__specs {
@@ -57,37 +57,37 @@
 }
 
 .page-container .order-card .header .store-name > view {
-  overflow: hidden;
   width: 100%;
-  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .page-container .status-desc {
   box-sizing: border-box;
   padding: 22rpx 20rpx;
-  font-size: 26rpx;
-  line-height: 1.3;
-  text-align: left;
-  color: #333333;
-  background-color: #f5f5f5;
-  border-radius: 8rpx;
-  word-wrap: break-word;
   margin-top: 24rpx;
   margin-bottom: 20rpx;
+  font-size: 26rpx;
+  line-height: 1.3;
+  color: #333;
+  text-align: left;
+  overflow-wrap: break-word;
+  background-color: #f5f5f5;
+  border-radius: 8rpx;
 }
 
 .page-container .header__right {
-  font-size: 24rpx;
-  color: #fa4126;
   display: flex;
   align-items: center;
+  font-size: 24rpx;
+  color: #fa4126;
 }
 
 .page-container .header__right__icon {
-  color: #d05b27;
-  font-size: 16px !important;
   margin-right: 10rpx;
+  font-size: 16px !important;
+  color: #d05b27;
 }
 
 .t-class-indicator {

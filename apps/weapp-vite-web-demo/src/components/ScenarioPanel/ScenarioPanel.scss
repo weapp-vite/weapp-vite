@@ -1,11 +1,11 @@
 .panel {
-  padding: 28rpx;
-  border-radius: 28rpx;
-  background: #ffffff;
-  box-shadow: 0 16rpx 40rpx rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  padding: 28rpx;
+  background: #fff;
+  border-radius: 28rpx;
+  box-shadow: 0 16rpx 40rpx rgb(15 23 42 / 8%);
 }
 
 .panel__head {
@@ -36,19 +36,19 @@
 }
 
 .panel__item {
-  padding: 20rpx;
-  border-radius: 20rpx;
-  background: #f8fafc;
-  border: 1rpx solid transparent;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
+  padding: 20rpx;
+  background: #f8fafc;
+  border: 1rpx solid transparent;
+  border-radius: 20rpx;
   transition: all 0.2s ease;
 }
 
 .panel__item.is-active {
-  border-color: rgba(37, 99, 235, 0.6);
-  background: rgba(59, 130, 246, 0.08);
+  background: rgb(59 130 246 / 8%);
+  border-color: rgb(37 99 235 / 60%);
 }
 
 .panel__item-title {
@@ -59,8 +59,8 @@
 
 .panel__item-desc {
   font-size: 22rpx;
-  color: #475569;
   line-height: 1.5;
+  color: #475569;
 }
 
 .panel__item-tags {
@@ -70,10 +70,10 @@
 }
 
 .panel__tag {
+  padding: 6rpx 14rpx;
   font-size: 20rpx;
   color: #1d4ed8;
-  padding: 6rpx 14rpx;
-  background: rgba(191, 219, 254, 0.6);
+  background: rgb(191 219 254 / 60%);
   border-radius: 999rpx;
 }
 

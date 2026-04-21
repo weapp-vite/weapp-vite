@@ -3,8 +3,8 @@
 }
 
 .title {
-  font-weight: 600;
   margin-bottom: 16rpx;
+  font-weight: 600;
 }
 
 .summary {

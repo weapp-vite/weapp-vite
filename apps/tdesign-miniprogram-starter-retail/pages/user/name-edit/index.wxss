@@ -1,18 +1,22 @@
 page {
   background-color: #f5f5f5;
 }
+
 page view {
   box-sizing: border-box;
 }
+
 .name-edit {
   padding-top: 20rpx;
 }
+
 .name-edit .name-edit__input--desc {
-  font-size: 26rpx;
   padding: 16rpx 32rpx;
-  color: #999;
   margin-bottom: 200rpx;
+  font-size: 26rpx;
+  color: #999;
 }
+
 .name-edit .name-edit__wrapper {
   margin: 0 32rpx;
 }

@@ -171,7 +171,7 @@ export default {
 .stat-label {
   display: block;
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgb(255 255 255 / 80%);
   margin-bottom: 12rpx;
 }
 

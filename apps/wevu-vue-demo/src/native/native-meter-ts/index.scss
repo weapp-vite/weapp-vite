@@ -1,14 +1,14 @@
 .native-meter {
   padding: 16rpx;
   margin-top: 8rpx;
+  background: #f8faff;
   border: 2rpx solid #ecf0fb;
   border-radius: 14rpx;
-  background: #f8faff;
 
   &__head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   &__label {

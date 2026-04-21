@@ -119,10 +119,10 @@ function toggleFeatured(id: number) {
 
 <style scoped>
 .card {
-  background: #ffffff;
-  border-radius: 16rpx;
   padding: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 32rpx rgb(0 0 0 / 6%);
 }
 
 .card-title {
@@ -133,27 +133,27 @@ function toggleFeatured(id: number) {
 
 .hint {
   display: block;
-  color: #718096;
-  font-size: 24rpx;
   margin-bottom: 16rpx;
+  font-size: 24rpx;
+  color: #718096;
 }
 
 .status {
   padding: 18rpx;
-  border-radius: 12rpx;
-  background: #f7fafc;
-  color: #2d3748;
   margin-bottom: 16rpx;
+  color: #2d3748;
+  background: #f7fafc;
+  border-radius: 12rpx;
 }
 
 .status.warning {
-  background: #fefcbf;
   color: #744210;
+  background: #fefcbf;
 }
 
 .status.success {
-  background: #c6f6d5;
   color: #22543d;
+  background: #c6f6d5;
 }
 
 .list {
@@ -164,12 +164,12 @@ function toggleFeatured(id: number) {
 }
 
 .list-item {
-  background: #f7fafc;
-  border-radius: 12rpx;
-  padding: 18rpx;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
+  padding: 18rpx;
+  background: #f7fafc;
+  border-radius: 12rpx;
 }
 
 .list-item.featured {
@@ -188,11 +188,11 @@ function toggleFeatured(id: number) {
 
 .tag {
   align-self: flex-start;
-  background: #ebf8ff;
-  color: #2b6cb0;
   padding: 6rpx 12rpx;
-  border-radius: 999rpx;
   font-size: 22rpx;
+  color: #2b6cb0;
+  background: #ebf8ff;
+  border-radius: 999rpx;
 }
 
 .actions {

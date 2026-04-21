@@ -1,10 +1,10 @@
 @charset "utf-8";
 
 .about {
-  padding: 48rpx;
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  padding: 48rpx;
   color: #1f2937;
 
   &__title {
@@ -23,8 +23,8 @@
   }
 
   &__origin {
-    color: #111827;
     font-weight: 500;
+    color: #111827;
   }
 
   button {

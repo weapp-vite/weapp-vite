@@ -24,8 +24,8 @@ const tips = [
 .card {
   padding: 20rpx;
   border-radius: 16rpx;
-  background: #ffffff;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .title {

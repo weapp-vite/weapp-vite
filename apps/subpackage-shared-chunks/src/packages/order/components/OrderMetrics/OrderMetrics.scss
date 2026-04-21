@@ -1,11 +1,11 @@
 .metrics-card {
-  background: #ffffff;
-  border-radius: 20rpx;
-  padding: 32rpx;
-  box-shadow: 0 16rpx 40rpx rgba(20, 20, 20, 0.05);
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  padding: 32rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 16rpx 40rpx rgb(20 20 20 / 5%);
 
   &__header {
     display: flex;
@@ -31,20 +31,20 @@
   }
 
   &__empty {
+    padding: 24rpx 0;
     font-size: 26rpx;
     color: #a0a0a0;
     text-align: center;
-    padding: 24rpx 0;
   }
 }
 
 .metric-item {
-  border: 1px solid #f0f0f0;
-  border-radius: 16rpx;
-  padding: 20rpx;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
+  padding: 20rpx;
+  border: 1px solid #f0f0f0;
+  border-radius: 16rpx;
 
   &__label {
     font-size: 26rpx;
@@ -59,9 +59,11 @@
 
   &__trend {
     font-size: 26rpx;
+
     &--up {
       color: #14b886;
     }
+
     &--down {
       color: #eb5757;
     }

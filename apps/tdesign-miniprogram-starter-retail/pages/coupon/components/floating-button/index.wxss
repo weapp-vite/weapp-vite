@@ -8,23 +8,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 96rpx;
   width: 96rpx;
-  background-color: rgba(0, 0, 0, 0.8);
-  opacity: 0.7;
+  height: 96rpx;
+  background-color: rgb(0 0 0 / 80%);
   border-radius: 48rpx;
+  opacity: 0.7;
 }
 
 .floating-button .floating-right-top {
   position: absolute;
-  right: 0rpx;
   top: 0rpx;
+  right: 0rpx;
   height: 28rpx;
-  background: #fa4126;
-  border-radius: 64rpx;
-  font-weight: bold;
+  padding: 0 8rpx;
   font-size: 22rpx;
+  font-weight: bold;
   line-height: 28rpx;
   color: #fff;
-  padding: 0 8rpx;
+  background: #fa4126;
+  border-radius: 64rpx;
 }

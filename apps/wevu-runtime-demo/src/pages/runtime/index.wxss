@@ -1,21 +1,21 @@
 .page {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 24rpx;
-  padding: 32rpx 24rpx 64rpx;
-  background: linear-gradient(180deg, #f4f4f5 0%, #ffffff 100%);
   min-height: 100%;
-  box-sizing: border-box;
+  padding: 32rpx 24rpx 64rpx;
+  background: linear-gradient(180deg, #f4f4f5 0%, #fff 100%);
 }
 
 .hero {
-  padding: 28rpx 32rpx;
-  border-radius: 24rpx;
-  background: #111827;
-  color: #f9fafb;
   display: flex;
   flex-direction: column;
   gap: 12rpx;
+  padding: 28rpx 32rpx;
+  color: #f9fafb;
+  background: #111827;
+  border-radius: 24rpx;
 }
 
 .hero-title {
@@ -29,19 +29,19 @@
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx 32rpx;
-  box-shadow: 0 16rpx 32rpx rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   gap: 20rpx;
+  padding: 28rpx 32rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 32rpx rgb(15 23 42 / 8%);
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
 .card-title {
@@ -64,9 +64,9 @@
 
 .counter-actions {
   display: flex;
-  justify-content: center;
   flex-wrap: wrap;
   gap: 16rpx;
+  justify-content: center;
 }
 
 .field {
@@ -81,11 +81,11 @@
 }
 
 .field-input {
+  box-sizing: border-box;
   width: 100%;
+  padding: 20rpx 24rpx;
   background: #f4f4f5;
   border-radius: 16rpx;
-  padding: 20rpx 24rpx;
-  box-sizing: border-box;
 }
 
 .greeting {
@@ -95,8 +95,8 @@
 
 .todo-creation {
   flex-direction: row;
-  align-items: center;
   gap: 16rpx;
+  align-items: center;
 }
 
 .todo-item {
@@ -104,8 +104,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 16rpx 20rpx;
-  border-radius: 16rpx;
   background: #f9fafb;
+  border-radius: 16rpx;
 }
 
 .todo-text {
@@ -126,8 +126,8 @@
 
 .log-item {
   padding: 16rpx 20rpx;
-  border-radius: 12rpx;
-  background: #f4f4f5;
   font-size: 24rpx;
   color: #1f2937;
+  background: #f4f4f5;
+  border-radius: 12rpx;
 }

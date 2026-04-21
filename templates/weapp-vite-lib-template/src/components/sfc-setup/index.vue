@@ -77,9 +77,9 @@ defineExpose({
 <style>
 .card {
   padding: 20rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid transparent;
   background: #eff6ff;
+  border: 2rpx solid transparent;
+  border-radius: 16rpx;
 }
 
 .title {
@@ -102,16 +102,16 @@ defineExpose({
 
 .btn {
   padding: 8rpx 16rpx;
-  border-radius: 999rpx;
-  border: 2rpx solid #1d4ed8;
-  background: #1d4ed8;
-  color: #eff6ff;
   font-size: 22rpx;
+  color: #eff6ff;
+  background: #1d4ed8;
+  border: 2rpx solid #1d4ed8;
+  border-radius: 999rpx;
 }
 
 .btn.ghost {
-  background: transparent;
   color: #1d4ed8;
+  background: transparent;
 }
 
 .tone-info {
@@ -142,7 +142,7 @@ defineExpose({
 }
 
 .is-active {
-  box-shadow: 0 0 0 4rpx rgba(29, 78, 216, 0.2);
+  box-shadow: 0 0 0 4rpx rgb(29 78 216 / 20%);
 }
 
 .has-count .title {

@@ -1,50 +1,60 @@
 .unread {
-  color: #9a9c9b;
   padding: 10rpx 40rpx;
+  color: #9a9c9b;
   text-align: left;
 }
+
 .unread text {
   display: inline-block;
-  line-height: 60rpx;
   font-size: 22rpx;
+  line-height: 60rpx;
 }
+
 .unread image {
+  float: right;
   display: inline-block;
   width: 50rpx;
   height: 50rpx;
   vertical-align: middle;
-  float: right;
 }
+
 .notify-item {
-  background: #ffffff;
   padding: 25rpx 70rpx 25rpx 0;
+  background: #fff;
   border-bottom: solid 1px #ebebeb;
 }
+
 .notify-item image {
   width: 80rpx;
   height: 80rpx;
   border-radius: 80rpx;
 }
+
 .notify-item .avatar {
   flex: 1;
 }
+
 .notify-item .notify-content {
   flex: 4;
   text-align: left;
 }
+
 .notify-item .notify-content text {
   display: block;
 }
+
 .notify-item .notify-content .notify-source {
-  color: #818a8f;
+  padding: 0 0 8rpx;
   font-size: 28rpx;
-  padding: 0 0 8rpx 0;
+  color: #818a8f;
 }
+
 .notify-item .notify-content .notify-title {
-  color: #afafaf;
   font-size: 30rpx;
   line-height: 34rpx;
+  color: #afafaf;
 }
+
 .placehold {
   padding: 80rpx 0;
   font-size: 28rpx;

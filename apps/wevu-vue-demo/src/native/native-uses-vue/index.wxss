@@ -5,7 +5,7 @@
 .native-uses-vue__note {
   display: block;
   margin-top: 10rpx;
-  color: #4b5563;
   font-size: 24rpx;
   line-height: 1.6;
+  color: #4b5563;
 }

@@ -32,23 +32,23 @@ function increase() {
 
 <style scoped>
 .page {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 40rpx 32rpx;
-  box-sizing: border-box;
   background: #f7f8fc;
 }
 
 .panel {
   padding: 28rpx;
-  border-radius: 20rpx;
-  background: #ffffff;
-  border: 2rpx solid #dbeafe;
   margin-bottom: 24rpx;
+  background: #fff;
+  border: 2rpx solid #dbeafe;
+  border-radius: 20rpx;
 }
 
 .panel.odd {
-  border-color: #c084fc;
   background: #faf5ff;
+  border-color: #c084fc;
 }
 
 .title {

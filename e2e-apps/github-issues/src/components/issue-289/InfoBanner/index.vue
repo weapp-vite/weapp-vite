@@ -15,10 +15,10 @@ defineProps<{
 <style scoped>
 .info-banner {
   padding: 20rpx 24rpx;
-  border-radius: 12rpx;
-  color: #1e293b;
-  background: #e2e8f0;
   font-size: 26rpx;
   font-weight: 500;
+  color: #1e293b;
+  background: #e2e8f0;
+  border-radius: 12rpx;
 }
 </style>

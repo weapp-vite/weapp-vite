@@ -1,35 +1,42 @@
-/**index.wxss**/
+/** index.wxss **/
 
 .container {
   height: 1500rpx;
 }
+
 .container .search {
   padding: 12.5rpx 0 12.5rpx 15rpx;
   background: #2a8ce5;
 }
+
 .container .search-left {
   flex: 8;
-  background: #4ea3e7;
   text-align: left;
+  background: #4ea3e7;
 }
+
 .container .search-left input {
   display: inline-block;
   height: 65rpx;
   font-size: 26rpx;
 }
+
 .search-placeholder {
-  color: #8ccefd;
   line-height: 20rpx;
+  color: #8ccefd;
 }
+
 .container .search .search-left image {
   display: inline-block;
   width: 35rpx;
   height: 35rpx;
   padding: 15rpx 15rpx 15rpx 20rpx;
 }
+
 .container .search .search-right {
   flex: 1;
 }
+
 .container .search .search-right image {
   width: 45rpx;
   height: 45rpx;
@@ -39,7 +46,8 @@
 .container {
   padding: 0;
   font-size: 14rpx;
-  background: #f0f4f3;
   color: #000;
+  background: #f0f4f3;
 }
-/*feed-item part is in app.wxss for multiplexing*/
+
+/* feed-item part is in app.wxss for multiplexing */

@@ -107,13 +107,13 @@ function toggleTransition() {
 
 <style scoped>
 .card {
-  background: #ffffff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   gap: 12rpx;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 32rpx rgb(0 0 0 / 6%);
 }
 
 .card-title {
@@ -124,8 +124,8 @@ function toggleTransition() {
 
 .hint {
   display: block;
-  color: #718096;
   font-size: 24rpx;
+  color: #718096;
 }
 
 .actions {
@@ -134,10 +134,10 @@ function toggleTransition() {
 }
 
 .tip {
-  margin-top: 4rpx;
   padding: 12rpx;
-  background: #ebf4ff;
+  margin-top: 4rpx;
   color: #2b6cb0;
+  background: #ebf4ff;
   border-radius: 10rpx;
 }
 

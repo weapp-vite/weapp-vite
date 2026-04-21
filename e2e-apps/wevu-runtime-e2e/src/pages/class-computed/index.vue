@@ -127,9 +127,9 @@ const _runE2E = runE2E
 }
 
 .item {
+  padding: 8rpx;
   margin-top: 10rpx;
   border-radius: 12rpx;
-  padding: 8rpx;
 }
 
 .details {

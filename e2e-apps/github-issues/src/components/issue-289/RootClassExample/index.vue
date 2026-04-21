@@ -66,24 +66,24 @@ const selectedClassName = computed(() => options.find(item => item.id === props.
 }
 
 .root-options {
-  margin: 12rpx 0;
   display: flex;
   flex-wrap: wrap;
   gap: 10rpx;
+  margin: 12rpx 0;
 }
 
 .root-option {
   min-height: 52rpx;
-  line-height: 52rpx;
   padding: 0 14rpx;
-  border-radius: 9999rpx;
   font-size: 22rpx;
+  line-height: 52rpx;
   color: #334155;
   background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 
 .root-option-active {
-  color: #ffffff;
+  color: #fff;
   background: #0ea5e9;
 }
 
@@ -92,30 +92,30 @@ const selectedClassName = computed(() => options.find(item => item.id === props.
 }
 
 .aaaa {
-  margin-top: 8rpx;
   padding: 14rpx 20rpx;
-  border-radius: 12rpx;
+  margin-top: 8rpx;
   font-size: 24rpx;
   color: #155e75;
   background: #cffafe;
+  border-radius: 12rpx;
 }
 
 .bbbb {
-  margin-top: 8rpx;
   padding: 14rpx 20rpx;
-  border-radius: 12rpx;
+  margin-top: 8rpx;
   font-size: 24rpx;
   color: #7c2d12;
   background: #ffedd5;
+  border-radius: 12rpx;
 }
 
 .cccc {
-  margin-top: 8rpx;
   padding: 14rpx 20rpx;
-  border-radius: 12rpx;
+  margin-top: 8rpx;
   font-size: 24rpx;
   color: #9f1239;
   background: #ffe4e6;
+  border-radius: 12rpx;
 }
 
 .root-options-tip {

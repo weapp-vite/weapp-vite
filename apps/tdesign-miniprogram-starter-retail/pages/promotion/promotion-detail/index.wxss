@@ -13,25 +13,25 @@
 .promotion-detail-container .wrap .count-down-wrap {
   display: flex;
   flex-direction: row;
-  justify-content: flex-start;
   align-items: baseline;
+  justify-content: flex-start;
   line-height: 34rpx;
 }
 
 .promotion-detail-container .wrap .count-down-wrap.in-banner-count-down-wrap {
   position: absolute;
+  right: 32rpx;
   bottom: 32rpx;
   left: 32rpx;
-  right: 32rpx;
 }
 
 .promotion-detail-container .wrap .count-down-wrap .status-tag {
   height: 32rpx;
-  line-height: 32rpx;
-  font-size: 20rpx;
-  margin-right: 12rpx;
-  border-radius: 16rpx;
   padding: 0 12rpx;
+  margin-right: 12rpx;
+  font-size: 20rpx;
+  line-height: 32rpx;
+  border-radius: 16rpx;
 }
 
 .promotion-detail-container .wrap .count-down-wrap .status-tag.before {
@@ -45,20 +45,20 @@
 }
 
 .promotion-detail-container .wrap .count-down-wrap .count-down-label {
-  color: #666;
-  font-size: 24rpx;
   margin-right: 0.5em;
+  font-size: 24rpx;
+  color: #666;
 }
 
 .promotion-detail-container .wrap .count-down-wrap .detail-entry {
-  margin-left: auto;
   height: 40rpx;
+  margin-left: auto;
 }
 
 .promotion-detail-container .wrap .count-down-wrap .detail-entry-label {
-  color: #fff;
-  font-size: 24rpx;
   margin-right: 12rpx;
+  font-size: 24rpx;
+  color: #fff;
 }
 
 .promotion-detail-container
@@ -79,8 +79,8 @@
   .wrap
   .count-down-wrap.after-banner-count-down-wrap
   .detail-entry-label {
-  color: #999;
   margin-right: 0;
+  color: #999;
 }
 
 .promotion-detail-container .wrap .gl-empty-wrap {
@@ -88,16 +88,16 @@
 }
 
 .promotion-detail-container .wrap .gl-empty-img {
+  display: block;
   width: 240rpx;
   height: 240rpx;
-  display: block;
   margin: 0 auto;
 }
 
 .promotion-detail-container .wrap .gl-empty-label {
+  margin-top: 40rpx;
   font-size: 28rpx;
   color: #999;
-  margin-top: 40rpx;
   text-align: center;
 }
 

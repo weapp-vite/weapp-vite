@@ -1,7 +1,7 @@
 page {
-  background: #f8fafc;
-  color: #0f172a;
   font-size: 28rpx;
+  color: #0f172a;
+  background: #f8fafc;
 }
 
 .page {
@@ -9,14 +9,14 @@ page {
 }
 
 .title {
+  margin-bottom: 16rpx;
   font-size: 40rpx;
   font-weight: 700;
-  margin-bottom: 16rpx;
 }
 
 .desc {
-  color: #334155;
   margin-bottom: 20rpx;
+  color: #334155;
 }
 
 .btn {
@@ -25,11 +25,11 @@ page {
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 18rpx;
   padding: 24rpx;
   margin-bottom: 16rpx;
+  background: #fff;
   border: 1rpx solid #e2e8f0;
+  border-radius: 18rpx;
 }
 
 .code {
@@ -42,11 +42,11 @@ page {
 
 
 .card-on {
-  border-color: #22c55e;
   background: #f0fdf4;
+  border-color: #22c55e;
 }
 
 .card-off {
-  border-color: #f97316;
   background: #fff7ed;
+  border-color: #f97316;
 }

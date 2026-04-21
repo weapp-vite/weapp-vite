@@ -16,8 +16,8 @@ page {
 
 .hero {
   padding: 34rpx 32rpx;
-  background: linear-gradient(135deg, #54401f 0%, #8b5a24 55%, #d18c2e 100%);
   color: #fff;
+  background: linear-gradient(135deg, #54401f 0%, #8b5a24 55%, #d18c2e 100%);
 
   &__eyebrow,
   &__title,
@@ -27,8 +27,8 @@ page {
 
   &__eyebrow {
     font-size: 22rpx;
-    letter-spacing: 4rpx;
     text-transform: uppercase;
+    letter-spacing: 4rpx;
     opacity: 0.74;
   }
 
@@ -47,8 +47,8 @@ page {
 }
 
 .panel {
-  margin-top: 24rpx;
   padding: 28rpx;
+  margin-top: 24rpx;
   background: rgb(255 255 255 / 92%);
   box-shadow: 0 14rpx 30rpx rgb(123 93 38 / 10%);
 
@@ -73,9 +73,9 @@ page {
 
   &__button {
     margin-top: 18rpx;
-    border-radius: 999rpx;
-    background: #8a5721;
-    color: #fff;
     font-size: 26rpx;
+    color: #fff;
+    background: #8a5721;
+    border-radius: 999rpx;
   }
 }

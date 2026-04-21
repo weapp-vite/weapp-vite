@@ -42,11 +42,11 @@ const openText = computed(() => (props.open ? 'open' : 'closed'))
 
 <style scoped>
 .use-slots-feature {
-  margin-top: 20rpx;
   padding: 20rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid #cbd5e1;
+  margin-top: 20rpx;
   background: #fff;
+  border: 2rpx solid #cbd5e1;
+  border-radius: 16rpx;
 }
 
 .use-slots-feature__title {
@@ -56,10 +56,10 @@ const openText = computed(() => (props.open ? 'open' : 'closed'))
 }
 
 .use-slots-feature__panel {
-  margin-top: 14rpx;
   padding: 10rpx 16rpx;
-  border-radius: 9999rpx;
+  margin-top: 14rpx;
   font-size: 22rpx;
+  border-radius: 9999rpx;
 }
 
 .slot-panel-open {
@@ -79,9 +79,9 @@ const openText = computed(() => (props.open ? 'open' : 'closed'))
 }
 
 .use-slots-feature__content {
-  margin-top: 12rpx;
   padding: 12rpx;
-  border-radius: 10rpx;
+  margin-top: 12rpx;
   background: #f1f5f9;
+  border-radius: 10rpx;
 }
 </style>

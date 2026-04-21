@@ -4,7 +4,7 @@ page {
 
 .page-container .comment-card {
   padding: 24rpx 32rpx 28rpx;
-  background-color: #ffffff;
+  background-color: #fff;
 }
 
 .comment-card .goods-info-container .goods-image {
@@ -28,10 +28,10 @@ page {
 }
 
 .comment-card .goods-info-container .goods-detail {
+  margin-top: 16rpx;
   font-size: 24rpx;
   font-weight: normal;
-  color: #999999;
-  margin-top: 16rpx;
+  color: #999;
 }
 
 .comment-card .rate-container {
@@ -41,9 +41,9 @@ page {
 }
 
 .comment-card .rate-container .rate-title {
+  margin-right: 12rpx;
   font-size: 28rpx;
   font-weight: bold;
-  margin-right: 12rpx;
 }
 
 .comment-card .textarea-container {
@@ -52,10 +52,10 @@ page {
 
 .comment-card .textarea-container .textarea {
   height: 294rpx;
-  background-color: #f5f5f5;
-  border-radius: 16rpx;
   font-size: 28rpx;
   font-weight: normal;
+  background-color: #f5f5f5;
+  border-radius: 16rpx;
 }
 
 .page-container .t-checkbox__bordered {
@@ -69,10 +69,10 @@ page {
 }
 
 .page-container .anonymous-box .name {
+  padding-left: 28rpx;
   font-size: 28rpx;
   font-weight: normal;
-  color: #999999;
-  padding-left: 28rpx;
+  color: #999;
 }
 
 .page-container .t-checkbox {
@@ -89,10 +89,10 @@ page {
 }
 
 .convey-card {
-  background-color: #ffffff;
-  margin-top: 24rpx;
   padding: 32rpx;
   padding-bottom: calc(env(safe-area-inset-bottom) + 140rpx);
+  margin-top: 24rpx;
+  background-color: #fff;
 }
 
 .convey-card .rate-container .rate-title {
@@ -104,16 +104,16 @@ page {
 }
 
 .submit-button-container {
-  padding: 12rpx 32rpx;
-  display: flex;
-  width: 100vw;
-  box-sizing: border-box;
-  justify-content: center;
   position: fixed;
   bottom: 0;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
-  background-color: #ffffff;
   z-index: 99;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  width: 100vw;
+  padding: 12rpx 32rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
+  background-color: #fff;
 }
 
 .submit-button-container .submit-button {
@@ -127,7 +127,7 @@ page {
   --td-button-default-color: #fff;
   --td-button-default-bg-color: #ccc;
   --td-button-default-border-color: #ccc;
-  --td-button-default-active-bg-color: rgba(204, 204, 204, 0.789);
+  --td-button-default-active-bg-color: rgb(204 204 204 / 78.9%);
 }
 
 .page-container .upload-container {
@@ -135,32 +135,32 @@ page {
 }
 
 .page-container .t-upload__wrapper {
-  border-radius: 8rpx;
   overflow: hidden;
+  border-radius: 8rpx;
 }
 
 .page-container .submmit-bar {
   position: fixed;
-  left: 0;
   right: 0;
   bottom: 0;
+  left: 0;
   z-index: 12;
+  height: 112rpx;
   padding: 12rpx 32rpx;
   padding-bottom: env(safe-area-inset-bottom);
   background-color: #fff;
-  height: 112rpx;
 }
 
 .page-container .submmit-bar-button {
-  border-radius: 48rpx !important;
   padding: 0 !important;
+  border-radius: 48rpx !important;
 }
 
 .page-container .t-upload__close-btn {
-  background-color: rgba(0, 0, 0, 0.4);
-  border-bottom-left-radius: 8rpx;
   width: 36rpx;
   height: 36rpx;
+  background-color: rgb(0 0 0 / 40%);
+  border-bottom-left-radius: 8rpx;
 }
 
 .upload-container .upload-addcontent-slot {

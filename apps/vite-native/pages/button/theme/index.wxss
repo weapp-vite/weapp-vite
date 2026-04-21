@@ -1,5 +1,5 @@
 .button-example {
-  margin: 32rpx;
   display: flex;
   justify-content: space-between;
+  margin: 32rpx;
 }

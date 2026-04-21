@@ -1,17 +1,17 @@
 .profile-settings {
-  padding: 32rpx;
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  padding: 32rpx;
 
   &__item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 24rpx;
+    background-color: rgb(255 255 255 / 95%);
     border-radius: 16rpx;
-    background-color: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 8rpx 20rpx rgba(23, 34, 63, 0.04);
+    box-shadow: 0 8rpx 20rpx rgb(23 34 63 / 4%);
   }
 
   &__label {
@@ -21,8 +21,8 @@
 
   &__save {
     margin-top: 24rpx;
-    border-radius: 20rpx;
+    color: #fff;
     background: linear-gradient(90deg, #0052d9 0%, #1d39c4 100%);
-    color: #ffffff;
+    border-radius: 20rpx;
   }
 }

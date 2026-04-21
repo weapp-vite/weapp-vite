@@ -119,11 +119,11 @@ onUnload(() => {
 
 .hero,
 .panel {
-  margin-bottom: 20rpx;
   padding: 28rpx;
+  margin-bottom: 20rpx;
+  background: rgb(255 255 255 / 90%);
   border: 2rpx solid rgb(244 63 94 / 14%);
   border-radius: 24rpx;
-  background: rgb(255 255 255 / 90%);
 }
 
 .hero-title,

@@ -1,15 +1,15 @@
 .home {
-  min-height: 100vh;
-  padding: 48rpx 32rpx 64rpx;
   display: flex;
   flex-direction: column;
   gap: 32rpx;
+  min-height: 100vh;
+  padding: 48rpx 32rpx 64rpx;
 
   &__hero {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 12rpx;
+    align-items: center;
   }
 
   &__logo {
@@ -24,7 +24,7 @@
 
   &__desc {
     font-size: 26rpx;
-    color: rgba(0, 0, 0, 0.55);
+    color: rgb(0 0 0 / 55%);
   }
 
   &__entries {
@@ -34,9 +34,9 @@
   }
 
   &__entry {
-    border-radius: 20rpx;
-    background: linear-gradient(90deg, #3c8cff 0%, #1050ff 100%);
-    color: #ffffff;
     font-size: 32rpx;
+    color: #fff;
+    background: linear-gradient(90deg, #3c8cff 0%, #1050ff 100%);
+    border-radius: 20rpx;
   }
 }

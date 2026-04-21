@@ -66,6 +66,7 @@ function appendLog(action: string, detail: string) {
   logCount.value += 1
   const line = `#${logCount.value} ${action} -> ${detail}`
   logs.value = [line, ...logs.value].slice(0, 8)
+  // eslint-disable-next-line no-console
   console.info('[issue-297-setup-method-calls]', action, detail, {
     activeRow: activeRow.value?.id,
     rowsCount: rows.value.length,
@@ -301,10 +302,10 @@ function _runE2E() {
 
 <style scoped>
 .issue297m-page {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 24rpx;
   background: #f8fafc;
-  box-sizing: border-box;
 }
 
 .issue297m-title {
@@ -322,28 +323,28 @@ function _runE2E() {
 }
 
 .issue297m-toolbar {
-  margin-top: 14rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 14rpx;
 }
 
 .issue297m-btn {
-  margin: 6rpx;
-  padding: 0 16rpx;
   min-height: 56rpx;
-  line-height: 56rpx;
-  border-radius: 9999rpx;
-  background: #dbeafe;
-  color: #1e3a8a;
+  padding: 0 16rpx;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 56rpx;
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-radius: 9999rpx;
 }
 
 .issue297m-state {
-  margin-top: 12rpx;
   padding: 12rpx;
-  border-radius: 12rpx;
+  margin-top: 12rpx;
+  background: #fff;
   border: 1rpx dashed #94a3b8;
-  background: #ffffff;
+  border-radius: 12rpx;
 }
 
 .issue297m-state-line {
@@ -353,11 +354,11 @@ function _runE2E() {
 }
 
 .issue297m-card {
-  margin-top: 12rpx;
   padding: 14rpx;
-  border-radius: 12rpx;
-  background: #ffffff;
+  margin-top: 12rpx;
+  background: #fff;
   border: 1rpx solid #cbd5e1;
+  border-radius: 12rpx;
 }
 
 .issue297m-card-title {
@@ -368,20 +369,20 @@ function _runE2E() {
 }
 
 .issue297m-inline-line {
-  margin-top: 8rpx;
   padding: 10rpx;
-  border-radius: 8rpx;
-  background: #eff6ff;
-  color: #1e3a8a;
+  margin-top: 8rpx;
   font-size: 22rpx;
+  color: #1e3a8a;
+  background: #eff6ff;
+  border-radius: 8rpx;
 }
 
 .issue297m-inline-anchor {
-  margin-top: 8rpx;
-  padding: 4rpx 10rpx;
   display: inline-flex;
-  border-radius: 9999rpx;
+  padding: 4rpx 10rpx;
+  margin-top: 8rpx;
   background: #bfdbfe;
+  border-radius: 9999rpx;
 }
 
 .issue297m-bind,
@@ -393,8 +394,8 @@ function _runE2E() {
 .issue297m-result {
   display: block;
   margin-top: 8rpx;
-  color: #1f2937;
   font-size: 22rpx;
+  color: #1f2937;
 }
 
 .issue297m-probe {
@@ -402,32 +403,32 @@ function _runE2E() {
 }
 
 .issue297m-logs {
-  margin-top: 14rpx;
   padding: 12rpx;
-  border-radius: 12rpx;
+  margin-top: 14rpx;
   background: #0f172a;
+  border-radius: 12rpx;
 }
 
 .issue297m-logs-title {
   display: block;
-  color: #e2e8f0;
   font-size: 22rpx;
   font-weight: 600;
+  color: #e2e8f0;
 }
 
 .issue297m-log-empty {
   display: block;
   margin-top: 8rpx;
-  color: #94a3b8;
   font-size: 20rpx;
+  color: #94a3b8;
 }
 
 .issue297m-log-item {
-  margin-top: 8rpx;
   padding: 8rpx 10rpx;
-  border-radius: 8rpx;
-  background: #1e293b;
-  color: #f8fafc;
+  margin-top: 8rpx;
   font-size: 20rpx;
+  color: #f8fafc;
+  background: #1e293b;
+  border-radius: 8rpx;
 }
 </style>

@@ -1,4 +1,5 @@
 .common {
-  --xxx: #dddddd;
+  --xxx: #ddd;
+
   color: var(--xxx);
 }

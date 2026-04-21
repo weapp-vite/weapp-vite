@@ -113,8 +113,8 @@ page {
 
 .hero {
   padding: 34rpx 32rpx;
-  background: linear-gradient(135deg, #16315c 0%, #25549c 54%, #34a0a4 100%);
   color: #fff;
+  background: linear-gradient(135deg, #16315c 0%, #25549c 54%, #34a0a4 100%);
   box-shadow: 0 18rpx 42rpx rgb(31 71 130 / 18%);
 
   &__eyebrow,
@@ -125,8 +125,8 @@ page {
 
   &__eyebrow {
     font-size: 22rpx;
-    letter-spacing: 4rpx;
     text-transform: uppercase;
+    letter-spacing: 4rpx;
     opacity: 0.74;
   }
 
@@ -152,22 +152,22 @@ page {
 
   &__chip {
     padding: 14rpx 20rpx;
-    border-radius: 999rpx;
-    background: rgb(255 255 255 / 85%);
-    color: #35527f;
     font-size: 24rpx;
+    color: #35527f;
+    background: rgb(255 255 255 / 85%);
+    border-radius: 999rpx;
     box-shadow: 0 8rpx 18rpx rgb(70 103 157 / 8%);
   }
 
   &__chip--active {
-    background: #214781;
     color: #fff;
+    background: #214781;
   }
 }
 
 .panel {
-  margin-top: 24rpx;
   padding: 28rpx;
+  margin-top: 24rpx;
   background: rgb(255 255 255 / 88%);
   box-shadow: 0 14rpx 28rpx rgb(74 103 146 / 10%);
 
@@ -181,18 +181,18 @@ page {
 
   &__button {
     margin-top: 18rpx;
-    border-radius: 999rpx;
-    background: #1d4f91;
-    color: #fff;
     font-size: 26rpx;
+    color: #fff;
+    background: #1d4f91;
+    border-radius: 999rpx;
   }
 }
 
 .overview {
-  margin-top: 24rpx;
   padding: 28rpx;
-  border-radius: 28rpx;
+  margin-top: 24rpx;
   background: rgb(255 255 255 / 92%);
+  border-radius: 28rpx;
   box-shadow: 0 12rpx 28rpx rgb(69 96 137 / 10%);
 
   &__title,
@@ -217,18 +217,18 @@ page {
   }
 
   &__item {
-    margin-top: 18rpx;
     padding: 22rpx;
+    margin-top: 18rpx;
+    background: #fff;
     border: 2rpx solid #e6edf9;
     border-radius: 22rpx;
-    background: #fff;
   }
 
   &__item-head {
     display: flex;
-    justify-content: space-between;
     gap: 16rpx;
     align-items: center;
+    justify-content: space-between;
   }
 
   &__item-title {
@@ -240,10 +240,10 @@ page {
 
   &__badge {
     padding: 8rpx 16rpx;
-    border-radius: 999rpx;
-    background: #244b87;
-    color: #fff;
     font-size: 22rpx;
+    color: #fff;
+    background: #244b87;
+    border-radius: 999rpx;
   }
 
   &__item-summary {
@@ -256,8 +256,8 @@ page {
   &__item-score {
     margin-top: 12rpx;
     font-size: 23rpx;
-    color: #23508d;
     font-weight: 600;
+    color: #23508d;
   }
 }
 
@@ -266,9 +266,9 @@ page {
 
   &__head {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     gap: 16rpx;
+    align-items: center;
+    justify-content: space-between;
   }
 
   &__label,

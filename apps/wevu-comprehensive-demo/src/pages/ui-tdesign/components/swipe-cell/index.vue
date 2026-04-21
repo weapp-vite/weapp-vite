@@ -20,7 +20,7 @@ definePageJson(() => ({
       </view>
       <t-swipe-cell>
         <template #left>
-          <view style="height: 100%; display: flex; align-items: center; padding: 0 24rpx; background: #fee2e2; color: #991b1b">
+          <view style=" display: flex; align-items: center;height: 100%; padding: 0 24rpx; color: #991b1b; background: #fee2e2">
             left
           </view>
         </template>
@@ -28,7 +28,7 @@ definePageJson(() => ({
           swipe content
         </view>
         <template #right>
-          <view style="height: 100%; display: flex; align-items: center; padding: 0 24rpx; background: #fee2e2; color: #991b1b">
+          <view style=" display: flex; align-items: center;height: 100%; padding: 0 24rpx; color: #991b1b; background: #fee2e2">
             right
           </view>
         </template>

@@ -27,7 +27,7 @@ const meta = {
   padding: 20rpx;
   border-radius: 16rpx;
   background: linear-gradient(135deg, #e0f2fe 0%, #fae8ff 100%);
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .title {
@@ -54,7 +54,7 @@ const meta = {
 .pill {
   padding: 10rpx 14rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgb(255 255 255 / 80%);
   font-size: 24rpx;
   color: #334155;
 }

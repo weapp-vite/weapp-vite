@@ -49,7 +49,7 @@ onShareTimeline(() => {
 .issue294-count {
   display: block;
   margin-top: 16rpx;
-  color: #334155;
   font-size: 28rpx;
+  color: #334155;
 }
 </style>

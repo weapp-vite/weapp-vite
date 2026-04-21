@@ -1,13 +1,12 @@
-/**answer.wxss**/
+/** answer.wxss **/
 
 .answer-feed {
   padding: 0;
   font-size: 14rpx;
-  background: #f0f4f3;
   color: #000;
+  background: #f0f4f3;
 }
-.question-wrp {
-}
+
 .question-item {
   padding: 40rpx 20rpx 10rpx;
   background: #fff;
@@ -16,25 +15,29 @@
 .question-item .que-tag .tag {
   height: 28rpx;
   padding: 15rpx 20rpx;
-  border-radius: 28rpx;
   margin: 0 10rpx;
-  background: #eef5f8;
-  color: #2186e0;
   font-size: 28rpx;
   vertical-align: middle;
+  color: #2186e0;
+  background: #eef5f8;
+  border-radius: 28rpx;
 }
+
 .question-item .que-title {
   padding: 40rpx 20rpx 30rpx;
   font-size: 38rpx;
 }
+
 .question-item .que-content {
   padding: 0 20rpx;
   font-size: 26rpx;
 }
+
 .question-item .que-follow {
-  margin: 20rpx;
   height: 68rpx;
+  margin: 20rpx;
 }
+
 .question-item .que-follow view {
   display: inline-block;
   margin: 0 40rpx 0 0;
@@ -46,51 +49,59 @@
   margin: 0 10rpx 0 0;
   vertical-align: middle;
 }
+
 .question-item .que-follow .left {
   float: left;
   padding: 10rpx 0;
 }
+
 .question-item .que-follow .left text {
-  color: #afafaf;
   height: 50rpx;
-  vertical-align: middle;
   padding: 18rpx 0;
   font-size: 24rpx;
+  vertical-align: middle;
+  color: #afafaf;
 }
+
 .question-item .que-follow .right {
   float: right;
   padding: 20rpx 55rpx;
-  color: #ffffff;
+  margin: 0;
+  font-size: 26rpx;
+  color: #fff;
   background: #52c980;
   border-radius: 3px;
-  font-size: 26rpx;
-  margin: 0;
 }
+
 .que-operate {
   width: 750rpx;
+  vertical-align: middle;
+  color: #889091;
+  background: #fff;
   border-top: solid 1px #ebebeb;
   border-bottom: solid 1px #ebebeb;
-  color: #889091;
-  vertical-align: middle;
-  background: #ffffff;
 }
+
 .que-operate .flex-item {
   padding: 20rpx 0;
   font-size: 26rpx;
 }
+
 .que-operate .invite {
   border-right: solid 2px #ebebeb;
 }
+
 .que-operate image {
   width: 50rpx;
   height: 50rpx;
-  vertical-align: middle;
   margin: 0 20rpx 0 0;
+  vertical-align: middle;
 }
 
 .answer-feed .feed-item .feed-content .answer-body {
   padding: 0;
-  /*height: 10rpx;*/
+
+  /* height: 10rpx; */
   font-size: 24rpx;
   line-height: 28rpx;
   color: #5b5b5b;

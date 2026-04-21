@@ -1,18 +1,18 @@
 @import '../../../../../style/theme.wxss';
 
 .comments-card-item {
-  padding: 32rpx;
-  display: flex;
-  background-color: #fff;
   position: relative;
+  display: flex;
+  padding: 32rpx;
+  background-color: #fff;
 }
 
 .comments-card-item::after {
-  content: '';
   position: absolute;
   bottom: 0rpx;
   width: 686rpx;
   height: 2rpx;
+  content: '';
   background-color: #f5f5f5;
 }
 
@@ -32,10 +32,10 @@
 
 .comments-card-item-container-name {
   display: flex;
-  font-size: 28rpx;
-  color: #333;
-  font-weight: 600;
   align-items: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
 }
 
 .comments-card-item-container-name .userName {
@@ -43,65 +43,65 @@
 }
 
 .comments-card-item-container-date {
+  display: flex;
+  margin-top: 4rpx;
   font-size: 22rpx;
   color: #999;
-  margin-top: 4rpx;
-  display: flex;
 }
 
 .comments-card-item-container-content {
-  margin-top: 16rpx;
   position: relative;
+  margin-top: 16rpx;
 }
 
 .comments-card-item-container-content .content-text {
   font-size: 28rpx;
-  white-space: normal;
-  word-break: break-all;
   font-weight: normal;
+  word-break: break-all;
+  white-space: normal;
 }
 
 .comments-card-item-container-content .hide-text {
+  display: -webkit-box;
   overflow: hidden;
   text-overflow: ellipsis;
   -webkit-line-clamp: 5;
   text-align: justify;
-  display: -webkit-box;
   -webkit-box-orient: vertical;
 }
 
 .comments-card-item-container-content .showMore {
   position: absolute;
+  right: 0;
+  bottom: 0;
   width: 112rpx;
   height: 36rpx;
-  bottom: 0;
-  right: 0;
+  font-size: 26rpx;
+  line-height: 36rpx;
+  color: #fa550f;
+  text-align: right;
   background: linear-gradient(
     to right,
-    rgba(255, 255, 255, 0.2) 0,
-    rgba(255, 255, 255, 0.45) 20%,
-    rgba(255, 255, 255, 0.7) 25%,
-    rgba(255, 255, 255, 0.9) 30%,
-    rgba(255, 255, 255, 0.95) 35%,
-    #ffffff 50%,
+    rgb(255 255 255 / 20%) 0,
+    rgb(255 255 255 / 45%) 20%,
+    rgb(255 255 255 / 70%) 25%,
+    rgb(255 255 255 / 90%) 30%,
+    rgb(255 255 255 / 95%) 35%,
+    #fff 50%,
     #fff 100%
   );
-  font-size: 26rpx;
-  color: #fa550f;
-  line-height: 36rpx;
-  text-align: right;
 }
 
 .comments-card-item-container-image {
-  margin-top: 24rpx;
   display: flex;
-  justify-content: space-between;
   flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 24rpx;
 }
 
 .comments-card-item-container-image .commentImg {
-  border-radius: 8rpx;
   margin-top: 12rpx;
+  border-radius: 8rpx;
 }
 
 .comments-card-item-container-image .commentImg3 {
@@ -120,22 +120,22 @@
 }
 
 .comments-card-item-container .comments-title {
+  position: relative;
   display: flex;
   align-items: center;
-  position: relative;
 }
 
 .comments-title .userName {
-  font-size: 26rpx;
-  color: #333333;
   margin-left: 24rpx;
+  font-size: 26rpx;
+  color: #333;
 }
 
 .comments-title .commentTime {
-  font-size: 24rpx;
-  color: #999999;
   position: absolute;
   right: 0;
+  font-size: 24rpx;
+  color: #999;
 }
 
 .comments-info {
@@ -150,23 +150,22 @@
 
 .comments-info .goods-info-text {
   font-size: 24rpx;
-
-  color: #999999;
+  color: #999;
 }
 
 .comments-card-item-container .comments-card-reply {
-  background-color: #f5f5f5;
   padding: 24rpx 16rpx;
   margin-top: 24rpx;
+  background-color: #f5f5f5;
 }
 
 .comments-card-item-container .comments-card-reply .prefix {
   font-size: 26rpx;
   font-weight: bold;
-  color: #666666;
+  color: #666;
 }
 
 .comments-card-item-container .comments-card-reply .content {
   font-size: 26rpx;
-  color: #666666;
+  color: #666;
 }

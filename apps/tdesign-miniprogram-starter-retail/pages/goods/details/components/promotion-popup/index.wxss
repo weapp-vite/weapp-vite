@@ -1,16 +1,16 @@
 .promotion-popup-container {
-  background-color: #ffffff;
   position: relative;
   z-index: 100;
+  background-color: #fff;
   border-radius: 16rpx 16rpx 0 0;
 }
 
 .promotion-popup-container .promotion-popup-close {
   position: absolute;
-  right: 30rpx;
   top: 30rpx;
+  right: 30rpx;
   z-index: 9;
-  color: rgba(153, 153, 153, 1);
+  color: rgb(153 153 153 / 100%);
 }
 
 .promotion-popup-container .promotion-popup-close .market {
@@ -19,17 +19,17 @@
 }
 
 .promotion-popup-container .promotion-popup-title {
-  height: 100rpx;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100rpx;
 }
 
 .promotion-popup-container .promotion-popup-title {
   font-size: 32rpx;
-  color: #222427;
   font-weight: 600;
+  color: #222427;
 }
 
 .promotion-popup-container .promotion-popup-content {
@@ -48,19 +48,19 @@
   .promotion-popup-content
   .promotion-detail-list
   .list-item:last-child {
+  padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
   margin-bottom: env(safe-area-inset-bottom);
   border-bottom: 0;
-  padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
 }
 
 .promotion-popup-container
   .promotion-popup-content
   .promotion-detail-list
   .list-item {
+  position: relative;
   display: flex;
   justify-content: space-between;
   padding: 10rpx 0 28rpx;
-  position: relative;
   font-size: 24rpx;
   color: #222427;
 }
@@ -70,18 +70,18 @@
   .promotion-detail-list
   .list-item
   .tag {
-  box-sizing: border-box;
-  font-size: 20rpx;
-  line-height: 32rpx;
-  padding: 2rpx 12rpx;
-  background-color: #ffece9;
-  margin-right: 16rpx;
-  display: inline-flex;
-  color: #fa4126;
-  border-radius: 54rpx;
-  flex-shrink: 0;
   position: relative;
   top: 2rpx;
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2rpx 12rpx;
+  margin-right: 16rpx;
+  font-size: 20rpx;
+  line-height: 32rpx;
+  color: #fa4126;
+  background-color: #ffece9;
+  border-radius: 54rpx;
 }
 
 .promotion-popup-container
@@ -89,11 +89,11 @@
   .promotion-detail-list
   .list-item
   .content {
-  font-size: 28rpx;
-  color: #222427;
-  flex: 1;
-  line-height: 40rpx;
   display: flex;
+  flex: 1;
+  font-size: 28rpx;
+  line-height: 40rpx;
+  color: #222427;
 }
 
 .promotion-popup-container
@@ -102,11 +102,11 @@
   .list-item
   .content
   .list-content {
-  width: 440rpx;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
   display: inline-block;
+  width: 440rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .promotion-popup-container
@@ -114,11 +114,11 @@
   .promotion-detail-list
   .list-item
   .collect-btn {
-  font-size: 24rpx;
-  flex-shrink: 0;
-  margin-left: 20rpx;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
+  margin-left: 20rpx;
+  font-size: 24rpx;
 }
 
 .promotion-popup-container

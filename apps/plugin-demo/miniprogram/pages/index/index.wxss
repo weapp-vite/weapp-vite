@@ -19,8 +19,8 @@ page {
 
 .hero {
   padding: 36rpx 32rpx;
-  background: linear-gradient(135deg, #20365c 0%, #32518c 58%, #4b7ed1 100%);
   color: #fff;
+  background: linear-gradient(135deg, #20365c 0%, #32518c 58%, #4b7ed1 100%);
   box-shadow: 0 22rpx 48rpx rgb(34 58 99 / 18%);
 }
 
@@ -28,8 +28,8 @@ page {
   display: block;
   margin-bottom: 12rpx;
   font-size: 22rpx;
-  letter-spacing: 3rpx;
   text-transform: uppercase;
+  letter-spacing: 3rpx;
   opacity: 0.72;
 }
 
@@ -49,8 +49,8 @@ page {
 }
 
 .panel {
-  margin-top: 24rpx;
   padding: 28rpx;
+  margin-top: 24rpx;
   background: rgb(255 255 255 / 88%);
   box-shadow: 0 12rpx 30rpx rgb(62 86 124 / 10%);
 }
@@ -73,10 +73,10 @@ page {
 
 .panel__button {
   margin-top: 20rpx;
-  border-radius: 999rpx;
-  background: #284a82;
-  color: #fff;
   font-size: 26rpx;
+  color: #fff;
+  background: #284a82;
+  border-radius: 999rpx;
 }
 
 .nav-grid {

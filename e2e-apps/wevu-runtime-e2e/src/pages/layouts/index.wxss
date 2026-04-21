@@ -1,5 +1,6 @@
 .page {
   --layouts-page-style-marker: 'LAYOUTS-PAGE-STYLE-BASE';
+
   padding: 24rpx;
 }
 

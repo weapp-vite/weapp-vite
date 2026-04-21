@@ -4,7 +4,7 @@
 $form-presets: (
   input: (
     radius: 12px,
-    bg: color.mix(#ffffff, #d6bcfa, $weight: 82%)
+    bg: color.mix(#fff, #d6bcfa, $weight: 82%)
   ),
   button: (
     radius: 999px,
@@ -25,16 +25,18 @@ $form-presets: (
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-radius: 20px;
-  background: linear-gradient(180deg, #f7ebff 0%, #ffeaf5 100%);
   padding: 20px;
+  background: linear-gradient(180deg, #f7ebff 0%, #ffeaf5 100%);
+  border-radius: 20px;
+
   @include focus-outline(#6b4dd6, 0.28);
 }
 
 @each $name, $preset in $form-presets {
   .forms-scope__#{$name} {
-    border-radius: map.get($preset, radius);
     background: map.get($preset, bg);
+    border-radius: map.get($preset, radius);
+
     @include focus-outline(map.get($preset, bg), 0.4);
 
     @if $name == button {

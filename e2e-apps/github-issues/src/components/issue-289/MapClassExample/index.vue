@@ -217,30 +217,30 @@ function handleRegionChange(event: any) {
 
 <style scoped>
 .issue289-map {
-  margin-top: 20rpx;
   width: 100%;
   height: 320rpx;
+  margin-top: 20rpx;
   border-radius: 16rpx;
 }
 
 .issue289-map-mock {
-  margin-top: 20rpx;
-  min-height: 120rpx;
   display: flex;
   flex-wrap: wrap;
   gap: 10rpx;
+  min-height: 120rpx;
+  margin-top: 20rpx;
 }
 
 .event-chip {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 64rpx;
-  border-radius: 9999rpx;
   padding: 0 16rpx;
-  box-sizing: border-box;
-  color: #fff;
   font-size: 22rpx;
+  color: #fff;
+  border-radius: 9999rpx;
 }
 
 .event-chip-expanded {
@@ -265,10 +265,10 @@ function handleRegionChange(event: any) {
 }
 
 .map-meta-list {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
   gap: 10rpx;
+  margin-top: 12rpx;
 }
 
 .map-meta-list-open {
@@ -281,10 +281,10 @@ function handleRegionChange(event: any) {
 
 .map-meta-item {
   min-height: 52rpx;
-  line-height: 52rpx;
   padding: 0 14rpx;
-  border-radius: 9999rpx;
   font-size: 22rpx;
+  line-height: 52rpx;
+  border-radius: 9999rpx;
 }
 
 .map-meta-item-idle {
@@ -306,19 +306,19 @@ function handleRegionChange(event: any) {
 }
 
 .map-meta-flag {
-  margin-left: 8rpx;
   padding: 0 8rpx;
-  border-radius: 9999rpx;
+  margin-left: 8rpx;
   font-size: 20rpx;
+  border-radius: 9999rpx;
 }
 
 .map-meta-flag-public {
-  color: #ffffff;
+  color: #fff;
   background: #15803d;
 }
 
 .map-meta-flag-private {
-  color: #ffffff;
+  color: #fff;
   background: #be123c;
 }
 
@@ -329,12 +329,12 @@ function handleRegionChange(event: any) {
 
 .map-meta-empty {
   min-height: 52rpx;
-  line-height: 52rpx;
   padding: 0 14rpx;
-  border-radius: 9999rpx;
   font-size: 22rpx;
+  line-height: 52rpx;
   color: #475569;
   background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 
 .map-meta {

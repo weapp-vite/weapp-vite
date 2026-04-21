@@ -41,13 +41,13 @@ function toggle() {
 
 <style scoped>
 .card {
-  background: #ffffff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   gap: 12rpx;
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 12rpx 32rpx rgb(0 0 0 / 6%);
 }
 
 .card-title {
@@ -58,15 +58,15 @@ function toggle() {
 
 .hint {
   display: block;
-  color: #718096;
   font-size: 24rpx;
+  color: #718096;
 }
 
 .scoped {
   padding: 14rpx;
-  border-radius: 10rpx;
-  background: #f7fafc;
   color: #2d3748;
+  background: #f7fafc;
+  border-radius: 10rpx;
 }
 
 .scoped.active {
@@ -77,14 +77,14 @@ function toggle() {
 <style module>
 .title {
   padding: 14rpx;
-  border-radius: 10rpx;
-  background: linear-gradient(135deg, #805ad5, #63b3ed);
-  color: #ffffff;
   font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #805ad5, #63b3ed);
+  border-radius: 10rpx;
 }
 
 .highlight {
-  box-shadow: 0 12rpx 24rpx rgba(99, 179, 237, 0.35);
+  box-shadow: 0 12rpx 24rpx rgb(99 179 237 / 35%);
   transform: translateY(-2rpx);
 }
 </style>

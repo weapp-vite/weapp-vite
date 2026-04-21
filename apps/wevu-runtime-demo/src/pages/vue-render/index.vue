@@ -57,10 +57,10 @@ function shuffle() {
 }
 
 .section {
-  background: #ffffff;
+  background: #fff;
   border-radius: 16rpx;
   padding: 18rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 24rpx rgb(0 0 0 / 6%);
 }
 
 .section-title {
@@ -77,7 +77,7 @@ function shuffle() {
 
 .btn-primary {
   background: #111827;
-  color: #ffffff;
+  color: #fff;
 }
 
 .btn-warning {
@@ -102,7 +102,7 @@ function shuffle() {
 .pill {
   padding: 12rpx;
   border-radius: 12rpx;
-  background: #ffffff;
+  background: #fff;
   border: 1rpx solid #e2e8f0;
 }
 /* stylelint-enable order/properties-order */

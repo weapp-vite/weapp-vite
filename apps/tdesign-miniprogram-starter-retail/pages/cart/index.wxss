@@ -3,8 +3,8 @@
 }
 
 .gap {
-  height: 100rpx;
   width: 100%;
+  height: 100rpx;
 }
 
 .t-button {

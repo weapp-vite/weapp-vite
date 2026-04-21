@@ -1,5 +1,6 @@
 .layout-default {
   --layout-default-style-marker: 'DEFAULT-LAYOUT-STYLE-BASE';
+
   min-height: 100%;
   padding: 12rpx;
 }

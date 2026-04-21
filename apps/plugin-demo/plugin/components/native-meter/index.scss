@@ -1,15 +1,15 @@
 .native-meter {
   padding: 20rpx;
   margin-top: 12rpx;
+  background: linear-gradient(180deg, #fcfdff 0%, #f1f6ff 100%);
   border: 2rpx solid #dfebff;
   border-radius: 22rpx;
-  background: linear-gradient(180deg, #fcfdff 0%, #f1f6ff 100%);
 
   &__head {
     display: flex;
-    justify-content: space-between;
     gap: 12rpx;
     align-items: center;
+    justify-content: space-between;
   }
 
   &__label {

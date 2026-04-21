@@ -1,7 +1,7 @@
 /* 主题定制 */
 .t-input {
-  --td-input-placeholder-text-color: #bbbbbb;
-  --td-input-text-color: #333333;
+  --td-input-placeholder-text-color: #bbb;
+  --td-input-text-color: #333;
 }
 
 .t-tab-bar {
@@ -24,8 +24,8 @@
   --td-button-default-bg-color: #fa4126;
   --td-button-default-border-color: #fa4126;
   --td-button-default-disabled-color: #fff;
-  --td-button-default-disabled-bg: #cccccc;
-  --td-button-default-disabled-border-color: #cccccc;
+  --td-button-default-disabled-bg: #ccc;
+  --td-button-default-disabled-border-color: #ccc;
   --td-button-default-active-bg-color: #fa4126;
   --td-button-default-active-border-color: #fa4126;
 }

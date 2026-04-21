@@ -1,10 +1,10 @@
 .native-badge {
   padding: 8rpx 14rpx;
   margin-bottom: 12rpx;
-  border-radius: 12rpx;
   font-size: 22rpx;
   color: #0f172a;
   background: #e2e8f0;
+  border-radius: 12rpx;
 }
 
 .native-badge-success {

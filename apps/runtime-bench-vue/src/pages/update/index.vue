@@ -134,14 +134,14 @@ export default defineComponent({
 
 .card__badge {
   padding: 4rpx 14rpx;
-  border-radius: 999rpx;
   font-size: 22rpx;
-  background: #ccfbf1;
   color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 999rpx;
 }
 
 .card__badge--active {
-  background: #dcfce7;
   color: #15803d;
+  background: #dcfce7;
 }
 </style>

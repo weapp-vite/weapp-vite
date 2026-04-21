@@ -89,13 +89,15 @@ function toggleHighlight() {
 </style>
 
 <style module>
+/* stylelint-disable selector-class-pattern */
 .moduleBox {
-  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16rpx 40rpx rgb(0 0 0 / 8%);
 }
 
 .highlight {
   background: #fff7ed;
 }
+/* stylelint-enable selector-class-pattern */
 </style>
 
 <json>

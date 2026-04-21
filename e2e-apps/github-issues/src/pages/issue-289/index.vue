@@ -51,9 +51,9 @@ const sceneLinks = [
 
 <style scoped>
 .issue289-nav-page {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 28rpx;
-  box-sizing: border-box;
   background: #f8fafc;
 }
 
@@ -72,16 +72,16 @@ const sceneLinks = [
 
 .issue289-nav-item {
   display: block;
-  margin-bottom: 12rpx;
   padding: 18rpx;
-  border-radius: 16rpx;
+  margin-bottom: 12rpx;
+  background: #fff;
   border: 2rpx solid #dbeafe;
-  background: #ffffff;
+  border-radius: 16rpx;
 }
 
 .issue289-nav-item-hover {
-  border-color: #93c5fd;
   background: #eff6ff;
+  border-color: #93c5fd;
 }
 
 .issue289-nav-item-title {
