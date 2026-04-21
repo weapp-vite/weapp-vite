@@ -4,6 +4,9 @@ export default icebreaker(
   {
     miniProgram: true,
     vue: true,
+    tailwindcss: {
+      entryPoint: './src/app.css',
+    },
     ignores: [
       'CHANGELOG.md',
       'README.md',
@@ -38,6 +41,11 @@ export default icebreaker(
       'eslint-comments/no-unlimited-disable': 'off',
       'markdown/heading-increment': 'off',
       'no-self-assign': 'off',
+      'better-tailwindcss/enforce-canonical-classes': 'off',
+      'better-tailwindcss/enforce-consistent-class-order': 'off',
+      'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
+      'better-tailwindcss/no-conflicting-classes': 'off',
+      'better-tailwindcss/no-unknown-classes': 'off',
     },
   },
 )
