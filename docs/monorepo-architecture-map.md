@@ -106,7 +106,8 @@ graph TD
 
 根 `package.json` 通过 Turbo 管理全仓构建：
 
-- `pnpm build`：构建主包（排除 apps/templates/website）
+- `pnpm build`：构建核心工作区包与扩展（跳过 apps/templates/e2e-apps/fixture/website）
+- `pnpm build:all`：构建整个工作区
 - `pnpm build:pkgs`：仅构建 `packages/*` + `@weapp-core/*`
 - `pnpm build:apps`：构建示例应用 + 模板
 - `pnpm build:docs`：构建文档站

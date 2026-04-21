@@ -17,7 +17,8 @@
   },
   "scripts": {
     "build:all": "turbo run build",
-    "build": "turbo run build --filter=!./apps/* --filter=!./templates/* --filter=!./website && node --import tsx scripts/print-dist-size-report.ts",
+    "build:core": "turbo run build --filter=./packages/* --filter=./packages-runtime/* --filter=./benchmarks/* --filter=./packages-private/* --filter=./@weapp-core/* --filter=./mpcore/packages/* --filter=./extensions/*",
+    "build": "pnpm run build:core && node --import tsx scripts/print-dist-size-report.ts --scope=core",
     "build:ci": "turbo run build --filter=!./apps/* --filter=!./templates/* --filter=!./website --filter=!@weapp-vite/sfc-playground --filter=!e2e-issue-814-tailwind3 --filter=!e2e-issue-814-tailwind4-broken && node --import tsx scripts/print-dist-size-report.ts",
     "dev": "turbo run dev --filter=!./apps/* --filter=!./templates/* --filter=!./website",
     "build:pkgs": "turbo run build --filter=./packages/* --filter=./packages-runtime/* --filter=./benchmarks/* --filter=./packages-private/* --filter=./@weapp-core/* --filter=./mpcore/packages/*",
