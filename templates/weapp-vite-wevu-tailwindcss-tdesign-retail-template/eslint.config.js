@@ -11,6 +11,8 @@ export default icebreaker(
       'CHANGELOG.md',
       'README.md',
       '.turbo/**',
+      'dist/**',
+      '.weapp-vite/**',
       'src/pages/category/components/goods-category/components/c-sidebar/README.md',
     ],
   },

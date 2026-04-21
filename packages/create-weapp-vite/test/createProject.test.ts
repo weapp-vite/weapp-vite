@@ -190,7 +190,7 @@ describe('createProject', () => {
 
     const appJson = await readJsonAs<{
       plugins?: Record<string, { provider?: string }>
-    }>(path.join(root, 'miniprogram/app.json'))
+    }>(path.join(root, 'src/app.json'))
     expect(appJson.plugins?.['hello-plugin']?.provider).toBe('touristappid')
   })
 

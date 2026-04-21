@@ -19,15 +19,15 @@
 
 ## 目录说明
 
-- `miniprogram/`: 宿主小程序源码
+- `src/`: 宿主小程序源码
 - `plugin/`: 插件源码，包含 `plugin.json`、公开组件与页面
 - `shared/`: 主包与插件共享的 TypeScript 模块
 
 ## 使用提示
 
 - 模板默认通过 `weapp.pluginRoot` 输出 `dist-plugin/**`
-- `miniprogram/app.json` 里预置了 `hello-plugin` 的 `provider`
-- 如果你要在自己的插件 AppID 下调试或上传，请先替换 `project.config.json` 的 `appid`，并同步修改 `miniprogram/app.json` 里的 `plugins.hello-plugin.provider`
+- `src/app.json` 里预置了 `hello-plugin` 的 `provider`
+- 如果你要在自己的插件 AppID 下调试或上传，请先替换 `project.config.json` 的 `appid`，并同步修改 `src/app.json` 里的 `plugins.hello-plugin.provider`
 
 ## 文档地址
 

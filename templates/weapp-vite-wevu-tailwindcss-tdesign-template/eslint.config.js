@@ -6,7 +6,7 @@ export default icebreaker({
   tailwindcss: {
     entryPoint: './src/app.css',
   },
-  ignores: ['CHANGELOG.md', 'README.md', '.turbo/**'],
+  ignores: ['CHANGELOG.md', 'README.md', '.turbo/**', 'dist/**', '.weapp-vite/**'],
 }, {
   files: ['src/**/*.{ts,vue}'],
   rules: {

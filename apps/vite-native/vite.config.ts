@@ -1,4 +1,4 @@
-import type { UserConfig } from 'weapp-vite'
+import { defineConfig } from 'weapp-vite'
 import process from 'node:process'
 // import consola from 'consola'
 // import { fs } from '@weapp-core/shared'
@@ -18,7 +18,7 @@ import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components
 
 const __dirname = import.meta.dirname
 
-export default <UserConfig>{
+export default defineConfig({
   // root: './packageA',
   // build: {
   //   outDir: 'dist/packageA',
@@ -150,4 +150,4 @@ export default <UserConfig>{
       // external:[]
     },
   },
-}
+})

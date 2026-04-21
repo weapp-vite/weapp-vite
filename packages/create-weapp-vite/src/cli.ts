@@ -8,6 +8,41 @@ import { RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 
 const cwd = process.cwd()
 
+const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName }> = [
+  {
+    name: '默认模板',
+    value: TemplateName.default,
+  },
+  {
+    name: 'Wevu 模板 (Vue SFC)',
+    value: TemplateName.wevu,
+  },
+  {
+    name: 'Wevu + TDesign 模板 (wevu + tdesign + tailwindcss)',
+    value: TemplateName.wevuTdesign,
+  },
+  {
+    name: '集成 Tailwindcss',
+    value: TemplateName.tailwindcss,
+  },
+  {
+    name: 'TDesign 模板 (tdesign + tailwindcss)',
+    value: TemplateName.tdesign,
+  },
+  {
+    name: 'Vant 模板 (vant + tailwindcss)',
+    value: TemplateName.vant,
+  },
+  {
+    name: '插件模板 (src + pluginRoot)',
+    value: TemplateName.plugin,
+  },
+  {
+    name: '组件库模板 (lib 模式)',
+    value: TemplateName.lib,
+  },
+]
+
 function parseCliArgs(argv: string[]) {
   const positionals: string[] = []
   let installSkills: boolean | undefined
@@ -53,40 +88,7 @@ export async function run() {
     ? argTemplate ?? TemplateName.default
     : await select<TemplateName>({
         message: '选择模板',
-        choices: [
-          {
-            name: '默认模板',
-            value: TemplateName.default,
-          },
-          {
-            name: '插件模板 (miniprogram + pluginRoot)',
-            value: TemplateName.plugin,
-          },
-          {
-            name: '组件库模板 (lib 模式)',
-            value: TemplateName.lib,
-          },
-          {
-            name: 'Wevu 模板 (Vue SFC)',
-            value: TemplateName.wevu,
-          },
-          {
-            name: 'Wevu + TDesign 模板 (wevu + tdesign + tailwindcss)',
-            value: TemplateName.wevuTdesign,
-          },
-          {
-            name: '集成 Tailwindcss',
-            value: TemplateName.tailwindcss,
-          },
-          {
-            name: 'Vant 模板 (vant + tailwindcss)',
-            value: TemplateName.vant,
-          },
-          {
-            name: 'TDesign 模板 (tdesign + tailwindcss)',
-            value: TemplateName.tdesign,
-          },
-        ],
+        choices: TEMPLATE_CHOICES,
         default: TemplateName.default,
       })
 

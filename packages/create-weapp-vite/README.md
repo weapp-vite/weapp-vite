@@ -7,8 +7,7 @@
 ## 特性
 
 - 交互式创建或非交互式参数创建
-- 内置多种模板（默认、Wevu、Tailwindcss、TDesign、Vant 等）
-- 内置多种模板（默认、插件、Wevu、Tailwindcss、TDesign、Vant 等）
+- 内置多种模板（默认、Wevu、Wevu + TDesign、Tailwindcss、TDesign、Vant、插件、组件库）
 - 自动对齐 `weapp-vite` 与 `wevu` 版本
 - 自动处理 `.gitignore` 写入
 - 可选安装推荐的 AI skills（`sonofmagic/skills`）
@@ -67,12 +66,13 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 `TemplateName` 支持以下模板：
 
 - `default`
-- `plugin`
 - `wevu`
-- `tailwindcss`
-- `vant`
-- `tdesign`
 - `wevu-tdesign`
+- `tailwindcss`
+- `tdesign`
+- `vant`
+- `plugin`
+- `lib`
 
 ## 相关链接
 

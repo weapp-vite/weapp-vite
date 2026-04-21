@@ -100,9 +100,9 @@ export function createAgentsGuidelines(templateName: TemplateName) {
       '',
       '## Plugin Authoring',
       '',
-      '- Keep `miniprogram/` as the host app source and `plugin/` as the plugin source root declared by `weapp.pluginRoot`.',
+      '- Keep `src/` as the host app source and `plugin/` as the plugin source root declared by `weapp.pluginRoot`.',
       '- Validate both `dist/` and `dist-plugin/` outputs after structural changes to host pages, plugin pages, or plugin public components.',
-      '- If you change plugin AppID or switch away from local `dev` linkage, update both `project.config.json.appid` and `miniprogram/app.json` -> `plugins.*.provider` together.',
+      '- If you change plugin AppID or switch away from local `dev` linkage, update both `project.config.json.appid` and `src/app.json` -> `plugins.*.provider` together.',
       '- Treat shared modules under `shared/` as regular source code that can be imported by both host and plugin entries.',
     )
   }
