@@ -141,9 +141,9 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="wx-address t-class [&_.weixin]:[display:inline-block] [&_.weixin]:[font-size:48rpx] [&_.weixin]:[margin-right:20rpx] [&_.weixin]:[font-weight:normal] [&_.cell]:[padding:32rpx_30rpx] [&_.cell]:[border-radius:8rpx] [&_.cell__title]:[font-size:30rpx] [&_.cell__title]:[color:#333333]" @tap="getWxLocation">
+  <view class="wx-address t-class [&_.weixin]:inline-block [&_.weixin]:text-[48rpx] [&_.weixin]:mr-[20rpx] [&_.weixin]:[font-weight:normal] [&_.cell]:p-[32rpx_30rpx] [&_.cell]:rounded-[8rpx] [&_.cell__title]:text-[30rpx] [&_.cell__title]:text-[#333333]" @tap="getWxLocation">
     <block v-if="isCustomStyle">
-      <view class="wx-address-custom [display:flex] [align-items:center] [font-size:32rpx]">
+      <view class="wx-address-custom flex items-center text-[32rpx]">
         <t-icon prefix="wr" t-class="weixin" color="#0ABF5B" name="wechat" size="48rpx" />
         <text>{{ title }}</text>
       </view>

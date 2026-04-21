@@ -88,15 +88,15 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="goods-category custom-class [display:flex] [&_.custom-sidebar]:[background-color:#f5f5f5]">
+  <view class="goods-category custom-class flex [&_.custom-sidebar]:bg-[#f5f5f5]">
     <c-sidebar custom-class="custom-sidebar [height:100%] [width:180rpx] [height:100vh]" :activeKey="activeKey" @change="onParentChange">
       <c-sidebar-item v-for="(item, index) in category" :key="index" :title="item.name" :disabled="item.disabled" />
     </c-sidebar>
-    <view class="goods-category__right [height:100%] [flex:auto] [width:0] [position:relative] [overflow:scroll] [-webkit-overflow-scrolling:touch] [background-color:white] [display:flex]">
+    <view class="goods-category__right h-full flex-auto w-0 relative overflow-scroll [-webkit-overflow-scrolling:touch] bg-[white] flex">
       <c-tabbar v-if="isSlotRight" :activeKey="subActiveKey" showMore @change="onChildChange">
         <slot />
       </c-tabbar>
-      <view v-if="!isSlotRight" class="goods-category-normal [margin:28rpx_34rpx_0rpx_32rpx]">
+      <view v-if="!isSlotRight" class="goods-category-normal m-[28rpx_34rpx_0rpx_32rpx]">
         <view
           v-if="activeCategory.children && activeCategory.children.length > 0"
           class="goods-category-normal-item"
@@ -106,34 +106,34 @@ defineComponentJson({
             :key="index"
           >
             <view v-if="level === 3 && item.children && item.children.length > 0">
-              <view class="flex goods-category-normal-item-title [display:flex] [font-size:28rpx] [font-weight:500]">
+              <view class="flex goods-category-normal-item-title [display:flex] text-[28rpx] font-medium">
                 {{ item.name }}
               </view>
-              <view class="goods-category-normal-item-container [background-color:#fff] [border-radius:8rpx] [padding-top:28rpx] [margin-top:-24rpx] [margin-bottom:30rpx] [display:flex] [flex-wrap:wrap]">
+              <view class="goods-category-normal-item-container bg-white rounded-[8rpx] pt-[28rpx] mt-[-24rpx] mb-[30rpx] flex flex-wrap">
                 <view
                   v-for="(subItem, subIndex) in item.children"
                   :key="subIndex"
-                  class="goods-category-normal-item-container-item [height:196rpx] [display:flex] [flex-direction:column] [align-items:center] [margin-top:24rpx] [width:33.3%] [&_.image]:[width:144rpx] [&_.image]:[height:144rpx]"
+                  class="goods-category-normal-item-container-item h-[196rpx] flex flex-col items-center mt-[24rpx] w-[33.3%] [&_.image]:size-[144rpx]"
                   :data-item="subItem"
                   @tap="changCategory"
                 >
                   <t-image :src="subItem.thumbnail" t-class="image" />
-                  <view class="flex goods-category-normal-item-container-item-title [display:flex] [justify-content:center] [font-size:24rpx] [color:#666666] [margin-top:20rpx]">
+                  <view class="flex goods-category-normal-item-container-item-title [display:flex] justify-center text-[24rpx] text-[#666666] mt-[20rpx]">
                     {{ subItem.name }}
                   </view>
                 </view>
               </view>
             </view>
           </block>
-          <view v-if="level === 2" class="goods-category-normal-item-second-container [background-color:#fff] [border-radius:8rpx] [margin-top:8rpx] [margin-bottom:30rpx] [display:grid] [grid-template-columns:33.33%_33.33%_33.33%]">
+          <view v-if="level === 2" class="goods-category-normal-item-second-container bg-white rounded-[8rpx] mt-[8rpx] mb-[30rpx] grid grid-cols-[33.33%_33.33%_33.33%]">
             <block v-for="(item, index) in activeCategory.children" :key="index">
               <view
-                class="goods-category-normal-item-second-container-item [height:200rpx] [text-align:center] [margin-top:20rpx] [&_.image]:[width:144rpx] [&_.image]:[height:144rpx]"
+                class="goods-category-normal-item-second-container-item h-[200rpx] text-center mt-[20rpx] [&_.image]:size-[144rpx]"
                 :data-item="item"
                 @tap="changCategory"
               >
                 <t-image :src="item.thumbnail" t-class="image" />
-                <view class="flex goods-category-normal-item-container-item-title [display:flex] [justify-content:center] [font-size:24rpx] [color:#666666] [margin-top:20rpx]">
+                <view class="flex goods-category-normal-item-container-item-title [display:flex] justify-center text-[24rpx] text-[#666666] mt-[20rpx]">
                   {{ item.name }}
                 </view>
               </view>

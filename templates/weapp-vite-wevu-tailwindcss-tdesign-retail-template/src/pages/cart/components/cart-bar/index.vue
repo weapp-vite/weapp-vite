@@ -82,8 +82,8 @@ defineComponentJson({
 </script>
 
 <template>
-  <view v-if="fixed" class="cart-bar__placeholder [height:100rpx]" />
-  <view :class="`cart-bar ${fixed ? 'cart-bar--fixed' : ''} flex flex-v-center [display:flex] [align-items:center] [height:112rpx] [background-color:#fff] [border-top:1rpx_solid_#e5e5e5] [padding:16rpx_32rpx] [box-sizing:border-box] [font-size:24rpx] [line-height:36rpx] [color:#333] [position:fixed] [left:0] [right:0] [z-index:99] [bottom:calc(100rpx_+_env(safe-area-inset-bottom))] [&_.cart-bar__check]:[margin-right:12rpx] [&_.cart-bar__total]:[margin-left:24rpx] [&_.account-btn]:[width:192rpx] [&_.account-btn]:[height:80rpx] [&_.account-btn]:[border-radius:40rpx] [&_.account-btn]:[background-color:#fa4126] [&_.account-btn]:[font-size:28rpx] [&_.account-btn]:[font-weight:bold] [&_.account-btn]:[line-height:80rpx] [&_.account-btn]:[color:#ffffff] [&_.account-btn]:[text-align:center] [&_.disabled-btn]:[background-color:#cccccc] [&_.hover-btn]:[opacity:0.5]`" :style="`bottom: ${fixed ? `calc(${bottomHeight}rpx + env(safe-area-inset-bottom))` : ''};`">
+  <view v-if="fixed" class="cart-bar__placeholder h-[100rpx]" />
+  <view :class="`cart-bar ${fixed ? 'cart-bar--fixed' : ''} flex flex-v-center [display:flex] items-center h-[112rpx] bg-white [border-top:1rpx_solid_#e5e5e5] p-[16rpx_32rpx] box-border text-[24rpx] leading-[36rpx] text-[#333] fixed inset-x-0 z-99 bottom-[calc(100rpx+env(safe-area-inset-bottom))] [&_.cart-bar__check]:mr-[12rpx] [&_.cart-bar__total]:ml-[24rpx] [&_.account-btn]:w-[192rpx] [&_.account-btn]:h-[80rpx] [&_.account-btn]:rounded-[40rpx] [&_.account-btn]:bg-[#fa4126] [&_.account-btn]:text-[28rpx] [&_.account-btn]:[font-weight:bold] [&_.account-btn]:leading-[80rpx] [&_.account-btn]:text-[#ffffff] [&_.account-btn]:text-center [&_.disabled-btn]:bg-[#cccccc] [&_.hover-btn]:opacity-[0.5]`" :style="`bottom: ${fixed ? `calc(${bottomHeight}rpx + env(safe-area-inset-bottom))` : ''};`">
     <t-icon
       size="40rpx"
       :color="isAllSelected ? '#FA4126' : '#BBBBBB'"
@@ -92,9 +92,9 @@ defineComponentJson({
       @tap.stop="handleSelectAll"
     />
     <text>全选</text>
-    <view class="cart-bar__total flex1 [flex:1] [display:flex] [&_.cart-bar__total--bold]:[font-size:28rpx] [&_.cart-bar__total--bold]:[line-height:40rpx] [&_.cart-bar__total--bold]:[color:#333] [&_.cart-bar__total--bold]:[font-weight:bold] [&_.cart-bar__total--normal]:[font-size:24rpx] [&_.cart-bar__total--normal]:[line-height:32rpx] [&_.cart-bar__total--normal]:[color:#999] [&_.cart-bar__total--price]:[color:#fa4126] [&_.cart-bar__total--price]:[font-weight:bold]">
+    <view class="cart-bar__total flex1 flex-1 flex [&_.cart-bar__total--bold]:text-[28rpx] [&_.cart-bar__total--bold]:leading-[40rpx] [&_.cart-bar__total--bold]:text-[#333] [&_.cart-bar__total--bold]:[font-weight:bold] [&_.cart-bar__total--normal]:text-[24rpx] [&_.cart-bar__total--normal]:leading-[32rpx] [&_.cart-bar__total--normal]:text-[#999] [&_.cart-bar__total--price]:text-[#fa4126] [&_.cart-bar__total--price]:[font-weight:bold]">
       <view>
-        <text class="cart-bar__total--bold text-padding-right [padding-right:4rpx]">
+        <text class="cart-bar__total--bold text-padding-right pr-[4rpx]">
           总计
         </text>
         <price
@@ -108,7 +108,7 @@ defineComponentJson({
         </text>
       </view>
       <view v-if="totalDiscountAmount">
-        <text class="cart-bar__total--normal text-padding-right [padding-right:4rpx]">
+        <text class="cart-bar__total--normal text-padding-right pr-[4rpx]">
           已优惠
         </text>
         <price class="cart-bar__total--normal" :price="totalDiscountAmount || '0'" :fill="false" />

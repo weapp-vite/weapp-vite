@@ -43,11 +43,11 @@ definePageJson({
 
 <template>
   <!-- 优惠券 -->
-  <view class="coupon-card-wrap [background-color:#fff] [padding:32rpx_32rpx_1rpx]">
+  <view class="coupon-card-wrap bg-white p-[32rpx_32rpx_1rpx]">
     <coupon-card :couponDTO="detail" />
   </view>
   <!-- 说明 -->
-  <view class="desc-wrap [margin-top:24rpx] [&_.button-wrap]:[margin:50rpx_32rpx_0]">
+  <view class="desc-wrap mt-[24rpx] [&_.button-wrap]:m-[50rpx_32rpx_0]">
     <t-cell-group t-class="desc-group-wrap [border-radius:8rpx] [overflow:hidden] [--cell-label-font-size:26rpx] [--cell-label-line-height:36rpx] [--cell-label-color:#999] [&_.t-class-cell]:[align-items:flex-start] [&_.t-class-title]:[font-size:26rpx] [&_.t-class-title]:[width:140rpx] [&_.t-class-title]:[flex:none] [&_.t-class-title]:[color:#888] [&_.t-class-note]:[font-size:26rpx] [&_.t-class-note]:[word-break:break-all] [&_.t-class-note]:[white-space:pre-line] [&_.t-class-note]:[justify-content:flex-start] [&_.t-class-note]:[color:#333] [&_.t-class-note]:[width:440rpx] [&_.in-popup]:[border-radius:0] [&_.in-popup]:[overflow:auto] [&_.in-popup]:[max-height:828rpx] [&_.wr-cell__title]:[color:#333] [&_.wr-cell__title]:[font-size:28rpx]">
       <t-cell
         v-if="detail && detail.desc"

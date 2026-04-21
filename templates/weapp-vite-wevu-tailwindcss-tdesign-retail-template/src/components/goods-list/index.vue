@@ -79,7 +79,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :id="independentID" class="goods-list-wrap wr-class [display:flex] [flex-flow:row_wrap] [justify-content:space-between] [padding:0] [background:#fff]">
+  <view :id="independentID" class="goods-list-wrap wr-class flex [flex-flow:row_wrap] justify-between p-0 [background:#fff]">
     <block v-for="(item, index) in goodsList" :key="index">
       <goods-card
         :id="`${independentID}-gd-${index}`"

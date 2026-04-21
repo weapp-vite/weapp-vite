@@ -196,7 +196,7 @@ definePageJson({
   <view v-if="pageLoading" style=" color: #b9b9b9;text-align: center">
     <t-loading theme="circular" size="40rpx" text="加载中..." inherit-color />
   </view>
-  <view class="home-page-header [background:linear-gradient(#fff,_#f5f5f5)] [display:block] [padding:0_24rpx] [&_.t-search__input-container]:[border-radius:32rpx] [&_.t-search__input-container]:[height:64rpx] [&_.t-search__input]:[font-size:28rpx] [&_.t-search__input]:[color:rgb(116,_116,_116)] [&_.swiper-wrap]:[margin-top:20rpx] [&_.t-image__swiper]:[width:100%] [&_.t-image__swiper]:[height:300rpx] [&_.t-image__swiper]:[border-radius:10rpx]">
+  <view class="home-page-header [background:linear-gradient(#fff,#f5f5f5)] block p-[0_24rpx] [&_.t-search__input-container]:rounded-[32rpx] [&_.t-search__input-container]:h-[64rpx] [&_.t-search__input]:text-[28rpx] [&_.t-search__input]:text-[rgb(116,116,116)] [&_.swiper-wrap]:mt-[20rpx] [&_.t-image__swiper]:w-full [&_.t-image__swiper]:h-[300rpx] [&_.t-image__swiper]:rounded-[10rpx]">
     <view class="search" @tap="navToSearchPage">
       <t-search
         t-class-input="t-search__input"
@@ -224,7 +224,7 @@ definePageJson({
       />
     </view>
   </view>
-  <view class="home-page-container [background:#f5f5f5] [display:block] [padding:0_24rpx] [&_.t-tabs]:[background:#f5f5f5] [&_.t-tabs_.t-tabs-nav]:[background-color:transparent] [&_.t-tabs_.t-tabs-nav]:[line-height:80rpx] [&_.t-tabs_.t-tabs-nav]:[font-size:28rpx] [&_.t-tabs_.t-tabs-nav]:[color:#333] [&_.t-tabs_.t-tabs-scroll]:[border:none] [&_.tab_.order-nav_.order-nav-item_.scroll-width]:[min-width:165rpx] [&_.tab_.order-nav-item_.active]:[color:#fa550f] [&_.tab_.bottom-line]:[border-radius:4rpx] [&_.tab_.order-nav-item_.active_.bottom-line]:[background-color:#fa550f] [&_.tabs-external__item]:[font-size:28rpx] [&_.tabs-external__active]:[color:#333333] [&_.tabs-external__active]:[font-size:32rpx] [&_.tabs-external__track]:[height:6rpx] [&_.tabs-external__track]:[border-radius:4rpx] [&_.tabs-external__track]:[width:48rpx] [&_.goods-list-container]:[background:#f5f5f5] [&_.goods-list-container]:[margin-top:16rpx]">
+  <view class="home-page-container [background:#f5f5f5] block p-[0_24rpx] [&_.t-tabs]:[background:#f5f5f5] [&_.t-tabs_.t-tabs-nav]:bg-transparent [&_.t-tabs_.t-tabs-nav]:leading-[80rpx] [&_.t-tabs_.t-tabs-nav]:text-[28rpx] [&_.t-tabs_.t-tabs-nav]:text-[#333] [&_.t-tabs_.t-tabs-scroll]:[border:none] [&_.tab_.order-nav_.order-nav-item_.scroll-width]:min-w-[165rpx] [&_.tab_.order-nav-item_.active]:text-[#fa550f] [&_.tab_.bottom-line]:rounded-[4rpx] [&_.tab_.order-nav-item_.active_.bottom-line]:bg-[#fa550f] [&_.tabs-external__item]:text-[28rpx] [&_.tabs-external__active]:text-[#333333] [&_.tabs-external__active]:text-[32rpx] [&_.tabs-external__track]:h-[6rpx] [&_.tabs-external__track]:rounded-[4rpx] [&_.tabs-external__track]:w-[48rpx] [&_.goods-list-container]:[background:#f5f5f5] [&_.goods-list-container]:mt-[16rpx]">
     <view class="home-page-tabs [--td-tab-nav-bg-color:transparent] [--td-tab-border-color:transparent] [--td-tab-item-color:#666] [--td-tab-track-color:red]">
       <t-tabs
         t-class="t-tabs [&_.t-tabs--top_.t-tabs__scroll]:[border-bottom:none] [&_.t-tabs--top_.t-tabs__item]:[height:86rpx] [&_.t-tabs--bottom_.t-tabs__item]:[height:86rpx]"

@@ -158,7 +158,7 @@ definePageJson({
 </script>
 
 <template>
-  <view class="person-info [padding-top:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-class]:[height:112rpx]">
+  <view class="person-info pt-[20rpx] [&_.order-group__left]:mr-0 [&_.t-cell-class]:h-[112rpx]">
     <t-cell-group>
       <t-cell
         title="头像"
@@ -202,8 +202,8 @@ definePageJson({
       />
     </t-cell-group>
   </view>
-  <view class="person-info__wrapper [width:100%] [padding:0_32rpx] [padding-bottom:calc(env(safe-area-inset-bottom)_+_20rpx)] [position:absolute] [bottom:0] [left:0]">
-    <view class="person-info__btn [width:100%] [border:2rpx_solid_#ddd] [border-radius:48rpx] [padding:18rpx_0] [display:flex] [align-self:center] [justify-content:center]" @tap="openUnbindConfirm">
+  <view class="person-info__wrapper w-full p-[0_32rpx] pb-[calc(env(safe-area-inset-bottom)+20rpx)] absolute bottom-0 left-0">
+    <view class="person-info__btn w-full [border:2rpx_solid_#ddd] rounded-[48rpx] p-[18rpx_0] flex self-center justify-center" @tap="openUnbindConfirm">
       切换账号登录
     </view>
   </view>

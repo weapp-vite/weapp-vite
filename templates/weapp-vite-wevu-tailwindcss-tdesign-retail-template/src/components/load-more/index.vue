@@ -78,7 +78,7 @@ defineComponentJson({
 <template>
   <view
     v-if="!(listIsEmpty && (status === 0 || status === 2))"
-    class="load-more wr-class [font-size:24rpx] [height:100rpx] [display:flex] [flex-direction:column] [justify-content:center] [&_.t-class-loading]:[display:flex] [&_.t-class-loading]:[justify-content:center] [&_.t-class-loading-text]:[color:#bbbbbb] [&_.t-class-indicator]:[color:#b9b9b9]"
+    class="load-more wr-class text-[24rpx] h-[100rpx] flex flex-col justify-center [&_.t-class-loading]:flex [&_.t-class-loading]:justify-center [&_.t-class-loading-text]:text-[#bbbbbb] [&_.t-class-indicator]:text-[#b9b9b9]"
     @tap="tapHandle"
   >
     <!-- 加载中 -->
@@ -103,9 +103,9 @@ defineComponentJson({
     </t-divider>
 
     <!-- 加载失败 -->
-    <view v-if="status === 3" class="load-more__error [margin:auto]">
+    <view v-if="status === 3" class="load-more__error m-auto">
       加载失败
-      <text class="load-more__refresh-btn [margin-left:16rpx] [color:#fa4126]" @tap="tapHandle">
+      <text class="load-more__refresh-btn ml-[16rpx] text-[#fa4126]" @tap="tapHandle">
         刷新
       </text>
     </view>

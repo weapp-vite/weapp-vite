@@ -56,77 +56,77 @@ definePageJson({
 </script>
 
 <template>
-  <view class="invoice-detail [&_.invoice-detail-box]:[background-color:#fff] [&_.invoice-detail-box]:[padding:24rpx_32rpx] [&_.invoice-detail-box]:[margin-top:24rpx]">
+  <view class="invoice-detail [&_.invoice-detail-box]:bg-white [&_.invoice-detail-box]:p-[24rpx_32rpx] [&_.invoice-detail-box]:mt-[24rpx]">
     <view class="invoice-detail-box">
-      <view class="invoice-detail-title [font-size:14px] [font-weight:600]">
+      <view class="invoice-detail-title text-[14px] font-semibold">
         发票详情
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           发票类型
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.invoiceType }}
         </view>
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           发票抬头
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.buyerName }}
         </view>
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           纳税人识别号
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.buyerTaxNo }}
         </view>
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           发票内容
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.ontentType }}
         </view>
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           发票金额
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.money }}
         </view>
       </view>
     </view>
     <view class="invoice-detail-box">
-      <view class="invoice-detail-title [font-size:14px] [font-weight:600]">
+      <view class="invoice-detail-title text-[14px] font-semibold">
         收票人信息
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           邮箱
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.email }}
         </view>
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           手机号
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.buyerPhone }}
         </view>
       </view>
-      <view class="invoice-detail-box-row [display:flex] [margin-top:44rpx]">
-        <view class="invoice-detail-box-title [font-size:13px] [color:#666666] [width:156rpx] [margin-right:32rpx]">
+      <view class="invoice-detail-box-row flex mt-[44rpx]">
+        <view class="invoice-detail-box-title text-[13px] text-[#666666] w-[156rpx] mr-[32rpx]">
           开票状态
         </view>
-        <view class="invoice-detail-box-value [font-size:13px] [color:#333333]">
+        <view class="invoice-detail-box-value text-[13px] text-[#333333]">
           {{ invoice.isInvoice }}
         </view>
       </view>

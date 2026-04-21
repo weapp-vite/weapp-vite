@@ -38,7 +38,7 @@ definePageJson({
 </script>
 
 <template>
-  <view class="name-edit [padding-top:20rpx] [&_.name-edit__input--desc]:[font-size:26rpx] [&_.name-edit__input--desc]:[padding:16rpx_32rpx] [&_.name-edit__input--desc]:[color:#999] [&_.name-edit__input--desc]:[margin-bottom:200rpx] [&_.name-edit__wrapper]:[margin:0_32rpx]">
+  <view class="name-edit pt-[20rpx] [&_.name-edit__input--desc]:text-[26rpx] [&_.name-edit__input--desc]:p-[16rpx_32rpx] [&_.name-edit__input--desc]:text-[#999] [&_.name-edit__input--desc]:mb-[200rpx] [&_.name-edit__wrapper]:m-[0_32rpx]">
     <t-input
       v-model:value="nameValue"
       borderless

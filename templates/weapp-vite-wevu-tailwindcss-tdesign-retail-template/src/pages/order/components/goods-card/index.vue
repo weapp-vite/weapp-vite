@@ -274,13 +274,13 @@ defineComponentJson({
 <template>
   <view
     :id="independentID"
-    :class="`wr-goods-card card-class ${layout} ${centered ? 'center' : ''} [box-sizing:border-box] [font-size:24rpx] [&_.center_.wr-goods-card__main]:[align-items:center] [&_.center_.wr-goods-card__main]:[justify-content:center] [&_.horizontal-wrap_.wr-goods-card__thumb]:[width:192rpx] [&_.horizontal-wrap_.wr-goods-card__thumb]:[height:192rpx] [&_.horizontal-wrap_.wr-goods-card__thumb]:[border-radius:8rpx] [&_.horizontal-wrap_.wr-goods-card__thumb]:[overflow:hidden] [&_.horizontal-wrap_.wr-goods-card__body]:[flex-direction:column] [&_.horizontal-wrap_.wr-goods-card__short_content]:[flex-direction:row] [&_.horizontal-wrap_.wr-goods-card__short_content]:[align-items:center] [&_.horizontal-wrap_.wr-goods-card__short_content]:[margin:16rpx_0_0_0] [&_.horizontal-wrap_.wr-goods-card__num]:[margin:0_0_0_auto] [&_.vertical_.wr-goods-card__main]:[padding:0_0_22rpx_0] [&_.vertical_.wr-goods-card__main]:[flex-direction:column] [&_.vertical_.wr-goods-card__thumb]:[width:340rpx] [&_.vertical_.wr-goods-card__thumb]:[height:340rpx] [&_.vertical_.wr-goods-card__body]:[margin:20rpx_20rpx_0_20rpx] [&_.vertical_.wr-goods-card__body]:[flex-direction:column] [&_.vertical_.wr-goods-card__long_content]:[overflow:hidden] [&_.vertical_.wr-goods-card__title]:[line-height:36rpx] [&_.vertical_.wr-goods-card__short_content]:[margin:20rpx_0_0_0] [&_.vertical_.wr-goods-card__price]:[order:2] [&_.vertical_.wr-goods-card__price]:[color:#fa4126] [&_.vertical_.wr-goods-card__price]:[margin:20rpx_0_0_0] [&_.vertical_.wr-goods-card__origin-price]:[order:1] [&_.vertical_.wr-goods-card__add-cart]:[position:absolute] [&_.vertical_.wr-goods-card__add-cart]:[bottom:20rpx] [&_.vertical_.wr-goods-card__add-cart]:[right:20rpx]`"
+    :class="`wr-goods-card card-class ${layout} ${centered ? 'center' : ''} box-border text-[24rpx] [&_.center_.wr-goods-card__main]:items-center [&_.center_.wr-goods-card__main]:justify-center [&_.horizontal-wrap_.wr-goods-card__thumb]:size-[192rpx] [&_.horizontal-wrap_.wr-goods-card__thumb]:rounded-[8rpx] [&_.horizontal-wrap_.wr-goods-card__thumb]:overflow-hidden [&_.horizontal-wrap_.wr-goods-card__body]:flex-col [&_.horizontal-wrap_.wr-goods-card__short_content]:flex-row [&_.horizontal-wrap_.wr-goods-card__short_content]:items-center [&_.horizontal-wrap_.wr-goods-card__short_content]:m-[16rpx_0_0_0] [&_.horizontal-wrap_.wr-goods-card__num]:m-[0_0_0_auto] [&_.vertical_.wr-goods-card__main]:p-[0_0_22rpx_0] [&_.vertical_.wr-goods-card__main]:flex-col [&_.vertical_.wr-goods-card__thumb]:size-[340rpx] [&_.vertical_.wr-goods-card__body]:m-[20rpx_20rpx_0_20rpx] [&_.vertical_.wr-goods-card__body]:flex-col [&_.vertical_.wr-goods-card__long_content]:overflow-hidden [&_.vertical_.wr-goods-card__title]:leading-[36rpx] [&_.vertical_.wr-goods-card__short_content]:m-[20rpx_0_0_0] [&_.vertical_.wr-goods-card__price]:order-2 [&_.vertical_.wr-goods-card__price]:text-[#fa4126] [&_.vertical_.wr-goods-card__price]:m-[20rpx_0_0_0] [&_.vertical_.wr-goods-card__origin-price]:order-1 [&_.vertical_.wr-goods-card__add-cart]:absolute [&_.vertical_.wr-goods-card__add-cart]:bottom-[20rpx] [&_.vertical_.wr-goods-card__add-cart]:right-[20rpx]`"
     :data-goods="goods"
     :hidden="hiddenInData"
     @tap="clickHandle"
   >
-    <view class="wr-goods-card__main [position:relative] [display:flex] [line-height:1] [flex-direction:row] [background:transparent] [padding:16rpx_0rpx]">
-      <view class="wr-goods-card__thumb thumb-class [flex-shrink:0] [position:relative] [width:176rpx] [height:176rpx] [&:empty]:[display:none] [&:empty]:[margin:0]" @tap="clickThumbHandle">
+    <view class="wr-goods-card__main relative flex leading-none flex-row [background:transparent] p-[16rpx_0rpx]">
+      <view class="wr-goods-card__thumb thumb-class shrink-0 relative size-[176rpx] empty:hidden empty:m-0" @tap="clickThumbHandle">
         <t-image
           v-if="!!goods.thumb && !goods.hideKey.thumb"
           t-class="wr-goods-card__thumb-com [width:176rpx] [height:176rpx] [border-radius:8rpx] [overflow:hidden]"
@@ -291,19 +291,19 @@ defineComponentJson({
         <slot name="thumb-cover" />
       </view>
 
-      <view class="wr-goods-card__body [display:flex] [margin:0_0_0_16rpx] [flex-direction:row] [flex:1_1_auto] [min-height:176rpx]">
-        <view class="wr-goods-card__long_content [display:flex] [flex-direction:column] [overflow:hidden] [flex:1_1_auto] [&_.goods_tips]:[width:100%] [&_.goods_tips]:[margin-top:16rpx] [&_.goods_tips]:[text-align:right] [&_.goods_tips]:[color:#fa4126] [&_.goods_tips]:[font-size:24rpx] [&_.goods_tips]:[line-height:32rpx] [&_.goods_tips]:[font-weight:bold]">
-          <view v-if="goods.title && !goods.hideKey.title" class="wr-goods-card__title title-class [flex-shrink:0] [font-size:28rpx] [color:#333] [line-height:40rpx] [font-weight:400] [display:-webkit-box] [-webkit-box-orient:vertical] [overflow:hidden] [word-break:break-word]" :style="`-webkit-line-clamp: ${goods.lineClamp};`">
+      <view class="wr-goods-card__body flex m-[0_0_0_16rpx] flex-row flex-[1_1_auto] min-h-[176rpx]">
+        <view class="wr-goods-card__long_content flex flex-col overflow-hidden flex-[1_1_auto] [&_.goods_tips]:w-full [&_.goods_tips]:mt-[16rpx] [&_.goods_tips]:text-right [&_.goods_tips]:text-[#fa4126] [&_.goods_tips]:text-[24rpx] [&_.goods_tips]:leading-[32rpx] [&_.goods_tips]:[font-weight:bold]">
+          <view v-if="goods.title && !goods.hideKey.title" class="wr-goods-card__title title-class shrink-0 text-[28rpx] text-[#333] leading-[40rpx] font-normal [display:-webkit-box] [-webkit-box-orient:vertical] overflow-hidden [word-break:break-word]" :style="`-webkit-line-clamp: ${goods.lineClamp};`">
             <slot name="before-title" />
             {{ goods.title }}
           </view>
           <slot name="after-title" />
-          <view v-if="goods.desc && !goods.hideKey.desc" class="wr-goods-card__desc desc-class [font-size:24rpx] [color:#f5f5f5] [line-height:40rpx] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow:hidden]">
+          <view v-if="goods.desc && !goods.hideKey.desc" class="wr-goods-card__desc desc-class text-[24rpx] text-[#f5f5f5] leading-[40rpx] line-clamp-2">
             {{ goods.desc }}
           </view>
           <slot name="after-desc" />
-          <view v-if="goods.specs && !goods.hideKey.specs" class="wr-goods-card__specs__desc specs-class [font-size:24rpx] [height:32rpx] [line-height:32rpx] [color:#999999] [margin:8rpx_0] [display:flex] [align-self:flex-start] [flex-direction:row]" @tap="clickSpecsHandle">
-            <view class="wr-goods-card__specs__desc-text [height:100%] [max-width:380rpx] [word-break:break-all] [overflow:hidden] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1]">
+          <view v-if="goods.specs && !goods.hideKey.specs" class="wr-goods-card__specs__desc specs-class text-[24rpx] h-[32rpx] leading-[32rpx] text-[#999999] m-[8rpx_0] flex self-start flex-row" @tap="clickSpecsHandle">
+            <view class="wr-goods-card__specs__desc-text h-full max-w-[380rpx] break-all line-clamp-1">
               {{ goods.specs }}
             </view>
           </view>
@@ -312,13 +312,13 @@ defineComponentJson({
           </view>
         </view>
 
-        <view class="wr-goods-card__short_content [display:flex] [flex-direction:column] [justify-content:flex-start] [align-items:flex-end] [margin:0_0_0_46rpx] [&_.no_storage]:[display:flex] [&_.no_storage]:[align-items:center] [&_.no_storage]:[justify-content:space-between] [&_.no_storage]:[height:40rpx] [&_.no_storage]:[color:#333] [&_.no_storage]:[font-size:24rpx] [&_.no_storage]:[line-height:32rpx] [&_.no_storage]:[width:100%]">
+        <view class="wr-goods-card__short_content flex flex-col justify-start items-end m-[0_0_0_46rpx] [&_.no_storage]:flex [&_.no_storage]:items-center [&_.no_storage]:justify-between [&_.no_storage]:h-[40rpx] [&_.no_storage]:text-[#333] [&_.no_storage]:text-[24rpx] [&_.no_storage]:leading-[32rpx] [&_.no_storage]:w-full">
           <block v-if="goods.stockQuantity !== 0">
-            <view v-if="pricePrefix" class="wr-goods-card__price__prefix price-prefix-class [order:0] [color:#666] [margin:0]">
+            <view v-if="pricePrefix" class="wr-goods-card__price__prefix price-prefix-class order-0 text-[#666] m-0">
               {{ pricePrefix }}
             </view>
             <slot name="price-prefix" />
-            <view v-if="goods.price && !goods.hideKey.price" class="wr-goods-card__price [white-space:nowrap] [font-weight:bold] [order:1] [color:#fa4126] [font-size:36rpx] [margin:0] [line-height:48rpx]">
+            <view v-if="goods.price && !goods.hideKey.price" class="wr-goods-card__price whitespace-nowrap [font-weight:bold] order-1 text-[#fa4126] text-[36rpx] m-0 leading-[48rpx]">
               <price
                 wr-class="price-class"
                 :symbol="currency"
@@ -327,7 +327,7 @@ defineComponentJson({
                 decimalSmaller
               />
             </view>
-            <view v-if="goods.originPrice && !goods.hideKey.originPrice && isValidityLinePrice" class="wr-goods-card__origin-price [white-space:nowrap] [font-weight:normal] [order:2] [color:#aaaaaa] [font-size:24rpx] [margin:0]">
+            <view v-if="goods.originPrice && !goods.hideKey.originPrice && isValidityLinePrice" class="wr-goods-card__origin-price whitespace-nowrap [font-weight:normal] order-2 text-[#aaaaaa] text-[24rpx] m-0">
               <price
                 wr-class="origin-price-class"
                 :symbol="currency"
@@ -336,15 +336,15 @@ defineComponentJson({
               />
             </view>
             <slot name="origin-price" />
-            <view v-if="goods.num && !goods.hideKey.num" class="wr-goods-card__num num-class [white-space:nowrap] [order:4] [font-size:24rpx] [color:#999] [margin:20rpx_0_0_auto]">
-              <text class="wr-goods-card__num__prefix [color:inherit]">
+            <view v-if="goods.num && !goods.hideKey.num" class="wr-goods-card__num num-class whitespace-nowrap order-4 text-[24rpx] text-[#999] m-[20rpx_0_0_auto]">
+              <text class="wr-goods-card__num__prefix text-inherit">
                 x
               </text>
               {{ goods.num }}
             </view>
           </block>
           <block v-else>
-            <view class="no_storage [&_.no_storage__right]:[width:80rpx] [&_.no_storage__right]:[height:40rpx] [&_.no_storage__right]:[border-radius:20rpx] [&_.no_storage__right]:[border:2rpx_solid_#fa4126] [&_.no_storage__right]:[line-height:40rpx] [&_.no_storage__right]:[text-align:center] [&_.no_storage__right]:[color:#fa4126]">
+            <view class="no_storage [&_.no_storage__right]:w-[80rpx] [&_.no_storage__right]:h-[40rpx] [&_.no_storage__right]:rounded-[20rpx] [&_.no_storage__right]:[border:2rpx_solid_#fa4126] [&_.no_storage__right]:leading-[40rpx] [&_.no_storage__right]:text-center [&_.no_storage__right]:text-[#fa4126]">
               <view>请重新选择商品规格</view>
               <view class="no_storage__right">
                 重选

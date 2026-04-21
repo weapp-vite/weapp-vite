@@ -257,7 +257,7 @@ defineComponentJson({
 
 <template>
   <view
-    class="wr-class wr-swipeout [position:relative] [overflow:hidden]"
+    class="wr-class wr-swipeout relative overflow-hidden"
     data-key="cell"
     capture-bind:tap="onClick"
     @touchstart="startDrag"
@@ -266,11 +266,11 @@ defineComponentJson({
     @touchcancel="endDrag"
   >
     <view id="wrapper">
-      <view v-if="leftWidth" class="wr-swipeout__left [position:absolute] [top:0] [height:100%] [left:0] [transform:translate3d(-100%,_0,_0)]" data-key="left" @tap.stop="onClick">
+      <view v-if="leftWidth" class="wr-swipeout__left absolute top-0 h-full left-0 transform-[translate3d(-100%,0,0)]" data-key="left" @tap.stop="onClick">
         <slot name="left" />
       </view>
       <slot />
-      <view v-if="rightWidth" class="wr-swipeout__right [position:absolute] [top:0] [height:100%] [right:0] [transform:translate3d(100%,_0,_0)]" data-key="right" @tap.stop="onClick">
+      <view v-if="rightWidth" class="wr-swipeout__right absolute top-0 h-full right-0 transform-[translate3d(100%,0,0)]" data-key="right" @tap.stop="onClick">
         <slot name="right" />
       </view>
     </view>

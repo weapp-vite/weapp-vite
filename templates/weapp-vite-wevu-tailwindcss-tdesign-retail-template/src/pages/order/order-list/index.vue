@@ -240,8 +240,8 @@ definePageJson({
 </script>
 
 <template>
-  <view class="page-container [&_.tab-bar__placeholder]:[height:88rpx] [&_.tab-bar__placeholder]:[line-height:88rpx] [&_.tab-bar__placeholder]:[background:#fff] [&_.tab-bar__inner]:[height:88rpx] [&_.tab-bar__inner]:[line-height:88rpx] [&_.tab-bar__inner]:[background:#fff] [&_.tab-bar__inner]:[font-size:26rpx] [&_.tab-bar__inner]:[color:#333333] [&_.tab-bar__inner]:[position:fixed] [&_.tab-bar__inner]:[width:100vw] [&_.tab-bar__inner]:[top:0] [&_.tab-bar__inner]:[left:0] [&_.tab-bar__inner_.order-nav_.order-nav-item_.bottom-line]:[bottom:12rpx] [&_.tab-bar__active]:[font-size:28rpx] [&_.specs-popup_.bottom-btn]:[color:#fa4126] [&_.specs-popup_.bottom-btn]:[color:var(--color-primary,_#fa4126)] [&_.order-number]:[color:#666666] [&_.order-number]:[font-size:28rpx]">
-    <view class="tab-bar [&_.tab-bar__active]:[color:#333333] [&_.t-tabs-track]:[background:#333333]">
+  <view class="page-container [&_.tab-bar__placeholder]:h-[88rpx] [&_.tab-bar__placeholder]:leading-[88rpx] [&_.tab-bar__placeholder]:[background:#fff] [&_.tab-bar__inner]:h-[88rpx] [&_.tab-bar__inner]:leading-[88rpx] [&_.tab-bar__inner]:[background:#fff] [&_.tab-bar__inner]:text-[26rpx] [&_.tab-bar__inner]:text-[#333333] [&_.tab-bar__inner]:fixed [&_.tab-bar__inner]:w-screen [&_.tab-bar__inner]:top-0 [&_.tab-bar__inner]:left-0 [&_.tab-bar__inner_.order-nav_.order-nav-item_.bottom-line]:bottom-[12rpx] [&_.tab-bar__active]:text-[28rpx] [&_.specs-popup_.bottom-btn]:text-[#fa4126] [&_.specs-popup_.bottom-btn]:[color:var(--color-primary,_#fa4126)] [&_.order-number]:text-[#666666] [&_.order-number]:text-[28rpx]">
+    <view class="tab-bar [&_.tab-bar__active]:text-[#333333] [&_.t-tabs-track]:[background:#333333]">
       <view class="tab-bar__placeholder" />
       <t-tabs
         t-class="tab-bar__inner [&_.t-tabs-is-active]:[color:#fa4126] [&_.t-tabs-track]:[background:#fa4126]"
@@ -295,7 +295,7 @@ definePageJson({
         />
         <template #more>
           <view>
-            <view class="price-total [font-size:24rpx] [line-height:32rpx] [color:#999999] [padding-top:10rpx] [width:100%] [display:flex] [align-items:baseline] [justify-content:flex-end] [&_.bold-price]:[color:#333333] [&_.bold-price]:[font-size:28rpx] [&_.bold-price]:[line-height:40rpx] [&_.real-pay]:[font-size:36rpx] [&_.real-pay]:[line-height:48rpx] [&_.real-pay]:[color:#fa4126] [&_.real-pay]:[font-weight:bold]">
+            <view class="price-total text-[24rpx] leading-[32rpx] text-[#999999] pt-[10rpx] w-full flex items-baseline justify-end [&_.bold-price]:text-[#333333] [&_.bold-price]:text-[28rpx] [&_.bold-price]:leading-[40rpx] [&_.real-pay]:text-[36rpx] [&_.real-pay]:leading-[48rpx] [&_.real-pay]:text-[#fa4126] [&_.real-pay]:[font-weight:bold]">
               <text>总价</text>
               <price fill :price="`${order.totalAmount}`" />
               <text>，运费</text>
@@ -322,7 +322,7 @@ definePageJson({
       >
         <!-- 空态 -->
         <template #empty>
-          <view class="empty-wrapper [height:calc(100vh_-_88rpx)]">
+          <view class="empty-wrapper h-[calc(100vh-88rpx)]">
             <t-empty t-class="t-empty-text [font-size:28rpx] [color:#999]" :src="emptyImg">
               暂无相关订单
             </t-empty>

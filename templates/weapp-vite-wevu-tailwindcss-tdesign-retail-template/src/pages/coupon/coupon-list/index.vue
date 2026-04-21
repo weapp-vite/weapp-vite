@@ -105,7 +105,7 @@ definePageJson({
       :value="tab.key"
     />
   </t-tabs>
-  <view class="coupon-list-wrap [margin-top:32rpx] [margin-left:32rpx] [margin-right:32rpx] [overflow-y:auto] [padding-bottom:100rpx] [padding-bottom:calc(constant(safe-area-inset-top)_+_100rpx)] [padding-bottom:calc(env(safe-area-inset-bottom)_+_100rpx)] [-webkit-overflow-scrolling:touch] [&_.t-pull-down-refresh__bar]:[background:#fff]">
+  <view class="coupon-list-wrap mt-[32rpx] mx-[32rpx] overflow-y-auto [padding-bottom:100rpx] pb-[calc(constant(safe-area-inset-top)+100rpx)] pb-[calc(100rpx+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] [&_.t-pull-down-refresh__bar]:[background:#fff]">
     <t-pull-down-refresh
       id="t-pull-down-refresh"
       t-class-indicator="t-class-indicator"
@@ -116,8 +116,8 @@ definePageJson({
         <coupon-card :couponDTO="item" />
       </view>
     </t-pull-down-refresh>
-    <view class="center-entry [box-sizing:content-box] [border-top:1rpx_solid_#dce0e4] [background-color:#fff] [position:fixed] [bottom:0] [left:0] [right:0] [height:100rpx] [padding-bottom:0] [padding-bottom:constant(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]">
-      <view class="center-entry-btn [color:#fa4126] [font-size:28rpx] [text-align:center] [line-height:100rpx] [display:flex] [align-items:center] [justify-content:center] [height:100rpx]" @tap="goCouponCenterHandle">
+    <view class="center-entry box-content [border-top:1rpx_solid_#dce0e4] bg-white fixed bottom-0 inset-x-0 h-[100rpx] [padding-bottom:0] [padding-bottom:constant(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <view class="center-entry-btn text-[#fa4126] text-[28rpx] text-center leading-[100rpx] flex items-center justify-center h-[100rpx]" @tap="goCouponCenterHandle">
         <view>领券中心</view>
         <t-icon
           name="chevron-right"

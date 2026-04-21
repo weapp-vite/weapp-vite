@@ -76,7 +76,7 @@ defineComponentJson({
     auto-pause-if-open-native
     show-play-btn
     object-fit="contain"
-    class="video my-video [display:flex] [&_.video_cover]:[width:100%] [&_.video_cover]:[height:100%] [&_.video_cover]:[position:relative] [&_.video_play_icon]:[position:absolute] [&_.video_play_icon]:[left:50%] [&_.video_play_icon]:[top:50%] [&_.video_play_icon]:[transform:translate(-50%,_-50%)] [&_.video_play_icon]:[z-index:5] [&_.video_txt]:[margin:10rpx_auto]"
+    class="video my-video flex [&_.video_cover]:size-full [&_.video_cover]:relative [&_.video_play_icon]:absolute [&_.video_play_icon]:left-[50%] [&_.video_play_icon]:top-[50%] [&_.video_play_icon]:transform-[translate(-50%,-50%)] [&_.video_play_icon]:z-5 [&_.video_txt]:m-[10rpx_auto]"
     @pause="bindpause"
     @ended="bindended"
     @play="bindplayByVideo"

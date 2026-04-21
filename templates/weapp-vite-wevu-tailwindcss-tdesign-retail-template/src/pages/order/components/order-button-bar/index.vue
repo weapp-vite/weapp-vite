@@ -236,7 +236,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="btn-bar [display:flex] [justify-content:space-between] [align-items:center] [line-height:1] [&_.order-btn]:[line-height:1] [&_.right]:[display:flex] [&_.right]:[align-items:center] [&_.t-button]:[width:160rpx] [&_.t-button]:[font-weight:400] [&_.t-button]:[margin-left:24rpx] [&_.t-button--max]:[width:176rpx] [&_.t-button--max]:[margin-left:24rpx] [&_.left_.delete-btn]:[font-size:22rpx]">
+  <view class="btn-bar flex justify-between items-center leading-none [&_.order-btn]:leading-none [&_.right]:flex [&_.right]:items-center [&_.t-button]:w-[160rpx] [&_.t-button]:font-normal [&_.t-button]:ml-[24rpx] [&_.t-button--max]:w-[176rpx] [&_.t-button--max]:ml-[24rpx] [&_.left_.delete-btn]:text-[22rpx]">
     <view class="left">
       <t-button
         v-for="(leftBtn, index) in buttons.left"

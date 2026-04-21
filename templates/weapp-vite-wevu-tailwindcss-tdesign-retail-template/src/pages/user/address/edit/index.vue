@@ -409,21 +409,21 @@ definePageJson({
 </script>
 
 <template>
-  <view class="address-detail [font-size:30rpx]">
-    <view class="divider-line [width:100%] [height:20rpx] [background-color:#f5f5f5]" />
+  <view class="address-detail text-[30rpx]">
+    <view class="divider-line w-full h-[20rpx] bg-[#f5f5f5]" />
     <t-location
       title="获取微信收获地址"
       isCustomStyle
       t-class="address-detail-wx-location [background:#fff] [padding:24rpx_32rpx] [display:flex] [align-items:center] [justify-content:space-between]"
       @change="getWeixinAddress"
     >
-      <t-icon class="address-detail-wx-arrow [align-items:flex-end]" name="arrow_forward" prefix="wr" color="#bbb" size="32rpx" />
+      <t-icon class="address-detail-wx-arrow items-end" name="arrow_forward" prefix="wr" color="#bbb" size="32rpx" />
     </t-location>
-    <view class="divider-line [width:100%] [height:20rpx] [background-color:#f5f5f5]" />
-    <view class="form-address [&_.map]:[font-size:48rpx] [&_.map]:[margin-left:20rpx] [&_.map]:[color:#9d9d9f] [&_.label-list]:[background:#f5f5f5] [&_.label-list]:[color:#333] [&_.label-list]:[min-width:100rpx] [&_.label-list]:[margin-right:32rpx] [&_.label-list]:[font-size:26rpx] [&_.label-list]:[border:2rpx_solid_transparent] [&_.label-list]:[width:auto] [&_.active-btn]:[color:#fa4126] [&_.active-btn]:[border:2rpx_solid_#fa4126] [&_.active-btn]:[background:rgba(255,_95,_21,_0.04)]">
+    <view class="divider-line w-full h-[20rpx] bg-[#f5f5f5]" />
+    <view class="form-address [&_.map]:text-[48rpx] [&_.map]:ml-[20rpx] [&_.map]:text-[#9d9d9f] [&_.label-list]:[background:#f5f5f5] [&_.label-list]:text-[#333] [&_.label-list]:min-w-[100rpx] [&_.label-list]:mr-[32rpx] [&_.label-list]:text-[26rpx] [&_.label-list]:[border:2rpx_solid_transparent] [&_.label-list]:w-auto [&_.active-btn]:text-[#fa4126] [&_.active-btn]:[border:2rpx_solid_#fa4126] [&_.active-btn]:[background:rgba(255,95,21,0.04)]">
       <form class="form-content">
         <t-cell-group>
-          <t-cell class="form-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" t-class-title="t-cell-title" title="收货人" t-class-note="t-cell-note">
+          <t-cell class="form-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none" t-class-title="t-cell-title" title="收货人" t-class-note="t-cell-note">
             <template #note>
               <t-input
                 class="t-input"
@@ -438,7 +438,7 @@ definePageJson({
               />
             </template>
           </t-cell>
-          <t-cell class="form-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" t-class-title="t-cell-title" title="手机号">
+          <t-cell class="form-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none" t-class-title="t-cell-title" title="手机号">
             <template #note>
               <t-input
                 class="t-input"
@@ -453,7 +453,7 @@ definePageJson({
               />
             </template>
           </t-cell>
-          <t-cell class="form-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" t-class-title="t-cell-title" title="地区">
+          <t-cell class="form-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none" t-class-title="t-cell-title" title="地区">
             <template #note>
               <t-input
                 class="t-input"
@@ -470,9 +470,9 @@ definePageJson({
               <t-icon t-class="map" prefix="wr" name="location" @tap.stop="onSearchAddress" />
             </template>
           </t-cell>
-          <t-cell class="form-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" t-class-title="t-cell-title" title="详细地址" :bordered="false">
+          <t-cell class="form-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none" t-class-title="t-cell-title" title="详细地址" :bordered="false">
             <template #note>
-              <view class="textarea__wrapper [width:100%] [&_.t-textarea]:[padding:0]">
+              <view class="textarea__wrapper w-full [&_.t-textarea]:p-0">
                 <t-textarea
                   type="text"
                   :value="locationState.detailAddress"
@@ -485,16 +485,16 @@ definePageJson({
             </template>
           </t-cell>
 
-          <view class="divider-line [width:100%] [height:20rpx] [background-color:#f5f5f5]" />
+          <view class="divider-line w-full h-[20rpx] bg-[#f5f5f5]" />
           <t-cell
-            class="form-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]"
+            class="form-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none"
             t-class-note="t-cell-note address__tag"
             t-class-title="t-cell-title"
             title="标签"
             :bordered="false"
           >
             <template #note>
-              <view class="t-input address-flex-box [display:flex] [flex-wrap:wrap]">
+              <view class="t-input address-flex-box flex flex-wrap">
                 <t-button
                   v-for="(label, index) in labels"
                   :key="index"
@@ -511,7 +511,7 @@ definePageJson({
               </view>
             </template>
           </t-cell>
-          <view class="divider-line [width:100%] [height:20rpx] [background-color:#f5f5f5]" />
+          <view class="divider-line w-full h-[20rpx] bg-[#f5f5f5]" />
           <t-cell title="设置为默认收货地址" :bordered="false">
             <template #note>
               <t-switch
@@ -522,7 +522,7 @@ definePageJson({
             </template>
           </t-cell>
         </t-cell-group>
-        <view class="submit [box-sizing:border-box] [padding:64rpx_30rpx_88rpx_30rpx] [&_.btn-submit-address]:[background:#fa4126] [&_.btn-submit-address]:[color:#fff]">
+        <view class="submit box-border p-[64rpx_30rpx_88rpx_30rpx] [&_.btn-submit-address]:[background:#fa4126] [&_.btn-submit-address]:text-white">
           <t-button shape="round" block :disabled="!submitActive" @tap="formSubmit">
             保存
           </t-button>
@@ -551,7 +551,7 @@ definePageJson({
     @cancel="cancelHandle"
   >
     <template #content>
-      <t-input v-model:value="labelValue" class="dialog__input [margin-top:32rpx] [border-radius:8rpx] [box-sizing:border-box] [--td-input-vertical-padding:12px] [--td-input-bg-color:#f3f3f3]" placeholder="请输入标签名称" borderless />
+      <t-input v-model:value="labelValue" class="dialog__input mt-[32rpx] rounded-[8rpx] box-border [--td-input-vertical-padding:12px] [--td-input-bg-color:#f3f3f3]" placeholder="请输入标签名称" borderless />
     </template>
   </t-dialog>
 </template>

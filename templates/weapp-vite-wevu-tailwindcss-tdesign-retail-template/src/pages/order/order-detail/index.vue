@@ -197,6 +197,11 @@ const invoiceType = ref('不开发票')
 const isPaid = ref(false)
 const pullDownRefresh = ref<any>(null)
 
+const orderDetailPageClass = `order-detail [width:100%] [box-sizing:border-box] [padding:0rpx_0rpx_calc(env(safe-area-inset-bottom)_+_144rpx)] [&_.count-down]:[color:#ffffff] [&_.header]:[width:100%] [&_.header]:[background-color:#ffffff] [&_.order-detail__header]:[width:700rpx] [&_.order-detail__header]:[height:200rpx] [&_.order-detail__header]:[border-radius:24rpx] [&_.order-detail__header]:[margin:0_auto] [&_.order-detail__header]:[overflow:hidden] [&_.order-detail__header]:[display:flex] [&_.order-detail__header]:[flex-direction:column] [&_.order-detail__header]:[align-items:center] [&_.order-detail__header]:[justify-content:center] [&_.order-detail__header]:[background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/template/order-bg.png')] [&_.order-detail__header]:[background-repeat:no-repeat] [&_.order-detail__header]:[background-size:contain] [&_.order-detail__header_.title]:[color:#ffffff] [&_.order-detail__header_.title]:[overflow:hidden] [&_.order-detail__header_.title]:[display:-webkit-box] [&_.order-detail__header_.title]:[-webkit-box-orient:vertical] [&_.order-detail__header_.desc]:[color:#ffffff] [&_.order-detail__header_.desc]:[overflow:hidden] [&_.order-detail__header_.desc]:[display:-webkit-box] [&_.order-detail__header_.desc]:[-webkit-box-orient:vertical] [&_.order-detail__header_.title]:[-webkit-line-clamp:1] [&_.order-detail__header_.title]:[font-size:44rpx] [&_.order-detail__header_.title]:[line-height:64rpx] [&_.order-detail__header_.title]:[margin-bottom:8rpx] [&_.order-detail__header_.title]:[font-weight:bold] [&_.order-detail__header_.desc]:[-webkit-line-clamp:2] [&_.order-detail__header_.desc]:[font-size:24rpx] [&_.order-detail__header_.desc]:[line-height:32rpx] [&_.order-detail__header_.desc_.count-down]:[display:inline] [&_.order-logistics]:[box-sizing:border-box] [&_.order-logistics]:[padding:32rpx] [&_.order-logistics]:[width:100%] [&_.order-logistics]:[background-color:#ffffff] [&_.order-logistics]:[overflow:hidden] [&_.order-logistics]:[color:#333333] [&_.order-logistics]:[font-size:32rpx] [&_.order-logistics]:[line-height:48rpx] [&_.order-logistics]:[display:flex] [&_.order-logistics]:[position:relative] [&_.border-bottom]:[margin:0_auto] [&_.border-bottom]:[width:686rpx] [&_.border-bottom]:[scale:1_0.5] [&_.border-bottom]:[height:2rpx] [&_.border-bottom]:[background-color:#e5e5e5] [&_.border-bottom-margin]:[margin:16rpx_auto] [&_.pay-detail]:[background-color:#ffffff] [&_.pay-detail]:[width:100%] [&_.pay-detail]:[box-sizing:border-box] [&_.padding-inline]:[padding:16rpx_32rpx] [&_.pay-detail_.pay-item]:[width:100%] [&_.pay-detail_.pay-item]:[height:72rpx] [&_.pay-detail_.pay-item]:[display:flex] [&_.pay-detail_.pay-item]:[align-items:center] [&_.pay-detail_.pay-item]:[justify-content:space-between] [&_.pay-detail_.pay-item]:[font-size:26rpx] [&_.pay-detail_.pay-item]:[line-height:36rpx] [&_.pay-detail_.pay-item]:[color:#666666] [&_.pay-detail_.pay-item]:[background-color:#ffffff] [&_.pay-detail_.pay-item_.pay-item__right]:[color:#333333] [&_.pay-detail_.pay-item_.pay-item__right]:[font-size:24rpx] [&_.pay-detail_.pay-item_.pay-item__right]:[display:flex] [&_.pay-detail_.pay-item_.pay-item__right]:[align-items:center] [&_.pay-detail_.pay-item_.pay-item__right]:[justify-content:flex-end] [&_.pay-detail_.pay-item_.pay-item__right]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[display:-webkit-box] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-box-orient:vertical] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-line-clamp:2] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[text-overflow:ellipsis] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[overflow:hidden] [&_.pay-detail_.pay-item_.font-bold]:[font-weight:bold] [&_.pay-detail_.pay-item_.primary]:[color:#fa4126] [&_.pay-detail_.pay-item_.max-size]:[font-size:36rpx] [&_.pay-detail_.pay-item_.max-size]:[line-height:48rpx] [&_.pay-detail_.pay-service]:[width:100%] [&_.pay-detail_.pay-service]:[height:72rpx] [&_.pay-detail_.pay-service]:[display:flex] [&_.pay-detail_.pay-service]:[align-items:center] [&_.pay-detail_.pay-service]:[justify-content:center] [&_.pay-detail_.pay-service]:[font-size:32rpx] [&_.pay-detail_.pay-service]:[line-height:36rpx] [&_.pay-detail_.pay-service]:[color:#333333] [&_.pay-detail_.pay-service]:[background-color:#ffffff]`
+const orderLogisticsClass = `order-logistics [&_.logistics-icon]:[width:40rpx] [&_.logistics-icon]:[height:40rpx] [&_.logistics-icon]:[margin-right:16rpx] [&_.logistics-icon]:[margin-top:4rpx] [&_.logistics-content]:[flex:1] [&_.logistics-content_.logistics-time]:[font-size:28rpx] [&_.logistics-content_.logistics-time]:[line-height:40rpx] [&_.logistics-content_.logistics-time]:[color:#999999] [&_.logistics-content_.logistics-time]:[margin-top:12rpx] [&_.logistics-back]:[color:#999999] [&_.logistics-back]:[align-self:center] [&_.edit-text]:[color:#fa4126] [&_.edit-text]:[font-size:26rpx] [&_.edit-text]:[line-height:36rpx]`
+const orderPayItemClass = `pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]`
+const orderBottomBarClass = `bottom-bar [position:fixed] [left:0] [bottom:0] [right:0] [z-index:10] [background:#fff] [height:112rpx] [width:686rpx] [padding:0rpx_32rpx_env(safe-area-inset-bottom)] [display:flex] [align-items:center]`
+
 function composeAddress(currentOrder: Pick<OrderDetailData, 'logisticsVO'>) {
   return [
     currentOrder.logisticsVO.receiverCity,
@@ -434,7 +439,7 @@ definePageJson({
 <template>
   <t-pull-down-refresh id="t-pull-down-refresh" t-class-indicator="t-class-indicator" @refresh="onPullDownRefresh_">
     <!-- 页面内容 -->
-    <view class="order-detail [width:100%] [box-sizing:border-box] [padding:0rpx_0rpx_calc(env(safe-area-inset-bottom)_+_144rpx)] [&_.count-down]:[color:#ffffff] [&_.header]:[width:100%] [&_.header]:[background-color:#ffffff] [&_.order-detail__header]:[width:700rpx] [&_.order-detail__header]:[height:200rpx] [&_.order-detail__header]:[border-radius:24rpx] [&_.order-detail__header]:[margin:0_auto] [&_.order-detail__header]:[overflow:hidden] [&_.order-detail__header]:[display:flex] [&_.order-detail__header]:[flex-direction:column] [&_.order-detail__header]:[align-items:center] [&_.order-detail__header]:[justify-content:center] [&_.order-detail__header]:[background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/template/order-bg.png')] [&_.order-detail__header]:[background-repeat:no-repeat] [&_.order-detail__header]:[background-size:contain] [&_.order-detail__header_.title]:[color:#ffffff] [&_.order-detail__header_.title]:[overflow:hidden] [&_.order-detail__header_.title]:[display:-webkit-box] [&_.order-detail__header_.title]:[-webkit-box-orient:vertical] [&_.order-detail__header_.desc]:[color:#ffffff] [&_.order-detail__header_.desc]:[overflow:hidden] [&_.order-detail__header_.desc]:[display:-webkit-box] [&_.order-detail__header_.desc]:[-webkit-box-orient:vertical] [&_.order-detail__header_.title]:[-webkit-line-clamp:1] [&_.order-detail__header_.title]:[font-size:44rpx] [&_.order-detail__header_.title]:[line-height:64rpx] [&_.order-detail__header_.title]:[margin-bottom:8rpx] [&_.order-detail__header_.title]:[font-weight:bold] [&_.order-detail__header_.desc]:[-webkit-line-clamp:2] [&_.order-detail__header_.desc]:[font-size:24rpx] [&_.order-detail__header_.desc]:[line-height:32rpx] [&_.order-detail__header_.desc_.count-down]:[display:inline] [&_.order-logistics]:[box-sizing:border-box] [&_.order-logistics]:[padding:32rpx] [&_.order-logistics]:[width:100%] [&_.order-logistics]:[background-color:#ffffff] [&_.order-logistics]:[overflow:hidden] [&_.order-logistics]:[color:#333333] [&_.order-logistics]:[font-size:32rpx] [&_.order-logistics]:[line-height:48rpx] [&_.order-logistics]:[display:flex] [&_.order-logistics]:[position:relative] [&_.border-bottom]:[margin:0_auto] [&_.border-bottom]:[width:686rpx] [&_.border-bottom]:[scale:1_0.5] [&_.border-bottom]:[height:2rpx] [&_.border-bottom]:[background-color:#e5e5e5] [&_.border-bottom-margin]:[margin:16rpx_auto] [&_.pay-detail]:[background-color:#ffffff] [&_.pay-detail]:[width:100%] [&_.pay-detail]:[box-sizing:border-box] [&_.padding-inline]:[padding:16rpx_32rpx] [&_.pay-detail_.pay-item]:[width:100%] [&_.pay-detail_.pay-item]:[height:72rpx] [&_.pay-detail_.pay-item]:[display:flex] [&_.pay-detail_.pay-item]:[align-items:center] [&_.pay-detail_.pay-item]:[justify-content:space-between] [&_.pay-detail_.pay-item]:[font-size:26rpx] [&_.pay-detail_.pay-item]:[line-height:36rpx] [&_.pay-detail_.pay-item]:[color:#666666] [&_.pay-detail_.pay-item]:[background-color:#ffffff] [&_.pay-detail_.pay-item_.pay-item__right]:[color:#333333] [&_.pay-detail_.pay-item_.pay-item__right]:[font-size:24rpx] [&_.pay-detail_.pay-item_.pay-item__right]:[display:flex] [&_.pay-detail_.pay-item_.pay-item__right]:[align-items:center] [&_.pay-detail_.pay-item_.pay-item__right]:[justify-content:flex-end] [&_.pay-detail_.pay-item_.pay-item__right]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[display:-webkit-box] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-box-orient:vertical] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-line-clamp:2] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[text-overflow:ellipsis] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[overflow:hidden] [&_.pay-detail_.pay-item_.font-bold]:[font-weight:bold] [&_.pay-detail_.pay-item_.primary]:[color:#fa4126] [&_.pay-detail_.pay-item_.max-size]:[font-size:36rpx] [&_.pay-detail_.pay-item_.max-size]:[line-height:48rpx] [&_.pay-detail_.pay-service]:[width:100%] [&_.pay-detail_.pay-service]:[height:72rpx] [&_.pay-detail_.pay-service]:[display:flex] [&_.pay-detail_.pay-service]:[align-items:center] [&_.pay-detail_.pay-service]:[justify-content:center] [&_.pay-detail_.pay-service]:[font-size:32rpx] [&_.pay-detail_.pay-service]:[line-height:36rpx] [&_.pay-detail_.pay-service]:[color:#333333] [&_.pay-detail_.pay-service]:[background-color:#ffffff]">
+    <view :class="orderDetailPageClass">
       <view class="header">
         <view class="order-detail__header">
           <view class="title">
@@ -473,7 +478,7 @@ definePageJson({
         </view>
 
         <!-- 物流 -->
-        <view v-if="logisticsNodes[0]" class="order-logistics [&_.logistics-icon]:[width:40rpx] [&_.logistics-icon]:[height:40rpx] [&_.logistics-icon]:[margin-right:16rpx] [&_.logistics-icon]:[margin-top:4rpx] [&_.logistics-content]:[flex:1] [&_.logistics-content_.logistics-time]:[font-size:28rpx] [&_.logistics-content_.logistics-time]:[line-height:40rpx] [&_.logistics-content_.logistics-time]:[color:#999999] [&_.logistics-content_.logistics-time]:[margin-top:12rpx] [&_.logistics-back]:[color:#999999] [&_.logistics-back]:[align-self:center] [&_.edit-text]:[color:#fa4126] [&_.edit-text]:[font-size:26rpx] [&_.edit-text]:[line-height:36rpx]" @tap="onDeliveryClick">
+        <view v-if="logisticsNodes[0]" :class="orderLogisticsClass" @tap="onDeliveryClick">
           <t-icon name="deliver" size="40rpx" class="logistics-icon" prefix="wr" />
           <view class="logistics-content">
             <view>{{ logisticsNodes[0].desc }}</view>
@@ -485,7 +490,7 @@ definePageJson({
         </view>
         <view v-if="logisticsNodes[0]" class="border-bottom" />
         <!-- 收货地址 -->
-        <view class="order-logistics [&_.logistics-icon]:[width:40rpx] [&_.logistics-icon]:[height:40rpx] [&_.logistics-icon]:[margin-right:16rpx] [&_.logistics-icon]:[margin-top:4rpx] [&_.logistics-content]:[flex:1] [&_.logistics-content_.logistics-time]:[font-size:28rpx] [&_.logistics-content_.logistics-time]:[line-height:40rpx] [&_.logistics-content_.logistics-time]:[color:#999999] [&_.logistics-content_.logistics-time]:[margin-top:12rpx] [&_.logistics-back]:[color:#999999] [&_.logistics-back]:[align-self:center] [&_.edit-text]:[color:#fa4126] [&_.edit-text]:[font-size:26rpx] [&_.edit-text]:[line-height:36rpx]">
+        <view :class="orderLogisticsClass">
           <t-icon name="location" size="40rpx" class="logistics-icon" prefix="wr" />
           <view class="logistics-content">
             <view>{{ `${order.logisticsVO.receiverName} ` }}{{ order.logisticsVO.receiverPhone }}</view>
@@ -519,11 +524,11 @@ definePageJson({
           </template>
         </order-goods-card>
         <view class="pay-detail">
-          <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+          <view :class="orderPayItemClass">
             <text>商品总额</text>
             <price fill decimalSmaller wr-class="pay-item__right font-bold" :price="order.totalAmount || '0'" />
           </view>
-          <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+          <view :class="orderPayItemClass">
             <text>运费</text>
             <view class="pay-item__right font-bold">
               <block v-if="order.freightFee">
@@ -535,14 +540,14 @@ definePageJson({
               </text>
             </view>
           </view>
-          <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+          <view :class="orderPayItemClass">
             <text>活动优惠</text>
             <view class="pay-item__right primary font-bold">
               -
               <price fill :price="order.discountAmount || 0" />
             </view>
           </view>
-          <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+          <view :class="orderPayItemClass">
             <text>优惠券</text>
             <view class="pay-item__right" @tap.stop="onOpenCoupons">
               <block v-if="order.couponAmount">
@@ -555,7 +560,7 @@ definePageJson({
             <!-- <t-icon name="chevron-right" size="32rpx" color="#BBBBBB" /> -->
             </view>
           </view>
-          <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+          <view :class="orderPayItemClass">
             <text>{{ isPaid ? '实付' : '应付' }}</text>
             <price
               fill
@@ -567,7 +572,7 @@ definePageJson({
         </view>
       </order-card>
       <view class="pay-detail padding-inline">
-        <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+        <view :class="orderPayItemClass">
           <text>订单编号</text>
           <view class="pay-item__right" @tap="onOrderNumCopy">
             <text class="order-no">
@@ -578,7 +583,7 @@ definePageJson({
             </view>
           </view>
         </view>
-        <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+        <view :class="orderPayItemClass">
           <text>下单时间</text>
           <view class="pay-item__right">
             <text class="order-no normal-color">
@@ -587,7 +592,7 @@ definePageJson({
           </view>
         </view>
         <view class="border-bottom border-bottom-margin" />
-        <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+        <view :class="orderPayItemClass">
           <text>发票</text>
           <view class="pay-item__right" @tap="onOrderInvoiceView">
             <text class="order-no normal-color">
@@ -598,7 +603,7 @@ definePageJson({
             </view>
           </view>
         </view>
-        <view class="pay-item [&_.pay-item__right_.pay-item__right__copy]:[width:80rpx] [&_.pay-item__right_.pay-item__right__copy]:[height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[text-align:center] [&_.pay-item__right_.pay-item__right__copy]:[font-size:24rpx] [&_.pay-item__right_.pay-item__right__copy]:[line-height:40rpx] [&_.pay-item__right_.pay-item__right__copy]:[color:#333333] [&_.pay-item__right_.pay-item__right__copy]:[position:relative] [&_.pay-item__right_.order-no]:[color:#333333] [&_.pay-item__right_.order-no]:[font-size:26rpx] [&_.pay-item__right_.order-no]:[line-height:40rpx] [&_.pay-item__right_.order-no]:[padding-right:16rpx] [&_.pay-item__right_.normal-color]:[color:#333333]">
+        <view :class="orderPayItemClass">
           <text>备注</text>
           <view class="pay-item__right">
             <text class="order-no normal-color">
@@ -615,7 +620,7 @@ definePageJson({
         </view>
       </view>
     </view>
-    <view v-if="_order.buttons.length > 0" class="bottom-bar [position:fixed] [left:0] [bottom:0] [right:0] [z-index:10] [background:#fff] [height:112rpx] [width:686rpx] [padding:0rpx_32rpx_env(safe-area-inset-bottom)] [display:flex] [align-items:center]">
+    <view v-if="_order.buttons.length > 0" :class="orderBottomBarClass">
       <order-button-bar :order="_order" isBtnMax @refresh="onRefresh" />
     </view>
   </t-pull-down-refresh>

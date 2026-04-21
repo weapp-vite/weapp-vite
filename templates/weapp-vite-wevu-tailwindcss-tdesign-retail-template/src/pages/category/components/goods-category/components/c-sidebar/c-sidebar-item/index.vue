@@ -60,14 +60,14 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="c-sidebar-item-container [background-color:white]">
+  <view class="c-sidebar-item-container bg-[white]">
     <view
-      :class="`c-sidebar-item ${selected ? 'active' : ''} ${disabled ? 'disabled' : ''} ${topRightRadius ? 'top-right-radius' : ''} ${bottomRightRadius ? 'bottom-right-radius' : ''} custom-class [display:flex] [justify-content:center] [text-align:center] [background-color:#f5f5f5] [color:#222427] [padding:20rpx_0] [font-size:26rpx] [&_.active]:[position:relative] [&_.active]:[background:white] [&_.active_.c-sidebar-item__text]:[background-color:white] [&_.active_.c-sidebar-item__text]:[border-radius:36rpx] [&_.active_.c-sidebar-item__text]:[color:#fa4126] [border-top-right-radius:16rpx] [border-bottom-right-radius:16rpx]`"
+      :class="`c-sidebar-item ${selected ? 'active' : ''} ${disabled ? 'disabled' : ''} ${topRightRadius ? 'top-right-radius' : ''} ${bottomRightRadius ? 'bottom-right-radius' : ''} custom-class flex justify-center text-center bg-[#f5f5f5] text-[#222427] p-[20rpx_0] text-[26rpx] [&_.active]:relative [&_.active]:[background:white] [&_.active_.c-sidebar-item__text]:bg-[white] [&_.active_.c-sidebar-item__text]:rounded-[36rpx] [&_.active_.c-sidebar-item__text]:text-[#fa4126] rounded-r-[16rpx]`"
       hover-class="c-sidebar-item--hover"
       :hover-stay-time="70"
       @tap="onClick"
     >
-      <view class="c-sidebar-item__text text-overflow [width:136rpx] [height:36rpx] [padding:8rpx_0] [line-height:36rpx] [text-align:center] [font-size:28rpx] [color:#666666] [overflow:hidden] [text-overflow:ellipsis] [white-space:nowrap]">
+      <view class="c-sidebar-item__text text-overflow w-[136rpx] h-[36rpx] p-[8rpx_0] leading-[36rpx] text-center text-[28rpx] text-[#666666] truncate">
         {{ title }}
       </view>
     </view>

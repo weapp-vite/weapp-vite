@@ -191,10 +191,10 @@ definePageJson({
 
 <template>
   <view class="fill-tracking-no">
-    <view class="notice-bar [padding:24rpx_30rpx] [text-align:center] [font-size:26rpx] [color:#e17349] [background:#fefcef]">
+    <view class="notice-bar p-[24rpx_30rpx] text-center text-[26rpx] text-[#e17349] [background:#fefcef]">
       请填写正确的退货包裹运单信息，以免影响退款进度
     </view>
-    <view class="fill-tracking-no__form [margin-top:20rpx] [--td-input-vertical-padding:0] [&_.t-cell__note]:[justify-content:flex-start] [&_.t-cell__note]:[width:340rpx] [&_.t-cell__note]:[margin-left:10rpx] [&_.t-cell__value]:[color:#333] [&_.t-cell__value]:[font-size:30rpx] [&_.t-cell__value]:[text-align:left] [&_.t-cell__value]:[padding:0] [&_.t-cell__value_.t-textarea__wrapper]:[padding:0] [&_.t-input__control]:[font-size:30rpx] [&_.t-textarea__placeholder]:[font-size:30rpx] [&_.t-cell__placeholder]:[font-size:30rpx] [&_.t-textarea__placeholder]:[color:#bbbbbb] [&_.t-cell__placeholder]:[color:#bbbbbb] [&_.t-input__wrapper]:[margin:0]">
+    <view class="fill-tracking-no__form mt-[20rpx] [--td-input-vertical-padding:0] [&_.t-cell__note]:justify-start [&_.t-cell__note]:w-[340rpx] [&_.t-cell__note]:ml-[10rpx] [&_.t-cell__value]:text-[#333] [&_.t-cell__value]:text-[30rpx] [&_.t-cell__value]:text-left [&_.t-cell__value]:p-0 [&_.t-cell__value_.t-textarea__wrapper]:p-0 [&_.t-input__control]:text-[30rpx] [&_.t-textarea__placeholder]:text-[30rpx] [&_.t-cell__placeholder]:text-[30rpx] [&_.t-textarea__placeholder]:text-[#bbbbbb] [&_.t-cell__placeholder]:text-[#bbbbbb] [&_.t-input__wrapper]:m-0">
       <t-cell-group>
         <t-cell title="运单号" t-class-title="t-cell-title-width">
           <template #note>
@@ -223,7 +223,7 @@ definePageJson({
           @tap="onCompanyTap"
         />
       </t-cell-group>
-      <view class="textarea-wrapper [background:#fff] [display:flex] [align-items:flex-start] [padding:24rpx_32rpx_0_32rpx]">
+      <view class="textarea-wrapper [background:#fff] flex items-start p-[24rpx_32rpx_0_32rpx]">
         <text>备注信息</text>
       </view>
       <t-textarea
@@ -237,7 +237,7 @@ definePageJson({
         @change="onInput"
       />
     </view>
-    <view class="fill-tracking-no__button-bar [margin:38rpx_30rpx_0] [&_.btn]:[background-color:transparent] [&_.btn]:[font-size:32rpx] [&_.btn]:[width:100%] [&_.btn]:[border-radius:48rpx] [&_.btn:first-child]:[margin-bottom:20rpx] [&_.btn_.confirmBtn]:[background:#fa4126] [&_.btn_.confirmBtn]:[color:#fff] [&_.btn_.disabled]:[background-color:#c6c6c6] [&_.btn_.disabled]:[color:#fff]">
+    <view class="fill-tracking-no__button-bar m-[38rpx_30rpx_0] [&_.btn]:bg-transparent [&_.btn]:text-[32rpx] [&_.btn]:w-full [&_.btn]:rounded-[48rpx] [&_.btn:first-child]:mb-[20rpx] [&_.btn_.confirmBtn]:[background:#fa4126] [&_.btn_.confirmBtn]:text-white [&_.btn_.disabled]:bg-[#c6c6c6] [&_.btn_.disabled]:text-white">
       <t-button
         :t-class="`btn ${submitActived ? 'confirmBtn' : ''}`"
         :disabled="!submitActived"

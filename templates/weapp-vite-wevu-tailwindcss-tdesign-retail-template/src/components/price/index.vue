@@ -87,16 +87,16 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :class="`price ${type} wr-class [display:inline] [color:inherit] [font-size:inherit] [text-decoration:inherit] [white-space:nowrap]`">
+  <view :class="`price ${type} wr-class inline text-inherit [font-size:inherit] [text-decoration:inherit] whitespace-nowrap`">
     <view v-if="type === 'delthrough'" class="line" :style="`height:${addUnit(lineThroughWidth)};`" />
-    <view class="symbol symbol-class [display:inline] [color:inherit] [font-size:inherit] [font-size:0.8em] [white-space:nowrap]">
+    <view class="symbol symbol-class inline text-inherit [font-size:inherit] text-[0.8em] whitespace-nowrap">
       {{ symbol }}
     </view>
-    <view class="pprice [display:inline] [margin:0_0_0_4rpx] [white-space:nowrap]">
-      <view class="integer inline [display:inline] [white-space:nowrap] [color:inherit] [font-size:inherit]">
+    <view class="pprice inline m-[0_0_0_4rpx] whitespace-nowrap">
+      <view class="integer inline [display:inline] whitespace-nowrap text-inherit [font-size:inherit]">
         {{ pArr[0] }}
       </view>
-      <view v-if="pArr[1]" :class="`decimal inline ${decimalSmaller ? 'smaller' : ''} decimal-class [display:inline] [white-space:nowrap] [color:inherit] [font-size:inherit] [&_.smaller]:[font-size:0.8em] [&_.smaller]:[vertical-align:baseline]`">
+      <view v-if="pArr[1]" :class="`decimal inline ${decimalSmaller ? 'smaller' : ''} decimal-class whitespace-nowrap text-inherit [font-size:inherit] [&_.smaller]:text-[0.8em] [&_.smaller]:align-baseline`">
         .{{ pArr[1] }}
       </view>
     </view>

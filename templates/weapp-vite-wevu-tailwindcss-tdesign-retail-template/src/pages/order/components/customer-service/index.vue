@@ -50,12 +50,12 @@ defineComponentJson({
 
 <template>
   <!-- 联系客服按钮 -->
-  <view class="wr-class customer-service text-btn [display:inline] [color:#333] [font-size:24rpx]" hover-class="text-btn--active [opacity:0.5]" @tap="onBtnTap">
+  <view class="wr-class customer-service text-btn inline text-[#333] text-[24rpx]" hover-class="text-btn--active [opacity:0.5]" @tap="onBtnTap">
     联系客服
   </view>
   <!-- 联系客服弹框 -->
   <t-popup :visible="show" placement="bottom" @visible-change="onDialogClose">
-    <view class="dialog--customer-service [background-color:#f3f4f5] [overflow:hidden] [&_.content]:[font-size:26rpx] [&_.content]:[margin:32rpx_30rpx] [&_.content]:[text-align:center] [&_.content_.title]:[display:inline] [&_.content_.title]:[color:#999999] [&_.content_.title]:[font-weight:bold] [&_.content_.subtitle]:[display:inline] [&_.content_.subtitle]:[color:#999999] [&_.options_.option]:[color:#333333] [&_.options_.option]:[font-size:30rpx] [&_.options_.option]:[text-align:center] [&_.options_.option]:[height:100rpx] [&_.options_.option]:[line-height:100rpx] [&_.options_.option]:[background-color:white] [&_.options_.option--active]:[opacity:0.5] [&_.options_.option_.main]:[color:#333] [&_.options_.option_.online]:[position:relative] [&_.options_.option_.online]:[top:-17rpx] [&_.options_.option_.online]:[margin-bottom:2rpx]">
+    <view class="dialog--customer-service bg-[#f3f4f5] overflow-hidden [&_.content]:text-[26rpx] [&_.content]:m-[32rpx_30rpx] [&_.content]:text-center [&_.content_.title]:inline [&_.content_.title]:text-[#999999] [&_.content_.title]:[font-weight:bold] [&_.content_.subtitle]:inline [&_.content_.subtitle]:text-[#999999] [&_.options_.option]:text-[#333333] [&_.options_.option]:text-[30rpx] [&_.options_.option]:text-center [&_.options_.option]:h-[100rpx] [&_.options_.option]:leading-[100rpx] [&_.options_.option]:bg-[white] [&_.options_.option--active]:opacity-[0.5] [&_.options_.option_.main]:text-[#333] [&_.options_.option_.online]:relative [&_.options_.option_.online]:top-[-17rpx] [&_.options_.option_.online]:mb-[2rpx]">
       <view v-if="desc" class="content">
         <view class="title">
           服务时间:

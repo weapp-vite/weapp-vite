@@ -651,11 +651,11 @@ definePageJson({
 </script>
 
 <template>
-  <view class="select-service [&_.service-form_.service-from-group]:[margin-top:20rpx] [&_.service-form]:[padding-bottom:calc(env(safe-area-inset-bottom)_+_80rpx)] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:[font-size:36rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:[color:#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:[font-family:DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:[font-size:28rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:[color:#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:[font-family:DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:[color:#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:[font-size:24rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:[font-family:DIN_Alternate] [&_.remark]:[min-height:110rpx] [&_.remark]:[border-radius:10rpx] [&_.remark]:[margin-top:20rpx] [&_.remark]:[background-color:#f5f5f5] [&_.special-cell_.special-cell-note]:[display:flex] [&_.special-cell_.special-cell-note]:[flex-direction:column] [&_.special-cell_.wr-cell__title]:[margin-right:100rpx] [&_.special-cell_.special-cell-note-price-class]:[font-size:36rpx] [&_.special-cell_.special-cell-note-price-class]:[color:#fa4126] [&_.special-cell_.special-cell-note-price-class]:[font-family:DIN_Alternate] [&_.special-cell_.special-cell-note-price-decimal]:[font-size:28rpx] [&_.special-cell_.special-cell-note-price-decimal]:[color:#fa4126] [&_.special-cell_.special-cell-note-price-decimal]:[font-family:DIN_Alternate] [&_.special-cell_.special-cell-note-price-symbol]:[color:#fa4126] [&_.special-cell_.special-cell-note-price-symbol]:[font-size:24rpx] [&_.special-cell_.special-cell-note-price-symbol]:[font-family:DIN_Alternate] [&_.bottom-bar__btn]:[width:686rpx] [&_.bottom-bar__btn]:[background-color:#fa4126] [&_.bottom-bar__btn]:[color:white] [&_.bottom-bar__btn]:[font-size:32rpx] [&_.bottom-bar__btn]:[border-radius:48rpx] [&_.bottom-bar__btn]:[position:absolute] [&_.bottom-bar__btn]:[left:50%] [&_.bottom-bar__btn]:[top:20rpx] [&_.bottom-bar__btn]:[transform:translateX(-50%)] [&_.bottom-bar__btn_.disabled]:[background-color:#c6c6c6] [&_.order-goods-card_.wr-goods-card]:[padding:0_30rpx] [&_.bottom-bar]:[background-color:#fff] [&_.bottom-bar]:[position:fixed] [&_.bottom-bar]:[bottom:0] [&_.bottom-bar]:[left:0] [&_.bottom-bar]:[width:100%] [&_.bottom-bar]:[height:158rpx] [&_.bottom-bar]:[z-index:3]">
-    <view class="order-goods-card [background:#fff] [margin-bottom:24rpx]">
+  <view class="select-service [&_.service-form_.service-from-group]:mt-[20rpx] [&_.service-form]:pb-[calc(env(safe-area-inset-bottom)+80rpx)] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:text-[36rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-class]:font-[DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:text-[28rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-decimal]:font-[DIN_Alternate] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:text-[#333] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:text-[24rpx] [&_.order-goods-card-footer_.order-goods-card-footer-price-symbol]:font-[DIN_Alternate] [&_.remark]:min-h-[110rpx] [&_.remark]:rounded-[10rpx] [&_.remark]:mt-[20rpx] [&_.remark]:bg-[#f5f5f5] [&_.special-cell_.special-cell-note]:flex [&_.special-cell_.special-cell-note]:flex-col [&_.special-cell_.wr-cell__title]:mr-[100rpx] [&_.special-cell_.special-cell-note-price-class]:text-[36rpx] [&_.special-cell_.special-cell-note-price-class]:text-[#fa4126] [&_.special-cell_.special-cell-note-price-class]:font-[DIN_Alternate] [&_.special-cell_.special-cell-note-price-decimal]:text-[28rpx] [&_.special-cell_.special-cell-note-price-decimal]:text-[#fa4126] [&_.special-cell_.special-cell-note-price-decimal]:font-[DIN_Alternate] [&_.special-cell_.special-cell-note-price-symbol]:text-[#fa4126] [&_.special-cell_.special-cell-note-price-symbol]:text-[24rpx] [&_.special-cell_.special-cell-note-price-symbol]:font-[DIN_Alternate] [&_.bottom-bar__btn]:w-[686rpx] [&_.bottom-bar__btn]:bg-[#fa4126] [&_.bottom-bar__btn]:text-[white] [&_.bottom-bar__btn]:text-[32rpx] [&_.bottom-bar__btn]:rounded-[48rpx] [&_.bottom-bar__btn]:absolute [&_.bottom-bar__btn]:left-[50%] [&_.bottom-bar__btn]:top-[20rpx] [&_.bottom-bar__btn]:transform-[translateX(-50%)] [&_.bottom-bar__btn_.disabled]:bg-[#c6c6c6] [&_.order-goods-card_.wr-goods-card]:p-[0_30rpx] [&_.bottom-bar]:bg-white [&_.bottom-bar]:fixed [&_.bottom-bar]:bottom-0 [&_.bottom-bar]:left-0 [&_.bottom-bar]:w-full [&_.bottom-bar]:h-[158rpx] [&_.bottom-bar]:z-3">
+    <view class="order-goods-card [background:#fff] mb-[24rpx]">
       <wr-order-goods-card :goods="goodsInfo" no-top-line thumb-class="order-goods-card-title-class ![width:10rpx]">
         <template #footer>
-          <view class="order-goods-card-footer [display:flex] [width:calc(100%_-_190rpx)] [justify-content:space-between] [position:absolute] [bottom:0] [left:190rpx] [bottom:20rpx]">
+          <view class="order-goods-card-footer flex w-[calc(100%-190rpx)] justify-between absolute [bottom:0] left-[190rpx] bottom-[20rpx]">
             <wr-price
               :price="goodsInfo.paidAmountEach"
               fill
@@ -663,14 +663,14 @@ definePageJson({
               symbol-class="order-goods-card-footer-price-symbol"
               decimal-class="order-goods-card-footer-price-decimal"
             />
-            <view class="order-goods-card-footer-num [color:#999] [line-height:40rpx]">
+            <view class="order-goods-card-footer-num text-[#999] leading-[40rpx]">
               x {{ goodsInfo.boughtQuantity }}
             </view>
           </view>
         </template>
       </wr-order-goods-card>
     </view>
-    <view v-if="!serviceRequireType" class="service-choice [&_.t-cell__title-text]:[color:#333] [&_.t-cell__title-text]:[font-weight:bold]">
+    <view v-if="!serviceRequireType" class="service-choice [&_.t-cell__title-text]:text-[#333] [&_.t-cell__title-text]:[font-weight:bold]">
       <t-cell-group>
         <t-cell
           title="申请退款（无需退货）"
@@ -681,7 +681,7 @@ definePageJson({
           <template #left-icon>
             <t-icon
               prefix="wr"
-              class="t-cell__left__icon [position:relative] [top:-24rpx] [margin-right:18rpx]"
+              class="t-cell__left__icon relative top-[-24rpx] mr-[18rpx]"
               name="goods_refund"
               size="48rpx"
               color="#fa4126"
@@ -698,7 +698,7 @@ definePageJson({
           <template #left-icon>
             <t-icon
               prefix="wr"
-              class="t-cell__left__icon [position:relative] [top:-24rpx] [margin-right:18rpx]"
+              class="t-cell__left__icon relative top-[-24rpx] mr-[18rpx]"
               name="goods_return"
               size="48rpx"
               color="#fa4126"
@@ -709,7 +709,7 @@ definePageJson({
           <template #left-icon>
             <t-icon
               prefix="wr"
-              class="t-cell__left__icon [position:relative] [top:-24rpx] [margin-right:18rpx]"
+              class="t-cell__left__icon relative top-[-24rpx] mr-[18rpx]"
               name="goods_return"
               size="48rpx"
               color="#fa4126"
@@ -718,7 +718,7 @@ definePageJson({
         </t-cell>
       </t-cell-group>
     </view>
-    <view v-else class="service-form [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-class]:[font-size:36rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-class]:[font-family:DIN_Alternate] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-decimal]:[font-size:28rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-decimal]:[font-family:DIN_Alternate] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-symbol]:[font-size:24rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-symbol]:[font-family:DIN_Alternate]">
+    <view v-else class="service-form [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-class]:text-[36rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-class]:font-[DIN_Alternate] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-decimal]:text-[28rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-decimal]:font-[DIN_Alternate] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-symbol]:text-[24rpx] [&_.service-from-group_.service-from-group__wrapper_.refund-money-price-symbol]:font-[DIN_Alternate]">
       <view class="service-from-group">
         <t-cell-group>
           <t-cell title="商品收货状态" arrow :note="serviceFrom.receiptStatus.desc" @tap="onApplyGoodsStatus" />
@@ -752,7 +752,7 @@ definePageJson({
             @tap="onAmountTap"
           >
             <template #note>
-              <view class="service-from-group__wrapper [display:flex] [flex-direction:column] [font-family:DIN_Alternate] [font-weight:bold] [font-size:36rpx] [text-align:right] [color:#fa4126]">
+              <view class="service-from-group__wrapper flex flex-col font-[DIN_Alternate] [font-weight:bold] text-[36rpx] text-right text-[#fa4126]">
                 <wr-price
                   :price="serviceFrom.amount.current"
                   fill
@@ -760,7 +760,7 @@ definePageJson({
                   symbol-class="refund-money-price-symbol"
                   decimal-class="refund-money-price-decimal"
                 />
-                <view class="service-from-group__price [display:flex] [align-items:center] [color:#bbb] [font-size:24rpx] [position:relative] [left:30rpx]">
+                <view class="service-from-group__price flex items-center text-[#bbb] text-[24rpx] relative left-[30rpx]">
                   修改
                   <template #left-icon>
                     <t-icon color="#bbb" name="chevron-right" size="30rpx" />
@@ -771,7 +771,7 @@ definePageJson({
           </t-cell>
         </t-cell-group>
       </view>
-      <view class="service-from-group__textarea [margin-top:20rpx] [background-color:#fff] [padding:32rpx_32rpx_24rpx] [&_.t-textarea__wrapper_.t-textarea__wrapper-textarea]:[height:136rpx] [&_.t-textarea__wrapper_.t-textarea__wrapper-textarea]:[box-sizing:border-box]">
+      <view class="service-from-group__textarea mt-[20rpx] bg-white p-[32rpx_32rpx_24rpx] [&_.t-textarea__wrapper_.t-textarea__wrapper-textarea]:h-[136rpx] [&_.t-textarea__wrapper_.t-textarea__wrapper-textarea]:box-border">
         <text class="textarea--label">
           退款说明
         </text>
@@ -785,7 +785,7 @@ definePageJson({
           @change="onRemarkChange"
         />
       </view>
-      <view class="service-from-group__grid [padding:0_32rpx_48rpx] [background:#fff] [margin-bottom:148rpx]">
+      <view class="service-from-group__grid p-[0_32rpx_48rpx] [background:#fff] mb-[148rpx]">
         <t-upload
           :media-type="['image', 'video']"
           :files="serviceFrom.rightsImageUrls"
@@ -797,9 +797,9 @@ definePageJson({
           @select-change="handleSelectChange"
         >
           <template #add-content>
-            <view class="upload-addcontent-slot [background-color:#f5f5f5] [height:inherit] [display:flex] [flex-direction:column] [align-items:center] [justify-content:center]">
+            <view class="upload-addcontent-slot bg-[#f5f5f5] h-[inherit] flex flex-col items-center justify-center">
               <t-icon name="add" size="60rpx" />
-              <view class="upload-desc [text-align:center] [display:flex] [flex-direction:column] [font-size:24rpx] [color:#999]">
+              <view class="upload-desc text-center flex flex-col text-[24rpx] text-[#999]">
                 <text>上传凭证</text>
                 <text>（最多3张）</text>
               </view>
@@ -820,7 +820,7 @@ definePageJson({
   </view>
   <t-popup :visible="showReceiptStatusDialog" placement="bottom" @close="closeReceiptStatusDialog">
     <template #content>
-      <view class="dialog--service-status [background-color:#f3f4f5] [overflow:hidden] [&_.options_.option]:[color:#333333] [&_.options_.option]:[font-size:30rpx] [&_.options_.option]:[text-align:center] [&_.options_.option]:[height:100rpx] [&_.options_.option]:[line-height:100rpx] [&_.options_.option]:[background-color:white] [&_.options_.option--active]:[opacity:0.5] [&_.options_.option_.main]:[color:#fa4126] [&_.cancel]:[color:#333333] [&_.cancel]:[font-size:30rpx] [&_.cancel]:[text-align:center] [&_.cancel]:[height:100rpx] [&_.cancel]:[line-height:100rpx] [&_.cancel]:[background-color:white] [&_.cancel]:[margin-top:20rpx] [&_.cancel--active]:[opacity:0.5]">
+      <view class="dialog--service-status bg-[#f3f4f5] overflow-hidden [&_.options_.option]:text-[#333333] [&_.options_.option]:text-[30rpx] [&_.options_.option]:text-center [&_.options_.option]:h-[100rpx] [&_.options_.option]:leading-[100rpx] [&_.options_.option]:bg-[white] [&_.options_.option--active]:opacity-[0.5] [&_.options_.option_.main]:text-[#fa4126] [&_.cancel]:text-[#333333] [&_.cancel]:text-[30rpx] [&_.cancel]:text-center [&_.cancel]:h-[100rpx] [&_.cancel]:leading-[100rpx] [&_.cancel]:bg-[white] [&_.cancel]:mt-[20rpx] [&_.cancel--active]:opacity-[0.5]">
         <view class="options">
           <view
             v-for="(item, index) in receiptStatusList"
@@ -850,12 +850,12 @@ definePageJson({
     @cancel="onAmountDialogCancel"
   >
     <template #title>
-      <view class="input-dialog__title [color:#333] [font-size:32rpx] [font-weight:normal]">
+      <view class="input-dialog__title text-[#333] text-[32rpx] [font-weight:normal]">
         退款金额
       </view>
     </template>
     <template #content>
-      <view class="input-dialog__content [&_.input-dialog__input]:[font-size:72rpx] [&_.input-dialog__input]:[height:64rpx] [&_.input-dialog__input]:[line-height:64rpx] [&_.input]:[font-size:48rpx] [&_.input]:[padding-left:0] [&_.input]:[padding-right:0] [&_.tips]:[margin-top:24rpx] [&_.tips]:[font-size:24rpx] [&_.tips]:[color:#999999]">
+      <view class="input-dialog__content [&_.input-dialog__input]:text-[72rpx] [&_.input-dialog__input]:h-[64rpx] [&_.input-dialog__input]:leading-[64rpx] [&_.input]:text-[48rpx] [&_.input]:px-0 [&_.tips]:mt-[24rpx] [&_.tips]:text-[24rpx] [&_.tips]:text-[#999999]">
         <t-input
           t-class="input"
           t-class-input="input-dialog__input"

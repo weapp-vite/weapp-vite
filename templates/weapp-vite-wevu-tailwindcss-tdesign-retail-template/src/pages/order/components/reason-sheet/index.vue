@@ -165,7 +165,7 @@ defineComponentJson({
 
 <template>
   <t-popup :visible="visible" placement="bottom" :close-btn="showCloseButton" @visible-change="onVisibleChange">
-    <view class="popup-content [background-color:white] [color:#222427] [border-radius:20rpx_20rpx_0_0] [overflow:hidden] [&_.header]:[height:100rpx] [&_.header]:[line-height:100rpx] [&_.header]:[text-align:center] [&_.header]:[vertical-align:middle] [&_.header]:[font-size:32rpx] [&_.header]:[font-weight:bold] [&_.header]:[position:relative] [&_.options]:[max-height:60vh] [&_.options]:[overflow-y:scroll] [&_.options]:[-webkit-overflow-scrolling:touch] [&_.options_.cell]:[height:100rpx] [&_.options_.cell]:[align-items:center] [&_.options_.cell]:[font-size:30rpx] [&_.options_.cell]:[color:#333333] [&_.button-bar]:[width:100%] [&_.button-bar]:[padding:20rpx_30rpx] [&_.button-bar]:[display:flex] [&_.button-bar]:[flex-wrap:nowrap] [&_.button-bar]:[align-items:center] [&_.button-bar]:[justify-content:space-between] [&_.button-bar_.btn]:[width:100%] [&_.button-bar_.btn]:[background:#fa4126] [&_.button-bar_.btn]:[color:#fff] [&_.button-bar_.btn]:[border-radius:48rpx]">
+    <view class="popup-content bg-[white] text-[#222427] rounded-[20rpx_20rpx_0_0] overflow-hidden [&_.header]:h-[100rpx] [&_.header]:leading-[100rpx] [&_.header]:text-center [&_.header]:align-middle [&_.header]:text-[32rpx] [&_.header]:[font-weight:bold] [&_.header]:relative [&_.options]:max-h-[60vh] [&_.options]:overflow-y-scroll [&_.options]:[-webkit-overflow-scrolling:touch] [&_.options_.cell]:h-[100rpx] [&_.options_.cell]:items-center [&_.options_.cell]:text-[30rpx] [&_.options_.cell]:text-[#333333] [&_.button-bar]:w-full [&_.button-bar]:p-[20rpx_30rpx] [&_.button-bar]:flex [&_.button-bar]:flex-nowrap [&_.button-bar]:items-center [&_.button-bar]:justify-between [&_.button-bar_.btn]:w-full [&_.button-bar_.btn]:[background:#fa4126] [&_.button-bar_.btn]:text-white [&_.button-bar_.btn]:rounded-[48rpx]">
       <view class="header">
         {{ title }}
       </view>
@@ -187,12 +187,12 @@ defineComponentJson({
           </template>
         </t-cell>
       </view>
-      <view v-if="showConfirmButton" class="button-bar [&_.btnWrapper]:[width:100%]">
+      <view v-if="showConfirmButton" class="button-bar [&_.btnWrapper]:w-full">
         <t-button class="btnWrapper" t-class="btn" @tap="onConfirm">
           {{ confirmButtonText }}
         </t-button>
       </view>
-      <view v-if="showCancelButton" class="[padding:0_30rpx_30rpx]">
+      <view v-if="showCancelButton" class="p-[0_30rpx_30rpx]">
         <t-button variant="text" @tap="onCancel()">
           {{ cancelButtonText }}
         </t-button>

@@ -410,7 +410,7 @@ definePageJson({
       @delete="onGoodsDelete"
     />
 
-    <view class="gap [height:100rpx] [width:100%]" />
+    <view class="gap h-[100rpx] w-full" />
     <!-- 商品小计以及结算按钮 -->
     <cart-bar
       :is-all-selected="cartIsAllSelected"

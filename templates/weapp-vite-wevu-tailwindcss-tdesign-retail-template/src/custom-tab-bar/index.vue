@@ -49,7 +49,7 @@ defineComponentJson({
       v-for="(item, index) in list"
       :key="index"
     >
-      <view class="custom-tab-bar-wrapper [display:flex] [flex-direction:column] [align-items:center] [&_.text]:[font-size:20rpx]">
+      <view class="custom-tab-bar-wrapper flex flex-col items-center [&_.text]:text-[20rpx]">
         <t-icon prefix="wr" :name="item.icon" size="48rpx" />
         <view class="text">
           {{ item.text }}

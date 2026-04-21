@@ -109,7 +109,7 @@ definePageJson({
 </script>
 
 <template>
-  <view v-if="logisticsData.logisticsNo || logisticsData.company" class="page-section cells [margin-top:24rpx] [background-color:white] [&_.order-group__left]:[margin-right:0]">
+  <view v-if="logisticsData.logisticsNo || logisticsData.company" class="page-section cells mt-[24rpx] bg-[white] [&_.order-group__left]:mr-0">
     <t-cell-group>
       <t-cell
         v-if="logisticsData.logisticsNo"
@@ -120,13 +120,13 @@ definePageJson({
         :bordered="false"
       >
         <template #note>
-          <text class="logistics-no [display:inline-block] [text-align:left] [word-break:break-all] [color:#333]">
+          <text class="logistics-no inline-block text-left break-all text-[#333]">
             {{ logisticsData.logisticsNo }}
           </text>
         </template>
         <template #right-icon>
           <view
-            class="text-btn [margin-left:20rpx] [display:inline] [font-size:24rpx] [padding:0_15rpx] [border:1rpx_solid_#ddd] [border-radius:28rpx] [color:#333]"
+            class="text-btn ml-[20rpx] inline text-[24rpx] p-[0_15rpx] [border:1rpx_solid_#ddd] rounded-[28rpx] text-[#333]"
             hover-class="text-btn--active [opacity:0.5]"
             @tap="onLogisticsNoCopy"
           >
@@ -146,7 +146,7 @@ definePageJson({
         <template #right-icon>
           <view
             v-if="logisticsData.phoneNumber"
-            class="text-btn [margin-left:20rpx] [display:inline] [font-size:24rpx] [padding:0_15rpx] [border:1rpx_solid_#ddd] [border-radius:28rpx] [color:#333]"
+            class="text-btn ml-[20rpx] inline text-[24rpx] p-[0_15rpx] [border:1rpx_solid_#ddd] rounded-[28rpx] text-[#333]"
             hover-class="text-btn--active [opacity:0.5]"
             @tap="onCall"
           >
@@ -156,9 +156,9 @@ definePageJson({
       </t-cell>
     </t-cell-group>
   </view>
-  <view class="page-section cell-steps [margin-top:24rpx] [background-color:white] [padding:8rpx] [&_.order-group__left]:[margin-right:0]">
+  <view class="page-section cell-steps mt-[24rpx] bg-[white] p-[8rpx] [&_.order-group__left]:mr-0">
     <t-steps
-      class="page-section__steps [padding:24rpx]"
+      class="page-section__steps p-[24rpx]"
       t-class="steps [&_.step-title]:[font-weight:bold] [&_.step-title]:[color:#333] [&_.step-title]:[font-size:30rpx] [&_.step-desc]:[color:#333333] [&_.step-desc]:[font-size:28rpx] [&_.step-date]:[color:#999999] [&_.step-date]:[font-size:24rpx] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[background:#ffece9] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[color:white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[border:none] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[color:white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[background:#f5f5f5] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[border:none]"
       layout="vertical"
       :current="active"
@@ -166,7 +166,7 @@ definePageJson({
       <t-step
         v-for="(item, index) in logisticsData.nodes"
         :key="index"
-        class="steps [&_.step-title]:[font-weight:bold] [&_.step-title]:[color:#333] [&_.step-title]:[font-size:30rpx] [&_.step-desc]:[color:#333333] [&_.step-desc]:[font-size:28rpx] [&_.step-date]:[color:#999999] [&_.step-date]:[font-size:24rpx] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[background:#ffece9] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[color:white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[border:none] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[color:white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[background:#f5f5f5] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[border:none]"
+        class="steps [&_.step-title]:[font-weight:bold] [&_.step-title]:text-[#333] [&_.step-title]:text-[30rpx] [&_.step-desc]:text-[#333333] [&_.step-desc]:text-[28rpx] [&_.step-date]:text-[#999999] [&_.step-date]:text-[24rpx] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[background:#ffece9] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:text-[white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[border:none] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:text-[white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[background:#f5f5f5] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[border:none]"
         t-class-title="step-title"
         :title="item.title"
         icon="slot"
@@ -174,7 +174,7 @@ definePageJson({
         <block v-if="isUrl(item.icon)">
           <template #icon>
             <t-image
-              class="cell-steps__imgWrapper [width:48rpx] [height:48rpx]"
+              class="cell-steps__imgWrapper size-[48rpx]"
               t-class="cell-steps__img [width:48rpx] [height:48rpx]"
               :src="item.icon"
             />

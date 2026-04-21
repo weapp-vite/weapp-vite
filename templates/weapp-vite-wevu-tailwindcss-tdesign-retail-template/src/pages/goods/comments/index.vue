@@ -201,7 +201,7 @@ definePageJson({
 </script>
 
 <template>
-  <view class="comments-header [display:flex] [flex-wrap:wrap] [padding:32rpx_32rpx_0rpx] [background-color:#fff] [margin-top:-24rpx] [margin-left:-24rpx]">
+  <view class="comments-header flex flex-wrap p-[32rpx_32rpx_0rpx] bg-white mt-[-24rpx] ml-[-24rpx]">
     <t-tag :t-class="`comments-header-tag ${commentType === '' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="" @tap="changeTag">
       全部({{ countObj.commentCount }})
     </t-tag>

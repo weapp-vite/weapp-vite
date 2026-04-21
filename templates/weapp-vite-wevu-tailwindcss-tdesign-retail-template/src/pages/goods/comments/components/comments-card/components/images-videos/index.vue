@@ -37,11 +37,11 @@ defineComponentJson({
 </script>
 
 <template>
-  <view :class="`images-videos-container container-${classType} [display:flex] [flex-wrap:wrap]`">
+  <view :class="`images-videos-container container-${classType} flex flex-wrap`">
     <view
       v-for="resource in resources"
       :key="resource.src"
-      :class="`resource-container resource-container-${classType} [display:flex]`"
+      :class="`resource-container resource-container-${classType} flex`"
     >
       <t-image v-if="resource.type === 'image'" :t-class="`resource-item-${classType}`" :src="resource.src" />
       <my-video v-else :videoSrc="resource.src" :my-video="`resource-item-${classType}`">
@@ -49,7 +49,7 @@ defineComponentJson({
           <t-image :t-class="`resource-item resource-item-${classType}`" :src="resource.coverSrc" />
         </template>
         <template #play-icon>
-          <image class="play-icon [width:96rpx] [height:96rpx]" src="./assets/play.png" />
+          <image class="play-icon size-[96rpx]" src="./assets/play.png" />
         </template>
       </my-video>
     </view>

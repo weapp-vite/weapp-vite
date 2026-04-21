@@ -291,11 +291,11 @@ definePageJson({
     :currAuthStep="currAuthStep"
     @gotoUserEditPage="gotoUserEditPage"
   />
-  <view class="content-wrapper [margin-top:340rpx] [position:relative] [padding:0_30rpx]">
-    <view class="order-group-wrapper [margin-bottom:16rpx]">
+  <view class="content-wrapper mt-[340rpx] relative p-[0_30rpx]">
+    <view class="order-group-wrapper mb-[16rpx]">
       <t-order-group :orderTagInfos="orderTagInfos" @onClickTop="jumpAllOrder" @onClickItem="jumpNav" />
     </view>
-    <view v-for="item in menuData" :key="item[0]?.type || 'menu-group'" class="cell-box [border-radius:10rpx] [overflow:hidden] [margin-bottom:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-padding]:[padding:24rpx_18rpx_24rpx_32rpx]">
+    <view v-for="item in menuData" :key="item[0]?.type || 'menu-group'" class="cell-box rounded-[10rpx] overflow-hidden mb-[20rpx] [&_.order-group__left]:mr-0 [&_.t-cell-padding]:p-[24rpx_18rpx_24rpx_32rpx]">
       <t-cell-group>
         <t-cell
           v-for="(xitem, xindex) in item"
@@ -317,18 +317,18 @@ definePageJson({
       </t-cell-group>
     </view>
   </view>
-  <view v-if="versionNo !== ''" class="footer__version [text-align:center] [margin-top:50rpx] [color:#999] [margin-bottom:4rpx] [font-size:24rpx] [line-height:32rpx]">
+  <view v-if="versionNo !== ''" class="footer__version text-center mt-[50rpx] text-[#999] mb-[4rpx] text-[24rpx] leading-[32rpx]">
     当前版本 {{ versionNo }}
   </view>
   <t-popup :visible="showMakePhone" placement="bottom" data-index="2" @visible-change="closeMakePhone">
-    <view class="popup-content [background:#f5f5f5] [margin-bottom:env(safe-area-inset-bottom)] [border-radius:16rpx_16rpx_0_0] [&_.popup-title]:[background:#fff] [&_.popup-title]:[text-align:center] [&_.popup-title]:[font-size:24rpx] [&_.popup-title]:[color:#999] [&_.popup-title]:[height:112rpx] [&_.popup-title]:[line-height:112rpx] [&_.popup-title]:[border-radius:16rpx_16rpx_0_0] [&_.popup-phone]:[background:#fff] [&_.popup-phone]:[height:100rpx] [&_.popup-phone]:[display:flex] [&_.popup-phone]:[justify-content:center] [&_.popup-phone]:[align-items:center] [&_.popup-phone]:[text-align:center] [&_.popup-phone]:[font-size:30rpx] [&_.popup-phone]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-phone]:[font-weight:400] [&_.popup-phone]:[color:#333] [&_.popup-close]:[background:#fff] [&_.popup-close]:[height:100rpx] [&_.popup-close]:[display:flex] [&_.popup-close]:[justify-content:center] [&_.popup-close]:[align-items:center] [&_.popup-close]:[text-align:center] [&_.popup-close]:[font-size:30rpx] [&_.popup-close]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-close]:[font-weight:400] [&_.popup-close]:[color:#333] [&_.popup-phone_.online]:[margin-bottom:20rpx] [&_.popup-close]:[border:0] [&_.popup-close]:[margin-top:16rpx]">
-      <view v-if="customerServiceInfo.serviceTimeDuration" class="popup-title border-bottom-1px [position:relative]">
+    <view class="popup-content [background:#f5f5f5] mb-[env(safe-area-inset-bottom)] rounded-[16rpx_16rpx_0_0] [&_.popup-title]:[background:#fff] [&_.popup-title]:text-center [&_.popup-title]:text-[24rpx] [&_.popup-title]:text-[#999] [&_.popup-title]:h-[112rpx] [&_.popup-title]:leading-[112rpx] [&_.popup-title]:rounded-[16rpx_16rpx_0_0] [&_.popup-phone]:[background:#fff] [&_.popup-phone]:h-[100rpx] [&_.popup-phone]:flex [&_.popup-phone]:justify-center [&_.popup-phone]:items-center [&_.popup-phone]:text-center [&_.popup-phone]:text-[30rpx] [&_.popup-phone]:font-[PingFangSC-Regular,PingFang_SC] [&_.popup-phone]:font-normal [&_.popup-phone]:text-[#333] [&_.popup-close]:[background:#fff] [&_.popup-close]:h-[100rpx] [&_.popup-close]:flex [&_.popup-close]:justify-center [&_.popup-close]:items-center [&_.popup-close]:text-center [&_.popup-close]:text-[30rpx] [&_.popup-close]:font-[PingFangSC-Regular,PingFang_SC] [&_.popup-close]:font-normal [&_.popup-close]:text-[#333] [&_.popup-phone_.online]:mb-[20rpx] [&_.popup-close]:[border:0] [&_.popup-close]:mt-[16rpx]">
+      <view v-if="customerServiceInfo.serviceTimeDuration" class="popup-title border-bottom-1px relative">
         服务时间: {{ customerServiceInfo.serviceTimeDuration }}
       </view>
-      <view :class="`popup-phone ${showKefu ? 'border-bottom-1px' : ''} [position:relative]`" @tap="call">
+      <view :class="`popup-phone ${showKefu ? 'border-bottom-1px' : ''} relative`" @tap="call">
         电话客服
       </view>
-      <button v-if="showKefu" class="popup-phone border-bottom-1px online [position:relative]" open-type="contact">
+      <button v-if="showKefu" class="popup-phone border-bottom-1px online relative" open-type="contact">
         在线客服
       </button>
       <view class="popup-close" @tap="closeMakePhone">

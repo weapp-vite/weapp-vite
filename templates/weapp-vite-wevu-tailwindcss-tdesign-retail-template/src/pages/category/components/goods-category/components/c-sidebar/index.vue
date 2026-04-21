@@ -122,7 +122,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <scroll-view class="c-sidebar custom-class [width:176rpx] [height:100vh]" scroll-y>
+  <scroll-view class="c-sidebar custom-class w-[176rpx] h-screen" scroll-y>
     <slot />
   </scroll-view>
 </template>

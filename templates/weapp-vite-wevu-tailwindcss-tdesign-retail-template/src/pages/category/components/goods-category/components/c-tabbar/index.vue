@@ -75,23 +75,23 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="c-tabbar custom-class [width:100%] [height:100%] [position:relative] [--tabbar-height:100rpx] [--tabbar-fontsize:28rpx] [--tabbar-background-color:white]">
+  <view class="c-tabbar custom-class size-full relative [--tabbar-height:100rpx] [--tabbar-fontsize:28rpx] [--tabbar-background-color:white]">
     <scroll-view
       v-if="tabList.length > 0"
-      class="c-tabbar__scroll [position:relative]"
+      class="c-tabbar__scroll relative"
       scroll-x="true"
       :scroll-into-view="`id-${currentActive}`"
     >
-      <view :class="`c-tabbar__inner ${showMore && tabList.length > 4 ? 'c-tabbar__inner_more' : ''} [display:flex] [flex-flow:row_nowrap]`">
+      <view :class="`c-tabbar__inner ${showMore && tabList.length > 4 ? 'c-tabbar__inner_more' : ''} flex [flex-flow:row_nowrap]`">
         <view
           v-for="(item, index) in tabList"
           :id="`id-${index}`"
           :key="index"
-          :class="`c-tabbar-item ${currentActive === index ? 'active' : ''} ${item.disabled ? 'disabled' : ''} [flex:none] [height:100rpx] [color:#282828] [font-size:28rpx] [padding:0_20rpx] [&_.disabled]:[color:#ccc]`"
+          :class="`c-tabbar-item ${currentActive === index ? 'active' : ''} ${item.disabled ? 'disabled' : ''} flex-none h-[100rpx] text-[#282828] text-[28rpx] p-[0_20rpx] [&_.disabled]:text-[#ccc]`"
           :data-index="index"
           @tap="onClick"
         >
-          <view class="c-tabbar-item__text [width:100%] [text-align:center] [height:100rpx] [line-height:100rpx]">
+          <view class="c-tabbar-item__text w-full text-center h-[100rpx] leading-[100rpx]">
             {{ item.name }}
           </view>
         </view>

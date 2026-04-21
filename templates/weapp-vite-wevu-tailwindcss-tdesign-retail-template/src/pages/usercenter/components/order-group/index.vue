@@ -50,7 +50,7 @@ defineComponentJson({
 </script>
 
 <template>
-  <view class="order-group [margin-bottom:24rpx] [background-color:#ffffff] [border-radius:16rpx_16rpx_0_0] [&_.order-group__top]:[padding:24rpx_18rpx_24rpx_32rpx] [&_.order-group__top]:[border-radius:16rpx_16rpx_0_0] [&_.order-group__left]:[margin-right:0]">
+  <view class="order-group mb-[24rpx] bg-[#ffffff] rounded-[16rpx_16rpx_0_0] [&_.order-group__top]:p-[24rpx_18rpx_24rpx_32rpx] [&_.order-group__top]:rounded-[16rpx_16rpx_0_0] [&_.order-group__left]:mr-0">
     <t-cell-group v-if="isTop">
       <t-cell
         t-class="order-group__top"
@@ -64,15 +64,15 @@ defineComponentJson({
         @tap="onClickTop"
       />
     </t-cell-group>
-    <view class="order-group__content [overflow:hidden] [width:100%] [height:164rpx] [display:flex] [background-color:#fff] [border-radius:0_0_16rpx_16rpx]">
+    <view class="order-group__content overflow-hidden w-full h-[164rpx] flex bg-white rounded-[0_0_16rpx_16rpx]">
       <view
         v-for="(item, index) in orderTagInfos"
         :key="index"
-        class="order-group__item [overflow:hidden] [display:flex] [flex-direction:column] [align-items:center] [justify-content:center] [flex:1] [&:first-child]:[border-radius:0_0_0_16rpx] [&:last-child]:[border-radius:0_0_16rpx_0]"
+        class="order-group__item overflow-hidden flex flex-col items-center justify-center flex-1 first:rounded-[0_0_0_16rpx] last:rounded-[0_0_16rpx_0]"
         :data-item="item"
         @tap="onClickItem"
       >
-        <view class="order-group__item__icon icon-class [margin-bottom:20rpx] [width:56rpx] [height:56rpx] [position:relative]">
+        <view class="order-group__item__icon icon-class mb-[20rpx] size-[56rpx] relative">
           <t-badge :count="item.orderNum" :max-count="99" color="#FF4646">
             <t-icon
               :prefix="classPrefix"
@@ -82,7 +82,7 @@ defineComponentJson({
             />
           </t-badge>
         </view>
-        <view class="order-group__item__title title-class [font-size:24rpx] [color:#666] [line-height:32rpx]">
+        <view class="order-group__item__title title-class text-[24rpx] text-[#666] leading-[32rpx]">
           {{ item.title }}
         </view>
       </view>
