@@ -668,6 +668,33 @@ describe('vue transform plugin shared helpers', () => {
     expect(output.map?.sources).toEqual(['index.vue'])
   })
 
+  it('still tries resolver-based page feature injection without direct page hook hints', async () => {
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: false,
+      code: 'Page({ setup() { usePageFeatureHooks() } })',
+      map: null,
+    })
+
+    const result = await finalizeTransformEntryScript({
+      result: {
+        template: '<view />',
+        script: 'Page({ setup() { usePageFeatureHooks() } })',
+      } as any,
+      filename: '/project/src/pages/issue-479/index.vue',
+      pluginCtx: {},
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(collectOnPageScrollPerformanceWarningsMock).not.toHaveBeenCalled()
+    expect(result.script).toBe('Page({ setup() { usePageFeatureHooks() } })')
+  })
+
   it('returns original entry code when finalize transform entry code has nothing extra to inject', () => {
     const output = finalizeTransformEntryCode({
       result: {

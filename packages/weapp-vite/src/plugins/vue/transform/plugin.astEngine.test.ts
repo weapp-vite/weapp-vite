@@ -359,13 +359,14 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
   })
 
-  it('skips page feature injection when page script has no page hook hints', async () => {
+  it('still runs page feature injection for pages without direct page hook hints', async () => {
     compileVueFileMock.mockResolvedValueOnce({
       script: 'export default { setup() { const count = 1; return { count } } }',
       template: '<view>{{ count }}</view>',
       meta: {},
     })
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
+    pageMatcherIsPageFileMock.mockResolvedValue(true)
 
     const { createVueTransformPlugin } = await import('./plugin')
     const plugin = createVueTransformPlugin({
@@ -400,7 +401,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       addWatchFile: vi.fn(),
     } as any, '<template><view>{{ count }}</view></template>', '/project/src/pages/home/index.vue')
 
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
     expect(collectOnPageScrollPerformanceWarningsMock).not.toHaveBeenCalled()
   })
 
