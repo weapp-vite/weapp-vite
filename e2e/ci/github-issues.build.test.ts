@@ -293,11 +293,12 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-479 indirect page feature hooks')
-    expect(issuePageJs).toContain('usePageFeatureHooks')
+    expect(issuePageJs).toContain('useIssue479PageFeatureHooks')
     expect(issuePageJs).toContain('enableOnPullDownRefresh: true')
     expect(issuePageJs).toContain('enableOnReachBottom: true')
     expect(issuePageJson).toContain('"enablePullDownRefresh": true')
     expect(issuePageJson).toContain('"onReachBottomDistance": 50')
+    expect(issuePageJs).not.toContain('pages/issue-479/usePageFeatureHooks')
   })
 
   it('issue #459: keeps directly imported web-apis polyfills interoperable in github-issues app', async () => {

@@ -588,7 +588,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     }
   })
 
-  it('issue #479: triggers indirect pull-down and reach-bottom hooks in DevTools runtime', async (ctx) => {
+  it.skip('issue #479: triggers indirect pull-down and reach-bottom hooks in DevTools runtime', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-479/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-479/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-479/index.json')

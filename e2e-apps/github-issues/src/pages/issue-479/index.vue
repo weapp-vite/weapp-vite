@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'wevu'
-import { usePageFeatureHooks } from './usePageFeatureHooks'
+import { useIssue479PageFeatureHooks } from '../../hooks/useIssue479PageFeatureHooks'
 
 definePageJson({
   navigationBarTitleText: 'issue-479',
@@ -11,7 +11,7 @@ definePageJson({
 const logs = ref<string[]>([])
 const items = Array.from({ length: 80 }, (_, index) => `issue-479-item-${index + 1}`)
 
-usePageFeatureHooks(logs.value)
+useIssue479PageFeatureHooks(logs.value)
 
 function _runE2E() {
   return {
