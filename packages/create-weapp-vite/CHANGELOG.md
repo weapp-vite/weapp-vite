@@ -1,5 +1,17 @@
 # create-weapp-vite
 
+## 2.3.5
+
+### Patch Changes
+
+- 🐛 **将所有内置 Tailwind 模板升级到 Tailwind CSS 4，统一切换到 `@tailwindcss/postcss`、`src/app.css` 入口和 `cssEntries` 配置，确保脚手架生成的新项目默认使用 Tailwind 4 并能被 `weapp-tailwindcss` 正常转译。** [`8b404db`](https://github.com/weapp-vite/weapp-vite/commit/8b404dbcc0679b17fd7ba1587afc0e302c8eab0e) by @sonofmagic
+
+- 🐛 **为所有内置模板与脚手架生成流程补齐 `@types/node`，修复新建项目中 `.weapp-vite/tsconfig.node.json` / `.weapp-vite/tsconfig.server.json` 引用 Node 类型时报“找不到类型定义文件 `node`”的问题，并增加相关回归测试。** [`e88adbb`](https://github.com/weapp-vite/weapp-vite/commit/e88adbbbf5bca82ee6548175946e4e321163d594) by @sonofmagic
+
+- 🐛 **为 Tailwind CSS 4 模板补齐 ESLint Tailwind 检查配置，统一将入口指向 `src/app.css`，并对 wevu 模板关闭不兼容的 `better-tailwindcss` 规则，确保新生成项目默认 lint 可用。** [`92c4286`](https://github.com/weapp-vite/weapp-vite/commit/92c428622176a1ced6350e325eb42db638372843) by @sonofmagic
+
+- 🐛 **修复托管 tsconfig 仍然回灌已弃用 `baseUrl` 的问题，并同步更新相关测试夹具，避免 TypeScript 6+ 持续报废弃诊断。** [`c3f2913`](https://github.com/weapp-vite/weapp-vite/commit/c3f2913a00145b802510608a2a50cdcf23c64975) by @sonofmagic
+
 ## 2.3.4
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.15.12
+
+### Patch Changes
+
+- 🐛 **修复托管 tsconfig 仍然回灌已弃用 `baseUrl` 的问题，并同步更新相关测试夹具，避免 TypeScript 6+ 持续报废弃诊断。** [`c3f2913`](https://github.com/weapp-vite/weapp-vite/commit/c3f2913a00145b802510608a2a50cdcf23c64975) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.15.12`, `wevu@6.15.12`
+
 ## 6.15.11
 
 ### Patch Changes
