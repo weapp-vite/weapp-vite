@@ -4,6 +4,9 @@ import { defineConfig } from 'weapp-vite'
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
 
 export default defineConfig({
+  define: {
+    'import.meta.env.ISSUE_484_FLAG': '123456',
+  },
   weapp: {
     srcRoot: 'src',
     autoRoutes: true,

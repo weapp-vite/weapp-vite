@@ -3,6 +3,7 @@ import type { scanWxml } from './scan'
 import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import { changeFileExtension } from '../utils/file'
+import { createStaticImportMetaReplacementMap } from '../utils/importMeta'
 import {
   normalizeImportSjsAttributes,
   resolveScriptModuleTagName,
@@ -191,14 +192,29 @@ function replaceDefineImportMetaEnv(code: string, defineImportMetaEnv?: Record<s
   return ms.toString()
 }
 
+function resolveDefineImportMetaEnv(options: Required<HandleWxmlOptions>) {
+  if (options.importMetaDefineRegistry && options.importMetaRelativePath) {
+    return createStaticImportMetaReplacementMap({
+      importMetaDefineRegistry: options.importMetaDefineRegistry,
+      extension: options.importMetaExtension ?? options.templateExtension ?? '',
+      relativePath: options.importMetaRelativePath,
+    })
+  }
+
+  return options.defineImportMetaEnv
+}
+
 function createCacheKey(options: Required<HandleWxmlOptions>) {
   const extension = options.scriptModuleExtension ?? ''
   const tag = options.scriptModuleTag ?? ''
   const templateExt = options.templateExtension ?? ''
-  const defineKeys = options.defineImportMetaEnv
-    ? Object.keys(options.defineImportMetaEnv).sort().map(key => `${key}:${String(options.defineImportMetaEnv?.[key])}`).join(',')
+  const importMetaRelativePath = options.importMetaRelativePath ?? ''
+  const importMetaExtension = options.importMetaExtension ?? ''
+  const resolvedDefineImportMetaEnv = resolveDefineImportMetaEnv(options)
+  const defineKeys = resolvedDefineImportMetaEnv
+    ? Object.keys(resolvedDefineImportMetaEnv).sort().map(key => `${key}:${String(resolvedDefineImportMetaEnv[key])}`).join(',')
     : ''
-  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${extension}|${tag}|${templateExt}|${defineKeys}`
+  return `${options.removeComment ? 1 : 0}|${options.transformEvent ? 1 : 0}|${extension}|${tag}|${templateExt}|${importMetaExtension}|${importMetaRelativePath}|${defineKeys}`
 }
 
 function getCachedResult(data: ScanResult, cacheKey: string) {
@@ -238,6 +254,9 @@ function getCachedInlineWxsTransform(code: string, extension: string) {
 export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWxmlOptions) {
   const opts = defu<Required<HandleWxmlOptions>, HandleWxmlOptions[]>(options, {
     defineImportMetaEnv: undefined,
+    importMetaDefineRegistry: undefined,
+    importMetaRelativePath: undefined,
+    importMetaExtension: undefined,
     removeComment: true,
     transformEvent: true,
     scriptModuleExtension: undefined,
@@ -295,7 +314,8 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const shouldTransformScriptModuleTags = resolvedScriptTag !== 'wxs' && scriptModuleTagTokens.length > 0
   const shouldRemoveConditionals = removalRanges.length > 0
   const shouldRemoveComments = opts.removeComment && commentTokens.length > 0
-  const shouldReplaceDefineImportMetaEnv = !!opts.defineImportMetaEnv && Object.keys(opts.defineImportMetaEnv).length > 0
+  const resolvedDefineImportMetaEnv = resolveDefineImportMetaEnv(opts)
+  const shouldReplaceDefineImportMetaEnv = !!resolvedDefineImportMetaEnv && Object.keys(resolvedDefineImportMetaEnv).length > 0
 
   if (!shouldNormalizeImports && !shouldNormalizeTemplateImports && !shouldRemoveLang && !shouldTransformInlineWxs && !shouldTransformEvents && !shouldTransformDirectives && !shouldTransformTagNames && !shouldTransformScriptModuleTags && !shouldRemoveConditionals && !shouldRemoveComments && !shouldReplaceDefineImportMetaEnv) {
     return setCachedResult(data, cacheKey, {
@@ -385,7 +405,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const finalCode = shouldNormalizeScriptModuleAttributes(resolvedScriptTag)
     ? normalizeImportSjsAttributes(ms.toString())
     : ms.toString()
-  const codeWithDefine = replaceDefineImportMetaEnv(finalCode, opts.defineImportMetaEnv)
+  const codeWithDefine = replaceDefineImportMetaEnv(finalCode, resolvedDefineImportMetaEnv)
 
   return setCachedResult(data, cacheKey, {
     code: codeWithDefine,

@@ -308,7 +308,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     const appPreludeOptions = resolveAppPreludeOptions(state)
     const appPreludeCode = await resolveAppPreludeCode(scanService.appEntry?.preludePath, {
-      defineImportMetaEnv: configService.defineImportMetaEnv,
+      importMetaDefineRegistry: configService.importMetaDefineRegistry,
       relativePath: scanService.appEntry?.preludePath
         ? configService.relativeAbsoluteSrcRoot(scanService.appEntry.preludePath)
         : undefined,

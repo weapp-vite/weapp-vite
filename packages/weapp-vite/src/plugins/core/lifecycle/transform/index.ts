@@ -89,7 +89,7 @@ export function createTransformHook(state: CorePluginState) {
       : undefined
     const importMetaTransformOptions = relativeOutputPath
       ? {
-          defineImportMetaEnv: configService.defineImportMetaEnv,
+          importMetaDefineRegistry: configService.importMetaDefineRegistry,
           extension: 'js',
           relativePath: relativeOutputPath,
         }

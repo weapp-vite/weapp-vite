@@ -5,28 +5,46 @@ import {
 } from '@weapp-core/constants'
 import { parseSync } from 'oxc-parser'
 import { describe, expect, it, vi } from 'vitest'
+import { createImportMetaDefineRegistry } from '../../../utils/importMeta'
 import { createTransformHook } from './transform'
+
+function createConfigServiceMock(options?: {
+  absoluteSrcRoot?: string
+  defineImportMetaEnv?: Record<string, any>
+  packageJson?: Record<string, any>
+  weappViteConfig?: Record<string, any>
+}) {
+  const absoluteSrcRoot = options?.absoluteSrcRoot ?? '/project/src'
+  const defineImportMetaEnv = options?.defineImportMetaEnv ?? {}
+
+  return {
+    absoluteSrcRoot,
+    defineImportMetaEnv,
+    importMetaDefineRegistry: createImportMetaDefineRegistry({
+      defineEntries: defineImportMetaEnv,
+    }),
+    packageJson: options?.packageJson ?? {
+      dependencies: {},
+    },
+    weappViteConfig: options?.weappViteConfig ?? {},
+    relativeAbsoluteSrcRoot(id: string) {
+      return id.replace(`${absoluteSrcRoot}/`, '')
+    },
+    relativeOutputPath(id: string) {
+      return id.replace(`${absoluteSrcRoot}/`, '')
+    },
+  }
+}
 
 describe('core lifecycle transform hook injectWeapi', () => {
   it('replaces import.meta.filename, import.meta.url, import.meta.dirname and bare import.meta in script files', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
+        configService: createConfigServiceMock({
           defineImportMetaEnv: {
             'import.meta.env': '{"MODE":"production","FEATURE_FLAG":"on"}',
           },
-          packageJson: {
-            dependencies: {},
-          },
-          weappViteConfig: {},
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-          relativeOutputPath(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        }),
       },
     } as any)
 
@@ -48,22 +66,11 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('replaces import.meta access in raw vue sfc script blocks', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
+        configService: createConfigServiceMock({
           defineImportMetaEnv: {
             'import.meta.env': '{"MODE":"production","FEATURE_FLAG":"on"}',
           },
-          packageJson: {
-            dependencies: {},
-          },
-          weappViteConfig: {},
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-          relativeOutputPath(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        }),
       },
     } as any)
 
@@ -87,19 +94,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('injects request globals for declared page entries as transform fallback', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
             },
           },
-          weappViteConfig: {},
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        }),
       },
       entriesMap: new Map([
         ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
@@ -118,19 +119,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('injects request globals for loaded page entries even before entriesMap is populated', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
             },
           },
-          weappViteConfig: {},
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        }),
       },
       loadedEntrySet: new Set(['/project/src/pages/request-globals/fetch.vue']),
       entriesMap: new Map(),
@@ -148,19 +143,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('injects request globals into existing vue script blocks when transform fallback receives raw sfc code', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
             },
           },
-          weappViteConfig: {},
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        }),
       },
       loadedEntrySet: new Set(['/project/src/pages/request-globals/fetch.vue']),
       entriesMap: new Map(),
@@ -187,21 +176,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('injects request globals into script-setup-only vue sfc raw code for next web runtime globals', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
-          packageJson: {
-            dependencies: {},
-          },
+        configService: createConfigServiceMock({
           weappViteConfig: {
             injectWebRuntimeGlobals: {
               enabled: true,
             },
           },
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        }),
       },
       loadedEntrySet: new Set(['/project/src/pages/issue-448/index.vue']),
       entriesMap: new Map(),
@@ -232,17 +213,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('injects passive local bindings for manual installRequestGlobals usage without auto mode', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
-          packageJson: {
-            dependencies: {},
-          },
-          weappViteConfig: {},
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        configService: createConfigServiceMock(),
       },
       loadedEntrySet: new Set(['/project/src/shared/request-globals.ts']),
       entriesMap: new Map(),
@@ -267,16 +238,14 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('rewrites wx/my member access to configured global api', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
               replaceWx: true,
             },
           },
-        },
+        }),
       },
     } as any)
 
@@ -293,15 +262,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('does not rewrite when replaceWx is disabled', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
             },
           },
-        },
+        }),
       },
     } as any)
 
@@ -312,16 +279,14 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('does not rewrite files outside src root', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
               replaceWx: true,
             },
           },
-        },
+        }),
       },
     } as any)
 
@@ -332,19 +297,13 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('skips style requests under src root', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           packageJson: {
             dependencies: {
               axios: '^1.0.0',
             },
           },
-          weappViteConfig: {},
-          relativeAbsoluteSrcRoot(id: string) {
-            return id.replace('/project/src/', '')
-          },
-        },
+        }),
       },
       entriesMap: new Map([
         ['pages/request-globals/fetch', { type: 'page', path: 'pages/request-globals/fetch' }],
@@ -358,16 +317,14 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('respects local bindings and avoids unsafe replacements', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
               replaceWx: true,
             },
           },
-        },
+        }),
       },
     } as any)
 
@@ -378,16 +335,14 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('keeps babel as default ast engine', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           weappViteConfig: {
             injectWeapi: {
               enabled: true,
               replaceWx: true,
             },
           },
-        },
+        }),
       },
     } as any)
 
@@ -403,9 +358,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
   it('fast rejects without rolldown parse when ast engine is oxc and source has no platform api access', async () => {
     const transform = createTransformHook({
       ctx: {
-        configService: {
-          absoluteSrcRoot: '/project/src',
-          defineImportMetaEnv: {},
+        configService: createConfigServiceMock({
           weappViteConfig: {
             ast: {
               engine: 'oxc',
@@ -415,7 +368,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
               replaceWx: true,
             },
           },
-        },
+        }),
       },
     } as any)
 

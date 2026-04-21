@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createImportMetaDefineRegistry } from '../../utils/importMeta'
 import { createRuntimeState } from '../runtimeState'
 import { createIndependentBuilder } from './independent'
 
@@ -25,14 +26,34 @@ vi.mock('../independentError', () => ({
 
 function createConfigService() {
   const defineEnv: Record<string, any> = {}
+  let importMetaEnvDefineOverride: Record<string, any> | undefined
+  let importMetaDefineRegistry = createImportMetaDefineRegistry({
+    baseEnv: defineEnv,
+  })
   return {
     defineEnv,
+    get importMetaEnvDefineOverride() {
+      return importMetaEnvDefineOverride
+    },
+    get importMetaDefineRegistry() {
+      return importMetaDefineRegistry
+    },
     merge: vi.fn((_meta: unknown, inlineConfig: any, inlineBuildConfig: any) => ({
       ...inlineBuildConfig,
       define: inlineConfig?.define,
     })),
     setDefineEnv: vi.fn((key: string, value: any) => {
       defineEnv[key] = value
+      importMetaDefineRegistry = createImportMetaDefineRegistry({
+        baseEnv: defineEnv,
+      })
+    }),
+    setImportMetaEnvDefineOverride: vi.fn((define?: Record<string, any>) => {
+      importMetaEnvDefineOverride = define
+      importMetaDefineRegistry = createImportMetaDefineRegistry({
+        baseEnv: defineEnv,
+        defineEntries: define,
+      })
     }),
   } as any
 }
@@ -68,7 +89,7 @@ describe('runtime buildPlugin independent builder', () => {
     expect(builder.getIndependentOutput('packageA')).toBeUndefined()
   })
 
-  it('syncs subpackage import.meta.env defines during independent build and restores previous state', async () => {
+  it('syncs subpackage import.meta.env override registry during independent build and restores previous state', async () => {
     const output = { output: [{ fileName: 'pkg/common.js' }] } as any
     buildMock.mockResolvedValueOnce(output)
     const runtimeState = createRuntimeState()
@@ -88,10 +109,14 @@ describe('runtime buildPlugin independent builder', () => {
 
     await builder.buildIndependentBundle('packageA', meta)
 
-    expect(configService.setDefineEnv).toHaveBeenCalledWith('VITE_SUB_PACKAGE_B', 'sub-package-b')
+    expect(configService.setImportMetaEnvDefineOverride).toHaveBeenCalledWith({
+      'import.meta.env.VITE_SUB_PACKAGE_B': '"sub-package-b"',
+    })
     expect(configService.defineEnv).toEqual({
       EXISTING: 'kept',
     })
+    expect(configService.importMetaDefineRegistry.envMemberAccess.VITE_SUB_PACKAGE_B).toBeUndefined()
+    expect(configService.importMetaDefineRegistry.envObject.VITE_SUB_PACKAGE_B).toBeUndefined()
   })
 
   it('dedupes concurrent independent builds and allows retry after task settles', async () => {

@@ -1,8 +1,8 @@
 import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import type { ImportMetaDefineRegistry } from '../../utils/importMeta'
 import { isTemplate } from '../../utils'
 import { changeFileExtension } from '../../utils/file'
-import { createStaticImportMetaReplacementMap } from '../../utils/importMeta'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../utils/path'
 import { resolveScriptModuleTagName } from '../../utils/wxmlScriptModule'
@@ -90,12 +90,12 @@ export function emitWxmlAssetFile(options: {
   token: any
   deps?: Set<string>
   emittedCodeCache: Map<string, string>
-  defineImportMetaEnv?: Record<string, any>
+  importMetaDefineRegistry?: ImportMetaDefineRegistry
   scriptModuleExtension?: string
   scriptModuleTag?: string
   templateExtension: string
 }) {
-  const { runtime, id, fileName, token, deps, emittedCodeCache, defineImportMetaEnv, scriptModuleExtension, scriptModuleTag, templateExtension } = options
+  const { runtime, id, fileName, token, deps, emittedCodeCache, importMetaDefineRegistry, scriptModuleExtension, scriptModuleTag, templateExtension } = options
 
   runtime.addWatchFile?.(normalizeWatchPath(id))
   if (deps) {
@@ -105,11 +105,9 @@ export function emitWxmlAssetFile(options: {
   }
 
   const result = handleWxml(token, {
-    defineImportMetaEnv: createStaticImportMetaReplacementMap({
-      defineImportMetaEnv,
-      extension: templateExtension,
-      relativePath: fileName,
-    }),
+    importMetaDefineRegistry,
+    importMetaExtension: templateExtension,
+    importMetaRelativePath: fileName,
     scriptModuleExtension,
     scriptModuleTag,
     templateExtension,
@@ -148,7 +146,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
       token,
       deps: wxmlService.depsMap.get(id),
       emittedCodeCache,
-      defineImportMetaEnv: configService.defineImportMetaEnv,
+      importMetaDefineRegistry: configService.importMetaDefineRegistry,
       scriptModuleExtension,
       scriptModuleTag,
       templateExtension,

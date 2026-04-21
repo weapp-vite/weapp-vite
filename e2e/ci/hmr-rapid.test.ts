@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 /**
@@ -166,14 +166,14 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       await dev.waitFor(waitForFileContains(distPath, 'HMR-SFC'), `${platform} initial SFC template`)
 
       // 第一次修改
-      const firstUpdate = originalSource.replace('<view class="title">HMR-SFC</view>', `<view class="title">${firstMarker}</view>`)
+      const firstUpdate = replaceHmrSfcTitle(originalSource, firstMarker)
       if (firstUpdate === originalSource) {
         throw new Error('Failed to insert first marker into .vue SFC template source.')
       }
       await replaceFileByRename(SFC_SRC_PATH, firstUpdate)
 
       // 第二次修改（无延迟，连续快速写入）
-      const secondUpdate = originalSource.replace('<view class="title">HMR-SFC</view>', `<view class="title">${secondMarker}</view>`)
+      const secondUpdate = replaceHmrSfcTitle(originalSource, secondMarker)
       if (secondUpdate === originalSource) {
         throw new Error('Failed to insert second marker into .vue SFC template source.')
       }

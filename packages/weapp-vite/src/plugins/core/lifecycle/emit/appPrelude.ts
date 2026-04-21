@@ -4,6 +4,7 @@ import type {
   WeappAppPreludeMode,
   WeappInjectRequestGlobalsTarget,
 } from '../../../../types'
+import type { ImportMetaDefineRegistry } from '../../../../utils/importMeta'
 import type { CorePluginState } from '../../helpers'
 import { readFile } from 'node:fs/promises'
 import path from 'pathe'
@@ -59,7 +60,7 @@ export function collectAppPreludeEntryChunkFileNames(state: CorePluginState) {
 export async function resolveAppPreludeCode(
   preludePath: string | undefined,
   options?: {
-    defineImportMetaEnv?: Record<string, any>
+    importMetaDefineRegistry?: ImportMetaDefineRegistry
     relativePath?: string
   },
 ) {
@@ -86,7 +87,7 @@ export async function resolveAppPreludeCode(
   const transformed = await transformWithOxc(source, preludePath)
   const importMetaCode = options?.relativePath
     ? replaceImportMetaAccess(transformed.code, {
-        defineImportMetaEnv: options.defineImportMetaEnv,
+        importMetaDefineRegistry: options.importMetaDefineRegistry,
         extension: path.extname(preludePath),
         relativePath: options.relativePath,
       })

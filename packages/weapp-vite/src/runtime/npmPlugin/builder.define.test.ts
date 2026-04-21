@@ -10,18 +10,20 @@ vi.mock('vite', () => {
 })
 
 describe('runtime npm builder define env', () => {
-  it('passes config defineImportMetaEnv into dependency build options', async () => {
+  it('passes config importMetaDefineEntries into dependency build options', async () => {
     const { createPackageBuilder } = await import('./builder')
+    const importMetaDefineEntries = {
+      'import.meta.env.PLATFORM': JSON.stringify('tt'),
+      'import.meta.env': JSON.stringify({
+        PLATFORM: 'tt',
+        MP_PLATFORM: 'tt',
+      }),
+    }
     const ctx = {
       configService: {
         cwd: '/project',
-        defineImportMetaEnv: {
-          'import.meta.env.PLATFORM': JSON.stringify('tt'),
-          'import.meta.env': JSON.stringify({
-            PLATFORM: 'tt',
-            MP_PLATFORM: 'tt',
-          }),
-        },
+        defineImportMetaEnv: importMetaDefineEntries,
+        importMetaDefineEntries,
         weappViteConfig: {},
       },
     } as MutableCompilerContext
