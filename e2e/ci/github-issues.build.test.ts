@@ -1115,7 +1115,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(userRuntimePath)).toBe(true)
   })
 
-  it('issue #327: routes npm deps by mainPackage/subPackages config without emitting main-package npm output', async () => {
+  it('issue #327: routes npm deps by mainPackage/subPackages config and only emits configured main-package npm output', async () => {
     await runBuild()
 
     const issue327NpmRoot = path.join(DIST_ROOT, 'subpackages/issue-327/miniprogram_npm')
@@ -1139,10 +1139,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(itemCamelCasePath)).toBe(true)
     expect(await fs.pathExists(userMergePath)).toBe(true)
     expect(await fs.pathExists(mainDayjsPath)).toBe(false)
-    expect(await fs.pathExists(mainTdesignPath)).toBe(false)
+    expect(await fs.pathExists(mainTdesignPath)).toBe(true)
     expect(await fs.pathExists(mainLodashPath)).toBe(false)
     expect(await fs.pathExists(mainMergePath)).toBe(false)
-    expect(await fs.pathExists(path.join(DIST_ROOT, 'miniprogram_npm'))).toBe(false)
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'miniprogram_npm'))).toBe(true)
 
     expect(await fs.pathExists(path.join(issue327NpmRoot, 'camelcase/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(issue327NpmRoot, 'merge/index.js'))).toBe(false)
