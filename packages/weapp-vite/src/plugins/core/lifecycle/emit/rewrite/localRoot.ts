@@ -82,9 +82,15 @@ export function rewriteJsonNpmImportsToLocalRoot(
   dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
   basedir?: string,
+  options?: {
+    excludeRoots?: string[]
+  },
 ) {
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
+      continue
+    }
+    if (options?.excludeRoots?.some(excludeRoot => output.fileName === excludeRoot || output.fileName.startsWith(`${excludeRoot}/`))) {
       continue
     }
     if (root && (output.fileName === `${root}.json` || !output.fileName.startsWith(`${root}/`))) {

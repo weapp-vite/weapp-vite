@@ -264,8 +264,18 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       )
     }
     else {
+      const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
+      const localSubPackageMetas = [...subPackageMap.values()]
+        .filter(meta => Array.isArray(meta?.subPackage?.dependencies) && meta.subPackage.dependencies.length > 0)
+      const localSubPackageRoots = localSubPackageMetas
+        .map(meta => meta.subPackage.root)
+        .filter(Boolean)
+
       for (const output of Object.values(rolldownBundle)) {
         if (output?.type !== 'chunk') {
+          continue
+        }
+        if (localSubPackageRoots.some(root => output.fileName === root || output.fileName.startsWith(`${root}/`))) {
           continue
         }
         rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, npmBuildCandidateDependencies, {
@@ -273,11 +283,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           basedir: configService.cwd,
         })
       }
-      rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies, configService.cwd)
+      rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, npmBuildCandidateDependencies, configService.cwd, {
+        excludeRoots: localSubPackageRoots,
+      })
 
-      const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
-      const localSubPackageMetas = [...subPackageMap.values()]
-        .filter(meta => Array.isArray(meta?.subPackage?.dependencies) && meta.subPackage.dependencies.length > 0)
       for (const meta of localSubPackageMetas) {
         for (const output of Object.values(rolldownBundle)) {
           if (output?.type !== 'chunk') {

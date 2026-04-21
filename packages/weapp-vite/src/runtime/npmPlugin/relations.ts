@@ -92,7 +92,9 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
       return [
         {
           ...packNpmRelationList[0],
-          miniprogramNpmDistDir: resolveDefaultNpmDistDir(configService),
+          miniprogramNpmDistDir: shouldUseProjectRootNpmDir(configService.platform)
+            ? resolvePlatformProjectRoot(configService)
+            : resolveDefaultNpmDistDir(configService),
         },
       ]
     }
