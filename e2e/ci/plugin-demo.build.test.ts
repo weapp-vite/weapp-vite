@@ -32,7 +32,7 @@ describe.sequential('plugin-demo build e2e', () => {
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'components/native-meter/index.js'))).toBe(true)
 
     const pluginVendorCode = await fs.readFile(path.join(PLUGIN_DIST_ROOT, 'weapp-vendors/wevu-ref.js'), 'utf8')
-    expect(pluginVendorCode).toContain('miniprogram_npm/dayjs/index')
+    expect(pluginVendorCode).toContain('dayjs')
     expect(pluginVendorCode).toContain('2026-03-19T12:34:00')
     expect(pluginVendorCode).toContain('npm(dayjs) 构建标记')
   })

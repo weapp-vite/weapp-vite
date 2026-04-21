@@ -361,8 +361,46 @@ export function resolveRequestGlobalsInstallerImport(chunk: OutputChunk, install
     return {
       exportName,
       installerChunkFileName,
-      requireImportLiteral: requireMatch[2] ?? null,
     }
+  }
+
+  try {
+    const ast = parseJsLike(chunk.code)
+    let resolvedImport: {
+      exportName: string
+      installerChunkFileName: string
+    } | null = null
+
+    traverse(ast as any, {
+      ImportDeclaration(path: any) {
+        if (resolvedImport) {
+          return
+        }
+
+        const importee = getStaticStringLiteral(path.node?.source)
+        if (!importee) {
+          return
+        }
+
+        const installerChunkFileName = normalizeRelativeChunkImport(chunk.fileName, importee)
+        const exportName = installerChunks.get(installerChunkFileName)
+        if (!exportName) {
+          return
+        }
+
+        resolvedImport = {
+          exportName,
+          installerChunkFileName,
+        }
+      },
+    })
+
+    if (resolvedImport) {
+      return resolvedImport
+    }
+  }
+  catch {
+    // 忽略解析失败，回退为未匹配。
   }
 
   return null
@@ -398,10 +436,10 @@ export function createRequestGlobalsPreludeCode(
   }
   else {
     const installerImport = resolveRequestGlobalsInstallerImport(chunk, installerChunks)
-    if (!installerImport?.requireImportLiteral || !installerImport.exportName) {
+    if (!installerImport?.exportName || !installerImport.installerChunkFileName) {
       return undefined
     }
-    installerHostCode = `require(${installerImport.requireImportLiteral})[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
+    installerHostCode = `require(${JSON.stringify(toRequireRequestPath(chunk.fileName, installerImport.installerChunkFileName))})[${JSON.stringify(installerImport.exportName)}](${createRequestGlobalsInstallerOptionsCode(chunkTargets, networkDefaults)}) || globalThis`
   }
 
   return [

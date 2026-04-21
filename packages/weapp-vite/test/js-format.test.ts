@@ -12,7 +12,7 @@ function getPluginNames(plugins: any) {
 describe('weapp.jsFormat & legacy targets', () => {
   const cwd = getFixture('loadDefaultConfig/case0')
 
-  it('defaults to cjs output without legacy transform', async () => {
+  it('defaults to esm output without legacy transform', async () => {
     const { ctx, dispose } = await createTestCompilerContext({
       cwd,
     })
@@ -21,12 +21,12 @@ describe('weapp.jsFormat & legacy targets', () => {
       const buildConfig = ctx.configService.options.config.build!
       const rolldownOutput = buildConfig.rolldownOptions?.output
 
-      expect(ctx.configService.weappViteConfig.jsFormat).toBe('cjs')
+      expect(ctx.configService.weappViteConfig.jsFormat).toBe('esm')
       expect(buildConfig.target).toBe('es2020')
       expect(Array.isArray(rolldownOutput)).toBe(false)
       if (!Array.isArray(rolldownOutput) && rolldownOutput) {
         expect(rolldownOutput).toMatchObject({
-          format: 'cjs',
+          format: 'esm',
         })
       }
       else {
@@ -165,6 +165,7 @@ describe('weapp.jsFormat & legacy targets', () => {
       cwd,
       inlineConfig: {
         weapp: {
+          jsFormat: 'cjs',
           es5: true,
         },
       },
@@ -188,6 +189,7 @@ describe('weapp.jsFormat & legacy targets', () => {
       cwd,
       inlineConfig: {
         weapp: {
+          jsFormat: 'cjs',
           es5: true,
         },
         build: {

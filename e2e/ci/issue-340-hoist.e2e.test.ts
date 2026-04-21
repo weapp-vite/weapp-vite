@@ -7,6 +7,10 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/issue-340-hoist')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
+function expectModuleReference(code: string, patternSource: string) {
+  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])${patternSource}\\1\\)|from\\s+(['"\`])${patternSource}\\2)`))
+}
+
 async function runBuild() {
   await fs.remove(DIST_ROOT)
 
@@ -46,12 +50,12 @@ describe.sequential('e2e app: issue-340-hoist (build)', () => {
     expect(rootWevuRefJs).toContain('useIssue340SharedMessage')
     expect(rootWevuRefJs).toContain('issue-340-hoist')
 
-    expect(itemPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
-    expect(userPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
+    expectModuleReference(itemPageJs, '\\.\\.\\/\\.\\.\\/\\.\\.\\/weapp-vendors\\/wevu-ref\\.js')
+    expectModuleReference(userPageJs, '\\.\\.\\/\\.\\.\\/\\.\\.\\/weapp-vendors\\/wevu-ref\\.js')
     expect(itemPageJs).not.toMatch(/weapp-shared\/common(?:\.\d+)?\.js/)
     expect(userPageJs).not.toMatch(/weapp-shared\/common(?:\.\d+)?\.js/)
-    expect(itemPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)/)
-    expect(userPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)/)
+    expect(itemPageJs).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)|from\s+(['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\2)/)
+    expect(userPageJs).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)|from\s+(['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\2)/)
     expect(itemPageJs).not.toMatch(/vendors(?:\.\d+)?\.js/)
     expect(userPageJs).not.toMatch(/vendors(?:\.\d+)?\.js/)
 

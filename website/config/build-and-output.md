@@ -139,7 +139,7 @@ export default defineConfig({
 ## `weapp.jsFormat` {#weapp-jsformat}
 
 - **类型**：`'cjs' | 'esm'`
-- **默认值**：`'cjs'`
+- **默认值**：`'esm'`
 
 决定脚本产物使用 CommonJS 还是 ESM。
 

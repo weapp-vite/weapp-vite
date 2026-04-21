@@ -1,3 +1,4 @@
+import type { TestJsFormat } from '../utils/jsFormat'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -6,143 +7,158 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const JS_FORMATS: TestJsFormat[] = ['cjs', 'esm']
 
 function toPosixPath(value: string) {
   return value.replace(/\\/g, '/')
 }
 
-async function runBuild() {
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function expectModuleReference(code: string, specifier: string) {
+  const escapedSpecifier = escapeRegex(specifier)
+  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2)`))
+}
+
+async function runBuild(jsFormat: TestJsFormat) {
   await fs.remove(DIST_ROOT)
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
     projectRoot: APP_ROOT,
     platform: 'weapp',
     cwd: APP_ROOT,
-    label: 'ci:wevu-subpackage-placement',
+    label: `ci:wevu-subpackage-placement:${jsFormat}`,
+    jsFormat,
   })
 }
 
 describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
-  it('emits vue sfc outputs for main package, normal subpackage, and independent subpackage', async () => {
-    await runBuild()
+  for (const jsFormat of JS_FORMATS) {
+    it(`emits vue sfc outputs for main package, normal subpackage, and independent subpackage in ${jsFormat}`, async () => {
+      await runBuild(jsFormat)
 
-    const appJsonPath = path.join(DIST_ROOT, 'app.json')
-    const mainPageJsPath = path.join(DIST_ROOT, 'pages/index/index.js')
-    const mainPageWxmlPath = path.join(DIST_ROOT, 'pages/index/index.wxml')
-    const mainPageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
-    const mainComponentJsPath = path.join(DIST_ROOT, 'components/main-vue-card/index.js')
-    const mainComponentWxmlPath = path.join(DIST_ROOT, 'components/main-vue-card/index.wxml')
-    const nativeBadgeJsonPath = path.join(DIST_ROOT, 'native/native-badge/index.json')
-    const normalEntryJsPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/pages/entry/index.js')
-    const normalDetailJsPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/pages/detail/index.js')
-    const independentEntryJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/entry/index.js')
-    const independentDetailJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/detail/index.js')
-    const mainSharedChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
-    const mainRuntimeChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-src.js')
-    const normalSharedChunkPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/common.js')
-    const independentSharedChunkPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/independentState.js')
+      const appJsonPath = path.join(DIST_ROOT, 'app.json')
+      const mainPageJsPath = path.join(DIST_ROOT, 'pages/index/index.js')
+      const mainPageWxmlPath = path.join(DIST_ROOT, 'pages/index/index.wxml')
+      const mainPageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
+      const mainComponentJsPath = path.join(DIST_ROOT, 'components/main-vue-card/index.js')
+      const mainComponentWxmlPath = path.join(DIST_ROOT, 'components/main-vue-card/index.wxml')
+      const nativeBadgeJsonPath = path.join(DIST_ROOT, 'native/native-badge/index.json')
+      const normalEntryJsPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/pages/entry/index.js')
+      const normalDetailJsPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/pages/detail/index.js')
+      const independentEntryJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/entry/index.js')
+      const independentDetailJsPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/pages/detail/index.js')
+      const mainSharedChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-ref.js')
+      const mainRuntimeChunkPath = path.join(DIST_ROOT, 'weapp-vendors/wevu-src.js')
+      const normalSharedChunkPath = path.join(DIST_ROOT, 'subpackages/normal-wevu/common.js')
+      const independentSharedChunkPath = path.join(DIST_ROOT, 'subpackages/independent-wevu/independentState.js')
 
-    expect(await fs.pathExists(appJsonPath)).toBe(true)
-    expect(await fs.pathExists(mainPageJsPath)).toBe(true)
-    expect(await fs.pathExists(mainPageWxmlPath)).toBe(true)
-    expect(await fs.pathExists(mainPageJsonPath)).toBe(true)
-    expect(await fs.pathExists(mainComponentJsPath)).toBe(true)
-    expect(await fs.pathExists(mainComponentWxmlPath)).toBe(true)
-    expect(await fs.pathExists(nativeBadgeJsonPath)).toBe(true)
-    expect(await fs.pathExists(normalEntryJsPath)).toBe(true)
-    expect(await fs.pathExists(normalDetailJsPath)).toBe(true)
-    expect(await fs.pathExists(independentEntryJsPath)).toBe(true)
-    expect(await fs.pathExists(independentDetailJsPath)).toBe(true)
-    expect(await fs.pathExists(mainSharedChunkPath)).toBe(true)
-    expect(await fs.pathExists(mainRuntimeChunkPath)).toBe(true)
-    expect(await fs.pathExists(normalSharedChunkPath)).toBe(true)
-    expect(await fs.pathExists(independentSharedChunkPath)).toBe(true)
+      expect(await fs.pathExists(appJsonPath)).toBe(true)
+      expect(await fs.pathExists(mainPageJsPath)).toBe(true)
+      expect(await fs.pathExists(mainPageWxmlPath)).toBe(true)
+      expect(await fs.pathExists(mainPageJsonPath)).toBe(true)
+      expect(await fs.pathExists(mainComponentJsPath)).toBe(true)
+      expect(await fs.pathExists(mainComponentWxmlPath)).toBe(true)
+      expect(await fs.pathExists(nativeBadgeJsonPath)).toBe(true)
+      expect(await fs.pathExists(normalEntryJsPath)).toBe(true)
+      expect(await fs.pathExists(normalDetailJsPath)).toBe(true)
+      expect(await fs.pathExists(independentEntryJsPath)).toBe(true)
+      expect(await fs.pathExists(independentDetailJsPath)).toBe(true)
+      expect(await fs.pathExists(mainSharedChunkPath)).toBe(true)
+      expect(await fs.pathExists(mainRuntimeChunkPath)).toBe(true)
+      expect(await fs.pathExists(normalSharedChunkPath)).toBe(true)
+      expect(await fs.pathExists(independentSharedChunkPath)).toBe(true)
 
-    const appJson = await fs.readJson(appJsonPath)
-    const mainPageJs = await fs.readFile(mainPageJsPath, 'utf8')
-    const mainPageWxml = await fs.readFile(mainPageWxmlPath, 'utf8')
-    const mainPageJson = await fs.readJson(mainPageJsonPath)
-    const mainComponentJs = await fs.readFile(mainComponentJsPath, 'utf8')
-    const mainComponentWxml = await fs.readFile(mainComponentWxmlPath, 'utf8')
-    const normalEntryJs = await fs.readFile(normalEntryJsPath, 'utf8')
-    const normalDetailJs = await fs.readFile(normalDetailJsPath, 'utf8')
-    const independentEntryJs = await fs.readFile(independentEntryJsPath, 'utf8')
-    const independentDetailJs = await fs.readFile(independentDetailJsPath, 'utf8')
-    const mainSharedChunk = await fs.readFile(mainSharedChunkPath, 'utf8')
-    const mainRuntimeChunk = await fs.readFile(mainRuntimeChunkPath, 'utf8')
-    const normalSharedChunk = await fs.readFile(normalSharedChunkPath, 'utf8')
-    const independentSharedChunk = await fs.readFile(independentSharedChunkPath, 'utf8')
+      const appJson = await fs.readJson(appJsonPath)
+      const mainPageJs = await fs.readFile(mainPageJsPath, 'utf8')
+      const mainPageWxml = await fs.readFile(mainPageWxmlPath, 'utf8')
+      const mainPageJson = await fs.readJson(mainPageJsonPath)
+      const mainComponentJs = await fs.readFile(mainComponentJsPath, 'utf8')
+      const mainComponentWxml = await fs.readFile(mainComponentWxmlPath, 'utf8')
+      const normalEntryJs = await fs.readFile(normalEntryJsPath, 'utf8')
+      const normalDetailJs = await fs.readFile(normalDetailJsPath, 'utf8')
+      const independentEntryJs = await fs.readFile(independentEntryJsPath, 'utf8')
+      const independentDetailJs = await fs.readFile(independentDetailJsPath, 'utf8')
+      const mainSharedChunk = await fs.readFile(mainSharedChunkPath, 'utf8')
+      const mainRuntimeChunk = await fs.readFile(mainRuntimeChunkPath, 'utf8')
+      const normalSharedChunk = await fs.readFile(normalSharedChunkPath, 'utf8')
+      const independentSharedChunk = await fs.readFile(independentSharedChunkPath, 'utf8')
 
-    expect(appJson.pages).toEqual(['pages/index/index'])
-    expect(appJson.subPackages).toEqual([
-      {
-        root: 'subpackages/normal-wevu',
-        pages: ['pages/entry/index', 'pages/detail/index'],
-      },
-      {
-        root: 'subpackages/independent-wevu',
-        pages: ['pages/entry/index', 'pages/detail/index'],
-        independent: true,
-      },
-    ])
+      expect(appJson.pages).toEqual(['pages/index/index'])
+      expect(appJson.subPackages).toEqual([
+        {
+          root: 'subpackages/normal-wevu',
+          pages: ['pages/entry/index', 'pages/detail/index'],
+        },
+        {
+          root: 'subpackages/independent-wevu',
+          pages: ['pages/entry/index', 'pages/detail/index'],
+          independent: true,
+        },
+      ])
 
-    expect(mainPageJson.usingComponents).toEqual({
-      'MainVueCard': '/components/main-vue-card/index',
-      'native-badge': '/native/native-badge/index',
+      expect(mainPageJson.usingComponents).toEqual({
+        'MainVueCard': '/components/main-vue-card/index',
+        'native-badge': '/native/native-badge/index',
+      })
+      expectModuleReference(mainPageJs, '../../weapp-vendors/wevu-ref.js')
+      expectModuleReference(mainPageJs, '../../weapp-vendors/wevu-src.js')
+      expect(mainPageJs).toContain('runE2E')
+      expect(mainPageJs).toContain('MainVueCard')
+      expect(mainPageWxml).toContain('__WSP_MAIN_VUE__')
+      expect(mainPageWxml).toContain('<MainVueCard')
+      expect(mainPageWxml).toContain('<native-badge')
+      expect(mainComponentJs).toMatch(/props:\s*\{\s*title:\s*null,\s*count:\s*null,\s*double:\s*null\s*\}/)
+      expect(mainComponentJs).toContain('setup(__props, { expose })')
+      expect(mainComponentWxml).toContain('{{props.title}}')
+      expect(mainComponentWxml).toContain('{{props.count}}')
+      expect(mainComponentWxml).toContain('{{props.double}}')
+
+      expect(mainSharedChunk).toContain('onLaunch')
+      expect(mainSharedChunk).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
+      expect(mainRuntimeChunk).toContain('createWevuComponent')
+
+      expect(mainPageJs).toContain('/subpackages/normal-wevu/pages/entry/index')
+      expect(mainPageJs).toContain('/subpackages/independent-wevu/pages/entry/index')
+
+      expectModuleReference(normalEntryJs, '../../common.js')
+      expectModuleReference(normalEntryJs, '../../../../weapp-vendors/wevu-src.js')
+      expect(normalEntryJs).toContain('goIndependent')
+      expectModuleReference(normalDetailJs, '../../common.js')
+      expectModuleReference(normalDetailJs, '../../../../weapp-vendors/wevu-src.js')
+      expect(normalDetailJs).toContain('from.value')
+
+      expectModuleReference(independentEntryJs, '../../independentState.js')
+      expect(independentEntryJs).toContain('goNormal')
+      expectModuleReference(independentDetailJs, '../../independentState.js')
+      expect(independentDetailJs).toContain('from.value')
+
+      expect(normalSharedChunk).toContain('var count = ')
+      expectModuleReference(normalSharedChunk, '../../weapp-vendors/wevu-ref.js')
+      expect(normalSharedChunk).toMatch(/\bref\(0\)/)
+      expect(normalSharedChunk).toContain('from:')
+      expect(normalSharedChunk).toMatch(/ref\(\s*['"`]direct['"`]\s*\)/)
+      expect(normalSharedChunk).toContain('count.value * 2')
+      expect(normalSharedChunk).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
+
+      expect(independentSharedChunk).toContain('var count = ')
+      expect(independentSharedChunk).toMatch(/\bref\(10\)|\b\(10\)/)
+      expect(independentSharedChunk).toContain('from:')
+      expect(independentSharedChunk).toMatch(/\(\s*['"`]direct['"`]\s*\)/)
+      expect(independentSharedChunk).toContain('count.value * 2')
+      expect(independentSharedChunk).toMatch(/Object\.defineProperty\(exports,|export\s+\{/)
+
+      const distJsFiles = (await fs.readdir(DIST_ROOT, { recursive: true }))
+        .filter(file => typeof file === 'string' && file.endsWith('.js'))
+        .map(file => toPosixPath(file))
+
+      expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-ref.js'))).toBe(true)
+      expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-src.js'))).toBe(true)
+      expect(distJsFiles.some(file => file.includes('subpackages/normal-wevu/common.js'))).toBe(true)
+      expect(distJsFiles.some(file => file.includes('subpackages/independent-wevu/independentState.js'))).toBe(true)
+      expect(distJsFiles.includes('pages/index/index.js')).toBe(true)
     })
-    expect(mainPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/weapp-vendors\/wevu-ref\.js\1\)/)
-    expect(mainPageJs).toMatch(/require\((['"`])\.\.\/\.\.\/weapp-vendors\/wevu-src\.js\1\)/)
-    expect(mainPageJs).toContain('runE2E')
-    expect(mainPageJs).toContain('MainVueCard')
-    expect(mainPageWxml).toContain('__WSP_MAIN_VUE__')
-    expect(mainPageWxml).toContain('<MainVueCard')
-    expect(mainPageWxml).toContain('<native-badge')
-    expect(mainComponentJs).toMatch(/props:\s*\{\s*title:\s*null,\s*count:\s*null,\s*double:\s*null\s*\}/)
-    expect(mainComponentJs).toContain('setup(__props, { expose })')
-    expect(mainComponentWxml).toContain('{{props.title}}')
-    expect(mainComponentWxml).toContain('{{props.count}}')
-    expect(mainComponentWxml).toContain('{{props.double}}')
-
-    expect(mainSharedChunk).toContain('onLaunch')
-    expect(mainSharedChunk).toContain('Object.defineProperty(exports,')
-    expect(mainRuntimeChunk).toContain('createWevuComponent')
-
-    expect(mainPageJs).toContain('/subpackages/normal-wevu/pages/entry/index')
-    expect(mainPageJs).toContain('/subpackages/independent-wevu/pages/entry/index')
-
-    expect(normalEntryJs).toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
-    expect(normalEntryJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-src\.js\1\)/)
-    expect(normalEntryJs).toContain('goIndependent')
-    expect(normalDetailJs).toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
-    expect(normalDetailJs).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/\.\.\/weapp-vendors\/wevu-src\.js\1\)/)
-    expect(normalDetailJs).toContain('from.value')
-
-    expect(independentEntryJs).toMatch(/require\((['"`])\.\.\/\.\.\/independentState\.js\1\)/)
-    expect(independentEntryJs).toContain('goNormal')
-    expect(independentDetailJs).toMatch(/require\((['"`])\.\.\/\.\.\/independentState\.js\1\)/)
-    expect(independentDetailJs).toContain('from.value')
-
-    expect(normalSharedChunk).toContain('var count = ')
-    expect(normalSharedChunk).toContain('require("../../weapp-vendors/wevu-ref.js")')
-    expect(normalSharedChunk).toContain('.ref(0)')
-    expect(normalSharedChunk).toContain('from:')
-    expect(normalSharedChunk).toMatch(/ref\(\s*['"`]direct['"`]\s*\)/)
-    expect(normalSharedChunk).toContain('count.value * 2')
-
-    expect(independentSharedChunk).toContain('var count = ')
-    expect(independentSharedChunk).toContain('(10)')
-    expect(independentSharedChunk).toContain('from:')
-    expect(independentSharedChunk).toMatch(/\(\s*['"`]direct['"`]\s*\)/)
-    expect(independentSharedChunk).toContain('count.value * 2')
-
-    const distJsFiles = (await fs.readdir(DIST_ROOT, { recursive: true }))
-      .filter(file => typeof file === 'string' && file.endsWith('.js'))
-      .map(file => toPosixPath(file))
-
-    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-ref.js'))).toBe(true)
-    expect(distJsFiles.some(file => file.includes('weapp-vendors/wevu-src.js'))).toBe(true)
-    expect(distJsFiles.some(file => file.includes('subpackages/normal-wevu/common.js'))).toBe(true)
-    expect(distJsFiles.some(file => file.includes('subpackages/independent-wevu/independentState.js'))).toBe(true)
-    expect(distJsFiles.includes('pages/index/index.js')).toBe(true)
-  })
+  }
 })
