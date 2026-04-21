@@ -147,6 +147,7 @@ export interface RuntimeState {
   config: {
     packageInfo: PackageInfo
     defineEnv: Record<string, any>
+    importMetaEnvDefineOverride?: Record<string, any>
     packageManager: DetectResult
     options: LoadConfigResult
   }
@@ -224,6 +225,7 @@ export function createRuntimeState(): RuntimeState {
     config: {
       packageInfo: createDefaultPackageInfo(),
       defineEnv: {},
+      importMetaEnvDefineOverride: undefined,
       packageManager: createDefaultPackageManager(),
       options: createDefaultLoadConfigResult(),
     },

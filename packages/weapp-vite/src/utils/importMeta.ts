@@ -1,6 +1,14 @@
 import path from 'pathe'
 import { normalizeRelativePath } from './path'
 
+const IMPORT_META_ENV_PREFIX = 'import.meta.env.'
+
+export interface ImportMetaDefineRegistry {
+  defineEntries: Record<string, any>
+  envObject: Record<string, any>
+  envMemberAccess: Record<string, any>
+}
+
 export interface StaticImportMetaValues {
   filename: string
   dirname: string
@@ -22,33 +30,72 @@ export function parseImportMetaDefineValue(value: any) {
   }
 }
 
-export function resolveImportMetaEnvObject(defineImportMetaEnv?: Record<string, any>) {
+export function pickImportMetaEnvDefineEntries(define?: Record<string, any>) {
+  if (!define) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(define).filter(([key]) => {
+      return key === 'import.meta.env' || key.startsWith(IMPORT_META_ENV_PREFIX)
+    }),
+  )
+}
+
+export function resolveImportMetaEnvObject(defineImportMetaEnv?: Record<string, any>, fallbackEnv: Record<string, any> = {}) {
   const rawEnv = defineImportMetaEnv?.['import.meta.env']
   const parsed = parseImportMetaDefineValue(rawEnv)
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return {}
+    return fallbackEnv
   }
 
   return parsed
 }
 
-export function resolveImportMetaEnvMemberValues(defineImportMetaEnv?: Record<string, any>) {
+export function resolveImportMetaEnvMemberValues(defineImportMetaEnv?: Record<string, any>, fallbackEnv: Record<string, any> = {}) {
   const values = {
-    ...resolveImportMetaEnvObject(defineImportMetaEnv),
+    ...resolveImportMetaEnvObject(defineImportMetaEnv, fallbackEnv),
   }
 
   for (const [key, value] of Object.entries(defineImportMetaEnv ?? {})) {
-    if (key === 'import.meta.env' || !key.startsWith('import.meta.env.')) {
+    if (key === 'import.meta.env' || !key.startsWith(IMPORT_META_ENV_PREFIX)) {
       continue
     }
-    values[key.slice('import.meta.env.'.length)] = parseImportMetaDefineValue(value)
+    values[key.slice(IMPORT_META_ENV_PREFIX.length)] = parseImportMetaDefineValue(value)
   }
 
   return values
 }
 
+export function createImportMetaDefineRegistry(options?: {
+  baseEnv?: Record<string, any>
+  defineEntries?: Record<string, any>
+}): ImportMetaDefineRegistry {
+  const baseEnv = {
+    ...(options?.baseEnv ?? {}),
+  }
+  const explicitDefineEntries = pickImportMetaEnvDefineEntries(options?.defineEntries)
+  const defaultDefineEntries: Record<string, any> = {}
+
+  for (const [key, value] of Object.entries(baseEnv)) {
+    defaultDefineEntries[`${IMPORT_META_ENV_PREFIX}${key}`] = JSON.stringify(value)
+  }
+  defaultDefineEntries['import.meta.env'] = JSON.stringify(baseEnv)
+
+  const defineEntries = {
+    ...defaultDefineEntries,
+    ...explicitDefineEntries,
+  }
+
+  return {
+    defineEntries,
+    envObject: resolveImportMetaEnvObject(defineEntries, baseEnv),
+    envMemberAccess: resolveImportMetaEnvMemberValues(defineEntries, baseEnv),
+  }
+}
+
 export function createStaticImportMetaValues(options: {
-  defineImportMetaEnv?: Record<string, any>
+  importMetaDefineRegistry?: ImportMetaDefineRegistry
   extension: string
   relativePath: string
 }): StaticImportMetaValues {
@@ -67,23 +114,24 @@ export function createStaticImportMetaValues(options: {
     filename: url,
     url,
     dirname: dirname === '.' ? '/' : dirname,
-    env: resolveImportMetaEnvObject(options.defineImportMetaEnv),
-    envAccess: resolveImportMetaEnvMemberValues(options.defineImportMetaEnv),
+    env: options.importMetaDefineRegistry?.envObject ?? {},
+    envAccess: options.importMetaDefineRegistry?.envMemberAccess ?? {},
   }
 }
 
 export function createStaticImportMetaReplacementMap(options: {
-  defineImportMetaEnv?: Record<string, any>
+  importMetaDefineRegistry?: ImportMetaDefineRegistry
   extension: string
   relativePath: string
 }) {
   const values = createStaticImportMetaValues(options)
-  const envJson = typeof options.defineImportMetaEnv?.['import.meta.env'] === 'string'
-    ? options.defineImportMetaEnv['import.meta.env']
+  const defineEntries = options.importMetaDefineRegistry?.defineEntries ?? {}
+  const envJson = typeof defineEntries['import.meta.env'] === 'string'
+    ? defineEntries['import.meta.env']
     : JSON.stringify(values.env)
 
   return {
-    ...(options.defineImportMetaEnv ?? {}),
+    ...defineEntries,
     'import.meta.filename': JSON.stringify(values.filename),
     'import.meta.url': JSON.stringify(values.url),
     'import.meta.dirname': JSON.stringify(values.dirname),

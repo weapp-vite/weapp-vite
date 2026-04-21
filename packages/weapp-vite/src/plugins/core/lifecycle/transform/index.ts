@@ -11,6 +11,7 @@ import {
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
+import { createImportMetaDefineRegistry } from '../../../../utils/importMeta'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
@@ -87,9 +88,13 @@ export function createTransformHook(state: CorePluginState) {
           ?? configService.relativeAbsoluteSrcRoot?.(sourceId)
         )
       : undefined
+    const importMetaDefineRegistry = configService.importMetaDefineRegistry
+      ?? createImportMetaDefineRegistry({
+        defineEntries: configService.defineImportMetaEnv,
+      })
     const importMetaTransformOptions = relativeOutputPath
       ? {
-          defineImportMetaEnv: configService.defineImportMetaEnv,
+          importMetaDefineRegistry,
           extension: 'js',
           relativePath: relativeOutputPath,
         }

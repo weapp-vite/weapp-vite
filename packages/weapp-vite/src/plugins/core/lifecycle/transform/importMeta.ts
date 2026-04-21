@@ -1,3 +1,4 @@
+import type { ImportMetaDefineRegistry } from '../../../../utils/importMeta'
 import * as t from '@babel/types'
 import MagicString from 'magic-string'
 import { parse as parseSfc } from 'vue/compiler-sfc'
@@ -46,7 +47,7 @@ function getImportMetaEnvPropertyName(node: any) {
 }
 
 export function replaceImportMetaAccess(code: string, options: {
-  defineImportMetaEnv?: Record<string, any>
+  importMetaDefineRegistry?: ImportMetaDefineRegistry
   extension: string
   relativePath: string
 }) {
@@ -158,7 +159,7 @@ export function replaceImportMetaAccess(code: string, options: {
 }
 
 export function replaceImportMetaAccessInSfc(source: string, options: {
-  defineImportMetaEnv?: Record<string, any>
+  importMetaDefineRegistry?: ImportMetaDefineRegistry
   extension: string
   relativePath: string
 }) {

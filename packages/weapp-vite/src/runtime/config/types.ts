@@ -5,6 +5,7 @@ import type { InlineConfig } from 'vite'
 import type { ResolvedMultiPlatformConfig } from '../../multiPlatform'
 import type { OutputExtensions } from '../../platforms/types'
 import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappLibComponentJson, WeappLibConfig, WeappLibDtsOptions, WeappLibFileName, WeappWebConfig } from '../../types'
+import type { ImportMetaDefineRegistry } from '../../utils/importMeta'
 
 export interface LoadConfigOptions {
   cwd: string
@@ -79,12 +80,15 @@ export interface ConfigService {
   packageManager: DetectResult
   packageInfo: PackageInfo
   setDefineEnv: (key: string, value: any) => void
+  setImportMetaEnvDefineOverride: (define?: Record<string, any>) => void
   load: (options?: Partial<LoadConfigOptions>) => Promise<LoadConfigResult>
   mergeWorkers: (...configs: Partial<InlineConfig>[]) => InlineConfig
   merge: (subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig | undefined>[]) => InlineConfig
   mergeWeb: (...configs: Partial<InlineConfig | undefined>[]) => InlineConfig | undefined
   mergeInlineConfig: (...configs: Partial<InlineConfig>[]) => InlineConfig
   readonly defineImportMetaEnv: Record<string, any>
+  readonly importMetaEnvDefineOverride?: Record<string, any>
+  readonly importMetaDefineRegistry: ImportMetaDefineRegistry
   readonly cwd: string
   readonly isDev: boolean
   readonly emitDefaultAutoImportOutputs: boolean

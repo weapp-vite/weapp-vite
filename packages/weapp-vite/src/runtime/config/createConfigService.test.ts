@@ -125,6 +125,7 @@ function createCtx(optionsOverrides: Record<string, any> = {}) {
       config: {
         packageInfo: {} as any,
         defineEnv: {},
+        importMetaEnvDefineOverride: undefined,
         packageManager: {
           agent: 'npm',
           name: 'npm',
@@ -217,6 +218,8 @@ describe('createConfigService', () => {
 
     expect(define['import.meta.env.ISSUE_484_FLAG']).toBe('123456')
     expect(JSON.parse(define['import.meta.env']).ISSUE_484_FLAG).toBeUndefined()
+    expect(service.importMetaDefineRegistry.envMemberAccess.ISSUE_484_FLAG).toBe(123456)
+    expect(service.importMetaDefineRegistry.envObject.ISSUE_484_FLAG).toBeUndefined()
   })
 
   it('resolves plugin roots and remaps output path for plugin sources', () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createImportMetaDefineRegistry } from '../../../../utils/importMeta'
 import { replaceImportMetaAccess } from './importMeta'
 
 describe('importMeta transform helpers', () => {
@@ -6,10 +7,12 @@ describe('importMeta transform helpers', () => {
     const code = replaceImportMetaAccess(
       'export const envObject = import.meta.env; export const flag = import.meta.env.ISSUE_484_FLAG',
       {
-        defineImportMetaEnv: {
-          'import.meta.env': '{"MODE":"production"}',
-          'import.meta.env.ISSUE_484_FLAG': '123456',
-        },
+        importMetaDefineRegistry: createImportMetaDefineRegistry({
+          defineEntries: {
+            'import.meta.env': '{"MODE":"production"}',
+            'import.meta.env.ISSUE_484_FLAG': '123456',
+          },
+        }),
         extension: 'js',
         relativePath: 'pages/import-meta/index.js',
       },
