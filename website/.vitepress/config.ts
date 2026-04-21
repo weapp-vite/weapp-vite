@@ -1,6 +1,7 @@
 import type { DefaultTheme } from 'vitepress/theme'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
@@ -863,6 +864,7 @@ export default withMermaid(
       //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
       // },
       plugins: [
+        tailwindcss(),
         llmstxt({
           excludeBlog: false,
           ignoreFiles: ['dist/**'],

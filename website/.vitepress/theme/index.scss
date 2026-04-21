@@ -1,6 +1,3 @@
-@use 'sass:color';
-
-/* Aggregated theme imports (Sass @use must come before any other rules) */
 @use './styles/vars';
 @use './styles/light';
 @use './styles/base';
@@ -10,8 +7,3 @@
 @use './styles/home';
 @use './styles/buttons';
 @use './styles/dark';
-
-/* Tailwind layers after Sass @use */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;

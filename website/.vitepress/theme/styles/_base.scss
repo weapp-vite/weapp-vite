@@ -3,7 +3,8 @@
 @use './vars' as *;
 
 body {
-  @apply transition-colors duration-500;
+  transition-duration: 500ms;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   background: radial-gradient(1200px 700px at 50% -10%, color.change($p2, $alpha: 0.18), transparent 55%) var(--vp-c-bg);
   color: var(--vp-c-text-1);
 }

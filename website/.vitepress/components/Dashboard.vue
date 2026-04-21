@@ -101,8 +101,11 @@ onMounted(async () => {
 
 <style lang="scss">
 .grid-stack-item-content {
+  background-color: #fff;
   border-radius: 8px;
+}
 
-  @apply bg-white dark:bg-[#141414];
+.dark .grid-stack-item-content {
+  background-color: #141414;
 }
 </style>
