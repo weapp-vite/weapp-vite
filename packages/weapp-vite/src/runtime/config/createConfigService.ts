@@ -140,6 +140,19 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     defineEnv[key] = value
   }
 
+  function getUserDefinedImportMetaEnv() {
+    const userDefine = options?.config?.define
+    if (!userDefine) {
+      return {}
+    }
+
+    return Object.fromEntries(
+      Object.entries(userDefine).filter(([key]) => {
+        return key === 'import.meta.env' || key.startsWith('import.meta.env.')
+      }),
+    )
+  }
+
   function getDefineImportMetaEnv() {
     const mpPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
     const resolvedPlatform = defineEnv.PLATFORM ?? mpPlatform
@@ -153,7 +166,10 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       define[`import.meta.env.${key}`] = JSON.stringify(value)
     }
     define['import.meta.env'] = JSON.stringify(env)
-    return define
+    return {
+      ...define,
+      ...getUserDefinedImportMetaEnv(),
+    }
   }
 
   function applyRuntimePlatform(runtime: 'miniprogram' | 'web') {

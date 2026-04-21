@@ -5,22 +5,46 @@ export interface StaticImportMetaValues {
   filename: string
   dirname: string
   env: Record<string, any>
+  envAccess: Record<string, any>
   url: string
+}
+
+export function parseImportMetaDefineValue(value: any) {
+  if (typeof value !== 'string') {
+    return value
+  }
+
+  try {
+    return JSON.parse(value)
+  }
+  catch {
+    return value
+  }
 }
 
 export function resolveImportMetaEnvObject(defineImportMetaEnv?: Record<string, any>) {
   const rawEnv = defineImportMetaEnv?.['import.meta.env']
-  if (typeof rawEnv !== 'string') {
+  const parsed = parseImportMetaDefineValue(rawEnv)
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return {}
   }
 
-  try {
-    const parsed = JSON.parse(rawEnv)
-    return parsed && typeof parsed === 'object' ? parsed : {}
+  return parsed
+}
+
+export function resolveImportMetaEnvMemberValues(defineImportMetaEnv?: Record<string, any>) {
+  const values = {
+    ...resolveImportMetaEnvObject(defineImportMetaEnv),
   }
-  catch {
-    return {}
+
+  for (const [key, value] of Object.entries(defineImportMetaEnv ?? {})) {
+    if (key === 'import.meta.env' || !key.startsWith('import.meta.env.')) {
+      continue
+    }
+    values[key.slice('import.meta.env.'.length)] = parseImportMetaDefineValue(value)
   }
+
+  return values
 }
 
 export function createStaticImportMetaValues(options: {
@@ -44,6 +68,7 @@ export function createStaticImportMetaValues(options: {
     url,
     dirname: dirname === '.' ? '/' : dirname,
     env: resolveImportMetaEnvObject(options.defineImportMetaEnv),
+    envAccess: resolveImportMetaEnvMemberValues(options.defineImportMetaEnv),
   }
 }
 

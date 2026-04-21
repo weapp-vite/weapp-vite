@@ -203,6 +203,22 @@ describe('createConfigService', () => {
     expect(JSON.parse(define['import.meta.env']).CUSTOM_FLAG).toBe(1)
   })
 
+  it('preserves user-defined import.meta.env member overrides for downstream preprocessors', () => {
+    const service = createConfigService(createCtx({
+      config: {
+        define: {
+          'import.meta.env.ISSUE_484_FLAG': '123456',
+        },
+        weapp: {},
+      },
+    }))
+
+    const define = service.defineImportMetaEnv
+
+    expect(define['import.meta.env.ISSUE_484_FLAG']).toBe('123456')
+    expect(JSON.parse(define['import.meta.env']).ISSUE_484_FLAG).toBeUndefined()
+  })
+
   it('resolves plugin roots and remaps output path for plugin sources', () => {
     const service = createConfigService(createCtx({
       config: {

@@ -68,8 +68,8 @@ export function replaceImportMetaAccess(code: string, options: {
     MemberExpression(path: any) {
       const envPropertyName = getImportMetaEnvPropertyName(path.node)
       if (envPropertyName) {
-        const envValue = Object.hasOwn(values.env, envPropertyName)
-          ? values.env[envPropertyName]
+        const envValue = Object.hasOwn(values.envAccess, envPropertyName)
+          ? values.envAccess[envPropertyName]
           : undefined
         path.replaceWith(t.valueToNode(envValue))
         mutated = true
@@ -102,8 +102,8 @@ export function replaceImportMetaAccess(code: string, options: {
     OptionalMemberExpression(path: any) {
       const envPropertyName = getImportMetaEnvPropertyName(path.node)
       if (envPropertyName) {
-        const envValue = Object.hasOwn(values.env, envPropertyName)
-          ? values.env[envPropertyName]
+        const envValue = Object.hasOwn(values.envAccess, envPropertyName)
+          ? values.envAccess[envPropertyName]
           : undefined
         path.replaceWith(t.valueToNode(envValue))
         mutated = true
