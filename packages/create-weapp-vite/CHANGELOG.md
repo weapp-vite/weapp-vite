@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.3.4
+
+### Patch Changes
+
+- 🐛 **修复 wevu 页面通过本地 helper 间接注册 `onPullDownRefresh`、`onReachBottom` 时，`weapp-vite` 漏掉页面特性注入，导致下拉刷新与触底钩子在最终产物中不生效的问题。** [#481](https://github.com/weapp-vite/weapp-vite/pull/481) by @sonofmagic
+
+- 🐛 **修复 `tdesign-miniprogram/*` 这类通过相对 `node_modules` 的 `miniprogram_dist` / `miniprogram` alias 引入时的 npm 路径归一化。现在这类路径会在依赖识别与产物重写阶段恢复成稳定的包内入口，避免命令式调用 `Dialog.confirm()` 等 API 时命中错误的模块包装层。** [#480](https://github.com/weapp-vite/weapp-vite/pull/480) by @sonofmagic
+
 ## 2.3.3
 
 ### Patch Changes
