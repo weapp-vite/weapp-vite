@@ -13,8 +13,8 @@ export const TEMPLATE_CATALOG = {
   '@icebreakers/stylelint-config': '^3.0.5',
   '@iconify-json/mdi': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
-  '@tailwindcss/postcss': '^4.2.3',
-  '@tailwindcss/vite': '^4.2.3',
+  '@tailwindcss/postcss': '^4.2.4',
+  '@tailwindcss/vite': '^4.2.4',
   '@types/node': '^25.6.0',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
@@ -58,7 +58,7 @@ export const TEMPLATE_CATALOG = {
   rolldown: '1.0.0-rc.16',
   sass: '^1.99.0',
   stylelint: '^17.8.0',
-  tailwindcss: '^4.2.3',
+  tailwindcss: '^4.2.4',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
   vite: '8.0.9',
@@ -78,9 +78,9 @@ export const TEMPLATE_NAMED_CATALOG = {
     typescript: '^6.0.3'
   },
   tailwind3: {
-    tailwindcss: '^4.2.3'
+    tailwindcss: '^4.2.4'
   },
   tailwind4: {
-    tailwindcss: '^4.2.3'
+    tailwindcss: '^4.2.4'
   }
 } as const
