@@ -2,7 +2,10 @@ import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
+  readPageWxml,
+  relaunchPage,
   releaseSharedMiniProgram,
+  tapElement,
 } from './github-issues.runtime.shared'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
@@ -64,9 +67,137 @@ async function waitForIssue466NativeRuntime(page: any, timeoutMs = 20_000) {
   throw new Error(`Timed out waiting for issue-466 native runtime: ${JSON.stringify(lastRuntime, null, 2)}`)
 }
 
+async function waitForIssue466MainRuntime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  let lastRuntime: Record<string, any> | null = null
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await page.callMethod('_runE2E')
+      lastRuntime = runtime
+      if (runtime?.confirmType === 'function') {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  throw new Error(`Timed out waiting for issue-466 main runtime: ${JSON.stringify(lastRuntime, null, 2)}`)
+}
+
 describe.sequential('github-issues runtime issue-466', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
+  })
+
+  it('issue #466: keeps main-package tdesign Dialog.confirm callable through a user-facing page flow', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const collector = attachRuntimeErrorCollector(miniProgram)
+
+    try {
+      const page = await relaunchPage(
+        miniProgram,
+        '/pages/issue-466/index',
+        undefined,
+        20_000,
+      )
+      if (!page) {
+        throw new Error('Failed to launch main-package issue-466 page')
+      }
+
+      await waitForIssue466MainRuntime(page)
+
+      expect(await page.callMethod('_resetE2E')).toMatchObject({
+        confirmType: 'function',
+        openCount: 0,
+        settleCount: 0,
+        dialogVisible: false,
+        lastAction: 'idle',
+        lastTrigger: 'idle',
+        lastError: '',
+        lastPayload: '',
+        lastReturnedPromise: false,
+      })
+
+      const pageWxml = await readPageWxml(page)
+      expect(pageWxml).toContain('class="issue466-main-page"')
+      expect(pageWxml).toContain('id="issue466-main-open"')
+
+      const openMarker = collector.mark()
+      await tapElement(page, '#issue466-main-open')
+      const opened = await page.callMethod('_runE2E')
+      expect(opened).toMatchObject({
+        confirmType: 'function',
+        openCount: 1,
+        settleCount: 0,
+        dialogVisible: true,
+        lastAction: 'opening',
+        lastTrigger: 'user-tap',
+        lastError: '',
+        lastPayload: '',
+        lastTitle: 'issue-466 main confirm title',
+        lastReturnedPromise: true,
+      })
+      expect(collector.getSince(openMarker)).toEqual([])
+
+      const cancelMarker = collector.mark()
+      const cancelled = await page.callMethod('_cancelDialogE2E')
+      expect(cancelled).toMatchObject({
+        confirmType: 'function',
+        openCount: 1,
+        settleCount: 1,
+        dialogVisible: false,
+        lastAction: 'cancelled',
+        lastTrigger: 'user-tap',
+        lastError: '{"trigger":"cancel"}',
+        lastPayload: '{"trigger":"cancel"}',
+        lastTitle: 'issue-466 main confirm title',
+        lastReturnedPromise: true,
+      })
+      expect(collector.getSince(cancelMarker)).toEqual([])
+
+      const reopenMarker = collector.mark()
+      const reopened = await page.callMethod('_openDialogE2E')
+      expect(reopened).toMatchObject({
+        confirmType: 'function',
+        openCount: 2,
+        settleCount: 1,
+        dialogVisible: true,
+        lastAction: 'opening',
+        lastTrigger: 'e2e',
+        lastError: '',
+        lastPayload: '',
+        lastTitle: 'issue-466 main confirm title',
+        lastReturnedPromise: true,
+      })
+      expect(collector.getSince(reopenMarker)).toEqual([])
+
+      const confirmMarker = collector.mark()
+      const confirmed = await page.callMethod('_confirmDialogE2E')
+      expect(confirmed).toMatchObject({
+        confirmType: 'function',
+        openCount: 2,
+        settleCount: 2,
+        dialogVisible: false,
+        lastAction: 'confirmed',
+        lastTrigger: 'e2e',
+        lastError: '',
+        lastTitle: 'issue-466 main confirm title',
+        lastReturnedPromise: true,
+      })
+      expect(collector.getSince(confirmMarker)).toEqual([])
+    }
+    finally {
+      collector.dispose()
+      await releaseSharedMiniProgram(miniProgram)
+    }
   })
 
   it('issue #466: keeps imported tdesign Dialog methods callable in DevTools runtime', async (ctx) => {

@@ -23,7 +23,9 @@ export default defineConfig({
     },
     npm: {
       mainPackage: {
-        dependencies: false,
+        dependencies: [
+          /^tdesign-miniprogram$/,
+        ],
       },
       subPackages: {
         'subpackages/issue-327': {

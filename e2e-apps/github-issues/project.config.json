@@ -11,8 +11,13 @@
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
     "enhance": true,
-    "packNpmManually": false,
-    "packNpmRelationList": [],
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./dist"
+      }
+    ],
     "minifyWXSS": true,
     "localPlugins": false,
     "disableUseStrict": false,
