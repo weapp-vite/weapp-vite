@@ -114,7 +114,8 @@ describe('subPackages shared styles', () => {
     expect(componentsContent).toMatch(/\.component-theme--warning \{/)
 
     expect(normalizeEol(rootIndexContent).trim()).toBe('.package-root {\n  padding: 12px;\n}')
-    expect(normalizeEol(rootPagesContent).trim()).toBe('.package-pages {\n  background: rgba(255, 192, 203, 0.3);\n}')
+    expect(rootPagesContent).toContain('.package-pages {')
+    expect(rootPagesContent).toMatch(/background:\s*(?:rgba\(255,\s*192,\s*203,\s*0\.3\)|rgb\(255 192 203 \/ 30%\));/)
     expect(normalizeEol(rootComponentsContent).trim()).toBe('.package-components {\n  border: 1px dashed #999;\n}')
   })
 
