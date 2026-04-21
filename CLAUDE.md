@@ -24,7 +24,8 @@ pnpm dev --filter=<package-name>  # Watch specific package
 
 ### Building
 ```bash
-pnpm build            # Build all packages (excludes apps, templates, website)
+pnpm build            # Build core workspace packages and extensions
+pnpm build:all        # Build every workspace, including apps/templates/e2e fixtures
 pnpm build:pkgs       # Build packages/* and @weapp-core/* only
 pnpm build:apps       # Build apps/* and templates/* only
 pnpm ci               # CI build (excludes apps, templates, website)
