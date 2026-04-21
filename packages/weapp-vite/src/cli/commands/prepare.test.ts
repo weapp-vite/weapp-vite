@@ -59,6 +59,7 @@ describe('prepare cli command', () => {
       mode: 'development',
       configFile: undefined,
       syncSupportFiles: false,
+      preloadAppEntry: false,
     })
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
     expect(loggerInfoMock).toHaveBeenCalledWith('已生成 .weapp-vite 支持文件。')
@@ -84,6 +85,7 @@ describe('prepare cli command', () => {
       mode: 'development',
       configFile: undefined,
       syncSupportFiles: false,
+      preloadAppEntry: false,
     })
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
   })

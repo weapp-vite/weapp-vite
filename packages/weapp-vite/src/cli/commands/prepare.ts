@@ -33,6 +33,7 @@ export function registerPrepareCommand(cli: CAC) {
           mode: typeof options.mode === 'string' ? options.mode : 'development',
           configFile: resolveConfigFile(options),
           syncSupportFiles: false,
+          preloadAppEntry: false,
         })
 
         await syncProjectSupportFiles(ctx)
