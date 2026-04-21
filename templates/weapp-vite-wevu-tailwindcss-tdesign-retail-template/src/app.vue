@@ -97,8 +97,4 @@ onShow(() => {
 })
 </script>
 
-<style>
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-</style>
+<style src="./app.css"></style>

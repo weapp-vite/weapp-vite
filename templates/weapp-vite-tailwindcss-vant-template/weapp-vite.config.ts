@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { weappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 import { VantResolver } from 'weapp-vite/auto-import-components/resolvers'
@@ -45,6 +46,7 @@ export default defineConfig({
   plugins: [
     weappTailwindcss({
       rem2rpx: true,
+      cssEntries: [path.resolve(import.meta.dirname, 'src/app.css')],
     }),
   ],
 })

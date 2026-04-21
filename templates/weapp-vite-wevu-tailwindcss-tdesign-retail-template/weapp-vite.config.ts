@@ -34,6 +34,7 @@ export default defineConfig({
   plugins: [
     weappTailwindcss({
       rem2rpx: true,
+      cssEntries: [path.resolve(import.meta.dirname, 'src/app.css')],
     }),
   ],
 })
