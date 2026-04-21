@@ -7,7 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { main as printRolldownVersions } from './print-rolldown-versions.mjs'
 
 const WAIT_INTERVAL_MS = 300
-const WAIT_TIMEOUT_MS = 5 * 60 * 1000
+const WAIT_TIMEOUT_MS = 5 * 1000
 const PNPM_COMMAND_PATTERN = /\bpnpm(?:\.cjs)?\b/
 const INSTALL_COMMAND_PATTERN = /\b(?:i|install)\b/
 const LIFECYCLE_COMMAND_PATTERN = /(?:^|[\s'"])(?:preinstall|install|postinstall|prepare)(?=$|[\s'"])/
@@ -155,41 +155,57 @@ function summarizeLifecycleCommand(command) {
   return command.slice(shellCommandIndex + shellCommandSeparator.length).trim()
 }
 
-function logWaitForInstallTail(pendingLifecycleProcesses) {
+function formatLifecycleWaitMessage(prefix, pendingLifecycleProcesses) {
   const summarizedCommands = pendingLifecycleProcesses
     .slice(0, MAX_WAIT_LOG_COMMANDS)
     .map(processInfo => summarizeLifecycleCommand(processInfo.command))
   const remainingCount = pendingLifecycleProcesses.length - summarizedCommands.length
   const remainingLabel = remainingCount > 0 ? ` 等 ${remainingCount} 个` : ''
 
-  console.log([
-    `[workspace] waiting for remaining workspace lifecycle scripts before rolldown report (${pendingLifecycleProcesses.length})${remainingLabel}:`,
+  return [
+    `${prefix} (${pendingLifecycleProcesses.length})${remainingLabel}:`,
     ...summarizedCommands.map(command => `- ${command}`),
-  ].join('\n'))
+  ].join('\n')
+}
+
+function logWaitForInstallTail(pendingLifecycleProcesses) {
+  console.log(formatLifecycleWaitMessage(
+    '[workspace] waiting briefly for remaining workspace lifecycle scripts before rolldown report',
+    pendingLifecycleProcesses,
+  ))
+}
+
+function logWaitTimeoutForInstallTail(pendingLifecycleProcesses) {
+  console.warn(formatLifecycleWaitMessage(
+    '[workspace] install tail fired before workspace lifecycle finished; continuing rolldown report with remaining scripts still running',
+    pendingLifecycleProcesses,
+  ))
 }
 
 async function waitForInstallTail() {
   const startedAt = Date.now()
   let hasLoggedWait = false
+  let lastPendingLifecycleProcesses = []
 
   while (Date.now() - startedAt < WAIT_TIMEOUT_MS) {
     const processes = listProcesses()
     if (processes.length === 0) {
-      return
+      return { timedOut: false, pendingLifecycleProcesses: [] }
     }
     const processIndex = buildProcessIndex(processes)
     const ancestors = collectAncestors(processIndex, process.pid)
     const installAncestor = findInstallAncestor(ancestors)
 
     if (!installAncestor) {
-      return
+      return { timedOut: false, pendingLifecycleProcesses: [] }
     }
 
     const lifecycleRootPid = findLifecycleRootPid(ancestors, installAncestor.pid)
     const pendingLifecycleProcesses = listSiblingLifecycleProcesses(processes, installAncestor.pid, lifecycleRootPid)
     if (pendingLifecycleProcesses.length === 0) {
-      return
+      return { timedOut: false, pendingLifecycleProcesses: [] }
     }
+    lastPendingLifecycleProcesses = pendingLifecycleProcesses
     if (!hasLoggedWait) {
       logWaitForInstallTail(pendingLifecycleProcesses)
       hasLoggedWait = true
@@ -197,10 +213,18 @@ async function waitForInstallTail() {
 
     await sleep(WAIT_INTERVAL_MS)
   }
+
+  return {
+    timedOut: true,
+    pendingLifecycleProcesses: lastPendingLifecycleProcesses,
+  }
 }
 
 async function main() {
-  await waitForInstallTail()
+  const waitResult = await waitForInstallTail()
+  if (waitResult.timedOut && waitResult.pendingLifecycleProcesses.length > 0) {
+    logWaitTimeoutForInstallTail(waitResult.pendingLifecycleProcesses)
+  }
   printRolldownVersions({ mode: 'warn' })
 }
 
@@ -210,12 +234,14 @@ export {
   collectDescendantPids,
   findInstallAncestor,
   findLifecycleRootPid,
+  formatLifecycleWaitMessage,
   hasOtherLifecycleProcesses,
   isInstallCommand,
   isLifecycleCommand,
   listProcesses,
   listSiblingLifecycleProcesses,
   logWaitForInstallTail,
+  logWaitTimeoutForInstallTail,
   main,
   parseProcessLine,
   summarizeLifecycleCommand,

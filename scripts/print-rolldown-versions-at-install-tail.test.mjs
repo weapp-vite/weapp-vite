@@ -6,6 +6,7 @@ import {
   collectDescendantPids,
   findInstallAncestor,
   findLifecycleRootPid,
+  formatLifecycleWaitMessage,
   hasOtherLifecycleProcesses,
   isInstallCommand,
   isLifecycleCommand,
@@ -95,4 +96,23 @@ it('hasOtherLifecycleProcesses ignores non-lifecycle pnpm helper processes', () 
   ]
 
   assert.equal(hasOtherLifecycleProcesses(processes, 100, 200), false)
+})
+
+it('formatLifecycleWaitMessage limits command list and reports remaining count', () => {
+  const message = formatLifecycleWaitMessage(
+    '[workspace] waiting briefly for remaining workspace lifecycle scripts before rolldown report',
+    [
+      { pid: 300, ppid: 100, command: 'sh -c templates/weapp-vite-template postinstall' },
+      { pid: 301, ppid: 100, command: 'sh -c weapp-tw patch && wv prepare' },
+      { pid: 302, ppid: 100, command: '/bin/sh /tmp/node_modules/.bin/wv prepare' },
+      { pid: 303, ppid: 100, command: 'sh -c apps/demo postinstall' },
+    ],
+  )
+
+  assert.equal(message, [
+    '[workspace] waiting briefly for remaining workspace lifecycle scripts before rolldown report (4) 等 1 个:',
+    '- templates/weapp-vite-template postinstall',
+    '- weapp-tw patch && wv prepare',
+    '- /bin/sh /tmp/node_modules/.bin/wv prepare',
+  ].join('\n'))
 })
