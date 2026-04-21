@@ -15,13 +15,13 @@ export type UserConfigFnNoEnvPlain<T extends UserConfig = UserConfig> = () => T
 
 export type UserConfigFnNoEnv<T extends UserConfig = UserConfig> = () => T | Promise<T>
 
-export type UserConfigFnObjectPlain<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => T
+export type UserConfigFnObjectPlain<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T
 
-export type UserConfigFnObject<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => T
+export type UserConfigFnObject<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T
 
-export type UserConfigFnPromise<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => Promise<T>
+export type UserConfigFnPromise<T extends UserConfig = UserConfig> = (env: ConfigEnv) => Promise<T>
 
-export type UserConfigFn<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => T | Promise<T>
+export type UserConfigFn<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T | Promise<T>
 
 export type UserConfigExport<T extends UserConfig = UserConfig>
   = | T

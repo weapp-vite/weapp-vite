@@ -6,10 +6,11 @@ const normalize = (filePath: string) => filePath.replaceAll('\\', '/')
 
 it('externalizes hoisted deps but bundles nested node_modules', async () => {
   const fixtureDir = path.join(__dirname, './fixture/externalize-paths')
-  const relativeEntry = path.relative(process.cwd(), path.join(fixtureDir, 'input.ts'))
+  const entryPath = path.join(fixtureDir, 'input.ts')
 
   const { mod, dependencies } = await bundleRequire({
-    filepath: relativeEntry,
+    filepath: entryPath,
+    cwd: fixtureDir,
   })
 
   const normalizedDeps = dependencies.map(normalize)

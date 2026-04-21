@@ -94,6 +94,13 @@ const promiseNoEnvConfig = defineConfig(() => Promise.resolve({
 }))
 expectAssignable<UserConfig | Promise<UserConfig>>(promiseNoEnvConfig())
 
+const envConfig = defineConfig(({ mode }) => ({
+  weapp: {
+    srcRoot: mode,
+  },
+}))
+expectAssignable<string | undefined>(envConfig({ command: 'build', mode: 'production' }).weapp?.srcRoot)
+
 const looseConfig = defineConfig({
   customFeature: {
     enabled: true,

@@ -3,21 +3,27 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '@/createContext'
-import { getFixture } from './utils'
+import { createTempFixtureProject, getFixture } from './utils'
 
 describe('subpackage npm local outputs', () => {
-  const cwd = getFixture('subpackage-npm-normal')
+  const fixtureSource = getFixture('subpackage-npm-normal')
 
   let ctx: CompilerContext | undefined
+  let cleanupTempProject: (() => Promise<void>) | undefined
 
   afterEach(async () => {
     if (ctx?.watcherService) {
       await ctx.watcherService.closeAll()
     }
     ctx = undefined
+    await cleanupTempProject?.()
+    cleanupTempProject = undefined
   })
 
   it('emits local npm outputs and rewrites runtime paths for normal subpackages', async () => {
+    const tempProject = await createTempFixtureProject(fixtureSource, 'subpackage-npm-normal')
+    cleanupTempProject = tempProject.cleanup
+    const cwd = tempProject.tempDir
     const outDir = path.resolve(cwd, 'dist')
     await fs.remove(outDir)
     await fs.outputFile(path.resolve(outDir, 'miniprogram_npm/stale/index.js'), 'module.exports = "stale"')

@@ -1,3 +1,6 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
   compileConfigBlocks,
@@ -6,6 +9,16 @@ import {
   normalizeConfigLang,
   resolveJsLikeLang,
 } from './config'
+
+async function withTempVueDir<T>(prefix: string, run: (dir: string) => Promise<T>) {
+  const dir = await mkdtemp(path.join(os.tmpdir(), `${prefix}-`))
+  try {
+    return await run(dir)
+  }
+  finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+}
 
 describe('json config transform helpers', () => {
   it('normalizes language tags', () => {
@@ -112,82 +125,89 @@ describe('json config transform helpers', () => {
   })
 
   it('evaluates js/ts config block exports', async () => {
-    const objectResult = await evaluateJsLikeConfig(
-      `export default { navigationBarTitleText: 'JS 对象' }`,
-      '/tmp/wevu-config-js.vue',
-      'js',
-    )
-    expect(objectResult).toEqual({
-      navigationBarTitleText: 'JS 对象',
-    })
+    await withTempVueDir('wevu-config-js', async (tempDir) => {
+      const objectResult = await evaluateJsLikeConfig(
+        `export default { navigationBarTitleText: 'JS 对象' }`,
+        path.join(tempDir, 'wevu-config-js.vue'),
+        'js',
+      )
+      expect(objectResult).toEqual({
+        navigationBarTitleText: 'JS 对象',
+      })
 
-    const functionResult = await evaluateJsLikeConfig(
-      `export default () => ({ enablePullDownRefresh: true })`,
-      '/tmp/wevu-config-fn.vue',
-      'ts',
-    )
-    expect(functionResult).toEqual({
-      enablePullDownRefresh: true,
-    })
+      const functionResult = await evaluateJsLikeConfig(
+        `export default () => ({ enablePullDownRefresh: true })`,
+        path.join(tempDir, 'wevu-config-fn.vue'),
+        'ts',
+      )
+      expect(functionResult).toEqual({
+        enablePullDownRefresh: true,
+      })
 
-    const asyncResult = await evaluateJsLikeConfig(
-      `export default async () => ({ usingComponents: { 'x-card': './card' } })`,
-      '/tmp/wevu-config-async.vue',
-      'ts',
-    )
-    expect(asyncResult).toEqual({
-      usingComponents: {
-        'x-card': './card',
-      },
+      const asyncResult = await evaluateJsLikeConfig(
+        `export default async () => ({ usingComponents: { 'x-card': './card' } })`,
+        path.join(tempDir, 'wevu-config-async.vue'),
+        'ts',
+      )
+      expect(asyncResult).toEqual({
+        usingComponents: {
+          'x-card': './card',
+        },
+      })
     })
   })
 
   it('supports js-like blocks in compileConfigBlocks and merge callback returning void', async () => {
-    const blocks = [
-      {
-        type: 'json',
-        lang: 'json',
-        content: `{"navigationBarTitleText":"json"}`,
-      },
-      {
-        type: 'json',
-        lang: 'js',
-        content: `export default { usingComponents: { "x-card": "./card" } }`,
-      },
-    ] as any
-
-    const stages: string[] = []
-    const output = await compileConfigBlocks(
-      blocks,
-      '/tmp/wevu-config-compile.vue',
-      {
-        merge: (target, source) => {
-          stages.push(Object.keys(source).join(','))
-          Object.assign(target, source)
+    await withTempVueDir('wevu-config-compile', async (tempDir) => {
+      const blocks = [
+        {
+          type: 'json',
+          lang: 'json',
+          content: `{"navigationBarTitleText":"json"}`,
         },
-      },
-    )
+        {
+          type: 'json',
+          lang: 'js',
+          content: `export default { usingComponents: { "x-card": "./card" } }`,
+        },
+      ] as any
 
-    expect(stages.length).toBe(2)
-    expect(JSON.parse(output!)).toEqual({
-      navigationBarTitleText: 'json',
-      usingComponents: {
-        'x-card': './card',
-      },
+      const stages: string[] = []
+      const output = await compileConfigBlocks(
+        blocks,
+        path.join(tempDir, 'wevu-config-compile.vue'),
+        {
+          merge: (target, source) => {
+            stages.push(Object.keys(source).join(','))
+            Object.assign(target, source)
+          },
+        },
+      )
+
+      expect(stages.length).toBe(2)
+      expect(JSON.parse(output!)).toEqual({
+        navigationBarTitleText: 'json',
+        usingComponents: {
+          'x-card': './card',
+        },
+      })
     })
   })
 
   it('wraps js-like config evaluation errors in compileConfigBlocks', async () => {
-    const blocks = [
-      {
-        type: 'json',
-        lang: 'js',
-        content: `export default 1`,
-      },
-    ] as any
+    await withTempVueDir('wevu-config-error', async (tempDir) => {
+      const fileName = path.join(tempDir, 'wevu-config-error.vue')
+      const blocks = [
+        {
+          type: 'json',
+          lang: 'js',
+          content: `export default 1`,
+        },
+      ] as any
 
-    await expect(
-      compileConfigBlocks(blocks, '/tmp/wevu-config-error.vue'),
-    ).rejects.toThrow('解析 <json> 块失败（js）：/tmp/wevu-config-error.vue')
+      await expect(
+        compileConfigBlocks(blocks, fileName),
+      ).rejects.toThrow(`解析 <json> 块失败（js）：${fileName}`)
+    })
   })
 })
