@@ -22,6 +22,8 @@ it('isInstallCommand matches pnpm install commands only', () => {
 it('isLifecycleCommand matches lifecycle scripts only', () => {
   assert.equal(isLifecycleCommand('sh -c website postinstall'), true)
   assert.equal(isLifecycleCommand('node /path/pnpm.cjs run prepare'), true)
+  assert.equal(isLifecycleCommand('node scripts/postinstall-sync.mjs'), false)
+  assert.equal(isLifecycleCommand('node scripts/print-rolldown-versions-at-install-tail.mjs'), false)
   assert.equal(isLifecycleCommand('node /path/pnpm.cjs worker --reporter append-only'), false)
 })
 
@@ -63,6 +65,7 @@ it('listSiblingLifecycleProcesses only returns sibling lifecycle roots', () => {
     { pid: 150, ppid: 100, command: 'node /path/pnpm.cjs worker --reporter append-only' },
     { pid: 200, ppid: 100, command: 'sh -c website postinstall' },
     { pid: 210, ppid: 200, command: 'node scripts/print-rolldown-versions-at-install-tail.mjs' },
+    { pid: 250, ppid: 100, command: 'node scripts/postinstall-sync.mjs' },
     { pid: 300, ppid: 100, command: 'sh -c templates/weapp-vite-wevu-template postinstall' },
   ]
 

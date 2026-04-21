@@ -10,7 +10,7 @@ const WAIT_INTERVAL_MS = 300
 const WAIT_TIMEOUT_MS = 5 * 60 * 1000
 const PNPM_COMMAND_PATTERN = /\bpnpm(?:\.cjs)?\b/
 const INSTALL_COMMAND_PATTERN = /\b(?:i|install)\b/
-const LIFECYCLE_COMMAND_PATTERN = /\b(?:preinstall|install|postinstall|prepare)\b/
+const LIFECYCLE_COMMAND_PATTERN = /(?:^|[\s'"])(?:preinstall|install|postinstall|prepare)(?=$|[\s'"])/
 const PS_COMMAND_PATTERN = /\bps\s+-eo\b/
 const MAX_WAIT_LOG_COMMANDS = 3
 
