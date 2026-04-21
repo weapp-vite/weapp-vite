@@ -23,6 +23,8 @@ function createMockCompilerContext() {
     weappViteConfig: {},
     merge: vi.fn((_meta: any, _inline: any, overrides: any) => overrides ?? {}),
     mergeWorkers: vi.fn(),
+    importMetaEnvDefineOverride: undefined,
+    setImportMetaEnvDefineOverride: vi.fn(),
     relativeAbsoluteSrcRoot: (p: string) => p,
     absoluteSrcRoot: '/project/src',
     relativeCwd: (p: string) => p,

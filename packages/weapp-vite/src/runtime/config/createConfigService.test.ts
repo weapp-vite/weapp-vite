@@ -125,6 +125,7 @@ function createCtx(optionsOverrides: Record<string, any> = {}) {
       config: {
         packageInfo: {} as any,
         defineEnv: {},
+        importMetaEnvDefineOverride: undefined,
         packageManager: {
           agent: 'npm',
           name: 'npm',
@@ -196,11 +197,32 @@ describe('createConfigService', () => {
     expect(loggerInfoMock).not.toHaveBeenCalled()
 
     service.setDefineEnv('CUSTOM_FLAG', 1)
+    const importMetaDefineEntries = service.importMetaDefineEntries
     const define = service.defineImportMetaEnv
+    expect(importMetaDefineEntries).toEqual(define)
     expect(define['import.meta.env.PLATFORM']).toBe(JSON.stringify('weapp'))
     expect(define['import.meta.env.MP_PLATFORM']).toBe(JSON.stringify('weapp'))
     expect(define['import.meta.env.CUSTOM_FLAG']).toBe('1')
     expect(JSON.parse(define['import.meta.env']).CUSTOM_FLAG).toBe(1)
+  })
+
+  it('preserves user-defined import.meta.env member overrides for downstream preprocessors', () => {
+    const service = createConfigService(createCtx({
+      config: {
+        define: {
+          'import.meta.env.ISSUE_484_FLAG': '123456',
+        },
+        weapp: {},
+      },
+    }))
+
+    const define = service.defineImportMetaEnv
+
+    expect(service.importMetaDefineEntries).toEqual(define)
+    expect(define['import.meta.env.ISSUE_484_FLAG']).toBe('123456')
+    expect(JSON.parse(define['import.meta.env']).ISSUE_484_FLAG).toBeUndefined()
+    expect(service.importMetaDefineRegistry.envMemberAccess.ISSUE_484_FLAG).toBe(123456)
+    expect(service.importMetaDefineRegistry.envObject.ISSUE_484_FLAG).toBeUndefined()
   })
 
   it('resolves plugin roots and remaps output path for plugin sources', () => {

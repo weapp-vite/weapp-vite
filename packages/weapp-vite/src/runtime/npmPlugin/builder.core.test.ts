@@ -28,13 +28,16 @@ async function createTempDir() {
 }
 
 function createMockContext(overrides: Record<string, unknown> = {}) {
+  const importMetaDefineEntries = {
+    'import.meta.env.__TEST__': JSON.stringify('yes'),
+  }
+
   return {
     configService: {
       cwd: '/project',
       platform: 'weapp',
-      defineImportMetaEnv: {
-        'import.meta.env.__TEST__': JSON.stringify('yes'),
-      },
+      defineImportMetaEnv: importMetaDefineEntries,
+      importMetaDefineEntries,
       weappViteConfig: {},
       ...overrides,
     },

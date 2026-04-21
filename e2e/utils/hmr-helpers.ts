@@ -101,6 +101,33 @@ export function replaceSfcTitleMarker(source: string, marker: string) {
 }
 
 /**
+ * 替换 HMR SFC 页面标题内容，避免测试依赖模板中的具体换行或缩进格式。
+ *
+ * @param source - 原始 SFC 源码
+ * @param nextTitle - 替换后的标题内容
+ * @returns 替换后的 SFC 源码
+ */
+export function replaceHmrSfcTitle(source: string, nextTitle: string) {
+  const openTag = '<view class="title">'
+  const closeTag = '</view>'
+  const start = source.indexOf(openTag)
+  if (start === -1) {
+    return source
+  }
+
+  const contentStart = start + openTag.length
+  const end = source.indexOf(closeTag, contentStart)
+  if (end === -1) {
+    return source
+  }
+
+  const leadingWhitespace = source.slice(contentStart).match(/^\s*/)?.[0] ?? ''
+  const trailingWhitespace = source.slice(contentStart, end).match(/\s*$/)?.[0] ?? ''
+
+  return `${source.slice(0, contentStart)}${leadingWhitespace}${nextTitle}${trailingWhitespace}${source.slice(end)}`
+}
+
+/**
  * 通过“先重命名旧文件，再写回同名新文件”的方式模拟 Windows 常见的原子保存流程。
  *
  * @param filePath - 目标文件路径

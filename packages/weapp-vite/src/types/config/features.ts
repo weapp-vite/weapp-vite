@@ -1,6 +1,7 @@
 import type { MiniProgramNetworkDefaults } from '@wevu/web-apis'
 import type { InlineConfig } from 'vite'
 import type { PageLayoutMeta, WevuDefaults } from 'wevu'
+import type { ImportMetaDefineRegistry } from '../../utils/importMeta'
 import type {
   AlipayNpmMode,
   BuildNpmPackageMeta,
@@ -68,6 +69,9 @@ export interface ScanWxmlOptions {
  */
 export interface HandleWxmlOptions {
   defineImportMetaEnv?: Record<string, any>
+  importMetaDefineRegistry?: ImportMetaDefineRegistry
+  importMetaRelativePath?: string
+  importMetaExtension?: string
   removeComment?: boolean
   transformEvent?: boolean
   scriptModuleExtension?: string

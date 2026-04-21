@@ -3,14 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import {
-  createHmrMarker,
-  PLATFORM_EXT,
-  replaceFileByRename,
-  replaceSfcTitleMarker,
-  resolvePlatforms,
-  waitForFileContains,
-} from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, replaceHmrSfcTitle, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 /**
@@ -486,7 +479,7 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     const distPath = path.join(DIST_ROOT, `pages/hmr-sfc/index.${ext.template}`)
     const marker = createHmrMarker('MODIFY-SFC-TEMPLATE', platform)
 
-    const updatedSource = replaceSfcTitleMarker(originalSource, marker)
+    const updatedSource = replaceHmrSfcTitle(originalSource, marker)
     if (updatedSource === originalSource) {
       throw new Error('Failed to insert marker into .vue template section.')
     }

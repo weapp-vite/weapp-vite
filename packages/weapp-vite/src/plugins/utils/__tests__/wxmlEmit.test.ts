@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
+import { createImportMetaDefineRegistry } from '../../../utils/importMeta'
 import { emitJsonAsset, emitWxmlAssetFile, emitWxmlAssetsWithCache, resolveWxmlEmitContext, resolveWxmlEmitTargets } from '../wxmlEmit'
 
 function createMockCompiler(options?: { outputExtensions?: Record<string, string>, platform?: string, defineImportMetaEnv?: Record<string, any> }): MutableCompilerContext {
@@ -25,6 +26,9 @@ function createMockCompiler(options?: { outputExtensions?: Record<string, string
       return relative || '.'
     },
     defineImportMetaEnv: options?.defineImportMetaEnv ?? {},
+    importMetaDefineRegistry: createImportMetaDefineRegistry({
+      defineEntries: options?.defineImportMetaEnv,
+    }),
   } as unknown as MutableCompilerContext['configService']
 
   ctx.scanService = {
@@ -142,7 +146,7 @@ describe('emitWxmlAssetsWithCache', () => {
       token,
       deps,
       emittedCodeCache,
-      defineImportMetaEnv: {},
+      importMetaDefineRegistry: createImportMetaDefineRegistry(),
       scriptModuleExtension: 'wxs',
       scriptModuleTag: 'wxs',
       templateExtension: 'wxml',
@@ -159,7 +163,7 @@ describe('emitWxmlAssetsWithCache', () => {
       token,
       deps,
       emittedCodeCache,
-      defineImportMetaEnv: {},
+      importMetaDefineRegistry: createImportMetaDefineRegistry(),
       scriptModuleExtension: 'wxs',
       scriptModuleTag: 'wxs',
       templateExtension: 'wxml',

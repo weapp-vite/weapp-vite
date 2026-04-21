@@ -10,6 +10,7 @@ import path from 'pathe'
 import logger, { configureLogger } from '../../logger'
 import { resolveMultiPlatformConfig } from '../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
+import { createImportMetaDefineRegistry, pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { resolveBuiltinPackageAliases } from '../packageAliases'
@@ -140,20 +141,41 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     defineEnv[key] = value
   }
 
-  function getDefineImportMetaEnv() {
+  function setImportMetaEnvDefineOverride(define?: Record<string, any>) {
+    configState.importMetaEnvDefineOverride = define
+      ? pickImportMetaEnvDefineEntries(define)
+      : undefined
+  }
+
+  function getUserDefinedImportMetaEnv() {
+    const userDefine = options?.config?.define
+    return pickImportMetaEnvDefineEntries(userDefine)
+  }
+
+  function getCurrentImportMetaExplicitDefine() {
+    return configState.importMetaEnvDefineOverride
+      ?? getUserDefinedImportMetaEnv()
+  }
+
+  function getImportMetaBaseEnv() {
     const mpPlatform = options?.platform ?? DEFAULT_MP_PLATFORM
     const resolvedPlatform = defineEnv.PLATFORM ?? mpPlatform
-    const env = {
+    return {
       PLATFORM: resolvedPlatform,
       MP_PLATFORM: resolvedPlatform,
       ...defineEnv,
     }
-    const define: Record<string, any> = {}
-    for (const [key, value] of Object.entries(env)) {
-      define[`import.meta.env.${key}`] = JSON.stringify(value)
-    }
-    define['import.meta.env'] = JSON.stringify(env)
-    return define
+  }
+
+  function getImportMetaDefineRegistry() {
+    return createImportMetaDefineRegistry({
+      baseEnv: getImportMetaBaseEnv(),
+      defineEntries: getCurrentImportMetaExplicitDefine(),
+    })
+  }
+
+  function getDefineImportMetaEnv() {
+    return getImportMetaDefineRegistry().defineEntries
   }
 
   function applyRuntimePlatform(runtime: 'miniprogram' | 'web') {
@@ -255,13 +277,23 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return configState.packageInfo
     },
     setDefineEnv,
+    setImportMetaEnvDefineOverride,
     load,
     mergeWorkers,
     merge,
     mergeWeb,
     mergeInlineConfig,
+    get importMetaDefineEntries() {
+      return getDefineImportMetaEnv()
+    },
     get defineImportMetaEnv() {
       return getDefineImportMetaEnv()
+    },
+    get importMetaEnvDefineOverride() {
+      return configState.importMetaEnvDefineOverride
+    },
+    get importMetaDefineRegistry() {
+      return getImportMetaDefineRegistry()
     },
     get cwd() {
       return options.cwd
