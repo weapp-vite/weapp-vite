@@ -1354,6 +1354,9 @@ importers:
 
   e2e-apps/issue-814-tailwind3:
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.2.4
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard

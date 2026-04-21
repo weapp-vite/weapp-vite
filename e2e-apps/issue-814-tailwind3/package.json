@@ -12,6 +12,7 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "tailwindcss": "catalog:tailwind3",
     "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",
