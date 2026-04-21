@@ -226,6 +226,28 @@ async function waitForIssue446Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
+async function waitForIssue479Runtime(page: any, timeoutMs = 20_000) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt <= timeoutMs) {
+    try {
+      const runtime = await callPageMethodWithTimeout(page, '_runE2E')
+      if (runtime?.hasPull && runtime?.hasBottom) {
+        return runtime
+      }
+    }
+    catch {
+    }
+
+    try {
+      await page.waitFor(220)
+    }
+    catch {
+    }
+  }
+
+  return null
+}
+
 describe.sequential('e2e app: github-issues / lifecycle', () => {
   afterAll(async () => {
     await cleanupResidualIdeProcesses()
@@ -560,6 +582,39 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
         fooBar: 'issue-446-short-bind',
         summary: 'visible:issue-446-short-bind',
       })
+    }
+    finally {
+      await miniProgram.close().catch(() => {})
+    }
+  })
+
+  it.skip('issue #479: triggers indirect pull-down and reach-bottom hooks in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-479/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-479/index.js')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-479/index.json')
+
+    const miniProgram = await launchFreshMiniProgram(ctx)
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-479 indirect page feature hooks')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('enableOnPullDownRefresh: true')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('enableOnReachBottom: true')
+    expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"enablePullDownRefresh": true')
+
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-479/index', 'issue-479 indirect page feature hooks')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-479 page')
+      }
+
+      await miniProgram.callWxMethod('startPullDownRefresh')
+      await issuePage.waitFor(300)
+      await miniProgram.pageScrollTo(2400)
+      await issuePage.waitFor(300)
+
+      const runtimeResult = await waitForIssue479Runtime(issuePage)
+      expect(runtimeResult?.hasPull).toBe(true)
+      expect(runtimeResult?.hasBottom).toBe(true)
+      expect(runtimeResult?.logs).toContain('pull')
+      expect(runtimeResult?.logs).toContain('bottom')
     }
     finally {
       await miniProgram.close().catch(() => {})

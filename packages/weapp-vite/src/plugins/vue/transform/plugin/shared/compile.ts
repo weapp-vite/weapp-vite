@@ -13,7 +13,6 @@ import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
 import { buildWeappVueStyleRequest } from '../../styleRequest'
 import { handleTransformEntryPageLayoutFlow } from './layout'
 import {
-  mayNeedTransformPageFeatureInjection,
   mayNeedTransformPageScrollDiagnostics,
   mayNeedTransformSetDataPick,
   resolveScriptlessVueEntryStub,
@@ -42,14 +41,12 @@ export async function finalizeTransformEntryScript(options: {
       }
     }
 
-    if (mayNeedTransformPageFeatureInjection(result.script)) {
-      const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
-        checkMtime: configService.isDev,
-      })
-      if (injected.transformed) {
-        result.script = injected.code
-        result.scriptMap = composeSourceMaps(injected.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
-      }
+    const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
+      checkMtime: configService.isDev,
+    })
+    if (injected.transformed) {
+      result.script = injected.code
+      result.scriptMap = composeSourceMaps(injected.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
     }
   }
 
