@@ -2,7 +2,8 @@
   "appid": "wxb3d842a4a7e3440d",
   "miniprogramRoot": "dist",
   "setting": {
-    "minifyWXML": true
+    "minifyWXML": true,
+    "es6": true
   },
   "libVersion": "3.13.2"
 }

@@ -3,6 +3,7 @@
   "libVersion": "3.13.2",
   "miniprogramRoot": "dist",
   "setting": {
-    "minifyWXML": true
+    "minifyWXML": true,
+    "es6": true
   }
 }
