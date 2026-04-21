@@ -283,6 +283,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     merge,
     mergeWeb,
     mergeInlineConfig,
+    get importMetaDefineEntries() {
+      return getDefineImportMetaEnv()
+    },
     get defineImportMetaEnv() {
       return getDefineImportMetaEnv()
     },

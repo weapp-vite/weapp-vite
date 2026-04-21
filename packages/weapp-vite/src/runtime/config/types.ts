@@ -86,6 +86,7 @@ export interface ConfigService {
   merge: (subPackageMeta?: SubPackageMetaValue, ...configs: Partial<InlineConfig | undefined>[]) => InlineConfig
   mergeWeb: (...configs: Partial<InlineConfig | undefined>[]) => InlineConfig | undefined
   mergeInlineConfig: (...configs: Partial<InlineConfig>[]) => InlineConfig
+  readonly importMetaDefineEntries: Record<string, any>
   readonly defineImportMetaEnv: Record<string, any>
   readonly importMetaEnvDefineOverride?: Record<string, any>
   readonly importMetaDefineRegistry: ImportMetaDefineRegistry

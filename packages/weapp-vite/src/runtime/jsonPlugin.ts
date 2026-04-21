@@ -61,7 +61,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
             rolldownOptions: {
               input: {
                 // @ts-ignore
-                define: configService.defineImportMetaEnv,
+                define: configService.importMetaDefineEntries,
               },
               output: {
                 exports: 'named',

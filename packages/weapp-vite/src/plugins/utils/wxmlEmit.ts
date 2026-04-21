@@ -3,7 +3,6 @@ import type { SubPackageMetaValue } from '../../types'
 import type { ImportMetaDefineRegistry } from '../../utils/importMeta'
 import { isTemplate } from '../../utils'
 import { changeFileExtension } from '../../utils/file'
-import { createImportMetaDefineRegistry } from '../../utils/importMeta'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../utils/path'
 import { resolveScriptModuleTagName } from '../../utils/wxmlScriptModule'
@@ -147,10 +146,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
       token,
       deps: wxmlService.depsMap.get(id),
       emittedCodeCache,
-      importMetaDefineRegistry: configService.importMetaDefineRegistry
-        ?? createImportMetaDefineRegistry({
-          defineEntries: configService.defineImportMetaEnv,
-        }),
+      importMetaDefineRegistry: configService.importMetaDefineRegistry,
       scriptModuleExtension,
       scriptModuleTag,
       templateExtension,

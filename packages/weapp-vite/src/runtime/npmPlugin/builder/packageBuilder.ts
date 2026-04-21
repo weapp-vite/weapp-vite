@@ -126,14 +126,14 @@ export function createPackageBuilder(
   }
 
   function resolvePackageBuildTarget({ entry, name, options, outDir }: ResolvePackageBuildTargetArgs): ResolvedPackageBuildTarget {
-    const defineImportMetaEnv = ctx.configService?.defineImportMetaEnv ?? {}
+    const importMetaDefineEntries = ctx.configService?.importMetaDefineEntries ?? {}
     const mergedOptions: NpmBuildOptions = defu<NpmBuildOptions, NpmBuildOptions[]>(options, {
       configFile: false,
       publicDir: false,
       logLevel: 'silent',
       root: ctx.configService?.cwd ?? process.cwd(),
       define: {
-        ...defineImportMetaEnv,
+        ...importMetaDefineEntries,
         'process.env.NODE_ENV': JSON.stringify('production'),
       },
       plugins: [],

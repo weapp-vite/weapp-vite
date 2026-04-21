@@ -14,6 +14,7 @@ function createTestContext(cwd: string, pages: string[] = ['pages/index/index'])
         cwd,
       },
       defineImportMetaEnv: {},
+      importMetaDefineEntries: {},
       aliasEntries: [],
       platform: 'weapp',
       packageJson: {
