@@ -759,6 +759,46 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['packageA/pages/foo.js'].code).not.toContain('miniprogram_dist/dialog/index.js')
   })
 
+  it('localizes aliased relative miniprogram package imports back to subpackage miniprogram_npm paths', async () => {
+    const state = createState({
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['packageA', {
+              subPackage: {
+                root: 'packageA',
+                dependencies: [/^tdesign-miniprogram$/],
+              },
+            }],
+          ]),
+        },
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'packageA/pages/foo.js': {
+        type: 'chunk',
+        fileName: 'packageA/pages/foo.js',
+        code: 'const dialog = require("../node_modules/tdesign-miniprogram/miniprogram_dist/dialog/index.js")',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/tdesign-miniprogram/dialog/index')
+    expect(bundle['packageA/pages/foo.js'].code).not.toContain('miniprogram_dist/dialog/index.js')
+  })
+
   it('handles non-logging shared chunk duplicates and empty watch files gracefully', async () => {
     applySharedChunkStrategyMock.mockImplementationOnce((_bundle, options) => {
       options.onDuplicate?.({

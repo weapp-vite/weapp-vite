@@ -32,11 +32,22 @@ interface SizeGroup<TEntry> {
 }
 
 const ROOT = process.cwd()
-const WORKSPACE_DIRS = ['packages', 'packages-runtime', '@weapp-core', 'e2e-apps', 'extensions']
+type ReportScope = 'all' | 'core'
+
+const WORKSPACE_DIRS_BY_SCOPE: Record<ReportScope, string[]> = {
+  all: ['packages', 'packages-runtime', '@weapp-core', 'e2e-apps', 'extensions'],
+  core: ['packages', 'packages-runtime', '@weapp-core', 'extensions'],
+}
 const INFO_COLOR = colors.cyan
 const MUTED_COLOR = colors.dim
 const NPM_PACK_CACHE_DIR = path.join(ROOT, '.cache', 'npm-pack-report')
 const ENABLE_PUBLISH_SIZE_REPORT = process.env.WEAPP_VITE_REPORT_PUBLISH_SIZE === '1'
+
+function resolveReportScope(argv: string[]): ReportScope {
+  const scopeArg = argv.find(arg => arg.startsWith('--scope='))
+  const scope = scopeArg?.slice('--scope='.length)
+  return scope === 'core' ? 'core' : 'all'
+}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) {
@@ -149,10 +160,11 @@ function printGroup<TEntry extends { bytes?: number, packedBytes?: number, unpac
   )
 }
 
-async function collectWorkspacePackages() {
+async function collectWorkspacePackages(scope: ReportScope) {
   const packages: WorkspacePackage[] = []
+  const workspaceDirs = WORKSPACE_DIRS_BY_SCOPE[scope]
 
-  for (const dirName of WORKSPACE_DIRS) {
+  for (const dirName of workspaceDirs) {
     const baseDir = path.join(ROOT, dirName)
     let children: Awaited<ReturnType<typeof readdir>>
     try {
@@ -353,7 +365,8 @@ function printPublishSizeReport(workspacePackages: WorkspacePackage[]) {
 }
 
 async function main() {
-  const workspacePackages = await collectWorkspacePackages()
+  const reportScope = resolveReportScope(process.argv.slice(2))
+  const workspacePackages = await collectWorkspacePackages(reportScope)
   await printDistSizeReport(workspacePackages)
   if (ENABLE_PUBLISH_SIZE_REPORT) {
     printPublishSizeReport(workspacePackages)
