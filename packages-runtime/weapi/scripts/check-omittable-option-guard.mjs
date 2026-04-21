@@ -7,6 +7,14 @@ const TSCONFIG_PATH = path.join(PACKAGE_ROOT, 'tsconfig.json')
 const WX_TYPES_SUFFIX = path.join('miniprogram-api-typings', 'types', 'wx', 'lib.wx.api.d.ts')
 const WEAPI_TYPES_PATH = path.join(PACKAGE_ROOT, 'src', 'core', 'types.ts')
 
+export function toPosixPath(filePath) {
+  return String(filePath).replaceAll('\\', '/')
+}
+
+export function isWechatApiTypesSourceFile(fileName) {
+  return toPosixPath(fileName).endsWith(toPosixPath(WX_TYPES_SUFFIX))
+}
+
 function createProgram() {
   const config = ts.readConfigFile(TSCONFIG_PATH, ts.sys.readFile)
   if (config.error) {
@@ -39,7 +47,7 @@ function getWxModuleBlock(sourceFile) {
 }
 
 function collectOmittableWxMethods(program, checker) {
-  const wxSourceFile = program.getSourceFiles().find(file => file.fileName.endsWith(WX_TYPES_SUFFIX))
+  const wxSourceFile = program.getSourceFiles().find(file => isWechatApiTypesSourceFile(file.fileName))
   if (!wxSourceFile) {
     throw new Error(`未找到微信 API 类型文件: ${WX_TYPES_SUFFIX}`)
   }

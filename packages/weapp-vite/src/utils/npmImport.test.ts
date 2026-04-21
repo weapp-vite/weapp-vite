@@ -15,6 +15,7 @@ describe('utils/npmImport', () => {
     expect(normalizeNpmImportLookupPath('npm:tdesign-miniprogram/button/button')).toBe('tdesign-miniprogram/button/button')
     expect(normalizeNpmImportLookupPath('/node_modules/tdesign-miniprogram/button/button')).toBe('tdesign-miniprogram/button/button')
     expect(normalizeNpmImportLookupPath('\\miniprogram_npm\\tdesign-miniprogram\\button\\button')).toBe('tdesign-miniprogram/button/button')
+    expect(normalizeNpmImportLookupPath('../node_modules/tdesign-miniprogram/miniprogram_dist/dialog/index.js')).toBe('tdesign-miniprogram/dialog/index')
 
     const aliasedMiniprogramEntry = path.join(
       process.cwd(),

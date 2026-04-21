@@ -15,6 +15,7 @@ const EXPLICIT_NPM_DIR_RE = /^\/(?:miniprogram_npm|node_modules)\//
 const LEADING_SLASHES_RE = /^\/+/
 const NODE_MODULES_SEGMENT = '/node_modules/'
 const STRIP_SCRIPT_EXTENSION_RE = /\.[cm]?[jt]sx?$/
+const INFERRED_MINIPROGRAM_ROOTS = ['miniprogram_dist', 'miniprogram'] as const
 
 const miniprogramRootCache = new Map<string, string | undefined>()
 const packageRootCache = new Map<string, string | undefined>()
@@ -22,6 +23,16 @@ const resolveFromCurrentModule = createRequire(import.meta.url)
 
 function stripScriptExtension(value: string) {
   return value.replace(STRIP_SCRIPT_EXTENSION_RE, '')
+}
+
+function stripInferredMiniprogramRoot(subPath: string) {
+  for (const miniprogramRoot of INFERRED_MINIPROGRAM_ROOTS) {
+    if (subPath === miniprogramRoot || subPath.startsWith(`${miniprogramRoot}/`)) {
+      return subPath.slice(miniprogramRoot.length).replace(LEADING_SLASHES_RE, '')
+    }
+  }
+
+  return subPath
 }
 
 function readMiniprogramRoot(packageRoot: string) {
@@ -98,6 +109,9 @@ function normalizeAbsoluteNodeModulesImport(importee: string) {
   const miniprogramRoot = readMiniprogramRoot(packageRoot)
   if (miniprogramRoot && (subPath === miniprogramRoot || subPath.startsWith(`${miniprogramRoot}/`))) {
     subPath = subPath.slice(miniprogramRoot.length).replace(LEADING_SLASHES_RE, '')
+  }
+  else {
+    subPath = stripInferredMiniprogramRoot(subPath)
   }
 
   const normalizedSubPath = stripScriptExtension(subPath)
