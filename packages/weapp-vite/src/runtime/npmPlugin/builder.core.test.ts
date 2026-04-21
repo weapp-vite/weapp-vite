@@ -29,6 +29,10 @@ async function createTempDir() {
   return dir
 }
 
+function resolveRepoFixturePath(relativePath: string) {
+  return path.resolve(process.cwd(), relativePath)
+}
+
 function loadCommonJsModule(entryPath: string) {
   const cache = new Map<string, { exports: any }>()
 
@@ -592,6 +596,50 @@ describe('runtime npm package builder core', () => {
 
     expect(wrappedDialogModule.default.default).toBeUndefined()
     expect(wrappedDialogModule.default.confirm()).toBe(true)
+  })
+
+  it('normalizes the real tdesign dialog component entry from miniprogram_dist packages', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'tdesign-miniprogram')
+    const outRoot = path.resolve(root, 'dist/miniprogram_npm')
+    const realDialogComponentPath = resolveRepoFixturePath(
+      'apps/tdesign-miniprogram-starter-retail/node_modules/tdesign-miniprogram/miniprogram_dist/dialog/dialog.js',
+    )
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram_dist/dialog'))
+    await fs.writeFile(
+      path.resolve(pkgRoot, 'miniprogram_dist/dialog/dialog.js'),
+      readFileSync(realDialogComponentPath, 'utf8'),
+      'utf8',
+    )
+
+    const ctx = createMockContext({
+      platform: 'weapp',
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'tdesign-miniprogram',
+        version: '1.0.0',
+        miniprogram: 'miniprogram_dist',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'tdesign-miniprogram',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    const dialogComponentContent = await fs.readFile(path.resolve(outRoot, 'tdesign-miniprogram/dialog/dialog.js'), 'utf8')
+
+    expect(dialogComponentContent).toContain('__esModule')
+    expect(dialogComponentContent).toContain('require("../common/src/index")')
+    expect(dialogComponentContent).toContain('require("../common/config")')
+    expect(dialogComponentContent).toContain('require("./props")')
+    expect(dialogComponentContent).toContain('exports["default"]')
   })
 
   it('keeps copied cjs miniprogram package entry stable for build-npm packages like miniprogram-computed', async () => {
