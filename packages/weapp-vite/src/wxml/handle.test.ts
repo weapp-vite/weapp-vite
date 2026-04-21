@@ -1,6 +1,7 @@
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { normalizeWxsFilename, transformWxsCode } from '@/wxs'
+import { createImportMetaDefineRegistry } from '../utils/importMeta'
 import { handleWxml } from './handle' // 替换为实际模块路径
 // 模拟 `normalizeWxsFilename` 与 `transformWxsCode` 方法
 vi.mock('@/wxs', () => ({
@@ -561,6 +562,37 @@ describe('handleWxml', () => {
     })
 
     expect(result.code).toBe('<view data-url=\'{{"/pages/issue-431/index.wxml"}}\' data-dir=\'{{"/pages/issue-431"}}\' />')
+  })
+
+  it('resolves import.meta replacements directly from import-meta registry and static context', () => {
+    const data = {
+      code: '<view data-url="{{import.meta.url}}" data-dir="{{import.meta.dirname}}" data-flag="{{import.meta.env.ISSUE_484_FLAG}}" data-env="{{import.meta.env}}" />',
+      wxsImportNormalizeTokens: [],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, {
+      importMetaDefineRegistry: createImportMetaDefineRegistry({
+        baseEnv: {
+          MODE: 'production',
+        },
+        defineEntries: {
+          'import.meta.env.ISSUE_484_FLAG': '123456',
+        },
+      }),
+      importMetaExtension: 'wxml',
+      importMetaRelativePath: 'pages/issue-484/index.wxml',
+    })
+
+    expect(result.code).toBe('<view data-url="{{\'/pages/issue-484/index.wxml\'}}" data-dir="{{\'/pages/issue-484\'}}" data-flag="{{123456}}" data-env="{{import.meta.env}}" />')
   })
 
   it('replaces numeric and boolean import.meta.env.xxx values in whole mustache output', () => {
