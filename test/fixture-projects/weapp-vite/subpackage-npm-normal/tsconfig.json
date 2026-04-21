@@ -3,28 +3,27 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "allowJs": true,
-    "noEmit": true,
-    "strict": false,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ]
     },
+    "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true
+    "allowJs": true,
+    "strict": false,
+    "noEmit": true
   },
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
   "include": [
     "src"
   ],
   "exclude": [
     "dist",
     "node_modules"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
   ]
 }

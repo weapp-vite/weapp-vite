@@ -1,11 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2020",
+    "jsx": "preserve",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "strict": true,
-    "jsx": "preserve",
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
@@ -16,6 +14,7 @@
       "miniprogram-api-typings"
     ],
     "allowImportingTsExtensions": true,
+    "strict": true,
     "noEmit": true,
     "skipLibCheck": true
   },

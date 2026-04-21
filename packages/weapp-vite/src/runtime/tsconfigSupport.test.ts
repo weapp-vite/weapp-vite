@@ -31,6 +31,7 @@ describe('tsconfig support', () => {
     expect(app.compilerOptions.types).toContain('miniprogram-api-typings')
     expect(app.compilerOptions.types).toContain('weapp-vite/client')
     expect(app.compilerOptions.types).not.toContain('vite/client')
+    expect(app.compilerOptions).not.toHaveProperty('baseUrl')
     expect(app.include).toContain('../src/**/*')
     expect(app.compilerOptions.paths['@/*']).toEqual(['../src/*'])
     expect(node.extends).toBe('./tsconfig.shared.json')
@@ -107,6 +108,7 @@ describe('tsconfig support', () => {
     }`)
     await fs.writeFile(path.join(root, 'tsconfig.app.json'), `{
       "compilerOptions": {
+        "baseUrl": ".",
         "paths": {
           "tdesign-miniprogram/*": ["./node_modules/tdesign-miniprogram/miniprogram_dist/*"]
         }
@@ -128,6 +130,7 @@ describe('tsconfig support', () => {
     const shared = JSON.parse(files.find(file => file.path.endsWith('tsconfig.shared.json'))!.content)
 
     expect(shared.compilerOptions.strict).toBe(false)
+    expect(app.compilerOptions).not.toHaveProperty('baseUrl')
     expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
     expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['../node_modules/tdesign-miniprogram/miniprogram_dist/*'])
     expect(app.include).toContain('../legacy/**/*.ts')
@@ -179,6 +182,23 @@ describe('tsconfig support', () => {
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
     expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'vite/client', 'custom-env']))
+  })
+
+  it('omits deprecated baseUrl from managed and user app compiler options', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      weappViteConfig: {
+        typescript: {
+          app: {
+            compilerOptions: {
+              baseUrl: '.',
+            },
+          },
+        },
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.compilerOptions).not.toHaveProperty('baseUrl')
   })
 
   it('writes managed tsconfig files into .weapp-vite', async () => {

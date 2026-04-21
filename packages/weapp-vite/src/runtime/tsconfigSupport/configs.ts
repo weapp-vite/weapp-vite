@@ -15,6 +15,15 @@ import {
   unique,
 } from './shared'
 
+function omitDeprecatedCompilerOptions<T extends Record<string, any> | undefined>(compilerOptions: T): T {
+  if (!compilerOptions || !('baseUrl' in compilerOptions)) {
+    return compilerOptions
+  }
+
+  const { baseUrl: _baseUrl, ...rest } = compilerOptions
+  return rest as T
+}
+
 function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const configService = requireConfigService(ctx, '生成 app tsconfig 前必须初始化 configService。')
   const packageJson = configService.packageJson
@@ -84,8 +93,8 @@ export function createSharedTsconfig(ctx: MutableCompilerContext, legacyConfig?:
     noUncheckedSideEffectImports: true,
     erasableSyntaxOnly: true,
     skipLibCheck: true,
-    ...(legacyConfig?.shared?.compilerOptions ?? {}),
-    ...(userConfig?.shared?.compilerOptions ?? {}),
+    ...(omitDeprecatedCompilerOptions(legacyConfig?.shared?.compilerOptions) ?? {}),
+    ...(omitDeprecatedCompilerOptions(userConfig?.shared?.compilerOptions) ?? {}),
   }
 
   const config = {
@@ -115,8 +124,8 @@ export function createSharedTsconfig(ctx: MutableCompilerContext, legacyConfig?:
 
 export function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
-  const legacyAppCompilerOptions = legacyConfig?.app?.compilerOptions ?? {}
-  const userAppCompilerOptions = userConfig?.app?.compilerOptions ?? {}
+  const legacyAppCompilerOptions = omitDeprecatedCompilerOptions(legacyConfig?.app?.compilerOptions) ?? {}
+  const userAppCompilerOptions = omitDeprecatedCompilerOptions(userConfig?.app?.compilerOptions) ?? {}
   const compilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.app.tsbuildinfo',
     target: 'ES2023',
@@ -171,8 +180,8 @@ export function createNodeTsconfig(ctx: MutableCompilerContext, legacyConfig?: L
     target: 'ES2023',
     lib: ['ES2023'],
     types: ['node'],
-    ...(legacyConfig?.node?.compilerOptions ?? {}),
-    ...(userConfig?.node?.compilerOptions ?? {}),
+    ...(omitDeprecatedCompilerOptions(legacyConfig?.node?.compilerOptions) ?? {}),
+    ...(omitDeprecatedCompilerOptions(userConfig?.node?.compilerOptions) ?? {}),
   }
 
   const include = unique([
@@ -205,8 +214,8 @@ export function createServerTsconfig(ctx: MutableCompilerContext, legacyConfig?:
     target: 'ES2023',
     lib: ['ES2023'],
     types: ['node'],
-    ...(legacyConfig?.server?.compilerOptions ?? {}),
-    ...(userConfig?.server?.compilerOptions ?? {}),
+    ...(omitDeprecatedCompilerOptions(legacyConfig?.server?.compilerOptions) ?? {}),
+    ...(omitDeprecatedCompilerOptions(userConfig?.server?.compilerOptions) ?? {}),
   }
 
   const files = unique([
