@@ -4,13 +4,13 @@
   "version": "0.0.4",
   "private": true,
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:h5": "weapp-vite dev -p h5  --host",
-    "build": "weapp-vite build",
-    "preview": "weapp-vite preview",
-    "postinstall": "weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "dev": "wv dev",
+    "dev:h5": "wv dev -p h5  --host",
+    "build": "wv build",
+    "preview": "wv preview",
+    "postinstall": "wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

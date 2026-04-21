@@ -16,17 +16,17 @@
   },
   "keywords": [],
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
-    "open": "weapp-vite open",
-    "postinstall": "weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui",
-    "dev:all": "weapp-vite dev --platform all",
-    "dev:ui:all": "weapp-vite dev --ui --platform all",
-    "build:all": "weapp-vite build --platform all"
+    "open": "wv open",
+    "postinstall": "wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui",
+    "dev:all": "wv dev --platform all",
+    "dev:ui:all": "wv dev --ui --platform all",
+    "build:all": "wv build --platform all"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

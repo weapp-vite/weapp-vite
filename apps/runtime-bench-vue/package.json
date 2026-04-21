@@ -6,14 +6,14 @@
   "packageManager": "pnpm@10.29.3",
   "description": "wevu Vue SFC 运行时 benchmark 基准工程",
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
-    "open": "weapp-vite open",
-    "postinstall": "weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "open": "wv open",
+    "postinstall": "wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

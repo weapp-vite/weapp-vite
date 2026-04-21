@@ -4,13 +4,14 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
     "pretest:types": "node ./scripts/prepare-type-fixtures.mjs",
     "test:types": "tsd",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui",
+    "postinstall": "wv prepare"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

@@ -20,17 +20,17 @@
     "ai"
   ],
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
-    "g": "weapp-vite generate",
-    "mcp:stdio": "weapp-vite mcp --workspace-root ../..",
-    "mcp:http": "weapp-vite mcp --workspace-root ../.. --transport streamable-http --host 127.0.0.1 --port 3188 --endpoint /mcp",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "open": "wv open",
+    "g": "wv generate",
+    "mcp:stdio": "wv mcp --workspace-root ../..",
+    "mcp:http": "wv mcp --workspace-root ../.. --transport streamable-http --host 127.0.0.1 --port 3188 --endpoint /mcp",
     "mcp:smoke": "pnpm run build && node ./scripts/mcp-smoke.mjs",
-    "postinstall": "weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "postinstall": "wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

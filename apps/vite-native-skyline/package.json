@@ -17,15 +17,15 @@
   "keywords": [],
   "main": "index.js",
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm",
-    "postinstall": "weapp-tw patch && weapp-vite prepare",
-    "g": "weapp-vite g",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "open": "wv open",
+    "build-npm": "wv build-npm",
+    "postinstall": "weapp-tw patch && wv prepare",
+    "g": "wv g",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "devDependencies": {
     "@vant/weapp": "catalog:",

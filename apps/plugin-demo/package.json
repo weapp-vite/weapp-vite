@@ -10,15 +10,15 @@
   "keywords": [],
   "main": "index.js",
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
     "typecheck": "vue-tsc --noEmit",
-    "open": "weapp-vite open",
-    "g": "weapp-vite generate",
-    "postinstall": "weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "open": "wv open",
+    "g": "wv generate",
+    "postinstall": "wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "dependencies": {
     "dayjs": "catalog:",

@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build --platform weapp --skipNpm",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui --platform weapp --skipNpm"
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build --platform weapp --skipNpm",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui --platform weapp --skipNpm",
+    "postinstall": "wv prepare"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

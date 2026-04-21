@@ -16,14 +16,14 @@
   },
   "keywords": [],
   "scripts": {
-    "dev": "weapp-vite dev -o",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
-    "build-npm": "weapp-vite build-npm",
-    "postinstall": "weapp-tw patch && weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui -o",
-    "build:ui": "weapp-vite build --ui"
+    "dev": "wv dev -o",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "open": "wv open",
+    "build-npm": "wv build-npm",
+    "postinstall": "weapp-tw patch && wv prepare",
+    "dev:ui": "wv dev --ui -o",
+    "build:ui": "wv build --ui"
   },
   "dependencies": {
     "tdesign-miniprogram": "catalog:"

@@ -6,16 +6,16 @@
   "packageManager": "pnpm@10.29.3",
   "description": "wevu + Vue SFC 录屏演示项目",
   "scripts": {
-    "prepare:weapp": "weapp-vite prepare",
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
+    "prepare:weapp": "wv prepare",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
-    "open": "weapp-vite open",
+    "open": "wv open",
     "video:prepare": "bash ../../docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh",
-    "postinstall": "weapp-tw patch && weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "postinstall": "weapp-tw patch && wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",

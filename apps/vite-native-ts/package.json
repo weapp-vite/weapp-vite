@@ -16,15 +16,15 @@
   },
   "keywords": [],
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
-    "g": "weapp-vite g",
-    "build-npm": "weapp-vite build-npm",
-    "postinstall": "weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "open": "wv open",
+    "g": "wv g",
+    "build-npm": "wv build-npm",
+    "postinstall": "wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "dependencies": {
     "gm-crypto": "catalog:"

@@ -5,15 +5,15 @@
   "packageManager": "pnpm@10.26.0",
   "description": "WeVu comprehensive demo showcasing all features",
   "scripts": {
-    "prepare:weapp": "weapp-vite prepare",
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
+    "prepare:weapp": "wv prepare",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
-    "open": "weapp-vite open",
-    "postinstall": "weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "open": "wv open",
+    "postinstall": "wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "dependencies": {
     "@vant/weapp": "catalog:",

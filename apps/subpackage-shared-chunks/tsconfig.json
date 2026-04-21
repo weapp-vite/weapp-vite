@@ -1,50 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "jsx": "preserve",
-    "lib": [
-      "ES2020",
-      "DOM"
-    ],
-    "useDefineForClassFields": false,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
-    "resolveJsonModule": true,
-    "types": [
-      "miniprogram-api-typings"
-    ],
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noEmit": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "skipLibCheck": true
-  },
-  "vueCompilerOptions": {
-    "plugins": [
-      "weapp-vite/volar"
-    ]
-  },
   "references": [
     {
-      "path": "./tsconfig.node.json"
+      "path": "./.weapp-vite/tsconfig.app.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.server.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.node.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.shared.json"
     }
   ],
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "files": []
 }

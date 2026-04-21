@@ -1,71 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "jsx": "preserve",
-    "lib": [
-      "ES2020",
-      "DOM"
-    ],
-    "useDefineForClassFields": false,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "tdesign-miniprogram/*": [
-        "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
-      ],
-      "@vant/weapp/*": [
-        "./node_modules/@vant/weapp/dist/*"
-      ],
-      "@behaviors/*": [
-        "./behaviors/*"
-      ]
-    },
-    "resolveJsonModule": true,
-    "types": [
-      "miniprogram-api-typings"
-    ],
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noEmit": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "skipLibCheck": true
-  },
   "references": [
     {
-      "path": "./tsconfig.node.json"
+      "path": "./.weapp-vite/tsconfig.app.json"
     },
     {
-      "path": "./tsconfig.test.json"
+      "path": "./.weapp-vite/tsconfig.server.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.node.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.shared.json"
     }
   ],
-  "include": [
-    "**/*.ts",
-    "**/*.js",
-    "**/*.vue",
-    "**/*.cjs",
-    "**/*.mjs"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.min.js",
-    "**/*.min.cjs",
-    "cos-wx-sdk-v5.js"
-  ],
-  "vueCompilerOptions": {
-    "plugins": [
-      "weapp-vite/volar"
-    ]
-  }
+  "files": []
 }

@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
     "build": "node -e \"const fs=require('fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.skip-build','skip build: this fixture is intentionally invalid and is verified by negative e2e tests\\n'); console.log('skip build: this fixture is intentionally invalid and is verified by negative e2e tests')\"",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "node -e \"const fs=require('fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.skip-build','skip build: this fixture is intentionally invalid and is verified by negative e2e tests\\n'); console.log('skip build: this fixture is intentionally invalid and is verified by negative e2e tests')\""
+    "dev:ui": "wv dev --ui",
+    "build:ui": "node -e \"const fs=require('fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.skip-build','skip build: this fixture is intentionally invalid and is verified by negative e2e tests\\n'); console.log('skip build: this fixture is intentionally invalid and is verified by negative e2e tests')\"",
+    "postinstall": "wv prepare"
   },
   "devDependencies": {
     "@weapp-vite/dashboard": "workspace:*",

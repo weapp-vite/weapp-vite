@@ -16,15 +16,15 @@
   "keywords": [],
   "main": "index.js",
   "scripts": {
-    "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build",
-    "open": "weapp-vite open",
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "open": "wv open",
     "lint:fix": "eslint . --fix",
     "open:dev": "weapp open -p",
-    "postinstall": "weapp-tw patch && weapp-vite prepare",
-    "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "postinstall": "weapp-tw patch && wv prepare",
+    "dev:ui": "wv dev --ui",
+    "build:ui": "wv build --ui"
   },
   "dependencies": {
     "tdesign-miniprogram": "catalog:"
