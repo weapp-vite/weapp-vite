@@ -5,10 +5,59 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { afterEach, it, vi } from 'vitest'
 
-function createVscodeModule(mockVscode: Record<string, unknown>) {
+function toUriPath(fsPath: string) {
+  return fsPath.replace(/\\/gu, '/')
+}
+
+function normalizeMockUri<T extends { fsPath: string, path: string }>(uri: T): T {
+  const fsPath = path.normalize(uri.fsPath)
+
   return {
-    ...mockVscode,
-    default: mockVscode,
+    ...uri,
+    fsPath,
+    path: toUriPath(fsPath),
+  }
+}
+
+function normalizeWorkspaceFolder<T extends { uri: { fsPath: string, path: string } }>(workspaceFolder: T): T {
+  return {
+    ...workspaceFolder,
+    uri: normalizeMockUri(workspaceFolder.uri),
+  }
+}
+
+function createVscodeModule(mockVscode: Record<string, unknown>) {
+  const normalizedVscode = { ...mockVscode } as Record<string, any>
+
+  if (normalizedVscode.workspace && typeof normalizedVscode.workspace === 'object') {
+    normalizedVscode.workspace = { ...normalizedVscode.workspace }
+
+    if (Array.isArray(normalizedVscode.workspace.workspaceFolders)) {
+      normalizedVscode.workspace.workspaceFolders = normalizedVscode.workspace.workspaceFolders.map(normalizeWorkspaceFolder)
+    }
+
+    if (typeof normalizedVscode.workspace.getWorkspaceFolder === 'function') {
+      const originalGetWorkspaceFolder = normalizedVscode.workspace.getWorkspaceFolder.bind(normalizedVscode.workspace)
+      normalizedVscode.workspace.getWorkspaceFolder = (...args: any[]) => {
+        const workspaceFolder = originalGetWorkspaceFolder(...args)
+
+        return workspaceFolder ? normalizeWorkspaceFolder(workspaceFolder) : workspaceFolder
+      }
+    }
+  }
+
+  if (normalizedVscode.Uri && typeof normalizedVscode.Uri === 'object') {
+    normalizedVscode.Uri = { ...normalizedVscode.Uri }
+
+    if (typeof normalizedVscode.Uri.file === 'function') {
+      const originalFile = normalizedVscode.Uri.file.bind(normalizedVscode.Uri)
+      normalizedVscode.Uri.file = (targetPath: string) => normalizeMockUri(originalFile(targetPath))
+    }
+  }
+
+  return {
+    ...normalizedVscode,
+    default: normalizedVscode,
   }
 }
 
@@ -294,6 +343,102 @@ it('removes usingComponents paths when a component directory is deleted', async 
   assert.equal(updates.length, 1)
   assert.equal(updates[0].nextText.includes('/components/card/user/index'), false)
   assert.equal(updates[0].nextText.includes('/components/avatar/index'), true)
+})
+
+it('resolves rooted usingComponents from the nearest monorepo project when app.config.ts is used', async () => {
+  const workspaceRoot = normalizeFsPath('/workspace')
+  const projectRoot = normalizeFsPath('/workspace/apps/demo')
+  const documentPath = normalizeFsPath('/workspace/apps/demo/src/components/vue-with-native/index.vue')
+  const fileContents = new Map<string, string>([
+    [normalizeFsPath('/workspace/apps/demo/package.json'), JSON.stringify({
+      dependencies: {
+        'weapp-vite': 'workspace:*',
+      },
+    }, null, 2)],
+    [normalizeFsPath('/workspace/apps/demo/vite.config.ts'), [
+      'import { defineConfig } from \'weapp-vite\'',
+      'export default defineConfig({})',
+    ].join('\n')],
+    [normalizeFsPath('/workspace/apps/demo/src/app.config.ts'), 'export default {}'],
+    [normalizeFsPath(documentPath), '<json>{"usingComponents":{"native-badge":"/native/native-badge/index"}}</json>'],
+    [normalizeFsPath('/workspace/apps/demo/src/native/native-badge/index.js'), 'Component({})'],
+  ])
+
+  vi.doMock('vscode', () => {
+    const mockVscode = {
+      window: {
+        activeTextEditor: undefined,
+      },
+      workspace: {
+        workspaceFolders: [
+          {
+            uri: {
+              fsPath: workspaceRoot,
+              path: workspaceRoot,
+            },
+          },
+        ],
+        getWorkspaceFolder: () => ({
+          uri: {
+            fsPath: workspaceRoot,
+            path: workspaceRoot,
+          },
+        }),
+        fs: {
+          stat: async (uri: { fsPath: string }) => {
+            if (!fileContents.has(uri.fsPath)) {
+              throw new Error('not found')
+            }
+
+            return {
+              type: 0,
+            }
+          },
+          readFile: async (uri: { fsPath: string }) => {
+            const content = fileContents.get(uri.fsPath)
+
+            if (content == null) {
+              throw new Error('not found')
+            }
+
+            return Buffer.from(content)
+          },
+        },
+      },
+      Uri: {
+        file(fsPath: string) {
+          return {
+            fsPath,
+            path: fsPath,
+          }
+        },
+      },
+    }
+
+    return createVscodeModule(mockVscode)
+  })
+  vi.resetModules()
+
+  const {
+    getVueUsingComponentFileStatus,
+  } = await import('./workspace')
+
+  const status = await getVueUsingComponentFileStatus({
+    languageId: 'vue',
+    uri: {
+      fsPath: documentPath,
+      path: documentPath,
+    },
+  }, '/native/native-badge/index')
+
+  assert.equal(status?.workspacePath, projectRoot)
+  assert.equal(status?.componentFilePath, normalizeFsPath('/workspace/apps/demo/src/native/native-badge/index.js'))
+  assert.deepEqual(status?.candidatePaths, [
+    normalizeFsPath('/workspace/apps/demo/src/native/native-badge/index.vue'),
+    normalizeFsPath('/workspace/apps/demo/src/native/native-badge/index.ts'),
+    normalizeFsPath('/workspace/apps/demo/src/native/native-badge/index.js'),
+    normalizeFsPath('/workspace/apps/demo/src/native/native-badge/index.wxml'),
+  ])
 })
 
 it('updates app.json routes when a page directory moves', async () => {

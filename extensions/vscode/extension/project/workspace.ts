@@ -42,6 +42,23 @@ function isLocalUsingComponentPath(componentPath: string) {
   return Boolean(componentPath.trim()) && !componentPath.includes('://')
 }
 
+const PROJECT_APP_ENTRY_FILE_NAMES = [
+  'src/app.json',
+  'src/app.config.ts',
+  'src/app.config.mts',
+  'src/app.config.cts',
+  'src/app.config.js',
+  'src/app.config.mjs',
+  'src/app.config.cjs',
+  'app.json',
+  'app.config.ts',
+  'app.config.mts',
+  'app.config.cts',
+  'app.config.js',
+  'app.config.mjs',
+  'app.config.cjs',
+]
+
 function getUsingComponentCandidatePaths(componentPath: string) {
   const normalizedPath = componentPath.trim().replace(/\\/gu, '/').replace(/\/+$/gu, '')
 
@@ -53,7 +70,7 @@ function getUsingComponentCandidatePaths(componentPath: string) {
 }
 
 function resolveUsingComponentCandidatePaths(
-  appJsonPath: string | null,
+  appEntryPath: string | null,
   documentPath: string,
   componentPath: string,
 ) {
@@ -63,7 +80,7 @@ function resolveUsingComponentCandidatePaths(
 
   const basePath = componentPath.startsWith('.')
     ? path.dirname(documentPath)
-    : path.dirname(appJsonPath ?? documentPath)
+    : path.dirname(appEntryPath ?? documentPath)
   const normalizedComponentPath = componentPath.startsWith('.')
     ? componentPath
     : componentPath.replace(/^\/+/u, '')
@@ -284,6 +301,16 @@ export async function getProjectAppJsonPath(workspaceFolder = getPrimaryWorkspac
   ])
 }
 
+export async function getProjectAppEntryPath(workspaceFolder = getPrimaryWorkspaceFolder()) {
+  if (!workspaceFolder) {
+    return null
+  }
+
+  return getExistingProjectFile(
+    PROJECT_APP_ENTRY_FILE_NAMES.map(fileName => path.join(workspaceFolder.uri.fsPath, fileName)),
+  )
+}
+
 export function getAppJsonDocumentUri(appJsonPath: string) {
   return vscode.Uri.file(appJsonPath)
 }
@@ -419,6 +446,28 @@ export async function findNearestWeappViteProjectWorkspaceFolder(startPath: stri
   }
 
   return null
+}
+
+export async function getDocumentProjectWorkspaceFolder(documentOrPath: any) {
+  const documentPath = typeof documentOrPath === 'string'
+    ? documentOrPath
+    : documentOrPath?.uri?.fsPath
+
+  if (!documentPath) {
+    return getPrimaryWorkspaceFolder()
+  }
+
+  const nearestWorkspaceFolder = await findNearestWeappViteProjectWorkspaceFolder(path.dirname(documentPath))
+
+  if (nearestWorkspaceFolder) {
+    return nearestWorkspaceFolder
+  }
+
+  if (typeof documentOrPath === 'string') {
+    return vscode.workspace.getWorkspaceFolder(vscode.Uri.file(documentPath)) ?? getPrimaryWorkspaceFolder()
+  }
+
+  return vscode.workspace.getWorkspaceFolder(documentOrPath.uri) ?? getPrimaryWorkspaceFolder()
 }
 
 export async function getProjectNavigationItems(workspaceFolder = getPrimaryWorkspaceFolder()) {
@@ -659,9 +708,9 @@ export async function getVueUsingComponentFileStatus(document: any, componentPat
     }
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri) ?? getPrimaryWorkspaceFolder()
-  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
-  const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, document.uri.fsPath, componentPath)
+  const workspaceFolder = await getDocumentProjectWorkspaceFolder(document)
+  const appEntryPath = await getProjectAppEntryPath(workspaceFolder)
+  const candidatePaths = resolveUsingComponentCandidatePaths(appEntryPath, document.uri.fsPath, componentPath)
   const componentFilePath = await getExistingProjectFile(candidatePaths)
   const workspacePath = workspaceFolder?.uri.fsPath ?? path.dirname(document.uri.fsPath)
 
@@ -723,8 +772,8 @@ export async function getVueTextsWithMovedUsingComponentPath(
   oldFilePath: string,
   newFilePath: string,
 ) {
-  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
-  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
+  const appEntryPath = await getProjectAppEntryPath(workspaceFolder)
+  const searchRoot = appEntryPath ? path.dirname(appEntryPath) : workspaceFolder.uri.fsPath
   const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
   const updates = []
 
@@ -742,7 +791,7 @@ export async function getVueTextsWithMovedUsingComponentPath(
         continue
       }
 
-      const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+      const candidatePaths = resolveUsingComponentCandidatePaths(appEntryPath, file.fsPath, reference.path)
       const matchedCandidatePath = candidatePaths.find(candidatePath => matchesMovedPath(candidatePath, oldFilePath))
 
       if (!matchedCandidatePath) {
@@ -755,7 +804,7 @@ export async function getVueTextsWithMovedUsingComponentPath(
         continue
       }
 
-      const nextPath = getMovedUsingComponentPath(reference.path, file.fsPath, appJsonPath, movedCandidatePath)
+      const nextPath = getMovedUsingComponentPath(reference.path, file.fsPath, appEntryPath, movedCandidatePath)
 
       if (!nextPath || nextPath === reference.path) {
         continue
@@ -787,8 +836,8 @@ export async function getVueTextsWithRemovedUsingComponentPath(
   workspaceFolder: any,
   deletedFilePath: string,
 ) {
-  const appJsonPath = await getProjectAppJsonPath(workspaceFolder)
-  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : workspaceFolder.uri.fsPath
+  const appEntryPath = await getProjectAppEntryPath(workspaceFolder)
+  const searchRoot = appEntryPath ? path.dirname(appEntryPath) : workspaceFolder.uri.fsPath
   const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
   const updates = []
 
@@ -806,7 +855,7 @@ export async function getVueTextsWithRemovedUsingComponentPath(
         continue
       }
 
-      const candidatePaths = resolveUsingComponentCandidatePaths(appJsonPath, file.fsPath, reference.path)
+      const candidatePaths = resolveUsingComponentCandidatePaths(appEntryPath, file.fsPath, reference.path)
       const matchedCandidatePaths = candidatePaths.filter(candidatePath => matchesMovedPath(candidatePath, deletedFilePath))
 
       if (matchedCandidatePaths.length === 0) {
@@ -854,7 +903,8 @@ export async function getProjectIssueSnapshot(workspaceFolder = getPrimaryWorksp
 
   const pagesSnapshot = await getWeappPagesTreeSnapshot(context.workspaceFolder)
   const appJsonPath = pagesSnapshot?.appJsonPath ?? await getProjectAppJsonPath(context.workspaceFolder)
-  const searchRoot = appJsonPath ? path.dirname(appJsonPath) : context.workspaceFolder.uri.fsPath
+  const appEntryPath = await getProjectAppEntryPath(context.workspaceFolder)
+  const searchRoot = appEntryPath ? path.dirname(appEntryPath) : context.workspaceFolder.uri.fsPath
   const vueFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(searchRoot, '**/*.vue'))
   const missingComponentEntries: WeappProjectIssueSnapshot['missingComponentEntries'] = []
 
