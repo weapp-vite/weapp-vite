@@ -274,11 +274,16 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('class="issue475-page"')
     expect(pageWxml).toContain('{{pageLabel}}')
     expect(pageWxml).toContain('{{pageTraceLabel}}')
+    expect(pageWxml).toContain('{{pageEnvLabel}}')
     expect(pageWxml).toContain('<SourceMapProbe />')
     expect(pageJs).toContain('//#region src/pages/issue-475/index.vue')
     expect(pageJs).toContain('issue-475 page marker')
+    expect(pageJs).toContain('const pageEnv = JSON.parse(')
+    expect(pageJs).not.toContain('const pageEnv = {\n')
     expect(componentJs).toContain('//#region src/components/issue-475/SourceMapProbe/index.vue')
     expect(componentJs).toContain('issue-475 component marker')
+    expect(componentJs).toContain('const componentEnv = JSON.parse(')
+    expect(componentJs).not.toContain('const componentEnv = {\n')
   })
 
   it('issue #479: injects indirect wevu page feature hooks from local helpers', async () => {

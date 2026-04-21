@@ -8,12 +8,7 @@ export interface StaticImportMetaValues {
   url: string
 }
 
-export function resolveImportMetaEnvObject(defineImportMetaEnv?: Record<string, any>) {
-  const rawEnv = defineImportMetaEnv?.['import.meta.env']
-  if (typeof rawEnv !== 'string') {
-    return {}
-  }
-
+function tryParseImportMetaEnvObject(rawEnv: string) {
   try {
     const parsed = JSON.parse(rawEnv)
     return parsed && typeof parsed === 'object' ? parsed : {}
@@ -21,6 +16,38 @@ export function resolveImportMetaEnvObject(defineImportMetaEnv?: Record<string, 
   catch {
     return {}
   }
+}
+
+function extractImportMetaEnvJson(rawEnv: string) {
+  const normalized = rawEnv.trim()
+  const matched = normalized.match(/^JSON\.parse\((.+)\)$/s)
+  if (!matched) {
+    return normalized
+  }
+
+  try {
+    const parsed = JSON.parse(matched[1]!)
+    return typeof parsed === 'string' ? parsed : normalized
+  }
+  catch {
+    return normalized
+  }
+}
+
+export function resolveImportMetaEnvObject(defineImportMetaEnv?: Record<string, any>) {
+  const rawEnv = defineImportMetaEnv?.['import.meta.env']
+  if (typeof rawEnv !== 'string') {
+    return {}
+  }
+
+  return tryParseImportMetaEnvObject(extractImportMetaEnvJson(rawEnv))
+}
+
+export function resolveImportMetaEnvExpression(defineImportMetaEnv?: Record<string, any>) {
+  const rawEnv = defineImportMetaEnv?.['import.meta.env']
+  return typeof rawEnv === 'string' && rawEnv.trim()
+    ? rawEnv
+    : JSON.stringify(resolveImportMetaEnvObject(defineImportMetaEnv))
 }
 
 export function createStaticImportMetaValues(options: {
@@ -53,9 +80,7 @@ export function createStaticImportMetaReplacementMap(options: {
   relativePath: string
 }) {
   const values = createStaticImportMetaValues(options)
-  const envJson = typeof options.defineImportMetaEnv?.['import.meta.env'] === 'string'
-    ? options.defineImportMetaEnv['import.meta.env']
-    : JSON.stringify(values.env)
+  const envJson = resolveImportMetaEnvExpression(options.defineImportMetaEnv)
 
   return {
     ...(options.defineImportMetaEnv ?? {}),

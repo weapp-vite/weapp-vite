@@ -2,7 +2,7 @@ import * as t from '@babel/types'
 import MagicString from 'magic-string'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { generate, parseJsLike, traverse } from '../../../../utils/babel'
-import { createStaticImportMetaValues } from '../../../../utils/importMeta'
+import { createStaticImportMetaValues, resolveImportMetaEnvExpression } from '../../../../utils/importMeta'
 
 function isImportMetaNode(node: any) {
   return node?.type === 'MetaProperty'
@@ -45,6 +45,24 @@ function getImportMetaEnvPropertyName(node: any) {
   return undefined
 }
 
+function createImportMetaEnvExpressionNode(rawExpression: string) {
+  try {
+    const ast = parseJsLike(`const __weappViteImportMetaEnv = ${rawExpression}`)
+    const declaration = ast.program.body[0]
+    if (
+      declaration?.type === 'VariableDeclaration'
+      && declaration.declarations[0]?.type === 'VariableDeclarator'
+      && declaration.declarations[0].init
+    ) {
+      return t.cloneNode(declaration.declarations[0].init, true)
+    }
+  }
+  catch {
+  }
+
+  return undefined
+}
+
 export function replaceImportMetaAccess(code: string, options: {
   defineImportMetaEnv?: Record<string, any>
   extension: string
@@ -55,13 +73,21 @@ export function replaceImportMetaAccess(code: string, options: {
   }
 
   const values = createStaticImportMetaValues(options)
+  const envExpressionNode = createImportMetaEnvExpressionNode(
+    resolveImportMetaEnvExpression(options.defineImportMetaEnv),
+  )
   const ast = parseJsLike(code)
   let mutated = false
   const importMetaObjectNode = t.objectExpression([
     t.objectProperty(t.identifier('filename'), t.stringLiteral(values.filename)),
     t.objectProperty(t.identifier('url'), t.stringLiteral(values.url)),
     t.objectProperty(t.identifier('dirname'), t.stringLiteral(values.dirname)),
-    t.objectProperty(t.identifier('env'), t.valueToNode(values.env)),
+    t.objectProperty(
+      t.identifier('env'),
+      envExpressionNode
+        ? t.cloneNode(envExpressionNode, true)
+        : t.valueToNode(values.env),
+    ),
   ])
 
   traverse(ast as any, {
@@ -77,7 +103,11 @@ export function replaceImportMetaAccess(code: string, options: {
       }
 
       if (isImportMetaMemberAccess(path.node, 'env')) {
-        path.replaceWith(t.valueToNode(values.env))
+        path.replaceWith(
+          envExpressionNode
+            ? t.cloneNode(envExpressionNode, true)
+            : t.valueToNode(values.env),
+        )
         mutated = true
         return
       }
@@ -111,7 +141,11 @@ export function replaceImportMetaAccess(code: string, options: {
       }
 
       if (isImportMetaMemberAccess(path.node, 'env')) {
-        path.replaceWith(t.valueToNode(values.env))
+        path.replaceWith(
+          envExpressionNode
+            ? t.cloneNode(envExpressionNode, true)
+            : t.valueToNode(values.env),
+        )
         mutated = true
         return
       }

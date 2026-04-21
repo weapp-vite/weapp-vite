@@ -200,7 +200,9 @@ describe('createConfigService', () => {
     expect(define['import.meta.env.PLATFORM']).toBe(JSON.stringify('weapp'))
     expect(define['import.meta.env.MP_PLATFORM']).toBe(JSON.stringify('weapp'))
     expect(define['import.meta.env.CUSTOM_FLAG']).toBe('1')
-    expect(JSON.parse(define['import.meta.env']).CUSTOM_FLAG).toBe(1)
+    expect(define['import.meta.env']).toMatch(/^JSON\.parse\(/)
+    const serializedEnv = define['import.meta.env'].slice('JSON.parse('.length, -1)
+    expect(JSON.parse(JSON.parse(serializedEnv)).CUSTOM_FLAG).toBe(1)
   })
 
   it('resolves plugin roots and remaps output path for plugin sources', () => {

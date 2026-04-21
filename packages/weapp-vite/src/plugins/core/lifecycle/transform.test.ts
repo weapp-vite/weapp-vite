@@ -84,6 +84,47 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).not.toContain('import.meta.url')
   })
 
+  it('keeps bare import.meta.env replacements on a single expression line in vue sfc script blocks', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          defineImportMetaEnv: {
+            'import.meta.env': 'JSON.parse("{\\"MODE\\":\\"production\\",\\"FEATURE_FLAG\\":\\"on\\"}")',
+            'import.meta.env.FEATURE_FLAG': '"on"',
+          },
+          packageJson: {
+            dependencies: {},
+          },
+          weappViteConfig: {},
+          relativeAbsoluteSrcRoot(id: string) {
+            return id.replace('/project/src/', '')
+          },
+          relativeOutputPath(id: string) {
+            return id.replace('/project/src/', '')
+          },
+        },
+      },
+    } as any)
+
+    const result = await transform(
+      [
+        '<script setup lang="ts">',
+        'const env = import.meta.env',
+        'const meta = import.meta',
+        '</script>',
+        '<template><view /></template>',
+      ].join('\n'),
+      '/project/src/pages/import-meta/index.vue',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toContain('const env = JSON.parse("{\\"MODE\\":\\"production\\",\\"FEATURE_FLAG\\":\\"on\\"}")')
+    expect(code).toContain('env: JSON.parse("{\\"MODE\\":\\"production\\",\\"FEATURE_FLAG\\":\\"on\\"}")')
+    expect(code).not.toContain('const env = {\n')
+    expect(code).not.toContain('env: {\n')
+  })
+
   it('injects request globals for declared page entries as transform fallback', async () => {
     const transform = createTransformHook({
       ctx: {

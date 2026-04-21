@@ -152,7 +152,8 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     for (const [key, value] of Object.entries(env)) {
       define[`import.meta.env.${key}`] = JSON.stringify(value)
     }
-    define['import.meta.env'] = JSON.stringify(env)
+    const serializedEnv = JSON.stringify(env)
+    define['import.meta.env'] = `JSON.parse(${JSON.stringify(serializedEnv)})`
     return define
   }
 
