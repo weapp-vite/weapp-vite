@@ -2203,6 +2203,43 @@ importers:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
 
+  templates/weapp-vite-plugin-template:
+    dependencies:
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.20
+    devDependencies:
+      '@icebreakers/eslint-config':
+        specifier: 'catalog:'
+        version: 4.0.8(@typescript-eslint/rule-tester@8.56.1(eslint@10.2.1(jiti@2.6.1))(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.58.2(typescript@6.0.3))(@vue/compiler-sfc@3.5.32)(eslint-plugin-pnpm@1.6.0(eslint@10.2.1(jiti@2.6.1)))(eslint@10.2.1(jiti@2.6.1))(globals@17.5.0)(postcss@8.5.10)(stylelint-order@6.0.4(stylelint@17.8.0(typescript@6.0.3)))(stylelint@17.8.0(typescript@6.0.3))(tailwindcss@4.2.4)(typescript@6.0.3)(vitest@4.1.5)
+      '@icebreakers/stylelint-config':
+        specifier: 'catalog:'
+        version: 3.0.5(postcss@8.5.10)(stylelint-order@6.0.4(stylelint@17.8.0(typescript@6.0.3)))(stylelint@17.8.0(typescript@6.0.3))(tailwindcss@4.2.4)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.0
+      eslint:
+        specifier: 'catalog:'
+        version: 10.2.1(jiti@2.6.1)
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.1.2
+      sass:
+        specifier: 'catalog:'
+        version: 1.99.0
+      stylelint:
+        specifier: 'catalog:'
+        version: 17.8.0(typescript@6.0.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
       tdesign-miniprogram:
@@ -21226,8 +21263,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.58.2(typescript@6.0.3)
+      '@typescript-eslint/types': 8.58.2
       debug: 4.4.3
       typescript: 6.0.3
     transitivePeerDependencies:

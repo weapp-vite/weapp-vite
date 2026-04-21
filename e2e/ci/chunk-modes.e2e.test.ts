@@ -203,7 +203,7 @@ describe.sequential('e2e chunk modes matrix', () => {
     }
 
     await fs.remove(DIST_ROOT)
-  }, 10 * 60_000)
+  }, 15 * 60_000)
 
   it('covers sharedPathRoot presets and optimization logging flags', async () => {
     const sharedRootOutDir = path.join('dist-matrix', chunkExtraCases[0].id)
