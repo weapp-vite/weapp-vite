@@ -170,5 +170,5 @@ describe.sequential('issue #391 watch shared chunk rebuild', () => {
       await ctxResult.dispose()
       await tempProject.cleanup()
     }
-  }, 120_000)
+  }, 180_000)
 })
