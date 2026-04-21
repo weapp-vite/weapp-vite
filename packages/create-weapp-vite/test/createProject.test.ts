@@ -99,6 +99,7 @@ describe('createProject', () => {
     const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^9.9.9')
+    expect(pkgJson.devDependencies['@types/node']).toBe(TEMPLATE_CATALOG['@types/node'])
     expect(pkgJson.devDependencies['typescript']).toBe(TEMPLATE_CATALOG.typescript)
     expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe(TEMPLATE_CATALOG['miniprogram-api-typings'])
     expect(pkgJson.devDependencies.sass).toBe(TEMPLATE_CATALOG.sass)
@@ -219,6 +220,7 @@ describe('createProject', () => {
     await createProject(root, TemplateName.default)
     const pkgJson = await readPackageJson(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies).toBeDefined()
+    expect(pkgJson.devDependencies['@types/node']).toBe(TEMPLATE_CATALOG['@types/node'])
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^4.3.3')
   })
 

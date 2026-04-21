@@ -252,6 +252,15 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
   upsertDependencyVersion(expectedPackageJson, 'weapp-vite', `^${weappViteVersion}`)
   upsertDependencyVersion(expectedPackageJson, 'wevu', `^${wevuVersion}`)
 
+  if (
+    !expectedPackageJson.dependencies?.['@types/node']
+    && !expectedPackageJson.devDependencies['@types/node']
+    && !expectedPackageJson.peerDependencies?.['@types/node']
+    && !expectedPackageJson.optionalDependencies?.['@types/node']
+  ) {
+    expectedPackageJson.devDependencies['@types/node'] = TEMPLATE_CATALOG['@types/node']
+  }
+
   if (!expectedPackageJson.devDependencies['weapp-tailwindcss']) {
     expectedPackageJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
   }
@@ -262,6 +271,7 @@ async function buildExpectedPackageJson(templateName: TemplateName): Promise<Pac
 describe('template catalog', () => {
   it('includes typing and lint packages used by templates and generated configs', () => {
     expect(TEMPLATE_CATALOG['miniprogram-api-typings']).toBeTruthy()
+    expect(TEMPLATE_CATALOG['@types/node']).toBeTruthy()
     expect(TEMPLATE_CATALOG['@mini-types/alipay']).toBeTruthy()
     expect(TEMPLATE_CATALOG['@douyin-microapp/typings']).toBeTruthy()
     expect(TEMPLATE_CATALOG['@icebreakers/eslint-config']).toBeTruthy()
@@ -278,6 +288,7 @@ describe('template package sources', () => {
 
     expect(pkgJson.devDependencies?.['@icebreakers/eslint-config']).toBe('catalog:')
     expect(pkgJson.devDependencies?.['@icebreakers/stylelint-config']).toBe('catalog:')
+    expect(pkgJson.devDependencies?.['@types/node']).toBe('catalog:')
     expect(pkgJson.devDependencies?.eslint).toBe('catalog:')
     expect(pkgJson.devDependencies?.stylelint).toBe('catalog:')
   })

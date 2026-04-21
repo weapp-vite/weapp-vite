@@ -34,6 +34,7 @@
   "devDependencies": {
     "@icebreakers/eslint-config": "catalog:",
     "@icebreakers/stylelint-config": "catalog:",
+    "@types/node": "catalog:",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",

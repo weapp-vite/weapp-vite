@@ -268,6 +268,21 @@ function normalizeTemplateDependencySpecs(pkgJson: PackageJson) {
   }
 }
 
+function ensureManagedTypeScriptDevDependencies(pkgJson: PackageJson) {
+  pkgJson.devDependencies ??= {}
+
+  if (
+    pkgJson.dependencies?.['@types/node']
+    || pkgJson.devDependencies['@types/node']
+    || pkgJson.peerDependencies?.['@types/node']
+    || pkgJson.optionalDependencies?.['@types/node']
+  ) {
+    return
+  }
+
+  pkgJson.devDependencies['@types/node'] = templateCatalogMap['@types/node']
+}
+
 export interface CreateProjectOptions {
   installSkills?: boolean
 }
@@ -308,6 +323,7 @@ export async function createProject(
     ? await fs.readJSON(templatePackagePath) as PackageJson
     : createEmptyPackageJson()
   normalizeTemplateDependencySpecs(pkgJson)
+  ensureManagedTypeScriptDevDependencies(pkgJson)
 
   if (!pkgJson.devDependencies) {
     pkgJson.devDependencies = {}
