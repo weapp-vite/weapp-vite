@@ -10,8 +10,8 @@ import {
 } from './literals'
 import { matchesSubPackageDependency } from './platform'
 
-export function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string) {
-  const normalized = normalizeWeappLocalNpmImport(importee)
+export function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string, basedir?: string) {
+  const normalized = normalizeWeappLocalNpmImport(importee, basedir)
   const target = root
     ? `${root}/miniprogram_npm/${normalized}`
     : `miniprogram_npm/${normalized}`
@@ -25,6 +25,7 @@ export function rewriteChunkNpmImportsToLocalRoot(
   dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
   options?: {
+    basedir?: string
     astEngine?: 'babel' | 'oxc'
   },
 ) {
@@ -57,7 +58,7 @@ export function rewriteChunkNpmImportsToLocalRoot(
           return
         }
 
-        const nextValue = toRelativeRuntimeNpmImport(chunk.fileName, root, currentValue)
+        const nextValue = toRelativeRuntimeNpmImport(chunk.fileName, root, currentValue, options?.basedir)
         if (nextValue === currentValue) {
           return
         }
@@ -80,6 +81,7 @@ export function rewriteJsonNpmImportsToLocalRoot(
   root: string,
   dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
+  basedir?: string,
 ) {
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
@@ -105,7 +107,7 @@ export function rewriteJsonNpmImportsToLocalRoot(
         if (typeof importee !== 'string' || !matchesSubPackageDependency(dependencyPatterns, importee, dependencies)) {
           continue
         }
-        parsed.usingComponents[componentName] = toRelativeRuntimeNpmImport(output.fileName, root, importee)
+        parsed.usingComponents[componentName] = toRelativeRuntimeNpmImport(output.fileName, root, importee, basedir)
         mutated = true
       }
 

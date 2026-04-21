@@ -254,6 +254,71 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['common.js'].code).toContain('/miniprogram_npm/tdesign-miniprogram/toast/index')
   })
 
+  it('localizes main package npm imports to relative miniprogram_npm paths for weapp build output', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+      subPackageMeta: null,
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/dialog-bare/index.js': {
+        type: 'chunk',
+        fileName: 'pages/dialog-bare/index.js',
+        code: 'const dialog = require("tdesign-miniprogram/dialog")',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/dialog-index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/dialog-index/index.js',
+        code: 'const dialog = require("tdesign-miniprogram/dialog/index")',
+        imports: [],
+        dynamicImports: [],
+      },
+      'pages/dialog-bare/index.json': {
+        type: 'asset',
+        fileName: 'pages/dialog-bare/index.json',
+        source: JSON.stringify({
+          usingComponents: {
+            't-dialog': 'tdesign-miniprogram/dialog/dialog',
+          },
+        }),
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/dialog-bare/index.js'].code).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
+    expect(bundle['pages/dialog-bare/index.js'].code).not.toContain('require("tdesign-miniprogram/dialog")')
+    expect(bundle['pages/dialog-index/index.js'].code).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
+    expect(bundle['pages/dialog-bare/index.json'].source).toContain('"t-dialog": "../../miniprogram_npm/tdesign-miniprogram/dialog/dialog"')
+  })
+
   it('rewrites alipay npm requires for explicit include from devDependencies', async () => {
     const state = {
       ctx: {

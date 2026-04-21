@@ -27,6 +27,30 @@ export function resolvePlatformProjectRoot(configService: MutableCompilerContext
   return normalizeRelativeDir(projectRoot)
 }
 
+function resolveDefaultNpmDistDir(configService: MutableCompilerContext['configService']) {
+  if (!configService) {
+    return '.'
+  }
+
+  if (typeof configService.outDir === 'string' && configService.outDir) {
+    if (path.isAbsolute(configService.outDir)) {
+      const relativeOutDir = path.relative(configService.cwd, configService.outDir)
+      if (relativeOutDir && !relativeOutDir.startsWith('..') && !path.isAbsolute(relativeOutDir)) {
+        return normalizeRelativeDir(relativeOutDir)
+      }
+      return configService.outDir
+    }
+
+    return normalizeRelativeDir(configService.outDir)
+  }
+
+  if (shouldUseProjectRootNpmDir(configService.platform)) {
+    return resolvePlatformProjectRoot(configService)
+  }
+
+  return '.'
+}
+
 export function getPackNpmRelationList(ctx: MutableCompilerContext) {
   const configService = requireConfigService(ctx, '解析 npm 关联列表前必须初始化 configService。')
   const isMultiPlatformEnabled = configService.multiPlatform.enabled
@@ -64,11 +88,11 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
   }
 
   if (!isMultiPlatformEnabled) {
-    if (!hasManualRelations && shouldUseProjectRootNpmDir(configService.platform)) {
+    if (!hasManualRelations) {
       return [
         {
           ...packNpmRelationList[0],
-          miniprogramNpmDistDir: resolvePlatformProjectRoot(configService),
+          miniprogramNpmDistDir: resolveDefaultNpmDistDir(configService),
         },
       ]
     }

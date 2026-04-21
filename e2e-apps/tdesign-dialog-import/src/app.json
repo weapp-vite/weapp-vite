@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/dialog-bare/index",
+    "pages/dialog-index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "tdesign-dialog-import",
+    "navigationBarBackgroundColor": "#0f172a",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#e2e8f0"
+  },
+  "style": "v2"
+}

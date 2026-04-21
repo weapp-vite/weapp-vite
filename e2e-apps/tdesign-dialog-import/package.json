@@ -1,0 +1,19 @@
+{
+  "name": "e2e-app-tdesign-dialog-import",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "catalog:"
+  },
+  "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
+    "weapp-vite": "workspace:*"
+  }
+}
