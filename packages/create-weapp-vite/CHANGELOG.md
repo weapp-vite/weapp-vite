@@ -1,5 +1,29 @@
 # create-weapp-vite
 
+## 2.3.5
+
+### Patch Changes
+
+- 🐛 **调整 `create-weapp-vite` 的模板选择顺序，按常用场景优先展示默认、Wevu 与 UI 集成模板；同时更新插件模板为 `src + pluginRoot` 结构，并将各模板的 ESLint 生成目录忽略统一收敛到 `eslint.config.js`。** [`ea17375`](https://github.com/weapp-vite/weapp-vite/commit/ea17375fa40751ef1753f338200a0b7ee9aba042) by @sonofmagic
+
+- 🐛 **修复 `config.define` 中 `import.meta.env.*` 自定义定义在 `weapp-vite` 预处理链路中丢失的问题，使 `.vue` 页面与其直接引用脚本中的成员访问行为重新与 Vite 保持一致，并补齐对应的回归测试与 issue 复现用例。** [#485](https://github.com/weapp-vite/weapp-vite/pull/485) by @sonofmagic
+
+- 🐛 **将所有内置 Tailwind 模板升级到 Tailwind CSS 4，统一切换到 `@tailwindcss/postcss`、`src/app.css` 入口和 `cssEntries` 配置，确保脚手架生成的新项目默认使用 Tailwind 4 并能被 `weapp-tailwindcss` 正常转译。** [`8b404db`](https://github.com/weapp-vite/weapp-vite/commit/8b404dbcc0679b17fd7ba1587afc0e302c8eab0e) by @sonofmagic
+
+- 🐛 **修复 `defineConfig` 回调中解构 `env` 参数时的类型推导问题，并收敛多处测试的临时目录与 fixture 隔离方式，避免 `pnpm test` 在并发执行下出现超时或共享目录冲突。** [`a1f49af`](https://github.com/weapp-vite/weapp-vite/commit/a1f49afc2b23951627f7d3b307d04a63c027d173) by @sonofmagic
+
+- 🐛 **为所有内置模板与脚手架生成流程补齐 `@types/node`，修复新建项目中 `.weapp-vite/tsconfig.node.json` / `.weapp-vite/tsconfig.server.json` 引用 Node 类型时报“找不到类型定义文件 `node`”的问题，并增加相关回归测试。** [`e88adbb`](https://github.com/weapp-vite/weapp-vite/commit/e88adbbbf5bca82ee6548175946e4e321163d594) by @sonofmagic
+
+- 🐛 **为 `create-weapp-vite` 新增 `plugin` 模板，内置宿主小程序、`pluginRoot`、共享 TypeScript 模块与插件公开组件/页面示例，方便直接初始化微信小程序插件工程。** [`d187404`](https://github.com/weapp-vite/weapp-vite/commit/d1874040e3048ed06027db96f20b36da8af6af68) by @sonofmagic
+
+- 🐛 **为 Tailwind CSS 4 模板补齐 ESLint Tailwind 检查配置，统一将入口指向 `src/app.css`，并对 wevu 模板关闭不兼容的 `better-tailwindcss` 规则，确保新生成项目默认 lint 可用。** [`92c4286`](https://github.com/weapp-vite/weapp-vite/commit/92c428622176a1ced6350e325eb42db638372843) by @sonofmagic
+
+- 🐛 **修复 `defineConfig(() => ({ ... }))` 在函数式配置下丢失上下文类型的问题，避免 `weapp.platform` 等联合字面量字段被宽化为 `string` 并导致 `vite.config.ts` 类型报错。** [`d187404`](https://github.com/weapp-vite/weapp-vite/commit/d1874040e3048ed06027db96f20b36da8af6af68) by @sonofmagic
+
+- 🐛 **修复托管 tsconfig 仍然回灌已弃用 `baseUrl` 的问题，并同步更新相关测试夹具，避免 TypeScript 6+ 持续报废弃诊断。** [`c3f2913`](https://github.com/weapp-vite/weapp-vite/commit/c3f2913a00145b802510608a2a50cdcf23c64975) by @sonofmagic
+
+- 🐛 **修复主包页面使用 `tdesign-miniprogram/dialog` 与 `tdesign-miniprogram/dialog/index` 时的 npm 路径本地化错误：现在会把主包 JS `require` 与 `usingComponents` 正确重写到 `dist/miniprogram_npm`，并对目录入口显式补齐 `/index`，避免微信运行时报 `Dialog.confirm is not a function` 或 `组件路径未找到`。同时新增专用 e2e app、构建回归测试与 DevTools 运行时回归测试覆盖该场景。** [#487](https://github.com/weapp-vite/weapp-vite/pull/487) by @sonofmagic
+
 ## 2.3.4
 
 ### Patch Changes

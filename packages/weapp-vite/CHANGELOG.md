@@ -1,5 +1,23 @@
 # weapp-vite
 
+## 6.15.12
+
+### Patch Changes
+
+- 🐛 **修复 `config.define` 中 `import.meta.env.*` 自定义定义在 `weapp-vite` 预处理链路中丢失的问题，使 `.vue` 页面与其直接引用脚本中的成员访问行为重新与 Vite 保持一致，并补齐对应的回归测试与 issue 复现用例。** [#485](https://github.com/weapp-vite/weapp-vite/pull/485) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite prepare` 在部分 Wevu / issue 工程中会额外预加载应用入口，导致 `pnpm install` 的 workspace `postinstall` 偶发不退出并看起来卡在 `website postinstall` 的问题。** [`1ddff0e`](https://github.com/weapp-vite/weapp-vite/commit/1ddff0e7226008939e31566fff09329993f4b4c2) by @sonofmagic
+
+- 🐛 **修复 `defineConfig` 回调中解构 `env` 参数时的类型推导问题，并收敛多处测试的临时目录与 fixture 隔离方式，避免 `pnpm test` 在并发执行下出现超时或共享目录冲突。** [`a1f49af`](https://github.com/weapp-vite/weapp-vite/commit/a1f49afc2b23951627f7d3b307d04a63c027d173) by @sonofmagic
+
+- 🐛 **修复 `defineConfig(() => ({ ... }))` 在函数式配置下丢失上下文类型的问题，避免 `weapp.platform` 等联合字面量字段被宽化为 `string` 并导致 `vite.config.ts` 类型报错。** [`d187404`](https://github.com/weapp-vite/weapp-vite/commit/d1874040e3048ed06027db96f20b36da8af6af68) by @sonofmagic
+
+- 🐛 **修复托管 tsconfig 仍然回灌已弃用 `baseUrl` 的问题，并同步更新相关测试夹具，避免 TypeScript 6+ 持续报废弃诊断。** [`c3f2913`](https://github.com/weapp-vite/weapp-vite/commit/c3f2913a00145b802510608a2a50cdcf23c64975) by @sonofmagic
+
+- 🐛 **修复主包页面使用 `tdesign-miniprogram/dialog` 与 `tdesign-miniprogram/dialog/index` 时的 npm 路径本地化错误：现在会把主包 JS `require` 与 `usingComponents` 正确重写到 `dist/miniprogram_npm`，并对目录入口显式补齐 `/index`，避免微信运行时报 `Dialog.confirm is not a function` 或 `组件路径未找到`。同时新增专用 e2e app、构建回归测试与 DevTools 运行时回归测试覆盖该场景。** [#487](https://github.com/weapp-vite/weapp-vite/pull/487) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.15.12`, `wevu@6.15.12`
+
 ## 6.15.11
 
 ### Patch Changes
