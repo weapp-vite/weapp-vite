@@ -22,6 +22,7 @@ vi.mock('vite', () => ({
 }))
 
 const tempDirs: string[] = []
+const REPO_ROOT = path.resolve(import.meta.dirname, '../../../../../')
 
 async function createTempDir() {
   const dir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'weapp-vite-builder-core-'))
@@ -30,7 +31,7 @@ async function createTempDir() {
 }
 
 function resolveRepoFixturePath(relativePath: string) {
-  return path.resolve(process.cwd(), relativePath)
+  return path.resolve(REPO_ROOT, relativePath)
 }
 
 function loadCommonJsModule(entryPath: string) {
