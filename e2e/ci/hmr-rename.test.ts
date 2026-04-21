@@ -3,7 +3,14 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import {
+  createHmrMarker,
+  PLATFORM_EXT,
+  replaceFileByRename,
+  replaceSfcTitleMarker,
+  resolvePlatforms,
+  waitForFileContains,
+} from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const HMR_SRC_DIR = path.join(APP_ROOT, 'src/pages/hmr')
@@ -209,7 +216,7 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     const ext = PLATFORM_EXT[platform]
     const distPath = path.join(DIST_ROOT, `pages/hmr-sfc/index.${ext.template}`)
     const marker = createHmrMarker('RENAME-SFC', platform)
-    const updatedSource = originalSource.replace('<view class="title">HMR-SFC</view>', `<view class="title">${marker}</view>`)
+    const updatedSource = replaceSfcTitleMarker(originalSource, marker)
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {

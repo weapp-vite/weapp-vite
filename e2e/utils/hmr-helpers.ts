@@ -87,6 +87,19 @@ export function createHmrMarker(prefix: string, platform: string): string {
   return `HMR-${prefix}-${platform.toUpperCase()}`
 }
 
+const HMR_SFC_TITLE_RE = /(<view\s+class="title">\s*)(HMR-SFC)(\s*<\/view>)/
+
+/**
+ * 替换 Vue SFC 标题节点中的 HMR 文案，兼容多行模板格式。
+ *
+ * @param source - 原始 SFC 源码
+ * @param marker - 新的标记内容
+ * @returns 替换后的源码；若未命中标题节点则返回原文
+ */
+export function replaceSfcTitleMarker(source: string, marker: string) {
+  return source.replace(HMR_SFC_TITLE_RE, `$1${marker}$3`)
+}
+
 /**
  * 通过“先重命名旧文件，再写回同名新文件”的方式模拟 Windows 常见的原子保存流程。
  *
