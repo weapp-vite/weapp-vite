@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "plugins": {
+    "hello-plugin": {
+      "version": "dev",
+      "provider": "touristappid"
+    }
+  }
+}

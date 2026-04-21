@@ -20,6 +20,7 @@ const TOURIST_APP_ID = 'touristappid'
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATE_DIR_MAP: Record<TemplateName, string> = {
   [TemplateName.default]: 'weapp-vite-template',
+  [TemplateName.plugin]: 'weapp-vite-plugin-template',
   [TemplateName.lib]: 'weapp-vite-lib-template',
   [TemplateName.wevu]: 'weapp-vite-wevu-template',
   [TemplateName.wevuTdesign]: 'weapp-vite-wevu-tailwindcss-tdesign-template',

@@ -86,6 +86,18 @@ describe('defineConfig', () => {
     }
   })
 
+  it('should return the same sync no-env config function when passed', () => {
+    const config = () => ({
+      weapp: {
+        srcRoot: 'src',
+      },
+    })
+
+    const result = defineConfig(config)
+    expect(result).toBe(config)
+    expect(result().weapp?.srcRoot).toBe('src')
+  })
+
   // 测试：空配置
   it('should return an empty object when passed an empty object', () => {
     const config: UserConfig = {}

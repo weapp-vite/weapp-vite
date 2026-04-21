@@ -4,6 +4,15 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     autoRoutes: true,
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            '@/*': ['./src/*'],
+          },
+        },
+      },
+    },
     autoImportComponents: {
       globs: [
         'components/**/*.wxml',

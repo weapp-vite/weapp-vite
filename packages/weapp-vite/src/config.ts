@@ -15,18 +15,17 @@ export type UserConfigFnNoEnvPlain<T extends UserConfig = UserConfig> = () => T
 
 export type UserConfigFnNoEnv<T extends UserConfig = UserConfig> = () => T | Promise<T>
 
-export type UserConfigFnObjectPlain<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T
+export type UserConfigFnObjectPlain<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => T
 
-export type UserConfigFnObject<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T
+export type UserConfigFnObject<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => T
 
-export type UserConfigFnPromise<T extends UserConfig = UserConfig> = (env: ConfigEnv) => Promise<T>
+export type UserConfigFnPromise<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => Promise<T>
 
-export type UserConfigFn<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T | Promise<T>
+export type UserConfigFn<T extends UserConfig = UserConfig> = (env?: ConfigEnv) => T | Promise<T>
 
 export type UserConfigExport<T extends UserConfig = UserConfig>
   = | T
     | Promise<T>
-    | UserConfigFnNoEnv<T>
     | UserConfigFnObject<T>
     | UserConfigFnPromise<T>
     | UserConfigFn<T>
@@ -40,15 +39,11 @@ declare module 'vite' {
 
 /**
  * @description 为 weapp-vite 配置提供类型提示与推断
- * @description 注意：同步回调重载需要放在 Promise/联合返回前面，
- * 这样 `vite.config.ts` 里对象字面量属性（如 `weapp.srcRoot`）才能保留上下文类型，
- * 才能在编辑器中正确显示 JSDoc 与支持跳转。
+ * @description 注意：这里不能继续使用对象/Promise/函数的多重重载；
+ * @description 否则 `() => ({})` 这类函数式配置里的对象字面量会丢失上下文类型，
+ * @description 导致 `platform` 等联合字面量字段被宽化为 `string`。
  */
-export function defineConfig(config: UserConfig): UserConfig
-export function defineConfig(config: Promise<UserConfig>): Promise<UserConfig>
-export function defineConfig(config: UserConfigFnObjectPlain): UserConfigFnObjectPlain
-export function defineConfig(config: UserConfigFn): UserConfigFn
-export function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise
+export function defineConfig<T extends UserConfigExport>(config: T): T
 export function defineConfig(config: UserConfigExport): UserConfigExport {
   return config
 }

@@ -1,5 +1,6 @@
 export enum TemplateName {
   default = 'default',
+  plugin = 'plugin',
   wevu = 'wevu',
   tailwindcss = 'tailwindcss',
   vant = 'vant',

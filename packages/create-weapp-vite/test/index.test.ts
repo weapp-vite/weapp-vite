@@ -112,6 +112,7 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     // assert output generated
     const out = path.join(cwd, name)
     await waitForFile(path.join(out, 'package.json'))
+    expect(lastSelectChoices?.some(c => c.value === 'plugin')).toBe(true)
     expect(lastSelectChoices?.some(c => c.value === 'wevu')).toBe(true)
     expect(lastSelectChoices?.some(c => c.value === 'wevu-tdesign')).toBe(true)
     const hasProjectConfig = await fs.pathExists(path.join(out, 'project.config.json'))

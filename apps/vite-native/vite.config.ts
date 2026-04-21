@@ -59,6 +59,20 @@ export default <UserConfig>{
     },
   },
   weapp: {
+    typescript: {
+      app: {
+        compilerOptions: {
+          emitDecoratorMetadata: true,
+          experimentalDecorators: true,
+          paths: {
+            '@/*': ['./*'],
+            'tdesign-miniprogram/*': ['./node_modules/tdesign-miniprogram/miniprogram_dist/*'],
+            '@vant/weapp/*': ['./node_modules/@vant/weapp/dist/*'],
+            '@behaviors/*': ['./behaviors/*'],
+          },
+        },
+      },
+    },
     jsonAlias: {
       entries: [
         {

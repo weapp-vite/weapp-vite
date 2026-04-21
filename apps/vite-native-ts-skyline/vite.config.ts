@@ -6,6 +6,15 @@ import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 export default defineConfig({
   weapp: {
     srcRoot: './miniprogram',
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            'tdesign-miniprogram/*': ['./node_modules/tdesign-miniprogram/miniprogram_dist/*'],
+          },
+        },
+      },
+    },
     autoImportComponents: {
       globs: ['miniprogram/components/**/*'],
       resolvers: [

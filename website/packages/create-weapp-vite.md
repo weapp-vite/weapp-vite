@@ -97,6 +97,7 @@ await createProject('my-app', TemplateName.wevu, { installSkills: true })
 | 模板名         | 说明                         |
 | -------------- | ---------------------------- |
 | `default`      | 默认原生小程序模板           |
+| `plugin`       | 微信小程序插件模板           |
 | `lib`          | 组件库模板（lib 模式）       |
 | `wevu`         | Wevu + Vue SFC 模板          |
 | `wevu-tdesign` | Wevu + TDesign + TailwindCSS |

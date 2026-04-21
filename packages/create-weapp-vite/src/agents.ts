@@ -11,6 +11,10 @@ function supportsNativePages(templateName: TemplateName) {
   return !supportsWevu(templateName)
 }
 
+function supportsPlugin(templateName: TemplateName) {
+  return templateName === TemplateName.plugin
+}
+
 /**
  * @description 生成新项目的 AGENTS 指引
  */
@@ -88,6 +92,18 @@ export function createAgentsGuidelines(templateName: TemplateName) {
       '- Keep native page/component structure consistent with the template unless there is a clear migration goal.',
       '- Prefer `weapp-vite generate` or `wv generate` for new app/page/component scaffolds.',
       '- If migrating this project toward Vue SFC or `wevu`, keep the migration explicit and prefer the official weapp-vite / wevu guidance first.',
+    )
+  }
+
+  if (supportsPlugin(templateName)) {
+    lines.push(
+      '',
+      '## Plugin Authoring',
+      '',
+      '- Keep `miniprogram/` as the host app source and `plugin/` as the plugin source root declared by `weapp.pluginRoot`.',
+      '- Validate both `dist/` and `dist-plugin/` outputs after structural changes to host pages, plugin pages, or plugin public components.',
+      '- If you change plugin AppID or switch away from local `dev` linkage, update both `project.config.json.appid` and `miniprogram/app.json` -> `plugins.*.provider` together.',
+      '- Treat shared modules under `shared/` as regular source code that can be imported by both host and plugin entries.',
     )
   }
 

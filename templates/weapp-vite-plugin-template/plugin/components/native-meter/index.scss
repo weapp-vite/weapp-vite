@@ -1,0 +1,51 @@
+.native-meter {
+  padding: 20rpx;
+  margin-top: 12rpx;
+  background: linear-gradient(180deg, #fcfdff 0%, #f1f6ff 100%);
+  border: 2rpx solid #dfebff;
+  border-radius: 22rpx;
+
+  &__head {
+    display: flex;
+    gap: 12rpx;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #233a5e;
+  }
+
+  &__value {
+    font-size: 23rpx;
+    color: #5f6a80;
+  }
+
+  &__track {
+    height: 16rpx;
+    margin-top: 14rpx;
+    overflow: hidden;
+    background: #deebff;
+    border-radius: 999rpx;
+  }
+
+  &__bar {
+    height: 100%;
+    border-radius: 999rpx;
+    transition: width 0.25s ease;
+  }
+
+  &__bar--neutral {
+    background: linear-gradient(90deg, #5f7cff, #4d63dd);
+  }
+
+  &__bar--success {
+    background: linear-gradient(90deg, #0d9488, #22c55e);
+  }
+
+  &__bar--danger {
+    background: linear-gradient(90deg, #dc2626, #f97316);
+  }
+}

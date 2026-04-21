@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "hello-showcase": "plugin://hello-plugin/hello-component",
+    "native-meter": "plugin://hello-plugin/native-meter"
+  }
+}

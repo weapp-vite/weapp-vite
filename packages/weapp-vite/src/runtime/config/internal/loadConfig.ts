@@ -105,6 +105,50 @@ function injectResolvedAliases(
   resolve.alias = aliasArray
 }
 
+function normalizeManagedPathAliasKey(key: string) {
+  if (!key || (key.includes('*') && !key.endsWith('/*'))) {
+    return undefined
+  }
+  return key.endsWith('/*') ? key.slice(0, -2) : key
+}
+
+function normalizeManagedPathAliasTarget(target: string) {
+  if (!target || (target.includes('*') && !target.endsWith('/*'))) {
+    return undefined
+  }
+  return target.endsWith('/*') ? target.slice(0, -2) : target
+}
+
+function collectManagedTsconfigAliases(config: InlineConfig, cwd: string) {
+  const weappTypeScript = config.weapp?.typescript
+  const pathSources = [
+    weappTypeScript?.shared?.compilerOptions?.paths,
+    weappTypeScript?.app?.compilerOptions?.paths,
+  ]
+  const aliasMap = new Map<string, string>()
+
+  for (const pathsConfig of pathSources) {
+    if (!pathsConfig || typeof pathsConfig !== 'object') {
+      continue
+    }
+
+    for (const [key, value] of Object.entries(pathsConfig)) {
+      const find = normalizeManagedPathAliasKey(key)
+      const target = Array.isArray(value) ? value.find(item => typeof item === 'string') : undefined
+      const normalizedTarget = typeof target === 'string' ? normalizeManagedPathAliasTarget(target) : undefined
+      if (!find || !normalizedTarget) {
+        continue
+      }
+      aliasMap.set(find, path.resolve(cwd, normalizedTarget))
+    }
+  }
+
+  return Array.from(aliasMap, ([find, replacement]) => ({
+    find,
+    replacement,
+  }))
+}
+
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
@@ -243,6 +287,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const srcRoot = config.weapp?.srcRoot ?? ''
+    const managedTsconfigAliases = collectManagedTsconfigAliases(config, cwd)
+    injectResolvedAliases(config, managedTsconfigAliases)
     const tsconfigPathsUsage = await inspectTsconfigPathsUsage(cwd)
     if (!tsconfigPathsUsage.enabled) {
       injectDefaultSrcAlias(config, cwd, srcRoot)

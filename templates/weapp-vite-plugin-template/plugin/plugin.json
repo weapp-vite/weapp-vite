@@ -1,0 +1,11 @@
+{
+  "publicComponents": {
+    "hello-component": "components/hello-component/index",
+    "native-meter": "components/native-meter/index"
+  },
+  "pages": {
+    "hello-page": "pages/hello-page/index",
+    "native-playground": "pages/native-playground/index"
+  },
+  "main": "index.js"
+}

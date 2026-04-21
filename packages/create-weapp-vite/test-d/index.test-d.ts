@@ -3,6 +3,7 @@ import { createProject, TemplateName } from 'create-weapp-vite'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
 expectAssignable<TemplateName>(TemplateName.default)
+expectAssignable<TemplateName>(TemplateName.plugin)
 expectAssignable<TemplateName>(TemplateName.wevu)
 
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default))

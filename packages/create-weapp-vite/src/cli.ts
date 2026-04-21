@@ -59,6 +59,10 @@ export async function run() {
             value: TemplateName.default,
           },
           {
+            name: '插件模板 (miniprogram + pluginRoot)',
+            value: TemplateName.plugin,
+          },
+          {
             name: '组件库模板 (lib 模式)',
             value: TemplateName.lib,
           },

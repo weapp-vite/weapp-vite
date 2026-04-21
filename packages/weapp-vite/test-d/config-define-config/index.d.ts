@@ -4,6 +4,7 @@ export interface AutoImportComponentsConfig {
 
 export interface WeappViteConfig {
   srcRoot?: string
+  platform?: 'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'
   wevu?: {
     defaults?: {
       component?: {
@@ -55,25 +56,14 @@ export interface ConfigEnv {
 
 export type UserConfigFnNoEnvPlain = () => UserConfig
 export type UserConfigFnNoEnv = () => UserConfig | Promise<UserConfig>
-export type UserConfigFnObject = (env: ConfigEnv) => UserConfig
-export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>
-export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>
-export type UserConfigLoose = UserConfig & Record<string, any>
+export type UserConfigFnObject = (env?: ConfigEnv) => UserConfig
+export type UserConfigFnPromise = (env?: ConfigEnv) => Promise<UserConfig>
+export type UserConfigFn = (env?: ConfigEnv) => UserConfig | Promise<UserConfig>
 export type UserConfigExport
-  = | UserConfigLoose
+  = | UserConfig
     | Promise<UserConfig>
-    | UserConfigFnNoEnvPlain
-    | UserConfigFnNoEnv
     | UserConfigFnObject
     | UserConfigFnPromise
     | UserConfigFn
 
-export declare function defineConfig(config: UserConfig): UserConfig
-export declare function defineConfig(config: Promise<UserConfig>): Promise<UserConfig>
-export declare function defineConfig(config: UserConfigFnNoEnvPlain): UserConfigFnNoEnvPlain
-export declare function defineConfig(config: UserConfigFnNoEnv): UserConfigFnNoEnv
-export declare function defineConfig(config: UserConfigFnObject): UserConfigFnObject
-export declare function defineConfig(config: UserConfigFn): UserConfigFn
-export declare function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise
-export declare function defineConfig(config: UserConfigLoose): UserConfigLoose
-export declare function defineConfig(config: UserConfigExport): UserConfigExport
+export declare function defineConfig<T extends UserConfigExport>(config: T): T

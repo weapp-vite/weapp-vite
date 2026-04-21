@@ -686,6 +686,60 @@ describe('runtime config internal loadConfig', () => {
     ]))
   })
 
+  it('prefers current weapp.typescript path aliases over stale referenced aliases', async () => {
+    inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
+      enabled: true,
+      root: false,
+      references: true,
+      referenceAliases: [
+        {
+          find: '@',
+          replacement: '/project/miniprogram',
+        },
+      ],
+    })
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          srcRoot: 'miniprogram',
+          typescript: {
+            app: {
+              compilerOptions: {
+                paths: {
+                  '@/*': ['./*'],
+                  '@shared/*': ['./shared/*'],
+                },
+              },
+            },
+          },
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project',
+      }),
+      expect.objectContaining({
+        find: '@shared',
+        replacement: '/project/shared',
+      }),
+    ]))
+  })
+
   it('throws when es5 is enabled but jsFormat is not cjs', async () => {
     loadViteConfigFileMock.mockResolvedValueOnce({
       config: {

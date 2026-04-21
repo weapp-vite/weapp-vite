@@ -1,5 +1,5 @@
 import type { UserConfig } from '.'
-import { expectError, expectType } from 'tsd'
+import { expectAssignable, expectError } from 'tsd'
 import { defineConfig } from '.'
 
 const objectConfig = defineConfig({
@@ -33,9 +33,9 @@ const objectConfig = defineConfig({
     },
   },
 })
-expectType<string | undefined>(objectConfig.weapp?.srcRoot)
-expectType<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
-expectType<boolean | {
+expectAssignable<string | undefined>(objectConfig.weapp?.srcRoot)
+expectAssignable<boolean | undefined>(objectConfig.weapp?.wevu?.defaults?.component?.allowNullPropInput)
+expectAssignable<boolean | {
   enabled?: boolean
   mode?: 'inline' | 'entry' | 'require'
   webRuntime?: boolean | {
@@ -44,53 +44,55 @@ expectType<boolean | {
     dependencies?: (string | RegExp)[]
   }
 } | undefined>(objectConfig.weapp?.appPrelude)
-expectType<boolean | {
+expectAssignable<boolean | {
   enabled?: boolean
   targets?: ('fetch' | 'Headers' | 'Request' | 'Response' | 'TextEncoder' | 'TextDecoder' | 'AbortController' | 'AbortSignal' | 'XMLHttpRequest' | 'WebSocket' | 'atob' | 'btoa' | 'queueMicrotask' | 'performance' | 'crypto' | 'Event' | 'CustomEvent')[]
   dependencies?: (string | RegExp)[]
   prelude?: boolean
 } | undefined>(objectConfig.weapp?.injectWebRuntimeGlobals)
-expectType<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
-expectType<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
+expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
+expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
 
 const promiseConfig = defineConfig(Promise.resolve({
   weapp: {
     srcRoot: 'src',
   },
 }))
-expectType<Promise<UserConfig>>(promiseConfig)
+expectAssignable<Promise<UserConfig>>(promiseConfig)
 
 const syncNoEnvConfig = defineConfig(() => ({
   weapp: {
     srcRoot: 'src',
+    platform: 'alipay',
     autoImportComponents: {
       vueComponents: true,
     },
   },
 }))
 const syncNoEnvResolved = syncNoEnvConfig()
-expectType<string | undefined>(syncNoEnvResolved.weapp?.srcRoot)
+expectAssignable<string | undefined>(syncNoEnvResolved.weapp?.srcRoot)
+expectAssignable<'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs' | undefined>(syncNoEnvResolved.weapp?.platform)
 expectError(syncNoEnvResolved.then(() => {}))
 
 const syncNoEnvVueComponents = syncNoEnvResolved.weapp?.autoImportComponents
   && typeof syncNoEnvResolved.weapp.autoImportComponents === 'object'
   ? syncNoEnvResolved.weapp.autoImportComponents.vueComponents
   : undefined
-expectType<boolean | string | undefined>(syncNoEnvVueComponents)
+expectAssignable<boolean | string | undefined>(syncNoEnvVueComponents)
 
 const asyncNoEnvConfig = defineConfig(async () => ({
   weapp: {
     srcRoot: 'src',
   },
 }))
-expectType<UserConfig | Promise<UserConfig>>(asyncNoEnvConfig())
+expectAssignable<UserConfig | Promise<UserConfig>>(asyncNoEnvConfig())
 
 const promiseNoEnvConfig = defineConfig(() => Promise.resolve({
   weapp: {
     srcRoot: 'src',
   },
 }))
-expectType<UserConfig | Promise<UserConfig>>(promiseNoEnvConfig())
+expectAssignable<UserConfig | Promise<UserConfig>>(promiseNoEnvConfig())
 
 const looseConfig = defineConfig({
   customFeature: {
@@ -100,5 +102,5 @@ const looseConfig = defineConfig({
     srcRoot: 'src',
   },
 })
-expectType<{ enabled: boolean } | undefined>(looseConfig.customFeature)
-expectType<string | undefined>(looseConfig.weapp?.srcRoot)
+expectAssignable<{ enabled: boolean } | undefined>(looseConfig.customFeature)
+expectAssignable<string | undefined>(looseConfig.weapp?.srcRoot)

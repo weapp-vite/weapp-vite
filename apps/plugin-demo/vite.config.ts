@@ -5,6 +5,15 @@ export default defineConfig({
     // weapp-vite options
     srcRoot: 'miniprogram',
     pluginRoot: 'plugin',
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            '@/*': ['./*'],
+          },
+        },
+      },
+    },
     npm: {
       enable: true,
       pluginPackage: {

@@ -1,0 +1,81 @@
+page {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top right, rgb(255 189 89 / 18%), transparent 26%),
+    linear-gradient(180deg, #fff8ec 0%, #fffdf7 100%);
+}
+
+.page {
+  padding: 28rpx 24rpx 40rpx;
+}
+
+.hero,
+.panel {
+  border-radius: 28rpx;
+}
+
+.hero {
+  padding: 34rpx 32rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #54401f 0%, #8b5a24 55%, #d18c2e 100%);
+
+  &__eyebrow,
+  &__title,
+  &__desc {
+    display: block;
+  }
+
+  &__eyebrow {
+    font-size: 22rpx;
+    text-transform: uppercase;
+    letter-spacing: 4rpx;
+    opacity: 0.74;
+  }
+
+  &__title {
+    margin-top: 12rpx;
+    font-size: 40rpx;
+    font-weight: 700;
+  }
+
+  &__desc {
+    margin-top: 16rpx;
+    font-size: 25rpx;
+    line-height: 1.7;
+    opacity: 0.9;
+  }
+}
+
+.panel {
+  padding: 28rpx;
+  margin-top: 24rpx;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 14rpx 30rpx rgb(123 93 38 / 10%);
+
+  &__title,
+  &__line {
+    display: block;
+  }
+
+  &__title {
+    margin-bottom: 12rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #61401c;
+  }
+
+  &__line {
+    margin-top: 8rpx;
+    font-size: 25rpx;
+    line-height: 1.7;
+    color: #6f5537;
+  }
+
+  &__button {
+    margin-top: 18rpx;
+    font-size: 26rpx;
+    color: #fff;
+    background: #8a5721;
+    border-radius: 999rpx;
+  }
+}

@@ -176,6 +176,24 @@ describe('createProject', () => {
     expect(agents).not.toContain('## Native Mini-program Authoring')
   })
 
+  it('writes plugin-specific guidance and local provider defaults for plugin templates', async () => {
+    const root = await createTmpRoot('plugin-template')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.plugin)
+
+    const agents = await fs.readFile(path.join(root, 'AGENTS.md'), 'utf8')
+    expect(agents).toContain('## Plugin Authoring')
+    expect(agents).toContain('dist-plugin/')
+    expect(agents).toContain('plugins.*.provider')
+
+    const appJson = await readJsonAs<{
+      plugins?: Record<string, { provider?: string }>
+    }>(path.join(root, 'miniprogram/app.json'))
+    expect(appJson.plugins?.['hello-plugin']?.provider).toBe('touristappid')
+  })
+
   it('preserves existing .gitignore when templates ship gitignore', async () => {
     const root = await createTmpRoot('existing-ignore')
     await fs.outputFile(path.join(root, '.gitignore'), '# existing entry\n')

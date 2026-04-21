@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const CREATE_PACKAGE_NAME = 'weapp-vite'
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_PACKAGE_SPEC = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
-const DEFAULT_TEMPLATE_NAMES = ['default', 'lib', 'wevu', 'wevu-tdesign', 'tailwindcss', 'vant', 'tdesign']
+const DEFAULT_TEMPLATE_NAMES = ['default', 'plugin', 'lib', 'wevu', 'wevu-tdesign', 'tailwindcss', 'vant', 'tdesign']
 const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? DEFAULT_TEMPLATE_NAMES)
   .map(name => name.trim())
   .filter(Boolean)
@@ -37,6 +37,7 @@ const NEWLINE_RE = /\r?\n/
 const DEV_REBUILD_SUCCESS_RE = /小程序已重新构建/
 const TEMPLATE_DIR_MAP = {
   'default': 'weapp-vite-template',
+  'plugin': 'weapp-vite-plugin-template',
   'lib': 'weapp-vite-lib-template',
   'wevu': 'weapp-vite-wevu-template',
   'wevu-tdesign': 'weapp-vite-wevu-tailwindcss-tdesign-template',

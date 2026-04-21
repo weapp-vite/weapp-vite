@@ -1,0 +1,45 @@
+{
+  "name": "weapp-vite-plugin-template",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "微信小程序插件模板",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "templates/weapp-vite-plugin-template"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "scripts": {
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern dist-plugin --ignore-pattern .weapp-vite",
+    "lint:fix": "eslint . --fix --ignore-pattern dist --ignore-pattern dist-plugin --ignore-pattern .weapp-vite",
+    "open": "wv open",
+    "stylelint": "stylelint \"{miniprogram,plugin,shared}/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"{miniprogram,plugin,shared}/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
+    "g": "wv generate",
+    "postinstall": "wv prepare"
+  },
+  "dependencies": {
+    "dayjs": "catalog:"
+  },
+  "devDependencies": {
+    "@icebreakers/eslint-config": "catalog:",
+    "@icebreakers/stylelint-config": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "sass": "catalog:",
+    "stylelint": "catalog:",
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
