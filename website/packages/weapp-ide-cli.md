@@ -239,6 +239,26 @@ if (isWeappIdeTopLevelCommand('preview')) {
 console.log(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES)
 ```
 
+### 6) opened-session helper
+
+除了官方 CLI 透传，`weapp-ide-cli` 现在也提供面向已打开 DevTools 会话的 Tool 域 helper，可优先复用当前会话完成以下操作：
+
+- 查询当前 Tool 信息
+- 触发重新编译
+- 清理 DevTools 缓存
+- 获取、设置、刷新 ticket
+- 获取测试账号列表
+
+如果你更希望直接在终端里操作这些会话信息，优先使用 `weapp-vite` 的高层入口：
+
+- `wv ide info`
+- `wv ide test-accounts`
+- `wv ide ticket`
+- `wv ide ticket:set --ticket <value>`
+- `wv ide ticket:refresh`
+
+`weapp-ide-cli` 更偏底层 helper 与官方能力对齐，`wv ide` 更适合日常开发调试。
+
 ## 语言切换
 
 默认中文。可通过以下方式切换英文：

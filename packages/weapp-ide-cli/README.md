@@ -202,6 +202,53 @@ if (isWeappIdeTopLevelCommand('preview')) {
 console.log(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES)
 ```
 
+### 6. 程序化 opened-session helper
+
+除了官方 CLI 透传和 automator 子命令，`weapp-ide-cli` 也提供了一组面向「已打开 DevTools 会话」的 helper。它们会优先复用当前项目对应的会话，在官方 HTTP / Tool 域能力可用时直接下发指令，减少再次拉起 IDE 或误打开项目选择页的概率。
+
+当前适合通过 helper 复用的能力包括：
+
+- 获取当前 DevTools Tool 信息
+- 通过已打开会话触发重新编译
+- 通过已打开会话清理 compile / all 等缓存
+- 获取、设置、刷新当前 ticket
+- 获取当前测试账号列表
+
+如果你在用 `weapp-vite`，更推荐直接使用高层入口：
+
+- `wv ide info`
+- `wv ide test-accounts`
+- `wv ide ticket`
+- `wv ide ticket:set --ticket <value>`
+- `wv ide ticket:refresh`
+
+`weapp-ide-cli` 负责底层官方 CLI / HTTP / automator helper 封装，`weapp-vite` 则提供更适合开发流的终端交互与项目解析。
+
+程序化调用示例：
+
+```ts
+import {
+  clearWechatIdeCacheByAutomator,
+  compileWechatIdeByAutomator,
+  getWechatIdeTicket,
+  getWechatIdeToolInfo,
+} from 'weapp-ide-cli'
+
+const projectPath = './dist/dev/mp-weixin'
+
+await compileWechatIdeByAutomator({ projectPath })
+
+const info = await getWechatIdeToolInfo({ projectPath })
+const ticket = await getWechatIdeTicket({ projectPath })
+
+await clearWechatIdeCacheByAutomator({
+  projectPath,
+  cleanType: 'compile',
+})
+
+console.log(info, ticket)
+```
+
 ## 路径与参数兼容
 
 - `-p` 会被自动替换为 `--project`，并且相对路径会解析为绝对路径。
