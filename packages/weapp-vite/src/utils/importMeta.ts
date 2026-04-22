@@ -75,8 +75,7 @@ export function resolveImportMetaEnvExpression(defineImportMetaEnv?: Record<stri
     return rawEnv
   }
 
-  const serializedEnv = JSON.stringify(resolveImportMetaEnvObject(defineImportMetaEnv, fallbackEnv))
-  return `JSON.parse(${JSON.stringify(serializedEnv)})`
+  return JSON.stringify(resolveImportMetaEnvObject(defineImportMetaEnv, fallbackEnv))
 }
 
 export function resolveImportMetaEnvMemberValues(defineImportMetaEnv?: Record<string, any>, fallbackEnv: Record<string, any> = {}) {

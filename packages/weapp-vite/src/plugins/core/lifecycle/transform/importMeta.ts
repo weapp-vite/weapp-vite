@@ -1,8 +1,8 @@
 import type { ImportMetaDefineRegistry } from '../../../../utils/importMeta'
-import * as t from '@babel/types'
+import { WEAPP_VITE_IMPORT_META_ENV_KEY } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import { parse as parseSfc } from 'vue/compiler-sfc'
-import { generate, parseJsLike, traverse } from '../../../../utils/babel'
+import { parseJsLike, traverse } from '../../../../utils/babel'
 import { createStaticImportMetaValues, resolveImportMetaEnvExpression } from '../../../../utils/importMeta'
 
 function isImportMetaNode(node: any) {
@@ -46,22 +46,58 @@ function getImportMetaEnvPropertyName(node: any) {
   return undefined
 }
 
-function createImportMetaEnvExpressionNode(rawExpression: string) {
-  try {
-    const ast = parseJsLike(`const __weappViteImportMetaEnv = ${rawExpression}`)
-    const declaration = ast.program.body[0]
-    if (
-      declaration?.type === 'VariableDeclaration'
-      && declaration.declarations[0]?.type === 'VariableDeclarator'
-      && declaration.declarations[0].init
-    ) {
-      return t.cloneNode(declaration.declarations[0].init, true)
-    }
+function wrapInlineExpression(expression: string) {
+  const trimmed = expression.trim()
+  return trimmed.startsWith('{') ? `(${trimmed})` : trimmed
+}
+
+function createSerializedEnvExpression(envObject: Record<string, any>) {
+  return `JSON.parse(${JSON.stringify(JSON.stringify(envObject))})`
+}
+
+function createCachedImportMetaEnvExpression(rawExpression: string, envObject: Record<string, any>) {
+  const trimmed = rawExpression.trim()
+  const runtimeExpression = trimmed.startsWith('{') || trimmed.startsWith('JSON.parse(')
+    ? createSerializedEnvExpression(envObject)
+    : wrapInlineExpression(trimmed)
+  const globalRef = `globalThis[${JSON.stringify(WEAPP_VITE_IMPORT_META_ENV_KEY)}]`
+  return `(${globalRef}||(${globalRef}=${runtimeExpression}))`
+}
+
+function toInlineLiteral(value: any) {
+  if (value === undefined) {
+    return 'undefined'
   }
-  catch {
+  if (
+    value === null
+    || typeof value === 'string'
+    || typeof value === 'number'
+    || typeof value === 'boolean'
+    || Array.isArray(value)
+    || typeof value === 'object'
+  ) {
+    return JSON.stringify(value)
   }
 
-  return undefined
+  return 'undefined'
+}
+
+function createImportMetaObjectExpression(values: ReturnType<typeof createStaticImportMetaValues>, envExpression: string) {
+  return `({"filename":${JSON.stringify(values.filename)},"url":${JSON.stringify(values.url)},"dirname":${JSON.stringify(values.dirname)},"env":${wrapInlineExpression(envExpression)}})`
+}
+
+function resolveNodeRange(node: any) {
+  return typeof node?.start === 'number' && typeof node?.end === 'number'
+    ? { start: node.start, end: node.end }
+    : undefined
+}
+
+function intersectsReplacement(
+  replacements: Array<{ start: number, end: number, value: string }>,
+  start: number,
+  end: number,
+) {
+  return replacements.some(replacement => !(end <= replacement.start || start >= replacement.end))
 }
 
 export function replaceImportMetaAccess(code: string, options: {
@@ -74,22 +110,25 @@ export function replaceImportMetaAccess(code: string, options: {
   }
 
   const values = createStaticImportMetaValues(options)
-  const envExpressionNode = createImportMetaEnvExpressionNode(
+  const envExpression = createCachedImportMetaEnvExpression(
     resolveImportMetaEnvExpression(options.importMetaDefineRegistry?.defineEntries, values.env),
+    values.env,
   )
+  const importMetaObjectExpression = createImportMetaObjectExpression(values, envExpression)
   const ast = parseJsLike(code)
-  let mutated = false
-  const importMetaObjectNode = t.objectExpression([
-    t.objectProperty(t.identifier('filename'), t.stringLiteral(values.filename)),
-    t.objectProperty(t.identifier('url'), t.stringLiteral(values.url)),
-    t.objectProperty(t.identifier('dirname'), t.stringLiteral(values.dirname)),
-    t.objectProperty(
-      t.identifier('env'),
-      envExpressionNode
-        ? t.cloneNode(envExpressionNode, true)
-        : t.valueToNode(values.env),
-    ),
-  ])
+  const replacements: Array<{ start: number, end: number, value: string }> = []
+
+  function addReplacement(node: any, value: string) {
+    const range = resolveNodeRange(node)
+    if (!range || intersectsReplacement(replacements, range.start, range.end)) {
+      return
+    }
+    replacements.push({
+      start: range.start,
+      end: range.end,
+      value,
+    })
+  }
 
   traverse(ast as any, {
     MemberExpression(path: any) {
@@ -98,36 +137,27 @@ export function replaceImportMetaAccess(code: string, options: {
         const envValue = Object.hasOwn(values.envAccess, envPropertyName)
           ? values.envAccess[envPropertyName]
           : undefined
-        path.replaceWith(t.valueToNode(envValue))
-        mutated = true
+        addReplacement(path.node, toInlineLiteral(envValue))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'env')) {
-        path.replaceWith(
-          envExpressionNode
-            ? t.cloneNode(envExpressionNode, true)
-            : t.valueToNode(values.env),
-        )
-        mutated = true
+        addReplacement(path.node, wrapInlineExpression(envExpression))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'url')) {
-        path.replaceWith(t.stringLiteral(values.url))
-        mutated = true
+        addReplacement(path.node, JSON.stringify(values.url))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'filename')) {
-        path.replaceWith(t.stringLiteral(values.filename))
-        mutated = true
+        addReplacement(path.node, JSON.stringify(values.filename))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'dirname')) {
-        path.replaceWith(t.stringLiteral(values.dirname))
-        mutated = true
+        addReplacement(path.node, JSON.stringify(values.dirname))
       }
     },
     OptionalMemberExpression(path: any) {
@@ -136,36 +166,27 @@ export function replaceImportMetaAccess(code: string, options: {
         const envValue = Object.hasOwn(values.envAccess, envPropertyName)
           ? values.envAccess[envPropertyName]
           : undefined
-        path.replaceWith(t.valueToNode(envValue))
-        mutated = true
+        addReplacement(path.node, toInlineLiteral(envValue))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'env')) {
-        path.replaceWith(
-          envExpressionNode
-            ? t.cloneNode(envExpressionNode, true)
-            : t.valueToNode(values.env),
-        )
-        mutated = true
+        addReplacement(path.node, wrapInlineExpression(envExpression))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'url')) {
-        path.replaceWith(t.stringLiteral(values.url))
-        mutated = true
+        addReplacement(path.node, JSON.stringify(values.url))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'filename')) {
-        path.replaceWith(t.stringLiteral(values.filename))
-        mutated = true
+        addReplacement(path.node, JSON.stringify(values.filename))
         return
       }
 
       if (isImportMetaMemberAccess(path.node, 'dirname')) {
-        path.replaceWith(t.stringLiteral(values.dirname))
-        mutated = true
+        addReplacement(path.node, JSON.stringify(values.dirname))
       }
     },
     MetaProperty(path: any) {
@@ -180,16 +201,20 @@ export function replaceImportMetaAccess(code: string, options: {
         return
       }
 
-      path.replaceWith(t.cloneNode(importMetaObjectNode, true))
-      mutated = true
+      addReplacement(path.node, importMetaObjectExpression)
     },
   })
 
-  if (!mutated) {
+  if (replacements.length === 0) {
     return code
   }
 
-  return generate(ast as any).code
+  const ms = new MagicString(code)
+  for (const replacement of replacements.sort((left, right) => left.start - right.start)) {
+    ms.update(replacement.start, replacement.end, replacement.value)
+  }
+
+  return ms.toString()
 }
 
 export function replaceImportMetaAccessInSfc(source: string, options: {

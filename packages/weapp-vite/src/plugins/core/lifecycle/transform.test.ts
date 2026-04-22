@@ -2,11 +2,18 @@ import {
   REQUEST_GLOBAL_ACTUALS_KEY,
   REQUEST_GLOBAL_EXPOSE_HELPER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+  WEAPP_VITE_IMPORT_META_ENV_KEY,
 } from '@weapp-core/constants'
 import { parseSync } from 'oxc-parser'
 import { describe, expect, it, vi } from 'vitest'
 import { createImportMetaDefineRegistry } from '../../../utils/importMeta'
 import { createTransformHook } from './transform'
+
+function createCachedEnvLinePattern(prefix: string) {
+  return new RegExp(
+    `${prefix}.*globalThis\\["${WEAPP_VITE_IMPORT_META_ENV_KEY}"\\].*JSON\\.parse\\(`,
+  )
+}
 
 function createConfigServiceMock(options?: {
   absoluteSrcRoot?: string
@@ -58,8 +65,8 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).toContain('"/pages/import-meta/index.js"')
     expect(code).toContain('"/pages/import-meta"')
     expect(code).toContain('"on"')
-    expect(code).toContain('filename: "/pages/import-meta/index.js"')
-    expect(code).toContain('url: "/pages/import-meta/index.js"')
+    expect(code).toContain('"filename":"/pages/import-meta/index.js"')
+    expect(code).toContain('"url":"/pages/import-meta/index.js"')
     expect(code).not.toContain('import.meta')
   })
 
@@ -96,7 +103,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
       ctx: {
         configService: createConfigServiceMock({
           defineImportMetaEnv: {
-            'import.meta.env': 'JSON.parse("{\\"MODE\\":\\"production\\",\\"FEATURE_FLAG\\":\\"on\\"}")',
+            'import.meta.env': '{"MODE":"production","FEATURE_FLAG":"on"}',
             'import.meta.env.FEATURE_FLAG': '"on"',
           },
         }),
@@ -115,8 +122,8 @@ describe('core lifecycle transform hook injectWeapi', () => {
     )
     const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
 
-    expect(code).toContain('const env = JSON.parse("{\\"MODE\\":\\"production\\",\\"FEATURE_FLAG\\":\\"on\\"}")')
-    expect(code).toContain('env: JSON.parse("{\\"MODE\\":\\"production\\",\\"FEATURE_FLAG\\":\\"on\\"}")')
+    expect(code).toMatch(createCachedEnvLinePattern('const env = '))
+    expect(code).toMatch(createCachedEnvLinePattern('"env":\\(?'))
     expect(code).not.toContain('const env = {\n')
     expect(code).not.toContain('env: {\n')
   })

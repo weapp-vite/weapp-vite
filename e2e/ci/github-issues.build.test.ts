@@ -75,6 +75,12 @@ function expectModuleReference(code: string, specifier: string) {
   expect(code).toMatch(new RegExp(`(?:require\\((['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\1\\)|from\\s+(['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\2)`))
 }
 
+function createCachedEnvLinePattern(variableName: string) {
+  return new RegExp(
+    `const ${variableName} = .*globalThis\\["__weappViteImportMetaEnv"\\].*JSON\\.parse\\(`,
+  )
+}
+
 function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) {
   const relativeImports = [
     ...[...sourceCode.matchAll(/require\((['"`])([^"'`]+)\1\)/g)].map(match => match[2]!),
@@ -292,11 +298,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('<SourceMapProbe />')
     expect(pageJs).toContain('//#region src/pages/issue-475/index.vue')
     expect(pageJs).toContain('issue-475 page marker')
-    expect(pageJs).toContain('const pageEnv = JSON.parse(')
+    expect(pageJs).toMatch(createCachedEnvLinePattern('pageEnv'))
     expect(pageJs).not.toContain('const pageEnv = {\n')
     expect(componentJs).toContain('//#region src/components/issue-475/SourceMapProbe/index.vue')
     expect(componentJs).toContain('issue-475 component marker')
-    expect(componentJs).toContain('const componentEnv = JSON.parse(')
+    expect(componentJs).toMatch(createCachedEnvLinePattern('componentEnv'))
     expect(componentJs).not.toContain('const componentEnv = {\n')
   })
 
