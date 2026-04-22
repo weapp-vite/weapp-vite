@@ -21,6 +21,7 @@ const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const logBuildAppFinishMock = vi.hoisted(() => vi.fn())
 const maybeStartForwardConsoleMock = vi.hoisted(() => vi.fn())
 const openIdeMock = vi.hoisted(() => vi.fn())
+const resolveIdeProjectRootMock = vi.hoisted(() => vi.fn((root: string) => root))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const devHotkeysCloseMock = vi.hoisted(() => vi.fn())
 const devHotkeysRestoreMock = vi.hoisted(() => vi.fn())
@@ -100,7 +101,7 @@ vi.mock('../forwardConsole', () => ({
 
 vi.mock('../openIde', () => ({
   openIde: openIdeMock,
-  resolveIdeProjectRoot: vi.fn((root: string) => root),
+  resolveIdeProjectRoot: resolveIdeProjectRootMock,
 }))
 
 vi.mock('../devHotkeys', () => ({
@@ -134,6 +135,8 @@ describe('serve cli command', () => {
     devHotkeysCloseMock.mockReset()
     devHotkeysRestoreMock.mockReset()
     resolveConfigFileMock.mockReturnValue(undefined)
+    resolveIdeProjectRootMock.mockReset()
+    resolveIdeProjectRootMock.mockImplementation((root: string) => root)
     const emitRuntimeEvents = vi.fn()
     const update = vi.fn().mockResolvedValue(undefined)
     buildServiceBuildMock.mockReset()
@@ -297,6 +300,51 @@ describe('serve cli command', () => {
     maybeStartForwardConsoleMock.mockResolvedValueOnce(false)
     const openResult = await hotkeyOptions.openIde()
     expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      reuseOpenedProject: false,
+      trustProject: true,
+    })
+    expect(openResult).toBe('已重新打开微信开发者工具项目')
+
+    fakeProcess.emit('SIGINT')
+    await actionPromise
+  })
+
+  it('reuses resolved ide project root for hotkeys compile target and reopen callback', async () => {
+    resolveIdeProjectRootMock.mockReturnValue('/project/ide-root')
+    createCompilerContextMock.mockReset()
+    createCompilerContextMock.mockResolvedValueOnce({
+      buildService: {
+        build: buildServiceBuildMock,
+      },
+      configService: {
+        platform: 'weapp',
+        cwd: '/project',
+        mode: 'development',
+        outDir: '/project/dist',
+        mpDistRoot: '/project/dist/miniprogram',
+        packageManager: { agent: 'pnpm' },
+        weappViteConfig: {},
+      },
+      webService: undefined,
+      watcherService: {
+        closeAll: watcherCloseAllMock,
+      },
+    })
+    const action = createServeActionHandler()
+
+    const actionPromise = action('/project', {
+      platform: 'weapp',
+      trustProject: true,
+    })
+
+    await Promise.resolve()
+
+    const hotkeyOptions = startDevHotkeysMock.mock.calls[0]?.[0]
+    expect(hotkeyOptions?.projectPath).toBe('/project/ide-root')
+
+    maybeStartForwardConsoleMock.mockResolvedValueOnce(false)
+    const openResult = await hotkeyOptions.openIde()
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/ide-root', {
       reuseOpenedProject: false,
       trustProject: true,
     })
