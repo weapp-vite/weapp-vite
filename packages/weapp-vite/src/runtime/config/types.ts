@@ -1,7 +1,7 @@
 import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
-import type { InlineConfig } from 'vite'
+import type { ConfigLoader, InlineConfig } from 'vite'
 import type { ResolvedMultiPlatformConfig } from '../../multiPlatform'
 import type { OutputExtensions } from '../../platforms/types'
 import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappLibComponentJson, WeappLibConfig, WeappLibDtsOptions, WeappLibFileName, WeappWebConfig } from '../../types'
@@ -11,6 +11,7 @@ export interface LoadConfigOptions {
   cwd: string
   isDev: boolean
   mode: string
+  configLoader?: ConfigLoader
   emitDefaultAutoImportOutputs?: boolean
   pluginOnly?: boolean
   inlineConfig?: InlineConfig

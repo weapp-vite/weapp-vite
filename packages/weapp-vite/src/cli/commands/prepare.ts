@@ -31,6 +31,7 @@ export function registerPrepareCommand(cli: CAC) {
           cwd,
           isDev: false,
           mode: typeof options.mode === 'string' ? options.mode : 'development',
+          configLoader: 'bundle',
           configFile: resolveConfigFile(options),
           syncSupportFiles: false,
           preloadAppEntry: false,
