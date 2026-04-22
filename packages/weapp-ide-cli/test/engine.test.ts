@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises'
+import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const pollWechatIdeEngineBuildResultByHttpMock = vi.hoisted(() => vi.fn())
@@ -98,10 +99,11 @@ describe('runWechatIdeEngineBuildByHttp', () => {
     await vi.advanceTimersByTimeAsync(1000)
     await pending
 
-    expect(statSpy).toHaveBeenCalledWith('/workspace/logs/engine.log')
-    expect(mkdirSpy).toHaveBeenCalledWith('/workspace/logs', { recursive: true })
+    const expectedLogPath = path.resolve('/workspace/logs/engine.log')
+    expect(statSpy).toHaveBeenCalledWith(expectedLogPath)
+    expect(mkdirSpy).toHaveBeenCalledWith(path.dirname(expectedLogPath), { recursive: true })
     expect(writeFileSpy).toHaveBeenCalledWith(
-      '/workspace/logs/engine.log',
+      expectedLogPath,
       'opening\ndone',
       'utf8',
     )

@@ -81,6 +81,14 @@ function createCachedEnvLinePattern(variableName: string) {
   )
 }
 
+function createObjectPropertyPattern(property: string, value: string) {
+  return new RegExp(`${escapeRegex(JSON.stringify(property))}\\s*:\\s*${escapeRegex(JSON.stringify(value))}`)
+}
+
+function createSerializedJsonEntryPattern(key: string, value: string) {
+  return new RegExp(escapeRegex(`\\"${key}\\":\\"${value}\\"`))
+}
+
 function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) {
   const relativeImports = [
     ...[...sourceCode.matchAll(/require\((['"`])([^"'`]+)\1\)/g)].map(match => match[2]!),
@@ -186,7 +194,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('/pages/issue-431/index.js')
     expect(pageJs).toContain('/pages/issue-431')
     expect(pageJs).toContain('importMetaSnapshot')
-    expect(pageJs).toContain('url: "/pages/issue-431/index.js"')
+    expect(pageJs).toMatch(createObjectPropertyPattern('url', '/pages/issue-431/index.js'))
     expect(pageJs).not.toContain('import.meta.url')
     expect(pageJs).not.toContain('import.meta.dirname')
     expect(pageJs).not.toContain('import.meta.env')
@@ -339,11 +347,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageWxml).toContain('issue-484 import.meta.env define override')
     expect(pageJs).toContain('var pageDefinedFlag = 123456;')
     expect(pageJs).toContain('const pageSummary = `issue-484 page define:')
-    expect(pageJs).toContain('MODE: "production"')
+    expect(pageJs).toMatch(createSerializedJsonEntryPattern('MODE', 'production'))
     expect(pageJs).not.toContain('ISSUE_484_FLAG')
     expect(helperJs).toContain('var helperDefinedFlag = 123456;')
     expect(helperJs).toContain('var helperSummary = `issue-484 helper define:')
-    expect(helperJs).toContain('MODE: "production"')
+    expect(helperJs).toMatch(createSerializedJsonEntryPattern('MODE', 'production'))
     expect(helperJs).not.toContain('ISSUE_484_FLAG')
   })
 
