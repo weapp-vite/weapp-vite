@@ -1,5 +1,6 @@
 import type { DevHotkeyDefinition, DevHotkeyState } from './types'
 import path from 'pathe'
+import { RETRY_CANCEL_KEYS, RETRY_CONFIRM_KEYS } from 'weapp-ide-cli'
 import packageJson from '../../../package.json'
 import { colors } from '../../logger'
 import { resolveDevHotkeyRowsByGroup } from './actions'
@@ -39,6 +40,16 @@ function formatHotkeyRows(rows: readonly DevHotkeyDefinition[]) {
   return formattedRows.map(({ key, description }) => `按 ${key.padEnd(keyColumnWidth)}  ${description}`)
 }
 
+function formatExtraHotkeyRows(rows: ReadonlyArray<readonly [string, string]>) {
+  const key = (value: string) => colors.bold(colors.green(value))
+  const formattedRows = rows.map(([hotkey, description]) => ({
+    description,
+    key: key(hotkey),
+  }))
+  const keyColumnWidth = Math.max(...formattedRows.map(row => row.key.length))
+  return formattedRows.map(({ key, description }) => `按 ${key.padEnd(keyColumnWidth)}  ${description}`)
+}
+
 /**
  * @description 生成带状态的开发态快捷键帮助文本。
  */
@@ -50,9 +61,18 @@ export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
       section.title,
       ...formatHotkeyRows(section.rows),
     ])
+  const retrySections = [
+    '',
+    '登录重试',
+    ...formatExtraHotkeyRows([
+      [RETRY_CONFIRM_KEYS.join(' / '), '微信开发者工具登录失效后确认重试当前命令'],
+      [RETRY_CANCEL_KEYS.join(' / '), '取消当前登录重试提示'],
+    ]),
+  ]
   return [
     `${colors.bold(colors.green('DEV'))}  weapp-vite v${packageJson.version}  ${state.projectLabel ?? 'weapp'}`,
     ...sections,
+    ...retrySections,
     '',
     `当前状态：${state.currentAction ?? '等待操作'} / MCP ${formatMcpStatus(state)}`,
     ...(state.lastAction ? [`最近操作：${state.lastAction}`] : []),

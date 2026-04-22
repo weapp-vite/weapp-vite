@@ -44,6 +44,8 @@ async function flushMicrotasks(times = 4) {
 }
 
 vi.mock('weapp-ide-cli', () => ({
+  RETRY_CANCEL_KEYS: ['q', 'Esc', 'Ctrl+C'],
+  RETRY_CONFIRM_KEYS: ['Enter'],
   closeSharedMiniProgram: closeSharedMiniProgramMock,
   createSharedInputSession: createSharedInputSessionMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
@@ -248,6 +250,9 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DevTools 动作'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('进程控制'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('登录重试'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 Enter'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 q / Esc / Ctrl+C'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态：等待操作 / MCP 未启动'))
   })
 
