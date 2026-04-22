@@ -1,0 +1,8 @@
+<view class="block-slot-host">
+  <view class="block-slot-host__header" data-slot-header="host">
+    <slot name="header"></slot>
+  </view>
+  <view class="block-slot-host__content" data-slot-content="host">
+    <slot></slot>
+  </view>
+</view>
