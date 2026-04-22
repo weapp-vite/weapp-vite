@@ -69,6 +69,7 @@ export interface TransformContext {
   htmlTagToWxmlTagClass: boolean
   scopedSlotsCompiler: ScopedSlotsCompilerMode
   scopedSlotsRequireProps: boolean
+  slotSingleRootNoWrapper: boolean
   slotMultipleInstance: boolean
   scopedSlotComponents: ScopedSlotComponentAsset[]
   componentGenerics: Record<string, true>
@@ -118,6 +119,7 @@ export interface TemplateCompileOptions {
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: ScopedSlotsCompilerMode
   scopedSlotsRequireProps?: boolean
+  slotSingleRootNoWrapper?: boolean
   slotMultipleInstance?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   objectLiteralBindMode?: ObjectLiteralBindMode

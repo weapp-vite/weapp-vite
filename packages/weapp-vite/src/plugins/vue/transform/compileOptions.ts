@@ -55,6 +55,7 @@ export function createCompileVueFileOptions(
   const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
   const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? (scopedSlotsCompiler !== 'augmented')
+  const slotSingleRootNoWrapper = configService.weappViteConfig?.vue?.template?.slotSingleRootNoWrapper ?? false
   const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
   const htmlTagToWxml = configService.weappViteConfig?.vue?.template?.htmlTagToWxml
   const htmlTagToWxmlTagClass = configService.weappViteConfig?.vue?.template?.htmlTagToWxmlTagClass ?? true
@@ -102,6 +103,7 @@ export function createCompileVueFileOptions(
       htmlTagToWxmlTagClass,
       scopedSlotsCompiler,
       scopedSlotsRequireProps,
+      slotSingleRootNoWrapper,
       slotMultipleInstance,
       classStyleRuntime: templatePlatformOptions.classStyleRuntime,
       objectLiteralBindMode,

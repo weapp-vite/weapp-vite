@@ -61,6 +61,7 @@ export function compileVueTemplateToWxml(
   const wxsExtension = options?.wxsExtension
   const scopedSlotsRequireProps = options?.scopedSlotsRequireProps
     ?? (options?.scopedSlotsCompiler !== 'augmented')
+  const slotSingleRootNoWrapper = options?.slotSingleRootNoWrapper ?? false
   const htmlTagToWxmlMap = resolveHtmlTagToWxmlMap(options?.htmlTagToWxml)
 
   try {
@@ -81,6 +82,7 @@ export function compileVueTemplateToWxml(
       htmlTagToWxmlTagClass: options?.htmlTagToWxmlTagClass ?? true,
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
       scopedSlotsRequireProps,
+      slotSingleRootNoWrapper,
       slotMultipleInstance: options?.slotMultipleInstance ?? true,
       scopedSlotComponents: [],
       componentGenerics: {},

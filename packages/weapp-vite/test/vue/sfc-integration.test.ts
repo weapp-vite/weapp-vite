@@ -138,7 +138,7 @@ export default {}
       expect(templateResult.code).toContain('name="footer"')
     })
 
-    it('should compile plain template v-slot SFC content without synthetic view wrapper', async () => {
+    it('should compile plain template v-slot SFC content without synthetic view wrapper when enabled', async () => {
       const sfc = `
 <template>
   <slot-host>
@@ -157,7 +157,11 @@ import SlotHost from './SlotHost.vue'
 </script>
       `.trim()
 
-      const result = await compileVueFile(sfc, 'test.vue')
+      const result = await compileVueFile(sfc, 'test.vue', {
+        template: {
+          slotSingleRootNoWrapper: true,
+        },
+      })
 
       expect(result.template).toContain('slot="icon"')
       expect(result.template).toContain('src="/cover.png"')

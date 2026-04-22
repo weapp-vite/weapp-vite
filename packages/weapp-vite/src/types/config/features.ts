@@ -264,6 +264,7 @@ export interface WeappVueTemplateConfig {
   htmlTagToWxmlTagClass?: boolean
   scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
   scopedSlotsRequireProps?: boolean
+  slotSingleRootNoWrapper?: boolean
   slotMultipleInstance?: boolean
   classStyleRuntime?: 'auto' | 'wxs' | 'js'
   objectLiteralBindMode?: 'runtime' | 'inline'
