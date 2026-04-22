@@ -43,6 +43,25 @@ describe('wechat command helpers', () => {
     ])
   })
 
+  it('builds open argv with project locator and trust-project flag', async () => {
+    const { openWechatIde } = await import('../src/cli/wechat-commands')
+
+    await openWechatIde({
+      platform: 'weapp',
+      projectPath: './dist/dev/mp-weixin',
+      trustProject: true,
+    })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith([
+      'open',
+      '--project',
+      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      '--platform',
+      'weapp',
+      '--trust-project',
+    ])
+  })
+
   it('runs islogin through official cli wrapper', async () => {
     const { isWechatIdeLoggedIn } = await import('../src/cli/wechat-commands')
 

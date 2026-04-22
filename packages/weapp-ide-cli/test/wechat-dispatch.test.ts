@@ -10,6 +10,7 @@ const clearWechatIdeCacheMock = vi.hoisted(() => vi.fn())
 const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoggedInMock = vi.hoisted(() => vi.fn())
 const loginWechatIdeMock = vi.hoisted(() => vi.fn())
+const openWechatIdeMock = vi.hoisted(() => vi.fn())
 const openWechatIdeOtherProjectMock = vi.hoisted(() => vi.fn())
 const previewWechatIdeMock = vi.hoisted(() => vi.fn())
 const quitWechatIdeMock = vi.hoisted(() => vi.fn())
@@ -27,6 +28,7 @@ vi.mock('../src/cli/wechat-commands', () => ({
   closeWechatIdeProject: closeWechatIdeProjectMock,
   isWechatIdeLoggedIn: isWechatIdeLoggedInMock,
   loginWechatIde: loginWechatIdeMock,
+  openWechatIde: openWechatIdeMock,
   openWechatIdeOtherProject: openWechatIdeOtherProjectMock,
   previewWechatIde: previewWechatIdeMock,
   quitWechatIde: quitWechatIdeMock,
@@ -47,6 +49,7 @@ describe('dispatchWechatCliCommand', () => {
     closeWechatIdeProjectMock.mockReset()
     isWechatIdeLoggedInMock.mockReset()
     loginWechatIdeMock.mockReset()
+    openWechatIdeMock.mockReset()
     openWechatIdeOtherProjectMock.mockReset()
     previewWechatIdeMock.mockReset()
     quitWechatIdeMock.mockReset()
@@ -62,6 +65,7 @@ describe('dispatchWechatCliCommand', () => {
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
     isWechatIdeLoggedInMock.mockResolvedValue(undefined)
     loginWechatIdeMock.mockResolvedValue(undefined)
+    openWechatIdeMock.mockResolvedValue(undefined)
     openWechatIdeOtherProjectMock.mockResolvedValue(undefined)
     previewWechatIdeMock.mockResolvedValue(undefined)
     quitWechatIdeMock.mockResolvedValue(undefined)
@@ -92,6 +96,28 @@ describe('dispatchWechatCliCommand', () => {
       qrFormat: 'image',
       qrOutput: '/tmp/qr.png',
       qrSize: undefined,
+    })
+  })
+
+  it('dispatches open argv to open helper', async () => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    const handled = await dispatchWechatCliCommand([
+      'open',
+      '--project',
+      '/tmp/demo',
+      '--platform',
+      'weapp',
+      '--trust-project',
+    ])
+
+    expect(handled).toBe(true)
+    expect(openWechatIdeMock).toHaveBeenCalledWith({
+      appid: undefined,
+      extAppid: undefined,
+      platform: 'weapp',
+      projectPath: '/tmp/demo',
+      trustProject: true,
     })
   })
 

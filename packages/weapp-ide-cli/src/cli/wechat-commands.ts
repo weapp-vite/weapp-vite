@@ -10,6 +10,14 @@ export interface LoginWechatIdeOptions {
   resultOutput?: string
 }
 
+export interface OpenWechatIdeOptions {
+  appid?: string
+  extAppid?: string
+  platform?: string
+  projectPath?: string
+  trustProject?: boolean
+}
+
 export interface BuildWechatIdeNpmOptions {
   compileType?: string
   projectPath?: string
@@ -124,6 +132,24 @@ function appendProjectLocatorArgv(argv: string[], options: {
   if (options.extAppid) {
     argv.push('--ext-appid', options.extAppid)
   }
+}
+
+/**
+ * @description 调用微信开发者工具 open 命令。
+ */
+export async function openWechatIde(options: OpenWechatIdeOptions = {}) {
+  const argv = ['open']
+
+  appendProjectLocatorArgv(argv, options)
+
+  if (options.platform) {
+    argv.push('--platform', options.platform)
+  }
+  if (options.trustProject) {
+    argv.push('--trust-project')
+  }
+
+  await runWechatCliCommand(argv)
 }
 
 /**

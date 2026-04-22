@@ -10,6 +10,7 @@ import {
   closeWechatIdeProject,
   isWechatIdeLoggedIn,
   loginWechatIde,
+  openWechatIde,
   openWechatIdeOtherProject,
   previewWechatIde,
   quitWechatIde,
@@ -36,6 +37,17 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       qrOutput: readOptionValue(argv, '--qr-output'),
       qrSize: readOptionValue(argv, '--qr-size'),
       resultOutput: readOptionValue(argv, '--result-output'),
+    })
+    return true
+  }
+
+  if (command === 'open') {
+    await openWechatIde({
+      appid: readOptionValue(argv, '--appid'),
+      extAppid: readOptionValue(argv, '--ext-appid'),
+      platform: readOptionValue(argv, '--platform'),
+      projectPath: readOptionValue(argv, '--project'),
+      trustProject: hasOption(argv, '--trust-project'),
     })
     return true
   }
