@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "block-slot",
+  "usingComponents": {
+    "block-slot-host": "../../components/block-slot-host/index"
+  }
+}

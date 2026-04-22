@@ -1,0 +1,24 @@
+<view class="block-slot-page">
+  <view class="block-slot-title">block slot experiment</view>
+
+  <block-slot-host>
+    <block slot="header">
+      <view class="block-slot-header-probe" data-header-label="{{headerLabel}}">
+        header slot via block: {{headerLabel}}
+      </view>
+      <view class="block-slot-header-extra" data-header-extra="true">
+        header extra
+      </view>
+    </block>
+
+    <block>
+      <view class="block-slot-default-probe" data-body-label="{{bodyLabel}}">
+        default slot via block: {{bodyLabel}}
+      </view>
+    </block>
+  </block-slot-host>
+
+  <view class="block-slot-action" bindtap="toggleLabels">
+    toggle block slot labels
+  </view>
+</view>

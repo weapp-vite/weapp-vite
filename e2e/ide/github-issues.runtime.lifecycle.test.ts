@@ -742,6 +742,54 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     }
   })
 
+  it('experiment: block nodes can provide named and default slot content in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/block-slot/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/block-slot/index.js')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'pages/block-slot/index.json')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/block-slot-host/index.wxml')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<block slot="header">')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('toggleLabels')
+    expect(await fs.readFile(issuePageJsonPath, 'utf-8')).toContain('"block-slot-host": "../../components/block-slot-host/index"')
+    expect(await fs.readFile(componentWxmlPath, 'utf-8')).toContain('<slot name="header"></slot>')
+
+    const miniProgram = await launchFreshMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/block-slot/index', 'header slot via block: ready')
+      if (!issuePage) {
+        throw new Error('Failed to launch block-slot page')
+      }
+
+      const initialRuntime = await issuePage.callMethod('_runE2E')
+      expect(initialRuntime?.ok).toBe(true)
+      expect(initialRuntime?.headerLabel).toBe('ready')
+      expect(initialRuntime?.bodyLabel).toBe('alpha')
+
+      const initialWxml = await readPageWxml(issuePage)
+      expect(initialWxml).toContain('data-slot-header="host"')
+      expect(initialWxml).toContain('header slot via block: ready')
+      expect(initialWxml).toContain('header extra')
+      expect(initialWxml).toContain('data-slot-content="host"')
+      expect(initialWxml).toContain('default slot via block: alpha')
+
+      await issuePage.callMethod('toggleLabels')
+      await issuePage.waitFor(260)
+
+      const updatedRuntime = await issuePage.callMethod('_runE2E')
+      expect(updatedRuntime?.headerLabel).toBe('updated')
+      expect(updatedRuntime?.bodyLabel).toBe('beta')
+
+      const updatedWxml = await readPageWxml(issuePage)
+      expect(updatedWxml).toContain('header slot via block: updated')
+      expect(updatedWxml).toContain('default slot via block: beta')
+      expect(updatedWxml).not.toContain('header slot via block: ready')
+      expect(updatedWxml).not.toContain('default slot via block: alpha')
+    }
+    finally {
+      await miniProgram.close().catch(() => {})
+    }
+  })
+
   it('issue #373: keeps shared store computed reactive after reLaunch tears down the first page', async (ctx) => {
     const launchPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.wxml')
     const resultPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.wxml')
