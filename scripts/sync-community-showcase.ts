@@ -117,6 +117,8 @@ const MULTI_SPACE_RE = /[ \t]+/g
 const MULTI_NEWLINE_RE = /\n{2,}/g
 const SPACE_BEFORE_CJK_PUNCT_RE = /\s+([，。！？；：])/g
 const QUOTE_PREFIX_RE = /^\s*>/gm
+const MARKDOWN_HEADING_PREFIX_RE = /^\s{0,3}#{1,6}\s+/
+const MARKDOWN_LIST_PREFIX_RE = /^\s*(?:[-+*]|\d+\.)\s+/
 const INTRO_LINE_RE = /^介绍\s*[:：]/
 const INTRO_LINE_PREFIX_RE = /^介绍\s*[:：]\s*/
 const GITHUB_LINE_RE = /^github\s*[:：]\s*(https?:\/\/\S+)/i
@@ -126,6 +128,7 @@ const QUOTED_TITLE_RE = /《([^》]+)》/
 const INTRO_LINKED_TITLE_RE = /介绍\s*[:：]\s*\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/
 const LEADING_DESCRIPTOR_RE = /^(一款|一个|一套|免费的?|开源的?)/
 const TRAILING_SENTENCE_RE = /[，。！？].*$/
+const NON_TITLE_HEADING_RE = /^(?:截图|二维码|功能(?:介绍)?|介绍|说明|演示|预览|效果|页面展示)$/
 const QRCODE_URL_RE = /qrcode|qr|weappcode|二维码/i
 const SCREENSHOT_HEADING_RE = /(?:^|\n)(?:#+\s*截图\b|截图\s*$)/m
 const NON_META_LINE_RE = /^(?:个人|公司|组织|链接|github)\s*[:：]/i
@@ -190,6 +193,8 @@ export function cleanInlineText(input: string): string {
 
   return htmlText
     .replace(WINDOWS_NEWLINE_RE, '\n')
+    .replace(MARKDOWN_HEADING_PREFIX_RE, '')
+    .replace(MARKDOWN_LIST_PREFIX_RE, '')
     .replace(MULTI_SPACE_RE, ' ')
     .replace(MULTI_NEWLINE_RE, '\n')
     .replace(SPACE_BEFORE_CJK_PUNCT_RE, '$1')
@@ -267,6 +272,22 @@ function extractDescriptionLine(lines: string[]): string | undefined {
     const trimmed = line.trim()
     if (INTRO_LINE_RE.test(trimmed)) {
       return cleanInlineText(trimmed.replace(INTRO_LINE_PREFIX_RE, ''))
+    }
+  }
+
+  return undefined
+}
+
+function extractHeadingLine(lines: string[]): string | undefined {
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!MARKDOWN_HEADING_PREFIX_RE.test(trimmed)) {
+      continue
+    }
+
+    const cleaned = cleanInlineText(trimmed)
+    if (cleaned && !NON_TITLE_HEADING_RE.test(cleaned)) {
+      return cleaned
     }
   }
 
@@ -401,9 +422,12 @@ export function parseShowcaseComment(comment: GithubIssueComment): ParsedComment
     .filter(Boolean)
 
   const { github, link } = extractLinks(body)
+  const headingTitle = extractHeadingLine(lines)
   const rawDescription = extractDescriptionLine(lines)
-    ?? cleanInlineText(lines.find(line => !NON_META_LINE_RE.test(line)) ?? '')
-  const title = extractTitleFromBody(body, rawDescription) ?? fallbackSlug('', github, comment.user?.login, comment.id)
+    ?? cleanInlineText(lines.find(line => !NON_META_LINE_RE.test(line) && !MARKDOWN_HEADING_PREFIX_RE.test(line)) ?? '')
+  const title = headingTitle
+    ?? extractTitleFromBody(body, rawDescription)
+    ?? fallbackSlug('', github, comment.user?.login, comment.id)
   const description = rawDescription
     .replace(new RegExp(`^《${escapeRegExp(title)}》\\s*[:：]\\s*`), '')
     .trim()

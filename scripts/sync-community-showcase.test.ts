@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import { it } from 'vitest'
-import { extractImageUrls, getImageDimensions, parseShowcaseComment, refineImageRoles } from './sync-community-showcase'
+import { cleanInlineText, extractImageUrls, getImageDimensions, parseShowcaseComment, refineImageRoles } from './sync-community-showcase'
 
 it('extractImageUrls supports html img and markdown image syntax', () => {
   const urls = extractImageUrls(`
@@ -13,6 +13,10 @@ it('extractImageUrls supports html img and markdown image syntax', () => {
     'https://example.com/a.png',
     'https://example.com/b.jpg',
   ])
+})
+
+it('cleanInlineText strips markdown heading markers', () => {
+  assert.equal(cleanInlineText('### 早睡搭子小程序：按时睡教'), '早睡搭子小程序：按时睡教')
 })
 
 it('parseShowcaseComment extracts title, description, links and image roles from rich comments', () => {
@@ -57,6 +61,48 @@ it('parseShowcaseComment ignores maintainer follow-up comments', () => {
   })
 
   assert.equal(entry, null)
+})
+
+it('parseShowcaseComment uses markdown heading as title and keeps hashes out of generated text', () => {
+  const entry = parseShowcaseComment({
+    id: 4293349314,
+    html_url: 'https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-4293349314',
+    created_at: '2026-04-22T03:38:38Z',
+    user: {
+      login: 'wooly99',
+    },
+    body: `### 早睡搭子小程序：按时睡教
+
+一款帮助用户建立稳定作息习惯的小程序，通过提醒、打卡和反馈机制减少熬夜。
+
+链接: https://example.com/sleep-buddy
+
+![cover](https://github.com/user-attachments/assets/cae18a8e-fc3f-415d-9308-3ad9db0e56e1)`,
+  })
+
+  assert.ok(entry)
+  assert.equal(entry?.title, '早睡搭子小程序：按时睡教')
+  assert.equal(entry?.description, '一款帮助用户建立稳定作息习惯的小程序，通过提醒、打卡和反馈机制减少熬夜。')
+})
+
+it('parseShowcaseComment ignores section headings like screenshot when inferring title', () => {
+  const entry = parseShowcaseComment({
+    id: 2451697149,
+    html_url: 'https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-2451697149',
+    created_at: '2024-11-01T11:02:22Z',
+    user: {
+      login: 'F-loat',
+    },
+    body: `《xiaomusic》小程序客户端，开源小程序音乐播放器，可控制小爱音箱播放本地/NAS音乐
+
+### 截图
+
+![cover](https://assets-1251785959.cos.ap-beijing.myqcloud.com/xiaoplayer/screenshot/5.png)
+![qrcode](https://assets-1251785959.cos.ap-beijing.myqcloud.com/xiaoplayer/weappcode.jpg)`,
+  })
+
+  assert.ok(entry)
+  assert.equal(entry?.title, 'xiaomusic')
 })
 
 it('getImageDimensions reads png dimensions from buffer', () => {

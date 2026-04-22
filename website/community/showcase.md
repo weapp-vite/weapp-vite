@@ -31,6 +31,6 @@ keywords:
 
 <CommunityShowcase entry-slug="visualizeit" />
 
-## ### 早睡搭子小程序：按时睡教
+## 早睡搭子小程序：按时睡教
 
 <CommunityShowcase entry-slug="wooly99" />
