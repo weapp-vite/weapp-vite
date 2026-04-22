@@ -229,8 +229,8 @@ weapp-vite build --open
 - `q`：退出当前 `dev`
 - `s`：截图当前页面并保存到本地
 - `r`：手动重新构建当前小程序产物
-- `c`：清理微信开发者工具 `compile` 缓存
-- `C`：清理微信开发者工具全部缓存
+- `c`：重置当前 DevTools automator 会话
+- `C`：重置会话并重开当前微信开发者工具项目
 - `o`：重新打开当前微信开发者工具项目
 - `m`：开关本地 MCP 服务
 - `Ctrl+C`：强制中断当前 `dev`
@@ -244,7 +244,8 @@ weapp-vite build --open
 weapp-vite dev --open
 # 启动后可直接在终端里按：
 # r -> 手动重新构建
-# c -> 清 compile 缓存
+# c -> 重置当前 DevTools 会话
+# C -> 重置会话并重开项目
 # o -> 重新打开当前 DevTools 项目
 ```
 

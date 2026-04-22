@@ -6,8 +6,11 @@ const takeScreenshotMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const parseWeappIdeCliMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
+const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
+const runWithSuspendedSharedInputMock = vi.hoisted(() => vi.fn())
 const runRetryableCommandMock = vi.hoisted(() => vi.fn())
+const withMiniProgramMock = vi.hoisted(() => vi.fn())
 const createSharedInputSessionMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
@@ -45,14 +48,17 @@ async function flushMicrotasks(times = 4) {
 
 vi.mock('weapp-ide-cli', () => ({
   RETRY_CANCEL_KEYS: ['q', 'Esc', 'Ctrl+C'],
-  RETRY_CONFIRM_KEYS: ['Enter'],
+  RETRY_CONFIRM_KEYS: ['y'],
   closeSharedMiniProgram: closeSharedMiniProgramMock,
   createSharedInputSession: createSharedInputSessionMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
+  openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   parse: parseWeappIdeCliMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
+  runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
   takeScreenshot: takeScreenshotMock,
+  withMiniProgram: withMiniProgramMock,
 }))
 
 vi.mock('node:readline', () => ({
@@ -133,9 +139,15 @@ describe('devHotkeys', () => {
     parseWeappIdeCliMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    openWechatIdeProjectByHttpMock.mockReset()
+    openWechatIdeProjectByHttpMock.mockResolvedValue('OK')
     promptWechatIdeLoginRetryMock.mockReset()
     promptWechatIdeLoginRetryMock.mockResolvedValue('cancel')
+    runWithSuspendedSharedInputMock.mockReset()
+    runWithSuspendedSharedInputMock.mockImplementation(async (runner: () => Promise<unknown>) => await runner())
     runRetryableCommandMock.mockReset()
+    withMiniProgramMock.mockReset()
+    withMiniProgramMock.mockRejectedValue(new Error('no automator'))
     runRetryableCommandMock.mockImplementation(async (options) => {
       const result = await options.execute()
       if (!options.isRetryableResult(result)) {
@@ -247,11 +259,11 @@ describe('devHotkeys', () => {
     stdin.emit('data', 'h')
 
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发动作'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DevTools 动作'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('会话动作'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('进程控制'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('登录重试'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 Enter'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 y'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 q / Esc / Ctrl+C'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态：等待操作 / MCP 未启动'))
   })
@@ -387,7 +399,7 @@ describe('devHotkeys', () => {
     session?.close()
   })
 
-  it('cleans devtools compile cache with c hotkey', async () => {
+  it('resets devtools session with c hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
@@ -401,22 +413,24 @@ describe('devHotkeys', () => {
 
     loggerMock.info.mockClear()
     stdin.emit('data', 'c')
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在清理微信开发者工具 compile 缓存'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在重置当前 DevTools 会话'))
     await flushMicrotasks(10)
 
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['cache', '--clean', 'compile'])
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已清理微信开发者工具compile 缓存'))
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在重置当前 DevTools 会话'))
   })
 
-  it('cleans all devtools cache with uppercase C hotkey', async () => {
+  it('resets session and reopens project with uppercase C hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
+    const openIdeMock = vi.fn().mockResolvedValue('已重新打开微信开发者工具项目')
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
       mcpConfig: undefined,
+      openIde: openIdeMock,
       platform: 'weapp',
       projectPath: '/project/dist',
     })
@@ -424,64 +438,13 @@ describe('devHotkeys', () => {
     stdin.emit('data', 'C')
     await flushMicrotasks(10)
 
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['cache', '--clean', 'all'])
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已清理微信开发者工具全部缓存'))
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
+    expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在重置当前 DevTools 会话并重开项目'))
   })
 
-  it('triggers devtools compile with r hotkey', async () => {
-    vi.doMock('node:process', () => ({
-      default: fakeProcess,
-    }))
-    const { startDevHotkeys } = await import('./devHotkeys')
-    startDevHotkeys({
-      cwd: '/project',
-      mcpConfig: undefined,
-      platform: 'weapp',
-      projectPath: '/project/dist',
-    })
-
-    stdin.emit('data', 'r')
-    await flushMicrotasks(10)
-
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['compile', '--project', '/project/dist'])
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在通知微信开发者工具重新编译当前项目'))
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已通知微信开发者工具重新编译当前项目'))
-  })
-
-  it('retries devtools compile from hotkey when ide login prompt returns retry', async () => {
-    vi.doMock('node:process', () => ({
-      default: fakeProcess,
-    }))
-    const loginRequiredError = new Error('需要重新登录 (code 10)')
-    parseWeappIdeCliMock
-      .mockRejectedValueOnce(loginRequiredError)
-      .mockResolvedValueOnce(undefined)
-    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    promptWechatIdeLoginRetryMock.mockResolvedValue('retry')
-
-    const { startDevHotkeys } = await import('./devHotkeys')
-    startDevHotkeys({
-      cwd: '/project',
-      mcpConfig: undefined,
-      platform: 'weapp',
-      projectPath: '/project/dist',
-    })
-
-    stdin.emit('data', 'r')
-    await flushMicrotasks(10)
-
-    expect(parseWeappIdeCliMock).toHaveBeenCalledTimes(2)
-    expect(parseWeappIdeCliMock).toHaveBeenNthCalledWith(1, ['compile', '--project', '/project/dist'])
-    expect(parseWeappIdeCliMock).toHaveBeenNthCalledWith(2, ['compile', '--project', '/project/dist'])
-    expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
-      cancelLevel: 'warn',
-      error: loginRequiredError,
-      logger: loggerMock,
-    })
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在通知微信开发者工具重新编译当前项目'))
-  })
-
-  it('triggers manual rebuild with uppercase R hotkey', async () => {
+  it('triggers manual rebuild with r hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
@@ -495,18 +458,42 @@ describe('devHotkeys', () => {
       rebuild: rebuildMock,
     })
 
-    stdin.emit('data', 'R')
+    stdin.emit('data', 'r')
     await flushMicrotasks(10)
 
     expect(rebuildMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已手动重新构建当前小程序产物'))
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在手动重新构建当前小程序产物'))
   })
 
-  it('reopens devtools project with o hotkey', async () => {
+  it('warns when rebuild hotkey is unavailable', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('data', 'r')
+    await flushMicrotasks(10)
+
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(loggerMock.warn).toHaveBeenCalledWith('[dev action] 当前 dev 会话未提供手动重新构建能力。')
+  })
+
+  it('reopens project with o hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
     const openIdeMock = vi.fn().mockResolvedValue('已重新打开微信开发者工具项目')
+
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
@@ -521,6 +508,7 @@ describe('devHotkeys', () => {
 
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
     expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
     expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已重新打开微信开发者工具项目'))
   })
 

@@ -253,6 +253,13 @@ export default class MiniProgram extends EventEmitter {
     return (await this.send('Tool.getTestAccounts')).accounts
   }
 
+  /**
+   * @description 调用开发者工具 Tool 域协议方法。
+   */
+  async tool(method: string, params: Record<string, any> = {}) {
+    return await this.send(`Tool.${method}`, params)
+  }
+
   async stopAudits(options: IAuditsOptions = {}) {
     const result = await this.send('Tool.stopAudits')
     if (options.path) {

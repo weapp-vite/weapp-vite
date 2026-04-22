@@ -61,7 +61,7 @@ describe('retry interaction helpers', () => {
     expect(logger.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
     expect(logger.warn).toHaveBeenCalledWith('请先打开微信开发者工具完成登录。')
     expect(logger.warn).toHaveBeenCalledWith('微信开发者工具返回登录错误：\n- message: 需要重新登录')
-    expect(logger.info).toHaveBeenCalledWith('按 Enter 重试，按 q / Esc / Ctrl+C 退出（2s 内无输入将自动失败）。')
+    expect(logger.info).toHaveBeenCalledWith('按 y 重试，按 q / Esc / Ctrl+C 退出（2s 内无输入将自动失败）。')
     expect(waitForExclusiveKeypressMock).toHaveBeenCalledWith({
       ignoreInitialMs: RETRY_PROMPT_INITIAL_IGNORE_MS,
       onKeypress: expect.any(Function),

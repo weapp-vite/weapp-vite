@@ -34,13 +34,21 @@ interface ExclusiveKeypressRecord<T> {
   timeout: ReturnType<typeof setTimeout>
 }
 
+interface ExclusiveCarryoverKeypressState {
+  signature: string
+  timestamp: number
+}
+
 const sharedSessions = new Set<SharedSessionRecord>()
 const exclusiveKeypressStack: ExclusiveKeypressRecord<unknown>[] = []
+
+const EXCLUSIVE_KEYPRESS_CARRYOVER_GUARD_MS = 500
 
 let initialized = false
 let rawModeEnabled = false
 let dataListenerAttached = false
 let keypressListenerAttached = false
+let lastExclusiveResolvedKeypress: ExclusiveCarryoverKeypressState | undefined
 
 function hasInteractiveStdin() {
   return Boolean(process.stdin?.isTTY)
@@ -83,13 +91,26 @@ function handleData(chunk: string | Uint8Array) {
 function handleKeypress(str: string, key: { name?: string, ctrl?: boolean } | undefined) {
   const activeExclusive = exclusiveKeypressStack.at(-1)
   if (activeExclusive) {
-    if (Date.now() < activeExclusive.ignoreUntil) {
+    const now = Date.now()
+    const signature = `${key?.ctrl ? 'ctrl+' : ''}${key?.name ?? str}`
+    if (lastExclusiveResolvedKeypress
+      && lastExclusiveResolvedKeypress.signature === signature
+      && now - lastExclusiveResolvedKeypress.timestamp <= EXCLUSIVE_KEYPRESS_CARRYOVER_GUARD_MS) {
+      lastExclusiveResolvedKeypress.timestamp = now
+      return
+    }
+
+    if (now < activeExclusive.ignoreUntil) {
       return
     }
     const nextValue = activeExclusive.onKeypress(str, key)
     if (nextValue !== undefined) {
       clearTimeout(activeExclusive.timeout)
       exclusiveKeypressStack.pop()
+      lastExclusiveResolvedKeypress = {
+        signature,
+        timestamp: now,
+      }
       updateTerminalState()
       activeExclusive.resolve(nextValue)
     }

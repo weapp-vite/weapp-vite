@@ -31,7 +31,7 @@ export interface WechatIdeLoginRetryOptions {
 export type RetryPromptResult = 'retry' | 'cancel' | 'timeout'
 
 export const RETRY_PROMPT_INITIAL_IGNORE_MS = 300
-export const RETRY_CONFIRM_KEYS = ['Enter'] as const
+export const RETRY_CONFIRM_KEYS = ['y'] as const
 export const RETRY_CANCEL_KEYS = ['q', 'Esc', 'Ctrl+C'] as const
 
 const LOGIN_REQUIRED_PATTERNS = [
@@ -148,7 +148,7 @@ export function createWechatIdeLoginRequiredExitError(error: unknown, reason?: s
 }
 
 /**
- * @description 交互等待用户按键重试，按 Enter 重试，按 q 或 Ctrl+C 取消。
+ * @description 交互等待用户按 y 重试，按 q 或 Ctrl+C 取消。
  */
 export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
   const { timeoutMs = 30_000 } = options
@@ -168,7 +168,7 @@ export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
         return 'cancel'
       }
 
-      if (key.name === 'return' || key.name === 'enter') {
+      if (key.name === 'y') {
         return 'retry'
       }
 

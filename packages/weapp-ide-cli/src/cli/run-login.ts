@@ -3,6 +3,7 @@ import process from 'node:process'
 import { i18nText } from '../i18n'
 import logger from '../logger'
 import { execute } from '../utils'
+import { runWithSuspendedSharedInput } from './inputCoordinator'
 import {
   createWechatIdeLoginRequiredExitError,
   isWechatIdeLoginRequiredError,
@@ -71,36 +72,38 @@ function flushExecutionOutput(result: unknown) {
  */
 export async function runWechatCliWithRetry(cliPath: string, argv: string[]) {
   const loginRetryOptions = resolveLoginRetryConfig(argv)
-  const result = await runRetryableCommand<WechatCliExecutionResult, 'retry' | 'cancel' | 'timeout'>({
-    createCancelError: result => createWechatIdeLoginRequiredExitError(unwrapWechatCliExecutionError(result)),
-    execute: async () => {
-      try {
-        return {
-          kind: 'result',
-          value: await execute(cliPath, loginRetryOptions.runtimeArgv, {
-            pipeStdout: false,
-            pipeStderr: false,
-          }),
-        } as const
-      }
-      catch (error) {
-        if (!isWechatIdeLoginRequiredError(error)) {
-          throw error
+  const result = await runWithSuspendedSharedInput(async () => {
+    return await runRetryableCommand<WechatCliExecutionResult, 'retry' | 'cancel' | 'timeout'>({
+      createCancelError: result => createWechatIdeLoginRequiredExitError(unwrapWechatCliExecutionError(result)),
+      execute: async () => {
+        try {
+          return {
+            kind: 'result',
+            value: await execute(cliPath, loginRetryOptions.runtimeArgv, {
+              pipeStdout: false,
+              pipeStderr: false,
+            }),
+          } as const
         }
-        return {
-          error,
-          kind: 'retryable',
-        } as const
-      }
-    },
-    isRetryableResult: result => result.kind === 'retryable' || isWechatIdeLoginRequiredError(result.value),
-    onRetry: () => {
-      logger.info(i18nText('正在重试连接微信开发者工具...', 'Retrying to connect Wechat DevTools...'))
-    },
-    promptRetry: async (result, retryCount) => {
-      return await promptLoginRetry(unwrapWechatCliExecutionError(result), loginRetryOptions, retryCount)
-    },
-    shouldRetry: action => action === 'retry',
+        catch (error) {
+          if (!isWechatIdeLoginRequiredError(error)) {
+            throw error
+          }
+          return {
+            error,
+            kind: 'retryable',
+          } as const
+        }
+      },
+      isRetryableResult: result => result.kind === 'retryable' || isWechatIdeLoginRequiredError(result.value),
+      onRetry: () => {
+        logger.info(i18nText('正在重试连接微信开发者工具...', 'Retrying to connect Wechat DevTools...'))
+      },
+      promptRetry: async (result, retryCount) => {
+        return await promptLoginRetry(unwrapWechatCliExecutionError(result), loginRetryOptions, retryCount)
+      },
+      shouldRetry: action => action === 'retry',
+    })
   })
 
   if (result.kind === 'retryable') {

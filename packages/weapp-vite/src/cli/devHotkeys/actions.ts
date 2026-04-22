@@ -1,5 +1,5 @@
 import type { DevHotkeyDefinition, DevHotkeyGroup } from './types'
-import { runDevRebuildAction, runDevtoolsCacheAction, runDevtoolsCompileAction, runOpenIdeAction } from './devtools'
+import { runDevRebuildAction, runOpenIdeAction, runResetAndReopenDevtoolsAction, runResetDevtoolsSessionAction } from './devtools'
 import { runScreenshotAction } from './screenshot'
 
 export interface DevHotkeyGroupDefinition {
@@ -9,7 +9,7 @@ export interface DevHotkeyGroupDefinition {
 
 export const DEV_HOTKEY_GROUPS: readonly DevHotkeyGroupDefinition[] = [
   { key: 'development', title: '开发动作' },
-  { key: 'devtools', title: 'DevTools 动作' },
+  { key: 'devtools', title: '会话动作' },
   { key: 'process', title: '进程控制' },
   { key: 'help', title: '帮助' },
 ]
@@ -27,19 +27,9 @@ export const DEV_HOTKEY_DEFINITIONS: readonly DevHotkeyDefinition[] = [
     },
   },
   {
-    description: '通知微信开发者工具重新编译当前项目',
-    group: 'development',
-    key: 'r',
-    label: 'DevTools 重新编译',
-    pendingLabel: '正在通知微信开发者工具重新编译当前项目',
-    run: async ({ options }) => {
-      return await runDevtoolsCompileAction(options)
-    },
-  },
-  {
     description: '手动重新构建当前小程序产物',
     group: 'development',
-    key: 'R',
+    key: 'r',
     label: '手动重新构建产物',
     pendingLabel: '正在手动重新构建当前小程序产物',
     run: async ({ options }) => {
@@ -47,23 +37,23 @@ export const DEV_HOTKEY_DEFINITIONS: readonly DevHotkeyDefinition[] = [
     },
   },
   {
-    description: '清理微信开发者工具 compile 缓存',
+    description: '重置当前 DevTools automator 会话',
     group: 'devtools',
     key: 'c',
-    label: '清理 compile 缓存',
-    pendingLabel: '正在清理微信开发者工具 compile 缓存',
+    label: '重置 DevTools 会话',
+    pendingLabel: '正在重置当前 DevTools 会话',
     run: async ({ options }) => {
-      return await runDevtoolsCacheAction(options, 'compile')
+      return await runResetDevtoolsSessionAction(options)
     },
   },
   {
-    description: '清理微信开发者工具全部缓存',
+    description: '重置会话并重开当前微信开发者工具项目',
     group: 'devtools',
     key: 'C',
-    label: '清理全部缓存',
-    pendingLabel: '正在清理微信开发者工具全部缓存',
+    label: '重置并重开项目',
+    pendingLabel: '正在重置当前 DevTools 会话并重开项目',
     run: async ({ options }) => {
-      return await runDevtoolsCacheAction(options, 'all')
+      return await runResetAndReopenDevtoolsAction(options)
     },
   },
   {

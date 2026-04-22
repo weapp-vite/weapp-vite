@@ -6,7 +6,9 @@ const formatAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const promptRetryKeypressMock = vi.hoisted(() => vi.fn())
+const runWithSuspendedSharedInputMock = vi.hoisted(() => vi.fn())
 const runRetryableCommandMock = vi.hoisted(() => vi.fn())
+const withMiniProgramMock = vi.hoisted(() => vi.fn())
 const getConfigMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -36,7 +38,9 @@ vi.mock('weapp-ide-cli', () => ({
   launchAutomator: launchAutomatorMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
   promptRetryKeypress: promptRetryKeypressMock,
+  runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
+  withMiniProgram: withMiniProgramMock,
 }))
 
 vi.mock('node:child_process', () => ({
@@ -64,7 +68,9 @@ describe('openIde', () => {
     isWechatIdeLoginRequiredErrorMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
     promptRetryKeypressMock.mockReset()
+    runWithSuspendedSharedInputMock.mockReset()
     runRetryableCommandMock.mockReset()
+    withMiniProgramMock.mockReset()
     getConfigMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -89,6 +95,8 @@ describe('openIde', () => {
     })
     promptWechatIdeLoginRetryMock.mockResolvedValue('cancel')
     promptRetryKeypressMock.mockResolvedValue('cancel')
+    runWithSuspendedSharedInputMock.mockImplementation(async (runner: () => Promise<unknown>) => await runner())
+    withMiniProgramMock.mockRejectedValue(new Error('no automator'))
     runRetryableCommandMock.mockImplementation(async (options) => {
       const result = await options.execute()
       if (!options.isRetryableResult(result)) {

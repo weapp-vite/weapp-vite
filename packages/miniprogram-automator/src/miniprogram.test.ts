@@ -103,6 +103,15 @@ describe('MiniProgram', () => {
     await expect(miniProgram.checkVersion()).resolves.toBeUndefined()
   })
 
+  it('forwards raw Tool domain commands through tool()', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    await miniProgram.tool('compile', { force: true })
+
+    expect(connection.send).toHaveBeenCalledWith('Tool.compile', { force: true })
+  })
+
   it('switches route through plugin methods when current page is a plugin page', async () => {
     const connection = new FakeConnection()
     connection.send

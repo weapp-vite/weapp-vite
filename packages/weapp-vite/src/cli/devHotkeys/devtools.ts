@@ -1,34 +1,31 @@
 import type { StartDevHotkeysOptions } from './types'
 import { closeSharedMiniProgram } from 'weapp-ide-cli'
 import logger, { colors } from '../../logger'
-import { executeWechatIdeCliCommand } from '../openIde/execute'
-
-type DevtoolsCacheCleanType = 'all' | 'compile'
-
-function formatCacheLabel(cleanType: DevtoolsCacheCleanType) {
-  return cleanType === 'all' ? '全部缓存' : 'compile 缓存'
-}
 
 /**
- * @description 清理微信开发者工具缓存，并在执行前关闭共享 automator 会话。
+ * @description 重置当前 DevTools automator 共享会话。
  */
-export async function runDevtoolsCacheAction(options: StartDevHotkeysOptions, cleanType: DevtoolsCacheCleanType) {
-  const cacheLabel = formatCacheLabel(cleanType)
-  logger.info(`[dev action] 正在清理微信开发者工具${cacheLabel}...`)
+export async function runResetDevtoolsSessionAction(options: StartDevHotkeysOptions) {
+  logger.info('[dev action] 正在重置当前 DevTools 会话...')
   await closeSharedMiniProgram(options.projectPath)
-  await executeWechatIdeCliCommand(['cache', '--clean', cleanType])
-  logger.success(`[dev action] 微信开发者工具${cacheLabel}已清理。`)
-  return `已清理微信开发者工具${cacheLabel}`
+  logger.success('[dev action] 当前 DevTools 会话已重置。')
+  return '已重置当前 DevTools 会话'
 }
 
 /**
- * @description 通知微信开发者工具重新编译当前项目。
+ * @description 重置共享会话并重开当前项目，以恢复 DevTools 状态。
  */
-export async function runDevtoolsCompileAction(options: StartDevHotkeysOptions) {
-  logger.info('[dev action] 正在通知微信开发者工具重新编译当前项目...')
-  await executeWechatIdeCliCommand(['compile', '--project', options.projectPath])
-  logger.success('[dev action] 微信开发者工具已收到重新编译指令。')
-  return '已通知微信开发者工具重新编译当前项目'
+export async function runResetAndReopenDevtoolsAction(options: StartDevHotkeysOptions) {
+  if (!options.openIde) {
+    logger.warn('[dev action] 当前 dev 会话未提供重新打开微信开发者工具的能力。')
+    return '重置并重开微信开发者工具不可用'
+  }
+
+  logger.info('[dev action] 正在重置当前 DevTools 会话并重开项目...')
+  await closeSharedMiniProgram(options.projectPath)
+  const summary = await options.openIde()
+  logger.success('[dev action] 当前 DevTools 会话已重置，并已重新打开项目。')
+  return summary ?? '已重置当前 DevTools 会话并重新打开项目'
 }
 
 /**
