@@ -1,5 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
+import { resetWechatIdeFileUtilsByHttp } from './http'
 import { runWechatCliCommand } from './run-wechat-cli'
 
 export interface LoginWechatIdeOptions {
@@ -42,12 +43,71 @@ export interface UploadWechatIdeOptions {
   version: string
 }
 
+export interface AutoWechatIdeOptions {
+  account?: string
+  appid?: string
+  extAppid?: string
+  port?: string
+  projectPath?: string
+  testTicket?: string
+  ticket?: string
+  trustProject?: boolean
+}
+
+export interface AutoReplayWechatIdeOptions {
+  account?: string
+  appid?: string
+  extAppid?: string
+  port?: string
+  projectPath?: string
+  replayAll?: boolean
+  replayConfigPath?: string
+  testTicket?: string
+  ticket?: string
+  trustProject?: boolean
+}
+
 export interface OpenWechatIdeOtherProjectOptions {
   projectPath?: string
 }
 
 export interface ClearWechatIdeCacheOptions {
   clean: 'all' | 'auth' | 'compile' | 'file' | 'network' | 'session' | 'storage'
+}
+
+export interface ResetWechatIdeFileUtilsOptions {
+  projectPath: string
+}
+
+export interface BuildWechatIdeApkOptions {
+  desc?: string
+  isUploadResourceBundle?: boolean
+  keyAlias: string
+  keyPass: string
+  keyStore: string
+  output: string
+  resourceBundleDesc?: string
+  resourceBundleVersion?: string
+  storePass: string
+  useAab?: boolean
+}
+
+export interface BuildWechatIdeIpaOptions {
+  certificateName?: string
+  isDistribute: boolean
+  isRemoteBuild?: boolean
+  isUploadBeta?: boolean
+  isUploadResourceBundle?: boolean
+  output: string
+  p12Password?: string
+  p12Path?: string
+  profilePath?: string
+  resourceBundleDesc?: string
+  resourceBundleVersion?: string
+  tpnsProfilePath?: string
+  versionCode?: number
+  versionDesc?: string
+  versionName?: string
 }
 
 function appendProjectLocatorArgv(argv: string[], options: {
@@ -154,6 +214,66 @@ export async function autoPreviewWechatIde(options: AutoPreviewWechatIdeOptions 
 }
 
 /**
+ * @description 调用微信开发者工具 auto 命令。
+ */
+export async function autoWechatIde(options: AutoWechatIdeOptions = {}) {
+  const argv = ['auto']
+
+  appendProjectLocatorArgv(argv, options)
+
+  if (options.port) {
+    argv.push('--auto-port', options.port)
+  }
+  if (options.account) {
+    argv.push('--auto-account', options.account)
+  }
+  if (options.testTicket) {
+    argv.push('--test-ticket', options.testTicket)
+  }
+  if (options.ticket) {
+    argv.push('--ticket', options.ticket)
+  }
+  if (options.trustProject) {
+    argv.push('--trust-project')
+  }
+
+  await runWechatCliCommand(argv)
+}
+
+/**
+ * @description 调用微信开发者工具 auto-replay 命令。
+ */
+export async function autoReplayWechatIde(options: AutoReplayWechatIdeOptions = {}) {
+  const argv = ['auto-replay']
+
+  appendProjectLocatorArgv(argv, options)
+
+  if (options.port) {
+    argv.push('--auto-port', options.port)
+  }
+  if (options.account) {
+    argv.push('--auto-account', options.account)
+  }
+  if (options.replayAll) {
+    argv.push('--replay-all')
+  }
+  if (options.replayConfigPath) {
+    argv.push('--replay-config-path', path.resolve(options.replayConfigPath))
+  }
+  if (options.testTicket) {
+    argv.push('--test-ticket', options.testTicket)
+  }
+  if (options.ticket) {
+    argv.push('--ticket', options.ticket)
+  }
+  if (options.trustProject) {
+    argv.push('--trust-project')
+  }
+
+  await runWechatCliCommand(argv)
+}
+
+/**
  * @description 调用微信开发者工具 upload 命令。
  */
 export async function uploadWechatIde(options: UploadWechatIdeOptions) {
@@ -195,4 +315,103 @@ export async function clearWechatIdeCache(options: ClearWechatIdeCacheOptions) {
  */
 export async function openWechatIdeOtherProject(_options: OpenWechatIdeOtherProjectOptions = {}) {
   await runWechatCliCommand(['open-other'])
+}
+
+/**
+ * @description 通过微信开发者工具 HTTP 服务端口重置指定项目的 fileutils 状态。
+ */
+export async function resetWechatIdeFileUtils(options: ResetWechatIdeFileUtilsOptions) {
+  await resetWechatIdeFileUtilsByHttp(path.resolve(options.projectPath))
+}
+
+/**
+ * @description 调用微信开发者工具 build-apk 命令。
+ */
+export async function buildWechatIdeApk(options: BuildWechatIdeApkOptions) {
+  const argv = [
+    'build-apk',
+    '--key-store',
+    path.resolve(options.keyStore),
+    '--key-alias',
+    options.keyAlias,
+    '--key-pass',
+    options.keyPass,
+    '--store-pass',
+    options.storePass,
+    '--output',
+    path.resolve(options.output),
+  ]
+
+  if (options.useAab !== undefined) {
+    argv.push('--use-aab', String(options.useAab))
+  }
+  if (options.desc) {
+    argv.push('--desc', options.desc)
+  }
+  if (options.isUploadResourceBundle) {
+    argv.push('--isUploadResourceBundle')
+  }
+  if (options.resourceBundleVersion) {
+    argv.push('--resourceBundleVersion', options.resourceBundleVersion)
+  }
+  if (options.resourceBundleDesc) {
+    argv.push('--resourceBundleDesc', options.resourceBundleDesc)
+  }
+
+  await runWechatCliCommand(argv)
+}
+
+/**
+ * @description 调用微信开发者工具 build-ipa 命令。
+ */
+export async function buildWechatIdeIpa(options: BuildWechatIdeIpaOptions) {
+  const argv = [
+    'build-ipa',
+    '--output',
+    path.resolve(options.output),
+    '--isDistribute',
+    String(options.isDistribute),
+  ]
+
+  if (options.isRemoteBuild !== undefined) {
+    argv.push('--isRemoteBuild', String(options.isRemoteBuild))
+  }
+  if (options.profilePath) {
+    argv.push('--profilePath', path.resolve(options.profilePath))
+  }
+  if (options.certificateName) {
+    argv.push('--certificateName', options.certificateName)
+  }
+  if (options.p12Path) {
+    argv.push('--p12Path', path.resolve(options.p12Path))
+  }
+  if (options.p12Password) {
+    argv.push('--p12Password', options.p12Password)
+  }
+  if (options.tpnsProfilePath) {
+    argv.push('--tpnsProfilePath', path.resolve(options.tpnsProfilePath))
+  }
+  if (options.isUploadBeta !== undefined) {
+    argv.push('--isUploadBeta', String(options.isUploadBeta))
+  }
+  if (options.isUploadResourceBundle) {
+    argv.push('--isUploadResourceBundle')
+  }
+  if (options.resourceBundleVersion) {
+    argv.push('--resourceBundleVersion', options.resourceBundleVersion)
+  }
+  if (options.resourceBundleDesc) {
+    argv.push('--resourceBundleDesc', options.resourceBundleDesc)
+  }
+  if (options.versionName) {
+    argv.push('--versionName', options.versionName)
+  }
+  if (options.versionCode !== undefined) {
+    argv.push('--versionCode', String(options.versionCode))
+  }
+  if (options.versionDesc) {
+    argv.push('--versionDesc', options.versionDesc)
+  }
+
+  await runWechatCliCommand(argv)
 }

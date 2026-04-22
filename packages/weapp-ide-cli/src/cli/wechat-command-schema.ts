@@ -164,7 +164,9 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
   if (
     command === 'upload'
     || command === 'auto'
+    || command === 'auto-replay'
     || command === 'auto-preview'
+    || command === 'reset-fileutils'
   ) {
     validateProjectLocator(command, argv)
   }
@@ -176,6 +178,52 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
         i18nText(
           'build-npm 命令的 --compile-type 不能为空字符串',
           'build-npm command requires a non-empty --compile-type value',
+        ),
+      )
+    }
+  }
+
+  if (command === 'build-apk') {
+    const output = readOptionValue(argv, '--output')
+    const keyStore = readOptionValue(argv, '--key-store')
+    const keyAlias = readOptionValue(argv, '--key-alias')
+    const keyPass = readOptionValue(argv, '--key-pass')
+    const storePass = readOptionValue(argv, '--store-pass')
+
+    if (
+      !isNonEmptyText(output)
+      || !isNonEmptyText(keyStore)
+      || !isNonEmptyText(keyAlias)
+      || !isNonEmptyText(keyPass)
+      || !isNonEmptyText(storePass)
+    ) {
+      throw new Error(
+        i18nText(
+          'build-apk 命令缺少必填参数：--output、--key-store、--key-alias、--key-pass、--store-pass',
+          'build-apk command requires --output, --key-store, --key-alias, --key-pass, and --store-pass',
+        ),
+      )
+    }
+  }
+
+  if (command === 'build-ipa') {
+    const output = readOptionValue(argv, '--output')
+    const isDistribute = readOptionValue(argv, '--isDistribute')
+
+    if (!isNonEmptyText(output) || !isNonEmptyText(isDistribute)) {
+      throw new Error(
+        i18nText(
+          'build-ipa 命令缺少必填参数：--output 和 --isDistribute',
+          'build-ipa command requires both --output and --isDistribute',
+        ),
+      )
+    }
+
+    if (isDistribute !== 'true' && isDistribute !== 'false') {
+      throw new Error(
+        i18nText(
+          `build-ipa 命令的 --isDistribute 值无效: ${isDistribute}（仅支持 true/false）`,
+          `Invalid build-ipa --isDistribute value: ${isDistribute} (supported: true/false)`,
         ),
       )
     }

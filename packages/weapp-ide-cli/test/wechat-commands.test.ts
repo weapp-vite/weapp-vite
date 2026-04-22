@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const runWechatCliCommandMock = vi.hoisted(() => vi.fn())
+const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../src/cli/run-wechat-cli', () => ({
   runWechatCliCommand: runWechatCliCommandMock,
+}))
+
+vi.mock('../src/cli/http', () => ({
+  resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
 }))
 
 describe('wechat command helpers', () => {
@@ -11,6 +16,8 @@ describe('wechat command helpers', () => {
     vi.resetModules()
     runWechatCliCommandMock.mockReset()
     runWechatCliCommandMock.mockResolvedValue(undefined)
+    resetWechatIdeFileUtilsByHttpMock.mockReset()
+    resetWechatIdeFileUtilsByHttpMock.mockResolvedValue(undefined)
   })
 
   it('builds login argv with normalized output paths', async () => {
@@ -113,6 +120,55 @@ describe('wechat command helpers', () => {
     ])
   })
 
+  it('builds auto argv with project locator and trust-project flag', async () => {
+    const { autoWechatIde } = await import('../src/cli/wechat-commands')
+
+    await autoWechatIde({
+      account: 'tester',
+      port: '9421',
+      projectPath: './dist/dev/mp-weixin',
+      testTicket: 'ticket-a',
+      ticket: 'ticket-b',
+      trustProject: true,
+    })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith([
+      'auto',
+      '--project',
+      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      '--auto-port',
+      '9421',
+      '--auto-account',
+      'tester',
+      '--test-ticket',
+      'ticket-a',
+      '--ticket',
+      'ticket-b',
+      '--trust-project',
+    ])
+  })
+
+  it('builds auto-replay argv with normalized replay config path', async () => {
+    const { autoReplayWechatIde } = await import('../src/cli/wechat-commands')
+
+    await autoReplayWechatIde({
+      appid: 'wx123',
+      replayAll: true,
+      replayConfigPath: './tmp/replay.json',
+      trustProject: true,
+    })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith([
+      'auto-replay',
+      '--appid',
+      'wx123',
+      '--replay-all',
+      '--replay-config-path',
+      expect.stringMatching(/tmp\/replay\.json$/),
+      '--trust-project',
+    ])
+  })
+
   it('builds upload argv with required fields and normalized info output', async () => {
     const { uploadWechatIde } = await import('../src/cli/wechat-commands')
 
@@ -166,5 +222,112 @@ describe('wechat command helpers', () => {
     await openWechatIdeOtherProject()
 
     expect(runWechatCliCommandMock).toHaveBeenCalledWith(['open-other'])
+  })
+
+  it('resets fileutils through http helper with normalized project path', async () => {
+    const { resetWechatIdeFileUtils } = await import('../src/cli/wechat-commands')
+
+    await resetWechatIdeFileUtils({
+      projectPath: './dist/dev/mp-weixin',
+    })
+
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith(
+      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+    )
+  })
+
+  it('builds build-apk argv with normalized file paths', async () => {
+    const { buildWechatIdeApk } = await import('../src/cli/wechat-commands')
+
+    await buildWechatIdeApk({
+      desc: 'release apk',
+      isUploadResourceBundle: true,
+      keyAlias: 'demo',
+      keyPass: 'key-pass',
+      keyStore: './certs/demo.keystore',
+      output: './dist/apk',
+      resourceBundleDesc: 'rb-desc',
+      resourceBundleVersion: '1.2.3',
+      storePass: 'store-pass',
+      useAab: true,
+    })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith([
+      'build-apk',
+      '--key-store',
+      expect.stringMatching(/certs\/demo\.keystore$/),
+      '--key-alias',
+      'demo',
+      '--key-pass',
+      'key-pass',
+      '--store-pass',
+      'store-pass',
+      '--output',
+      expect.stringMatching(/dist\/apk$/),
+      '--use-aab',
+      'true',
+      '--desc',
+      'release apk',
+      '--isUploadResourceBundle',
+      '--resourceBundleVersion',
+      '1.2.3',
+      '--resourceBundleDesc',
+      'rb-desc',
+    ])
+  })
+
+  it('builds build-ipa argv with normalized optional file paths', async () => {
+    const { buildWechatIdeIpa } = await import('../src/cli/wechat-commands')
+
+    await buildWechatIdeIpa({
+      certificateName: 'Apple Demo',
+      isDistribute: true,
+      isRemoteBuild: false,
+      isUploadBeta: true,
+      isUploadResourceBundle: true,
+      output: './dist/ipa',
+      p12Password: 'secret',
+      p12Path: './certs/demo.p12',
+      profilePath: './certs/demo.mobileprovision',
+      resourceBundleDesc: 'rb-desc',
+      resourceBundleVersion: '2.0.0',
+      tpnsProfilePath: './certs/demo.tpns',
+      versionCode: 12,
+      versionDesc: 'ipa desc',
+      versionName: '1.2.0',
+    })
+
+    expect(runWechatCliCommandMock).toHaveBeenCalledWith([
+      'build-ipa',
+      '--output',
+      expect.stringMatching(/dist\/ipa$/),
+      '--isDistribute',
+      'true',
+      '--isRemoteBuild',
+      'false',
+      '--profilePath',
+      expect.stringMatching(/certs\/demo\.mobileprovision$/),
+      '--certificateName',
+      'Apple Demo',
+      '--p12Path',
+      expect.stringMatching(/certs\/demo\.p12$/),
+      '--p12Password',
+      'secret',
+      '--tpnsProfilePath',
+      expect.stringMatching(/certs\/demo\.tpns$/),
+      '--isUploadBeta',
+      'true',
+      '--isUploadResourceBundle',
+      '--resourceBundleVersion',
+      '2.0.0',
+      '--resourceBundleDesc',
+      'rb-desc',
+      '--versionName',
+      '1.2.0',
+      '--versionCode',
+      '12',
+      '--versionDesc',
+      'ipa desc',
+    ])
   })
 })

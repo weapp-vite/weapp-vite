@@ -1,6 +1,10 @@
 import { readOptionValue } from './automator-argv'
 import {
   autoPreviewWechatIde,
+  autoReplayWechatIde,
+  autoWechatIde,
+  buildWechatIdeApk,
+  buildWechatIdeIpa,
   buildWechatIdeNpm,
   clearWechatIdeCache,
   closeWechatIdeProject,
@@ -9,6 +13,7 @@ import {
   openWechatIdeOtherProject,
   previewWechatIde,
   quitWechatIde,
+  resetWechatIdeFileUtils,
   uploadWechatIde,
 } from './wechat-commands'
 
@@ -73,6 +78,36 @@ export async function dispatchWechatCliCommand(argv: string[]) {
     return true
   }
 
+  if (command === 'auto') {
+    await autoWechatIde({
+      account: readOptionValue(argv, '--auto-account'),
+      appid: readOptionValue(argv, '--appid'),
+      extAppid: readOptionValue(argv, '--ext-appid'),
+      port: readOptionValue(argv, '--auto-port'),
+      projectPath: readOptionValue(argv, '--project'),
+      testTicket: readOptionValue(argv, '--test-ticket'),
+      ticket: readOptionValue(argv, '--ticket'),
+      trustProject: hasOption(argv, '--trust-project'),
+    })
+    return true
+  }
+
+  if (command === 'auto-replay') {
+    await autoReplayWechatIde({
+      account: readOptionValue(argv, '--auto-account'),
+      appid: readOptionValue(argv, '--appid'),
+      extAppid: readOptionValue(argv, '--ext-appid'),
+      port: readOptionValue(argv, '--auto-port'),
+      projectPath: readOptionValue(argv, '--project'),
+      replayAll: hasOption(argv, '--replay-all'),
+      replayConfigPath: readOptionValue(argv, '--replay-config-path'),
+      testTicket: readOptionValue(argv, '--test-ticket'),
+      ticket: readOptionValue(argv, '--ticket'),
+      trustProject: hasOption(argv, '--trust-project'),
+    })
+    return true
+  }
+
   if (command === 'upload') {
     const version = readOptionValue(argv, '--version')
     const desc = readOptionValue(argv, '--desc')
@@ -87,6 +122,60 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       infoOutput: readOptionValue(argv, '--info-output'),
       projectPath: readOptionValue(argv, '--project'),
       version,
+    })
+    return true
+  }
+
+  if (command === 'build-apk') {
+    const output = readOptionValue(argv, '--output')
+    const keyStore = readOptionValue(argv, '--key-store')
+    const keyAlias = readOptionValue(argv, '--key-alias')
+    const keyPass = readOptionValue(argv, '--key-pass')
+    const storePass = readOptionValue(argv, '--store-pass')
+    if (!output || !keyStore || !keyAlias || !keyPass || !storePass) {
+      return false
+    }
+
+    await buildWechatIdeApk({
+      desc: readOptionValue(argv, '--desc'),
+      isUploadResourceBundle: hasOption(argv, '--isUploadResourceBundle'),
+      keyAlias,
+      keyPass,
+      keyStore,
+      output,
+      resourceBundleDesc: readOptionValue(argv, '--resourceBundleDesc'),
+      resourceBundleVersion: readOptionValue(argv, '--resourceBundleVersion'),
+      storePass,
+      useAab: readOptionValue(argv, '--use-aab') === 'true',
+    })
+    return true
+  }
+
+  if (command === 'build-ipa') {
+    const output = readOptionValue(argv, '--output')
+    const isDistribute = readOptionValue(argv, '--isDistribute')
+    if (!output || !isDistribute) {
+      return false
+    }
+
+    await buildWechatIdeIpa({
+      certificateName: readOptionValue(argv, '--certificateName'),
+      isDistribute: isDistribute === 'true',
+      isRemoteBuild: readOptionValue(argv, '--isRemoteBuild') === 'true',
+      isUploadBeta: readOptionValue(argv, '--isUploadBeta') === 'true',
+      isUploadResourceBundle: hasOption(argv, '--isUploadResourceBundle'),
+      output,
+      p12Password: readOptionValue(argv, '--p12Password'),
+      p12Path: readOptionValue(argv, '--p12Path'),
+      profilePath: readOptionValue(argv, '--profilePath'),
+      resourceBundleDesc: readOptionValue(argv, '--resourceBundleDesc'),
+      resourceBundleVersion: readOptionValue(argv, '--resourceBundleVersion'),
+      tpnsProfilePath: readOptionValue(argv, '--tpnsProfilePath'),
+      versionCode: readOptionValue(argv, '--versionCode')
+        ? Number(readOptionValue(argv, '--versionCode'))
+        : undefined,
+      versionDesc: readOptionValue(argv, '--versionDesc'),
+      versionName: readOptionValue(argv, '--versionName'),
     })
     return true
   }
@@ -115,6 +204,16 @@ export async function dispatchWechatCliCommand(argv: string[]) {
 
   if (command === 'open-other' && !hasOption(argv, '--project')) {
     await openWechatIdeOtherProject()
+    return true
+  }
+
+  if (command === 'reset-fileutils') {
+    const projectPath = readOptionValue(argv, '--project')
+    if (!projectPath) {
+      return false
+    }
+
+    await resetWechatIdeFileUtils({ projectPath })
     return true
   }
 
