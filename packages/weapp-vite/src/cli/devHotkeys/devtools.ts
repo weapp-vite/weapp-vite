@@ -1,6 +1,7 @@
 import type { StartDevHotkeysOptions } from './types'
-import { closeSharedMiniProgram, parse } from 'weapp-ide-cli'
+import { closeSharedMiniProgram } from 'weapp-ide-cli'
 import logger, { colors } from '../../logger'
+import { executeWechatIdeCliCommand } from '../openIde/execute'
 
 type DevtoolsCacheCleanType = 'all' | 'compile'
 
@@ -15,7 +16,7 @@ export async function runDevtoolsCacheAction(options: StartDevHotkeysOptions, cl
   const cacheLabel = formatCacheLabel(cleanType)
   logger.info(`[dev action] 正在清理微信开发者工具${cacheLabel}...`)
   await closeSharedMiniProgram(options.projectPath)
-  await parse(['cache', '--clean', cleanType])
+  await executeWechatIdeCliCommand(['cache', '--clean', cleanType])
   logger.success(`[dev action] 微信开发者工具${cacheLabel}已清理。`)
   return `已清理微信开发者工具${cacheLabel}`
 }
@@ -25,7 +26,7 @@ export async function runDevtoolsCacheAction(options: StartDevHotkeysOptions, cl
  */
 export async function runDevtoolsCompileAction(options: StartDevHotkeysOptions) {
   logger.info('[dev action] 正在通知微信开发者工具重新编译当前项目...')
-  await parse(['compile', '--project', options.projectPath])
+  await executeWechatIdeCliCommand(['compile', '--project', options.projectPath])
   logger.success('[dev action] 微信开发者工具已收到重新编译指令。')
   return '已通知微信开发者工具重新编译当前项目'
 }

@@ -5,9 +5,6 @@ import {
   bootstrapWechatDevtoolsSettings,
   formatAutomatorLoginError,
   isAutomatorLoginError,
-  isWechatIdeLoginRequiredError,
-  parse,
-  promptWechatIdeLoginRetry,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
@@ -17,6 +14,7 @@ import {
 } from '../../platform'
 import { createInlineConfig } from '../runtime'
 import { closeIde as closeWechatIde } from './close'
+import { executeWechatIdeCliCommand } from './execute'
 import {
   openWechatIdeByAutomator,
   reopenOpenedWechatIde,
@@ -53,33 +51,13 @@ function shouldLogAutomatorFallbackError() {
  * @description 执行 IDE 打开流程，并在登录失效时允许按键重试。
  */
 async function runWechatIdeOpenWithRetry(argv: string[]) {
-  let retrying = true
-
-  while (retrying) {
-    try {
-      await parse(argv)
-      return
-    }
-    catch (error) {
-      if (!isWechatIdeLoginRequiredError(error)) {
-        logger.error(error)
-        return
-      }
-
-      const action = await promptWechatIdeLoginRetry({
-        cancelLevel: 'warn',
-        error,
-        logger,
-      })
-
-      if (action !== 'retry') {
-        retrying = false
-        continue
-      }
-
+  await executeWechatIdeCliCommand(argv, {
+    cancelLevel: 'warn',
+    onNonLoginError: error => logger.error(error),
+    onRetry: () => {
       logger.info(colors.bold(colors.green('正在重试连接微信开发者工具...')))
-    }
-  }
+    },
+  })
 }
 
 /**
@@ -104,7 +82,7 @@ export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
 }
 
 export async function closeIde() {
-  return await closeWechatIde(runWechatIdeOpenWithRetry)
+  return await closeWechatIde()
 }
 
 async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIdeOptions) {

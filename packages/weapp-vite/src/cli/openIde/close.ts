@@ -4,6 +4,7 @@ import { promisify } from 'node:util'
 import path from 'pathe'
 import { getConfig, isWechatIdeLoginRequiredError, parse } from 'weapp-ide-cli'
 import logger from '../../logger'
+import { executeWechatIdeCliCommand } from './execute'
 
 const execFileAsync = promisify(execFile)
 
@@ -43,7 +44,7 @@ async function closeIdeByProcessKill(cliPath: string | null) {
 /**
  * @description 关闭微信开发者工具，并在 CLI 不可用时回退到系统级关闭。
  */
-export async function closeIde(runWechatIdeOpenWithRetry: (argv: string[]) => Promise<void>) {
+export async function closeIde() {
   const config = await getConfig()
   const cliPath = config.cliPath?.trim() ? config.cliPath : null
 
@@ -54,7 +55,11 @@ export async function closeIde(runWechatIdeOpenWithRetry: (argv: string[]) => Pr
   catch (error) {
     if (isWechatIdeLoginRequiredError(error)) {
       try {
-        await runWechatIdeOpenWithRetry(['close'])
+        await executeWechatIdeCliCommand(['close'], {
+          cancelLevel: 'warn',
+          onNonLoginError: retryError => logger.error(retryError),
+          onRetry: () => logger.info('正在重试连接微信开发者工具...'),
+        })
         return true
       }
       catch (retryError) {
