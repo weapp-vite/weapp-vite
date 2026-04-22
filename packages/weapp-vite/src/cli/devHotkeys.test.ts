@@ -5,6 +5,7 @@ const emitKeypressEventsMock = vi.hoisted(() => vi.fn())
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const parseWeappIdeCliMock = vi.hoisted(() => vi.fn())
+const createSharedInputSessionMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
 const closeMcpMock = vi.hoisted(() => vi.fn())
@@ -41,6 +42,7 @@ async function flushMicrotasks(times = 4) {
 
 vi.mock('weapp-ide-cli', () => ({
   closeSharedMiniProgram: closeSharedMiniProgramMock,
+  createSharedInputSession: createSharedInputSessionMock,
   parse: parseWeappIdeCliMock,
   takeScreenshot: takeScreenshotMock,
 }))
@@ -106,6 +108,19 @@ describe('devHotkeys', () => {
     mkdirMock.mockResolvedValue(undefined)
     closeSharedMiniProgramMock.mockReset()
     closeSharedMiniProgramMock.mockResolvedValue(undefined)
+    createSharedInputSessionMock.mockReset()
+    createSharedInputSessionMock.mockImplementation(({ onData, onKeypress }) => {
+      stdin.on('data', onData)
+      stdin.on('keypress', onKeypress)
+      return {
+        close: vi.fn(() => {
+          stdin.off('data', onData)
+          stdin.off('keypress', onKeypress)
+        }),
+        resume: vi.fn(),
+        suspend: vi.fn(),
+      }
+    })
     parseWeappIdeCliMock.mockReset()
     parseWeappIdeCliMock.mockResolvedValue(undefined)
     closeMcpMock.mockReset()
@@ -142,15 +157,11 @@ describe('devHotkeys', () => {
     })
 
     expect(session).toBeDefined()
-    expect(emitKeypressEventsMock).toHaveBeenCalledWith(stdin)
-    expect(stdin.setRawMode).toHaveBeenCalledWith(true)
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
     expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('状态        等待操作'))
 
     session?.close()
-    expect(stdin.setRawMode).toHaveBeenCalledWith(false)
-    expect(stdin.pause).toHaveBeenCalled()
   })
 
   it('can skip startup hint until restore is called', async () => {
@@ -408,39 +419,6 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已通知微信开发者工具重新编译当前项目'))
   })
 
-  it('yields retry hotkeys to nested weapp-ide-cli prompts while compile action is running', async () => {
-    vi.doMock('node:process', () => ({
-      default: fakeProcess,
-    }))
-    let resolveCompile: (() => void) | undefined
-    parseWeappIdeCliMock.mockImplementationOnce(async () => {
-      await new Promise<void>((resolve) => {
-        resolveCompile = resolve
-      })
-    })
-
-    const { startDevHotkeys } = await import('./devHotkeys')
-    startDevHotkeys({
-      cwd: '/project',
-      mcpConfig: undefined,
-      platform: 'weapp',
-      projectPath: '/project/dist',
-    })
-
-    stdin.emit('data', 'r')
-    await flushMicrotasks(10)
-
-    loggerMock.warn.mockClear()
-    stdin.emit('data', 'r')
-    await flushMicrotasks(10)
-
-    expect(parseWeappIdeCliMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.warn).not.toHaveBeenCalledWith(expect.stringContaining('当前正在通知微信开发者工具重新编译当前项目'))
-
-    resolveCompile?.()
-    await flushMicrotasks(10)
-  })
-
   it('triggers manual rebuild with uppercase R hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
@@ -606,8 +584,6 @@ describe('devHotkeys', () => {
 
     stdin.emit('data', '\u0003')
 
-    expect(stdin.setRawMode).toHaveBeenCalledWith(false)
-    expect(stdin.pause).toHaveBeenCalled()
     expect(fakeProcess.kill).toHaveBeenCalledWith(1234, 'SIGINT')
   })
 
@@ -624,20 +600,12 @@ describe('devHotkeys', () => {
     })
 
     loggerMock.info.mockClear()
-    stdin.setRawMode.mockClear()
-    stdin.pause.mockClear()
-    stdin.resume.mockClear()
-
     stdin.emit('data', '\u001A')
 
-    expect(stdin.setRawMode).toHaveBeenCalledWith(false)
-    expect(stdin.pause).toHaveBeenCalledTimes(1)
     expect(fakeProcess.kill).toHaveBeenCalledWith(1234, 'SIGTSTP')
 
     fakeProcess.emit('SIGCONT')
 
-    expect(stdin.setRawMode).toHaveBeenCalledWith(true)
-    expect(stdin.resume).toHaveBeenCalledTimes(2)
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('按 h 显示帮助，按 q 退出'))
   })
 
@@ -655,8 +623,6 @@ describe('devHotkeys', () => {
 
     stdin.emit('data', 'q')
 
-    expect(stdin.setRawMode).toHaveBeenCalledWith(false)
-    expect(stdin.pause).toHaveBeenCalled()
     expect(fakeProcess.kill).toHaveBeenCalledWith(1234, 'SIGINT')
   })
 })

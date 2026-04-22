@@ -1,7 +1,7 @@
 import process from 'node:process'
-import { emitKeypressEvents } from 'node:readline'
 import { i18nText } from '../i18n'
 import { colors } from '../logger'
+import { waitForExclusiveKeypress } from './inputCoordinator'
 
 export interface RetryKeypressOptions {
   timeoutMs?: number
@@ -24,17 +24,6 @@ interface ExecErrorLike {
 }
 
 /**
- * @description 判断是否为微信开发者工具登录失效错误。
- */
-export function isWechatIdeLoginRequiredError(error: unknown) {
-  const text = extractExecutionErrorText(error)
-  if (!text) {
-    return false
-  }
-  return LOGIN_REQUIRED_PATTERNS.some(pattern => pattern.test(text))
-}
-
-/**
  * @description 提取执行错误文本，便于统一匹配与提示。
  */
 export function extractExecutionErrorText(error: unknown) {
@@ -52,6 +41,45 @@ export function extractExecutionErrorText(error: unknown) {
   }
 
   return parts.join('\n')
+}
+
+function extractLoginRequiredMessage(text: string) {
+  if (!text) {
+    return ''
+  }
+  if (/需要重新登录/.test(text)) {
+    return '需要重新登录'
+  }
+
+  const englishMatch = text.match(/need\s+re-?login|re-?login/i)
+  if (englishMatch?.[0]) {
+    return englishMatch[0].toLowerCase()
+  }
+
+  const firstLine = text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .find(line => Boolean(line) && !line.startsWith('at '))
+
+  if (!firstLine) {
+    return ''
+  }
+
+  return firstLine
+    .replace(/^\[error\]\s*/i, '')
+    .replace(/^error\s*:\s*/i, '')
+    .slice(0, 120)
+}
+
+/**
+ * @description 判断是否为微信开发者工具登录失效错误。
+ */
+export function isWechatIdeLoginRequiredError(error: unknown) {
+  const text = extractExecutionErrorText(error)
+  if (!text) {
+    return false
+  }
+  return LOGIN_REQUIRED_PATTERNS.some(pattern => pattern.test(text))
 }
 
 /**
@@ -94,34 +122,6 @@ export function createWechatIdeLoginRequiredExitError(error: unknown, reason?: s
   return loginError
 }
 
-function extractLoginRequiredMessage(text: string) {
-  if (!text) {
-    return ''
-  }
-  if (/需要重新登录/.test(text)) {
-    return '需要重新登录'
-  }
-
-  const englishMatch = text.match(/need\s+re-?login|re-?login/i)
-  if (englishMatch?.[0]) {
-    return englishMatch[0].toLowerCase()
-  }
-
-  const firstLine = text
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .find(line => Boolean(line) && !line.startsWith('at '))
-
-  if (!firstLine) {
-    return ''
-  }
-
-  return firstLine
-    .replace(/^\[error\]\s*/i, '')
-    .replace(/^error\s*:\s*/i, '')
-    .slice(0, 120)
-}
-
 /**
  * @description 交互等待用户按键重试，按 r 重试，按 q 或 Ctrl+C 取消。
  */
@@ -132,61 +132,30 @@ export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
     return 'cancel' as const
   }
 
-  emitKeypressEvents(process.stdin)
-
-  const hasSetRawMode = typeof process.stdin.setRawMode === 'function'
-  if (hasSetRawMode) {
-    process.stdin.setRawMode(true)
-  }
-  process.stdin.resume()
-
-  return new Promise<RetryPromptResult>((resolve) => {
-    let settled = false
-    const normalizedTimeoutMs = Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 30_000
-    const timeout = setTimeout(() => {
-      done('timeout')
-    }, normalizedTimeoutMs)
-
-    const cleanup = () => {
-      clearTimeout(timeout)
-      process.stdin.off('keypress', onKeypress)
-      if (hasSetRawMode) {
-        process.stdin.setRawMode(false)
-      }
-      process.stdin.pause()
-    }
-
-    const done = (value: RetryPromptResult) => {
-      if (settled) {
-        return
-      }
-      settled = true
-      cleanup()
-      resolve(value)
-    }
-
-    const onKeypress = (_str: string, key: { name?: string, ctrl?: boolean } | undefined) => {
+  return await waitForExclusiveKeypress<RetryPromptResult>({
+    onKeypress: (_str, key) => {
       if (!key) {
         return
       }
 
       if (key.ctrl && key.name === 'c') {
-        done('cancel')
-        return
+        return 'cancel'
       }
 
       if (key.name === 'r') {
-        done('retry')
-        return
+        return 'retry'
       }
 
       if (key.name === 'q' || key.name === 'escape') {
-        done('cancel')
+        return 'cancel'
       }
-    }
-
-    process.stdin.on('keypress', onKeypress)
+    },
+    timeoutMs,
   })
+}
+
+function highlightHotkey(key: string) {
+  return colors.bold(colors.green(key))
 }
 
 /**
@@ -199,8 +168,4 @@ export function formatRetryHotkeyPrompt(timeoutMs = 30_000) {
     `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出（${timeoutSeconds}s 内无输入将自动失败）。`,
     `Press ${highlight('r')} to retry, ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} to cancel (auto fail in ${timeoutSeconds}s).`,
   )
-}
-
-function highlightHotkey(key: string) {
-  return colors.bold(colors.green(key))
 }

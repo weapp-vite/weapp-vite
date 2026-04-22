@@ -2,8 +2,7 @@ import type { WeappViteMcpServerHandle } from '../../mcp'
 import type { DevHotkeysSession, DevHotkeyState, HotkeyInputSource, StartDevHotkeysOptions } from './types'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
-import { emitKeypressEvents } from 'node:readline'
-import { closeSharedMiniProgram } from 'weapp-ide-cli'
+import { closeSharedMiniProgram, createSharedInputSession } from 'weapp-ide-cli'
 import logger from '../../logger'
 import { resolveWeappMcpConfig } from '../../mcp'
 import { resolveRunnableHotkeyDefinition } from './actions'
@@ -31,13 +30,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     return
   }
 
-  emitKeypressEvents(process.stdin)
-  const hasSetRawMode = typeof process.stdin.setRawMode === 'function'
-  if (hasSetRawMode) {
-    process.stdin.setRawMode(true)
-  }
-  process.stdin.resume()
-
   let closed = false
   let running = false
   let mcpHandle: WeappViteMcpServerHandle | undefined
@@ -56,64 +48,24 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     mcpRunning: Boolean(mcpHandle?.close),
     projectLabel: resolveProjectLabel(options.cwd),
   })
-  const detachTerminal = () => {
-    if (hasSetRawMode) {
-      process.stdin.setRawMode(false)
-    }
-    process.stdin.pause()
-  }
-  const attachTerminal = () => {
-    if (closed) {
-      return
-    }
-    if (hasSetRawMode) {
-      process.stdin.setRawMode(true)
-    }
-    process.stdin.resume()
-  }
-  const detachInputListeners = () => {
-    if (onData) {
-      process.stdin.off('data', onData)
-    }
-    if (onKeypress) {
-      process.stdin.off('keypress', onKeypress)
-    }
-  }
-  const attachInputListeners = () => {
-    if (closed) {
-      return
-    }
-    if (onData) {
-      process.stdin.on('data', onData)
-    }
-    if (onKeypress) {
-      process.stdin.on('keypress', onKeypress)
-    }
-  }
-  const ensureTerminalActive = () => {
-    if (closed) {
-      return
-    }
-    if (hasSetRawMode) {
-      process.stdin.setRawMode(true)
-    }
-    process.stdin.resume()
-  }
+  let inputSession = createSharedInputSession({
+    onData: (chunk) => {
+      onData?.(chunk)
+    },
+    onKeypress: (str, key) => {
+      onKeypress?.(str, key)
+    },
+  })
   const close = () => {
     if (closed) {
       return
     }
     closed = true
-    if (onData) {
-      process.stdin.off('data', onData)
-    }
-    if (onKeypress) {
-      process.stdin.off('keypress', onKeypress)
-    }
     if (onSigcont) {
       process.off('SIGCONT', onSigcont)
     }
-    detachTerminal()
+    inputSession?.close()
+    inputSession = undefined
     if (mcpHandle?.close) {
       void mcpHandle.close().catch((error) => {
         logger.warn(`[dev action] MCP 服务关闭失败：${error instanceof Error ? error.message : String(error)}`)
@@ -134,26 +86,22 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
 
   const printHelp = () => {
     printPanel(formatDevHotkeyHelpWithState(getState()), true)
-    ensureTerminalActive()
   }
 
   const printHint = () => {
     printPanel(formatDevHotkeyHintWithState(getState()))
-    ensureTerminalActive()
   }
   const restore = () => {
     if (closed) {
       return
     }
-    detachInputListeners()
-    attachTerminal()
-    attachInputListeners()
+    inputSession?.resume()
     printHint()
   }
 
   const suspend = () => {
     lastRenderedPanel = ''
-    detachTerminal()
+    inputSession?.suspend()
     forwardSigtstp()
   }
   const toggleMcp = createToggleMcpAction({
@@ -175,7 +123,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     label: string,
     pendingLabel: string,
     action: () => Promise<string | undefined>,
-    options: { exclusiveInput?: boolean } = {},
   ) => {
     if (running) {
       const current = currentAction ?? '已有命令'
@@ -186,9 +133,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     running = true
     currentAction = pendingLabel
     printHint()
-    if (options.exclusiveInput) {
-      detachInputListeners()
-    }
     void action()
       .then((summary) => {
         if (summary) {
@@ -202,9 +146,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
         running = false
         currentAction = undefined
         if (!closed) {
-          if (options.exclusiveInput) {
-            attachInputListeners()
-          }
           printHint()
         }
       })
@@ -244,9 +185,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
             options,
             toggleMcp,
           })
-        },
-        {
-          exclusiveInput: action.exclusiveInput,
         },
       )
     }
@@ -295,7 +233,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       handleInputOnce(str, 'keypress')
     }
   }
-  attachInputListeners()
   onSigcont = () => {
     restore()
   }
