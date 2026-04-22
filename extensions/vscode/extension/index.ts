@@ -13,6 +13,9 @@ import {
   buildVueUsingComponentDiagnostics,
 } from './editor/content'
 import {
+  WeappWxmlDocumentFormattingProvider,
+} from './editor/format'
+import {
   WeappViteAppJsonCompletionProvider,
   WeappViteAppJsonDocumentLinkProvider,
   WeappViteCodeActionProvider,
@@ -398,6 +401,7 @@ export function activate(context: any) {
   const viteConfigCompletionProvider = new WeappViteConfigCompletionProvider()
   const hoverProvider = new WeappViteHoverProvider()
   const vueDocumentLinkProvider = new WeappViteVueDocumentLinkProvider()
+  const wxmlDocumentFormattingProvider = new WeappWxmlDocumentFormattingProvider()
   const wxmlCompletionProvider = new WeappTemplateCompletionProvider()
   const wxmlHoverProvider = new WeappTemplateHoverProvider()
   const wxmlDocumentHighlightProvider = new WeappTemplateDocumentHighlightProvider()
@@ -487,6 +491,10 @@ export function activate(context: any) {
     vscode.languages.registerDocumentLinkProvider(
       { language: 'vue', scheme: 'file' },
       vueDocumentLinkProvider,
+    ),
+    vscode.languages.registerDocumentFormattingEditProvider(
+      { language: 'wxml', scheme: 'file' },
+      wxmlDocumentFormattingProvider,
     ),
     vscode.languages.registerDocumentLinkProvider(
       [
