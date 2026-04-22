@@ -1,0 +1,8 @@
+<view class="slot-tag-paired-host">
+  <view class="slot-tag-paired-host__header" data-slot-host="paired-header">
+    <slot name="header"></slot>
+  </view>
+  <view class="slot-tag-paired-host__content" data-slot-host="paired-default">
+    <slot></slot>
+  </view>
+</view>

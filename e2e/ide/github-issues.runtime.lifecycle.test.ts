@@ -842,6 +842,62 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     }
   })
 
+  it('experiment: native self-closing and paired slot tags render equivalently in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/slot-tag-form/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/slot-tag-form/index.js')
+    const selfHostWxmlPath = path.join(DIST_ROOT, 'components/slot-tag-self-host/index.wxml')
+    const pairedHostWxmlPath = path.join(DIST_ROOT, 'components/slot-tag-paired-host/index.wxml')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('self header: {{sharedHeaderLabel}}')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('paired header: {{sharedHeaderLabel}}')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('toggleLabels')
+    expect(await fs.readFile(selfHostWxmlPath, 'utf-8')).toContain('<slot name="header" />')
+    expect(await fs.readFile(pairedHostWxmlPath, 'utf-8')).toContain('<slot name="header"></slot>')
+
+    const miniProgram = await launchFreshMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/slot-tag-form/index', 'slot tag form experiment')
+      if (!issuePage) {
+        throw new Error('Failed to launch slot-tag-form page')
+      }
+
+      const initialRuntime = await issuePage.callMethod('_runE2E')
+      expect(initialRuntime?.ok).toBe(true)
+      expect(initialRuntime?.sharedHeaderLabel).toBe('ready')
+      expect(initialRuntime?.sharedBodyLabel).toBe('alpha')
+
+      const initialWxml = await readPageWxml(issuePage)
+      expect(initialWxml).toContain('data-slot-host="self-header"')
+      expect(initialWxml).toContain('self header: ready')
+      expect(initialWxml).toContain('data-slot-host="self-default"')
+      expect(initialWxml).toContain('self body: alpha')
+      expect(initialWxml).toContain('data-slot-host="paired-header"')
+      expect(initialWxml).toContain('paired header: ready')
+      expect(initialWxml).toContain('data-slot-host="paired-default"')
+      expect(initialWxml).toContain('paired body: alpha')
+
+      await issuePage.callMethod('toggleLabels')
+      await issuePage.waitFor(260)
+
+      const updatedRuntime = await issuePage.callMethod('_runE2E')
+      expect(updatedRuntime?.sharedHeaderLabel).toBe('updated')
+      expect(updatedRuntime?.sharedBodyLabel).toBe('beta')
+
+      const updatedWxml = await readPageWxml(issuePage)
+      expect(updatedWxml).toContain('self header: updated')
+      expect(updatedWxml).toContain('self body: beta')
+      expect(updatedWxml).toContain('paired header: updated')
+      expect(updatedWxml).toContain('paired body: beta')
+      expect(updatedWxml).not.toContain('self header: ready')
+      expect(updatedWxml).not.toContain('paired header: ready')
+      expect(updatedWxml).not.toContain('self body: alpha')
+      expect(updatedWxml).not.toContain('paired body: alpha')
+    }
+    finally {
+      await miniProgram.close().catch(() => {})
+    }
+  })
+
   it('issue #373: keeps shared store computed reactive after reLaunch tears down the first page', async (ctx) => {
     const launchPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/launch/index.wxml')
     const resultPageWxmlPath = path.join(DIST_ROOT, 'pages/issue-373/result/index.wxml')

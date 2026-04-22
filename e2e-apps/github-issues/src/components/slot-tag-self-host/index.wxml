@@ -1,0 +1,8 @@
+<view class="slot-tag-self-host">
+  <view class="slot-tag-self-host__header" data-slot-host="self-header">
+    <slot name="header" />
+  </view>
+  <view class="slot-tag-self-host__content" data-slot-host="self-default">
+    <slot />
+  </view>
+</view>
