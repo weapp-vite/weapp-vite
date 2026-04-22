@@ -364,15 +364,15 @@ describe('Vue Template Compiler', () => {
       expect(result.code).not.toContain('<view slot="icon">')
     })
 
-    it('should lower plain template v-slot multi child content through block wrapper when enabled', () => {
+    it('should keep plain template v-slot multi child content wrapped when enabled', () => {
       const result = compileVueTemplateToWxml(
         '<my-comp><template #header><view>A</view><view>B</view></template></my-comp>',
         'test.vue',
         { slotSingleRootNoWrapper: true },
       )
       expect(result.scopedSlotComponents).toBeUndefined()
-      expect(result.code).toContain('<block slot="header"><view>A</view><view>B</view></block>')
-      expect(result.code).not.toContain('<view slot="header"><view>A</view><view>B</view></view>')
+      expect(result.code).toContain('<view slot="header"><view>A</view><view>B</view></view>')
+      expect(result.code).not.toContain('<block slot="header">')
     })
 
     it('should mix scoped and plain template v-slot slots', () => {

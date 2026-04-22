@@ -165,7 +165,8 @@ import SlotHost from './SlotHost.vue'
 
       expect(result.template).toContain('slot="icon"')
       expect(result.template).toContain('src="/cover.png"')
-      expect(result.template).toContain('<block slot="header"><view>A</view><view>B</view></block>')
+      expect(result.template).toContain('<view slot="header"><view>A</view><view>B</view></view>')
+      expect(result.template).not.toContain('<block slot="header">')
       expect(result.template).not.toContain('<view slot="icon">')
     })
 

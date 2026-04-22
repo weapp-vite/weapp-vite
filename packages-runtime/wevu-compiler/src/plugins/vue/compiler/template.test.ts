@@ -637,7 +637,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('<view slot="icon">')
   })
 
-  it('projects plain named slot multiple children through block wrapper when enabled', () => {
+  it('keeps plain named slot multiple children wrapped when enabled', () => {
     const template = `
 <Child>
   <template #header>
@@ -653,8 +653,8 @@ describe('compileVueTemplateToWxml', () => {
       { slotSingleRootNoWrapper: true },
     )
 
-    expect(code).toContain('<block slot="header"><view>A</view><view>B</view></block>')
-    expect(code).not.toContain('<view slot="header"><view>A</view><view>B</view></view>')
+    expect(code).toContain('<view slot="header"><view>A</view><view>B</view></view>')
+    expect(code).not.toContain('<block slot="header">')
   })
 
   it.each([
