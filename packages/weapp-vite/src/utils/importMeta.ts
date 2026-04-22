@@ -150,7 +150,7 @@ export function createStaticImportMetaReplacementMap(options: {
   importMetaDefineRegistry?: ImportMetaDefineRegistry
   extension: string
   relativePath: string
-}) {
+}): Record<string, any> {
   const values = createStaticImportMetaValues(options)
   const defineEntries = options.importMetaDefineRegistry?.defineEntries ?? {}
   const envJson = resolveImportMetaEnvExpression(defineEntries, values.env)

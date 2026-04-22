@@ -222,7 +222,8 @@ describe('createConfigService', () => {
 
     expect(service.importMetaDefineEntries).toEqual(define)
     expect(define['import.meta.env.ISSUE_484_FLAG']).toBe('123456')
-    expect(JSON.parse(define['import.meta.env']).ISSUE_484_FLAG).toBeUndefined()
+    const serializedEnv = define['import.meta.env'].slice('JSON.parse('.length, -1)
+    expect(JSON.parse(JSON.parse(serializedEnv)).ISSUE_484_FLAG).toBeUndefined()
     expect(service.importMetaDefineRegistry.envMemberAccess.ISSUE_484_FLAG).toBe(123456)
     expect(service.importMetaDefineRegistry.envObject.ISSUE_484_FLAG).toBeUndefined()
   })
