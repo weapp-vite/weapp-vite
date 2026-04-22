@@ -12,6 +12,7 @@ import {
   isLifecycleCommand,
   listSiblingLifecycleProcesses,
   parseProcessLine,
+  waitForInstallTail,
 } from './print-rolldown-versions-at-install-tail.mjs'
 
 it('isInstallCommand matches pnpm install commands only', () => {
@@ -115,4 +116,44 @@ it('formatLifecycleWaitMessage limits command list and reports remaining count',
     '- weapp-tw patch && wv prepare',
     '- /bin/sh /tmp/node_modules/.bin/wv prepare',
   ].join('\n'))
+})
+
+it('waitForInstallTail polls until sibling lifecycle scripts finish', async () => {
+  const pending = { pid: 300, ppid: 100, command: 'sh -c templates/weapp-vite-template postinstall' }
+  const snapshots = [
+    [pending],
+    [pending],
+    [],
+  ]
+  const pollDurations = []
+
+  const result = await waitForInstallTail({
+    timeoutMs: 2_000,
+    pollMs: 10,
+    inspectImpl: () => snapshots.shift() ?? [],
+    delayImpl: async (duration) => {
+      pollDurations.push(duration)
+    },
+  })
+
+  assert.deepEqual(result, [])
+  assert.deepEqual(pollDurations, [10, 10])
+})
+
+it('waitForInstallTail returns pending lifecycle scripts after timeout', async () => {
+  const pending = { pid: 300, ppid: 100, command: 'sh -c templates/weapp-vite-template postinstall' }
+  let inspectCount = 0
+
+  const result = await waitForInstallTail({
+    timeoutMs: 0,
+    pollMs: 10,
+    inspectImpl: () => {
+      inspectCount += 1
+      return [pending]
+    },
+    delayImpl: async () => {},
+  })
+
+  assert.equal(inspectCount, 1)
+  assert.deepEqual(result, [pending])
 })

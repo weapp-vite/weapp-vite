@@ -2,6 +2,7 @@
 
 import { execFileSync } from 'node:child_process'
 import process from 'node:process'
+import { setTimeout as delay } from 'node:timers/promises'
 
 import { main as printRolldownVersions } from './print-rolldown-versions.mjs'
 
@@ -10,6 +11,8 @@ const INSTALL_COMMAND_PATTERN = /\b(?:i|install)\b/
 const LIFECYCLE_COMMAND_PATTERN = /(?:^|[\s'"])(?:preinstall|install|postinstall|prepare)(?=$|[\s'"])/
 const PS_COMMAND_PATTERN = /\bps\s+-eo\b/
 const MAX_WAIT_LOG_COMMANDS = 3
+const INSTALL_TAIL_WAIT_TIMEOUT_MS = 15_000
+const INSTALL_TAIL_WAIT_POLL_MS = 250
 
 function parseProcessLine(line) {
   const trimmedLine = line.trimStart()
@@ -196,8 +199,31 @@ function inspectInstallTail() {
   return listSiblingLifecycleProcesses(processes, installAncestor.pid, lifecycleRootPid)
 }
 
+async function waitForInstallTail({
+  timeoutMs = INSTALL_TAIL_WAIT_TIMEOUT_MS,
+  pollMs = INSTALL_TAIL_WAIT_POLL_MS,
+  inspectImpl = inspectInstallTail,
+  delayImpl = delay,
+} = {}) {
+  const startedAt = Date.now()
+  let pendingLifecycleProcesses = inspectImpl()
+
+  if (pendingLifecycleProcesses.length === 0) {
+    return []
+  }
+
+  logWaitForInstallTail(pendingLifecycleProcesses)
+
+  while (pendingLifecycleProcesses.length > 0 && Date.now() - startedAt < timeoutMs) {
+    await delayImpl(pollMs)
+    pendingLifecycleProcesses = inspectImpl()
+  }
+
+  return pendingLifecycleProcesses
+}
+
 async function main() {
-  const pendingLifecycleProcesses = inspectInstallTail()
+  const pendingLifecycleProcesses = await waitForInstallTail()
   if (pendingLifecycleProcesses.length > 0) {
     logWaitTimeoutForInstallTail(pendingLifecycleProcesses)
   }
@@ -222,6 +248,7 @@ export {
   main,
   parseProcessLine,
   summarizeLifecycleCommand,
+  waitForInstallTail,
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
