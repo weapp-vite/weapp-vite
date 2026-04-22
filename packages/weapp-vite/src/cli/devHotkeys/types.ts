@@ -19,6 +19,7 @@ export interface DevHotkeyActionContext {
 
 export interface DevHotkeyDefinition {
   description: string
+  exclusiveInput?: boolean
   group: DevHotkeyGroup
   key: string
   label?: string

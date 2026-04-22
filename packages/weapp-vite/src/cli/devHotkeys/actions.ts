@@ -28,6 +28,7 @@ export const DEV_HOTKEY_DEFINITIONS: readonly DevHotkeyDefinition[] = [
   },
   {
     description: '通知微信开发者工具重新编译当前项目',
+    exclusiveInput: true,
     group: 'development',
     key: 'r',
     label: 'DevTools 重新编译',
@@ -48,6 +49,7 @@ export const DEV_HOTKEY_DEFINITIONS: readonly DevHotkeyDefinition[] = [
   },
   {
     description: '清理微信开发者工具 compile 缓存',
+    exclusiveInput: true,
     group: 'devtools',
     key: 'c',
     label: '清理 compile 缓存',
@@ -58,6 +60,7 @@ export const DEV_HOTKEY_DEFINITIONS: readonly DevHotkeyDefinition[] = [
   },
   {
     description: '清理微信开发者工具全部缓存',
+    exclusiveInput: true,
     group: 'devtools',
     key: 'C',
     label: '清理全部缓存',
@@ -68,6 +71,7 @@ export const DEV_HOTKEY_DEFINITIONS: readonly DevHotkeyDefinition[] = [
   },
   {
     description: '重新打开当前微信开发者工具项目',
+    exclusiveInput: true,
     group: 'devtools',
     key: 'o',
     label: '重新打开微信开发者工具',

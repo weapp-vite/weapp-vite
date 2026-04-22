@@ -71,6 +71,25 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     }
     process.stdin.resume()
   }
+  const detachInputListeners = () => {
+    if (onData) {
+      process.stdin.off('data', onData)
+    }
+    if (onKeypress) {
+      process.stdin.off('keypress', onKeypress)
+    }
+  }
+  const attachInputListeners = () => {
+    if (closed) {
+      return
+    }
+    if (onData) {
+      process.stdin.on('data', onData)
+    }
+    if (onKeypress) {
+      process.stdin.on('keypress', onKeypress)
+    }
+  }
   const ensureTerminalActive = () => {
     if (closed) {
       return
@@ -126,19 +145,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     if (closed) {
       return
     }
-    if (onData) {
-      process.stdin.off('data', onData)
-    }
-    if (onKeypress) {
-      process.stdin.off('keypress', onKeypress)
-    }
+    detachInputListeners()
     attachTerminal()
-    if (onData) {
-      process.stdin.on('data', onData)
-    }
-    if (onKeypress) {
-      process.stdin.on('keypress', onKeypress)
-    }
+    attachInputListeners()
     printHint()
   }
 
@@ -162,7 +171,12 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     return undefined
   }
 
-  const runAction = (label: string, pendingLabel: string, action: () => Promise<string | undefined>) => {
+  const runAction = (
+    label: string,
+    pendingLabel: string,
+    action: () => Promise<string | undefined>,
+    options: { exclusiveInput?: boolean } = {},
+  ) => {
     if (running) {
       const current = currentAction ?? '已有命令'
       logger.warn(`[dev action] 当前正在${current.replace(REG_PENDING_PREFIX, '')}，请稍后再试。`)
@@ -172,6 +186,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
     running = true
     currentAction = pendingLabel
     printHint()
+    if (options.exclusiveInput) {
+      detachInputListeners()
+    }
     void action()
       .then((summary) => {
         if (summary) {
@@ -185,6 +202,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
         running = false
         currentAction = undefined
         if (!closed) {
+          if (options.exclusiveInput) {
+            attachInputListeners()
+          }
           printHint()
         }
       })
@@ -225,6 +245,9 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
             toggleMcp,
           })
         },
+        {
+          exclusiveInput: action.exclusiveInput,
+        },
       )
     }
   }
@@ -259,7 +282,6 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       handleInputOnce(char, 'data')
     }
   }
-  process.stdin.on('data', onData)
   onKeypress = (str, key) => {
     if (key?.ctrl && key.name === 'c') {
       handleInputOnce('\u0003', 'keypress')
@@ -273,7 +295,7 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       handleInputOnce(str, 'keypress')
     }
   }
-  process.stdin.on('keypress', onKeypress)
+  attachInputListeners()
   onSigcont = () => {
     restore()
   }

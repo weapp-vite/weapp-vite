@@ -408,6 +408,39 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已通知微信开发者工具重新编译当前项目'))
   })
 
+  it('yields retry hotkeys to nested weapp-ide-cli prompts while compile action is running', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    let resolveCompile: (() => void) | undefined
+    parseWeappIdeCliMock.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => {
+        resolveCompile = resolve
+      })
+    })
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('data', 'r')
+    await flushMicrotasks(10)
+
+    loggerMock.warn.mockClear()
+    stdin.emit('data', 'r')
+    await flushMicrotasks(10)
+
+    expect(parseWeappIdeCliMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.warn).not.toHaveBeenCalledWith(expect.stringContaining('当前正在通知微信开发者工具重新编译当前项目'))
+
+    resolveCompile?.()
+    await flushMicrotasks(10)
+  })
+
   it('triggers manual rebuild with uppercase R hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
