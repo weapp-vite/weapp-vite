@@ -13,7 +13,7 @@ import { openIde, resolveIdeProjectRoot } from '../../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../../runtime'
 import { createAnalyzeController } from './analyze'
-import { resolveWebHost, waitForServeShutdownSignal } from './shared'
+import { createServeMiniProgramDevActions, resolveWebHost, waitForServeShutdownSignal } from './shared'
 
 export function registerServeCommand(cli: CAC) {
   cli
@@ -79,35 +79,35 @@ export function registerServeCommand(cli: CAC) {
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
-      const ideProjectRoot = resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd)
-      const openCurrentIdeProject = async () => {
-        const openedByForwardConsole = await maybeStartForwardConsole({
-          platform: configService.platform,
-          mpDistRoot: configService.mpDistRoot,
-          cwd: configService.cwd,
-          weappViteConfig: configService.weappViteConfig,
-        })
-        if (openedByForwardConsole) {
-          return '已通过控制台转发复用当前开发者工具会话'
-        }
-
-        await openIde(configService.platform, ideProjectRoot, {
-          reuseOpenedProject: false,
-          trustProject: options.trustProject,
-        })
-        return '已重新打开微信开发者工具项目'
-      }
+      const miniProgramDevActions = createServeMiniProgramDevActions({
+        build: async () => {
+          await buildService.build(options)
+        },
+        fallbackProjectPath: configService.cwd,
+        openIde: async (projectPath) => {
+          await openIde(configService.platform, projectPath, {
+            reuseOpenedProject: false,
+            trustProject: options.trustProject,
+          })
+        },
+        projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
+        tryReuseForwardConsole: async () => {
+          return await maybeStartForwardConsole({
+            platform: configService.platform,
+            mpDistRoot: configService.mpDistRoot,
+            cwd: configService.cwd,
+            weappViteConfig: configService.weappViteConfig,
+          })
+        },
+      })
       const devHotkeysSession = targets.runMini
         ? startDevHotkeys({
             cwd: configService.cwd,
             mcpConfig: configService.weappViteConfig?.mcp,
-            openIde: openCurrentIdeProject,
+            openIde: miniProgramDevActions.openIde,
             platform: configService.platform,
-            projectPath: ideProjectRoot ?? configService.cwd,
-            rebuild: async () => {
-              await buildService.build(options)
-              return '已手动重新构建当前小程序产物'
-            },
+            projectPath: miniProgramDevActions.projectPath ?? configService.cwd,
+            rebuild: miniProgramDevActions.rebuild,
             silentStartupHint: true,
           })
         : undefined
@@ -184,7 +184,7 @@ export function registerServeCommand(cli: CAC) {
               tags: ['ide', 'open'],
             },
           ])
-          await openCurrentIdeProject()
+          await miniProgramDevActions.openIde()
           devHotkeysSession?.restore()
         }
 
