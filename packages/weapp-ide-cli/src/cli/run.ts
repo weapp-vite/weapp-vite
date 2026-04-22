@@ -1,10 +1,7 @@
 import type { ArgvTransform } from '../utils'
 import { cac } from 'cac'
-import { readCustomConfig } from '../config/custom'
 import { getConfiguredLocale } from '../config/resolver'
-import { configureLocaleFromArgv, i18nText, validateLocaleOption } from '../i18n'
-import logger, { colors } from '../logger'
-import { isOperatingSystemSupported, operatingSystemName } from '../runtime/platform'
+import { configureLocaleFromArgv, validateLocaleOption } from '../i18n'
 import { createAlias, createPathCompat, transformArgv } from '../utils'
 import { readOptionValue, removeOption } from './automator-argv'
 import {
@@ -15,13 +12,10 @@ import {
 import { printCompareHelp } from './compare'
 import { handleConfigCommand } from './config-command'
 import { runMinidev } from './minidev'
-import { promptForCliPath } from './prompt'
-import { resolveCliPath } from './resolver'
 import { AUTOMATOR_COMMAND_NAMES, getAutomatorCommandHelp, isAutomatorCommand, runAutomatorCommand } from './run-automator'
-import { runWechatCliWithRetry } from './run-login'
+import { runWechatCliCommand } from './run-wechat-cli'
 import { printScreenshotHelp } from './screenshot'
 import { validateWechatCliCommandArgs } from './wechat-command-schema'
-import { bootstrapWechatDevtoolsSettings } from './wechatDevtoolsSettings'
 
 const MINIDEV_NAMESPACE = new Set<string>(MINIDEV_NAMESPACE_COMMAND_NAMES)
 const ALIPAY_PLATFORM_ALIASES = new Set<string>(MINIDEV_NAMESPACE_COMMAND_NAMES)
@@ -90,21 +84,6 @@ async function handleHelpCommand(args: readonly string[]) {
   createCli().outputHelp()
 }
 
-async function handleMissingCliPath(source: 'custom' | 'default' | 'missing') {
-  const message = source === 'custom'
-    ? i18nText(
-        '在当前自定义路径中未找到微信web开发者命令行工具，请重新指定路径。',
-        'Cannot find Wechat Web DevTools CLI in custom path, please reconfigure it.',
-      )
-    : i18nText(
-        `未检测到微信web开发者命令行工具，请执行 ${colors.bold(colors.green('weapp-ide-cli config'))} 指定路径。`,
-        `Wechat Web DevTools CLI not found, please run ${colors.bold(colors.green('weapp-ide-cli config'))} to configure it.`,
-      )
-
-  logger.warn(message)
-  await promptForCliPath()
-}
-
 /**
  * @description 判断 open 指令是否应转发到 minidev。
  */
@@ -128,52 +107,6 @@ function createMinidevOpenArgv(argv: readonly string[]) {
   const nextArgv = [...argv]
   nextArgv[0] = 'ide'
   return removeOption(nextArgv, '--platform')
-}
-
-function shouldBootstrapWechatDevtools(command: string | undefined) {
-  return command === 'open' || command === 'auto' || command === 'auto-preview'
-}
-
-function resolveBooleanCliOption(argv: readonly string[], optionName: string) {
-  if (argv.includes(optionName)) {
-    return true
-  }
-
-  const rawValue = readOptionValue(argv, optionName)
-  if (rawValue === undefined) {
-    return undefined
-  }
-
-  const normalized = rawValue.trim().toLowerCase()
-  if (normalized === '' || normalized === 'true' || normalized === '1' || normalized === 'on') {
-    return true
-  }
-  if (normalized === 'false' || normalized === '0' || normalized === 'off') {
-    return false
-  }
-  return true
-}
-
-async function maybeBootstrapWechatDevtoolsSettings(argv: readonly string[]) {
-  const command = argv[0]
-  if (!shouldBootstrapWechatDevtools(command)) {
-    return
-  }
-
-  const config = await readCustomConfig()
-  if (config.autoBootstrapDevtools === false) {
-    return
-  }
-
-  const projectPath = readOptionValue(argv, '--project')
-  const trustProjectOption = resolveBooleanCliOption(argv, '--trust-project')
-  const trustProject = trustProjectOption === undefined
-    ? config.autoTrustProject ?? false
-    : trustProjectOption
-  await bootstrapWechatDevtoolsSettings({
-    projectPath,
-    trustProject,
-  })
 }
 
 /**
@@ -214,22 +147,6 @@ export async function parse(argv: string[]) {
     return
   }
 
-  if (!isOperatingSystemSupported(operatingSystemName)) {
-    logger.warn(i18nText(
-      `微信web开发者工具不支持当前平台：${operatingSystemName} !`,
-      `Wechat Web DevTools CLI is not supported on current platform: ${operatingSystemName}!`,
-    ))
-    return
-  }
-
   validateWechatCliCommandArgs(formattedArgv)
-
-  const { cliPath, source } = await resolveCliPath()
-  if (!cliPath) {
-    await handleMissingCliPath(source)
-    return
-  }
-
-  await maybeBootstrapWechatDevtoolsSettings(formattedArgv)
-  await runWechatCliWithRetry(cliPath, formattedArgv)
+  await runWechatCliCommand(formattedArgv)
 }
