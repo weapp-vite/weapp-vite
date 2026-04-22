@@ -23,6 +23,7 @@ export interface GlobalCLIOptions {
   'p'?: string
   'platform'?: string
   'projectConfig'?: string
+  'ticket'?: string
   'trustProject'?: boolean
   'analyze'?: boolean
   'ui'?: boolean

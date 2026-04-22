@@ -1,7 +1,14 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
-import { bootstrapWechatDevtoolsSettings } from 'weapp-ide-cli'
+import {
+  bootstrapWechatDevtoolsSettings,
+  getWechatIdeTestAccounts,
+  getWechatIdeTicket,
+  getWechatIdeToolInfo,
+  refreshWechatIdeTicket,
+  setWechatIdeTicket,
+} from 'weapp-ide-cli'
 import logger from '../../logger'
 import { resolveForwardConsoleOptions, startForwardConsoleBridge } from '../forwardConsole'
 import { openIde, resolveIdeCommandContext } from '../openIde'
@@ -36,11 +43,26 @@ async function waitForTermination(cleanup: () => Promise<void>) {
   })
 }
 
+function formatIdeOutput(data: unknown, options: Pick<GlobalCLIOptions, 'json'>) {
+  if (options.json) {
+    return JSON.stringify(data, null, 2)
+  }
+  return JSON.stringify(data, null, 2)
+}
+
 /**
  * @description 执行 ide 子命令。
  */
 export async function runIdeCommand(action: string | undefined, root: string | undefined, options: GlobalCLIOptions) {
-  if (action !== 'logs' && action !== 'setup') {
+  if (
+    action !== 'logs'
+    && action !== 'setup'
+    && action !== 'info'
+    && action !== 'test-accounts'
+    && action !== 'ticket'
+    && action !== 'ticket:set'
+    && action !== 'ticket:refresh'
+  ) {
     throw new Error(`未知 ide 子命令: ${action ?? '(empty)'}`)
   }
   filterDuplicateOptions(options)
@@ -76,6 +98,50 @@ export async function runIdeCommand(action: string | undefined, root: string | u
     })
   }
 
+  if (action === 'info') {
+    const result = await getWechatIdeToolInfo({
+      projectPath: resolved.projectPath,
+    })
+    logger.info(formatIdeOutput(result, options))
+    return
+  }
+
+  if (action === 'test-accounts') {
+    const result = await getWechatIdeTestAccounts({
+      projectPath: resolved.projectPath,
+    })
+    logger.info(formatIdeOutput(result, options))
+    return
+  }
+
+  if (action === 'ticket') {
+    const result = await getWechatIdeTicket({
+      projectPath: resolved.projectPath,
+    })
+    logger.info(formatIdeOutput(result, options))
+    return
+  }
+
+  if (action === 'ticket:set') {
+    if (!options.ticket) {
+      throw new Error('`weapp-vite ide ticket:set` 需要提供 --ticket。')
+    }
+    await setWechatIdeTicket({
+      projectPath: resolved.projectPath,
+      ticket: options.ticket,
+    })
+    logger.info(`已设置微信开发者工具 ticket：${options.ticket}`)
+    return
+  }
+
+  if (action === 'ticket:refresh') {
+    await refreshWechatIdeTicket({
+      projectPath: resolved.projectPath,
+    })
+    logger.info('已刷新微信开发者工具 ticket。')
+    return
+  }
+
   const forwardConsoleOptions = await resolveForwardConsoleOptions({
     ...resolved.weappViteConfig,
     forwardConsole: resolved.weappViteConfig?.forwardConsole === false
@@ -109,6 +175,7 @@ export function registerIdeCommand(cli: CAC) {
     .option('-o, --open', '[boolean] open ide before attaching log bridge')
     .option('-p, --platform <platform>', '[string] target platform (weapp | h5)')
     .option('--project-config <path>', '[string] project config path (miniprogram only)')
+    .option('--ticket <value>', '[string] ticket used by `ide ticket:set`')
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .action(async (action: string | undefined, root: string | undefined, options: GlobalCLIOptions) => {
       await runIdeCommand(action, root, options)

@@ -5,6 +5,11 @@ const resolveIdeCommandContextMock = vi.hoisted(() => vi.fn())
 const resolveForwardConsoleOptionsMock = vi.hoisted(() => vi.fn())
 const startForwardConsoleBridgeMock = vi.hoisted(() => vi.fn())
 const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
+const getWechatIdeTestAccountsMock = vi.hoisted(() => vi.fn())
+const getWechatIdeTicketMock = vi.hoisted(() => vi.fn())
+const getWechatIdeToolInfoMock = vi.hoisted(() => vi.fn())
+const refreshWechatIdeTicketMock = vi.hoisted(() => vi.fn())
+const setWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -19,6 +24,11 @@ vi.mock('../openIde', () => ({
 
 vi.mock('weapp-ide-cli', () => ({
   bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
+  getWechatIdeTestAccounts: getWechatIdeTestAccountsMock,
+  getWechatIdeTicket: getWechatIdeTicketMock,
+  getWechatIdeToolInfo: getWechatIdeToolInfoMock,
+  refreshWechatIdeTicket: refreshWechatIdeTicketMock,
+  setWechatIdeTicket: setWechatIdeTicketMock,
 }))
 
 vi.mock('../forwardConsole', () => ({
@@ -43,6 +53,11 @@ describe('ide logs command', () => {
     resolveForwardConsoleOptionsMock.mockReset()
     startForwardConsoleBridgeMock.mockReset()
     bootstrapWechatDevtoolsSettingsMock.mockReset()
+    getWechatIdeTestAccountsMock.mockReset()
+    getWechatIdeTicketMock.mockReset()
+    getWechatIdeToolInfoMock.mockReset()
+    refreshWechatIdeTicketMock.mockReset()
+    setWechatIdeTicketMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
@@ -77,6 +92,11 @@ describe('ide logs command', () => {
       updatedSecurityCount: 0,
       trustedProjectCount: 1,
     })
+    getWechatIdeTestAccountsMock.mockResolvedValue(['tester-a'])
+    getWechatIdeTicketMock.mockResolvedValue({ ticket: 'ticket-a' })
+    getWechatIdeToolInfoMock.mockResolvedValue({ SDKVersion: '3.0.0' })
+    refreshWechatIdeTicketMock.mockResolvedValue(undefined)
+    setWechatIdeTicketMock.mockResolvedValue(undefined)
     startForwardConsoleBridgeMock.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
     })
@@ -154,5 +174,69 @@ describe('ide logs command', () => {
       projectPath: 'dist/dev',
       trustProject: false,
     })
+  })
+
+  it('prints tool info through opened-session helper', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('info', undefined, {})
+
+    expect(getWechatIdeToolInfoMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith(JSON.stringify({ SDKVersion: '3.0.0' }, null, 2))
+    expect(startForwardConsoleBridgeMock).not.toHaveBeenCalled()
+  })
+
+  it('prints test accounts through opened-session helper', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('test-accounts', undefined, {})
+
+    expect(getWechatIdeTestAccountsMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith(JSON.stringify(['tester-a'], null, 2))
+  })
+
+  it('prints ticket through opened-session helper', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('ticket', undefined, {})
+
+    expect(getWechatIdeTicketMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith(JSON.stringify({ ticket: 'ticket-a' }, null, 2))
+  })
+
+  it('sets ticket through opened-session helper', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('ticket:set', undefined, { ticket: 'ticket-b' })
+
+    expect(setWechatIdeTicketMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+      ticket: 'ticket-b',
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith('已设置微信开发者工具 ticket：ticket-b')
+  })
+
+  it('rejects ticket:set without --ticket', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await expect(runIdeCommand('ticket:set', undefined, {})).rejects.toThrow('`weapp-vite ide ticket:set` 需要提供 --ticket。')
+    expect(setWechatIdeTicketMock).not.toHaveBeenCalled()
+  })
+
+  it('refreshes ticket through opened-session helper', async () => {
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('ticket:refresh', undefined, {})
+
+    expect(refreshWechatIdeTicketMock).toHaveBeenCalledWith({
+      projectPath: 'dist/dev',
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith('已刷新微信开发者工具 ticket。')
   })
 })
