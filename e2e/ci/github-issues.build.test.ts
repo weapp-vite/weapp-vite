@@ -71,7 +71,8 @@ function escapeRegex(value: string) {
 
 function expectModuleReference(code: string, specifier: string) {
   const escapedSpecifier = escapeRegex(specifier)
-  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2)`))
+  const escapedBuiltSpecifier = `(?:\\.\\.\\/)+miniprogram_npm\\/${escapedSpecifier}(?:\\/index)?`
+  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\1\\)|from\\s+(['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\2)`))
 }
 
 function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) {
@@ -1083,8 +1084,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(await fs.pathExists(fallbackUnderscorePath)).toBe(false)
     expect(await fs.pathExists(fallbackPlusPath)).toBe(false)
-    expect(await fs.pathExists(itemRuntimePath)).toBe(false)
-    expect(await fs.pathExists(userRuntimePath)).toBe(false)
+    expect(await fs.pathExists(itemRuntimePath)).toBe(true)
+    expect(await fs.pathExists(userRuntimePath)).toBe(true)
   })
 
   it('issue #340: keeps cross-subpackage source imports runnable for item/login-required and user/register/form', async () => {
@@ -1143,8 +1144,8 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(userInvalidCommonPath)).toBe(false)
     expect(await fs.pathExists(itemVendorsPath)).toBe(false)
     expect(await fs.pathExists(userVendorsPath)).toBe(false)
-    expect(await fs.pathExists(itemRuntimePath)).toBe(false)
-    expect(await fs.pathExists(userRuntimePath)).toBe(false)
+    expect(await fs.pathExists(itemRuntimePath)).toBe(true)
+    expect(await fs.pathExists(userRuntimePath)).toBe(true)
   })
 
   it('issue #327: routes npm deps by mainPackage/subPackages config and only emits configured main-package npm output', async () => {

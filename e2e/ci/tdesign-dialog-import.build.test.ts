@@ -30,7 +30,8 @@ async function readDistNpmFile(relativePath: string) {
 
 function expectModuleReference(code: string, specifier: string) {
   const escapedSpecifier = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])${escapedSpecifier}\\1\\)|from\\s+(['"\`])${escapedSpecifier}\\2)`))
+  const escapedBuiltSpecifier = `(?:\\.\\.\\/)+miniprogram_npm\\/${escapedSpecifier}(?:\\/index)?`
+  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\1\\)|from\\s+(['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\2)`))
 }
 
 describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
