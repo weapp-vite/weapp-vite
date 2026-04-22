@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const emitKeypressEventsMock = vi.hoisted(() => vi.fn())
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
+const parseWeappIdeCliMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
 const closeMcpMock = vi.hoisted(() => vi.fn())
@@ -40,6 +41,7 @@ async function flushMicrotasks(times = 4) {
 
 vi.mock('weapp-ide-cli', () => ({
   closeSharedMiniProgram: closeSharedMiniProgramMock,
+  parse: parseWeappIdeCliMock,
   takeScreenshot: takeScreenshotMock,
 }))
 
@@ -104,6 +106,8 @@ describe('devHotkeys', () => {
     mkdirMock.mockResolvedValue(undefined)
     closeSharedMiniProgramMock.mockReset()
     closeSharedMiniProgramMock.mockResolvedValue(undefined)
+    parseWeappIdeCliMock.mockReset()
+    parseWeappIdeCliMock.mockResolvedValue(undefined)
     closeMcpMock.mockReset()
     closeMcpMock.mockResolvedValue(undefined)
     startWeappViteMcpServerMock.mockReset()
@@ -205,7 +209,8 @@ describe('devHotkeys', () => {
     loggerMock.info.mockClear()
     stdin.emit('data', 'h')
 
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发动作'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('DevTools 动作'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('进程控制'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('帮助'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('当前状态：等待操作 / MCP 未启动'))
@@ -226,7 +231,7 @@ describe('devHotkeys', () => {
     loggerMock.info.mockClear()
     stdin.emit('keypress', 'h', { name: 'h' })
 
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发动作'))
   })
 
   it('supports fullwidth hotkeys such as ｈ under ime-style input', async () => {
@@ -244,7 +249,7 @@ describe('devHotkeys', () => {
     loggerMock.info.mockClear()
     stdin.emit('data', 'ｈ')
 
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('快捷命令'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发动作'))
   })
 
   it('prints help again when pressing h repeatedly', async () => {
@@ -322,7 +327,7 @@ describe('devHotkeys', () => {
     loggerMock.info.mockClear()
     stdin.emit('data', 'm')
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在启动 MCP 服务'))
-    await flushMicrotasks()
+    await flushMicrotasks(10)
 
     expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
       endpoint: '/mcp',
@@ -332,14 +337,98 @@ describe('devHotkeys', () => {
       unref: false,
       workspaceRoot: '/project',
     })
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('开发快捷键已就绪'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
 
     stdin.emit('data', 'm')
-    await flushMicrotasks()
+    await flushMicrotasks(10)
 
     expect(closeMcpMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('开发快捷键已就绪'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('开发快捷键已就绪'))
     session?.close()
+  })
+
+  it('cleans devtools compile cache with c hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    loggerMock.info.mockClear()
+    stdin.emit('data', 'c')
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在清理微信开发者工具 compile 缓存'))
+    await flushMicrotasks(10)
+
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['cache', '--clean', 'compile'])
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已清理微信开发者工具compile 缓存'))
+  })
+
+  it('cleans all devtools cache with uppercase C hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('data', 'C')
+    await flushMicrotasks(10)
+
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['cache', '--clean', 'all'])
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已清理微信开发者工具全部缓存'))
+  })
+
+  it('triggers manual rebuild with r hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const rebuildMock = vi.fn().mockResolvedValue('已手动重新构建当前小程序产物')
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+      rebuild: rebuildMock,
+    })
+
+    stdin.emit('data', 'r')
+    await flushMicrotasks(10)
+
+    expect(rebuildMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已手动重新构建当前小程序产物'))
+  })
+
+  it('reopens devtools project with o hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const openIdeMock = vi.fn().mockResolvedValue('已重新打开微信开发者工具项目')
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      openIde: openIdeMock,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('data', 'o')
+    await flushMicrotasks(10)
+
+    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
+    expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已重新打开微信开发者工具项目'))
   })
 
   it('shows screenshot summary in hint after screenshot action', async () => {

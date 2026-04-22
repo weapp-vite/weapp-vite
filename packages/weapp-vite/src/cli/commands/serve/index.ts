@@ -83,8 +83,28 @@ export function registerServeCommand(cli: CAC) {
         ? startDevHotkeys({
             cwd: configService.cwd,
             mcpConfig: configService.weappViteConfig?.mcp,
+            openIde: async () => {
+              const openedByForwardConsole = await maybeStartForwardConsole({
+                platform: configService.platform,
+                mpDistRoot: configService.mpDistRoot,
+                cwd: configService.cwd,
+                weappViteConfig: configService.weappViteConfig,
+              })
+              if (!openedByForwardConsole) {
+                await openIde(configService.platform, resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd), {
+                  reuseOpenedProject: false,
+                  trustProject: options.trustProject,
+                })
+                return '已重新打开微信开发者工具项目'
+              }
+              return '已通过控制台转发复用当前开发者工具会话'
+            },
             platform: configService.platform,
             projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd) ?? configService.cwd,
+            rebuild: async () => {
+              await buildService.build(options)
+              return '已手动重新构建当前小程序产物'
+            },
             silentStartupHint: true,
           })
         : undefined

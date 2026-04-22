@@ -25,6 +25,7 @@ const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const devHotkeysCloseMock = vi.hoisted(() => vi.fn())
 const devHotkeysRestoreMock = vi.hoisted(() => vi.fn())
 const watcherCloseAllMock = vi.hoisted(() => vi.fn())
+const buildServiceBuildMock = vi.hoisted(() => vi.fn())
 const fakeProcess = vi.hoisted(() => {
   const listeners = new Map<string, Set<(...args: any[]) => void>>()
   return {
@@ -135,10 +136,12 @@ describe('serve cli command', () => {
     resolveConfigFileMock.mockReturnValue(undefined)
     const emitRuntimeEvents = vi.fn()
     const update = vi.fn().mockResolvedValue(undefined)
+    buildServiceBuildMock.mockReset()
+    buildServiceBuildMock.mockResolvedValue({})
     createCompilerContextMock
       .mockResolvedValueOnce({
         buildService: {
-          build: vi.fn().mockResolvedValue({}),
+          build: buildServiceBuildMock,
         },
         configService: {
           platform: 'weapp',
@@ -225,8 +228,10 @@ describe('serve cli command', () => {
     expect(startDevHotkeysMock).toHaveBeenCalledWith({
       cwd: '/project',
       mcpConfig: undefined,
+      openIde: expect.any(Function),
       platform: 'weapp',
       projectPath: '/project/dist',
+      rebuild: expect.any(Function),
       silentStartupHint: true,
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
@@ -267,5 +272,37 @@ describe('serve cli command', () => {
 
     expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
     expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('injects rebuild and reopen callbacks into dev hotkeys session', async () => {
+    const action = createServeActionHandler()
+
+    const actionPromise = action('/project', {
+      platform: 'weapp',
+      trustProject: true,
+    })
+
+    await Promise.resolve()
+
+    const hotkeyOptions = startDevHotkeysMock.mock.calls[0]?.[0]
+    expect(hotkeyOptions).toBeDefined()
+
+    const rebuildResult = await hotkeyOptions.rebuild()
+    expect(buildServiceBuildMock).toHaveBeenCalledWith({
+      platform: 'weapp',
+      trustProject: true,
+    })
+    expect(rebuildResult).toBe('已手动重新构建当前小程序产物')
+
+    maybeStartForwardConsoleMock.mockResolvedValueOnce(false)
+    const openResult = await hotkeyOptions.openIde()
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', {
+      reuseOpenedProject: false,
+      trustProject: true,
+    })
+    expect(openResult).toBe('已重新打开微信开发者工具项目')
+
+    fakeProcess.emit('SIGINT')
+    await actionPromise
   })
 })

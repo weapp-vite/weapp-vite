@@ -321,6 +321,54 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['pages/dialog-bare/index.json'].source).toContain('"t-dialog": "../../miniprogram_npm/tdesign-miniprogram/dialog/dialog"')
   })
 
+  it('drops node-mode interop for localized main-package npm alias chains', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+      subPackageMeta: null,
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'pages/dialog-index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/dialog-index/index.js',
+        code: 'const dialogModule = require("tdesign-miniprogram/dialog/index");const dialog = dialogModule;const wrapped = __toESM(dialog, 1);wrapped.default.confirm()',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['pages/dialog-index/index.js'].code).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
+    expect(bundle['pages/dialog-index/index.js'].code).toContain('__toESM(dialog)')
+    expect(bundle['pages/dialog-index/index.js'].code).not.toContain('__toESM(dialog, 1)')
+  })
+
   it('rewrites alipay npm requires for explicit include from devDependencies', async () => {
     const state = {
       ctx: {

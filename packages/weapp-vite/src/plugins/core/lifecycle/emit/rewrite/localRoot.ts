@@ -37,6 +37,27 @@ function isNumericOneLiteral(node: any) {
   return (node?.type === 'NumericLiteral' || node?.type === 'Literal') && node.value === 1
 }
 
+function getLocalizedBindingNameFromExpression(node: any, localizedRequireBindings: Set<string>) {
+  if (!node) {
+    return
+  }
+
+  if (node.type === 'Identifier' && localizedRequireBindings.has(node.name)) {
+    return node.name
+  }
+
+  if (
+    node.type === 'CallExpression'
+    && node.callee?.type === 'Identifier'
+    && node.callee.name === 'require'
+  ) {
+    const importee = getRequireImportLiteral(node.arguments?.[0])
+    if (typeof importee === 'string' && isRelativeMiniprogramNpmImport(importee)) {
+      return importee
+    }
+  }
+}
+
 export function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string, basedir?: string) {
   const normalized = normalizeWeappLocalNpmImport(importee, basedir)
   const target = root
@@ -69,20 +90,18 @@ export function rewriteChunkNpmImportsToLocalRoot(
       VariableDeclarator(path: any) {
         const id = path.node?.id
         const init = path.node?.init
-        if (!id || id.type !== 'Identifier' || !init || init.type !== 'CallExpression') {
+        if (!id || id.type !== 'Identifier') {
+          return
+        }
+        if (!init || (init.type !== 'CallExpression' && init.type !== 'Identifier')) {
           return
         }
 
-        const callee = init.callee
-        if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
-          return
-        }
         if (path.scope?.hasBinding?.('require')) {
           return
         }
 
-        const currentValue = getRequireImportLiteral(init.arguments?.[0])
-        if (typeof currentValue === 'string' && isRelativeMiniprogramNpmImport(currentValue)) {
+        if (getLocalizedBindingNameFromExpression(init, localizedRequireBindings)) {
           localizedRequireBindings.add(id.name)
         }
       },
@@ -90,20 +109,17 @@ export function rewriteChunkNpmImportsToLocalRoot(
       AssignmentExpression(path: any) {
         const left = path.node?.left
         const right = path.node?.right
-        if (!left || left.type !== 'Identifier' || !right || right.type !== 'CallExpression') {
+        if (!left || left.type !== 'Identifier') {
           return
         }
-
-        const callee = right.callee
-        if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
+        if (!right || (right.type !== 'CallExpression' && right.type !== 'Identifier')) {
           return
         }
         if (path.scope?.hasBinding?.('require')) {
           return
         }
 
-        const currentValue = getRequireImportLiteral(right.arguments?.[0])
-        if (typeof currentValue === 'string' && isRelativeMiniprogramNpmImport(currentValue)) {
+        if (getLocalizedBindingNameFromExpression(right, localizedRequireBindings)) {
           localizedRequireBindings.add(left.name)
         }
       },
@@ -152,13 +168,7 @@ export function rewriteChunkNpmImportsToLocalRoot(
         }
 
         const firstArg = args[0]
-        const shouldDropNodeInterop = firstArg?.type === 'Identifier'
-          ? localizedRequireBindings.has(firstArg.name)
-          : firstArg?.type === 'CallExpression'
-            && firstArg.callee?.type === 'Identifier'
-            && firstArg.callee.name === 'require'
-            && typeof getRequireImportLiteral(firstArg.arguments?.[0]) === 'string'
-            && isRelativeMiniprogramNpmImport(String(getRequireImportLiteral(firstArg.arguments?.[0])))
+        const shouldDropNodeInterop = Boolean(getLocalizedBindingNameFromExpression(firstArg, localizedRequireBindings))
 
         if (!shouldDropNodeInterop) {
           return

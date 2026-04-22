@@ -6,6 +6,7 @@ import { emitKeypressEvents } from 'node:readline'
 import { closeSharedMiniProgram } from 'weapp-ide-cli'
 import logger from '../../logger'
 import { resolveWeappMcpConfig } from '../../mcp'
+import { resolveRunnableHotkeyDefinition } from './actions'
 import { formatDevHotkeyHelp, formatDevHotkeyHelpWithState, formatDevHotkeyHint, formatDevHotkeyHintWithState, HOTKEY_DEDUP_WINDOW_MS, normalizeInputChar, REG_PENDING_PREFIX, resolveProjectLabel } from './format'
 import { createToggleMcpAction } from './mcp'
 import { resolveDevScreenshotOutputPath, runScreenshotAction } from './screenshot'
@@ -154,6 +155,12 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       mcpHandle = handle
     },
   })
+  const resolvePendingLabel = (input: string) => {
+    if (input === 'm') {
+      return mcpHandle?.close ? '正在关闭 MCP 服务' : '正在启动 MCP 服务'
+    }
+    return undefined
+  }
 
   const runAction = (label: string, pendingLabel: string, action: () => Promise<string | undefined>) => {
     if (running) {
@@ -207,18 +214,18 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       printHelp()
       return
     }
-    if (normalized === 's') {
-      runAction('截图', '正在截图当前页面', async () => {
-        const screenshotPath = await runScreenshotAction(options)
-        return `截图已保存到 ${screenshotPath}`
-      })
-      return
-    }
-    if (normalized === 'm') {
-      const pendingLabel = mcpHandle?.close ? '正在关闭 MCP 服务' : '正在启动 MCP 服务'
-      runAction('MCP 切换', pendingLabel, async () => {
-        return await toggleMcp()
-      })
+    const action = resolveRunnableHotkeyDefinition(normalizedInput) ?? resolveRunnableHotkeyDefinition(normalized)
+    if (action?.run) {
+      runAction(
+        action.label ?? action.description,
+        resolvePendingLabel(normalized) ?? action.pendingLabel ?? `正在执行 ${action.description}`,
+        async () => {
+          return await action.run({
+            options,
+            toggleMcp,
+          })
+        },
+      )
     }
   }
 

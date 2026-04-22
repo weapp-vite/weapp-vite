@@ -2,12 +2,9 @@
 
 import { execFileSync } from 'node:child_process'
 import process from 'node:process'
-import { setTimeout as sleep } from 'node:timers/promises'
 
 import { main as printRolldownVersions } from './print-rolldown-versions.mjs'
 
-const WAIT_INTERVAL_MS = 300
-const WAIT_TIMEOUT_MS = 5 * 1000
 const PNPM_COMMAND_PATTERN = /\bpnpm(?:\.cjs)?\b/
 const INSTALL_COMMAND_PATTERN = /\b(?:i|install)\b/
 const LIFECYCLE_COMMAND_PATTERN = /(?:^|[\s'"])(?:preinstall|install|postinstall|prepare)(?=$|[\s'"])/
@@ -182,48 +179,27 @@ function logWaitTimeoutForInstallTail(pendingLifecycleProcesses) {
   ))
 }
 
-async function waitForInstallTail() {
-  const startedAt = Date.now()
-  let hasLoggedWait = false
-  let lastPendingLifecycleProcesses = []
-
-  while (Date.now() - startedAt < WAIT_TIMEOUT_MS) {
-    const processes = listProcesses()
-    if (processes.length === 0) {
-      return { timedOut: false, pendingLifecycleProcesses: [] }
-    }
-    const processIndex = buildProcessIndex(processes)
-    const ancestors = collectAncestors(processIndex, process.pid)
-    const installAncestor = findInstallAncestor(ancestors)
-
-    if (!installAncestor) {
-      return { timedOut: false, pendingLifecycleProcesses: [] }
-    }
-
-    const lifecycleRootPid = findLifecycleRootPid(ancestors, installAncestor.pid)
-    const pendingLifecycleProcesses = listSiblingLifecycleProcesses(processes, installAncestor.pid, lifecycleRootPid)
-    if (pendingLifecycleProcesses.length === 0) {
-      return { timedOut: false, pendingLifecycleProcesses: [] }
-    }
-    lastPendingLifecycleProcesses = pendingLifecycleProcesses
-    if (!hasLoggedWait) {
-      logWaitForInstallTail(pendingLifecycleProcesses)
-      hasLoggedWait = true
-    }
-
-    await sleep(WAIT_INTERVAL_MS)
+function inspectInstallTail() {
+  const processes = listProcesses()
+  if (processes.length === 0) {
+    return []
   }
 
-  return {
-    timedOut: true,
-    pendingLifecycleProcesses: lastPendingLifecycleProcesses,
+  const processIndex = buildProcessIndex(processes)
+  const ancestors = collectAncestors(processIndex, process.pid)
+  const installAncestor = findInstallAncestor(ancestors)
+  if (!installAncestor) {
+    return []
   }
+
+  const lifecycleRootPid = findLifecycleRootPid(ancestors, installAncestor.pid)
+  return listSiblingLifecycleProcesses(processes, installAncestor.pid, lifecycleRootPid)
 }
 
 async function main() {
-  const waitResult = await waitForInstallTail()
-  if (waitResult.timedOut && waitResult.pendingLifecycleProcesses.length > 0) {
-    logWaitTimeoutForInstallTail(waitResult.pendingLifecycleProcesses)
+  const pendingLifecycleProcesses = inspectInstallTail()
+  if (pendingLifecycleProcesses.length > 0) {
+    logWaitTimeoutForInstallTail(pendingLifecycleProcesses)
   }
   printRolldownVersions({ mode: 'warn' })
 }
@@ -236,6 +212,7 @@ export {
   findLifecycleRootPid,
   formatLifecycleWaitMessage,
   hasOtherLifecycleProcesses,
+  inspectInstallTail,
   isInstallCommand,
   isLifecycleCommand,
   listProcesses,
