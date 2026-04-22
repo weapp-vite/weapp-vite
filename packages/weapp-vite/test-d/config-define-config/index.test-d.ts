@@ -26,6 +26,7 @@ const objectConfig = defineConfig({
           div: 'view',
         },
         htmlTagToWxmlTagClass: false,
+        slotSingleRootNoWrapper: true,
       },
     },
     autoImportComponents: {
@@ -52,6 +53,7 @@ expectAssignable<boolean | {
 } | undefined>(objectConfig.weapp?.injectWebRuntimeGlobals)
 expectAssignable<boolean | Record<string, string> | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxml)
 expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.htmlTagToWxmlTagClass)
+expectAssignable<boolean | undefined>(objectConfig.weapp?.vue?.template?.slotSingleRootNoWrapper)
 
 const promiseConfig = defineConfig(Promise.resolve({
   weapp: {

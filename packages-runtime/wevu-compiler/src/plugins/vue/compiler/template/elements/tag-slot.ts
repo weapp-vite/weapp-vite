@@ -197,6 +197,10 @@ export function renderSlotFallback(
     return rawContent
   }
 
+  if (!context.slotSingleRootNoWrapper) {
+    return `<view ${slotAttr}>${rawContent}</view>`
+  }
+
   const renderedChildren = rawRenderedChildren
     .filter(item => item.code.trim().length > 0)
   if (!renderedChildren.length) {

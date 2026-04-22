@@ -24,6 +24,11 @@ export default defineConfig({
     wevu: {
       autoSetDataPick: true,
     },
+    vue: {
+      template: {
+        slotSingleRootNoWrapper: true,
+      },
+    },
     npm: {
       mainPackage: {
         dependencies: [

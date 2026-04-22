@@ -349,13 +349,14 @@ describe('Vue Template Compiler', () => {
       )
       expect(result.scopedSlotComponents).toBeUndefined()
       expect(result.code).not.toContain('generic:scoped-slots-action')
-      expect(result.code).toContain('<view slot="action">Action</view>')
+      expect(result.code).toContain('<view slot="action"><view>Action</view></view>')
     })
 
-    it('should lower plain template v-slot single html child without wrapper view', () => {
+    it('should lower plain template v-slot single html child without wrapper view when enabled', () => {
       const result = compileVueTemplateToWxml(
         '<my-comp><template #icon><img class="probe" src="/cover.png" /></template></my-comp>',
         'test.vue',
+        { slotSingleRootNoWrapper: true },
       )
       expect(result.scopedSlotComponents).toBeUndefined()
       expect(result.code).toContain('slot="icon"')
@@ -363,10 +364,11 @@ describe('Vue Template Compiler', () => {
       expect(result.code).not.toContain('<view slot="icon">')
     })
 
-    it('should lower plain template v-slot multi child content through block wrapper', () => {
+    it('should lower plain template v-slot multi child content through block wrapper when enabled', () => {
       const result = compileVueTemplateToWxml(
         '<my-comp><template #header><view>A</view><view>B</view></template></my-comp>',
         'test.vue',
+        { slotSingleRootNoWrapper: true },
       )
       expect(result.scopedSlotComponents).toBeUndefined()
       expect(result.code).toContain('<block slot="header"><view>A</view><view>B</view></block>')

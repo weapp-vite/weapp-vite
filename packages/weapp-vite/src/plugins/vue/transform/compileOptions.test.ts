@@ -133,6 +133,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
               },
               htmlTagToWxmlTagClass: false,
               scopedSlotsCompiler: 'augmented',
+              slotSingleRootNoWrapper: true,
               classStyleRuntime: 'auto',
             },
           },
@@ -154,6 +155,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.wxsExtension).toBe('sjs')
     expect(options.template.classStyleWxsSrc).toBe('/virtual/__class_style__.wxs')
     expect(options.template.scopedSlotsRequireProps).toBe(false)
+    expect(options.template.slotSingleRootNoWrapper).toBe(true)
     expect(options.json).toEqual({
       kind: 'page',
       defaults: {
@@ -203,6 +205,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.template.classStyleRuntime).toBe('js')
     expect(options.template.wxsExtension).toBeUndefined()
     expect(options.template.classStyleWxsSrc).toBeUndefined()
+    expect(options.template.slotSingleRootNoWrapper).toBe(false)
     expect(options.json.kind).toBe('component')
     expect(await options.autoImportTags.resolveUsingComponent('Missing')).toBeUndefined()
     expect(await options.sfcSrc.resolveId('./source.vue', '/project/src/components/card.vue')).toBeUndefined()
