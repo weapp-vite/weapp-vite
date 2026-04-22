@@ -1,4 +1,9 @@
-import { isWechatIdeLoginRequiredError, parse, promptWechatIdeLoginRetry } from 'weapp-ide-cli'
+import {
+  isWechatIdeLoginRequiredError,
+  parse,
+  promptWechatIdeLoginRetry,
+  runRetryableCommand,
+} from 'weapp-ide-cli'
 import logger from '../../logger'
 
 export interface ExecuteWechatIdeCliCommandOptions {
@@ -20,31 +25,34 @@ export async function executeWechatIdeCliCommand(
     onRetry,
   } = options
 
-  while (true) {
-    try {
-      await parse(argv)
-      return
-    }
-    catch (error) {
-      if (!isWechatIdeLoginRequiredError(error)) {
-        if (onNonLoginError) {
-          onNonLoginError(error)
-          return
+  await runRetryableCommand<null | unknown, 'retry' | 'cancel' | 'timeout'>({
+    createCancelError: () => new Error('cancelled'),
+    execute: async () => {
+      try {
+        await parse(argv)
+        return null
+      }
+      catch (error) {
+        if (!isWechatIdeLoginRequiredError(error)) {
+          if (onNonLoginError) {
+            onNonLoginError(error)
+            return null
+          }
+          throw error
         }
-        throw error
+        return error
       }
-
-      const action = await promptWechatIdeLoginRetry({
-        cancelLevel,
-        error,
-        logger,
-      })
-
-      if (action !== 'retry') {
-        return
-      }
-
+    },
+    isRetryableResult: result => result !== null,
+    onCancel: () => {},
+    onRetry: () => {
       onRetry?.()
-    }
-  }
+    },
+    promptRetry: async error => await promptWechatIdeLoginRetry({
+      cancelLevel,
+      error,
+      logger,
+    }),
+    shouldRetry: action => action === 'retry',
+  })
 }

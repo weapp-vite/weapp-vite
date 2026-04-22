@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const parseMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
+const runRetryableCommandMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   error: vi.fn(),
   info: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock('weapp-ide-cli', () => ({
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   parse: parseMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
+  runRetryableCommand: runRetryableCommandMock,
 }))
 
 vi.mock('../../logger', () => ({
@@ -24,11 +26,25 @@ describe('executeWechatIdeCliCommand', () => {
     parseMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
+    runRetryableCommandMock.mockReset()
     loggerMock.error.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     parseMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    runRetryableCommandMock.mockImplementation(async (options) => {
+      const result = await options.execute()
+      if (!options.isRetryableResult(result)) {
+        return result
+      }
+      const action = await options.promptRetry(result, 0)
+      if (options.shouldRetry(action)) {
+        options.onRetry?.()
+        return await options.execute()
+      }
+      options.onCancel?.(result)
+      throw options.createCancelError(result)
+    })
   })
 
   it('retries login-required ide commands until parse succeeds', async () => {
