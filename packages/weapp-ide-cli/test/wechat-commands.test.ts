@@ -16,6 +16,14 @@ vi.mock('../src/cli/automator-session', () => ({
   withMiniProgram: withMiniProgramMock,
 }))
 
+function createPathSuffixPattern(suffix: string) {
+  const escaped = suffix
+    .split('/')
+    .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('[\\\\/]')
+  return new RegExp(`${escaped}$`)
+}
+
 describe('wechat command helpers', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -50,11 +58,11 @@ describe('wechat command helpers', () => {
       '--qr-format',
       'image',
       '--qr-output',
-      expect.stringMatching(/tmp\/qr\.png$/),
+      expect.stringMatching(createPathSuffixPattern('tmp/qr.png')),
       '--qr-size',
       '280',
       '--result-output',
-      expect.stringMatching(/tmp\/result\.json$/),
+      expect.stringMatching(createPathSuffixPattern('tmp/result.json')),
     ])
   })
 
@@ -70,7 +78,7 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith([
       'open',
       '--project',
-      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
       '--platform',
       'weapp',
       '--trust-project',
@@ -96,7 +104,7 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith([
       'build-npm',
       '--project',
-      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
       '--compile-type',
       'miniprogram',
     ])
@@ -117,15 +125,15 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith([
       'preview',
       '--project',
-      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
       '--qr-format',
       'image',
       '--qr-output',
-      expect.stringMatching(/tmp\/qr\.png$/),
+      expect.stringMatching(createPathSuffixPattern('tmp/qr.png')),
       '--qr-size',
       '280',
       '--info-output',
-      expect.stringMatching(/tmp\/info\.json$/),
+      expect.stringMatching(createPathSuffixPattern('tmp/info.json')),
       '--compile-condition',
       'test-condition',
     ])
@@ -148,7 +156,7 @@ describe('wechat command helpers', () => {
       '--ext-appid',
       'wx456',
       '--info-output',
-      expect.stringMatching(/tmp\/auto-preview\.json$/),
+      expect.stringMatching(createPathSuffixPattern('tmp/auto-preview.json')),
       '--compile-condition',
       'ci-condition',
     ])
@@ -169,7 +177,7 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith([
       'auto',
       '--project',
-      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
       '--auto-port',
       '9421',
       '--auto-account',
@@ -198,7 +206,7 @@ describe('wechat command helpers', () => {
       'wx123',
       '--replay-all',
       '--replay-config-path',
-      expect.stringMatching(/tmp\/replay\.json$/),
+      expect.stringMatching(createPathSuffixPattern('tmp/replay.json')),
       '--trust-project',
     ])
   })
@@ -216,13 +224,13 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith([
       'upload',
       '--project',
-      expect.stringMatching(/dist\/build\/mp-weixin$/),
+      expect.stringMatching(createPathSuffixPattern('dist/build/mp-weixin')),
       '--version',
       '1.0.0',
       '--desc',
       'release build',
       '--info-output',
-      expect.stringMatching(/tmp\/upload\.json$/),
+      expect.stringMatching(createPathSuffixPattern('tmp/upload.json')),
     ])
   })
 
