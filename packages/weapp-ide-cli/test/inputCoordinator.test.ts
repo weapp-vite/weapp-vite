@@ -99,4 +99,29 @@ describe('inputCoordinator', () => {
     expect(onSharedKeypress).toHaveBeenCalledWith('h', { name: 'h' })
     session?.close()
   })
+
+  it('suspends shared sessions while running exclusive terminal work and restores them afterwards', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { createSharedInputSession, runWithSuspendedSharedInput } = await import('../src/cli/inputCoordinator')
+    const onSharedKeypress = vi.fn()
+
+    const session = createSharedInputSession({
+      onKeypress: onSharedKeypress,
+    })
+
+    const pending = runWithSuspendedSharedInput(async () => {
+      stdin.emit('keypress', 'r', { name: 'r' })
+      return 'done'
+    })
+
+    await expect(pending).resolves.toBe('done')
+    expect(onSharedKeypress).not.toHaveBeenCalled()
+
+    stdin.emit('keypress', 'h', { name: 'h' })
+
+    expect(onSharedKeypress).toHaveBeenCalledWith('h', { name: 'h' })
+    session?.close()
+  })
 })

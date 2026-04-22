@@ -189,3 +189,34 @@ export async function waitForExclusiveKeypress<T>(
     updateTerminalState()
   })
 }
+
+export async function runWithSuspendedSharedInput<T>(runner: () => Promise<T>): Promise<T> {
+  const previousStates = new Map<SharedSessionRecord, boolean>()
+
+  for (const session of sharedSessions) {
+    if (session.closed) {
+      continue
+    }
+    previousStates.set(session, session.suspended)
+    session.suspended = true
+  }
+
+  if (canSetRawMode() && rawModeEnabled) {
+    process.stdin.setRawMode(false)
+    rawModeEnabled = false
+  }
+
+  process.stdin.resume()
+
+  try {
+    return await runner()
+  }
+  finally {
+    for (const [session, suspended] of previousStates) {
+      if (!session.closed) {
+        session.suspended = suspended
+      }
+    }
+    updateTerminalState()
+  }
+}

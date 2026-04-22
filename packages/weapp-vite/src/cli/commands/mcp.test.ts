@@ -8,6 +8,8 @@ const inspectMcpClientConfigMock = vi.hoisted(() => vi.fn())
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
+const runWithSuspendedSharedInputMock = vi.hoisted(() => vi.fn())
+const createInterfaceMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../mcp', () => ({
   startWeappViteMcpServer: startWeappViteMcpServerMock,
@@ -18,6 +20,14 @@ vi.mock('../../mcp', () => ({
     host: '127.0.0.1',
     port: 3088,
   })),
+}))
+
+vi.mock('weapp-ide-cli', () => ({
+  runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
+}))
+
+vi.mock('node:readline/promises', () => ({
+  createInterface: createInterfaceMock,
 }))
 
 vi.mock('../../logger', () => ({
@@ -46,6 +56,8 @@ describe('mcp cli command', () => {
     buildMcpClientConfigPlanMock.mockReset()
     writeMcpClientConfigMock.mockReset()
     inspectMcpClientConfigMock.mockReset()
+    runWithSuspendedSharedInputMock.mockReset()
+    createInterfaceMock.mockReset()
     loggerInfoMock.mockReset()
     loggerSuccessMock.mockReset()
     loggerWarnMock.mockReset()
@@ -66,6 +78,11 @@ describe('mcp cli command', () => {
       issues: [],
       serverName: 'weapp-vite-project',
       transport: 'command',
+    })
+    runWithSuspendedSharedInputMock.mockImplementation(async (runner: () => Promise<unknown>) => await runner())
+    createInterfaceMock.mockReturnValue({
+      close: vi.fn(),
+      question: vi.fn().mockResolvedValue('y'),
     })
   })
 
@@ -149,6 +166,34 @@ describe('mcp cli command', () => {
       transport: 'command',
     }))
     expect(writeMcpClientConfigMock).toHaveBeenCalled()
+  })
+
+  it('prompts before writing client config when --yes is not provided', async () => {
+    const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY')
+    Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: true })
+    Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: true })
+
+    const { registerMcpCommand } = await import('./mcp')
+    const cli = cac('weapp-vite')
+    registerMcpCommand(cli)
+
+    try {
+      cli.parse(['node', 'weapp-vite', 'mcp', 'init', 'claude-code'], { run: false })
+      await cli.runMatchedCommand()
+
+      expect(runWithSuspendedSharedInputMock).toHaveBeenCalledTimes(1)
+      expect(createInterfaceMock).toHaveBeenCalledTimes(1)
+      expect(writeMcpClientConfigMock).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      if (stdinDescriptor) {
+        Object.defineProperty(process.stdin, 'isTTY', stdinDescriptor)
+      }
+      if (stdoutDescriptor) {
+        Object.defineProperty(process.stdout, 'isTTY', stdoutDescriptor)
+      }
+    }
   })
 
   it('runs doctor command and reports success', async () => {

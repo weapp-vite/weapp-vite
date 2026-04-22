@@ -3,6 +3,7 @@ import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import path from 'pathe'
+import { runWithSuspendedSharedInput } from 'weapp-ide-cli'
 import logger from '../../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../../mcp'
 import { loadConfig } from '../loadConfig'
@@ -74,19 +75,21 @@ async function confirmWrite() {
     return false
   }
 
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
+  return await runWithSuspendedSharedInput(async () => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    })
 
-  try {
-    const answer = await rl.question('是否写入配置文件？(Y/n) ')
-    const normalized = answer.trim().toLowerCase()
-    return normalized === '' || normalized === 'y' || normalized === 'yes'
-  }
-  finally {
-    rl.close()
-  }
+    try {
+      const answer = await rl.question('是否写入配置文件？(Y/n) ')
+      const normalized = answer.trim().toLowerCase()
+      return normalized === '' || normalized === 'y' || normalized === 'yes'
+    }
+    finally {
+      rl.close()
+    }
+  })
 }
 
 function resolveClientTransport(transport?: McpCommandOptions['transport']) {
