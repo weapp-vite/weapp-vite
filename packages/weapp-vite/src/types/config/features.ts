@@ -265,6 +265,7 @@ export interface WeappVueTemplateConfig {
   scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
   scopedSlotsRequireProps?: boolean
   slotMultipleInstance?: boolean
+  slotSingleRootNoWrapper?: boolean
   classStyleRuntime?: 'auto' | 'wxs' | 'js'
   objectLiteralBindMode?: 'runtime' | 'inline'
   mustacheInterpolation?: 'compact' | 'spaced'

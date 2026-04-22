@@ -82,6 +82,7 @@ export function compileVueTemplateToWxml(
       scopedSlotsCompiler: options?.scopedSlotsCompiler ?? 'auto',
       scopedSlotsRequireProps,
       slotMultipleInstance: options?.slotMultipleInstance ?? true,
+      slotSingleRootNoWrapper: options?.slotSingleRootNoWrapper ?? false,
       scopedSlotComponents: [],
       componentGenerics: {},
       scopeStack: [],

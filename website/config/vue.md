@@ -36,6 +36,7 @@ keywords:
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
     scopedSlotsRequireProps?: boolean
     slotMultipleInstance?: boolean
+    slotSingleRootNoWrapper?: boolean
     classStyleRuntime?: 'auto' | 'wxs' | 'js'
     objectLiteralBindMode?: 'runtime' | 'inline'
     mustacheInterpolation?: 'compact' | 'spaced'
@@ -57,6 +58,7 @@ export default defineConfig({
         scopedSlotsCompiler: 'auto',
         scopedSlotsRequireProps: true,
         slotMultipleInstance: true,
+        slotSingleRootNoWrapper: false,
         classStyleRuntime: 'js',
         objectLiteralBindMode: 'runtime',
         mustacheInterpolation: 'compact',
@@ -83,6 +85,7 @@ export default defineConfig({
   - `off`：关闭 scoped slot（仅保留原生 slot，不支持 slot props）。
 - `scopedSlotsRequireProps`：仅在 slot 传递作用域参数时才生成 scoped slot 组件。默认值随 `scopedSlotsCompiler` 自动推导。
 - `slotMultipleInstance`：`v-for` 下 scoped slot 多实例模式（默认 `true`）。
+- `slotSingleRootNoWrapper`：当 `<template v-slot>` 的兜底内容只有一个可挂载根节点时，直接把 `slot` 挂到该节点上，而不是额外包一层 `<view>`。默认 `false`，多根节点、`template v-if` 等结构化子节点仍会保留包裹层。
 - `classStyleRuntime`：class/style 绑定运行时。
   - `js`：强制 JS（默认）。
   - `auto`：平台支持 WXS 时优先 WXS，否则回退 JS。

@@ -28,6 +28,93 @@ export interface ScopedSlotDeclaration {
   children: any[]
 }
 
+function isRenderableSlotChild(node: any): boolean {
+  if (node.type === NodeTypes.COMMENT) {
+    return false
+  }
+  if (node.type === NodeTypes.TEXT) {
+    return node.content.trim().length > 0
+  }
+  return true
+}
+
+function canAttachSlotToChild(node: ElementNode): boolean {
+  return !['template', 'slot', 'transition', 'keep-alive'].includes(node.tag)
+}
+
+function findSingleRenderableSlotRoot(children: any[]): ElementNode | undefined {
+  const renderableChildren = children.filter(isRenderableSlotChild)
+  if (renderableChildren.length !== 1) {
+    return undefined
+  }
+  const [child] = renderableChildren
+  if (child.type !== NodeTypes.ELEMENT) {
+    return undefined
+  }
+  return canAttachSlotToChild(child as ElementNode)
+    ? child as ElementNode
+    : undefined
+}
+
+function hasExplicitSlotAttribute(node: ElementNode): boolean {
+  return node.props.some((prop) => {
+    if (prop.type === NodeTypes.ATTRIBUTE) {
+      return prop.name === 'slot'
+    }
+    if (prop.type === NodeTypes.DIRECTIVE) {
+      return prop.name === 'slot'
+        || (prop.name === 'bind'
+          && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+          && prop.arg.content === 'slot')
+    }
+    return false
+  })
+}
+
+function createSlotAttribute(info: Extract<SlotNameInfo, { type: 'static' | 'dynamic' }>, node: ElementNode): any {
+  if (info.type === 'dynamic') {
+    return {
+      type: NodeTypes.DIRECTIVE,
+      name: 'bind',
+      rawName: ':slot',
+      exp: {
+        type: NodeTypes.SIMPLE_EXPRESSION,
+        content: info.exp,
+        isStatic: false,
+        constType: 0,
+        loc: node.loc,
+      },
+      arg: {
+        type: NodeTypes.SIMPLE_EXPRESSION,
+        content: 'slot',
+        isStatic: true,
+        constType: 3,
+        loc: node.loc,
+      },
+      modifiers: [],
+      loc: node.loc,
+    }
+  }
+
+  return {
+    type: NodeTypes.ATTRIBUTE,
+    name: 'slot',
+    value: {
+      type: NodeTypes.TEXT,
+      content: info.value,
+      loc: node.loc,
+    },
+    loc: node.loc,
+  }
+}
+
+function cloneNodeWithSlotAttribute(node: ElementNode, info: Extract<SlotNameInfo, { type: 'static' | 'dynamic' }>): ElementNode {
+  return {
+    ...node,
+    props: [...node.props, createSlotAttribute(info, node)],
+  }
+}
+
 export function renderSlotNameAttribute(
   info: SlotNameInfo,
   context: TransformContext,
@@ -162,13 +249,20 @@ export function renderSlotFallback(
   context: TransformContext,
   transformNode: TransformNode,
 ): string {
+  const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
+  if (!slotAttr) {
+    const content = decl.children.map(child => transformNode(child, context)).join('')
+    return content
+  }
+  if (context.slotSingleRootNoWrapper) {
+    const singleRootChild = findSingleRenderableSlotRoot(decl.children)
+    if (singleRootChild && decl.name.type !== 'default' && !hasExplicitSlotAttribute(singleRootChild)) {
+      return transformNode(cloneNodeWithSlotAttribute(singleRootChild, decl.name), context)
+    }
+  }
   const content = decl.children.map(child => transformNode(child, context)).join('')
   if (!content) {
     return ''
-  }
-  const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
-  if (!slotAttr) {
-    return content
   }
   return `<view ${slotAttr}>${content}</view>`
 }

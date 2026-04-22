@@ -336,6 +336,25 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(helperJs).not.toContain('ISSUE_484_FLAG')
   })
 
+  it('issue #494: removes the extra named slot wrapper for single-root template slot content when enabled', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-494/index.wxml')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-494 template slot single root no wrapper')
+    expect(pageWxml).toContain('<Issue494IconHost>')
+    expect(pageWxml).toContain('<image')
+    expect(pageWxml).toContain('class="img issue494-icon"')
+    expect(pageWxml).toContain('slot="icon"')
+    expect(pageWxml).not.toContain('<view slot="icon">')
+    expect(pageWxml).toContain('<view slot="content">')
+    expect(pageWxml).toContain('class="issue494-title"')
+    expect(pageWxml).toContain('issue-494 template slot single root no wrapper')
+    expect(pageWxml).toContain('class="issue494-desc"')
+    expect(pageWxml).toContain('multi root fallback keeps wrapper')
+  })
+
   it('issue #459: keeps directly imported web-apis polyfills interoperable in github-issues app', async () => {
     await runBuild()
 

@@ -70,6 +70,7 @@ export interface TransformContext {
   scopedSlotsCompiler: ScopedSlotsCompilerMode
   scopedSlotsRequireProps: boolean
   slotMultipleInstance: boolean
+  slotSingleRootNoWrapper: boolean
   scopedSlotComponents: ScopedSlotComponentAsset[]
   componentGenerics: Record<string, true>
   scopeStack: Array<Set<string>>
@@ -119,6 +120,7 @@ export interface TemplateCompileOptions {
   scopedSlotsCompiler?: ScopedSlotsCompilerMode
   scopedSlotsRequireProps?: boolean
   slotMultipleInstance?: boolean
+  slotSingleRootNoWrapper?: boolean
   classStyleRuntime?: ClassStyleRuntime | 'auto'
   objectLiteralBindMode?: ObjectLiteralBindMode
   mustacheInterpolation?: MustacheInterpolationMode

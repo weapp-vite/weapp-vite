@@ -604,6 +604,78 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain('__wv-slot-props=')
   })
 
+  it('keeps the named slot wrapper by default for template v-slot fallback content', () => {
+    const template = `
+<Child>
+  <template #icon>
+    <img class="issue494-icon" src="/assets/issue-494.png" />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<view slot="icon"><image class="img issue494-icon" src="/assets/issue-494.png" /></view>')
+  })
+
+  it('unwraps the named slot wrapper when the fallback content has a single root element and the option is enabled', () => {
+    const template = `
+<Child>
+  <template #icon>
+    <img class="issue494-icon" src="/assets/issue-494.png" />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { slotSingleRootNoWrapper: true },
+    )
+
+    expect(code).toContain('<image class="img issue494-icon" src="/assets/issue-494.png" slot="icon" />')
+    expect(code).not.toContain('<view slot="icon">')
+  })
+
+  it('preserves the named slot wrapper for multi-root fallback content when the option is enabled', () => {
+    const template = `
+<Child>
+  <template #content>
+    <view>one</view>
+    <view>two</view>
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { slotSingleRootNoWrapper: true },
+    )
+
+    expect(code).toContain('<view slot="content"><view>one</view><view>two</view></view>')
+  })
+
+  it('preserves the named slot wrapper for structural template children when the option is enabled', () => {
+    const template = `
+<Child>
+  <template #callout>
+    <template v-if="ok">
+      <view>callout</view>
+    </template>
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { slotSingleRootNoWrapper: true },
+    )
+
+    expect(code).toContain('<view slot="callout"><block wx:if="{{ok}}"><view>callout</view></block></view>')
+  })
+
   it.each([
     ['weapp', 'bindtap'],
     ['alipay', 'onTap'],
