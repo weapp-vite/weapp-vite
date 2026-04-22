@@ -2,11 +2,18 @@ import {
   REQUEST_GLOBAL_ACTUALS_KEY,
   REQUEST_GLOBAL_EXPOSE_HELPER,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
+  WEAPP_VITE_IMPORT_META_ENV_KEY,
 } from '@weapp-core/constants'
 import { parseSync } from 'oxc-parser'
 import { describe, expect, it, vi } from 'vitest'
 import { createImportMetaDefineRegistry } from '../../../utils/importMeta'
 import { createTransformHook } from './transform'
+
+function createCachedEnvLinePattern(prefix: string) {
+  return new RegExp(
+    `${prefix}.*globalThis\\["${WEAPP_VITE_IMPORT_META_ENV_KEY}"\\].*JSON\\.parse\\(`,
+  )
+}
 
 function createConfigServiceMock(options?: {
   absoluteSrcRoot?: string
@@ -58,8 +65,8 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).toContain('"/pages/import-meta/index.js"')
     expect(code).toContain('"/pages/import-meta"')
     expect(code).toContain('"on"')
-    expect(code).toContain('filename: "/pages/import-meta/index.js"')
-    expect(code).toContain('url: "/pages/import-meta/index.js"')
+    expect(code).toContain('"filename":"/pages/import-meta/index.js"')
+    expect(code).toContain('"url":"/pages/import-meta/index.js"')
     expect(code).not.toContain('import.meta')
   })
 
@@ -89,6 +96,36 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(code).toContain('const metaUrl = "/pages/import-meta/index.js"')
     expect(code).toContain('const featureFlag = "on"')
     expect(code).not.toContain('import.meta.url')
+  })
+
+  it('keeps bare import.meta.env replacements on a single expression line in vue sfc script blocks', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: createConfigServiceMock({
+          defineImportMetaEnv: {
+            'import.meta.env': '{"MODE":"production","FEATURE_FLAG":"on"}',
+            'import.meta.env.FEATURE_FLAG': '"on"',
+          },
+        }),
+      },
+    } as any)
+
+    const result = await transform(
+      [
+        '<script setup lang="ts">',
+        'const env = import.meta.env',
+        'const meta = import.meta',
+        '</script>',
+        '<template><view /></template>',
+      ].join('\n'),
+      '/project/src/pages/import-meta/index.vue',
+    )
+    const code = result && typeof result === 'object' && 'code' in result ? result.code : ''
+
+    expect(code).toMatch(createCachedEnvLinePattern('const env = '))
+    expect(code).toMatch(createCachedEnvLinePattern('"env":\\(?'))
+    expect(code).not.toContain('const env = {\n')
+    expect(code).not.toContain('env: {\n')
   })
 
   it('injects request globals for declared page entries as transform fallback', async () => {

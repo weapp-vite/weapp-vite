@@ -22,6 +22,8 @@ export const REQUEST_GLOBAL_CHUNK_HOST_REF = '__rc'
 export const REQUEST_GLOBAL_BUNDLE_HOST_REF = '__rb'
 export const REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME = '__wvRGI__'
 
+export const WEAPP_VITE_IMPORT_META_ENV_KEY = '__weappViteImportMetaEnv'
+
 export const WEVU_PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
 export const WEVU_PAGE_LAYOUT_NONE = '__wv_no_layout'
 export const WEVU_PAGE_LAYOUT_NAME_KEY = '__wv_page_layout_name'

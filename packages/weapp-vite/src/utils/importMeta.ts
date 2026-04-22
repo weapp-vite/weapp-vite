@@ -30,6 +30,29 @@ export function parseImportMetaDefineValue(value: any) {
   }
 }
 
+function extractImportMetaEnvJson(value: string) {
+  const normalized = value.trim()
+  const matched = normalized.match(/^JSON\.parse\((.+)\)$/s)
+  if (!matched) {
+    return normalized
+  }
+
+  const parsed = parseImportMetaDefineValue(matched[1]!)
+  return typeof parsed === 'string' ? parsed : normalized
+}
+
+function parseImportMetaEnvObject(value: any) {
+  const normalizedValue = typeof value === 'string'
+    ? extractImportMetaEnvJson(value)
+    : value
+  const parsed = parseImportMetaDefineValue(normalizedValue)
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return undefined
+  }
+
+  return parsed
+}
+
 export function pickImportMetaEnvDefineEntries(define?: Record<string, any>) {
   if (!define) {
     return {}
@@ -43,13 +66,16 @@ export function pickImportMetaEnvDefineEntries(define?: Record<string, any>) {
 }
 
 export function resolveImportMetaEnvObject(defineImportMetaEnv?: Record<string, any>, fallbackEnv: Record<string, any> = {}) {
+  return parseImportMetaEnvObject(defineImportMetaEnv?.['import.meta.env']) ?? fallbackEnv
+}
+
+export function resolveImportMetaEnvExpression(defineImportMetaEnv?: Record<string, any>, fallbackEnv: Record<string, any> = {}) {
   const rawEnv = defineImportMetaEnv?.['import.meta.env']
-  const parsed = parseImportMetaDefineValue(rawEnv)
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return fallbackEnv
+  if (typeof rawEnv === 'string' && rawEnv.trim()) {
+    return rawEnv
   }
 
-  return parsed
+  return JSON.stringify(resolveImportMetaEnvObject(defineImportMetaEnv, fallbackEnv))
 }
 
 export function resolveImportMetaEnvMemberValues(defineImportMetaEnv?: Record<string, any>, fallbackEnv: Record<string, any> = {}) {
@@ -80,7 +106,7 @@ export function createImportMetaDefineRegistry(options?: {
   for (const [key, value] of Object.entries(baseEnv)) {
     defaultDefineEntries[`${IMPORT_META_ENV_PREFIX}${key}`] = JSON.stringify(value)
   }
-  defaultDefineEntries['import.meta.env'] = JSON.stringify(baseEnv)
+  defaultDefineEntries['import.meta.env'] = resolveImportMetaEnvExpression(undefined, baseEnv)
 
   const defineEntries = {
     ...defaultDefineEntries,
@@ -123,12 +149,10 @@ export function createStaticImportMetaReplacementMap(options: {
   importMetaDefineRegistry?: ImportMetaDefineRegistry
   extension: string
   relativePath: string
-}) {
+}): Record<string, any> {
   const values = createStaticImportMetaValues(options)
   const defineEntries = options.importMetaDefineRegistry?.defineEntries ?? {}
-  const envJson = typeof defineEntries['import.meta.env'] === 'string'
-    ? defineEntries['import.meta.env']
-    : JSON.stringify(values.env)
+  const envJson = resolveImportMetaEnvExpression(defineEntries, values.env)
 
   return {
     ...defineEntries,

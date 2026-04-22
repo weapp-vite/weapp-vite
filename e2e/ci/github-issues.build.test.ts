@@ -75,6 +75,20 @@ function expectModuleReference(code: string, specifier: string) {
   expect(code).toMatch(new RegExp(`(?:require\\((['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\1\\)|from\\s+(['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\2)`))
 }
 
+function createCachedEnvLinePattern(variableName: string) {
+  return new RegExp(
+    `const ${variableName} = .*globalThis\\["__weappViteImportMetaEnv"\\].*JSON\\.parse\\(`,
+  )
+}
+
+function createObjectPropertyPattern(property: string, value: string) {
+  return new RegExp(`${escapeRegex(JSON.stringify(property))}\\s*:\\s*${escapeRegex(JSON.stringify(value))}`)
+}
+
+function createSerializedJsonEntryPattern(key: string, value: string) {
+  return new RegExp(escapeRegex(`\\"${key}\\":\\"${value}\\"`))
+}
+
 function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) {
   const relativeImports = [
     ...[...sourceCode.matchAll(/require\((['"`])([^"'`]+)\1\)/g)].map(match => match[2]!),
@@ -180,7 +194,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('/pages/issue-431/index.js')
     expect(pageJs).toContain('/pages/issue-431')
     expect(pageJs).toContain('importMetaSnapshot')
-    expect(pageJs).toContain('url: "/pages/issue-431/index.js"')
+    expect(pageJs).toMatch(createObjectPropertyPattern('url', '/pages/issue-431/index.js'))
     expect(pageJs).not.toContain('import.meta.url')
     expect(pageJs).not.toContain('import.meta.dirname')
     expect(pageJs).not.toContain('import.meta.env')
@@ -288,11 +302,16 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageWxml).toContain('class="issue475-page"')
     expect(pageWxml).toContain('{{pageLabel}}')
     expect(pageWxml).toContain('{{pageTraceLabel}}')
+    expect(pageWxml).toContain('{{pageEnvLabel}}')
     expect(pageWxml).toContain('<SourceMapProbe />')
     expect(pageJs).toContain('//#region src/pages/issue-475/index.vue')
     expect(pageJs).toContain('issue-475 page marker')
+    expect(pageJs).toMatch(createCachedEnvLinePattern('pageEnv'))
+    expect(pageJs).not.toContain('const pageEnv = {\n')
     expect(componentJs).toContain('//#region src/components/issue-475/SourceMapProbe/index.vue')
     expect(componentJs).toContain('issue-475 component marker')
+    expect(componentJs).toMatch(createCachedEnvLinePattern('componentEnv'))
+    expect(componentJs).not.toContain('const componentEnv = {\n')
   })
 
   it('issue #479: injects indirect wevu page feature hooks from local helpers', async () => {
@@ -328,11 +347,11 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageWxml).toContain('issue-484 import.meta.env define override')
     expect(pageJs).toContain('var pageDefinedFlag = 123456;')
     expect(pageJs).toContain('const pageSummary = `issue-484 page define:')
-    expect(pageJs).toContain('MODE: "production"')
+    expect(pageJs).toMatch(createSerializedJsonEntryPattern('MODE', 'production'))
     expect(pageJs).not.toContain('ISSUE_484_FLAG')
     expect(helperJs).toContain('var helperDefinedFlag = 123456;')
     expect(helperJs).toContain('var helperSummary = `issue-484 helper define:')
-    expect(helperJs).toContain('MODE: "production"')
+    expect(helperJs).toMatch(createSerializedJsonEntryPattern('MODE', 'production'))
     expect(helperJs).not.toContain('ISSUE_484_FLAG')
   })
 

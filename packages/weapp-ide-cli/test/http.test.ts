@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const detectWechatDevtoolsServicePortMock = vi.hoisted(() => vi.fn())
@@ -5,6 +6,14 @@ const detectWechatDevtoolsServicePortMock = vi.hoisted(() => vi.fn())
 vi.mock('../src/cli/wechatDevtoolsSettings', () => ({
   detectWechatDevtoolsServicePort: detectWechatDevtoolsServicePortMock,
 }))
+
+function expectFetchRequest(callIndex: number, expectedUrl: string) {
+  const [request, init] = (fetch as any).mock.calls[callIndex] ?? []
+  expect(String(request)).toBe(expectedUrl)
+  expect(init).toEqual(expect.objectContaining({
+    method: 'GET',
+  }))
+}
 
 describe('wechat devtools http helpers', () => {
   beforeEach(() => {
@@ -24,48 +33,30 @@ describe('wechat devtools http helpers', () => {
 
   it('opens project by service port http api', async () => {
     const { openWechatIdeProjectByHttp } = await import('../src/cli/http')
+    const projectPath = path.resolve('/workspace/demo-app')
 
     await openWechatIdeProjectByHttp('/workspace/demo-app')
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        href: 'http://127.0.0.1:9527/open?projectpath=%2Fworkspace%2Fdemo-app',
-      }),
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    )
+    expectFetchRequest(0, `http://127.0.0.1:9527/open?projectpath=${encodeURIComponent(projectPath)}`)
   })
 
   it('resets fileutils by service port http api', async () => {
     const { resetWechatIdeFileUtilsByHttp } = await import('../src/cli/http')
+    const projectPath = path.resolve('/workspace/demo-app')
 
     await resetWechatIdeFileUtilsByHttp('/workspace/demo-app')
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        href: 'http://127.0.0.1:9527/v2/resetfileutils?project=%2Fworkspace%2Fdemo-app',
-      }),
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    )
+    expectFetchRequest(0, `http://127.0.0.1:9527/v2/resetfileutils?project=${encodeURIComponent(projectPath)}`)
   })
 
   it('starts engine build by service port http api', async () => {
     const { startWechatIdeEngineBuildByHttp } = await import('../src/cli/http')
+    const projectPath = path.resolve('/workspace/demo-app')
 
     const result = await startWechatIdeEngineBuildByHttp('/workspace/demo-app')
 
     expect(result).toEqual({ body: 'OK' })
-    expect(fetch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        href: 'http://127.0.0.1:9527/engine/build?projectpath=%2Fworkspace%2Fdemo-app',
-      }),
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    )
+    expectFetchRequest(0, `http://127.0.0.1:9527/engine/build?projectpath=${encodeURIComponent(projectPath)}`)
   })
 
   it('parses engine build result from service port http api', async () => {
@@ -87,13 +78,6 @@ describe('wechat devtools http helpers', () => {
       msg: '构建成功',
       status: 'END',
     })
-    expect(fetch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        href: 'http://127.0.0.1:9527/engine/buildResult/',
-      }),
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    )
+    expectFetchRequest(0, 'http://127.0.0.1:9527/engine/buildResult/')
   })
 })

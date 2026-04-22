@@ -203,6 +203,7 @@ describe('createConfigService', () => {
     expect(define['import.meta.env.PLATFORM']).toBe(JSON.stringify('weapp'))
     expect(define['import.meta.env.MP_PLATFORM']).toBe(JSON.stringify('weapp'))
     expect(define['import.meta.env.CUSTOM_FLAG']).toBe('1')
+    expect(define['import.meta.env']).toBe('{"PLATFORM":"weapp","MP_PLATFORM":"weapp","IS_WEB":false,"IS_MINIPROGRAM":true,"CUSTOM_FLAG":1}')
     expect(JSON.parse(define['import.meta.env']).CUSTOM_FLAG).toBe(1)
   })
 
