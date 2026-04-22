@@ -513,7 +513,7 @@ async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm') {
     projectRoot: templateRoot,
     platform: 'weapp',
     cwd: templateRoot,
-    label: `ide:${path.basename(templateRoot)}`,
+    label: `ide:${path.basename(templateRoot)}${jsFormat ? `:${jsFormat}` : ''}`,
     skipNpm: !hasDependencies || hasPrebuiltNpm,
   })
 }

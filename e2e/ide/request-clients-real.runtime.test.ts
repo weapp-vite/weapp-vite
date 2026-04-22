@@ -1,3 +1,4 @@
+import type { TestJsFormat } from '../utils/jsFormat'
 import { rm } from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -18,53 +19,33 @@ const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
   /operation not permitted/i,
   /EACCES/i,
 ]
+const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
 
 let baseUrl = ''
 let serverHandle: Awaited<ReturnType<typeof startRequestClientsRealServer>> | null = null
-let miniProgram: any = null
-let buildPrepared = false
 let sharedInfraUnavailableMessage = ''
+const preparedBuildFormats = new Set<TestJsFormat>()
 
 function isLocalServerInfraError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return LOCAL_SERVER_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
-async function ensureBuilt() {
-  if (buildPrepared) {
+async function ensureBuilt(jsFormat: TestJsFormat) {
+  if (preparedBuildFormats.has(jsFormat)) {
     return
   }
 
   await rm(DIST_ROOT, { recursive: true, force: true })
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
+    jsFormat,
     projectRoot: APP_ROOT,
     platform: 'weapp',
     cwd: APP_ROOT,
-    label: 'ide:request-clients-real',
+    label: `ide:request-clients-real:${jsFormat}`,
   })
-  buildPrepared = true
-}
-
-async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
-  if (miniProgram) {
-    return miniProgram
-  }
-
-  await ensureBuilt()
-
-  try {
-    miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
-    return miniProgram
-  }
-  catch (error) {
-    if (isDevtoolsHttpPortError(error)) {
-      ctx.skip('WeChat DevTools 服务端口未开启，跳过 request-clients-real IDE 自动化用例。')
-    }
-    throw error
-  }
+  preparedBuildFormats.add(jsFormat)
 }
 
 function withBaseUrl(route: string) {
@@ -132,205 +113,223 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  if (miniProgram) {
-    await miniProgram.close()
-  }
   if (serverHandle) {
     await serverHandle.stop()
   }
 })
 
-describe.sequential('e2e app: request-clients-real', () => {
-  it('exposes request globals from the Vue app runtime entry', async (ctx) => {
-    if (sharedInfraUnavailableMessage) {
-      ctx.skip(sharedInfraUnavailableMessage)
-    }
-    const miniProgram = await getMiniProgram(ctx)
-    const page = await miniProgram.reLaunch('/pages/index/index')
-    if (!page) {
-      throw new Error('Failed to launch /pages/index/index')
+for (const jsFormat of JS_FORMATS) {
+  describe.sequential(`e2e app: request-clients-real [${jsFormat}]`, () => {
+    let miniProgram: any = null
+
+    async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
+      if (miniProgram) {
+        return miniProgram
+      }
+
+      await ensureBuilt(jsFormat)
+
+      try {
+        miniProgram = await launchAutomator({
+          projectPath: APP_ROOT,
+        })
+        return miniProgram
+      }
+      catch (error) {
+        if (isDevtoolsHttpPortError(error)) {
+          ctx.skip('WeChat DevTools 服务端口未开启，跳过 request-clients-real IDE 自动化用例。')
+        }
+        throw error
+      }
     }
 
-    const appProbe = await miniProgram.evaluate(() => {
-      return {
-        fetchType: typeof fetch,
-        urlAvailable: (() => {
-          try {
-            return new URL('https://request-globals.invalid').protocol === 'https:'
-          }
-          catch {
-            return false
-          }
-        })(),
-        webSocketAvailable: typeof WebSocket === 'function',
-        xmlHttpRequestAvailable: typeof XMLHttpRequest === 'function',
+    afterAll(async () => {
+      if (miniProgram) {
+        await miniProgram.close()
       }
     })
 
-    expect(appProbe, JSON.stringify(appProbe)).toEqual({
-      fetchType: 'function',
-      urlAvailable: true,
-      webSocketAvailable: true,
-      xmlHttpRequestAvailable: true,
-    })
-  })
-
-  it('covers fetch against a local real server', async (ctx) => {
-    if (sharedInfraUnavailableMessage) {
-      ctx.skip(sharedInfraUnavailableMessage)
-    }
-    const miniProgram = await getMiniProgram(ctx)
-    const baselineTrace = await readHostTrace(miniProgram)
-    const cases = [
-      {
-        route: '/pages/fetch/index',
-        payloadToken: '"transport":"fetch"',
-        path: '/fetch',
-      },
-    ] as const
-
-    for (const testCase of cases) {
-      const page = await miniProgram.reLaunch(withBaseUrl(testCase.route))
+    it('exposes request globals from the Vue app runtime entry', async (ctx) => {
+      if (sharedInfraUnavailableMessage) {
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      const miniProgram = await getMiniProgram(ctx)
+      const page = await miniProgram.reLaunch('/pages/index/index')
       if (!page) {
-        throw new Error(`Failed to launch route ${testCase.route}`)
+        throw new Error('Failed to launch /pages/index/index')
+      }
+
+      const appProbe = await miniProgram.evaluate(() => {
+        return {
+          fetchType: typeof fetch,
+          urlAvailable: (() => {
+            try {
+              return new URL('https://request-globals.invalid').protocol === 'https:'
+            }
+            catch {
+              return false
+            }
+          })(),
+          webSocketAvailable: typeof WebSocket === 'function',
+          xmlHttpRequestAvailable: typeof XMLHttpRequest === 'function',
+        }
+      })
+
+      expect(appProbe, JSON.stringify(appProbe)).toEqual({
+        fetchType: 'function',
+        urlAvailable: true,
+        webSocketAvailable: true,
+        xmlHttpRequestAvailable: true,
+      })
+    })
+
+    it('covers fetch against a local real server', async (ctx) => {
+      if (sharedInfraUnavailableMessage) {
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      const miniProgram = await getMiniProgram(ctx)
+      const baselineTrace = await readHostTrace(miniProgram)
+      const page = await miniProgram.reLaunch(withBaseUrl('/pages/fetch/index'))
+      if (!page) {
+        throw new Error('Failed to launch /pages/fetch/index')
       }
 
       const result = await page.callMethod('runE2E')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
       expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-      expect(result?.snapshot?.requestPath).toBe(testCase.path)
-      expect(result?.snapshot?.payload).toContain(testCase.payloadToken)
+      expect(result?.snapshot?.requestPath).toBe('/fetch')
+      expect(result?.snapshot?.payload).toContain('"transport":"fetch"')
       expect(result?.snapshot?.pageStatus).toBe('全部通过')
-      expectRequestTrace(newRequestCalls, testCase.path)
-    }
-  })
-
-  it('covers axios against a local real server', async (ctx) => {
-    if (sharedInfraUnavailableMessage) {
-      ctx.skip(sharedInfraUnavailableMessage)
-    }
-    const miniProgram = await getMiniProgram(ctx)
-    const baselineTrace = await readHostTrace(miniProgram)
-    const page = await miniProgram.reLaunch(withBaseUrl('/pages/axios/index'))
-    if (!page) {
-      throw new Error('Failed to launch /pages/axios/index')
-    }
-
-    const result = await page.callMethod('runE2E')
-    const currentTrace = await readHostTrace(miniProgram)
-    const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-    expect(result?.snapshot?.requestPath).toBe('/axios')
-    expect(result?.snapshot?.payload).toContain('"transport":"axios"')
-    expect(result?.snapshot?.pageStatus).toBe('全部通过')
-    expectRequestTrace(newRequestCalls, '/axios')
-  })
-
-  it('covers graphql-request against a local real server', async (ctx) => {
-    if (sharedInfraUnavailableMessage) {
-      ctx.skip(sharedInfraUnavailableMessage)
-    }
-    const miniProgram = await getMiniProgram(ctx)
-    const baselineTrace = await readHostTrace(miniProgram)
-    const page = await miniProgram.reLaunch(withBaseUrl('/pages/graphql-request/index'))
-    if (!page) {
-      throw new Error('Failed to launch /pages/graphql-request/index')
-    }
-
-    const result = await page.callMethod('runE2E')
-    const currentTrace = await readHostTrace(miniProgram)
-    const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-    expect(result?.snapshot?.requestPath).toBe('/graphql')
-    expect(result?.snapshot?.payload).toContain('"client":"graphql-request"')
-    expect(result?.snapshot?.pageStatus).toBe('全部通过')
-    expectRequestTrace(newRequestCalls, '/graphql')
-  })
-
-  it('covers vue-query with tab switch, refetch and query key rotation against a local real server', async (ctx) => {
-    if (sharedInfraUnavailableMessage) {
-      ctx.skip(sharedInfraUnavailableMessage)
-    }
-    const miniProgram = await getMiniProgram(ctx)
-    const baselineTrace = await readHostTrace(miniProgram)
-    const page = await miniProgram.reLaunch(withBaseUrl('/pages/vue-query/index'))
-    if (!page) {
-      throw new Error('Failed to launch /pages/vue-query/index')
-    }
-
-    const result = await page.callMethod('runE2E')
-    const currentTrace = await readHostTrace(miniProgram)
-    const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
-    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-    expect(result?.checks).toEqual({
-      initialOverview: true,
-      switchedDetail: true,
-      refetchAdvanced: true,
-      keyRotated: true,
+      expectRequestTrace(newRequestCalls, '/fetch')
     })
-    expect(result?.snapshots?.initial?.label).toBe('Overview Data')
-    expect(result?.snapshots?.detail?.label).toBe('Detail Data')
-    expect(result?.snapshots?.afterRotate?.seed).toBe(1)
-    expectRequestTrace(newRequestCalls, '/vue-query')
-  })
 
-  it('covers socket.io-client against a local real realtime server', async (ctx) => {
-    if (sharedInfraUnavailableMessage) {
-      ctx.skip(sharedInfraUnavailableMessage)
-    }
-    const miniProgram = await getMiniProgram(ctx)
-    const baselineTrace = await readHostTrace(miniProgram)
-    const page = await miniProgram.reLaunch(withBaseUrl('/pages/socket-io/index'))
-    if (!page) {
-      throw new Error('Failed to launch /pages/socket-io/index')
-    }
+    it('covers axios against a local real server', async (ctx) => {
+      if (sharedInfraUnavailableMessage) {
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      const miniProgram = await getMiniProgram(ctx)
+      const baselineTrace = await readHostTrace(miniProgram)
+      const page = await miniProgram.reLaunch(withBaseUrl('/pages/axios/index'))
+      if (!page) {
+        throw new Error('Failed to launch /pages/axios/index')
+      }
 
-    const result = await page.callMethod('runE2E')
-    const currentTrace = await readHostTrace(miniProgram)
-    const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
-    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-    expect(result?.snapshot?.requestPath).toBe('/socket.io')
-    expect(result?.snapshot?.payload).toContain('"client":"socket.io-client"')
-    expect(result?.snapshot?.payload).toContain('"serverRandomReceived":true')
-    expect(result?.snapshot?.payload).toContain('"websocketOnlyConnected":true')
-    expect(result?.latestRandomMessage).toBeTruthy()
-    expect(result?.randomPushCount).toBeGreaterThan(0)
-    expect(['polling', 'websocket']).toContain(result?.defaultTransportName)
-    expect(result?.websocketOnlyTransportName).toBe('websocket')
-    expect(serverHandle?.requestCounts.socketIo).toBeGreaterThan(0)
-    expect(result?.snapshot?.pageStatus).toBe('全部通过')
-    expectSocketTrace(newSocketCalls, '/socket.io', {
-      perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
+      const result = await page.callMethod('runE2E')
+      const currentTrace = await readHostTrace(miniProgram)
+      const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
+      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
+      expect(result?.snapshot?.requestPath).toBe('/axios')
+      expect(result?.snapshot?.payload).toContain('"transport":"axios"')
+      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expectRequestTrace(newRequestCalls, '/axios')
+    })
+
+    it('covers graphql-request against a local real server', async (ctx) => {
+      if (sharedInfraUnavailableMessage) {
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      const miniProgram = await getMiniProgram(ctx)
+      const baselineTrace = await readHostTrace(miniProgram)
+      const page = await miniProgram.reLaunch(withBaseUrl('/pages/graphql-request/index'))
+      if (!page) {
+        throw new Error('Failed to launch /pages/graphql-request/index')
+      }
+
+      const result = await page.callMethod('runE2E')
+      const currentTrace = await readHostTrace(miniProgram)
+      const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
+      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
+      expect(result?.snapshot?.requestPath).toBe('/graphql')
+      expect(result?.snapshot?.payload).toContain('"client":"graphql-request"')
+      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expectRequestTrace(newRequestCalls, '/graphql')
+    })
+
+    it('covers vue-query with tab switch, refetch and query key rotation against a local real server', async (ctx) => {
+      if (sharedInfraUnavailableMessage) {
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      const miniProgram = await getMiniProgram(ctx)
+      const baselineTrace = await readHostTrace(miniProgram)
+      const page = await miniProgram.reLaunch(withBaseUrl('/pages/vue-query/index'))
+      if (!page) {
+        throw new Error('Failed to launch /pages/vue-query/index')
+      }
+
+      const result = await page.callMethod('runE2E')
+      const currentTrace = await readHostTrace(miniProgram)
+      const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
+      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
+      expect(result?.checks).toEqual({
+        initialOverview: true,
+        switchedDetail: true,
+        refetchAdvanced: true,
+        keyRotated: true,
+      })
+      expect(result?.snapshots?.initial?.label).toBe('Overview Data')
+      expect(result?.snapshots?.detail?.label).toBe('Detail Data')
+      expect(result?.snapshots?.afterRotate?.seed).toBe(1)
+      expectRequestTrace(newRequestCalls, '/vue-query')
+    })
+
+    it('covers socket.io-client against a local real realtime server', async (ctx) => {
+      if (sharedInfraUnavailableMessage) {
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      const miniProgram = await getMiniProgram(ctx)
+      const baselineTrace = await readHostTrace(miniProgram)
+      const page = await miniProgram.reLaunch(withBaseUrl('/pages/socket-io/index'))
+      if (!page) {
+        throw new Error('Failed to launch /pages/socket-io/index')
+      }
+
+      const result = await page.callMethod('runE2E')
+      const currentTrace = await readHostTrace(miniProgram)
+      const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
+      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
+      expect(result?.snapshot?.requestPath).toBe('/socket.io')
+      expect(result?.snapshot?.payload).toContain('"client":"socket.io-client"')
+      expect(result?.snapshot?.payload).toContain('"serverRandomReceived":true')
+      expect(result?.snapshot?.payload).toContain('"websocketOnlyConnected":true')
+      expect(result?.latestRandomMessage).toBeTruthy()
+      expect(result?.randomPushCount).toBeGreaterThan(0)
+      expect(['polling', 'websocket']).toContain(result?.defaultTransportName)
+      expect(result?.websocketOnlyTransportName).toBe('websocket')
+      expect(serverHandle?.requestCounts.socketIo).toBeGreaterThan(0)
+      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expectSocketTrace(newSocketCalls, '/socket.io', {
+        perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
+      })
+    })
+
+    it('covers native WebSocket against a local real realtime server', async (ctx) => {
+      if (sharedInfraUnavailableMessage) {
+        ctx.skip(sharedInfraUnavailableMessage)
+      }
+      const miniProgram = await getMiniProgram(ctx)
+      const baselineTrace = await readHostTrace(miniProgram)
+      const page = await miniProgram.reLaunch(withBaseUrl('/pages/websocket/index'))
+      if (!page) {
+        throw new Error('Failed to launch /pages/websocket/index')
+      }
+
+      const result = await page.callMethod('runE2E')
+      const currentTrace = await readHostTrace(miniProgram)
+      const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
+      expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
+      expect(result?.snapshot?.requestPath).toBe('/ws')
+      expect(result?.snapshot?.payload).toContain('"client":"native-websocket"')
+      expect(result?.snapshot?.payload).toContain('"serverRandomEvent":"server-random"')
+      expect(result?.snapshot?.payload).toContain('"transport":"websocket"')
+      expect(result?.connectedReadyState).toBe(1)
+      expect(result?.latestRandomMessage).toBeTruthy()
+      expect(result?.randomPushCount).toBeGreaterThan(0)
+      expect(result?.snapshot?.pageStatus).toBe('全部通过')
+      expectSocketTrace(newSocketCalls, '/ws', {
+        perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
+        timeout: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.timeout,
+      })
     })
   })
-
-  it('covers native WebSocket against a local real realtime server', async (ctx) => {
-    if (sharedInfraUnavailableMessage) {
-      ctx.skip(sharedInfraUnavailableMessage)
-    }
-    const miniProgram = await getMiniProgram(ctx)
-    const baselineTrace = await readHostTrace(miniProgram)
-    const page = await miniProgram.reLaunch(withBaseUrl('/pages/websocket/index'))
-    if (!page) {
-      throw new Error('Failed to launch /pages/websocket/index')
-    }
-
-    const result = await page.callMethod('runE2E')
-    const currentTrace = await readHostTrace(miniProgram)
-    const newSocketCalls = currentTrace.socketCalls.slice(baselineTrace.socketCalls.length)
-    expect(result?.ok, JSON.stringify({ result, requestCounts: serverHandle?.requestCounts })).toBe(true)
-    expect(result?.snapshot?.requestPath).toBe('/ws')
-    expect(result?.snapshot?.payload).toContain('"client":"native-websocket"')
-    expect(result?.snapshot?.payload).toContain('"serverRandomEvent":"server-random"')
-    expect(result?.snapshot?.payload).toContain('"transport":"websocket"')
-    expect(result?.connectedReadyState).toBe(1)
-    expect(result?.latestRandomMessage).toBeTruthy()
-    expect(result?.randomPushCount).toBeGreaterThan(0)
-    expect(result?.snapshot?.pageStatus).toBe('全部通过')
-    expectSocketTrace(newSocketCalls, '/ws', {
-      perMessageDeflate: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.perMessageDeflate,
-      timeout: REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS.timeout,
-    })
-  })
-})
+}
