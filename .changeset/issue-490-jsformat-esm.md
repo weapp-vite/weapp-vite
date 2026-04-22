@@ -1,6 +1,6 @@
 ---
-"weapp-vite": minor
+"weapp-vite": patch
 "create-weapp-vite": patch
 ---
 
-默认将 `weapp.jsFormat` 从 `cjs` 切换为 `esm`，同时补齐 `esm` / `cjs` 双格式兼容与回归覆盖，修复默认 `esm` 场景下请求相关全局注入缺失的问题。
+保持 `weapp.jsFormat` 默认值为 `cjs`，同时补齐 `esm` / `cjs` 双格式回归覆盖，并修复显式 `esm` 场景下请求相关全局注入缺失的问题。

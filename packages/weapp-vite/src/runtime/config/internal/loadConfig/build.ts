@@ -52,7 +52,7 @@ export function configureBuildAndPlugins(options: {
   } = options
 
   const buildConfig = config.build ?? (config.build = {})
-  const jsFormat = config.weapp?.jsFormat ?? 'esm'
+  const jsFormat = config.weapp?.jsFormat ?? 'cjs'
   const enableLegacyEs5 = config.weapp?.es5 === true
   if (enableLegacyEs5) {
     logger.warn('`weapp.es5` / `@swc/core` 降级方案已废弃，建议改为保持 `build.target >= es2020`，并在开发者工具中开启“将 JS 编译成 ES5”功能。')

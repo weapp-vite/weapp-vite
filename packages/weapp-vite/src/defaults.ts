@@ -52,7 +52,7 @@ export function getWeappViteConfig(): WeappViteConfig {
     // 已废弃：保留默认关闭，仅兼容旧配置。
     es5: false,
     packageSizeWarningBytes: 2 * 1024 * 1024,
-    jsFormat: 'esm',
+    jsFormat: 'cjs',
     isAdditionalWxml: () => {
       return false
     },
