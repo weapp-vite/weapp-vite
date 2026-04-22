@@ -274,7 +274,7 @@ describe('wechat command helpers', () => {
     })
 
     expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith(
-      expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
     )
   })
 
@@ -297,7 +297,7 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith([
       'build-apk',
       '--key-store',
-      expect.stringMatching(/certs\/demo\.keystore$/),
+      expect.stringMatching(createPathSuffixPattern('certs/demo.keystore')),
       '--key-alias',
       'demo',
       '--key-pass',
@@ -305,7 +305,7 @@ describe('wechat command helpers', () => {
       '--store-pass',
       'store-pass',
       '--output',
-      expect.stringMatching(/dist\/apk$/),
+      expect.stringMatching(createPathSuffixPattern('dist/apk')),
       '--use-aab',
       'true',
       '--desc',
@@ -342,21 +342,21 @@ describe('wechat command helpers', () => {
     expect(runWechatCliCommandMock).toHaveBeenCalledWith([
       'build-ipa',
       '--output',
-      expect.stringMatching(/dist\/ipa$/),
+      expect.stringMatching(createPathSuffixPattern('dist/ipa')),
       '--isDistribute',
       'true',
       '--isRemoteBuild',
       'false',
       '--profilePath',
-      expect.stringMatching(/certs\/demo\.mobileprovision$/),
+      expect.stringMatching(createPathSuffixPattern('certs/demo.mobileprovision')),
       '--certificateName',
       'Apple Demo',
       '--p12Path',
-      expect.stringMatching(/certs\/demo\.p12$/),
+      expect.stringMatching(createPathSuffixPattern('certs/demo.p12')),
       '--p12Password',
       'secret',
       '--tpnsProfilePath',
-      expect.stringMatching(/certs\/demo\.tpns$/),
+      expect.stringMatching(createPathSuffixPattern('certs/demo.tpns')),
       '--isUploadBeta',
       'true',
       '--isUploadResourceBundle',
@@ -382,7 +382,7 @@ describe('wechat command helpers', () => {
 
     expect(withMiniProgramMock).toHaveBeenCalledWith({
       preferOpenedSession: true,
-      projectPath: expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      projectPath: expect.stringMatching(createPathSuffixPattern('dist/dev/mp-weixin')),
       sharedSession: true,
       timeout: undefined,
     }, expect.any(Function))
