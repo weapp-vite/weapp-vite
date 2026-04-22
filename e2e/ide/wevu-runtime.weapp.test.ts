@@ -1,3 +1,4 @@
+import type { TestJsFormat } from '../utils/jsFormat'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import {
@@ -9,6 +10,8 @@ import {
   resolvePages,
   runBuild,
 } from '../wevu-runtime.utils'
+
+const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
 
 function resolveConsolePayload(entry: any) {
   if (entry && typeof entry === 'object' && entry.entry && typeof entry.entry === 'object') {
@@ -78,197 +81,199 @@ async function runPageE2E(page: any) {
   return null
 }
 
-let sharedMiniProgram: any = null
-let sharedBuildPrepared = false
+for (const jsFormat of JS_FORMATS) {
+  describe.sequential(`wevu runtime (weapp e2e) [${jsFormat}]`, () => {
+    let sharedMiniProgram: any = null
+    let sharedBuildPrepared = false
 
-async function getSharedMiniProgram() {
-  if (!sharedBuildPrepared) {
-    await runBuild('weapp')
-    sharedBuildPrepared = true
-  }
-  if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
+    async function getSharedMiniProgram() {
+      if (!sharedBuildPrepared) {
+        await runBuild('weapp', jsFormat)
+        sharedBuildPrepared = true
+      }
+      if (!sharedMiniProgram) {
+        sharedMiniProgram = await launchAutomator({
+          projectPath: APP_ROOT,
+        })
+      }
+      return sharedMiniProgram
+    }
+
+    async function releaseSharedMiniProgram(miniProgram: any) {
+      if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+        return
+      }
+      await miniProgram.close()
+    }
+
+    async function closeSharedMiniProgram() {
+      if (!sharedMiniProgram) {
+        return
+      }
+      const miniProgram = sharedMiniProgram
+      sharedMiniProgram = null
+      await miniProgram.close()
+    }
+
+    afterAll(async () => {
+      await closeSharedMiniProgram()
     })
-  }
-  return sharedMiniProgram
-}
 
-async function releaseSharedMiniProgram(miniProgram: any) {
-  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
-    return
-  }
-  await miniProgram.close()
-}
+    it('runs all pages and snapshots WXML', async () => {
+      const config = await loadAppConfig()
+      const pages = getPageOrder(resolvePages(config))
 
-async function closeSharedMiniProgram() {
-  if (!sharedMiniProgram) {
-    return
-  }
-  const miniProgram = sharedMiniProgram
-  sharedMiniProgram = null
-  await miniProgram.close()
-}
+      const miniProgram = await getSharedMiniProgram()
 
-describe.sequential('wevu runtime (weapp e2e)', () => {
-  afterAll(async () => {
-    await closeSharedMiniProgram()
-  })
-
-  it('runs all pages and snapshots WXML', async () => {
-    const config = await loadAppConfig()
-    const pages = getPageOrder(resolvePages(config))
-
-    const miniProgram = await getSharedMiniProgram()
-
-    try {
-      for (const pagePath of pages) {
-        const route = `/${pagePath}`
-        const page = await miniProgram.reLaunch(route)
-        if (!page) {
-          throw new Error(`Failed to launch page: ${route}`)
-        }
-
-        const result = await runPageE2E(page)
-        if (result != null) {
-          if (!result?.ok) {
-            throw new Error(`E2E failed for ${pagePath}: ${JSON.stringify(result)}`)
+      try {
+        for (const pagePath of pages) {
+          const route = `/${pagePath}`
+          const page = await miniProgram.reLaunch(route)
+          if (!page) {
+            throw new Error(`Failed to launch page: ${route}`)
           }
-          expect(result.ok).toBe(true)
+
+          const result = await runPageE2E(page)
+          if (result != null) {
+            if (!result?.ok) {
+              throw new Error(`E2E failed for ${pagePath}: ${JSON.stringify(result)}`)
+            }
+            expect(result.ok).toBe(true)
+          }
+
+          const element = await page.$('page')
+          if (!element) {
+            throw new Error(`Missing page element for ${route}`)
+          }
+          const wxml = normalizeAutomatorWxml(await element.wxml())
+          expect(await formatMarkup(wxml)).toMatchSnapshot(`wevu-runtime::${jsFormat}::${pagePath}`)
+        }
+      }
+      finally {
+        await releaseSharedMiniProgram(miniProgram)
+      }
+    })
+
+    it('triggers page scroll and prints debug console logs', async () => {
+      const miniProgram = await getSharedMiniProgram()
+
+      const consoleEntries: string[] = []
+      const onConsole = (entry: any) => {
+        const text = normalizeConsoleText(entry)
+        if (text.includes('[runtime-scroll-debug]')) {
+          consoleEntries.push(text)
+        }
+      }
+
+      miniProgram.on('console', onConsole)
+      try {
+        const page = await miniProgram.reLaunch('/pages/runtime/index')
+        if (!page) {
+          throw new Error('Failed to launch /pages/runtime/index')
         }
 
-        const element = await page.$('page')
-        if (!element) {
-          throw new Error(`Missing page element for ${route}`)
+        await page.waitFor(200)
+        await miniProgram.pageScrollTo(1200)
+        await page.waitFor(180)
+        await miniProgram.pageScrollTo(1800)
+        await page.waitFor(220)
+
+        const scrollLogs = await waitForTruthy(async () => {
+          const logs = await page.callMethod('getScrollDebugLogs')
+          return Array.isArray(logs) && logs.length > 0 ? logs : null
+        })
+
+        if (!scrollLogs) {
+          throw new Error('Expected runtime scroll debug logs, but none were produced')
         }
-        const wxml = normalizeAutomatorWxml(await element.wxml())
-        expect(await formatMarkup(wxml)).toMatchSnapshot(`wevu-runtime::${pagePath}`)
+
+        const hookLogs = await waitForTruthy(async () => {
+          const logs = await page.callMethod('getHookLogs')
+          return Array.isArray(logs) && logs.includes('onPageScroll') ? logs : null
+        })
+        expect(Array.isArray(hookLogs)).toBe(true)
+        expect(hookLogs).toContain('onPageScroll')
+        expect(scrollLogs.some((item: any) => Number(item?.scrollTop ?? -1) > 0)).toBe(true)
+
+        const consoleMatches = await waitForTruthy(async () => {
+          return consoleEntries.length > 0 ? consoleEntries.slice() : null
+        })
+        expect(consoleMatches).not.toBeNull()
+        expect(consoleMatches?.some(item => item.includes('[runtime-scroll-debug]'))).toBe(true)
       }
-    }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
-    }
+      finally {
+        miniProgram.removeListener('console', onConsole)
+        await releaseSharedMiniProgram(miniProgram)
+      }
+    })
+
+    it('switches native page layouts between default/admin/none at runtime', async () => {
+      const miniProgram = await getSharedMiniProgram()
+
+      try {
+        const page = await miniProgram.reLaunch('/pages/layouts/index')
+        if (!page) {
+          throw new Error('Failed to launch /pages/layouts/index')
+        }
+
+        await page.waitFor(200)
+        let root = await page.$('page')
+        if (!root) {
+          throw new Error('Missing page root for /pages/layouts/index')
+        }
+        let wxml = normalizeAutomatorWxml(await root.wxml())
+
+        expect(wxml).toContain('<weapp-layout-default')
+        expect(wxml).not.toContain('<weapp-layout-admin')
+        expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
+        expect(await page.data('currentLayout')).toBe('default')
+
+        await page.callMethod('applyAdminLayout')
+        await page.waitFor(160)
+        root = await page.$('page')
+        if (!root) {
+          throw new Error('Missing page root after applyAdminLayout')
+        }
+        wxml = normalizeAutomatorWxml(await root.wxml())
+
+        expect(wxml).toContain('<weapp-layout-admin')
+        expect(wxml).not.toContain('<weapp-layout-default')
+        expect(await page.data('currentLayout')).toBe('admin')
+        expect(await page.data('__wv_page_layout_props')).toMatchObject({
+          title: 'LAYOUTS-ADMIN-TITLE-BASE',
+          subtitle: 'LAYOUTS-ADMIN-SUBTITLE-BASE',
+        })
+
+        await page.callMethod('clearLayout')
+        await page.waitFor(160)
+        root = await page.$('page')
+        if (!root) {
+          throw new Error('Missing page root after clearLayout')
+        }
+        wxml = normalizeAutomatorWxml(await root.wxml())
+
+        expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
+        expect(wxml).not.toContain('<weapp-layout-default')
+        expect(wxml).not.toContain('<weapp-layout-admin')
+        expect(await page.data('currentLayout')).toBe('none')
+        expect(await page.data('__wv_page_layout_props')).toEqual({})
+
+        await page.callMethod('applyDefaultLayout')
+        await page.waitFor(160)
+        root = await page.$('page')
+        if (!root) {
+          throw new Error('Missing page root after applyDefaultLayout')
+        }
+        wxml = normalizeAutomatorWxml(await root.wxml())
+
+        expect(wxml).toContain('<weapp-layout-default')
+        expect(wxml).not.toContain('<weapp-layout-admin')
+        expect(await page.data('currentLayout')).toBe('default')
+        expect(await page.data('__wv_page_layout_props')).toEqual({})
+      }
+      finally {
+        await releaseSharedMiniProgram(miniProgram)
+      }
+    })
   })
-
-  it('triggers page scroll and prints debug console logs', async () => {
-    const miniProgram = await getSharedMiniProgram()
-
-    const consoleEntries: string[] = []
-    const onConsole = (entry: any) => {
-      const text = normalizeConsoleText(entry)
-      if (text.includes('[runtime-scroll-debug]')) {
-        consoleEntries.push(text)
-      }
-    }
-
-    miniProgram.on('console', onConsole)
-    try {
-      const page = await miniProgram.reLaunch('/pages/runtime/index')
-      if (!page) {
-        throw new Error('Failed to launch /pages/runtime/index')
-      }
-
-      await page.waitFor(200)
-      await miniProgram.pageScrollTo(1200)
-      await page.waitFor(180)
-      await miniProgram.pageScrollTo(1800)
-      await page.waitFor(220)
-
-      const scrollLogs = await waitForTruthy(async () => {
-        const logs = await page.callMethod('getScrollDebugLogs')
-        return Array.isArray(logs) && logs.length > 0 ? logs : null
-      })
-
-      if (!scrollLogs) {
-        throw new Error('Expected runtime scroll debug logs, but none were produced')
-      }
-
-      const hookLogs = await waitForTruthy(async () => {
-        const logs = await page.callMethod('getHookLogs')
-        return Array.isArray(logs) && logs.includes('onPageScroll') ? logs : null
-      })
-      expect(Array.isArray(hookLogs)).toBe(true)
-      expect(hookLogs).toContain('onPageScroll')
-      expect(scrollLogs.some((item: any) => Number(item?.scrollTop ?? -1) > 0)).toBe(true)
-
-      const consoleMatches = await waitForTruthy(async () => {
-        return consoleEntries.length > 0 ? consoleEntries.slice() : null
-      })
-      expect(consoleMatches).not.toBeNull()
-      expect(consoleMatches?.some(item => item.includes('[runtime-scroll-debug]'))).toBe(true)
-    }
-    finally {
-      miniProgram.removeListener('console', onConsole)
-      await releaseSharedMiniProgram(miniProgram)
-    }
-  })
-
-  it('switches native page layouts between default/admin/none at runtime', async () => {
-    const miniProgram = await getSharedMiniProgram()
-
-    try {
-      const page = await miniProgram.reLaunch('/pages/layouts/index')
-      if (!page) {
-        throw new Error('Failed to launch /pages/layouts/index')
-      }
-
-      await page.waitFor(200)
-      let root = await page.$('page')
-      if (!root) {
-        throw new Error('Missing page root for /pages/layouts/index')
-      }
-      let wxml = normalizeAutomatorWxml(await root.wxml())
-
-      expect(wxml).toContain('<weapp-layout-default')
-      expect(wxml).not.toContain('<weapp-layout-admin')
-      expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
-      expect(await page.data('currentLayout')).toBe('default')
-
-      await page.callMethod('applyAdminLayout')
-      await page.waitFor(160)
-      root = await page.$('page')
-      if (!root) {
-        throw new Error('Missing page root after applyAdminLayout')
-      }
-      wxml = normalizeAutomatorWxml(await root.wxml())
-
-      expect(wxml).toContain('<weapp-layout-admin')
-      expect(wxml).not.toContain('<weapp-layout-default')
-      expect(await page.data('currentLayout')).toBe('admin')
-      expect(await page.data('__wv_page_layout_props')).toMatchObject({
-        title: 'LAYOUTS-ADMIN-TITLE-BASE',
-        subtitle: 'LAYOUTS-ADMIN-SUBTITLE-BASE',
-      })
-
-      await page.callMethod('clearLayout')
-      await page.waitFor(160)
-      root = await page.$('page')
-      if (!root) {
-        throw new Error('Missing page root after clearLayout')
-      }
-      wxml = normalizeAutomatorWxml(await root.wxml())
-
-      expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
-      expect(wxml).not.toContain('<weapp-layout-default')
-      expect(wxml).not.toContain('<weapp-layout-admin')
-      expect(await page.data('currentLayout')).toBe('none')
-      expect(await page.data('__wv_page_layout_props')).toEqual({})
-
-      await page.callMethod('applyDefaultLayout')
-      await page.waitFor(160)
-      root = await page.$('page')
-      if (!root) {
-        throw new Error('Missing page root after applyDefaultLayout')
-      }
-      wxml = normalizeAutomatorWxml(await root.wxml())
-
-      expect(wxml).toContain('<weapp-layout-default')
-      expect(wxml).not.toContain('<weapp-layout-admin')
-      expect(await page.data('currentLayout')).toBe('default')
-      expect(await page.data('__wv_page_layout_props')).toEqual({})
-    }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
-    }
-  })
-})
+}
