@@ -5,6 +5,7 @@ import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
+import logger from '../../../logger'
 import {
   createCjsConfigLoadError,
   getAliasEntries,
@@ -150,6 +151,46 @@ function collectManagedTsconfigAliases(config: InlineConfig, cwd: string) {
   }))
 }
 
+async function loadConfigFileWithFallback(
+  configEnv: { command: 'serve' | 'build', mode: string },
+  configFile: string | undefined,
+  cwd: string,
+  configLoader: 'bundle' | 'runner' | 'native',
+) {
+  const suppressedWarningCodes = configLoader === 'native'
+    ? [TYPELESS_PACKAGE_JSON_WARNING_CODE]
+    : undefined
+
+  try {
+    return await loadViteConfigFile(
+      configEnv,
+      configFile,
+      cwd,
+      undefined,
+      undefined,
+      configLoader,
+      suppressedWarningCodes,
+    )
+  }
+  catch (error) {
+    if (configLoader !== 'native') {
+      throw error
+    }
+
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[prepare] 原生配置加载失败，已回退到 runner：${message}`)
+
+    return loadViteConfigFile(
+      configEnv,
+      configFile,
+      cwd,
+      undefined,
+      undefined,
+      'runner',
+    )
+  }
+}
+
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
@@ -167,12 +208,10 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     let loaded: Awaited<ReturnType<typeof loadViteConfigFile>> | undefined
     try {
-      loaded = await loadViteConfigFile({
+      loaded = await loadConfigFileWithFallback({
         command: isDev ? 'serve' : 'build',
         mode,
-      }, resolvedConfigFile, cwd, undefined, undefined, configLoader, configLoader === 'native'
-        ? [TYPELESS_PACKAGE_JSON_WARNING_CODE]
-        : undefined)
+      }, resolvedConfigFile, cwd, configLoader)
     }
     catch (error) {
       const cjsError = createCjsConfigLoadError({
@@ -195,12 +234,10 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       }
       else {
         try {
-          weappLoaded = await loadViteConfigFile({
+          weappLoaded = await loadConfigFileWithFallback({
             command: isDev ? 'serve' : 'build',
             mode,
-          }, weappConfigFilePath, cwd, undefined, undefined, configLoader, configLoader === 'native'
-            ? [TYPELESS_PACKAGE_JSON_WARNING_CODE]
-            : undefined)
+          }, weappConfigFilePath, cwd, configLoader)
         }
         catch (error) {
           const cjsError = createCjsConfigLoadError({

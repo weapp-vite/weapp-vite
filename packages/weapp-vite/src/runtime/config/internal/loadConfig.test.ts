@@ -193,6 +193,50 @@ describe('runtime config internal loadConfig', () => {
     )
   })
 
+  it('falls back to runner when native config loading fails', async () => {
+    loadViteConfigFileMock
+      .mockRejectedValueOnce(new Error('Cannot find module'))
+      .mockResolvedValueOnce({
+        config: {},
+        path: '/project/vite.config.ts',
+      })
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'development',
+      inlineConfig: {},
+      configLoader: 'native',
+      cliPlatform: undefined,
+      configFile: '/project/vite.config.ts',
+    } as any)).resolves.toBeTruthy()
+
+    expect(loadViteConfigFileMock).toHaveBeenNthCalledWith(
+      1,
+      { command: 'build', mode: 'development' },
+      '/project/vite.config.ts',
+      '/project',
+      undefined,
+      undefined,
+      'native',
+      ['MODULE_TYPELESS_PACKAGE_JSON'],
+    )
+    expect(loadViteConfigFileMock).toHaveBeenNthCalledWith(
+      2,
+      { command: 'build', mode: 'development' },
+      '/project/vite.config.ts',
+      '/project',
+      undefined,
+      undefined,
+      'runner',
+    )
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[prepare] 原生配置加载失败，已回退到 runner：Cannot find module',
+    )
+  })
+
   it('rethrows original error when cjs wrapper is unavailable', async () => {
     loadViteConfigFileMock.mockRejectedValueOnce(new Error('raw boom'))
     createCjsConfigLoadErrorMock.mockReturnValueOnce(null)
