@@ -5,8 +5,7 @@ const isAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const formatAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
-const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
-const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
+const promptRetryKeypressMock = vi.hoisted(() => vi.fn())
 const getConfigMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -35,8 +34,7 @@ vi.mock('weapp-ide-cli', () => ({
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   launchAutomator: launchAutomatorMock,
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
-  formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
-  waitForRetryKeypress: waitForRetryKeypressMock,
+  promptRetryKeypress: promptRetryKeypressMock,
 }))
 
 vi.mock('node:child_process', () => ({
@@ -63,8 +61,7 @@ describe('openIde', () => {
     formatAutomatorLoginErrorMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     formatWechatIdeLoginRequiredErrorMock.mockReset()
-    formatRetryHotkeyPromptMock.mockReset()
-    waitForRetryKeypressMock.mockReset()
+    promptRetryKeypressMock.mockReset()
     getConfigMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -88,8 +85,7 @@ describe('openIde', () => {
       cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
     })
     formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
-    formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
-    waitForRetryKeypressMock.mockResolvedValue('cancel')
+    promptRetryKeypressMock.mockResolvedValue('cancel')
     execFileMock.mockImplementation((_file: string, _args: string[], callback: (error: any, stdout?: string, stderr?: string) => void) => {
       callback(null, '', '')
       return {} as any
@@ -165,7 +161,7 @@ describe('openIde', () => {
     connectOpenedAutomatorMock.mockResolvedValueOnce({
       disconnect: miniProgramDisconnectMock,
     })
-    waitForRetryKeypressMock.mockResolvedValueOnce('retry')
+    promptRetryKeypressMock.mockResolvedValueOnce('retry')
 
     const { openIde } = await import('./openIde')
     await openIde('weapp', 'dist/dev/mp-weixin')
@@ -459,15 +455,15 @@ describe('openIde', () => {
       .mockRejectedValueOnce(loginRequiredError)
       .mockResolvedValueOnce(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    waitForRetryKeypressMock.mockResolvedValue('retry')
+    promptRetryKeypressMock.mockResolvedValue('retry')
 
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
     expect(parseMock).toHaveBeenCalledTimes(2)
-    expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
+    expect(promptRetryKeypressMock).toHaveBeenCalledTimes(1)
+    expect(promptRetryKeypressMock).toHaveBeenCalledWith({ logger: loggerMock })
     expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
     expect(loggerMock.warn).toHaveBeenCalledWith('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
-    expect(loggerMock.info).toHaveBeenCalledWith('按 r 重试，按 q / Esc / Ctrl+C 退出。')
     expect(loggerMock.info).toHaveBeenCalledWith('正在重试连接微信开发者工具...')
   })
 
@@ -477,12 +473,13 @@ describe('openIde', () => {
 
     parseMock.mockRejectedValueOnce(loginRequiredError)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
-    waitForRetryKeypressMock.mockResolvedValue('cancel')
+    promptRetryKeypressMock.mockResolvedValue('cancel')
 
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
     expect(parseMock).toHaveBeenCalledTimes(1)
-    expect(waitForRetryKeypressMock).toHaveBeenCalledTimes(1)
+    expect(promptRetryKeypressMock).toHaveBeenCalledTimes(1)
+    expect(promptRetryKeypressMock).toHaveBeenCalledWith({ logger: loggerMock })
     expect(loggerMock.warn).toHaveBeenCalledWith('已取消重试。完成登录后请重新执行当前命令。')
   })
 
@@ -496,7 +493,7 @@ describe('openIde', () => {
     await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
 
     expect(loggerMock.error).toHaveBeenCalledWith(error)
-    expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
+    expect(promptRetryKeypressMock).not.toHaveBeenCalled()
   })
 
   it('resolves ide project path from mpDistRoot', async () => {

@@ -7,6 +7,12 @@ export interface RetryKeypressOptions {
   timeoutMs?: number
 }
 
+export interface RetryPromptOptions extends RetryKeypressOptions {
+  logger: {
+    info: (message: string) => void
+  }
+}
+
 export type RetryPromptResult = 'retry' | 'cancel' | 'timeout'
 
 const LOGIN_REQUIRED_PATTERNS = [
@@ -168,4 +174,13 @@ export function formatRetryHotkeyPrompt(timeoutMs = 30_000) {
     `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出（${timeoutSeconds}s 内无输入将自动失败）。`,
     `Press ${highlight('r')} to retry, ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} to cancel (auto fail in ${timeoutSeconds}s).`,
   )
+}
+
+/**
+ * @description 输出重试热键提示，并独占等待当前提示对应的按键输入。
+ */
+export async function promptRetryKeypress(options: RetryPromptOptions) {
+  const { logger, timeoutMs = 30_000 } = options
+  logger.info(formatRetryHotkeyPrompt(timeoutMs))
+  return await waitForRetryKeypress({ timeoutMs })
 }
