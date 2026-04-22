@@ -5,6 +5,9 @@ const emitKeypressEventsMock = vi.hoisted(() => vi.fn())
 const takeScreenshotMock = vi.hoisted(() => vi.fn())
 const closeSharedMiniProgramMock = vi.hoisted(() => vi.fn())
 const parseWeappIdeCliMock = vi.hoisted(() => vi.fn())
+const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
+const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
+const runRetryableCommandMock = vi.hoisted(() => vi.fn())
 const createSharedInputSessionMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
@@ -43,7 +46,10 @@ async function flushMicrotasks(times = 4) {
 vi.mock('weapp-ide-cli', () => ({
   closeSharedMiniProgram: closeSharedMiniProgramMock,
   createSharedInputSession: createSharedInputSessionMock,
+  isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   parse: parseWeappIdeCliMock,
+  promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
+  runRetryableCommand: runRetryableCommandMock,
   takeScreenshot: takeScreenshotMock,
 }))
 
@@ -123,6 +129,24 @@ describe('devHotkeys', () => {
     })
     parseWeappIdeCliMock.mockReset()
     parseWeappIdeCliMock.mockResolvedValue(undefined)
+    isWechatIdeLoginRequiredErrorMock.mockReset()
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    promptWechatIdeLoginRetryMock.mockReset()
+    promptWechatIdeLoginRetryMock.mockResolvedValue('cancel')
+    runRetryableCommandMock.mockReset()
+    runRetryableCommandMock.mockImplementation(async (options) => {
+      const result = await options.execute()
+      if (!options.isRetryableResult(result)) {
+        return result
+      }
+      const action = await options.promptRetry(result, 0)
+      if (options.shouldRetry(action)) {
+        options.onRetry?.()
+        return await options.execute()
+      }
+      options.onCancel?.(result)
+      throw options.createCancelError(result)
+    })
     closeMcpMock.mockReset()
     closeMcpMock.mockResolvedValue(undefined)
     startWeappViteMcpServerMock.mockReset()
@@ -417,6 +441,39 @@ describe('devHotkeys', () => {
     expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['compile', '--project', '/project/dist'])
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在通知微信开发者工具重新编译当前项目'))
     expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已通知微信开发者工具重新编译当前项目'))
+  })
+
+  it('retries devtools compile from hotkey when ide login prompt returns retry', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const loginRequiredError = new Error('需要重新登录 (code 10)')
+    parseWeappIdeCliMock
+      .mockRejectedValueOnce(loginRequiredError)
+      .mockResolvedValueOnce(undefined)
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+    promptWechatIdeLoginRetryMock.mockResolvedValue('retry')
+
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('data', 'r')
+    await flushMicrotasks(10)
+
+    expect(parseWeappIdeCliMock).toHaveBeenCalledTimes(2)
+    expect(parseWeappIdeCliMock).toHaveBeenNthCalledWith(1, ['compile', '--project', '/project/dist'])
+    expect(parseWeappIdeCliMock).toHaveBeenNthCalledWith(2, ['compile', '--project', '/project/dist'])
+    expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      cancelLevel: 'warn',
+      error: loginRequiredError,
+      logger: loggerMock,
+    })
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在通知微信开发者工具重新编译当前项目'))
   })
 
   it('triggers manual rebuild with uppercase R hotkey', async () => {
