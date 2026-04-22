@@ -153,7 +153,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
   return async function loadConfig(opts: LoadConfigOptions): Promise<LoadConfigResult> {
-    const { cwd, isDev, mode, pluginOnly = false, inlineConfig, configFile, cliPlatform, projectConfigPath, configLoader = 'runner' } = opts
+    const { cwd, isDev, mode, pluginOnly = false, inlineConfig, configFile, cliPlatform, projectConfigPath } = opts
 
     const { packageJson, packageJsonPath } = await loadPackageJson(cwd)
 
@@ -169,7 +169,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       loaded = await loadViteConfigFile({
         command: isDev ? 'serve' : 'build',
         mode,
-      }, resolvedConfigFile, cwd, undefined, undefined, configLoader)
+      }, resolvedConfigFile, cwd, undefined, undefined, 'runner')
     }
     catch (error) {
       const cjsError = createCjsConfigLoadError({
@@ -195,7 +195,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
           weappLoaded = await loadViteConfigFile({
             command: isDev ? 'serve' : 'build',
             mode,
-          }, weappConfigFilePath, cwd, undefined, undefined, configLoader)
+          }, weappConfigFilePath, cwd, undefined, undefined, 'runner')
         }
         catch (error) {
           const cjsError = createCjsConfigLoadError({

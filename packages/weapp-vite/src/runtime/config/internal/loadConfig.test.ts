@@ -168,32 +168,6 @@ describe('runtime config internal loadConfig', () => {
     } as any)).rejects.toThrow('cjs wrapped')
   })
 
-  it('passes through custom config loader for one-shot commands', async () => {
-    const loadConfig = createFactory()
-
-    await loadConfig({
-      cwd: '/project',
-      isDev: false,
-      mode: 'development',
-      configLoader: 'bundle',
-      inlineConfig: {},
-      cliPlatform: undefined,
-      configFile: '/project/vite.config.ts',
-    } as any)
-
-    expect(loadViteConfigFileMock).toHaveBeenCalledWith(
-      {
-        command: 'build',
-        mode: 'development',
-      },
-      '/project/vite.config.ts',
-      '/project',
-      undefined,
-      undefined,
-      'bundle',
-    )
-  })
-
   it('rethrows original error when cjs wrapper is unavailable', async () => {
     loadViteConfigFileMock.mockRejectedValueOnce(new Error('raw boom'))
     createCjsConfigLoadErrorMock.mockReturnValueOnce(null)
