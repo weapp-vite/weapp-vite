@@ -796,8 +796,9 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-494/SlotHost/index.wxml')
 
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('slot="icon"')
-    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<block slot="header">')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<view slot="header"><view class="issue494-header-probe"')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).not.toContain('<view slot="icon">')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).not.toContain('<block slot="header">')
     expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('toggleLabels')
     expect(await fs.readFile(componentWxmlPath, 'utf-8')).toContain('<slot name="icon" />')
 
@@ -836,6 +837,47 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       expect(updatedWxml).toContain('default via template slot: beta')
       expect(updatedWxml).not.toContain('header via template slot: ready')
       expect(updatedWxml).not.toContain('default via template slot: alpha')
+    }
+    finally {
+      await miniProgram.close().catch(() => {})
+    }
+  })
+
+  it('experiment: flex parent keeps projected multi-node slot groups visible in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/slot-flex-layout/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/slot-flex-layout/index.js')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/slot-flex-host/index.wxml')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('slot flex layout experiment')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('<view slot="middle"><view class="slot-flex-item slot-flex-item--middle-multi-center-a"')
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).not.toContain('<block slot="middle">')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).not.toContain('_runE2E')
+    expect(await fs.readFile(componentWxmlPath, 'utf-8')).toContain('<slot name="left" />')
+
+    const miniProgram = await launchFreshMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/slot-flex-layout/index', 'slot flex layout experiment')
+      if (!issuePage) {
+        throw new Error('Failed to launch slot-flex-layout page')
+      }
+
+      const initialWxml = await readPageWxml(issuePage)
+      expect(initialWxml).toContain('single-per-slot')
+      expect(initialWxml).toContain('middle-multi')
+      expect(initialWxml).toContain('all-multi')
+      expect(initialWxml).toContain('data-case="single-left"')
+      expect(initialWxml).toContain('data-case="single-middle"')
+      expect(initialWxml).toContain('data-case="single-right"')
+      expect(initialWxml).toContain('data-case="middle-multi-left"')
+      expect(initialWxml).toContain('data-case="middle-multi-center-a"')
+      expect(initialWxml).toContain('data-case="middle-multi-center-b"')
+      expect(initialWxml).toContain('data-case="middle-multi-right"')
+      expect(initialWxml).toContain('data-case="all-multi-left-a"')
+      expect(initialWxml).toContain('data-case="all-multi-left-b"')
+      expect(initialWxml).toContain('data-case="all-multi-middle-a"')
+      expect(initialWxml).toContain('data-case="all-multi-middle-b"')
+      expect(initialWxml).toContain('data-case="all-multi-right-a"')
+      expect(initialWxml).toContain('data-case="all-multi-right-b"')
     }
     finally {
       await miniProgram.close().catch(() => {})

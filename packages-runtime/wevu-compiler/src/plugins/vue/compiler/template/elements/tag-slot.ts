@@ -216,7 +216,10 @@ export function renderSlotFallback(
     }
   }
 
-  return `<block ${slotAttr}>${content}</block>`
+  // 真机 / DevTools 运行时里，多节点 fallback 通过 `<block slot="...">` 投影并不稳定，
+  // 某些布局场景（尤其父级是 flex）会直接丢失整组内容，因此这里只对“单根节点”做无包裹下推；
+  // 只要出现多节点，就退回真实 `<view>` 容器，优先保证投影可见性和兼容性。
+  return `<view ${slotAttr}>${content}</view>`
 }
 
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {

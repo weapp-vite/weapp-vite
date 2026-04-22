@@ -267,6 +267,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/slot-flex-layout/index",
+          "pathName": "pages/slot-flex-layout/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/slot-tag-form/index",
           "pathName": "pages/slot-tag-form/index",
           "query": "",
