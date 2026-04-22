@@ -79,28 +79,31 @@ export function registerServeCommand(cli: CAC) {
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
+      const ideProjectRoot = resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd)
+      const openCurrentIdeProject = async () => {
+        const openedByForwardConsole = await maybeStartForwardConsole({
+          platform: configService.platform,
+          mpDistRoot: configService.mpDistRoot,
+          cwd: configService.cwd,
+          weappViteConfig: configService.weappViteConfig,
+        })
+        if (openedByForwardConsole) {
+          return '已通过控制台转发复用当前开发者工具会话'
+        }
+
+        await openIde(configService.platform, ideProjectRoot, {
+          reuseOpenedProject: false,
+          trustProject: options.trustProject,
+        })
+        return '已重新打开微信开发者工具项目'
+      }
       const devHotkeysSession = targets.runMini
         ? startDevHotkeys({
             cwd: configService.cwd,
             mcpConfig: configService.weappViteConfig?.mcp,
-            openIde: async () => {
-              const openedByForwardConsole = await maybeStartForwardConsole({
-                platform: configService.platform,
-                mpDistRoot: configService.mpDistRoot,
-                cwd: configService.cwd,
-                weappViteConfig: configService.weappViteConfig,
-              })
-              if (!openedByForwardConsole) {
-                await openIde(configService.platform, resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd), {
-                  reuseOpenedProject: false,
-                  trustProject: options.trustProject,
-                })
-                return '已重新打开微信开发者工具项目'
-              }
-              return '已通过控制台转发复用当前开发者工具会话'
-            },
+            openIde: openCurrentIdeProject,
             platform: configService.platform,
-            projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd) ?? configService.cwd,
+            projectPath: ideProjectRoot ?? configService.cwd,
             rebuild: async () => {
               await buildService.build(options)
               return '已手动重新构建当前小程序产物'
@@ -181,18 +184,7 @@ export function registerServeCommand(cli: CAC) {
               tags: ['ide', 'open'],
             },
           ])
-          const openedByForwardConsole = await maybeStartForwardConsole({
-            platform: configService.platform,
-            mpDistRoot: configService.mpDistRoot,
-            cwd: configService.cwd,
-            weappViteConfig: configService.weappViteConfig,
-          })
-          if (!openedByForwardConsole) {
-            await openIde(configService.platform, resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd), {
-              reuseOpenedProject: false,
-              trustProject: options.trustProject,
-            })
-          }
+          await openCurrentIdeProject()
           devHotkeysSession?.restore()
         }
 
