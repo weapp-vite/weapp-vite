@@ -598,10 +598,41 @@ describe('compileVueTemplateToWxml', () => {
     )
 
     expect(warnings.some(message => message.includes('已禁用作用域插槽参数'))).toBe(true)
-    expect(code).toContain('<view slot="header"><view>{{title}}</view></view>')
+    expect(code).toContain('<view slot="header">{{title}}</view>')
     expect(code).toContain('<slot><view>fallback</view></slot>')
     expect(code).not.toContain('vue-slots=')
     expect(code).not.toContain('__wv-slot-props=')
+  })
+
+  it('projects plain named slot single child without synthetic view wrapper', () => {
+    const template = `
+<Child>
+  <template #icon>
+    <img class="probe" src="/cover.png" />
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<image slot="icon" class="img probe" src="/cover.png" />')
+    expect(code).not.toContain('<view slot="icon">')
+  })
+
+  it('projects plain named slot multiple children through block wrapper', () => {
+    const template = `
+<Child>
+  <template #header>
+    <view>A</view>
+    <view>B</view>
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<block slot="header"><view>A</view><view>B</view></block>')
+    expect(code).not.toContain('<view slot="header"><view>A</view><view>B</view></view>')
   })
 
   it.each([

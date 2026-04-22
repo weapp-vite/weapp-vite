@@ -260,6 +260,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-494/index",
+          "pathName": "pages/issue-494/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-459/index",
           "pathName": "pages/issue-459/index",
           "query": "",
