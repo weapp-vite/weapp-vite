@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "slot-tag-form",
+  "usingComponents": {
+    "slot-tag-paired-host": "../../components/slot-tag-paired-host/index",
+    "slot-tag-self-host": "../../components/slot-tag-self-host/index"
+  }
+}

@@ -1,0 +1,5 @@
+Component({
+  options: {
+    multipleSlots: true,
+  },
+})

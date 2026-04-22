@@ -1,0 +1,25 @@
+<view class="slot-tag-form-page">
+  <view class="slot-tag-form-title">slot tag form experiment</view>
+
+  <slot-tag-self-host>
+    <view slot="header" class="slot-tag-form-self-header" data-probe="self-header">
+      self header: {{sharedHeaderLabel}}
+    </view>
+    <view class="slot-tag-form-self-body" data-probe="self-body">
+      self body: {{sharedBodyLabel}}
+    </view>
+  </slot-tag-self-host>
+
+  <slot-tag-paired-host>
+    <view slot="header" class="slot-tag-form-paired-header" data-probe="paired-header">
+      paired header: {{sharedHeaderLabel}}
+    </view>
+    <view class="slot-tag-form-paired-body" data-probe="paired-body">
+      paired body: {{sharedBodyLabel}}
+    </view>
+  </slot-tag-paired-host>
+
+  <view class="slot-tag-form-action" bindtap="toggleLabels">
+    toggle slot tag labels
+  </view>
+</view>
