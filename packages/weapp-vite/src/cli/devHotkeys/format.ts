@@ -1,7 +1,8 @@
-import type { DevHotkeyState } from './types'
+import type { DevHotkeyDefinition, DevHotkeyState } from './types'
 import path from 'pathe'
 import packageJson from '../../../package.json'
 import { colors } from '../../logger'
+import { resolveDevHotkeyRowsByGroup } from './actions'
 
 const FULLWIDTH_ASCII_START = 0xFF01
 const FULLWIDTH_ASCII_END = 0xFF5E
@@ -28,40 +29,33 @@ function formatFooterLine(state: DevHotkeyState) {
   return '就绪      等待操作...'
 }
 
+function formatHotkeyRows(rows: readonly DevHotkeyDefinition[]) {
+  const key = (value: string) => colors.bold(colors.green(value))
+  const formattedRows = rows.map(row => ({
+    description: row.description,
+    key: key(row.key),
+  }))
+  const keyColumnWidth = Math.max(...formattedRows.map(row => row.key.length))
+  return formattedRows.map(({ key, description }) => `按 ${key.padEnd(keyColumnWidth)}  ${description}`)
+}
+
 /**
  * @description 生成带状态的开发态快捷键帮助文本。
  */
 export function formatDevHotkeyHelpWithState(state: DevHotkeyState) {
-  const key = (value: string) => colors.bold(colors.green(value))
-  const actionRows = [
-    { key: key('s'), description: '截图当前页面并保存到本地' },
-    { key: key('m'), description: '开关 MCP 服务' },
-  ]
-  const processRows = [
-    { key: key('q'), description: '退出当前 dev' },
-    { key: key('Ctrl+C'), description: '强制中断当前 dev' },
-    { key: key('Ctrl+Z'), description: '暂时挂起当前 dev，恢复终端控制' },
-  ]
-  const helpRows = [
-    { key: key('h'), description: '重新显示这份帮助' },
-  ]
-  const keyColumnWidth = Math.max(...[...actionRows, ...processRows, ...helpRows].map(row => row.key.length))
-  const formatRows = (rows: { key: string, description: string }[]) => rows.map(({ key, description }) =>
-    `按 ${key.padEnd(keyColumnWidth)}  ${description}`,
-  )
+  const sections = resolveDevHotkeyRowsByGroup()
+    .filter(section => section.rows.length > 0)
+    .flatMap(section => [
+      '',
+      section.title,
+      ...formatHotkeyRows(section.rows),
+    ])
   return [
     `${colors.bold(colors.green('DEV'))}  weapp-vite v${packageJson.version}  ${state.projectLabel ?? 'weapp'}`,
-    '',
-    '快捷命令',
-    ...formatRows(actionRows),
-    '',
-    '进程控制',
-    ...formatRows(processRows),
-    '',
-    '帮助',
-    ...formatRows(helpRows),
+    ...sections,
     '',
     `当前状态：${state.currentAction ?? '等待操作'} / MCP ${formatMcpStatus(state)}`,
+    ...(state.lastAction ? [`最近操作：${state.lastAction}`] : []),
   ].join('\n')
 }
 
@@ -72,6 +66,9 @@ export function formatDevHotkeyHintWithState(state: DevHotkeyState) {
   const key = (value: string) => colors.bold(colors.green(value))
   if (state.currentAction) {
     return `${formatFooterLine(state)}，按 ${key('h')} 显示帮助，按 ${key('q')} 退出`
+  }
+  if (state.lastAction) {
+    return `开发快捷键已就绪，最近操作：${state.lastAction}，按 ${key('h')} 显示帮助，按 ${key('q')} 退出`
   }
   return `开发快捷键已就绪，按 ${key('h')} 显示帮助，按 ${key('q')} 退出`
 }
