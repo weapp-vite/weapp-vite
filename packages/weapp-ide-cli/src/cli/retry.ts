@@ -30,6 +30,8 @@ export interface WechatIdeLoginRetryOptions {
 
 export type RetryPromptResult = 'retry' | 'cancel' | 'timeout'
 
+export const RETRY_PROMPT_INITIAL_IGNORE_MS = 300
+
 const LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
   /需要重新登录/,
@@ -154,6 +156,7 @@ export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
   }
 
   return await waitForExclusiveKeypress<RetryPromptResult>({
+    ignoreInitialMs: RETRY_PROMPT_INITIAL_IGNORE_MS,
     onKeypress: (_str, key) => {
       if (!key) {
         return

@@ -13,6 +13,7 @@ export interface SharedInputSession {
 }
 
 export interface ExclusiveKeypressOptions<T> {
+  ignoreInitialMs?: number
   timeoutMs?: number
   onKeypress: (
     str: string,
@@ -27,6 +28,7 @@ interface SharedSessionRecord {
 }
 
 interface ExclusiveKeypressRecord<T> {
+  ignoreUntil: number
   onKeypress: ExclusiveKeypressOptions<T>['onKeypress']
   resolve: (value: T | 'timeout') => void
   timeout: ReturnType<typeof setTimeout>
@@ -81,6 +83,9 @@ function handleData(chunk: string | Uint8Array) {
 function handleKeypress(str: string, key: { name?: string, ctrl?: boolean } | undefined) {
   const activeExclusive = exclusiveKeypressStack.at(-1)
   if (activeExclusive) {
+    if (Date.now() < activeExclusive.ignoreUntil) {
+      return
+    }
     const nextValue = activeExclusive.onKeypress(str, key)
     if (nextValue !== undefined) {
       clearTimeout(activeExclusive.timeout)
@@ -172,7 +177,11 @@ export async function waitForExclusiveKeypress<T>(
     const normalizedTimeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs && options.timeoutMs > 0
       ? options.timeoutMs
       : 30_000
+    const normalizedIgnoreInitialMs = Number.isFinite(options.ignoreInitialMs) && options.ignoreInitialMs && options.ignoreInitialMs > 0
+      ? options.ignoreInitialMs
+      : 0
     const record: ExclusiveKeypressRecord<T> = {
+      ignoreUntil: Date.now() + normalizedIgnoreInitialMs,
       onKeypress: options.onKeypress,
       resolve,
       timeout: setTimeout(() => {

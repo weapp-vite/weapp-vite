@@ -47,7 +47,7 @@ describe('retry interaction helpers', () => {
 
   it('logs login-required details and retries when user confirms', async () => {
     waitForExclusiveKeypressMock.mockResolvedValue('retry')
-    const { promptWechatIdeLoginRetry } = await import('../src/cli/retry')
+    const { promptWechatIdeLoginRetry, RETRY_PROMPT_INITIAL_IGNORE_MS } = await import('../src/cli/retry')
     const error = new Error('需要重新登录 (code 10)')
 
     const result = await promptWechatIdeLoginRetry({
@@ -63,6 +63,7 @@ describe('retry interaction helpers', () => {
     expect(logger.warn).toHaveBeenCalledWith('微信开发者工具返回登录错误：\n- message: 需要重新登录')
     expect(logger.info).toHaveBeenCalledWith('按 r 重试，按 q / Esc / Ctrl+C 退出（2s 内无输入将自动失败）。')
     expect(waitForExclusiveKeypressMock).toHaveBeenCalledWith({
+      ignoreInitialMs: RETRY_PROMPT_INITIAL_IGNORE_MS,
       onKeypress: expect.any(Function),
       timeoutMs: 1234,
     })

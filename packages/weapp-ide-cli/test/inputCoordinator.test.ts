@@ -100,6 +100,29 @@ describe('inputCoordinator', () => {
     session?.close()
   })
 
+  it('ignores carry-over keypresses during exclusive prompt initial guard window', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { waitForExclusiveKeypress } = await import('../src/cli/inputCoordinator')
+
+    const pending = waitForExclusiveKeypress({
+      ignoreInitialMs: 300,
+      onKeypress: (_str, key) => {
+        if (key?.name === 'r') {
+          return 'retry'
+        }
+      },
+      timeoutMs: 1000,
+    })
+
+    stdin.emit('keypress', 'r', { name: 'r' })
+    await vi.advanceTimersByTimeAsync(301)
+    stdin.emit('keypress', 'r', { name: 'r' })
+
+    await expect(pending).resolves.toBe('retry')
+  })
+
   it('suspends shared sessions while running exclusive terminal work and restores them afterwards', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
