@@ -1,4 +1,4 @@
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import path from 'pathe'

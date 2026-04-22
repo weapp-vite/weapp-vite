@@ -83,5 +83,36 @@
         "relativePath": "cases/visualizeit/qrcode-1.jpeg"
       }
     ]
+  },
+  {
+    "id": 4293349314,
+    "slug": "wooly99",
+    "title": "### 早睡搭子小程序：按时睡教",
+    "description": "### 早睡搭子小程序：按时睡教",
+    "sourceCommentUrl": "https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-4293349314",
+    "createdAt": "2026-04-22T03:38:38Z",
+    "author": "wooly99",
+    "assets": [
+      {
+        "kind": "cover",
+        "originalUrl": "https://github.com/user-attachments/assets/cae18a8e-fc3f-415d-9308-3ad9db0e56e1",
+        "relativePath": "cases/wooly99/cover.webp"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://github.com/user-attachments/assets/e5ebd41e-f62e-4a2e-9adb-b479037f3f8a",
+        "relativePath": "cases/wooly99/screenshot-1.jpeg"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://github.com/user-attachments/assets/5e1e8d32-94ff-4f23-b01b-6af3703e0fa0",
+        "relativePath": "cases/wooly99/screenshot-2.jpeg"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://github.com/user-attachments/assets/02075f99-5638-4b21-9257-8b7168e0eff7",
+        "relativePath": "cases/wooly99/screenshot-3.jpeg"
+      }
+    ]
   }
 ]

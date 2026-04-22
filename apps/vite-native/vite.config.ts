@@ -1,12 +1,12 @@
-import { defineConfig } from 'weapp-vite'
 import process from 'node:process'
 // import consola from 'consola'
-// import { fs } from '@weapp-core/shared'
+// import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { weappTailwindcss } from 'weapp-tailwindcss/vite'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 // import Inspect from 'vite-plugin-inspect'
 
-import { weappTailwindcss } from 'weapp-tailwindcss/vite'
+import { defineConfig } from 'weapp-vite'
 import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components/resolvers'
 // import { register } from 'tsx/esm/api'
 // register()

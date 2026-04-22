@@ -1,5 +1,5 @@
 // import { touch } from '../../packages/weapp-vite/src/utils/file'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 
 function touch(filename: string) {

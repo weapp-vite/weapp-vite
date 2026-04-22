@@ -1,6 +1,6 @@
 import { parse } from '@babel/parser'
 import _babelTraverse from '@babel/traverse'
-import { fs } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
 
