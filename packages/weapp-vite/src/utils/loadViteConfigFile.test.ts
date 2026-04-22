@@ -120,6 +120,40 @@ export default {
     )
   })
 
+  it('passes a custom Vite log level when provided', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-'))
+    tempDirs.push(tempDir)
+
+    const configFile = path.join(tempDir, 'vite.config.ts')
+    await fs.writeFile(configFile, 'export default {}')
+
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {},
+      path: configFile,
+      dependencies: [configFile],
+    })
+
+    await loadViteConfigFile(
+      { command: 'build', mode: 'development' },
+      configFile,
+      tempDir,
+      undefined,
+      undefined,
+      'native',
+      undefined,
+      'silent',
+    )
+
+    expect(loadConfigFromFileMock).toHaveBeenCalledWith(
+      { command: 'build', mode: 'development' },
+      configFile,
+      tempDir,
+      'silent',
+      undefined,
+      'native',
+    )
+  })
+
   it('suppresses selected process warnings only during config loading', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-'))
     tempDirs.push(tempDir)

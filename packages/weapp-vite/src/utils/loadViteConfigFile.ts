@@ -1,4 +1,4 @@
-import type { ConfigEnv, UserConfigExport } from 'vite'
+import type { ConfigEnv, LogLevel, UserConfigExport } from 'vite'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
@@ -84,6 +84,7 @@ export async function loadViteConfigFile(
   configFileExport?: UserConfigExport,
   configLoader?: ViteConfigLoader,
   suppressedWarningCodes?: string[],
+  logLevel?: LogLevel,
 ) {
   void configFileDependencies
   void configFileExport
@@ -95,7 +96,7 @@ export async function loadViteConfigFile(
       configEnv,
       resolvedConfigFile,
       configRoot,
-      undefined,
+      logLevel,
       undefined,
       resolvedConfigLoader,
     ),

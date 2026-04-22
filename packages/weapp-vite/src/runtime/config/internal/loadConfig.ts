@@ -170,6 +170,7 @@ async function loadConfigFileWithFallback(
       undefined,
       configLoader,
       suppressedWarningCodes,
+      configLoader === 'native' ? 'silent' : undefined,
     )
   }
   catch (error) {

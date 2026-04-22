@@ -190,6 +190,7 @@ describe('runtime config internal loadConfig', () => {
       undefined,
       'native',
       ['MODULE_TYPELESS_PACKAGE_JSON'],
+      'silent',
     )
   })
 
@@ -222,6 +223,7 @@ describe('runtime config internal loadConfig', () => {
       undefined,
       'native',
       ['MODULE_TYPELESS_PACKAGE_JSON'],
+      'silent',
     )
     expect(loadViteConfigFileMock).toHaveBeenNthCalledWith(
       2,
