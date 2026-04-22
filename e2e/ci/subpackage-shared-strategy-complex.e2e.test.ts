@@ -75,6 +75,14 @@ function isFlattenedSubpackagesSharedChunk(file: string) {
   return /subpackages_[^/]*subpackages_[^/]*\/common(?:\.\d+)?\.js$/.test(file)
 }
 
+function expectModuleReference(code: string, patternSource: string) {
+  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])${patternSource}\\1\\)|from\\s+(['"\`])${patternSource}\\2)`))
+}
+
+function expectNoModuleReference(code: string, patternSource: string) {
+  expect(code).not.toMatch(new RegExp(`(?:require\\((['"\`])${patternSource}\\1\\)|from\\s+(['"\`])${patternSource}\\2)`))
+}
+
 async function runBuild(appRoot: string, outDir: string, strategy: SharedStrategy) {
   await execa('node', [
     CLI_PATH,
@@ -215,9 +223,9 @@ describe.sequential('e2e subpackage sharedStrategy complex matrix', () => {
               const pageContent = await fs.readFile(pagePath, 'utf8')
 
               expect(sharedContent).toContain('exports')
-              expect(pageContent).toMatch(/require\((['"`])\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)/)
-              expect(pageContent).not.toMatch(/require\((['"`]).*subpackages_[^'"`)]*subpackages_[^'"`)]*\/common(?:\.\d+)?\.js\1\)/)
-              expect(pageContent).not.toMatch(/require\((['"`])[^\n\r+\u2028\u2029]*\+[^\n\r"')`\u2028\u2029]*(?:["')`][^\n\r+\u2028\u2029]*\+[^\n\r"')`\u2028\u2029]*)*(?:[\n\r\u2028\u2029][^"')`]*)?\/common(?:\.\d+)?\.js\1\)/)
+              expectModuleReference(pageContent, '\\.\\/weapp-shared\\/common(?:\\.\\d+)?\\.js')
+              expectNoModuleReference(pageContent, '.*subpackages_[^\'"`)]*subpackages_[^\'"`)]*\\/common(?:\\.\\d+)?\\.js')
+              expectNoModuleReference(pageContent, '[^\\n\\r+\\u2028\\u2029]*\\+[^\\n\\r"\')`\\u2028\\u2029]*(?:["\')`][^\\n\\r+\\u2028\\u2029]*\\+[^\\n\\r"\')`\\u2028\\u2029]*)*(?:[\\n\\r\\u2028\\u2029][^"\')`]*)?\\/common(?:\\.\\d+)?\\.js')
             }
           }
         }

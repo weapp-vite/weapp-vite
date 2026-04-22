@@ -65,12 +65,27 @@ async function scanFiles(root: string) {
   return (await fd.crawl(root).withPromise()).sort()
 }
 
-function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) {
-  const requireMatches = [...sourceCode.matchAll(/require\((['"`])([^"'`]+)\1\)/g)]
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
-  return requireMatches
-    .map(match => path.resolve(path.dirname(sourceFilePath), match[2]!))
-    .find(candidate => candidate.startsWith(DIST_ROOT) && path.extname(candidate) === '.js')
+function expectModuleReference(code: string, specifier: string) {
+  const escapedSpecifier = escapeRegex(specifier)
+  const escapedBuiltSpecifier = `(?:\\.\\.\\/)+miniprogram_npm\\/${escapedSpecifier}(?:\\/index)?`
+  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\1\\)|from\\s+(['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\2)`))
+}
+
+function resolveSharedRuntimeImport(sourceFilePath: string, sourceCode: string) {
+  const relativeImports = [
+    ...[...sourceCode.matchAll(/require\((['"`])([^"'`]+)\1\)/g)].map(match => match[2]!),
+    ...[...sourceCode.matchAll(/from\s+(['"`])([^"'`]+)\1/g)].map(match => match[2]!),
+  ]
+  const candidates = relativeImports
+    .map(importee => path.resolve(path.dirname(sourceFilePath), importee))
+    .filter(candidate => candidate.startsWith(DIST_ROOT) && path.extname(candidate) === '.js')
+
+  return candidates.find(candidate => candidate.includes(`${path.sep}weapp-vendors${path.sep}`))
+    ?? candidates[0]
 }
 
 async function findWevuVendorRuntimePath(expectedSnippet: string) {
@@ -216,14 +231,13 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('transportName')
     expect(pageJs).toContain('socket.invalid/github-issues')
     expect(pageJs).toContain('/* __wvRGC__ */')
-    expect(pageJs).toContain('targets: ["WebSocket"]')
+    expect(pageJs).toContain('installWebRuntimeGlobals({ targets: [')
+    expect(pageJs).toContain('"WebSocket"')
     expect(pageJs).toContain('|| globalThis')
     expect(pageJs).toContain('var WebSocket =')
-    expect(pageJs).toContain('.WebSocket;')
+    expect(pageJs).toContain('.WebSocket')
     expect(pageJs).toContain('var URL =')
-    expect(pageJs).toContain('.URL;')
-    expect(pageJs).toContain('["WebSocket"] =')
-    expect(pageJs).toContain('["URL"] =')
+    expect(pageJs).toContain('.URL')
   })
 
   it('issue #448: injects the next batch of web runtime globals on demand', async () => {
@@ -373,14 +387,14 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('_runE2E')
     expect(pageJs).toContain('_resetE2E')
     expect(pageJs).toContain('#issue466-dialog')
-    expect(pageJs).toContain('require("./miniprogram_npm/tdesign-miniprogram/dialog/index")')
+    expect(pageJs).toContain('tdesign-miniprogram/dialog/index')
     expect(pageJs).toContain('issue-466 alert title')
     expect(pageJs).toContain('issue-466 confirm title')
     expect(pageJs).toContain('issue-466 action title')
     expect(pageJs).toContain('issue-466 close title')
     expect(pageJs).not.toContain('.default.default')
     expect(pageJs).not.toMatch(/__toESM\([^)]*,\s*1\)/)
-    expect(nativePageJs).toContain('require("../miniprogram_npm/tdesign-miniprogram/dialog/index")')
+    expect(nativePageJs).toContain('tdesign-miniprogram/dialog/index')
     expect(nativePageJs).toContain('issue-466 native confirm title')
     expect(nativePageJs).not.toContain('miniprogram_dist/dialog/index.js')
     expect(nativePageJs).not.toContain('.default.default')
@@ -441,7 +455,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentWxml).toContain('sum = {{sum}}')
     expect(componentWxml).toContain('summary = {{summary}}')
     expect(componentJs).toContain('ComponentWithComputed')
-    expect(componentJs).toContain('require("../../miniprogram_npm/miniprogram-computed/index")')
+    expectModuleReference(componentJs, 'miniprogram-computed')
     expect(componentJs).toContain('watchCount')
     expect(componentJs).toContain('lastWatch')
     expect(componentJs).toContain('summary(data)')
@@ -1056,12 +1070,10 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const itemVendorRuntimePath = resolveSharedRuntimeImport(itemSharedPath, itemShared)
     const userVendorRuntimePath = resolveSharedRuntimeImport(userSharedPath, userShared)
 
-    expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
-    expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
-    expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
-    expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/common\.js\1\)/)
+    expect(itemShared).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)|from\s+(['"`])\.\.\/\.\.\/rolldown-runtime\.js\2)/)
+    expect(userShared).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)|from\s+(['"`])\.\.\/\.\.\/rolldown-runtime\.js\2)/)
+    expect(itemShared).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/common\.js\1\)|from\s+(['"`])\.\.\/\.\.\/common\.js\2)/)
+    expect(userShared).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/common\.js\1\)|from\s+(['"`])\.\.\/\.\.\/common\.js\2)/)
 
     expect(itemShared).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
@@ -1103,21 +1115,19 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(itemPageJs).toContain('item-login-required:issue-340:shared')
     expect(userPageJs).toContain('user-register-form:issue-340:shared')
-    expect(itemPageJs).toMatch(/require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)/)
-    expect(userPageJs).toMatch(/require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)/)
-    expect(itemPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
-    expect(userPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
-    expect(itemPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)/)
-    expect(userPageJs).not.toMatch(/require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)/)
+    expect(itemPageJs).toMatch(/(?:require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)|from\s+(['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\2)/)
+    expect(userPageJs).toMatch(/(?:require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)|from\s+(['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\2)/)
+    expect(itemPageJs).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)|from\s+(['"`])\.\.\/\.\.\/\.\.\/common\.js\2)/)
+    expect(userPageJs).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)|from\s+(['"`])\.\.\/\.\.\/\.\.\/common\.js\2)/)
+    expect(itemPageJs).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)|from\s+(['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\2)/)
+    expect(userPageJs).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\1\)|from\s+(['"`])\.\.\/\.\.\/common(?:\.\d+)?\.js\2)/)
     expect(itemPageJs).not.toMatch(/vendors(?:\.\d+)?\.js/)
     expect(userPageJs).not.toMatch(/vendors(?:\.\d+)?\.js/)
 
     expect(itemShared).toContain('issue-340')
     expect(userShared).toContain('issue-340')
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/weapp-vendors\/[^"'`]+\.js\1\)/)
-    expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
-    expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
+    expect(itemShared).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)|from\s+(['"`])\.\.\/\.\.\/rolldown-runtime\.js\2)/)
+    expect(userShared).not.toMatch(/(?:require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)|from\s+(['"`])\.\.\/\.\.\/rolldown-runtime\.js\2)/)
     expect(itemShared).not.toMatch(/subpackages_item.*subpackages_user\/common\.js/)
     expect(userShared).not.toMatch(/subpackages_item.*subpackages_user\/common\.js/)
     expect(itemVendorRuntimePath).toBeDefined()
@@ -1306,7 +1316,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(resultPageJs).toContain('increment')
     expect(resultPageJs).toContain('_runE2E')
 
-    expect(wevuRuntime).toContain('Object.defineProperty(exports, "storeToRefs"')
+    expect(wevuRuntime).toMatch(/Object\.defineProperty\(exports,\s*"storeToRefs"|export\s+\{[^}]*storeToRefs/)
     expect(launchPageJs).toContain('storeToRefs(store)')
     expect(resultPageJs).toContain('storeToRefs(store)')
   })

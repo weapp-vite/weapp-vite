@@ -28,6 +28,12 @@ async function readDistNpmFile(relativePath: string) {
   return await readFile(path.join(DIST_NPM_ROOT, relativePath), 'utf8')
 }
 
+function expectModuleReference(code: string, specifier: string) {
+  const escapedSpecifier = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const escapedBuiltSpecifier = `(?:\\.\\.\\/)+miniprogram_npm\\/${escapedSpecifier}(?:\\/index)?`
+  expect(code).toMatch(new RegExp(`(?:require\\((['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\1\\)|from\\s+(['"\`])(?:${escapedSpecifier}|${escapedBuiltSpecifier})\\2)`))
+}
+
 describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
   beforeAll(async () => {
     await buildApp()
@@ -47,8 +53,8 @@ describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
     expect(barePageWxml).toContain('<t-dialog id="t-dialog" />')
     expect(barePageWxml).toContain('<t-toast id="t-toast" />')
     expect(barePageJs).toContain('issue-dialog-bare confirm title')
-    expect(barePageJs).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
-    expect(barePageJs).toContain('../../miniprogram_npm/tdesign-miniprogram/toast/index')
+    expectModuleReference(barePageJs, 'tdesign-miniprogram/dialog')
+    expectModuleReference(barePageJs, 'tdesign-miniprogram/toast')
     expect(barePageJs).not.toContain('.default.default')
     expect(barePageJs).not.toMatch(/__toESM\([^)]*,\s*1\)/)
     expect(barePageJson).toContain('"t-dialog": "../../miniprogram_npm/tdesign-miniprogram/dialog/dialog"')
@@ -58,8 +64,8 @@ describe.sequential('e2e app: tdesign-dialog-import (build)', () => {
     expect(indexPageWxml).toContain('<t-dialog id="t-dialog" />')
     expect(indexPageWxml).toContain('<t-toast id="t-toast" />')
     expect(indexPageJs).toContain('issue-dialog-index confirm title')
-    expect(indexPageJs).toContain('../../miniprogram_npm/tdesign-miniprogram/dialog/index')
-    expect(indexPageJs).toContain('../../miniprogram_npm/tdesign-miniprogram/toast/index')
+    expectModuleReference(indexPageJs, 'tdesign-miniprogram/dialog/index')
+    expectModuleReference(indexPageJs, 'tdesign-miniprogram/toast/index')
     expect(indexPageJs).not.toContain('.default.default')
     expect(indexPageJs).not.toMatch(/__toESM\([^)]*,\s*1\)/)
     expect(indexPageJson).toContain('"t-dialog": "../../miniprogram_npm/tdesign-miniprogram/dialog/dialog"')

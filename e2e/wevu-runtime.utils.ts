@@ -1,3 +1,4 @@
+import type { TestJsFormat } from './utils/jsFormat'
 import { access, readFile, rm } from 'node:fs/promises'
 import path from 'pathe'
 import { formatWxml, formatWxss } from './template-e2e.utils'
@@ -39,14 +40,15 @@ async function pathExists(filePath: string) {
   }
 }
 
-export async function runBuild(platform: RuntimePlatform) {
+export async function runBuild(platform: RuntimePlatform, jsFormat?: TestJsFormat) {
   await rm(DIST_ROOT, { recursive: true, force: true })
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
+    jsFormat,
     projectRoot: APP_ROOT,
     platform,
     skipNpm: true,
-    label: `wevu-runtime:${platform}`,
+    label: `wevu-runtime:${platform}${jsFormat ? `:${jsFormat}` : ''}`,
   })
 }
 

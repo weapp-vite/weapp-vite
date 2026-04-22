@@ -165,6 +165,7 @@ describe('weapp.jsFormat & legacy targets', () => {
       cwd,
       inlineConfig: {
         weapp: {
+          jsFormat: 'cjs',
           es5: true,
         },
       },
@@ -188,6 +189,7 @@ describe('weapp.jsFormat & legacy targets', () => {
       cwd,
       inlineConfig: {
         weapp: {
+          jsFormat: 'cjs',
           es5: true,
         },
         build: {

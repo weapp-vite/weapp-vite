@@ -1,3 +1,4 @@
+import type { TestJsFormat } from '../utils/jsFormat'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { APP_ROOT, ensureWevuRuntimeDemoBuilt } from './wevu-runtime-demo.shared'
@@ -34,6 +35,7 @@ const CASES = [
     title: 'axios',
   },
 ] as const
+const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -100,123 +102,125 @@ async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...a
   }
 }
 
-describe.sequential('wevu runtime demo request globals (weapp e2e)', () => {
-  let miniProgram: any
+for (const jsFormat of JS_FORMATS) {
+  describe.sequential(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, () => {
+    let miniProgram: any
 
-  async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
-    if (miniProgram) {
-      return miniProgram
-    }
-    try {
-      await ensureWevuRuntimeDemoBuilt()
-      miniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
-      })
-      return miniProgram
-    }
-    catch (error) {
-      if (isDevtoolsHttpPortError(error)) {
-        ctx.skip('WeChat DevTools 服务端口未开启，跳过 request globals IDE 自动化用例。')
+    async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
+      if (miniProgram) {
+        return miniProgram
       }
-      throw error
-    }
-  }
-
-  afterAll(async () => {
-    if (!miniProgram) {
-      return
-    }
-    await miniProgram.close()
-  })
-
-  it('exposes request globals from the app runtime and request-globals index page', async (ctx) => {
-    const miniProgram = await getMiniProgram(ctx)
-    const page = await miniProgram.reLaunch('/pages/request-globals/index')
-    if (!page) {
-      throw new Error('Failed to launch /pages/request-globals/index')
-    }
-
-    const appProbe = await miniProgram.evaluate(() => {
-      return {
-        fetchType: typeof fetch,
-        urlAvailable: (() => {
-          try {
-            return new URL('https://request-globals.invalid').protocol === 'https:'
-          }
-          catch {
-            return false
-          }
-        })(),
-        webSocketAvailable: typeof WebSocket === 'function',
-        xmlHttpRequestAvailable: typeof XMLHttpRequest === 'function',
+      try {
+        await ensureWevuRuntimeDemoBuilt(jsFormat)
+        miniProgram = await launchAutomator({
+          projectPath: APP_ROOT,
+        })
+        return miniProgram
       }
+      catch (error) {
+        if (isDevtoolsHttpPortError(error)) {
+          ctx.skip('WeChat DevTools 服务端口未开启，跳过 request globals IDE 自动化用例。')
+        }
+        throw error
+      }
+    }
+
+    afterAll(async () => {
+      if (!miniProgram) {
+        return
+      }
+      await miniProgram.close()
     })
 
-    const entries = await page.data('entries')
-
-    expect(appProbe, JSON.stringify(appProbe)).toEqual({
-      fetchType: 'function',
-      urlAvailable: true,
-      webSocketAvailable: true,
-      xmlHttpRequestAvailable: true,
-    })
-    expect(entries).toEqual([
-      {
-        desc: '使用 wevu/fetch + wevu/web-apis，验证全局 fetch 与宿主默认参数',
-        route: '/pages/request-globals/fetch',
-        title: 'fetch',
-      },
-      {
-        desc: '使用 wevu/web-apis 安装 web runtime，验证 graphql-request 对 URL / fetch 的依赖链路',
-        route: '/pages/request-globals/graphql-request',
-        title: 'graphql-request',
-      },
-      {
-        desc: '使用 wevu/web-apis 安装 web runtime，验证 axios 在小程序中的请求适配能力',
-        route: '/pages/request-globals/axios',
-        title: 'axios',
-      },
-    ])
-  })
-
-  it('supports fetch, graphql-request and axios in simulator runtime', async (ctx) => {
-    const miniProgram = await getMiniProgram(ctx)
-
-    for (const testCase of CASES) {
-      const page = await miniProgram.reLaunch(testCase.route)
+    it('exposes request globals from the app runtime and request-globals index page', async (ctx) => {
+      const miniProgram = await getMiniProgram(ctx)
+      const page = await miniProgram.reLaunch('/pages/request-globals/index')
       if (!page) {
-        throw new Error(`Failed to launch route ${testCase.route}`)
+        throw new Error('Failed to launch /pages/request-globals/index')
       }
 
-      const initialState = await waitForTransportState(page, snapshot => (
-        snapshot.pageStatus === '全部通过'
-        && snapshot.runCount === 1
-        && snapshot.status === 'success'
-        && Array.isArray(snapshot.requestLog)
-        && snapshot.requestLog.length === 1
-      ))
+      const appProbe = await miniProgram.evaluate(() => {
+        return {
+          fetchType: typeof fetch,
+          urlAvailable: (() => {
+            try {
+              return new URL('https://request-globals.invalid').protocol === 'https:'
+            }
+            catch {
+              return false
+            }
+          })(),
+          webSocketAvailable: typeof WebSocket === 'function',
+          xmlHttpRequestAvailable: typeof XMLHttpRequest === 'function',
+        }
+      })
 
-      expect(initialState.payload).toContain(testCase.expectedPayload)
-      expect(initialState.requestLog[0]).toContain(testCase.expectedRequestPath)
-      for (const expectedTrace of testCase.expectedRequestTrace) {
-        expect(initialState.requestLog[0]).toContain(expectedTrace)
+      const entries = await page.data('entries')
+
+      expect(appProbe, JSON.stringify(appProbe)).toEqual({
+        fetchType: 'function',
+        urlAvailable: true,
+        webSocketAvailable: true,
+        xmlHttpRequestAvailable: true,
+      })
+      expect(entries).toEqual([
+        {
+          desc: '使用 wevu/fetch + wevu/web-apis，验证全局 fetch 与宿主默认参数',
+          route: '/pages/request-globals/fetch',
+          title: 'fetch',
+        },
+        {
+          desc: '使用 wevu/web-apis 安装 web runtime，验证 graphql-request 对 URL / fetch 的依赖链路',
+          route: '/pages/request-globals/graphql-request',
+          title: 'graphql-request',
+        },
+        {
+          desc: '使用 wevu/web-apis 安装 web runtime，验证 axios 在小程序中的请求适配能力',
+          route: '/pages/request-globals/axios',
+          title: 'axios',
+        },
+      ])
+    })
+
+    it('supports fetch, graphql-request and axios in simulator runtime', async (ctx) => {
+      const miniProgram = await getMiniProgram(ctx)
+
+      for (const testCase of CASES) {
+        const page = await miniProgram.reLaunch(testCase.route)
+        if (!page) {
+          throw new Error(`Failed to launch route ${testCase.route}`)
+        }
+
+        const initialState = await waitForTransportState(page, snapshot => (
+          snapshot.pageStatus === '全部通过'
+          && snapshot.runCount === 1
+          && snapshot.status === 'success'
+          && Array.isArray(snapshot.requestLog)
+          && snapshot.requestLog.length === 1
+        ))
+
+        expect(initialState.payload).toContain(testCase.expectedPayload)
+        expect(initialState.requestLog[0]).toContain(testCase.expectedRequestPath)
+        for (const expectedTrace of testCase.expectedRequestTrace) {
+          expect(initialState.requestLog[0]).toContain(expectedTrace)
+        }
+
+        await invokeOrTap(page, 'runChecks', 0)
+
+        const rerunState = await waitForTransportState(page, snapshot => (
+          snapshot.pageStatus === '全部通过'
+          && snapshot.runCount === 2
+          && snapshot.status === 'success'
+          && Array.isArray(snapshot.requestLog)
+          && snapshot.requestLog.length === 1
+        ))
+
+        expect(rerunState.payload).toContain(testCase.expectedPayload)
+        expect(rerunState.requestLog[0]).toContain(testCase.expectedRequestPath)
+        for (const expectedTrace of testCase.expectedRequestTrace) {
+          expect(rerunState.requestLog[0]).toContain(expectedTrace)
+        }
       }
-
-      await invokeOrTap(page, 'runChecks', 0)
-
-      const rerunState = await waitForTransportState(page, snapshot => (
-        snapshot.pageStatus === '全部通过'
-        && snapshot.runCount === 2
-        && snapshot.status === 'success'
-        && Array.isArray(snapshot.requestLog)
-        && snapshot.requestLog.length === 1
-      ))
-
-      expect(rerunState.payload).toContain(testCase.expectedPayload)
-      expect(rerunState.requestLog[0]).toContain(testCase.expectedRequestPath)
-      for (const expectedTrace of testCase.expectedRequestTrace) {
-        expect(rerunState.requestLog[0]).toContain(expectedTrace)
-      }
-    }
+    })
   })
-})
+}

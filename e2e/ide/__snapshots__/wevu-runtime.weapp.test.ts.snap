@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/class-style/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/class-style/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -71,7 +71,78 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/diff/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/class-style/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Class Style</view>
+      <view class="summary">ok: true</view>
+      <view
+        id="class-style-target"
+        style="
+          background-color: #f0f9ff;
+          padding: 4px;
+          margin-top: 5px;
+          border-radius: 6px;
+          opacity: 0.9;
+          color: #0052d9;
+          font-size: 14px;
+          line-height: 1.6;
+          --tokenColor: #0f62fe;
+        "
+        class="base state-ready root-a nested-a nested-b active ready">
+        class-style-target
+      </view>
+      <map
+        class="map-zone"
+        id="class-style-map"
+        latitude="39.91"
+        longitude="116.4"
+        markers='[{"id":1,"latitude":39.908823,"longitude":116.39747,"width":18,"height":18},{"id":2,"latitude":39.914889,"longitude":116.403873,"width":18,"height":18}]'
+        scale="13">
+        ©TENCENT-MAP-LICENSE
+        <view>
+          <cover-view
+            class="relative h- 64rpx flex items-center rounded-full p- 8rpx shadow-lg w- 164rpx bg-highlight-dark"
+            marker-id="0">
+            callout-0
+          </cover-view>
+          <cover-view
+            class="relative h- 64rpx flex items-center rounded-full p- 8rpx shadow-lg w- 164rpx bg-white"
+            marker-id="1">
+            callout-1
+          </cover-view>
+        </view>
+      </map>
+      <view class="root-ready" id="guard-root-class">root-guard-class</view>
+      <text selectable="" class="details">
+        { "name": "class-style", "ok": true, "checks": { "enabledUpdated": true,
+        "classStateUpdated": true, "classArrayUpdated": true, "classFlagsUpdated": true,
+        "styleObjectUpdated": true, "styleArrayUpdated": true, "mapSlotWidthClassResolved": true,
+        "mapSlotSelectedClassResolved": true, "mapSlotUnselectedClassResolved": true,
+        "rootGuardClassResolved": true }, "details": { "classList": [ "root-a", "", [ "nested-a", {
+        "nested-b": true } ] ], "classFlags": { "active": true, "disabled": false }, "styleObject":
+        { "color": "#0052d9", "fontSize": "28rpx", "lineHeight": 1.6, "--tokenColor": "#0f62fe" },
+        "styleArray": [ "padding:8rpx", { "marginTop": "10rpx", "borderRadius": "12rpx" }, [ {
+        "opacity": 0.9 } ] ], "styleText": "background-color:#f0f9ff", "root": { "a": "root-ready"
+        }, "classBindingEntries": [ [ "__wv_cls_0", "base state-ready root-a nested-a nested-b
+        active ready" ], [ "__wv_cls_1", [ "relative h-[64rpx] flex items-center rounded-full
+        p-[8rpx] shadow-lg w-[164rpx] bg-highlight-dark", "relative h-[64rpx] flex items-center
+        rounded-full p-[8rpx] shadow-lg w-[164rpx] bg-white" ] ], [ "__wv_cls_2", "root-ready" ] ]
+        }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/diff/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -97,7 +168,33 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/diff/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Diff</view>
+      <view class="summary">ok: true</view>
+      <view class="hidden">count: 1</view>
+      <view class="hidden">nested: 2</view>
+      <view class="hidden">list: 1,2,3</view>
+      <view class="hidden">skip:</view>
+      <text selectable="" class="details">
+        { "name": "diff", "ok": true, "checks": { "hasCalls": true, "noSetData": true,
+        "includesNested": true, "includesList": true, "isNoSetData": true }, "details": {
+        "payloadKeys": [ "state.count", "state.nested.value", "state.list" ], "callCount": 1 }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/hmr/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -119,7 +216,29 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr-html/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/hmr/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">HMR</view>
+      <view class="summary">ok: true</view>
+      <text selectable="" class="details">
+        { "name": "hmr", "ok": true, "checks": { "versionBumped": true, "stateRetained": true,
+        "hotActionApplied": true }, "details": { "versionBefore": 1, "nextVersion": 2, "before": 1,
+        "afterInc": 2, "afterHot": 4 }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/hmr-html/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -136,7 +255,24 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/hmr-sfc/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/hmr-html/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="hmr-html-page">
+      <view class="title">HMR-HTML</view>
+      <view class="content">HMR-HTML-TEMPLATE</view>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/hmr-sfc/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -153,7 +289,24 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/layouts/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/hmr-sfc/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="hmr-sfc-page">
+      <view class="title">HMR-SFC</view>
+      <view class="marker">HMR-SFC-SCRIPT</view>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/layouts/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -195,7 +348,49 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/reactivity/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/layouts/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="hero">
+        <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
+        <view class="hero__title">Layouts HMR Playground</view>
+        <view class="hero__desc">current: default</view>
+        <view class="hero__desc">script: LAYOUTS-PAGE-SCRIPT-BASE</view>
+      </view>
+      <view class="card">
+        <view class="card__title">default layout</view>
+        <view class="card__desc">default layout is mounted from src/layouts/default.</view>
+      </view>
+      <view class="card">
+        <view class="card__title">admin layout</view>
+        <view class="card__desc">admin layout is mounted from src/layouts/admin.</view>
+      </view>
+      <view class="card">
+        <view class="card__title">plain page</view>
+        <view class="card__desc">setPageLayout(false) removes wrappers.</view>
+      </view>
+      <view class="actions">
+        <button class="action-btn" role="button" aria-disabled="false">default</button>
+        <button class="action-btn action-btn--primary" role="button" aria-disabled="false">
+          admin
+        </button>
+        <button class="action-btn action-btn--ghost" role="button" aria-disabled="false">
+          none
+        </button>
+      </view>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/reactivity/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -223,7 +418,35 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/root-guard/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/reactivity/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Reactivity</view>
+      <view class="summary">ok: true</view>
+      <text user-select="" class="details">
+        { "name": "reactivity", "ok": true, "checks": { "isRef": true, "isReactive": true,
+        "isShallowReactive": true, "isShallowRef": true, "markRaw": true, "toRaw": true, "computed":
+        true, "watchTriggered": true, "watchEffectTriggered": true, "shallowRefTrigger": true,
+        "scopeDisposed": true, "scopeMatched": true, "deepStrategy": true, "unrefValue": true,
+        "toValueRef": true, "toValueGetter": true, "toRefsValue": true, "toRefValue": true,
+        "readonlyValue": true, "traverseWorks": true, "versionUpdated": true, "mutationRecorded":
+        true }, "details": { "watchValues": [ 1, 4 ], "watchEffectValues": [ 1, 2 ],
+        "shallowTriggered": 1, "currentStrategy": "traverse", "versionBefore": 8, "versionAfter": 9,
+        "mutationLogs": 1 }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/root-guard/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -245,7 +468,29 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/runtime/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/root-guard/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Root Guard Class</view>
+      <view class="summary">ok: true</view>
+      <text user-select="" class="details">
+        { "name": "root-guard", "ok": true, "checks": { "classBindingGenerated": true,
+        "classBindingSafeString": true }, "details": { "classBindingEntries": [ [ "__wv_cls_0", "" ]
+        ] }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/runtime/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -316,7 +561,78 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/store/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/runtime/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Runtime</view>
+      <view class="ref-target" id="runtime-ref">template-ref</view>
+      <view class="summary">ok: true</view>
+      <x-child is="components/x-child/index" id="child">
+        <view class="child-index--child">
+          <view class="child-index--row">title: child</view>
+          <view class="child-index--row">count: 1</view>
+          <view class="child-index--row">doubled: 2</view>
+          <view class="child-index--row">attrs: []</view>
+          <view class="child-index--row">slots: []</view>
+          <view class="child-index--row">injected: global-value</view>
+          <view class="child-index--row">emit: 1</view>
+          <view class="child-index--row">watch: 0</view>
+        </view>
+        <view>header slot</view>
+        <view>default slot</view>
+      </x-child>
+      <x-model is="components/x-model/index" id="model">
+        <view class="model-index--model">
+          <view class="model-index--row">label: model</view>
+          <view class="model-index--row">model: changed</view>
+          <view class="model-index--row">emitLogs: 1</view>
+        </view>
+      </x-model>
+      <x-compat is="components/x-compat/index" id="compat">
+        <view class="compat-index--compat">
+          <view class="compat-index--row">label: compat</view>
+          <view class="compat-index--row">count: 1</view>
+        </view>
+      </x-compat>
+      <x-scoped is="components/x-scoped/index" id="scoped">
+        <view class="scoped-index--scoped">scoped: wv_OWNER</view>
+      </x-scoped>
+      <text selectable="" class="details">
+        { "name": "runtime", "ok": true, "checks": { "inSetupInstance": true, "inSetupContext":
+        true, "outsideSetupInstance": true, "bindModelUpdated": true, "bindModelHelpers": true,
+        "ctxBindModel": true, "templateRefReady": true, "hooksCollected": true, "shareResult": true,
+        "timelineResult": true, "favoritesResult": true, "exitStateResult": true, "normalizeClass":
+        true, "normalizeStyle": true, "mergeArray": true, "mergeObject": true, "childEmit": true,
+        "childAttrs": true, "childSlots": true, "compatComponent": true, "scopedComponent": true,
+        "modelEmitLogged": true, "localInjected": true, "globalInjected": true, "explicitGlobal":
+        true, "defaultsApplied": true }, "details": { "beforeHooks": [ "onBeforeMount",
+        "onBeforeUnmount", "onLoad", "onShow", "onActivated", "onReady", "onMounted", "onRouteDone"
+        ], "afterHooks": [ "onBeforeMount", "onBeforeUnmount", "onLoad", "onShow", "onActivated",
+        "onReady", "onMounted", "onRouteDone", "onPageScroll", "onReachBottom", "onPullDownRefresh",
+        "onTabItemTap", "onRouteDone", "onResize", "onMoved", "onErrorCaptured",
+        "onUnhandledRejection", "onShareAppMessage", "onShareTimeline", "onAddToFavorites",
+        "onSaveExitState" ], "extraHooks": [ "onPageScroll", "onReachBottom", "onPullDownRefresh",
+        "onTabItemTap", "onRouteDone", "onResize", "onMoved", "onErrorCaptured",
+        "onUnhandledRejection", "onShareAppMessage", "onShareTimeline", "onAddToFavorites",
+        "onSaveExitState" ], "shareResult": { "title": "share" }, "timelineResult": { "title":
+        "timeline" }, "favoritesResult": { "title": "favorites" }, "exitStateResult": { "data": {
+        "key": "value" } }, "modelBefore": { "value": "changed", "logs": [] }, "modelAfter": {
+        "value": "changed", "logs": [ "update:modelValue:\\"model-next\\"" ] }, "childAttrs": "[]",
+        "childSlots": "[]", "currentFormTitle": "changed", "runtimeFormTitle": "changed" }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/store/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -343,7 +659,34 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/store-share/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/store/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Store</view>
+      <view class="summary">ok: true</view>
+      <text selectable="" class="details">
+        { "name": "store", "ok": true, "checks": { "pluginTouched": true, "pluginRecords": true,
+        "subscribeTriggered": true, "actionTriggered": true, "setupReset": true, "optionsReset":
+        true, "optionsPatched": true, "refsSetup": true, "refsOptions": true, "refsGetter": true },
+        "details": { "subscribeLogs": [ "direct", "direct", "direct", "patch function", "patch
+        object", "direct", "direct" ], "actionLogs": [ "before:inc", "after:inc", "before:visit",
+        "after:visit", "before:setName", "after:setName", "before:inc", "after:inc",
+        "before:setName", "after:setName" ], "setupCount": 1, "setupName": "shared", "optionsCount":
+        1, "optionsLabel": "shared" }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/store-share/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">
@@ -365,7 +708,118 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
 "
 `;
 
-exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::pages/style-matrix/index 1`] = `
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/store-share/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Store Share</view>
+      <view class="summary">ok: true</view>
+      <text selectable="" class="details">
+        { "name": "store-share", "ok": true, "checks": { "sharedName": true, "sharedLabel": true,
+        "sharedCount": true }, "details": { "setupCount": 1, "setupName": "shared", "optionsCount":
+        1, "optionsLabel": "shared" }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::esm::pages/style-matrix/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
+  <view class="index--layout-default">
+    <text class="index--layout-default__marker"></text>
+    <view class="index--layout-shared-template">
+      LAYOUT-SHARED-TEMPLATE-BASE: LAYOUT-SHARED-WXS-BASE
+    </view>
+    <view class="page">
+      <view class="title">Style Matrix</view>
+      <view class="summary">ok: true</view>
+      <view class="cell" id="style-string" style="color: #1f2937; background-color: #f9fafb">
+        style-string
+      </view>
+      <view
+        class="cell"
+        id="style-object"
+        style="font-size: 12px; line-height: 1.4; border-radius: 4px">
+        style-object
+      </view>
+      <view
+        class="cell"
+        id="style-camel"
+        style="background-color: #fffbe6; margin-top: 4px; webkit-line-clamp: 2">
+        style-camel
+      </view>
+      <view
+        class="cell"
+        id="style-array"
+        style="padding: 2px; margin-top: 3px; border-color: #d9d9d9">
+        style-array
+      </view>
+      <view
+        class="cell"
+        id="style-nested"
+        style="display: block; opacity: 0.95; transform: translate3d(0, 0, 0)">
+        style-nested
+      </view>
+      <view class="cell" id="style-nullable" style="color: #374151; padding: 1px">
+        style-nullable
+      </view>
+      <view class="cell" id="style-override" style="color: #111111; color: #222222; color: #333333">
+        style-override
+      </view>
+      <view
+        class="cell"
+        id="style-important"
+        style="color: #f5222d !important; background-color: #f0f5ff">
+        style-important
+      </view>
+      <view
+        class="cell"
+        id="style-css-var"
+        style="
+          --chip-bg: #f6ffed;
+          --chip-color: #389e0d;
+          color: var(--chip-color);
+          background-color: var(--chip-bg);
+        ">
+        style-css-var
+      </view>
+      <view
+        class="cell"
+        id="style-conditional"
+        style="border-color: #d9d9d9; border-style: dashed; border-width: 1px">
+        style-conditional
+      </view>
+      <text selectable="" class="details">
+        { "name": "style-matrix", "ok": true, "checks": { "stringUpdated": true, "objectUpdated":
+        true, "camelCaseUpdated": true, "arrayUpdated": true, "nestedArrayUpdated": true,
+        "nullableUpdated": true, "overrideUpdated": true, "importantUpdated": true, "cssVarUpdated":
+        true, "conditionalUpdated": true }, "details": { "styleString":
+        "color:#0f766e;background-color:#ecfeff", "styleObject": { "fontSize": "28rpx",
+        "lineHeight": 1.6, "borderRadius": "12rpx" }, "styleCamelObject": { "backgroundColor":
+        "#eff6ff", "marginTop": "10rpx", "WebkitLineClamp": 3 }, "styleArray": [ "padding:8rpx", {
+        "marginTop": "10rpx", "borderColor": "#91caff" } ], "styleNestedArray": [ "display:block", [
+        { "opacity": 1 }, [ { "transform": "translate3d(1px, 0, 0)" } ] ] ], "styleNullable": [
+        null, null, false, "", { "color": "#111827", "marginBottom": null, "padding": "4rpx" } ],
+        "styleOverride": [ { "color": "#123456" }, "color:#234567", { "color": "#345678" } ],
+        "styleImportant": [ { "color": "#ff4d4f !important" }, "background-color:#fff1f0" ],
+        "styleCssVar": [ { "--chip-bg": "#e6f4ff", "--chip-color": "#0958d9" },
+        "color:var(--chip-color)", { "backgroundColor": "var(--chip-bg)" } ], "isReady": true }}
+      </text>
+    </view>
+  </view>
+</weapp-layout-default>
+"
+`;
+
+exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-runtime::cjs::pages/style-matrix/index 1`] = `
 "<weapp-layout-default is="layouts/default/index">
   <view class="index--layout-shared-include">LAYOUT-SHARED-INCLUDE-BASE</view>
   <view class="index--layout-default">

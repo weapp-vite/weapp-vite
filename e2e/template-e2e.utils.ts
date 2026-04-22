@@ -51,6 +51,7 @@ function debugTemplateE2E(templateName: string, phase: string, detail?: string) 
 }
 
 export interface TemplateE2EOptions {
+  jsFormat?: 'cjs' | 'esm'
   templateRoot: string
   templateName: string
 }
@@ -492,7 +493,7 @@ function resolvePages(config: Record<string, any>) {
   return pages
 }
 
-async function runBuild(templateRoot: string) {
+async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm') {
   const packageJsonPath = path.resolve(templateRoot, 'package.json')
   const packageJson = await readJson<Record<string, any>>(packageJsonPath)
   const hasDependencies = packageJson?.dependencies && Object.keys(packageJson.dependencies).length > 0
@@ -508,18 +509,19 @@ async function runBuild(templateRoot: string) {
 
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
+    jsFormat,
     projectRoot: templateRoot,
     platform: 'weapp',
     cwd: templateRoot,
-    label: `ide:${path.basename(templateRoot)}`,
+    label: `ide:${path.basename(templateRoot)}${jsFormat ? `:${jsFormat}` : ''}`,
     skipNpm: !hasDependencies || hasPrebuiltNpm,
   })
 }
 
 export async function runTemplateE2E(options: TemplateE2EOptions) {
-  const { templateRoot, templateName } = options
+  const { templateRoot, templateName, jsFormat } = options
   debugTemplateE2E(templateName, 'start')
-  await runBuild(templateRoot)
+  await runBuild(templateRoot, jsFormat)
   debugTemplateE2E(templateName, 'build-done')
   const config = await loadAppConfig(templateRoot)
   debugTemplateE2E(templateName, 'config-loaded')

@@ -5,6 +5,7 @@ import process from 'node:process'
 import { fs as fsExtra } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
+import { resolveJsFormatConfigOverride } from './jsFormat'
 
 const WARN_PATTERN = /\[warn\]/i
 const ERROR_PATTERN = /\[error\]/i
@@ -19,6 +20,8 @@ interface BuildLogStats {
 
 interface BuildCommandOptions {
   cliPath: string
+  configFile?: string
+  jsFormat?: 'cjs' | 'esm'
   projectRoot: string
   platform: 'weapp' | 'alipay' | 'tt'
   cwd?: string
@@ -171,6 +174,8 @@ export function sanitizeBuildCommandEnv(env = process.env) {
 export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptions) {
   const {
     cliPath,
+    configFile,
+    jsFormat,
     projectRoot,
     platform,
     cwd,
@@ -196,11 +201,19 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     }
   }
 
+  const distRoot = path.resolve(projectRoot, 'dist')
+  const configOverride = await resolveJsFormatConfigOverride({
+    configFile,
+    jsFormat,
+    projectRoot,
+  })
   const args = [cliPath, 'build', projectRoot, '--platform', platform]
   if (safeSkipNpm) {
     args.push('--skipNpm')
   }
-  const distRoot = path.resolve(projectRoot, 'dist')
+  if (configOverride.configFile) {
+    args.push('--config', configOverride.configFile)
+  }
 
   async function runBuildCommand() {
     await removeDirWithRetry(distRoot)
@@ -229,33 +242,38 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     return { result, fullOutput }
   }
 
-  let { result, fullOutput } = await runBuildCommand()
-  if ((result.exitCode ?? 1) !== 0) {
-    const reason = MINIPROGRAM_NPM_EEXIST_PATTERN.test(fullOutput)
-      ? 'miniprogram_npm mkdir EEXIST'
-      : 'build exit non-zero'
-    const retryLine = `[e2e-build-retry] label=${label} reason=${reason}`
-    process.stdout.write(`${retryLine}\n`)
-    ;({ result, fullOutput } = await runBuildCommand())
-  }
+  try {
+    let { result, fullOutput } = await runBuildCommand()
+    if ((result.exitCode ?? 1) !== 0) {
+      const reason = MINIPROGRAM_NPM_EEXIST_PATTERN.test(fullOutput)
+        ? 'miniprogram_npm mkdir EEXIST'
+        : 'build exit non-zero'
+      const retryLine = `[e2e-build-retry] label=${label} reason=${reason}`
+      process.stdout.write(`${retryLine}\n`)
+      ;({ result, fullOutput } = await runBuildCommand())
+    }
 
-  const summary = `[e2e-build-stats] label=${label} warn=${stats.warn} error=${stats.error} exit=${result.exitCode ?? 1}`
-  if ((result.exitCode ?? 1) === 0) {
-    process.stdout.write(`${summary}\n`)
-  }
-  else {
-    process.stderr.write(`${summary}\n`)
-    throw new Error(`Build failed: node ${args.join(' ')}`)
-  }
-  appendIdeReportEvent({
-    source: 'build',
-    kind: 'stats',
-    project: reportProject,
-    label,
-    warn: stats.warn,
-    error: stats.error,
-    exit: result.exitCode ?? 1,
-  })
+    const summary = `[e2e-build-stats] label=${label} warn=${stats.warn} error=${stats.error} exit=${result.exitCode ?? 1}`
+    if ((result.exitCode ?? 1) === 0) {
+      process.stdout.write(`${summary}\n`)
+    }
+    else {
+      process.stderr.write(`${summary}\n`)
+      throw new Error(`Build failed: node ${args.join(' ')}`)
+    }
+    appendIdeReportEvent({
+      source: 'build',
+      kind: 'stats',
+      project: reportProject,
+      label,
+      warn: stats.warn,
+      error: stats.error,
+      exit: result.exitCode ?? 1,
+    })
 
-  return stats
+    return stats
+  }
+  finally {
+    await configOverride.cleanup()
+  }
 }
