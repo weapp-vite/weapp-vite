@@ -20,7 +20,8 @@
     "dev:docs": "vitepress dev",
     "build": "pnpm -w seo:prepare && vitepress build",
     "preview": "vitepress preview",
-    "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"
+    "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt",
+    "postinstall": "node ../scripts/print-rolldown-versions-at-install-tail.mjs"
   },
   "dependencies": {
     "@iconify/vue": "^5.0.0",
