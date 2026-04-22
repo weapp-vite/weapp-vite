@@ -15,6 +15,10 @@ const overwriteCustomConfigMock = vi.hoisted(() => vi.fn())
 const readCustomConfigMock = vi.hoisted(() => vi.fn())
 const removeCustomConfigKeyMock = vi.hoisted(() => vi.fn())
 const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
+const dispatchWechatCliCommandMock = vi.hoisted(() => vi.fn())
+const getAutomatorCommandHelpMock = vi.hoisted(() => vi.fn())
+const isAutomatorCommandMock = vi.hoisted(() => vi.fn())
+const runAutomatorCommandMock = vi.hoisted(() => vi.fn())
 const fsMock = vi.hoisted(() => ({
   pathExists: vi.fn(),
   writeJSON: vi.fn(),
@@ -59,6 +63,26 @@ vi.mock('../src/config/custom', () => ({
 vi.mock('../src/cli/wechatDevtoolsSettings', () => ({
   bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
 }))
+
+vi.mock('../src/cli/wechat-dispatch', () => ({
+  dispatchWechatCliCommand: dispatchWechatCliCommandMock,
+}))
+
+vi.mock('../src/cli/run-automator', () => ({
+  AUTOMATOR_COMMAND_NAMES: ['navigate'],
+  getAutomatorCommandHelp: getAutomatorCommandHelpMock,
+  isAutomatorCommand: isAutomatorCommandMock,
+  runAutomatorCommand: runAutomatorCommandMock,
+}))
+
+vi.mock('@weapp-vite/miniprogram-automator', () => ({
+  Launcher: class Launcher {},
+  MiniProgram: class MiniProgram {},
+  Page: class Page {},
+  Element: class Element {},
+}), {
+  virtual: true,
+})
 
 vi.mock('../src/cli/prompt', () => ({
   promptForCliPath: promptForCliPathMock,
@@ -138,6 +162,10 @@ describe('cli parsing', () => {
     readCustomConfigMock.mockReset()
     removeCustomConfigKeyMock.mockReset()
     bootstrapWechatDevtoolsSettingsMock.mockReset()
+    dispatchWechatCliCommandMock.mockReset()
+    getAutomatorCommandHelpMock.mockReset()
+    isAutomatorCommandMock.mockReset()
+    runAutomatorCommandMock.mockReset()
     fsMock.pathExists.mockReset()
     fsMock.writeJSON.mockReset()
     fsMock.readJSON.mockReset()
@@ -178,6 +206,17 @@ describe('cli parsing', () => {
       detectedSecurityCount: 1,
       updatedSecurityCount: 0,
       trustedProjectCount: 1,
+    })
+    dispatchWechatCliCommandMock.mockResolvedValue(false)
+    getAutomatorCommandHelpMock.mockReturnValue(
+      'Usage: weapp navigate <url> -p <project-path>\nNavigate to a page\n跳转到页面',
+    )
+    isAutomatorCommandMock.mockImplementation((command: string) => command === 'navigate')
+    runAutomatorCommandMock.mockImplementation(async (_command: string, args: string[]) => {
+      if (args.includes('--help')) {
+        // eslint-disable-next-line no-console
+        console.log('Usage: weapp navigate <url> -p <project-path>\nNavigate to a page\n跳转到页面')
+      }
     })
     fsMock.pathExists.mockResolvedValue(true)
     fsMock.writeJSON.mockResolvedValue(undefined)
@@ -247,6 +286,20 @@ describe('cli parsing', () => {
         pipeStderr: false,
       },
     )
+  })
+
+  it('prefers helper dispatcher before raw wechat cli execution', async () => {
+    const { parse } = await loadRunModule()
+    dispatchWechatCliCommandMock.mockResolvedValueOnce(true)
+
+    await parse(['preview', '-p', './mini-app'])
+
+    expect(dispatchWechatCliCommandMock).toHaveBeenCalledWith([
+      'preview',
+      '--project',
+      `${mockCwd}/mini-app`,
+    ])
+    expect(executeMock).not.toHaveBeenCalled()
   })
 
   it('bootstraps security settings for open without project path', async () => {
@@ -514,6 +567,18 @@ describe('cli parsing', () => {
     expect(executeMock).not.toHaveBeenCalled()
   })
 
+  it('fails fast when login qr-format is invalid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(
+      parse(['login', '--qr-format', 'svg']),
+    ).rejects.toThrow(
+      'login 命令的二维码格式无效: svg（仅支持 terminal/image/base64）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
   it('fails fast when cache misses required clean argument', async () => {
     const { parse } = await loadRunModule()
 
@@ -529,6 +594,18 @@ describe('cli parsing', () => {
 
     await expect(parse(['cache', '--clean', 'foo'])).rejects.toThrow(
       'cache 命令的清理类型无效: foo（仅支持 storage/file/compile/auth/network/session/all）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when build-npm compile-type is empty', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(
+      parse(['build-npm', '--compile-type', '']),
+    ).rejects.toThrow(
+      'build-npm 命令的 --compile-type 不能为空字符串',
     )
 
     expect(executeMock).not.toHaveBeenCalled()

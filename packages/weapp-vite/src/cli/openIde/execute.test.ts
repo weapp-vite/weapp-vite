@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const clearWechatIdeCacheMock = vi.hoisted(() => vi.fn())
+const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
 const parseMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
+const quitWechatIdeMock = vi.hoisted(() => vi.fn())
+const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
+const runWechatIdeEngineBuildByHttpMock = vi.hoisted(() => vi.fn())
 const runWithSuspendedSharedInputMock = vi.hoisted(() => vi.fn())
 const runRetryableCommandMock = vi.hoisted(() => vi.fn())
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
@@ -14,10 +19,15 @@ const loggerMock = vi.hoisted(() => ({
 }))
 
 vi.mock('weapp-ide-cli', () => ({
+  clearWechatIdeCache: clearWechatIdeCacheMock,
+  closeWechatIdeProject: closeWechatIdeProjectMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   parse: parseMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
+  quitWechatIde: quitWechatIdeMock,
+  resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
+  runWechatIdeEngineBuildByHttp: runWechatIdeEngineBuildByHttpMock,
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
   withMiniProgram: withMiniProgramMock,
@@ -29,19 +39,34 @@ vi.mock('../../logger', () => ({
 
 describe('executeWechatIdeCliCommand', () => {
   beforeEach(() => {
+    clearWechatIdeCacheMock.mockReset()
+    closeWechatIdeProjectMock.mockReset()
     parseMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
     openWechatIdeProjectByHttpMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
+    quitWechatIdeMock.mockReset()
+    resetWechatIdeFileUtilsByHttpMock.mockReset()
+    runWechatIdeEngineBuildByHttpMock.mockReset()
     runWithSuspendedSharedInputMock.mockReset()
     runRetryableCommandMock.mockReset()
     withMiniProgramMock.mockReset()
     loggerMock.error.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
+    clearWechatIdeCacheMock.mockResolvedValue(undefined)
+    closeWechatIdeProjectMock.mockResolvedValue(undefined)
     parseMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     openWechatIdeProjectByHttpMock.mockResolvedValue('OK')
+    resetWechatIdeFileUtilsByHttpMock.mockResolvedValue('OK')
+    quitWechatIdeMock.mockResolvedValue(undefined)
+    runWechatIdeEngineBuildByHttpMock.mockResolvedValue({
+      body: '{"status":"END"}',
+      done: true,
+      failed: false,
+      status: 'END',
+    })
     runWithSuspendedSharedInputMock.mockImplementation(async (runner: () => Promise<unknown>) => await runner())
     withMiniProgramMock.mockRejectedValue(new Error('no automator'))
     runRetryableCommandMock.mockImplementation(async (options) => {
@@ -109,11 +134,33 @@ describe('executeWechatIdeCliCommand', () => {
     expect(parseMock).not.toHaveBeenCalled()
   })
 
+  it('prefers http reset-fileutils when projectPath is provided', async () => {
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['reset-fileutils'], {
+      projectPath: '/project/dist',
+    })
+
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('/project/dist')
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('prefers http engine build when projectPath is provided', async () => {
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['engine', 'build'], {
+      projectPath: '/project/dist',
+    })
+
+    expect(runWechatIdeEngineBuildByHttpMock).toHaveBeenCalledWith('/project/dist')
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
   it('swallows non-login errors when custom handler is provided', async () => {
     const commandError = new Error('unexpected failure')
     const onNonLoginError = vi.fn()
-    parseMock.mockRejectedValueOnce(commandError)
-    isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    clearWechatIdeCacheMock.mockRejectedValueOnce(commandError)
     const { executeWechatIdeCliCommand } = await import('./execute')
 
     await executeWechatIdeCliCommand(['cache', '--clean', 'all'], {
@@ -123,5 +170,32 @@ describe('executeWechatIdeCliCommand', () => {
     expect(onNonLoginError).toHaveBeenCalledWith(commandError)
     expect(runWithSuspendedSharedInputMock).toHaveBeenCalledTimes(1)
     expect(promptWechatIdeLoginRetryMock).not.toHaveBeenCalled()
+  })
+
+  it('prefers helper cache command when automator path is unavailable', async () => {
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['cache', '--clean', 'all'])
+
+    expect(clearWechatIdeCacheMock).toHaveBeenCalledWith({ clean: 'all' })
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('prefers helper close command before parse fallback', async () => {
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['close'])
+
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
+  it('prefers helper quit command before parse fallback', async () => {
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['quit'])
+
+    expect(quitWechatIdeMock).toHaveBeenCalledTimes(1)
+    expect(parseMock).not.toHaveBeenCalled()
   })
 })

@@ -16,6 +16,7 @@ import { AUTOMATOR_COMMAND_NAMES, getAutomatorCommandHelp, isAutomatorCommand, r
 import { runWechatCliCommand } from './run-wechat-cli'
 import { printScreenshotHelp } from './screenshot'
 import { validateWechatCliCommandArgs } from './wechat-command-schema'
+import { dispatchWechatCliCommand } from './wechat-dispatch'
 
 const MINIDEV_NAMESPACE = new Set<string>(MINIDEV_NAMESPACE_COMMAND_NAMES)
 const ALIPAY_PLATFORM_ALIASES = new Set<string>(MINIDEV_NAMESPACE_COMMAND_NAMES)
@@ -148,5 +149,10 @@ export async function parse(argv: string[]) {
   }
 
   validateWechatCliCommandArgs(formattedArgv)
+  const handledByHelper = await dispatchWechatCliCommand(formattedArgv)
+  if (handledByHelper) {
+    return
+  }
+
   await runWechatCliCommand(formattedArgv)
 }

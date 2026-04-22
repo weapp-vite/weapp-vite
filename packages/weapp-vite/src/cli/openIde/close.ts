@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import process from 'node:process'
 import { promisify } from 'node:util'
 import path from 'pathe'
-import { getConfig, isWechatIdeLoginRequiredError, parse } from 'weapp-ide-cli'
+import { closeWechatIdeProject, getConfig, isWechatIdeLoginRequiredError } from 'weapp-ide-cli'
 import logger from '../../logger'
 import { executeWechatIdeCliCommand } from './execute'
 
@@ -49,7 +49,7 @@ export async function closeIde() {
   const cliPath = config.cliPath?.trim() ? config.cliPath : null
 
   try {
-    await parse(['close'])
+    await closeWechatIdeProject()
     return true
   }
   catch (error) {

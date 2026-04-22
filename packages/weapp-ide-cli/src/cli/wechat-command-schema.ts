@@ -11,6 +11,8 @@ const CACHE_CLEAN_TYPES = [
   'all',
 ] as const
 
+const QR_FORMAT_TYPES = ['terminal', 'image', 'base64'] as const
+
 function isNonEmptyText(value: string | undefined) {
   return typeof value === 'string' && value.trim().length > 0
 }
@@ -108,11 +110,25 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
       return
     }
 
-    if (!['terminal', 'image', 'base64'].includes(qrFormat.toLowerCase())) {
+    if (!QR_FORMAT_TYPES.includes(qrFormat.toLowerCase() as (typeof QR_FORMAT_TYPES)[number])) {
       throw new Error(
         i18nText(
-          `preview 命令的二维码格式无效: ${qrFormat}（仅支持 terminal/image/base64）`,
-          `Invalid preview qr format: ${qrFormat} (supported: terminal/image/base64)`,
+          `preview 命令的二维码格式无效: ${qrFormat}（仅支持 ${QR_FORMAT_TYPES.join('/')}）`,
+          `Invalid preview qr format: ${qrFormat} (supported: ${QR_FORMAT_TYPES.join('/')})`,
+        ),
+      )
+    }
+  }
+
+  if (command === 'login') {
+    const qrFormat
+      = readOptionValue(argv, '--qr-format') || readOptionValue(argv, '-f')
+
+    if (qrFormat && !QR_FORMAT_TYPES.includes(qrFormat.toLowerCase() as (typeof QR_FORMAT_TYPES)[number])) {
+      throw new Error(
+        i18nText(
+          `login 命令的二维码格式无效: ${qrFormat}（仅支持 ${QR_FORMAT_TYPES.join('/')}）`,
+          `Invalid login qr format: ${qrFormat} (supported: ${QR_FORMAT_TYPES.join('/')})`,
         ),
       )
     }
@@ -151,5 +167,17 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
     || command === 'auto-preview'
   ) {
     validateProjectLocator(command, argv)
+  }
+
+  if (command === 'build-npm') {
+    const compileType = readOptionValue(argv, '--compile-type')
+    if (compileType !== undefined && !isNonEmptyText(compileType)) {
+      throw new Error(
+        i18nText(
+          'build-npm 命令的 --compile-type 不能为空字符串',
+          'build-npm command requires a non-empty --compile-type value',
+        ),
+      )
+    }
   }
 }

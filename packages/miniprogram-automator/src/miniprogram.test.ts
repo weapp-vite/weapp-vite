@@ -112,6 +112,19 @@ describe('MiniProgram', () => {
     expect(connection.send).toHaveBeenCalledWith('Tool.compile', { force: true })
   })
 
+  it('provides typed Tool domain helpers', async () => {
+    const connection = new FakeConnection()
+    const miniProgram = new MiniProgram(connection as any)
+
+    await miniProgram.compile({ force: true })
+    await miniProgram.clearCache({ clean: 'compile' })
+    await miniProgram.toolInfo()
+
+    expect(connection.send).toHaveBeenNthCalledWith(1, 'Tool.compile', { force: true })
+    expect(connection.send).toHaveBeenNthCalledWith(2, 'Tool.clearCache', { clean: 'compile' })
+    expect(connection.send).toHaveBeenNthCalledWith(3, 'Tool.getInfo', {})
+  })
+
   it('switches route through plugin methods when current page is a plugin page', async () => {
     const connection = new FakeConnection()
     connection.send

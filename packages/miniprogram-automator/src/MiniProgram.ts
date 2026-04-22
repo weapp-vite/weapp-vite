@@ -16,6 +16,12 @@ interface IScreenshotOptions {
 interface IAuditsOptions {
   path?: string
 }
+interface IToolCompileOptions {
+  force?: boolean
+}
+interface IToolClearCacheOptions {
+  clean: 'all' | 'auth' | 'compile' | 'file' | 'network' | 'session' | 'storage'
+}
 type AutomatorCallable = (...args: any[]) => any
 
 const CLOSE_STEP_TIMEOUT = 2000
@@ -251,6 +257,27 @@ export default class MiniProgram extends EventEmitter {
 
   async testAccounts() {
     return (await this.send('Tool.getTestAccounts')).accounts
+  }
+
+  /**
+   * @description 获取开发者工具 Tool 域基础信息。
+   */
+  async toolInfo() {
+    return await this.send('Tool.getInfo')
+  }
+
+  /**
+   * @description 触发开发者工具执行一次项目编译。
+   */
+  async compile(options: IToolCompileOptions = {}) {
+    return await this.send('Tool.compile', options)
+  }
+
+  /**
+   * @description 清理开发者工具缓存。
+   */
+  async clearCache(options: IToolClearCacheOptions) {
+    return await this.send('Tool.clearCache', options)
   }
 
   /**

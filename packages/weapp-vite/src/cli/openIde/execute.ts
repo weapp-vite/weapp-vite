@@ -1,9 +1,14 @@
 import {
+  clearWechatIdeCache,
+  closeWechatIdeProject,
   isWechatIdeLoginRequiredError,
   openWechatIdeProjectByHttp,
   parse,
   promptWechatIdeLoginRetry,
+  quitWechatIde,
+  resetWechatIdeFileUtilsByHttp,
   runRetryableCommand,
+  runWechatIdeEngineBuildByHttp,
   runWithSuspendedSharedInput,
   withMiniProgram,
 } from 'weapp-ide-cli'
@@ -136,17 +141,71 @@ async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[],
 }
 
 async function tryExecuteWechatIdeCliCommandByHttp(argv: readonly string[], projectPath?: string) {
-  if (!projectPath) {
-    return false
-  }
-
   const command = argv[0]
-  if (command !== 'compile') {
+  if (!command) {
     return false
   }
 
-  await openWechatIdeProjectByHttp(projectPath)
-  return true
+  if (command === 'compile') {
+    if (!projectPath) {
+      return false
+    }
+
+    await openWechatIdeProjectByHttp(projectPath)
+    return true
+  }
+
+  if (command === 'reset-fileutils') {
+    if (!projectPath) {
+      return false
+    }
+
+    await resetWechatIdeFileUtilsByHttp(projectPath)
+    return true
+  }
+
+  if (command === 'engine' && argv[1] === 'build') {
+    const engineProjectPath = argv[2] || projectPath
+    if (!engineProjectPath) {
+      return false
+    }
+
+    await runWechatIdeEngineBuildByHttp(engineProjectPath)
+    return true
+  }
+
+  return false
+}
+
+async function tryExecuteWechatIdeCliCommandByHelper(argv: readonly string[]) {
+  const command = argv[0]
+  if (!command) {
+    return false
+  }
+
+  if (command === 'close') {
+    await closeWechatIdeProject()
+    return true
+  }
+
+  if (command === 'quit') {
+    await quitWechatIde()
+    return true
+  }
+
+  if (command === 'cache') {
+    const cleanType = readArgOption(argv, '--clean', '-c')
+    if (!cleanType) {
+      return false
+    }
+
+    await clearWechatIdeCache({
+      clean: cleanType as 'all' | 'auth' | 'compile' | 'file' | 'network' | 'session' | 'storage',
+    })
+    return true
+  }
+
+  return false
 }
 
 /**
@@ -189,6 +248,20 @@ export async function executeWechatIdeCliCommand(
         throw error
       }
       // automator 优先策略仅作增强；失败时回退到原有 CLI 命令链路
+    }
+
+    try {
+      const handledByHelper = await tryExecuteWechatIdeCliCommandByHelper(argv)
+      if (handledByHelper) {
+        return
+      }
+    }
+    catch (error) {
+      if (onNonLoginError) {
+        onNonLoginError(error)
+        return
+      }
+      throw error
     }
 
     await runRetryableCommand<null | unknown, 'retry' | 'cancel' | 'timeout'>({

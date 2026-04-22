@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseMock = vi.hoisted(() => vi.fn())
+const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
 const isAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const formatAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
@@ -29,6 +30,7 @@ const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
   bootstrapWechatDevtoolsSettings: bootstrapWechatDevtoolsSettingsMock,
+  closeWechatIdeProject: closeWechatIdeProjectMock,
   connectOpenedAutomator: connectOpenedAutomatorMock,
   formatAutomatorLoginError: formatAutomatorLoginErrorMock,
   parse: parseMock,
@@ -63,6 +65,7 @@ vi.mock('../logger', () => ({
 describe('openIde', () => {
   beforeEach(() => {
     parseMock.mockReset()
+    closeWechatIdeProjectMock.mockReset()
     isAutomatorLoginErrorMock.mockReset()
     formatAutomatorLoginErrorMock.mockReset()
     isWechatIdeLoginRequiredErrorMock.mockReset()
@@ -87,6 +90,7 @@ describe('openIde', () => {
     delete process.env.WEAPP_VITE_DEBUG_AUTOMATOR_OPEN
 
     parseMock.mockResolvedValue(undefined)
+    closeWechatIdeProjectMock.mockResolvedValue(undefined)
     isAutomatorLoginErrorMock.mockReturnValue(false)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     formatAutomatorLoginErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
@@ -196,9 +200,7 @@ describe('openIde', () => {
       projectPath: 'dist/dev/mp-weixin',
       timeout: 3000,
     })
-    expect(parseMock).toHaveBeenCalledWith([
-      'close',
-    ])
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
     expect(colorsMock.green).toHaveBeenCalledWith('r')
     expect(colorsMock.bold).toHaveBeenCalledWith('r')
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 r 关闭当前窗口后重新打开。')
@@ -225,9 +227,7 @@ describe('openIde', () => {
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(2)
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
-    expect(parseMock).toHaveBeenCalledWith([
-      'close',
-    ])
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
     expect(launchAutomatorMock).toHaveBeenCalledWith({
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
@@ -346,19 +346,17 @@ describe('openIde', () => {
     ])
   })
 
-  it('passes close command to weapp-ide-cli parse', async () => {
+  it('passes close command to weapp-ide-cli helper', async () => {
     const { closeIde } = await import('./openIde')
     await closeIde()
 
-    expect(parseMock).toHaveBeenCalledWith([
-      'close',
-    ])
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to AppleScript when close command fails on macOS', async () => {
     const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
     Object.defineProperty(process, 'platform', { value: 'darwin' })
-    parseMock.mockRejectedValueOnce(new Error('close failed'))
+    closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
 
     try {
       const { closeIde } = await import('./openIde')
@@ -381,7 +379,7 @@ describe('openIde', () => {
   it('falls back to process kill when AppleScript close also fails', async () => {
     const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
     Object.defineProperty(process, 'platform', { value: 'darwin' })
-    parseMock.mockRejectedValueOnce(new Error('close failed'))
+    closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
     let callCount = 0
     execFileMock.mockImplementation((_file: string, args: string[], callback: (error: any, stdout?: string, stderr?: string) => void) => {
       callCount += 1
@@ -412,7 +410,7 @@ describe('openIde', () => {
   it('returns false when close command and all fallback closers fail', async () => {
     const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
     Object.defineProperty(process, 'platform', { value: 'linux' })
-    parseMock.mockRejectedValueOnce(new Error('close failed'))
+    closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
     execFileMock.mockImplementation((_file: string, _args: string[], callback: (error: any) => void) => {
       callback(new Error('pkill failed'))
       return {} as any
@@ -438,22 +436,21 @@ describe('openIde', () => {
 
   it('logs retry failure when close command hits login-required path twice', async () => {
     const loginRequiredError = new Error('login required')
-    parseMock
-      .mockRejectedValueOnce(loginRequiredError)
-      .mockRejectedValueOnce(new Error('retry failed'))
+    closeWechatIdeProjectMock.mockRejectedValueOnce(loginRequiredError)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
 
     const { closeIde } = await import('./openIde')
     const result = await closeIde()
 
     expect(result).toBe(true)
-    expect(parseMock).toHaveBeenCalledTimes(2)
+    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(2)
+    expect(parseMock).not.toHaveBeenCalled()
   })
 
   it('returns false when close fallback has no cli path to kill process', async () => {
     const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
     Object.defineProperty(process, 'platform', { value: 'linux' })
-    parseMock.mockRejectedValueOnce(new Error('close failed'))
+    closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
     getConfigMock.mockResolvedValueOnce({
       cliPath: '   ',
     })

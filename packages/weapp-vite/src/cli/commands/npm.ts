@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
+import process from 'node:process'
+import { buildWechatIdeNpm } from 'weapp-ide-cli'
 import logger from '../../logger'
-import { executeWechatIdeCliCommand } from '../openIde/execute'
 
 export function registerNpmCommand(cli: CAC) {
   cli
@@ -9,7 +10,9 @@ export function registerNpmCommand(cli: CAC) {
     .alias('build-npm')
     .action(async () => {
       try {
-        await executeWechatIdeCliCommand(['build-npm', '-p'])
+        await buildWechatIdeNpm({
+          projectPath: process.cwd(),
+        })
       }
       catch (error) {
         logger.error(error)
