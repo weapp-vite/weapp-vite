@@ -157,20 +157,62 @@ export function createScopedSlotComponent(
   return { componentName, slotKey }
 }
 
+function injectAttributeIntoOpeningTag(source: string, attr: string): string | null {
+  if (!source.startsWith('<') || source.startsWith('</') || source.startsWith('<!--')) {
+    return null
+  }
+
+  let tagNameEnd = 1
+  while (tagNameEnd < source.length) {
+    const char = source[tagNameEnd]
+    if (char === ' ' || char === '\n' || char === '\r' || char === '\t' || char === '/' || char === '>') {
+      break
+    }
+    tagNameEnd += 1
+  }
+
+  if (tagNameEnd <= 1) {
+    return null
+  }
+
+  return `${source.slice(0, tagNameEnd)} ${attr}${source.slice(tagNameEnd)}`
+}
+
 export function renderSlotFallback(
   decl: ScopedSlotDeclaration,
   context: TransformContext,
   transformNode: TransformNode,
 ): string {
-  const content = decl.children.map(child => transformNode(child, context)).join('')
-  if (!content) {
+  const rawRenderedChildren = decl.children
+    .map(child => ({
+      code: transformNode(child, context),
+    }))
+  const rawContent = rawRenderedChildren.map(item => item.code).join('')
+  if (!rawContent) {
     return ''
   }
+
   const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
   if (!slotAttr) {
-    return content
+    return rawContent
   }
-  return `<view ${slotAttr}>${content}</view>`
+
+  const renderedChildren = rawRenderedChildren
+    .filter(item => item.code.trim().length > 0)
+  if (!renderedChildren.length) {
+    return ''
+  }
+
+  const content = renderedChildren.map(item => item.code).join('')
+
+  if (renderedChildren.length === 1) {
+    const projected = injectAttributeIntoOpeningTag(renderedChildren[0]!.code, slotAttr)
+    if (projected) {
+      return projected
+    }
+  }
+
+  return `<block ${slotAttr}>${content}</block>`
 }
 
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {

@@ -364,6 +364,32 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(componentJs).toContain('multipleSlots: true')
   })
 
+  it('issue #494: removes synthetic view wrappers from plain template v-slot content when possible', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-494/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-494/index.js')
+    const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-494/SlotHost/index.wxml')
+
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+    const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
+
+    expect(pageWxml).toContain('slot="icon"')
+    expect(pageWxml).toContain('data-probe="single-image"')
+    expect(pageWxml).toContain('src="{{iconSrc}}"')
+    expect(pageWxml).toContain('<block slot="header">')
+    expect(pageWxml).toContain('header via template slot: {{headerLabel}}')
+    expect(pageWxml).toContain('default via template slot: {{bodyLabel}}')
+    expect(pageWxml).not.toContain('<view slot="icon">')
+    expect(pageWxml).not.toContain('<view slot="header"><view')
+    expect(pageJs).toContain('toggleLabels')
+    expect(pageJs).toContain('_runE2E')
+    expect(componentWxml).toContain('<slot name="icon" />')
+    expect(componentWxml).toContain('<slot name="header" />')
+    expect(componentWxml).toContain('<slot />')
+  })
+
   it('issue #459: keeps directly imported web-apis polyfills interoperable in github-issues app', async () => {
     await runBuild()
 

@@ -138,6 +138,33 @@ export default {}
       expect(templateResult.code).toContain('name="footer"')
     })
 
+    it('should compile plain template v-slot SFC content without synthetic view wrapper', async () => {
+      const sfc = `
+<template>
+  <slot-host>
+    <template #icon>
+      <img class="probe" src="/cover.png" />
+    </template>
+    <template #header>
+      <view>A</view>
+      <view>B</view>
+    </template>
+  </slot-host>
+</template>
+
+<script setup lang="ts">
+import SlotHost from './SlotHost.vue'
+</script>
+      `.trim()
+
+      const result = await compileVueFile(sfc, 'test.vue')
+
+      expect(result.template).toContain('slot="icon"')
+      expect(result.template).toContain('src="/cover.png"')
+      expect(result.template).toContain('<block slot="header"><view>A</view><view>B</view></block>')
+      expect(result.template).not.toContain('<view slot="icon">')
+    })
+
     it('should compile SFC with CSS Modules', () => {
       const sfc = `
 <template>
