@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 import { normalize } from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { loadViteConfigFile } from './loadViteConfigFile'
+import { loadViteConfigFile, TYPELESS_PACKAGE_JSON_WARNING_CODE } from './loadViteConfigFile'
 
 const loadConfigFromFileMock = vi.hoisted(() => vi.fn())
 
@@ -117,5 +118,37 @@ export default {
       undefined,
       'runner',
     )
+  })
+
+  it('suppresses selected process warnings only during config loading', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-'))
+    tempDirs.push(tempDir)
+
+    const configFile = path.join(tempDir, 'vite.config.ts')
+    await fs.writeFile(configFile, 'export default {}')
+
+    const emitWarningSpy = vi.spyOn(process, 'emitWarning')
+    loadConfigFromFileMock.mockImplementationOnce(async () => {
+      process.emitWarning('typeless', { code: TYPELESS_PACKAGE_JSON_WARNING_CODE })
+      process.emitWarning('other warning', { code: 'OTHER_WARNING' })
+      return {
+        config: {},
+        path: configFile,
+        dependencies: [configFile],
+      }
+    })
+
+    await loadViteConfigFile(
+      { command: 'serve', mode: 'development' },
+      configFile,
+      tempDir,
+      undefined,
+      undefined,
+      'native',
+      [TYPELESS_PACKAGE_JSON_WARNING_CODE],
+    )
+
+    expect(emitWarningSpy).toHaveBeenCalledTimes(1)
+    expect(emitWarningSpy).toHaveBeenCalledWith('other warning', { code: 'OTHER_WARNING' }, undefined)
   })
 })

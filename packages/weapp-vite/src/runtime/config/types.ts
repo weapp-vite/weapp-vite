@@ -5,6 +5,7 @@ import type { InlineConfig } from 'vite'
 import type { ResolvedMultiPlatformConfig } from '../../multiPlatform'
 import type { OutputExtensions } from '../../platforms/types'
 import type { MpPlatform, ResolvedAlias, SubPackageMetaValue, WeappLibComponentJson, WeappLibConfig, WeappLibDtsOptions, WeappLibFileName, WeappWebConfig } from '../../types'
+import type { ViteConfigLoader } from '../../utils'
 import type { ImportMetaDefineRegistry } from '../../utils/importMeta'
 
 export interface LoadConfigOptions {
@@ -15,6 +16,7 @@ export interface LoadConfigOptions {
   pluginOnly?: boolean
   inlineConfig?: InlineConfig
   configFile?: string
+  configLoader?: ViteConfigLoader
   cliPlatform?: string
   projectConfigPath?: string
 }

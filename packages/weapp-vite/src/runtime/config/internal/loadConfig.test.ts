@@ -77,6 +77,7 @@ vi.mock('../../../platform', async () => {
 })
 
 vi.mock('../../../utils', () => ({
+  TYPELESS_PACKAGE_JSON_WARNING_CODE: 'MODULE_TYPELESS_PACKAGE_JSON',
   createCjsConfigLoadError: createCjsConfigLoadErrorMock,
   getAliasEntries: getAliasEntriesMock,
   getProjectConfig: getProjectConfigMock,
@@ -166,6 +167,30 @@ describe('runtime config internal loadConfig', () => {
       cliPlatform: undefined,
       configFile: '/project/vite.config.ts',
     } as any)).rejects.toThrow('cjs wrapped')
+  })
+
+  it('passes through an explicit config loader and suppresses native typeless warnings', async () => {
+    const loadConfig = createFactory()
+
+    await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'development',
+      inlineConfig: {},
+      configLoader: 'native',
+      cliPlatform: undefined,
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(loadViteConfigFileMock).toHaveBeenCalledWith(
+      { command: 'build', mode: 'development' },
+      '/project/vite.config.ts',
+      '/project',
+      undefined,
+      undefined,
+      'native',
+      ['MODULE_TYPELESS_PACKAGE_JSON'],
+    )
   })
 
   it('rethrows original error when cjs wrapper is unavailable', async () => {

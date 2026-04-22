@@ -58,6 +58,7 @@ describe('prepare cli command', () => {
       isDev: false,
       mode: 'development',
       configFile: undefined,
+      configLoader: 'native',
       syncSupportFiles: false,
       preloadAppEntry: false,
     })
@@ -84,6 +85,7 @@ describe('prepare cli command', () => {
       isDev: false,
       mode: 'development',
       configFile: undefined,
+      configLoader: 'native',
       syncSupportFiles: false,
       preloadAppEntry: false,
     })
