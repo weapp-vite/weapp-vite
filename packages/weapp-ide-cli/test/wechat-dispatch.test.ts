@@ -282,6 +282,130 @@ describe('dispatchWechatCliCommand', () => {
     })
   })
 
+  it('dispatches official short aliases to stable helpers', async () => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    const loginHandled = await dispatchWechatCliCommand([
+      'login',
+      '-f',
+      'image',
+      '-o',
+      '/tmp/qr.png',
+      '-r',
+      '/tmp/result.json',
+    ])
+    const previewHandled = await dispatchWechatCliCommand([
+      'preview',
+      '-p',
+      '/tmp/demo',
+      '-f',
+      'base64',
+      '-o',
+      '/tmp/preview.png',
+      '-i',
+      '/tmp/info.json',
+    ])
+    const uploadHandled = await dispatchWechatCliCommand([
+      'upload',
+      '-p',
+      '/tmp/demo',
+      '-v',
+      '1.0.0',
+      '-d',
+      'release',
+      '-i',
+      '/tmp/upload.json',
+    ])
+    const buildApkHandled = await dispatchWechatCliCommand([
+      'build-apk',
+      '-o',
+      '/tmp/out',
+      '-ks',
+      '/tmp/demo.keystore',
+      '-ka',
+      'demo',
+      '-kp',
+      'key-pass',
+      '-sp',
+      'store-pass',
+      '-u',
+    ])
+
+    expect(loginHandled).toBe(true)
+    expect(previewHandled).toBe(true)
+    expect(uploadHandled).toBe(true)
+    expect(buildApkHandled).toBe(true)
+
+    expect(loginWechatIdeMock).toHaveBeenCalledWith({
+      qrFormat: 'image',
+      qrOutput: '/tmp/qr.png',
+      qrSize: undefined,
+      resultOutput: '/tmp/result.json',
+    })
+    expect(previewWechatIdeMock).toHaveBeenCalledWith({
+      appid: undefined,
+      compileCondition: undefined,
+      extAppid: undefined,
+      infoOutput: '/tmp/info.json',
+      projectPath: '/tmp/demo',
+      qrFormat: 'base64',
+      qrOutput: '/tmp/preview.png',
+      qrSize: undefined,
+    })
+    expect(uploadWechatIdeMock).toHaveBeenCalledWith({
+      appid: undefined,
+      desc: 'release',
+      extAppid: undefined,
+      infoOutput: '/tmp/upload.json',
+      projectPath: '/tmp/demo',
+      version: '1.0.0',
+    })
+    expect(buildWechatIdeApkMock).toHaveBeenCalledWith({
+      desc: undefined,
+      isUploadResourceBundle: false,
+      keyAlias: 'demo',
+      keyPass: 'key-pass',
+      keyStore: '/tmp/demo.keystore',
+      output: '/tmp/out',
+      resourceBundleDesc: undefined,
+      resourceBundleVersion: undefined,
+      storePass: 'store-pass',
+      useAab: true,
+    })
+  })
+
+  it('dispatches build-ipa boolean flags in official yargs style', async () => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    const handled = await dispatchWechatCliCommand([
+      'build-ipa',
+      '-o',
+      '/tmp/out',
+      '--isDistribute',
+      '--isRemoteBuild',
+      '--isUploadBeta=false',
+    ])
+
+    expect(handled).toBe(true)
+    expect(buildWechatIdeIpaMock).toHaveBeenCalledWith({
+      certificateName: undefined,
+      isDistribute: true,
+      isRemoteBuild: true,
+      isUploadBeta: false,
+      isUploadResourceBundle: false,
+      output: '/tmp/out',
+      p12Password: undefined,
+      p12Path: undefined,
+      profilePath: undefined,
+      resourceBundleDesc: undefined,
+      resourceBundleVersion: undefined,
+      tpnsProfilePath: undefined,
+      versionCode: undefined,
+      versionDesc: undefined,
+      versionName: undefined,
+    })
+  })
+
   it('dispatches reset-fileutils argv to http-backed helper', async () => {
     const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
 

@@ -7,6 +7,33 @@ export interface ParsedAutomatorArgs {
   positionals: string[]
 }
 
+function parsePositiveInt(raw: string): number | undefined {
+  const value = Number.parseInt(raw, 10)
+  if (!Number.isFinite(value) || value <= 0) {
+    return undefined
+  }
+  return value
+}
+
+function takesValue(optionName: string) {
+  return optionName === '-p'
+    || optionName === '--project'
+    || optionName === '-t'
+    || optionName === '--timeout'
+    || optionName === '-o'
+    || optionName === '--output'
+    || optionName === '--page'
+    || optionName === '--login-retry'
+    || optionName === '--login-retry-timeout'
+    || optionName === '--lang'
+    || optionName === '--platform'
+    || optionName === '--qr-output'
+    || optionName === '-r'
+    || optionName === '--result-output'
+    || optionName === '--info-output'
+    || optionName === '-i'
+}
+
 /**
  * @description 解析 automator 命令通用参数与位置参数。
  */
@@ -81,27 +108,68 @@ export function parseAutomatorArgs(argv: readonly string[]): ParsedAutomatorArgs
 }
 
 /**
- * @description 读取选项值，支持 --option value 与 --option=value。
+ * @description 读取选项值，支持多个别名，以及 --option value 与 --option=value。
  */
-export function readOptionValue(argv: readonly string[], optionName: string): string | undefined {
-  const optionWithEqual = `${optionName}=`
+export function readOptionValue(argv: readonly string[], ...optionNames: string[]): string | undefined {
+  for (const optionName of optionNames) {
+    const optionWithEqual = `${optionName}=`
 
-  for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index]
-    if (!token) {
-      continue
-    }
-
-    if (token === optionName) {
-      const value = argv[index + 1]
-      if (typeof value !== 'string') {
-        return undefined
+    for (let index = 0; index < argv.length; index += 1) {
+      const token = argv[index]
+      if (!token) {
+        continue
       }
-      return value.trim()
-    }
 
-    if (token.startsWith(optionWithEqual)) {
-      return token.slice(optionWithEqual.length).trim()
+      if (token === optionName) {
+        const value = argv[index + 1]
+        if (typeof value !== 'string') {
+          return undefined
+        }
+        return value.trim()
+      }
+
+      if (token.startsWith(optionWithEqual)) {
+        return token.slice(optionWithEqual.length).trim()
+      }
+    }
+  }
+
+  return undefined
+}
+
+/**
+ * @description 读取布尔选项，支持裸 flag、--flag=true/false 与 --flag true/false。
+ */
+export function readBooleanOption(argv: readonly string[], ...optionNames: string[]): boolean | undefined {
+  for (const optionName of optionNames) {
+    const optionWithEqual = `${optionName}=`
+
+    for (let index = 0; index < argv.length; index += 1) {
+      const token = argv[index]
+      if (!token) {
+        continue
+      }
+
+      if (token === optionName) {
+        const nextToken = argv[index + 1]
+        if (nextToken === 'true') {
+          return true
+        }
+        if (nextToken === 'false') {
+          return false
+        }
+        return true
+      }
+
+      if (token.startsWith(optionWithEqual)) {
+        const rawValue = token.slice(optionWithEqual.length).trim().toLowerCase()
+        if (rawValue === 'true') {
+          return true
+        }
+        if (rawValue === 'false') {
+          return false
+        }
+      }
     }
   }
 
@@ -137,31 +205,4 @@ export function removeOption(argv: readonly string[], optionName: string): strin
   }
 
   return nextArgv
-}
-
-function parsePositiveInt(raw: string): number | undefined {
-  const value = Number.parseInt(raw, 10)
-  if (!Number.isFinite(value) || value <= 0) {
-    return undefined
-  }
-  return value
-}
-
-function takesValue(optionName: string) {
-  return optionName === '-p'
-    || optionName === '--project'
-    || optionName === '-t'
-    || optionName === '--timeout'
-    || optionName === '-o'
-    || optionName === '--output'
-    || optionName === '--page'
-    || optionName === '--login-retry'
-    || optionName === '--login-retry-timeout'
-    || optionName === '--lang'
-    || optionName === '--platform'
-    || optionName === '--qr-output'
-    || optionName === '-r'
-    || optionName === '--result-output'
-    || optionName === '--info-output'
-    || optionName === '-i'
 }

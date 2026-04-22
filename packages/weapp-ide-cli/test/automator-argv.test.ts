@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { parseAutomatorArgs, readOptionValue, removeOption } from '../src/cli/automator-argv'
+import { parseAutomatorArgs, readBooleanOption, readOptionValue, removeOption } from '../src/cli/automator-argv'
 
 describe('automator argv helpers', () => {
   const mockCwd = '/workspace/demo'
@@ -42,7 +42,17 @@ describe('automator argv helpers', () => {
   it('reads option values from both forms', () => {
     expect(readOptionValue(['--output', 'a.json'], '--output')).toBe('a.json')
     expect(readOptionValue(['--output=b.json'], '--output')).toBe('b.json')
+    expect(readOptionValue(['-o', 'c.json'], '--output', '-o')).toBe('c.json')
     expect(readOptionValue(['--output'], '--output')).toBeUndefined()
+  })
+
+  it('reads boolean options from bare flags and explicit values', () => {
+    expect(readBooleanOption(['--isDistribute'], '--isDistribute')).toBe(true)
+    expect(readBooleanOption(['--isDistribute=true'], '--isDistribute')).toBe(true)
+    expect(readBooleanOption(['--isDistribute', 'false'], '--isDistribute')).toBe(false)
+    expect(readBooleanOption(['-u'], '--use-aab', '-u')).toBe(true)
+    expect(readBooleanOption(['--use-aab=false'], '--use-aab')).toBe(false)
+    expect(readBooleanOption([], '--isDistribute')).toBeUndefined()
   })
 
   it('removes option/value pairs and --option=value tokens', () => {

@@ -1,4 +1,4 @@
-import { readOptionValue } from './automator-argv'
+import { readBooleanOption, readOptionValue } from './automator-argv'
 import { runWechatIdeEngineBuild } from './engine'
 import {
   autoPreviewWechatIde,
@@ -34,10 +34,10 @@ export async function dispatchWechatCliCommand(argv: string[]) {
 
   if (command === 'login') {
     await loginWechatIde({
-      qrFormat: readOptionValue(argv, '--qr-format') as 'base64' | 'image' | 'terminal' | undefined,
-      qrOutput: readOptionValue(argv, '--qr-output'),
+      qrFormat: readOptionValue(argv, '--qr-format', '-f') as 'base64' | 'image' | 'terminal' | undefined,
+      qrOutput: readOptionValue(argv, '--qr-output', '-o'),
       qrSize: readOptionValue(argv, '--qr-size'),
-      resultOutput: readOptionValue(argv, '--result-output'),
+      resultOutput: readOptionValue(argv, '--result-output', '-r'),
     })
     return true
   }
@@ -47,7 +47,7 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       appid: readOptionValue(argv, '--appid'),
       extAppid: readOptionValue(argv, '--ext-appid'),
       platform: readOptionValue(argv, '--platform'),
-      projectPath: readOptionValue(argv, '--project'),
+      projectPath: readOptionValue(argv, '--project', '-p'),
       trustProject: hasOption(argv, '--trust-project'),
     })
     return true
@@ -71,10 +71,10 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       appid: readOptionValue(argv, '--appid'),
       compileCondition: readOptionValue(argv, '--compile-condition'),
       extAppid: readOptionValue(argv, '--ext-appid'),
-      infoOutput: readOptionValue(argv, '--info-output'),
-      projectPath: readOptionValue(argv, '--project'),
-      qrFormat: readOptionValue(argv, '--qr-format') as 'base64' | 'image' | 'terminal' | undefined,
-      qrOutput: readOptionValue(argv, '--qr-output'),
+      infoOutput: readOptionValue(argv, '--info-output', '-i'),
+      projectPath: readOptionValue(argv, '--project', '-p'),
+      qrFormat: readOptionValue(argv, '--qr-format', '-f') as 'base64' | 'image' | 'terminal' | undefined,
+      qrOutput: readOptionValue(argv, '--qr-output', '-o'),
       qrSize: readOptionValue(argv, '--qr-size'),
     })
     return true
@@ -85,8 +85,8 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       appid: readOptionValue(argv, '--appid'),
       compileCondition: readOptionValue(argv, '--compile-condition'),
       extAppid: readOptionValue(argv, '--ext-appid'),
-      infoOutput: readOptionValue(argv, '--info-output'),
-      projectPath: readOptionValue(argv, '--project'),
+      infoOutput: readOptionValue(argv, '--info-output', '-i'),
+      projectPath: readOptionValue(argv, '--project', '-p'),
     })
     return true
   }
@@ -97,7 +97,7 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       appid: readOptionValue(argv, '--appid'),
       extAppid: readOptionValue(argv, '--ext-appid'),
       port: readOptionValue(argv, '--auto-port'),
-      projectPath: readOptionValue(argv, '--project'),
+      projectPath: readOptionValue(argv, '--project', '-p'),
       testTicket: readOptionValue(argv, '--test-ticket'),
       ticket: readOptionValue(argv, '--ticket'),
       trustProject: hasOption(argv, '--trust-project'),
@@ -111,7 +111,7 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       appid: readOptionValue(argv, '--appid'),
       extAppid: readOptionValue(argv, '--ext-appid'),
       port: readOptionValue(argv, '--auto-port'),
-      projectPath: readOptionValue(argv, '--project'),
+      projectPath: readOptionValue(argv, '--project', '-p'),
       replayAll: hasOption(argv, '--replay-all'),
       replayConfigPath: readOptionValue(argv, '--replay-config-path'),
       testTicket: readOptionValue(argv, '--test-ticket'),
@@ -122,8 +122,8 @@ export async function dispatchWechatCliCommand(argv: string[]) {
   }
 
   if (command === 'upload') {
-    const version = readOptionValue(argv, '--version')
-    const desc = readOptionValue(argv, '--desc')
+    const version = readOptionValue(argv, '--version', '-v')
+    const desc = readOptionValue(argv, '--desc', '-d')
     if (!version || !desc) {
       return false
     }
@@ -132,25 +132,25 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       appid: readOptionValue(argv, '--appid'),
       desc,
       extAppid: readOptionValue(argv, '--ext-appid'),
-      infoOutput: readOptionValue(argv, '--info-output'),
-      projectPath: readOptionValue(argv, '--project'),
+      infoOutput: readOptionValue(argv, '--info-output', '-i'),
+      projectPath: readOptionValue(argv, '--project', '-p'),
       version,
     })
     return true
   }
 
   if (command === 'build-apk') {
-    const output = readOptionValue(argv, '--output')
-    const keyStore = readOptionValue(argv, '--key-store')
-    const keyAlias = readOptionValue(argv, '--key-alias')
-    const keyPass = readOptionValue(argv, '--key-pass')
-    const storePass = readOptionValue(argv, '--store-pass')
+    const output = readOptionValue(argv, '--output', '-o')
+    const keyStore = readOptionValue(argv, '--key-store', '--keyStore', '-ks')
+    const keyAlias = readOptionValue(argv, '--key-alias', '--keyAlias', '-ka')
+    const keyPass = readOptionValue(argv, '--key-pass', '--keyPass', '-kp')
+    const storePass = readOptionValue(argv, '--store-pass', '--storePass', '-sp')
     if (!output || !keyStore || !keyAlias || !keyPass || !storePass) {
       return false
     }
 
     await buildWechatIdeApk({
-      desc: readOptionValue(argv, '--desc'),
+      desc: readOptionValue(argv, '--desc', '-d'),
       isUploadResourceBundle: hasOption(argv, '--isUploadResourceBundle'),
       keyAlias,
       keyPass,
@@ -159,23 +159,23 @@ export async function dispatchWechatCliCommand(argv: string[]) {
       resourceBundleDesc: readOptionValue(argv, '--resourceBundleDesc'),
       resourceBundleVersion: readOptionValue(argv, '--resourceBundleVersion'),
       storePass,
-      useAab: readOptionValue(argv, '--use-aab') === 'true',
+      useAab: readBooleanOption(argv, '--use-aab', '--useAab', '-u'),
     })
     return true
   }
 
   if (command === 'build-ipa') {
-    const output = readOptionValue(argv, '--output')
-    const isDistribute = readOptionValue(argv, '--isDistribute')
-    if (!output || !isDistribute) {
+    const output = readOptionValue(argv, '--output', '-o')
+    const isDistribute = readBooleanOption(argv, '--isDistribute')
+    if (!output || isDistribute === undefined) {
       return false
     }
 
     await buildWechatIdeIpa({
       certificateName: readOptionValue(argv, '--certificateName'),
-      isDistribute: isDistribute === 'true',
-      isRemoteBuild: readOptionValue(argv, '--isRemoteBuild') === 'true',
-      isUploadBeta: readOptionValue(argv, '--isUploadBeta') === 'true',
+      isDistribute,
+      isRemoteBuild: readBooleanOption(argv, '--isRemoteBuild') ?? false,
+      isUploadBeta: readBooleanOption(argv, '--isUploadBeta') ?? false,
       isUploadResourceBundle: hasOption(argv, '--isUploadResourceBundle'),
       output,
       p12Password: readOptionValue(argv, '--p12Password'),
@@ -204,7 +204,7 @@ export async function dispatchWechatCliCommand(argv: string[]) {
   }
 
   if (command === 'cache') {
-    const clean = readOptionValue(argv, '--clean')
+    const clean = readOptionValue(argv, '--clean', '-c')
     if (!clean) {
       return false
     }
@@ -215,13 +215,13 @@ export async function dispatchWechatCliCommand(argv: string[]) {
     return true
   }
 
-  if (command === 'open-other' && !hasOption(argv, '--project')) {
+  if (command === 'open-other' && !hasOption(argv, '--project') && !hasOption(argv, '-p')) {
     await openWechatIdeOtherProject()
     return true
   }
 
   if (command === 'reset-fileutils') {
-    const projectPath = readOptionValue(argv, '--project')
+    const projectPath = readOptionValue(argv, '--project', '-p')
     if (!projectPath) {
       return false
     }

@@ -1,5 +1,5 @@
 import { i18nText } from '../i18n'
-import { readOptionValue } from './automator-argv'
+import { readBooleanOption, readOptionValue } from './automator-argv'
 
 const CACHE_CLEAN_TYPES = [
   'storage',
@@ -35,7 +35,7 @@ function validatePortOption(argv: readonly string[]) {
 }
 
 function validateProjectLocator(command: string, argv: readonly string[]) {
-  const projectPath = readOptionValue(argv, '--project')
+  const projectPath = readOptionValue(argv, '--project', '-p')
   const appid = readOptionValue(argv, '--appid')
 
   if (isNonEmptyText(projectPath) || isNonEmptyText(appid)) {
@@ -56,7 +56,7 @@ function validateExtAppidDependency(argv: readonly string[]) {
     return
   }
 
-  const projectPath = readOptionValue(argv, '--project')
+  const projectPath = readOptionValue(argv, '--project', '-p')
   if (isNonEmptyText(projectPath)) {
     return
   }
@@ -87,9 +87,8 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
   validateExtAppidDependency(argv)
 
   if (command === 'upload') {
-    const version
-      = readOptionValue(argv, '--version') || readOptionValue(argv, '-v')
-    const desc = readOptionValue(argv, '--desc') || readOptionValue(argv, '-d')
+    const version = readOptionValue(argv, '--version', '-v')
+    const desc = readOptionValue(argv, '--desc', '-d')
 
     if (!isNonEmptyText(version) || !isNonEmptyText(desc)) {
       throw new Error(
@@ -104,8 +103,7 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
   if (command === 'preview') {
     validateProjectLocator(command, argv)
 
-    const qrFormat
-      = readOptionValue(argv, '--qr-format') || readOptionValue(argv, '-f')
+    const qrFormat = readOptionValue(argv, '--qr-format', '-f')
     if (!qrFormat) {
       return
     }
@@ -121,8 +119,7 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
   }
 
   if (command === 'login') {
-    const qrFormat
-      = readOptionValue(argv, '--qr-format') || readOptionValue(argv, '-f')
+    const qrFormat = readOptionValue(argv, '--qr-format', '-f')
 
     if (qrFormat && !QR_FORMAT_TYPES.includes(qrFormat.toLowerCase() as (typeof QR_FORMAT_TYPES)[number])) {
       throw new Error(
@@ -135,8 +132,7 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
   }
 
   if (command === 'cache') {
-    const cleanType
-      = readOptionValue(argv, '--clean') || readOptionValue(argv, '-c')
+    const cleanType = readOptionValue(argv, '--clean', '-c')
 
     if (!isNonEmptyText(cleanType)) {
       throw new Error(
@@ -184,11 +180,11 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
   }
 
   if (command === 'build-apk') {
-    const output = readOptionValue(argv, '--output')
-    const keyStore = readOptionValue(argv, '--key-store')
-    const keyAlias = readOptionValue(argv, '--key-alias')
-    const keyPass = readOptionValue(argv, '--key-pass')
-    const storePass = readOptionValue(argv, '--store-pass')
+    const output = readOptionValue(argv, '--output', '-o')
+    const keyStore = readOptionValue(argv, '--key-store', '--keyStore', '-ks')
+    const keyAlias = readOptionValue(argv, '--key-alias', '--keyAlias', '-ka')
+    const keyPass = readOptionValue(argv, '--key-pass', '--keyPass', '-kp')
+    const storePass = readOptionValue(argv, '--store-pass', '--storePass', '-sp')
 
     if (
       !isNonEmptyText(output)
@@ -199,31 +195,22 @@ export function validateWechatCliCommandArgs(argv: readonly string[]) {
     ) {
       throw new Error(
         i18nText(
-          'build-apk 命令缺少必填参数：--output、--key-store、--key-alias、--key-pass、--store-pass',
-          'build-apk command requires --output, --key-store, --key-alias, --key-pass, and --store-pass',
+          'build-apk 命令缺少必填参数：--output/-o、--key-store/-ks、--key-alias/-ka、--key-pass/-kp、--store-pass/-sp',
+          'build-apk command requires --output/-o, --key-store/-ks, --key-alias/-ka, --key-pass/-kp, and --store-pass/-sp',
         ),
       )
     }
   }
 
   if (command === 'build-ipa') {
-    const output = readOptionValue(argv, '--output')
-    const isDistribute = readOptionValue(argv, '--isDistribute')
+    const output = readOptionValue(argv, '--output', '-o')
+    const isDistribute = readBooleanOption(argv, '--isDistribute')
 
-    if (!isNonEmptyText(output) || !isNonEmptyText(isDistribute)) {
+    if (!isNonEmptyText(output) || isDistribute === undefined) {
       throw new Error(
         i18nText(
-          'build-ipa 命令缺少必填参数：--output 和 --isDistribute',
-          'build-ipa command requires both --output and --isDistribute',
-        ),
-      )
-    }
-
-    if (isDistribute !== 'true' && isDistribute !== 'false') {
-      throw new Error(
-        i18nText(
-          `build-ipa 命令的 --isDistribute 值无效: ${isDistribute}（仅支持 true/false）`,
-          `Invalid build-ipa --isDistribute value: ${isDistribute} (supported: true/false)`,
+          'build-ipa 命令缺少必填参数：--output/-o 和 --isDistribute',
+          'build-ipa command requires both --output/-o and --isDistribute',
         ),
       )
     }
