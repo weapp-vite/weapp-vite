@@ -1,5 +1,6 @@
 import path from 'node:path'
 import process from 'node:process'
+import { withMiniProgram } from './automator-session'
 import { resetWechatIdeFileUtilsByHttp } from './http'
 import { runWechatCliCommand } from './run-wechat-cli'
 
@@ -85,6 +86,25 @@ export interface ClearWechatIdeCacheOptions {
 
 export interface ResetWechatIdeFileUtilsOptions {
   projectPath: string
+}
+
+export interface WechatIdeAutomatorSessionOptions {
+  preferOpenedSession?: boolean
+  projectPath: string
+  sharedSession?: boolean
+  timeout?: number
+}
+
+export interface CompileWechatIdeByAutomatorOptions extends WechatIdeAutomatorSessionOptions {
+  force?: boolean
+}
+
+export interface ClearWechatIdeCacheByAutomatorOptions extends WechatIdeAutomatorSessionOptions {
+  clean: 'all' | 'auth' | 'compile' | 'file' | 'network' | 'session' | 'storage'
+}
+
+export interface SetWechatIdeTicketOptions extends WechatIdeAutomatorSessionOptions {
+  ticket: string
 }
 
 export interface BuildWechatIdeApkOptions {
@@ -348,6 +368,82 @@ export async function openWechatIdeOtherProject(_options: OpenWechatIdeOtherProj
  */
 export async function resetWechatIdeFileUtils(options: ResetWechatIdeFileUtilsOptions) {
   await resetWechatIdeFileUtilsByHttp(path.resolve(options.projectPath))
+}
+
+function createAutomatorSessionOptions(options: WechatIdeAutomatorSessionOptions) {
+  return {
+    preferOpenedSession: options.preferOpenedSession ?? true,
+    projectPath: path.resolve(options.projectPath),
+    sharedSession: options.sharedSession ?? true,
+    timeout: options.timeout,
+  }
+}
+
+/**
+ * @description 通过已打开或新建的 automator 会话获取开发者工具基础信息。
+ */
+export async function getWechatIdeToolInfo(options: WechatIdeAutomatorSessionOptions) {
+  return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
+    return await miniProgram.toolInfo()
+  })
+}
+
+/**
+ * @description 通过已打开或新建的 automator 会话执行项目编译。
+ */
+export async function compileWechatIdeByAutomator(options: CompileWechatIdeByAutomatorOptions) {
+  return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
+    return await miniProgram.compile({
+      force: options.force,
+    })
+  })
+}
+
+/**
+ * @description 通过已打开或新建的 automator 会话清理开发者工具缓存。
+ */
+export async function clearWechatIdeCacheByAutomator(options: ClearWechatIdeCacheByAutomatorOptions) {
+  return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
+    return await miniProgram.clearCache({
+      clean: options.clean,
+    })
+  })
+}
+
+/**
+ * @description 通过已打开或新建的 automator 会话获取当前 ticket。
+ */
+export async function getWechatIdeTicket(options: WechatIdeAutomatorSessionOptions) {
+  return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
+    return await miniProgram.getTicket()
+  })
+}
+
+/**
+ * @description 通过已打开或新建的 automator 会话设置 ticket。
+ */
+export async function setWechatIdeTicket(options: SetWechatIdeTicketOptions) {
+  return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
+    await miniProgram.setTicket(options.ticket)
+  })
+}
+
+/**
+ * @description 通过已打开或新建的 automator 会话刷新 ticket。
+ */
+export async function refreshWechatIdeTicket(options: WechatIdeAutomatorSessionOptions) {
+  return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
+    await miniProgram.refreshTicket()
+  })
+}
+
+/**
+ * @description 通过已打开或新建的 automator 会话获取测试账号列表。
+ */
+export async function getWechatIdeTestAccounts(options: WechatIdeAutomatorSessionOptions) {
+  return await withMiniProgram(createAutomatorSessionOptions(options), async (miniProgram) => {
+    return await miniProgram.testAccounts()
+  })
 }
 
 /**

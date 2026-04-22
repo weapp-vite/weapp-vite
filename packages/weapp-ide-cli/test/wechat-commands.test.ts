@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const runWechatCliCommandMock = vi.hoisted(() => vi.fn())
 const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
+const withMiniProgramMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../src/cli/run-wechat-cli', () => ({
   runWechatCliCommand: runWechatCliCommandMock,
@@ -11,6 +12,10 @@ vi.mock('../src/cli/http', () => ({
   resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
 }))
 
+vi.mock('../src/cli/automator-session', () => ({
+  withMiniProgram: withMiniProgramMock,
+}))
+
 describe('wechat command helpers', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -18,6 +23,16 @@ describe('wechat command helpers', () => {
     runWechatCliCommandMock.mockResolvedValue(undefined)
     resetWechatIdeFileUtilsByHttpMock.mockReset()
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue(undefined)
+    withMiniProgramMock.mockReset()
+    withMiniProgramMock.mockImplementation(async (_options, runner) => await runner({
+      clearCache: vi.fn(async () => undefined),
+      compile: vi.fn(async () => undefined),
+      getTicket: vi.fn(async () => ({ ticket: 'ticket-a' })),
+      refreshTicket: vi.fn(async () => undefined),
+      setTicket: vi.fn(async () => undefined),
+      testAccounts: vi.fn(async () => ['tester-a']),
+      toolInfo: vi.fn(async () => ({ SDKVersion: '3.0.0' })),
+    }))
   })
 
   it('builds login argv with normalized output paths', async () => {
@@ -348,5 +363,72 @@ describe('wechat command helpers', () => {
       '--versionDesc',
       'ipa desc',
     ])
+  })
+
+  it('gets tool info through shared opened-session automator helper', async () => {
+    const { getWechatIdeToolInfo } = await import('../src/cli/wechat-commands')
+
+    const result = await getWechatIdeToolInfo({
+      projectPath: './dist/dev/mp-weixin',
+    })
+
+    expect(withMiniProgramMock).toHaveBeenCalledWith({
+      preferOpenedSession: true,
+      projectPath: expect.stringMatching(/dist\/dev\/mp-weixin$/),
+      sharedSession: true,
+      timeout: undefined,
+    }, expect.any(Function))
+    expect(result).toEqual({ SDKVersion: '3.0.0' })
+  })
+
+  it('compiles through shared opened-session automator helper', async () => {
+    const compileMock = vi.fn(async () => undefined)
+    withMiniProgramMock.mockImplementationOnce(async (_options, runner) => await runner({
+      compile: compileMock,
+    }))
+    const { compileWechatIdeByAutomator } = await import('../src/cli/wechat-commands')
+
+    await compileWechatIdeByAutomator({
+      force: true,
+      projectPath: './dist/dev/mp-weixin',
+    })
+
+    expect(compileMock).toHaveBeenCalledWith({ force: true })
+  })
+
+  it('gets and updates ticket through shared opened-session automator helper', async () => {
+    const getTicketMock = vi.fn(async () => ({ ticket: 'ticket-a' }))
+    const setTicketMock = vi.fn(async () => undefined)
+    const refreshTicketMock = vi.fn(async () => undefined)
+    withMiniProgramMock
+      .mockImplementationOnce(async (_options, runner) => await runner({
+        getTicket: getTicketMock,
+      }))
+      .mockImplementationOnce(async (_options, runner) => await runner({
+        setTicket: setTicketMock,
+      }))
+      .mockImplementationOnce(async (_options, runner) => await runner({
+        refreshTicket: refreshTicketMock,
+      }))
+    const {
+      getWechatIdeTicket,
+      refreshWechatIdeTicket,
+      setWechatIdeTicket,
+    } = await import('../src/cli/wechat-commands')
+
+    const ticket = await getWechatIdeTicket({
+      projectPath: './dist/dev/mp-weixin',
+    })
+    await setWechatIdeTicket({
+      projectPath: './dist/dev/mp-weixin',
+      ticket: 'ticket-b',
+    })
+    await refreshWechatIdeTicket({
+      projectPath: './dist/dev/mp-weixin',
+    })
+
+    expect(ticket).toEqual({ ticket: 'ticket-a' })
+    expect(setTicketMock).toHaveBeenCalledWith('ticket-b')
+    expect(refreshTicketMock).toHaveBeenCalledTimes(1)
   })
 })

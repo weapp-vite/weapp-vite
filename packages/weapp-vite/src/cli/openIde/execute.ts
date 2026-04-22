@@ -1,6 +1,8 @@
 import {
   clearWechatIdeCache,
+  clearWechatIdeCacheByAutomator,
   closeWechatIdeProject,
+  compileWechatIdeByAutomator,
   isWechatIdeLoginRequiredError,
   openWechatIdeProjectByHttp,
   parse,
@@ -10,7 +12,6 @@ import {
   runRetryableCommand,
   runWechatIdeEngineBuild,
   runWithSuspendedSharedInput,
-  withMiniProgram,
 } from 'weapp-ide-cli'
 import logger from '../../logger'
 
@@ -22,31 +23,6 @@ export interface ExecuteWechatIdeCliCommandOptions {
   onRetry?: () => void
   projectPath?: string
 }
-
-interface AutomatorToolLike {
-  close?: () => Promise<unknown>
-  tool?: (method: string, params?: Record<string, unknown>) => Promise<unknown>
-}
-
-const AUTOMATOR_TOOL_CANDIDATES = {
-  cache: {
-    all: [
-      { method: 'clearCache', params: { clean: 'all' } },
-      { method: 'cleanCache', params: { clean: 'all' } },
-      { method: 'clearAllCache', params: {} },
-    ],
-    compile: [
-      { method: 'clearCache', params: { clean: 'compile' } },
-      { method: 'cleanCache', params: { clean: 'compile' } },
-      { method: 'clearCompileCache', params: {} },
-    ],
-  },
-  compile: [
-    { method: 'compile', params: {} },
-    { method: 'compileProject', params: {} },
-    { method: 'recompile', params: {} },
-  ],
-} as const
 
 function readArgOption(argv: readonly string[], ...names: string[]) {
   for (let index = 0; index < argv.length; index += 1) {
@@ -61,28 +37,6 @@ function readArgOption(argv: readonly string[], ...names: string[]) {
   }
 }
 
-async function runAutomatorToolCandidates(
-  miniProgram: AutomatorToolLike,
-  candidates: ReadonlyArray<{ method: string, params: Record<string, unknown> }>,
-) {
-  if (typeof miniProgram.tool !== 'function') {
-    throw new TypeError('AUTOMATOR_TOOL_UNAVAILABLE')
-  }
-
-  let lastError: unknown
-  for (const candidate of candidates) {
-    try {
-      await miniProgram.tool(candidate.method, candidate.params)
-      return
-    }
-    catch (error) {
-      lastError = error
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error('AUTOMATOR_TOOL_COMMAND_FAILED')
-}
-
 async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[], projectPath?: string) {
   if (!projectPath) {
     return false
@@ -94,12 +48,8 @@ async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[],
   }
 
   if (command === 'compile') {
-    await withMiniProgram({
-      preferOpenedSession: true,
+    await compileWechatIdeByAutomator({
       projectPath,
-      sharedSession: true,
-    }, async (miniProgram) => {
-      await runAutomatorToolCandidates(miniProgram as AutomatorToolLike, AUTOMATOR_TOOL_CANDIDATES.compile)
     })
     return true
   }
@@ -110,29 +60,9 @@ async function tryExecuteWechatIdeCliCommandByAutomator(argv: readonly string[],
       return false
     }
 
-    await withMiniProgram({
-      preferOpenedSession: true,
+    await clearWechatIdeCacheByAutomator({
+      clean: cleanType,
       projectPath,
-      sharedSession: true,
-    }, async (miniProgram) => {
-      await runAutomatorToolCandidates(
-        miniProgram as AutomatorToolLike,
-        AUTOMATOR_TOOL_CANDIDATES.cache[cleanType],
-      )
-    })
-    return true
-  }
-
-  if (command === 'close' || command === 'quit') {
-    await withMiniProgram({
-      preferOpenedSession: true,
-      projectPath,
-      sharedSession: true,
-    }, async (miniProgram) => {
-      if (typeof (miniProgram as AutomatorToolLike).close !== 'function') {
-        throw new TypeError('AUTOMATOR_CLOSE_UNAVAILABLE')
-      }
-      await miniProgram.close()
     })
     return true
   }
