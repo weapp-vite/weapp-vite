@@ -187,6 +187,16 @@ wv ide logs
 wv ide logs --open
 ```
 
+除了日志桥接，`ide` 子命令现在也支持直接读取已打开 DevTools 会话的信息：
+
+```sh
+wv ide info
+wv ide test-accounts
+wv ide ticket
+wv ide ticket:set --ticket your-ticket
+wv ide ticket:refresh
+```
+
 ## DevTools 配置预热
 
 `weapp-vite` 在打开微信开发者工具前，会复用 `weapp-ide-cli` 的底层能力，自动尝试预热本机 DevTools 配置：

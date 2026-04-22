@@ -185,7 +185,45 @@ wv ide setup .
 wv ide setup ./dist/dev
 ```
 
-### 7) `npm`（含别名）
+### 7) `ide info` / `ide test-accounts` / `ide ticket*`
+
+读取当前已打开 DevTools 会话的信息，优先复用已打开的 automator 会话。
+
+```bash
+wv ide info [root]
+wv ide test-accounts [root]
+wv ide ticket [root]
+wv ide ticket:set [root] --ticket <value>
+wv ide ticket:refresh [root]
+```
+
+参数：
+
+| 参数                        | 说明                                               |
+| --------------------------- | -------------------------------------------------- |
+| `-o, --open`                | 先打开微信开发者工具，再执行信息查询或 ticket 操作 |
+| `-p, --platform <platform>` | 目标平台（当前仅支持 `weapp`）                     |
+| `--project-config <path>`   | 小程序 `project.config.json` 路径                  |
+| `--ticket <value>`          | `ide ticket:set` 需要设置的新 ticket               |
+
+说明：
+
+- `ide info` 返回当前 DevTools `Tool.getInfo` 的结果。
+- `ide test-accounts` 返回当前 DevTools 可用的测试账号列表。
+- `ide ticket` / `ide ticket:set` / `ide ticket:refresh` 会直接操作当前 DevTools 会话里的 ticket。
+- 这些命令不是日志桥接常驻进程，执行完成后会直接退出。
+
+示例：
+
+```bash
+wv ide info
+wv ide test-accounts --open
+wv ide ticket
+wv ide ticket:set --ticket your-ticket
+wv ide ticket:refresh
+```
+
+### 8) `npm`（含别名）
 
 调用 IDE 的 npm 构建能力。
 
@@ -195,7 +233,7 @@ wv build:npm
 wv build-npm
 ```
 
-### 8) `generate` / `g`
+### 9) `generate` / `g`
 
 生成 app / page / component 文件骨架。
 
@@ -212,7 +250,7 @@ wv g [filepath]
 | `-p, --page`        | 按 page 模板生成 |
 | `-n, --name <name>` | 指定文件名       |
 
-### 8) `init`
+### 10) `init`
 
 初始化项目配置。
 
@@ -220,7 +258,7 @@ wv g [filepath]
 wv init
 ```
 
-### 9) `prepare`
+### 11) `prepare`
 
 预生成 `.weapp-vite` 下的支持文件，包括托管 `tsconfig`、自动路由类型、自动导入组件清单与类型等。
 
@@ -234,7 +272,7 @@ wv prepare [root]
 - 老项目尚未跑过 `dev/build`，但希望编辑器先拿到类型文件；
 - 团队希望把自动路由、自动导入组件相关产物纳入显式预热流程。
 
-### 10) `mcp`
+### 12) `mcp`
 
 启动 `weapp-vite` MCP 服务（用于 AI 助手接入）。
 

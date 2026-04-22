@@ -171,7 +171,7 @@ export async function runIdeCommand(action: string | undefined, root: string | u
  */
 export function registerIdeCommand(cli: CAC) {
   cli
-    .command('ide [action] [root]', 'forward Wechat DevTools console logs to terminal')
+    .command('ide [action] [root]', 'run Wechat DevTools utility actions and log bridge commands')
     .option('-o, --open', '[boolean] open ide before attaching log bridge')
     .option('-p, --platform <platform>', '[string] target platform (weapp | h5)')
     .option('--project-config <path>', '[string] project config path (miniprogram only)')
