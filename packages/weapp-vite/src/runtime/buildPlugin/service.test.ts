@@ -9,6 +9,7 @@ const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
 
 const buildMock = vi.hoisted(() => vi.fn())
 const cleanOutputsMock = vi.hoisted(() => vi.fn(async () => {}))
+const resetEmittedOutputCachesMock = vi.hoisted(() => vi.fn())
 const isOutputRootInsideOutDirMock = vi.hoisted(() => vi.fn((outDir: string, pluginOutputRoot: string) => {
   return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
 }))
@@ -46,6 +47,7 @@ vi.mock('vite', () => ({
 vi.mock('./outputs', () => ({
   cleanOutputs: cleanOutputsMock,
   isOutputRootInsideOutDir: isOutputRootInsideOutDirMock,
+  resetEmittedOutputCaches: resetEmittedOutputCachesMock,
 }))
 
 vi.mock('../../createContext', () => ({
@@ -158,6 +160,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
 describe('runtime buildPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetEmittedOutputCachesMock.mockReset()
     isOutputRootInsideOutDirMock.mockImplementation((outDir: string, pluginOutputRoot: string) => {
       return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
     })
@@ -281,6 +284,7 @@ describe('runtime buildPlugin service', () => {
     await service.build()
 
     expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
+    expect(resetEmittedOutputCachesMock).toHaveBeenCalledWith(ctx.runtimeState)
   })
 
   it('reuses npm cache in dev mode when dependencies are not outdated', async () => {

@@ -1,6 +1,7 @@
+import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { cleanOutputs, isOutputRootInsideOutDir, syncExternalPluginOutputs } from './outputs'
+import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, syncExternalPluginOutputs } from './outputs'
 
 const DEFAULT_TEST_PLATFORM = 'weapp'
 
@@ -158,6 +159,30 @@ describe('buildPlugin outputs', () => {
     await cleanOutputs(configService)
     expect(rmMock).not.toHaveBeenCalled()
     expect(loggerMock.success).not.toHaveBeenCalled()
+  })
+
+  it('clears emitted output caches after output cleanup', () => {
+    const runtimeState = {
+      json: {
+        emittedSource: new Map([['app.json', '{}']]),
+      },
+      asset: {
+        emittedBuffer: new Map([['images/logo.png', Buffer.from('logo')]]),
+      },
+      css: {
+        emittedSource: new Map([['app.wxss', '.page {}']]),
+      },
+      wxml: {
+        emittedCode: new Map([['pages/index/index.wxml', '<view />']]),
+      },
+    } as any
+
+    resetEmittedOutputCaches(runtimeState)
+
+    expect(runtimeState.json.emittedSource.size).toBe(0)
+    expect(runtimeState.asset.emittedBuffer.size).toBe(0)
+    expect(runtimeState.css.emittedSource.size).toBe(0)
+    expect(runtimeState.wxml.emittedCode.size).toBe(0)
   })
 
   it('syncs plugin outputs when plugin output root is outside outDir', async () => {

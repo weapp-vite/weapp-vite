@@ -21,6 +21,16 @@ export async function runDevtoolsCacheAction(options: StartDevHotkeysOptions, cl
 }
 
 /**
+ * @description 通知微信开发者工具重新编译当前项目。
+ */
+export async function runDevtoolsCompileAction(options: StartDevHotkeysOptions) {
+  logger.info('[dev action] 正在通知微信开发者工具重新编译当前项目...')
+  await parse(['compile', '--project', options.projectPath])
+  logger.success('[dev action] 微信开发者工具已收到重新编译指令。')
+  return '已通知微信开发者工具重新编译当前项目'
+}
+
+/**
  * @description 手动触发一次当前小程序 dev 重新构建。
  */
 export async function runDevRebuildAction(options: StartDevHotkeysOptions) {

@@ -45,6 +45,15 @@ async function removeDirectoryEntries(
   return deletedPaths.sort()
 }
 
+export function resetEmittedOutputCaches(
+  runtimeState: MutableCompilerContext['runtimeState'],
+) {
+  runtimeState.json.emittedSource.clear()
+  runtimeState.asset.emittedBuffer.clear()
+  runtimeState.css.emittedSource.clear()
+  runtimeState.wxml.emittedCode.clear()
+}
+
 export async function cleanOutputs(
   configService: NonNullable<MutableCompilerContext['configService']>,
 ) {

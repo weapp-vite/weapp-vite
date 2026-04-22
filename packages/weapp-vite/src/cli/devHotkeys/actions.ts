@@ -1,5 +1,5 @@
 import type { DevHotkeyDefinition, DevHotkeyGroup } from './types'
-import { runDevRebuildAction, runDevtoolsCacheAction, runOpenIdeAction } from './devtools'
+import { runDevRebuildAction, runDevtoolsCacheAction, runDevtoolsCompileAction, runOpenIdeAction } from './devtools'
 import { runScreenshotAction } from './screenshot'
 
 export interface DevHotkeyGroupDefinition {
@@ -27,10 +27,20 @@ export const DEV_HOTKEY_DEFINITIONS: readonly DevHotkeyDefinition[] = [
     },
   },
   {
-    description: '手动重新构建当前小程序产物',
+    description: '通知微信开发者工具重新编译当前项目',
     group: 'development',
     key: 'r',
-    label: '手动重新构建',
+    label: 'DevTools 重新编译',
+    pendingLabel: '正在通知微信开发者工具重新编译当前项目',
+    run: async ({ options }) => {
+      return await runDevtoolsCompileAction(options)
+    },
+  },
+  {
+    description: '手动重新构建当前小程序产物',
+    group: 'development',
+    key: 'R',
+    label: '手动重新构建产物',
     pendingLabel: '正在手动重新构建当前小程序产物',
     run: async ({ options }) => {
       return await runDevRebuildAction(options)

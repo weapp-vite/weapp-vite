@@ -18,7 +18,7 @@ import { generateLibDts } from '../libDts'
 import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createIndependentBuilder } from './independent'
-import { cleanOutputs, isOutputRootInsideOutDir } from './outputs'
+import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
 import { resolveTouchAppWxssEnabled } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
@@ -292,6 +292,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const shouldCleanOutputs = !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
     if (shouldCleanOutputs) {
       await cleanOutputs(configService)
+      resetEmittedOutputCaches(ctx.runtimeState)
     }
     const pluginOnly = configService.pluginOnly
     const isMultiPlatformEnabled = configService.multiPlatform.enabled

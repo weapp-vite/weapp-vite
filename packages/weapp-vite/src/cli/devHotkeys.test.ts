@@ -388,7 +388,27 @@ describe('devHotkeys', () => {
     expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已清理微信开发者工具全部缓存'))
   })
 
-  it('triggers manual rebuild with r hotkey', async () => {
+  it('triggers devtools compile with r hotkey', async () => {
+    vi.doMock('node:process', () => ({
+      default: fakeProcess,
+    }))
+    const { startDevHotkeys } = await import('./devHotkeys')
+    startDevHotkeys({
+      cwd: '/project',
+      mcpConfig: undefined,
+      platform: 'weapp',
+      projectPath: '/project/dist',
+    })
+
+    stdin.emit('data', 'r')
+    await flushMicrotasks(10)
+
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['compile', '--project', '/project/dist'])
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在通知微信开发者工具重新编译当前项目'))
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已通知微信开发者工具重新编译当前项目'))
+  })
+
+  it('triggers manual rebuild with uppercase R hotkey', async () => {
     vi.doMock('node:process', () => ({
       default: fakeProcess,
     }))
@@ -402,7 +422,7 @@ describe('devHotkeys', () => {
       rebuild: rebuildMock,
     })
 
-    stdin.emit('data', 'r')
+    stdin.emit('data', 'R')
     await flushMicrotasks(10)
 
     expect(rebuildMock).toHaveBeenCalledTimes(1)
