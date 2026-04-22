@@ -118,6 +118,55 @@ describe('suiteRunner', () => {
     vi.useRealTimers()
   })
 
+  it('does not wait forever when descendant processes keep piped stdio open after exit', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-child-exit-'))
+    const pidFile = path.join(tempRoot, 'child.pid')
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+
+    const leakStdoutScript = `
+      const fs = require('node:fs');
+      const { spawn } = require('node:child_process');
+      const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 3000)'], {
+        stdio: ['ignore', 1, 2],
+      });
+      fs.writeFileSync(${JSON.stringify(pidFile)}, String(child.pid));
+      process.exit(0);
+    `
+
+    try {
+      const result = await Promise.race([
+        runTaskSuite('e2e:test', [
+          {
+            label: 'pipe-leak-task',
+            command: process.execPath,
+            args: ['-e', leakStdoutScript],
+          },
+        ], {
+          writeReport: false,
+        }),
+        new Promise<'timeout'>(resolve => setTimeout(resolve, 1000, 'timeout')),
+      ])
+
+      expect(result).toBe(0)
+    }
+    finally {
+      if (fs.existsSync(pidFile)) {
+        const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
+        if (Number.isInteger(childPid) && childPid > 0) {
+          try {
+            process.kill(childPid)
+          }
+          catch {
+          }
+        }
+      }
+
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      process.exitCode = previousExitCode
+    }
+  })
+
   it('keeps ide gate smaller than ide full and includes core runtime coverage', async () => {
     const ideSmokeTasks = await getSuiteTasks('ide-smoke')
     const ideGateTasks = await getSuiteTasks('ide-gate')

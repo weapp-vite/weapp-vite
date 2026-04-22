@@ -41,6 +41,7 @@ const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=
 const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
 const TASK_HEARTBEAT_INTERVAL_MS = 30_000
+const TASK_STDIO_CLOSE_GRACE_MS = 200
 
 function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
@@ -194,6 +195,81 @@ async function defaultRunTask(task: SuiteTask) {
     const child = spawn(task.command, task.args, getTaskSpawnOptions(task))
     const stdoutForwarder = createOutputForwarder(text => process.stdout.write(text), collector)
     const stderrForwarder = createOutputForwarder(text => process.stderr.write(text), collector)
+    let exitCode: number | undefined
+    let stdoutClosed = child.stdout == null
+    let stderrClosed = child.stderr == null
+    let stdioCloseGraceTimer: NodeJS.Timeout | undefined
+    let settled = false
+
+    function clearGraceTimer() {
+      if (stdioCloseGraceTimer) {
+        clearTimeout(stdioCloseGraceTimer)
+        stdioCloseGraceTimer = undefined
+      }
+    }
+
+    function finalize(code: number) {
+      if (settled) {
+        return
+      }
+
+      settled = true
+      clearGraceTimer()
+      stdoutForwarder.flush()
+      stderrForwarder.flush()
+      task.artifacts = collector.artifacts
+      child.stdout?.destroy()
+      child.stderr?.destroy()
+      resolve(code)
+    }
+
+    function scheduleFinalize() {
+      if (settled || exitCode === undefined || stdioCloseGraceTimer) {
+        return
+      }
+
+      stdioCloseGraceTimer = setTimeout(() => {
+        finalize(exitCode ?? 1)
+      }, TASK_STDIO_CLOSE_GRACE_MS)
+      stdioCloseGraceTimer.unref?.()
+    }
+
+    function maybeFinalize() {
+      if (settled || exitCode === undefined) {
+        return
+      }
+
+      if (stdoutClosed && stderrClosed) {
+        finalize(exitCode)
+        return
+      }
+
+      scheduleFinalize()
+    }
+
+    function onStdoutClose() {
+      stdoutClosed = true
+      maybeFinalize()
+    }
+
+    function onStderrClose() {
+      stderrClosed = true
+      maybeFinalize()
+    }
+
+    function onError(error: Error) {
+      if (settled) {
+        return
+      }
+
+      clearGraceTimer()
+      reject(error)
+    }
+
+    function onExit(code: number | null) {
+      exitCode = code ?? 1
+      maybeFinalize()
+    }
 
     child.stdout.on('data', (chunk) => {
       stdoutForwarder.handleText(chunk.toString())
@@ -203,13 +279,10 @@ async function defaultRunTask(task: SuiteTask) {
       stderrForwarder.handleText(chunk.toString())
     })
 
-    child.on('error', reject)
-    child.on('close', (code) => {
-      stdoutForwarder.flush()
-      stderrForwarder.flush()
-      task.artifacts = collector.artifacts
-      resolve(code ?? 1)
-    })
+    child.stdout?.on('close', onStdoutClose)
+    child.stderr?.on('close', onStderrClose)
+    child.on('error', onError)
+    child.on('exit', onExit)
   })
 }
 
