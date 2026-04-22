@@ -15,7 +15,12 @@ const openWechatIdeOtherProjectMock = vi.hoisted(() => vi.fn())
 const previewWechatIdeMock = vi.hoisted(() => vi.fn())
 const quitWechatIdeMock = vi.hoisted(() => vi.fn())
 const resetWechatIdeFileUtilsMock = vi.hoisted(() => vi.fn())
+const runWechatIdeEngineBuildMock = vi.hoisted(() => vi.fn())
 const uploadWechatIdeMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../src/cli/engine', () => ({
+  runWechatIdeEngineBuild: runWechatIdeEngineBuildMock,
+}))
 
 vi.mock('../src/cli/wechat-commands', () => ({
   autoReplayWechatIde: autoReplayWechatIdeMock,
@@ -54,6 +59,7 @@ describe('dispatchWechatCliCommand', () => {
     previewWechatIdeMock.mockReset()
     quitWechatIdeMock.mockReset()
     resetWechatIdeFileUtilsMock.mockReset()
+    runWechatIdeEngineBuildMock.mockReset()
     uploadWechatIdeMock.mockReset()
     autoReplayWechatIdeMock.mockResolvedValue(undefined)
     autoWechatIdeMock.mockResolvedValue(undefined)
@@ -70,6 +76,7 @@ describe('dispatchWechatCliCommand', () => {
     previewWechatIdeMock.mockResolvedValue(undefined)
     quitWechatIdeMock.mockResolvedValue(undefined)
     resetWechatIdeFileUtilsMock.mockResolvedValue(undefined)
+    runWechatIdeEngineBuildMock.mockResolvedValue(undefined)
     uploadWechatIdeMock.mockResolvedValue(undefined)
   })
 
@@ -287,6 +294,23 @@ describe('dispatchWechatCliCommand', () => {
     expect(handled).toBe(true)
     expect(resetWechatIdeFileUtilsMock).toHaveBeenCalledWith({
       projectPath: '/tmp/demo',
+    })
+  })
+
+  it('dispatches engine build argv to engine helper', async () => {
+    const { dispatchWechatCliCommand } = await import('../src/cli/wechat-dispatch')
+
+    const handled = await dispatchWechatCliCommand([
+      'engine',
+      'build',
+      '/tmp/demo',
+      '--logPath',
+      '/tmp/engine.log',
+    ])
+
+    expect(handled).toBe(true)
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('/tmp/demo', {
+      logPath: '/tmp/engine.log',
     })
   })
 

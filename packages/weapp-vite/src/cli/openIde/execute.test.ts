@@ -8,7 +8,7 @@ const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const quitWechatIdeMock = vi.hoisted(() => vi.fn())
 const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
-const runWechatIdeEngineBuildByHttpMock = vi.hoisted(() => vi.fn())
+const runWechatIdeEngineBuildMock = vi.hoisted(() => vi.fn())
 const runWithSuspendedSharedInputMock = vi.hoisted(() => vi.fn())
 const runRetryableCommandMock = vi.hoisted(() => vi.fn())
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
@@ -27,7 +27,7 @@ vi.mock('weapp-ide-cli', () => ({
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
   quitWechatIde: quitWechatIdeMock,
   resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
-  runWechatIdeEngineBuildByHttp: runWechatIdeEngineBuildByHttpMock,
+  runWechatIdeEngineBuild: runWechatIdeEngineBuildMock,
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
   withMiniProgram: withMiniProgramMock,
@@ -47,7 +47,7 @@ describe('executeWechatIdeCliCommand', () => {
     promptWechatIdeLoginRetryMock.mockReset()
     quitWechatIdeMock.mockReset()
     resetWechatIdeFileUtilsByHttpMock.mockReset()
-    runWechatIdeEngineBuildByHttpMock.mockReset()
+    runWechatIdeEngineBuildMock.mockReset()
     runWithSuspendedSharedInputMock.mockReset()
     runRetryableCommandMock.mockReset()
     withMiniProgramMock.mockReset()
@@ -61,7 +61,7 @@ describe('executeWechatIdeCliCommand', () => {
     openWechatIdeProjectByHttpMock.mockResolvedValue('OK')
     resetWechatIdeFileUtilsByHttpMock.mockResolvedValue('OK')
     quitWechatIdeMock.mockResolvedValue(undefined)
-    runWechatIdeEngineBuildByHttpMock.mockResolvedValue({
+    runWechatIdeEngineBuildMock.mockResolvedValue({
       body: '{"status":"END"}',
       done: true,
       failed: false,
@@ -153,7 +153,9 @@ describe('executeWechatIdeCliCommand', () => {
       projectPath: '/project/dist',
     })
 
-    expect(runWechatIdeEngineBuildByHttpMock).toHaveBeenCalledWith('/project/dist')
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('/project/dist', {
+      logPath: undefined,
+    })
     expect(parseMock).not.toHaveBeenCalled()
   })
 

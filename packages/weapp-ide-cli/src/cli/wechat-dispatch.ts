@@ -1,4 +1,5 @@
 import { readOptionValue } from './automator-argv'
+import { runWechatIdeEngineBuild } from './engine'
 import {
   autoPreviewWechatIde,
   autoReplayWechatIde,
@@ -226,6 +227,18 @@ export async function dispatchWechatCliCommand(argv: string[]) {
     }
 
     await resetWechatIdeFileUtils({ projectPath })
+    return true
+  }
+
+  if (command === 'engine' && argv[1] === 'build') {
+    const projectPath = argv[2]
+    if (!projectPath) {
+      return false
+    }
+
+    await runWechatIdeEngineBuild(projectPath, {
+      logPath: readOptionValue(argv, '--logPath', '-l'),
+    })
     return true
   }
 

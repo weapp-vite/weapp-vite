@@ -8,7 +8,7 @@ import {
   quitWechatIde,
   resetWechatIdeFileUtilsByHttp,
   runRetryableCommand,
-  runWechatIdeEngineBuildByHttp,
+  runWechatIdeEngineBuild,
   runWithSuspendedSharedInput,
   withMiniProgram,
 } from 'weapp-ide-cli'
@@ -170,7 +170,9 @@ async function tryExecuteWechatIdeCliCommandByHttp(argv: readonly string[], proj
       return false
     }
 
-    await runWechatIdeEngineBuildByHttp(engineProjectPath)
+    await runWechatIdeEngineBuild(engineProjectPath, {
+      logPath: readArgOption(argv, '--logPath', '-l'),
+    })
     return true
   }
 

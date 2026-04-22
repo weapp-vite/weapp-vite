@@ -2,6 +2,8 @@ import type {
   PollWechatIdeEngineBuildResult,
   WechatDevtoolsHttpCommandOptions,
 } from './http'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import {
   pollWechatIdeEngineBuildResultByHttp,
   startWechatIdeEngineBuildByHttp,
@@ -13,6 +15,10 @@ export interface RunWechatIdeEngineBuildByHttpOptions extends WechatDevtoolsHttp
   pollIntervalMs?: number
 }
 
+export interface RunWechatIdeEngineBuildOptions extends RunWechatIdeEngineBuildByHttpOptions {
+  logPath?: string
+}
+
 function createEngineBuildError(message: string, code: string) {
   const error = new Error(message) as Error & { code: string }
   error.code = code
@@ -21,6 +27,46 @@ function createEngineBuildError(message: string, code: string) {
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function createEngineBuildLogFilename() {
+  const now = new Date()
+  const parts = [
+    now.getFullYear(),
+    now.getMonth() + 1,
+    now.getDate(),
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+  ]
+  return `${parts.join('-')}.json`
+}
+
+async function resolveEngineBuildLogFilePath(logPath: string) {
+  const resolvedLogPath = path.resolve(logPath)
+
+  try {
+    const stat = await fs.stat(resolvedLogPath)
+    if (stat.isDirectory()) {
+      return path.join(resolvedLogPath, createEngineBuildLogFilename())
+    }
+
+    await fs.rm(resolvedLogPath, { force: true })
+  }
+  catch {
+  }
+
+  await fs.mkdir(path.dirname(resolvedLogPath), { recursive: true })
+  return resolvedLogPath
+}
+
+async function writeEngineBuildLog(logPath: string | undefined, content: string) {
+  if (!logPath) {
+    return
+  }
+
+  const filePath = await resolveEngineBuildLogFilePath(logPath)
+  await fs.writeFile(filePath, content, 'utf8')
 }
 
 /**
@@ -54,5 +100,43 @@ export async function runWechatIdeEngineBuildByHttp(
     }
 
     await sleep(options.pollIntervalMs ?? 1_000)
+  }
+}
+
+/**
+ * @description 以更接近官方 CLI 的方式执行 engine build，并支持将构建日志写入文件。
+ */
+export async function runWechatIdeEngineBuild(
+  projectPath: string,
+  options: RunWechatIdeEngineBuildOptions = {},
+) {
+  const logs: string[] = []
+  let lastLoggedMessage: string | undefined
+
+  try {
+    const result = await runWechatIdeEngineBuildByHttp(projectPath, {
+      ...options,
+      onProgress: (progress) => {
+        if (progress.msg && progress.msg !== lastLoggedMessage) {
+          lastLoggedMessage = progress.msg
+          logs.push(progress.msg)
+        }
+        options.onProgress?.(progress)
+      },
+    })
+
+    await writeEngineBuildLog(
+      options.logPath,
+      logs.join('\n'),
+    )
+    return result
+  }
+  catch (error) {
+    logs.push(error instanceof Error ? error.message : String(error))
+    await writeEngineBuildLog(
+      options.logPath,
+      logs.join('\n'),
+    )
+    throw error
   }
 }
