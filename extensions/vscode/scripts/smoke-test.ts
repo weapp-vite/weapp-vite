@@ -154,6 +154,10 @@ function createMockVscode() {
         registeredProviders.push({ type: 'documentLink', selector })
         return { dispose() {} }
       },
+      registerDocumentFormattingEditProvider(selector: unknown) {
+        registeredProviders.push({ type: 'documentFormatting', selector })
+        return { dispose() {} }
+      },
       registerHoverProvider(selector: unknown) {
         registeredProviders.push({ type: 'hover', selector })
         return { dispose() {} }
@@ -399,7 +403,11 @@ async function main() {
         'weapp-vite.revealPageRouteInAppJsonFromTreeItem',
       ],
     )
-    assert.equal(state.registeredProviders.length, 17)
+    assert.equal(state.registeredProviders.length, 18)
+    assert.ok(
+      state.registeredProviders.some(item => item.type === 'documentFormatting'
+        && JSON.stringify(item.selector) === JSON.stringify({ language: 'wxml', scheme: 'file' })),
+    )
     assert.equal(state.createdTreeViews.length, 1)
     assert.equal(state.createdTreeViews[0]?.viewId, 'weapp-vite.pages')
     assert.equal(state.statusBarItems.length, 1)
