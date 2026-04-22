@@ -6,6 +6,7 @@ const formatAutomatorLoginErrorMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const promptRetryKeypressMock = vi.hoisted(() => vi.fn())
+const runRetryableCommandMock = vi.hoisted(() => vi.fn())
 const getConfigMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock('weapp-ide-cli', () => ({
   launchAutomator: launchAutomatorMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
   promptRetryKeypress: promptRetryKeypressMock,
+  runRetryableCommand: runRetryableCommandMock,
 }))
 
 vi.mock('node:child_process', () => ({
@@ -62,6 +64,7 @@ describe('openIde', () => {
     isWechatIdeLoginRequiredErrorMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
     promptRetryKeypressMock.mockReset()
+    runRetryableCommandMock.mockReset()
     getConfigMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -86,6 +89,21 @@ describe('openIde', () => {
     })
     promptWechatIdeLoginRetryMock.mockResolvedValue('cancel')
     promptRetryKeypressMock.mockResolvedValue('cancel')
+    runRetryableCommandMock.mockImplementation(async (options) => {
+      const result = await options.execute()
+      if (!options.isRetryableResult(result)) {
+        return result
+      }
+
+      const action = await options.promptRetry(result, 0)
+      if (options.shouldRetry(action)) {
+        options.onRetry?.()
+        return await options.execute()
+      }
+
+      options.onCancel?.(result)
+      throw options.createCancelError(result)
+    })
     execFileMock.mockImplementation((_file: string, _args: string[], callback: (error: any, stdout?: string, stderr?: string) => void) => {
       callback(null, '', '')
       return {} as any
@@ -476,7 +494,7 @@ describe('openIde', () => {
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
     promptWechatIdeLoginRetryMock.mockResolvedValue('cancel')
 
-    await openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })
+    await expect(openIde('weapp', 'dist/dev/mp-weixin', { trustProject: false })).rejects.toThrow('cancelled')
 
     expect(parseMock).toHaveBeenCalledTimes(1)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledTimes(1)
