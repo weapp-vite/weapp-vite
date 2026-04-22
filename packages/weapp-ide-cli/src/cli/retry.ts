@@ -31,6 +31,8 @@ export interface WechatIdeLoginRetryOptions {
 export type RetryPromptResult = 'retry' | 'cancel' | 'timeout'
 
 export const RETRY_PROMPT_INITIAL_IGNORE_MS = 300
+export const RETRY_CONFIRM_KEYS = ['Enter'] as const
+export const RETRY_CANCEL_KEYS = ['q', 'Esc', 'Ctrl+C'] as const
 
 const LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
@@ -146,7 +148,7 @@ export function createWechatIdeLoginRequiredExitError(error: unknown, reason?: s
 }
 
 /**
- * @description 交互等待用户按键重试，按 r 重试，按 q 或 Ctrl+C 取消。
+ * @description 交互等待用户按键重试，按 Enter 重试，按 q 或 Ctrl+C 取消。
  */
 export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
   const { timeoutMs = 30_000 } = options
@@ -166,7 +168,7 @@ export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
         return 'cancel'
       }
 
-      if (key.name === 'r') {
+      if (key.name === 'return' || key.name === 'enter') {
         return 'retry'
       }
 
@@ -188,9 +190,11 @@ function highlightHotkey(key: string) {
 export function formatRetryHotkeyPrompt(timeoutMs = 30_000) {
   const highlight = (key: string) => highlightHotkey(key)
   const timeoutSeconds = Math.max(1, Math.ceil(timeoutMs / 1000))
+  const confirmKeys = RETRY_CONFIRM_KEYS.map(highlight).join(' / ')
+  const cancelKeys = RETRY_CANCEL_KEYS.map(highlight).join(' / ')
   return i18nText(
-    `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出（${timeoutSeconds}s 内无输入将自动失败）。`,
-    `Press ${highlight('r')} to retry, ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} to cancel (auto fail in ${timeoutSeconds}s).`,
+    `按 ${confirmKeys} 重试，按 ${cancelKeys} 退出（${timeoutSeconds}s 内无输入将自动失败）。`,
+    `Press ${confirmKeys} to retry, ${cancelKeys} to cancel (auto fail in ${timeoutSeconds}s).`,
   )
 }
 

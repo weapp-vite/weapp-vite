@@ -52,7 +52,7 @@ describe('retry helpers', () => {
     const prompt = formatRetryHotkeyPrompt(5_000)
 
     expect(prompt).toContain('按')
-    expect(prompt).toContain('r')
+    expect(prompt).toContain('Enter')
     expect(prompt).toContain('q')
     expect(prompt).toContain('Esc')
     expect(prompt).toContain('Ctrl+C')
