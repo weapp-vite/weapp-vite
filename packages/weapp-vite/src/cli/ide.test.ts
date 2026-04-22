@@ -1,18 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const parseWeappIdeCliMock = vi.hoisted(() => vi.fn())
 const isWeappIdeTopLevelCommandMock = vi.hoisted(() => vi.fn())
+const executeWechatIdeCliCommandMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
-  parse: parseWeappIdeCliMock,
   isWeappIdeTopLevelCommand: isWeappIdeTopLevelCommandMock,
+}))
+
+vi.mock('./openIde/execute', () => ({
+  executeWechatIdeCliCommand: executeWechatIdeCliCommandMock,
 }))
 
 describe('tryRunIdeCommand', () => {
   beforeEach(() => {
-    parseWeappIdeCliMock.mockReset()
     isWeappIdeTopLevelCommandMock.mockReset()
-    parseWeappIdeCliMock.mockResolvedValue(undefined)
+    executeWechatIdeCliCommandMock.mockReset()
+    executeWechatIdeCliCommandMock.mockResolvedValue(undefined)
     isWeappIdeTopLevelCommandMock.mockImplementation((command: string) =>
       ['cache', 'preview', 'navigate', 'config', 'screenshot', 'compare'].includes(
         command,
@@ -30,7 +33,7 @@ describe('tryRunIdeCommand', () => {
     ])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith([
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith([
       'preview',
       '--project',
       '/tmp/demo',
@@ -43,7 +46,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['cache', '--clean', 'all'])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith([
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith([
       'cache',
       '--clean',
       'all',
@@ -56,7 +59,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['navigate', 'pages/index/index'])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith([
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith([
       'navigate',
       'pages/index/index',
     ])
@@ -68,7 +71,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['compare', '--baseline', 'baseline.png'])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['compare', '--baseline', 'baseline.png'])
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith(['compare', '--baseline', 'baseline.png'])
   })
 
   it('forwards help target for ide command', async () => {
@@ -77,7 +80,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['help', 'navigate'])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['help', 'navigate'])
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith(['help', 'navigate'])
   })
 
   it('keeps native help target untouched', async () => {
@@ -86,7 +89,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['help', 'open'])
 
     expect(forwarded).toBe(false)
-    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 
   it('forwards namespaced ide command', async () => {
@@ -95,7 +98,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['ide', 'config', 'lang', 'en'])
 
     expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['config', 'lang', 'en'])
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith(['config', 'lang', 'en'])
   })
 
   it('keeps native ide logs command untouched', async () => {
@@ -104,7 +107,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['ide', 'logs'])
 
     expect(forwarded).toBe(false)
-    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 
   it('keeps native weapp-vite open command untouched', async () => {
@@ -113,7 +116,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['open'])
 
     expect(forwarded).toBe(false)
-    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 
   it('does not forward weapp-vite build command', async () => {
@@ -122,7 +125,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['build'])
 
     expect(forwarded).toBe(false)
-    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 
   it('does not forward weapp-vite mcp command', async () => {
@@ -131,7 +134,7 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['mcp'])
 
     expect(forwarded).toBe(false)
-    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 
   it('forwards unknown command to weapp-ide-cli', async () => {
@@ -140,6 +143,6 @@ describe('tryRunIdeCommand', () => {
     const forwarded = await tryRunIdeCommand(['foobar', '--x'])
 
     expect(forwarded).toBe(false)
-    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 })

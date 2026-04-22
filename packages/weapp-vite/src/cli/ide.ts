@@ -1,4 +1,5 @@
-import { isWeappIdeTopLevelCommand, parse as parseWeappIdeCli } from 'weapp-ide-cli'
+import { isWeappIdeTopLevelCommand } from 'weapp-ide-cli'
+import { executeWechatIdeCliCommand } from './openIde/execute'
 
 const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'dev',
@@ -29,7 +30,7 @@ export async function tryRunIdeCommand(argv: string[]) {
     if (argv[1] === 'logs') {
       return false
     }
-    await parseWeappIdeCli(argv.slice(1))
+    await executeWechatIdeCliCommand(argv.slice(1))
     return true
   }
 
@@ -42,7 +43,7 @@ export async function tryRunIdeCommand(argv: string[]) {
     if (!target || WEAPP_VITE_NATIVE_COMMANDS.has(target) || !isWeappIdeTopLevelCommand(target)) {
       return false
     }
-    await parseWeappIdeCli(argv)
+    await executeWechatIdeCliCommand(argv)
     return true
   }
 
@@ -50,6 +51,6 @@ export async function tryRunIdeCommand(argv: string[]) {
     return false
   }
 
-  await parseWeappIdeCli(argv)
+  await executeWechatIdeCliCommand(argv)
   return true
 }
