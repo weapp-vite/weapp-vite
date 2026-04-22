@@ -5,9 +5,8 @@ import { execute } from '../utils'
 import { readOptionValue, removeOption } from './automator-argv'
 import {
   createWechatIdeLoginRequiredExitError,
-  formatWechatIdeLoginRequiredError,
   isWechatIdeLoginRequiredError,
-  promptRetryKeypress,
+  promptWechatIdeLoginRetry,
 } from './retry'
 
 export type LoginRetryMode = 'never' | 'once' | 'always'
@@ -81,16 +80,6 @@ function stripLoginRetryControlFlags(argv: readonly string[]) {
 async function promptLoginRetry(errorLike: unknown, options: LoginRetryOptions, retryCount: number) {
   const { nonInteractive, retryMode, retryTimeoutMs } = options
 
-  logger.error(i18nText(
-    '检测到微信开发者工具登录状态失效，请先登录后重试。',
-    'Wechat DevTools login has expired. Please login and retry.',
-  ))
-  logger.warn(i18nText(
-    '请先打开微信开发者工具完成登录。',
-    'Please open Wechat DevTools and complete login first.',
-  ))
-  logger.warn(formatWechatIdeLoginRequiredError(errorLike))
-
   if (nonInteractive) {
     logger.error(i18nText(
       '当前为非交互模式，检测到登录失效后直接失败。',
@@ -101,32 +90,24 @@ async function promptLoginRetry(errorLike: unknown, options: LoginRetryOptions, 
 
   const shouldAllowRetry = retryMode === 'always' || (retryMode === 'once' && retryCount < 1)
   if (!shouldAllowRetry) {
+    await promptWechatIdeLoginRetry({
+      allowRetry: false,
+      error: errorLike,
+      logger,
+      promptOpenIdeLogin: true,
+      retryTimeoutMs,
+    })
     logger.info(i18nText('当前重试策略不允许继续重试。', 'Current retry policy does not allow further retries.'))
     return 'cancel' as const
   }
 
-  const action = await promptRetryKeypress({
+  const action = await promptWechatIdeLoginRetry({
+    error: errorLike,
     logger,
-    timeoutMs: retryTimeoutMs,
+    promptOpenIdeLogin: true,
+    retryTimeoutMs,
   })
-
-  if (action === 'timeout') {
-    logger.error(i18nText(
-      `等待登录重试输入超时（${retryTimeoutMs}ms），已自动取消。`,
-      `Retry prompt timed out (${retryTimeoutMs}ms), canceled automatically.`,
-    ))
-    return 'cancel' as const
-  }
-
-  if (action !== 'retry') {
-    logger.info(i18nText(
-      '已取消重试。完成登录后请重新执行当前命令。',
-      'Retry canceled. Please run the command again after login.',
-    ))
-    return 'cancel' as const
-  }
-
-  return 'retry' as const
+  return action
 }
 
 function flushExecutionOutput(result: unknown) {

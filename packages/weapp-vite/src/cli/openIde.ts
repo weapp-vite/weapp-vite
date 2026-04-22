@@ -7,13 +7,13 @@ import {
   bootstrapWechatDevtoolsSettings,
   connectOpenedAutomator,
   formatAutomatorLoginError,
-  formatWechatIdeLoginRequiredError,
   getConfig,
   isAutomatorLoginError,
   isWechatIdeLoginRequiredError,
   launchAutomator,
   parse,
   promptRetryKeypress,
+  promptWechatIdeLoginRetry,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../createContext'
 import logger, { colors } from '../logger'
@@ -76,13 +76,13 @@ async function runWechatIdeOpenWithRetry(argv: string[]) {
         return
       }
 
-      logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
-      logger.warn(formatWechatIdeLoginRequiredError(error))
-
-      const action = await promptRetryKeypress({ logger })
+      const action = await promptWechatIdeLoginRetry({
+        cancelLevel: 'warn',
+        error,
+        logger,
+      })
 
       if (action !== 'retry') {
-        logger.warn('已取消重试。完成登录后请重新执行当前命令。')
         retrying = false
         continue
       }

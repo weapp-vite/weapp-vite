@@ -13,6 +13,21 @@ export interface RetryPromptOptions extends RetryKeypressOptions {
   }
 }
 
+export interface RetryLogger {
+  error: (message: string) => void
+  info: (message: string) => void
+  warn: (message: string) => void
+}
+
+export interface WechatIdeLoginRetryOptions {
+  allowRetry?: boolean
+  cancelLevel?: 'info' | 'warn'
+  error: unknown
+  logger: RetryLogger
+  promptOpenIdeLogin?: boolean
+  retryTimeoutMs?: number
+}
+
 export type RetryPromptResult = 'retry' | 'cancel' | 'timeout'
 
 const LOGIN_REQUIRED_PATTERNS = [
@@ -183,4 +198,59 @@ export async function promptRetryKeypress(options: RetryPromptOptions) {
   const { logger, timeoutMs = 30_000 } = options
   logger.info(formatRetryHotkeyPrompt(timeoutMs))
   return await waitForRetryKeypress({ timeoutMs })
+}
+
+/**
+ * @description 统一处理微信开发者工具登录失效场景下的提示与重试交互。
+ */
+export async function promptWechatIdeLoginRetry(options: WechatIdeLoginRetryOptions) {
+  const {
+    allowRetry = true,
+    cancelLevel = 'info',
+    error,
+    logger,
+    promptOpenIdeLogin = false,
+    retryTimeoutMs = 30_000,
+  } = options
+
+  logger.error(i18nText(
+    '检测到微信开发者工具登录状态失效，请先登录后重试。',
+    'Wechat DevTools login has expired. Please login and retry.',
+  ))
+
+  if (promptOpenIdeLogin) {
+    logger.warn(i18nText(
+      '请先打开微信开发者工具完成登录。',
+      'Please open Wechat DevTools and complete login first.',
+    ))
+  }
+
+  logger.warn(formatWechatIdeLoginRequiredError(error))
+
+  if (!allowRetry) {
+    return 'cancel' as const
+  }
+
+  const action = await promptRetryKeypress({
+    logger,
+    timeoutMs: retryTimeoutMs,
+  })
+
+  if (action === 'timeout') {
+    logger.error(i18nText(
+      `等待登录重试输入超时（${retryTimeoutMs}ms），已自动取消。`,
+      `Retry prompt timed out (${retryTimeoutMs}ms), canceled automatically.`,
+    ))
+    return 'cancel' as const
+  }
+
+  if (action !== 'retry') {
+    logger[cancelLevel](i18nText(
+      '已取消重试。完成登录后请重新执行当前命令。',
+      'Retry canceled. Please run the command again after login.',
+    ))
+    return 'cancel' as const
+  }
+
+  return 'retry' as const
 }
