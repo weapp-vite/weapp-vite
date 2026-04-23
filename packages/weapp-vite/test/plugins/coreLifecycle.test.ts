@@ -1,5 +1,6 @@
 import path from 'pathe'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRuntimeState } from '@/runtime/runtimeState'
 
 const invalidateEntryForSidecarSpy = vi.fn()
 const ensureSidecarWatcherSpy = vi.fn()
@@ -59,6 +60,7 @@ describe('core plugin watchChange', () => {
       layoutEntryDependents: new Map(),
     })
     const ctx = {
+      runtimeState: createRuntimeState(),
       configService: {
         isDev: true,
         platform: 'weapp',

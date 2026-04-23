@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { useLoadEntry } from '@/plugins/hooks/useLoadEntry'
+import { createRuntimeState } from '@/runtime/runtimeState'
 
 describe('useLoadEntry markEntryDirty', () => {
   const baseCtx = {
@@ -21,7 +22,10 @@ describe('useLoadEntry markEntryDirty', () => {
   }
 
   it('evicts dirty entries from the loaded set', () => {
-    const ctx = { ...baseCtx } as any
+    const ctx = {
+      ...baseCtx,
+      runtimeState: createRuntimeState(),
+    } as any
 
     const { loadedEntrySet, markEntryDirty } = useLoadEntry(ctx)
     const entryId = '/project/src/components/hello.vue'
@@ -33,7 +37,10 @@ describe('useLoadEntry markEntryDirty', () => {
   })
 
   it('emits dirty entries using cached resolutions', async () => {
-    const ctx = { ...baseCtx } as any
+    const ctx = {
+      ...baseCtx,
+      runtimeState: createRuntimeState(),
+    } as any
     const { loadedEntrySet, resolvedEntryMap, markEntryDirty, emitDirtyEntries } = useLoadEntry(ctx)
 
     const entryId = '/project/src/components/hello.vue'

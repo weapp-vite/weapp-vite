@@ -541,6 +541,7 @@ describe('openIde', () => {
     })
 
     expect(result).toEqual({
+      cwd: '/workspace/project',
       platform: 'alipay',
       projectPath: 'dist/alipay',
     })
@@ -575,6 +576,7 @@ describe('openIde', () => {
       cliPlatform: 'weapp',
     })
     expect(result).toEqual({
+      cwd: '/workspace/project',
       platform: 'weapp',
       projectPath: '/workspace/project/dist/weapp',
       weappViteConfig: {
