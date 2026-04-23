@@ -1,3 +1,4 @@
+---
 'weapp-vite': patch
 'create-weapp-vite': patch
 ---
