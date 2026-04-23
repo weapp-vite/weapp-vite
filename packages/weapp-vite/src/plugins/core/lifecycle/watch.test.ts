@@ -139,6 +139,7 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
     expect(state.ctx.runtimeState.build.hmr.profile.file).toBe(entryId)
     expect(state.ctx.runtimeState.build.hmr.profile.watchToDirtyMs).toBeTypeOf('number')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
   })
 
   it('marks loaded script updates as direct entry dirties', async () => {
@@ -377,6 +378,7 @@ describe('core lifecycle watch hook', () => {
 
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, '/project/src/pages/hmr/index.ts', 'dependency')
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, '/project/src/pages/store/index.ts', 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['importer-graph:2'])
   })
 
   it('normalizes transient delete events on shared dependencies back to dependency updates', async () => {

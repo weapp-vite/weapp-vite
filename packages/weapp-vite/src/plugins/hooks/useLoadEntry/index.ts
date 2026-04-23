@@ -23,6 +23,12 @@ interface HmrOptions {
   setLastEmittedEntries?: (entryIds: Set<string>) => void
 }
 
+interface PendingEntryResolution {
+  pending: Set<string>
+  sharedChunkResolveMs?: number
+  pendingReasonSummary?: string[]
+}
+
 function resolvePendingEntryIds(options: {
   isDev: boolean
   mode: HmrSharedChunksMode
@@ -33,21 +39,25 @@ function resolvePendingEntryIds(options: {
   sharedChunksByEntry?: Map<string, Set<string>>
   subPackageRoots?: Set<string>
   relativeAbsoluteSrcRoot?: (id: string) => string
-}) {
+}): PendingEntryResolution {
   const pending = new Set(options.dirtyEntrySet)
 
   if (options.mode === 'full') {
-    return new Set(options.resolvedEntryMap.keys())
+    return {
+      pending: new Set(options.resolvedEntryMap.keys()),
+      pendingReasonSummary: ['full-rebuild'],
+    }
   }
 
   if (!options.isDev || options.mode === 'off') {
-    return pending
+    return { pending }
   }
 
   if (!options.sharedChunkImporters?.size || !options.sharedChunksByEntry?.size) {
-    return pending
+    return { pending }
   }
 
+  const startedAt = performance.now()
   const relatedChunkIds = new Set<string>()
   for (const entryId of options.dirtyEntrySet) {
     const chunkIds = options.sharedChunksByEntry.get(entryId)
@@ -60,9 +70,14 @@ function resolvePendingEntryIds(options: {
   }
 
   if (!relatedChunkIds.size) {
-    return pending
+    return {
+      pending,
+      sharedChunkResolveMs: performance.now() - startedAt,
+    }
   }
 
+  const expandedImporters = new Set<string>()
+  let expansionMode: DirtyEntryReason | 'mixed' | null = null
   for (const chunkId of relatedChunkIds) {
     const importers = options.sharedChunkImporters.get(chunkId)
     if (!importers) {
@@ -85,12 +100,36 @@ function resolvePendingEntryIds(options: {
     if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
       continue
     }
+    if (hasDependencyDrivenImporter && hasDirectDirtyImporter) {
+      expansionMode = 'mixed'
+    }
+    else if (hasDependencyDrivenImporter) {
+      expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
+    }
+    else if (hasDirectDirtyImporter) {
+      expansionMode = expansionMode && expansionMode !== 'direct' ? 'mixed' : 'direct'
+    }
     for (const importer of importers) {
+      if (!pending.has(importer)) {
+        expandedImporters.add(importer)
+      }
       pending.add(importer)
     }
   }
 
-  return pending
+  const pendingReasonSummary: string[] = []
+  if (expandedImporters.size > 0) {
+    const chunkPreview = [...relatedChunkIds].slice(0, 2).map(chunkId => chunkId.split('/').at(-1)).join(',')
+    const overflow = relatedChunkIds.size > 2 ? '+' : ''
+    const mode = expansionMode ? `:${expansionMode}` : ''
+    pendingReasonSummary.push(`shared-chunk(${chunkPreview}${overflow})+${expandedImporters.size}${mode}`)
+  }
+
+  return {
+    pending,
+    sharedChunkResolveMs: performance.now() - startedAt,
+    pendingReasonSummary,
+  }
 }
 
 export function useLoadEntry(
@@ -202,7 +241,7 @@ export function useLoadEntry(
 
       const emitStartedAt = performance.now()
       const dirtyCount = dirtyEntrySet.size
-      const pendingEntryIds = resolvePendingEntryIds({
+      const pendingResolution = resolvePendingEntryIds({
         isDev: Boolean(ctx.configService?.isDev),
         mode: hmrSharedChunksMode,
         resolvedEntryMap,
@@ -213,6 +252,7 @@ export function useLoadEntry(
         subPackageRoots: new Set(ctx.scanService?.subPackageMap?.keys?.() ?? []),
         relativeAbsoluteSrcRoot: ctx.configService.relativeAbsoluteSrcRoot.bind(ctx.configService),
       })
+      const pendingEntryIds = pendingResolution.pending
       const pending: ResolvedId[] = []
       lastActualEmittedEntryIds.clear()
 
@@ -237,9 +277,11 @@ export function useLoadEntry(
       ctx.runtimeState.build.hmr.profile = {
         ...ctx.runtimeState.build.hmr.profile,
         emitMs: performance.now() - emitStartedAt,
+        sharedChunkResolveMs: pendingResolution.sharedChunkResolveMs,
         dirtyCount,
         pendingCount: pending.length,
         emittedCount: actualEmittedEntryIds.size,
+        pendingReasonSummary: pendingResolution.pendingReasonSummary,
       }
 
       if (debug) {

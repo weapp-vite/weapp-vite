@@ -71,7 +71,7 @@ async function processChangedFile(
   id: string,
   event: ChangeEvent,
 ) {
-  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, markEntryDirty, resolvedEntryMap } = state
+  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, resolvedEntryMap } = state
   const { scanService, configService, buildService } = ctx
   const normalizedId = normalizeFsResolvedId(id)
   if (isSkippableResolvedId(normalizedId)) {
@@ -79,6 +79,15 @@ async function processChangedFile(
   }
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
   const affectedLayoutEntryIds = new Set<string>()
+  const dirtyReasonStats = new Map<string, number>()
+  const markEntryDirtyWithCause = (
+    entryId: string,
+    reason: 'direct' | 'dependency',
+    cause: string,
+  ) => {
+    state.markEntryDirty(entryId, reason)
+    dirtyReasonStats.set(cause, (dirtyReasonStats.get(cause) ?? 0) + 1)
+  }
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
 
@@ -118,7 +127,7 @@ async function processChangedFile(
           affectedLayoutEntryIds.add(primaryScriptId)
         }
         else {
-          markEntryDirty(primaryScriptId, reason)
+          markEntryDirtyWithCause(primaryScriptId, reason, 'sidecar-direct')
         }
       }
     }
@@ -135,9 +144,9 @@ async function processChangedFile(
   if (event === 'update' && affectedLayoutEntryIds.size) {
     if (!resolvedEntryMap.size) {
       for (const entryId of affectedLayoutEntryIds) {
-        markEntryDirty(entryId, 'dependency')
+        markEntryDirtyWithCause(entryId, 'dependency', 'layout-self')
       }
-      return
+      return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
     }
 
     const dependentEntryIds = new Set<string>()
@@ -154,34 +163,34 @@ async function processChangedFile(
 
     if (dependentEntryIds.size) {
       for (const entryId of affectedLayoutEntryIds) {
-        markEntryDirty(entryId, 'dependency')
+        markEntryDirtyWithCause(entryId, 'dependency', 'layout-self')
       }
       for (const entryId of dependentEntryIds) {
-        markEntryDirty(entryId, 'dependency')
+        markEntryDirtyWithCause(entryId, 'dependency', 'layout-dependent')
       }
-      return
+      return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
     }
 
     for (const entryId of resolvedEntryMap.keys()) {
-      markEntryDirty(entryId, 'dependency')
+      markEntryDirtyWithCause(entryId, 'dependency', 'layout-fallback-full')
     }
-    return
+    return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
   }
 
   if (!isDeletedMissingSelf && (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component')) {
-    markEntryDirty(normalizedId, 'direct')
+    markEntryDirtyWithCause(normalizedId, 'direct', 'entry-direct')
   }
   else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {
     const affectedEntries = state.layoutEntryDependents.get(normalizedId)
     for (const entryId of affectedEntries!) {
-      markEntryDirty(entryId, 'dependency')
+      markEntryDirtyWithCause(entryId, 'dependency', 'layout-dependent')
     }
   }
   else if (state.moduleImporters.size && state.entryModuleIds.size) {
     const affected = collectAffectedEntries(state, normalizedId)
     if (affected.size) {
       for (const entryId of affected) {
-        markEntryDirty(entryId, 'dependency')
+        markEntryDirtyWithCause(entryId, 'dependency', 'importer-graph')
       }
     }
   }
@@ -234,6 +243,8 @@ async function processChangedFile(
   else if (!handledByIndependentWatcher) {
     logger.success(`[${event}] ${configService.relativeCwd(normalizedId)}`)
   }
+
+  return [...dirtyReasonStats.entries()].map(([cause, count]) => `${cause}:${count}`)
 }
 
 export function createWatchChangeHook(state: CorePluginState) {
@@ -244,12 +255,13 @@ export function createWatchChangeHook(state: CorePluginState) {
       return
     }
     const event = await normalizeWatchEvent(normalizedId, change.event)
-    await processChangedFile(state, normalizedId, event)
+    const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
     state.ctx.runtimeState.build.hmr.profile = {
       ...state.ctx.runtimeState.build.hmr.profile,
       event,
       file: normalizedId,
       watchToDirtyMs: performance.now() - startedAt,
+      dirtyReasonSummary,
     }
   }
 }

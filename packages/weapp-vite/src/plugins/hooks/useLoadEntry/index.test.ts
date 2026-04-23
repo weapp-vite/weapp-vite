@@ -117,6 +117,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(2)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+1:dependency'])
+    expect(ctx.runtimeState.build.hmr.profile.sharedChunkResolveMs).toBeTypeOf('number')
   })
 
   it('keeps partial rebuild when shared chunk importers are fully dirty', async () => {
@@ -347,5 +349,23 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.dirtyCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
     expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
+  })
+
+  it('records full rebuild explanation when sharedChunks mode is full', async () => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'full',
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    hook.markEntryDirty(ids[0], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['full-rebuild'])
   })
 })

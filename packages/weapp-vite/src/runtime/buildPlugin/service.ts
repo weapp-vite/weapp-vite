@@ -41,6 +41,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       totalMs,
       watchToDirtyMs: hmrState.profile.watchToDirtyMs,
       emitMs: hmrState.profile.emitMs,
+      sharedChunkResolveMs: hmrState.profile.sharedChunkResolveMs,
       dirtyCount: hmrState.profile.dirtyCount,
       pendingCount: hmrState.profile.pendingCount,
       emittedCount: hmrState.profile.emittedCount,
@@ -59,6 +60,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
     const totalValues = recentProfiles.map(item => item.totalMs)
     const emitValues = recentProfiles.flatMap(item => item.emitMs === undefined ? [] : [item.emitMs])
+    const sharedChunkValues = recentProfiles.flatMap(item => item.sharedChunkResolveMs === undefined ? [] : [item.sharedChunkResolveMs])
     const watchValues = recentProfiles.flatMap(item => item.watchToDirtyMs === undefined ? [] : [item.watchToDirtyMs])
     const maxPending = Math.max(...recentProfiles.map(item => item.pendingCount ?? 0))
     const segments = [
@@ -71,6 +73,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (emitValues.length) {
       segments.push(`emit avg ${average(emitValues).toFixed(2)} ms`)
+    }
+    if (sharedChunkValues.length) {
+      segments.push(`shared avg ${average(sharedChunkValues).toFixed(2)} ms`)
     }
     if (maxPending > 0) {
       segments.push(`pending max ${maxPending}`)
@@ -89,6 +94,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (profile.emitMs !== undefined) {
       segments.push(`emit ${profile.emitMs.toFixed(2)} ms`)
     }
+    if (profile.sharedChunkResolveMs !== undefined) {
+      segments.push(`shared ${profile.sharedChunkResolveMs.toFixed(2)} ms`)
+    }
     if (profile.dirtyCount !== undefined) {
       segments.push(`dirty ${profile.dirtyCount}`)
     }
@@ -97,6 +105,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (profile.emittedCount !== undefined) {
       segments.push(`emitted ${profile.emittedCount}`)
+    }
+    if (profile.dirtyReasonSummary?.length) {
+      segments.push(`dirtyCause ${profile.dirtyReasonSummary.join('+')}`)
+    }
+    if (profile.pendingReasonSummary?.length) {
+      segments.push(`pendingCause ${profile.pendingReasonSummary.join('+')}`)
     }
     if (!segments.length) {
       return ''

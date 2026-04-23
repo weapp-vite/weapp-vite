@@ -268,9 +268,12 @@ describe('runtime buildPlugin service', () => {
       event: 'update',
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
+      sharedChunkResolveMs: 1.75,
       dirtyCount: 2,
       pendingCount: 2,
       emittedCount: 2,
+      dirtyReasonSummary: ['entry-direct:1', 'importer-graph:1'],
+      pendingReasonSummary: ['shared-chunk(common.js)+1:direct'],
     }
     watcher.emit('START')
     watcher.emit('END')
@@ -278,7 +281,10 @@ describe('runtime buildPlugin service', () => {
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序已重新构建（'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.25 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit 14.50 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('shared 1.75 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('dirty 2'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('dirtyCause entry-direct:1+importer-graph:1'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('pendingCause shared-chunk(common.js)+1:direct'))
     expect(ctx.runtimeState.build.hmr.profile).toEqual({})
   })
 
@@ -298,6 +304,7 @@ describe('runtime buildPlugin service', () => {
       ctx.runtimeState.build.hmr.profile = {
         watchToDirtyMs: 2 + index,
         emitMs: 10 + index,
+        sharedChunkResolveMs: 1 + index,
         dirtyCount: 1,
         pendingCount: 2 + index,
         emittedCount: 1,
@@ -309,6 +316,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(5)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近5次 avg'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit avg'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('shared avg'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('pending max'))
   })
 

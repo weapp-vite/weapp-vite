@@ -115,6 +115,7 @@ export interface RuntimeState {
         totalMs: number
         watchToDirtyMs?: number
         emitMs?: number
+        sharedChunkResolveMs?: number
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
@@ -124,9 +125,12 @@ export interface RuntimeState {
         file?: string
         watchToDirtyMs?: number
         emitMs?: number
+        sharedChunkResolveMs?: number
         dirtyCount?: number
         pendingCount?: number
         emittedCount?: number
+        dirtyReasonSummary?: string[]
+        pendingReasonSummary?: string[]
       }
     }
   }
