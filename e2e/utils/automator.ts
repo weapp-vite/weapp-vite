@@ -5,6 +5,8 @@ import process from 'node:process'
 import { Automator, MiniProgram } from '@weapp-vite/miniprogram-automator'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
+import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
+import { resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { launchHeadlessAutomator } from './automator.headless'
 import {
   appendIdeReportEvent,
@@ -44,7 +46,7 @@ const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
 const RUNTIME_LOG_META_KEY = '__weappViteRuntimeLogMeta'
 const RELAUNCH_PATCH_META_KEY = '__weappViteRelaunchPatchMeta'
 const DEFAULT_LOGIN_PREFLIGHT_TIMEOUT = 30_000
-const DEFAULT_RELUNCH_READY_TIMEOUT = 15_000
+const DEFAULT_RELUNCH_READY_TIMEOUT = 30_000
 const DEFAULT_RELUNCH_RETRIES = 3
 const DEFAULT_RELUNCH_RETRY_DELAY = 280
 const DEFAULT_RELUNCH_SETTLE_DELAY = 260
@@ -934,9 +936,17 @@ function enhanceMiniProgramRelaunch(miniProgram: any) {
     const route = typeof args[0] === 'string' ? args[0] : '<unknown-route>'
     let lastError: unknown = null
 
+    const normalizeRoute = (value: string) => {
+      return value
+        .split('?', 1)[0]
+        .replace(LEADING_SLASH_PATTERN, '')
+        .replace(TRIM_ROUTE_SLASH_PATTERN, '')
+    }
+
     for (let attempt = 1; attempt <= RELAUNCH_RETRIES; attempt += 1) {
+      let page: any = null
       try {
-        const page = await rawReLaunch(...args)
+        page = await rawReLaunch(...args)
         if (!page) {
           throw new Error(`reLaunch returned empty page: ${route}`)
         }
@@ -959,6 +969,17 @@ function enhanceMiniProgramRelaunch(miniProgram: any) {
       }
       catch (error) {
         lastError = error
+        try {
+          const currentPage = await miniProgram.currentPage()
+          if (normalizeRoute(currentPage?.path ?? '') === normalizeRoute(route)) {
+            process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
+            return currentPage ?? page
+          }
+          process.stdout.write(`[info] [runtime:relaunch-current-page] route=${route} attempt=${attempt} current=${currentPage?.path ?? '<none>'}\n`)
+        }
+        catch {
+          // currentPage 在 DevTools 路由切换瞬态可能继续超时，这里保持原重试路径。
+        }
         if (attempt >= RELAUNCH_RETRIES || !isLikelyRelaunchRetryableError(error)) {
           throw error
         }
@@ -970,6 +991,46 @@ function enhanceMiniProgramRelaunch(miniProgram: any) {
   }
 
   return miniProgram
+}
+
+async function compileMiniProgramProject(miniProgram: any, project: string) {
+  if (typeof miniProgram?.compile !== 'function') {
+    return
+  }
+
+  process.stdout.write(`[info] [runtime:launch-step] compile-start project=${project}\n`)
+  await runWithTimeout(
+    miniProgram.compile({ force: true }),
+    30_000,
+    `compile project ${project}`,
+  )
+  await sleep(1_200)
+  process.stdout.write(`[info] [runtime:launch-step] compile-ready project=${project}\n`)
+}
+
+async function refreshMiniProgramProjectIndex(projectPath: string | undefined, project: string) {
+  if (!projectPath) {
+    return
+  }
+
+  process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-start project=${project}\n`)
+  await runWithTimeout(
+    resetWechatIdeFileUtilsByHttp(projectPath),
+    10_000,
+    `reset fileutils ${project}`,
+  )
+  process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-ready project=${project}\n`)
+
+  process.stdout.write(`[info] [runtime:launch-step] engine-build-start project=${project}\n`)
+  await runWithTimeout(
+    runWechatIdeEngineBuildByHttp(projectPath, {
+      overallTimeoutMs: 60_000,
+      pollIntervalMs: 1_000,
+    }),
+    70_000,
+    `engine build ${project}`,
+  )
+  process.stdout.write(`[info] [runtime:launch-step] engine-build-ready project=${project}\n`)
 }
 
 function patchAutomatorVersionCheck() {
@@ -1215,6 +1276,8 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
 
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
+            await refreshMiniProgramProjectIndex(rest.projectPath, project)
+            await compileMiniProgramProject(withRelaunch, project)
             if (projectMeta?.warmupRoute && !shouldSkipAutomatorWarmup()) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${projectMeta.warmupRoute} project=${project}\n`)
               await withRelaunch.reLaunch(projectMeta.warmupRoute)

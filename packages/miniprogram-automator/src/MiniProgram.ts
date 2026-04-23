@@ -4,6 +4,7 @@
 import type Connection from './Connection'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
+import process from 'node:process'
 import pkg from '../package.json'
 import { cmpVersion, isFn, isStr, startWith, trim } from './internal/compat'
 import Native from './Native'
@@ -27,6 +28,9 @@ type AutomatorCallable = (...args: any[]) => any
 const CLOSE_STEP_TIMEOUT = 2000
 const CURRENT_PAGE_RETRIES = 3
 const CURRENT_PAGE_RETRY_DELAY = 400
+const CHANGE_ROUTE_READY_TIMEOUT = 15_000
+const CHANGE_ROUTE_POLL_DELAY = 500
+const CHANGE_ROUTE_DEBUG_ENABLED = process.env.WEAPP_VITE_E2E_CHANGE_ROUTE_DEBUG === '1'
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -63,6 +67,20 @@ function isCurrentPageProtocolTimeout(error: unknown) {
     && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
     && 'method' in error
     && error.method === 'App.getCurrentPage'
+}
+
+function normalizeRoutePath(value: string | undefined) {
+  return String(value ?? '')
+    .split('?', 1)[0]
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
+}
+
+function logChangeRouteDebug(message: string) {
+  if (!CHANGE_ROUTE_DEBUG_ENABLED) {
+    return
+  }
+  process.stdout.write(`[automator:changeRoute] ${message}\n`)
 }
 /** MiniProgram 的实现。 */
 export default class MiniProgram extends EventEmitter {
@@ -316,6 +334,7 @@ export default class MiniProgram extends EventEmitter {
 
   private async changeRoute(method: string, url?: string) {
     const currentPage = await this.currentPage()
+    logChangeRouteDebug(`start method=${method} url=${url ?? '<none>'} current=${currentPage?.path ?? '<none>'}`)
     if (currentPage && isPluginPath(currentPage.path)) {
       const pluginId = extractPluginId(currentPage.path)
       await this.callPluginWxMethod(pluginId, method, { url })
@@ -323,8 +342,55 @@ export default class MiniProgram extends EventEmitter {
     else {
       await this.callWxMethod(method, { url })
     }
-    await sleep(3000)
-    return await this.currentPage()
+
+    const expectedRoute = normalizeRoutePath(url)
+    const startedAt = Date.now()
+    let lastPage: Page | undefined
+    let lastError: unknown
+
+    while (Date.now() - startedAt <= CHANGE_ROUTE_READY_TIMEOUT) {
+      try {
+        const page = await this.currentPage()
+        lastPage = page
+        logChangeRouteDebug(`poll method=${method} url=${url ?? '<none>'} current=${page?.path ?? '<none>'}`)
+        if (!expectedRoute || normalizeRoutePath(page?.path) === expectedRoute) {
+          logChangeRouteDebug(`ready method=${method} url=${url ?? '<none>'} current=${page?.path ?? '<none>'}`)
+          return page
+        }
+      }
+      catch (error) {
+        lastError = error
+        logChangeRouteDebug(`poll-error method=${method} url=${url ?? '<none>'} error=${error instanceof Error ? error.message : String(error)}`)
+      }
+
+      try {
+        const stack = await this.pageStack()
+        const stackTop = stack.at(-1)
+        if (stackTop) {
+          lastPage = stackTop
+          logChangeRouteDebug(`stack method=${method} url=${url ?? '<none>'} current=${stackTop.path}`)
+          if (!expectedRoute || normalizeRoutePath(stackTop.path) === expectedRoute) {
+            logChangeRouteDebug(`stack-ready method=${method} url=${url ?? '<none>'} current=${stackTop.path}`)
+            return stackTop
+          }
+        }
+      }
+      catch (error) {
+        lastError = error
+        logChangeRouteDebug(`stack-error method=${method} url=${url ?? '<none>'} error=${error instanceof Error ? error.message : String(error)}`)
+      }
+      await sleep(CHANGE_ROUTE_POLL_DELAY)
+    }
+
+    if (lastPage) {
+      logChangeRouteDebug(`timeout method=${method} url=${url ?? '<none>'} current=${lastPage.path}`)
+      throw new Error(`Timed out waiting route ${expectedRoute || '<current>'} after ${method}; current page: ${lastPage.path}`)
+    }
+
+    logChangeRouteDebug(`timeout method=${method} url=${url ?? '<none>'} current=<none> error=${lastError instanceof Error ? lastError.message : String(lastError)}`)
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Timed out waiting route ${expectedRoute || '<current>'} after ${method}`)
   }
 
   private async send(method: string, params: Record<string, any> = {}) {

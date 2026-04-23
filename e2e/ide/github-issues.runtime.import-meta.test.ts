@@ -1,10 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   closeSharedMiniProgram,
-  getSharedMiniProgram,
+  launchFreshMiniProgram,
   readPageWxml,
   relaunchPage,
-  releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
 
 describe.sequential('github-issues runtime import.meta bindings', () => {
@@ -13,7 +12,7 @@ describe.sequential('github-issues runtime import.meta bindings', () => {
   })
 
   it('issue #431: renders supported native wxml import.meta bindings at runtime', async (ctx) => {
-    const miniProgram = await getSharedMiniProgram(ctx)
+    const miniProgram = await launchFreshMiniProgram(ctx)
 
     try {
       const page = await relaunchPage(
@@ -51,7 +50,7 @@ describe.sequential('github-issues runtime import.meta bindings', () => {
       expect(pageWxml).not.toContain('import.meta.dirname')
     }
     finally {
-      await releaseSharedMiniProgram(miniProgram)
+      await miniProgram.close().catch(() => {})
     }
   })
 })

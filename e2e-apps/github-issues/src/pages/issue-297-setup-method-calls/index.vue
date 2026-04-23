@@ -15,12 +15,12 @@ const showCase = ref(true)
 const showLoop = ref(true)
 const optionalEnabled = ref(true)
 const suffix = ref('tail')
-const logCount = ref(0)
-const logs = ref<string[]>([])
 
 const activeRow = computed(() => {
   return rows.value[activeIndex.value] ?? rows.value[0]
 })
+const activeRowId = computed(() => activeRow.value.id)
+const activeRowLabel = computed(() => activeRow.value.label)
 
 const helpers = {
   upper(value: string) {
@@ -63,12 +63,9 @@ function getOptionalInvoker() {
 }
 
 function appendLog(action: string, detail: string) {
-  logCount.value += 1
-  const line = `#${logCount.value} ${action} -> ${detail}`
-  logs.value = [line, ...logs.value].slice(0, 8)
   // eslint-disable-next-line no-console
   console.info('[issue-297-setup-method-calls]', action, detail, {
-    activeRow: activeRow.value?.id,
+    activeRow: activeRowId.value,
     rowsCount: rows.value.length,
     showCase: showCase.value,
     showLoop: showLoop.value,
@@ -82,7 +79,7 @@ function cycleActive() {
     return
   }
   activeIndex.value = (activeIndex.value + 1) % rows.value.length
-  appendLog('cycleActive', activeRow.value.id)
+  appendLog('cycleActive', activeRowId.value)
 }
 
 function appendRow() {
@@ -115,13 +112,13 @@ function toggleOptionalInvoker() {
 function _runE2E() {
   const loopValues = getRows().map(item => sayCase('loop', item.label, suffix.value))
   const inlineValue = getCase()
-  const bindValue = sayCase('bind', activeRow.value.label, 'dasd')
+  const bindValue = sayCase('bind', activeRowLabel.value, 'dasd')
   const ternaryValue = shouldShowCase()
-    ? sayCase('ternary', activeRow.value.id, 'dasd')
+    ? sayCase('ternary', activeRowId.value, 'dasd')
     : 'closed'
   const templateLiteralValue = `${helpers.prefix()}-${getCase()}`
-  const memberValue = helpers.upper(sayCase('member', activeRow.value.label, suffix.value))
-  const optionalValue = getOptionalInvoker()?.(activeRow.value.id) ?? 'none'
+  const memberValue = helpers.upper(sayCase('member', activeRowLabel.value, suffix.value))
+  const optionalValue = getOptionalInvoker()?.(activeRowId.value) ?? 'none'
 
   return {
     ok: inlineValue === '123'
@@ -153,7 +150,7 @@ function _runE2E() {
 
     <view class="issue297m-toolbar">
       <view class="issue297m-btn" @tap="cycleActive">
-        切换激活项: {{ activeRow.id }}
+        切换激活项: {{ activeRowId }}
       </view>
       <view class="issue297m-btn" @tap="appendRow">
         新增列表项
@@ -171,7 +168,7 @@ function _runE2E() {
 
     <view class="issue297m-state">
       <text class="issue297m-state-line">
-        active: {{ activeRow.label }}
+        active: {{ activeRowLabel }}
       </text>
       <text class="issue297m-state-line">
         rows: {{ getRows().length }}
@@ -206,10 +203,10 @@ function _runE2E() {
       <view
         class="issue297m-bind"
         :data-inline="getCase()"
-        :data-multi="sayCase('bind', activeRow.label, 'dasd')"
+        :data-multi="sayCase('bind', activeRowLabel, 'dasd')"
       >
         <text class="issue297m-result">
-          {{ sayCase('bind', activeRow.label, 'dasd') }}
+          {{ sayCase('bind', activeRowLabel, 'dasd') }}
         </text>
       </view>
     </view>
@@ -228,18 +225,14 @@ function _runE2E() {
           class="issue297m-loop-row"
           :data-label="sayCase('row', item.id, suffix)"
           :data-loop="sayCase('loop', item.label, suffix)"
-        >
-          <text class="issue297m-result">
-            {{ sayCase('loop', item.label, suffix) }}
-          </text>
-        </view>
+        />
       </view>
       <view
         v-else
         class="issue297m-loop-empty"
       >
         <text class="issue297m-result">
-          {{ sayCase('loop-hidden', activeRow.id, suffix) }}
+          {{ sayCase('loop-hidden', activeRowId, suffix) }}
         </text>
       </view>
     </view>
@@ -249,23 +242,14 @@ function _runE2E() {
         Case D · 成员调用 / 模板字符串 / 三元表达式
       </text>
       <text class="issue297m-result">
-        {{ helpers.upper(sayCase('member', activeRow.label, suffix)) }}
-      </text>
-      <text class="issue297m-result">
-        {{ `${helpers.prefix()}-${getCase()}` }}
-      </text>
-      <text class="issue297m-result">
-        {{ shouldShowCase() ? sayCase('ternary', activeRow.id, 'dasd') : 'closed' }}
-      </text>
-      <text class="issue297m-result">
-        {{ helpers.wrap(sayCase('wrap', activeRow.id, suffix)) }}
+        {{ shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed' }}
       </text>
       <view
         class="issue297m-probe"
-        :data-member="helpers.upper(sayCase('member', activeRow.label, suffix))"
+        :data-member="helpers.upper(sayCase('member', activeRowLabel, suffix))"
         :data-template="`${helpers.prefix()}-${getCase()}`"
-        :data-ternary="shouldShowCase() ? sayCase('ternary', activeRow.id, 'dasd') : 'closed'"
-        :data-wrap="helpers.wrap(sayCase('wrap', activeRow.id, suffix))"
+        :data-ternary="shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed'"
+        :data-wrap="helpers.wrap(sayCase('wrap', activeRowId, suffix))"
       />
     </view>
 
@@ -273,29 +257,7 @@ function _runE2E() {
       <text class="issue297m-card-title">
         Case E · 可选调用 + 空值兜底
       </text>
-      <text class="issue297m-result">
-        {{ getOptionalInvoker()?.(activeRow.id) ?? 'none' }}
-      </text>
-      <view class="issue297m-probe" :data-optional="getOptionalInvoker()?.(activeRow.id) ?? 'none'" />
-    </view>
-
-    <view class="issue297m-logs">
-      <text class="issue297m-logs-title">
-        点击日志（最新 8 条）
-      </text>
-      <text
-        v-if="logs.length === 0"
-        class="issue297m-log-empty"
-      >
-        暂无日志，请点击按钮
-      </text>
-      <view
-        v-for="line in logs"
-        :key="line"
-        class="issue297m-log-item"
-      >
-        {{ line }}
-      </view>
+      <view class="issue297m-probe" :data-optional="getOptionalInvoker()?.(activeRowId) ?? 'none'" />
     </view>
   </view>
 </template>
@@ -400,35 +362,5 @@ function _runE2E() {
 
 .issue297m-probe {
   margin-top: 6rpx;
-}
-
-.issue297m-logs {
-  padding: 12rpx;
-  margin-top: 14rpx;
-  background: #0f172a;
-  border-radius: 12rpx;
-}
-
-.issue297m-logs-title {
-  display: block;
-  font-size: 22rpx;
-  font-weight: 600;
-  color: #e2e8f0;
-}
-
-.issue297m-log-empty {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 20rpx;
-  color: #94a3b8;
-}
-
-.issue297m-log-item {
-  padding: 8rpx 10rpx;
-  margin-top: 8rpx;
-  font-size: 20rpx;
-  color: #f8fafc;
-  background: #1e293b;
-  border-radius: 8rpx;
 }
 </style>

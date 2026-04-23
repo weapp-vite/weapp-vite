@@ -24,6 +24,8 @@ const eventLogs = ref<string[]>([])
 const activeRow = computed(() => {
   return rows.value[activeIndex.value] ?? rows.value[0] ?? baseRows[0]
 })
+const activeRowId = computed(() => activeRow.value.id)
+const activeRowLabel = computed(() => activeRow.value.label)
 
 function sayHello(prefix: number, item: string, tail: string) {
   return `Hello-${prefix}-${item}-${tail}`
@@ -47,7 +49,7 @@ function appendLog(action: string, detail: string) {
     showBindCase: showBindCase.value,
     showListCase: showListCase.value,
     showInlineCase: showInlineCase.value,
-    activeRow: activeRow.value?.id,
+    activeRow: activeRowId.value,
     rowsCount: rows.value.length,
   })
 }
@@ -74,7 +76,7 @@ function cycleActive() {
     return
   }
   activeIndex.value = (activeIndex.value + 1) % rows.value.length
-  appendLog('cycleActive', activeRow.value.id)
+  appendLog('cycleActive', activeRowId.value)
 }
 
 function appendRow() {
@@ -126,7 +128,7 @@ function _runE2E() {
         Case C(多参数): {{ showInlineCase ? '显示' : '隐藏' }}
       </view>
       <view class="issue297-btn" @tap="cycleActive">
-        切换激活项: {{ activeRow.id }}
+        切换激活项: {{ activeRowId }}
       </view>
       <view class="issue297-btn" @tap="appendRow">
         新增列表项
@@ -141,7 +143,7 @@ function _runE2E() {
         rows: {{ getRows().length }}
       </text>
       <text class="issue297-state-text">
-        active: {{ activeRow.label }}
+        active: {{ activeRowLabel }}
       </text>
       <text class="issue297-state-text">
         tapCount: {{ tapCount }}
@@ -238,10 +240,10 @@ function _runE2E() {
         三参数函数调用 + 激活项联动
       </text>
       <text class="issue297-case-result">
-        {{ sayHello(1, activeRow.label, dasd) }}
+        {{ sayHello(1, activeRowLabel, dasd) }}
       </text>
       <text class="issue297-case-result">
-        {{ sayHello(1, `${activeRow.id}-meta`, dasd) }}
+        {{ sayHello(1, `${activeRowId}-meta`, dasd) }}
       </text>
     </view>
   </view>

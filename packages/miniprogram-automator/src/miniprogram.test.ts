@@ -130,11 +130,11 @@ describe('MiniProgram', () => {
     connection.send
       .mockResolvedValueOnce({ pageId: 1, path: 'plugin-private://plugin-a/pages/home', query: {} })
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ pageId: 2, path: '/pages/after', query: {} })
+      .mockResolvedValueOnce({ pageId: 2, path: '/pages/next', query: {} })
     const miniProgram = new MiniProgram(connection as any)
 
     const pending = miniProgram.navigateTo('/pages/next')
-    await vi.advanceTimersByTimeAsync(3000)
+    await vi.advanceTimersByTimeAsync(600)
     const page = await pending
 
     expect(connection.send).toHaveBeenNthCalledWith(2, 'App.callWxMethod', {
@@ -142,7 +142,33 @@ describe('MiniProgram', () => {
       pluginId: 'plugin-a',
       args: [{ url: '/pages/next' }],
     })
-    expect(page.path).toBe('/pages/after')
+    expect(page.path).toBe('/pages/next')
+  })
+
+  it('waits for the target route after route changes instead of reading currentPage only once', async () => {
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        return currentPageReads >= 3
+          ? { pageId: 2, path: '/pages/next', query: {} }
+          : { pageId: 1, path: '/pages/index', query: {} }
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(1_200)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledWith('App.callWxMethod', {
+      method: 'reLaunch',
+      args: [{ url: '/pages/next' }],
+    })
+    expect(currentPageReads).toBeGreaterThanOrEqual(3)
   })
 
   it('retries currentPage when App.getCurrentPage times out transiently', async () => {
@@ -167,6 +193,46 @@ describe('MiniProgram', () => {
     expect(connection.send).toHaveBeenNthCalledWith(1, 'App.getCurrentPage', {})
     expect(connection.send).toHaveBeenNthCalledWith(2, 'App.getCurrentPage', {})
     expect(page.path).toBe('/pages/recovered')
+  })
+
+  it('falls back to pageStack when App.getCurrentPage times out during route changes', async () => {
+    const timeoutError = Object.assign(
+      new Error('DevTools did not respond to protocol method App.getCurrentPage within 30000ms'),
+      {
+        code: 'DEVTOOLS_PROTOCOL_TIMEOUT',
+        method: 'App.getCurrentPage',
+      },
+    )
+    const connection = new FakeConnection()
+    let currentPageReads = 0
+    connection.send.mockImplementation(async (method: string) => {
+      if (method === 'App.getCurrentPage') {
+        currentPageReads += 1
+        if (currentPageReads === 1) {
+          return { pageId: 1, path: '/pages/index', query: {} }
+        }
+        throw timeoutError
+      }
+      if (method === 'App.callWxMethod') {
+        return {}
+      }
+      if (method === 'App.getPageStack') {
+        return {
+          pageStack: [
+            { pageId: 2, path: '/pages/next', query: {} },
+          ],
+        }
+      }
+      return {}
+    })
+    const miniProgram = new MiniProgram(connection as any)
+
+    const pending = miniProgram.reLaunch('/pages/next')
+    await vi.advanceTimersByTimeAsync(2_000)
+    const page = await pending
+
+    expect(page.path).toBe('/pages/next')
+    expect(connection.send).toHaveBeenCalledWith('App.getPageStack', {})
   })
 
   it('renders remote debug qr code and resolves after connection event', async () => {

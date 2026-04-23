@@ -3,7 +3,6 @@ import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
   readPageWxml,
-  relaunchPage,
   releaseSharedMiniProgram,
   tapElement,
 } from './github-issues.runtime.shared'
@@ -102,16 +101,12 @@ describe.sequential('github-issues runtime issue-466', () => {
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {
-      const page = await relaunchPage(
-        miniProgram,
-        '/pages/issue-466/index',
-        undefined,
-        20_000,
-      )
+      const page = await miniProgram.reLaunch('/pages/issue-466/index')
       if (!page) {
         throw new Error('Failed to launch main-package issue-466 page')
       }
 
+      await page.waitFor(600)
       await waitForIssue466MainRuntime(page)
 
       expect(await page.callMethod('_resetE2E')).toMatchObject({

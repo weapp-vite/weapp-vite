@@ -54,15 +54,17 @@ function shouldIncludeScanCandidate(
   }
 
   if (
-    route?.root
-    && !route.pagePath.startsWith('pages/')
+    route
     && candidate.hasScript
     && !candidate.hasTemplate
     && !candidate.jsonPath
   ) {
     const hasVueEntry = [...candidate.files].some(file => file.endsWith('.vue'))
     const isIndexEntry = path.basename(route.pagePath) === 'index'
-    if (!hasVueEntry && !isIndexEntry) {
+    const isNestedPagesEntry = route.root
+      ? !route.pagePath.startsWith('pages/')
+      : route.pagePath.startsWith('pages/') && route.pagePath.slice('pages/'.length).includes('/')
+    if (isNestedPagesEntry && !hasVueEntry && !isIndexEntry) {
       return false
     }
   }

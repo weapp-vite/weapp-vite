@@ -97,5 +97,23 @@ describe('auto routes scan helpers', () => {
       root: 'subpackages/user',
       pagePath: 'register/form',
     })).toBe(true)
+
+    expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/pages/issue-484/define.ts']),
+      hasScript: true,
+      hasTemplate: false,
+      jsonPath: undefined,
+    }, undefined, {
+      pagePath: 'pages/issue-484/define',
+    })).toBe(false)
+
+    expect(shouldIncludeScanCandidate({
+      files: new Set(['/project/src/pages/home.ts']),
+      hasScript: true,
+      hasTemplate: false,
+      jsonPath: undefined,
+    }, undefined, {
+      pagePath: 'pages/home',
+    })).toBe(true)
   })
 })

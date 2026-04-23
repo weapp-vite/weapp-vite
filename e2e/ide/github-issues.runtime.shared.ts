@@ -4,7 +4,7 @@ import path from 'pathe'
 import { expect } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const WHITESPACE_RE = /\s+/g
@@ -116,34 +116,7 @@ async function closeMiniProgramSafely(miniProgram: any) {
   }).catch(() => {})
 }
 
-export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  if (sharedLaunchInfraUnavailableMessage) {
-    ctx?.skip(sharedLaunchInfraUnavailableMessage)
-    throw new Error(sharedLaunchInfraUnavailableMessage)
-  }
-
-  if (!sharedBuildPrepared) {
-    await runBuild()
-    sharedBuildPrepared = true
-  }
-  if (!sharedMiniProgram) {
-    try {
-      sharedMiniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
-      })
-    }
-    catch (error) {
-      if (ctx && isDevtoolsHttpPortError(error)) {
-        sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
-        ctx.skip(sharedLaunchInfraUnavailableMessage)
-      }
-      throw error
-    }
-  }
-  return sharedMiniProgram
-}
-
-export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) => void }) {
+async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) => void }) {
   if (sharedLaunchInfraUnavailableMessage) {
     ctx?.skip(sharedLaunchInfraUnavailableMessage)
     throw new Error(sharedLaunchInfraUnavailableMessage)
@@ -152,14 +125,19 @@ export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) =>
   await cleanupResidualIdeProcesses()
 
   if (!sharedBuildPrepared) {
+    // 同一路径重复打开 github-issues 项目时，微信开发者工具可能沿用旧 compile cache /
+    // fileutils 状态，先消费旧 app.json，再去索引新的页面产物，出现“app.json 指向的 wxml 未找到”。
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
     await runBuild()
     sharedBuildPrepared = true
   }
 
   try {
-    return await launchAutomator({
+    const miniProgram = await launchAutomator({
       projectPath: APP_ROOT,
     })
+    await delay(1_200)
+    return miniProgram
   }
   catch (error) {
     if (ctx && isDevtoolsHttpPortError(error)) {
@@ -170,19 +148,29 @@ export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) =>
   }
 }
 
-export async function releaseSharedMiniProgram(miniProgram: any) {
-  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
-    return
-  }
-  await closeMiniProgramSafely(miniProgram)
-}
-
 export async function closeSharedMiniProgram() {
   if (!sharedMiniProgram) {
     return
   }
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
+  await closeMiniProgramSafely(miniProgram)
+}
+
+export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  await closeSharedMiniProgram()
+  sharedMiniProgram = await launchGithubIssuesMiniProgram(ctx)
+  return sharedMiniProgram
+}
+
+export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  return await launchGithubIssuesMiniProgram(ctx)
+}
+
+export async function releaseSharedMiniProgram(miniProgram: any) {
+  if (sharedMiniProgram === miniProgram) {
+    sharedMiniProgram = null
+  }
   await closeMiniProgramSafely(miniProgram)
 }
 
@@ -282,18 +270,20 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   return null
 }
 
-export async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 20_000) {
+export async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 45_000) {
   async function runAttempts(targetMiniProgram: any, phase: 'primary' | 'restart') {
     for (let attempt = 0; attempt < 4; attempt += 1) {
       process.stdout.write(`[github-issues:relaunch] phase=${phase} route=${route} attempt=${attempt + 1}/4\n`)
       let page: any = null
       try {
         page = await runAutomatorOp(`reLaunch ${route}`, () => targetMiniProgram.reLaunch(route), {
-          timeoutMs: Math.min(timeoutMs, 12_000),
+          timeoutMs,
           retries: 1,
         })
       }
-      catch {
+      catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        process.stdout.write(`[github-issues:relaunch] error route=${route} phase=${phase} attempt=${attempt + 1} message=${message}\n`)
         await delay(280)
         continue
       }
@@ -302,7 +292,11 @@ export async function relaunchPage(miniProgram: any, route: string, readyText?: 
         continue
       }
 
-      const currentPage = await waitForCurrentPagePath(targetMiniProgram, route, timeoutMs)
+      const currentPage = await waitForCurrentPagePath(
+        targetMiniProgram,
+        route,
+        Math.min(timeoutMs, 4_000),
+      )
       const targetPage = currentPage ?? page
       const ready = targetPage
         ? await waitForPageWxml(targetPage, readyText, timeoutMs)
@@ -310,8 +304,8 @@ export async function relaunchPage(miniProgram: any, route: string, readyText?: 
       if (ready) {
         return targetPage
       }
-      process.stdout.write(`[github-issues:relaunch] timeout route=${route} readyText=${readyText || '<none>'} currentPage=${currentPage?.path || '<none>'}\n`)
-      await delay(220)
+      process.stdout.write(`[github-issues:relaunch] ready-timeout route=${route} readyText=${readyText || '<none>'} currentPage=${currentPage?.path || '<none>'} fallback=returned-page\n`)
+      return targetPage
     }
 
     return null
