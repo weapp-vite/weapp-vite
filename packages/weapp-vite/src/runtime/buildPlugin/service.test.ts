@@ -293,9 +293,8 @@ describe('runtime buildPlugin service', () => {
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.25 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit 14.50 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('shared 1.75 ms'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('dirty 2'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('dirtyCause entry-direct:1+importer-graph:1'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('pendingCause shared-chunk(common.js)+1:direct'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('d/p/e 2/2/2'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('cause entry+1 -> shared+1'))
     expect(ctx.runtimeState.build.hmr.profile).toEqual({})
   })
 
@@ -329,9 +328,7 @@ describe('runtime buildPlugin service', () => {
     })
     expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(5)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近5次 avg'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit avg'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('shared avg'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('pending max'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('max'))
   })
 
   it('writes hmr profile jsonl with default output path when enabled', async () => {

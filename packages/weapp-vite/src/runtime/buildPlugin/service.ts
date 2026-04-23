@@ -61,6 +61,47 @@ interface HmrPhaseRegressionCandidate {
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let lastHmrSlowTipProfileCount = 0
 
+  function formatReasonLabel(reason: string) {
+    if (reason.startsWith('entry-direct:')) {
+      return 'entry'
+    }
+    if (reason.startsWith('sidecar-direct:')) {
+      return 'sidecar'
+    }
+    if (reason.startsWith('importer-graph:')) {
+      return 'importer'
+    }
+    if (reason.startsWith('layout-self:')) {
+      return 'layout-self'
+    }
+    if (reason.startsWith('layout-dependent:')) {
+      return 'layout-dependent'
+    }
+    if (reason.startsWith('layout-propagation:')) {
+      return 'layout'
+    }
+    if (reason.startsWith('layout-fallback-full:')) {
+      return 'layout-full'
+    }
+    if (reason.startsWith('auto-routes-topology:')) {
+      return 'routes-topology'
+    }
+    if (reason.startsWith('shared-chunk(')) {
+      const countMatch = reason.match(/\+(\d+):/)
+      return countMatch ? `shared+${countMatch[1]}` : 'shared'
+    }
+    return reason
+  }
+
+  function formatReasonSummary(reasons?: string[]) {
+    if (!reasons?.length) {
+      return undefined
+    }
+    const labels = reasons.map(formatReasonLabel)
+    const [first, ...rest] = labels
+    return rest.length ? `${first}+${rest.length}` : first
+  }
+
   function recordHmrProfile(totalMs: number) {
     const hmrState = ctx.runtimeState.build.hmr
     hmrState.recentProfiles.push({
@@ -85,27 +126,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
     const totalValues = recentProfiles.map(item => item.totalMs)
-    const emitValues = recentProfiles.flatMap(item => item.emitMs === undefined ? [] : [item.emitMs])
-    const sharedChunkValues = recentProfiles.flatMap(item => item.sharedChunkResolveMs === undefined ? [] : [item.sharedChunkResolveMs])
-    const watchValues = recentProfiles.flatMap(item => item.watchToDirtyMs === undefined ? [] : [item.watchToDirtyMs])
-    const maxPending = Math.max(...recentProfiles.map(item => item.pendingCount ?? 0))
     const segments = [
-      `近${recentProfiles.length}次 avg ${average(totalValues).toFixed(2)} ms`,
+      `近${recentProfiles.length}次 avg ${average(totalValues).toFixed(0)} ms`,
       `max ${Math.max(...totalValues).toFixed(2)} ms`,
     ]
-
-    if (watchValues.length) {
-      segments.push(`watch avg ${average(watchValues).toFixed(2)} ms`)
-    }
-    if (emitValues.length) {
-      segments.push(`emit avg ${average(emitValues).toFixed(2)} ms`)
-    }
-    if (sharedChunkValues.length) {
-      segments.push(`shared avg ${average(sharedChunkValues).toFixed(2)} ms`)
-    }
-    if (maxPending > 0) {
-      segments.push(`pending max ${maxPending}`)
-    }
 
     return `；${segments.join('，')}`
   }
@@ -123,20 +147,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (profile.sharedChunkResolveMs !== undefined) {
       segments.push(`shared ${profile.sharedChunkResolveMs.toFixed(2)} ms`)
     }
-    if (profile.dirtyCount !== undefined) {
-      segments.push(`dirty ${profile.dirtyCount}`)
+    if (
+      profile.dirtyCount !== undefined
+      || profile.pendingCount !== undefined
+      || profile.emittedCount !== undefined
+    ) {
+      segments.push(`d/p/e ${profile.dirtyCount ?? 0}/${profile.pendingCount ?? 0}/${profile.emittedCount ?? 0}`)
     }
-    if (profile.pendingCount !== undefined) {
-      segments.push(`pending ${profile.pendingCount}`)
-    }
-    if (profile.emittedCount !== undefined) {
-      segments.push(`emitted ${profile.emittedCount}`)
-    }
-    if (profile.dirtyReasonSummary?.length) {
-      segments.push(`dirtyCause ${profile.dirtyReasonSummary.join('+')}`)
-    }
-    if (profile.pendingReasonSummary?.length) {
-      segments.push(`pendingCause ${profile.pendingReasonSummary.join('+')}`)
+    const dirtyReason = formatReasonSummary(profile.dirtyReasonSummary)
+    const pendingReason = formatReasonSummary(profile.pendingReasonSummary)
+    if (dirtyReason || pendingReason) {
+      segments.push(`cause ${dirtyReason ?? '-'} -> ${pendingReason ?? '-'}`)
     }
     if (!segments.length) {
       return ''
