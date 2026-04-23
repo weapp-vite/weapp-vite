@@ -35,6 +35,11 @@ describe('getWeappViteConfig', () => {
     expect(config.hmr?.touchAppWxss).toBe('auto')
   })
 
+  it('defaults hmr.logLevel to default', () => {
+    const config = getWeappViteConfig()
+    expect(config.hmr?.logLevel).toBe('default')
+  })
+
   it('defaults hmr.profileJson to false', () => {
     const config = getWeappViteConfig()
     expect(config.hmr?.profileJson).toBe(false)

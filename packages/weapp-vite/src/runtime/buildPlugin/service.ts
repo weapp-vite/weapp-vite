@@ -119,6 +119,125 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     } satisfies InlineConfig
   }
 
+  function formatReasonLabel(reason: string) {
+    if (reason.startsWith('entry-direct:')) {
+      return 'entry'
+    }
+    if (reason.startsWith('sidecar-direct:')) {
+      return 'sidecar'
+    }
+    if (reason.startsWith('importer-graph:')) {
+      return 'importer'
+    }
+    if (reason.startsWith('layout-self:')) {
+      return 'layout-self'
+    }
+    if (reason.startsWith('layout-dependent:')) {
+      return 'layout-dependent'
+    }
+    if (reason.startsWith('layout-propagation:')) {
+      return 'layout'
+    }
+    if (reason.startsWith('layout-fallback-full:')) {
+      return 'layout-full'
+    }
+    if (reason.startsWith('auto-routes-topology:')) {
+      return 'routes-topology'
+    }
+    if (reason.startsWith('shared-chunk(')) {
+      const countMatch = reason.match(/\+(\d+):/)
+      return countMatch ? `shared+${countMatch[1]}` : 'shared'
+    }
+    return reason
+  }
+
+  function formatReasonSummary(reasons?: string[]) {
+    if (!reasons?.length) {
+      return undefined
+    }
+    const labels = reasons.map(formatReasonLabel)
+    const [first, ...rest] = labels
+    return rest.length ? `${first}+${rest.length}` : first
+  }
+
+  function formatHmrRecentSummary() {
+    const recentProfiles = ctx.runtimeState.build.hmr.recentProfiles
+    if (recentProfiles.length < 2) {
+      return ''
+    }
+
+    const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
+    const totalValues = recentProfiles.map(item => item.totalMs)
+    const segments = [
+      `近${recentProfiles.length}次 avg ${average(totalValues).toFixed(0)} ms`,
+      `max ${Math.max(...totalValues).toFixed(2)} ms`,
+    ]
+
+    return `；${segments.join('，')}`
+  }
+
+  function resolveHmrLogLevel() {
+    return ctx.configService?.weappViteConfig.hmr?.logLevel ?? 'default'
+  }
+
+  function formatHmrLogLine(durationMs: number) {
+    const duration = durationMs.toFixed(2)
+    const profile = ctx.runtimeState.build.hmr.profile
+    const logLevel = resolveHmrLogLevel()
+
+    if (logLevel === 'default') {
+      return `小程序已重新构建（${duration} ms）`
+    }
+
+    if (logLevel === 'concise') {
+      const conciseSegments = [
+        typeof profile.buildCoreMs === 'number' ? `build-core ${profile.buildCoreMs.toFixed(2)} ms` : undefined,
+        typeof profile.transformMs === 'number' ? `transform ${profile.transformMs.toFixed(2)} ms` : undefined,
+        typeof profile.writeMs === 'number' ? `write ${profile.writeMs.toFixed(2)} ms` : undefined,
+      ].filter((segment): segment is string => Boolean(segment))
+
+      return conciseSegments.length
+        ? `小程序已重新构建（${duration} ms，${conciseSegments.join('，')}）`
+        : `小程序已重新构建（${duration} ms）`
+    }
+
+    const verboseSegments: string[] = []
+    if (profile.buildCoreMs !== undefined) {
+      verboseSegments.push(`build-core ${profile.buildCoreMs.toFixed(2)} ms`)
+    }
+    if (profile.transformMs !== undefined) {
+      verboseSegments.push(`transform ${profile.transformMs.toFixed(2)} ms`)
+    }
+    if (profile.writeMs !== undefined) {
+      verboseSegments.push(`write ${profile.writeMs.toFixed(2)} ms`)
+    }
+    if (profile.watchToDirtyMs !== undefined) {
+      verboseSegments.push(`watch->dirty ${profile.watchToDirtyMs.toFixed(2)} ms`)
+    }
+    if (profile.emitMs !== undefined) {
+      verboseSegments.push(`emit ${profile.emitMs.toFixed(2)} ms`)
+    }
+    if (profile.sharedChunkResolveMs !== undefined) {
+      verboseSegments.push(`shared ${profile.sharedChunkResolveMs.toFixed(2)} ms`)
+    }
+    if (
+      profile.dirtyCount !== undefined
+      || profile.pendingCount !== undefined
+      || profile.emittedCount !== undefined
+    ) {
+      verboseSegments.push(`d/p/e ${profile.dirtyCount ?? 0}/${profile.pendingCount ?? 0}/${profile.emittedCount ?? 0}`)
+    }
+    const dirtyReason = formatReasonSummary(profile.dirtyReasonSummary)
+    const pendingReason = formatReasonSummary(profile.pendingReasonSummary)
+    if (dirtyReason || pendingReason) {
+      verboseSegments.push(`cause ${dirtyReason ?? '-'} -> ${pendingReason ?? '-'}`)
+    }
+
+    return verboseSegments.length
+      ? `小程序已重新构建（${duration} ms，${verboseSegments.join('，')}${formatHmrRecentSummary()}）`
+      : `小程序已重新构建（${duration} ms）`
+  }
+
   function formatHmrPhaseRegressionHint(
     currentProfile: NonNullable<MutableCompilerContext['runtimeState']>['build']['hmr']['recentProfiles'][number],
     previousProfiles: NonNullable<MutableCompilerContext['runtimeState']>['build']['hmr']['recentProfiles'],
@@ -361,14 +480,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       else if (e.code === 'END') {
         const durationMs = performance.now() - startTime
         void (async () => {
-          const duration = durationMs.toFixed(2)
           if (firstBuildCompleted) {
             finalizeHmrProfile(durationMs)
             recordHmrProfile(durationMs)
             await writeHmrProfileJsonSample(durationMs).catch((error) => {
               debug?.(`write hmr profile json failed: ${String(error)}`)
             })
-            logger.success(`小程序已重新构建（${duration} ms）`)
+            logger.success(formatHmrLogLine(durationMs))
             shouldLogSlowHmrTip()
           }
           else {

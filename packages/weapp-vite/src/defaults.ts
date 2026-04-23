@@ -64,6 +64,7 @@ export function getWeappViteConfig(): WeappViteConfig {
     hmr: {
       sharedChunks: 'auto',
       touchAppWxss: 'auto',
+      logLevel: 'default',
       profileJson: false,
     },
     mcp: {

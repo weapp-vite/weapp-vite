@@ -328,6 +328,129 @@ describe('runtime buildPlugin service', () => {
     expect(loggerSuccessMock).toHaveBeenLastCalledWith(expect.stringMatching(/小程序已重新构建（\d+\.\d{2} ms）/))
   })
 
+  it('prints concise hmr log when hmr.logLevel is concise', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(1)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(177.25)
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          hmr: {
+            logLevel: 'concise',
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    ctx.runtimeState.build.hmr.profile = {
+      buildCoreMs: 120.5,
+      transformMs: 40.25,
+      writeMs: 6.5,
+      watchToDirtyMs: 3.25,
+      emitMs: 14.5,
+    }
+    watcher.emit('START')
+    watcher.emit('END')
+
+    await vi.waitFor(() => {
+      expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('build-core '))
+    })
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('transform 40.25 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('write 6.50 ms'))
+    expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('watch->dirty'))
+    expect(loggerSuccessMock).not.toHaveBeenCalledWith(expect.stringContaining('d/p/e'))
+    nowSpy.mockRestore()
+  })
+
+  it('prints verbose hmr log only when hmr.logLevel is verbose', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(1)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(177)
+      .mockReturnValueOnce(200)
+      .mockReturnValueOnce(379)
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          hmr: {
+            logLevel: 'verbose',
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    for (const profile of [
+      {
+        buildCoreMs: 40,
+        transformMs: 10,
+        writeMs: 3,
+        watchToDirtyMs: 2,
+        emitMs: 8,
+        sharedChunkResolveMs: 1,
+        dirtyCount: 1,
+        pendingCount: 2,
+        emittedCount: 2,
+        dirtyReasonSummary: ['entry-direct:1'],
+        pendingReasonSummary: ['shared-chunk(common.js)+1:direct'],
+      },
+      {
+        buildCoreMs: 42,
+        transformMs: 11,
+        writeMs: 4,
+        watchToDirtyMs: 3,
+        emitMs: 9,
+        sharedChunkResolveMs: 2,
+        dirtyCount: 1,
+        pendingCount: 2,
+        emittedCount: 2,
+        dirtyReasonSummary: ['entry-direct:1'],
+        pendingReasonSummary: ['shared-chunk(common.js)+1:direct'],
+      },
+    ]) {
+      ctx.runtimeState.build.hmr.profile = profile
+      watcher.emit('START')
+      watcher.emit('END')
+    }
+
+    await vi.waitFor(() => {
+      expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('build-core '))
+    })
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('transform 11.00 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('write 4.00 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.00 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('d/p/e 1/2/2'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('cause entry -> shared+1'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近2次 avg'))
+    nowSpy.mockRestore()
+  })
+
   it('writes hmr profile jsonl with default output path when enabled', async () => {
     const watcher = createManualWatcher()
     buildMock.mockResolvedValueOnce(watcher)

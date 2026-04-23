@@ -246,6 +246,10 @@ export interface WeappHmrConfig {
   sharedChunks?: 'full' | 'auto' | 'off'
   touchAppWxss?: boolean | 'auto'
   /**
+   * @description HMR 终端日志档位：默认仅输出总耗时，显式开启 concise/verbose 后再展示阶段诊断。
+   */
+  logLevel?: 'default' | 'concise' | 'verbose'
+  /**
    * @description 是否输出 HMR 结构化 profile，或指定自定义 JSONL 输出路径
    */
   profileJson?: boolean | string
