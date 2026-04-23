@@ -51,6 +51,13 @@ interface HmrProfileJsonSample {
   pendingReasonSummary?: string[]
 }
 
+interface HmrPhaseRegressionCandidate {
+  label: 'watch->dirty' | 'emit' | 'shared'
+  currentMs: number
+  averageMs: number
+  ratio: number
+}
+
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let lastHmrSlowTipProfileCount = 0
 
@@ -148,6 +155,58 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     })
   }
 
+  function formatHmrPhaseRegressionHint(
+    currentProfile: NonNullable<MutableCompilerContext['runtimeState']>['build']['hmr']['recentProfiles'][number],
+    previousProfiles: NonNullable<MutableCompilerContext['runtimeState']>['build']['hmr']['recentProfiles'],
+  ) {
+    const candidates: HmrPhaseRegressionCandidate[] = []
+    const phases = [
+      {
+        key: 'watchToDirtyMs',
+        label: 'watch->dirty',
+      },
+      {
+        key: 'emitMs',
+        label: 'emit',
+      },
+      {
+        key: 'sharedChunkResolveMs',
+        label: 'shared',
+      },
+    ] as const
+
+    for (const phase of phases) {
+      const currentValue = currentProfile[phase.key]
+      if (currentValue === undefined || currentValue < 5) {
+        continue
+      }
+      const previousValues = previousProfiles.flatMap(item => item[phase.key] === undefined ? [] : [item[phase.key]])
+      if (!previousValues.length) {
+        continue
+      }
+      const averageMs = previousValues.reduce((sum, value) => sum + value, 0) / previousValues.length
+      if (averageMs <= 0) {
+        continue
+      }
+      candidates.push({
+        label: phase.label,
+        currentMs: currentValue,
+        averageMs,
+        ratio: currentValue / averageMs,
+      })
+    }
+
+    const bestCandidate = candidates
+      .filter(candidate => candidate.currentMs >= 10 && candidate.ratio >= 1.3)
+      .sort((left, right) => right.ratio - left.ratio || right.currentMs - left.currentMs)[0]
+
+    if (!bestCandidate) {
+      return ''
+    }
+
+    return `；疑似慢段 ${bestCandidate.label} ${bestCandidate.currentMs.toFixed(2)} ms（近${previousProfiles.length}次均值 ${bestCandidate.averageMs.toFixed(2)} ms）`
+  }
+
   function shouldLogSlowHmrTip() {
     const outputPath = resolveHmrProfileJsonPath()
     if (!outputPath) {
@@ -179,7 +238,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     lastHmrSlowTipProfileCount = recentProfiles.length
     logger.info(
-      `检测到 HMR 重建明显变慢：当前 ${currentProfile.totalMs.toFixed(2)} ms，近${previousProfiles.length}次均值 ${previousAverage.toFixed(2)} ms；建议运行 weapp-vite analyze --hmr-profile 查看阶段统计。`,
+      `检测到 HMR 重建明显变慢：当前 ${currentProfile.totalMs.toFixed(2)} ms，近${previousProfiles.length}次均值 ${previousAverage.toFixed(2)} ms${formatHmrPhaseRegressionHint(currentProfile, previousProfiles)}；建议运行 weapp-vite analyze --hmr-profile 查看阶段统计。`,
     )
     return true
   }

@@ -503,6 +503,7 @@ describe('runtime buildPlugin service', () => {
       expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('weapp-vite analyze --hmr-profile'))
     })
     expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('当前 190.00 ms'))
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('疑似慢段 emit 100.00 ms'))
     nowSpy.mockRestore()
   })
 
@@ -595,6 +596,60 @@ describe('runtime buildPlugin service', () => {
     }
 
     expect(loggerInfoMock).toHaveBeenCalledTimes(1)
+    nowSpy.mockRestore()
+  })
+
+  it('prefers shared phase hint when shared chunk cost regresses most', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(120)
+      .mockReturnValueOnce(130)
+      .mockReturnValueOnce(210)
+      .mockReturnValueOnce(220)
+      .mockReturnValueOnce(310)
+      .mockReturnValueOnce(320)
+      .mockReturnValueOnce(510)
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          hmr: {
+            profileJson: true,
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    for (const profile of [
+      { emitMs: 20, sharedChunkResolveMs: 6 },
+      { emitMs: 22, sharedChunkResolveMs: 7 },
+      { emitMs: 24, sharedChunkResolveMs: 8 },
+      { emitMs: 26, sharedChunkResolveMs: 90 },
+    ]) {
+      ctx.runtimeState.build.hmr.profile = profile
+      watcher.emit('START')
+      watcher.emit('END')
+      await vi.waitFor(() => {
+        expect(loggerSuccessMock).toHaveBeenCalled()
+      })
+    }
+
+    await vi.waitFor(() => {
+      expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('疑似慢段 shared 90.00 ms'))
+    })
     nowSpy.mockRestore()
   })
 
