@@ -13,6 +13,7 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { touch } from '../../utils/file'
+import { resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { generateLibDts } from '../libDts'
@@ -139,14 +140,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   function resolveHmrProfileJsonPath() {
-    const option = ctx.configService?.weappViteConfig.hmr?.profileJson
-    if (!option) {
-      return undefined
-    }
-    if (option === true) {
-      return path.join(ctx.configService.cwd, '.weapp-vite', 'hmr-profile.jsonl')
-    }
-    return path.resolve(ctx.configService.cwd, option)
+    return resolveHmrProfileJsonOutputPath({
+      cwd: ctx.configService.cwd,
+      option: ctx.configService?.weappViteConfig.hmr?.profileJson,
+    })
   }
 
   function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {

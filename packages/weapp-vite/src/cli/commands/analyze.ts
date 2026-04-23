@@ -1,13 +1,16 @@
 import type { CAC } from 'cac'
+import type { HmrProfileAnalyzeResult } from '../../analyze/hmr'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import type { ConfigService } from '../../runtime/config/types'
 import type { AnalyzeCLIOptions } from '../types'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { analyzeHmrProfile } from '../../analyze/hmr'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
+import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
@@ -171,7 +174,7 @@ function printWebAnalysisSummary(result: WebAnalyzeResult) {
 }
 
 async function writeAnalyzeResult(
-  result: AnalyzeSubpackagesResult | WebAnalyzeResult,
+  result: AnalyzeSubpackagesResult | WebAnalyzeResult | HmrProfileAnalyzeResult,
   outputOption: string,
   configService: ConfigService,
 ) {
@@ -189,9 +192,62 @@ async function writeAnalyzeResult(
   return resolvedOutputPath
 }
 
+function formatMetricSummary(label: string, metric: HmrProfileAnalyzeResult['metrics'][keyof HmrProfileAnalyzeResult['metrics']]) {
+  if (!metric.count || metric.averageMs === undefined || metric.maxMs === undefined) {
+    return undefined
+  }
+  return `${label} avg ${metric.averageMs.toFixed(2)} ms，max ${metric.maxMs.toFixed(2)} ms`
+}
+
+function formatCountItems(items: HmrProfileAnalyzeResult['events'], limit: number = 5) {
+  const entries = items.slice(0, limit).map(item => `${item.name} x${item.count}`)
+  return entries.join('，')
+}
+
+function printHmrProfileAnalysisSummary(result: HmrProfileAnalyzeResult, configService: ConfigService) {
+  logger.success('HMR profile 分析完成')
+  logger.info(`- profile：${colors.green(configService.relativeCwd(result.profilePath))}`)
+  logger.info(`- 样本：${result.sampleCount} 条`)
+  if (result.firstTimestamp && result.lastTimestamp) {
+    logger.info(`- 时间范围：${result.firstTimestamp} -> ${result.lastTimestamp}`)
+  }
+
+  const totalSummary = formatMetricSummary('total', result.metrics.totalMs)
+  const watchSummary = formatMetricSummary('watch->dirty', result.metrics.watchToDirtyMs)
+  const emitSummary = formatMetricSummary('emit', result.metrics.emitMs)
+  const sharedSummary = formatMetricSummary('shared', result.metrics.sharedChunkResolveMs)
+
+  for (const summary of [totalSummary, watchSummary, emitSummary, sharedSummary]) {
+    if (summary) {
+      logger.info(`- ${summary}`)
+    }
+  }
+
+  if (result.events.length) {
+    logger.info(`- 事件分布：${formatCountItems(result.events)}`)
+  }
+  if (result.dirtyReasons.length) {
+    logger.info(`- 主要 dirty 原因：${formatCountItems(result.dirtyReasons)}`)
+  }
+  if (result.pendingReasons.length) {
+    logger.info(`- 主要 pending 原因：${formatCountItems(result.pendingReasons)}`)
+  }
+  if (result.skippedLineCount > 0) {
+    logger.warn(`- 跳过 ${result.skippedLineCount} 条无法解析的 profile 记录`)
+  }
+  if (result.slowestSamples.length) {
+    logger.info('- 最慢样本：')
+    for (const sample of result.slowestSamples.slice(0, 3)) {
+      const fileLabel = sample.file ? configService.relativeCwd(sample.file) : '(unknown)'
+      logger.info(`  - ${sample.totalMs?.toFixed(2) ?? '0.00'} ms，${sample.event ?? 'unknown'}，${fileLabel}`)
+    }
+  }
+}
+
 export function registerAnalyzeCommand(cli: CAC) {
   cli
     .command('analyze [root]', 'analyze 两端包体与源码映射')
+    .option('--hmr-profile [file]', `[string | boolean] 分析 HMR JSONL profile，省略值时优先读取配置，否则回退到默认路径`)
     .option('--json', `[boolean] 输出 JSON 结果`)
     .option('--output <file>', `[string] 将分析结果写入指定文件（JSON）`)
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
@@ -216,6 +272,29 @@ export function registerAnalyzeCommand(cli: CAC) {
           resolvedConfigPlatform: ctx.configService.platform,
         })
         const outputOption = typeof options.output === 'string' ? options.output.trim() : ''
+        if (options.hmrProfile !== undefined && options.hmrProfile !== false) {
+          const profileOption = typeof options.hmrProfile === 'string' && options.hmrProfile.trim()
+            ? options.hmrProfile.trim()
+            : ctx.configService.weappViteConfig.hmr?.profileJson
+          const profilePath = resolveHmrProfileJsonPath({
+            cwd: ctx.configService.cwd,
+            option: profileOption,
+            fallbackToDefault: true,
+          })
+          const hmrProfileResult = await analyzeHmrProfile({
+            profilePath,
+          })
+          const writtenPath = await writeAnalyzeResult(hmrProfileResult, outputOption, ctx.configService)
+          if (outputJson) {
+            if (!writtenPath) {
+              process.stdout.write(`${JSON.stringify(hmrProfileResult, null, 2)}\n`)
+            }
+          }
+          else {
+            printHmrProfileAnalysisSummary(hmrProfileResult, ctx.configService)
+          }
+          return
+        }
         if (targets.runWeb) {
           const webResult = createWebAnalyzeResult(ctx.configService, {
             platform: targets.label === 'web' ? 'web' : 'h5',
