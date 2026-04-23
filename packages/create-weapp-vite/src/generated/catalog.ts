@@ -19,8 +19,8 @@ export const TEMPLATE_CATALOG = {
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.6',
-  '@vue/compiler-core': '^3.5.32',
-  '@vue/compiler-dom': '^3.5.32',
+  '@vue/compiler-core': '^3.5.33',
+  '@vue/compiler-dom': '^3.5.33',
   '@vue/language-core': '^3.2.7',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -30,7 +30,7 @@ export const TEMPLATE_CATALOG = {
   'gm-crypto': '^0.1.12',
   'lru-cache': '^11.3.5',
   'magic-string': '^0.30.21',
-  'miniprogram-api-typings': '^5.1.2',
+  'miniprogram-api-typings': '^5.1.3',
   'oxc-parser': '^0.127.0',
   'oxc-walker': '^0.7.0',
   'pkg-types': '^2.3.0',
@@ -55,14 +55,14 @@ export const TEMPLATE_CATALOG = {
   merge: '^2.1.1',
   pathe: '^2.0.3',
   postcss: '^8.5.10',
-  rolldown: '1.0.0-rc.16',
+  rolldown: '1.0.0-rc.17',
   sass: '^1.99.0',
   stylelint: '^17.8.0',
   tailwindcss: '^4.2.4',
   tslib: '^2.8.1',
   typescript: '^6.0.3',
-  vite: '8.0.9',
-  vue: '^3.5.32',
+  vite: '8.0.10',
+  vue: '^3.5.33',
   zod: '^4.3.6'
 } as const
 
@@ -74,7 +74,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'weapp-tailwindcss': '4.11.2'
   },
   latest: {
-    'miniprogram-api-typings': '^5.1.2',
+    'miniprogram-api-typings': '^5.1.3',
     typescript: '^6.0.3'
   },
   tailwind3: {
