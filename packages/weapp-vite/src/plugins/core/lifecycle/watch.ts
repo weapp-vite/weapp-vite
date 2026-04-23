@@ -78,6 +78,7 @@ async function processChangedFile(
     return
   }
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
+  const affectedLayoutEntryIds = new Set<string>()
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   invalidateFileCache(normalizedId)
   if (event === 'update') {
@@ -107,20 +108,61 @@ async function processChangedFile(
         const reason = isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(primaryScriptId))
           ? 'dependency'
           : 'direct'
-        markEntryDirty(primaryScriptId, reason)
+        if (reason === 'dependency') {
+          affectedLayoutEntryIds.add(primaryScriptId)
+        }
+        else {
+          markEntryDirty(primaryScriptId, reason)
+        }
       }
     }
   }
-  const shouldInvalidateAllResolvedEntries = event === 'update'
-    && isLayoutSourcePath(relativeSrc)
-    && resolvedEntryMap.size > 0
 
-  if (shouldInvalidateAllResolvedEntries) {
+  if (
+    event === 'update'
+    && isLayoutSourcePath(relativeSrc)
+    && (loadedEntrySet.has(normalizedId) || resolvedEntryMap.has(normalizedId))
+  ) {
+    affectedLayoutEntryIds.add(normalizedId)
+  }
+
+  if (event === 'update' && affectedLayoutEntryIds.size) {
+    if (!resolvedEntryMap.size) {
+      for (const entryId of affectedLayoutEntryIds) {
+        markEntryDirty(entryId, 'dependency')
+      }
+      return
+    }
+
+    const dependentEntryIds = new Set<string>()
+
+    for (const layoutEntryId of affectedLayoutEntryIds) {
+      const dependents = state.layoutEntryDependents.get(layoutEntryId)
+      if (!dependents?.size) {
+        continue
+      }
+      for (const entryId of dependents) {
+        dependentEntryIds.add(entryId)
+      }
+    }
+
+    if (dependentEntryIds.size) {
+      for (const entryId of affectedLayoutEntryIds) {
+        markEntryDirty(entryId, 'dependency')
+      }
+      for (const entryId of dependentEntryIds) {
+        markEntryDirty(entryId, 'dependency')
+      }
+      return
+    }
+
     for (const entryId of resolvedEntryMap.keys()) {
       markEntryDirty(entryId, 'dependency')
     }
+    return
   }
-  else if (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component') {
+
+  if (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component') {
     markEntryDirty(normalizedId, 'direct')
   }
   else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {

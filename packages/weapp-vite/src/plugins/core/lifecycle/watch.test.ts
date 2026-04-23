@@ -197,6 +197,33 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(3, dataEntry, 'dependency')
   })
 
+  it('narrows layout source updates to tracked dependent entries when layout graph is available', async () => {
+    const layoutEntry = '/project/src/layouts/default/index.ts'
+    const pageEntry = '/project/src/pages/layout-a/index.ts'
+    const dataEntry = '/project/src/pages/layout-b/index.ts'
+    const unrelatedEntry = '/project/src/pages/plain/index.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [layoutEntry, { id: layoutEntry }],
+        [pageEntry, { id: pageEntry }],
+        [dataEntry, { id: dataEntry }],
+        [unrelatedEntry, { id: unrelatedEntry }],
+      ]),
+      layoutEntryDependents: new Map([
+        [layoutEntry, new Set([pageEntry, dataEntry])],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(layoutEntry, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(3)
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, layoutEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(3, dataEntry, 'dependency')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(unrelatedEntry, 'dependency')
+  })
+
   it('marks layout template sidecar updates as dependency dirties', async () => {
     isTemplateMock.mockReturnValue(true)
     findJsEntryMock.mockResolvedValue({
@@ -208,6 +235,34 @@ describe('core lifecycle watch hook', () => {
     await hook('/project/src/layouts/default/index.wxml', { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/layouts/default/index.ts', 'dependency')
+  })
+
+  it('narrows layout sidecar updates to tracked dependent entries when layout graph is available', async () => {
+    isTemplateMock.mockReturnValue(true)
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/layouts/default/index.ts',
+    })
+    const layoutEntry = '/project/src/layouts/default/index.ts'
+    const pageEntry = '/project/src/pages/layout-a/index.ts'
+    const unrelatedEntry = '/project/src/pages/plain/index.ts'
+    const state = createState({
+      resolvedEntryMap: new Map([
+        [layoutEntry, { id: layoutEntry }],
+        [pageEntry, { id: pageEntry }],
+        [unrelatedEntry, { id: unrelatedEntry }],
+      ]),
+      layoutEntryDependents: new Map([
+        [layoutEntry, new Set([pageEntry])],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/layouts/default/index.wxml', { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(2)
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, layoutEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, pageEntry, 'dependency')
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(unrelatedEntry, 'dependency')
   })
 
   it('marks html layout template sidecar updates as dependency dirties', async () => {
