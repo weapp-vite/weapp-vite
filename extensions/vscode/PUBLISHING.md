@@ -21,9 +21,10 @@
 - release PR 由仓库统一的 changeset 流程生成，扩展版本号与 `CHANGELOG.md` 也由该流程统一写入
 - release PR 合并到 `main` 后，会触发 `.github/workflows/release.yml`
 - `release.yml` 只允许在 `main` ref 上执行实际发布；即使手动 dispatch 到 `changeset-release/main` 这类未合并分支，也不会发布 Marketplace
-- `release.yml` 会先执行现有 npm release 流程，再查询 VS Code Marketplace 当前线上版本
-- 如果 `extensions/vscode/package.json` 当前版本高于 Marketplace 线上版本，且对应 tag 尚不存在，则执行 `pnpm --dir extensions/vscode run publish:vsce`
-- 这样即使某次首次发布失败，只要线上版本仍然落后，后续成功的 release run 也会自动补发
+- `release.yml` 会先执行仓库统一的 Changesets 发布动作
+- 只有当 `changesets/action` 本次真的完成了发布（而不是仅创建/更新 release PR）时，才会继续查询 VS Code Marketplace 当前线上版本
+- 在这次真实发布之后，如果 `extensions/vscode/package.json` 当前版本高于 Marketplace 线上版本，且对应 tag 尚不存在，则执行 `pnpm --dir extensions/vscode run publish:vsce`
+- 单独向 `main` 提交一个 `.changeset` 文件只会进入 release PR / version 流程，不会直接触发 Marketplace 正式发布
 - 发布成功后，会创建类似 `vscode-extension-v0.1.0` 的 git tag，但不会发布到 npm
 
 必须配置的仓库 secret：

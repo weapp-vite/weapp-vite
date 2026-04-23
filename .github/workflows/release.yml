@@ -64,16 +64,17 @@ jobs:
 
       - name: Plan VS Code Marketplace release
         id: vscode_marketplace
+        if: steps.changesets.outputs.published == 'true'
         run: pnpm --dir extensions/vscode run release:marketplace:plan
 
       - name: Publish VS Code extension to Marketplace
-        if: steps.vscode_marketplace.outputs.should_publish == 'true'
+        if: steps.changesets.outputs.published == 'true' && steps.vscode_marketplace.outputs.should_publish == 'true'
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: pnpm --dir extensions/vscode run publish:vsce
 
       - name: Tag VS Code Marketplace release
-        if: steps.vscode_marketplace.outputs.should_publish == 'true'
+        if: steps.changesets.outputs.published == 'true' && steps.vscode_marketplace.outputs.should_publish == 'true'
         run: |
           git tag "${{ steps.vscode_marketplace.outputs.release_tag }}"
           git push origin "${{ steps.vscode_marketplace.outputs.release_tag }}"

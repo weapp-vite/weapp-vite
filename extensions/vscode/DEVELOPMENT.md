@@ -75,4 +75,4 @@ pnpm --dir extensions/vscode run release:marketplace:plan
 
 - [PUBLISHING.md](./PUBLISHING.md)
 
-目前 release 流程已经限制为仅允许在 `main` ref 上执行实际 Marketplace 发布，未合并的 `changeset-release/*` 分支不会直接发布。
+目前 release 流程除了限制 `main` ref 外，还要求 `changesets/action` 本次实际完成发布；未合并的 `changeset-release/*` 分支、以及仅新增 changeset 但尚未进入真正 release publish 的提交，都不会直接发布 Marketplace。
