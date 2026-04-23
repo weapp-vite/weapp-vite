@@ -52,6 +52,8 @@ interface HmrProfileJsonSample {
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
+  let lastHmrSlowTipProfileCount = 0
+
   function recordHmrProfile(totalMs: number) {
     const hmrState = ctx.runtimeState.build.hmr
     hmrState.recentProfiles.push({
@@ -144,6 +146,42 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       cwd: ctx.configService.cwd,
       option: ctx.configService?.weappViteConfig.hmr?.profileJson,
     })
+  }
+
+  function shouldLogSlowHmrTip() {
+    const outputPath = resolveHmrProfileJsonPath()
+    if (!outputPath) {
+      return false
+    }
+
+    const recentProfiles = ctx.runtimeState.build.hmr.recentProfiles
+    if (recentProfiles.length < 4) {
+      return false
+    }
+    if (recentProfiles.length - lastHmrSlowTipProfileCount < 3) {
+      return false
+    }
+
+    const currentProfile = recentProfiles.at(-1)
+    if (!currentProfile) {
+      return false
+    }
+
+    const previousProfiles = recentProfiles.slice(0, -1)
+    const previousAverage = previousProfiles.reduce((sum, item) => sum + item.totalMs, 0) / previousProfiles.length
+
+    if (currentProfile.totalMs < 120) {
+      return false
+    }
+    if (currentProfile.totalMs < previousAverage * 1.5) {
+      return false
+    }
+
+    lastHmrSlowTipProfileCount = recentProfiles.length
+    logger.info(
+      `检测到 HMR 重建明显变慢：当前 ${currentProfile.totalMs.toFixed(2)} ms，近${previousProfiles.length}次均值 ${previousAverage.toFixed(2)} ms；建议运行 weapp-vite analyze --hmr-profile 查看阶段统计。`,
+    )
+    return true
   }
 
   function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {
@@ -280,6 +318,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               debug?.(`write hmr profile json failed: ${String(error)}`)
             })
             logger.success(`小程序已重新构建（${duration} ms${formatHmrProfileSummary()}${formatHmrRecentSummary()}）`)
+            shouldLogSlowHmrTip()
           }
           else {
             firstBuildCompleted = true

@@ -30,6 +30,7 @@ const checkWorkersOptionsMock = vi.hoisted(() => vi.fn())
 const devWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
 const watchWorkersMock = vi.hoisted(() => vi.fn())
 const buildWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
+const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const independentBuildMock = vi.hoisted(() => vi.fn(async () => ({ output: [] })))
 const independentGetOutputMock = vi.hoisted(() => vi.fn(() => undefined))
@@ -91,6 +92,7 @@ vi.mock('../../utils/file', () => ({
 vi.mock('../../context/shared', () => ({
   debug: vi.fn(),
   logger: {
+    info: loggerInfoMock,
     success: loggerSuccessMock,
   },
 }))
@@ -450,6 +452,150 @@ describe('runtime buildPlugin service', () => {
 
     expect(mkdirMock).not.toHaveBeenCalled()
     expect(appendFileMock).not.toHaveBeenCalled()
+  })
+
+  it('prints analyze hint when hmr profile is enabled and rebuild becomes much slower', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(120)
+      .mockReturnValueOnce(130)
+      .mockReturnValueOnce(210)
+      .mockReturnValueOnce(220)
+      .mockReturnValueOnce(310)
+      .mockReturnValueOnce(320)
+      .mockReturnValueOnce(510)
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          hmr: {
+            profileJson: true,
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    for (const totalMs of [100, 80, 90, 200]) {
+      ctx.runtimeState.build.hmr.profile = {
+        emitMs: totalMs / 2,
+      }
+      watcher.emit('START')
+      watcher.emit('END')
+      await vi.waitFor(() => {
+        expect(loggerSuccessMock).toHaveBeenCalled()
+      })
+    }
+
+    await vi.waitFor(() => {
+      expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('weapp-vite analyze --hmr-profile'))
+    })
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('当前 190.00 ms'))
+    nowSpy.mockRestore()
+  })
+
+  it('does not print analyze hint when hmr profile output is disabled', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(120)
+      .mockReturnValueOnce(130)
+      .mockReturnValueOnce(210)
+      .mockReturnValueOnce(220)
+      .mockReturnValueOnce(310)
+      .mockReturnValueOnce(320)
+      .mockReturnValueOnce(510)
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    for (const totalMs of [100, 80, 90, 200]) {
+      ctx.runtimeState.build.hmr.profile = {
+        emitMs: totalMs / 2,
+      }
+      watcher.emit('START')
+      watcher.emit('END')
+      await vi.waitFor(() => {
+        expect(loggerSuccessMock).toHaveBeenCalled()
+      })
+    }
+
+    expect(loggerInfoMock).not.toHaveBeenCalled()
+    nowSpy.mockRestore()
+  })
+
+  it('suppresses repeated slow hmr hints until enough new samples accumulate', async () => {
+    const nowSpy = vi.spyOn(performance, 'now')
+    nowSpy
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(120)
+      .mockReturnValueOnce(130)
+      .mockReturnValueOnce(210)
+      .mockReturnValueOnce(220)
+      .mockReturnValueOnce(310)
+      .mockReturnValueOnce(320)
+      .mockReturnValueOnce(520)
+      .mockReturnValueOnce(530)
+      .mockReturnValueOnce(740)
+      .mockReturnValueOnce(750)
+      .mockReturnValueOnce(970)
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          hmr: {
+            profileJson: true,
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    for (const totalMs of [100, 80, 90, 200, 210, 220]) {
+      ctx.runtimeState.build.hmr.profile = {
+        emitMs: totalMs / 2,
+      }
+      watcher.emit('START')
+      watcher.emit('END')
+      await vi.waitFor(() => {
+        expect(loggerSuccessMock).toHaveBeenCalled()
+      })
+    }
+
+    expect(loggerInfoMock).toHaveBeenCalledTimes(1)
+    nowSpy.mockRestore()
   })
 
   it('skips npm build when skipNpm is enabled and hmr touch is false', async () => {
