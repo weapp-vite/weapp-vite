@@ -35,7 +35,7 @@ export function resolveHmrProfileJsonPath(options: ResolveHmrProfileJsonPathOpti
  * @description 为 HMR profile 累加阶段耗时。
  */
 export function recordHmrProfileDuration(
-  profile: Record<HmrProfileDurationKey, number | undefined> | undefined,
+  profile: Partial<Record<HmrProfileDurationKey, number | undefined>> | undefined,
   key: HmrProfileDurationKey,
   durationMs: number,
 ) {

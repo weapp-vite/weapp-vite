@@ -1,10 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "rootDir": ".",
+    "rootDir": "../..",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
+      "weapp-vite": [
+        "../../packages/weapp-vite/dist/index.d.mts"
+      ],
+      "weapp-vite/*": [
+        "../../packages/weapp-vite/dist/*"
+      ],
       "@weapp-vite/ast/babel": [
         "../../packages/ast/src/babel.ts"
       ],

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DevicePresetValue, PreviewTapInvocation } from './devicePreview/constants'
+import { reactive } from 'vue'
 import { DEVICE_PRESETS } from './devicePreview/constants'
 import { useDevicePreview } from './devicePreview/useDevicePreview'
 
@@ -17,7 +18,9 @@ const emit = defineEmits<{
   updateViewport: [payload: { height: number, width: number }]
 }>()
 
-const preview = useDevicePreview(props, emit)
+const preview = reactive(useDevicePreview(props, emit))
+const previewHost = preview.previewHost
+const previewStage = preview.previewStage
 </script>
 
 <template>
@@ -40,7 +43,7 @@ const preview = useDevicePreview(props, emit)
     </div>
 
     <div
-      ref="preview.previewStage"
+      ref="previewStage"
       class="grid min-h-0 content-start justify-items-center overflow-auto bg-[#2c2c2c] px-6 py-5"
       :style="preview.stageStyle"
     >
@@ -55,7 +58,7 @@ const preview = useDevicePreview(props, emit)
               <span class="icon-[mdi--battery-high] text-[12px]" aria-hidden="true" />
             </div>
           </div>
-          <div ref="preview.previewHost" :class="preview.viewportShellClass" />
+          <div ref="previewHost" :class="preview.viewportShellClass" />
           <button
             type="button"
             class="absolute bottom-1 right-1 z-30 h-5 w-5 cursor-se-resize rounded-full border border-[color:rgb(13_155_135_/_0.28)] bg-[color:rgb(255_255_255_/_0.94)] shadow-[0_6px_18px_rgb(15_27_40_/_0.16)] after:absolute after:bottom-[5px] after:right-[5px] after:h-2 after:w-2 after:rounded-sm after:border-b-2 after:border-r-2 after:border-[color:var(--sim-accent)]"

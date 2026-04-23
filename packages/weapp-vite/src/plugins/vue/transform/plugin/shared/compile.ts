@@ -5,7 +5,7 @@ import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import MagicString from 'magic-string'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
-import { composeSourceMaps } from '../../../../../utils/sourcemap'
+import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../../injectSetDataPick'
@@ -18,8 +18,15 @@ import {
   resolveScriptlessVueEntryStub,
 } from './state'
 
-type VueTransformResultWithScriptMap = VueTransformResult & {
+export type VueTransformResultWithScriptMap = Omit<VueTransformResult, 'scriptMap'> & {
   scriptMap?: EncodedSourceMapLike | null
+}
+
+export function normalizeVueTransformResult(result: VueTransformResult): VueTransformResultWithScriptMap {
+  return {
+    ...result,
+    scriptMap: normalizeEncodedSourceMapLike(result.scriptMap),
+  }
 }
 
 export async function finalizeTransformEntryScript(options: {

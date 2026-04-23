@@ -15,10 +15,35 @@ export function isEncodedSourceMapLike(value: unknown): value is EncodedSourceMa
     value
     && typeof value === 'object'
     && 'version' in value
+    && typeof (value as { version?: unknown }).version === 'number'
     && 'mappings' in value
     && 'names' in value
     && 'sources' in value,
   )
+}
+
+export function normalizeEncodedSourceMapLike(value: unknown): EncodedSourceMapLike | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const sourceMap = value as Partial<EncodedSourceMapLike> & { version?: unknown }
+  const numericVersion = typeof sourceMap.version === 'number'
+    ? sourceMap.version
+    : typeof sourceMap.version === 'string'
+      ? Number(sourceMap.version)
+      : Number.NaN
+
+  if (!Number.isFinite(numericVersion)) {
+    return null
+  }
+
+  const normalized = {
+    ...sourceMap,
+    version: numericVersion,
+  }
+
+  return isEncodedSourceMapLike(normalized) ? normalized : null
 }
 
 export function composeSourceMaps(

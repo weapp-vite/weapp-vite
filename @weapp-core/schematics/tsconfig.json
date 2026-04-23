@@ -2,6 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "paths": {
+      "weapp-vite/json": [
+        "../../packages/weapp-vite/dist/json.d.mts"
+      ],
       "@/*": [
         "./src/*"
       ]

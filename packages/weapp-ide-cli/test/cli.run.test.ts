@@ -80,9 +80,7 @@ vi.mock('@weapp-vite/miniprogram-automator', () => ({
   MiniProgram: class MiniProgram {},
   Page: class Page {},
   Element: class Element {},
-}), {
-  virtual: true,
-})
+}))
 
 vi.mock('../src/cli/prompt', () => ({
   promptForCliPath: promptForCliPathMock,

@@ -8,8 +8,9 @@ export default defineConfig({
         page: 'src/pages',
       },
       filenames: {
-        style: 'index.wxss',
-        template: 'index.wxml',
+        app: 'app',
+        component: 'index',
+        page: 'index',
       },
     },
   },

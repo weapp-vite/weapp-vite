@@ -281,6 +281,9 @@ export function registerAnalyzeCommand(cli: CAC) {
             option: profileOption,
             fallbackToDefault: true,
           })
+          if (!profilePath) {
+            throw new Error('未找到可用的 HMR profile 文件路径')
+          }
           const hmrProfileResult = await analyzeHmrProfile({
             profilePath,
           })

@@ -1,10 +1,10 @@
 export interface RetryableCommandExecutorOptions<TResult, TPromptResult> {
-  createCancelError: (error: unknown) => Error
+  createCancelError: (result: TResult) => Error
   execute: () => Promise<TResult>
   isRetryableResult: (result: TResult) => boolean
-  onCancel?: (error: unknown) => void
+  onCancel?: (result: TResult) => void
   onRetry?: () => void
-  promptRetry: (error: unknown, retryCount: number) => Promise<TPromptResult>
+  promptRetry: (result: TResult, retryCount: number) => Promise<TPromptResult>
   shouldRetry: (result: TPromptResult) => boolean
 }
 

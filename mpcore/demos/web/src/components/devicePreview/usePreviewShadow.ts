@@ -7,6 +7,7 @@ import { resolveTapChain } from './previewEvents'
 export function usePreviewShadow(
   markup: Ref<string>,
   previewScale: ComputedRef<number>,
+  stageSize: Ref<{ height: number, width: number }>,
   viewportHeight: Ref<number>,
   viewportWidth: Ref<number>,
   onSelectScope: (scopeId: string) => void,
@@ -15,7 +16,6 @@ export function usePreviewShadow(
 ) {
   const previewHost = ref<HTMLDivElement | null>(null)
   const previewStage = ref<HTMLDivElement | null>(null)
-  const stageSize = ref({ height: 760, width: 0 })
   let previewShadowRoot: ShadowRoot | null = null
   let previewStageObserver: ResizeObserver | null = null
   let resizeDragState: {
@@ -24,6 +24,7 @@ export function usePreviewShadow(
     startX: number
     startY: number
   } | null = null
+  let stopPointer = () => {}
 
   function handleScreenClick(event: Event) {
     const payload = resolveTapChain(event.target)
@@ -70,8 +71,6 @@ export function usePreviewShadow(
     window.removeEventListener('pointercancel', stopPointer)
     onCommit()
   }
-
-  function stopPointer() {}
 
   function startResizeDrag(event: PointerEvent, onCloseControls: () => void, onCommit: () => void) {
     event.preventDefault()

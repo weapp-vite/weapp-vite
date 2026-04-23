@@ -176,12 +176,13 @@ export function startDevHotkeys(options: StartDevHotkeysOptions): DevHotkeysSess
       return
     }
     const action = resolveRunnableHotkeyDefinition(normalizedInput) ?? resolveRunnableHotkeyDefinition(normalized)
-    if (action?.run) {
+    const run = action?.run
+    if (run) {
       runAction(
         action.label ?? action.description,
         resolvePendingLabel(normalized) ?? action.pendingLabel ?? `正在执行 ${action.description}`,
         async () => {
-          return await action.run({
+          return await run({
             options,
             toggleMcp,
           })

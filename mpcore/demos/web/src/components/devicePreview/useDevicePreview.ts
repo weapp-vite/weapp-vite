@@ -9,6 +9,12 @@ import {
 } from './constants'
 import { usePreviewShadow } from './usePreviewShadow'
 
+interface DevicePreviewEmit {
+  (event: 'dispatchTapChain', payload: { activeScopeId: string, chain: PreviewTapInvocation[] }): void
+  (event: 'selectScope', scopeId: string): void
+  (event: 'updateViewport', payload: { height: number, width: number }): void
+}
+
 function clampPositiveInt(value: string, fallback: number) {
   const parsed = Number.parseInt(value, 10)
   if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -31,9 +37,7 @@ export function useDevicePreview(
     viewportHeight: number
     viewportWidth: number
   },
-  emit: (event: 'dispatchTapChain', payload: { activeScopeId: string, chain: PreviewTapInvocation[] }) => void
-    & ((event: 'selectScope', scopeId: string) => void)
-    & ((event: 'updateViewport', payload: { height: number, width: number }) => void),
+  emit: DevicePreviewEmit,
 ) {
   const viewportWidthInput = ref(String(props.viewportWidth))
   const viewportHeightInput = ref(String(props.viewportHeight))
@@ -42,6 +46,7 @@ export function useDevicePreview(
   const selectedPreset = ref<DevicePresetValue>('custom')
   const zoomMode = ref<ZoomMode>('fit')
   const stageHeight = ref(DEFAULT_STAGE_HEIGHT)
+  const stageSize = ref({ height: 760, width: 0 })
   const zoomPercent = ref(DEFAULT_ZOOM_PERCENT)
   const showAdvancedControls = ref(false)
   const showDeviceFrame = ref(true)
@@ -115,6 +120,20 @@ export function useDevicePreview(
 
   const previewScale = computed(() => zoomMode.value === 'fit' ? fitScale.value : zoomPercent.value / 100)
 
+  const { previewHost, previewStage, startResizeDrag: startShadowResizeDrag } = usePreviewShadow(
+    toRef(props, 'markup'),
+    previewScale,
+    stageSize,
+    toRef(props, 'viewportHeight'),
+    toRef(props, 'viewportWidth'),
+    scopeId => emit('selectScope', scopeId),
+    payload => emit('dispatchTapChain', payload),
+    (width, height) => {
+      viewportWidthInput.value = String(width)
+      viewportHeightInput.value = String(height)
+    },
+  )
+
   const scaledViewportStyle = computed(() => ({
     height: `${Math.max(1, Math.round(props.viewportHeight * previewScale.value))}px`,
     width: `${Math.max(1, Math.round(props.viewportWidth * previewScale.value))}px`,
@@ -136,19 +155,6 @@ export function useDevicePreview(
   const viewportShellClass = computed(() => showDeviceFrame.value
     ? 'relative h-full w-full overflow-hidden rounded-[32px] border border-[#5c616d] bg-[#0f1422] shadow-[0_18px_36px_rgb(0_0_0_/_0.45)]'
     : 'relative h-full w-full overflow-hidden rounded-[14px] border border-[color:rgb(15_27_40_/_0.08)] bg-[color:var(--sim-surface-page)] shadow-[0_10px_28px_rgb(15_27_40_/_0.08)]')
-
-  const { previewHost, previewStage, stageSize, startResizeDrag: startShadowResizeDrag } = usePreviewShadow(
-    toRef(props, 'markup'),
-    previewScale,
-    toRef(props, 'viewportHeight'),
-    toRef(props, 'viewportWidth'),
-    scopeId => emit('selectScope', scopeId),
-    payload => emit('dispatchTapChain', payload),
-    (width, height) => {
-      viewportWidthInput.value = String(width)
-      viewportHeightInput.value = String(height)
-    },
-  )
 
   function persistToolbarState() {
     localStorage.setItem(DEVICE_TOOLBAR_STORAGE_KEY, JSON.stringify({

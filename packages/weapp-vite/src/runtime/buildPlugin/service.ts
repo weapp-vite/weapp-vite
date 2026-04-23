@@ -90,7 +90,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   function resolveHmrProfileJsonPath() {
     return resolveHmrProfileJsonOutputPath({
-      cwd: ctx.configService.cwd,
+      cwd: ctx.configService?.cwd ?? process.cwd(),
       option: ctx.configService?.weappViteConfig.hmr?.profileJson,
     })
   }
@@ -101,7 +101,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       profile.watchToDirtyMs,
       profile.emitMs,
       profile.writeMs,
-    ].reduce((sum, value) => sum + (typeof value === 'number' ? value : 0), 0)
+    ].reduce<number>((sum, value) => sum + (typeof value === 'number' ? value : 0), 0)
     profile.buildCoreMs = Math.max(0, totalMs - measuredMs)
   }
 
@@ -283,11 +283,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (currentValue === undefined || currentValue < 5) {
         continue
       }
-      const previousValues = previousProfiles.flatMap(item => item[phase.key] === undefined ? [] : [item[phase.key]])
+      const previousValues = previousProfiles.flatMap<number>((item) => {
+        const value = item[phase.key]
+        return value === undefined ? [] : [value]
+      })
       if (!previousValues.length) {
         continue
       }
-      const averageMs = previousValues.reduce((sum, value) => sum + value, 0) / previousValues.length
+      const averageMs = previousValues.reduce<number>((sum, value) => sum + value, 0) / previousValues.length
       if (averageMs <= 0) {
         continue
       }

@@ -9,7 +9,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -104,13 +104,13 @@ export async function transformVueLikeFile(options: {
       classStyleRuntimeWarned,
     })
 
-    const result = await measureStage('compile', async () => await compileTransformEntryResult({
+    const result = normalizeVueTransformResult(await measureStage('compile', async () => await compileTransformEntryResult({
       transformedSource,
       filename,
       compileOptions,
       compileVueFile,
       compileJsxFile,
-    }))
+    })))
 
     await measureStage('finalizeCompiledResult', async () => {
       await finalizeTransformCompiledResult({

@@ -6,6 +6,12 @@ type QueryRoot = ParentNode & {
   querySelectorAll?: ParentNode['querySelectorAll']
 }
 
+interface MiniProgramRuntimeGlobal {
+  createSelectorQuery?: () => {
+    in?: (context: unknown) => unknown
+  }
+}
+
 const MINI_PROGRAM_RUNTIME_GLOBAL_KEYS = getMiniProgramRuntimeGlobalKeys()
 
 export function resolveQueryRoot(instance: ComponentPublicInstance & { renderRoot?: ParentNode }): QueryRoot {
@@ -17,11 +23,7 @@ export function resolveRenderRoot(instance: ComponentPublicInstance & { renderRo
 }
 
 export function createScopedSelectorQuery(instance: ComponentPublicInstance) {
-  const runtime = globalThis as Record<string, {
-    createSelectorQuery?: () => {
-      in?: (context: unknown) => unknown
-    }
-  } | undefined>
+  const runtime = globalThis as unknown as Partial<Record<string, MiniProgramRuntimeGlobal | undefined>>
   for (const globalKey of MINI_PROGRAM_RUNTIME_GLOBAL_KEYS) {
     const query = runtime[globalKey]?.createSelectorQuery?.()
     if (query && typeof query.in === 'function') {
