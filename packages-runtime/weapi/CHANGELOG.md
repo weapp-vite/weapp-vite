@@ -1,5 +1,12 @@
 # @wevu/api
 
+## 0.2.6
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`2a9ea57`](https://github.com/weapp-vite/weapp-vite/commit/2a9ea57748425265c35533646bdc0c3fa70c440f) by @sonofmagic
+  - 默认 catalog 变更键：@vue/compiler-core, @vue/compiler-dom, miniprogram-api-typings, rolldown, vite, vue。命名 catalog 变更键：latest(miniprogram-api-typings)。
+
 ## 0.2.5
 
 ### Patch Changes

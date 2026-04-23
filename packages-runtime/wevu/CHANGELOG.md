@@ -1,5 +1,18 @@
 # wevu
 
+## 6.15.14
+
+### Patch Changes
+
+- 🐛 **基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。** [`2a9ea57`](https://github.com/weapp-vite/weapp-vite/commit/2a9ea57748425265c35533646bdc0c3fa70c440f) by @sonofmagic
+  - 默认 catalog 变更键：@vue/compiler-core, @vue/compiler-dom, miniprogram-api-typings, rolldown, vite, vue。命名 catalog 变更键：latest(miniprogram-api-typings)。
+- 📦 Updated 4 dependencies [`2a9ea57`](https://github.com/weapp-vite/weapp-vite/commit/2a9ea57748425265c35533646bdc0c3fa70c440f)
+  <details><summary>Details</summary>
+
+  `@wevu/api@0.2.6`, `@wevu/compiler@6.15.14`, `@weapp-core/constants@0.1.2`, `@wevu/web-apis@1.2.10`
+
+  </details>
+
 ## 6.15.13
 
 ### Patch Changes
