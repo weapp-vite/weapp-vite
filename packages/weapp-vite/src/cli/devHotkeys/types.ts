@@ -1,4 +1,4 @@
-import type { WeappMcpConfig } from '../../types'
+import type { WeappMcpConfig, WeappViteConfig } from '../../types'
 
 export interface StartDevHotkeysOptions {
   cwd: string
@@ -8,6 +8,7 @@ export interface StartDevHotkeysOptions {
   projectPath: string
   rebuild?: () => Promise<string | undefined>
   silentStartupHint?: boolean
+  weappViteConfig?: WeappViteConfig
 }
 
 export type DevHotkeyGroup = 'development' | 'devtools' | 'help' | 'process'

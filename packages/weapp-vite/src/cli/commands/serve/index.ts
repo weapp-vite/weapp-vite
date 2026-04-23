@@ -109,6 +109,7 @@ export function registerServeCommand(cli: CAC) {
             projectPath: miniProgramDevActions.projectPath ?? configService.cwd,
             rebuild: miniProgramDevActions.rebuild,
             silentStartupHint: true,
+            weappViteConfig: configService.weappViteConfig,
           })
         : undefined
 

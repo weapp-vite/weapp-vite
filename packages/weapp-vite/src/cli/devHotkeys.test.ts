@@ -15,6 +15,7 @@ const createSharedInputSessionMock = vi.hoisted(() => vi.fn())
 const mkdirMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
 const closeMcpMock = vi.hoisted(() => vi.fn())
+const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -102,6 +103,10 @@ vi.mock('../logger', () => ({
   },
 }))
 
+vi.mock('./hmrProfileSummary', () => ({
+  readLatestHmrProfileSummary: readLatestHmrProfileSummaryMock,
+}))
+
 vi.mock('../../package.json', () => ({
   default: {
     version: 'test-version',
@@ -163,6 +168,8 @@ describe('devHotkeys', () => {
     })
     closeMcpMock.mockReset()
     closeMcpMock.mockResolvedValue(undefined)
+    readLatestHmrProfileSummaryMock.mockReset()
+    readLatestHmrProfileSummaryMock.mockResolvedValue(undefined)
     startWeappViteMcpServerMock.mockReset()
     startWeappViteMcpServerMock.mockResolvedValue({
       close: closeMcpMock,
@@ -426,6 +433,10 @@ describe('devHotkeys', () => {
       default: fakeProcess,
     }))
     const openIdeMock = vi.fn().mockResolvedValue('已重新打开微信开发者工具项目')
+    readLatestHmrProfileSummaryMock.mockResolvedValue({
+      line: '[hmr] 最近一次热更新 120.00 ms，update，src/pages/logs/index.vue，主耗时 emit 60.00 ms',
+      profilePath: '/project/.weapp-vite/hmr-profile.jsonl',
+    })
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
       cwd: '/project',
@@ -433,6 +444,11 @@ describe('devHotkeys', () => {
       openIde: openIdeMock,
       platform: 'weapp',
       projectPath: '/project/dist',
+      weappViteConfig: {
+        hmr: {
+          profileJson: true,
+        },
+      },
     })
 
     stdin.emit('data', 'C')
@@ -440,8 +456,17 @@ describe('devHotkeys', () => {
 
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
     expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(readLatestHmrProfileSummaryMock).toHaveBeenCalledWith({
+      cwd: '/project',
+      relativeCwd: expect.any(Function),
+      weappViteConfig: {
+        hmr: {
+          profileJson: true,
+        },
+      },
+    })
     expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在重置当前 DevTools 会话并重开项目'))
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已重新打开微信开发者工具项目；[hmr] 最近一次热更新 120.00 ms'))
   })
 
   it('triggers manual rebuild with r hotkey', async () => {
@@ -493,6 +518,10 @@ describe('devHotkeys', () => {
       default: fakeProcess,
     }))
     const openIdeMock = vi.fn().mockResolvedValue('已重新打开微信开发者工具项目')
+    readLatestHmrProfileSummaryMock.mockResolvedValue({
+      line: '[hmr] 最近一次热更新 88.00 ms，update，src/pages/home/index.vue，主耗时 emit 30.00 ms',
+      profilePath: '/project/.weapp-vite/hmr-profile.jsonl',
+    })
 
     const { startDevHotkeys } = await import('./devHotkeys')
     startDevHotkeys({
@@ -501,6 +530,11 @@ describe('devHotkeys', () => {
       openIde: openIdeMock,
       platform: 'weapp',
       projectPath: '/project/dist',
+      weappViteConfig: {
+        hmr: {
+          profileJson: true,
+        },
+      },
     })
 
     stdin.emit('data', 'o')
@@ -508,8 +542,17 @@ describe('devHotkeys', () => {
 
     expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/project/dist')
     expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(readLatestHmrProfileSummaryMock).toHaveBeenCalledWith({
+      cwd: '/project',
+      relativeCwd: expect.any(Function),
+      weappViteConfig: {
+        hmr: {
+          profileJson: true,
+        },
+      },
+    })
     expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
-    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已重新打开微信开发者工具项目'))
+    expect(loggerMock.info).toHaveBeenLastCalledWith(expect.stringContaining('最近操作：已重新打开微信开发者工具项目；[hmr] 最近一次热更新 88.00 ms'))
   })
 
   it('shows screenshot summary in hint after screenshot action', async () => {

@@ -1,6 +1,19 @@
 import type { StartDevHotkeysOptions } from './types'
 import { closeSharedMiniProgram } from 'weapp-ide-cli'
 import logger, { colors } from '../../logger'
+import { readLatestHmrProfileSummary } from '../hmrProfileSummary'
+
+async function appendLatestHmrSummary(baseSummary: string, options: StartDevHotkeysOptions) {
+  const summary = await readLatestHmrProfileSummary({
+    cwd: options.cwd,
+    relativeCwd: value => value.replace(`${options.cwd}/`, ''),
+    weappViteConfig: options.weappViteConfig,
+  })
+  if (!summary) {
+    return baseSummary
+  }
+  return `${baseSummary}；${summary.line}`
+}
 
 /**
  * @description 重置当前 DevTools automator 共享会话。
@@ -25,7 +38,7 @@ export async function runResetAndReopenDevtoolsAction(options: StartDevHotkeysOp
   await closeSharedMiniProgram(options.projectPath)
   const summary = await options.openIde()
   logger.success('[dev action] 当前 DevTools 会话已重置，并已重新打开项目。')
-  return summary ?? '已重置当前 DevTools 会话并重新打开项目'
+  return await appendLatestHmrSummary(summary ?? '已重置当前 DevTools 会话并重新打开项目', options)
 }
 
 /**
@@ -56,5 +69,5 @@ export async function runOpenIdeAction(options: StartDevHotkeysOptions) {
   await closeSharedMiniProgram(options.projectPath)
   const summary = await options.openIde()
   logger.success('[dev action] 微信开发者工具项目已重新打开。')
-  return summary ?? '已重新打开微信开发者工具项目'
+  return await appendLatestHmrSummary(summary ?? '已重新打开微信开发者工具项目', options)
 }

@@ -236,6 +236,7 @@ describe('serve cli command', () => {
       projectPath: '/project/dist',
       rebuild: expect.any(Function),
       silentStartupHint: true,
+      weappViteConfig: {},
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
