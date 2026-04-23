@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
-import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { collectChangesetPackages } from './changeset-utils'
 
 function runGit(args: string[]) {
   const result = spawnSync('git', args, { encoding: 'utf8' })
@@ -64,50 +64,6 @@ function getDiffFiles(baseRef: string, pathSpec?: string) {
   return output ? output.split('\n').filter(Boolean) : []
 }
 
-function extractChangesetPackages(content: string) {
-  const lines = content.split('\n')
-  let start = -1
-  let end = -1
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i]?.trim()
-    if (line === '---') {
-      if (start === -1) {
-        start = i
-      }
-      else {
-        end = i
-        break
-      }
-    }
-  }
-  if (start === -1 || end === -1 || end <= start + 1) {
-    return []
-  }
-
-  const packages = new Set<string>()
-  for (let i = start + 1; i < end; i += 1) {
-    const trimmed = lines[i]?.trim()
-    if (!trimmed) {
-      continue
-    }
-    const colonIndex = trimmed.indexOf(':')
-    if (colonIndex <= 0) {
-      continue
-    }
-    let key = trimmed.slice(0, colonIndex).trim()
-    if (
-      (key.startsWith('"') && key.endsWith('"'))
-      || (key.startsWith('\'') && key.endsWith('\''))
-    ) {
-      key = key.slice(1, -1)
-    }
-    if (key) {
-      packages.add(key)
-    }
-  }
-  return [...packages]
-}
-
 function isReleaseWorthyConstantsFile(file: string) {
   return file.startsWith('@weapp-core/constants/src/')
     || [
@@ -127,13 +83,7 @@ async function main() {
     return
   }
 
-  const changesetPackages = new Set<string>()
-  for (const file of changedChangesetFiles) {
-    const content = await fs.readFile(path.resolve(file), 'utf8')
-    for (const pkg of extractChangesetPackages(content)) {
-      changesetPackages.add(pkg)
-    }
-  }
+  const changesetPackages = await collectChangesetPackages(changedChangesetFiles.map(file => path.resolve(file)))
 
   if (!changesetPackages.has('@weapp-core/constants')) {
     console.error('Missing changeset for @weapp-core/constants. Add a changeset when releasable files under @weapp-core/constants change.')

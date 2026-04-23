@@ -5,6 +5,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 /* eslint-disable e18e/ban-dependencies -- release guard scans workspace package manifests with fast-glob, consistent with existing repository checks. */
 import fg from 'fast-glob'
+import { collectChangesetPackages } from './changeset-utils'
 
 export interface PublishableWorkspacePackageEntry {
   dir: string
@@ -122,53 +123,6 @@ export function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: st
   catch {
     return false
   }
-}
-
-export function extractChangesetPackages(content: string) {
-  const lines = content.split('\n')
-  let start = -1
-  let end = -1
-
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i]?.trim()
-    if (line === '---') {
-      if (start === -1) {
-        start = i
-      }
-      else {
-        end = i
-        break
-      }
-    }
-  }
-
-  if (start === -1 || end === -1 || end <= start + 1) {
-    return []
-  }
-
-  const packages = new Set<string>()
-  for (let i = start + 1; i < end; i += 1) {
-    const trimmed = lines[i]?.trim()
-    if (!trimmed) {
-      continue
-    }
-    const colonIndex = trimmed.indexOf(':')
-    if (colonIndex <= 0) {
-      continue
-    }
-    let key = trimmed.slice(0, colonIndex).trim()
-    if (
-      (key.startsWith('"') && key.endsWith('"'))
-      || (key.startsWith('\'') && key.endsWith('\''))
-    ) {
-      key = key.slice(1, -1)
-    }
-    if (key) {
-      packages.add(key)
-    }
-  }
-
-  return [...packages]
 }
 
 function collectLocalWorkspaceDependencyNames(
@@ -321,13 +275,7 @@ async function main() {
   const changedChangesetFiles = getDiffFiles(baseRef, '.changeset')
     .filter(file => file.endsWith('.md') && path.basename(file) !== 'README.md')
 
-  const changesetPackages = new Set<string>()
-  for (const file of changedChangesetFiles) {
-    const content = await fs.readFile(path.resolve(file), 'utf8')
-    for (const pkg of extractChangesetPackages(content)) {
-      changesetPackages.add(pkg)
-    }
-  }
+  const changesetPackages = await collectChangesetPackages(changedChangesetFiles.map(file => path.resolve(file)))
 
   const issues = collectPublishableWorkspaceChangesetIssues({
     packages,

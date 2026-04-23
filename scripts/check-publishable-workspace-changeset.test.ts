@@ -1,11 +1,15 @@
 import type { PublishableWorkspacePackageEntry } from './check-publishable-workspace-changeset'
 import assert from 'node:assert/strict'
+import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { it } from 'vitest'
 import {
-  collectPublishableWorkspaceChangesetIssues,
+  collectChangesetPackages as collectChangesetPackagesFromUtils,
   extractChangesetPackages,
+} from './changeset-utils'
+import {
+  collectPublishableWorkspaceChangesetIssues,
   isCurrentModuleEntry,
   isReleaseWorthyWorkspaceFile,
 } from './check-publishable-workspace-changeset'
@@ -21,6 +25,29 @@ it('extractChangesetPackages reads package names from frontmatter', () => {
   ].join('\n'))
 
   assert.deepEqual(packages, ['weapp-vite', '@weapp-core/init'])
+})
+
+it('collectChangesetPackages ignores deleted changeset files', async () => {
+  const existingFile = path.resolve(process.cwd(), '.changeset/__codex-existing-changeset__.md')
+  await fs.writeFile(existingFile, [
+    '---',
+    '"weapp-vite": patch',
+    '---',
+    '',
+    'summary',
+  ].join('\n'))
+
+  try {
+    const packages = await collectChangesetPackagesFromUtils([
+      existingFile,
+      path.resolve(process.cwd(), '.changeset/__codex-missing-changeset__.md'),
+    ])
+
+    assert.deepEqual([...packages], ['weapp-vite'])
+  }
+  finally {
+    await fs.rm(existingFile, { force: true })
+  }
 })
 
 it('isCurrentModuleEntry resolves relative argv paths without throwing', () => {
