@@ -7,6 +7,8 @@ import { it } from 'vitest'
 import {
   collectChangesetPackages as collectChangesetPackagesFromUtils,
   extractChangesetPackages,
+  hasNonReleaseArtifactTemplateChange,
+  hasReleaseArtifactsForPackage,
 } from './changeset-utils'
 import {
   collectPublishableWorkspaceChangesetIssues,
@@ -48,6 +50,38 @@ it('collectChangesetPackages ignores deleted changeset files', async () => {
   finally {
     await fs.rm(existingFile, { force: true })
   }
+})
+
+it('hasReleaseArtifactsForPackage detects release-generated package files', () => {
+  assert.equal(
+    hasReleaseArtifactsForPackage([
+      'packages/create-weapp-vite/package.json',
+      'templates/weapp-vite-lib-template/package.json',
+    ], 'packages/create-weapp-vite'),
+    true,
+  )
+  assert.equal(
+    hasReleaseArtifactsForPackage([
+      'templates/weapp-vite-lib-template/package.json',
+    ], 'packages/create-weapp-vite'),
+    false,
+  )
+})
+
+it('hasNonReleaseArtifactTemplateChange ignores release-only template artifacts', () => {
+  assert.equal(
+    hasNonReleaseArtifactTemplateChange([
+      'templates/weapp-vite-lib-template/package.json',
+      'templates/weapp-vite-lib-template/CHANGELOG.md',
+    ]),
+    false,
+  )
+  assert.equal(
+    hasNonReleaseArtifactTemplateChange([
+      'templates/weapp-vite-lib-template/src/index.ts',
+    ]),
+    true,
+  )
 })
 
 it('isCurrentModuleEntry resolves relative argv paths without throwing', () => {

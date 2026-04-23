@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
-import { collectChangesetPackages } from './changeset-utils'
+import { collectChangesetPackages, hasReleaseArtifactsForPackage } from './changeset-utils'
 
 function runGit(args: string[]) {
   const result = spawnSync('git', args, { encoding: 'utf8' })
@@ -84,8 +84,10 @@ async function main() {
   }
 
   const changesetPackages = await collectChangesetPackages(changedChangesetFiles.map(file => path.resolve(file)))
+  const hasConstantsRelease = changesetPackages.has('@weapp-core/constants')
+    || hasReleaseArtifactsForPackage(changedConstantsFiles, '@weapp-core/constants')
 
-  if (!changesetPackages.has('@weapp-core/constants')) {
+  if (!hasConstantsRelease) {
     console.error('Missing changeset for @weapp-core/constants. Add a changeset when releasable files under @weapp-core/constants change.')
     process.exitCode = 1
   }

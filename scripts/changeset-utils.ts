@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises'
+import path from 'node:path'
 
 export function extractChangesetPackages(content: string) {
   const lines = content.split('\n')
@@ -66,4 +67,26 @@ export async function collectChangesetPackages(changedChangesetFiles: string[]) 
   }
 
   return changesetPackages
+}
+
+export function hasReleaseArtifactsForPackage(changedFiles: string[], packageDir: string) {
+  const normalizedDir = packageDir.replaceAll('\\', '/').replace(/\/$/, '')
+  const expectedFiles = new Set([
+    `${normalizedDir}/package.json`,
+    `${normalizedDir}/CHANGELOG.md`,
+  ])
+
+  return changedFiles.some(file => expectedFiles.has(file.replaceAll('\\', '/')))
+}
+
+export function hasNonReleaseArtifactTemplateChange(changedFiles: string[]) {
+  return changedFiles.some((file) => {
+    const normalizedFile = file.replaceAll('\\', '/')
+    if (!normalizedFile.startsWith('templates/')) {
+      return false
+    }
+
+    const baseName = path.posix.basename(normalizedFile)
+    return baseName !== 'package.json' && baseName !== 'CHANGELOG.md'
+  })
 }

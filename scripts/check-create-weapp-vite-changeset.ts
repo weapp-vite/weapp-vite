@@ -1,7 +1,11 @@
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
-import { collectChangesetPackages } from './changeset-utils'
+import {
+  collectChangesetPackages,
+  hasNonReleaseArtifactTemplateChange,
+  hasReleaseArtifactsForPackage,
+} from './changeset-utils'
 
 function runGit(args: string[]) {
   const result = spawnSync('git', args, { encoding: 'utf8' })
@@ -72,11 +76,12 @@ async function main() {
 
   const changesetPackages = await collectChangesetPackages(changedChangesetFiles.map(file => path.resolve(file)))
 
-  const templatesChanged = changedFiles.some(file => file.startsWith('templates/'))
+  const templatesChanged = hasNonReleaseArtifactTemplateChange(changedFiles)
   const releasingWeappVite = changesetPackages.has('weapp-vite')
   const releasingWevu = changesetPackages.has('wevu')
   const needsCreateWeappVite = templatesChanged || releasingWeappVite || releasingWevu
   const hasCreateWeappVite = changesetPackages.has('create-weapp-vite')
+    || hasReleaseArtifactsForPackage(changedFiles, 'packages/create-weapp-vite')
 
   if (needsCreateWeappVite && !hasCreateWeappVite) {
     const reasons = []

@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
-import { collectChangesetPackages } from './changeset-utils'
+import { collectChangesetPackages, hasReleaseArtifactsForPackage } from './changeset-utils'
 
 function runGit(args: string[]) {
   const result = spawnSync('git', args, { encoding: 'utf8' })
@@ -92,8 +92,10 @@ async function main() {
   }
 
   const changesetPackages = await collectChangesetPackages(changedChangesetFiles.map(file => path.resolve(file)))
+  const hasVscodeRelease = changesetPackages.has('@weapp-vite/vscode')
+    || hasReleaseArtifactsForPackage(changedVscodeFiles, 'extensions/vscode')
 
-  if (!changesetPackages.has('@weapp-vite/vscode')) {
+  if (!hasVscodeRelease) {
     console.error('Missing changeset for @weapp-vite/vscode. Add a changeset when releasable files under extensions/vscode change.')
     process.exitCode = 1
   }
