@@ -37,6 +37,13 @@ const DEVTOOLS_CLI_EARLY_EXIT_PATTERNS = [
   /ERR_INVALID_ARG_TYPE/i,
   /The ["']path["'] argument must be of type string/i,
 ]
+const DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS = [
+  /Cannot GET \/engine\/build\b/i,
+  /Cannot GET \/engine\/buildResult\//i,
+]
+const DEVTOOLS_TOOL_COMPILE_UNSUPPORTED_PATTERNS = [
+  /^unimplemented$/i,
+]
 const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
   /需要重新登录/,
@@ -993,19 +1000,44 @@ function enhanceMiniProgramRelaunch(miniProgram: any) {
   return miniProgram
 }
 
+function isUnsupportedToolCompileError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return DEVTOOLS_TOOL_COMPILE_UNSUPPORTED_PATTERNS.some(pattern => pattern.test(error.message))
+}
+
 async function compileMiniProgramProject(miniProgram: any, project: string) {
   if (typeof miniProgram?.compile !== 'function') {
     return
   }
 
   process.stdout.write(`[info] [runtime:launch-step] compile-start project=${project}\n`)
-  await runWithTimeout(
-    () => miniProgram.compile({ force: true }),
-    30_000,
-    `compile project ${project}`,
-  )
+  try {
+    await runWithTimeout(
+      () => miniProgram.compile({ force: true }),
+      30_000,
+      `compile project ${project}`,
+    )
+  }
+  catch (error) {
+    if (isUnsupportedToolCompileError(error)) {
+      process.stdout.write(`[warn] [runtime:launch-step] compile-skip reason=tool-unimplemented project=${project}\n`)
+      return
+    }
+    throw error
+  }
   await sleep(1_200)
   process.stdout.write(`[info] [runtime:launch-step] compile-ready project=${project}\n`)
+}
+
+function isMissingEngineBuildEndpointError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS.some(pattern => pattern.test(error.message))
 }
 
 async function refreshMiniProgramProjectIndex(projectPath: string | undefined, project: string) {
@@ -1022,14 +1054,23 @@ async function refreshMiniProgramProjectIndex(projectPath: string | undefined, p
   process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-ready project=${project}\n`)
 
   process.stdout.write(`[info] [runtime:launch-step] engine-build-start project=${project}\n`)
-  await runWithTimeout(
-    () => runWechatIdeEngineBuildByHttp(projectPath, {
-      overallTimeoutMs: 60_000,
-      pollIntervalMs: 1_000,
-    }),
-    70_000,
-    `engine build ${project}`,
-  )
+  try {
+    await runWithTimeout(
+      () => runWechatIdeEngineBuildByHttp(projectPath, {
+        overallTimeoutMs: 60_000,
+        pollIntervalMs: 1_000,
+      }),
+      70_000,
+      `engine build ${project}`,
+    )
+  }
+  catch (error) {
+    if (isMissingEngineBuildEndpointError(error)) {
+      process.stdout.write(`[warn] [runtime:launch-step] engine-build-skip reason=endpoint-missing project=${project}\n`)
+      return
+    }
+    throw error
+  }
   process.stdout.write(`[info] [runtime:launch-step] engine-build-ready project=${project}\n`)
 }
 

@@ -13,6 +13,8 @@ const LEADING_SLASH_RE = /^\/+/
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
@@ -116,69 +118,6 @@ async function closeMiniProgramSafely(miniProgram: any) {
   }).catch(() => {})
 }
 
-async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  if (sharedLaunchInfraUnavailableMessage) {
-    ctx?.skip(sharedLaunchInfraUnavailableMessage)
-    throw new Error(sharedLaunchInfraUnavailableMessage)
-  }
-
-  await cleanupResidualIdeProcesses()
-
-  if (!sharedBuildPrepared) {
-    // 同一路径重复打开 github-issues 项目时，微信开发者工具可能沿用旧 compile cache /
-    // fileutils 状态，先消费旧 app.json，再去索引新的页面产物，出现“app.json 指向的 wxml 未找到”。
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
-    await runBuild()
-    sharedBuildPrepared = true
-  }
-
-  try {
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
-    await delay(1_200)
-    return miniProgram
-  }
-  catch (error) {
-    if (ctx && isDevtoolsHttpPortError(error)) {
-      sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
-      ctx.skip(sharedLaunchInfraUnavailableMessage)
-    }
-    throw error
-  }
-}
-
-export async function closeSharedMiniProgram() {
-  if (!sharedMiniProgram) {
-    return
-  }
-  const miniProgram = sharedMiniProgram
-  sharedMiniProgram = null
-  await closeMiniProgramSafely(miniProgram)
-}
-
-export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  await closeSharedMiniProgram()
-  sharedMiniProgram = await launchGithubIssuesMiniProgram(ctx)
-  return sharedMiniProgram
-}
-
-export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  return await launchGithubIssuesMiniProgram(ctx)
-}
-
-export async function releaseSharedMiniProgram(miniProgram: any) {
-  if (sharedMiniProgram === miniProgram) {
-    sharedMiniProgram = null
-  }
-  await closeMiniProgramSafely(miniProgram)
-}
-
-async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  await closeSharedMiniProgram()
-  return await getSharedMiniProgram(ctx)
-}
-
 function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
 }
@@ -268,6 +207,90 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
     await delay(220)
   }
   return null
+}
+
+async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  if (sharedLaunchInfraUnavailableMessage) {
+    ctx?.skip(sharedLaunchInfraUnavailableMessage)
+    throw new Error(sharedLaunchInfraUnavailableMessage)
+  }
+
+  await cleanupResidualIdeProcesses()
+
+  if (!sharedBuildPrepared) {
+    // 同一路径重复打开 github-issues 项目时，微信开发者工具可能沿用旧 compile cache /
+    // fileutils 状态，先消费旧 app.json，再去索引新的页面产物，出现“app.json 指向的 wxml 未找到”。
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    await runBuild()
+    sharedBuildPrepared = true
+  }
+
+  try {
+    const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    try {
+      if (previousLaunchMode) {
+        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+      }
+
+      const miniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+
+      const warmupPage = await waitForCurrentPagePath(miniProgram, GITHUB_ISSUES_WARMUP_ROUTE, 15_000)
+      if (!warmupPage) {
+        throw new Error(`Failed to reach github-issues warmup route: ${GITHUB_ISSUES_WARMUP_ROUTE}`)
+      }
+      const warmupReady = await waitForPageWxml(warmupPage, undefined, 15_000)
+      if (!warmupReady) {
+        throw new Error(`Failed to settle github-issues warmup route: ${GITHUB_ISSUES_WARMUP_ROUTE}`)
+      }
+      await delay(600)
+      return miniProgram
+    }
+    finally {
+      if (previousLaunchMode) {
+        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
+      }
+    }
+  }
+  catch (error) {
+    if (ctx && isDevtoolsHttpPortError(error)) {
+      sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
+      ctx.skip(sharedLaunchInfraUnavailableMessage)
+    }
+    throw error
+  }
+}
+
+export async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await closeMiniProgramSafely(miniProgram)
+}
+
+export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  await closeSharedMiniProgram()
+  sharedMiniProgram = await launchGithubIssuesMiniProgram(ctx)
+  return sharedMiniProgram
+}
+
+export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  return await launchGithubIssuesMiniProgram(ctx)
+}
+
+export async function releaseSharedMiniProgram(miniProgram: any) {
+  if (sharedMiniProgram === miniProgram) {
+    sharedMiniProgram = null
+  }
+  await closeMiniProgramSafely(miniProgram)
+}
+
+async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  await closeSharedMiniProgram()
+  return await getSharedMiniProgram(ctx)
 }
 
 export async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 45_000) {

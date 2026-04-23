@@ -56,10 +56,12 @@ interface MockPage {
 }
 
 interface MockMiniProgramRuntime {
+  compile: ReturnType<typeof vi.fn>
   on: ReturnType<typeof vi.fn>
   removeListener: ReturnType<typeof vi.fn>
   close: ReturnType<typeof vi.fn>
   reLaunch: ReturnType<typeof vi.fn>
+  __rawCompile: ReturnType<typeof vi.fn>
   __rawClose: ReturnType<typeof vi.fn>
   __rawReLaunch: ReturnType<typeof vi.fn>
 }
@@ -74,6 +76,7 @@ function createMockPage(): MockPage {
 
 function createMockMiniProgram(options?: { reLaunchError?: Error }): MockMiniProgramRuntime {
   const page = createMockPage()
+  const rawCompile = vi.fn(async () => {})
   const rawClose = vi.fn(async () => {})
   const rawReLaunch = options?.reLaunchError
     ? vi.fn(async () => {
@@ -81,10 +84,12 @@ function createMockMiniProgram(options?: { reLaunchError?: Error }): MockMiniPro
       })
     : vi.fn(async () => page)
   return {
+    compile: rawCompile,
     on: vi.fn(),
     removeListener: vi.fn(),
     close: rawClose,
     reLaunch: rawReLaunch,
+    __rawCompile: rawCompile,
     __rawClose: rawClose,
     __rawReLaunch: rawReLaunch,
   }
@@ -253,6 +258,43 @@ describe.sequential('automator launch resilience', () => {
     expect(launchMock).toHaveBeenCalledTimes(1)
     expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(firstMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('skips removed devtools engine build endpoint and falls back to automator compile', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const miniProgram = createMockMiniProgram()
+    launchMock.mockResolvedValueOnce(miniProgram)
+    runWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(runWechatIdeEngineBuildByHttpMock).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawCompile).toHaveBeenCalledWith({ force: true })
+    expect(miniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('skips unsupported tool compile method and still completes warmup launch', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const miniProgram = createMockMiniProgram()
+    miniProgram.compile.mockRejectedValueOnce(new Error('unimplemented'))
+    launchMock.mockResolvedValueOnce(miniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(miniProgram.__rawCompile).toHaveBeenCalledWith({ force: true })
+    expect(miniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
   })
 
   it('uses cli bridge mode for ide launches and connects via websocket endpoint', async () => {
