@@ -423,10 +423,6 @@ async function terminateProcess(child) {
 }
 
 async function waitForChildClose(child, timeoutMs = 10_000) {
-  if (child.exitCode !== null) {
-    return true
-  }
-
   let settled = false
   await Promise.race([
     new Promise((resolve) => {
@@ -442,7 +438,7 @@ async function waitForChildClose(child, timeoutMs = 10_000) {
     delay(timeoutMs),
   ])
 
-  return settled || child.exitCode !== null
+  return settled
 }
 
 function cleanupChildProcessHandles(child) {

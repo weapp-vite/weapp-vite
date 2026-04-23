@@ -69,4 +69,18 @@ describe('create-weapp-vite smoke helpers', () => {
     expect(child.stdin.destroy).toHaveBeenCalledTimes(1)
     expect(child.unref).toHaveBeenCalledTimes(1)
   })
+
+  it('waits for close even after exitCode is already set', async () => {
+    const child = new EventEmitter() as EventEmitter & {
+      exitCode: number | null
+    }
+
+    child.exitCode = 0
+
+    setTimeout(() => {
+      child.emit('close')
+    }, 20)
+
+    await expect(waitForChildClose(child, 100)).resolves.toBe(true)
+  })
 })
