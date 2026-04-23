@@ -80,6 +80,7 @@ async function processChangedFile(
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
   const affectedLayoutEntryIds = new Set<string>()
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
+  const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   invalidateFileCache(normalizedId)
   if (event === 'update') {
     const isTemplateFile = isTemplate(normalizedId)
@@ -162,7 +163,7 @@ async function processChangedFile(
     return
   }
 
-  if (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component') {
+  if (!isDeletedMissingSelf && (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component')) {
     markEntryDirty(normalizedId, 'direct')
   }
   else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {

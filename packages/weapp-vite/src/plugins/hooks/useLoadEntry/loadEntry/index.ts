@@ -260,38 +260,49 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         })
 
         if (type === 'page') {
-          const vueSource = await fs.readFile(vueEntryPath, 'utf-8')
-          const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
-          if (layoutPlan) {
-            await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
-            await registerResolvedPageLayoutEntries({
-              layouts: layoutPlan.layouts,
-              entries,
-              explicitEntryTypes,
-              nativeScriptEntries: nativeLayoutScriptEntries,
-              normalizeEntry,
-              jsonPath,
-            })
-            for (const layout of layoutPlan.layouts) {
-              if (layout.kind === 'native') {
-                continue
+          let vueSource: string | undefined
+          try {
+            vueSource = await fs.readFile(vueEntryPath, 'utf-8')
+          }
+          catch (error) {
+            const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
+            if (!(missingEntry && configService.isDev && !await fs.pathExists(vueEntryPath))) {
+              throw error
+            }
+          }
+          if (vueSource) {
+            const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
+            if (layoutPlan) {
+              await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
+              await registerResolvedPageLayoutEntries({
+                layouts: layoutPlan.layouts,
+                entries,
+                explicitEntryTypes,
+                nativeScriptEntries: nativeLayoutScriptEntries,
+                normalizeEntry,
+                jsonPath,
+              })
+              for (const layout of layoutPlan.layouts) {
+                if (layout.kind === 'native') {
+                  continue
+                }
+                if (!layout.file.endsWith('.vue')) {
+                  continue
+                }
+                if (!await shouldEmitScriptlessVueLayoutJs(layout.file)) {
+                  continue
+                }
+                const relativeLayoutBase = configService.relativeOutputPath(removeExtensionDeep(layout.file))
+                if (!relativeLayoutBase || emittedScriptlessVueLayoutJs.has(relativeLayoutBase)) {
+                  continue
+                }
+                emittedScriptlessVueLayoutJs.add(relativeLayoutBase)
+                const { scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
+                emitScriptlessComponentAsset(
+                  this,
+                  resolveScriptlessComponentFileName(relativeLayoutBase, scriptExtension),
+                )
               }
-              if (!layout.file.endsWith('.vue')) {
-                continue
-              }
-              if (!await shouldEmitScriptlessVueLayoutJs(layout.file)) {
-                continue
-              }
-              const relativeLayoutBase = configService.relativeOutputPath(removeExtensionDeep(layout.file))
-              if (!relativeLayoutBase || emittedScriptlessVueLayoutJs.has(relativeLayoutBase)) {
-                continue
-              }
-              emittedScriptlessVueLayoutJs.add(relativeLayoutBase)
-              const { scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
-              emitScriptlessComponentAsset(
-                this,
-                resolveScriptlessComponentFileName(relativeLayoutBase, scriptExtension),
-              )
             }
           }
         }

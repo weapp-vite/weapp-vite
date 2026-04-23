@@ -181,7 +181,7 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
         waitForOutputSince(
           dev,
           outputLengthBeforeModify,
-          /小程序已重新构建（[\d.]+ ms）/,
+          /小程序已重新构建（[\d.]+ ms(?:，[^）]+)?）/,
         ),
         'auto-routes existing route rebuild log',
       )

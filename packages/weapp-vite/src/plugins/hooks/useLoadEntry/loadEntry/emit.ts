@@ -5,6 +5,7 @@ import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { ResolvedEntryRecord } from './resolve'
 import fs from 'node:fs/promises'
+import { fs as sharedFs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
@@ -256,6 +257,13 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
 
   for (const { entry, resolvedId } of combinedResolved) {
     if (!resolvedId) {
+      const missingAbsoluteEntryPath = path.resolve(entryResolveRoot, entry)
+      const shouldSuppressMissingEntryWarning = configService.isDev
+        && path.isAbsolute(missingAbsoluteEntryPath)
+        && !await sharedFs.pathExists(missingAbsoluteEntryPath)
+      if (shouldSuppressMissingEntryWarning) {
+        continue
+      }
       if (pluginEntrySet?.has(entry)) {
         logger.warn(`没有找到插件入口 \`${entry}\` 对应的脚本文件，请检查路径是否正确!`)
       }
@@ -294,7 +302,17 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
 
   debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
 
-  let code = await readFileCached(id, { checkMtime: configService.isDev })
+  let code: string
+  try {
+    code = await readFileCached(id, { checkMtime: configService.isDev })
+  }
+  catch (error) {
+    const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
+    if (missingEntry && configService.isDev && !await sharedFs.pathExists(id)) {
+      return
+    }
+    throw error
+  }
 
   if (
     type === 'page'

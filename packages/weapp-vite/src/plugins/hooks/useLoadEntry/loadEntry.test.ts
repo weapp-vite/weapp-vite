@@ -947,6 +947,71 @@ describe('createEntryLoader', () => {
     expect(logger.warn).not.toHaveBeenCalledWith('没有找到 `components/card/index` 的入口文件，请检查路径是否正确!')
   })
 
+  it('suppresses transient missing-entry warnings during dev hmr when the target file is already deleted', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === pageScript) {
+        return {
+          path: '/project/src/pages/home.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService, configService, emitEntriesChunks } = createLoader()
+    configService.isDev = true
+    jsonService.read.mockResolvedValue({
+      usingComponents: {
+        MissingCard: '/components/missing/index',
+      },
+    })
+
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (id: string) => {
+      if (id === '/project/src/components/missing/index') {
+        return null
+      }
+      return { id } as any
+    })
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    expect(logger.warn).not.toHaveBeenCalledWith('没有找到 `/components/missing/index` 的入口文件，请检查路径是否正确!')
+    expect(emitEntriesChunks).not.toHaveBeenCalledWith([
+      expect.objectContaining({ id: '/project/src/components/missing/index' }),
+    ])
+  })
+
+  it('skips deleted current vue entries during dev hmr instead of throwing build errors', async () => {
+    const pageScript = '/project/src/pages/logs/hmr-added.vue'
+    mockFindJsonEntry.mockResolvedValue({
+      path: undefined,
+      predictions: [],
+    })
+    mockFindVueEntry.mockResolvedValue(pageScript)
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === pageScript) {
+        const error = new Error('transient missing page entry') as Error & { code: string }
+        error.code = 'ENOENT'
+        throw error
+      }
+      return 'console.log("noop")'
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      return target !== pageScript
+    })
+
+    const { loader, configService } = createLoader()
+    configService.isDev = true
+    const pluginCtx = createPluginContext()
+
+    await expect(loader.call(pluginCtx, pageScript, 'page')).resolves.toBeUndefined()
+  })
+
   it('caches resolved entry ids across invocations', async () => {
     const appScript = '/project/src/app.js'
     mockFindJsonEntry.mockImplementation(async (filepath: string) => {
@@ -1067,6 +1132,38 @@ import FooBar from '../../components/foo-bar/index.vue'
         FooBar: '/components/foo-bar/index',
       },
     })
+  })
+
+  it('suppresses transient ENOENT warnings while deleted vue entries are being removed during dev hmr', async () => {
+    const pageScript = '/project/src/pages/auto-delete/index.js'
+    const vueEntryPath = '/project/src/pages/auto-delete/index.vue'
+    mockFindVueEntry.mockResolvedValue(vueEntryPath)
+    mockExtractConfigFromVue.mockResolvedValue({
+      navigationBarTitleText: 'AutoDelete',
+    })
+
+    const enoent = new Error('transient missing vue entry during delete') as Error & { code: string }
+    enoent.code = 'ENOENT'
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === vueEntryPath) {
+        throw enoent
+      }
+      return 'console.log("noop")'
+    })
+    existsMock.mockImplementation(async (target: string) => {
+      return target !== vueEntryPath
+    })
+
+    const { loader, configService, registerJsonAsset } = createLoader()
+    configService.isDev = true
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalled()
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining(`[自动 usingComponents] 解析失败：${vueEntryPath}`),
+    )
   })
 
   it('augments json usingComponents from <script setup> imports that use the default @ alias', async () => {

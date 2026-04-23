@@ -179,6 +179,23 @@ describe('core lifecycle watch hook', () => {
     expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/pages/hmr/index.ts')
   })
 
+  it('does not mark deleted declared page entries as direct dirties after a real delete', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+    const entryId = '/project/src/pages/logs/hmr-added.vue'
+    const state = createState({
+      entriesMap: new Map([
+        ['pages/logs/hmr-added', { type: 'page' }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'delete' })
+
+    expect(state.markEntryDirty).not.toHaveBeenCalledWith(entryId, 'direct')
+    expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
+    expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(state.ctx, entryId, 'delete')
+  })
+
   it('normalizes transient delete events on template sidecars back to updates', async () => {
     vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
     isTemplateMock.mockReturnValue(true)

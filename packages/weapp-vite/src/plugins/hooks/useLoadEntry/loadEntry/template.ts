@@ -2,6 +2,7 @@ import type { PluginContext } from 'rolldown'
 import type { AstEngineName } from '../../../../ast'
 import type { CompilerContext } from '../../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { collectScriptSetupImportsFromCode, resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { collectVueTemplateTags, isAutoImportCandidateTag, VUE_COMPONENT_TAG_RE } from '../../../../utils/vueTemplateTags'
@@ -130,6 +131,10 @@ export async function applyScriptSetupUsingComponents(options: {
     }
   }
   catch (error) {
+    const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
+    if (missingEntry && configService?.isDev && !await fs.pathExists(vueEntryPath)) {
+      return
+    }
     const message = error instanceof Error ? error.message : String(error)
     logger.warn(`[自动 usingComponents] 解析失败：${vueEntryPath}：${message}`)
   }
