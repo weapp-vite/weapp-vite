@@ -1,6 +1,8 @@
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
+  REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER,
+  REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
   REQUEST_GLOBAL_PRELUDE_MARKER,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
@@ -68,6 +70,22 @@ async function runBuildWithRequestGlobalsPrelude(mode: 'inline' | 'entry' | 'req
       APP_PRELUDE_REQUEST_GLOBALS: '1',
     },
   })
+}
+
+async function resolveRequestGlobalsSharedRuntimePath() {
+  const candidates = [
+    path.join(DIST_ROOT, 'request-globals-web-apis-shared.js'),
+    path.join(DIST_ROOT, 'request-globals-wevu-web-apis-shared.js'),
+    path.join(DIST_ROOT, 'weapp-vendors/web-apis-shared.js'),
+  ]
+
+  for (const candidate of candidates) {
+    if (await fs.pathExists(candidate)) {
+      return candidate
+    }
+  }
+
+  throw new Error(`failed to resolve request globals shared runtime under ${DIST_ROOT}`)
 }
 
 describe.sequential('e2e app: app-prelude-native (build)', () => {
@@ -223,6 +241,8 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
     const runtimeJs = await fs.readFile(path.join(DIST_ROOT, 'request-globals-runtime.js'), 'utf8')
+    const sharedRuntimePath = await resolveRequestGlobalsSharedRuntimePath()
+    const sharedRuntimeJs = await fs.readFile(sharedRuntimePath, 'utf8')
 
     expect(appJs).toContain('require("./app.prelude.js")')
     expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
@@ -233,6 +253,9 @@ describe.sequential('e2e app: app-prelude-native (build)', () => {
     expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')
     expect(rootPreludeJs).not.toContain('"WebSocket"')
     expect(runtimeJs).toContain('Object.defineProperty(exports,')
+    expect(sharedRuntimeJs).not.toContain(`/* ${REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER} */`)
+    expect(sharedRuntimeJs).not.toContain(`/* ${REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER} */`)
+    expect(sharedRuntimeJs).not.toContain('var fetch =')
     expect(rootPreludeJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(rootPreludeJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 })

@@ -30,6 +30,7 @@ import {
   REQUEST_GLOBAL_EXPORT_RE,
   REQUEST_GLOBAL_INSTALLER_RE,
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
+  REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME,
 } from './constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
 
@@ -199,7 +200,7 @@ export function injectRequestGlobalsBundleRuntime(
     if (bindingTargets.length === 0) {
       continue
     }
-    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, bindingTargets)
     const syntheticExportCode = exportName
       ? ''
       : `Object.defineProperty(exports,${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)},{enumerable:false,get:function(){return ${installerName}}});`
@@ -257,7 +258,8 @@ export function injectRequestGlobalsPassiveBindings(
     if (chunkTargets.length === 0) {
       continue
     }
-    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
+    const bindingTargets = resolveRequestGlobalsBindingTargets(chunkTargets)
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, bindingTargets)
     if (!passiveBindingsCode) {
       continue
     }
@@ -409,6 +411,111 @@ export function resolveRequestGlobalsInstallerImport(chunk: OutputChunk, install
 function toRequireRequestPath(fromFileName: string, toFileName: string) {
   const relativePath = toPosixPath(path.relative(path.dirname(fromFileName), toFileName))
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+}
+
+function rewriteChunkRequireLiteral(
+  chunk: OutputChunk,
+  fromFileName: string,
+  toFileName: string,
+) {
+  let didRewrite = false
+  const nextCode = chunk.code.replaceAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE, (...args) => {
+    const match = args[0] as string
+    const requireLiteral = args[2] as string | undefined
+    const importee = (args[3] ?? args[4] ?? args[5]) as string | undefined
+    if (!requireLiteral || !importee) {
+      return match
+    }
+
+    const resolvedImport = normalizeRelativeChunkImport(chunk.fileName, importee)
+    if (resolvedImport !== fromFileName) {
+      return match
+    }
+
+    didRewrite = true
+    return match.replace(requireLiteral, JSON.stringify(toRequireRequestPath(chunk.fileName, toFileName)))
+  })
+
+  if (didRewrite) {
+    chunk.code = nextCode
+  }
+}
+
+export function collapseRequestGlobalsRuntimeSupportChunk(bundle: OutputBundle) {
+  const runtimeChunk = bundle[REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME]
+  if (!runtimeChunk || runtimeChunk.type !== 'chunk') {
+    return
+  }
+
+  const runtimeOutput = runtimeChunk as OutputChunk
+  let supportChunkFileName: string | null = null
+  let runtimeRequireMatch: RegExpMatchArray | null = null
+  for (const requireMatch of runtimeOutput.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)) {
+    const importee = requireMatch[3] ?? requireMatch[4] ?? requireMatch[5]
+    if (!importee) {
+      continue
+    }
+
+    const resolvedImport = normalizeRelativeChunkImport(runtimeOutput.fileName, importee)
+    const supportChunk = bundle[resolvedImport]
+    if (!supportChunk || supportChunk.type !== 'chunk') {
+      continue
+    }
+    if (
+      resolvedImport === REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME
+      || (!resolvedImport.startsWith('request-globals-') && !resolvedImport.endsWith('web-apis-shared.js'))
+    ) {
+      continue
+    }
+
+    supportChunkFileName = resolvedImport
+    runtimeRequireMatch = requireMatch as RegExpMatchArray
+    break
+  }
+
+  if (!supportChunkFileName || !runtimeRequireMatch) {
+    return
+  }
+
+  const supportChunk = bundle[supportChunkFileName]
+  if (!supportChunk || supportChunk.type !== 'chunk') {
+    return
+  }
+
+  const supportModuleRef = '__wvRGS__'
+  const supportRequireIdentifier = runtimeRequireMatch[1]
+  runtimeOutput.code = runtimeOutput.code.replace(
+    runtimeRequireMatch[0],
+    `${supportRequireIdentifier} = ${supportModuleRef}`,
+  )
+  runtimeOutput.code = [
+    `const ${supportModuleRef} = (() => {`,
+    '  const module = { exports: {} }',
+    '  const exports = module.exports',
+    String((supportChunk as OutputChunk).code),
+    '  return module.exports',
+    '})();',
+    runtimeOutput.code,
+    `for (const __wvRGK__ in ${supportModuleRef}) {`,
+    '  if (__wvRGK__ in exports) {',
+    '    continue',
+    '  }',
+    `  Object.defineProperty(exports, __wvRGK__, { enumerable: true, get: () => ${supportModuleRef}[__wvRGK__] })`,
+    '}',
+  ].join('\n')
+
+  delete bundle[supportChunkFileName]
+
+  for (const output of Object.values(bundle)) {
+    if (!output || output.type !== 'chunk') {
+      continue
+    }
+    const chunk = output as OutputChunk
+    if (chunk.fileName === runtimeOutput.fileName) {
+      continue
+    }
+    rewriteChunkRequireLiteral(chunk, supportChunkFileName, runtimeOutput.fileName)
+  }
 }
 
 export function createRequestGlobalsPreludeCode(

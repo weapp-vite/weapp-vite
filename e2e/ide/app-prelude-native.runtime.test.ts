@@ -3,7 +3,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { relaunchPage, waitForCurrentPagePath } from './github-issues.runtime.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -45,6 +45,10 @@ async function launchFreshMiniProgram(
   await cleanupResidualIdeProcesses()
 
   if (!sharedBuildPreparedModes.has(mode)) {
+    // 同一路径下切换不同 appPrelude / request-runtime 构建拓扑时，
+    // 微信开发者工具会复用旧的 compile cache，并在 app.json 尚未重建完成前
+    // 先处理旧 chunk 的 onFileChange，留下过期模块图。
+    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
     await runBuild(
       mode === 'inline' ? 'inline' : undefined,
       { requestRuntime: mode === 'default-request-runtime' },

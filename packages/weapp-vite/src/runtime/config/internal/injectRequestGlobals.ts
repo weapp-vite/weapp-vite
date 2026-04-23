@@ -369,8 +369,13 @@ export function createRequestGlobalsInstallerOptionsCode(
  * @description 3. 在全局对象完成安装前就完成环境探测并缓存结果。
  * @description 因此这里必须把 fetch / XMLHttpRequest / WebSocket / URL 等名字绑定到实际使用它们的产物作用域内。
  */
-export function createRequestGlobalsPassiveBindingsCode(targets: WeappInjectRequestGlobalsTarget[]) {
-  const bindingTargets = resolveRequestGlobalsBindingTargets(targets)
+export function createRequestGlobalsPassiveBindingsCode(
+  targets: WeappInjectRequestGlobalsTarget[],
+  explicitBindingTargets?: string[],
+) {
+  const bindingTargets = explicitBindingTargets?.length
+    ? explicitBindingTargets
+    : resolveRequestGlobalsBindingTargets(targets)
   if (bindingTargets.length === 0) {
     return ''
   }

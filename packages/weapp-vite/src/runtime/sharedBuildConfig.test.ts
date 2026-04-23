@@ -157,6 +157,12 @@ describe('sharedBuildConfig', () => {
     })).toBe('weapp-vendors/scope-pkg-store.js')
   })
 
+  it('keeps request globals support chunks at the dist root for devtools module discovery', () => {
+    expect(resolveStableHashedDistChunkFileName({
+      facadeModuleId: '/project/node_modules/.pnpm/@wevu+web-apis@1.0.0/node_modules/@wevu/web-apis/dist/shared-BD3I133J.mjs',
+    })).toBe('request-globals-wevu-web-apis-shared.js')
+  })
+
   it('returns undefined for path mode when there is only one importer', () => {
     const resolveName = createChunkNameResolver({
       sharedMode: 'path',

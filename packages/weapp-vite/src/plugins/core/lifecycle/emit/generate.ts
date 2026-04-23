@@ -22,6 +22,7 @@ import {
 import { injectAppPreludeCode, resolveAppPreludeCode, resolveAppPreludeOptions } from './appPrelude'
 import { PRETTY_NODE_MODULES_RE } from './constants'
 import {
+  collapseRequestGlobalsRuntimeSupportChunk,
   injectAxiosFetchAdapterEnv,
   injectRequestGlobalsBundleRuntime,
   injectRequestGlobalsLocalBindings,
@@ -331,6 +332,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         injectRequestGlobalsOptions.networkDefaults,
       )
       injectAxiosFetchAdapterEnv(rolldownBundle)
+      collapseRequestGlobalsRuntimeSupportChunk(rolldownBundle)
     }
 
     const appPreludeOptions = resolveAppPreludeOptions(state)

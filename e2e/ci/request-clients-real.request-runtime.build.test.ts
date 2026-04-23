@@ -74,7 +74,9 @@ async function resolveRuntimeChunkPath(distRoot: string) {
   const fallbackPaths = [
     path.join(distRoot, 'weapp-vendors/wevu-ref.js'),
     path.join(distRoot, 'weapp-vendors/wevu-defineProperty.js'),
+    path.join(distRoot, 'request-globals-web-apis-shared.js'),
     path.join(distRoot, 'weapp-vendors/web-apis-shared.js'),
+    path.join(distRoot, 'request-globals-wevu-web-apis-shared.js'),
   ]
 
   for (const fallbackPath of fallbackPaths) {
@@ -139,7 +141,9 @@ describe.sequential('e2e app: request clients request runtime (build)', () => {
             '../../request-globals-runtime.js',
             '../../weapp-vendors/wevu-ref.js',
             '../../weapp-vendors/wevu-defineProperty.js',
+            '../../request-globals-web-apis-shared.js',
             '../../weapp-vendors/web-apis-shared.js',
+            '../../request-globals-wevu-web-apis-shared.js',
           ])
           expect(entryJs).toContain('var fetch =')
           expect(entryJs).toContain('.fetch')

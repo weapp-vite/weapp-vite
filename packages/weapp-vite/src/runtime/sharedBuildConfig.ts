@@ -240,6 +240,11 @@ function resolveStableHashedDistChunkFileName(
       continue
     }
 
+    REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.lastIndex = 0
+    if (REG_REQUEST_GLOBAL_RUNTIME_VENDOR_ID.test(cleanedAbsoluteId) || packageToken.endsWith('web-apis')) {
+      return `request-globals-${packageToken}-${baseName}.js`
+    }
+
     return `weapp-vendors/${packageToken}-${baseName}.js`
   }
 
