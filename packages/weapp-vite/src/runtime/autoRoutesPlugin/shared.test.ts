@@ -166,9 +166,9 @@ describe('auto routes shared helpers', () => {
     })).toBe(false)
   })
 
-  it('marks create delete and rename events for full rescan', () => {
-    expect(shouldAutoRoutesFullRescan('create')).toBe(true)
-    expect(shouldAutoRoutesFullRescan('delete')).toBe(true)
+  it('marks only rename events for full rescan', () => {
+    expect(shouldAutoRoutesFullRescan('create')).toBe(false)
+    expect(shouldAutoRoutesFullRescan('delete')).toBe(false)
     expect(shouldAutoRoutesFullRescan('rename')).toBe(true)
     expect(shouldAutoRoutesFullRescan('update')).toBe(false)
     expect(shouldAutoRoutesFullRescan()).toBe(false)

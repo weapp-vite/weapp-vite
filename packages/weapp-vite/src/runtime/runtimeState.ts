@@ -1,8 +1,8 @@
 import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
-import type { RolldownOutput } from 'rolldown'
-import type { AppEntry, ComponentsMap, SubPackageMetaValue } from '../types'
+import type { ResolvedId, RolldownOutput } from 'rolldown'
+import type { AppEntry, ComponentsMap, Entry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
 import type { LocalAutoImportMatch } from './autoImport/types'
@@ -103,6 +103,15 @@ export interface RuntimeState {
     independent: {
       outputs: Map<string, RolldownOutput>
     }
+    hmr: {
+      loadedEntrySet: Set<string>
+      dirtyEntrySet: Set<string>
+      dirtyEntryReasons: Map<string, 'direct' | 'dependency'>
+      resolvedEntryMap: Map<string, ResolvedId>
+      entriesMap: Map<string, Entry | undefined>
+      layoutEntryDependents: Map<string, Set<string>>
+      entryLayoutDependencies: Map<string, Set<string>>
+    }
   }
   json: {
     cache: FileCache<any>
@@ -182,6 +191,15 @@ export function createRuntimeState(): RuntimeState {
       npmBuilt: false,
       independent: {
         outputs: new Map<string, RolldownOutput>(),
+      },
+      hmr: {
+        loadedEntrySet: new Set<string>(),
+        dirtyEntrySet: new Set<string>(),
+        dirtyEntryReasons: new Map<string, 'direct' | 'dependency'>(),
+        resolvedEntryMap: new Map<string, ResolvedId>(),
+        entriesMap: new Map<string, Entry | undefined>(),
+        layoutEntryDependents: new Map<string, Set<string>>(),
+        entryLayoutDependencies: new Map<string, Set<string>>(),
       },
     },
     json: {

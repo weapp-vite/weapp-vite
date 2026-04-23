@@ -82,13 +82,13 @@ export function useLoadEntry(
   const debug = createDebugger('weapp-vite:load-entry')
   const buildTarget = options?.buildTarget ?? 'app'
 
-  const entriesMap = new Map<string, Entry | undefined>()
-  const loadedEntrySet = new Set<string>()
-  const dirtyEntrySet = new Set<string>()
-  const dirtyEntryReasons = new Map<string, DirtyEntryReason>()
-  const resolvedEntryMap = new Map<string, ResolvedId>()
-  const layoutEntryDependents = new Map<string, Set<string>>()
-  const entryLayoutDependencies = new Map<string, Set<string>>()
+  const entriesMap = ctx.runtimeState.build.hmr.entriesMap as Map<string, Entry | undefined>
+  const loadedEntrySet = ctx.runtimeState.build.hmr.loadedEntrySet
+  const dirtyEntrySet = ctx.runtimeState.build.hmr.dirtyEntrySet
+  const dirtyEntryReasons = ctx.runtimeState.build.hmr.dirtyEntryReasons as Map<string, DirtyEntryReason>
+  const resolvedEntryMap = ctx.runtimeState.build.hmr.resolvedEntryMap as Map<string, ResolvedId>
+  const layoutEntryDependents = ctx.runtimeState.build.hmr.layoutEntryDependents
+  const entryLayoutDependencies = ctx.runtimeState.build.hmr.entryLayoutDependencies
   const lastActualEmittedEntryIds = new Set<string>()
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)

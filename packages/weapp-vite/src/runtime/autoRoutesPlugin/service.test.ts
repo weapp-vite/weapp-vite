@@ -249,10 +249,25 @@ describe('createAutoRoutesService branch coverage', () => {
     ctx.runtimeState.autoRoutes.needsFullRescan = false
     const service = createAutoRoutesService(ctx)
 
-    await service.handleFileChange('/project/src/pages/index/index.ts')
+    await expect(service.handleFileChange('/project/src/pages/index/index.ts')).resolves.toBe(false)
 
     expect(updateCandidateFromFileMock).toHaveBeenCalledTimes(1)
     expect(scanRoutesMock).not.toHaveBeenCalled()
+  })
+
+  it('reports route topology changes when file change updates candidates', async () => {
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await expect(service.handleFileChange('/project/src/pages/index/index.ts', 'create')).resolves.toBe(true)
+
+    expect(updateCandidateFromFileMock).toHaveBeenCalledTimes(1)
+    expect(scanRoutesMock).toHaveBeenCalledTimes(1)
   })
 
   it('restores routes from persistent cache when watched files are unchanged', async () => {

@@ -157,7 +157,7 @@ export function isAutoRoutesPagesRelatedPath(
 export function shouldAutoRoutesFullRescan(
   event?: ChangeEvent | 'rename',
 ) {
-  return event === 'rename' || event === 'create' || event === 'delete'
+  return event === 'rename'
 }
 
 /**

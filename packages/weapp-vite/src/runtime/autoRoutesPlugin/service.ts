@@ -21,7 +21,7 @@ export interface AutoRoutesService {
   getWatchFiles: () => Iterable<string>
   getWatchDirectories: () => Iterable<string>
   isRouteFile: (filePath: string) => boolean
-  handleFileChange: (filePath: string, event?: AutoRoutesFileEvent) => Promise<void>
+  handleFileChange: (filePath: string, event?: AutoRoutesFileEvent) => Promise<boolean>
   isInitialized: () => boolean
   isEnabled: () => boolean
 }
@@ -200,11 +200,11 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
     async handleFileChange(filePath: string, event?: AutoRoutesFileEvent) {
       if (!isEnabled()) {
-        return
+        return false
       }
 
       if (!matchesRouteFile(ctx, filePath)) {
-        return
+        return false
       }
 
       const changed = await updateCandidateFromFile(
@@ -215,11 +215,12 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
         markNeedsFullRescan,
       )
       if (!changed && !state.needsFullRescan) {
-        return
+        return false
       }
 
       flagDirty()
       await ensureFresh()
+      return true
     },
 
     isInitialized() {

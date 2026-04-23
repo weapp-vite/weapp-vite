@@ -22,7 +22,7 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
   const getWatchDirectories = vi.fn(() => [])
   const isRouteFile = vi.fn(() => false)
   const isEnabled = vi.fn(() => true)
-  const handleFileChange = vi.fn(async () => {})
+  const handleFileChange = vi.fn(async () => true)
   const ctx = {
     autoRoutesService: {
       ensureFresh,
@@ -287,9 +287,12 @@ describe('auto-routes plugin alias fallback', () => {
       handleFileChange,
     } = createPlugin()
 
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
     isRouteFile.mockImplementation((id: string) => id.endsWith('app.json'))
     await plugin.watchChange?.('/virtual/project/src/app.json', { event: 'update' } as any)
-    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/app.json', 'update')
+    expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/app.json', 'update')
 
     isRouteFile.mockReturnValue(false)
     await plugin.watchChange?.('/virtual/project/src/pages/home/index.ts', { event: 'create' } as any)
@@ -299,6 +302,23 @@ describe('auto-routes plugin alias fallback', () => {
     expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'rename')
     expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/pages/home/style.scss', 'rename')
     expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/card/index.ts', 'rename')
+  })
+
+  it('keeps route file watchChange updates in build mode for non-serve flows', async () => {
+    const {
+      plugin,
+      isRouteFile,
+      handleFileChange,
+    } = createPlugin()
+
+    plugin.configResolved?.({
+      command: 'build',
+    } as any)
+    isRouteFile.mockImplementation((id: string) => id.endsWith('app.json'))
+
+    await plugin.watchChange?.('/virtual/project/src/app.json', { event: 'update' } as any)
+
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/app.json', 'update')
   })
 
   it('routes pages rename-like delete and create events to full rescan handling', async () => {
@@ -396,6 +416,29 @@ describe('auto-routes plugin alias fallback', () => {
     } as any)
 
     expect(buildFiltered).toEqual([{ id: '\0weapp-vite:auto-routes' }])
+  })
+
+  it('skips virtual auto-routes invalidation when route update does not change topology', async () => {
+    const { plugin, isRouteFile, handleFileChange } = createPlugin()
+    handleFileChange.mockResolvedValueOnce(false)
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+    isRouteFile.mockReturnValue(true)
+
+    const result = await plugin.handleHotUpdate?.({
+      file: '/virtual/project/src/pages/home/index.vue',
+      server: {
+        moduleGraph: {
+          getModuleById: vi.fn(() => ({ id: '\0weapp-vite:auto-routes' })),
+        },
+      },
+      modules: [],
+    } as any)
+
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.vue', 'update')
+    expect(result).toBeUndefined()
   })
 
   it('returns undefined for unrelated handleHotUpdate files', async () => {

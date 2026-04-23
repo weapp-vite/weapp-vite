@@ -135,7 +135,7 @@ describe('auto routes plugin shared helpers', () => {
     expect(resolveAutoRoutesVirtualId('/project/src/pages/index.ts', aliasTargets)).toBeNull()
   })
 
-  it('maps watch change events to rename-like structural changes only', () => {
+  it('maps watch change events to rename-like fallback handling only', () => {
     expect(resolveAutoRoutesWatchChangeEvent('create')).toBe('rename')
     expect(resolveAutoRoutesWatchChangeEvent('delete')).toBe('rename')
     expect(resolveAutoRoutesWatchChangeEvent('update')).toBeUndefined()

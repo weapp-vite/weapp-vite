@@ -69,6 +69,7 @@ function createState(overrides: Record<string, any> = {}) {
       invalidateResolveCache: vi.fn(),
     },
     loadedEntrySet: new Set<string>(),
+    entriesMap: new Map<string, { type: string }>(),
     layoutEntryDependents: new Map<string, Set<string>>(),
     markEntryDirty: vi.fn(),
     moduleImporters: new Map(),
@@ -119,6 +120,20 @@ describe('core lifecycle watch hook', () => {
     const entryId = '/project/src/pages/hmr/index.ts'
     const state = createState({
       loadedEntrySet: new Set([entryId]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
+  it('marks declared page source updates as direct entry dirties even before they enter loadedEntrySet', async () => {
+    const entryId = '/project/src/pages/logs/index.vue'
+    const state = createState({
+      entriesMap: new Map([
+        ['pages/logs/index', { type: 'page' }],
+      ]),
     })
     const hook = createWatchChangeHook(state)
 

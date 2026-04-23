@@ -98,6 +98,23 @@ async function waitForAppJsonWindowTitle(title: string, timeoutMs = 90_000) {
   throw new Error(`Timed out waiting for ${APP_JSON_DIST} window.navigationBarTitleText to become: ${title}`)
 }
 
+async function waitForOutputSince(
+  dev: { getOutput: () => string },
+  startOffset: number,
+  matcher: RegExp,
+  timeoutMs = 30_000,
+) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const nextOutput = dev.getOutput().slice(startOffset)
+    if (matcher.test(nextOutput)) {
+      return nextOutput
+    }
+    await sleep(250)
+  }
+  throw new Error(`Timed out waiting for dev output since offset to match: ${matcher}`)
+}
+
 async function retryWithSourceTouch<T>(
   task: () => Promise<T>,
   touchFilePath: string,
@@ -157,13 +174,20 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
 
       // modify existing route file
       const modifiedLogsSource = originalLogsSource.replace('logs', modifyMarker)
+      const outputLengthBeforeModify = dev.getOutput().length
       await fs.writeFile(LOGS_VUE_PATH, modifiedLogsSource, 'utf8')
       await dev.waitFor(waitForFileContains(LOGS_WXML_DIST, modifyMarker), 'dist template updated after modify')
-      const modifyOutput = await dev.waitForOutput(
-        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
-        'auto-routes existing route incremental hmr log',
+      const modifyOutput = await dev.waitFor(
+        waitForOutputSince(
+          dev,
+          outputLengthBeforeModify,
+          /小程序已重新构建（[\d.]+ ms）/,
+        ),
+        'auto-routes existing route rebuild log',
       )
-      expect(modifyOutput).toMatch(/emitAll=false pending=1/)
+      expect(modifyOutput).toContain('小程序已重新构建（')
+      expect(await fs.readFile(TYPED_ROUTER_PATH, 'utf8')).toContain(`"${LOGS_ROUTE}"`)
+      expect(await fs.readFile(TYPED_ROUTER_PATH, 'utf8')).not.toContain(`"${ADDED_ROUTE}"`)
 
       // add route — small delay lets the watcher settle after the previous modify event
       await sleep(1_000)

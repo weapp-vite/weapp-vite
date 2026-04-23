@@ -163,6 +163,9 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     async watchChange(id, change) {
       const event = change?.event
       if (service.isRouteFile(id)) {
+        if (resolvedConfig?.command === 'serve' && event === 'update') {
+          return
+        }
         await service.handleFileChange(id, event)
         return
       }
@@ -187,8 +190,13 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       if (!hotUpdateAction.shouldHandle) {
         return
       }
+      let didChangeRoutes = false
       if (hotUpdateAction.shouldUpdateRouteFile) {
-        await service.handleFileChange(context.file, 'update')
+        didChangeRoutes = await service.handleFileChange(context.file, 'update')
+      }
+
+      if (resolvedConfig?.command === 'serve' && routeFile && !didChangeRoutes) {
+        return
       }
 
       const virtualModule = context.server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)

@@ -3,6 +3,19 @@ import { useLoadEntry } from './index'
 
 function createContext() {
   return {
+    runtimeState: {
+      build: {
+        hmr: {
+          loadedEntrySet: new Set<string>(),
+          dirtyEntrySet: new Set<string>(),
+          dirtyEntryReasons: new Map<string, 'direct' | 'dependency'>(),
+          resolvedEntryMap: new Map<string, { id: string }>(),
+          entriesMap: new Map<string, any>(),
+          layoutEntryDependents: new Map<string, Set<string>>(),
+          entryLayoutDependencies: new Map<string, Set<string>>(),
+        },
+      },
+    },
     configService: {
       isDev: true,
       absoluteSrcRoot: '/project/src',
@@ -47,6 +60,20 @@ function seedResolvedEntries(
 }
 
 describe('useLoadEntry emitDirtyEntries', () => {
+  it('reuses runtimeState-backed hmr containers across hook creation', () => {
+    const ctx = createContext()
+    const first = useLoadEntry(ctx, {})
+    first.markEntryDirty('/project/src/pages/logs/index.vue')
+    first.resolvedEntryMap.set('/project/src/pages/logs/index.vue', { id: '/project/src/pages/logs/index.vue' } as any)
+
+    const second = useLoadEntry(ctx, {})
+
+    expect(second.dirtyEntrySet).toBe(first.dirtyEntrySet)
+    expect(second.resolvedEntryMap).toBe(first.resolvedEntryMap)
+    expect(second.dirtyEntrySet.has('/project/src/pages/logs/index.vue')).toBe(true)
+    expect(second.resolvedEntryMap.has('/project/src/pages/logs/index.vue')).toBe(true)
+  })
+
   it('emits all entries in full mode', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
