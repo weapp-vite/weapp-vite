@@ -1,6 +1,8 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
+import logger from '../../logger'
+import { readLatestHmrProfileSummary } from '../hmrProfileSummary'
 import { openIde, resolveIdeCommandContext, resolveIdeProjectRoot } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { resolveRuntimeTargets } from '../runtime'
@@ -14,13 +16,21 @@ export function registerOpenCommand(cli: CAC) {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      const { platform, projectPath, mpDistRoot } = await resolveIdeCommandContext({
+      const { cwd, platform, projectPath, mpDistRoot, weappViteConfig } = await resolveIdeCommandContext({
         configFile,
         mode: options.mode ?? 'development',
         platform: targets.mpPlatform,
         projectPath: root,
         cliPlatform: targets.rawPlatform,
       })
+      const latestHmrSummary = await readLatestHmrProfileSummary({
+        cwd: cwd ?? process.cwd(),
+        relativeCwd: value => cwd ? value.replace(`${cwd}/`, '') : value,
+        weappViteConfig,
+      })
+      if (latestHmrSummary) {
+        logger.info(latestHmrSummary.line)
+      }
 
       await openIde(platform, projectPath ?? resolveIdeProjectRoot(mpDistRoot, process.cwd()), {
         trustProject: options.trustProject,
