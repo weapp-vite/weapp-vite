@@ -1000,7 +1000,7 @@ async function compileMiniProgramProject(miniProgram: any, project: string) {
 
   process.stdout.write(`[info] [runtime:launch-step] compile-start project=${project}\n`)
   await runWithTimeout(
-    miniProgram.compile({ force: true }),
+    () => miniProgram.compile({ force: true }),
     30_000,
     `compile project ${project}`,
   )
@@ -1015,7 +1015,7 @@ async function refreshMiniProgramProjectIndex(projectPath: string | undefined, p
 
   process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-start project=${project}\n`)
   await runWithTimeout(
-    resetWechatIdeFileUtilsByHttp(projectPath),
+    () => resetWechatIdeFileUtilsByHttp(projectPath),
     10_000,
     `reset fileutils ${project}`,
   )
@@ -1023,7 +1023,7 @@ async function refreshMiniProgramProjectIndex(projectPath: string | undefined, p
 
   process.stdout.write(`[info] [runtime:launch-step] engine-build-start project=${project}\n`)
   await runWithTimeout(
-    runWechatIdeEngineBuildByHttp(projectPath, {
+    () => runWechatIdeEngineBuildByHttp(projectPath, {
       overallTimeoutMs: 60_000,
       pollIntervalMs: 1_000,
     }),

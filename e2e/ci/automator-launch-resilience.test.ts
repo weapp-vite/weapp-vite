@@ -7,7 +7,7 @@ const DEFAULT_WECHAT_CLI_PATH = process.platform === 'win32'
   ? 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
   : '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 
-const { connectMock, execaMock, launchMock, MockMiniProgram } = vi.hoisted(() => {
+const { connectMock, execaMock, launchMock, resetWechatIdeFileUtilsByHttpMock, runWechatIdeEngineBuildByHttpMock, MockMiniProgram } = vi.hoisted(() => {
   class MockMiniProgramClass {
     send = vi.fn(async () => ({ SDKVersion: '3.13.2' }))
   }
@@ -15,6 +15,8 @@ const { connectMock, execaMock, launchMock, MockMiniProgram } = vi.hoisted(() =>
     connectMock: vi.fn(),
     execaMock: vi.fn(),
     launchMock: vi.fn(),
+    resetWechatIdeFileUtilsByHttpMock: vi.fn(async () => ''),
+    runWechatIdeEngineBuildByHttpMock: vi.fn(async () => ({ body: '{"status":"END"}', done: true, failed: false, status: 'END' })),
     MockMiniProgram: MockMiniProgramClass,
   }
 })
@@ -32,6 +34,18 @@ vi.mock('@weapp-vite/miniprogram-automator', () => {
 vi.mock('execa', () => {
   return {
     execa: execaMock,
+  }
+})
+
+vi.mock('../../packages/weapp-ide-cli/src/cli/http', () => {
+  return {
+    resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
+  }
+})
+
+vi.mock('../../packages/weapp-ide-cli/src/cli/engine', () => {
+  return {
+    runWechatIdeEngineBuildByHttp: runWechatIdeEngineBuildByHttpMock,
   }
 })
 
@@ -106,6 +120,15 @@ describe.sequential('automator launch resilience', () => {
     connectMock.mockReset()
     execaMock.mockReset()
     launchMock.mockReset()
+    resetWechatIdeFileUtilsByHttpMock.mockReset()
+    runWechatIdeEngineBuildByHttpMock.mockReset()
+    resetWechatIdeFileUtilsByHttpMock.mockResolvedValue('')
+    runWechatIdeEngineBuildByHttpMock.mockResolvedValue({
+      body: '{"status":"END"}',
+      done: true,
+      failed: false,
+      status: 'END',
+    })
     clearLaunchEnv()
   })
 

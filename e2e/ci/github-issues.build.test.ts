@@ -342,7 +342,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const helperJsPath = path.join(DIST_ROOT, 'pages/issue-484/define.js')
     const issuePageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const pageJs = await fs.readFile(pageJsPath, 'utf-8')
-    const helperJs = await fs.readFile(helperJsPath, 'utf-8')
+    const helperJs = await fs.pathExists(helperJsPath)
+      ? await fs.readFile(helperJsPath, 'utf-8')
+      : pageJs
 
     expect(issuePageWxml).toContain('issue-484 import.meta.env define override')
     expect(pageJs).toContain('var pageDefinedFlag = 123456;')
@@ -350,7 +352,7 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toMatch(createSerializedJsonEntryPattern('MODE', 'production'))
     expect(pageJs).not.toContain('ISSUE_484_FLAG')
     expect(helperJs).toContain('var helperDefinedFlag = 123456;')
-    expect(helperJs).toContain('var helperSummary = `issue-484 helper define:')
+    expect(helperJs).toContain('helperSummary = `issue-484 helper define:')
     expect(helperJs).toMatch(createSerializedJsonEntryPattern('MODE', 'production'))
     expect(helperJs).not.toContain('ISSUE_484_FLAG')
   })

@@ -160,6 +160,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       await dev.waitFor(waitForFile(APP_JS_PATH, 240_000), `${platform} initial app.js generated`)
       await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), `${platform} initial item page script generated`)
       await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), `${platform} initial user page script generated`)
+      await dev.waitForOutput('开发服务已就绪', `${platform} dev server ready banner`)
 
       expect((await findSharedCarrierFiles('issue-340-hoist')).length).toBeGreaterThan(0)
 
@@ -220,6 +221,7 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       await dev.waitFor(waitForFile(APP_JSON_PATH, 240_000), `${platform} issue-340-hoist app.json generated`)
       await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), `${platform} initial item page script generated`)
       await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), `${platform} initial user page script generated`)
+      await dev.waitForOutput('开发服务已就绪', `${platform} dev server ready banner`)
 
       expect((await findSharedCarrierFiles('issue-340-hoist')).length).toBeGreaterThan(0)
 

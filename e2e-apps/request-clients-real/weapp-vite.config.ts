@@ -1,14 +1,25 @@
 import { defineConfig } from 'weapp-vite'
-import { requestClientsRealDevPlugin } from '../../e2e/utils/requestClientsRealDevPlugin'
-import { REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS } from '../../e2e/utils/requestClientsRealHostTraceRuntime'
+
+const REQUEST_CLIENTS_REAL_NETWORK_DEFAULTS = {
+  request: {
+    timeout: 4_321,
+  },
+  socket: {
+    perMessageDeflate: false,
+    timeout: 6_789,
+  },
+} as const
 
 export default defineConfig(async (env) => {
-  const devSetup = env.command === 'serve'
-    ? await requestClientsRealDevPlugin({
-        projectRoot: import.meta.dirname,
-        serverPort: 60322,
-      })
-    : null
+  let devSetup: Awaited<ReturnType<typeof import('../../e2e/utils/requestClientsRealDevPlugin').requestClientsRealDevPlugin>> | null = null
+
+  if (env.command === 'serve') {
+    const { requestClientsRealDevPlugin } = await import('../../e2e/utils/requestClientsRealDevPlugin')
+    devSetup = await requestClientsRealDevPlugin({
+      projectRoot: import.meta.dirname,
+      serverPort: 60322,
+    })
+  }
 
   return {
     plugins: devSetup ? [devSetup.plugin] : [],
