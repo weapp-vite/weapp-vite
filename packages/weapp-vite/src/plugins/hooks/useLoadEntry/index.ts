@@ -29,32 +29,64 @@ interface PendingEntryResolution {
   pendingReasonSummary?: string[]
 }
 
+function resolveUpstreamPendingReasonSummary(dirtyReasonSummary?: string[]) {
+  if (!dirtyReasonSummary?.length) {
+    return []
+  }
+
+  const pendingReasonSummary: string[] = []
+  const hasLayoutFallback = dirtyReasonSummary.some(item => item.startsWith('layout-fallback-full:'))
+  const hasLayoutPropagation = dirtyReasonSummary.some(item => item.startsWith('layout-self:') || item.startsWith('layout-dependent:'))
+  const hasAutoRoutesTopology = dirtyReasonSummary.some(item => item.startsWith('auto-routes-topology:'))
+
+  if (hasLayoutFallback) {
+    pendingReasonSummary.push('layout-fallback-full')
+  }
+  else if (hasLayoutPropagation) {
+    pendingReasonSummary.push('layout-propagation')
+  }
+
+  if (hasAutoRoutesTopology) {
+    pendingReasonSummary.push('auto-routes-topology')
+  }
+
+  return pendingReasonSummary
+}
+
 function resolvePendingEntryIds(options: {
   isDev: boolean
   mode: HmrSharedChunksMode
   resolvedEntryMap: Map<string, ResolvedId>
   dirtyEntrySet: Set<string>
   dirtyEntryReasons: Map<string, DirtyEntryReason>
+  dirtyReasonSummary?: string[]
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
   subPackageRoots?: Set<string>
   relativeAbsoluteSrcRoot?: (id: string) => string
 }): PendingEntryResolution {
   const pending = new Set(options.dirtyEntrySet)
+  const pendingReasonSummary = resolveUpstreamPendingReasonSummary(options.dirtyReasonSummary)
 
   if (options.mode === 'full') {
     return {
       pending: new Set(options.resolvedEntryMap.keys()),
-      pendingReasonSummary: ['full-rebuild'],
+      pendingReasonSummary: ['full-rebuild', ...pendingReasonSummary],
     }
   }
 
   if (!options.isDev || options.mode === 'off') {
-    return { pending }
+    return {
+      pending,
+      pendingReasonSummary,
+    }
   }
 
   if (!options.sharedChunkImporters?.size || !options.sharedChunksByEntry?.size) {
-    return { pending }
+    return {
+      pending,
+      pendingReasonSummary,
+    }
   }
 
   const startedAt = performance.now()
@@ -73,6 +105,7 @@ function resolvePendingEntryIds(options: {
     return {
       pending,
       sharedChunkResolveMs: performance.now() - startedAt,
+      pendingReasonSummary,
     }
   }
 
@@ -117,7 +150,6 @@ function resolvePendingEntryIds(options: {
     }
   }
 
-  const pendingReasonSummary: string[] = []
   if (expandedImporters.size > 0) {
     const chunkPreview = [...relatedChunkIds].slice(0, 2).map(chunkId => chunkId.split('/').at(-1)).join(',')
     const overflow = relatedChunkIds.size > 2 ? '+' : ''
@@ -247,6 +279,7 @@ export function useLoadEntry(
         resolvedEntryMap,
         dirtyEntrySet,
         dirtyEntryReasons,
+        dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
         subPackageRoots: new Set(ctx.scanService?.subPackageMap?.keys?.() ?? []),

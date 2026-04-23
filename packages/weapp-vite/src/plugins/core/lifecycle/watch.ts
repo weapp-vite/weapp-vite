@@ -90,9 +90,13 @@ async function processChangedFile(
   }
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
+  const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
 
-  if (isDeletedMissingSelf && ctx.autoRoutesService?.isRouteFile(normalizedId)) {
-    await ctx.autoRoutesService.handleFileChange(normalizedId, 'delete')
+  if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
+    const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event)
+    if (didChangeRoutes) {
+      dirtyReasonStats.set('auto-routes-topology', 1)
+    }
   }
 
   invalidateFileCache(normalizedId)

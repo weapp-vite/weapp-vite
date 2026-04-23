@@ -220,6 +220,7 @@ describe('core lifecycle watch hook', () => {
     await hook(entryId, { event: 'delete' })
 
     expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'delete')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['auto-routes-topology:1'])
   })
 
   it('normalizes transient delete events on template sidecars back to updates', async () => {

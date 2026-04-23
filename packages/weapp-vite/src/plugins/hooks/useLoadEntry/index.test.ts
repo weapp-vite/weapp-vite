@@ -368,4 +368,71 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['full-rebuild'])
   })
+
+  it('derives layout propagation explanation from upstream dirty causes', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['layout-self:1', 'layout-dependent:2'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+      },
+    })
+
+    const ids = ['/project/src/layouts/default/index.ts', '/project/src/pages/a.ts', '/project/src/pages/b.ts']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.markEntryDirty(id, 'dependency')
+    }
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['layout-propagation'])
+  })
+
+  it('derives fallback-full explanation from upstream layout dirty causes', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['layout-fallback-full:3'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+      },
+    })
+
+    const ids = ['/project/src/a.ts', '/project/src/b.ts']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    for (const id of ids) {
+      hook.markEntryDirty(id, 'dependency')
+    }
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['layout-fallback-full'])
+  })
+
+  it('derives auto-routes topology explanation from upstream dirty causes', async () => {
+    const ctx = createContext()
+    ctx.runtimeState.build.hmr.profile = {
+      dirtyReasonSummary: ['auto-routes-topology:1'],
+    }
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+      },
+    })
+
+    const ids = ['/project/src/pages/logs/index.vue']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    hook.markEntryDirty(ids[0], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['auto-routes-topology'])
+  })
 })
