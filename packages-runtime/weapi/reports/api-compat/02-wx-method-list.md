@@ -1,6 +1,6 @@
 # 02 小程序基准 API 全量清单
 
-总计：481
+总计：484
 
 - `addCard`
 - `addFileToFavorites`
@@ -32,6 +32,7 @@
 - `checkIsOpenAccessibility`
 - `checkIsPictureInPictureActive`
 - `checkIsSoterEnrolledInDevice`
+- `checkIsSupportFacialRecognition`
 - `checkIsSupportSoterAuthentication`
 - `checkSession`
 - `chooseAddress`
@@ -88,6 +89,7 @@
 - `downloadFile`
 - `editImage`
 - `enableAlertBeforeUnload`
+- `enterChatToolMode`
 - `exitMiniProgram`
 - `exitVoIPChat`
 - `faceDetect`
@@ -382,6 +384,7 @@
 - `request`
 - `requestCommonPayment`
 - `requestDeviceVoIP`
+- `requestFacialVerify`
 - `requestIdleCallback`
 - `requestMerchantTransfer`
 - `requestOrderPayment`

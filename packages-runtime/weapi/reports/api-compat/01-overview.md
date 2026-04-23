@@ -2,7 +2,7 @@
 
 ## 覆盖结论
 
-- 小程序基准命名方法总数：481
+- 小程序基准命名方法总数：484
 - 支付宝可调用兼容方法数：201
 - 支付宝语义对齐方法数：201
 - 支付宝 fallback 方法数：0
@@ -19,8 +19,8 @@
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按小程序基准命名调用失败）方法：280
-- 抖音侧不兼容（按小程序基准命名调用失败）方法：348
+- 支付宝侧不兼容（按小程序基准命名调用失败）方法：283
+- 抖音侧不兼容（按小程序基准命名调用失败）方法：351
 
 ## 不兼容示例（前 40 项）
 
@@ -50,6 +50,7 @@
 - `checkIsAddedToMyMiniProgram` -> 目标 `checkIsAddedToMyMiniProgram`（unsupported）
 - `checkIsOpenAccessibility` -> 目标 `checkIsOpenAccessibility`（unsupported）
 - `checkIsPictureInPictureActive` -> 目标 `checkIsPictureInPictureActive`（unsupported）
+- `checkIsSupportFacialRecognition` -> 目标 `checkIsSupportFacialRecognition`（unsupported）
 - `checkSession` -> 目标 `checkSession`（unsupported）
 - `chooseAddress` -> 目标 `chooseAddress`（unsupported）
 - `chooseInvoice` -> 目标 `chooseInvoice`（unsupported）
@@ -65,7 +66,6 @@
 - `createCacheManager` -> 目标 `createCacheManager`（unsupported）
 - `createCameraContext` -> 目标 `createCameraContext`（unsupported）
 - `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
-- `createInferenceSession` -> 目标 `createInferenceSession`（unsupported）
 
 ### 抖音不兼容示例
 
@@ -94,6 +94,7 @@
 - `checkIsOpenAccessibility` -> 目标 `checkIsOpenAccessibility`（unsupported）
 - `checkIsPictureInPictureActive` -> 目标 `checkIsPictureInPictureActive`（unsupported）
 - `checkIsSoterEnrolledInDevice` -> 目标 `checkIsSoterEnrolledInDevice`（unsupported）
+- `checkIsSupportFacialRecognition` -> 目标 `checkIsSupportFacialRecognition`（unsupported）
 - `checkIsSupportSoterAuthentication` -> 目标 `checkIsSupportSoterAuthentication`（unsupported）
 - `chooseContact` -> 目标 `chooseContact`（unsupported）
 - `chooseInvoice` -> 目标 `chooseInvoice`（unsupported）
@@ -108,4 +109,3 @@
 - `compressVideo` -> 目标 `compressVideo`（unsupported）
 - `connectWifi` -> 目标 `connectWifi`（unsupported）
 - `createAudioContext` -> 目标 `createAudioContext`（unsupported）
-- `createBLEConnection` -> 目标 `createBLEConnection`（unsupported）

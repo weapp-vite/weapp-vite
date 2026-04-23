@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按小程序基准命名）
 
-总计：481，支持：201，不支持：280
+总计：484，支持：201，不支持：283
 
 | 小程序基准 API                                | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                                                          |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
@@ -34,6 +34,7 @@
 | `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `checkIsSoterEnrolledInDevice`                | `checkIsIfaaEnrolledInDevice`                 | ✅   | `mapped`      | ✅       | 映射到 `my.checkIsIfaaEnrolledInDevice`，`speech` 模式按 unsupported 报错                                     |
+| `checkIsSupportFacialRecognition`             | `checkIsSupportFacialRecognition`             | ❌   | `unsupported` | ❌       | 未提供 my.checkIsSupportFacialRecognition，调用时将返回 not supported                                         |
 | `checkIsSupportSoterAuthentication`           | `checkIsSupportIfaaAuthentication`            | ✅   | `mapped`      | ✅       | 映射到 `my.checkIsSupportIfaaAuthentication`                                                                  |
 | `checkSession`                                | `checkSession`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `chooseAddress`                               | `chooseAddress`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -90,6 +91,7 @@
 | `downloadFile`                                | `downloadFile`                                | ✅   | `native`      | ✅       | 直连 `my.downloadFile`                                                                                        |
 | `editImage`                                   | `editImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `enableAlertBeforeUnload`                     | `enableAlertBeforeUnload`                     | ✅   | `native`      | ✅       | 直连 `my.enableAlertBeforeUnload`                                                                             |
+| `enterChatToolMode`                           | `enterChatToolMode`                           | ❌   | `unsupported` | ❌       | 未提供 my.enterChatToolMode，调用时将返回 not supported                                                       |
 | `exitMiniProgram`                             | `exitMiniProgram`                             | ✅   | `native`      | ✅       | 直连 `my.exitMiniProgram`                                                                                     |
 | `exitVoIPChat`                                | `exitVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `faceDetect`                                  | `faceDetect`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
@@ -384,6 +386,7 @@
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `my.request`                                                                                             |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `requestFacialVerify`                         | `requestFacialVerify`                         | ❌   | `unsupported` | ❌       | 未提供 my.requestFacialVerify，调用时将返回 not supported                                                     |
 | `requestIdleCallback`                         | `requestIdleCallback`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `requestOrderPayment`                         | `requestOrderPayment`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |

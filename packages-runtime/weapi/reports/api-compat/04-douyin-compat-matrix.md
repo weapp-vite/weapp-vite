@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按小程序基准命名）
 
-总计：481，支持：133，不支持：348
+总计：484，支持：133，不支持：351
 
 | 小程序基准 API                                | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -34,6 +34,7 @@
 | `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsSupportFacialRecognition`             | `checkIsSupportFacialRecognition`             | ❌   | `unsupported` | ❌       | 未提供 tt.checkIsSupportFacialRecognition，调用时将返回 not supported             |
 | `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkSession`                                | `checkSession`                                | ✅   | `mapped`      | ✅       | 直连 `tt.checkSession`                                                            |
 | `chooseAddress`                               | `chooseAddress`                               | ✅   | `mapped`      | ✅       | 直连 `tt.chooseAddress`                                                           |
@@ -90,6 +91,7 @@
 | `downloadFile`                                | `downloadFile`                                | ✅   | `native`      | ✅       | 直连 `tt.downloadFile`                                                            |
 | `editImage`                                   | `editImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `enableAlertBeforeUnload`                     | `enableAlertBeforeUnload`                     | ❌   | `unsupported` | ❌       | 未提供 tt.enableAlertBeforeUnload，调用时将返回 not supported                     |
+| `enterChatToolMode`                           | `enterChatToolMode`                           | ❌   | `unsupported` | ❌       | 未提供 tt.enterChatToolMode，调用时将返回 not supported                           |
 | `exitMiniProgram`                             | `exitMiniProgram`                             | ✅   | `native`      | ✅       | 直连 `tt.exitMiniProgram`                                                         |
 | `exitVoIPChat`                                | `exitVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `faceDetect`                                  | `faceDetect`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -384,6 +386,7 @@
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `tt.request`                                                                 |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `requestFacialVerify`                         | `requestFacialVerify`                         | ❌   | `unsupported` | ❌       | 未提供 tt.requestFacialVerify，调用时将返回 not supported                         |
 | `requestIdleCallback`                         | `requestIdleCallback`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestOrderPayment`                         | `requestOrderPayment`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
