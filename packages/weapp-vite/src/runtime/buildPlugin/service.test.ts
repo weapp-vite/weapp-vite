@@ -112,6 +112,29 @@ function createWatcher(eventCodes: string[]) {
   return watcher
 }
 
+function createManualWatcher() {
+  let eventCallback: ((payload: { code: string }) => void) | undefined
+  let resolveSubscribed: (() => void) | undefined
+  const subscribed = new Promise<void>((resolve) => {
+    resolveSubscribed = resolve
+  })
+  const watcher: any = {
+    on: vi.fn((event: string, callback: (payload: { code: string }) => void) => {
+      if (event === 'event') {
+        eventCallback = callback
+        resolveSubscribed?.()
+      }
+      return watcher
+    }),
+    emit(code: string) {
+      eventCallback?.({ code })
+    },
+    subscribed,
+    close: vi.fn(),
+  }
+  return watcher
+}
+
 function createMockContext(overrides: Record<string, unknown> = {}) {
   const runtimeState = createRuntimeState()
   const ctx = {
@@ -226,6 +249,37 @@ describe('runtime buildPlugin service', () => {
     expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
     expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
+  })
+
+  it('prints hmr phase timings on rebuild completion and resets the profile', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    ctx.runtimeState.build.hmr.profile = {
+      file: '/project/src/pages/logs/index.vue',
+      event: 'update',
+      watchToDirtyMs: 3.25,
+      emitMs: 14.5,
+      dirtyCount: 2,
+      pendingCount: 2,
+      emittedCount: 2,
+    }
+    watcher.emit('START')
+    watcher.emit('END')
+
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序已重新构建（'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.25 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit 14.50 ms'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('dirty 2'))
+    expect(ctx.runtimeState.build.hmr.profile).toEqual({})
   })
 
   it('skips npm build when skipNpm is enabled and hmr touch is false', async () => {

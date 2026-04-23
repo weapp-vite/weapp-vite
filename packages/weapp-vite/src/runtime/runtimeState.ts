@@ -2,7 +2,7 @@ import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
 import type { ResolvedId, RolldownOutput } from 'rolldown'
-import type { AppEntry, ComponentsMap, Entry, SubPackageMetaValue } from '../types'
+import type { AppEntry, ChangeEvent, ComponentsMap, Entry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
 import type { LocalAutoImportMatch } from './autoImport/types'
@@ -111,6 +111,15 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       layoutEntryDependents: Map<string, Set<string>>
       entryLayoutDependencies: Map<string, Set<string>>
+      profile: {
+        event?: ChangeEvent
+        file?: string
+        watchToDirtyMs?: number
+        emitMs?: number
+        dirtyCount?: number
+        pendingCount?: number
+        emittedCount?: number
+      }
     }
   }
   json: {
@@ -200,6 +209,7 @@ export function createRuntimeState(): RuntimeState {
         entriesMap: new Map<string, Entry | undefined>(),
         layoutEntryDependents: new Map<string, Set<string>>(),
         entryLayoutDependencies: new Map<string, Set<string>>(),
+        profile: {},
       },
     },
     json: {

@@ -35,6 +35,35 @@ export interface BuildService {
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
+  function formatHmrProfileSummary() {
+    const profile = ctx.runtimeState.build.hmr.profile
+    const segments: string[] = []
+
+    if (profile.watchToDirtyMs !== undefined) {
+      segments.push(`watch->dirty ${profile.watchToDirtyMs.toFixed(2)} ms`)
+    }
+    if (profile.emitMs !== undefined) {
+      segments.push(`emit ${profile.emitMs.toFixed(2)} ms`)
+    }
+    if (profile.dirtyCount !== undefined) {
+      segments.push(`dirty ${profile.dirtyCount}`)
+    }
+    if (profile.pendingCount !== undefined) {
+      segments.push(`pending ${profile.pendingCount}`)
+    }
+    if (profile.emittedCount !== undefined) {
+      segments.push(`emitted ${profile.emittedCount}`)
+    }
+    if (!segments.length) {
+      return ''
+    }
+    return `，${segments.join('，')}`
+  }
+
+  function resetHmrProfile() {
+    ctx.runtimeState.build.hmr.profile = {}
+  }
+
   function assertRuntimeServices(target: MutableCompilerContext): asserts target is MutableCompilerContext & {
     configService: NonNullable<MutableCompilerContext['configService']>
     watcherService: NonNullable<MutableCompilerContext['watcherService']>
@@ -134,17 +163,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       else if (e.code === 'END') {
         const duration = (performance.now() - startTime).toFixed(2)
         if (firstBuildCompleted) {
-          logger.success(`小程序已重新构建（${duration} ms）`)
+          logger.success(`小程序已重新构建（${duration} ms${formatHmrProfileSummary()}）`)
         }
         else {
           firstBuildCompleted = true
         }
+        resetHmrProfile()
         if (appWxssPath && shouldTouchAppWxss()) {
           void touch(appWxssPath).catch(() => {})
         }
         resolveWatcher(e)
       }
       else if (e.code === 'ERROR') {
+        resetHmrProfile()
         rejectWatcher(e)
       }
     })

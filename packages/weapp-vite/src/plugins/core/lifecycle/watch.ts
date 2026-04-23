@@ -232,11 +232,18 @@ async function processChangedFile(
 
 export function createWatchChangeHook(state: CorePluginState) {
   return async function watchChange(id: string, change: { event: ChangeEvent }) {
+    const startedAt = performance.now()
     const normalizedId = normalizeFsResolvedId(id)
     if (isSkippableResolvedId(normalizedId)) {
       return
     }
     const event = await normalizeWatchEvent(normalizedId, change.event)
     await processChangedFile(state, normalizedId, event)
+    state.ctx.runtimeState.build.hmr.profile = {
+      ...state.ctx.runtimeState.build.hmr.profile,
+      event,
+      file: normalizedId,
+      watchToDirtyMs: performance.now() - startedAt,
+    }
   }
 }

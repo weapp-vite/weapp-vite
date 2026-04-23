@@ -63,6 +63,13 @@ function createState(overrides: Record<string, any> = {}) {
       wxmlService: {
         scan: vi.fn(async () => null),
       },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile: {},
+          },
+        },
+      },
     },
     subPackageMeta: null,
     loadEntry: {
@@ -114,6 +121,20 @@ describe('core lifecycle watch hook', () => {
 
     expect(state.ctx.wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/hmr-html/index.html')
     expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/pages/hmr-html/index.ts', 'direct')
+  })
+
+  it('records watch-to-dirty profile for the latest hmr file event', async () => {
+    const entryId = '/project/src/pages/hmr/index.ts'
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'update' })
+
+    expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.file).toBe(entryId)
+    expect(state.ctx.runtimeState.build.hmr.profile.watchToDirtyMs).toBeTypeOf('number')
   })
 
   it('marks loaded script updates as direct entry dirties', async () => {

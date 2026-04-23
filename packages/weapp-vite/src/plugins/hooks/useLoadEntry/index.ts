@@ -178,6 +178,7 @@ export function useLoadEntry(
         return
       }
 
+      const emitStartedAt = performance.now()
       const dirtyCount = dirtyEntrySet.size
       const pendingEntryIds = resolvePendingEntryIds({
         isDev: Boolean(ctx.configService?.isDev),
@@ -210,6 +211,13 @@ export function useLoadEntry(
       const shouldEmitAllEntries = actualEmittedEntryIds.size > 0 && actualEmittedEntryIds.size === resolvedEntryMap.size
       options?.hmr?.setDidEmitAllEntries?.(shouldEmitAllEntries)
       options?.hmr?.setLastEmittedEntries?.(actualEmittedEntryIds)
+      ctx.runtimeState.build.hmr.profile = {
+        ...ctx.runtimeState.build.hmr.profile,
+        emitMs: performance.now() - emitStartedAt,
+        dirtyCount,
+        pendingCount: pending.length,
+        emittedCount: actualEmittedEntryIds.size,
+      }
 
       if (debug) {
         debug(`hmr emit dirty=${dirtyCount} resolved=${resolvedEntryMap.size} emitAll=${shouldEmitAllEntries} pending=${pending.length}`)

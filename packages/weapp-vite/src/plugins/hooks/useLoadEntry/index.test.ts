@@ -13,6 +13,7 @@ function createContext() {
           entriesMap: new Map<string, any>(),
           layoutEntryDependents: new Map<string, Set<string>>(),
           entryLayoutDependencies: new Map<string, Set<string>>(),
+          profile: {},
         },
       },
     },
@@ -285,5 +286,26 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(2)
+  })
+
+  it('records emit profile metrics for incremental hmr rebuilds', async () => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'off',
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    hook.markEntryDirty(ids[0])
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(ctx.runtimeState.build.hmr.profile.emitMs).toBeTypeOf('number')
+    expect(ctx.runtimeState.build.hmr.profile.dirtyCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.pendingCount).toBe(1)
+    expect(ctx.runtimeState.build.hmr.profile.emittedCount).toBe(1)
   })
 })
