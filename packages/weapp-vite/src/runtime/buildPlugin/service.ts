@@ -35,6 +35,50 @@ export interface BuildService {
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
+  function recordHmrProfile(totalMs: number) {
+    const hmrState = ctx.runtimeState.build.hmr
+    hmrState.recentProfiles.push({
+      totalMs,
+      watchToDirtyMs: hmrState.profile.watchToDirtyMs,
+      emitMs: hmrState.profile.emitMs,
+      dirtyCount: hmrState.profile.dirtyCount,
+      pendingCount: hmrState.profile.pendingCount,
+      emittedCount: hmrState.profile.emittedCount,
+    })
+    if (hmrState.recentProfiles.length > 5) {
+      hmrState.recentProfiles.splice(0, hmrState.recentProfiles.length - 5)
+    }
+  }
+
+  function formatHmrRecentSummary() {
+    const recentProfiles = ctx.runtimeState.build.hmr.recentProfiles
+    if (recentProfiles.length < 2) {
+      return ''
+    }
+
+    const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
+    const totalValues = recentProfiles.map(item => item.totalMs)
+    const emitValues = recentProfiles.flatMap(item => item.emitMs === undefined ? [] : [item.emitMs])
+    const watchValues = recentProfiles.flatMap(item => item.watchToDirtyMs === undefined ? [] : [item.watchToDirtyMs])
+    const maxPending = Math.max(...recentProfiles.map(item => item.pendingCount ?? 0))
+    const segments = [
+      `近${recentProfiles.length}次 avg ${average(totalValues).toFixed(2)} ms`,
+      `max ${Math.max(...totalValues).toFixed(2)} ms`,
+    ]
+
+    if (watchValues.length) {
+      segments.push(`watch avg ${average(watchValues).toFixed(2)} ms`)
+    }
+    if (emitValues.length) {
+      segments.push(`emit avg ${average(emitValues).toFixed(2)} ms`)
+    }
+    if (maxPending > 0) {
+      segments.push(`pending max ${maxPending}`)
+    }
+
+    return `；${segments.join('，')}`
+  }
+
   function formatHmrProfileSummary() {
     const profile = ctx.runtimeState.build.hmr.profile
     const segments: string[] = []
@@ -161,9 +205,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         startTime = performance.now()
       }
       else if (e.code === 'END') {
-        const duration = (performance.now() - startTime).toFixed(2)
+        const durationMs = performance.now() - startTime
+        const duration = durationMs.toFixed(2)
         if (firstBuildCompleted) {
-          logger.success(`小程序已重新构建（${duration} ms${formatHmrProfileSummary()}）`)
+          recordHmrProfile(durationMs)
+          logger.success(`小程序已重新构建（${duration} ms${formatHmrProfileSummary()}${formatHmrRecentSummary()}）`)
         }
         else {
           firstBuildCompleted = true

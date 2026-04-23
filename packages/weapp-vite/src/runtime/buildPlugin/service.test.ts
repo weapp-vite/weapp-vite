@@ -282,6 +282,36 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.hmr.profile).toEqual({})
   })
 
+  it('tracks recent hmr samples and prints a rolling summary for rebuild trends', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    for (let index = 0; index < 6; index += 1) {
+      ctx.runtimeState.build.hmr.profile = {
+        watchToDirtyMs: 2 + index,
+        emitMs: 10 + index,
+        dirtyCount: 1,
+        pendingCount: 2 + index,
+        emittedCount: 1,
+      }
+      watcher.emit('START')
+      watcher.emit('END')
+    }
+
+    expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(5)
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近5次 avg'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit avg'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('pending max'))
+  })
+
   it('skips npm build when skipNpm is enabled and hmr touch is false', async () => {
     buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
     const ctx = createMockContext({

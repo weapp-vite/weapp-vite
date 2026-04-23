@@ -111,6 +111,14 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       layoutEntryDependents: Map<string, Set<string>>
       entryLayoutDependencies: Map<string, Set<string>>
+      recentProfiles: Array<{
+        totalMs: number
+        watchToDirtyMs?: number
+        emitMs?: number
+        dirtyCount?: number
+        pendingCount?: number
+        emittedCount?: number
+      }>
       profile: {
         event?: ChangeEvent
         file?: string
@@ -209,6 +217,7 @@ export function createRuntimeState(): RuntimeState {
         entriesMap: new Map<string, Entry | undefined>(),
         layoutEntryDependents: new Map<string, Set<string>>(),
         entryLayoutDependencies: new Map<string, Set<string>>(),
+        recentProfiles: [],
         profile: {},
       },
     },
