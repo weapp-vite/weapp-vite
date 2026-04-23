@@ -245,6 +245,10 @@ export interface WeappSubPackageConfig {
 export interface WeappHmrConfig {
   sharedChunks?: 'full' | 'auto' | 'off'
   touchAppWxss?: boolean | 'auto'
+  /**
+   * @description 是否输出 HMR 结构化 profile，或指定自定义 JSONL 输出路径
+   */
+  profileJson?: boolean | string
 }
 
 /**

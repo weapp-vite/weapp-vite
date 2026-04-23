@@ -39,6 +39,13 @@ const createIndependentBuilderMock = vi.hoisted(() => vi.fn(() => ({
   getIndependentOutput: independentGetOutputMock,
   invalidateIndependentOutput: independentInvalidateMock,
 })))
+const appendFileMock = vi.hoisted(() => vi.fn(async () => {}))
+const mkdirMock = vi.hoisted(() => vi.fn(async () => {}))
+
+vi.mock('node:fs/promises', () => ({
+  appendFile: appendFileMock,
+  mkdir: mkdirMock,
+}))
 
 vi.mock('vite', () => ({
   build: buildMock,
@@ -278,7 +285,9 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('START')
     watcher.emit('END')
 
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序已重新构建（'))
+    await vi.waitFor(() => {
+      expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序已重新构建（'))
+    })
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.25 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit 14.50 ms'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('shared 1.75 ms'))
@@ -313,11 +322,134 @@ describe('runtime buildPlugin service', () => {
       watcher.emit('END')
     }
 
+    await vi.waitFor(() => {
+      expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近5次 avg'))
+    })
     expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(5)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近5次 avg'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit avg'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('shared avg'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('pending max'))
+  })
+
+  it('writes hmr profile jsonl with default output path when enabled', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          hmr: {
+            profileJson: true,
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    ctx.runtimeState.build.hmr.profile = {
+      file: '/project/src/pages/logs/index.vue',
+      event: 'update',
+      watchToDirtyMs: 3.25,
+      emitMs: 14.5,
+      sharedChunkResolveMs: 1.75,
+      dirtyCount: 2,
+      pendingCount: 2,
+      emittedCount: 2,
+      dirtyReasonSummary: ['entry-direct:1'],
+      pendingReasonSummary: ['shared-chunk(common.js)+1:direct'],
+    }
+    watcher.emit('START')
+    watcher.emit('END')
+    await vi.waitFor(() => {
+      expect(appendFileMock).toHaveBeenCalledTimes(1)
+    })
+
+    expect(mkdirMock).toHaveBeenCalledWith('/project/.weapp-vite', { recursive: true })
+    expect(appendFileMock).toHaveBeenCalledWith(
+      '/project/.weapp-vite/hmr-profile.jsonl',
+      expect.stringMatching(/"file":"\/project\/src\/pages\/logs\/index\.vue"/),
+      'utf8',
+    )
+    const [, payload] = appendFileMock.mock.calls[0]
+    expect(typeof payload).toBe('string')
+    expect(payload.endsWith('\n')).toBe(true)
+    expect(payload).toContain('"event":"update"')
+    expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')
+    expect(payload).toContain('"pendingReasonSummary":["shared-chunk(common.js)+1:direct"]')
+  })
+
+  it('writes hmr profile jsonl to custom relative path', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          hmr: {
+            profileJson: '.reports/hmr.jsonl',
+          },
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    ctx.runtimeState.build.hmr.profile = {
+      event: 'create',
+      dirtyCount: 1,
+    }
+    watcher.emit('START')
+    watcher.emit('END')
+    await vi.waitFor(() => {
+      expect(appendFileMock).toHaveBeenCalledTimes(1)
+    })
+
+    expect(mkdirMock).toHaveBeenCalledWith('/project/.reports', { recursive: true })
+    expect(appendFileMock).toHaveBeenCalledWith(
+      '/project/.reports/hmr.jsonl',
+      expect.stringContaining('"event":"create"'),
+      'utf8',
+    )
+  })
+
+  it('does not write hmr profile jsonl when disabled', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    ctx.runtimeState.build.hmr.profile = {
+      event: 'update',
+      dirtyCount: 1,
+    }
+    watcher.emit('START')
+    watcher.emit('END')
+    await vi.waitFor(() => {
+      expect(loggerSuccessMock).toHaveBeenCalled()
+    })
+
+    expect(mkdirMock).not.toHaveBeenCalled()
+    expect(appendFileMock).not.toHaveBeenCalled()
   })
 
   it('skips npm build when skipNpm is enabled and hmr touch is false', async () => {

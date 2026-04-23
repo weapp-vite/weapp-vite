@@ -6,6 +6,7 @@ import type {
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import { build } from 'vite'
@@ -32,6 +33,21 @@ export interface BuildService {
   buildIndependentBundle: (root: string, meta: SubPackageMetaValue) => Promise<RolldownOutput>
   getIndependentOutput: (root: string) => RolldownOutput | undefined
   invalidateIndependentOutput: (root: string) => void
+}
+
+interface HmrProfileJsonSample {
+  timestamp: string
+  totalMs: number
+  event?: string
+  file?: string
+  watchToDirtyMs?: number
+  emitMs?: number
+  sharedChunkResolveMs?: number
+  dirtyCount?: number
+  pendingCount?: number
+  emittedCount?: number
+  dirtyReasonSummary?: string[]
+  pendingReasonSummary?: string[]
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
@@ -120,6 +136,45 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   function resetHmrProfile() {
     ctx.runtimeState.build.hmr.profile = {}
+  }
+
+  function resolveHmrProfileJsonPath() {
+    const option = ctx.configService?.weappViteConfig.hmr?.profileJson
+    if (!option) {
+      return undefined
+    }
+    if (option === true) {
+      return path.join(ctx.configService.cwd, '.weapp-vite', 'hmr-profile.jsonl')
+    }
+    return path.resolve(ctx.configService.cwd, option)
+  }
+
+  function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {
+    const profile = ctx.runtimeState.build.hmr.profile
+    return {
+      timestamp: new Date().toISOString(),
+      totalMs,
+      event: profile.event,
+      file: profile.file,
+      watchToDirtyMs: profile.watchToDirtyMs,
+      emitMs: profile.emitMs,
+      sharedChunkResolveMs: profile.sharedChunkResolveMs,
+      dirtyCount: profile.dirtyCount,
+      pendingCount: profile.pendingCount,
+      emittedCount: profile.emittedCount,
+      dirtyReasonSummary: profile.dirtyReasonSummary,
+      pendingReasonSummary: profile.pendingReasonSummary,
+    }
+  }
+
+  async function writeHmrProfileJsonSample(totalMs: number) {
+    const outputPath = resolveHmrProfileJsonPath()
+    if (!outputPath) {
+      return
+    }
+
+    await mkdir(path.dirname(outputPath), { recursive: true })
+    await appendFile(outputPath, `${JSON.stringify(createHmrProfileJsonSample(totalMs))}\n`, 'utf8')
   }
 
   function assertRuntimeServices(target: MutableCompilerContext): asserts target is MutableCompilerContext & {
@@ -220,19 +275,27 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       else if (e.code === 'END') {
         const durationMs = performance.now() - startTime
-        const duration = durationMs.toFixed(2)
-        if (firstBuildCompleted) {
-          recordHmrProfile(durationMs)
-          logger.success(`小程序已重新构建（${duration} ms${formatHmrProfileSummary()}${formatHmrRecentSummary()}）`)
-        }
-        else {
-          firstBuildCompleted = true
-        }
-        resetHmrProfile()
-        if (appWxssPath && shouldTouchAppWxss()) {
-          void touch(appWxssPath).catch(() => {})
-        }
-        resolveWatcher(e)
+        void (async () => {
+          const duration = durationMs.toFixed(2)
+          if (firstBuildCompleted) {
+            recordHmrProfile(durationMs)
+            await writeHmrProfileJsonSample(durationMs).catch((error) => {
+              debug?.(`write hmr profile json failed: ${String(error)}`)
+            })
+            logger.success(`小程序已重新构建（${duration} ms${formatHmrProfileSummary()}${formatHmrRecentSummary()}）`)
+          }
+          else {
+            firstBuildCompleted = true
+          }
+          resetHmrProfile()
+          if (appWxssPath && shouldTouchAppWxss()) {
+            void touch(appWxssPath).catch(() => {})
+          }
+          resolveWatcher(e)
+        })().catch((error) => {
+          resetHmrProfile()
+          rejectWatcher(error)
+        })
       }
       else if (e.code === 'ERROR') {
         resetHmrProfile()

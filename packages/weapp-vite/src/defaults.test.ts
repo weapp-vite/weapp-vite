@@ -35,6 +35,11 @@ describe('getWeappViteConfig', () => {
     expect(config.hmr?.touchAppWxss).toBe('auto')
   })
 
+  it('defaults hmr.profileJson to false', () => {
+    const config = getWeappViteConfig()
+    expect(config.hmr?.profileJson).toBe(false)
+  })
+
   it('keeps additional defaults stable', () => {
     const config = getWeappViteConfig()
     expect(config.isAdditionalWxml?.()).toBe(false)
