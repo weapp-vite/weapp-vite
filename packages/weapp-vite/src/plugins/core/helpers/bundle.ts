@@ -10,6 +10,7 @@ import { isPathInside, normalizeRelativePath } from '../../../utils/path'
 import { emitJsonAsset } from '../../utils/wxmlEmit'
 
 const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
+const REQUIRE_CALL_RE = /\brequire\((`[^`]+`|'[^']+'|"[^"]+")\)/g
 
 export function filterPluginBundleOutputs(
   bundle: OutputBundle,
@@ -200,5 +201,38 @@ export function removeImplicitPagePreloads(
     if (implicitlyLoaded && implicitlyLoaded.length) {
       (chunk as any).implicitlyLoadedBefore = implicitlyLoaded.filter(name => !targetSet.has(name))
     }
+  }
+}
+
+export function syncChunkImportsFromRequireCalls(bundle: OutputBundle) {
+  const chunkFileNames = new Set(
+    Object.values(bundle)
+      .filter((output): output is OutputChunk => output?.type === 'chunk')
+      .map(chunk => chunk.fileName),
+  )
+
+  for (const output of Object.values(bundle)) {
+    if (!output || output.type !== 'chunk' || typeof output.code !== 'string') {
+      continue
+    }
+
+    const chunk = output as OutputChunk
+    const nextImports = new Set(Array.isArray(chunk.imports) ? chunk.imports : [])
+
+    for (const match of chunk.code.matchAll(REQUIRE_CALL_RE)) {
+      const specifier = stripQuotes(match[1])
+      if (!specifier.startsWith('.')) {
+        continue
+      }
+
+      const resolved = resolveRelativeImport(chunk.fileName, specifier)
+      if (!resolved || resolved === chunk.fileName || !chunkFileNames.has(resolved)) {
+        continue
+      }
+
+      nextImports.add(resolved)
+    }
+
+    chunk.imports = [...nextImports]
   }
 }

@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
-import { relaunchPage } from './github-issues.runtime.shared'
+import { relaunchPage, waitForCurrentPagePath } from './github-issues.runtime.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-native')
@@ -54,7 +54,8 @@ async function closeSharedMiniPrograms() {
 async function collectAppLogs(root: string) {
   const miniProgram = await launchFreshMiniProgram(root)
   try {
-    const page = await relaunchPage(miniProgram, '/pages/index/index', undefined, 30_000)
+    const page = await waitForCurrentPagePath(miniProgram, '/pages/index/index', 30_000)
+      ?? await relaunchPage(miniProgram, '/pages/index/index', undefined, 30_000)
     if (!page) {
       throw new Error('Failed to launch /pages/index/index')
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterPluginBundleOutputs } from './bundle'
+import { filterPluginBundleOutputs, syncChunkImportsFromRequireCalls } from './bundle'
 
 describe('core helper bundle', () => {
   it('keeps plugin assets intact in pluginOnly mode', () => {
@@ -32,6 +32,50 @@ describe('core helper bundle', () => {
       'index.js',
       'pages/hello-page.wxml',
       'plugin.json',
+    ])
+  })
+
+  it('syncs relative require calls back into chunk imports', () => {
+    const bundle = {
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: [
+          'require("./app.prelude.js")',
+          'const runtime = require("./request-globals-runtime.js")',
+          'const shared = require("./weapp-vendors/web-apis-shared.js")',
+        ].join('\n'),
+        imports: [],
+      },
+      'request-globals-runtime.js': {
+        type: 'chunk',
+        fileName: 'request-globals-runtime.js',
+        code: 'const shared = require("./weapp-vendors/web-apis-shared.js")',
+        imports: [],
+      },
+      'app.prelude.js': {
+        type: 'chunk',
+        fileName: 'app.prelude.js',
+        code: '',
+        imports: [],
+      },
+      'weapp-vendors/web-apis-shared.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/web-apis-shared.js',
+        code: '',
+        imports: [],
+      },
+    } as any
+
+    syncChunkImportsFromRequireCalls(bundle)
+
+    expect(bundle['app.js'].imports).toEqual([
+      'app.prelude.js',
+      'request-globals-runtime.js',
+      'weapp-vendors/web-apis-shared.js',
+    ])
+    expect(bundle['request-globals-runtime.js'].imports).toEqual([
+      'weapp-vendors/web-apis-shared.js',
     ])
   })
 })

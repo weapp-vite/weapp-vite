@@ -10,6 +10,7 @@ const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'babel'))
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
 const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
+const syncChunkImportsFromRequireCallsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../runtime/chunkStrategy', () => ({
   DEFAULT_SHARED_CHUNK_STRATEGY: 'copy',
@@ -41,6 +42,7 @@ vi.mock('../helpers', () => ({
   refreshModuleGraph: refreshModuleGraphMock,
   refreshSharedChunkImporters: vi.fn(),
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
+  syncChunkImportsFromRequireCalls: syncChunkImportsFromRequireCallsMock,
 }))
 
 vi.mock('../../../logger', () => ({

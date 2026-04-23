@@ -17,6 +17,7 @@ import {
   refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
   removeImplicitPagePreloads,
+  syncChunkImportsFromRequireCalls,
 } from '../../helpers'
 import { injectAppPreludeCode, resolveAppPreludeCode, resolveAppPreludeOptions } from './appPrelude'
 import { PRETTY_NODE_MODULES_RE } from './constants'
@@ -356,6 +357,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       },
       asset => this.emitFile(asset),
     )
+    syncChunkImportsFromRequireCalls(rolldownBundle)
 
     refreshModuleGraph(this, state)
 

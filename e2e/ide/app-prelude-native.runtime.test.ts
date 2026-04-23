@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
-import { relaunchPage } from './github-issues.runtime.shared'
+import { relaunchPage, waitForCurrentPagePath } from './github-issues.runtime.shared'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
@@ -80,7 +80,8 @@ async function collectPreludeLogs(
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const miniProgram = await launchFreshMiniProgram(ctx, mode)
     try {
-      const page = await relaunchPage(miniProgram, route, undefined, 30_000)
+      const page = await waitForCurrentPagePath(miniProgram, route, 30_000)
+        ?? await relaunchPage(miniProgram, route, undefined, 30_000)
       if (!page) {
         throw new Error(`Failed to launch ${route}`)
       }
@@ -113,7 +114,8 @@ async function collectRequestRuntimeState(
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const miniProgram = await launchFreshMiniProgram(ctx, mode)
     try {
-      const page = await relaunchPage(miniProgram, route, undefined, 30_000)
+      const page = await waitForCurrentPagePath(miniProgram, route, 30_000)
+        ?? await relaunchPage(miniProgram, route, undefined, 30_000)
       if (!page) {
         throw new Error(`Failed to launch ${route}`)
       }

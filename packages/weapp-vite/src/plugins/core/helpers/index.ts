@@ -2,6 +2,7 @@ export {
   emitJsonAssets,
   filterPluginBundleOutputs,
   removeImplicitPagePreloads,
+  syncChunkImportsFromRequireCalls,
 } from './bundle'
 
 export { formatBytes } from './bytes'

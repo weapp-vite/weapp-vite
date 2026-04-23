@@ -35,6 +35,7 @@ const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
 const refreshPartialSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
+const syncChunkImportsFromRequireCallsMock = vi.hoisted(() => vi.fn())
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const FULL_REQUEST_GLOBAL_TARGETS_LITERAL = JSON.stringify(FULL_REQUEST_GLOBAL_TARGETS)
@@ -66,6 +67,7 @@ vi.mock('../helpers', () => ({
   refreshPartialSharedChunkImporters: refreshPartialSharedChunkImportersMock,
   refreshSharedChunkImporters: refreshSharedChunkImportersMock,
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
+  syncChunkImportsFromRequireCalls: syncChunkImportsFromRequireCallsMock,
 }))
 
 vi.mock('../../../logger', () => ({
