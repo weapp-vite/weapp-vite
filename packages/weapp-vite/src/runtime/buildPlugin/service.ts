@@ -61,47 +61,6 @@ interface HmrPhaseRegressionCandidate {
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let lastHmrSlowTipProfileCount = 0
 
-  function formatReasonLabel(reason: string) {
-    if (reason.startsWith('entry-direct:')) {
-      return 'entry'
-    }
-    if (reason.startsWith('sidecar-direct:')) {
-      return 'sidecar'
-    }
-    if (reason.startsWith('importer-graph:')) {
-      return 'importer'
-    }
-    if (reason.startsWith('layout-self:')) {
-      return 'layout-self'
-    }
-    if (reason.startsWith('layout-dependent:')) {
-      return 'layout-dependent'
-    }
-    if (reason.startsWith('layout-propagation:')) {
-      return 'layout'
-    }
-    if (reason.startsWith('layout-fallback-full:')) {
-      return 'layout-full'
-    }
-    if (reason.startsWith('auto-routes-topology:')) {
-      return 'routes-topology'
-    }
-    if (reason.startsWith('shared-chunk(')) {
-      const countMatch = reason.match(/\+(\d+):/)
-      return countMatch ? `shared+${countMatch[1]}` : 'shared'
-    }
-    return reason
-  }
-
-  function formatReasonSummary(reasons?: string[]) {
-    if (!reasons?.length) {
-      return undefined
-    }
-    const labels = reasons.map(formatReasonLabel)
-    const [first, ...rest] = labels
-    return rest.length ? `${first}+${rest.length}` : first
-  }
-
   function recordHmrProfile(totalMs: number) {
     const hmrState = ctx.runtimeState.build.hmr
     hmrState.recentProfiles.push({
@@ -116,53 +75,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     if (hmrState.recentProfiles.length > 5) {
       hmrState.recentProfiles.splice(0, hmrState.recentProfiles.length - 5)
     }
-  }
-
-  function formatHmrRecentSummary() {
-    const recentProfiles = ctx.runtimeState.build.hmr.recentProfiles
-    if (recentProfiles.length < 2) {
-      return ''
-    }
-
-    const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
-    const totalValues = recentProfiles.map(item => item.totalMs)
-    const segments = [
-      `近${recentProfiles.length}次 avg ${average(totalValues).toFixed(0)} ms`,
-      `max ${Math.max(...totalValues).toFixed(2)} ms`,
-    ]
-
-    return `；${segments.join('，')}`
-  }
-
-  function formatHmrProfileSummary() {
-    const profile = ctx.runtimeState.build.hmr.profile
-    const segments: string[] = []
-
-    if (profile.watchToDirtyMs !== undefined) {
-      segments.push(`watch->dirty ${profile.watchToDirtyMs.toFixed(2)} ms`)
-    }
-    if (profile.emitMs !== undefined) {
-      segments.push(`emit ${profile.emitMs.toFixed(2)} ms`)
-    }
-    if (profile.sharedChunkResolveMs !== undefined) {
-      segments.push(`shared ${profile.sharedChunkResolveMs.toFixed(2)} ms`)
-    }
-    if (
-      profile.dirtyCount !== undefined
-      || profile.pendingCount !== undefined
-      || profile.emittedCount !== undefined
-    ) {
-      segments.push(`d/p/e ${profile.dirtyCount ?? 0}/${profile.pendingCount ?? 0}/${profile.emittedCount ?? 0}`)
-    }
-    const dirtyReason = formatReasonSummary(profile.dirtyReasonSummary)
-    const pendingReason = formatReasonSummary(profile.pendingReasonSummary)
-    if (dirtyReason || pendingReason) {
-      segments.push(`cause ${dirtyReason ?? '-'} -> ${pendingReason ?? '-'}`)
-    }
-    if (!segments.length) {
-      return ''
-    }
-    return `，${segments.join('，')}`
   }
 
   function resetHmrProfile() {
@@ -397,7 +309,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             await writeHmrProfileJsonSample(durationMs).catch((error) => {
               debug?.(`write hmr profile json failed: ${String(error)}`)
             })
-            logger.success(`小程序已重新构建（${duration} ms${formatHmrProfileSummary()}${formatHmrRecentSummary()}）`)
+            logger.success(`小程序已重新构建（${duration} ms）`)
             shouldLogSlowHmrTip()
           }
           else {

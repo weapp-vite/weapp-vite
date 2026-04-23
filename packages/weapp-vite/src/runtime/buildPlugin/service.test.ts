@@ -290,11 +290,7 @@ describe('runtime buildPlugin service', () => {
     await vi.waitFor(() => {
       expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序已重新构建（'))
     })
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('watch->dirty 3.25 ms'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('emit 14.50 ms'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('shared 1.75 ms'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('d/p/e 2/2/2'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('cause entry+1 -> shared+1'))
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringMatching(/小程序已重新构建（\d+\.\d{2} ms）/))
     expect(ctx.runtimeState.build.hmr.profile).toEqual({})
   })
 
@@ -324,11 +320,10 @@ describe('runtime buildPlugin service', () => {
     }
 
     await vi.waitFor(() => {
-      expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近5次 avg'))
+      expect(loggerSuccessMock).toHaveBeenCalledTimes(6)
     })
     expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(5)
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近5次 avg'))
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('max'))
+    expect(loggerSuccessMock).toHaveBeenLastCalledWith(expect.stringMatching(/小程序已重新构建（\d+\.\d{2} ms）/))
   })
 
   it('writes hmr profile jsonl with default output path when enabled', async () => {
