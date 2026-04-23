@@ -1,5 +1,11 @@
 # @weapp-core/constants
 
+## 0.1.2
+
+### Patch Changes
+
+- 🐛 **为 `import.meta.env` 调试稳定性补充共享缓存 key 常量，供 `weapp-vite` 在页面与组件产物中复用同一份 env 表达式，减少调试输出行号漂移。** [#495](https://github.com/weapp-vite/weapp-vite/pull/495) by @sonofmagic
+
 ## 0.1.1
 
 ### Patch Changes

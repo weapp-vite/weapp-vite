@@ -1,5 +1,35 @@
 # create-weapp-vite
 
+## 2.3.7
+
+### Patch Changes
+
+- 🐛 **增强 `weapp-vite dev --open` 的终端开发快捷键体验：新增手动重新构建、清理微信开发者工具 compile/全部缓存、重新打开当前 DevTools 项目等快捷键，并把帮助面板与动作执行统一收敛为可扩展的热键注册表，方便后续继续扩展更多开发态调试操作。** [`80932ff`](https://github.com/weapp-vite/weapp-vite/commit/80932ff0bed75f97782ccd969d3b3db5835f99dd) by @sonofmagic
+
+- 🐛 **修复开发态快捷键与小程序产物重建流程：将 `r` 调整为通知微信开发者工具重新编译当前项目，将手动重建产物改为 `R`，并修复 dev 重建清空 `dist` 后因 emit 缓存未失效导致 `app.json` 等产物未重新写回的问题。** [`7e9447c`](https://github.com/weapp-vite/weapp-vite/commit/7e9447c157298d7ecb6341060b00b17f51bd43fe) by @sonofmagic
+
+- 🐛 **修复 `injectRequestGlobals` 与 `appPrelude` 联用时的 IDE 运行时模块装载问题。现在会避免把 request-globals support chunk 继续拆成额外共享模块，而是折叠回 `request-globals-runtime.js` 并统一改写相关引用，避免微信开发者工具在主包运行时出现 `module "... is not defined"` 的异常日志；同时补充了 request-globals 共享绑定注入与构建产物形态的回归测试，防止后续再次回退到不稳定的 chunk 结构。** [`3c81dae`](https://github.com/weapp-vite/weapp-vite/commit/3c81daee04b236bd2461e2235c6c388517bcb5b3) by @sonofmagic
+
+- 🐛 **继续增强微信开发者工具命令链路的稳定封装。`weapp-ide-cli` 新增了更完整的程序化命令层与顶层 helper 分发，覆盖 `open`、`login`、`preview`、`upload`、`cache`、`close`、`quit`、`build-npm`、`open-other`、`auto`、`auto-replay`、`build-apk`、`build-ipa`、`reset-fileutils`、`engine build` 等官方命令，并为 `engine build` 补齐了 `logPath` 日志落盘语义；同时补充了 DevTools HTTP `engine build` 流程，以及基于已打开 automator 会话优先执行的 `Tool.*` 程序化 helper（如 `compile`、`clearCache`、`toolInfo`、`ticket` 相关能力）。`weapp-vite` 则开始在 IDE 顶层转发、统一执行器与 `npm` / `close` 等入口优先复用这些稳定 helper，并新增 `wv ide info`、`wv ide test-accounts`、`wv ide ticket`、`wv ide ticket:set`、`wv ide ticket:refresh` 等用户入口，减少对原始 argv 透传和官方 CLI 黑盒行为的直接耦合。** [`1ebbab3`](https://github.com/weapp-vite/weapp-vite/commit/1ebbab3f3a650caf146f340be39a0b63491f9e46) by @sonofmagic
+
+- 🐛 **修复 `github-issues` 等场景下自动路由误收集脚本辅助文件导致 `app.json` 指向不存在页面的问题，并增强 IDE 自动化路由等待逻辑，降低微信开发者工具协议短暂超时造成的误判。** [`6549dba`](https://github.com/weapp-vite/weapp-vite/commit/6549dbad5aea7592d4b5c694c9fc7788f62c16bb) by @sonofmagic
+
+- 🐛 **修复已本地化到 `miniprogram_npm` 的 copied `miniprogram` / `miniprogram_dist` 依赖在页面产物里仍保留 Node 模式 `__toESM(..., 1)` 的互操作问题。现在会沿着同作用域别名链追踪这些本地 npm 绑定，并统一降级为普通 `__toESM(...)` 包装，避免 `Dialog.confirm is not a function`、`.default.default` 等双层默认导出回归，同时补齐主包与分包 alias 链路的回归覆盖。** [`a3d3d56`](https://github.com/weapp-vite/weapp-vite/commit/a3d3d5671a1567b71d112cc32fb0b6e74e503ac2) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite prepare` 在安装阶段通过 Vite `runner` 加载配置时遗留大量原生句柄、导致宿主环境里的 `pnpm install` 在末尾长时间卡住的问题。现在 `prepare` 会改用更轻量的 `native` 配置加载模式，并局部抑制 Node 针对无 `type` 的临时 TS 配置告警，避免安装收尾阶段无响应。** [`82bb8a0`](https://github.com/weapp-vite/weapp-vite/commit/82bb8a0243c23c953047d282fb103bef3ea8156f) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite dev --open` 的微信开发者工具快捷键与会话协同逻辑。现在 `r` 仅用于手动重新构建当前小程序产物，不再误触发开发者工具项目重开；`c` / `C` 改为重置当前 automator 会话或重置后重开项目。与此同时，`weapp-ide-cli` 新增基于 DevTools HTTP `/open` 的项目重开能力，并统一共享输入挂起与登录重试处理，避免快捷键、重试确认和已打开会话之间发生按键冲突。** [`b3a30a3`](https://github.com/weapp-vite/weapp-vite/commit/b3a30a3454ad0ed441b14c97a15cd5e230a628b5) by @sonofmagic
+
+- 🐛 **保持 `weapp.jsFormat` 默认值为 `cjs`，同时补齐 `esm` / `cjs` 双格式回归覆盖，并修复显式 `esm` 场景下请求相关全局注入缺失的问题。** [#491](https://github.com/weapp-vite/weapp-vite/pull/491) by @sonofmagic
+
+- 🐛 **修复开发态终端输入冲突：当 `wv dev` 的快捷键与微信开发者工具登录失效后的“按 r 重试”交互同时存在时，统一由共享输入协调器管理 `stdin`，避免 DevTools 重试按键被外层热键错误拦截。** [`79105e6`](https://github.com/weapp-vite/weapp-vite/commit/79105e635727529ee06d1434eed0fb57a08843e5) by @sonofmagic
+
+- 🐛 **修复小程序 `.vue` 文件中裸 `import.meta.env` 被展开为多行对象后导致源码调试行号偏移的问题。现在聚合 env 会保持为单行表达式，同时补齐 `issue #475` 的 page/component 回归覆盖，避免页面与组件调试定位再次漂移。** [#495](https://github.com/weapp-vite/weapp-vite/pull/495) by @sonofmagic
+
+- 🐛 **为普通 `template v-slot` 新增 `weapp.vue.template.slotSingleRootNoWrapper` 配置开关，默认值为 `false`，保持原先的包裹行为不变；当显式开启后，只有“单个可投影根节点”会把 `slot` 直接下推到该子节点，避免额外生成包裹用的 `<view>`。多子节点场景仍会保留真实 `<view slot="...">...</view>` 容器，以避免 `<block slot="...">` 在小程序运行时里出现整组内容丢失的问题。这让 `<template #icon><img /></template>` 这类迁移自 Web Vue 的写法既可以按需保留 `img -> image` 的标签映射，又能在开启新行为时减少单节点场景的布局错乱。** [#497](https://github.com/weapp-vite/weapp-vite/pull/497) by @sonofmagic
+
+- 🐛 **修复并收敛小程序开发态的 DevTools 交互流程：`weapp-vite dev --open` 现在将 `r` 明确用于通知微信开发者工具重新编译，将手动重新构建产物调整为 `R`，并修复手动重建清空 `dist` 后 `app.json` 等关键产物未重新写回的问题；同时统一 IDE 打开、登录失效重试与终端按键输入协调逻辑，避免在微信开发者工具登录过期时出现热键监听、重试提示与重新编译动作互相干扰的情况。** [`b759e42`](https://github.com/weapp-vite/weapp-vite/commit/b759e42b1b8d1e42ae1e8de60ed64418364bdb0c) by @sonofmagic
+
 ## 2.3.6
 
 ### Patch Changes
