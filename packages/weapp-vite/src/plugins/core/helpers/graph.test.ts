@@ -35,6 +35,7 @@ function createState() {
     entryModuleIds: new Set<string>(),
     resolvedEntryMap: new Map<string, any>(),
     hmrSharedChunkImporters: new Map<string, Set<string>>(),
+    hmrSharedChunksByEntry: new Map<string, Set<string>>(),
     hmrSharedChunkDependencies: new Map<string, Set<string>>(),
   } as any
 }
@@ -178,6 +179,12 @@ describe('core helpers graph', () => {
     expect(state.hmrSharedChunkImporters.get('chunks/lazy.js')).toEqual(
       new Set(['/project/src/pages/a.ts']),
     )
+    expect(state.hmrSharedChunksByEntry.get('/project/src/pages/a.ts')).toEqual(
+      new Set(['chunks/shared.js', 'chunks/lazy.js']),
+    )
+    expect(state.hmrSharedChunksByEntry.get('/project/src/virtual-entry.ts')).toEqual(
+      new Set(['chunks/shared.js']),
+    )
     expect(state.hmrSharedChunkImporters.has('chunks/entry-like.js')).toBe(false)
     expect(state.hmrSharedChunkImporters.has('chunks/missing.js')).toBe(false)
   })
@@ -241,6 +248,9 @@ describe('core helpers graph', () => {
         '/project/src/components/base-footer.vue',
       ]),
     )
+    expect(state.hmrSharedChunksByEntry.get('/project/src/components/base-navbar.vue')).toEqual(
+      new Set(['chunks/runtime.js']),
+    )
   })
 
   it('preserves transitive shared chunk importers when partial emits omit nested shared chunks', () => {
@@ -298,6 +308,9 @@ describe('core helpers graph', () => {
     )
     expect(state.hmrSharedChunkImporters.get('weapp-vendors/wevu-ref.js')).toEqual(
       new Set([appEntry, componentEntry]),
+    )
+    expect(state.hmrSharedChunksByEntry.get(componentEntry)).toEqual(
+      new Set(['weapp-vendors/wevu-src.js', 'weapp-vendors/wevu-ref.js']),
     )
   })
 

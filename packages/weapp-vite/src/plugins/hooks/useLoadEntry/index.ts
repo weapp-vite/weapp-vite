@@ -18,6 +18,7 @@ type DirtyEntryReason = 'direct' | 'dependency'
 interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
   sharedChunkImporters?: Map<string, Set<string>>
+  sharedChunksByEntry?: Map<string, Set<string>>
   setDidEmitAllEntries?: (value: boolean) => void
   setLastEmittedEntries?: (entryIds: Set<string>) => void
 }
@@ -29,6 +30,7 @@ function resolvePendingEntryIds(options: {
   dirtyEntrySet: Set<string>
   dirtyEntryReasons: Map<string, DirtyEntryReason>
   sharedChunkImporters?: Map<string, Set<string>>
+  sharedChunksByEntry?: Map<string, Set<string>>
   subPackageRoots?: Set<string>
   relativeAbsoluteSrcRoot?: (id: string) => string
 }) {
@@ -42,11 +44,30 @@ function resolvePendingEntryIds(options: {
     return pending
   }
 
-  if (!options.sharedChunkImporters?.size) {
+  if (!options.sharedChunkImporters?.size || !options.sharedChunksByEntry?.size) {
     return pending
   }
 
-  for (const importers of options.sharedChunkImporters.values()) {
+  const relatedChunkIds = new Set<string>()
+  for (const entryId of options.dirtyEntrySet) {
+    const chunkIds = options.sharedChunksByEntry.get(entryId)
+    if (!chunkIds?.size) {
+      continue
+    }
+    for (const chunkId of chunkIds) {
+      relatedChunkIds.add(chunkId)
+    }
+  }
+
+  if (!relatedChunkIds.size) {
+    return pending
+  }
+
+  for (const chunkId of relatedChunkIds) {
+    const importers = options.sharedChunkImporters.get(chunkId)
+    if (!importers) {
+      continue
+    }
     if (importers.size <= 1) {
       continue
     }
@@ -156,6 +177,7 @@ export function useLoadEntry(
 
   const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
+  const hmrSharedChunksByEntry = options?.hmr?.sharedChunksByEntry
 
   return {
     loadEntry,
@@ -187,6 +209,7 @@ export function useLoadEntry(
         dirtyEntrySet,
         dirtyEntryReasons,
         sharedChunkImporters: hmrSharedChunkImporters,
+        sharedChunksByEntry: hmrSharedChunksByEntry,
         subPackageRoots: new Set(ctx.scanService?.subPackageMap?.keys?.() ?? []),
         relativeAbsoluteSrcRoot: ctx.configService.relativeAbsoluteSrcRoot.bind(ctx.configService),
       })

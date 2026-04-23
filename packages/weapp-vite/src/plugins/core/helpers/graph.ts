@@ -168,6 +168,14 @@ function appendSharedChunkImporters(
     else {
       state.hmrSharedChunkImporters.set(chunkId, new Set([entryId]))
     }
+
+    const currentChunkIds = state.hmrSharedChunksByEntry.get(entryId)
+    if (currentChunkIds) {
+      currentChunkIds.add(chunkId)
+    }
+    else {
+      state.hmrSharedChunksByEntry.set(entryId, new Set([chunkId]))
+    }
   }
 
   const restoreMissingChunkImporters = (
@@ -251,6 +259,7 @@ function appendSharedChunkImporters(
 
 export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePluginState) {
   state.hmrSharedChunkImporters.clear()
+  state.hmrSharedChunksByEntry.clear()
   state.hmrSharedChunkDependencies.clear()
   appendSharedChunkImporters(bundle, state)
 }
@@ -300,6 +309,13 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
   for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
     for (const entryId of refreshedEntryIds) {
       importers.delete(entryId)
+      const chunkIds = state.hmrSharedChunksByEntry.get(entryId)
+      if (chunkIds) {
+        chunkIds.delete(chunkId)
+        if (chunkIds.size === 0) {
+          state.hmrSharedChunksByEntry.delete(entryId)
+        }
+      }
     }
     if (importers.size === 0) {
       state.hmrSharedChunkImporters.delete(chunkId)
