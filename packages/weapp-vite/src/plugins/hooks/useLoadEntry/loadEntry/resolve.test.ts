@@ -77,4 +77,14 @@ describe('createEntryResolver', () => {
       await fs.remove(tempDir)
     }
   })
+
+  it('drops stale absolute resolve results in dev when the file was deleted before load', async () => {
+    const entryPath = '/project/src/pages/logs/hmr-added.vue'
+    const resolver = createEntryResolver({ isDev: true })
+    const pluginCtx = {
+      resolve: async () => ({ id: entryPath }),
+    } as any
+
+    await expect(resolver.resolveEntryWithCache(pluginCtx, entryPath)).resolves.toBeNull()
+  })
 })

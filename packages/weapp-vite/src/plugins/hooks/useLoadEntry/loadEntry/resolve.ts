@@ -26,6 +26,12 @@ export function createEntryResolver(configService?: { isDev?: boolean }) {
       }
     }
     const resolved = await pluginCtx.resolve(resolvedSource)
+    if (resolved?.id && configService?.isDev && path.isAbsolute(resolved.id)) {
+      const [resolvedPathWithoutQuery] = resolved.id.split('?')
+      if (!resolvedPathWithoutQuery || !await fs.pathExists(resolvedPathWithoutQuery)) {
+        return null
+      }
+    }
     const resolvedId = resolved
       ?? (path.isAbsolute(resolvedSource) && await fs.pathExists(resolvedSource)
         ? { id: resolvedSource } as ResolvedId

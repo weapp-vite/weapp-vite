@@ -81,6 +81,11 @@ async function processChangedFile(
   const affectedLayoutEntryIds = new Set<string>()
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
+
+  if (isDeletedMissingSelf && ctx.autoRoutesService?.isRouteFile(normalizedId)) {
+    await ctx.autoRoutesService.handleFileChange(normalizedId, 'delete')
+  }
+
   invalidateFileCache(normalizedId)
   if (event === 'update') {
     const isTemplateFile = isTemplate(normalizedId)

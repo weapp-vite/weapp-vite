@@ -1,5 +1,6 @@
 import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/fs'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import {
@@ -92,6 +93,21 @@ export function createLoadHook(state: CorePluginState) {
       })
     }
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
+    const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
+    const isDeclaredEntry = Boolean(declaredEntryType)
+
+    if (
+      configService.isDev
+      && isDeclaredEntry
+      && sourceId
+      && !sourceId.startsWith('\0')
+      && await fs.pathExists(sourceId) === false
+    ) {
+      return {
+        code: sourceId.endsWith('.vue') ? '<template />' : '',
+        map: { mappings: '' },
+      }
+    }
 
     if (relativeBasename === resolveRootEntryBasename(state)) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
@@ -139,9 +155,6 @@ export function createLoadHook(state: CorePluginState) {
       }
       return result
     }
-
-    const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
-    const isDeclaredEntry = Boolean(declaredEntryType)
 
     if (loadedEntrySet.has(sourceId) || isDeclaredEntry || subPackageMeta?.entries.includes(relativeBasename)) {
       const loadType = declaredEntryType === 'page' ? 'page' : 'component'

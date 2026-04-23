@@ -63,6 +63,10 @@ function createState(overrides: Record<string, any> = {}) {
       wxmlService: {
         scan: vi.fn(async () => null),
       },
+      autoRoutesService: {
+        isRouteFile: vi.fn(() => false),
+        handleFileChange: vi.fn(async () => false),
+      },
       runtimeState: {
         build: {
           hmr: {
@@ -194,6 +198,27 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(entryId, 'direct')
     expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(state.ctx, entryId, 'delete')
+  })
+
+  it('syncs auto-routes state before rebuilding a truly deleted route file', async () => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+    const entryId = '/project/src/pages/logs/hmr-added.vue'
+    const baseState = createState()
+    const state = {
+      ...baseState,
+      ctx: {
+        ...baseState.ctx,
+        autoRoutesService: {
+          isRouteFile: vi.fn((id: string) => id === entryId),
+          handleFileChange: vi.fn(async () => true),
+        },
+      },
+    }
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'delete' })
+
+    expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'delete')
   })
 
   it('normalizes transient delete events on template sidecars back to updates', async () => {

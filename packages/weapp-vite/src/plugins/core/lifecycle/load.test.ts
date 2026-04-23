@@ -6,6 +6,7 @@ import {
   REQUEST_GLOBAL_INSTALLER_HOST_REF,
   REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER,
 } from '@weapp-core/constants'
+import { fs } from '@weapp-core/shared/fs'
 import { parseSync } from 'oxc-parser'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
@@ -104,6 +105,44 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(code.match(/<script\b/g)?.length).toBe(2)
     expect(code).toContain('<script lang="ts">import { installWebRuntimeGlobals')
     expect(code).toContain('export default {}')
+  })
+
+  it('returns an empty module for deleted declared entries during dev hmr', async () => {
+    const sourceId = '/project/src/pages/logs/hmr-added.vue'
+    const loadEntry = vi.fn(async () => {
+      throw new Error('should not load deleted entry')
+    })
+    const pathExistsSpy = vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
+
+    try {
+      const load = createLoadHook({
+        ctx: {
+          configService: {
+            isDev: true,
+            platform: 'weapp',
+            packageJson: { dependencies: {} },
+            weappViteConfig: {},
+            weappLibConfig: undefined,
+            relativeAbsoluteSrcRoot: () => 'pages/logs/hmr-added',
+          },
+        },
+        subPackageMeta: undefined,
+        loadEntry,
+        loadedEntrySet: new Set<string>(),
+        entriesMap: new Map([
+          ['pages/logs/hmr-added', { type: 'page' }],
+        ]),
+      } as any)
+
+      await expect(load.call({}, sourceId)).resolves.toEqual({
+        code: '<template />',
+        map: { mappings: '' },
+      })
+      expect(loadEntry).not.toHaveBeenCalled()
+    }
+    finally {
+      pathExistsSpy.mockRestore()
+    }
   })
 
   it('injects passive local bindings for manual installRequestGlobals usage without auto mode', async () => {
