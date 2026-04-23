@@ -5,6 +5,9 @@ export interface HmrProfileJsonSample {
   totalMs?: number
   event?: string
   file?: string
+  buildCoreMs?: number
+  transformMs?: number
+  writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
@@ -37,6 +40,9 @@ export interface HmrProfileAnalyzeResult {
   lastTimestamp?: string
   metrics: {
     totalMs: HmrProfileMetricSummary
+    buildCoreMs: HmrProfileMetricSummary
+    transformMs: HmrProfileMetricSummary
+    writeMs: HmrProfileMetricSummary
     watchToDirtyMs: HmrProfileMetricSummary
     emitMs: HmrProfileMetricSummary
     sharedChunkResolveMs: HmrProfileMetricSummary
@@ -117,6 +123,9 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const dirtyReasonCounts = new Map<string, number>()
   const pendingReasonCounts = new Map<string, number>()
   const totalValues: number[] = []
+  const buildCoreValues: number[] = []
+  const transformValues: number[] = []
+  const writeValues: number[] = []
   const watchToDirtyValues: number[] = []
   const emitValues: number[] = []
   const sharedChunkValues: number[] = []
@@ -125,6 +134,15 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     totalValues.push(sample.totalMs!)
     if (sample.event) {
       eventCounts.set(sample.event, (eventCounts.get(sample.event) ?? 0) + 1)
+    }
+    if (isFiniteNumber(sample.buildCoreMs)) {
+      buildCoreValues.push(sample.buildCoreMs)
+    }
+    if (isFiniteNumber(sample.transformMs)) {
+      transformValues.push(sample.transformMs)
+    }
+    if (isFiniteNumber(sample.writeMs)) {
+      writeValues.push(sample.writeMs)
     }
     if (isFiniteNumber(sample.watchToDirtyMs)) {
       watchToDirtyValues.push(sample.watchToDirtyMs)
@@ -162,6 +180,9 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     lastTimestamp: orderedByTime.at(-1)?.timestamp,
     metrics: {
       totalMs: createMetricSummary(totalValues),
+      buildCoreMs: createMetricSummary(buildCoreValues),
+      transformMs: createMetricSummary(transformValues),
+      writeMs: createMetricSummary(writeValues),
       watchToDirtyMs: createMetricSummary(watchToDirtyValues),
       emitMs: createMetricSummary(emitValues),
       sharedChunkResolveMs: createMetricSummary(sharedChunkValues),

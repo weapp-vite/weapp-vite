@@ -113,6 +113,9 @@ export interface RuntimeState {
       entryLayoutDependencies: Map<string, Set<string>>
       recentProfiles: Array<{
         totalMs: number
+        buildCoreMs?: number
+        transformMs?: number
+        writeMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
@@ -123,6 +126,9 @@ export interface RuntimeState {
       profile: {
         event?: ChangeEvent
         file?: string
+        buildCoreMs?: number
+        transformMs?: number
+        writeMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number

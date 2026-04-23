@@ -275,6 +275,8 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile = {
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
+      transformMs: 9.5,
+      writeMs: 5.25,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
@@ -351,6 +353,8 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile = {
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
+      transformMs: 9.5,
+      writeMs: 5.25,
       watchToDirtyMs: 3.25,
       emitMs: 14.5,
       sharedChunkResolveMs: 1.75,
@@ -376,6 +380,9 @@ describe('runtime buildPlugin service', () => {
     expect(typeof payload).toBe('string')
     expect(payload.endsWith('\n')).toBe(true)
     expect(payload).toContain('"event":"update"')
+    expect(payload).toContain('"transformMs":9.5')
+    expect(payload).toContain('"writeMs":5.25')
+    expect(payload).toContain('"buildCoreMs":')
     expect(payload).toContain('"dirtyReasonSummary":["entry-direct:1"]')
     expect(payload).toContain('"pendingReasonSummary":["shared-chunk(common.js)+1:direct"]')
   })

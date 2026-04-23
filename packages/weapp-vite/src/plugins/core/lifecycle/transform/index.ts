@@ -11,6 +11,7 @@ import {
   resolveManualRequestGlobalsTargets,
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
+import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { REQUEST_GLOBAL_PASSIVE_BINDINGS_MARKER } from '../emit/constants'
 import { replaceImportMetaAccess, replaceImportMetaAccessInSfc } from './importMeta'
@@ -79,50 +80,56 @@ export function createTransformHook(state: CorePluginState) {
     if (!shouldTransformId(id, configService.absoluteSrcRoot)) {
       return null
     }
+    const startedAt = performance.now()
 
-    const sourceId = normalizeFsResolvedId(id)
-    const relativeOutputPath = sourceId
-      ? (
-          configService.relativeOutputPath?.(sourceId)
-          ?? configService.relativeAbsoluteSrcRoot?.(sourceId)
-        )
-      : undefined
-    const importMetaTransformOptions = relativeOutputPath
-      ? {
-          importMetaDefineRegistry: configService.importMetaDefineRegistry,
-          extension: 'js',
-          relativePath: relativeOutputPath,
-        }
-      : undefined
-    const importMetaCode = importMetaTransformOptions
-      ? (
-          sourceId?.endsWith('.vue')
-            ? replaceImportMetaAccessInSfc(code, importMetaTransformOptions)
-            : replaceImportMetaAccess(code, importMetaTransformOptions)
-        )
-      : code
-    const nextCode = resolveRequestGlobalsTransformCode(id, importMetaCode) ?? importMetaCode
-
-    if (!injectOptions) {
-      return nextCode === code
-        ? null
-        : {
-            code: nextCode,
-            map: null,
+    try {
+      const sourceId = normalizeFsResolvedId(id)
+      const relativeOutputPath = sourceId
+        ? (
+            configService.relativeOutputPath?.(sourceId)
+            ?? configService.relativeAbsoluteSrcRoot?.(sourceId)
+          )
+        : undefined
+      const importMetaTransformOptions = relativeOutputPath
+        ? {
+            importMetaDefineRegistry: configService.importMetaDefineRegistry,
+            extension: 'js',
+            relativePath: relativeOutputPath,
           }
-    }
+        : undefined
+      const importMetaCode = importMetaTransformOptions
+        ? (
+            sourceId?.endsWith('.vue')
+              ? replaceImportMetaAccessInSfc(code, importMetaTransformOptions)
+              : replaceImportMetaAccess(code, importMetaTransformOptions)
+          )
+        : code
+      const nextCode = resolveRequestGlobalsTransformCode(id, importMetaCode) ?? importMetaCode
 
-    const replaced = replacePlatformApiAccess(nextCode, injectOptions.globalName, {
-      engine: astEngine,
-      parserLike: this as unknown as AstParserLike,
-    })
-    if (replaced === code) {
-      return null
-    }
+      if (!injectOptions) {
+        return nextCode === code
+          ? null
+          : {
+              code: nextCode,
+              map: null,
+            }
+      }
 
-    return {
-      code: replaced,
-      map: null,
+      const replaced = replacePlatformApiAccess(nextCode, injectOptions.globalName, {
+        engine: astEngine,
+        parserLike: this as unknown as AstParserLike,
+      })
+      if (replaced === code) {
+        return null
+      }
+
+      return {
+        code: replaced,
+        map: null,
+      }
+    }
+    finally {
+      recordHmrProfileDuration(state.ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
     }
   }
 

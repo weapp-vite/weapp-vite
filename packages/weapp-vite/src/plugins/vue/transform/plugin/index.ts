@@ -4,6 +4,7 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { createPageEntryMatcher } from '../../../wevu'
 import { fs } from '@weapp-core/shared/fs'
+import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
@@ -71,21 +72,27 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       if (!isVueLikeId(id)) {
         return null
       }
+      const startedAt = performance.now()
 
-      return transformVueLikeFile({
-        ctx,
-        pluginCtx: this,
-        code,
-        id,
-        compilationCache,
-        pageMatcher,
-        setPageMatcher: matcher => (pageMatcher = matcher),
-        reExportResolutionCache,
-        styleBlocksCache,
-        scopedSlotModules,
-        emittedScopedSlotChunks,
-        classStyleRuntimeWarned,
-      })
+      try {
+        return await transformVueLikeFile({
+          ctx,
+          pluginCtx: this,
+          code,
+          id,
+          compilationCache,
+          pageMatcher,
+          setPageMatcher: matcher => (pageMatcher = matcher),
+          reExportResolutionCache,
+          styleBlocksCache,
+          scopedSlotModules,
+          emittedScopedSlotChunks,
+          classStyleRuntimeWarned,
+        })
+      }
+      finally {
+        recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
+      }
     },
 
     async generateBundle(_options, bundle) {

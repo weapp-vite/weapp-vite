@@ -1,6 +1,7 @@
 import path from 'pathe'
 
 export const DEFAULT_HMR_PROFILE_JSONL_RELATIVE_PATH = '.weapp-vite/hmr-profile.jsonl'
+export type HmrProfileDurationKey = 'transformMs' | 'writeMs'
 
 interface ResolveHmrProfileJsonPathOptions {
   cwd: string
@@ -28,4 +29,18 @@ export function resolveHmrProfileJsonPath(options: ResolveHmrProfileJsonPathOpti
     return path.join(options.cwd, DEFAULT_HMR_PROFILE_JSONL_RELATIVE_PATH)
   }
   return undefined
+}
+
+/**
+ * @description 为 HMR profile 累加阶段耗时。
+ */
+export function recordHmrProfileDuration(
+  profile: Record<HmrProfileDurationKey, number | undefined> | undefined,
+  key: HmrProfileDurationKey,
+  durationMs: number,
+) {
+  if (!profile || !Number.isFinite(durationMs) || durationMs <= 0) {
+    return
+  }
+  profile[key] = (profile[key] ?? 0) + durationMs
 }

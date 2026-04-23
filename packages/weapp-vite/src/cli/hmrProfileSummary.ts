@@ -12,6 +12,9 @@ interface HmrProfileJsonSample {
   totalMs?: number
   event?: string
   file?: string
+  buildCoreMs?: number
+  transformMs?: number
+  writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
@@ -50,6 +53,14 @@ function parseLatestHmrProfileSample(content: string) {
 function formatPhaseHint(sample: HmrProfileJsonSample) {
   const phases = [
     {
+      label: 'build-core',
+      value: sample.buildCoreMs,
+    },
+    {
+      label: 'transform',
+      value: sample.transformMs,
+    },
+    {
       label: 'watch->dirty',
       value: sample.watchToDirtyMs,
     },
@@ -60,6 +71,10 @@ function formatPhaseHint(sample: HmrProfileJsonSample) {
     {
       label: 'shared',
       value: sample.sharedChunkResolveMs,
+    },
+    {
+      label: 'write',
+      value: sample.writeMs,
     },
   ]
     .filter(phase => isFiniteNumber(phase.value))

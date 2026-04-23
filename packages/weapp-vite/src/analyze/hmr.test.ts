@@ -15,6 +15,9 @@ describe('analyze hmr profile', () => {
         totalMs: 30,
         event: 'update',
         file: '/project/src/pages/home/index.vue',
+        buildCoreMs: 16,
+        transformMs: 8,
+        writeMs: 2,
         watchToDirtyMs: 3,
         emitMs: 10,
         sharedChunkResolveMs: 1,
@@ -27,6 +30,9 @@ describe('analyze hmr profile', () => {
         totalMs: 50,
         event: 'create',
         file: '/project/src/pages/logs/index.vue',
+        buildCoreMs: 28,
+        transformMs: 12,
+        writeMs: 4,
         watchToDirtyMs: 4,
         emitMs: 12,
         sharedChunkResolveMs: 2,
@@ -49,6 +55,9 @@ describe('analyze hmr profile', () => {
     expect(result.lastTimestamp).toBe('2026-04-23T10:01:00.000Z')
     expect(result.metrics.totalMs.averageMs).toBe(40)
     expect(result.metrics.totalMs.maxMs).toBe(50)
+    expect(result.metrics.buildCoreMs.averageMs).toBe(22)
+    expect(result.metrics.transformMs.averageMs).toBe(10)
+    expect(result.metrics.writeMs.averageMs).toBe(3)
     expect(result.metrics.watchToDirtyMs.averageMs).toBe(3.5)
     expect(result.events).toEqual([
       { name: 'create', count: 1 },

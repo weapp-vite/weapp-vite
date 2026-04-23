@@ -19,6 +19,7 @@ import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { generateLibDts } from '../libDts'
 import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
 import { resolveTouchAppWxssEnabled } from './touchAppWxss'
@@ -41,6 +42,9 @@ interface HmrProfileJsonSample {
   totalMs: number
   event?: string
   file?: string
+  buildCoreMs?: number
+  transformMs?: number
+  writeMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
@@ -52,7 +56,7 @@ interface HmrProfileJsonSample {
 }
 
 interface HmrPhaseRegressionCandidate {
-  label: 'watch->dirty' | 'emit' | 'shared'
+  label: 'build-core' | 'transform' | 'watch->dirty' | 'emit' | 'shared' | 'write'
   currentMs: number
   averageMs: number
   ratio: number
@@ -65,6 +69,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const hmrState = ctx.runtimeState.build.hmr
     hmrState.recentProfiles.push({
       totalMs,
+      buildCoreMs: hmrState.profile.buildCoreMs,
+      transformMs: hmrState.profile.transformMs,
+      writeMs: hmrState.profile.writeMs,
       watchToDirtyMs: hmrState.profile.watchToDirtyMs,
       emitMs: hmrState.profile.emitMs,
       sharedChunkResolveMs: hmrState.profile.sharedChunkResolveMs,
@@ -88,12 +95,52 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     })
   }
 
+  function finalizeHmrProfile(totalMs: number) {
+    const profile = ctx.runtimeState.build.hmr.profile
+    const measuredMs = [
+      profile.watchToDirtyMs,
+      profile.emitMs,
+      profile.writeMs,
+    ].reduce((sum, value) => sum + (typeof value === 'number' ? value : 0), 0)
+    profile.buildCoreMs = Math.max(0, totalMs - measuredMs)
+  }
+
+  function appendHmrMetricsPlugin(config: InlineConfig) {
+    if (!ctx.configService?.isDev) {
+      return config
+    }
+    const plugins = config.plugins
+    return {
+      ...config,
+      plugins: [
+        ...(plugins ? (Array.isArray(plugins) ? plugins : [plugins]) : []),
+        createHmrProfileMetricsPlugin(ctx),
+      ],
+    } satisfies InlineConfig
+  }
+
   function formatHmrPhaseRegressionHint(
     currentProfile: NonNullable<MutableCompilerContext['runtimeState']>['build']['hmr']['recentProfiles'][number],
     previousProfiles: NonNullable<MutableCompilerContext['runtimeState']>['build']['hmr']['recentProfiles'],
   ) {
     const candidates: HmrPhaseRegressionCandidate[] = []
+    const phasePriority: Record<HmrPhaseRegressionCandidate['label'], number> = {
+      'emit': 0,
+      'shared': 1,
+      'write': 2,
+      'transform': 3,
+      'watch->dirty': 4,
+      'build-core': 5,
+    }
     const phases = [
+      {
+        key: 'buildCoreMs',
+        label: 'build-core',
+      },
+      {
+        key: 'transformMs',
+        label: 'transform',
+      },
       {
         key: 'watchToDirtyMs',
         label: 'watch->dirty',
@@ -105,6 +152,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       {
         key: 'sharedChunkResolveMs',
         label: 'shared',
+      },
+      {
+        key: 'writeMs',
+        label: 'write',
       },
     ] as const
 
@@ -131,7 +182,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     const bestCandidate = candidates
       .filter(candidate => candidate.currentMs >= 10 && candidate.ratio >= 1.3)
-      .sort((left, right) => right.ratio - left.ratio || right.currentMs - left.currentMs)[0]
+      .sort((left, right) => {
+        return right.ratio - left.ratio
+          || right.currentMs - left.currentMs
+          || phasePriority[left.label] - phasePriority[right.label]
+      })[0]
 
     if (!bestCandidate) {
       return ''
@@ -183,6 +238,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       totalMs,
       event: profile.event,
       file: profile.file,
+      buildCoreMs: profile.buildCoreMs,
+      transformMs: profile.transformMs,
+      writeMs: profile.writeMs,
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,
       sharedChunkResolveMs: profile.sharedChunkResolveMs,
@@ -256,7 +314,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.(`[${target}] dev build watcher start`)
     const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
     // eslint-disable-next-line ts/no-use-before-define
-    const buildOptions = applyTargetBuildOverride(
+    const buildOptions = appendHmrMetricsPlugin(applyTargetBuildOverride(
       configService.merge(
         undefined,
         createSharedBuildConfig(configService, scanService),
@@ -264,7 +322,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         resolveTargetBuildOverride(target),
       ),
       target,
-    )
+    ))
     const watcherPromise = build(
       buildOptions,
     ) as unknown as Promise<RolldownWatcher>
@@ -305,6 +363,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         void (async () => {
           const duration = durationMs.toFixed(2)
           if (firstBuildCompleted) {
+            finalizeHmrProfile(durationMs)
             recordHmrProfile(durationMs)
             await writeHmrProfileJsonSample(durationMs).catch((error) => {
               debug?.(`write hmr profile json failed: ${String(error)}`)

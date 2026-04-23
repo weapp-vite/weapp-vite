@@ -8,6 +8,7 @@ import {
 import { resolveAstEngine } from '../ast'
 import logger from '../logger'
 import { getReadFileCheckMtime } from '../utils/cachePolicy'
+import { recordHmrProfileDuration } from '../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { collectOnPageScrollPerformanceWarnings } from './performance/onPageScrollDiagnostics'
@@ -69,36 +70,42 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
       if (!filename || !path.isAbsolute(filename)) {
         return null
       }
+      const startedAt = performance.now()
 
-      if (!(await pageMatcher.isPageFile(filename))) {
-        return null
-      }
+      try {
+        if (!(await pageMatcher.isPageFile(filename))) {
+          return null
+        }
 
-      for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
-        engine: resolveAstEngine(configService.weappViteConfig),
-      })) {
-        logger.warn(warning)
-      }
+        for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
+          engine: resolveAstEngine(configService.weappViteConfig),
+        })) {
+          logger.warn(warning)
+        }
 
-      const result = await injectWevuPageFeaturesInJsWithResolver(code, {
-        id: filename,
-        resolver: createViteResolverAdapter(
-          {
-            resolve: async (source, importer) => {
-              return await this.resolve(source, importer) as any
+        const result = await injectWevuPageFeaturesInJsWithResolver(code, {
+          id: filename,
+          resolver: createViteResolverAdapter(
+            {
+              resolve: async (source, importer) => {
+                return await this.resolve(source, importer) as any
+              },
             },
-          },
-          { readFile: readFileCached },
-          { checkMtime: getReadFileCheckMtime(configService) },
-        ),
-      })
-      if (!result.transformed) {
-        return null
-      }
+            { readFile: readFileCached },
+            { checkMtime: getReadFileCheckMtime(configService) },
+          ),
+        })
+        if (!result.transformed) {
+          return null
+        }
 
-      return {
-        code: result.code,
-        map: null,
+        return {
+          code: result.code,
+          map: null,
+        }
+      }
+      finally {
+        recordHmrProfileDuration(ctx.runtimeState?.build?.hmr?.profile, 'transformMs', performance.now() - startedAt)
       }
     },
   }
