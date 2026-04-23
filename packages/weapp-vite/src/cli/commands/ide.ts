@@ -11,6 +11,7 @@ import {
 } from 'weapp-ide-cli'
 import logger from '../../logger'
 import { resolveForwardConsoleOptions, startForwardConsoleBridge } from '../forwardConsole'
+import { readLatestHmrProfileSummary } from '../hmrProfileSummary'
 import { openIde, resolveIdeCommandContext } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { resolveRuntimeTargets } from '../runtime'
@@ -151,6 +152,15 @@ export async function runIdeCommand(action: string | undefined, root: string | u
           enabled: true,
         },
   })
+
+  const latestHmrSummary = await readLatestHmrProfileSummary({
+    cwd: resolved.cwd ?? process.cwd(),
+    relativeCwd: value => resolved.cwd ? value.replace(`${resolved.cwd}/`, '') : value,
+    weappViteConfig: resolved.weappViteConfig,
+  })
+  if (latestHmrSummary) {
+    logger.info(latestHmrSummary.line)
+  }
 
   const session = await startForwardConsoleBridge({
     projectPath: resolved.projectPath,

@@ -31,6 +31,7 @@ export interface ResolveIdeCommandOptions {
 }
 
 export interface ResolvedIdeCommandContext {
+  cwd?: string
   platform?: MpPlatform
   projectPath?: string
   weappViteConfig?: Awaited<ReturnType<typeof createCompilerContext>>['configService']['weappViteConfig']
@@ -180,6 +181,7 @@ export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions
         projectPath = resolveIdeProjectRoot(ctx.configService.mpDistRoot, ctx.configService.cwd)
       }
       return {
+        cwd: ctx.configService.cwd,
         platform,
         projectPath,
         weappViteConfig: ctx.configService.weappViteConfig,
@@ -199,6 +201,7 @@ export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions
   }
 
   return {
+    cwd,
     platform,
     projectPath,
   }

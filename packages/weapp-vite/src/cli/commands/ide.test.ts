@@ -4,6 +4,7 @@ const openIdeMock = vi.hoisted(() => vi.fn())
 const resolveIdeCommandContextMock = vi.hoisted(() => vi.fn())
 const resolveForwardConsoleOptionsMock = vi.hoisted(() => vi.fn())
 const startForwardConsoleBridgeMock = vi.hoisted(() => vi.fn())
+const readLatestHmrProfileSummaryMock = vi.hoisted(() => vi.fn())
 const bootstrapWechatDevtoolsSettingsMock = vi.hoisted(() => vi.fn())
 const getWechatIdeTestAccountsMock = vi.hoisted(() => vi.fn())
 const getWechatIdeTicketMock = vi.hoisted(() => vi.fn())
@@ -36,6 +37,10 @@ vi.mock('../forwardConsole', () => ({
   startForwardConsoleBridge: startForwardConsoleBridgeMock,
 }))
 
+vi.mock('../hmrProfileSummary', () => ({
+  readLatestHmrProfileSummary: readLatestHmrProfileSummaryMock,
+}))
+
 vi.mock('../../logger', () => ({
   default: loggerMock,
 }))
@@ -52,6 +57,7 @@ describe('ide logs command', () => {
     resolveIdeCommandContextMock.mockReset()
     resolveForwardConsoleOptionsMock.mockReset()
     startForwardConsoleBridgeMock.mockReset()
+    readLatestHmrProfileSummaryMock.mockReset()
     bootstrapWechatDevtoolsSettingsMock.mockReset()
     getWechatIdeTestAccountsMock.mockReset()
     getWechatIdeTicketMock.mockReset()
@@ -77,6 +83,7 @@ describe('ide logs command', () => {
 
     openIdeMock.mockResolvedValue(undefined)
     resolveIdeCommandContextMock.mockResolvedValue({
+      cwd: '/workspace/demo',
       platform: 'weapp',
       projectPath: 'dist/dev',
       weappViteConfig: {},
@@ -100,6 +107,7 @@ describe('ide logs command', () => {
     startForwardConsoleBridgeMock.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
     })
+    readLatestHmrProfileSummaryMock.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -117,7 +125,25 @@ describe('ide logs command', () => {
       logLevels: ['log', 'info', 'warn', 'error'],
       unhandledErrors: true,
     }))
+    expect(readLatestHmrProfileSummaryMock).toHaveBeenCalledWith({
+      cwd: '/workspace/demo',
+      relativeCwd: expect.any(Function),
+      weappViteConfig: {},
+    })
     expect(processOffSpy).toHaveBeenCalled()
+  })
+
+  it('prints latest hmr summary before attaching ide logs bridge', async () => {
+    readLatestHmrProfileSummaryMock.mockResolvedValue({
+      line: '[hmr] 最近一次热更新 120.00 ms，update，src/pages/logs/index.vue，主耗时 emit 60.00 ms',
+      profilePath: '/workspace/demo/.weapp-vite/hmr-profile.jsonl',
+    })
+    const { runIdeCommand } = await import('./ide')
+
+    await runIdeCommand('logs', undefined, {})
+
+    expect(loggerMock.info).toHaveBeenCalledWith('[hmr] 最近一次热更新 120.00 ms，update，src/pages/logs/index.vue，主耗时 emit 60.00 ms')
+    expect(startForwardConsoleBridgeMock).toHaveBeenCalledTimes(1)
   })
 
   it('opens ide first when --open is provided', async () => {
@@ -142,6 +168,7 @@ describe('ide logs command', () => {
 
   it('rejects non-weapp platforms', async () => {
     resolveIdeCommandContextMock.mockResolvedValue({
+      cwd: '/workspace/demo',
       platform: 'alipay',
       projectPath: 'dist/alipay',
       weappViteConfig: {},
