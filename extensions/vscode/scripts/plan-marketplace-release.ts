@@ -5,6 +5,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 export interface MarketplaceReleasePlan {
+  changesetsPublished: boolean
   currentVersion: string
   currentRef: null | string
   isMainRef: boolean
@@ -13,6 +14,7 @@ export interface MarketplaceReleasePlan {
   releaseTag: string
   shouldPublish: boolean
   tagExists: boolean
+  versionBumped: boolean
 }
 
 interface MarketplaceQueryResponse {
@@ -178,6 +180,24 @@ export function compareSemverVersions(left: string, right: string) {
 }
 
 /**
+ * 判断当前提交是否把扩展版本往上提升了。
+ */
+export function isVersionBumped(currentVersion: string, previousVersion: null | string) {
+  if (previousVersion === null) {
+    return true
+  }
+
+  return compareSemverVersions(currentVersion, previousVersion) > 0
+}
+
+/**
+ * 判断本次 release workflow 是否由 Changesets 实际执行了发布。
+ */
+export function readChangesetsPublishedFlag(value: null | string | undefined) {
+  return value === 'true'
+}
+
+/**
  * 判断当前 ref 是否为主分支发布 ref。
  */
 export function isMainReleaseRef(ref: null | string | undefined) {
@@ -237,6 +257,7 @@ export async function fetchMarketplaceLatestVersion(publisher: string, extension
  * 根据线上版本与 tag 状态生成发布计划。
  */
 export function createMarketplaceReleasePlan(
+  changesetsPublished: boolean,
   currentVersion: string,
   previousVersion: null | string,
   marketplaceVersion: null | string,
@@ -245,11 +266,14 @@ export function createMarketplaceReleasePlan(
 ): MarketplaceReleasePlan {
   const releaseTag = `${releaseTagPrefix}${currentVersion}`
   const isMainRef = isMainReleaseRef(currentRef)
-  const shouldPublish = isMainRef && (marketplaceVersion === null
+  const versionBumped = isVersionBumped(currentVersion, previousVersion)
+  const hasAllowedTrigger = changesetsPublished || versionBumped
+  const shouldPublish = isMainRef && hasAllowedTrigger && (marketplaceVersion === null
     ? !tagExists
     : compareSemverVersions(currentVersion, marketplaceVersion) > 0 && !tagExists)
 
   return {
+    changesetsPublished,
     currentVersion,
     currentRef,
     isMainRef,
@@ -258,6 +282,7 @@ export function createMarketplaceReleasePlan(
     releaseTag,
     shouldPublish,
     tagExists,
+    versionBumped,
   }
 }
 
@@ -297,6 +322,7 @@ function resolveCurrentReleaseRef() {
  */
 async function loadMarketplaceReleasePlan() {
   const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8')
+  const changesetsPublished = readChangesetsPublishedFlag(process.env.CHANGESETS_PUBLISHED)
   const currentVersion = readVersionFromPackageJson(packageJsonContent)
   const currentRef = resolveCurrentReleaseRef()
   const previousVersion = readPreviousVersion()
@@ -304,7 +330,14 @@ async function loadMarketplaceReleasePlan() {
   const marketplaceVersion = await fetchMarketplaceLatestVersion(publisher, extensionName)
   const tagExists = runGit(['tag', '--list', `${releaseTagPrefix}${currentVersion}`], true).length > 0
 
-  return createMarketplaceReleasePlan(currentVersion, previousVersion, marketplaceVersion, tagExists, currentRef)
+  return createMarketplaceReleasePlan(
+    changesetsPublished,
+    currentVersion,
+    previousVersion,
+    marketplaceVersion,
+    tagExists,
+    currentRef,
+  )
 }
 
 /**
@@ -318,6 +351,7 @@ function writeGitHubOutput(plan: MarketplaceReleasePlan) {
   }
 
   const lines = [
+    `changesets_published=${String(plan.changesetsPublished)}`,
     `current_version=${plan.currentVersion}`,
     `current_ref=${plan.currentRef ?? ''}`,
     `is_main_ref=${String(plan.isMainRef)}`,
@@ -326,6 +360,7 @@ function writeGitHubOutput(plan: MarketplaceReleasePlan) {
     `release_tag=${plan.releaseTag}`,
     `should_publish=${String(plan.shouldPublish)}`,
     `tag_exists=${String(plan.tagExists)}`,
+    `version_bumped=${String(plan.versionBumped)}`,
   ]
 
   fs.appendFileSync(githubOutput, `${lines.join('\n')}\n`)

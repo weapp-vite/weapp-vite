@@ -75,4 +75,4 @@ pnpm --dir extensions/vscode run release:marketplace:plan
 
 - [PUBLISHING.md](./PUBLISHING.md)
 
-目前 release 流程除了限制 `main` ref 外，还要求 `changesets/action` 本次实际完成发布；未合并的 `changeset-release/*` 分支、以及仅新增 changeset 但尚未进入真正 release publish 的提交，都不会直接发布 Marketplace。
+目前 release 流程除了限制 `main` ref 外，还要求满足合法发布入口之一：要么 `changesets/action` 本次实际完成发布，要么当前提交把插件版本手动往上提升。未合并的 `changeset-release/*` 分支、以及仅新增 changeset 但尚未进入真正 release publish 的提交，都不会直接发布 Marketplace。
