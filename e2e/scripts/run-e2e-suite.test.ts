@@ -15,5 +15,7 @@ describe('run-e2e-suite ide cleanup hooks', () => {
     expect(shouldCleanupIdeBeforeEachTask('full')).toBe(false)
     expect(shouldCleanupIdeBeforeEachTask('full-regression')).toBe(false)
     expect(shouldCleanupIdeBeforeEachTask('ide-headless-smoke')).toBe(false)
+    expect(shouldCleanupIdeBeforeEachTask('ide-headless-gate')).toBe(false)
+    expect(shouldCleanupIdeBeforeEachTask('ide-headless-full')).toBe(false)
   })
 })

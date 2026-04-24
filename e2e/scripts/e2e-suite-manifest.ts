@@ -113,6 +113,10 @@ function createHeadlessVitestTask(configPath: string, filePath: string, label = 
   }
 }
 
+function getHeadlessPatternTasks(patterns: string[]) {
+  return patterns.map(filePath => createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, filePath)))
+}
+
 function createCommandTask(label: string, args: string[]): SuiteTask {
   return {
     label,
@@ -180,9 +184,25 @@ export function getIdeSmokeTasks() {
 }
 
 export function getIdeHeadlessSmokeTasks() {
-  return [
-    createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'ide/index.test.ts')),
-  ]
+  return getHeadlessPatternTasks([
+    'ide/index.test.ts',
+    'ide/template-weapp-vite-template.test.ts',
+  ])
+}
+
+export function getIdeHeadlessGateTasks() {
+  return getHeadlessPatternTasks([
+    'ide/index.test.ts',
+    'ide/app-lifecycle.test.ts',
+    'ide/auto-routes-define-app-json.runtime.test.ts',
+    'ide/template-weapp-vite-template.test.ts',
+    'ide/template-weapp-vite-wevu-template.test.ts',
+    'ide/wevu-runtime.weapp.test.ts',
+  ])
+}
+
+export function getIdeHeadlessTasks() {
+  return getHeadlessPatternTasks(IDE_GATE_TESTS.map(filePath => toRelativeLabel(filePath)))
 }
 
 export function getIdeGithubIssuesTasks() {
@@ -256,6 +276,16 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-headless-smoke',
     description: 'Smallest headless runtime smoke suite for provider-based IDE assertions',
     tasks: getIdeHeadlessSmokeTasks,
+  },
+  'ide-headless-gate': {
+    name: 'ide-headless-gate',
+    description: 'Broader headless runtime gate suite with provider-compatible core coverage',
+    tasks: getIdeHeadlessGateTasks,
+  },
+  'ide-headless-full': {
+    name: 'ide-headless-full',
+    description: 'Largest provider-compatible IDE suite backed by the headless runtime',
+    tasks: getIdeHeadlessTasks,
   },
   'ide-full': {
     name: 'ide-full',

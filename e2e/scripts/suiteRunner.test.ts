@@ -171,21 +171,36 @@ describe('suiteRunner', () => {
     const ideSmokeTasks = await getSuiteTasks('ide-smoke')
     const ideGateTasks = await getSuiteTasks('ide-gate')
     const ideFullTasks = await getSuiteTasks('ide-full')
+    const ideHeadlessSmokeTasks = await getSuiteTasks('ide-headless-smoke')
+    const ideHeadlessGateTasks = await getSuiteTasks('ide-headless-gate')
+    const ideHeadlessFullTasks = await getSuiteTasks('ide-headless-full')
     const ideChunkModesTasks = await getSuiteTasks('ide-full:chunk-modes')
     const ideGithubIssuesTasks = await getSuiteTasks('ide-full:github-issues')
     const ideSmokeLabels = ideSmokeTasks.map(task => task.label)
     const ideGateLabels = ideGateTasks.map(task => task.label)
     const ideFullLabels = ideFullTasks.map(task => task.label)
+    const ideHeadlessSmokeLabels = ideHeadlessSmokeTasks.map(task => task.label)
+    const ideHeadlessGateLabels = ideHeadlessGateTasks.map(task => task.label)
+    const ideHeadlessFullLabels = ideHeadlessFullTasks.map(task => task.label)
     const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
     expect(ideGateTasks.length).toBeLessThan(ideFullTasks.length)
+    expect(ideHeadlessSmokeTasks.length).toBeLessThan(ideHeadlessGateTasks.length)
+    expect(ideHeadlessGateTasks.length).toBeLessThanOrEqual(ideHeadlessFullTasks.length)
     expect(ideSmokeLabels).toContain('ide/index.test.ts')
     expect(ideSmokeLabels).toContain('ide/template-weapp-vite-template.test.ts')
     expect(ideGateLabels).toContain('ide/index.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
+    expect(ideHeadlessSmokeLabels).toEqual([
+      'ide/index.test.ts',
+      'ide/template-weapp-vite-template.test.ts',
+    ])
+    expect(ideHeadlessGateLabels).toContain('ide/app-lifecycle.test.ts')
+    expect(ideHeadlessGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/lifecycle-compare.test.ts')
     expect(ideChunkModesLabels).toEqual([
       'ide/chunk-modes.runtime.duplicate.test.ts',
       'ide/chunk-modes.runtime.extras.test.ts',
@@ -199,6 +214,7 @@ describe('suiteRunner', () => {
 
   it('uses env-based target file selection for suite vitest tasks', async () => {
     const [firstIdeSmokeTask] = await getSuiteTasks('ide-smoke')
+    const [firstHeadlessSmokeTask] = await getSuiteTasks('ide-headless-smoke')
 
     expect(firstIdeSmokeTask).toMatchObject({
       label: 'ide/index.test.ts',
@@ -209,6 +225,15 @@ describe('suiteRunner', () => {
       },
     })
     expect(firstIdeSmokeTask?.args).toHaveLength(4)
+    expect(firstHeadlessSmokeTask).toMatchObject({
+      label: 'ide/index.test.ts',
+      command: 'pnpm',
+      args: ['vitest', 'run', '-c', expect.stringContaining('vitest.e2e.headless.config.ts')],
+      env: {
+        [E2E_TARGET_FILE_ENV]: 'ide/index.test.ts',
+        WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      },
+    })
   })
 
   it('lists suite metadata for layered ide execution', async () => {
@@ -216,14 +241,23 @@ describe('suiteRunner', () => {
     const ideSmoke = suites.find(suite => suite.name === 'ide-smoke')
     const ideGate = suites.find(suite => suite.name === 'ide-gate')
     const ideFull = suites.find(suite => suite.name === 'ide-full')
+    const ideHeadlessSmoke = suites.find(suite => suite.name === 'ide-headless-smoke')
+    const ideHeadlessGate = suites.find(suite => suite.name === 'ide-headless-gate')
+    const ideHeadlessFull = suites.find(suite => suite.name === 'ide-headless-full')
 
     expect(ideSmoke).toBeDefined()
     expect(ideGate).toBeDefined()
     expect(ideFull).toBeDefined()
+    expect(ideHeadlessSmoke).toBeDefined()
+    expect(ideHeadlessGate).toBeDefined()
+    expect(ideHeadlessFull).toBeDefined()
     expect(ideSmoke!.taskCount).toBeGreaterThan(0)
     expect(ideSmoke!.taskCount).toBeLessThan(ideGate!.taskCount)
     expect(ideGate!.taskCount).toBeLessThan(ideFull!.taskCount)
+    expect(ideHeadlessSmoke!.taskCount).toBeLessThan(ideHeadlessGate!.taskCount)
+    expect(ideHeadlessGate!.taskCount).toBeLessThanOrEqual(ideHeadlessFull!.taskCount)
     expect(ideSmoke!.labels).toContain('ide/index.test.ts')
+    expect(ideHeadlessSmoke!.labels).toContain('ide/template-weapp-vite-template.test.ts')
   })
 
   it('writes a suite report that preserves child report links across tasks', () => {
