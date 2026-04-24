@@ -41,8 +41,10 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 ### 2.1 Dist Sync Guard (Prevent Stale CLI/Runtime)
 
 - When editing `packages/*/src/**` or `packages-runtime/*/src/**`, assume downstream apps/templates/e2e consume built artifacts from `dist` (not live `src`).
+- Do not assume `pnpm test`, `pnpm e2e:ci`, or `pnpm --filter <app> build/dev` will pick up fresh `src` changes automatically; if validation goes through a published package entry, CLI entry, or downstream app/template/e2e project, rebuild the touched package first so `dist` is up to date.
 - Before validating through `apps/*`, `templates/*`, or `e2e-apps/*`, rebuild each touched package first:
   - `pnpm --filter <package-name> build`
+- If the same work session changes `packages/*/src/**` or `packages-runtime/*/src/**` again, rebuild again before the next downstream validation; do not reuse older `dist` from an earlier pass.
 - For `weapp-vite` CLI changes specifically (`packages/weapp-vite/src/cli/**`, `packages/weapp-vite/src/mcp.ts`, or other CLI entry dependencies), always run:
   - `pnpm --filter weapp-vite build`
   - then run app-level checks such as `pnpm --filter <app> dev` / `build` / `open` / `run mcp:*`
@@ -114,8 +116,8 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Classes/types: PascalCase.
 - Prefer named exports unless a file intentionally owns a single default export.
 - 跨包共享、会进入最终运行时代码、或需要在多个包/测试之间保持稳定值的 runtime marker / key / helper-name 常量，优先收敛到 `@weapp-core/constants`；不要把这类常量继续散落在 `packages/weapp-vite` 的单文件内部。
-- 对 `dist`、小程序构建输出目录、插件输出目录这类最终构建产物，默认要求全部来自 Vite/Rolldown 的原生 emit / write 流程；不要为了 dev/HMR 兜底、补写、同步或清理差量而直接 `writeFile` 生成这些产物。
-- 如果某个方案需要“手动把 bundle 写回磁盘”才能工作，默认视为违反架构约束；应优先改成调整 entry invalidation、watcher、plugin emit、bundler write 阶段，保证产物仍由 bundler 自身落盘。
+- Final build outputs under `dist`, mini-program output directories, and plugin output directories must come from Vite/Rolldown native emit/write; do not generate them by directly calling `writeFile` for dev/HMR fallback, sync, patch-up, or cleanup.
+- If an approach only works by manually writing bundle files back to disk, treat it as an architectural violation; prefer fixing entry invalidation, watchers, plugin emit behavior, or bundler write-stage integration so the bundler still owns persistence.
 - Keep eslint/stylelint clean and avoid introducing TypeScript errors.
 - Always fix stylelint issues in standalone style files and in `<style>` blocks inside `.vue` files (including generated style outputs).
 - JSDoc comments must be in Chinese.
