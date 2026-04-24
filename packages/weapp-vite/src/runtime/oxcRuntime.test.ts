@@ -7,8 +7,8 @@ const pathExistsMock = vi.hoisted(() => vi.fn())
 const readFileMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 
-vi.mock('local-pkg', () => ({
-  getPackageInfoSync: getPackageInfoSyncMock,
+vi.mock('./localPkg', () => ({
+  safeGetPackageInfoSync: getPackageInfoSyncMock,
 }))
 
 vi.mock('@weapp-core/shared/fs', async (importOriginal) => {

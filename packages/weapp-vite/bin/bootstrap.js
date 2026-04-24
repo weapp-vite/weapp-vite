@@ -6,6 +6,38 @@ function getGlobalProcess() {
   return Reflect.get(globalThis, 'process')
 }
 
+function isKnownLocalPkgResolveNoise(args) {
+  const message = args
+    .map((value) => {
+      if (value instanceof Error) {
+        return `${value.message}\n${value.stack ?? ''}`
+      }
+      return String(value)
+    })
+    .join('\n')
+
+  return message.includes('ERR_INVALID_FILE_URL_HOST')
+    && (message.includes('local-pkg') || message.includes('mlly'))
+}
+
+export function guardKnownLocalPkgResolveNoise() {
+  // eslint-disable-next-line no-console -- CLI 启动阶段需要定向过滤已知三方解析噪音
+  const originalConsoleError = console.error
+
+  // eslint-disable-next-line no-console -- CLI 启动阶段需要定向过滤已知三方解析噪音
+  console.error = (...args) => {
+    if (isKnownLocalPkgResolveNoise(args)) {
+      return
+    }
+    originalConsoleError(...args)
+  }
+
+  return () => {
+    // eslint-disable-next-line no-console -- 恢复原始 console.error
+    console.error = originalConsoleError
+  }
+}
+
 export function formatPrepareSkipMessage(error) {
   const message = error instanceof Error ? error.message : String(error)
   return `[prepare] 跳过 .weapp-vite 支持文件预生成：${message}`
@@ -77,6 +109,7 @@ export async function runWeappViteCLI(options = {}) {
     write = message => getGlobalProcess().stderr.write(`\n WARN  ${message}\n\n`),
   } = options
   const restorePrepareGuard = guardPrepareProcessExit(argv)
+  const restoreKnownNoiseGuard = guardKnownLocalPkgResolveNoise()
 
   try {
     await importer()
@@ -90,6 +123,7 @@ export async function runWeappViteCLI(options = {}) {
     throw error
   }
   finally {
+    restoreKnownNoiseGuard()
     if (!isPrepareCommand(argv)) {
       restorePrepareGuard()
     }

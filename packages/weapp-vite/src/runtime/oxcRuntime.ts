@@ -1,9 +1,9 @@
 import type { Plugin as RolldownPlugin } from 'rolldown'
 import type { Plugin as VitePlugin } from 'vite'
 import { fs } from '@weapp-core/shared/fs'
-import { getPackageInfoSync } from 'local-pkg'
 import path from 'pathe'
 import logger from '../logger'
+import { safeGetPackageInfoSync } from './localPkg'
 
 const NULL_BYTE = '\u0000'
 // eslint-disable-next-line regexp/no-useless-non-capturing-group -- 这里需要兼容 oxc 的正则输出
@@ -32,7 +32,7 @@ export interface OxcRuntimeSupport {
 }
 
 export function createOxcRuntimeSupport(): OxcRuntimeSupport {
-  const oxcRuntimeInfo = getPackageInfoSync('@oxc-project/runtime')
+  const oxcRuntimeInfo = safeGetPackageInfoSync('@oxc-project/runtime')
   const oxcRuntimeHelpersRoot = oxcRuntimeInfo
     ? path.resolve(oxcRuntimeInfo.rootPath, 'src/helpers/esm')
     : undefined

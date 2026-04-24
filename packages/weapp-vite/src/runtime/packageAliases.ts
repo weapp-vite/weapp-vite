@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { getPackageInfoSync } from 'local-pkg'
 import path from 'pathe'
+import { safeGetPackageInfoSync } from './localPkg'
 
 export interface BuiltinPackageAliasEntry {
   find: string
@@ -98,7 +98,7 @@ function resolvePackageEntry(
   distEntry: string,
   fallbackWorkspacePackagePath?: string,
 ) {
-  const packageInfo = getPackageInfoSync(packageName)
+  const packageInfo = safeGetPackageInfoSync(packageName)
   if (packageInfo) {
     const resolvedEntry = path.resolve(packageInfo.rootPath, distEntry)
     if (existsSync(resolvedEntry)) {

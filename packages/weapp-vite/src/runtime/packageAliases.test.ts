@@ -10,8 +10,8 @@ vi.mock('node:fs', () => ({
   existsSync: existsSyncMock,
 }))
 
-vi.mock('local-pkg', () => ({
-  getPackageInfoSync: getPackageInfoSyncMock,
+vi.mock('./localPkg', () => ({
+  safeGetPackageInfoSync: getPackageInfoSyncMock,
 }))
 
 describe('runtime package aliases', () => {

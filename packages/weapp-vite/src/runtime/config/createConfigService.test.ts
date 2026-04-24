@@ -33,8 +33,8 @@ vi.mock('../../logger', () => ({
   configureLogger: configureLoggerMock,
 }))
 
-vi.mock('local-pkg', () => ({
-  getPackageInfoSync: vi.fn(() => ({
+vi.mock('../localPkg', () => ({
+  safeGetPackageInfoSync: vi.fn(() => ({
     name: 'weapp-vite',
     version: '0.0.0-test',
   })),

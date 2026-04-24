@@ -4,7 +4,6 @@ import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types
 import fs from 'node:fs'
 import process from 'node:process'
 import { defu, removeExtensionDeep } from '@weapp-core/shared'
-import { getPackageInfoSync } from 'local-pkg'
 import { detect } from 'package-manager-detector/detect'
 import path from 'pathe'
 import logger, { configureLogger } from '../../logger'
@@ -12,6 +11,7 @@ import { resolveMultiPlatformConfig } from '../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
 import { createImportMetaDefineRegistry, pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
+import { safeGetPackageInfoSync } from '../localPkg'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { resolveBuiltinPackageAliases } from '../packageAliases'
 import { createAliasManager } from './internal/alias'
@@ -20,7 +20,7 @@ import { createMergeFactories } from './internal/merge'
 
 function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const configState = ctx.runtimeState.config
-  configState.packageInfo = getPackageInfoSync('weapp-vite')!
+  configState.packageInfo = safeGetPackageInfoSync('weapp-vite') ?? configState.packageInfo
 
   const defineEnv = configState.defineEnv
   let packageManager = configState.packageManager
