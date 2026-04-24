@@ -19,6 +19,8 @@ export async function transformVueLikeFile(options: {
   compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
   pageMatcher: ReturnType<typeof createPageEntryMatcher> | null
   setPageMatcher: (matcher: ReturnType<typeof createPageEntryMatcher>) => void
+  scanDirtySynced: boolean
+  setScanDirtySynced: (synced: boolean) => void
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   compileOptionsCache: Map<string, CompileVueFileResolvedOptions>
   styleBlocksCache: Map<string, SFCStyleBlock[]>
@@ -34,6 +36,8 @@ export async function transformVueLikeFile(options: {
     compilationCache,
     pageMatcher,
     setPageMatcher,
+    scanDirtySynced,
+    setScanDirtySynced,
     reExportResolutionCache,
     compileOptionsCache,
     styleBlocksCache,
@@ -75,6 +79,8 @@ export async function transformVueLikeFile(options: {
       configService,
       scanService: ctx.scanService,
       scanDirty: ctx.runtimeState.scan.isDirty,
+      scanDirtySynced,
+      setScanDirtySynced,
       filename,
     }))
 

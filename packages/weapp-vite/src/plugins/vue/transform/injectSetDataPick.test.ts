@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getWxmlDirectivePrefix } from '../../../platform'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs } from './injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, mayNeedInjectSetDataPickInJs } from './injectSetDataPick'
 
 const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
 
@@ -35,6 +35,12 @@ createWevuComponent(__wevuOptions)
     expect(injected.code).toContain('pick')
     expect(injected.code).toContain('"count"')
     expect(injected.code).toContain('"total"')
+  })
+
+  it('detects whether js may need setData.pick injection', () => {
+    expect(mayNeedInjectSetDataPickInJs('createWevuComponent(options)')).toBe(true)
+    expect(mayNeedInjectSetDataPickInJs('defineComponent({})')).toBe(true)
+    expect(mayNeedInjectSetDataPickInJs('Page({})')).toBe(false)
   })
 
   it('merges with existing setData.pick array', () => {
@@ -75,5 +81,13 @@ defineComponent({
     expect(injected.code).toContain('setData: {')
     expect(injected.code).toContain('pick: ["count"]')
     expect(injected.code).toContain('...setDataOption')
+  })
+
+  it('returns original js when no wevu component call hint exists', () => {
+    const source = 'Page({ data: { count: 1 } })'
+    const injected = injectSetDataPickInJs(source, ['count'])
+
+    expect(injected.transformed).toBe(false)
+    expect(injected.code).toBe(source)
   })
 })

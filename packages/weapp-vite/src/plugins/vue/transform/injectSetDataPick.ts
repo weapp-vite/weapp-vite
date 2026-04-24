@@ -25,6 +25,13 @@ function isTargetWevuComponentCall(callee: t.Expression | t.V8IntrinsicIdentifie
     && (callee.property.name === 'createWevuComponent' || callee.property.name === 'defineComponent')
 }
 
+/**
+ * 通过轻量字符串特征快速判断脚本是否可能需要注入 setData.pick。
+ */
+export function mayNeedInjectSetDataPickInJs(source: string): boolean {
+  return source.includes('createWevuComponent') || source.includes('defineComponent')
+}
+
 function getObjectPropertyByKey(objectExpression: t.ObjectExpression, key: string): t.ObjectProperty | undefined {
   for (const member of objectExpression.properties) {
     if (member.type !== 'ObjectProperty') {
@@ -215,7 +222,7 @@ export function injectSetDataPickInJs(
   source: string,
   pickKeys: string[],
 ): { code: string, transformed: boolean, map?: EncodedSourceMapLike | null } {
-  if (!pickKeys.length) {
+  if (!pickKeys.length || !mayNeedInjectSetDataPickInJs(source)) {
     return { code: source, transformed: false }
   }
 

@@ -363,4 +363,40 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(createUsingComponentPathResolverMock).toHaveBeenCalledTimes(1)
     expect(createSfcResolveSrcOptionsMock).toHaveBeenCalledTimes(1)
   })
+
+  it('caches auto import tag resolution until service version changes', async () => {
+    const autoImportResolve = vi.fn(() => ({ value: { name: 'FooCard', from: '/components/foo-card' } }))
+    let version = 1
+    const options = createCompileVueFileOptions(
+      {
+        autoImportService: {
+          getVersion: () => version,
+          resolve: autoImportResolve,
+        },
+      } as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+        compileOptionsCache: new Map(),
+      },
+    )
+
+    await options.autoImportTags.resolveUsingComponent('FooCard')
+    await options.autoImportTags.resolveUsingComponent('FooCard')
+    expect(autoImportResolve).toHaveBeenCalledTimes(1)
+
+    version = 2
+    await options.autoImportTags.resolveUsingComponent('FooCard')
+    expect(autoImportResolve).toHaveBeenCalledTimes(2)
+  })
 })

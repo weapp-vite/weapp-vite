@@ -70,6 +70,8 @@ export async function resolveTransformEntryFlags(options: {
   configService: NonNullable<CompilerContext['configService']>
   scanService: CompilerContext['scanService']
   scanDirty: boolean
+  scanDirtySynced: boolean
+  setScanDirtySynced: (synced: boolean) => void
   filename: string
 }) {
   const {
@@ -79,6 +81,8 @@ export async function resolveTransformEntryFlags(options: {
     configService,
     scanService,
     scanDirty,
+    scanDirtySynced,
+    setScanDirtySynced,
     filename,
   } = options
 
@@ -97,8 +101,12 @@ export async function resolveTransformEntryFlags(options: {
   })
 
   setPageMatcher(currentPageMatcher)
-  if (scanDirty) {
+  if (scanDirty && !scanDirtySynced) {
     currentPageMatcher.markDirty()
+    setScanDirtySynced(true)
+  }
+  else if (!scanDirty && scanDirtySynced) {
+    setScanDirtySynced(false)
   }
 
   return {

@@ -59,6 +59,11 @@ function buildCompileVueFileOptions(
   configService: NonNullable<CompilerContext['configService']>,
   state: CompileOptionsContext,
 ) {
+  const importerBaseName = removeExtensionDeep(vuePath)
+  const autoImportResolveCache = new Map<string, {
+    match: ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>
+    version: number
+  }>()
   const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
   const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
   const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? (scopedSlotsCompiler !== 'augmented')
@@ -100,7 +105,24 @@ function buildCompileVueFileOptions(
       enabled: true,
       warn: (message: string) => logger.warn(message),
       resolveUsingComponent: async (tag: string) => {
-        const match = ctx.autoImportService?.resolve(tag, removeExtensionDeep(vuePath))
+        const autoImportService = ctx.autoImportService
+        if (!autoImportService) {
+          return undefined
+        }
+
+        const version = typeof autoImportService.getVersion === 'function'
+          ? autoImportService.getVersion()
+          : 0
+        const cached = autoImportResolveCache.get(tag)
+        const match = cached && cached.version === version
+          ? cached.match
+          : autoImportService.resolve(tag, importerBaseName)
+        if (!cached || cached.version !== version) {
+          autoImportResolveCache.set(tag, {
+            match,
+            version,
+          })
+        }
         return match?.value
       },
     },

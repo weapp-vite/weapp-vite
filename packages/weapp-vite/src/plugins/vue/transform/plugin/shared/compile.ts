@@ -8,11 +8,12 @@ import logger from '../../../../../logger'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../../injectSetDataPick'
+import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
 import { registerVueTemplateToken, resolveVueOutputBase } from '../../shared'
-import { buildWeappVueStyleRequest } from '../../styleRequest'
+import { buildWeappVueStyleRequests } from '../../styleRequest'
 import { handleTransformEntryPageLayoutFlow } from './layout'
 import {
+  mayNeedTransformPageFeatureInjection,
   mayNeedTransformPageScrollDiagnostics,
   mayNeedTransformSetDataPick,
   resolveScriptlessVueEntryStub,
@@ -48,12 +49,14 @@ export async function finalizeTransformEntryScript(options: {
       }
     }
 
-    const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
-      checkMtime: configService.isDev,
-    })
-    if (injected.transformed) {
-      result.script = injected.code
-      result.scriptMap = composeSourceMaps(injected.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
+    if (mayNeedTransformPageFeatureInjection(result.script)) {
+      const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
+        checkMtime: configService.isDev,
+      })
+      if (injected.transformed) {
+        result.script = injected.code
+        result.scriptMap = composeSourceMaps(injected.map as EncodedSourceMapLike | null | undefined, result.scriptMap)
+      }
     }
   }
 
@@ -65,6 +68,7 @@ export async function finalizeTransformEntryScript(options: {
     && mayNeedTransformSetDataPick(result.template, {
       platform: configService.platform,
     })
+    && mayNeedInjectSetDataPickInJs(result.script)
   ) {
     const keys = collectSetDataPickKeysFromTemplate(result.template, {
       astEngine: resolveAstEngine(configService.weappViteConfig),
@@ -93,11 +97,8 @@ export function finalizeTransformEntryCode(options: {
   let hasMutation = false
 
   if (styleBlocks?.length) {
-    const styleImports = styleBlocks
-      .map((styleBlock, index) => {
-        const request = buildWeappVueStyleRequest(filename, styleBlock, index)
-        return `import ${JSON.stringify(request)};\n`
-      })
+    const styleImports = buildWeappVueStyleRequests(filename, styleBlocks)
+      .map(request => `import ${JSON.stringify(request)};\n`)
       .join('')
     returned.prepend(styleImports)
     hasMutation = true

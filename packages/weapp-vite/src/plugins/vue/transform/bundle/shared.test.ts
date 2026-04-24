@@ -21,6 +21,7 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   code,
 })))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
+const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
 const readFileMock = vi.hoisted(() => vi.fn(async () => ''))
 const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
   template: '<view />',
@@ -61,6 +62,7 @@ vi.mock('../injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
+  mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
 }))
 
 vi.mock('../pageLayout', async (importOriginal) => {
@@ -134,6 +136,8 @@ describe('emitSharedVueEntryAssets', () => {
     }))
     isAutoSetDataPickEnabledMock.mockReset()
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
+    mayNeedInjectSetDataPickInJsMock.mockReset()
+    mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
     readFileMock.mockReset()
     readFileMock.mockResolvedValue('')
     compileVueFileMock.mockReset()
@@ -447,18 +451,18 @@ describe('emitSharedVueEntryAssets', () => {
   it('finalizes compiled page results with page feature and setDataPick injections', async () => {
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: true,
-      code: 'Page({ data: { ready: true } })',
+      code: 'Page({ onReachBottom() {}, data: { ready: true } })',
     })
     injectSetDataPickInJsMock.mockReturnValue({
       transformed: true,
-      code: 'Page({ data: { ready: true }, __setDataPick: ["title"] })',
+      code: 'Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })',
     })
     isAutoSetDataPickEnabledMock.mockReturnValue(true)
 
     const result = await finalizeCompiledVueLikeResult({
       result: {
         template: '<view>{{title}}</view>',
-        script: 'Page({})',
+        script: 'Page({ onReachBottom() {} })',
       } as any,
       filename: '/project/src/pages/index/index.vue',
       pluginCtx: { emitFile: vi.fn() },
@@ -472,8 +476,8 @@ describe('emitSharedVueEntryAssets', () => {
 
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ data: { ready: true } })', ['title'])
-    expect(result.script).toBe('Page({ data: { ready: true }, __setDataPick: ["title"] })')
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {}, data: { ready: true } })', ['title'])
+    expect(result.script).toBe('Page({ onReachBottom() {}, data: { ready: true }, __setDataPick: ["title"] })')
   })
 
   it('compiles vue page entries and applies resolved layout plans', async () => {
@@ -574,8 +578,8 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(result.script).toBe('Page({ fromPipeline: true })')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
+    expect(result.script).toBe('Page({})')
   })
 
   it('skips setDataPick injection for app entries', async () => {
@@ -751,7 +755,8 @@ describe('emitSharedVueEntryAssets', () => {
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(cached.source).toBe('<view updated />')
     expect(cached.result).toBe(result)
-    expect((result as any).script).toBe('Page({ refreshed: true })')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
+    expect((result as any).script).toBe('Page({})')
   })
 
   it('falls back to cached compiled result when dev refresh recompilation fails', async () => {
@@ -890,7 +895,8 @@ describe('emitSharedVueEntryAssets', () => {
     expect(readFileMock).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', 'utf-8')
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(result.source).toBe('<view>{{title}}</view>')
-    expect(result.result.script).toBe('Page({ loaded: true })')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
+    expect(result.result.script).toBe('Page({})')
   })
 
   it('emits fallback page bundle assets through shared entry and page flows', () => {

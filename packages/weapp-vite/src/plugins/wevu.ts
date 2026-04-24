@@ -19,6 +19,7 @@ const JS_LIKE_SOURCE_RE = /\.[cm]?[jt]sx?$/
 
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
+  let scanDirtySynced = false
 
   return {
     name: 'weapp-vite:wevu:page-features',
@@ -51,8 +52,12 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
       }))
 
       // 注意：app.json 变更会影响 pages 列表，这里直接跟随 scanService 的 dirty 标记。
-      if (ctx.runtimeState.scan.isDirty) {
+      if (ctx.runtimeState.scan.isDirty && !scanDirtySynced) {
         pageMatcher.markDirty()
+        scanDirtySynced = true
+      }
+      else if (!ctx.runtimeState.scan.isDirty && scanDirtySynced) {
+        scanDirtySynced = false
       }
 
       const sourceId = normalizeFsResolvedId(id)

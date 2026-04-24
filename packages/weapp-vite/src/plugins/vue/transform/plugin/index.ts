@@ -21,6 +21,7 @@ import { transformVueLikeFile } from './transformFile'
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
+  let scanDirtySynced = false
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
@@ -85,6 +86,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           compilationCache,
           pageMatcher,
           setPageMatcher: matcher => (pageMatcher = matcher),
+          scanDirtySynced,
+          setScanDirtySynced: synced => (scanDirtySynced = synced),
           reExportResolutionCache,
           compileOptionsCache,
           styleBlocksCache,

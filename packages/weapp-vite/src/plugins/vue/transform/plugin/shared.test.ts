@@ -17,11 +17,12 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   map: null,
 })))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
+const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
 const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'oxc'))
-const buildWeappVueStyleRequestMock = vi.hoisted(() => vi.fn((filename: string, _block: any, index: number) => `${filename}?style=${index}`))
+const buildWeappVueStyleRequestsMock = vi.hoisted(() => vi.fn((filename: string, styleBlocks: any[]) => styleBlocks.map((_block, index) => `${filename}?style=${index}`)))
 const fsReadFileMock = vi.hoisted(() => vi.fn(async () => 'loaded from fs'))
 const toAbsoluteIdMock = vi.hoisted(() => vi.fn((id: string) => id))
 
@@ -50,6 +51,7 @@ vi.mock('../injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
+  mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
 }))
 
 vi.mock('../../../performance/onPageScrollDiagnostics', () => ({
@@ -72,7 +74,7 @@ vi.mock('../../../../utils/toAbsoluteId', () => ({
 }))
 
 vi.mock('../styleRequest', () => ({
-  buildWeappVueStyleRequest: buildWeappVueStyleRequestMock,
+  buildWeappVueStyleRequests: buildWeappVueStyleRequestsMock,
 }))
 
 vi.mock('@weapp-core/shared/fs', async (importOriginal) => {
@@ -111,14 +113,16 @@ describe('vue transform plugin shared helpers', () => {
     }))
     isAutoSetDataPickEnabledMock.mockReset()
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
+    mayNeedInjectSetDataPickInJsMock.mockReset()
+    mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
     collectOnPageScrollPerformanceWarningsMock.mockReset()
     collectOnPageScrollPerformanceWarningsMock.mockReturnValue([])
     loggerWarnMock.mockReset()
     loggerErrorMock.mockReset()
     resolveAstEngineMock.mockReset()
     resolveAstEngineMock.mockReturnValue('oxc')
-    buildWeappVueStyleRequestMock.mockReset()
-    buildWeappVueStyleRequestMock.mockImplementation((filename: string, _block: any, index: number) => `${filename}?style=${index}`)
+    buildWeappVueStyleRequestsMock.mockReset()
+    buildWeappVueStyleRequestsMock.mockImplementation((filename: string, styleBlocks: any[]) => styleBlocks.map((_block, index) => `${filename}?style=${index}`))
     fsReadFileMock.mockReset()
     fsReadFileMock.mockResolvedValue('loaded from fs')
     toAbsoluteIdMock.mockReset()
@@ -583,12 +587,12 @@ describe('vue transform plugin shared helpers', () => {
     isAutoSetDataPickEnabledMock.mockReturnValue(true)
     injectSetDataPickInJsMock.mockReturnValue({
       transformed: true,
-      code: 'Page({ __setDataPick: ["count"] })',
+      code: 'Page({ onReachBottom() {}, __setDataPick: ["count"] })',
       map: {
         version: 3,
         names: [],
         sources: ['/project/src/pages/home/index.vue'],
-        sourcesContent: ['Page({})'],
+        sourcesContent: ['Page({ onReachBottom() {} })'],
         mappings: 'AAAA',
       },
     })
@@ -596,7 +600,7 @@ describe('vue transform plugin shared helpers', () => {
     const result = await finalizeTransformEntryScript({
       result: {
         template: '<view a:if="visible" />',
-        script: 'Page({})',
+        script: 'Page({ onReachBottom() {} })',
       } as any,
       filename: '/project/src/pages/home/index.vue',
       pluginCtx: {},
@@ -612,8 +616,9 @@ describe('vue transform plugin shared helpers', () => {
     expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view a:if="visible" />', {
       astEngine: 'oxc',
     })
-    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({})', ['count'])
-    expect(result.script).toBe('Page({ __setDataPick: ["count"] })')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ onReachBottom() {} })', ['count'])
+    expect(result.script).toBe('Page({ onReachBottom() {}, __setDataPick: ["count"] })')
   })
 
   it('skips transform entry script finalize side effects when conditions are not met', async () => {
@@ -656,7 +661,7 @@ describe('vue transform plugin shared helpers', () => {
       isDev: true,
     })
 
-    expect(buildWeappVueStyleRequestMock).toHaveBeenCalledTimes(2)
+    expect(buildWeappVueStyleRequestsMock).toHaveBeenCalledTimes(1)
     expect(output.code).toContain('import "/project/src/pages/home/index.vue?style=0";')
     expect(output.code).toContain('import "/project/src/pages/home/index.vue?style=1";')
     expect(output.code).toContain('Page({})')
@@ -668,7 +673,7 @@ describe('vue transform plugin shared helpers', () => {
     expect(output.map?.sources).toEqual(['index.vue'])
   })
 
-  it('still tries resolver-based page feature injection without direct page hook hints', async () => {
+  it('skips resolver-based page feature injection without direct page hook hints', async () => {
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
       transformed: false,
       code: 'Page({ setup() { usePageFeatureHooks() } })',
@@ -690,7 +695,7 @@ describe('vue transform plugin shared helpers', () => {
       isApp: false,
     })
 
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
     expect(collectOnPageScrollPerformanceWarningsMock).not.toHaveBeenCalled()
     expect(result.script).toBe('Page({ setup() { usePageFeatureHooks() } })')
   })
@@ -717,7 +722,7 @@ describe('vue transform plugin shared helpers', () => {
       isDev: false,
     })
 
-    expect(buildWeappVueStyleRequestMock).not.toHaveBeenCalled()
+    expect(buildWeappVueStyleRequestsMock).not.toHaveBeenCalled()
     expect(output.code).toBe('App({})')
     expect(output.map?.sources).toEqual(['/project/src/app.vue'])
   })
@@ -960,6 +965,7 @@ console.log(pages, routeSubPackages)
 
   it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {
     const setPageMatcher = vi.fn()
+    const setScanDirtySynced = vi.fn()
     const isPageFile = vi.fn(async () => true)
     const markDirty = vi.fn()
     const createPageMatcher = vi.fn(() => ({
@@ -987,6 +993,8 @@ console.log(pages, routeSubPackages)
         pluginJson: undefined,
       } as any,
       scanDirty: true,
+      scanDirtySynced: false,
+      setScanDirtySynced,
       filename: '/project/src/app.vue',
     })
 
@@ -996,6 +1004,7 @@ console.log(pages, routeSubPackages)
       markDirty,
     }))
     expect(markDirty).toHaveBeenCalledTimes(1)
+    expect(setScanDirtySynced).toHaveBeenCalledWith(true)
     expect(isPageFile).toHaveBeenCalledWith('/project/src/app.vue')
     expect(resolved).toEqual({
       isPage: true,
@@ -1009,6 +1018,7 @@ console.log(pages, routeSubPackages)
 
   it('reuses existing page matcher and skips page matching in lib mode', async () => {
     const setPageMatcher = vi.fn()
+    const setScanDirtySynced = vi.fn()
     const existingPageMatcher = {
       isPageFile: vi.fn(async () => false),
       markDirty: vi.fn(),
@@ -1027,6 +1037,8 @@ console.log(pages, routeSubPackages)
       } as any,
       scanService: undefined,
       scanDirty: false,
+      scanDirtySynced: false,
+      setScanDirtySynced,
       filename: '/project/src/pages/home/index.vue',
     })).resolves.toEqual({
       isPage: false,
@@ -1036,7 +1048,38 @@ console.log(pages, routeSubPackages)
 
     expect(createPageMatcher).not.toHaveBeenCalled()
     expect(setPageMatcher).not.toHaveBeenCalled()
+    expect(setScanDirtySynced).not.toHaveBeenCalled()
     expect(existingPageMatcher.isPageFile).not.toHaveBeenCalled()
     expect(existingPageMatcher.markDirty).not.toHaveBeenCalled()
+  })
+
+  it('avoids repeating page matcher dirty sync within the same dirty phase', async () => {
+    const setPageMatcher = vi.fn()
+    const setScanDirtySynced = vi.fn()
+    const existingPageMatcher = {
+      isPageFile: vi.fn(async () => true),
+      markDirty: vi.fn(),
+    }
+
+    const resolved = await resolveTransformEntryFlags({
+      pageMatcher: existingPageMatcher,
+      setPageMatcher,
+      createPageMatcher: vi.fn(),
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        weappLibConfig: {
+          enabled: false,
+        },
+      } as any,
+      scanService: undefined,
+      scanDirty: true,
+      scanDirtySynced: true,
+      setScanDirtySynced,
+      filename: '/project/src/pages/home/index.vue',
+    })
+
+    expect(existingPageMatcher.markDirty).not.toHaveBeenCalled()
+    expect(setScanDirtySynced).not.toHaveBeenCalled()
+    expect(resolved.isPage).toBe(true)
   })
 })
