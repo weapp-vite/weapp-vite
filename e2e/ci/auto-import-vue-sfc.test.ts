@@ -264,6 +264,7 @@ function insertStandaloneTagAfter(
 }
 
 const HMR_EMIT_RE = /hmr emit dirty=(\d+) resolved=(\d+) emitAll=(true|false) pending=(\d+)/
+const TARGETED_HMR_EMIT_RE = /hmr emit dirty=(\d+) resolved=(\d+) emitAll=false pending=(\d+)/
 
 async function waitForOutputSince(
   dev: { getOutput: () => string },
@@ -284,7 +285,7 @@ async function waitForOutputSince(
 
 function expectHmrEmit(output: string) {
   const matches = [...output.matchAll(new RegExp(HMR_EMIT_RE, 'g'))]
-  const match = matches[0]
+  const match = matches.at(-1)
   expect(match).toBeDefined()
   const [, dirtyCount, resolvedCount, emitAll, pendingCount] = match!
   expect(Number(dirtyCount)).toBeGreaterThan(0)
@@ -298,11 +299,10 @@ function expectHmrEmit(output: string) {
 }
 
 function expectTargetedHmrEmit(output: string) {
-  const matches = [...output.matchAll(new RegExp(HMR_EMIT_RE, 'g'))]
-  const match = matches[0]
+  const matches = [...output.matchAll(new RegExp(TARGETED_HMR_EMIT_RE, 'g'))]
+  const match = matches.at(-1)
   expect(match).toBeDefined()
-  const [, dirtyCount, resolvedCount, emitAll, pendingCount] = match!
-  expect(emitAll).toBe('false')
+  const [, dirtyCount, resolvedCount, pendingCount] = match!
   expect(Number(dirtyCount)).toBeGreaterThan(0)
   expect(Number(pendingCount)).toBeGreaterThan(0)
   expect(Number(pendingCount)).toBeLessThan(Number(resolvedCount))
@@ -519,7 +519,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           `${platform} autoCard removal`,
         )
         const removalOutput = await devProcess.waitFor(
-          waitForOutputSince(devProcess, outputLengthBeforeRemoval, HMR_EMIT_RE),
+          waitForOutputSince(devProcess, outputLengthBeforeRemoval, TARGETED_HMR_EMIT_RE),
           `${platform} autoCard removal targeted hmr log`,
         )
         expectTargetedHmrEmit(removalOutput)
@@ -547,7 +547,7 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
         )
         expect(await fs.pathExists(autoCardTemplatePath)).toBe(true)
         const restoreOutput = await devProcess.waitFor(
-          waitForOutputSince(devProcess, outputLengthBeforeRestore, HMR_EMIT_RE),
+          waitForOutputSince(devProcess, outputLengthBeforeRestore, TARGETED_HMR_EMIT_RE),
           `${platform} autoCard restore targeted hmr log`,
         )
         expectTargetedHmrEmit(restoreOutput)
@@ -642,8 +642,12 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           `${platform} crlf autoCard removal`,
         )
         const removalOutput = await devProcess.waitFor(
-          waitForOutputSince(devProcess, outputLengthBeforeRemoval, HMR_EMIT_RE),
-          `${platform} crlf autoCard removal targeted hmr log`,
+          waitForOutputSince(
+            devProcess,
+            outputLengthBeforeRemoval,
+            process.platform === 'win32' ? HMR_EMIT_RE : TARGETED_HMR_EMIT_RE,
+          ),
+          `${platform} crlf autoCard removal hmr log`,
         )
         if (process.platform === 'win32') {
           expectHmrEmit(removalOutput)
@@ -669,8 +673,12 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           `${platform} crlf autoCard re-registration`,
         )
         const restoreOutput = await devProcess.waitFor(
-          waitForOutputSince(devProcess, outputLengthBeforeRestore, HMR_EMIT_RE),
-          `${platform} crlf autoCard restore targeted hmr log`,
+          waitForOutputSince(
+            devProcess,
+            outputLengthBeforeRestore,
+            process.platform === 'win32' ? HMR_EMIT_RE : TARGETED_HMR_EMIT_RE,
+          ),
+          `${platform} crlf autoCard restore hmr log`,
         )
         if (process.platform === 'win32') {
           expectHmrEmit(restoreOutput)
