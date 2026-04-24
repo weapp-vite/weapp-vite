@@ -284,7 +284,7 @@ async function waitForOutputSince(
 
 function expectHmrEmit(output: string) {
   const matches = [...output.matchAll(new RegExp(HMR_EMIT_RE, 'g'))]
-  const match = matches.at(-1)
+  const match = matches[0]
   expect(match).toBeDefined()
   const [, dirtyCount, resolvedCount, emitAll, pendingCount] = match!
   expect(Number(dirtyCount)).toBeGreaterThan(0)
@@ -299,7 +299,7 @@ function expectHmrEmit(output: string) {
 
 function expectTargetedHmrEmit(output: string) {
   const matches = [...output.matchAll(new RegExp(HMR_EMIT_RE, 'g'))]
-  const match = matches.at(-1)
+  const match = matches[0]
   expect(match).toBeDefined()
   const [, dirtyCount, resolvedCount, emitAll, pendingCount] = match!
   expect(emitAll).toBe('false')
