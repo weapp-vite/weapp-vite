@@ -10,12 +10,12 @@ const aaa = ref('items-center')
 </script>
 
 <template>
-  <view class="flex gap-[24px]">
+  <view class="flex gap-6">
     <view>1</view>
     <view>2</view>
     <view>3</view>
   </view>
-  <view :class="[`flex${bbb} gap-[17px]`, aaa]">
+  <view :class="[`flex${bbb} gap-4.25`, aaa]">
     <view>1</view>
     <view>2</view>
     <view>3</view>

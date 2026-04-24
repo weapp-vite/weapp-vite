@@ -16,9 +16,9 @@ const sampleStyle = computed(() => ({
 <template>
   <li :class="mutedPanelStyles()">
     <div class="flex items-center justify-between gap-3">
-      <code class="text-xs text-[color:var(--dashboard-text-soft)]">{{ name }}</code>
+      <code class="text-xs text-(--dashboard-text-soft)">{{ name }}</code>
       <span
-        class="h-8 w-14 rounded-xl border border-[color:var(--dashboard-border)]"
+        class="h-8 w-14 rounded-xl border border-(--dashboard-border)"
         :style="sampleStyle"
       />
     </div>

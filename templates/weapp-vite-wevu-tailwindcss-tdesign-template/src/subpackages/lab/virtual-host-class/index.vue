@@ -14,7 +14,7 @@ const inlineStyleCase = 'color:#2563eb;background:#dbeafe;padding:16rpx;border-r
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#f5f3ff] via-[#ffffff] to-[#eef2ff] p-[20rpx]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#f5f3ff] via-[#ffffff] to-[#eef2ff] p-[20rpx]">
       <text class="text-[32rpx] font-semibold text-[#1f1a3f]">
         virtualHost + class/style 透传实验
       </text>

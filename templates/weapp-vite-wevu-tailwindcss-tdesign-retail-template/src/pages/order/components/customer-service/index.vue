@@ -55,7 +55,7 @@ defineComponentJson({
   </view>
   <!-- 联系客服弹框 -->
   <t-popup :visible="show" placement="bottom" @visible-change="onDialogClose">
-    <view class="dialog--customer-service bg-[#f3f4f5] overflow-hidden [&_.content]:text-[26rpx] [&_.content]:m-[32rpx_30rpx] [&_.content]:text-center [&_.content_.title]:inline [&_.content_.title]:text-[#999999] [&_.content_.title]:[font-weight:bold] [&_.content_.subtitle]:inline [&_.content_.subtitle]:text-[#999999] [&_.options_.option]:text-[#333333] [&_.options_.option]:text-[30rpx] [&_.options_.option]:text-center [&_.options_.option]:h-[100rpx] [&_.options_.option]:leading-[100rpx] [&_.options_.option]:bg-[white] [&_.options_.option--active]:opacity-[0.5] [&_.options_.option_.main]:text-[#333] [&_.options_.option_.online]:relative [&_.options_.option_.online]:top-[-17rpx] [&_.options_.option_.online]:mb-[2rpx]">
+    <view class="dialog--customer-service bg-[#f3f4f5] overflow-hidden [&_.content]:text-[26rpx] [&_.content]:m-[32rpx_30rpx] [&_.content]:text-center [&_.content_.title]:inline [&_.content_.title]:text-[#999999] [&_.content_.title]:[font-weight:bold] [&_.content_.subtitle]:inline [&_.content_.subtitle]:text-[#999999] [&_.options_.option]:text-[#333333] [&_.options_.option]:text-[30rpx] [&_.options_.option]:text-center [&_.options_.option]:h-[100rpx] [&_.options_.option]:leading-[100rpx] [&_.options_.option]:bg-white [&_.options_.option--active]:opacity-50 [&_.options_.option_.main]:text-[#333] [&_.options_.option_.online]:relative [&_.options_.option_.online]:top-[-17rpx] [&_.options_.option_.online]:mb-[2rpx]">
       <view v-if="desc" class="content">
         <view class="title">
           服务时间:

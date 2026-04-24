@@ -82,10 +82,10 @@ const themeFeatureItems: DashboardIconFeatureItem[] = themeOptions.map(option =>
           <p class="text-3xl font-semibold tracking-tight">
             IBM Plex Sans Console
           </p>
-          <p class="text-base text-[color:var(--dashboard-text-muted)]">
+          <p class="text-base text-(--dashboard-text-muted)">
             说明文案采用偏紧凑的行高和较高的信息密度，适合后续挂载构建分析、事件流和诊断面板。
           </p>
-          <p class="text-sm uppercase tracking-[0.24em] text-[color:var(--dashboard-text-soft)]">
+          <p class="text-sm uppercase tracking-[0.24em] text-(--dashboard-text-soft)">
             uppercased meta labels for control surfaces
           </p>
         </div>

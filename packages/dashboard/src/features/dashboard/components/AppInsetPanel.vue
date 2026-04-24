@@ -10,7 +10,7 @@ defineProps<{
   <div :class="mutedPanelStyles()">
     <p
       v-if="eyebrow"
-      class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]"
+      class="text-[11px] uppercase tracking-[0.18em] text-(--dashboard-text-soft)"
     >
       {{ eyebrow }}
     </p>

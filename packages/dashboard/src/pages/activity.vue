@@ -217,10 +217,10 @@ watch(filteredRuntimeEvents, (events) => {
         <li
           v-for="item in activityItems"
           :key="`${item.time}-${item.title}`"
-          class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
+          class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4"
         >
           <div class="flex items-start gap-3">
-            <span class="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
+            <span class="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-(--dashboard-accent-soft) text-(--dashboard-accent)">
               <span class="h-5 w-5">
                 <DashboardIcon :name="item.tone === 'live' ? 'status-live' : 'metric-time'" />
               </span>
@@ -228,11 +228,11 @@ watch(filteredRuntimeEvents, (events) => {
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <strong class="tracking-tight">{{ item.title }}</strong>
-                <span class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                <span class="rounded-full border border-(--dashboard-border) px-2 py-0.5 text-[11px] uppercase tracking-[0.18em] text-(--dashboard-text-soft)">
                   {{ item.time }}
                 </span>
               </div>
-              <p class="mt-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+              <p class="mt-2 text-sm leading-6 text-(--dashboard-text-muted)">
                 {{ item.summary }}
               </p>
             </div>
@@ -267,14 +267,14 @@ watch(filteredRuntimeEvents, (events) => {
           <li
             v-for="item in diagnostics"
             :key="item.label"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-3"
           >
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="font-medium">
                   {{ item.label }}
                 </p>
-                <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
                   {{ item.detail }}
                 </p>
               </div>
@@ -342,7 +342,7 @@ watch(filteredRuntimeEvents, (events) => {
             当前过滤条件下没有匹配的事件。你可以清空关键字，或者切回“全部类型 / 全部等级”。
           </AppEmptyState>
 
-          <ul class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+          <ul class="grid gap-2 text-sm leading-6 text-(--dashboard-text-muted)">
             <AppRuntimeEventListItem
               v-for="event in filteredRuntimeEvents"
               :key="event.id"

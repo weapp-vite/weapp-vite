@@ -46,7 +46,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
     >
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-[11px] uppercase tracking-[0.22em] text-[color:var(--dashboard-text-soft)]">
+          <p class="text-[11px] uppercase tracking-[0.22em] text-(--dashboard-text-soft)">
             {{ card.label }}
           </p>
           <p class="mt-2 text-2xl font-semibold md:text-[1.65rem]">
@@ -63,7 +63,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
         <span
           v-for="item in card.packageTypeTags"
           :key="item.label"
-          class="rounded-full border border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-accent-soft)] px-3 py-1 text-xs text-[color:var(--dashboard-text)]"
+          class="rounded-full border border-(--dashboard-border-strong) bg-(--dashboard-accent-soft) px-3 py-1 text-xs text-(--dashboard-text)"
         >
           {{ item.label }} {{ item.value }}
         </span>

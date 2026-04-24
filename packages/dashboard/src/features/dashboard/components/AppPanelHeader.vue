@@ -21,12 +21,12 @@ const iconClassName = iconFrameStyles()
         </span>
       </span>
       <div>
-        <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
+        <h2 class="text-lg font-semibold text-(--dashboard-text)">
           {{ title }}
         </h2>
         <p
           v-if="description"
-          class="text-xs text-[color:var(--dashboard-text-soft)] md:text-sm"
+          class="text-xs text-(--dashboard-text-soft) md:text-sm"
         >
           {{ description }}
         </p>

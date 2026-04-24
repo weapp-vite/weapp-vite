@@ -26,11 +26,11 @@ function handleThemeChange(event: Event): void {
 </script>
 
 <template>
-  <header class="flex flex-col gap-4 rounded-[24px] border border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel-strong)] px-4 py-4 shadow-[var(--dashboard-shadow)] md:px-5">
+  <header class="flex flex-col gap-4 rounded-6 border border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) px-4 py-4 shadow-(--dashboard-shadow) md:px-5">
     <div class="flex items-start justify-between gap-3">
       <div class="flex items-start gap-3">
         <button
-          class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] text-[color:var(--dashboard-text)] md:hidden"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text) md:hidden"
           type="button"
           @click="emit('menu')"
         >
@@ -39,28 +39,28 @@ function handleThemeChange(event: Event): void {
           </span>
         </button>
         <div>
-          <p class="text-[11px] uppercase tracking-[0.28em] text-[color:var(--dashboard-accent)]">
+          <p class="text-[11px] uppercase tracking-[0.28em] text-(--dashboard-accent)">
             weapp-vite dashboard
           </p>
           <h1 class="mt-1 text-2xl font-semibold tracking-tight md:text-[2rem]">
             {{ title }}
           </h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+          <p class="mt-2 max-w-3xl text-sm leading-6 text-(--dashboard-text-muted)">
             {{ description }}
           </p>
         </div>
       </div>
 
       <label
-        class="hidden items-center gap-2 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-2 text-xs font-medium text-[color:var(--dashboard-text-soft)] md:inline-flex"
+        class="hidden items-center gap-2 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2 text-xs font-medium text-(--dashboard-text-soft) md:inline-flex"
         for="dashboard-global-theme"
       >
-        <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
+        <span class="h-4 w-4 text-(--dashboard-accent)">
           <DashboardIcon :name="currentThemeIconName" />
         </span>
         <select
           id="dashboard-global-theme"
-          class="min-w-[8rem] bg-transparent text-[color:var(--dashboard-text)] outline-none"
+          class="min-w-32 bg-transparent text-(--dashboard-text) outline-none"
           :value="themePreference"
           @change="handleThemeChange"
         >
@@ -77,15 +77,15 @@ function handleThemeChange(event: Event): void {
 
     <div class="flex flex-wrap items-center gap-2 md:hidden">
       <label
-        class="inline-flex items-center gap-2 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-2 text-xs font-medium text-[color:var(--dashboard-text-soft)]"
+        class="inline-flex items-center gap-2 rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-3 py-2 text-xs font-medium text-(--dashboard-text-soft)"
         for="dashboard-mobile-theme"
       >
-        <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
+        <span class="h-4 w-4 text-(--dashboard-accent)">
           <DashboardIcon :name="currentThemeIconName" />
         </span>
         <select
           id="dashboard-mobile-theme"
-          class="min-w-[8rem] bg-transparent text-[color:var(--dashboard-text)] outline-none"
+          class="min-w-32 bg-transparent text-(--dashboard-text) outline-none"
           :value="themePreference"
           @change="handleThemeChange"
         >

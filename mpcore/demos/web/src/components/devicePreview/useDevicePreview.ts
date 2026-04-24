@@ -153,8 +153,8 @@ export function useDevicePreview(
   const zoomLabel = computed(() => `${Math.round(previewScale.value * 100)}%`)
   const activePresetLabel = computed(() => DEVICE_PRESETS.find(item => item.value === selectedPreset.value)?.label ?? 'Custom Device')
   const viewportShellClass = computed(() => showDeviceFrame.value
-    ? 'relative h-full w-full overflow-hidden rounded-[32px] border border-[#5c616d] bg-[#0f1422] shadow-[0_18px_36px_rgb(0_0_0_/_0.45)]'
-    : 'relative h-full w-full overflow-hidden rounded-[14px] border border-[color:rgb(15_27_40_/_0.08)] bg-[color:var(--sim-surface-page)] shadow-[0_10px_28px_rgb(15_27_40_/_0.08)]')
+    ? 'relative h-full w-full overflow-hidden rounded-8 border border-[#5c616d] bg-[#0f1422] shadow-[0_18px_36px_rgb(0_0_0_/_0.45)]'
+    : 'relative h-full w-full overflow-hidden rounded-3.5 border border-[rgb(15_27_40_/_0.08)] bg-(--sim-surface-page) shadow-[0_10px_28px_rgb(15_27_40_/_0.08)]')
 
   function persistToolbarState() {
     localStorage.setItem(DEVICE_TOOLBAR_STORAGE_KEY, JSON.stringify({

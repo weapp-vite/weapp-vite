@@ -15,7 +15,7 @@ defineProps<{
         :key="`${route}-${index}`"
         :class="cn(
           'py-1 text-[13px] transition-colors',
-          index === routes.length - 1 ? 'font-semibold text-[color:var(--sim-accent-strong)]' : 'text-[color:var(--sim-muted)]',
+          index === routes.length - 1 ? 'font-semibold text-(--sim-accent-strong)' : 'text-(--sim-muted)',
         )"
       >
         {{ route }}

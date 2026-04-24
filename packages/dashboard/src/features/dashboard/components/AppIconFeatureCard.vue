@@ -19,12 +19,12 @@ defineProps<{
   >
     <p
       v-if="eyebrow"
-      class="text-[11px] uppercase tracking-[0.22em] text-[color:var(--dashboard-accent)]"
+      class="text-[11px] uppercase tracking-[0.22em] text-(--dashboard-accent)"
     >
       {{ eyebrow }}
     </p>
     <div :class="eyebrow ? 'mt-3 flex items-start gap-3' : 'flex items-start gap-3'">
-      <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
+      <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-(--dashboard-accent-soft) text-(--dashboard-accent)">
         <span class="h-5 w-5">
           <DashboardIcon :name="iconName" />
         </span>
@@ -35,13 +35,13 @@ defineProps<{
         </h3>
         <p
           v-if="meta"
-          class="mt-1 text-xs uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]"
+          class="mt-1 text-xs uppercase tracking-[0.16em] text-(--dashboard-text-soft)"
         >
           {{ meta }}
         </p>
         <p
           v-if="description"
-          class="mt-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]"
+          class="mt-2 text-sm leading-6 text-(--dashboard-text-muted)"
         >
           {{ description }}
         </p>

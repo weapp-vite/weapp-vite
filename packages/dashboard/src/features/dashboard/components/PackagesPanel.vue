@@ -57,15 +57,15 @@ const packageInsightCards = computed<PackageInsightCard[]>(() => props.packageIn
               :title="pkg.label"
               :description="pkg.typeLabel"
             />
-            <p class="mt-2 text-sm text-[color:var(--dashboard-text-soft)]">
+            <p class="mt-2 text-sm text-(--dashboard-text-soft)">
               {{ pkg.summaryText }}
             </p>
           </div>
           <div class="text-right">
-            <p class="text-xl font-semibold text-[color:var(--dashboard-text)]">
+            <p class="text-xl font-semibold text-(--dashboard-text)">
               {{ pkg.totalBytesLabel }}
             </p>
-            <p class="text-xs text-[color:var(--dashboard-text-soft)]">
+            <p class="text-xs text-(--dashboard-text-soft)">
               {{ pkg.entryCountText }}
             </p>
           </div>

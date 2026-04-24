@@ -31,7 +31,7 @@ function getChartBadgeClassName(): string {
     </AppPanelHeader>
     <div
       :ref="bindChartRef"
-      class="h-[min(58vh,36rem)] min-h-[21rem] rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-2"
+      class="h-[min(58vh,36rem)] min-h-84 rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-2"
     />
   </div>
 </template>

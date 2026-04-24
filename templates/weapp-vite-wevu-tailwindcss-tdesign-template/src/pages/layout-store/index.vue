@@ -50,7 +50,7 @@ onUnload(() => {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#e8f1ff] via-[#ffffff] to-[#eef2ff] p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.06)]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#e8f1ff] via-[#ffffff] to-[#eef2ff] p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.06)]">
       <SectionTitle title="Store 驱动 Layout 交互" subtitle="wevu/store 发起意图，页面上下文消费后命中 layout 内的 toast / dialog 宿主" />
       <text class="mt-[12rpx] block text-[22rpx] leading-[1.7] text-[#5b5b7b]">
         推荐边界是 store 只保存布局状态和交互意图，真正调用 useToast() / useDialog() / setPageLayout() 仍由页面执行，这样不会把 page runtime hook 直接塞进 store。

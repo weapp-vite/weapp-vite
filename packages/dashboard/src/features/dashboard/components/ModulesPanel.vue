@@ -82,10 +82,10 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
           v-bind="item"
           break-title
         >
-          <ul class="mt-3 space-y-1.5 text-xs text-[color:var(--dashboard-text-muted)]">
+          <ul class="mt-3 space-y-1.5 text-xs text-(--dashboard-text-muted)">
             <li v-for="pkg in item.packages" :key="`${item.key}:${pkg.packageId}`">
-              <span class="font-medium text-[color:var(--dashboard-text)]">{{ pkg.packageLabel }}</span>
-              <span class="text-[color:var(--dashboard-text-soft)]"> · </span>
+              <span class="font-medium text-(--dashboard-text)">{{ pkg.packageLabel }}</span>
+              <span class="text-(--dashboard-text-soft)"> · </span>
               <span>{{ pkg.files.join('、') }}</span>
             </li>
           </ul>
@@ -110,7 +110,7 @@ const largestFileSampleItems = computed<ListItemRow[]>(() => props.visibleLarges
 
       <section :class="surfaceStyles({ padding: 'md' })">
         <AppPanelHeader icon-name="file-samples" title="文件样本" />
-        <ul class="mt-4 space-y-2.5 text-sm text-[color:var(--dashboard-text-muted)]">
+        <ul class="mt-4 space-y-2.5 text-sm text-(--dashboard-text-muted)">
           <AppCompactListItem
             v-for="item in largestFileSampleItems"
             :key="item.key"

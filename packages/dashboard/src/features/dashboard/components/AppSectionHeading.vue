@@ -13,7 +13,7 @@ withDefaults(defineProps<{
 
 <template>
   <div class="space-y-1.5">
-    <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.28em] text-[color:var(--dashboard-accent)]">
+    <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.28em] text-(--dashboard-accent)">
       {{ eyebrow }}
     </p>
     <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -21,7 +21,7 @@ withDefaults(defineProps<{
         <h2 class="text-xl font-semibold tracking-tight md:text-2xl">
           {{ title }}
         </h2>
-        <p v-if="description" class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+        <p v-if="description" class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
           {{ description }}
         </p>
       </div>

@@ -139,7 +139,7 @@ function submit() {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#fff7ed] via-[#ffffff] to-[#fef3c7] p-[20rpx]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#fff7ed] via-[#ffffff] to-[#fef3c7] p-[20rpx]">
       <SectionTitle title="项目提报" subtitle="示例多步表单与联动校验" />
       <view class="mt-[12rpx]">
         <t-steps :current="currentStep" layout="horizontal">

@@ -399,7 +399,7 @@ definePageJson({
             @tap="onGoodsCardTap"
           >
             <template #footer>
-              <view class="order-goods-card-footer [display:flex] [width:calc(100%_-_190rpx)] [justify-content:space-between] [position:absolute] [bottom:20rpx] [left:190rpx]">
+              <view class="order-goods-card-footer flex w-[calc(100%-190rpx)] justify-between absolute bottom-[20rpx] left-[190rpx]">
                 <wr-price
                   :price="goods.itemRefundAmount"
                   fill
@@ -407,7 +407,7 @@ definePageJson({
                   symbol-class="order-goods-card-footer-price-symbol"
                   decimal-class="order-goods-card-footer-price-decimal"
                 />
-                <view class="order-goods-card-footer-num [color:#999] [line-height:40rpx]">
+                <view class="order-goods-card-footer-num text-[#999] leading-[40rpx]">
                   x {{ goods.rightsQuantity }}
                 </view>
               </view>

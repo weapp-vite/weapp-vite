@@ -43,13 +43,13 @@ const hasHeader = Boolean(props.title || props.description || slots.header)
           </span>
         </span>
         <div>
-          <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.24em] text-[color:var(--dashboard-accent)]">
+          <p v-if="eyebrow" class="text-[11px] uppercase tracking-[0.24em] text-(--dashboard-accent)">
             {{ eyebrow }}
           </p>
           <h2 v-if="title" class="text-lg font-semibold tracking-tight">
             {{ title }}
           </h2>
-          <p v-if="description" class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+          <p v-if="description" class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
             {{ description }}
           </p>
         </div>

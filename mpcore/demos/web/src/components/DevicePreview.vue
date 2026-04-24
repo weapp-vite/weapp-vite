@@ -49,7 +49,7 @@ const previewStage = preview.previewStage
     >
       <div class="relative shrink-0" :style="preview.scaledViewportStyle">
         <div class="absolute left-0 top-0" :style="preview.previewViewportStyle">
-          <div v-if="preview.showDeviceFrame" class="absolute left-1/2 top-[7px] z-20 h-[28px] w-[122px] -translate-x-1/2 rounded-b-[18px] border border-[#4a505d] bg-[#111827]" />
+          <div v-if="preview.showDeviceFrame" class="absolute left-1/2 top-1.75 z-20 h-7 w-30.5 -translate-x-1/2 rounded-b-4.5 border border-[#4a505d] bg-[#111827]" />
           <div class="absolute left-0 top-0 z-20 flex w-full items-center justify-between px-4 pt-3 text-[11px] font-semibold text-white">
             <span>22:08</span>
             <div class="flex items-center gap-1">
@@ -61,7 +61,7 @@ const previewStage = preview.previewStage
           <div ref="previewHost" :class="preview.viewportShellClass" />
           <button
             type="button"
-            class="absolute bottom-1 right-1 z-30 h-5 w-5 cursor-se-resize rounded-full border border-[color:rgb(13_155_135_/_0.28)] bg-[color:rgb(255_255_255_/_0.94)] shadow-[0_6px_18px_rgb(15_27_40_/_0.16)] after:absolute after:bottom-[5px] after:right-[5px] after:h-2 after:w-2 after:rounded-sm after:border-b-2 after:border-r-2 after:border-[color:var(--sim-accent)]"
+            class="absolute bottom-1 right-1 z-30 h-5 w-5 cursor-se-resize rounded-full border border-[rgb(13_155_135/0.28)] bg-[rgb(255_255_255/0.94)] shadow-[0_6px_18px_rgb(15_27_40/0.16)] after:absolute after:bottom-1.25 after:right-1.25 after:h-2 after:w-2 after:rounded-sm after:border-b-2 after:border-r-2 after:border-(--sim-accent)"
             title="拖拽调整视口尺寸"
             @pointerdown="preview.startResizeDrag"
           />
@@ -70,17 +70,17 @@ const previewStage = preview.previewStage
 
       <div
         v-if="preview.showAdvancedControls"
-        class="mt-4 grid w-full max-w-[312px] gap-2 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-3 text-[12px] text-[color:var(--sim-text)] shadow-[0_18px_44px_rgb(0_0_0_/_0.24)]"
+        class="mt-4 grid w-full max-w-78 gap-2 border border-(--sim-border) bg-(--sim-panel) p-3 text-[12px] text-(--sim-text) shadow-[0_18px_44px_rgb(0_0_0/0.24)]"
       >
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">设备控制</span>
-          <button class="rounded-sm px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]" @click="preview.closeAdvancedControls">
+          <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-(--sim-muted)">设备控制</span>
+          <button class="rounded-sm px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-(--sim-muted) hover:bg-(--sim-pill-hover)" @click="preview.closeAdvancedControls">
             Close
           </button>
         </div>
         <select
           :value="preview.selectedPreset"
-          class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)]"
+          class="h-8 border border-(--sim-border) bg-(--sim-panel-soft) px-2 text-[12px] text-(--sim-text)"
           @change="preview.applyPreset(($event.target as HTMLSelectElement).value as DevicePresetValue)"
         >
           <option
@@ -95,16 +95,16 @@ const previewStage = preview.previewStage
           </option>
         </select>
         <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
-          <input v-model="preview.viewportWidthInput" type="number" min="1" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" @change="preview.commitViewportSize">
-          <input v-model="preview.viewportHeightInput" type="number" min="1" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" @change="preview.commitViewportSize">
-          <button class="inline-flex h-8 w-8 items-center justify-center border border-[color:var(--sim-border)] text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]" @click="preview.rotateViewport">
+          <input v-model="preview.viewportWidthInput" type="number" min="1" class="h-8 border border-(--sim-border) bg-(--sim-panel-soft) px-2 text-[12px] text-(--sim-text) outline-none" @change="preview.commitViewportSize">
+          <input v-model="preview.viewportHeightInput" type="number" min="1" class="h-8 border border-(--sim-border) bg-(--sim-panel-soft) px-2 text-[12px] text-(--sim-text) outline-none" @change="preview.commitViewportSize">
+          <button class="inline-flex h-8 w-8 items-center justify-center border border-(--sim-border) text-(--sim-muted) hover:bg-(--sim-pill-hover)" @click="preview.rotateViewport">
             <span class="icon-[mdi--phone-rotate-landscape]" aria-hidden="true" />
           </button>
         </div>
         <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
-          <input v-model="preview.zoomPercentInput" type="number" min="25" max="300" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" :disabled="preview.zoomMode !== 'custom'" @change="preview.commitZoomPercent">
-          <input v-model="preview.stageHeightInput" type="number" min="320" max="1200" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" @change="preview.commitStageHeight">
-          <button class="inline-flex h-8 w-8 items-center justify-center border text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]" :class="preview.zoomMode === 'fit' ? 'border-[color:var(--sim-accent-border)] bg-[color:var(--sim-accent-soft)]' : 'border-[color:var(--sim-border)]'" @click="preview.setZoomMode(preview.zoomMode === 'fit' ? 'custom' : 'fit')">
+          <input v-model="preview.zoomPercentInput" type="number" min="25" max="300" class="h-8 border border-(--sim-border) bg-(--sim-panel-soft) px-2 text-[12px] text-(--sim-text) outline-none" :disabled="preview.zoomMode !== 'custom'" @change="preview.commitZoomPercent">
+          <input v-model="preview.stageHeightInput" type="number" min="320" max="1200" class="h-8 border border-(--sim-border) bg-(--sim-panel-soft) px-2 text-[12px] text-(--sim-text) outline-none" @change="preview.commitStageHeight">
+          <button class="inline-flex h-8 w-8 items-center justify-center border text-(--sim-muted) hover:bg-(--sim-pill-hover)" :class="preview.zoomMode === 'fit' ? 'border-(--sim-accent-border) bg-(--sim-accent-soft)' : 'border-(--sim-border)'" @click="preview.setZoomMode(preview.zoomMode === 'fit' ? 'custom' : 'fit')">
             <span class="icon-[mdi--fit-to-page-outline]" aria-hidden="true" />
           </button>
         </div>

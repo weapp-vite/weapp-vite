@@ -49,7 +49,7 @@ async function navigateTo(url: string) {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#f5f3ff] via-[#ffffff] to-[#eef2ff] p-[20rpx]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#f5f3ff] via-[#ffffff] to-[#eef2ff] p-[20rpx]">
       <SectionTitle title="TDesign 组件实验室" subtitle="常用组件的组合应用" />
       <view class="mt-[12rpx]">
         <t-tabs :value="activeTab" @change="handleTabChange">
@@ -137,7 +137,7 @@ async function navigateTo(url: string) {
         <t-notice-bar theme="info" content="TDesign 组件可用于丰富产品体验。" />
         <t-swiper :autoplay="true" height="140">
           <t-swiper-item>
-            <view class="h-full rounded-[20rpx] bg-gradient-to-br from-[#c7d2fe] to-[#f0abfc] p-[16rpx]">
+            <view class="h-full rounded-[20rpx] bg-linear-to-br from-[#c7d2fe] to-[#f0abfc] p-[16rpx]">
               <text class="text-[24rpx] font-semibold text-white">
                 品牌展示
               </text>
@@ -147,7 +147,7 @@ async function navigateTo(url: string) {
             </view>
           </t-swiper-item>
           <t-swiper-item>
-            <view class="h-full rounded-[20rpx] bg-gradient-to-br from-[#fde68a] to-[#fca5a5] p-[16rpx]">
+            <view class="h-full rounded-[20rpx] bg-linear-to-br from-[#fde68a] to-[#fca5a5] p-[16rpx]">
               <text class="text-[24rpx] font-semibold text-white">
                 营销推荐
               </text>

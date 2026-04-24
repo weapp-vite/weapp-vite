@@ -66,8 +66,8 @@ function isActive(currentPath: string, targetPath: string) {
 </script>
 
 <template>
-  <div class="min-h-screen px-3 py-3 text-[color:var(--dashboard-text)] md:px-4 md:py-4 lg:px-5">
-    <div class="mx-auto grid max-w-[1600px] gap-3 lg:grid-cols-[18.5rem_minmax(0,1fr)]">
+  <div class="min-h-screen px-3 py-3 text-(--dashboard-text) md:px-4 md:py-4 lg:px-5">
+    <div class="mx-auto grid max-w-400 gap-3 lg:grid-cols-[18.5rem_minmax(0,1fr)]">
       <aside class="hidden lg:block">
         <div class="sticky top-4 space-y-3">
           <AppSurfaceCard
@@ -83,10 +83,10 @@ function isActive(currentPath: string, targetPath: string) {
                 :key="item.to"
                 :to="item.to"
                 :class="cn(
-                  'group rounded-[18px] border px-3 py-3 transition',
+                  'group rounded-4.5 border px-3 py-3 transition',
                   isActive(route.path, item.to)
-                    ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel-strong)] shadow-[var(--dashboard-shadow)]'
-                    : 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]',
+                    ? 'border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) shadow-(--dashboard-shadow)'
+                    : 'border-(--dashboard-border) bg-(--dashboard-panel-muted) hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)',
                 )"
               >
                 <div class="flex items-start gap-3">
@@ -94,8 +94,8 @@ function isActive(currentPath: string, targetPath: string) {
                     :class="cn(
                       'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
                       isActive(route.path, item.to)
-                        ? 'bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]'
-                        : 'bg-[color:var(--dashboard-panel)] text-[color:var(--dashboard-text-soft)] group-hover:text-[color:var(--dashboard-accent)]',
+                        ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
+                        : 'bg-(--dashboard-panel) text-(--dashboard-text-soft) group-hover:text-(--dashboard-accent)',
                     )"
                   >
                     <span class="h-5 w-5">
@@ -103,10 +103,10 @@ function isActive(currentPath: string, targetPath: string) {
                     </span>
                   </span>
                   <div class="min-w-0">
-                    <p class="font-medium text-[color:var(--dashboard-text)]">
+                    <p class="font-medium text-(--dashboard-text)">
                       {{ item.label }}
                     </p>
-                    <p class="mt-1 text-xs leading-5 text-[color:var(--dashboard-text-soft)]">
+                    <p class="mt-1 text-xs leading-5 text-(--dashboard-text-soft)">
                       {{ item.caption }}
                     </p>
                   </div>
@@ -179,10 +179,10 @@ function isActive(currentPath: string, targetPath: string) {
               :key="item.to"
               :to="item.to"
               :class="cn(
-                'group rounded-[18px] border px-3 py-3 transition',
+                'group rounded-4.5 border px-3 py-3 transition',
                 isActive(route.path, item.to)
-                  ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel-strong)] shadow-[var(--dashboard-shadow)]'
-                  : 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]',
+                  ? 'border-(--dashboard-border-strong) bg-(--dashboard-panel-strong) shadow-(--dashboard-shadow)'
+                  : 'border-(--dashboard-border) bg-(--dashboard-panel-muted) hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)',
               )"
               @click="mobileNavOpen = false"
             >
@@ -191,8 +191,8 @@ function isActive(currentPath: string, targetPath: string) {
                   :class="cn(
                     'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
                     isActive(route.path, item.to)
-                      ? 'bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]'
-                      : 'bg-[color:var(--dashboard-panel)] text-[color:var(--dashboard-text-soft)] group-hover:text-[color:var(--dashboard-accent)]',
+                      ? 'bg-(--dashboard-accent-soft) text-(--dashboard-accent)'
+                      : 'bg-(--dashboard-panel) text-(--dashboard-text-soft) group-hover:text-(--dashboard-accent)',
                   )"
                 >
                   <span class="h-5 w-5">
@@ -200,10 +200,10 @@ function isActive(currentPath: string, targetPath: string) {
                   </span>
                 </span>
                 <div class="min-w-0">
-                  <p class="font-medium text-[color:var(--dashboard-text)]">
+                  <p class="font-medium text-(--dashboard-text)">
                     {{ item.label }}
                   </p>
-                  <p class="mt-1 text-xs leading-5 text-[color:var(--dashboard-text-soft)]">
+                  <p class="mt-1 text-xs leading-5 text-(--dashboard-text-soft)">
                     {{ item.caption }}
                   </p>
                 </div>

@@ -13,7 +13,7 @@ const workbench = useWorkbench()
 </script>
 
 <template>
-  <main class="h-screen overflow-hidden bg-[color:var(--sim-bg)] text-[color:var(--sim-text)]">
+  <main class="h-screen overflow-hidden bg-(--sim-bg) text-(--sim-text)">
     <section class="grid h-full grid-rows-[28px_34px_minmax(0,1fr)] overflow-hidden max-[1180px]:grid-rows-[28px_auto_minmax(0,1fr)]">
       <AppChrome
         :current-route="workbench.currentRoute.value"
@@ -24,14 +24,16 @@ const workbench = useWorkbench()
 
       <section
         v-if="workbench.errorMessage.value"
-        :class="cn(alertCard(), 'absolute right-3 top-18 z-10 grid max-w-[520px] gap-1 rounded-md py-2')"
+        :class="cn(alertCard(), 'absolute right-3 top-18 z-10 grid max-w-130 gap-1 rounded-md py-2')"
       >
         <strong class="text-sm font-semibold">🕛 运行时错误</strong>
-        <pre class="m-0 overflow-auto whitespace-pre-wrap text-xs leading-6">{{ workbench.errorMessage.value }}</pre>
+        <pre class="m-0 overflow-auto whitespace-pre-wrap text-xs leading-6">
+          {{ workbench.errorMessage.value }}
+        </pre>
       </section>
 
-      <section class="grid min-h-0 [grid-template-columns:428px_378px_minmax(0,1fr)] overflow-hidden max-[1180px]:grid-cols-1">
-        <aside class="min-h-0 border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-soft)]">
+      <section class="grid min-h-0 grid-cols-[428px_378px_minmax(0,1fr)] overflow-hidden max-[1180px]:grid-cols-1">
+        <aside class="min-h-0 border-r border-(--sim-divider) bg-(--sim-panel-soft)">
           <DevicePreview
             :route="workbench.currentRoute.value"
             :markup="workbench.previewMarkup.value"
@@ -72,7 +74,7 @@ const workbench = useWorkbench()
           @toggle-tree-path="workbench.toggleTreePath"
         />
 
-        <section class="grid min-h-0 [grid-template-rows:minmax(0,1fr)_392px] max-[1180px]:[grid-template-rows:minmax(420px,1fr)_minmax(280px,auto)]">
+        <section class="grid min-h-0 grid-rows-[minmax(0,1fr)_392px] max-[1180px]:grid-rows-[minmax(420px,1fr)_minmax(280px,auto)]">
           <SourceEditor
             :code="workbench.selectedFileContent.value"
             :file-path="workbench.selectedFilePath.value"

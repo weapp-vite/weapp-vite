@@ -267,9 +267,9 @@ definePageJson({
 </script>
 
 <template>
-  <view class="receipt [height:100vh] [background:#f5f5f5] [position:relative] [padding-top:20rpx] [&_.t-input__wrapper]:[margin:0] [&_.flex]:[display:flex] [&_.flex]:[align-items:center] [&_.flex]:[justify-content:space-between] [&_.head-title]:[color:#333] [&_.head-title]:[font-size:30rpx] [&_.head-title]:[font-weight:bold] [&_.btn-wrap]:[display:flex] [&_.btn-wrap_.btn]:[width:128rpx] [&_.btn-wrap_.btn]:[background:#f5f5f5] [&_.btn-wrap_.btn]:[font-size:24rpx] [&_.btn-wrap_.btn]:[color:#333] [&_.btn-wrap_.btn]:[margin-right:22rpx] [&_.btn-wrap_.btn]:[text-align:center] [&_.btn-wrap_.btn]:[border-radius:8rpx] [&_.btn-wrap_.btn]:[position:relative] [&_.btn-wrap_.btn]:[border:2rpx_solid_#f5f5f5] [&_.btn-wrap_.active-btn]:[background-color:transparent] [&_.btn-wrap_.active-btn]:[border-color:#fa4126] [&_.btn-wrap_.active-btn]:[color:#fa4126] [&_.title]:[width:100%] [&_.title]:[background-color:#fff] [&_.title]:[margin-bottom:20rpx] [&_.receipt-label]:[display:flex] [&_.receipt-label_.btn]:[width:128rpx] [&_.receipt-label_.btn]:[background:#f5f5f5] [&_.receipt-label_.btn]:[font-size:24rpx] [&_.receipt-label_.btn]:[color:#333] [&_.receipt-label_.btn]:[margin-left:22rpx] [&_.receipt-label_.btn]:[text-align:center] [&_.receipt-label_.btn]:[border-radius:8rpx] [&_.receipt-label_.btn]:[border:2rpx_solid_#f5f5f5] [&_.receipt-label_.active-btn]:[background-color:transparent] [&_.receipt-label_.active-btn]:[border-color:#fa4126] [&_.receipt-label_.active-btn]:[color:#fa4126] [&_.receipt-label_.wr-cell__title]:[font-size:30rpx] [&_.receipt-label_.wr-cell__title]:[color:#333] [&_.receipt-label_.wr-cell__title]:[font-weight:bold] [&_.receipt-content]:[background:#fff] [&_.receipt-content]:[margin-top:20rpx] [&_.receipt-content_.addressTags]:[padding:0_30rpx] [&_.receipt-content_.addressTags]:[height:100rpx] [&_.receipt-content_.addressTags_.btn-wrap]:[display:flex] [&_.receipt-content_.line]:[width:720rpx] [&_.receipt-content_.line]:[margin-left:30rpx] [&_.receipt-content_.line]:[background-color:#e6e6e6] [&_.receipt-content_.line]:[height:1rpx] [&_.receipt-content_.receipt-input]:[display:flex] [&_.receipt-content_.receipt-input]:[padding:0_30rpx] [&_.receipt-content_.receipt-input]:[align-items:center] [&_.receipt-content_.receipt-input]:[height:100rpx] [&_.receipt-content_.receipt-input]:[color:#666] [&_.receipt-content_.receipt-input_.title]:[color:#333] [&_.receipt-content_.receipt-input_.title]:[display:inline-block] [&_.receipt-content_.receipt-input_.title]:[width:140rpx] [&_.receipt-content_.receipt-input_.title]:[margin-right:30rpx] [&_.receipt-content_.receipt-input_.title]:[font-size:30rpx] [&_.receipt-content_.receipt-input_.title]:[font-weight:bold] [&_.receipt-content_.receipt-input_.wr-icon]:[font-size:28rpx] [&_.receipt-content_.receipt-input_.wr-icon]:[margin-left:20rpx] [&_.receipt-info]:[background:#fff] [&_.receipt-info]:[margin-top:20rpx] [&_.receipt-info_.info-con]:[padding:0_30rpx] [&_.receipt-info_.info-con]:[height:100rpx] [&_.receipt-info_.title]:[font-size:24rpx] [&_.receipt-info_.title]:[color:#999999] [&_.receipt-info_.title]:[line-height:36rpx] [&_.receipt-info_.title]:[padding:0_30rpx_20rpx] [&_.receipt-info_.title]:[box-sizing:border-box] [&_.receipt-know]:[display:flex] [&_.receipt-know]:[align-items:center] [&_.receipt-know]:[font-size:26rpx] [&_.receipt-know]:[font-weight:400] [&_.receipt-know]:[color:#999999] [&_.receipt-know]:[padding:20rpx_30rpx] [&_.receipt-know]:[line-height:26rpx] [&_.receipt-know_.icon]:[margin-left:16rpx] [&_.receipt-know_.icon]:[font-size:26rpx] [&_.dialog-receipt_.dialog__message]:[padding:0] [&_.dialog-receipt_.dialog-info]:[max-height:622rpx] [&_.dialog-receipt_.info-wrap]:[padding:0_18rpx] [&_.dialog-receipt_.info_.title]:[display:inline-block] [&_.dialog-receipt_.info_.title]:[font-size:28rpx] [&_.dialog-receipt_.info_.title]:[font-weight:400] [&_.dialog-receipt_.info_.title]:[color:#999] [&_.dialog-receipt_.info_.title]:[line-height:40rpx] [&_.dialog-receipt_.info_.title]:[margin-bottom:40rpx] [&_.dialog-receipt_.info_.title]:[text-align:left] [&_.receipt-btn]:[position:fixed] [&_.receipt-btn]:[bottom:0] [&_.receipt-btn]:[left:0] [&_.receipt-btn]:[right:0] [&_.receipt-btn]:[z-index:100] [&_.receipt-btn]:[background:#fff] [&_.receipt-btn]:[width:100%] [&_.receipt-btn]:[padding:0_20rpx] [&_.receipt-btn]:[box-sizing:border-box] [&_.receipt-btn]:[padding-bottom:calc(20rpx_+_env(safe-area-inset-bottom))] [&_.receipt-btn_.receipt-btn-con]:[margin-top:20rpx] [&_.receipt-btn_.receipt-btn-con]:[display:inline-block] [&_.receipt-btn_.receipt-btn-con]:[width:100%] [&_.receipt-btn_.receipt-btn-con]:[line-height:80rpx] [&_.receipt-btn_.receipt-btn-con]:[background:#fa4126] [&_.receipt-btn_.receipt-btn-con]:[text-align:center] [&_.receipt-btn_.receipt-btn-con]:[color:#fff] [&_.receipt-btn_.receipt-btn-con]:[border-radius:48rpx]">
+  <view class="receipt h-screen [background:#f5f5f5] relative pt-[20rpx] [&_.t-input__wrapper]:m-0 [&_.flex]:flex [&_.flex]:items-center [&_.flex]:justify-between [&_.head-title]:text-[#333] [&_.head-title]:text-[30rpx] [&_.head-title]:[font-weight:bold] [&_.btn-wrap]:flex [&_.btn-wrap_.btn]:w-[128rpx] [&_.btn-wrap_.btn]:[background:#f5f5f5] [&_.btn-wrap_.btn]:text-[24rpx] [&_.btn-wrap_.btn]:text-[#333] [&_.btn-wrap_.btn]:mr-[22rpx] [&_.btn-wrap_.btn]:text-center [&_.btn-wrap_.btn]:rounded-[8rpx] [&_.btn-wrap_.btn]:relative [&_.btn-wrap_.btn]:[border:2rpx_solid_#f5f5f5] [&_.btn-wrap_.active-btn]:bg-transparent [&_.btn-wrap_.active-btn]:border-[#fa4126] [&_.btn-wrap_.active-btn]:text-[#fa4126] [&_.title]:w-full [&_.title]:bg-white [&_.title]:mb-[20rpx] [&_.receipt-label]:flex [&_.receipt-label_.btn]:w-[128rpx] [&_.receipt-label_.btn]:[background:#f5f5f5] [&_.receipt-label_.btn]:text-[24rpx] [&_.receipt-label_.btn]:text-[#333] [&_.receipt-label_.btn]:ml-[22rpx] [&_.receipt-label_.btn]:text-center [&_.receipt-label_.btn]:rounded-[8rpx] [&_.receipt-label_.btn]:[border:2rpx_solid_#f5f5f5] [&_.receipt-label_.active-btn]:bg-transparent [&_.receipt-label_.active-btn]:border-[#fa4126] [&_.receipt-label_.active-btn]:text-[#fa4126] [&_.receipt-label_.wr-cell__title]:text-[30rpx] [&_.receipt-label_.wr-cell__title]:text-[#333] [&_.receipt-label_.wr-cell__title]:[font-weight:bold] [&_.receipt-content]:[background:#fff] [&_.receipt-content]:mt-[20rpx] [&_.receipt-content_.addressTags]:p-[0_30rpx] [&_.receipt-content_.addressTags]:h-[100rpx] [&_.receipt-content_.addressTags_.btn-wrap]:flex [&_.receipt-content_.line]:w-[720rpx] [&_.receipt-content_.line]:ml-[30rpx] [&_.receipt-content_.line]:bg-[#e6e6e6] [&_.receipt-content_.line]:h-[1rpx] [&_.receipt-content_.receipt-input]:flex [&_.receipt-content_.receipt-input]:p-[0_30rpx] [&_.receipt-content_.receipt-input]:items-center [&_.receipt-content_.receipt-input]:h-[100rpx] [&_.receipt-content_.receipt-input]:text-[#666] [&_.receipt-content_.receipt-input_.title]:text-[#333] [&_.receipt-content_.receipt-input_.title]:inline-block [&_.receipt-content_.receipt-input_.title]:w-[140rpx] [&_.receipt-content_.receipt-input_.title]:mr-[30rpx] [&_.receipt-content_.receipt-input_.title]:text-[30rpx] [&_.receipt-content_.receipt-input_.title]:[font-weight:bold] [&_.receipt-content_.receipt-input_.wr-icon]:text-[28rpx] [&_.receipt-content_.receipt-input_.wr-icon]:ml-[20rpx] [&_.receipt-info]:[background:#fff] [&_.receipt-info]:mt-[20rpx] [&_.receipt-info_.info-con]:p-[0_30rpx] [&_.receipt-info_.info-con]:h-[100rpx] [&_.receipt-info_.title]:text-[24rpx] [&_.receipt-info_.title]:text-[#999999] [&_.receipt-info_.title]:leading-[36rpx] [&_.receipt-info_.title]:p-[0_30rpx_20rpx] [&_.receipt-info_.title]:box-border [&_.receipt-know]:flex [&_.receipt-know]:items-center [&_.receipt-know]:text-[26rpx] [&_.receipt-know]:font-normal [&_.receipt-know]:text-[#999999] [&_.receipt-know]:p-[20rpx_30rpx] [&_.receipt-know]:leading-[26rpx] [&_.receipt-know_.icon]:ml-[16rpx] [&_.receipt-know_.icon]:text-[26rpx] [&_.dialog-receipt_.dialog__message]:p-0 [&_.dialog-receipt_.dialog-info]:max-h-[622rpx] [&_.dialog-receipt_.info-wrap]:p-[0_18rpx] [&_.dialog-receipt_.info_.title]:inline-block [&_.dialog-receipt_.info_.title]:text-[28rpx] [&_.dialog-receipt_.info_.title]:font-normal [&_.dialog-receipt_.info_.title]:text-[#999] [&_.dialog-receipt_.info_.title]:leading-[40rpx] [&_.dialog-receipt_.info_.title]:mb-[40rpx] [&_.dialog-receipt_.info_.title]:text-left [&_.receipt-btn]:fixed [&_.receipt-btn]:bottom-0 [&_.receipt-btn]:left-0 [&_.receipt-btn]:right-0 [&_.receipt-btn]:z-100 [&_.receipt-btn]:[background:#fff] [&_.receipt-btn]:w-full [&_.receipt-btn]:p-[0_20rpx] [&_.receipt-btn]:box-border [&_.receipt-btn]:pb-[calc(20rpx+env(safe-area-inset-bottom))] [&_.receipt-btn_.receipt-btn-con]:mt-[20rpx] [&_.receipt-btn_.receipt-btn-con]:inline-block [&_.receipt-btn_.receipt-btn-con]:w-full [&_.receipt-btn_.receipt-btn-con]:leading-[80rpx] [&_.receipt-btn_.receipt-btn-con]:[background:#fa4126] [&_.receipt-btn_.receipt-btn-con]:text-center [&_.receipt-btn_.receipt-btn-con]:text-white [&_.receipt-btn_.receipt-btn-con]:rounded-[48rpx]">
     <view class="title">
-      <t-cell class="receipt-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" title="发票" :bordered="false" t-class-left="cell-left">
+      <t-cell class="receipt-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none" title="发票" :bordered="false" t-class-left="cell-left">
         <template #right-icon>
           <view class="btn-wrap">
             <view
@@ -286,7 +286,7 @@ definePageJson({
       </t-cell>
     </view>
     <block v-if="receiptIndex === 1">
-      <t-cell class="receipt-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" title="发票抬头" t-class-left="cell-left">
+      <t-cell class="receipt-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none" title="发票抬头" t-class-left="cell-left">
         <template #right-icon>
           <view class="btn-wrap">
             <view
@@ -302,7 +302,7 @@ definePageJson({
         </template>
       </t-cell>
       <t-cell
-        class="receipt-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]"
+        class="receipt-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none"
         :title="addressTagsIndex === 0 ? '姓名' : '公司名称'"
         t-class-left="cell-left"
         t-class-right="cell-right"
@@ -320,13 +320,13 @@ definePageJson({
         </template>
       </t-cell>
       <t-cell
-        class="receipt-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]"
+        class="receipt-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none"
         :title="addressTagsIndex === 0 ? '手机号' : '识别号'"
         t-class-left="cell-left"
         t-class-right="cell-right"
       >
         <template #right-icon>
-          <view class="addressTagsIndex-cell [display:flex] [align-items:center] [justify-content:space-between] [width:100%]">
+          <view class="addressTagsIndex-cell flex items-center justify-between w-full">
             <t-input
               t-class="input-com [display:inline-block] [flex:1] [font-size:30rpx] [font-weight:400] [line-height:30rpx] ![padding:0] [color:#666]"
               borderless
@@ -341,7 +341,7 @@ definePageJson({
         </template>
       </t-cell>
       <t-cell
-        class="receipt-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]"
+        class="receipt-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none"
         title="电子邮箱"
         :bordered="false"
         t-class-left="cell-left"
@@ -360,7 +360,7 @@ definePageJson({
         </template>
       </t-cell>
       <view class="receipt-info">
-        <t-cell class="receipt-cell [&_.t-cell__title]:[width:144rpx] [&_.t-cell__title]:[padding-right:32rpx] [&_.t-cell__title]:[flex:none]" title="发票内容" :bordered="false" t-class-left="cell-left">
+        <t-cell class="receipt-cell [&_.t-cell__title]:w-[144rpx] [&_.t-cell__title]:pr-[32rpx] [&_.t-cell__title]:flex-none" title="发票内容" :bordered="false" t-class-left="cell-left">
           <template #right-icon>
             <view class="btn-wrap">
               <view
@@ -391,7 +391,7 @@ definePageJson({
         @confirm="onDialogTap"
       >
         <template #content>
-          <view class="srcoll-view-wrap [margin-top:20rpx]">
+          <view class="srcoll-view-wrap mt-[20rpx]">
             <scroll-view class="dialog-info" :scroll-x="false" :scroll-y="true">
               <view class="info-wrap">
                 <view v-if="!codeShow" class="info">

@@ -6,7 +6,7 @@ const props = defineProps<{
   items: DashboardLabelValueItem[]
 }>()
 
-const rowClassName = 'flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-2.5'
+const rowClassName = 'flex items-center justify-between gap-3 rounded-2xl border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-2.5'
 
 const rows = computed<DashboardKeyedLabelValueItem[]>(() => props.items.map(item => ({
   key: item.label,
@@ -22,10 +22,10 @@ const rows = computed<DashboardKeyedLabelValueItem[]>(() => props.items.map(item
       :key="item.key"
       :class="rowClassName"
     >
-      <span class="text-xs uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
+      <span class="text-xs uppercase tracking-[0.16em] text-(--dashboard-text-soft)">
         {{ item.label }}
       </span>
-      <strong class="text-sm text-[color:var(--dashboard-text)]">
+      <strong class="text-sm text-(--dashboard-text)">
         {{ item.value }}
       </strong>
     </li>

@@ -516,7 +516,7 @@ definePageJson({
           <template #append-card>
             <order-button-bar
 
-              class="goods-button-bar [height:112rpx] [width:686rpx] [margin-bottom:16rpx]"
+              class="goods-button-bar h-[112rpx] w-[686rpx] mb-[16rpx]"
               :order="_order"
               :goodsIndex="gIndex"
               @refresh="onRefresh"

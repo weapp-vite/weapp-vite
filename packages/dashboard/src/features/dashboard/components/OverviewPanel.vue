@@ -54,7 +54,7 @@ const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
           description="最大体积样本"
         >
           <template #meta>
-            <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Top 10</span>
+            <span class="text-[11px] uppercase tracking-[0.2em] text-(--dashboard-text-soft)">Top 10</span>
           </template>
         </AppPanelHeader>
         <ol class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm xl:grid-cols-1">
@@ -73,10 +73,10 @@ const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
           description="分包根目录与模式"
         >
           <template #meta>
-            <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Roots</span>
+            <span class="text-[11px] uppercase tracking-[0.2em] text-(--dashboard-text-soft)">Roots</span>
           </template>
         </AppPanelHeader>
-        <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-[color:var(--dashboard-text-muted)]">
+        <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
           <AppEmptyState v-if="!hasSubPackageItems" as="li" compact>
             当前构建没有配置分包。
           </AppEmptyState>

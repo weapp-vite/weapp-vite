@@ -24,14 +24,14 @@ const emit = defineEmits<{
         :class="sceneButton({ active: activeId === scenario.id })"
         @click="emit('pick', scenario.id)"
       >
-        <strong class="text-[15px] font-semibold tracking-tight text-[color:var(--sim-text)]">
+        <strong class="text-[15px] font-semibold tracking-tight text-(--sim-text)">
           {{ scenario.name }}
         </strong>
         <span :class="mutedTextClass">{{ scenario.description }}</span>
       </button>
     </div>
     <label :class="dropzoneCard()">
-      <span class="text-[14px] font-semibold tracking-tight text-[color:var(--sim-text)]">🕛 导入目录</span>
+      <span class="text-[14px] font-semibold tracking-tight text-(--sim-text)">🕛 导入目录</span>
       <span :class="labelClass">
         {{ loading ? '正在解析目录...' : '选择包含 app.json / app.js / pages 的构建目录。' }}
       </span>
