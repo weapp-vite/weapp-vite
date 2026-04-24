@@ -9,7 +9,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -27,6 +27,8 @@ export async function transformVueLikeFile(options: {
   scopedSlotModules: Map<string, string>
   emittedScopedSlotChunks: Set<string>
   classStyleRuntimeWarned: { value: boolean }
+  readAndParseSfc: typeof import('../../../utils/vueSfc').readAndParseSfc
+  createReadAndParseSfcOptions: typeof import('../../../utils/vueSfc').createReadAndParseSfcOptions
 }) {
   const {
     ctx,
@@ -44,6 +46,8 @@ export async function transformVueLikeFile(options: {
     scopedSlotModules,
     emittedScopedSlotChunks,
     classStyleRuntimeWarned,
+    readAndParseSfc,
+    createReadAndParseSfcOptions,
   } = options
   const vueTransformTiming = ctx.configService?.weappViteConfig?.debug?.vueTransformTiming
   const { measureStage, reportTiming } = createTransformStageMeasurer(vueTransformTiming)
@@ -71,6 +75,21 @@ export async function transformVueLikeFile(options: {
       isDev: configService.isDev,
       readFileCached,
     }))
+
+    await measureStage('preloadSfcStyles', async () => {
+      await preloadTransformSfcStyleBlocks({
+        filename,
+        source,
+        styleBlocksCache,
+        load: async (target, source) => {
+          const parsed = await readAndParseSfc(target, createReadAndParseSfcOptions(pluginCtx, configService, {
+            source,
+            checkMtime: configService.isDev,
+          }))
+          return parsed.descriptor.styles
+        },
+      })
+    })
 
     const { isPage, isApp } = await measureStage('matchPageEntry', async () => await resolveTransformEntryFlags({
       pageMatcher,

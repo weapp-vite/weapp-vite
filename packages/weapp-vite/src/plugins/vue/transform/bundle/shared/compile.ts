@@ -8,7 +8,6 @@ import { createCompileVueFileOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled, mayNeedInjectSetDataPickInJs } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
-import { mayNeedTransformPageFeatureInjection } from '../../plugin/shared'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
 import { setVueBundlePageLayoutPlan } from './types'
 
@@ -72,7 +71,7 @@ export async function finalizeCompiledVueLikeResult(options: {
 }) {
   const { result, filename, pluginCtx, configService, isPage, isApp } = options
 
-  if (isPage && result.script && mayNeedTransformPageFeatureInjection(result.script)) {
+  if (isPage && result.script) {
     const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
       checkMtime: configService.isDev,
     })

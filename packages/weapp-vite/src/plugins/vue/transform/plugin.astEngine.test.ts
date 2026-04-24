@@ -5,6 +5,7 @@ const compileJsxFileMock = vi.hoisted(() => vi.fn())
 const collectSetDataPickKeysFromTemplateMock = vi.hoisted(() => vi.fn())
 const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn())
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn())
+const mayNeedInjectSetDataPickInJsMock = vi.hoisted(() => vi.fn(() => true))
 const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({ mock: true })))
 const readAndParseSfcMock = vi.hoisted(() => vi.fn())
 const createReadAndParseSfcOptionsMock = vi.hoisted(() => vi.fn((_pluginCtx: any, _configService: any, options?: any) => ({
@@ -34,6 +35,7 @@ vi.mock('./injectSetDataPick', () => ({
   collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
   injectSetDataPickInJs: injectSetDataPickInJsMock,
   isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
+  mayNeedInjectSetDataPickInJs: mayNeedInjectSetDataPickInJsMock,
 }))
 
 vi.mock('./compileOptions', () => ({
@@ -122,6 +124,8 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       transformed: false,
       code: 'export default {}',
     })
+    mayNeedInjectSetDataPickInJsMock.mockReset()
+    mayNeedInjectSetDataPickInJsMock.mockReturnValue(true)
     injectWevuPageFeaturesInJsWithViteResolverMock.mockClear()
     collectOnPageScrollPerformanceWarningsMock.mockClear()
     pageMatcherIsPageFileMock.mockReset()

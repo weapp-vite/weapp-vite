@@ -37,8 +37,9 @@ export async function finalizeTransformEntryScript(options: {
   configService: NonNullable<CompilerContext['configService']>
   isPage: boolean
   isApp: boolean
+  forcePageFeatureInjection?: boolean
 }) {
-  const { result, filename, pluginCtx, configService, isPage, isApp } = options
+  const { result, filename, pluginCtx, configService, isPage, isApp, forcePageFeatureInjection = false } = options
 
   if (isPage && result.script) {
     if (mayNeedTransformPageScrollDiagnostics(result.script)) {
@@ -49,7 +50,7 @@ export async function finalizeTransformEntryScript(options: {
       }
     }
 
-    if (mayNeedTransformPageFeatureInjection(result.script)) {
+    if (forcePageFeatureInjection || mayNeedTransformPageFeatureInjection(result.script)) {
       const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
         checkMtime: configService.isDev,
       })
@@ -213,6 +214,7 @@ export async function finalizeTransformCompiledResult(options: {
     configService,
     isPage,
     isApp,
+    forcePageFeatureInjection: isPage,
   })
 
   compilationCache.set(filename, { result, source, isPage })

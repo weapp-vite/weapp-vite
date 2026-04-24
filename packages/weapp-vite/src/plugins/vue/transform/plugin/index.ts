@@ -35,6 +35,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     async buildStart() {
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
+      compileOptionsCache.clear()
 
       await preloadNativeLayoutEntries({
         pluginCtx: this,
@@ -94,6 +95,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           scopedSlotModules,
           emittedScopedSlotChunks,
           classStyleRuntimeWarned,
+          readAndParseSfc,
+          createReadAndParseSfcOptions,
         })
       }
       finally {

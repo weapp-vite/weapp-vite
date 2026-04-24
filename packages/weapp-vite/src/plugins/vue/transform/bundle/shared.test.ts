@@ -578,8 +578,8 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
-    expect(result.script).toBe('Page({})')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(result.script).toBe('Page({ fromPipeline: true })')
   })
 
   it('skips setDataPick injection for app entries', async () => {
@@ -755,8 +755,8 @@ describe('emitSharedVueEntryAssets', () => {
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(cached.source).toBe('<view updated />')
     expect(cached.result).toBe(result)
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
-    expect((result as any).script).toBe('Page({})')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect((result as any).script).toBe('Page({ refreshed: true })')
   })
 
   it('falls back to cached compiled result when dev refresh recompilation fails', async () => {
@@ -895,8 +895,8 @@ describe('emitSharedVueEntryAssets', () => {
     expect(readFileMock).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', 'utf-8')
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(result.source).toBe('<view>{{title}}</view>')
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
-    expect(result.result.script).toBe('Page({})')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(result.result.script).toBe('Page({ loaded: true })')
   })
 
   it('emits fallback page bundle assets through shared entry and page flows', () => {
