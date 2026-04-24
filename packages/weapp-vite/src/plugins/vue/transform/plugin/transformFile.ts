@@ -1,15 +1,15 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { readFile as readFileCached } from '../../../utils/cache'
-import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, normalizeVueTransformResult, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, logTransformFileError, normalizeVueTransformResult, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -20,6 +20,7 @@ export async function transformVueLikeFile(options: {
   pageMatcher: ReturnType<typeof createPageEntryMatcher> | null
   setPageMatcher: (matcher: ReturnType<typeof createPageEntryMatcher>) => void
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
+  compileOptionsCache: Map<string, CompileVueFileResolvedOptions>
   styleBlocksCache: Map<string, SFCStyleBlock[]>
   scopedSlotModules: Map<string, string>
   emittedScopedSlotChunks: Set<string>
@@ -34,6 +35,7 @@ export async function transformVueLikeFile(options: {
     pageMatcher,
     setPageMatcher,
     reExportResolutionCache,
+    compileOptionsCache,
     styleBlocksCache,
     scopedSlotModules,
     emittedScopedSlotChunks,
@@ -66,22 +68,6 @@ export async function transformVueLikeFile(options: {
       readFileCached,
     }))
 
-    await measureStage('preParseSfc', async () => {
-      await preloadTransformSfcStyleBlocks({
-        filename,
-        source,
-        styleBlocksCache,
-        load: async (target, loadedSource) => (
-          await readAndParseSfc(target, {
-            ...createReadAndParseSfcOptions(pluginCtx, ctx.configService, {
-              source: loadedSource,
-              checkMtime: false,
-            }),
-          })
-        ).descriptor.styles,
-      })
-    })
-
     const { isPage, isApp } = await measureStage('matchPageEntry', async () => await resolveTransformEntryFlags({
       pageMatcher,
       setPageMatcher,
@@ -102,6 +88,7 @@ export async function transformVueLikeFile(options: {
     const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, {
       reExportResolutionCache,
       classStyleRuntimeWarned,
+      compileOptionsCache,
     })
 
     const result = normalizeVueTransformResult(await measureStage('compile', async () => await compileTransformEntryResult({
@@ -111,6 +98,9 @@ export async function transformVueLikeFile(options: {
       compileVueFile,
       compileJsxFile,
     })))
+    if (Array.isArray(result.meta?.styleBlocks)) {
+      styleBlocksCache.set(filename, result.meta.styleBlocks as SFCStyleBlock[])
+    }
 
     await measureStage('finalizeCompiledResult', async () => {
       await finalizeTransformCompiledResult({
@@ -133,7 +123,7 @@ export async function transformVueLikeFile(options: {
     const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
       result,
       filename,
-      styleBlocks: styleBlocksCache.get(filename),
+      styleBlocks: (result.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename),
       isPage,
       isApp,
       isDev: configService.isDev,

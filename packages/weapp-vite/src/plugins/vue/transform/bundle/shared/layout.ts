@@ -5,6 +5,7 @@ import type { CompilationCacheEntry } from './types'
 import { normalizeWatchPath } from '../../../../../utils/path'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../../shared'
+import { getVueBundlePageLayoutPlan } from './types'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
@@ -90,11 +91,12 @@ export async function handleCompiledEntryPageLayouts(options: {
   configService: NonNullable<CompilerContext['configService']>
   emitLayouts: (layouts: ResolvedPageLayout[] | undefined) => Promise<void>
 }) {
-  const resolvedLayoutPlan = await resolvePageLayoutPlan(
-    options.source,
-    options.filename,
-    options.configService,
-  )
+  const resolvedLayoutPlan = getVueBundlePageLayoutPlan(options.result)
+    ?? await resolvePageLayoutPlan(
+      options.source,
+      options.filename,
+      options.configService,
+    )
 
   if (resolvedLayoutPlan) {
     applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan, {

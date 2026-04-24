@@ -8,9 +8,16 @@ import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
 import { resolveWevuDefaultsWithPreset } from './wevuPreset'
 
+export type CompileVueFileResolvedOptions = ReturnType<typeof buildCompileVueFileOptions>
+
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
   classStyleRuntimeWarned: { value: boolean }
+  compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
+}
+
+export function getCompileVueFileOptionsCacheKey(vuePath: string, isPage: boolean, isApp: boolean) {
+  return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}`
 }
 
 export function resolveVueTemplatePlatformOptions(options: {
@@ -43,7 +50,7 @@ export function resolveVueTemplatePlatformOptions(options: {
   } as const
 }
 
-export function createCompileVueFileOptions(
+function buildCompileVueFileOptions(
   ctx: CompilerContext,
   pluginCtx: any,
   vuePath: string,
@@ -119,4 +126,24 @@ export function createCompileVueFileOptions(
     sfcSrc: createSfcResolveSrcOptions(pluginCtx, configService),
     wevuDefaults,
   } as const
+}
+
+export function createCompileVueFileOptions(
+  ctx: CompilerContext,
+  pluginCtx: any,
+  vuePath: string,
+  isPage: boolean,
+  isApp: boolean,
+  configService: NonNullable<CompilerContext['configService']>,
+  state: CompileOptionsContext,
+) {
+  const cacheKey = getCompileVueFileOptionsCacheKey(vuePath, isPage, isApp)
+  const cached = state.compileOptionsCache?.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  const created = buildCompileVueFileOptions(ctx, pluginCtx, vuePath, isPage, isApp, configService, state)
+  state.compileOptionsCache?.set(cacheKey, created)
+  return created
 }

@@ -1,5 +1,6 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
+import type { VueBundleCompileOptionsState } from './shared'
 import { fs } from '@weapp-core/shared/fs'
 import {
   emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded,
@@ -216,7 +217,7 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
   layoutFilePath: string
   ctx: CompilerContext
   configService: NonNullable<CompilerContext['configService']>
-  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  compileOptionsState: VueBundleCompileOptionsState
   outputExtensions: OutputExtensions | undefined
 }) {
   const {
@@ -270,7 +271,7 @@ export function createBundleLayoutEmitters(options: {
   bundle: Record<string, any>
   ctx: CompilerContext
   configService: NonNullable<CompilerContext['configService']>
-  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  compileOptionsState: VueBundleCompileOptionsState
   outputExtensions: OutputExtensions | undefined
 }) {
   return {
@@ -303,7 +304,7 @@ export async function emitBundlePageLayoutsIfNeeded(options: {
   bundle: Record<string, any>
   ctx: CompilerContext
   configService: NonNullable<CompilerContext['configService']>
-  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  compileOptionsState: VueBundleCompileOptionsState
   outputExtensions: OutputExtensions | undefined
 }) {
   if (!options.layouts?.length) {

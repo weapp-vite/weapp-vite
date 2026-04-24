@@ -19,7 +19,10 @@ export async function compileVueFile(
   const parsed = await parseVueFile(source, filename, options)
 
   const result: VueTransformResult = {
-    meta: { ...parsed.meta },
+    meta: {
+      ...parsed.meta,
+      styleBlocks: parsed.descriptor.styles,
+    },
   }
 
   const autoUsingComponents = (options?.autoUsingComponents?.enabled

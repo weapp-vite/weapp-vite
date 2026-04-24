@@ -318,4 +318,49 @@ describe('resolveVueTemplatePlatformOptions', () => {
       },
     })
   })
+
+  it('reuses cached compile options for the same vue entry', () => {
+    createUsingComponentPathResolverMock.mockClear()
+    createSfcResolveSrcOptionsMock.mockClear()
+
+    const state = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+      compileOptionsCache: new Map(),
+    }
+
+    const first = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      state,
+    )
+
+    const second = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      state,
+    )
+
+    expect(second).toBe(first)
+    expect(createUsingComponentPathResolverMock).toHaveBeenCalledTimes(1)
+    expect(createSfcResolveSrcOptionsMock).toHaveBeenCalledTimes(1)
+  })
 })

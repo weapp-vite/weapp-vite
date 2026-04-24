@@ -1,4 +1,4 @@
-import type { VueBundleState } from './shared'
+import type { VueBundleCompileOptionsState, VueBundleState } from './shared'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
@@ -13,7 +13,7 @@ export async function emitResolvedFallbackPageEntryAssets(options: {
   entryFilePath: string
   relativeBase: string
   configService: NonNullable<VueBundleState['ctx']['configService']>
-  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  compileOptionsState: VueBundleCompileOptionsState
   outputExtensions: NonNullable<NonNullable<VueBundleState['ctx']['configService']>['outputExtensions']>
   templateExtension: string
   styleExtension: string
@@ -73,13 +73,13 @@ export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
   state: VueBundleState,
 ) {
-  const { ctx, pluginCtx, compilationCache, reExportResolutionCache, classStyleRuntimeWarned } = state
+  const { ctx, pluginCtx, compilationCache, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache } = state
   const { configService, scanService } = ctx
   if (!configService || !scanService) {
     return
   }
 
-  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
+  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache }
   const {
     outputExtensions,
     templateExtension,

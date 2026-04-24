@@ -9,6 +9,7 @@ import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeat
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../../pageLayout'
 import { getEntryBaseName, isAppVueLikeFile } from './layout'
+import { setVueBundlePageLayoutPlan } from './types'
 
 export async function compileVueLikeFile(options: {
   source: string
@@ -37,6 +38,7 @@ export async function compileVueLikeFile(options: {
     if (isPage && result.template) {
       const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
       if (resolvedLayoutPlan) {
+        setVueBundlePageLayoutPlan(result, resolvedLayoutPlan)
         applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
           platform: configService.platform,
         })
@@ -49,6 +51,7 @@ export async function compileVueLikeFile(options: {
   if (isPage && result.template) {
     const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
     if (resolvedLayoutPlan) {
+      setVueBundlePageLayoutPlan(result, resolvedLayoutPlan)
       applyPageLayoutPlan(result, filename, resolvedLayoutPlan, {
         platform: configService.platform,
       })

@@ -1,3 +1,4 @@
+import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { AstEngineName } from '../../../../ast/types'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
 import type { WevuDefaults } from '../../../../types/wevu'
@@ -24,6 +25,7 @@ export interface VueTransformResult {
     jsonMacroHash?: string
     defineOptionsHash?: string
     sfcSrcDeps?: string[]
+    styleBlocks?: SFCStyleBlock[]
   }
 }
 

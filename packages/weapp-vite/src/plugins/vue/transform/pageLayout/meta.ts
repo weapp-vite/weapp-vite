@@ -6,6 +6,14 @@ import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse
 import { normalizeLayoutName } from './shared'
 
 const PAGE_META_MACRO_NAME = 'definePageMeta'
+const analyzedPageLayoutSourceCache = new Map<string, {
+  source: string
+  result: {
+    layoutMeta?: ResolvedLayoutMeta
+    dynamicSwitch: boolean
+    dynamicPropKeys: string[]
+  }
+}>()
 
 function unwrapStaticExpression(node: t.Expression): t.Expression {
   if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
@@ -236,60 +244,99 @@ function parseScriptAst(content: string) {
   return babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
 }
 
-export function extractPageLayoutMeta(source: string, filename: string) {
-  if (filename.endsWith('.vue')) {
-    const { descriptor } = parseSfc(source, { filename })
-    let layout: ResolvedLayoutMeta | undefined
+function analyzeVueScriptBlocks(source: string, filename: string) {
+  const { descriptor } = parseSfc(source, { filename })
+  const scriptAst = descriptor.script?.content
+    ? parseScriptAst(descriptor.script.content)
+    : undefined
+  const scriptSetupAst = descriptor.scriptSetup?.content
+    ? parseScriptAst(descriptor.scriptSetup.content)
+    : undefined
 
-    if (descriptor.script?.content) {
-      layout = extractLayoutFromProgram(parseScriptAst(descriptor.script.content), filename)
+  return {
+    descriptor,
+    scriptAst,
+    scriptSetupAst,
+  }
+}
+
+function analyzePageLayoutSourceUncached(source: string, filename: string) {
+  if (filename.endsWith('.vue')) {
+    const { scriptAst, scriptSetupAst } = analyzeVueScriptBlocks(source, filename)
+    let layoutMeta: ResolvedLayoutMeta | undefined
+
+    if (scriptAst) {
+      layoutMeta = extractLayoutFromProgram(scriptAst, filename)
     }
-    if (descriptor.scriptSetup?.content) {
-      const setupLayout = extractLayoutFromProgram(parseScriptAst(descriptor.scriptSetup.content), filename)
-      if (layout !== undefined && setupLayout !== undefined) {
+    if (scriptSetupAst) {
+      const setupLayout = extractLayoutFromProgram(scriptSetupAst, filename)
+      if (layoutMeta !== undefined && setupLayout !== undefined) {
         throw new Error(`${filename} 中的 <script> 与 <script setup> 不能同时声明 definePageMeta().`)
       }
       if (setupLayout !== undefined) {
-        layout = setupLayout
+        layoutMeta = setupLayout
       }
     }
 
-    return layout
+    const dynamicSwitch = Boolean(
+      (scriptAst && hasSetPageLayoutCallInProgram(scriptAst))
+      || (scriptSetupAst && hasSetPageLayoutCallInProgram(scriptSetupAst)),
+    )
+    const dynamicPropKeys = dynamicSwitch
+      ? Array.from(new Set([
+          ...(scriptAst ? collectSetPageLayoutPropKeysFromProgram(scriptAst) : []),
+          ...(scriptSetupAst ? collectSetPageLayoutPropKeysFromProgram(scriptSetupAst) : []),
+        ]))
+      : []
+
+    return {
+      layoutMeta,
+      dynamicSwitch,
+      dynamicPropKeys,
+    }
   }
 
-  return extractLayoutFromProgram(parseScriptAst(source), filename)
+  const ast = parseScriptAst(source)
+  const dynamicSwitch = hasSetPageLayoutCallInProgram(ast)
+  return {
+    layoutMeta: extractLayoutFromProgram(ast, filename),
+    dynamicSwitch,
+    dynamicPropKeys: dynamicSwitch ? collectSetPageLayoutPropKeysFromProgram(ast) : [],
+  }
+}
+
+export function analyzePageLayoutSource(source: string, filename: string) {
+  const cached = analyzedPageLayoutSourceCache.get(filename)
+  if (cached?.source === source) {
+    return cached.result
+  }
+
+  const result = analyzePageLayoutSourceUncached(source, filename)
+  analyzedPageLayoutSourceCache.set(filename, {
+    source,
+    result,
+  })
+  return result
+}
+
+export function invalidatePageLayoutSourceAnalysisCache(filename?: string) {
+  if (!filename) {
+    analyzedPageLayoutSourceCache.clear()
+    return
+  }
+  analyzedPageLayoutSourceCache.delete(filename)
+}
+
+export function extractPageLayoutMeta(source: string, filename: string) {
+  return analyzePageLayoutSource(source, filename).layoutMeta
 }
 
 export function hasSetPageLayoutUsage(source: string, filename: string) {
-  if (filename.endsWith('.vue')) {
-    const { descriptor } = parseSfc(source, { filename })
-    return Boolean(
-      (descriptor.script?.content && hasSetPageLayoutCallInProgram(parseScriptAst(descriptor.script.content)))
-      || (descriptor.scriptSetup?.content && hasSetPageLayoutCallInProgram(parseScriptAst(descriptor.scriptSetup.content))),
-    )
-  }
-
-  return hasSetPageLayoutCallInProgram(parseScriptAst(source))
+  return analyzePageLayoutSource(source, filename).dynamicSwitch
 }
 
 export function collectSetPageLayoutPropKeys(source: string, filename: string) {
-  if (filename.endsWith('.vue')) {
-    const { descriptor } = parseSfc(source, { filename })
-    const keys = new Set<string>()
-    if (descriptor.script?.content) {
-      for (const key of collectSetPageLayoutPropKeysFromProgram(parseScriptAst(descriptor.script.content))) {
-        keys.add(key)
-      }
-    }
-    if (descriptor.scriptSetup?.content) {
-      for (const key of collectSetPageLayoutPropKeysFromProgram(parseScriptAst(descriptor.scriptSetup.content))) {
-        keys.add(key)
-      }
-    }
-    return [...keys]
-  }
-
-  return collectSetPageLayoutPropKeysFromProgram(parseScriptAst(source))
+  return analyzePageLayoutSource(source, filename).dynamicPropKeys
 }
 
 export function extractPageLayoutName(source: string, filename: string) {

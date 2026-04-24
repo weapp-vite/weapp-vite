@@ -6,7 +6,7 @@ import picomatch from 'picomatch'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../../utils'
 import { normalizeWatchPath, toPosixPath } from '../../../../utils/path'
 import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
-import { collectSetPageLayoutPropKeys, extractPageLayoutMeta, hasSetPageLayoutUsage } from './meta'
+import { analyzePageLayoutSource, invalidatePageLayoutSourceAnalysisCache } from './meta'
 import { normalizeComparablePath, normalizeLayoutName, removeFileExtension, toLayoutTagName } from './shared'
 
 const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
@@ -237,6 +237,7 @@ async function resolveAllLayouts(
 }
 
 export function invalidateResolvedPageLayoutsCache(absoluteSrcRoot?: string) {
+  invalidatePageLayoutSourceAnalysisCache()
   if (!absoluteSrcRoot) {
     resolvedLayoutsCache.clear()
     return
@@ -252,11 +253,12 @@ export async function resolvePageLayoutPlan(
 ): Promise<ResolvedPageLayoutPlan | undefined> {
   const hasPageMetaHint = source.includes(PAGE_META_HINT)
   const hasDynamicLayoutHint = source.includes(SET_PAGE_LAYOUT_HINT)
-  const layoutMeta = (hasPageMetaHint ? extractPageLayoutMeta(source, filename) : undefined)
+  const analyzedSource = hasPageMetaHint || hasDynamicLayoutHint
+    ? analyzePageLayoutSource(source, filename)
+    : undefined
+  const layoutMeta = (hasPageMetaHint ? analyzedSource?.layoutMeta : undefined)
     ?? resolveRouteRuleLayoutMeta(filename, configService)
-  const dynamicSwitch = hasDynamicLayoutHint
-    ? hasSetPageLayoutUsage(source, filename)
-    : false
+  const dynamicSwitch = hasDynamicLayoutHint ? Boolean(analyzedSource?.dynamicSwitch) : false
   if (layoutMeta?.disabled && !dynamicSwitch) {
     return undefined
   }
@@ -290,7 +292,7 @@ export async function resolvePageLayoutPlan(
     dynamicPropKeys: dynamicSwitch
       ? Array.from(new Set([
           ...Object.keys(currentLayout?.props ?? {}),
-          ...collectSetPageLayoutPropKeys(source, filename),
+          ...(analyzedSource?.dynamicPropKeys ?? []),
         ]))
       : [],
   }

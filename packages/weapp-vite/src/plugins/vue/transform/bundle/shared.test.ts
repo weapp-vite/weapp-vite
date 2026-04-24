@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addBundleWatchFile, compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -1034,6 +1034,50 @@ describe('emitSharedVueEntryAssets', () => {
     )
     expect(emitLayouts).toHaveBeenCalledWith([
       { kind: 'native', file: '/layouts/default/index' },
+    ])
+  })
+
+  it('reuses cached compiled entry page layout plan when available', async () => {
+    const emitLayouts = vi.fn(async () => {})
+    const result = {
+      template: '<view />',
+      meta: {
+        pageLayoutPlan: {
+          layouts: [
+            { kind: 'native', file: '/layouts/cached/index' },
+          ],
+        },
+      },
+    } as any
+
+    await handleCompiledEntryPageLayouts({
+      source: '<view />',
+      filename: '/project/src/pages/demo/index.vue',
+      result,
+      configService: {} as any,
+      emitLayouts,
+    })
+
+    expect(resolvePageLayoutPlanMock).not.toHaveBeenCalled()
+    expect(getVueBundlePageLayoutPlan(result)).toEqual({
+      layouts: [
+        { kind: 'native', file: '/layouts/cached/index' },
+      ],
+    })
+    expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
+      result,
+      '/project/src/pages/demo/index.vue',
+      {
+        layouts: [
+          { kind: 'native', file: '/layouts/cached/index' },
+        ],
+      },
+      {
+        platform: undefined,
+      },
+    )
+    expect(emitLayouts).toHaveBeenCalledWith([
+      { kind: 'native', file: '/layouts/cached/index' },
     ])
   })
 

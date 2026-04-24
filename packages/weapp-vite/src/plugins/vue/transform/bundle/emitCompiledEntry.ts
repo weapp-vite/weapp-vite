@@ -1,4 +1,4 @@
-import type { CompilationCacheEntry, VueBundleState } from './shared'
+import type { CompilationCacheEntry, VueBundleCompileOptionsState, VueBundleState } from './shared'
 import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
@@ -12,7 +12,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
   cached: CompilationCacheEntry
   result: CompilationCacheEntry['result']
   relativeBase: string
-  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  compileOptionsState: VueBundleCompileOptionsState
   outputExtensions: NonNullable<NonNullable<VueBundleState['ctx']['configService']>['outputExtensions']>
   templateExtension: string
   jsonExtension: string
@@ -85,7 +85,7 @@ export async function emitCompiledVueEntryAssets(
   filename: string,
   cached: CompilationCacheEntry,
 ) {
-  const { ctx, pluginCtx, reExportResolutionCache, classStyleRuntimeWarned } = state
+  const { ctx, pluginCtx, reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache } = state
   const { configService } = ctx
   if (!configService) {
     return
@@ -93,7 +93,7 @@ export async function emitCompiledVueEntryAssets(
 
   addBundleWatchFile(pluginCtx, filename)
 
-  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
+  const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned, compileOptionsCache }
   const {
     outputExtensions,
     templateExtension,

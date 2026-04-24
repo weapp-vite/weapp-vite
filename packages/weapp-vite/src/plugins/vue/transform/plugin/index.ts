@@ -3,6 +3,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { createPageEntryMatcher } from '../../../wevu'
+import type { CompileVueFileResolvedOptions } from '../compileOptions'
 import { fs } from '@weapp-core/shared/fs'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -21,6 +22,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
+  const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
   const styleBlocksCache = new Map<string, SFCStyleBlock[]>()
   const scopedSlotModules = new Map<string, string>()
   const emittedScopedSlotChunks = new Set<string>()
@@ -84,6 +86,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           pageMatcher,
           setPageMatcher: matcher => (pageMatcher = matcher),
           reExportResolutionCache,
+          compileOptionsCache,
           styleBlocksCache,
           scopedSlotModules,
           emittedScopedSlotChunks,
@@ -101,6 +104,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         pluginCtx: this,
         compilationCache,
         reExportResolutionCache,
+        compileOptionsCache,
         classStyleRuntimeWarned,
       })
     },
