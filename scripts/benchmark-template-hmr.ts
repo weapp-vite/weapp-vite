@@ -66,7 +66,6 @@ const cliPath = path.join(repoRoot, 'packages/weapp-vite/bin/weapp-vite.js')
 const reportRoot = path.join(repoRoot, '.tmp/template-hmr-bench')
 const reportJsonPath = path.join(reportRoot, 'report.json')
 const reportMdPath = path.join(reportRoot, 'report.md')
-const tempConfigBackupName = '.weapp-vite.hmr-bench.original-config.ts'
 const iterations = Number.parseInt(process.env.TEMPLATE_HMR_ITERATIONS ?? '3', 10)
 const timeoutMs = Number.parseInt(process.env.TEMPLATE_HMR_TIMEOUT_MS ?? '30000', 10)
 const heartbeatMs = Number.parseInt(process.env.TEMPLATE_HMR_HEARTBEAT_MS ?? '2000', 10)
@@ -217,8 +216,6 @@ async function main() {
 
 async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> {
   const profilePath = path.join(project.projectRoot, '.weapp-vite/hmr-profile.jsonl')
-  const configBackupPath = path.join(project.projectRoot, tempConfigBackupName)
-  const originalConfig = await readFile(project.configPath, 'utf8')
   const sourceBackups = new Map<string, string>()
 
   for (const scenario of project.scenarios) {
@@ -227,7 +224,6 @@ async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> 
     }
   }
 
-  await writeBenchWrapperConfig(project.configPath, configBackupPath, originalConfig)
   await rm(path.join(project.projectRoot, 'dist'), { recursive: true, force: true }).catch(() => {})
   await rm(profilePath, { force: true }).catch(() => {})
 
@@ -236,13 +232,15 @@ async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> 
     'tsx',
     cliPath,
     'dev',
-    project.projectRoot,
+    normalizePath(path.relative(repoRoot, project.projectRoot)),
     '--platform',
     'weapp',
     '--skipNpm',
   ], {
-    cwd: project.projectRoot,
-    env: createDevProcessEnv(),
+    cwd: repoRoot,
+    env: createDevProcessEnv({
+      disableSidecarWatch: true,
+    }),
     stdout: 'pipe',
     stderr: 'pipe',
     all: true,
@@ -294,8 +292,6 @@ async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> 
     for (const [filePath, original] of sourceBackups) {
       await writeFile(filePath, original, 'utf8').catch(() => {})
     }
-    await writeFile(project.configPath, originalConfig, 'utf8').catch(() => {})
-    await rm(configBackupPath, { force: true }).catch(() => {})
   }
 }
 
@@ -313,9 +309,17 @@ async function benchmarkScenario(options: {
     const profileLineCount = await countJsonlLines(profilePath)
     const current = scenario.mutate(original, marker)
     debugLog(`scenario=${scenario.id} iteration=${index + 1}: mutate ${normalizePath(scenario.sourceFile)}`)
+    const startedAt = performance.now()
     await replaceFileByRename(scenario.sourceFile, current)
     await waitForFileContainsWithHeartbeat(scenario.outputFile, marker, scenario.sourceFile, current)
-    samples.push(await waitForHmrProfileSample(profilePath, scenario.sourceFile, profileLineCount))
+    const totalMs = performance.now() - startedAt
+    const profileSample = await waitForHmrProfileSample(profilePath, scenario.sourceFile, profileLineCount, 1_500)
+    samples.push({
+      file: normalizePath(scenario.sourceFile),
+      totalMs,
+      ...profileSample,
+      totalMs: profileSample.totalMs ?? totalMs,
+    })
   }
 
   await replaceFileByRename(scenario.sourceFile, original)
@@ -413,11 +417,22 @@ async function waitForFileContains(filePath: string, marker: string, waitMs = ti
   throw new Error(`Timed out waiting for ${filePath} to contain marker: ${marker}`)
 }
 
-async function waitForHmrProfileSample(profilePath: string, sourceFile: string, startLineCount: number) {
+async function waitForHmrProfileSample(
+  profilePath: string,
+  sourceFile: string,
+  startLineCount: number,
+  waitMs = timeoutMs,
+) {
+  if (!(await pathExists(profilePath))) {
+    return {
+      file: normalizePath(sourceFile),
+    } satisfies HmrProfileJsonSample
+  }
+
   const startedAt = Date.now()
   const normalizedSourceFile = normalizePath(sourceFile)
 
-  while (Date.now() - startedAt < timeoutMs) {
+  while (Date.now() - startedAt < waitMs) {
     const samples = await readJsonlSamplesSince(profilePath, startLineCount)
     const matched = samples.findLast(sample => normalizePath(sample.file) === normalizedSourceFile)
     if (matched) {
@@ -460,32 +475,6 @@ async function readJsonlSamplesSince(filePath: string, startLineCount: number) {
       }
     })
     .filter((sample): sample is HmrProfileJsonSample => sample !== undefined)
-}
-
-async function writeBenchWrapperConfig(filePath: string, backupPath: string, originalConfig: string) {
-  const source = [
-    `import { defineConfig } from 'weapp-vite'`,
-    `import originalConfig from './${path.basename(backupPath)}'`,
-    ``,
-    `export default defineConfig(async (env) => {`,
-    `  const resolved = typeof originalConfig === 'function' ? await originalConfig(env) : await originalConfig`,
-    `  return {`,
-    `    ...resolved,`,
-    `    weapp: {`,
-    `      ...(resolved?.weapp ?? {}),`,
-    `      hmr: {`,
-    `        ...(resolved?.weapp?.hmr ?? {}),`,
-    `        logLevel: 'verbose',`,
-    `        profileJson: true,`,
-    `      },`,
-    `    },`,
-    `  }`,
-    `})`,
-    ``,
-  ].join('\n')
-
-  await writeFile(backupPath, originalConfig, 'utf8')
-  await writeFile(filePath, source, 'utf8')
 }
 
 async function pathExists(filePath: string) {
