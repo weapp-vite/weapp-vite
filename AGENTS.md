@@ -114,6 +114,8 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Classes/types: PascalCase.
 - Prefer named exports unless a file intentionally owns a single default export.
 - 跨包共享、会进入最终运行时代码、或需要在多个包/测试之间保持稳定值的 runtime marker / key / helper-name 常量，优先收敛到 `@weapp-core/constants`；不要把这类常量继续散落在 `packages/weapp-vite` 的单文件内部。
+- 对 `dist`、小程序构建输出目录、插件输出目录这类最终构建产物，默认要求全部来自 Vite/Rolldown 的原生 emit / write 流程；不要为了 dev/HMR 兜底、补写、同步或清理差量而直接 `writeFile` 生成这些产物。
+- 如果某个方案需要“手动把 bundle 写回磁盘”才能工作，默认视为违反架构约束；应优先改成调整 entry invalidation、watcher、plugin emit、bundler write 阶段，保证产物仍由 bundler 自身落盘。
 - Keep eslint/stylelint clean and avoid introducing TypeScript errors.
 - Always fix stylelint issues in standalone style files and in `<style>` blocks inside `.vue` files (including generated style outputs).
 - JSDoc comments must be in Chinese.

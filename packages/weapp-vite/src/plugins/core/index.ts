@@ -15,7 +15,11 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
   const hmrSharedChunkImporters = new Map<string, Set<string>>()
   const hmrSharedChunksByEntry = new Map<string, Set<string>>()
   const hmrSharedChunkDependencies = new Map<string, Set<string>>()
-  const hmrState = { didEmitAllEntries: false, hasBuiltOnce: false, lastEmittedEntryIds: new Set<string>() }
+  const hmrState = {
+    didEmitAllEntries: false,
+    hasBuiltOnce: false,
+    lastEmittedEntryIds: new Set<string>(),
+  }
   const {
     loadEntry,
     loadedEntrySet,

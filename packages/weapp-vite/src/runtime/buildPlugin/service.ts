@@ -8,10 +8,12 @@ import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
+import chokidar from 'chokidar'
 import path from 'pathe'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
+import { isSidecarFile } from '../../plugins/utils/invalidateEntry/shared'
 import { touch } from '../../utils/file'
 import { resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
@@ -19,6 +21,7 @@ import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { generateLibDts } from '../libDts'
 import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { createSidecarWatchOptions } from '../watch/options'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
@@ -60,6 +63,10 @@ interface HmrPhaseRegressionCandidate {
   currentMs: number
   averageMs: number
   ratio: number
+}
+
+function shouldHandleSnapshotSidecarFile(filePath: string) {
+  return filePath.endsWith('.vue') || isSidecarFile(filePath)
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
@@ -398,6 +405,35 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   assertRuntimeServices(ctx)
 
   const { configService, watcherService, npmService, scanService } = ctx
+
+  function attachSidecarWatcherToWatcherClose(options: {
+    watcher: RolldownWatcher
+    watcherRoot: string
+    sidecarRoot: string
+    waitForPendingSnapshotBuilds: () => Promise<unknown>
+    markClosed: () => void
+  }) {
+    const { watcher, watcherRoot, sidecarRoot, waitForPendingSnapshotBuilds, markClosed } = options
+    const originalClose = watcher.close.bind(watcher)
+    let closePromise: Promise<unknown> | undefined
+
+    watcher.close = () => {
+      if (!closePromise) {
+        closePromise = (async () => {
+          markClosed()
+          await waitForPendingSnapshotBuilds().catch(() => {})
+          const sidecarWatcher = watcherService.sidecarWatcherMap.get(sidecarRoot)
+          if (sidecarWatcher) {
+            watcherService.sidecarWatcherMap.delete(sidecarRoot)
+            await Promise.resolve(sidecarWatcher.close()).catch(() => {})
+          }
+          watcherService.rollupWatcherMap.delete(watcherRoot)
+          return originalClose()
+        })()
+      }
+      return closePromise
+    }
+  }
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
   let autoTouchResolved = false
@@ -445,6 +481,54 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ),
       target,
     ))
+    buildOptions.build = {
+      ...(buildOptions.build ?? {}),
+      write: true,
+    }
+    const snapshotBuildOptions: InlineConfig = {
+      ...buildOptions,
+      build: {
+        ...(buildOptions.build ?? {}),
+      },
+    }
+    delete snapshotBuildOptions.build?.watch
+    const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
+    let snapshotBuildChain = Promise.resolve()
+    let devWatcherClosed = false
+
+    const runSnapshotBuild = (reason?: { event?: string, file?: string }) => {
+      if (devWatcherClosed) {
+        return snapshotBuildChain
+      }
+      const startedAt = reason ? performance.now() : 0
+      snapshotBuildChain = snapshotBuildChain.then(async () => {
+        if (devWatcherClosed) {
+          return
+        }
+        if (reason?.event || reason?.file) {
+          ctx.runtimeState.build.hmr.profile = {
+            ...ctx.runtimeState.build.hmr.profile,
+            event: reason.event,
+            file: reason.file,
+            watchToDirtyMs: performance.now() - startedAt,
+          }
+        }
+        for (const entryId of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
+          ctx.runtimeState.build.hmr.dirtyEntrySet.add(entryId)
+          ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, 'direct')
+          ctx.runtimeState.build.hmr.loadedEntrySet.delete(entryId)
+        }
+        process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
+        try {
+          await build(snapshotBuildOptions)
+        }
+        finally {
+          delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
+        }
+      })
+      return snapshotBuildChain
+    }
+
     const watcherPromise = build(
       buildOptions,
     ) as unknown as Promise<RolldownWatcher>
@@ -464,7 +548,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
     let startTime: DOMHighResTimeStamp
     let firstBuildCompleted = false
-
     let resolveWatcher: (value: unknown) => void
     let rejectWatcher: (reason?: any) => void
     const promise = new Promise((res, rej) => {
@@ -477,12 +560,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : undefined
 
     watcher.on('event', (e) => {
+      if (devWatcherClosed) {
+        return
+      }
       if (e.code === 'START') {
         startTime = performance.now()
       }
       else if (e.code === 'END') {
         const durationMs = performance.now() - startTime
         void (async () => {
+          await runSnapshotBuild()
           if (firstBuildCompleted) {
             finalizeHmrProfile(durationMs)
             recordHmrProfile(durationMs)
@@ -515,6 +602,54 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const watcherRoot = target === 'plugin'
       ? configService.absolutePluginRoot ?? configService.absoluteSrcRoot
       : '/'
+    if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
+      const snapshotWatcher = chokidar.watch(
+        configService.absoluteSrcRoot,
+        createSidecarWatchOptions(configService, {
+          persistent: true,
+          ignoreInitial: true,
+        }),
+      )
+      snapshotWatcher.on('all', (event, id) => {
+        if (!id) {
+          return
+        }
+        if (!shouldHandleSnapshotSidecarFile(id)) {
+          return
+        }
+        const sidecarStartedAt = performance.now()
+        const normalizedEvent = event.startsWith('unlink')
+          ? 'delete'
+          : event.startsWith('add')
+            ? 'create'
+            : 'update'
+        void runSnapshotBuild({
+          event: normalizedEvent,
+          file: id,
+        }).then(() => {
+          const durationMs = performance.now() - sidecarStartedAt
+          finalizeHmrProfile(durationMs)
+          recordHmrProfile(durationMs)
+          logger.success(formatHmrLogLine(durationMs))
+          resetHmrProfile()
+        }).catch((error) => {
+          resetHmrProfile()
+          logger.error(error)
+        })
+      })
+      watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
+        close: () => snapshotWatcher.close(),
+      })
+      attachSidecarWatcherToWatcherClose({
+        watcher,
+        watcherRoot,
+        sidecarRoot: snapshotWatcherRoot,
+        waitForPendingSnapshotBuilds: () => snapshotBuildChain,
+        markClosed: () => {
+          devWatcherClosed = true
+        },
+      })
+    }
     watcherService.setRollupWatcher(watcher, watcherRoot)
     return watcher
   }

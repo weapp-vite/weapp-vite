@@ -42,6 +42,10 @@ const createIndependentBuilderMock = vi.hoisted(() => vi.fn(() => ({
 })))
 const appendFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const mkdirMock = vi.hoisted(() => vi.fn(async () => {}))
+const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
+  on: vi.fn(),
+  close: vi.fn(),
+})))
 
 vi.mock('node:fs/promises', () => ({
   appendFile: appendFileMock,
@@ -50,6 +54,12 @@ vi.mock('node:fs/promises', () => ({
 
 vi.mock('vite', () => ({
   build: buildMock,
+}))
+
+vi.mock('chokidar', () => ({
+  default: {
+    watch: chokidarWatchMock,
+  },
 }))
 
 vi.mock('./outputs', () => ({
@@ -138,7 +148,27 @@ function createManualWatcher() {
     emit(code: string) {
       eventCallback?.({ code })
     },
+    emitPayload(payload: { code: string, [key: string]: any }) {
+      eventCallback?.(payload)
+    },
     subscribed,
+    close: vi.fn(),
+  }
+  return watcher
+}
+
+function createManualSidecarWatcher() {
+  let allCallback: ((event: string, id?: string) => void) | undefined
+  const watcher: any = {
+    on: vi.fn((event: string, callback: (event: string, id?: string) => void) => {
+      if (event === 'all') {
+        allCallback = callback
+      }
+      return watcher
+    }),
+    emit(event: string, id?: string) {
+      allCallback?.(event, id)
+    },
     close: vi.fn(),
   }
   return watcher
@@ -146,6 +176,8 @@ function createManualWatcher() {
 
 function createMockContext(overrides: Record<string, unknown> = {}) {
   const runtimeState = createRuntimeState()
+  const rollupWatcherMap = new Map()
+  const sidecarWatcherMap = new Map()
   const ctx = {
     runtimeState,
     configService: {
@@ -169,7 +201,11 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       isDev: true,
     },
     watcherService: {
-      setRollupWatcher: vi.fn(),
+      rollupWatcherMap,
+      sidecarWatcherMap,
+      setRollupWatcher: vi.fn((watcher: any, root: string = '/') => {
+        rollupWatcherMap.set(root, watcher)
+      }),
     },
     npmService: {
       build: vi.fn(async () => {}),
@@ -189,6 +225,21 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
   return ctx
 }
 
+async function flushAsyncTasks() {
+  for (let index = 0; index < 6; index += 1) {
+    await Promise.resolve()
+  }
+}
+
+async function waitForMockCalls(mock: { mock: { calls: unknown[] } }, count: number) {
+  for (let index = 0; index < 20; index += 1) {
+    if (mock.mock.calls.length >= count) {
+      return
+    }
+    await flushAsyncTasks()
+  }
+}
+
 describe('runtime buildPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -202,6 +253,7 @@ describe('runtime buildPlugin service', () => {
       hasWorkersDir: false,
       workersDir: undefined,
     })
+    chokidarWatchMock.mockClear()
   })
 
   afterEach(() => {
@@ -236,7 +288,9 @@ describe('runtime buildPlugin service', () => {
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -260,9 +314,125 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
 
+  it('forces dev watch builds to keep writing files to outDir', async () => {
+    buildMock
+      .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    await service.build({ skipNpm: true })
+
+    expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
+      build: expect.objectContaining({
+        write: true,
+      }),
+    }))
+  })
+
+  it('runs a snapshot write build after each dev watch end event', async () => {
+    const watcher = createManualWatcher()
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
+      build: expect.not.objectContaining({
+        watch: expect.anything(),
+      }),
+    }))
+  })
+
+  it('runs sidecar snapshot build with its own hmr timing window', async () => {
+    let nowValue = 0
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowValue)
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    nowValue = 0
+    watcher.emit('START')
+    nowValue = 10
+    watcher.emit('END')
+    await firstBuild
+
+    nowValue = 20
+    sidecarWatcher.emit('change', '/project/src/pages/logs/index.vue')
+    nowValue = 28
+    await waitForMockCalls(loggerSuccessMock, 1)
+
+    expect(buildMock).toHaveBeenCalledTimes(3)
+    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('8.00 ms'))
+    nowSpy.mockRestore()
+  })
+
+  it('ignores plain script updates in snapshot sidecar watcher', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', '/project/src/shared/runtime-dep.ts')
+    await flushAsyncTasks()
+
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(loggerSuccessMock).not.toHaveBeenCalled()
+  })
+
+  it('closes snapshot sidecar watcher when main watcher closes directly', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    const result = await firstBuild
+
+    expect(ctx.watcherService.sidecarWatcherMap.size).toBe(1)
+    await result.close()
+
+    expect(sidecarWatcher.close).toHaveBeenCalledTimes(1)
+    expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+    expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+  })
+
   it('prints hmr phase timings on rebuild completion and resets the profile', async () => {
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -298,7 +468,9 @@ describe('runtime buildPlugin service', () => {
 
   it('tracks recent hmr samples and prints a rolling summary for rebuild trends', async () => {
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -336,7 +508,9 @@ describe('runtime buildPlugin service', () => {
       .mockReturnValueOnce(10)
       .mockReturnValueOnce(177.25)
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -386,7 +560,9 @@ describe('runtime buildPlugin service', () => {
       .mockReturnValueOnce(200)
       .mockReturnValueOnce(379)
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -453,7 +629,9 @@ describe('runtime buildPlugin service', () => {
 
   it('writes hmr profile jsonl with default output path when enabled', async () => {
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -512,7 +690,9 @@ describe('runtime buildPlugin service', () => {
 
   it('writes hmr profile jsonl to custom relative path', async () => {
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -552,7 +732,9 @@ describe('runtime buildPlugin service', () => {
 
   it('does not write hmr profile jsonl when disabled', async () => {
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -577,20 +759,12 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('prints analyze hint when hmr profile is enabled and rebuild becomes much slower', async () => {
-    const nowSpy = vi.spyOn(performance, 'now')
-    nowSpy
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(10)
-      .mockReturnValueOnce(20)
-      .mockReturnValueOnce(120)
-      .mockReturnValueOnce(130)
-      .mockReturnValueOnce(210)
-      .mockReturnValueOnce(220)
-      .mockReturnValueOnce(310)
-      .mockReturnValueOnce(320)
-      .mockReturnValueOnce(510)
+    let nowValue = 0
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowValue)
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -606,62 +780,61 @@ describe('runtime buildPlugin service', () => {
 
     const firstBuild = service.build({ skipNpm: true })
     await watcher.subscribed
+    nowValue = 0
     watcher.emit('START')
+    nowValue = 10
     watcher.emit('END')
     await firstBuild
 
+    let cursor = 20
     for (const totalMs of [100, 80, 90, 200]) {
       ctx.runtimeState.build.hmr.profile = {
         emitMs: totalMs / 2,
       }
+      nowValue = cursor
       watcher.emit('START')
+      nowValue = cursor + totalMs
       watcher.emit('END')
-      await vi.waitFor(() => {
-        expect(loggerSuccessMock).toHaveBeenCalled()
-      })
+      await waitForMockCalls(loggerSuccessMock, cursor === 20 ? 1 : loggerSuccessMock.mock.calls.length + 1)
+      cursor += totalMs + 10
     }
 
-    await vi.waitFor(() => {
-      expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('weapp-vite analyze --hmr-profile'))
-    })
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('当前 190.00 ms'))
+    await waitForMockCalls(loggerInfoMock, 1)
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('weapp-vite analyze --hmr-profile'))
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('当前 200.00 ms'))
     expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('疑似慢段 emit 100.00 ms'))
     nowSpy.mockRestore()
   })
 
   it('does not print analyze hint when hmr profile output is disabled', async () => {
-    const nowSpy = vi.spyOn(performance, 'now')
-    nowSpy
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(10)
-      .mockReturnValueOnce(20)
-      .mockReturnValueOnce(120)
-      .mockReturnValueOnce(130)
-      .mockReturnValueOnce(210)
-      .mockReturnValueOnce(220)
-      .mockReturnValueOnce(310)
-      .mockReturnValueOnce(320)
-      .mockReturnValueOnce(510)
+    let nowValue = 0
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowValue)
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
     const firstBuild = service.build({ skipNpm: true })
     await watcher.subscribed
+    nowValue = 0
     watcher.emit('START')
+    nowValue = 10
     watcher.emit('END')
     await firstBuild
 
+    let cursor = 20
     for (const totalMs of [100, 80, 90, 200]) {
       ctx.runtimeState.build.hmr.profile = {
         emitMs: totalMs / 2,
       }
+      nowValue = cursor
       watcher.emit('START')
+      nowValue = cursor + totalMs
       watcher.emit('END')
-      await vi.waitFor(() => {
-        expect(loggerSuccessMock).toHaveBeenCalled()
-      })
+      await waitForMockCalls(loggerSuccessMock, cursor === 20 ? 1 : loggerSuccessMock.mock.calls.length + 1)
+      cursor += totalMs + 10
     }
 
     expect(loggerInfoMock).not.toHaveBeenCalled()
@@ -669,24 +842,12 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('suppresses repeated slow hmr hints until enough new samples accumulate', async () => {
-    const nowSpy = vi.spyOn(performance, 'now')
-    nowSpy
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(10)
-      .mockReturnValueOnce(20)
-      .mockReturnValueOnce(120)
-      .mockReturnValueOnce(130)
-      .mockReturnValueOnce(210)
-      .mockReturnValueOnce(220)
-      .mockReturnValueOnce(310)
-      .mockReturnValueOnce(320)
-      .mockReturnValueOnce(520)
-      .mockReturnValueOnce(530)
-      .mockReturnValueOnce(740)
-      .mockReturnValueOnce(750)
-      .mockReturnValueOnce(970)
+    let nowValue = 0
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowValue)
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -702,19 +863,23 @@ describe('runtime buildPlugin service', () => {
 
     const firstBuild = service.build({ skipNpm: true })
     await watcher.subscribed
+    nowValue = 0
     watcher.emit('START')
+    nowValue = 10
     watcher.emit('END')
     await firstBuild
 
+    let cursor = 20
     for (const totalMs of [100, 80, 90, 200, 210, 220]) {
       ctx.runtimeState.build.hmr.profile = {
         emitMs: totalMs / 2,
       }
+      nowValue = cursor
       watcher.emit('START')
+      nowValue = cursor + totalMs
       watcher.emit('END')
-      await vi.waitFor(() => {
-        expect(loggerSuccessMock).toHaveBeenCalled()
-      })
+      await waitForMockCalls(loggerSuccessMock, cursor === 20 ? 1 : loggerSuccessMock.mock.calls.length + 1)
+      cursor += totalMs + 10
     }
 
     expect(loggerInfoMock).toHaveBeenCalledTimes(1)
@@ -722,20 +887,12 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('prefers shared phase hint when shared chunk cost regresses most', async () => {
-    const nowSpy = vi.spyOn(performance, 'now')
-    nowSpy
-      .mockReturnValueOnce(0)
-      .mockReturnValueOnce(10)
-      .mockReturnValueOnce(20)
-      .mockReturnValueOnce(120)
-      .mockReturnValueOnce(130)
-      .mockReturnValueOnce(210)
-      .mockReturnValueOnce(220)
-      .mockReturnValueOnce(310)
-      .mockReturnValueOnce(320)
-      .mockReturnValueOnce(510)
+    let nowValue = 0
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowValue)
     const watcher = createManualWatcher()
-    buildMock.mockResolvedValueOnce(watcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -751,32 +908,38 @@ describe('runtime buildPlugin service', () => {
 
     const firstBuild = service.build({ skipNpm: true })
     await watcher.subscribed
+    nowValue = 0
     watcher.emit('START')
+    nowValue = 10
     watcher.emit('END')
     await firstBuild
 
-    for (const profile of [
+    let cursor = 20
+    const durations = [100, 80, 90, 200]
+    for (const { profile, totalMs } of [
       { emitMs: 20, sharedChunkResolveMs: 6 },
       { emitMs: 22, sharedChunkResolveMs: 7 },
       { emitMs: 24, sharedChunkResolveMs: 8 },
       { emitMs: 26, sharedChunkResolveMs: 90 },
-    ]) {
+    ].map((profile, index) => ({ profile, totalMs: durations[index] }))) {
+      nowValue = cursor
       ctx.runtimeState.build.hmr.profile = profile
       watcher.emit('START')
+      nowValue = cursor + totalMs
       watcher.emit('END')
-      await vi.waitFor(() => {
-        expect(loggerSuccessMock).toHaveBeenCalled()
-      })
+      await waitForMockCalls(loggerSuccessMock, cursor === 20 ? 1 : loggerSuccessMock.mock.calls.length + 1)
+      cursor += totalMs + 10
     }
 
-    await vi.waitFor(() => {
-      expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('疑似慢段 shared 90.00 ms'))
-    })
+    await waitForMockCalls(loggerInfoMock, 1)
+    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('疑似慢段 shared 90.00 ms'))
     nowSpy.mockRestore()
   })
 
   it('skips npm build when skipNpm is enabled and hmr touch is false', async () => {
-    buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
+    buildMock
+      .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext({
       configService: {
         ...createMockContext().configService,
@@ -797,7 +960,9 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('skips output cleanup in dev when cleanOutputsInDev is false', async () => {
-    buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
+    buildMock
+      .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -816,7 +981,9 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('cleans output in dev when cleanOutputsInDev is true', async () => {
-    buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
+    buildMock
+      .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
     const baseCtx = createMockContext()
     const ctx = createMockContext({
       configService: {
@@ -835,7 +1002,9 @@ describe('runtime buildPlugin service', () => {
   })
 
   it('reuses npm cache in dev mode when dependencies are not outdated', async () => {
-    buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
+    buildMock
+      .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext()
     ctx.runtimeState.build.npmBuilt = true
     ctx.npmService.checkDependenciesCacheOutdate.mockResolvedValueOnce(false)
@@ -986,7 +1155,9 @@ describe('runtime buildPlugin service', () => {
   it('runs isolated plugin watcher in dev mode and registers it on main watcher service', async () => {
     const pluginWatcher = createWatcher(['START', 'END'])
     buildMock.mockReset()
-    buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
+    buildMock
+      .mockResolvedValueOnce(createWatcher(['START', 'END']))
+      .mockResolvedValueOnce({ output: [] })
     createCompilerContextMock.mockResolvedValueOnce({
       buildService: {
         build: vi.fn(async () => pluginWatcher),

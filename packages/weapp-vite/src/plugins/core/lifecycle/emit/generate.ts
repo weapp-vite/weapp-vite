@@ -2,6 +2,7 @@ import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../../runtime/chunkStrategy'
 import type { SubPackageMetaValue } from '../../../../types'
 import type { CorePluginState } from '../../helpers'
+import process from 'node:process'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { shouldRewriteBundleNpmImports } from '../../../../platform'
@@ -88,7 +89,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       let redundantBytesTotal = 0
 
       if (configService.isDev && state.hmrSharedChunksMode === 'auto') {
+        const forceFullSharedChunkRefresh = process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS === '1'
         if (state.hmrState.didEmitAllEntries || !state.hmrState.hasBuiltOnce) {
+          refreshSharedChunkImporters(rolldownBundle, state)
+        }
+        else if (forceFullSharedChunkRefresh) {
           refreshSharedChunkImporters(rolldownBundle, state)
         }
         else if (state.hmrState.lastEmittedEntryIds?.size) {
@@ -359,6 +364,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       },
       asset => this.emitFile(asset),
     )
+
     syncChunkImportsFromRequireCalls(rolldownBundle)
 
     refreshModuleGraph(this, state)
