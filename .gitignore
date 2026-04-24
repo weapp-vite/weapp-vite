@@ -76,6 +76,7 @@ packages/weapp-vite/test-d/.tmp-tsd
 .playwright-mcp
 .tmp
 .codex-tmp
+tools/*/node_modules
 extensions/vscode/.artifacts/
 extensions/vscode/.vscode-test/
 

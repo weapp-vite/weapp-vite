@@ -1,0 +1,14 @@
+{
+  "name": "@weapp-vite/miniprogram-ci-runner",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Isolated miniprogram-ci runner for weapp-vite monorepo",
+  "scripts": {
+    "preview": "node ./run.mjs preview",
+    "upload": "node ./run.mjs upload"
+  },
+  "dependencies": {
+    "miniprogram-ci": "2.1.31"
+  }
+}
