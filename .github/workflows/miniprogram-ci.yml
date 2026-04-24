@@ -1,0 +1,133 @@
+name: Miniprogram CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: miniprogram-ci 动作
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - upload
+      project:
+        description: 目标项目目录，例如 apps/mcp-demo
+        required: true
+        default: apps/mcp-demo
+        type: string
+      project_type:
+        description: 小程序项目类型
+        required: true
+        default: miniProgram
+        type: choice
+        options:
+          - miniProgram
+          - miniGame
+          - plugin
+      version:
+        description: 版本号
+        required: true
+        default: 1.0.0
+        type: string
+      desc:
+        description: 版本描述
+        required: true
+        default: github actions upload
+        type: string
+      robot:
+        description: CI 机器人编号
+        required: true
+        default: '1'
+        type: string
+      page:
+        description: 预览页面路径，仅 preview 使用
+        required: false
+        default: ''
+        type: string
+      query:
+        description: 预览 query，仅 preview 使用
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  miniprogram-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HUSKY: 0
+      WEAPP_CI_APPID: ${{ secrets.WEAPP_CI_APPID }}
+      WEAPP_CI_PRIVATE_KEY: ${{ secrets.WEAPP_CI_PRIVATE_KEY }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '20'
+
+      - name: Install workspace dependencies
+        run: pnpm install --config.confirmModulesPurge=false
+
+      - name: Install isolated miniprogram-ci runner
+        run: pnpm weapp:ci:setup
+
+      - name: Validate required secrets
+        run: |
+          test -n "$WEAPP_CI_APPID"
+          test -n "$WEAPP_CI_PRIVATE_KEY"
+
+      - name: Materialize private key
+        run: |
+          mkdir -p .tmp/weapp-ci
+          printf '%s' "$WEAPP_CI_PRIVATE_KEY" > .tmp/weapp-ci/private.key
+
+      - name: Build target app
+        run: pnpm --dir "${{ inputs.project }}" run build
+
+      - name: Run isolated miniprogram-ci
+        env:
+          WEAPP_CI_PRIVATE_KEY_PATH: ${{ github.workspace }}/.tmp/weapp-ci/private.key
+        run: |
+          ARGS=(
+            "${{ inputs.action }}"
+            --project-root "${{ github.workspace }}/${{ inputs.project }}"
+            --private-key "$WEAPP_CI_PRIVATE_KEY_PATH"
+            --appid "$WEAPP_CI_APPID"
+            --project-type "${{ inputs.project_type }}"
+            --ci-version "${{ inputs.version }}"
+            --desc "${{ inputs.desc }}"
+            --robot "${{ inputs.robot }}"
+          )
+
+          if [ -n "${{ inputs.page }}" ]; then
+            ARGS+=(--page "${{ inputs.page }}")
+          fi
+
+          if [ -n "${{ inputs.query }}" ]; then
+            ARGS+=(--query "${{ inputs.query }}")
+          fi
+
+          if [ "${{ inputs.action }}" = "preview" ]; then
+            ARGS+=(--qrcode-output "${{ github.workspace }}/.tmp/weapp-ci/preview.jpg")
+          fi
+
+          node tools/miniprogram-ci-runner/run.mjs "${ARGS[@]}"
+
+      - name: Upload preview artifact
+        if: inputs.action == 'preview'
+        uses: actions/upload-artifact@v7
+        with:
+          name: miniprogram-preview-qrcode
+          path: .tmp/weapp-ci/preview.jpg
+          if-no-files-found: error

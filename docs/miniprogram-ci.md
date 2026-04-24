@@ -123,6 +123,17 @@ pnpm weapp:ci:upload -- \
 
 ## GitHub Actions 示例
 
+仓库已提供一个手动触发的 workflow：
+
+- `.github/workflows/miniprogram-ci.yml`
+
+需要准备两个 GitHub Secrets：
+
+- `WEAPP_CI_APPID`
+- `WEAPP_CI_PRIVATE_KEY`
+
+执行前请确认 GitHub Actions 出口 IP 已加入微信公众平台白名单，否则会返回 `invalid ip`。
+
 ```yaml
 - name: Install
   run: pnpm install --config.confirmModulesPurge=false
