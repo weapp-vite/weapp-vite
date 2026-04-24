@@ -3,7 +3,7 @@ import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import fg from 'fast-glob'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
-import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_STABLE_TESTS } from './hmr-guard-manifest'
+import { HMR_GUARD_SPECIAL_CASES } from './hmr-guard-manifest'
 import {
   shouldForceDiskBackedMiniProgramDevChecks,
   supportsDiskBackedMiniProgramDev,
@@ -136,6 +136,7 @@ export async function getCiTasks(options: SuiteTaskFactoryOptions = {}) {
   const tasks = [
     ...buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
     createCommandTask('hmr-guard:full', ['full']),
+    createCommandTask('hmr-guard:auto-import-vue-sfc', ['auto-import-vue-sfc']),
     createCommandTask('hmr-guard:shared-chunks-auto', ['shared-chunks-auto']),
   ]
 
@@ -144,7 +145,6 @@ export async function getCiTasks(options: SuiteTaskFactoryOptions = {}) {
     && (shouldForceDiskBackedMiniProgramDevChecks() || await supportsDiskBackedMiniProgramDev())
   ) {
     tasks.push(
-      createVitestTask(CI_CONFIG_PATH, HMR_GUARD_STABLE_TESTS.find(filePath => filePath.endsWith('/auto-import-vue-sfc.test.ts'))!, 'ci/auto-import-vue-sfc.test.ts (rerun)'),
       createVitestTask(CI_CONFIG_PATH, path.resolve(ROOT, 'ci/style-import-vue.test.ts')),
     )
   }
@@ -326,6 +326,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'hmr-shared-chunks-auto',
     description: 'Single CI special-case HMR verification',
     tasks: () => [createVitestTask(CI_CONFIG_PATH, HMR_GUARD_SPECIAL_CASES.sharedChunksAuto)],
+  },
+  'hmr-auto-import-vue-sfc': {
+    name: 'hmr-auto-import-vue-sfc',
+    description: 'Single CI special-case HMR verification for auto-import Vue SFC',
+    tasks: () => [createVitestTask(CI_CONFIG_PATH, HMR_GUARD_SPECIAL_CASES.autoImportVueSfc)],
   },
 }
 
