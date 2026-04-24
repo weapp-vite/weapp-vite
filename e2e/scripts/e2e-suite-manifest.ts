@@ -3,11 +3,7 @@ import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import fg from 'fast-glob'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
-import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_STABLE_TESTS } from './hmr-guard-manifest'
-import {
-  shouldForceDiskBackedMiniProgramDevChecks,
-  supportsDiskBackedMiniProgramDev,
-} from './mini-program-dev-support'
+import { HMR_GUARD_SPECIAL_CASES } from './hmr-guard-manifest'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
@@ -125,7 +121,7 @@ function createCommandTask(label: string, args: string[]): SuiteTask {
   }
 }
 
-export async function getCiTasks(options: SuiteTaskFactoryOptions = {}) {
+export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   const buildOnlyFiles = fg.sync('ci/**/*.test.ts', {
     cwd: ROOT,
     absolute: true,
@@ -136,18 +132,9 @@ export async function getCiTasks(options: SuiteTaskFactoryOptions = {}) {
   const tasks = [
     ...buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
     createCommandTask('hmr-guard:full', ['full']),
+    createCommandTask('hmr-guard:auto-routes-hmr', ['auto-routes-hmr']),
     createCommandTask('hmr-guard:shared-chunks-auto', ['shared-chunks-auto']),
   ]
-
-  if (
-    !options.skipDiskBackedDevProbe
-    && (shouldForceDiskBackedMiniProgramDevChecks() || await supportsDiskBackedMiniProgramDev())
-  ) {
-    tasks.push(
-      createVitestTask(CI_CONFIG_PATH, HMR_GUARD_STABLE_TESTS.find(filePath => filePath.endsWith('/auto-import-vue-sfc.test.ts'))!, 'ci/auto-import-vue-sfc.test.ts (rerun)'),
-      createVitestTask(CI_CONFIG_PATH, path.resolve(ROOT, 'ci/style-import-vue.test.ts')),
-    )
-  }
 
   return tasks
 }

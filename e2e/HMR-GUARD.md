@@ -30,8 +30,12 @@ pnpm run e2e:hmr:guard:config
   验证页面与组件在模板、脚本、样式、JSON、SFC 修改后的输出更新。
 - `e2e/ci/hmr-layouts.test.ts`
   验证 layouts 页面及 `src/layouts/default|admin` 在模板、脚本、样式、JSON 修改后的输出更新。
+- `e2e/ci/hmr-layout-shared-template-wxs.test.ts`
+  验证 layout 引用的共享 template/include/WXS 变更后，layout 及共享产物会一起增量更新。
 - `e2e/ci/hmr-rename.test.ts`
   验证编辑器常见 rename-save 流程不会打挂 dev 过程。
+- `e2e/ci/hmr-shared-template-wxs.test.ts`
+  验证页面与 SFC 共享 template/include/WXS 依赖变更时，所有 importer 都会同步更新。
 - `e2e/ci/hmr-shared-runtime-deps.test.ts`
   验证共享运行时脚本在 rename-save 与连续快速保存后，`common.js` 及多个 importer 仍保持一致，不会出现共享导出丢失。
 - `e2e/ci/hmr-rapid.test.ts`
@@ -46,6 +50,8 @@ pnpm run e2e:hmr:guard:config
   验证 auto-routes 在 dev 下维护 `typed-router`、`app.json`、`app.js`，并对已有页面修改保持增量更新。
 - `e2e/ci/auto-import-vue-sfc.test.ts`
   验证 auto-import 维护 `usingComponents`，并对单页改动保持增量更新。
+- `e2e/ci/style-import-vue.test.ts`
+  验证 Vue SFC 内 `@import` / `style src` 引入的样式依赖在 dev watch 下更新后，目标 wxss 会同步热更新。
 - `e2e/ci/hmr-shared-chunks-auto.test.ts`
   验证 `hmr.sharedChunks = 'auto'` 下的直接 entry 更新与共享依赖扩散路径。
 - `e2e/ci/wevu-runtime.hmr.test.ts`
@@ -54,9 +60,11 @@ pnpm run e2e:hmr:guard:config
 ## 分组策略
 
 - `e2e:hmr:guard`
-  串行执行稳定子集：`hmr-modify`、`hmr-layouts`、`hmr-rename`、`hmr-shared-runtime-deps`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`auto-import-vue-sfc`、`auto-routes-hmr`、`wevu-runtime.hmr`。
+  串行执行稳定子集：`hmr-modify`、`hmr-html-template`、`hmr-layouts`、`hmr-layout-shared-template-wxs`、`hmr-shared-template-wxs`、`hmr-rename`、`hmr-shared-runtime-deps`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`issue-340-comment.hmr`、`auto-import-vue-sfc`、`style-import-vue`、`wevu-runtime.hmr`。
 - `e2e:hmr:guard:smoke`
   串行执行本地高频回归子集：`auto-import-vue-sfc`、`auto-routes-hmr`、`hmr-rename`、`hmr-rapid`。
+- `e2e:hmr:guard:auto-routes-hmr`
+  单独执行 `auto-routes-hmr`。这个用例会同时触发路由拓扑与 app 级联更新，保持独立运行更稳定。
 - `e2e:hmr:guard:shared-chunks-auto`
   单独执行 `hmr-shared-chunks-auto`。这个用例对命令入口和进程清理顺序更敏感，不并入主串行 suite。
 - `e2e/vitest.e2e.hmr-guard.config.ts`
@@ -77,4 +85,5 @@ pnpm --filter weapp-vite build
 - 对结构性变更场景，优先验证“最终行为正确”和“dev 过程不崩”。
 - 对单页直接编辑场景，优先补日志级断言，防止退化成全量 HMR。
 - 新增 HMR 回归时，先决定它属于稳定子集、smoke 子集，还是像 `shared-chunks-auto` 一样必须作为特例独立运行；然后更新 `e2e/scripts/hmr-guard-manifest.ts`，让入口、清单和文档保持同源。
+- `pnpm e2e:ci` 会显式串行执行 `hmr-guard:full`、`hmr-guard:auto-routes-hmr`、`hmr-guard:shared-chunks-auto`；若新增 HMR case 没被这三条入口覆盖，应视为 CI 漏挂。
 - `e2e:hmr:guard` 与 `e2e:hmr:guard:smoke` 由 `e2e/scripts/run-hmr-guard-suite.ts` 统一驱动，采用“单文件 `vitest run` 串行 + 每段前显式 cleanup”的方式执行；不要把整组 HMR dev-watch 用例直接塞进同一个 Vitest 进程，否则不同文件的清理逻辑容易互相污染。

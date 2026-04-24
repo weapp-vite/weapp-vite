@@ -4,10 +4,58 @@ function resolveCiTest(testPath: string) {
   return path.resolve(import.meta.dirname, '..', 'ci', testPath).replaceAll('\\', '/')
 }
 
+function resolveCiTests(testPaths: string[]) {
+  return testPaths.map(resolveCiTest)
+}
+
+export const HMR_GUARD_TEST_GROUPS = {
+  directEntryUpdates: resolveCiTests([
+    'hmr-modify.test.ts',
+    'hmr-html-template.test.ts',
+    'hmr-layouts.test.ts',
+    'hmr-rename.test.ts',
+    'hmr-rapid.test.ts',
+    'hmr-add.test.ts',
+    'hmr-delete.test.ts',
+    'hmr-app-config.test.ts',
+    'issue-340-comment.hmr.test.ts',
+  ]),
+  sharedDependencyPropagation: resolveCiTests([
+    'hmr-layout-shared-template-wxs.test.ts',
+    'hmr-shared-template-wxs.test.ts',
+    'hmr-shared-runtime-deps.test.ts',
+  ]),
+  derivedOutputSync: resolveCiTests([
+    'auto-import-vue-sfc.test.ts',
+    'style-import-vue.test.ts',
+    'wevu-runtime.hmr.test.ts',
+  ]),
+} as const
+
 export const HMR_GUARD_STABLE_TESTS = [
+  ...HMR_GUARD_TEST_GROUPS.directEntryUpdates,
+  ...HMR_GUARD_TEST_GROUPS.sharedDependencyPropagation,
+  ...HMR_GUARD_TEST_GROUPS.derivedOutputSync,
+]
+
+export const HMR_GUARD_SMOKE_TESTS = resolveCiTests([
+  'auto-import-vue-sfc.test.ts',
+  'auto-routes-hmr.test.ts',
+  'hmr-rename.test.ts',
+  'hmr-rapid.test.ts',
+])
+
+export const HMR_GUARD_SPECIAL_CASES = {
+  autoRoutesHmr: resolveCiTest('auto-routes-hmr.test.ts'),
+  sharedChunksAuto: resolveCiTest('hmr-shared-chunks-auto.test.ts'),
+}
+
+export const HMR_GUARD_ALL_TESTS = [
   'hmr-modify.test.ts',
   'hmr-html-template.test.ts',
   'hmr-layouts.test.ts',
+  'hmr-layout-shared-template-wxs.test.ts',
+  'hmr-shared-template-wxs.test.ts',
   'hmr-rename.test.ts',
   'hmr-shared-runtime-deps.test.ts',
   'hmr-rapid.test.ts',
@@ -16,23 +64,8 @@ export const HMR_GUARD_STABLE_TESTS = [
   'hmr-app-config.test.ts',
   'issue-340-comment.hmr.test.ts',
   'auto-import-vue-sfc.test.ts',
+  'style-import-vue.test.ts',
   'wevu-runtime.hmr.test.ts',
-].map(resolveCiTest)
-
-export const HMR_GUARD_SMOKE_TESTS = [
-  'auto-import-vue-sfc.test.ts',
   'auto-routes-hmr.test.ts',
-  'hmr-rename.test.ts',
-  'hmr-rapid.test.ts',
+  'hmr-shared-chunks-auto.test.ts',
 ].map(resolveCiTest)
-
-export const HMR_GUARD_SPECIAL_CASES = {
-  autoRoutesHmr: resolveCiTest('auto-routes-hmr.test.ts'),
-  sharedChunksAuto: resolveCiTest('hmr-shared-chunks-auto.test.ts'),
-}
-
-export const HMR_GUARD_ALL_TESTS = [
-  ...HMR_GUARD_STABLE_TESTS,
-  HMR_GUARD_SPECIAL_CASES.autoRoutesHmr,
-  HMR_GUARD_SPECIAL_CASES.sharedChunksAuto,
-]
