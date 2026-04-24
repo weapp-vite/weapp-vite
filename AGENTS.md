@@ -116,6 +116,8 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Classes/types: PascalCase.
 - Prefer named exports unless a file intentionally owns a single default export.
 - 跨包共享、会进入最终运行时代码、或需要在多个包/测试之间保持稳定值的 runtime marker / key / helper-name 常量，优先收敛到 `@weapp-core/constants`；不要把这类常量继续散落在 `packages/weapp-vite` 的单文件内部。
+- Prefer root-cause fixes over symptom patches. If a regression is caused by ownership confusion between watcher layers, invalidation paths, or build stages, restore a single clear source of truth instead of stacking another fallback on top.
+- Take a long-term engineering approach: avoid “just make this case pass” changes that increase duplicate triggers, hidden coupling, or architectural debt. Prefer solutions that simplify the steady-state model and reduce future debugging cost.
 - Final build outputs under `dist`, mini-program output directories, and plugin output directories must come from Vite/Rolldown native emit/write; do not generate them by directly calling `writeFile` for dev/HMR fallback, sync, patch-up, or cleanup.
 - If an approach only works by manually writing bundle files back to disk, treat it as an architectural violation; prefer fixing entry invalidation, watchers, plugin emit behavior, or bundler write-stage integration so the bundler still owns persistence.
 - Keep eslint/stylelint clean and avoid introducing TypeScript errors.

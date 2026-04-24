@@ -372,13 +372,36 @@ describe('runtime buildPlugin service', () => {
     await firstBuild
 
     nowValue = 20
-    sidecarWatcher.emit('change', '/project/src/pages/logs/index.vue')
+    sidecarWatcher.emit('change', '/project/src/pages/logs/index.wxml')
     nowValue = 28
     await waitForMockCalls(loggerSuccessMock, 1)
 
     expect(buildMock).toHaveBeenCalledTimes(3)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('8.00 ms'))
     nowSpy.mockRestore()
+  })
+
+  it('ignores vue updates in snapshot sidecar watcher', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', '/project/src/pages/logs/index.vue')
+    await flushAsyncTasks()
+
+    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(loggerSuccessMock).not.toHaveBeenCalled()
   })
 
   it('ignores plain script updates in snapshot sidecar watcher', async () => {

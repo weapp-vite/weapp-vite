@@ -66,7 +66,7 @@ interface HmrPhaseRegressionCandidate {
 }
 
 function shouldHandleSnapshotSidecarFile(filePath: string) {
-  return filePath.endsWith('.vue') || isSidecarFile(filePath)
+  return isSidecarFile(filePath)
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
