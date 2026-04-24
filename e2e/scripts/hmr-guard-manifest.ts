@@ -4,26 +4,45 @@ function resolveCiTest(testPath: string) {
   return path.resolve(import.meta.dirname, '..', 'ci', testPath).replaceAll('\\', '/')
 }
 
-export const HMR_GUARD_STABLE_TESTS = [
-  'hmr-modify.test.ts',
-  'hmr-html-template.test.ts',
-  'hmr-layouts.test.ts',
-  'hmr-rename.test.ts',
-  'hmr-shared-runtime-deps.test.ts',
-  'hmr-rapid.test.ts',
-  'hmr-add.test.ts',
-  'hmr-delete.test.ts',
-  'hmr-app-config.test.ts',
-  'issue-340-comment.hmr.test.ts',
-  'wevu-runtime.hmr.test.ts',
-].map(resolveCiTest)
+function resolveCiTests(testPaths: string[]) {
+  return testPaths.map(resolveCiTest)
+}
 
-export const HMR_GUARD_SMOKE_TESTS = [
+export const HMR_GUARD_TEST_GROUPS = {
+  directEntryUpdates: resolveCiTests([
+    'hmr-modify.test.ts',
+    'hmr-html-template.test.ts',
+    'hmr-layouts.test.ts',
+    'hmr-rename.test.ts',
+    'hmr-rapid.test.ts',
+    'hmr-add.test.ts',
+    'hmr-delete.test.ts',
+    'hmr-app-config.test.ts',
+    'issue-340-comment.hmr.test.ts',
+  ]),
+  sharedDependencyPropagation: resolveCiTests([
+    'hmr-layout-shared-template-wxs.test.ts',
+    'hmr-shared-template-wxs.test.ts',
+    'hmr-shared-runtime-deps.test.ts',
+  ]),
+  derivedOutputSync: resolveCiTests([
+    'style-import-vue.test.ts',
+    'wevu-runtime.hmr.test.ts',
+  ]),
+} as const
+
+export const HMR_GUARD_STABLE_TESTS = [
+  ...HMR_GUARD_TEST_GROUPS.directEntryUpdates,
+  ...HMR_GUARD_TEST_GROUPS.sharedDependencyPropagation,
+  ...HMR_GUARD_TEST_GROUPS.derivedOutputSync,
+]
+
+export const HMR_GUARD_SMOKE_TESTS = resolveCiTests([
   'auto-import-vue-sfc.test.ts',
   'auto-routes-hmr.test.ts',
   'hmr-rename.test.ts',
   'hmr-rapid.test.ts',
-].map(resolveCiTest)
+])
 
 export const HMR_GUARD_SPECIAL_CASES = {
   autoImportVueSfc: resolveCiTest('auto-import-vue-sfc.test.ts'),
