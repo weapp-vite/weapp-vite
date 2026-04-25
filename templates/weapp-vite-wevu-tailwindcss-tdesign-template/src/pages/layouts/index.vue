@@ -67,7 +67,7 @@ async function openLayoutStoreDemo() {
 
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[24rpx] text-[#1c1c3c]">
-    <view class="rounded-[28rpx] bg-gradient-to-br from-[#eef2ff] via-[#ffffff] to-[#ede9fe] p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.06)]">
+    <view class="rounded-[28rpx] bg-linear-to-br from-[#eef2ff] via-[#ffffff] to-[#ede9fe] p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.06)]">
       <SectionTitle title="页面布局能力" subtitle="基础模板已接入 src/layouts 目录约定" />
       <text class="mt-[12rpx] block text-[22rpx] leading-[1.7] text-[#5b5b7b]">
         当前状态：{{ currentLayout }}。可在 default、admin 与 false 三种模式之间切换，用来承接后台页、运营页或沉浸式页面。

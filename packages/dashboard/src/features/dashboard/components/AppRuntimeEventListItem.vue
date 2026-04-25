@@ -15,22 +15,22 @@ const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeEventBadgeI
 const eventMeta = computed(() => formatRuntimeEventMeta(props.event))
 const panelClassName = computed(() =>
   props.selected
-    ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel)]'
-    : 'border-[color:var(--dashboard-border)]',
+    ? 'border-(--dashboard-border-strong) bg-(--dashboard-panel)'
+    : 'border-(--dashboard-border)',
 )
 </script>
 
 <template>
   <li
-    class="rounded-[18px] border bg-[color:var(--dashboard-panel-muted)] px-4 py-3 transition"
+    class="rounded-4.5 border bg-(--dashboard-panel-muted) px-4 py-3 transition"
     :class="panelClassName"
   >
     <div class="flex items-start justify-between gap-3">
       <div>
-        <p class="font-medium text-[color:var(--dashboard-text)]">
+        <p class="font-medium text-(--dashboard-text)">
           {{ props.event.title }}
         </p>
-        <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+        <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
           {{ props.event.detail }}
         </p>
         <AppMetaLabel class="mt-2">

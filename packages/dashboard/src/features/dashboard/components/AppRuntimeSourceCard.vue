@@ -44,10 +44,10 @@ const summaryText = computed(() => `平均耗时 ${props.averageDuration}`)
   <div :class="mutedPanelStyles({ padding: 'sm' })">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <p class="truncate font-medium text-[color:var(--dashboard-text)]">
+        <p class="truncate font-medium text-(--dashboard-text)">
           {{ props.source }}
         </p>
-        <p class="mt-1 text-[11px] uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
+        <p class="mt-1 text-[11px] uppercase tracking-[0.16em] text-(--dashboard-text-soft)">
           {{ subtitle }}
         </p>
       </div>
@@ -55,17 +55,17 @@ const summaryText = computed(() => `平均耗时 ${props.averageDuration}`)
     </div>
     <div
       v-if="props.latestTimestamp"
-      class="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-[color:var(--dashboard-text-soft)]"
+      class="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-(--dashboard-text-soft)"
     >
       <span
         v-for="item in detailItems"
         :key="item.key"
-        class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5"
+        class="rounded-full border border-(--dashboard-border) px-2 py-0.5"
       >
         {{ item.label }}
       </span>
     </div>
-    <p v-else class="mt-3 text-sm text-[color:var(--dashboard-text-muted)]">
+    <p v-else class="mt-3 text-sm text-(--dashboard-text-muted)">
       {{ summaryText }}
     </p>
   </div>

@@ -45,19 +45,19 @@ const tabPanelStyles = panelSurface()
 </script>
 
 <template>
-  <section class="min-h-0 border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-soft)]">
-    <section :class="cn(tabPanelStyles.base(), 'h-full rounded-none border-0 shadow-none [grid-template-rows:32px_32px_minmax(0,1fr)]')">
-      <div class="flex items-center justify-between border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-strong)] px-2">
-        <div class="flex items-center gap-0.5 text-[color:var(--sim-muted)]">
+  <section class="min-h-0 border-r border-(--sim-divider) bg-(--sim-panel-soft)">
+    <section :class="cn(tabPanelStyles.base(), 'h-full rounded-none border-0 shadow-none grid-rows-[32px_32px_minmax(0,1fr)]')">
+      <div class="flex items-center justify-between border-b border-(--sim-divider) bg-(--sim-panel-strong) px-2">
+        <div class="flex items-center gap-0.5 text-(--sim-muted)">
           <button
             v-for="icon in explorerToolbarIcons"
             :key="icon"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-sm hover:bg-[color:var(--sim-pill-hover)]"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-sm hover:bg-(--sim-pill-hover)"
           >
             <span :class="cn(icon, 'text-[14px]')" aria-hidden="true" />
           </button>
         </div>
-        <button class="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]">
+        <button class="inline-flex h-7 w-7 items-center justify-center rounded-sm text-(--sim-muted) hover:bg-(--sim-pill-hover)">
           <span class="icon-[mdi--dots-horizontal]" aria-hidden="true" />
         </button>
       </div>
@@ -78,10 +78,10 @@ const tabPanelStyles = panelSurface()
           v-if="explorerTab === 'resources'"
           class="grid h-full min-h-0 grid-rows-[30px_minmax(0,1fr)]"
         >
-          <div class="flex items-center border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel)] px-3 text-[11px]">
-            <span class="truncate font-semibold uppercase tracking-[0.08em] text-[color:var(--sim-muted)]">{{ projectDisplayLabel }}</span>
+          <div class="flex items-center border-b border-(--sim-divider) bg-(--sim-panel) px-3 text-[11px]">
+            <span class="truncate font-semibold uppercase tracking-[0.08em] text-(--sim-muted)">{{ projectDisplayLabel }}</span>
           </div>
-          <div class="min-h-0 overflow-auto bg-[color:var(--sim-panel)] p-2">
+          <div class="min-h-0 overflow-auto bg-(--sim-panel) p-2">
             <FileTree
               :expanded-paths="expandedTreePaths"
               :nodes="fileTree"

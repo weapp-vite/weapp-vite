@@ -93,7 +93,7 @@ defineComponentJson({
       {{ symbol }}
     </view>
     <view class="pprice inline m-[0_0_0_4rpx] whitespace-nowrap">
-      <view class="integer inline [display:inline] whitespace-nowrap text-inherit [font-size:inherit]">
+      <view class="integer inline whitespace-nowrap text-inherit [font-size:inherit]">
         {{ pArr[0] }}
       </view>
       <view v-if="pArr[1]" :class="`decimal inline ${decimalSmaller ? 'smaller' : ''} decimal-class whitespace-nowrap text-inherit [font-size:inherit] [&_.smaller]:text-[0.8em] [&_.smaller]:align-baseline`">

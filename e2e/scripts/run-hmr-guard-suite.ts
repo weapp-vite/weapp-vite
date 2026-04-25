@@ -18,12 +18,16 @@ const VITEST_CONFIG_PATH = path.resolve(import.meta.dirname, '../vitest.e2e.ci.c
 
 const SUITES = {
   'full': {
-    description: '稳定 HMR 护栏全集，不包含入口敏感的 shared-chunks-auto 特例',
+    description: '稳定 HMR 护栏全集，不包含需独立运行的 auto-import-vue-sfc / auto-routes-hmr / shared-chunks-auto 特例',
     tests: HMR_GUARD_STABLE_TESTS,
   },
   'smoke': {
     description: '本地快速 HMR smoke 子集',
     tests: HMR_GUARD_SMOKE_TESTS,
+  },
+  'auto-import-vue-sfc': {
+    description: 'auto-import Vue SFC 特例，单独运行以避免被前序 dev-watch 用例污染',
+    tests: [HMR_GUARD_SPECIAL_CASES.autoImportVueSfc],
   },
   'shared-chunks-auto': {
     description: 'sharedChunks=auto 特例，需独立运行避免与其他 dev-watch 用例互相干扰',

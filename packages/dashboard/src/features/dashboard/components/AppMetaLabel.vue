@@ -7,7 +7,7 @@ defineProps<{
 <template>
   <p
     class="text-[11px] uppercase tracking-[0.18em]"
-    :class="accent ? 'text-[color:var(--dashboard-accent)]' : 'text-[color:var(--dashboard-text-soft)]'"
+    :class="accent ? 'text-(--dashboard-accent)' : 'text-(--dashboard-text-soft)'"
   >
     <slot />
   </p>

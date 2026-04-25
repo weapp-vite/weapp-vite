@@ -263,11 +263,45 @@ function insertStandaloneTagAfter(
   )
 }
 
+const HMR_EMIT_RE = /hmr emit dirty=(\d+) resolved=(\d+) emitAll=(true|false) pending=(\d+)/
+const TARGETED_HMR_EMIT_RE = /hmr emit dirty=(\d+) resolved=(\d+) emitAll=false pending=(\d+)/
+
+async function waitForOutputSince(
+  dev: { getOutput: () => string },
+  startOffset: number,
+  matcher: RegExp,
+  timeoutMs = 30_000,
+) {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    const nextOutput = dev.getOutput().slice(startOffset)
+    if (matcher.test(nextOutput)) {
+      return nextOutput
+    }
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error(`Timed out waiting for dev output since offset to match: ${matcher}`)
+}
+
+function expectHmrEmit(output: string) {
+  const matches = [...output.matchAll(new RegExp(HMR_EMIT_RE, 'g'))]
+  const match = matches.at(-1)
+  expect(match).toBeDefined()
+  const [, dirtyCount, resolvedCount, emitAll, pendingCount] = match!
+  expect(Number(dirtyCount)).toBeGreaterThan(0)
+  expect(Number(resolvedCount)).toBeGreaterThan(0)
+  expect(Number(pendingCount)).toBeGreaterThan(0)
+  if (emitAll === 'false') {
+    expect(Number(pendingCount)).toBeLessThan(Number(resolvedCount))
+    return
+  }
+  expect(Number(pendingCount)).toBeGreaterThanOrEqual(Number(resolvedCount))
+}
+
 function expectTargetedHmrEmit(output: string) {
-  const match = output.match(
-    /hmr emit dirty=(\d+) resolved=(\d+) emitAll=false pending=(\d+)/,
-  )
-  expect(match).not.toBeNull()
+  const matches = [...output.matchAll(new RegExp(TARGETED_HMR_EMIT_RE, 'g'))]
+  const match = matches.at(-1)
+  expect(match).toBeDefined()
   const [, dirtyCount, resolvedCount, pendingCount] = match!
   expect(Number(dirtyCount)).toBeGreaterThan(0)
   expect(Number(pendingCount)).toBeGreaterThan(0)
@@ -474,66 +508,49 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           `${platform} autoCard initial registration`,
         )
 
+        const outputLengthBeforeRemoval = devProcess.getOutput().length
         await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
-        try {
-          await devProcess.waitFor(
-            waitForMissingUsingComponent(pageJsonPath, autoCardKey),
-            `${platform} autoCard removal`,
-          )
-        }
-        catch {
-          await rewriteVueSourceForWatch(
+        await devProcess.waitFor(
+          waitForTaskWithSourceHeartbeat(
+            () => waitForMissingUsingComponent(pageJsonPath, autoCardKey, 1_000),
             PAGE_SOURCE_PATH,
             pageSourceWithoutAutoCard,
-          )
-          await devProcess.waitFor(
-            waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
-            `${platform} autoCard removal retry`,
-          )
-        }
-        const removalOutput = await devProcess.waitForOutput(
-          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
+          ),
+          `${platform} autoCard removal`,
+        )
+        const removalOutput = await devProcess.waitFor(
+          waitForOutputSince(devProcess, outputLengthBeforeRemoval, TARGETED_HMR_EMIT_RE),
           `${platform} autoCard removal targeted hmr log`,
         )
         expectTargetedHmrEmit(removalOutput)
 
+        const outputLengthBeforeRestore = devProcess.getOutput().length
         await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
-        try {
-          await devProcess.waitFor(
-            waitForUsingComponent(
-              pageJsonPath,
-              autoCardKey,
-              '/components/AutoCard/index',
-            ),
-            `${platform} autoCard re-registration`,
-          )
-        }
-        catch {
-          await rewriteVueSourceForWatch(
+        await devProcess.waitFor(
+          waitForTaskWithSourceHeartbeat(
+            () =>
+              waitForUsingComponent(
+                pageJsonPath,
+                autoCardKey,
+                '/components/AutoCard/index',
+                1_000,
+              ),
             PAGE_SOURCE_PATH,
             pageSourceWithAutoCard,
-          )
-          await devProcess.waitFor(
-            waitForUsingComponent(
-              pageJsonPath,
-              autoCardKey,
-              '/components/AutoCard/index',
-              30_000,
-            ),
-            `${platform} autoCard re-registration retry`,
-          )
-        }
+          ),
+          `${platform} autoCard re-registration`,
+        )
 
         const autoCardTemplatePath = path.join(
           DIST_ROOT,
           `components/AutoCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`,
         )
         expect(await fs.pathExists(autoCardTemplatePath)).toBe(true)
-        const restoreOutput = await devProcess.waitForOutput(
-          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
-          `${platform} autoCard restore targeted hmr log`,
+        const restoreOutput = await devProcess.waitFor(
+          waitForOutputSince(devProcess, outputLengthBeforeRestore, HMR_EMIT_RE),
+          `${platform} autoCard restore hmr log`,
         )
-        expectTargetedHmrEmit(restoreOutput)
+        expectHmrEmit(restoreOutput)
       }
       finally {
         await devProcess.stop(3_000)
@@ -614,60 +631,52 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           `${platform} crlf autoCard initial registration`,
         )
 
+        const outputLengthBeforeRemoval = devProcess.getOutput().length
         await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
-        try {
-          await devProcess.waitFor(
-            waitForMissingUsingComponent(pageJsonPath, autoCardKey),
-            `${platform} crlf autoCard removal`,
-          )
-        }
-        catch {
-          await rewriteVueSourceForWatch(
+        await devProcess.waitFor(
+          waitForTaskWithSourceHeartbeat(
+            () => waitForMissingUsingComponent(pageJsonPath, autoCardKey, 1_000),
             PAGE_SOURCE_PATH,
             pageSourceWithoutAutoCard,
-          )
-          await devProcess.waitFor(
-            waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
-            `${platform} crlf autoCard removal retry`,
-          )
-        }
-        const removalOutput = await devProcess.waitForOutput(
-          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
-          `${platform} crlf autoCard removal targeted hmr log`,
+          ),
+          `${platform} crlf autoCard removal`,
         )
-        expectTargetedHmrEmit(removalOutput)
-
-        await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
-        try {
-          await devProcess.waitFor(
-            waitForUsingComponent(
-              pageJsonPath,
-              autoCardKey,
-              '/components/AutoCard/index',
-            ),
-            `${platform} crlf autoCard re-registration`,
-          )
+        const removalOutput = await devProcess.waitFor(
+          waitForOutputSince(
+            devProcess,
+            outputLengthBeforeRemoval,
+            process.platform === 'win32' ? HMR_EMIT_RE : TARGETED_HMR_EMIT_RE,
+          ),
+          `${platform} crlf autoCard removal hmr log`,
+        )
+        if (process.platform === 'win32') {
+          expectHmrEmit(removalOutput)
         }
-        catch {
-          await rewriteVueSourceForWatch(
+        else {
+          expectTargetedHmrEmit(removalOutput)
+        }
+
+        const outputLengthBeforeRestore = devProcess.getOutput().length
+        await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
+        await devProcess.waitFor(
+          waitForTaskWithSourceHeartbeat(
+            () =>
+              waitForUsingComponent(
+                pageJsonPath,
+                autoCardKey,
+                '/components/AutoCard/index',
+                1_000,
+              ),
             PAGE_SOURCE_PATH,
             pageSourceWithAutoCard,
-          )
-          await devProcess.waitFor(
-            waitForUsingComponent(
-              pageJsonPath,
-              autoCardKey,
-              '/components/AutoCard/index',
-              30_000,
-            ),
-            `${platform} crlf autoCard re-registration retry`,
-          )
-        }
-        const restoreOutput = await devProcess.waitForOutput(
-          /hmr emit dirty=\d+ resolved=\d+ emitAll=false pending=\d+/,
-          `${platform} crlf autoCard restore targeted hmr log`,
+          ),
+          `${platform} crlf autoCard re-registration`,
         )
-        expectTargetedHmrEmit(restoreOutput)
+        const restoreOutput = await devProcess.waitFor(
+          waitForOutputSince(devProcess, outputLengthBeforeRestore, HMR_EMIT_RE),
+          `${platform} crlf autoCard restore hmr log`,
+        )
+        expectHmrEmit(restoreOutput)
       }
       finally {
         await devProcess.stop(3_000)

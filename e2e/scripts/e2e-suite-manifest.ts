@@ -132,6 +132,7 @@ export async function getCiTasks(_options: SuiteTaskFactoryOptions = {}) {
   const tasks = [
     ...buildOnlyFiles.map(filePath => createVitestTask(CI_CONFIG_PATH, filePath)),
     createCommandTask('hmr-guard:full', ['full']),
+    createCommandTask('hmr-guard:auto-import-vue-sfc', ['auto-import-vue-sfc']),
     createCommandTask('hmr-guard:auto-routes-hmr', ['auto-routes-hmr']),
     createCommandTask('hmr-guard:shared-chunks-auto', ['shared-chunks-auto']),
   ]
@@ -313,6 +314,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'hmr-shared-chunks-auto',
     description: 'Single CI special-case HMR verification',
     tasks: () => [createVitestTask(CI_CONFIG_PATH, HMR_GUARD_SPECIAL_CASES.sharedChunksAuto)],
+  },
+  'hmr-auto-import-vue-sfc': {
+    name: 'hmr-auto-import-vue-sfc',
+    description: 'Single CI special-case HMR verification for auto-import Vue SFC',
+    tasks: () => [createVitestTask(CI_CONFIG_PATH, HMR_GUARD_SPECIAL_CASES.autoImportVueSfc)],
   },
 }
 

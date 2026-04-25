@@ -120,8 +120,8 @@ defineComponentJson({
 <template>
   <t-popup :visible="show" placement="bottom">
     <template #content>
-      <view class="city-picker-box [position:absolute] [bottom:-100%] [transition:0.3s_bottom_ease-in-out] [left:0] [right:0] [z-index:100] [background-color:#fff] [padding:0_30rpx] [color:#333333] [font-size:34rpx] [border-radius:20rpx_20rpx_0_0] [padding-bottom:env(safe-area-inset-bottom)]">
-        <view v-if="headerVisible" class="city-picker-header city-picker-more [height:100rpx] [line-height:100rpx] [text-align:center] [font-size:32rpx] [color:#333333] [display:flex] [justify-content:space-between] [align-items:center]">
+      <view class="city-picker-box absolute -bottom-full [transition:0.3s_bottom_ease-in-out] left-0 right-0 z-100 bg-white p-[0_30rpx] text-[#333333] text-[34rpx] rounded-[20rpx_20rpx_0_0] pb-[env(safe-area-inset-bottom)]">
+        <view v-if="headerVisible" class="city-picker-header city-picker-more h-[100rpx] leading-[100rpx] text-center text-[32rpx] text-[#333333] flex justify-between items-center">
           <view class="btn" hover-class="btn__active" @tap.stop="onClose">
             取消
           </view>
@@ -132,19 +132,19 @@ defineComponentJson({
             确定
           </view>
         </view>
-        <view v-else class="city-picker-header [height:100rpx] [line-height:100rpx] [text-align:center] [font-size:32rpx] [color:#333333]">
+        <view v-else class="city-picker-header h-[100rpx] leading-[100rpx] text-center text-[32rpx] text-[#333333]">
           <view v-if="title" class="title">
             {{ title }}
           </view>
         </view>
-        <picker-view class="picker [height:300rpx] [margin:50rpx_0] [line-height:88rpx] [text-align:center]" indicator-class="picker-center-row [height:88rpx]" :value="pickerValue" @change="onChange">
+        <picker-view class="picker h-[300rpx] m-[50rpx_0] leading-[88rpx] text-center" indicator-class="picker-center-row [height:88rpx]" :value="pickerValue" @change="onChange">
           <picker-view-column class="picker-column">
             <view v-for="(item, index) in pickerOptions" :key="item.code ?? index">
               {{ item.name }}
             </view>
           </picker-view-column>
         </picker-view>
-        <view v-if="!headerVisible" class="city-picker-footer [height:100rpx] [display:flex] [justify-content:space-between] [align-items:center] [&_.btn]:[width:330rpx] [&_.btn]:[height:80rpx] [&_.btn]:[line-height:80rpx] [&_.btn]:[text-align:center] [&_.btn]:[color:#666666] [&_.btn]:[font-size:32rpx] [&_.btn]:[position:relative] [&_.btn__active]:[opacity:0.5] [&_.btn_.primary]:[color:#fa550f]">
+        <view v-if="!headerVisible" class="city-picker-footer h-[100rpx] flex justify-between items-center [&_.btn]:w-[330rpx] [&_.btn]:h-[80rpx] [&_.btn]:leading-[80rpx] [&_.btn]:text-center [&_.btn]:text-[#666666] [&_.btn]:text-[32rpx] [&_.btn]:relative [&_.btn__active]:opacity-[0.5] [&_.btn_.primary]:text-[#fa550f]">
           <view class="btn" hover-class="btn__active" @tap.stop="onClose">
             取消
           </view>

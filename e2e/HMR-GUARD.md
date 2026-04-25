@@ -60,9 +60,11 @@ pnpm run e2e:hmr:guard:config
 ## 分组策略
 
 - `e2e:hmr:guard`
-  串行执行稳定子集：`hmr-modify`、`hmr-html-template`、`hmr-layouts`、`hmr-layout-shared-template-wxs`、`hmr-shared-template-wxs`、`hmr-rename`、`hmr-shared-runtime-deps`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`issue-340-comment.hmr`、`auto-import-vue-sfc`、`style-import-vue`、`wevu-runtime.hmr`。
+  串行执行稳定子集：`hmr-modify`、`hmr-html-template`、`hmr-layouts`、`hmr-layout-shared-template-wxs`、`hmr-shared-template-wxs`、`hmr-rename`、`hmr-shared-runtime-deps`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`issue-340-comment.hmr`、`style-import-vue`、`wevu-runtime.hmr`。
 - `e2e:hmr:guard:smoke`
   串行执行本地高频回归子集：`auto-import-vue-sfc`、`auto-routes-hmr`、`hmr-rename`、`hmr-rapid`。
+- `e2e:hmr:guard:auto-import-vue-sfc`
+  单独执行 `auto-import-vue-sfc`。这个用例对前序 dev-watch 状态更敏感，独立运行可以避免 Windows 下的串行污染假红。
 - `e2e:hmr:guard:auto-routes-hmr`
   单独执行 `auto-routes-hmr`。这个用例会同时触发路由拓扑与 app 级联更新，保持独立运行更稳定。
 - `e2e:hmr:guard:shared-chunks-auto`
@@ -84,6 +86,6 @@ pnpm --filter weapp-vite build
 
 - 对结构性变更场景，优先验证“最终行为正确”和“dev 过程不崩”。
 - 对单页直接编辑场景，优先补日志级断言，防止退化成全量 HMR。
-- 新增 HMR 回归时，先决定它属于稳定子集、smoke 子集，还是像 `shared-chunks-auto` 一样必须作为特例独立运行；然后更新 `e2e/scripts/hmr-guard-manifest.ts`，让入口、清单和文档保持同源。
-- `pnpm e2e:ci` 会显式串行执行 `hmr-guard:full`、`hmr-guard:auto-routes-hmr`、`hmr-guard:shared-chunks-auto`；若新增 HMR case 没被这三条入口覆盖，应视为 CI 漏挂。
+- 新增 HMR 回归时，先决定它属于稳定子集、smoke 子集，还是像 `auto-import-vue-sfc` / `shared-chunks-auto` 一样必须作为特例独立运行；然后更新 `e2e/scripts/hmr-guard-manifest.ts`，让入口、清单和文档保持同源。
+- `pnpm e2e:ci` 会显式串行执行 `hmr-guard:full`、`hmr-guard:auto-import-vue-sfc`、`hmr-guard:auto-routes-hmr`、`hmr-guard:shared-chunks-auto`；若新增 HMR case 没被这四条入口覆盖，应视为 CI 漏挂。
 - `e2e:hmr:guard` 与 `e2e:hmr:guard:smoke` 由 `e2e/scripts/run-hmr-guard-suite.ts` 统一驱动，采用“单文件 `vitest run` 串行 + 每段前显式 cleanup”的方式执行；不要把整组 HMR dev-watch 用例直接塞进同一个 Vitest 进程，否则不同文件的清理逻辑容易互相污染。

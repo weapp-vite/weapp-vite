@@ -38,8 +38,8 @@ function getFileIcon(path: string) {
         :class="cn(
           'flex h-6 w-full items-center gap-1.5 px-1.5 text-left text-[11px] transition-colors',
           node.type === 'file' && selectedPath === node.path
-            ? 'bg-[color:var(--sim-selection-bg)] text-[color:var(--sim-text)]'
-            : 'text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-hover-strong)] hover:text-[color:var(--sim-text)]',
+            ? 'bg-(--sim-selection-bg) text-(--sim-text)'
+            : 'text-(--sim-muted) hover:bg-(--sim-hover-strong) hover:text-(--sim-text)',
         )"
         :style="{ paddingLeft: `${6 + node.depth * 14}px` }"
         @click="node.type === 'directory' ? emit('toggle', node.path) : emit('select', node.path)"

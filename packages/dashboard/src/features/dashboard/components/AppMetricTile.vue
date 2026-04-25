@@ -7,7 +7,7 @@ defineProps<{
   value: DashboardMetricItem['value']
 }>()
 
-const panelClassName = 'rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3'
+const panelClassName = 'rounded-xl border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-3'
 </script>
 
 <template>
@@ -15,7 +15,7 @@ const panelClassName = 'rounded-xl border border-[color:var(--dashboard-border)]
     <AppMetaLabel>
       {{ label }}
     </AppMetaLabel>
-    <p class="mt-1.5 text-base font-semibold text-[color:var(--dashboard-text)]">
+    <p class="mt-1.5 text-base font-semibold text-(--dashboard-text)">
       {{ value }}
     </p>
   </div>

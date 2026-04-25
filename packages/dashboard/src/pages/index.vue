@@ -43,15 +43,15 @@ const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.m
               <li
                 v-for="item in signals"
                 :key="item.label"
-                class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-3"
+                class="flex items-center justify-between gap-3 rounded-2xl border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-3"
               >
                 <span class="inline-flex items-center gap-2">
-                  <span class="h-4.5 w-4.5 text-[color:var(--dashboard-accent)]">
+                  <span class="h-4.5 w-4.5 text-(--dashboard-accent)">
                     <DashboardIcon :name="item.iconName" />
                   </span>
                   {{ item.label }}
                 </span>
-                <strong class="text-[color:var(--dashboard-text)]">{{ item.value }}</strong>
+                <strong class="text-(--dashboard-text)">{{ item.value }}</strong>
               </li>
             </ul>
           </AppInsetPanel>
@@ -90,14 +90,14 @@ const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.m
           <article
             v-for="command in commandItems"
             :key="command.command"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
+            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4"
           >
             <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 class="font-medium">
                   {{ command.label }}
                 </h3>
-                <p class="mt-1 text-sm text-[color:var(--dashboard-text-muted)]">
+                <p class="mt-1 text-sm text-(--dashboard-text-muted)">
                   {{ command.note }}
                 </p>
               </div>
@@ -115,11 +115,11 @@ const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.m
         description="先做壳子，不急着过度抽象数据模型。所有新增页面都要能在没有真实 payload 的情况下独立预览。"
         icon-name="metric-quality"
       >
-        <ol class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+        <ol class="grid gap-2 text-sm leading-6 text-(--dashboard-text-muted)">
           <li
             v-for="item in releaseChecklist"
             :key="item"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-3"
           >
             {{ item }}
           </li>

@@ -74,11 +74,11 @@ defineComponentJson({
 </script>
 
 <template>
-  <view v-if="soldout || !isStock" class="flex soldout flex-center wr-sold-out h-[80rpx] [background:rgba(170,170,170,1)] w-full text-white [display:flex] [display:-webkit-flex] justify-center [-webkit-justify-content:center] items-center [-webkit-align-items:center]">
+  <view v-if="soldout || !isStock" class="flex soldout flex-center wr-sold-out h-[80rpx] [background:rgba(170,170,170,1)] w-full text-white [display:-webkit-flex] justify-center [-webkit-justify-content:center] items-center [-webkit-align-items:center]">
     {{ soldout ? '商品已下架' : '商品已售馨' }}
   </view>
-  <view class="footer-cont flex flex-between wr-class bg-white p-[16rpx] [display:flex] [display:-webkit-flex] justify-between [-webkit-justify-content:space-between]">
-    <view v-if="jumpArray.length > 0" class="flex flex-between bottom-operate-left w-full [display:flex] [display:-webkit-flex] justify-between [-webkit-justify-content:space-between] [&_.icon-warp]:w-[50%]">
+  <view class="footer-cont flex flex-between wr-class bg-white p-[16rpx] [display:-webkit-flex] justify-between [-webkit-justify-content:space-between]">
+    <view v-if="jumpArray.length > 0" class="flex flex-between bottom-operate-left w-full [display:-webkit-flex] justify-between [-webkit-justify-content:space-between] [&_.icon-warp]:w-[50%]">
       <view
         v-for="(item, index) in jumpArray"
         :key="index"
@@ -100,11 +100,11 @@ defineComponentJson({
       </view>
     </view>
     <block v-if="buttonType === 1">
-      <view class="flex buy-buttons [display:flex] [display:-webkit-flex]">
-        <view :class="`bar-separately ${soldout || !isStock ? 'bar-addCart-disabled' : ''} [width:254rpx] h-[80rpx] text-white flex items-center justify-center [background:#ffece9] [color:#fa4126] rounded-[40rpx_0_0_40rpx] [background:rgba(170,_170,_170,_1)] w-full [background:rgba(221,221,221,1)] text-[28rpx] [display:-webkit-flex]`" @tap="toAddCart">
+      <view class="flex buy-buttons [display:-webkit-flex]">
+        <view :class="`bar-separately ${soldout || !isStock ? 'bar-addCart-disabled' : ''} w-[254rpx] h-[80rpx] text-white flex items-center justify-center [background:#ffece9] text-[#fa4126] rounded-[40rpx_0_0_40rpx] [background:rgba(170,170,170,1)] w-full [background:rgba(221,221,221,1)] text-[28rpx] [display:-webkit-flex]`" @tap="toAddCart">
           加入购物车
         </view>
-        <view :class="`bar-buy ${soldout || !isStock ? 'bar-buyNow-disabled' : ''} [width:254rpx] h-[80rpx] text-white flex items-center justify-center bg-[#fa4126] rounded-[0rpx_40rpx_40rpx_0rpx] [background:rgba(170,_170,_170,_1)] w-full [background:rgba(198,198,198,1)] text-[28rpx] [display:-webkit-flex]`" @tap="toBuyNow">
+        <view :class="`bar-buy ${soldout || !isStock ? 'bar-buyNow-disabled' : ''} w-[254rpx] h-[80rpx] text-white flex items-center justify-center bg-[#fa4126] rounded-[0rpx_40rpx_40rpx_0rpx] [background:rgba(170,170,170,1)] w-full [background:rgba(198,198,198,1)] text-[28rpx] [display:-webkit-flex]`" @tap="toBuyNow">
           立即购买
         </view>
       </view>

@@ -109,7 +109,7 @@ definePageJson({
 </script>
 
 <template>
-  <view v-if="logisticsData.logisticsNo || logisticsData.company" class="page-section cells mt-[24rpx] bg-[white] [&_.order-group__left]:mr-0">
+  <view v-if="logisticsData.logisticsNo || logisticsData.company" class="page-section cells mt-[24rpx] bg-white [&_.order-group__left]:mr-0">
     <t-cell-group>
       <t-cell
         v-if="logisticsData.logisticsNo"
@@ -156,7 +156,7 @@ definePageJson({
       </t-cell>
     </t-cell-group>
   </view>
-  <view class="page-section cell-steps mt-[24rpx] bg-[white] p-[8rpx] [&_.order-group__left]:mr-0">
+  <view class="page-section cell-steps mt-[24rpx] bg-white p-[8rpx] [&_.order-group__left]:mr-0">
     <t-steps
       class="page-section__steps p-[24rpx]"
       t-class="steps [&_.step-title]:[font-weight:bold] [&_.step-title]:[color:#333] [&_.step-title]:[font-size:30rpx] [&_.step-desc]:[color:#333333] [&_.step-desc]:[font-size:28rpx] [&_.step-date]:[color:#999999] [&_.step-date]:[font-size:24rpx] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[background:#ffece9] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[color:white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[border:none] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[color:white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[background:#f5f5f5] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[border:none]"
@@ -166,7 +166,7 @@ definePageJson({
       <t-step
         v-for="(item, index) in logisticsData.nodes"
         :key="index"
-        class="steps [&_.step-title]:[font-weight:bold] [&_.step-title]:text-[#333] [&_.step-title]:text-[30rpx] [&_.step-desc]:text-[#333333] [&_.step-desc]:text-[28rpx] [&_.step-date]:text-[#999999] [&_.step-date]:text-[24rpx] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[background:#ffece9] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:text-[white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[border:none] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:text-[white] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[background:#f5f5f5] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[border:none]"
+        class="steps [&_.step-title]:[font-weight:bold] [&_.step-title]:text-[#333] [&_.step-title]:text-[30rpx] [&_.step-desc]:text-[#333333] [&_.step-desc]:text-[28rpx] [&_.step-date]:text-[#999999] [&_.step-date]:text-[24rpx] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[background:#ffece9] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:text-white [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--process_.t-steps-item__icon-number]:[border:none] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:text-white [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[background:#f5f5f5] [&_.t-step--vertical_.t-step--default-anchor_.t-steps-item--default_.t-steps-item__icon-number]:[border:none]"
         t-class-title="step-title"
         :title="item.title"
         icon="slot"

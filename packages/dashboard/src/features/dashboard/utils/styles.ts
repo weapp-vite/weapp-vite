@@ -1,12 +1,12 @@
 import { tv } from 'tailwind-variants'
 
 export const surfaceStyles = tv({
-  base: 'rounded-[20px] border shadow-[var(--dashboard-shadow)]',
+  base: 'rounded-5 border shadow-(--dashboard-shadow)',
   variants: {
     tone: {
-      default: 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)]',
-      strong: 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel-strong)]',
-      muted: 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)]',
+      default: 'border-(--dashboard-border) bg-(--dashboard-panel)',
+      strong: 'border-(--dashboard-border-strong) bg-(--dashboard-panel-strong)',
+      muted: 'border-(--dashboard-border) bg-(--dashboard-panel-muted)',
     },
     padding: {
       none: '',
@@ -22,7 +22,7 @@ export const surfaceStyles = tv({
 })
 
 export const iconFrameStyles = tv({
-  base: 'flex items-center justify-center rounded-xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]',
+  base: 'flex items-center justify-center rounded-xl bg-(--dashboard-accent-soft) text-(--dashboard-accent)',
   variants: {
     size: {
       sm: 'h-8 w-8',
@@ -36,14 +36,14 @@ export const iconFrameStyles = tv({
 })
 
 export const mutedPanelStyles = tv({
-  base: 'rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)]',
+  base: 'rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted)',
   variants: {
     padding: {
       sm: 'px-4 py-3',
       md: 'p-4',
     },
     interactive: {
-      true: 'transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]',
+      true: 'transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)',
       false: '',
     },
   },
@@ -62,8 +62,8 @@ export const pillButtonStyles = tv({
       badge: 'px-2.5 py-1 text-[11px] uppercase tracking-[0.18em]',
     },
     active: {
-      true: 'border-[color:var(--dashboard-accent)] bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-text)]',
-      false: 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] text-[color:var(--dashboard-text-soft)] hover:border-[color:var(--dashboard-border-strong)] hover:text-[color:var(--dashboard-text)]',
+      true: 'border-(--dashboard-accent) bg-(--dashboard-accent-soft) text-(--dashboard-text)',
+      false: 'border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text-soft) hover:border-(--dashboard-border-strong) hover:text-(--dashboard-text)',
     },
   },
   defaultVariants: {
@@ -76,8 +76,8 @@ export const runtimeBadgeStyles = tv({
   base: 'rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]',
   variants: {
     tone: {
-      neutral: 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] text-[color:var(--dashboard-text-soft)]',
-      info: 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]',
+      neutral: 'border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text-soft)',
+      info: 'border-(--dashboard-border-strong) bg-(--dashboard-accent-soft) text-(--dashboard-accent)',
       success: 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-300',
       warning: 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-300',
       error: 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/12 dark:text-rose-300',
@@ -89,5 +89,5 @@ export const runtimeBadgeStyles = tv({
 })
 
 export const sectionNoteStyles = tv({
-  base: 'rounded-[20px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-[color:var(--dashboard-text-soft)] shadow-[var(--dashboard-shadow)]',
+  base: 'rounded-5 border border-(--dashboard-border) bg-(--dashboard-panel) px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-(--dashboard-text-soft) shadow-(--dashboard-shadow)',
 })

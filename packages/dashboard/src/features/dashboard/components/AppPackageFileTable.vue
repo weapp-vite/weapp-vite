@@ -27,9 +27,9 @@ const fileRows = computed(() => props.files.map(file => createPackageFileRow(fil
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-xl border border-[color:var(--dashboard-border)]">
-    <table class="min-w-full divide-y divide-[color:var(--dashboard-border)] text-left text-sm">
-      <thead class="bg-[color:var(--dashboard-panel-muted)] text-[color:var(--dashboard-text-soft)]">
+  <div class="overflow-hidden rounded-xl border border-(--dashboard-border)">
+    <table class="min-w-full divide-y divide-(--dashboard-border) text-left text-sm">
+      <thead class="bg-(--dashboard-panel-muted) text-(--dashboard-text-soft)">
         <tr>
           <th class="px-3 py-2 text-[11px] font-medium uppercase tracking-[0.18em]">
             文件
@@ -45,9 +45,9 @@ const fileRows = computed(() => props.files.map(file => createPackageFileRow(fil
           </th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-[color:var(--dashboard-border)] text-[color:var(--dashboard-text-muted)]">
+      <tbody class="divide-y divide-(--dashboard-border) text-(--dashboard-text-muted)">
         <tr v-for="file in fileRows" :key="file.file">
-          <td class="px-3 py-2 font-mono text-xs text-[color:var(--dashboard-text)]">
+          <td class="px-3 py-2 font-mono text-xs text-(--dashboard-text)">
             {{ file.file }}
           </td>
           <td class="px-3 py-2">
@@ -56,7 +56,7 @@ const fileRows = computed(() => props.files.map(file => createPackageFileRow(fil
           <td class="px-3 py-2">
             {{ file.fromLabel }}
           </td>
-          <td class="px-3 py-2 font-medium text-[color:var(--dashboard-text)]">
+          <td class="px-3 py-2 font-medium text-(--dashboard-text)">
             {{ file.sizeLabel }}
           </td>
         </tr>

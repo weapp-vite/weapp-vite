@@ -160,8 +160,8 @@ onBeforeUnmount(() => {
       padding="header"
     >
       <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.92fr)]">
-        <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
-          <p class="text-[11px] uppercase tracking-[0.24em] text-[color:var(--dashboard-text-soft)]">
+        <div class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) p-4">
+          <p class="text-[11px] uppercase tracking-[0.24em] text-(--dashboard-text-soft)">
             recommended commands
           </p>
           <div class="mt-4 grid gap-2">
@@ -181,24 +181,24 @@ onBeforeUnmount(() => {
 
         <div class="grid gap-2">
           <RouterLink
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
+            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-4 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
             to="/"
           >
             <p class="font-medium">
               返回工作台
             </p>
-            <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+            <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
               继续查看应用壳子、命令面板和当前增强节奏。
             </p>
           </RouterLink>
           <RouterLink
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
+            class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-4 transition hover:border-(--dashboard-border-strong) hover:bg-(--dashboard-panel)"
             to="/activity"
           >
             <p class="font-medium">
               查看活动流
             </p>
-            <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+            <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
               后续可以在这里观察真实的构建事件和诊断状态。
             </p>
           </RouterLink>
@@ -258,7 +258,7 @@ onBeforeUnmount(() => {
               :duration-text="latestRuntimeEvent?.durationMs !== undefined ? `最近一次耗时: ${formatDuration(latestRuntimeEvent.durationMs)}` : undefined"
             >
               <RouterLink
-                class="mt-4 inline-flex rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-1.5 text-xs font-medium text-[color:var(--dashboard-text)] transition hover:border-[color:var(--dashboard-border-strong)]"
+                class="mt-4 inline-flex rounded-full border border-(--dashboard-border) bg-(--dashboard-panel) px-3 py-1.5 text-xs font-medium text-(--dashboard-text) transition hover:border-(--dashboard-border-strong)"
                 to="/activity"
               >
                 打开事件控制台
@@ -304,14 +304,14 @@ onBeforeUnmount(() => {
             <li
               v-for="event in recentRuntimeEvents"
               :key="event.id"
-              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+              class="rounded-4.5 border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-4 py-3"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <p class="font-medium text-[color:var(--dashboard-text)]">
+                  <p class="font-medium text-(--dashboard-text)">
                     {{ event.title }}
                   </p>
-                  <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                  <p class="mt-1 text-sm leading-6 text-(--dashboard-text-muted)">
                     {{ event.detail }}
                   </p>
                   <AppMetaLabel class="mt-2">

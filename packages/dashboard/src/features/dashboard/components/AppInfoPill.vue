@@ -11,12 +11,12 @@ defineProps<{
 
 <template>
   <span
-    class="inline-flex items-center rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-2.5 py-1 text-xs font-medium text-[color:var(--dashboard-text-soft)]"
+    class="inline-flex items-center rounded-full border border-(--dashboard-border) bg-(--dashboard-panel-muted) px-2.5 py-1 text-xs font-medium text-(--dashboard-text-soft)"
     :class="uppercase ? 'tracking-[0.18em] uppercase' : undefined"
   >
     <span
       v-if="iconName"
-      class="mr-1.5 h-4 w-4 text-[color:var(--dashboard-accent)]"
+      class="mr-1.5 h-4 w-4 text-(--dashboard-accent)"
     >
       <DashboardIcon :name="iconName" />
     </span>

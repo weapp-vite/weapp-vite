@@ -206,7 +206,7 @@ const weappConfig = {
 核心源码片段：
 
 ```vue
-<view :class="[`flex${bbb} gap-[17px]`, aaa]">
+<view :class="[`flex${bbb} gap-4.25`, aaa]">
 ```
 
 <!--
@@ -280,7 +280,7 @@ const classExpr = `flex${this.bbb} gap-_b17px_B`
 结果说明：
 
 - 动态类被编译到运行时表达式
-- 任意值 `gap-[17px]` 转义为 `gap-_b17px_B`
+- 任意值 `gap-4.25` 转义为 `gap-_b17px_B`
 
 <!--
 时间：1 分钟

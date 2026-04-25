@@ -92,7 +92,7 @@ defineComponentJson({
     <c-sidebar custom-class="custom-sidebar [height:100%] [width:180rpx] [height:100vh]" :activeKey="activeKey" @change="onParentChange">
       <c-sidebar-item v-for="(item, index) in category" :key="index" :title="item.name" :disabled="item.disabled" />
     </c-sidebar>
-    <view class="goods-category__right h-full flex-auto w-0 relative overflow-scroll [-webkit-overflow-scrolling:touch] bg-[white] flex">
+    <view class="goods-category__right h-full flex-auto w-0 relative overflow-scroll [-webkit-overflow-scrolling:touch] bg-white flex">
       <c-tabbar v-if="isSlotRight" :activeKey="subActiveKey" showMore @change="onChildChange">
         <slot />
       </c-tabbar>
@@ -106,7 +106,7 @@ defineComponentJson({
             :key="index"
           >
             <view v-if="level === 3 && item.children && item.children.length > 0">
-              <view class="flex goods-category-normal-item-title [display:flex] text-[28rpx] font-medium">
+              <view class="flex goods-category-normal-item-title text-[28rpx] font-medium">
                 {{ item.name }}
               </view>
               <view class="goods-category-normal-item-container bg-white rounded-[8rpx] pt-[28rpx] mt-[-24rpx] mb-[30rpx] flex flex-wrap">
@@ -118,7 +118,7 @@ defineComponentJson({
                   @tap="changCategory"
                 >
                   <t-image :src="subItem.thumbnail" t-class="image" />
-                  <view class="flex goods-category-normal-item-container-item-title [display:flex] justify-center text-[24rpx] text-[#666666] mt-[20rpx]">
+                  <view class="flex goods-category-normal-item-container-item-title justify-center text-[24rpx] text-[#666666] mt-[20rpx]">
                     {{ subItem.name }}
                   </view>
                 </view>
@@ -133,7 +133,7 @@ defineComponentJson({
                 @tap="changCategory"
               >
                 <t-image :src="item.thumbnail" t-class="image" />
-                <view class="flex goods-category-normal-item-container-item-title [display:flex] justify-center text-[24rpx] text-[#666666] mt-[20rpx]">
+                <view class="flex goods-category-normal-item-container-item-title justify-center text-[24rpx] text-[#666666] mt-[20rpx]">
                   {{ item.name }}
                 </view>
               </view>

@@ -34,6 +34,7 @@ describe('hmr-guard manifest', () => {
     const labels = ciTasks.map(task => task.label)
 
     expect(labels).toContain('hmr-guard:full')
+    expect(labels).toContain('hmr-guard:auto-import-vue-sfc')
     expect(labels).toContain('hmr-guard:auto-routes-hmr')
     expect(labels).toContain('hmr-guard:shared-chunks-auto')
   })

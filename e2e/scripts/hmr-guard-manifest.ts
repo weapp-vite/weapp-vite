@@ -26,7 +26,6 @@ export const HMR_GUARD_TEST_GROUPS = {
     'hmr-shared-runtime-deps.test.ts',
   ]),
   derivedOutputSync: resolveCiTests([
-    'auto-import-vue-sfc.test.ts',
     'style-import-vue.test.ts',
     'wevu-runtime.hmr.test.ts',
   ]),
@@ -46,26 +45,14 @@ export const HMR_GUARD_SMOKE_TESTS = resolveCiTests([
 ])
 
 export const HMR_GUARD_SPECIAL_CASES = {
+  autoImportVueSfc: resolveCiTest('auto-import-vue-sfc.test.ts'),
   autoRoutesHmr: resolveCiTest('auto-routes-hmr.test.ts'),
   sharedChunksAuto: resolveCiTest('hmr-shared-chunks-auto.test.ts'),
 }
 
 export const HMR_GUARD_ALL_TESTS = [
-  'hmr-modify.test.ts',
-  'hmr-html-template.test.ts',
-  'hmr-layouts.test.ts',
-  'hmr-layout-shared-template-wxs.test.ts',
-  'hmr-shared-template-wxs.test.ts',
-  'hmr-rename.test.ts',
-  'hmr-shared-runtime-deps.test.ts',
-  'hmr-rapid.test.ts',
-  'hmr-add.test.ts',
-  'hmr-delete.test.ts',
-  'hmr-app-config.test.ts',
-  'issue-340-comment.hmr.test.ts',
-  'auto-import-vue-sfc.test.ts',
-  'style-import-vue.test.ts',
-  'wevu-runtime.hmr.test.ts',
-  'auto-routes-hmr.test.ts',
-  'hmr-shared-chunks-auto.test.ts',
-].map(resolveCiTest)
+  ...HMR_GUARD_STABLE_TESTS,
+  HMR_GUARD_SPECIAL_CASES.autoImportVueSfc,
+  HMR_GUARD_SPECIAL_CASES.autoRoutesHmr,
+  HMR_GUARD_SPECIAL_CASES.sharedChunksAuto,
+]
