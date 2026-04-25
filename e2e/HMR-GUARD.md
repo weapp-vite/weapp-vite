@@ -46,6 +46,8 @@ pnpm run e2e:hmr:guard:config
   验证删除页面/组件文件时 dev 过程稳定。
 - `e2e/ci/hmr-app-config.test.ts`
   验证 `app.json` 的 window/pages 更新能在 dev 下生效。
+- `e2e/ci/hmr-package-scripts.test.ts`
+  验证 `e2e-apps` 与 `apps` 代表项目通过 package `dev` 脚本启动后，原生页面与 Vue SFC 的 dev-watch 热更新仍能写入产物。
 - `e2e/ci/auto-routes-hmr.test.ts`
   验证 auto-routes 在 dev 下维护 `typed-router`、`app.json`、`app.js`，并对已有页面修改保持增量更新。
 - `e2e/ci/auto-import-vue-sfc.test.ts`
@@ -60,7 +62,7 @@ pnpm run e2e:hmr:guard:config
 ## 分组策略
 
 - `e2e:hmr:guard`
-  串行执行稳定子集：`hmr-modify`、`hmr-html-template`、`hmr-layouts`、`hmr-layout-shared-template-wxs`、`hmr-shared-template-wxs`、`hmr-rename`、`hmr-shared-runtime-deps`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`issue-340-comment.hmr`、`style-import-vue`、`wevu-runtime.hmr`。
+  串行执行稳定子集：`hmr-modify`、`hmr-html-template`、`hmr-layouts`、`hmr-layout-shared-template-wxs`、`hmr-shared-template-wxs`、`hmr-rename`、`hmr-shared-runtime-deps`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`hmr-package-scripts`、`issue-340-comment.hmr`、`style-import-vue`、`wevu-runtime.hmr`。
 - `e2e:hmr:guard:smoke`
   串行执行本地高频回归子集：`auto-import-vue-sfc`、`auto-routes-hmr`、`hmr-rename`、`hmr-rapid`。
 - `e2e:hmr:guard:auto-import-vue-sfc`

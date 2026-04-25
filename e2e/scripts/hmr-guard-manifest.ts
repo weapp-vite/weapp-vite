@@ -18,6 +18,7 @@ export const HMR_GUARD_TEST_GROUPS = {
     'hmr-add.test.ts',
     'hmr-delete.test.ts',
     'hmr-app-config.test.ts',
+    'hmr-package-scripts.test.ts',
     'issue-340-comment.hmr.test.ts',
   ]),
   sharedDependencyPropagation: resolveCiTests([
