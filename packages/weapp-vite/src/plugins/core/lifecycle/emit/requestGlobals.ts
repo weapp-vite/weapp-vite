@@ -209,7 +209,6 @@ export function injectRequestGlobalsBundleRuntime(
       `const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = ${installerName}(${installerOptionsCode}) || globalThis`,
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}}catch{}`),
-      ...bindingTargets.map(target => `${target} = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
     ].join(';')
     const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode}\n`
     const firstRequireMatch = chunk.code.match(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE)

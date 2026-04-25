@@ -5,6 +5,10 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { runtimeBaseRoutes } from '../chunk-modes.matrix'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import {
+  cleanDevtoolsCache,
+  cleanupResidualDevtoolsProcesses,
+} from '../utils/ide-devtools-cleanup'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
 const PREPARE_SCRIPT_PATH = path.resolve(import.meta.dirname, '../../scripts/chunk-modes-project.mjs')
@@ -180,7 +184,13 @@ async function closeSharedMiniProgram() {
   }
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
-  await miniProgram.close()
+  await miniProgram.close().catch(() => {})
+}
+
+async function resetDevtoolsProjectState(projectPath: string) {
+  await closeSharedMiniProgram()
+  await cleanDevtoolsCache('compile', { cwd: projectPath }).catch(() => {})
+  await cleanupResidualDevtoolsProcesses()
 }
 
 export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: RuntimeMatrixCase[]) {
@@ -191,8 +201,8 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
 
     for (const runtimeCase of runtimeCases) {
       it(`runs without runtime errors in devtools for ${runtimeCase.id}`, async (ctx) => {
-        await closeSharedMiniProgram()
         const projectPath = await prepareScenarioProject(runtimeCase)
+        await resetDevtoolsProjectState(projectPath)
 
         const miniProgram = await getSharedMiniProgram(projectPath, ctx)
 

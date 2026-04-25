@@ -1,9 +1,11 @@
 import type { TestJsFormat } from '../utils/jsFormat'
 import { rm } from 'node:fs/promises'
+import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
   REQUEST_CLIENTS_REAL_REQUEST_DEFAULTS,
   REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS,
@@ -19,6 +21,8 @@ const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
   /operation not permitted/i,
   /EACCES/i,
 ]
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
 
 let baseUrl = ''
@@ -36,6 +40,7 @@ async function ensureBuilt(jsFormat: TestJsFormat) {
     return
   }
 
+  await cleanDevtoolsCache('all', { cwd: APP_ROOT })
   await rm(DIST_ROOT, { recursive: true, force: true })
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -130,9 +135,30 @@ for (const jsFormat of JS_FORMATS) {
       await ensureBuilt(jsFormat)
 
       try {
-        miniProgram = await launchAutomator({
-          projectPath: APP_ROOT,
-        })
+        await cleanupResidualIdeProcesses()
+        const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+        const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+        try {
+          delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+          delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+          miniProgram = await launchAutomator({
+            projectPath: APP_ROOT,
+          })
+        }
+        finally {
+          if (previousLaunchMode == null) {
+            delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+          }
+          else {
+            process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
+          }
+          if (previousSkipWarmup == null) {
+            delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+          }
+          else {
+            process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
+          }
+        }
         return miniProgram
       }
       catch (error) {
@@ -147,6 +173,7 @@ for (const jsFormat of JS_FORMATS) {
       if (miniProgram) {
         await miniProgram.close()
       }
+      await cleanupResidualIdeProcesses()
     })
 
     it('exposes request globals from the Vue app runtime entry', async (ctx) => {

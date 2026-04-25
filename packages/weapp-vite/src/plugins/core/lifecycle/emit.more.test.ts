@@ -1101,8 +1101,9 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['common.js'].code).toContain(`var XMLHttpRequest = ${REQUEST_GLOBAL_EXPOSE_HELPER}("XMLHttpRequest",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"],[])?${REQUEST_GLOBAL_ACTUALS_KEY}["XMLHttpRequest"]:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.XMLHttpRequest,[])?globalThis.XMLHttpRequest:${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}("XMLHttpRequest"))`)
     expect(bundle['common.js'].code).toContain(`var WebSocket = ${REQUEST_GLOBAL_EXPOSE_HELPER}("WebSocket",${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"],["wss://request-globals.invalid"])?${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"]:${REQUEST_GLOBAL_USABLE_CONSTRUCTOR_HELPER}(globalThis.WebSocket,["wss://request-globals.invalid"])?globalThis.WebSocket:${REQUEST_GLOBAL_LAZY_CONSTRUCTOR_HELPER}("WebSocket"))`)
     expect(bundle['common.js'].code).toContain(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
-    expect(bundle['common.js'].code).toContain(`URL = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.URL`)
-    expect(bundle['common.js'].code).toContain(`WebSocket = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket`)
+    expect(bundle['common.js'].code).toContain(`${REQUEST_GLOBAL_ACTUALS_KEY}["WebSocket"] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket`)
+    expect(bundle['common.js'].code).toContain(`try{globalThis["WebSocket"]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket}catch{}`)
+    expect(bundle['common.js'].code).not.toContain(`WebSocket = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.WebSocket`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(REQUEST_GLOBAL_LOCAL_BINDINGS_MARKER)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require("../../common.js")`)
     expect(bundle['pages/request-globals/fetch.js'].code).toContain(`const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${REQUEST_GLOBAL_CHUNK_MODULE_REF}["At"]({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
@@ -1515,7 +1516,53 @@ describe('core lifecycle emit hook extra branches', () => {
     const code = bundle['dist.js'].code
     expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
     expect(code).toContain(`const e=require("./common.js");const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn({ targets: ["fetch","Headers","Request","Response","TextEncoder","TextDecoder","AbortController","AbortSignal","XMLHttpRequest","WebSocket"] }) || globalThis`)
+    expect(code).not.toContain(`Request = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.Request`)
     expect(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = vn`)).toBeLessThan(code.indexOf('Object.defineProperty(exports,`At`'))
+  })
+
+  it('does not overwrite same-named module locals when ESM runtime installation is appended', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      entriesMap: new Map([
+        ['weapp-vendors/request-runtime', { type: 'chunk', path: 'weapp-vendors/request-runtime' }],
+      ]),
+      ctx: {
+        configService: {
+          packageJson: {
+            dependencies: {
+              'socket.io-client': '^4.8.3',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'weapp-vendors/request-runtime.js': {
+        type: 'chunk',
+        fileName: 'weapp-vendors/request-runtime.js',
+        code: [
+          'import { helper } from "../rolldown-runtime.js";',
+          'function installSingleTarget(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}})',
+          'var Request = class Request { on() {} };',
+          'function createPollingRequest(){ return new Request() }',
+          'export { createPollingRequest, helper };',
+        ].join(''),
+        imports: ['rolldown-runtime.js'],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const code = bundle['weapp-vendors/request-runtime.js'].code
+    expect(code).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
+    expect(code).toContain('var Request = class Request { on() {} };')
+    expect(code).toContain(`${REQUEST_GLOBAL_ACTUALS_KEY}["Request"] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.Request`)
+    expect(code).not.toContain(`Request = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.Request`)
+    expect(code.indexOf('var Request = class Request')).toBeLessThan(code.indexOf(`const ${REQUEST_GLOBAL_BUNDLE_HOST_REF} = installSingleTarget`))
   })
 
   it('runs request globals installer through app prelude before entry execution when enabled', async () => {

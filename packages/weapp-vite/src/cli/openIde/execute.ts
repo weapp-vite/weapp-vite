@@ -18,7 +18,7 @@ import logger from '../../logger'
 export interface ExecuteWechatIdeCliCommandOptions {
   automatorMode?: 'prefer' | 'require'
   cancelLevel?: 'info' | 'warn'
-  httpMode?: 'prefer' | 'require'
+  httpMode?: 'prefer' | 'require' | 'skip'
   onNonLoginError?: (error: unknown) => void
   onRetry?: () => void
   projectPath?: string
@@ -157,15 +157,17 @@ export async function executeWechatIdeCliCommand(
   } = options
 
   await runWithSuspendedSharedInput(async () => {
-    try {
-      const handledByHttp = await tryExecuteWechatIdeCliCommandByHttp(argv, projectPath)
-      if (handledByHttp) {
-        return
+    if (httpMode !== 'skip') {
+      try {
+        const handledByHttp = await tryExecuteWechatIdeCliCommandByHttp(argv, projectPath)
+        if (handledByHttp) {
+          return
+        }
       }
-    }
-    catch (error) {
-      if (httpMode === 'require') {
-        throw error
+      catch (error) {
+        if (httpMode === 'require') {
+          throw error
+        }
       }
     }
 

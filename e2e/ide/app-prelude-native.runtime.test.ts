@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -10,10 +11,8 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-prelude-native')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const APP_PRELUDE_IDE_LAUNCH_TIMEOUT = 180_000
-
-async function delay(ms: number) {
-  await new Promise(resolve => setTimeout(resolve, ms))
-}
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 
 async function runBuild(
   mode?: 'inline',
@@ -57,10 +56,30 @@ async function launchFreshMiniProgram(
   }
 
   try {
-    return await launchAutomator({
-      projectPath: APP_ROOT,
-      timeout: APP_PRELUDE_IDE_LAUNCH_TIMEOUT,
-    })
+    const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+    try {
+      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+      delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+      return await launchAutomator({
+        projectPath: APP_ROOT,
+        timeout: APP_PRELUDE_IDE_LAUNCH_TIMEOUT,
+      })
+    }
+    finally {
+      if (previousLaunchMode == null) {
+        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+      }
+      else {
+        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
+      }
+      if (previousSkipWarmup == null) {
+        delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+      }
+      else {
+        process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
+      }
+    }
   }
   catch (error) {
     if (isDevtoolsHttpPortError(error)) {
@@ -74,38 +93,35 @@ async function closeSharedMiniProgram() {
   await cleanupResidualIdeProcesses()
 }
 
-async function collectPreludeLogs(
-  ctx: { skip: (message?: string) => void },
-  route: string,
-  mode: 'default' | 'inline' | 'default-request-runtime',
-) {
-  let lastError: unknown
+async function ensureRoutePage(miniProgram: any, route: string) {
+  const page = await waitForCurrentPagePath(miniProgram, route, 10_000)
+    ?? await relaunchPage(miniProgram, route, undefined, 45_000)
+  if (!page) {
+    throw new Error(`Failed to launch ${route}`)
+  }
+  await page.waitFor(500)
+  return page
+}
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const miniProgram = await launchFreshMiniProgram(ctx, mode)
-    try {
-      const page = await waitForCurrentPagePath(miniProgram, route, 30_000)
-        ?? await relaunchPage(miniProgram, route, undefined, 30_000)
-      if (!page) {
-        throw new Error(`Failed to launch ${route}`)
-      }
-      await page.waitFor(500)
-      return await miniProgram.evaluate(() => {
+async function collectPreludeLogsByRoute(
+  ctx: { skip: (message?: string) => void },
+  routes: string[],
+  mode: 'default' | 'inline',
+) {
+  const miniProgram = await launchFreshMiniProgram(ctx, mode)
+  try {
+    const logsByRoute: Record<string, string[]> = {}
+    for (const route of routes) {
+      await ensureRoutePage(miniProgram, route)
+      logsByRoute[route] = await miniProgram.evaluate(() => {
         return getApp<{ getPreludeLog?: () => string[] }>()?.getPreludeLog?.() ?? []
       })
     }
-    catch (error) {
-      lastError = error
-      if (attempt < 3) {
-        await delay(600)
-      }
-    }
-    finally {
-      await miniProgram.close().catch(() => {})
-    }
+    return logsByRoute
   }
-
-  throw lastError
+  finally {
+    await miniProgram.close().catch(() => {})
+  }
 }
 
 async function collectRequestRuntimeState(
@@ -113,44 +129,27 @@ async function collectRequestRuntimeState(
   route: string,
   mode: 'default-request-runtime',
 ) {
-  let lastError: unknown
-
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const miniProgram = await launchFreshMiniProgram(ctx, mode)
-    try {
-      const page = await waitForCurrentPagePath(miniProgram, route, 30_000)
-        ?? await relaunchPage(miniProgram, route, undefined, 30_000)
-      if (!page) {
-        throw new Error(`Failed to launch ${route}`)
+  const miniProgram = await launchFreshMiniProgram(ctx, mode)
+  try {
+    await ensureRoutePage(miniProgram, route)
+    return await miniProgram.evaluate(() => {
+      return {
+        fetch: typeof fetch,
+        headers: typeof Headers,
+        request: typeof Request,
+        response: typeof Response,
+        xmlHttpRequest: typeof XMLHttpRequest,
+        webSocket: typeof WebSocket,
+        url: typeof URL,
+        urlSearchParams: typeof URLSearchParams,
+        blob: typeof Blob,
+        formData: typeof FormData,
       }
-      await page.waitFor(500)
-      return await miniProgram.evaluate(() => {
-        return {
-          fetch: typeof fetch,
-          headers: typeof Headers,
-          request: typeof Request,
-          response: typeof Response,
-          xmlHttpRequest: typeof XMLHttpRequest,
-          webSocket: typeof WebSocket,
-          url: typeof URL,
-          urlSearchParams: typeof URLSearchParams,
-          blob: typeof Blob,
-          formData: typeof FormData,
-        }
-      })
-    }
-    catch (error) {
-      lastError = error
-      if (attempt < 3) {
-        await delay(600)
-      }
-    }
-    finally {
-      await miniProgram.close().catch(() => {})
-    }
+    })
   }
-
-  throw lastError
+  finally {
+    await miniProgram.close().catch(() => {})
+  }
 }
 
 describe.sequential('e2e app: app-prelude-native runtime', () => {
@@ -159,23 +158,27 @@ describe.sequential('e2e app: app-prelude-native runtime', () => {
   })
 
   it('executes inline app prelude once even after relaunching main and subpackage pages', async (ctx) => {
-    const mainLogs = await collectPreludeLogs(ctx, '/pages/index/index', 'inline')
-    const normalLogs = await collectPreludeLogs(ctx, '/subpackages/normal/pages/entry/index', 'inline')
-    const independentLogs = await collectPreludeLogs(ctx, '/subpackages/independent/pages/entry/index', 'inline')
+    const logs = await collectPreludeLogsByRoute(ctx, [
+      '/pages/index/index',
+      '/subpackages/normal/pages/entry/index',
+      '/subpackages/independent/pages/entry/index',
+    ], 'inline')
 
-    expect(mainLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
-    expect(normalLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
-    expect(independentLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(logs['/pages/index/index']).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(logs['/subpackages/normal/pages/entry/index']).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(logs['/subpackages/independent/pages/entry/index']).toEqual(['app.prelude.ts:/app.prelude.ts'])
   })
 
   it('keeps one prelude side effect per package scope under default require mode', async (ctx) => {
-    const mainLogs = await collectPreludeLogs(ctx, '/pages/index/index', 'default')
-    const normalLogs = await collectPreludeLogs(ctx, '/subpackages/normal/pages/entry/index', 'default')
-    const independentLogs = await collectPreludeLogs(ctx, '/subpackages/independent/pages/entry/index', 'default')
+    const logs = await collectPreludeLogsByRoute(ctx, [
+      '/pages/index/index',
+      '/subpackages/normal/pages/entry/index',
+      '/subpackages/independent/pages/entry/index',
+    ], 'default')
 
-    expect(mainLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
-    expect(normalLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
-    expect(independentLogs).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(logs['/pages/index/index']).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(logs['/subpackages/normal/pages/entry/index']).toEqual(['app.prelude.ts:/app.prelude.ts'])
+    expect(logs['/subpackages/independent/pages/entry/index']).toEqual(['app.prelude.ts:/app.prelude.ts'])
   })
 
   it('installs request runtime globals through app.prelude.js under default require mode', async (ctx) => {

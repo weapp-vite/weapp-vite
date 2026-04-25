@@ -103,6 +103,51 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
   return true
 }
 
+/**
+ * @description 打开后主动刷新微信开发者工具的项目索引，避免模拟器沿用过期 app 配置。
+ */
+async function stabilizeOpenedWechatIdeProject(projectPath: string, servicePortEnabled?: boolean) {
+  if (servicePortEnabled === false) {
+    return
+  }
+
+  try {
+    await executeWechatIdeCliCommand(['compile'], {
+      httpMode: 'prefer',
+      onNonLoginError: error => logger.error(error),
+      projectPath,
+    })
+    await executeWechatIdeCliCommand(['reset-fileutils', '-p', projectPath], {
+      httpMode: 'prefer',
+      onNonLoginError: error => logger.error(error),
+      projectPath,
+    })
+    await executeWechatIdeCliCommand(['engine', 'build', projectPath], {
+      httpMode: 'prefer',
+      onNonLoginError: error => logger.error(error),
+      projectPath,
+    })
+    try {
+      await executeWechatIdeCliCommand(['compile'], {
+        automatorMode: 'require',
+        httpMode: 'skip',
+        projectPath,
+      })
+    }
+    catch (error) {
+      if (shouldLogAutomatorFallbackError()) {
+        logger.error(error)
+      }
+    }
+  }
+  catch (error) {
+    logger.warn('刷新微信开发者工具项目索引失败，已保留当前打开状态；如模拟器仍显示旧状态，可手动刷新一次。')
+    if (shouldLogAutomatorFallbackError()) {
+      logger.error(error)
+    }
+  }
+}
+
 function createIdeOpenArgv(platform?: MpPlatform, projectPath?: string, options: OpenIdeOptions = {}) {
   const argv = ['open', '-p']
   if (projectPath) {
@@ -141,6 +186,7 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
     try {
       const opened = await tryOpenWechatIdeByAutomator(projectPath, options)
       if (opened) {
+        await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled)
         return
       }
     }
@@ -157,6 +203,9 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
   }
 
   await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, options))
+  if (platform === 'weapp' && projectPath) {
+    await stabilizeOpenedWechatIdeProject(projectPath, bootstrapResult?.servicePortEnabled)
+  }
 }
 
 /**

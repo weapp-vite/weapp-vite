@@ -15,6 +15,7 @@ const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues
 export const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const GITHUB_ISSUES_WARMUP_ROUTE = '/pages/block-slot/index'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
@@ -209,6 +210,24 @@ export async function waitForCurrentPagePath(miniProgram: any, expectedPath: str
   return null
 }
 
+async function ensureGithubIssuesWarmupPage(miniProgram: any) {
+  const page = await waitForCurrentPagePath(miniProgram, GITHUB_ISSUES_WARMUP_ROUTE, 15_000)
+    ?? await runAutomatorOp(
+      `reLaunch ${GITHUB_ISSUES_WARMUP_ROUTE}`,
+      () => miniProgram.reLaunch(GITHUB_ISSUES_WARMUP_ROUTE),
+      {
+        timeoutMs: 30_000,
+        retries: 2,
+        retryDelayMs: 280,
+      },
+    )
+  if (!page) {
+    return null
+  }
+  const warmupReady = await waitForPageWxml(page, undefined, 15_000)
+  return warmupReady ? page : null
+}
+
 async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) => void }) {
   if (sharedLaunchInfraUnavailableMessage) {
     ctx?.skip(sharedLaunchInfraUnavailableMessage)
@@ -227,22 +246,20 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
 
   try {
     const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
     try {
       if (previousLaunchMode) {
         delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
       }
+      delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
 
       const miniProgram = await launchAutomator({
         projectPath: APP_ROOT,
       })
 
-      const warmupPage = await waitForCurrentPagePath(miniProgram, GITHUB_ISSUES_WARMUP_ROUTE, 15_000)
+      const warmupPage = await ensureGithubIssuesWarmupPage(miniProgram)
       if (!warmupPage) {
         throw new Error(`Failed to reach github-issues warmup route: ${GITHUB_ISSUES_WARMUP_ROUTE}`)
-      }
-      const warmupReady = await waitForPageWxml(warmupPage, undefined, 15_000)
-      if (!warmupReady) {
-        throw new Error(`Failed to settle github-issues warmup route: ${GITHUB_ISSUES_WARMUP_ROUTE}`)
       }
       await delay(600)
       return miniProgram
@@ -250,6 +267,12 @@ async function launchGithubIssuesMiniProgram(ctx?: { skip: (message?: string) =>
     finally {
       if (previousLaunchMode) {
         process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
+      }
+      if (previousSkipWarmup == null) {
+        delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+      }
+      else {
+        process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
       }
     }
   }

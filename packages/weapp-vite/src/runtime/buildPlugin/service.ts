@@ -5,7 +5,7 @@ import type {
 } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, MutableCompilerContext } from '../../context'
-import type { SubPackageMetaValue } from '../../types'
+import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import chokidar from 'chokidar'
@@ -415,7 +415,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }) {
     const { watcher, watcherRoot, sidecarRoot, waitForPendingSnapshotBuilds, markClosed } = options
     const originalClose = watcher.close.bind(watcher)
-    let closePromise: Promise<unknown> | undefined
+    let closePromise: Promise<void> | undefined
 
     watcher.close = () => {
       if (!closePromise) {
@@ -428,7 +428,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             await Promise.resolve(sidecarWatcher.close()).catch(() => {})
           }
           watcherService.rollupWatcherMap.delete(watcherRoot)
-          return originalClose()
+          await originalClose()
         })()
       }
       return closePromise
@@ -496,7 +496,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let snapshotBuildChain = Promise.resolve()
     let devWatcherClosed = false
 
-    const runSnapshotBuild = (reason?: { event?: string, file?: string }) => {
+    const runSnapshotBuild = (reason?: { event?: ChangeEvent, file?: string }) => {
       if (devWatcherClosed) {
         return snapshotBuildChain
       }

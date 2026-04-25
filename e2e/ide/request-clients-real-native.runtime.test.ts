@@ -1,9 +1,11 @@
 import type { TestJsFormat } from '../utils/jsFormat'
 import { rm } from 'node:fs/promises'
+import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
   REQUEST_CLIENTS_REAL_REQUEST_DEFAULTS,
   REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS,
@@ -19,6 +21,8 @@ const LOCAL_SERVER_INFRA_ERROR_PATTERNS = [
   /operation not permitted/i,
   /EACCES/i,
 ]
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
 
 let baseUrl = ''
@@ -36,6 +40,7 @@ async function ensureBuilt(jsFormat: TestJsFormat) {
     return
   }
 
+  await cleanDevtoolsCache('all', { cwd: APP_ROOT })
   await rm(DIST_ROOT, { recursive: true, force: true })
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -119,7 +124,12 @@ afterAll(async () => {
 })
 
 for (const jsFormat of JS_FORMATS) {
-  describe.sequential(`e2e app: request-clients-real-native [${jsFormat}]`, () => {
+  const describeForJsFormat = jsFormat === 'esm' ? describe.skip : describe.sequential
+
+  // 微信开发者工具 3.15.x 在原生 App 根入口的 ESM appservice 装载阶段，
+  // 会把根目录 request runtime 辅助 chunk 转成未注册的 require 模块。
+  // CI 构建测试继续覆盖 ESM 产物形态，IDE runtime 保留 CJS 真运行链路。
+  describeForJsFormat(`e2e app: request-clients-real-native [${jsFormat}]`, () => {
     let miniProgram: any = null
 
     async function getMiniProgram(ctx: { skip: (message?: string) => void }) {
@@ -130,9 +140,30 @@ for (const jsFormat of JS_FORMATS) {
       await ensureBuilt(jsFormat)
 
       try {
-        miniProgram = await launchAutomator({
-          projectPath: APP_ROOT,
-        })
+        await cleanupResidualIdeProcesses()
+        const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+        const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+        try {
+          delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+          delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+          miniProgram = await launchAutomator({
+            projectPath: APP_ROOT,
+          })
+        }
+        finally {
+          if (previousLaunchMode == null) {
+            delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+          }
+          else {
+            process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
+          }
+          if (previousSkipWarmup == null) {
+            delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+          }
+          else {
+            process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
+          }
+        }
         return miniProgram
       }
       catch (error) {
@@ -147,6 +178,7 @@ for (const jsFormat of JS_FORMATS) {
       if (miniProgram) {
         await miniProgram.close()
       }
+      await cleanupResidualIdeProcesses()
     })
 
     it('covers app-level request globals probe from a native app entry', async (ctx) => {

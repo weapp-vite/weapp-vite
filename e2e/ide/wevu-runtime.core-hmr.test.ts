@@ -91,6 +91,7 @@ async function relaunchIdeRoute(
 ) {
   // 小程序 IDE 的文件型热更新在 compile 后会频繁残留陈旧的 automator 会话；
   // 这里统一重建连接，验证的是“IDE 已感知并重新运行最新产物”，而不是浏览器式模块常驻 HMR。
+  let lastError: unknown = null
   for (const cleanType of ['compile', 'all'] as const) {
     await closeMiniProgram()
     await cleanupResidualDevtoolsProcesses()
@@ -100,11 +101,22 @@ async function relaunchIdeRoute(
     const miniProgram = await ensureMiniProgram(ctx)
     const page = await relaunchPage(miniProgram, route, readyText, 24_000)
     if (page) {
-      return page
+      try {
+        if (readyText) {
+          await waitForPageWxmlContains(page, readyText, 8_000)
+        }
+        return page
+      }
+      catch (error) {
+        lastError = error
+        continue
+      }
     }
   }
 
-  throw new Error(`Failed to relaunch IDE route: ${route}`)
+  throw new Error(`Failed to relaunch IDE route: ${route}`, {
+    cause: lastError as Error,
+  })
 }
 
 async function waitForFileContainsWithRetry(

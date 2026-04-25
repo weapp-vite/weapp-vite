@@ -4,10 +4,14 @@ import type {
 } from './http'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies -- DevTools CLI fallback 需要跨平台进程执行与超时控制。
+import { execa } from 'execa'
 import {
   pollWechatIdeEngineBuildResultByHttp,
   startWechatIdeEngineBuildByHttp,
 } from './http'
+import { resolveCliPath } from './resolver'
 
 export interface RunWechatIdeEngineBuildByHttpOptions extends WechatDevtoolsHttpCommandOptions {
   onProgress?: (result: PollWechatIdeEngineBuildResult) => void
@@ -24,6 +28,13 @@ function createEngineBuildError(message: string, code: string) {
   error.code = code
   return error
 }
+
+const ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS = [
+  /Cannot GET \/engine\/build\b/i,
+  /Cannot GET \/engine\/buildResult\//i,
+]
+const ENGINE_BUILD_CLI_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
+const COMPACT_WHITESPACE_PATTERN = /\s+/g
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -67,6 +78,59 @@ async function writeEngineBuildLog(logPath: string | undefined, content: string)
 
   const filePath = await resolveEngineBuildLogFilePath(logPath)
   await fs.writeFile(filePath, content, 'utf8')
+}
+
+function isEngineBuildEndpointMissingError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS.some(pattern => pattern.test(message))
+}
+
+function compactOutput(value: string | undefined) {
+  return typeof value === 'string'
+    ? value.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
+    : ''
+}
+
+async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWechatIdeEngineBuildOptions = {}) {
+  const { cliPath } = await resolveCliPath()
+  if (!cliPath) {
+    throw createEngineBuildError('WECHAT_DEVTOOLS_CLI_NOT_FOUND', 'WECHAT_DEVTOOLS_CLI_NOT_FOUND')
+  }
+
+  const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+    reject: false,
+    timeout: options.overallTimeoutMs ?? 120_000,
+  })
+  const stdout = typeof result.stdout === 'string' ? result.stdout : ''
+  const stderr = typeof result.stderr === 'string' ? result.stderr : ''
+  const output = [stdout, stderr].filter(Boolean).join('\n')
+  await writeEngineBuildLog(options.logPath, output)
+
+  if ((result.exitCode ?? 1) === 0) {
+    if (stdout) {
+      process.stdout.write(stdout)
+    }
+    if (stderr) {
+      process.stderr.write(stderr)
+    }
+    return
+  }
+
+  if (ENGINE_BUILD_CLI_OPENED_PATTERN.test(output)) {
+    return
+  }
+
+  if (stdout) {
+    process.stdout.write(stdout)
+  }
+  if (stderr) {
+    process.stderr.write(stderr)
+  }
+
+  throw createEngineBuildError(
+    compactOutput(stderr) || compactOutput(stdout) || `WECHAT_DEVTOOLS_ENGINE_BUILD_CLI_FAILED:${result.exitCode ?? 1}`,
+    'WECHAT_DEVTOOLS_ENGINE_BUILD_CLI_FAILED',
+  )
 }
 
 /**
@@ -132,6 +196,9 @@ export async function runWechatIdeEngineBuild(
     return result
   }
   catch (error) {
+    if (isEngineBuildEndpointMissingError(error)) {
+      return await runWechatIdeEngineBuildByCli(projectPath, options)
+    }
     logs.push(error instanceof Error ? error.message : String(error))
     await writeEngineBuildLog(
       options.logPath,

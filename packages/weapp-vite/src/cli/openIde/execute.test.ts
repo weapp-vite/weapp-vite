@@ -148,6 +148,22 @@ describe('executeWechatIdeCliCommand', () => {
     expect(parseMock).not.toHaveBeenCalled()
   })
 
+  it('can require automator compile without the http open shortcut', async () => {
+    const { executeWechatIdeCliCommand } = await import('./execute')
+
+    await executeWechatIdeCliCommand(['compile', '--project', '/project/dist'], {
+      automatorMode: 'require',
+      httpMode: 'skip',
+      projectPath: '/project/dist',
+    })
+
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(compileWechatIdeByAutomatorMock).toHaveBeenCalledWith({
+      projectPath: '/project/dist',
+    })
+    expect(parseMock).not.toHaveBeenCalled()
+  })
+
   it('prefers http reset-fileutils when projectPath is provided', async () => {
     const { executeWechatIdeCliCommand } = await import('./execute')
 

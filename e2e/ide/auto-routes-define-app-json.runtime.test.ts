@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -7,6 +8,8 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-routes-define-app-json')
 const HOME_ROUTE = '/pages/home/index'
+const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const LEADING_SLASH_RE = /^\/+/
 
 async function runBuild() {
@@ -166,9 +169,29 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+    const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+    try {
+      delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+      delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+      sharedMiniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+    }
+    finally {
+      if (previousLaunchMode == null) {
+        delete process.env[AUTOMATOR_LAUNCH_MODE_ENV]
+      }
+      else {
+        process.env[AUTOMATOR_LAUNCH_MODE_ENV] = previousLaunchMode
+      }
+      if (previousSkipWarmup == null) {
+        delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+      }
+      else {
+        process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
+      }
+    }
   }
   return sharedMiniProgram
 }

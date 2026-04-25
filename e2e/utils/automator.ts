@@ -6,8 +6,9 @@ import { Automator, MiniProgram } from '@weapp-vite/miniprogram-automator'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
-import { resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
+import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { launchHeadlessAutomator } from './automator.headless'
+import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import {
   appendIdeReportEvent,
   resolveReportProjectPath,
@@ -44,6 +45,9 @@ const DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS = [
 const DEVTOOLS_TOOL_COMPILE_UNSUPPORTED_PATTERNS = [
   /^unimplemented$/i,
 ]
+const DEVTOOLS_TOOL_COMPILE_TIMEOUT_PATTERNS = [
+  /Timeout in compile project/i,
+]
 const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
   /需要重新登录/,
@@ -57,10 +61,11 @@ const DEFAULT_RELUNCH_READY_TIMEOUT = 30_000
 const DEFAULT_RELUNCH_RETRIES = 3
 const DEFAULT_RELUNCH_RETRY_DELAY = 280
 const DEFAULT_RELUNCH_SETTLE_DELAY = 260
-const DEFAULT_LAUNCH_RETRIES = 3
+const DEFAULT_LAUNCH_RETRIES = 4
 const DEFAULT_LAUNCH_RETRY_DELAY = 1_200
 const DEFAULT_LAUNCH_ATTEMPT_TIMEOUT = 24_000
 const DEFAULT_APP_CONFIG_READY_TIMEOUT = 12_000
+const DEFAULT_TOOL_COMPILE_TIMEOUT = 30_000
 const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
@@ -80,6 +85,8 @@ const WARN_CONSOLE_TEXT_PATTERN = /\b(?:warn(?:ing)?|deprecated|deprecation)\b/i
 const COMPONENT_WARN_PATTERN = /\[Component\]/
 const RELAUNCH_RETRYABLE_PATTERNS = [
   /Wait timed out after/i,
+  /Timeout in raw reLaunch/i,
+  /Timeout in warmup reLaunch/i,
   /timed out waiting page root/i,
   /Failed to find page root/i,
   /Execution context was destroyed/i,
@@ -110,6 +117,7 @@ const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
 ] as const
 const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile', 'all'] as const
 const DEVTOOLS_ISLOGIN_JSON_PATTERN = /"login"\s*:\s*(true|false)/i
+const DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
 
 function normalizePathForMatch(value: string) {
   const normalized = path.normalize(path.resolve(value))
@@ -175,6 +183,10 @@ const APP_CONFIG_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT,
   DEFAULT_APP_CONFIG_READY_TIMEOUT,
 )
+const TOOL_COMPILE_TIMEOUT = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_TOOL_COMPILE_TIMEOUT,
+  DEFAULT_TOOL_COMPILE_TIMEOUT,
+)
 const TRUST_ALL_PROJECTS = process.env.WEAPP_VITE_E2E_TRUST_PROJECT === '1'
 const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
   .split(ENV_LIST_SPLIT_PATTERN)
@@ -186,7 +198,6 @@ let versionPatched = false
 let miniProgramOnPatched = false
 let loginPreflightPassed = false
 let localhostListenPatched = false
-const completedDevtoolsCacheRecoverySteps = new Set<string>()
 const automator = new Automator()
 
 interface RuntimeLogStats {
@@ -420,6 +431,17 @@ function isLikelyDevtoolsCompileCacheCorruptionMessage(message: string) {
   return DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS.some(pattern => pattern.test(message))
 }
 
+function isLikelySimulatorBootErrorMessage(message: string) {
+  return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(message))
+}
+
+function isLikelyDevtoolsLaunchCacheStaleMessage(message: string) {
+  return isLikelyDevtoolsCompileCacheCorruptionMessage(message)
+    || isLikelySimulatorBootErrorMessage(message)
+    || LAUNCH_TIMEOUT_PATTERN.test(message)
+    || RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
+}
+
 function resolveWechatCliPath(cliPath?: string) {
   if (typeof cliPath === 'string' && cliPath.trim()) {
     return cliPath.trim()
@@ -462,19 +484,20 @@ async function resolveDevtoolsCliLoginState(cliPath?: string) {
 
 async function recoverDevtoolsCompileCache(options: {
   cliPath?: string
+  completedSteps?: Set<string>
   cwd?: string
   error: unknown
   project: string
 }) {
   const message = options.error instanceof Error ? options.error.message : String(options.error)
-  if (!isLikelyDevtoolsCompileCacheCorruptionMessage(message)) {
+  if (!isLikelyDevtoolsLaunchCacheStaleMessage(message)) {
     return false
   }
 
   const resolvedCliPath = resolveWechatCliPath(options.cliPath)
+  const completedSteps = options.completedSteps
   for (const cleanType of DEVTOOLS_CACHE_RECOVERY_STEPS) {
-    const recoveryKey = `${resolvedCliPath}::${cleanType}`
-    if (completedDevtoolsCacheRecoverySteps.has(recoveryKey)) {
+    if (completedSteps?.has(cleanType)) {
       continue
     }
 
@@ -495,7 +518,7 @@ async function recoverDevtoolsCompileCache(options: {
     })
 
     if ((result.exitCode ?? 1) === 0) {
-      completedDevtoolsCacheRecoverySteps.add(recoveryKey)
+      completedSteps?.add(cleanType)
       process.stdout.write(`[info] [runtime:launch-recover] cleaned=${cleanType} project=${options.project}\n`)
       appendIdeReportEvent({
         source: 'runtime',
@@ -525,8 +548,36 @@ async function recoverDevtoolsCompileCache(options: {
   return false
 }
 
+async function cleanupDevtoolsProcessStateAfterLaunchFailure(error: unknown, project: string) {
+  const message = error instanceof Error ? error.message : String(error)
+  if (!isLikelyDevtoolsLaunchCacheStaleMessage(message)) {
+    return
+  }
+
+  process.stdout.write(`[warn] [runtime:launch-recover] cleanup-devtools project=${project}\n`)
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'message',
+    project,
+    level: 'warn',
+    channel: 'launch-recover',
+    text: 'cleanup-devtools',
+  })
+  await cleanupResidualDevtoolsProcesses().catch((cleanupError) => {
+    const cleanupMessage = cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
+    process.stdout.write(`[warn] [runtime:launch-recover] cleanup-devtools-failed project=${project} reason=${cleanupMessage.slice(0, 240)}\n`)
+  })
+}
+
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function normalizeRouteForCompare(value: string) {
+  return value
+    .split('?', 1)[0]
+    .replace(LEADING_SLASH_PATTERN, '')
+    .replace(TRIM_ROUTE_SLASH_PATTERN, '')
 }
 
 async function runWithTimeout<T>(
@@ -579,10 +630,6 @@ async function runWithTimeout<T>(
 export function isLikelyRelaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return RELAUNCH_RETRYABLE_PATTERNS.some(pattern => pattern.test(message))
-}
-
-function isLikelySimulatorBootErrorMessage(message: string) {
-  return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
 function readJsonObject(filePath: string): Record<string, any> | undefined {
@@ -943,17 +990,14 @@ function enhanceMiniProgramRelaunch(miniProgram: any) {
     const route = typeof args[0] === 'string' ? args[0] : '<unknown-route>'
     let lastError: unknown = null
 
-    const normalizeRoute = (value: string) => {
-      return value
-        .split('?', 1)[0]
-        .replace(LEADING_SLASH_PATTERN, '')
-        .replace(TRIM_ROUTE_SLASH_PATTERN, '')
-    }
-
     for (let attempt = 1; attempt <= RELAUNCH_RETRIES; attempt += 1) {
       let page: any = null
       try {
-        page = await rawReLaunch(...args)
+        page = await runWithTimeout(
+          () => rawReLaunch(...args),
+          RELAUNCH_READY_TIMEOUT,
+          `raw reLaunch ${route}`,
+        )
         if (!page) {
           throw new Error(`reLaunch returned empty page: ${route}`)
         }
@@ -977,8 +1021,12 @@ function enhanceMiniProgramRelaunch(miniProgram: any) {
       catch (error) {
         lastError = error
         try {
-          const currentPage = await miniProgram.currentPage()
-          if (normalizeRoute(currentPage?.path ?? '') === normalizeRoute(route)) {
+          const currentPage = await runWithTimeout(
+            () => miniProgram.currentPage(),
+            5_000,
+            `read current page after reLaunch ${route}`,
+          )
+          if (normalizeRouteForCompare(currentPage?.path ?? '') === normalizeRouteForCompare(route)) {
             process.stdout.write(`[info] [runtime:relaunch-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
             return currentPage ?? page
           }
@@ -1000,12 +1048,90 @@ function enhanceMiniProgramRelaunch(miniProgram: any) {
   return miniProgram
 }
 
+async function resolveCurrentPageAfterWarmupFailure(miniProgram: any, route: string, error: unknown, project: string) {
+  if (typeof miniProgram.currentPage !== 'function') {
+    return undefined
+  }
+
+  try {
+    const currentPage = await runWithTimeout(
+      () => miniProgram.currentPage(),
+      5_000,
+      `read current page after warmup reLaunch ${route}`,
+    )
+    const currentRoute = currentPage?.path ?? ''
+    if (normalizeRouteForCompare(currentRoute) !== normalizeRouteForCompare(route)) {
+      process.stdout.write(`[info] [runtime:warmup-current-page] route=${route} current=${currentRoute || '<none>'} project=${project}\n`)
+      return undefined
+    }
+
+    const pageRoot = await waitForRelaunchPageRoot(currentPage)
+    if (!pageRoot) {
+      process.stdout.write(`[info] [runtime:warmup-current-page] route=${route} current=${currentRoute} root=<missing> project=${project}\n`)
+      return undefined
+    }
+
+    process.stdout.write(`[info] [runtime:warmup-fallback] route=${route} project=${project} reason=${error instanceof Error ? error.message : String(error)}\n`)
+    return currentPage
+  }
+  catch {
+    return undefined
+  }
+}
+
+async function warmupMiniProgramRoute(miniProgram: any, route: string, project: string) {
+  let page: any
+  try {
+    page = await runWithTimeout(
+      () => miniProgram.reLaunch(route),
+      RELAUNCH_READY_TIMEOUT,
+      `warmup reLaunch ${route}`,
+    )
+  }
+  catch (error) {
+    const currentPage = isLikelyRelaunchRetryableError(error)
+      ? await resolveCurrentPageAfterWarmupFailure(miniProgram, route, error, project)
+      : undefined
+    if (!currentPage) {
+      throw error
+    }
+    page = currentPage
+  }
+  if (!page) {
+    throw new Error(`warmup reLaunch returned empty page: ${route}`)
+  }
+
+  if (RELAUNCH_SETTLE_DELAY > 0) {
+    if (typeof page.waitFor === 'function') {
+      await page.waitFor(RELAUNCH_SETTLE_DELAY)
+    }
+    else {
+      await sleep(RELAUNCH_SETTLE_DELAY)
+    }
+  }
+
+  const pageRoot = await waitForRelaunchPageRoot(page)
+  if (!pageRoot) {
+    throw new Error(`Timed out waiting page root after warmup reLaunch: ${route}`)
+  }
+
+  process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} project=${project}\n`)
+}
+
 function isUnsupportedToolCompileError(error: unknown) {
   if (!(error instanceof Error)) {
     return false
   }
 
   return DEVTOOLS_TOOL_COMPILE_UNSUPPORTED_PATTERNS.some(pattern => pattern.test(error.message))
+}
+
+function isToolCompileTimeoutError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return DEVTOOLS_TOOL_COMPILE_TIMEOUT_PATTERNS.some(pattern => pattern.test(error.message))
 }
 
 async function compileMiniProgramProject(miniProgram: any, project: string) {
@@ -1017,13 +1143,17 @@ async function compileMiniProgramProject(miniProgram: any, project: string) {
   try {
     await runWithTimeout(
       () => miniProgram.compile({ force: true }),
-      30_000,
+      TOOL_COMPILE_TIMEOUT,
       `compile project ${project}`,
     )
   }
   catch (error) {
     if (isUnsupportedToolCompileError(error)) {
       process.stdout.write(`[warn] [runtime:launch-step] compile-skip reason=tool-unimplemented project=${project}\n`)
+      return
+    }
+    if (isToolCompileTimeoutError(error)) {
+      process.stdout.write(`[warn] [runtime:launch-step] compile-skip reason=tool-timeout project=${project}\n`)
       return
     }
     throw error
@@ -1040,9 +1170,24 @@ function isMissingEngineBuildEndpointError(error: unknown) {
   return DEVTOOLS_ENGINE_BUILD_ENDPOINT_MISSING_PATTERNS.some(pattern => pattern.test(error.message))
 }
 
-async function refreshMiniProgramProjectIndex(projectPath: string | undefined, project: string) {
+async function refreshMiniProgramProjectIndex(
+  projectPath: string | undefined,
+  project: string,
+  options: { cliPath?: string, cwd?: string, refreshProject?: boolean } = {},
+) {
   if (!projectPath) {
     return
+  }
+
+  if (options.refreshProject) {
+    process.stdout.write(`[info] [runtime:launch-step] project-refresh-start project=${project}\n`)
+    await runWithTimeout(
+      () => openWechatIdeProjectByHttp(projectPath),
+      10_000,
+      `refresh project ${project}`,
+    )
+    await sleep(1_000)
+    process.stdout.write(`[info] [runtime:launch-step] project-refresh-ready project=${project}\n`)
   }
 
   process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-start project=${project}\n`)
@@ -1066,7 +1211,26 @@ async function refreshMiniProgramProjectIndex(projectPath: string | undefined, p
   }
   catch (error) {
     if (isMissingEngineBuildEndpointError(error)) {
-      process.stdout.write(`[warn] [runtime:launch-step] engine-build-skip reason=endpoint-missing project=${project}\n`)
+      process.stdout.write(`[warn] [runtime:launch-step] engine-build-http-skip reason=endpoint-missing project=${project}\n`)
+      const cliPath = resolveWechatCliPath(options.cliPath)
+      const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+        cwd: options.cwd,
+        reject: false,
+        timeout: 70_000,
+      })
+      if ((result.exitCode ?? 1) !== 0) {
+        const stderr = typeof result.stderr === 'string' ? result.stderr.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
+        const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
+        const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
+        if (DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN.test(`${stderr}\n${stdout}`)) {
+          process.stdout.write(`[warn] [runtime:launch-step] engine-build-cli-opened-with-nonzero project=${project} reason=${details}\n`)
+          await sleep(1_200)
+          return
+        }
+        throw new Error(`Wechat DevTools CLI engine build failed: ${details}`)
+      }
+      await sleep(1_200)
+      process.stdout.write(`[info] [runtime:launch-step] engine-build-ready source=cli project=${project}\n`)
       return
     }
     throw error
@@ -1285,6 +1449,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   const launchTimeout = timeout ?? 90_000
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
   const launchMode = resolveAutomatorLaunchMode()
+  const completedRecoverySteps = new Set<string>()
   if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
     patchMiniProgramOn()
   }
@@ -1297,14 +1462,17 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
             process.stdout.write(`[info] [runtime:launch-step] preflight project=${project}\n`)
             const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
             process.stdout.write(`[info] [runtime:launch-step] preflight-ready project=${project} warmup=${projectMeta?.warmupRoute ?? '<none>'}\n`)
+            const mergedProjectConfig = projectConfig
+              ? {
+                  libVersion: DEFAULT_LIB_VERSION,
+                  ...projectConfig,
+                }
+              : undefined
             const launchOptions = {
               ...rest,
               timeout: launchTimeout,
               trustProject: resolvedTrustProject,
-              projectConfig: {
-                libVersion: DEFAULT_LIB_VERSION,
-                ...projectConfig,
-              },
+              ...(mergedProjectConfig ? { projectConfig: mergedProjectConfig } : {}),
             }
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
@@ -1316,14 +1484,17 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
             }
 
             const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
-            const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
-            await refreshMiniProgramProjectIndex(rest.projectPath, project)
-            await compileMiniProgramProject(withRelaunch, project)
+            await refreshMiniProgramProjectIndex(rest.projectPath, project, {
+              cliPath: rest.cliPath,
+              cwd: rest.cwd,
+              refreshProject: launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE,
+            })
+            await compileMiniProgramProject(withRuntimeLogs, project)
             if (projectMeta?.warmupRoute && !shouldSkipAutomatorWarmup()) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${projectMeta.warmupRoute} project=${project}\n`)
-              await withRelaunch.reLaunch(projectMeta.warmupRoute)
-              process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${projectMeta.warmupRoute} project=${project}\n`)
+              await warmupMiniProgramRoute(withRuntimeLogs, projectMeta.warmupRoute, project)
             }
+            const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
             return withRelaunch
           },
           launchAttemptTimeout,
@@ -1349,11 +1520,13 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
         if (attempt < LAUNCH_RETRIES) {
           const recovered = await recoverDevtoolsCompileCache({
             cliPath: rest.cliPath,
+            completedSteps: completedRecoverySteps,
             cwd: rest.cwd,
             error,
             project,
           })
           if (recovered) {
+            await cleanupDevtoolsProcessStateAfterLaunchFailure(error, project)
             await sleep(LAUNCH_RETRY_DELAY)
             continue
           }
@@ -1372,6 +1545,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
             channel: 'launch-retry',
             text: `attempt=${attempt}/${LAUNCH_RETRIES} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`,
           })
+          await cleanupDevtoolsProcessStateAfterLaunchFailure(error, project)
           await sleep(LAUNCH_RETRY_DELAY)
           continue
         }

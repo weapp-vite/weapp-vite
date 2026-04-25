@@ -98,6 +98,30 @@ describe('ide devtools cleanup', () => {
     )
   })
 
+  it('retries cache clean after stale DevTools port initialization failure', async () => {
+    execaMock
+      .mockResolvedValueOnce({
+        exitCode: 1,
+        stderr: '#initialize-error: wait IDE port timeout\nIDE may already started at port 20130, trying to connect',
+        stdout: '',
+      })
+      .mockResolvedValueOnce({ exitCode: 0, stderr: '', stdout: '' })
+
+    const { cleanDevtoolsCache } = await import('./ide-devtools-cleanup')
+
+    const task = cleanDevtoolsCache('all')
+    await vi.runAllTimersAsync()
+    await task
+
+    expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledWith([
+      'e2e/utils/automator.cli-bridge.ts',
+      'wechatwebdevtools.app/Contents/MacOS/cli',
+      'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
+      'wechatwebdevtools',
+    ], 2_500)
+    expect(execaMock).toHaveBeenCalledTimes(2)
+  })
+
   it('runs full ide cleanup by chaining dev cleanup and devtools cleanup', async () => {
     const { cleanupResidualIdeProcesses } = await import('./ide-devtools-cleanup')
 

@@ -10,6 +10,9 @@ const promptRetryKeypressMock = vi.hoisted(() => vi.fn())
 const runWithSuspendedSharedInputMock = vi.hoisted(() => vi.fn())
 const runRetryableCommandMock = vi.hoisted(() => vi.fn())
 const withMiniProgramMock = vi.hoisted(() => vi.fn())
+const openWechatIdeProjectByHttpMock = vi.hoisted(() => vi.fn())
+const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
+const runWechatIdeEngineBuildMock = vi.hoisted(() => vi.fn())
 const getConfigMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
@@ -38,10 +41,13 @@ vi.mock('weapp-ide-cli', () => ({
   isAutomatorLoginError: isAutomatorLoginErrorMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   launchAutomator: launchAutomatorMock,
+  openWechatIdeProjectByHttp: openWechatIdeProjectByHttpMock,
   promptWechatIdeLoginRetry: promptWechatIdeLoginRetryMock,
   promptRetryKeypress: promptRetryKeypressMock,
+  resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
   runWithSuspendedSharedInput: runWithSuspendedSharedInputMock,
   runRetryableCommand: runRetryableCommandMock,
+  runWechatIdeEngineBuild: runWechatIdeEngineBuildMock,
   withMiniProgram: withMiniProgramMock,
 }))
 
@@ -74,6 +80,9 @@ describe('openIde', () => {
     runWithSuspendedSharedInputMock.mockReset()
     runRetryableCommandMock.mockReset()
     withMiniProgramMock.mockReset()
+    openWechatIdeProjectByHttpMock.mockReset()
+    resetWechatIdeFileUtilsByHttpMock.mockReset()
+    runWechatIdeEngineBuildMock.mockReset()
     getConfigMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
@@ -91,6 +100,9 @@ describe('openIde', () => {
 
     parseMock.mockResolvedValue(undefined)
     closeWechatIdeProjectMock.mockResolvedValue(undefined)
+    openWechatIdeProjectByHttpMock.mockResolvedValue(undefined)
+    resetWechatIdeFileUtilsByHttpMock.mockResolvedValue(undefined)
+    runWechatIdeEngineBuildMock.mockResolvedValue(undefined)
     isAutomatorLoginErrorMock.mockReturnValue(false)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
     formatAutomatorLoginErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
@@ -163,6 +175,11 @@ describe('openIde', () => {
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
     })
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      logPath: undefined,
+    })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(1)
     expect(parseMock).not.toHaveBeenCalled()
   })
@@ -184,6 +201,11 @@ describe('openIde', () => {
     expect(colorsMock.bold).toHaveBeenCalledWith('r')
     expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 r 关闭当前窗口后重新打开。')
     expect(launchAutomatorMock).not.toHaveBeenCalled()
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      logPath: undefined,
+    })
     expect(parseMock).not.toHaveBeenCalled()
   })
 
@@ -209,6 +231,11 @@ describe('openIde', () => {
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
     })
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      logPath: undefined,
+    })
   })
 
   it('reopens current weapp project immediately when reuse is disabled', async () => {
@@ -232,6 +259,11 @@ describe('openIde', () => {
       projectPath: 'dist/dev/mp-weixin',
       trustProject: true,
     })
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      logPath: undefined,
+    })
   })
 
   it('does not append trust-project when explicitly disabled', async () => {
@@ -247,6 +279,11 @@ describe('openIde', () => {
       '-p',
       'dist/dev/mp-weixin',
     ])
+    expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('dist/dev/mp-weixin')
+    expect(runWechatIdeEngineBuildMock).toHaveBeenCalledWith('dist/dev/mp-weixin', {
+      logPath: undefined,
+    })
     expect(launchAutomatorMock).not.toHaveBeenCalled()
   })
 
@@ -288,6 +325,9 @@ describe('openIde', () => {
       'dist/dev/mp-weixin',
       '--trust-project',
     ])
+    expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
+    expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
+    expect(runWechatIdeEngineBuildMock).not.toHaveBeenCalled()
   })
 
   it('prints original automator error when fallback debug env is enabled', async () => {
