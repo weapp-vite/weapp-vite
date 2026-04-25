@@ -547,10 +547,10 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
         )
         expect(await fs.pathExists(autoCardTemplatePath)).toBe(true)
         const restoreOutput = await devProcess.waitFor(
-          waitForOutputSince(devProcess, outputLengthBeforeRestore, TARGETED_HMR_EMIT_RE),
-          `${platform} autoCard restore targeted hmr log`,
+          waitForOutputSince(devProcess, outputLengthBeforeRestore, HMR_EMIT_RE),
+          `${platform} autoCard restore hmr log`,
         )
-        expectTargetedHmrEmit(restoreOutput)
+        expectHmrEmit(restoreOutput)
       }
       finally {
         await devProcess.stop(3_000)
@@ -673,19 +673,10 @@ describeAutoImportSuite('auto import local components (e2e)', () => {
           `${platform} crlf autoCard re-registration`,
         )
         const restoreOutput = await devProcess.waitFor(
-          waitForOutputSince(
-            devProcess,
-            outputLengthBeforeRestore,
-            process.platform === 'win32' ? HMR_EMIT_RE : TARGETED_HMR_EMIT_RE,
-          ),
+          waitForOutputSince(devProcess, outputLengthBeforeRestore, HMR_EMIT_RE),
           `${platform} crlf autoCard restore hmr log`,
         )
-        if (process.platform === 'win32') {
-          expectHmrEmit(restoreOutput)
-        }
-        else {
-          expectTargetedHmrEmit(restoreOutput)
-        }
+        expectHmrEmit(restoreOutput)
       }
       finally {
         await devProcess.stop(3_000)
