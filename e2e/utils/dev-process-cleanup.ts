@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- e2e 清理脚本需要 execa 调用系统进程管理命令。 */
 import process from 'node:process'
 import { execa } from 'execa'
 import { cleanupProcessesByCommandPatterns, cleanupTrackedDevProcesses } from './dev-process'
@@ -17,8 +18,10 @@ function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
-export async function cleanupResidualDevProcesses() {
-  if (process.platform === 'win32') {
+export async function cleanupResidualDevProcesses(platform = process.platform) {
+  if (platform === 'win32') {
+    await cleanupTrackedDevProcesses(2_500)
+    await sleep(1_000)
     return
   }
 

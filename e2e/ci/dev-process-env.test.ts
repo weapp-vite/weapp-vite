@@ -83,4 +83,10 @@ describe('dev process env isolation', () => {
       extendEnv: false,
     }))
   })
+
+  it('uses taskkill to terminate Windows process trees', async () => {
+    const { getWindowsTaskkillArgs } = await import('../utils/dev-process')
+
+    expect(getWindowsTaskkillArgs(12345)).toEqual(['/pid', '12345', '/t', '/f'])
+  })
 })

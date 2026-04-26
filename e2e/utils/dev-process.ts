@@ -74,6 +74,10 @@ function isPidAlive(pid: number) {
   }
 }
 
+export function getWindowsTaskkillArgs(pid: number) {
+  return ['/pid', String(pid), '/t', '/f']
+}
+
 async function listUnixProcesses() {
   const { stdout } = await execa('ps', ['-Ao', 'pid=,ppid=,command='], {
     stdin: 'ignore',
@@ -124,6 +128,34 @@ function collectProcessTreePids(rootPid: number, processList: ProcessEntry[]) {
 
 async function terminatePid(pid: number, forceKillDelayMs: number) {
   if (!isPidAlive(pid)) {
+    TRACKED_DEV_PIDS.delete(pid)
+    return
+  }
+
+  if (process.platform === 'win32') {
+    await execa('taskkill', getWindowsTaskkillArgs(pid), {
+      reject: false,
+      stdin: 'ignore',
+      stdout: 'ignore',
+      stderr: 'ignore',
+    })
+
+    const deadline = Date.now() + forceKillDelayMs
+    while (Date.now() < deadline) {
+      if (!isPidAlive(pid)) {
+        TRACKED_DEV_PIDS.delete(pid)
+        return
+      }
+      await sleep(100)
+    }
+
+    try {
+      if (isPidAlive(pid)) {
+        process.kill(pid, 'SIGKILL')
+      }
+    }
+    catch {}
+
     TRACKED_DEV_PIDS.delete(pid)
     return
   }
@@ -289,7 +321,10 @@ export function startDevProcess(
     else if (child.exitCode == null) {
       child.kill('SIGTERM')
     }
-    await settledExit
+    await Promise.race([
+      settledExit,
+      sleep(forceKillDelayMs).then(() => undefined),
+    ])
   }
 
   return {
