@@ -15,6 +15,10 @@ export function transformElement(node: ElementNode, context: TransformContext, t
   }
 
   if (tag === 'slot') {
+    const { type } = isStructuralDirective(node)
+    if (type === 'if') {
+      return transformIfElement(node, context, transformNode)
+    }
     return transformSlotElement(node, context, transformNode)
   }
 
