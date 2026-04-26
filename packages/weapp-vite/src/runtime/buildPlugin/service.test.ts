@@ -46,6 +46,7 @@ const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
   on: vi.fn(),
   close: vi.fn(),
 })))
+const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: undefined })))
 
 vi.mock('node:fs/promises', () => ({
   appendFile: appendFileMock,
@@ -96,6 +97,7 @@ vi.mock('./workers', () => ({
 }))
 
 vi.mock('../../utils/file', () => ({
+  findJsEntry: findJsEntryMock,
   touch: touchMock,
 }))
 
@@ -188,6 +190,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       outputExtensions: { wxss: 'wxss' },
       absolutePluginRoot: undefined,
       absoluteSrcRoot: '/project/src',
+      relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
       platform: 'weapp',
       multiPlatform: {
         enabled: false,
@@ -243,6 +246,7 @@ async function waitForMockCalls(mock: { mock: { calls: unknown[] } }, count: num
 describe('runtime buildPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    buildMock.mockReset()
     resetEmittedOutputCachesMock.mockReset()
     isOutputRootInsideOutDirMock.mockImplementation((outDir: string, pluginOutputRoot: string) => {
       return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
@@ -253,7 +257,9 @@ describe('runtime buildPlugin service', () => {
       hasWorkersDir: false,
       workersDir: undefined,
     })
+    findJsEntryMock.mockResolvedValue({ path: undefined })
     chokidarWatchMock.mockClear()
+    delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
   })
 
   afterEach(() => {
@@ -288,9 +294,7 @@ describe('runtime buildPlugin service', () => {
     resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
-      .mockResolvedValueOnce({ output: [] })
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
-      .mockResolvedValueOnce({ output: [] })
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -330,7 +334,7 @@ describe('runtime buildPlugin service', () => {
     }))
   })
 
-  it('runs a snapshot write build after each dev watch end event', async () => {
+  it('does not run an extra snapshot write build after regular dev watch end events', async () => {
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
@@ -344,11 +348,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await firstBuild
 
-    expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
-      build: expect.not.objectContaining({
-        watch: expect.anything(),
-      }),
-    }))
+    expect(buildMock).toHaveBeenCalledTimes(1)
   })
 
   it('runs sidecar snapshot build with its own hmr timing window', async () => {
@@ -376,9 +376,91 @@ describe('runtime buildPlugin service', () => {
     nowValue = 28
     await waitForMockCalls(loggerSuccessMock, 1)
 
-    expect(buildMock).toHaveBeenCalledTimes(3)
+    expect(buildMock).toHaveBeenCalledTimes(2)
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('8.00 ms'))
     nowSpy.mockRestore()
+  })
+
+  it('marks only the matched entry dirty for direct sidecar snapshot updates', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const forceFullValues: Array<string | undefined> = []
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementation(async () => {
+        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        return { output: [] }
+      })
+    findJsEntryMock.mockResolvedValue({ path: '/project/src/pages/logs/index.ts' })
+    const ctx = createMockContext()
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
+      id: '/project/src/pages/logs/index.ts',
+    })
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/about/index.ts', {
+      id: '/project/src/pages/about/index.ts',
+    })
+    ctx.runtimeState.build.hmr.loadedEntrySet.add('/project/src/pages/logs/index.ts')
+    ctx.runtimeState.build.hmr.loadedEntrySet.add('/project/src/pages/about/index.ts')
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+    touchMock.mockClear()
+
+    sidecarWatcher.emit('change', '/project/src/pages/logs/index.wxml')
+    await waitForMockCalls(touchMock, 1)
+
+    expect(buildMock).toHaveBeenCalledTimes(1)
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set(['/project/src/pages/logs/index.ts']))
+    expect(ctx.runtimeState.build.hmr.dirtyEntryReasons.get('/project/src/pages/logs/index.ts')).toBe('direct')
+    expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/logs/index.ts')).toBe(false)
+    expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/about/index.ts')).toBe(true)
+    expect(touchMock).toHaveBeenCalledWith('/project/src/pages/logs/index.ts')
+    expect(loggerSuccessMock).not.toHaveBeenCalled()
+    expect(forceFullValues).toEqual([])
+  })
+
+  it('keeps full snapshot fallback for sidecar topology changes', async () => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const forceFullValues: Array<string | undefined> = []
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock
+      .mockResolvedValueOnce(watcher)
+      .mockImplementation(async () => {
+        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        return { output: [] }
+      })
+    const ctx = createMockContext()
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
+      id: '/project/src/pages/logs/index.ts',
+    })
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/about/index.ts', {
+      id: '/project/src/pages/about/index.ts',
+    })
+    ctx.runtimeState.build.hmr.loadedEntrySet.add('/project/src/pages/logs/index.ts')
+    ctx.runtimeState.build.hmr.loadedEntrySet.add('/project/src/pages/about/index.ts')
+    const service = createBuildService(ctx)
+
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('add', '/project/src/pages/logs/index.wxml')
+    await waitForMockCalls(buildMock, 2)
+
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([
+      '/project/src/pages/logs/index.ts',
+      '/project/src/pages/about/index.ts',
+    ]))
+    expect(ctx.runtimeState.build.hmr.loadedEntrySet.size).toBe(0)
+    expect(forceFullValues).toEqual(['1'])
   })
 
   it('ignores vue updates in snapshot sidecar watcher', async () => {
@@ -400,7 +482,7 @@ describe('runtime buildPlugin service', () => {
     sidecarWatcher.emit('change', '/project/src/pages/logs/index.vue')
     await flushAsyncTasks()
 
-    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(buildMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).not.toHaveBeenCalled()
   })
 
@@ -423,7 +505,7 @@ describe('runtime buildPlugin service', () => {
     sidecarWatcher.emit('change', '/project/src/shared/runtime-dep.ts')
     await flushAsyncTasks()
 
-    expect(buildMock).toHaveBeenCalledTimes(2)
+    expect(buildMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).not.toHaveBeenCalled()
   })
 

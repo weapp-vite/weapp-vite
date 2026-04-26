@@ -13,11 +13,17 @@ import path from 'pathe'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
-import { isSidecarFile } from '../../plugins/utils/invalidateEntry/shared'
-import { touch } from '../../utils/file'
+import {
+  configSuffixes,
+  isSidecarFile,
+  watchedCssExts,
+  watchedTemplateExts,
+} from '../../plugins/utils/invalidateEntry/shared'
+import { findJsEntry, touch } from '../../utils/file'
 import { resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { generateLibDts } from '../libDts'
 import { hasLocalSubPackageNpmConfig } from '../npmPlugin/service'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
@@ -63,6 +69,11 @@ interface HmrPhaseRegressionCandidate {
   currentMs: number
   averageMs: number
   ratio: number
+}
+
+interface SnapshotBuildReason {
+  event?: ChangeEvent
+  file?: string
 }
 
 function shouldHandleSnapshotSidecarFile(filePath: string) {
@@ -493,10 +504,64 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     delete snapshotBuildOptions.build?.watch
     const snapshotWatcherRoot = `${configService.absoluteSrcRoot}::dev-snapshot`
-    let snapshotBuildChain = Promise.resolve()
+    let snapshotBuildChain: Promise<'snapshot' | 'forwarded' | 'closed' | undefined> = Promise.resolve(undefined)
     let devWatcherClosed = false
 
-    const runSnapshotBuild = (reason?: { event?: ChangeEvent, file?: string }) => {
+    async function resolveSnapshotSidecarEntryId(reason?: SnapshotBuildReason) {
+      if (reason?.event !== 'update' || !reason.file) {
+        return undefined
+      }
+      const normalizedFile = normalizeFsResolvedId(reason.file)
+      const configSuffix = configSuffixes.find(suffix => normalizedFile.endsWith(suffix))
+      const ext = path.extname(normalizedFile)
+      if (!configSuffix && !(ext && (watchedCssExts.has(ext) || watchedTemplateExts.has(ext)))) {
+        return undefined
+      }
+      const basePath = configSuffix
+        ? normalizedFile.slice(0, -configSuffix.length)
+        : ext
+          ? normalizedFile.slice(0, -ext.length)
+          : normalizedFile
+      const primaryScript = await findJsEntry(basePath)
+      if (!primaryScript.path) {
+        return undefined
+      }
+      const entryId = normalizeFsResolvedId(primaryScript.path)
+      if (!ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
+        return undefined
+      }
+      const relativeSrc = configService.relativeAbsoluteSrcRoot(entryId)
+      if (relativeSrc === 'layouts' || relativeSrc.startsWith('layouts/')) {
+        return undefined
+      }
+      return entryId
+    }
+
+    function markSnapshotEntriesFullDirty() {
+      for (const entryId of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
+        ctx.runtimeState.build.hmr.dirtyEntrySet.add(entryId)
+        ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, 'direct')
+        ctx.runtimeState.build.hmr.loadedEntrySet.delete(entryId)
+      }
+      ctx.runtimeState.build.hmr.profile = {
+        ...ctx.runtimeState.build.hmr.profile,
+        dirtyCount: ctx.runtimeState.build.hmr.dirtyEntrySet.size,
+        dirtyReasonSummary: [`snapshot-full:${ctx.runtimeState.build.hmr.resolvedEntryMap.size}`],
+      }
+    }
+
+    function markSnapshotEntryDirty(entryId: string) {
+      ctx.runtimeState.build.hmr.dirtyEntrySet.add(entryId)
+      ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, 'direct')
+      ctx.runtimeState.build.hmr.loadedEntrySet.delete(entryId)
+      ctx.runtimeState.build.hmr.profile = {
+        ...ctx.runtimeState.build.hmr.profile,
+        dirtyCount: ctx.runtimeState.build.hmr.dirtyEntrySet.size,
+        dirtyReasonSummary: ['sidecar-direct:1'],
+      }
+    }
+
+    const runSnapshotBuild = (reason?: SnapshotBuildReason) => {
       if (devWatcherClosed) {
         return snapshotBuildChain
       }
@@ -513,14 +578,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             watchToDirtyMs: performance.now() - startedAt,
           }
         }
-        for (const entryId of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
-          ctx.runtimeState.build.hmr.dirtyEntrySet.add(entryId)
-          ctx.runtimeState.build.hmr.dirtyEntryReasons.set(entryId, 'direct')
-          ctx.runtimeState.build.hmr.loadedEntrySet.delete(entryId)
+        const sidecarEntryId = await resolveSnapshotSidecarEntryId(reason)
+        if (sidecarEntryId) {
+          markSnapshotEntryDirty(sidecarEntryId)
+          await touch(sidecarEntryId)
+          return 'forwarded'
         }
+        markSnapshotEntriesFullDirty()
         process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
         try {
           await build(snapshotBuildOptions)
+          return 'snapshot'
         }
         finally {
           delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
@@ -569,7 +637,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       else if (e.code === 'END') {
         const durationMs = performance.now() - startTime
         void (async () => {
-          await runSnapshotBuild()
           if (firstBuildCompleted) {
             finalizeHmrProfile(durationMs)
             recordHmrProfile(durationMs)
@@ -626,7 +693,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         void runSnapshotBuild({
           event: normalizedEvent,
           file: id,
-        }).then(() => {
+        }).then((result) => {
+          if (result !== 'snapshot') {
+            return
+          }
           const durationMs = performance.now() - sidecarStartedAt
           finalizeHmrProfile(durationMs)
           recordHmrProfile(durationMs)
