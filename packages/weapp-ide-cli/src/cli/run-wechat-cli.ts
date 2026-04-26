@@ -12,6 +12,36 @@ function shouldBootstrapWechatDevtools(command: string | undefined) {
   return command === 'open' || command === 'auto' || command === 'auto-preview'
 }
 
+function appendOptionValue(argv: string[], sourceArgv: readonly string[], optionName: string) {
+  const value = readOptionValue(sourceArgv, optionName)
+  if (value !== undefined) {
+    argv.push(optionName, value)
+  }
+}
+
+function createAutoPreviewWakeArgv(argv: readonly string[], trustProject: boolean | undefined) {
+  if (argv[0] !== 'auto-preview') {
+    return undefined
+  }
+
+  const projectPath = readOptionValue(argv, '--project')
+  const appid = readOptionValue(argv, '--appid')
+  if (!projectPath && !appid) {
+    return undefined
+  }
+
+  const wakeArgv = ['open']
+  appendOptionValue(wakeArgv, argv, '--project')
+  appendOptionValue(wakeArgv, argv, '--appid')
+  appendOptionValue(wakeArgv, argv, '--ext-appid')
+
+  if (trustProject === true) {
+    wakeArgv.push('--trust-project')
+  }
+
+  return wakeArgv
+}
+
 function resolveBooleanCliOption(argv: readonly string[], optionName: string) {
   if (argv.includes(optionName)) {
     return true
@@ -50,12 +80,12 @@ async function handleMissingCliPath(source: 'custom' | 'default' | 'missing') {
 async function maybeBootstrapWechatDevtoolsSettings(argv: readonly string[]) {
   const command = argv[0]
   if (!shouldBootstrapWechatDevtools(command)) {
-    return
+    return undefined
   }
 
   const config = await readCustomConfig()
   if (config.autoBootstrapDevtools === false) {
-    return
+    return undefined
   }
 
   const projectPath = readOptionValue(argv, '--project')
@@ -67,6 +97,10 @@ async function maybeBootstrapWechatDevtoolsSettings(argv: readonly string[]) {
     projectPath,
     trustProject,
   })
+
+  return {
+    trustProject,
+  }
 }
 
 /**
@@ -87,6 +121,11 @@ export async function runWechatCliCommand(argv: string[]) {
     return
   }
 
-  await maybeBootstrapWechatDevtoolsSettings(argv)
+  const bootstrapContext = await maybeBootstrapWechatDevtoolsSettings(argv)
+  const wakeArgv = createAutoPreviewWakeArgv(argv, bootstrapContext?.trustProject)
+  if (wakeArgv) {
+    await runWechatCliWithRetry(cliPath, wakeArgv)
+  }
+
   await runWechatCliWithRetry(cliPath, argv)
 }

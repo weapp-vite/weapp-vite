@@ -84,6 +84,60 @@ describe('runWechatCliCommand', () => {
     ])
   })
 
+  it('opens the target project before auto-preview so devtools is foregrounded', async () => {
+    const { runWechatCliCommand } = await import('../src/cli/run-wechat-cli')
+
+    await runWechatCliCommand([
+      'auto-preview',
+      '--project',
+      '/tmp/demo',
+      '--info-output',
+      '/tmp/auto-preview.json',
+    ])
+
+    expect(bootstrapWechatDevtoolsSettingsMock).toHaveBeenCalledWith({
+      projectPath: '/tmp/demo',
+      trustProject: false,
+    })
+    expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(1, '/Applications/wechat-cli', [
+      'open',
+      '--project',
+      '/tmp/demo',
+    ])
+    expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(2, '/Applications/wechat-cli', [
+      'auto-preview',
+      '--project',
+      '/tmp/demo',
+      '--info-output',
+      '/tmp/auto-preview.json',
+    ])
+  })
+
+  it('passes configured project trust to the auto-preview foreground open command', async () => {
+    readCustomConfigMock.mockResolvedValueOnce({
+      autoTrustProject: true,
+    })
+    const { runWechatCliCommand } = await import('../src/cli/run-wechat-cli')
+
+    await runWechatCliCommand(['auto-preview', '--appid', 'wx123', '--ext-appid', 'wx456'])
+
+    expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(1, '/Applications/wechat-cli', [
+      'open',
+      '--appid',
+      'wx123',
+      '--ext-appid',
+      'wx456',
+      '--trust-project',
+    ])
+    expect(runWechatCliWithRetryMock).toHaveBeenNthCalledWith(2, '/Applications/wechat-cli', [
+      'auto-preview',
+      '--appid',
+      'wx123',
+      '--ext-appid',
+      'wx456',
+    ])
+  })
+
   it('prompts for cli path when resolver returns missing', async () => {
     resolveCliPathMock.mockResolvedValueOnce({
       cliPath: '',
