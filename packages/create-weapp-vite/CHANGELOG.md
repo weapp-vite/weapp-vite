@@ -1,5 +1,51 @@
 # create-weapp-vite
 
+## 2.3.8
+
+### Patch Changes
+
+- 🐛 **继续增强小程序文件型热更新的原因解释日志，把 layout 传播、layout 回退全量和 auto-routes 拓扑变化纳入 pending 原因摘要，帮助开发阶段快速判断本次重构建是否由布局依赖或路由拓扑变更触发。** [`65cca45`](https://github.com/weapp-vite/weapp-vite/commit/65cca457437bf0e5e6dafd9957930c85ec377877) by @sonofmagic
+
+- 🐛 **增强开发态 HMR profile 的粗粒度阶段采样：新增 `buildCoreMs`、`transformMs`、`writeMs` 指标，并同步到 JSONL profile、`analyze --hmr-profile` 聚合结果与 IDE/CLI 摘要，便于定位热更新慢点是在核心构建、transform 还是写盘尾段。** [`500b3c1`](https://github.com/weapp-vite/weapp-vite/commit/500b3c116105b8d9a4b2087a95044665f02a0724) by @sonofmagic
+
+- 🐛 **优化小程序文件型热更新里 shared chunk 关联项的增量判定路径，避免每次 watch 重构都全量扫描所有 shared chunk importer 集合，并补齐反向索引与回归测试以保持部分重构语义稳定。** [`45f8533`](https://github.com/weapp-vite/weapp-vite/commit/45f8533e5e4a4237000dd857189b4860ee131963) by @sonofmagic
+
+- 🐛 **修复 Vue 页面与共享 chunk 相关的 HMR 回归，恢复无显式 page hook hint 时的页面特性注入，并补回样式块预解析与构建轮次级 compileOptions 缓存隔离，避免 watch 重编译时出现组件默认导出丢失。** [`fb991fc`](https://github.com/weapp-vite/weapp-vite/commit/fb991fc16e227a1a8517cfb3a86ccaad4bddaf37) by @sonofmagic
+
+- 🐛 **修复小程序文件级热更新中 `auto-routes` 与 `layout` 链路的多余失效、全量重扫、删除窗口期误报与状态丢失问题，并收敛对应 e2e 断言到稳定的重构建信号。** [`385ebeb`](https://github.com/weapp-vite/weapp-vite/commit/385ebebc9965c1468a21340dd317f23c39351cb2) by @sonofmagic
+
+- 🐛 **在开发态文件型热更新中，当启用 HMR profile JSONL 输出且最近一次重建明显慢于近期均值时，追加提示开发者运行 `weapp-vite analyze --hmr-profile`，把慢样本诊断从日志直接闭环到结构化分析命令。** [`2614395`](https://github.com/weapp-vite/weapp-vite/commit/2614395e7145d72137571fa85681f65fe6a35e73) by @sonofmagic
+
+- 🐛 **增强小程序文件型热更新的阶段采样与原因解释日志，新增 shared chunk 解析耗时、脏标记来源摘要与 pending 扩张原因摘要，帮助开发阶段更快定位为何触发增量或扩大量重构建。** [`485e021`](https://github.com/weapp-vite/weapp-vite/commit/485e021b77f321ecd9a8d7c9956cbb8057bd3159) by @sonofmagic
+
+- 🐛 **为小程序文件型热更新新增可选的 JSONL profile 输出能力，支持把单次变更的 watch 到脏标记、shared chunk 解析、emit 以及 dirty/pending 原因摘要落盘，方便持续定位开发态体感延迟到底卡在构建链路的哪一段。** [`504aadc`](https://github.com/weapp-vite/weapp-vite/commit/504aadcdf1461f639013dd22f1129302ed8f8dd2) by @sonofmagic
+
+- 🐛 **为 `weapp-vite analyze` 增加 `--hmr-profile` 模式，可读取文件型热更新生成的 JSONL profile 并输出聚合后的阶段耗时、事件分布、dirty/pending 原因和最慢样本，方便开发者直接定位热更新慢点。** [`2d39c91`](https://github.com/weapp-vite/weapp-vite/commit/2d39c91ede8a4ed09e4a79e9479209eced1c18f1) by @sonofmagic
+
+- 🐛 **修复 `wevu` 的 `inject()` 缺失 key 行为：未传默认值且找不到 provider 时改为输出 warning 并返回 `undefined`，避免后续 setup 代码被异常阻断，并与 Vue 3 的依赖注入语义保持一致。** [#504](https://github.com/weapp-vite/weapp-vite/pull/504) by @sonofmagic
+
+- 🐛 **修复 `weapp auto-preview -p` 在微信开发者工具不在前台时可能无法唤起小程序预览的问题。现在 `auto-preview` 会在执行前先按同一项目定位信息唤起开发者工具，再继续运行官方自动预览命令，提升后台场景下的预览启动稳定性。** [#506](https://github.com/weapp-vite/weapp-vite/pull/506) by @sonofmagic
+
+- 🐛 **在 `weapp-vite ide logs` 启动日志桥前读取最近一次 HMR profile 样本，并输出简洁的热更新阶段摘要，帮助开发者在查看 IDE 日志前先看到最近一次文件型热更新的大致耗时与主耗时阶段。** [`6878cb9`](https://github.com/weapp-vite/weapp-vite/commit/6878cb93afce717100b89f6f3e2c24ed85b10e58) by @sonofmagic
+
+- 🐛 **修复开发态 HMR 的 shared chunk / snapshot emit 路径，约束最终 dist 产物统一来自 Vite 或 Rolldown 的原生 emit/write，避免通过手动写文件生成构建输出，并补齐相关回归测试与流程约束。** [`8dad804`](https://github.com/weapp-vite/weapp-vite/commit/8dad80499848e6827ce10be37818fb5ccd8a0eff) by @sonofmagic
+
+- 🐛 **补充开发态 HMR 日志分层开关：新增 `weapp.hmr.logLevel`，支持 `default`、`concise`、`verbose` 三档输出。默认仅展示总耗时，简洁与详细诊断只在显式开启时输出。** [`d157615`](https://github.com/weapp-vite/weapp-vite/commit/d157615436e43046517cddadf1336b1b788ea97d) by @sonofmagic
+
+- 🐛 **修复 ESM shared chunk 中 request runtime 安装代码覆盖第三方库同名局部变量的问题，并稳定微信开发者工具打开后的项目索引刷新流程。现在 request globals 共享安装阶段只同步运行时 actuals 与 `globalThis`，避免把 `Request`、`WebSocket` 等 Web API 绑定回写到 chunk 内部变量；同时 `wv open` / `wv dev --open` 会在打开后刷新项目、重置 fileutils 并在 HTTP engine build 端点缺失时回退到官方 CLI，减少模拟器首次启动时读取陈旧配置导致的 `subPackages` 异常。** [`471286e`](https://github.com/weapp-vite/weapp-vite/commit/471286ea43d918d07c0dd38058429987c0c335e1) by @sonofmagic
+
+- 🐛 **在 `dev` 快捷键的重开开发者工具动作中追加最近一次 HMR 摘要，让 `o` / `C` 热键执行后显示的“最近操作”同时带出文件型热更新的最近耗时与主耗时阶段。** [`d5921e5`](https://github.com/weapp-vite/weapp-vite/commit/d5921e59ebb68c391ea18c5eb7ef978506f026f8) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 模板中 `<slot />` 携带 `v-if` / `v-else-if` / `v-else` 时条件指令丢失的问题，确保编译到小程序模板后保留对应平台条件分支。** [#503](https://github.com/weapp-vite/weapp-vite/pull/503) by @sonofmagic
+
+- 🐛 **在 `weapp-vite open` 执行前也会读取最近一次 HMR profile 样本并输出简洁摘要，让手动重开开发者工具时同样能看到最近一次文件型热更新的耗时与主耗时阶段。** [`40933d1`](https://github.com/weapp-vite/weapp-vite/commit/40933d1bd66ca0e25cd8beff679a6b2d2833746e) by @sonofmagic
+
+- 🐛 **同步脚手架内置模板里的 Tailwind canonical class 写法，消除模板代码在编辑器中的 `suggestCanonicalClasses` 噪音，保持新建项目与仓库模板示例一致。** [#501](https://github.com/weapp-vite/weapp-vite/pull/501) by @sonofmagic
+
+- 🐛 **收紧开发态 HMR 默认日志的单行长度：压缩 `dirty/pending/emitted` 统计、简写原因摘要，并把滚动趋势缩减为 `avg/max`，减少频繁热更新时的终端噪音。** [`efa0bb0`](https://github.com/weapp-vite/weapp-vite/commit/efa0bb0f1a4d69d7d8ed6f101bf4ab5492fbde2d) by @sonofmagic
+
+- 🐛 **在开发态 HMR 慢样本提示里补充“疑似慢段”摘要，会优先指出 `watch->dirty`、`emit` 或 `shared` 哪一段相对近期均值回归最明显，帮助开发者在进入 `analyze --hmr-profile` 前先快速判断问题大致落点。** [`18f6f2d`](https://github.com/weapp-vite/weapp-vite/commit/18f6f2d5b210728c1f4f990040229000e7e9e283) by @sonofmagic
+
 ## 2.3.7
 
 ### Patch Changes
