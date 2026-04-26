@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.3.10
+
+### Patch Changes
+
+- 🐛 **修复 wevu provide/inject 在小程序运行时只能依赖 app 级 provide 的问题，对齐 Vue 3 的 app、layout、page、组件祖先链注入语义，并补充深层组件注入覆盖。** [#511](https://github.com/weapp-vite/weapp-vite/pull/511) by @sonofmagic
+
 ## 2.3.9
 
 ### Patch Changes
