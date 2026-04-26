@@ -547,6 +547,22 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain(`__wv-slot-props="{{{`)
   })
 
+  it('keeps structural directives on slot outlet elements', () => {
+    const template = `
+<slot v-if="abc" />
+<slot v-else-if="efg" />
+<slot v-else />
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/issue-502/index.vue')
+
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{abc}}"><slot`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elifAttr}="{{efg}}"><slot`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.elseAttr}><slot`)
+    expect(code).not.toContain('v-if')
+    expect(code).not.toContain('v-else')
+  })
+
   it('emits array-based slot scope mapping', () => {
     const template = `
 <Child v-for="(item, index) in list" :key="index">

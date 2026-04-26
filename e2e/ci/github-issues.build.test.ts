@@ -428,6 +428,23 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(pageJs).toContain('_runE2E')
   })
 
+  it('issue #502: keeps structural directives on slot outlet elements', async () => {
+    await runBuild()
+
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-502/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-502/index.js')
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+    const pageJs = await fs.readFile(pageJsPath, 'utf-8')
+
+    expect(pageWxml).toContain('issue-502 slot condition outlet')
+    expect(pageWxml).toContain('<block wx:if="{{abc}}"><slot />')
+    expect(pageWxml).toContain('<block wx:elif="{{efg}}"><slot />')
+    expect(pageWxml).toContain('<block wx:else><slot />')
+    expect(pageWxml).not.toContain('<slot /><slot /><slot />')
+    expect(pageJs).toContain('toggleBranch')
+    expect(pageJs).toContain('_runE2E')
+  })
+
   it('experiment: flex parent keeps projected multi-node slot groups visible via view wrappers', async () => {
     await runBuild()
 
