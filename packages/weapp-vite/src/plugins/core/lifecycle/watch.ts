@@ -14,15 +14,12 @@ import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/res
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
+import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
 import { collectAffectedEntries } from '../helpers'
 
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
-
-function isLayoutSourcePath(relativeSrc: string) {
-  return relativeSrc === 'layouts' || relativeSrc.startsWith('layouts/')
-}
 
 async function normalizeWatchEvent(id: string, event: ChangeEvent) {
   if (event !== 'delete') {

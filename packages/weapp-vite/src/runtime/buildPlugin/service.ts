@@ -19,6 +19,7 @@ import {
   watchedCssExts,
   watchedTemplateExts,
 } from '../../plugins/utils/invalidateEntry/shared'
+import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { findJsEntry, touch } from '../../utils/file'
 import { resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
@@ -531,7 +532,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         return undefined
       }
       const relativeSrc = configService.relativeAbsoluteSrcRoot(entryId)
-      if (relativeSrc === 'layouts' || relativeSrc.startsWith('layouts/')) {
+      if (isLayoutSourcePath(relativeSrc)) {
         return undefined
       }
       return entryId

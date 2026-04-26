@@ -3,16 +3,12 @@ import {
   WEVU_PARENT_INSTANCE_KEY,
   WEVU_RUNTIME_APP_KEY,
 } from '@weapp-core/constants'
+import { isRuntimeLayoutComponentTarget } from '../../layoutComponentMatcher'
 import { getCurrentMiniProgramPages } from '../../platform'
 import { attachRuntimeLayoutProvideContext, attachRuntimeProvideContext } from '../../provideContext'
 
-function isRuntimeLayoutTarget(target: InternalRuntimeState): boolean {
-  const componentPath = (target as any).is
-  return typeof componentPath === 'string' && componentPath.startsWith('layouts/')
-}
-
 function resolveRuntimeParentInstance(target: InternalRuntimeState): InternalRuntimeState | undefined {
-  if (isRuntimeLayoutTarget(target)) {
+  if (isRuntimeLayoutComponentTarget(target)) {
     return undefined
   }
 
@@ -48,7 +44,7 @@ function resolveRuntimeParentInstance(target: InternalRuntimeState): InternalRun
 }
 
 function attachRuntimeLayoutParentContext(target: InternalRuntimeState) {
-  if (!isRuntimeLayoutTarget(target)) {
+  if (!isRuntimeLayoutComponentTarget(target)) {
     return
   }
   const currentPage = getCurrentMiniProgramPages().at(-1) as InternalRuntimeState | undefined
