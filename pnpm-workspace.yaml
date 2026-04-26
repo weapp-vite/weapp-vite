@@ -64,7 +64,7 @@ catalog:
   oxc-walker: ^0.7.0
   pathe: ^2.0.3
   pkg-types: ^2.3.0
-  postcss: ^8.5.10
+  postcss: ^8.5.12
   rolldown: 1.0.0-rc.17
   sass: ^1.99.0
   sass-embedded: ^1.99.0
