@@ -24,6 +24,7 @@ interface ScenarioCase {
   label: string
   sourceFile: string
   outputFile: string
+  expectedMarker?: (marker: string) => string
   mutate: (original: string, marker: string) => string
 }
 
@@ -42,8 +43,9 @@ interface ScenarioResult {
   file: string
   outputFile: string
   samples: HmrProfileJsonSample[]
-  averageMs: number
-  maxMs: number
+  averageMs?: number
+  maxMs?: number
+  error?: string
   averageBuildCoreMs?: number
   averageWatchToDirtyMs?: number
   averageTransformMs?: number
@@ -54,16 +56,18 @@ interface ScenarioResult {
 interface BenchmarkResult {
   name: string
   source: string
-  startupMs: number
+  startupMs?: number
   scenarios: ScenarioResult[]
-  averageMs: number
-  maxMs: number
+  averageMs?: number
+  maxMs?: number
+  error?: string
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(__dirname, '..')
-const cliPath = path.join(repoRoot, 'packages/weapp-vite/bin/weapp-vite.js')
-const reportRoot = path.join(repoRoot, '.tmp/template-hmr-bench')
+const repoRoot = path.resolve(process.env.TEMPLATE_HMR_REPO_ROOT ?? path.resolve(__dirname, '..'))
+const cliPath = path.resolve(process.env.TEMPLATE_HMR_CLI_PATH ?? path.join(repoRoot, 'packages/weapp-vite/bin/weapp-vite.js'))
+const nodeImport = process.env.TEMPLATE_HMR_NODE_IMPORT?.trim()
+const reportRoot = path.resolve(process.env.TEMPLATE_HMR_REPORT_DIR ?? path.join(repoRoot, '.tmp/template-hmr-bench'))
 const reportJsonPath = path.join(reportRoot, 'report.json')
 const reportMdPath = path.join(reportRoot, 'report.md')
 const iterations = Number.parseInt(process.env.TEMPLATE_HMR_ITERATIONS ?? '3', 10)
@@ -100,6 +104,7 @@ const PROJECTS: ProjectCase[] = [
         label: 'native style',
         sourceFile: path.join(repoRoot, 'e2e-apps/wevu-runtime-e2e/src/pages/hmr/index.wxss'),
         outputFile: path.join(repoRoot, 'e2e-apps/wevu-runtime-e2e/dist/pages/hmr/index.wxss'),
+        expectedMarker: marker => toCssIdent(marker),
         mutate: (original, marker) => `${stripTrailingMarker(original)}\n.hmr-bench-${toCssIdent(marker)} { color: #0f766e; }\n`,
       },
       {
@@ -121,6 +126,7 @@ const PROJECTS: ProjectCase[] = [
         label: 'vue style',
         sourceFile: path.join(repoRoot, 'e2e-apps/wevu-runtime-e2e/src/pages/hmr-sfc/index.vue'),
         outputFile: path.join(repoRoot, 'e2e-apps/wevu-runtime-e2e/dist/pages/hmr-sfc/index.wxss'),
+        expectedMarker: marker => toCssIdent(marker),
         mutate: (original, marker) => original.replace('/* HMR-SFC-STYLE */', `.hmr-bench-${toCssIdent(marker)} { color: #1677ff; }`),
       },
     ],
@@ -152,6 +158,7 @@ const PROJECTS: ProjectCase[] = [
         label: 'layout style',
         sourceFile: path.join(repoRoot, 'e2e-apps/github-issues/src/pages/issue-398/index.vue'),
         outputFile: path.join(repoRoot, 'e2e-apps/github-issues/dist/pages/issue-398/index.wxss'),
+        expectedMarker: marker => toCssIdent(marker),
         mutate: (original, marker) => original.replace('</style>', `.issue-398-page__bench-${toCssIdent(marker)} { color: #52c41a; }\n</style>`),
       },
     ],
@@ -196,7 +203,14 @@ async function main() {
 
   for (const project of selectedProjects) {
     process.stdout.write(`\n[template-hmr] benchmarking ${project.id}\n`)
-    results.push(await benchmarkProject(project))
+    try {
+      results.push(await benchmarkProject(project))
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      process.stderr.write(`[template-hmr] project failed: ${project.id}: ${message}\n`)
+      results.push(createFailedProjectResult(project, message))
+    }
   }
 
   const report = {
@@ -214,6 +228,15 @@ async function main() {
   process.stdout.write(`[template-hmr] report.md -> ${reportMdPath}\n`)
 }
 
+function createFailedProjectResult(project: ProjectCase, error: string): BenchmarkResult {
+  return {
+    name: project.id,
+    source: formatReportPath(project.projectRoot),
+    scenarios: project.scenarios.map(scenario => createFailedScenarioResult(scenario, 'project failed before scenario benchmark')),
+    error,
+  }
+}
+
 async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> {
   const profilePath = path.join(project.projectRoot, '.weapp-vite/hmr-profile.jsonl')
   const sourceBackups = new Map<string, string>()
@@ -228,8 +251,7 @@ async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> 
   await rm(profilePath, { force: true }).catch(() => {})
 
   const dev = startDevProcess(process.execPath, [
-    '--import',
-    'tsx',
+    ...createNodeImportArgs(),
     cliPath,
     'dev',
     normalizePath(path.relative(repoRoot, project.projectRoot)),
@@ -270,11 +292,18 @@ async function benchmarkProject(project: ProjectCase): Promise<BenchmarkResult> 
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of project.scenarios) {
-      scenarioResults.push(await benchmarkScenario({
-        projectId: project.id,
-        profilePath,
-        scenario,
-      }))
+      try {
+        scenarioResults.push(await benchmarkScenario({
+          projectId: project.id,
+          profilePath,
+          scenario,
+        }))
+      }
+      catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        process.stderr.write(`[template-hmr] scenario failed: ${project.id}/${scenario.id}: ${message}\n`)
+        scenarioResults.push(createFailedScenarioResult(scenario, message))
+      }
     }
 
     const totalValues = scenarioResults.flatMap(item => item.samples.map(sample => sample.totalMs ?? 0))
@@ -304,30 +333,35 @@ async function benchmarkScenario(options: {
   const original = await readFile(scenario.sourceFile, 'utf8')
   const samples: HmrProfileJsonSample[] = []
 
-  for (let index = 0; index < iterations; index += 1) {
-    const marker = createMarker(projectId, scenario.id, index)
-    const profileLineCount = await countJsonlLines(profilePath)
-    const current = scenario.mutate(original, marker)
-    debugLog(`scenario=${scenario.id} iteration=${index + 1}: mutate ${normalizePath(scenario.sourceFile)}`)
-    const startedAt = performance.now()
-    await replaceFileByRename(scenario.sourceFile, current)
-    await waitForFileContainsWithHeartbeat(scenario.outputFile, marker, scenario.sourceFile, current)
-    const totalMs = performance.now() - startedAt
-    const profileSample = await waitForHmrProfileSample(profilePath, scenario.sourceFile, profileLineCount, 1_500)
-    samples.push({
-      file: normalizePath(scenario.sourceFile),
-      totalMs,
-      ...profileSample,
-      totalMs: profileSample.totalMs ?? totalMs,
-    })
+  try {
+    for (let index = 0; index < iterations; index += 1) {
+      const marker = createMarker(projectId, scenario.id, index)
+      const expectedMarker = scenario.expectedMarker?.(marker) ?? marker
+      const profileLineCount = await countJsonlLines(profilePath)
+      const current = scenario.mutate(original, marker)
+      debugLog(`scenario=${scenario.id} iteration=${index + 1}: mutate ${normalizePath(scenario.sourceFile)}`)
+      const startedAt = performance.now()
+      await replaceFileByRename(scenario.sourceFile, current)
+      await waitForFileContainsWithHeartbeat(scenario.outputFile, expectedMarker, scenario.sourceFile, current)
+      const totalMs = performance.now() - startedAt
+      const profileSample = await waitForHmrProfileSample(profilePath, scenario.sourceFile, profileLineCount, 1_500)
+      samples.push({
+        file: formatReportPath(scenario.sourceFile),
+        totalMs,
+        ...profileSample,
+        file: formatReportPath(profileSample.file ?? scenario.sourceFile),
+        totalMs: profileSample.totalMs ?? totalMs,
+      })
+    }
   }
-
-  await replaceFileByRename(scenario.sourceFile, original)
+  finally {
+    await replaceFileByRename(scenario.sourceFile, original)
+  }
 
   return {
     scenario: scenario.label,
-    file: normalizePath(scenario.sourceFile),
-    outputFile: normalizePath(scenario.outputFile),
+    file: formatReportPath(scenario.sourceFile),
+    outputFile: formatReportPath(scenario.outputFile),
     samples,
     averageMs: average(samples.map(sample => sample.totalMs ?? 0)),
     maxMs: max(samples.map(sample => sample.totalMs ?? 0)),
@@ -336,6 +370,16 @@ async function benchmarkScenario(options: {
     averageTransformMs: averageOptional(samples.map(sample => sample.transformMs)),
     averageWriteMs: averageOptional(samples.map(sample => sample.writeMs)),
     averageEmitMs: averageOptional(samples.map(sample => sample.emitMs)),
+  }
+}
+
+function createFailedScenarioResult(scenario: ScenarioCase, error: string): ScenarioResult {
+  return {
+    scenario: scenario.label,
+    file: formatReportPath(scenario.sourceFile),
+    outputFile: formatReportPath(scenario.outputFile),
+    samples: [],
+    error,
   }
 }
 
@@ -425,7 +469,7 @@ async function waitForHmrProfileSample(
 ) {
   if (!(await pathExists(profilePath))) {
     return {
-      file: normalizePath(sourceFile),
+      file: formatReportPath(sourceFile),
     } satisfies HmrProfileJsonSample
   }
 
@@ -442,7 +486,7 @@ async function waitForHmrProfileSample(
   }
 
   return {
-    file: normalizedSourceFile,
+    file: formatReportPath(normalizedSourceFile),
   } satisfies HmrProfileJsonSample
 }
 
@@ -495,6 +539,21 @@ function normalizePath(value: string | undefined) {
   return (value ?? '').replaceAll('\\', '/')
 }
 
+function formatReportPath(value: string | undefined) {
+  const normalized = normalizePath(value)
+  if (!normalized) {
+    return normalized
+  }
+  const relative = normalizePath(path.relative(repoRoot, normalized))
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative)
+    ? relative
+    : normalized
+}
+
+function createNodeImportArgs() {
+  return nodeImport ? ['--import', nodeImport] : []
+}
+
 function stripTrailingMarker(source: string) {
   return source
     .replace(/\n?const __hmrBenchScriptMarker = '.*?'\n?$/g, '\n')
@@ -536,6 +595,10 @@ function max(values: number[]) {
   return Math.max(...values)
 }
 
+function comparableMs(value: number | undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
 function formatMs(value: number | undefined) {
   if (value === undefined || !Number.isFinite(value)) {
     return '-'
@@ -570,7 +633,7 @@ function renderMarkdown(results: BenchmarkResult[]) {
   ]
 
   for (const item of results) {
-    const slowestScenario = [...item.scenarios].sort((left, right) => right.averageMs - left.averageMs)[0]
+    const slowestScenario = [...item.scenarios].sort((left, right) => comparableMs(right.averageMs) - comparableMs(left.averageMs))[0]
     lines.push(
       `| ${item.name} | ${formatMs(item.startupMs)} | ${formatMs(item.averageMs)} | ${formatMs(item.maxMs)} | ${slowestScenario?.scenario ?? '-'} |`,
     )
@@ -582,17 +645,24 @@ function renderMarkdown(results: BenchmarkResult[]) {
     lines.push('')
     lines.push(`- source: ${item.source}`)
     lines.push(`- startup: ${formatMs(item.startupMs)}`)
+    if (item.error) {
+      lines.push(`- status: failed: ${item.error.replaceAll('\n', ' ')}`)
+    }
     lines.push('')
-    lines.push('| scenario | avg total | max total | avg build-core | avg watch->dirty | avg transform | avg write | avg emit |')
-    lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |')
+    lines.push('| scenario | avg total | max total | avg build-core | avg watch->dirty | avg transform | avg write | avg emit | status |')
+    lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |')
     for (const scenario of item.scenarios) {
       lines.push(
-        `| ${scenario.scenario} | ${formatMs(scenario.averageMs)} | ${formatMs(scenario.maxMs)} | ${formatMs(scenario.averageBuildCoreMs)} | ${formatMs(scenario.averageWatchToDirtyMs)} | ${formatMs(scenario.averageTransformMs)} | ${formatMs(scenario.averageWriteMs)} | ${formatMs(scenario.averageEmitMs)} |`,
+        `| ${scenario.scenario} | ${formatMs(scenario.averageMs)} | ${formatMs(scenario.maxMs)} | ${formatMs(scenario.averageBuildCoreMs)} | ${formatMs(scenario.averageWatchToDirtyMs)} | ${formatMs(scenario.averageTransformMs)} | ${formatMs(scenario.averageWriteMs)} | ${formatMs(scenario.averageEmitMs)} | ${scenario.error ? `failed: ${escapeMarkdownTableCell(scenario.error)}` : 'ok'} |`,
       )
     }
   }
 
   return `${lines.join('\n')}\n`
+}
+
+function escapeMarkdownTableCell(value: string) {
+  return value.replaceAll('|', '\\|').replaceAll('\n', '<br>')
 }
 
 void main().catch((error) => {
