@@ -210,9 +210,17 @@ describe.sequential('e2e app: wevu-features / behavior', () => {
 
       const provideScopeWxml = await readPageWxml(provideInjectScopePage)
       expect(provideScopeWxml).toContain('page provide = page-provide-value')
-      expect(provideScopeWxml).toContain('app inject = app-provide-value')
-      expect(provideScopeWxml).toContain('page inject = missing-page')
-      expect(provideScopeWxml).toContain('app=app-provide-value; page=missing-page')
+      expect(provideScopeWxml).toContain('layout provide = layout-provide-value')
+      expect(provideScopeWxml).toContain('layout app instance inject = app-instance-provide-value')
+      expect(provideScopeWxml).toContain('layout app setup inject = app-setup-provide-value')
+      expect(provideScopeWxml).toContain('layout own inject = layout-provide-value')
+      expect(provideScopeWxml).toContain('app instance inject = app-instance-provide-value')
+      expect(provideScopeWxml).toContain('app setup inject = app-setup-provide-value')
+      expect(provideScopeWxml).toContain('page inject = page-provide-value')
+      expect(provideScopeWxml).toContain('layout inject = layout-provide-value')
+      expect(provideScopeWxml).toContain('component inject = component-provide-value')
+      expect(provideScopeWxml).toContain('shadow inject = component-shadow-value')
+      expect(provideScopeWxml).toContain('appInstance=app-instance-provide-value; appSetup=app-setup-provide-value; page=page-provide-value; layout=layout-provide-value; component=component-provide-value; shadow=component-shadow-value')
 
       const storePage = await relaunchPage(miniProgram, '/pages/use-store/index', 'wevu store 特性展示')
       if (!storePage) {

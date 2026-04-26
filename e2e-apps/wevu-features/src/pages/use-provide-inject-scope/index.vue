@@ -3,8 +3,14 @@ import { provide } from 'wevu'
 import ProvideInjectScopeMiddle from '../../components/provide-inject-scope-middle/index.vue'
 
 const PAGE_PROVIDE_SCOPE_KEY = 'wevu-features:page-provide-scope'
+const SHADOW_PROVIDE_SCOPE_KEY = 'wevu-features:shadow-provide-scope'
+
+definePageMeta({
+  layout: 'provide-inject-scope',
+})
 
 provide(PAGE_PROVIDE_SCOPE_KEY, 'page-provide-value')
+provide(SHADOW_PROVIDE_SCOPE_KEY, 'page-shadow-value')
 </script>
 
 <template>

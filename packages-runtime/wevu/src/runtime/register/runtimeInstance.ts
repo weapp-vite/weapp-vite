@@ -19,7 +19,6 @@ import {
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
   WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
-  WEVU_RUNTIME_APP_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
@@ -28,6 +27,7 @@ import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pag
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
+import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
 import {
   createNoopWatchStopHandle,
   safeMarkNoSetData,
@@ -95,7 +95,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
-  target[WEVU_RUNTIME_APP_KEY] = runtimeApp as RuntimeApp<any, any, any>
+  attachRuntimeProvideParentContext(target, runtimeApp as RuntimeApp<any, any, any>)
   safeMarkNoSetData(target)
   const ownerId = allocateOwnerId()
   const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
