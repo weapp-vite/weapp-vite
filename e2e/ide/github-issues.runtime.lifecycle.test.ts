@@ -843,6 +843,36 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     }
   })
 
+  it('issue #500: missing inject warns without blocking later setup code in DevTools runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-500/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-500/index.js')
+
+    expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-500 inject missing key continuation')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('issue-500:missing-token')
+    expect(await fs.readFile(issuePageJsPath, 'utf-8')).toContain('_runE2E')
+
+    const miniProgram = await launchFreshMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-500/index', 'inject after line: continued')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-500 page')
+      }
+
+      const runtime = await issuePage.callMethod('_runE2E')
+      expect(runtime?.ok).toBe(true)
+      expect(runtime?.continuationText).toBe('continued')
+      expect(runtime?.missingType).toBe('undefined')
+
+      const wxml = await readPageWxml(issuePage)
+      expect(wxml).toContain('data-continuation="continued"')
+      expect(wxml).toContain('data-missing-type="undefined"')
+      expect(wxml).toContain('inject after line: continued')
+    }
+    finally {
+      await miniProgram.close().catch(() => {})
+    }
+  })
+
   it('experiment: flex parent keeps projected multi-node slot groups visible in DevTools runtime', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/slot-flex-layout/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/slot-flex-layout/index.js')

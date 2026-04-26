@@ -161,7 +161,7 @@ defineComponent({
     const injected = inject<number>(TOKEN, 0)
     expectType<number>(injected)
     provide(TOKEN, props.count)
-    expectType<number>(inject<number>(TOKEN))
+    expectType<number | undefined>(inject<number>(TOKEN))
     const readonlyProps = shallowReadonly(props)
     expectType<string | undefined>(readonlyProps.title)
     onMounted(() => {})

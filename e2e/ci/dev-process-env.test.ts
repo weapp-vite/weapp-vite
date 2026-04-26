@@ -27,10 +27,30 @@ function createMockChild() {
   })
 }
 
+function createPendingMockChild() {
+  const promise = new Promise(() => {})
+
+  return Object.assign(promise, {
+    exitCode: null,
+    kill: vi.fn(),
+    pid: 12345,
+    stdout: new EventEmitter(),
+    stderr: new EventEmitter(),
+    all: new EventEmitter(),
+  })
+}
+
 describe('dev process env isolation', () => {
+  const originalPlatform = process.platform
+
   afterEach(() => {
     vi.clearAllMocks()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
     vi.unstubAllEnvs()
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+    })
   })
 
   it('removes ci and vitest-specific env flags from child dev processes', async () => {
@@ -82,5 +102,60 @@ describe('dev process env isolation', () => {
       env,
       extendEnv: false,
     }))
+  })
+
+  it('stops windows package-script dev processes with taskkill without waiting forever', async () => {
+    vi.useFakeTimers()
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+    })
+
+    const child = createPendingMockChild()
+    execaMock.mockImplementation((command: string) => {
+      if (command === 'taskkill') {
+        return Promise.resolve({
+          exitCode: 0,
+          signal: undefined,
+        })
+      }
+
+      return child
+    })
+
+    let isFirstPidCheck = true
+    vi.spyOn(process, 'kill').mockImplementation(((pid: number, signal?: NodeJS.Signals | 0) => {
+      if (pid === 12345 && signal === 0 && isFirstPidCheck) {
+        isFirstPidCheck = false
+        return true
+      }
+
+      if (pid === 12345 && signal === 0) {
+        const error = new Error('process is gone') as NodeJS.ErrnoException
+        error.code = 'ESRCH'
+        throw error
+      }
+
+      return true
+    }) as typeof process.kill)
+
+    const { startDevProcess } = await import('../utils/dev-process')
+    const dev = startDevProcess('pnpm', ['--dir', 'fixtures/app', 'run', 'dev'], {
+      all: true,
+      env: {
+        PATH: process.env.PATH ?? '',
+      },
+    })
+
+    const stopPromise = dev.stop(100)
+    await vi.advanceTimersByTimeAsync(1_100)
+    await stopPromise
+
+    expect(execaMock).toHaveBeenCalledWith('taskkill', ['/PID', '12345', '/T', '/F'], expect.objectContaining({
+      reject: false,
+      stdin: 'ignore',
+      stdout: 'ignore',
+      stderr: 'ignore',
+    }))
+    expect(child.kill).not.toHaveBeenCalled()
   })
 })

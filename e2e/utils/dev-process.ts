@@ -122,8 +122,31 @@ function collectProcessTreePids(rootPid: number, processList: ProcessEntry[]) {
   return orderedPids
 }
 
+async function terminateWindowsPid(pid: number, forceKillDelayMs: number) {
+  await execa('taskkill', ['/PID', String(pid), '/T', '/F'], {
+    reject: false,
+    stdin: 'ignore',
+    stdout: 'ignore',
+    stderr: 'ignore',
+  })
+
+  const deadline = Date.now() + forceKillDelayMs
+  while (Date.now() < deadline) {
+    if (!isPidAlive(pid)) {
+      return
+    }
+    await sleep(100)
+  }
+}
+
 async function terminatePid(pid: number, forceKillDelayMs: number) {
   if (!isPidAlive(pid)) {
+    TRACKED_DEV_PIDS.delete(pid)
+    return
+  }
+
+  if (process.platform === 'win32') {
+    await terminateWindowsPid(pid, forceKillDelayMs)
     TRACKED_DEV_PIDS.delete(pid)
     return
   }
@@ -161,6 +184,16 @@ async function terminatePid(pid: number, forceKillDelayMs: number) {
   catch {}
 
   TRACKED_DEV_PIDS.delete(pid)
+}
+
+async function waitForExitWithTimeout(
+  settledExit: Promise<DevProcessExitInfo>,
+  timeoutMs: number,
+) {
+  await Promise.race([
+    settledExit,
+    sleep(timeoutMs),
+  ])
 }
 
 export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
@@ -289,7 +322,7 @@ export function startDevProcess(
     else if (child.exitCode == null) {
       child.kill('SIGTERM')
     }
-    await settledExit
+    await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
   }
 
   return {

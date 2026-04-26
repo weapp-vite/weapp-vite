@@ -267,6 +267,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-500/index",
+          "pathName": "pages/issue-500/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/issue-502/index",
           "pathName": "pages/issue-502/index",
           "query": "",
