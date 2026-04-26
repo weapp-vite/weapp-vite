@@ -203,6 +203,17 @@ describe.sequential('e2e app: wevu-features / behavior', () => {
       const provideAfterClass = await readClassName(provideInjectPage, '#provide-state')
       expect(provideAfterClass).toContain('theme-teal')
 
+      const provideInjectScopePage = await relaunchPage(miniProgram, '/pages/use-provide-inject-scope/index', 'wevu provide / inject 深层作用域复现')
+      if (!provideInjectScopePage) {
+        throw new Error('Failed to launch use-provide-inject-scope page')
+      }
+
+      const provideScopeWxml = await readPageWxml(provideInjectScopePage)
+      expect(provideScopeWxml).toContain('page provide = page-provide-value')
+      expect(provideScopeWxml).toContain('app inject = app-provide-value')
+      expect(provideScopeWxml).toContain('page inject = missing-page')
+      expect(provideScopeWxml).toContain('app=app-provide-value; page=missing-page')
+
       const storePage = await relaunchPage(miniProgram, '/pages/use-store/index', 'wevu store 特性展示')
       if (!storePage) {
         throw new Error('Failed to launch use-store page')

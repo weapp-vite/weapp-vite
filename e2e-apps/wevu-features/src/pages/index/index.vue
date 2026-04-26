@@ -25,6 +25,12 @@ const featureList = [
     path: '/pages/use-provide-inject/index',
   },
   {
+    key: 'provideInjectScope',
+    title: 'provide / inject scope',
+    summary: '复现页面级 provide 与 App 级 provide 的深层 inject 差异',
+    path: '/pages/use-provide-inject-scope/index',
+  },
+  {
     key: 'store',
     title: 'store',
     summary: '展示 setup/options store 与 patch/reset/订阅能力',

@@ -54,6 +54,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
       'pages/subpath-entries/index',
       'pages/use-attrs/index',
       'pages/use-model/index',
+      'pages/use-provide-inject-scope/index',
       'pages/use-provide-inject/index',
       'pages/use-slots/index',
       'pages/use-store/index',
@@ -76,6 +77,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(indexJs).toContain('/pages/use-slots/index')
     expect(indexJs).toContain('/pages/use-model/index')
     expect(indexJs).toContain('/pages/use-provide-inject/index')
+    expect(indexJs).toContain('/pages/use-provide-inject-scope/index')
     expect(indexJs).toContain('/pages/use-store/index')
     expect(indexJs).toContain('/pages/subpath-entries/index')
     expect(indexJs).toContain('/pages/router-showcase/index')
@@ -86,6 +88,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(indexJs).toContain('useSlots')
     expect(indexJs).toContain('useModel')
     expect(indexJs).toContain('provide / inject')
+    expect(indexJs).toContain('provide / inject scope')
     expect(indexJs).toContain('store')
     expect(indexJs).toContain('subpath entries')
     expect(indexJs).toContain('router showcase')
@@ -122,6 +125,8 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useProvideInjectPageWxmlPath = path.join(DIST_ROOT, 'pages/use-provide-inject/index.wxml')
     const useProvideInjectPageJsPath = path.join(DIST_ROOT, 'pages/use-provide-inject/index.js')
     const useProvideInjectFeatureWxmlPath = path.join(DIST_ROOT, 'components/use-provide-inject-feature/index.wxml')
+    const useProvideInjectScopePageWxmlPath = path.join(DIST_ROOT, 'pages/use-provide-inject-scope/index.wxml')
+    const useProvideInjectScopeLeafWxmlPath = path.join(DIST_ROOT, 'components/provide-inject-scope-leaf/index.wxml')
     const useStorePageWxmlPath = path.join(DIST_ROOT, 'pages/use-store/index.wxml')
     const useStorePageJsPath = path.join(DIST_ROOT, 'pages/use-store/index.js')
     const subpathEntriesPageWxmlPath = path.join(DIST_ROOT, 'pages/subpath-entries/index.wxml')
@@ -157,6 +162,8 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(await fs.pathExists(useProvideInjectPageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useProvideInjectPageJsPath)).toBe(true)
     expect(await fs.pathExists(useProvideInjectFeatureWxmlPath)).toBe(true)
+    expect(await fs.pathExists(useProvideInjectScopePageWxmlPath)).toBe(true)
+    expect(await fs.pathExists(useProvideInjectScopeLeafWxmlPath)).toBe(true)
     expect(await fs.pathExists(useStorePageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useStorePageJsPath)).toBe(true)
     expect(await fs.pathExists(subpathEntriesPageWxmlPath)).toBe(true)
@@ -192,6 +199,8 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useProvideInjectPageWxml = await fs.readFile(useProvideInjectPageWxmlPath, 'utf8')
     const useProvideInjectPageJs = await fs.readFile(useProvideInjectPageJsPath, 'utf8')
     const useProvideInjectFeatureWxml = await fs.readFile(useProvideInjectFeatureWxmlPath, 'utf8')
+    const useProvideInjectScopePageWxml = await fs.readFile(useProvideInjectScopePageWxmlPath, 'utf8')
+    const useProvideInjectScopeLeafWxml = await fs.readFile(useProvideInjectScopeLeafWxmlPath, 'utf8')
     const useStorePageWxml = await fs.readFile(useStorePageWxmlPath, 'utf8')
     const useStorePageJs = await fs.readFile(useStorePageJsPath, 'utf8')
     const subpathEntriesPageWxml = await fs.readFile(subpathEntriesPageWxmlPath, 'utf8')
@@ -248,6 +257,10 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(useProvideInjectFeatureWxml).toContain('id="inject-panel"')
     expect(useProvideInjectFeatureWxml).toContain('id="inject-inc"')
     expect(useProvideInjectFeatureWxml).toContain('id="inject-toggle-theme"')
+    expect(useProvideInjectScopePageWxml).toContain('<ProvideInjectScopeMiddle')
+    expect(useProvideInjectScopeLeafWxml).toContain('id="scope-app-value"')
+    expect(useProvideInjectScopeLeafWxml).toContain('id="scope-page-value"')
+    expect(useProvideInjectScopeLeafWxml).toContain('id="scope-summary"')
 
     expect(useStorePageWxml).toContain('id="store-plugin-records"')
     expect(useStorePageWxml).toContain('id="store-subscribe-count"')

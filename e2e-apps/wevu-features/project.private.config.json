@@ -57,6 +57,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/use-provide-inject-scope/index",
+          "pathName": "pages/use-provide-inject-scope/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/use-store/index",
           "pathName": "pages/use-store/index",
           "query": "",
