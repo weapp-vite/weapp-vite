@@ -9,6 +9,7 @@ import { collectElementAttributes } from './attrs'
 import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, withForScope, withScope } from './helpers'
 import { transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
+import { transformSlotElement } from './tag-slot'
 
 const REGEX_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g
 
@@ -39,9 +40,11 @@ export function transformIfElement(node: ElementNode, context: TransformContext,
   const templateSlotChildren = elementWithoutIf.children.filter(
     child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
   )
-  const content = slotDirective || templateSlotChildren.length > 0
-    ? transformComponentWithSlots(elementWithoutIf as ElementNode, context, transformNode)
-    : transformNormalElement(elementWithoutIf as ElementNode, context, transformNode)
+  const content = elementWithoutIf.tag === 'slot'
+    ? transformSlotElement(elementWithoutIf as ElementNode, context, transformNode)
+    : slotDirective || templateSlotChildren.length > 0
+      ? transformComponentWithSlots(elementWithoutIf as ElementNode, context, transformNode)
+      : transformNormalElement(elementWithoutIf as ElementNode, context, transformNode)
 
   const dir = ifDirective as DirectiveNode
   if (dir.name === 'if' && dir.exp) {
