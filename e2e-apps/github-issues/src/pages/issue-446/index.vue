@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef } from 'wevu'
-import ShortBindProbe from '../../components/issue-446/ShortBindProbe/index.vue'
 
 definePageJson({
   navigationBarTitleText: 'issue-446',
