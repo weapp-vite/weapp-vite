@@ -1,4 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- IDE e2e 测试需要 execa 驱动准备脚本。 */
+import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
@@ -7,7 +8,7 @@ import { runtimeBaseRoutes } from '../chunk-modes.matrix'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import {
   cleanDevtoolsCache,
-  cleanupResidualDevtoolsProcesses,
+  cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
@@ -16,6 +17,7 @@ const DIST_MATRIX_ROOT = path.join(APP_ROOT, 'dist-matrix')
 const LEADING_SLASHES_RE = /^\/+/
 const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 const CHUNK_MODES_RUNTIME_CASE_TIMEOUT = 4 * 60_000
+const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 
 interface RuntimeRouteCase {
   route: string
@@ -34,6 +36,40 @@ let sharedLaunchInfraUnavailableMessage: string | null = null
 
 async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let settled = false
+  const task = Promise.resolve()
+    .then(factory)
+    .then((value) => {
+      settled = true
+      return value
+    })
+    .catch((error) => {
+      settled = true
+      throw error
+    })
+
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    if (!settled) {
+      void task.catch(() => {})
+    }
+  }
 }
 
 function normalizeRoutePath(routePath: string) {
@@ -107,7 +143,11 @@ async function relaunchPage(miniProgram: any, route: string, readyText?: string,
   for (let attempt = 0; attempt < 5; attempt += 1) {
     let page: any = null
     try {
-      page = await miniProgram.reLaunch(route)
+      page = await runWithTimeout(
+        () => miniProgram.reLaunch(route),
+        timeoutMs,
+        `chunk-modes reLaunch ${route}#${attempt + 1}`,
+      )
     }
     catch {
       await delay(280)
@@ -130,8 +170,19 @@ async function relaunchPage(miniProgram: any, route: string, readyText?: string,
   return null
 }
 
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close().catch(() => {})
+}
+
 async function prepareScenarioProject(runtimeCase: RuntimeMatrixCase) {
   const scenarioRoot = path.join(DIST_MATRIX_ROOT, runtimeCase.id)
+  await closeSharedMiniProgram()
+  await cleanupResidualIdeProcesses()
   await fs.remove(scenarioRoot)
 
   const result = await execa('node', [
@@ -151,14 +202,22 @@ async function prepareScenarioProject(runtimeCase: RuntimeMatrixCase) {
   return scenarioRoot
 }
 
-async function getSharedMiniProgram(projectPath: string, ctx?: { skip: (message?: string) => void }) {
+async function getSharedMiniProgram(
+  projectPath: string,
+  ctx?: { skip: (message?: string) => void },
+  options: { skipWarmup?: boolean } = {},
+) {
   if (sharedLaunchInfraUnavailableMessage) {
     ctx?.skip(sharedLaunchInfraUnavailableMessage)
     throw new Error(sharedLaunchInfraUnavailableMessage)
   }
 
   if (!sharedMiniProgram) {
+    const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
     try {
+      if (options.skipWarmup) {
+        process.env[AUTOMATOR_SKIP_WARMUP_ENV] = '1'
+      }
       sharedMiniProgram = await launchAutomator({
         projectPath,
         timeout: 60_000,
@@ -173,24 +232,24 @@ async function getSharedMiniProgram(projectPath: string, ctx?: { skip: (message?
       }
       throw error
     }
+    finally {
+      if (previousSkipWarmup == null) {
+        delete process.env[AUTOMATOR_SKIP_WARMUP_ENV]
+      }
+      else {
+        process.env[AUTOMATOR_SKIP_WARMUP_ENV] = previousSkipWarmup
+      }
+    }
   }
 
   return sharedMiniProgram
 }
 
-async function closeSharedMiniProgram() {
-  if (!sharedMiniProgram) {
-    return
-  }
-  const miniProgram = sharedMiniProgram
-  sharedMiniProgram = null
-  await miniProgram.close().catch(() => {})
-}
-
 async function resetDevtoolsProjectState(projectPath: string) {
   await closeSharedMiniProgram()
-  await cleanDevtoolsCache('compile', { cwd: projectPath }).catch(() => {})
-  await cleanupResidualDevtoolsProcesses()
+  // chunk mode 会连续切换共享 chunk 拓扑；只清 compile cache 时，DevTools 仍可能沿用旧项目索引启动模拟器。
+  await cleanDevtoolsCache('all', { cwd: projectPath }).catch(() => {})
+  await cleanupResidualIdeProcesses()
 }
 
 export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: RuntimeMatrixCase[]) {
@@ -204,7 +263,9 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
         const projectPath = await prepareScenarioProject(runtimeCase)
         await resetDevtoolsProjectState(projectPath)
 
-        const miniProgram = await getSharedMiniProgram(projectPath, ctx)
+        const miniProgram = await getSharedMiniProgram(projectPath, ctx, {
+          skipWarmup: !runtimeCase.id.startsWith('hoist-'),
+        })
 
         for (const routeCase of runtimeCase.routes) {
           const page = await relaunchPage(miniProgram, routeCase.route, routeCase.readyText)
