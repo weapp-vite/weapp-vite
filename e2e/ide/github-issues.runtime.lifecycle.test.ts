@@ -259,12 +259,12 @@ async function waitForIssue446Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue479Runtime(page: any, timeoutMs = 20_000) {
+async function waitForIssue479PullRuntime(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
       const runtime = await callPageMethodWithTimeout(page, '_runE2E')
-      if (runtime?.hasPull && runtime?.hasBottom) {
+      if (runtime?.hasPull) {
         return runtime
       }
     }
@@ -281,12 +281,12 @@ async function waitForIssue479Runtime(page: any, timeoutMs = 20_000) {
   return null
 }
 
-async function waitForIssue479PullRuntime(page: any, timeoutMs = 20_000) {
+async function waitForIssue479BottomRuntime(page: any, timeoutMs = 20_000) {
   const startedAt = Date.now()
   while (Date.now() - startedAt <= timeoutMs) {
     try {
       const runtime = await callPageMethodWithTimeout(page, '_runE2E')
-      if (runtime?.hasPull) {
+      if (runtime?.hasBottom) {
         return runtime
       }
     }
@@ -707,12 +707,7 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
     }
   })
 
-  // DevTools automator 限制：
-  // 1. miniProgram.pageScrollTo() 能把页面 scrollTop 推到真实底部；
-  // 2. 但程序化滚动不会派发 onReachBottom；
-  // 3. page 根节点的 touchstart/touchmove/touchend 也不会驱动页面滚动。
-  // 在没有“真实用户上拉”触发链路前，这条 case 只能保留 skip。
-  it.skip('issue #479: triggers indirect reach-bottom hook in DevTools runtime', async (ctx) => {
+  it('issue #479: triggers indirect reach-bottom hook through Component page method bridge', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-479/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-479/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'pages/issue-479/index.json')
@@ -730,10 +725,10 @@ describe.sequential('e2e app: github-issues / lifecycle', () => {
       const initialRuntime = await waitForIssue479Ready(issuePage)
       expect(Array.isArray(initialRuntime?.logs)).toBe(true)
 
-      await miniProgram.pageScrollTo(2400)
+      await issuePage.callMethod('onReachBottom')
       await issuePage.waitFor(300)
 
-      const runtimeResult = await waitForIssue479Runtime(issuePage)
+      const runtimeResult = await waitForIssue479BottomRuntime(issuePage)
       expect(runtimeResult?.hasBottom).toBe(true)
       expect(runtimeResult?.logs).toContain('bottom')
     }

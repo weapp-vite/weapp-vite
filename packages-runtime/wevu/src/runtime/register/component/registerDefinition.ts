@@ -66,7 +66,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     getRuntimeOwnerLabel,
   } = options
 
-  const pageShareMethodBridges: Record<string, (...args: any[]) => any> = {}
+  const pageMethodBridges: Record<string, (...args: any[]) => any> = {}
   const attachRuntimeLayoutHosts = (instance: InternalRuntimeState) => {
     if (!Array.isArray(layoutHosts) || !layoutHosts.length) {
       return
@@ -95,8 +95,8 @@ export function registerComponentDefinition<D extends object, C extends Computed
     }
   }
   if (isPage) {
-    const shareHookNames = ['onShareAppMessage', 'onShareTimeline', 'onAddToFavorites']
-    for (const hookName of shareHookNames) {
+    const methodBridgeHookNames = ['onReachBottom', 'onShareAppMessage', 'onShareTimeline', 'onAddToFavorites']
+    for (const hookName of methodBridgeHookNames) {
       const pageHook = (pageLifecycleHooks as any)[hookName]
       if (typeof pageHook !== 'function') {
         continue
@@ -104,7 +104,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
       if (typeof (finalMethods as any)[hookName] === 'function') {
         continue
       }
-      pageShareMethodBridges[hookName] = function pageShareMethodBridge(this: InternalRuntimeState, ...args: any[]) {
+      pageMethodBridges[hookName] = function pageMethodBridge(this: InternalRuntimeState, ...args: any[]) {
         return pageHook.apply(this, args)
       }
     }
@@ -290,7 +290,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
       },
     },
     methods: {
-      ...pageShareMethodBridges,
+      ...pageMethodBridges,
       ...finalMethods,
     },
     options: finalOptions,

@@ -127,6 +127,29 @@ describe('runtime: features & hooks', () => {
     expect(componentOptions.methods.onShareTimeline.call(pageInst)).toMatchObject({ title: 'share-timeline' })
   })
 
+  it('exposes reach-bottom handler in methods for Component-built pages', () => {
+    const logs: string[] = []
+    defineComponent({
+      features: {
+        enableOnReachBottom: true,
+      },
+      setup() {
+        onReachBottom(() => {
+          logs.push('bottom')
+        })
+      },
+    })
+
+    expect(registeredComponents).toHaveLength(1)
+    const componentOptions = registeredComponents[0]
+    expect(typeof componentOptions.methods?.onReachBottom).toBe('function')
+
+    const pageInst: any = {}
+    componentOptions.lifetimes.attached.call(pageInst)
+    componentOptions.methods.onReachBottom.call(pageInst)
+    expect(logs).toEqual(['bottom'])
+  })
+
   it('binds share handlers onto page instance directly', () => {
     defineComponent({
       features: {
