@@ -1,5 +1,13 @@
 # weapp-ide-cli
 
+## 5.2.6
+
+### Patch Changes
+
+- 🐛 **修复 `weapp auto-preview -p` 在微信开发者工具不在前台时可能无法唤起小程序预览的问题。现在 `auto-preview` 会在执行前先按同一项目定位信息唤起开发者工具，再继续运行官方自动预览命令，提升后台场景下的预览启动稳定性。** [#506](https://github.com/weapp-vite/weapp-vite/pull/506) by @sonofmagic
+
+- 🐛 **修复 ESM shared chunk 中 request runtime 安装代码覆盖第三方库同名局部变量的问题，并稳定微信开发者工具打开后的项目索引刷新流程。现在 request globals 共享安装阶段只同步运行时 actuals 与 `globalThis`，避免把 `Request`、`WebSocket` 等 Web API 绑定回写到 chunk 内部变量；同时 `wv open` / `wv dev --open` 会在打开后刷新项目、重置 fileutils 并在 HTTP engine build 端点缺失时回退到官方 CLI，减少模拟器首次启动时读取陈旧配置导致的 `subPackages` 异常。** [`471286e`](https://github.com/weapp-vite/weapp-vite/commit/471286ea43d918d07c0dd38058429987c0c335e1) by @sonofmagic
+
 ## 5.2.5
 
 ### Patch Changes

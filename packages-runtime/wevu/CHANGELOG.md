@@ -1,5 +1,15 @@
 # wevu
 
+## 6.15.15
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` 的 `inject()` 缺失 key 行为：未传默认值且找不到 provider 时改为输出 warning 并返回 `undefined`，避免后续 setup 代码被异常阻断，并与 Vue 3 的依赖注入语义保持一致。** [#504](https://github.com/weapp-vite/weapp-vite/pull/504) by @sonofmagic
+
+- 🐛 **修复 Vue SFC 模板中 `<slot />` 携带 `v-if` / `v-else-if` / `v-else` 时条件指令丢失的问题，确保编译到小程序模板后保留对应平台条件分支。** [#503](https://github.com/weapp-vite/weapp-vite/pull/503) by @sonofmagic
+- 📦 **Dependencies** [`381955a`](https://github.com/weapp-vite/weapp-vite/commit/381955a6d541e3930138792265dbcae265e7c5b8)
+  → `@wevu/compiler@6.15.15`
+
 ## 6.15.14
 
 ### Patch Changes

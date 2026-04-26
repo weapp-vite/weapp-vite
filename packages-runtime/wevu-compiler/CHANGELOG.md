@@ -1,5 +1,13 @@
 # @wevu/compiler
 
+## 6.15.15
+
+### Patch Changes
+
+- 🐛 **修复 Vue SFC 模板中 `<slot />` 携带 `v-if` / `v-else-if` / `v-else` 时条件指令丢失的问题，确保编译到小程序模板后保留对应平台条件分支。** [#503](https://github.com/weapp-vite/weapp-vite/pull/503) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.15.15`
+
 ## 6.15.14
 
 ### Patch Changes
