@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ProvideInjectScopeLeaf from '../provide-inject-scope-leaf/index.vue'
+import ProvideInjectScopeLevel01 from '../provide-inject-scope-level-01/index.vue'
 </script>
 
 <template>
@@ -7,7 +7,7 @@ import ProvideInjectScopeLeaf from '../provide-inject-scope-leaf/index.vue'
     <view class="provide-inject-scope-middle__title">
       middle component
     </view>
-    <ProvideInjectScopeLeaf />
+    <ProvideInjectScopeLevel01 />
   </view>
 </template>
 

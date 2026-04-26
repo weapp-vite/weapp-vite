@@ -10,7 +10,7 @@ import { version } from '../version'
 import { createRuntimeMount } from './app/mount'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
 import { getMiniProgramGlobalObject } from './platform'
-import { setGlobalProvidedValue } from './provide'
+import { ensureRuntimeAppProvides, setRuntimeAppProvidedValue } from './provideContext'
 import { registerApp } from './register'
 
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -64,7 +64,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       return runtimeApp
     },
     provide(key: any, value: any) {
-      setGlobalProvidedValue(key, value)
+      setRuntimeAppProvidedValue(runtimeApp, key, value)
       return runtimeApp
     },
     onUnmount(cleanup: () => void) {
@@ -95,6 +95,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   const hasGlobalApp = typeof App === 'function'
 
   try {
+    ensureRuntimeAppProvides(runtimeApp)
     Object.defineProperty(runtimeApp as Record<string, any>, '__wevuSetDataOptions', {
       value: setDataOptions,
       configurable: true,

@@ -1,37 +1,25 @@
-import { WEVU_IS_APP_INSTANCE_KEY } from '@weapp-core/constants'
 import { getCurrentInstance } from './hooks'
+import {
+  getInstanceProvides,
+  isRuntimeAppInstance,
+} from './provideContext'
+import {
+  getGlobalProvidedValue,
+  hasGlobalProvidedValue,
+  setGlobalProvidedValue,
+} from './provideStore'
 
 // ============================================================================
 // 分层的 provide/inject 机制
 // 用于在组件树内维护依赖注入关系，支持组件与全局两种作用域
 // ============================================================================
 
-// 标记组件实例提供域的 Symbol，避免与业务字段冲突
-const PROVIDE_SCOPE_KEY = Symbol('wevu.provideScope')
-
-// 全局提供/注入存储，用于兼容非组件环境或历史调用
-const __wevuGlobalProvideStore = new Map<any, any>()
-
-function isAppInstance(instance: unknown): boolean {
-  return Boolean(
-    instance
-    && typeof instance === 'object'
-    && (instance as { [WEVU_IS_APP_INSTANCE_KEY]?: boolean })[WEVU_IS_APP_INSTANCE_KEY] === true,
-  )
-}
-
-/**
- * 写入全局 provide 存储，供运行时内部与兼容层复用。
- */
-export function setGlobalProvidedValue<T>(key: any, value: T): void {
-  __wevuGlobalProvideStore.set(key, value)
-}
+export { setGlobalProvidedValue } from './provideStore'
 
 /**
  * 判断当前是否存在可用的注入上下文。
  *
- * wevu 目前的依赖注入上下文来自同步 `setup()` 阶段的当前实例；
- * 若未来补充 app 级 provider，这里可继续扩展判断来源。
+ * wevu 的依赖注入上下文来自同步 `setup()` 阶段的当前实例。
  */
 export function hasInjectionContext(): boolean {
   return Boolean(getCurrentInstance())
@@ -56,14 +44,8 @@ export function provide<T>(key: any, value: T): void {
   const instance = getCurrentInstance()
 
   if (instance) {
-    // 组件内提供：存放到当前实例的 provide 域中
-    let scope = (instance as any)[PROVIDE_SCOPE_KEY]
-    if (!scope) {
-      scope = new Map()
-      ;(instance as any)[PROVIDE_SCOPE_KEY] = scope
-    }
-    scope.set(key, value)
-    if (isAppInstance(instance)) {
+    getInstanceProvides(instance)[key as PropertyKey] = value
+    if (isRuntimeAppInstance(instance)) {
       setGlobalProvidedValue(key, value)
     }
   }
@@ -97,21 +79,15 @@ export function inject<T>(key: any, defaultValue?: T): T | undefined {
 
   // 优先尝试基于实例的注入，找不到再回退全局
   if (instance) {
-    let current: any = instance
-    while (current) {
-      const scope = current[PROVIDE_SCOPE_KEY]
-      if (scope && scope.has(key)) {
-        return scope.get(key) as T
-      }
-      // 小程序没有显式父子引用，这里仅尝试当前实例。
-      // 若未来补充父级指针，可在此向上遍历。
-      current = null
+    const provides = getInstanceProvides(instance)
+    if (key in provides) {
+      return provides[key as PropertyKey] as T
     }
   }
 
   // 兼容性回退：尝试读取全局存储
-  if (__wevuGlobalProvideStore.has(key)) {
-    return __wevuGlobalProvideStore.get(key) as T
+  if (hasGlobalProvidedValue(key)) {
+    return getGlobalProvidedValue(key)
   }
 
   // 使用默认值兜底
@@ -148,8 +124,8 @@ export function provideGlobal<T>(key: any, value: T): void {
  * 在无实例上下文时 `inject()` 会自动从全局存储读取。
  */
 export function injectGlobal<T>(key: any, defaultValue?: T): T {
-  if (__wevuGlobalProvideStore.has(key)) {
-    return __wevuGlobalProvideStore.get(key) as T
+  if (hasGlobalProvidedValue(key)) {
+    return getGlobalProvidedValue(key)
   }
   if (arguments.length >= 2) {
     return defaultValue as T
