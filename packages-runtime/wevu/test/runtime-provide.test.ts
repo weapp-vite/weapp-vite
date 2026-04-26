@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { inject, provide, provideGlobal, setGlobalProvidedValue } from '@/runtime/provide'
 
 describe('provide/inject', () => {
   // 注意：provide 和 inject 使用全局 Map，需要在每个测试后清理
   afterEach(() => {
+    vi.restoreAllMocks()
     // 清空全局 store（通过注入不存在的 key 强制重置）
     // 注意：实际实现可能需要导出清理函数
   })
@@ -111,18 +112,26 @@ describe('provide/inject', () => {
   })
 
   describe('error handling', () => {
-    it('should throw error when key not found and no default', () => {
+    it('should warn and return undefined when key not found and no default', () => {
       const key = Symbol('missing')
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-      expect(() => inject(key)).toThrow('wevu.inject：未找到对应 key 的值')
+      expect(inject(key)).toBeUndefined()
+      expect(warn).toHaveBeenCalledWith('wevu.inject：未找到对应 key 的值：Symbol(missing)')
     })
 
-    it('should throw error for undefined key without default', () => {
-      expect(() => inject(undefined as any)).toThrow('wevu.inject：未找到对应 key 的值')
+    it('should warn and return undefined for undefined key without default', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      expect(inject(undefined as any)).toBeUndefined()
+      expect(warn).toHaveBeenCalledWith('wevu.inject：未找到对应 key 的值：undefined')
     })
 
-    it('should throw error for null key without default', () => {
-      expect(() => inject(null as any)).toThrow('wevu.inject：未找到对应 key 的值')
+    it('should warn and return undefined for null key without default', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      expect(inject(null as any)).toBeUndefined()
+      expect(warn).toHaveBeenCalledWith('wevu.inject：未找到对应 key 的值：null')
     })
   })
 
@@ -137,7 +146,7 @@ describe('provide/inject', () => {
       const user: User = { name: 'Alice', age: 30 }
 
       provide<User>(key, user)
-      const injected = inject<User>(key)
+      const injected = inject<User>(key)!
 
       expect(injected.name).toBe('Alice')
       expect(injected.age).toBe(30)

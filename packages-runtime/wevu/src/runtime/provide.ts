@@ -90,7 +90,9 @@ export function provide<T>(key: any, value: T): void {
  * })
  * ```
  */
-export function inject<T>(key: any, defaultValue?: T): T {
+export function inject<T>(key: any, defaultValue: T): T
+export function inject<T>(key: any): T | undefined
+export function inject<T>(key: any, defaultValue?: T): T | undefined {
   const instance = getCurrentInstance()
 
   // 优先尝试基于实例的注入，找不到再回退全局
@@ -117,8 +119,12 @@ export function inject<T>(key: any, defaultValue?: T): T {
     return defaultValue as T
   }
 
-  // 保留旧版错误提示格式，避免破坏性改动
-  throw new Error('wevu.inject：未找到对应 key 的值')
+  const warn = globalThis.console?.warn
+  if (typeof warn === 'function') {
+    warn(`wevu.inject：未找到对应 key 的值：${String(key)}`)
+  }
+
+  return undefined
 }
 
 // ============================================================================

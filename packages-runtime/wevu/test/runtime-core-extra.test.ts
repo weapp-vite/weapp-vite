@@ -83,7 +83,9 @@ describe('provide/inject', () => {
     provide('global', 123)
     expect(inject('global')).toBe(123)
     expect(inject('missing', 'fallback')).toBe('fallback')
-    expect(() => inject('absent')).toThrow('wevu.inject：未找到对应 key 的值')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(inject('absent')).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith('wevu.inject：未找到对应 key 的值：absent')
   })
 
   it('elevates provide() to global store when called in app setup context', () => {
