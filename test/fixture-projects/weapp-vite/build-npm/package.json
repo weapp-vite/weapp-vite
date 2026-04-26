@@ -29,7 +29,7 @@
     "@vant/weapp": "^1.11.6",
     "es-toolkit": "^1.46.0",
     "gm-crypto": "^0.1.12",
-    "tdesign-miniprogram": "^1.13.2"
+    "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
     "autoprefixer": "catalog:",
