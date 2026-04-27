@@ -35,6 +35,7 @@ export interface CorePluginState {
   hmrSharedChunkImporters: Map<string, Set<string>>
   hmrSharedChunksByEntry: Map<string, Set<string>>
   hmrSharedChunkDependencies: Map<string, Set<string>>
+  hmrSourceSharedChunks: Set<string>
 }
 
 export interface RemoveImplicitPagePreloadOptions {

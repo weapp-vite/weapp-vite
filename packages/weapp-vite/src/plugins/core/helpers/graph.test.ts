@@ -34,9 +34,15 @@ function createState() {
     moduleImporters: new Map<string, Set<string>>(),
     entryModuleIds: new Set<string>(),
     resolvedEntryMap: new Map<string, any>(),
+    ctx: {
+      configService: {
+        absoluteSrcRoot: '/project/src',
+      },
+    },
     hmrSharedChunkImporters: new Map<string, Set<string>>(),
     hmrSharedChunksByEntry: new Map<string, Set<string>>(),
     hmrSharedChunkDependencies: new Map<string, Set<string>>(),
+    hmrSourceSharedChunks: new Set<string>(),
   } as any
 }
 
@@ -187,6 +193,15 @@ describe('core helpers graph', () => {
     )
     expect(state.hmrSharedChunkImporters.has('chunks/entry-like.js')).toBe(false)
     expect(state.hmrSharedChunkImporters.has('chunks/missing.js')).toBe(false)
+    expect(state.hmrSourceSharedChunks).toEqual(new Set([
+      'entries/a.js',
+      'entries/virtual.js',
+      'layouts/default.js',
+      'components/base-navbar/index.js',
+      'chunks/shared.js',
+      'chunks/lazy.js',
+      'chunks/entry-like.js',
+    ]))
   })
 
   it('propagates shared chunk importers through intermediate shared chunks', () => {

@@ -278,6 +278,34 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
+  it('expands direct entry updates across source shared chunk importers', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(ids[0], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+2:direct'])
+  })
+
   it('keeps direct updates incremental when a shared chunk spans main package and subpackage entries', async () => {
     const ctx = createContext()
     ctx.scanService.subPackageMap.set('subpackages/account', {})

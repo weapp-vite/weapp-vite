@@ -136,6 +136,30 @@ function appendSharedChunkImporters(
 
     return trackedImporterIds
   }
+  const isProjectSourceModule = (rawId?: string | null) => {
+    if (!rawId) {
+      return false
+    }
+    const absoluteSrcRoot = state.ctx?.configService?.absoluteSrcRoot
+    if (!absoluteSrcRoot) {
+      return false
+    }
+    const normalizedRoot = normalizeFsResolvedId(absoluteSrcRoot)
+    const normalizedId = normalizeFsResolvedId(rawId)
+    if (isSkippableResolvedId(normalizedId)) {
+      return false
+    }
+    return normalizedId === normalizedRoot || normalizedId.startsWith(`${normalizedRoot}/`)
+  }
+  const hasProjectSourceModule = (chunk: OutputChunk) => {
+    if (isProjectSourceModule(chunk.facadeModuleId)) {
+      return true
+    }
+    if (!Array.isArray(chunk.moduleIds)) {
+      return false
+    }
+    return chunk.moduleIds.some(moduleId => isProjectSourceModule(moduleId))
+  }
 
   for (const [bundleKey, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk') {
@@ -146,6 +170,12 @@ function appendSharedChunkImporters(
       chunk.fileName = bundleKey
     }
     bundleChunks.set(chunk.fileName, chunk)
+    if (hasProjectSourceModule(chunk)) {
+      state.hmrSourceSharedChunks.add(chunk.fileName)
+    }
+    else {
+      state.hmrSourceSharedChunks.delete(chunk.fileName)
+    }
   }
 
   const trackedImporterIdsByChunk = new Map<string, Set<string>>()
@@ -261,6 +291,7 @@ export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePlu
   state.hmrSharedChunkImporters.clear()
   state.hmrSharedChunksByEntry.clear()
   state.hmrSharedChunkDependencies.clear()
+  state.hmrSourceSharedChunks.clear()
   appendSharedChunkImporters(bundle, state)
 }
 
@@ -320,6 +351,7 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     if (importers.size === 0) {
       state.hmrSharedChunkImporters.delete(chunkId)
       state.hmrSharedChunkDependencies.delete(chunkId)
+      state.hmrSourceSharedChunks.delete(chunkId)
     }
   }
 

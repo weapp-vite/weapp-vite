@@ -19,6 +19,7 @@ interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
+  sourceSharedChunks?: Set<string>
   setDidEmitAllEntries?: (value: boolean) => void
   setLastEmittedEntries?: (entryIds: Set<string>) => void
 }
@@ -62,6 +63,7 @@ function resolvePendingEntryIds(options: {
   dirtyReasonSummary?: string[]
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
+  sourceSharedChunks?: Set<string>
   subPackageRoots?: Set<string>
   relativeAbsoluteSrcRoot?: (id: string) => string
 }): PendingEntryResolution {
@@ -119,6 +121,7 @@ function resolvePendingEntryIds(options: {
     if (importers.size <= 1) {
       continue
     }
+    const isSourceSharedChunk = options.sourceSharedChunks?.has(chunkId) === true
     let hasDependencyDrivenImporter = false
     let hasDirectDirtyImporter = false
     for (const importer of importers) {
@@ -130,11 +133,14 @@ function resolvePendingEntryIds(options: {
         hasDirectDirtyImporter = true
       }
     }
-    if (!hasDependencyDrivenImporter) {
+    if (!hasDependencyDrivenImporter && !(hasDirectDirtyImporter && isSourceSharedChunk)) {
       continue
     }
     if (hasDependencyDrivenImporter && hasDirectDirtyImporter) {
       expansionMode = 'mixed'
+    }
+    else if (hasDirectDirtyImporter) {
+      expansionMode = expansionMode && expansionMode !== 'direct' ? 'mixed' : 'direct'
     }
     else {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
@@ -246,6 +252,7 @@ export function useLoadEntry(
   const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
   const hmrSharedChunksByEntry = options?.hmr?.sharedChunksByEntry
+  const hmrSourceSharedChunks = options?.hmr?.sourceSharedChunks
 
   return {
     loadEntry,
@@ -279,6 +286,7 @@ export function useLoadEntry(
         dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
+        sourceSharedChunks: hmrSourceSharedChunks,
         subPackageRoots: new Set(ctx.scanService?.subPackageMap?.keys?.() ?? []),
         relativeAbsoluteSrcRoot: ctx.configService.relativeAbsoluteSrcRoot.bind(ctx.configService),
       })
