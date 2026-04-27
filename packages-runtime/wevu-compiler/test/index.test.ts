@@ -67,6 +67,22 @@ const title = 'hello'
     expect(crlfResult.config).toEqual(lfResult.config)
   })
 
+  it('removes unused script setup runtime marker from compiled output', async () => {
+    const source = `
+<script setup lang="ts">
+const title = 'hello'
+</script>
+<template>
+  <view>{{ title }}</view>
+</template>
+    `.trim()
+
+    const result = await compileVueFile(source, '/project/src/pages/index/index.vue')
+
+    expect(result.script).toContain('title')
+    expect(result.script).not.toContain('__isScriptSetup')
+  })
+
   it('supports SFCs with both script setup and normal script', async () => {
     const source = `
 <script setup lang="ts">
