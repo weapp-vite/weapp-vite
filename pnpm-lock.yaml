@@ -680,6 +680,9 @@ importers:
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.2.4
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
@@ -878,6 +881,9 @@ importers:
         specifier: 'catalog:'
         version: 1.14.0
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.2.4
       '@vue/language-plugin-pug':
         specifier: ^3.2.7
         version: 3.2.7
@@ -944,6 +950,9 @@ importers:
 
   apps/vite-native-skyline:
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.2.4
       '@vant/weapp':
         specifier: 'catalog:'
         version: 1.11.7
@@ -988,6 +997,9 @@ importers:
         specifier: 'catalog:'
         version: 1.14.0
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.2.4
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard
@@ -1034,6 +1046,9 @@ importers:
         specifier: 'catalog:'
         version: 1.14.0
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: 'catalog:'
+        version: 4.2.4
       '@weapp-vite/dashboard':
         specifier: workspace:*
         version: link:../../packages/dashboard

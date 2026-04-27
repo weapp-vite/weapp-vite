@@ -28,6 +28,7 @@
     "build:ui": "wv build --ui"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "catalog:",
     "@vant/weapp": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",

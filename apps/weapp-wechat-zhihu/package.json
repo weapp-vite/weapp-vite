@@ -30,6 +30,7 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",

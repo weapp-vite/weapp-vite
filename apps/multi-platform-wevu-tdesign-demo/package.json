@@ -48,6 +48,7 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
     "@iconify-json/mdi": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",

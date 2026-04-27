@@ -53,6 +53,7 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "catalog:",
     "@vue/language-plugin-pug": "^3.2.7",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "2.1.6",
