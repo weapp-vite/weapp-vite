@@ -51,6 +51,10 @@ function normalizeSlotNames(value: unknown): string[] {
 }
 
 export function createSetupSlotsProxy(props: Record<string, any>) {
+  if (!Object.hasOwn(props, WEVU_SLOT_NAMES_PROP)) {
+    return createSetupSlotsFallback()
+  }
+
   const resolveNames = () => normalizeSlotNames(props[WEVU_SLOT_NAMES_PROP])
   const isEnabled = (key: PropertyKey) => typeof key === 'string' && resolveNames().includes(key)
 

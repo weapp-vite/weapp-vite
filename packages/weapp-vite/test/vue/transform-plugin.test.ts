@@ -721,6 +721,7 @@ export default {}`,
     expect(await options.autoImportTags.resolveUsingComponent('t-cell-group', vuePath!)).toEqual({
       name: 't-cell-group',
       from: 'lib/t-cell-group',
+      sourceType: 'native',
     })
     options.autoImportTags.warn('noop')
     options.autoUsingComponents.warn('noop')
