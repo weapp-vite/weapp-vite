@@ -38,6 +38,7 @@
     "@icebreakers/stylelint-config": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
+    "autoprefixer": "catalog:",
     "eslint": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
