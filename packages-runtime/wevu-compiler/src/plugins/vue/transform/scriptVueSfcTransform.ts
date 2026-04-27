@@ -8,6 +8,7 @@ import { WE_VU_RUNTIME_APIS } from '../../../constants'
  * 1. 移除从 'vue' 导入 defineComponent
  * 2. 移除 __name 属性
  * 3. 移除空参数的 __expose() 调用（保留 defineExpose 生成的 __expose({...})）
+ * 4. 移除运行时未使用的 __isScriptSetup 标识
  */
 export function vueSfcTransformPlugin() {
   return {
@@ -49,6 +50,18 @@ export function vueSfcTransformPlugin() {
       },
 
       CallExpression(path: NodePath<t.CallExpression>) {
+        if (
+          t.isMemberExpression(path.node.callee)
+          && t.isIdentifier(path.node.callee.object, { name: 'Object' })
+          && t.isIdentifier(path.node.callee.property, { name: 'defineProperty' })
+          && t.isIdentifier(path.node.arguments[0], { name: '__returned__' })
+          && t.isStringLiteral(path.node.arguments[1], { value: '__isScriptSetup' })
+          && path.parentPath?.isExpressionStatement()
+        ) {
+          path.parentPath.remove()
+          return
+        }
+
         // 移除 __expose() 调用（仅空参数；有参数时为 defineExpose 的产物，需要保留）
         if (
           t.isIdentifier(path.node.callee, { name: '__expose' })
