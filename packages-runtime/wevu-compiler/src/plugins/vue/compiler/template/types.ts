@@ -91,6 +91,7 @@ export interface TransformContext {
   layoutHostIndexSeed: number
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
+  wevuComponentTags?: Set<string>
 }
 
 /**
@@ -126,6 +127,7 @@ export interface TemplateCompileOptions {
   mustacheInterpolation?: MustacheInterpolationMode
   wxsExtension?: string
   classStyleWxsSrc?: string
+  wevuComponentTags?: Iterable<string>
 }
 
 /**

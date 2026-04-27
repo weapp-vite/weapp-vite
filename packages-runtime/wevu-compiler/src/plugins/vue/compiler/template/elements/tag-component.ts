@@ -96,7 +96,11 @@ function pushSlotNamesAttr(
 }
 
 function shouldExposePlainSlotPresence(node: ElementNode) {
-  return node.tag === 'component' || /^[A-Z]/.test(node.tag)
+  return node.tag === 'component'
+}
+
+function isWevuComponentTag(node: ElementNode, context: TransformContext) {
+  return context.wevuComponentTags ? context.wevuComponentTags.has(node.tag) : /^[A-Z]/.test(node.tag)
 }
 
 export function transformComponentWithSlots(
@@ -175,7 +179,7 @@ export function transformComponentWithSlots(
     if (vTextExp !== undefined) {
       children = renderMustache(vTextExp, context)
     }
-    if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren)) {
+    if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
       pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
     }
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
@@ -205,7 +209,7 @@ export function transformComponentWithSlots(
     slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)
   }
-  if (shouldExposePlainSlotPresence(node)) {
+  if (shouldExposePlainSlotPresence(node) || isWevuComponentTag(node, context)) {
     for (const decl of plainSlotDeclarations) {
       slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     }
@@ -305,7 +309,7 @@ export function transformComponentWithSlotsFallback(
     if (vTextExp !== undefined) {
       children = renderMustache(vTextExp, context)
     }
-    if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren)) {
+    if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren) && isWevuComponentTag(node, context)) {
       pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
     }
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
@@ -329,7 +333,7 @@ export function transformComponentWithSlotsFallback(
     isComponent: true,
   })
   const mergedAttrs = [...extraAttrs, ...attrs]
-  if (shouldExposePlainSlotPresence(node)) {
+  if (shouldExposePlainSlotPresence(node) || isWevuComponentTag(node, context)) {
     pushSlotNamesAttr(
       mergedAttrs,
       slotDeclarations.map(decl => ({ name: stringifySlotName(decl.name, context), condition: decl.condition })),

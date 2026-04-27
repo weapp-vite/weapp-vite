@@ -168,6 +168,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(await options.autoImportTags.resolveUsingComponent('FooCard')).toEqual({
       name: 'FooCard',
       from: '/components/foo-card',
+      sourceType: 'native',
     })
     expect(autoImportResolve).toHaveBeenCalledWith('FooCard', '/project/src/pages/home/index')
     expect(await options.sfcSrc.resolveId('./source.vue', '/project/src/pages/home/index.vue')).toBe('/resolved/source.vue')

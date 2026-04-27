@@ -1,3 +1,4 @@
+import type { CompileVueFileOptions } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
 import type { MpPlatform } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -8,7 +9,7 @@ import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
 import { resolveWevuDefaultsWithPreset } from './wevuPreset'
 
-export type CompileVueFileResolvedOptions = ReturnType<typeof buildCompileVueFileOptions>
+export type CompileVueFileResolvedOptions = CompileVueFileOptions
 
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
@@ -58,7 +59,7 @@ function buildCompileVueFileOptions(
   isApp: boolean,
   configService: NonNullable<CompilerContext['configService']>,
   state: CompileOptionsContext,
-) {
+): CompileVueFileResolvedOptions {
   const importerBaseName = removeExtensionDeep(vuePath)
   const autoImportResolveCache = new Map<string, {
     match: ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>
@@ -123,7 +124,22 @@ function buildCompileVueFileOptions(
             version,
           })
         }
-        return match?.value
+        if (!match?.value) {
+          return undefined
+        }
+        if (match.kind === 'local') {
+          const resolvedId = match.entry.templatePath
+          const sourceType: 'wevu-sfc' | 'native' = resolvedId?.endsWith('.vue') ? 'wevu-sfc' : 'native'
+          return {
+            ...match.value,
+            resolvedId,
+            sourceType,
+          }
+        }
+        return {
+          ...match.value,
+          sourceType: 'native' as const,
+        }
       },
     },
     template: {

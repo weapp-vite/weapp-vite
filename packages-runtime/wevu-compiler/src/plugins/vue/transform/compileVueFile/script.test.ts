@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
+import { collectComponentSourceInfo } from './componentSources'
 import { compileScriptPhase } from './script'
 
 describe('compileScriptPhase', () => {
@@ -39,6 +40,17 @@ const local = 'ok'
       return undefined
     })
 
+    const componentSourceInfo = await collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: { isPage: true },
+      autoUsingComponents: {
+        resolveUsingComponentPath,
+      },
+      autoImportTags: undefined,
+    })
+
     const result = await compileScriptPhase(
       sfc.descriptor as any,
       sfc.descriptor as any,
@@ -49,6 +61,7 @@ const local = 'ok'
       },
       undefined,
       false,
+      componentSourceInfo,
     )
 
     expect(result.script).toContain('createWevuComponent')
@@ -59,5 +72,61 @@ const local = 'ok'
       TButton: 'tdesign/button/button',
     })
     expect(resolveUsingComponentPath).toHaveBeenCalled()
+  })
+
+  it('marks kebab-case template usage of imported vue components as wevu components', async () => {
+    const sfc = parse(`
+<template>
+  <my-card>
+    <template #header>
+      <view>Header</view>
+    </template>
+  </my-card>
+</template>
+<script setup lang="ts">
+import MyCard from './my-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+
+    const result = await collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: {
+        resolveUsingComponentPath: async () => ({
+          from: '/components/my-card',
+          resolvedId: '/project/src/components/my-card.vue',
+        }),
+      },
+      autoImportTags: undefined,
+    })
+
+    expect(result.wevuComponentTags.has('MyCard')).toBe(true)
+    expect(result.wevuComponentTags.has('my-card')).toBe(true)
+  })
+
+  it('marks direct .vue imports without auto using component resolver', async () => {
+    const sfc = parse(`
+<template>
+  <my-card />
+</template>
+<script setup lang="ts">
+import MyCard from './my-card.vue'
+</script>
+    `.trim(), { filename: '/project/src/pages/index/index.vue' })
+
+    const result = await collectComponentSourceInfo({
+      descriptor: sfc.descriptor as any,
+      descriptorForCompile: sfc.descriptor as any,
+      filename: '/project/src/pages/index/index.vue',
+      compileOptions: undefined,
+      autoUsingComponents: undefined,
+      autoImportTags: undefined,
+    })
+
+    expect(result.autoUsingComponentsMap).toEqual({})
+    expect(result.wevuComponentTags.has('MyCard')).toBe(true)
+    expect(result.wevuComponentTags.has('my-card')).toBe(true)
   })
 })

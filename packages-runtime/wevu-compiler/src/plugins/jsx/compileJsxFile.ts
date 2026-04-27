@@ -1,4 +1,4 @@
-import type { CompileVueFileOptions, VueTransformResult } from '../vue/transform/compileVueFile/types'
+import type { CompileVueFileOptions, ResolvedUsingComponentPath, VueTransformResult } from '../vue/transform/compileVueFile/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
@@ -10,6 +10,13 @@ import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
 
 const LEADING_DOT_RE = /^\./
 const SETUP_CALL_RE = /\bsetup\s*\(/
+
+function normalizeUsingComponentFrom(value: ResolvedUsingComponentPath | undefined) {
+  if (!value) {
+    return undefined
+  }
+  return typeof value === 'string' ? value : value.from
+}
 
 /**
  * 编译 JSX/TSX 文件，输出 wevu 脚本与 WXML 模板。
@@ -51,7 +58,7 @@ export async function compileJsxFile(
         continue
       }
 
-      let resolved = await options.autoUsingComponents.resolveUsingComponentPath(
+      let resolved = normalizeUsingComponentFrom(await options.autoUsingComponents.resolveUsingComponentPath(
         imported.importSource,
         filename,
         {
@@ -59,7 +66,7 @@ export async function compileJsxFile(
           importedName: imported.importedName,
           kind: imported.kind,
         },
-      )
+      ))
 
       if (!resolved && imported.importSource.startsWith('/')) {
         resolved = removeExtensionDeep(imported.importSource)

@@ -55,7 +55,14 @@ export type {
 
 export { buildClassStyleComputedCode } from './plugins/vue/transform/classStyleComputed'
 export { compileVueFile as compileSfc, compileVueFile } from './plugins/vue/transform/compileVueFile'
-export type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, VueTransformResult } from './plugins/vue/transform/compileVueFile'
+export type {
+  AutoImportTagsOptions,
+  AutoUsingComponentsOptions,
+  CompileVueFileOptions,
+  ResolvedUsingComponentInfo,
+  ResolvedUsingComponentPath,
+  VueTransformResult,
+} from './plugins/vue/transform/compileVueFile'
 export { compileConfigBlocks, evaluateJsLikeConfig, isJsonLikeLang, normalizeConfigLang, resolveJsLikeLang } from './plugins/vue/transform/config'
 export type { JsLikeLang } from './plugins/vue/transform/config'
 export { extractJsonMacroFromScriptSetup, stripJsonMacroCallsFromCode } from './plugins/vue/transform/jsonMacros'

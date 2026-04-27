@@ -1,4 +1,5 @@
 import type { CompileVueFileOptions, VueTransformResult } from './types'
+import { collectComponentSourceInfo } from './componentSources'
 import { compileConfigPhase } from './config'
 import { finalizeResult } from './finalize'
 import { parseVueFile } from './parse'
@@ -6,7 +7,14 @@ import { compileScriptPhase } from './script'
 import { compileStylePhase } from './style'
 import { compileTemplatePhase } from './template'
 
-export type { AutoImportTagsOptions, AutoUsingComponentsOptions, CompileVueFileOptions, VueTransformResult } from './types'
+export type {
+  AutoImportTagsOptions,
+  AutoUsingComponentsOptions,
+  CompileVueFileOptions,
+  ResolvedUsingComponentInfo,
+  ResolvedUsingComponentPath,
+  VueTransformResult,
+} from './types'
 
 /**
  * 编译 Vue 单文件组件，输出脚本、模板、样式与配置结果。
@@ -38,10 +46,29 @@ export async function compileVueFile(
     ? options.autoImportTags
     : undefined
 
+  const componentSourceInfo = await collectComponentSourceInfo({
+    descriptor: parsed.descriptor,
+    descriptorForCompile: parsed.descriptorForCompile,
+    filename,
+    compileOptions: options,
+    autoUsingComponents,
+    autoImportTags,
+  })
+
+  const templateOptions = componentSourceInfo.wevuComponentTags.size
+    ? {
+        ...options?.template,
+        wevuComponentTags: componentSourceInfo.wevuComponentTags,
+      }
+    : {
+        ...options?.template,
+        wevuComponentTags: [],
+      }
+
   const templateCompiled = compileTemplatePhase(
     parsed.descriptor,
     filename,
-    options?.template,
+    templateOptions,
     result,
   )
 
@@ -53,6 +80,7 @@ export async function compileVueFile(
     autoUsingComponents,
     templateCompiled,
     parsed.isAppFile,
+    componentSourceInfo,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap

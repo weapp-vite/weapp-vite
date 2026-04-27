@@ -104,6 +104,7 @@ export function compileVueTemplateToWxml(
       layoutHostIndexSeed: 0,
       inlineExpressions: [],
       inlineExpressionSeed: 0,
+      wevuComponentTags: options?.wevuComponentTags ? new Set(options.wevuComponentTags) : undefined,
     }
 
     // 转换 AST 到 WXML

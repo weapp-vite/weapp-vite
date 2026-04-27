@@ -45,6 +45,86 @@ describe('compileVueFile - auto import tags', () => {
     })
   })
 
+  it('injects slot metadata for kebab-case vue components resolved from script imports', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <my-card>
+    <template #header>
+      <view>Header</view>
+    </template>
+  </my-card>
+</template>
+<script setup lang="ts">
+import MyCard from './my-card.vue'
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+      {
+        autoUsingComponents: {
+          enabled: true,
+          resolveUsingComponentPath: async () => ({
+            from: '/components/my-card',
+            resolvedId: '/project/src/components/my-card.vue',
+          }),
+        },
+      },
+    )
+
+    expect(result.template).toContain(`my-card vue-slots="{{['header']}}"`)
+  })
+
+  it('injects slot metadata for kebab-case direct .vue imports without resolver', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <my-card>
+    <template #header>
+      <view>Header</view>
+    </template>
+  </my-card>
+</template>
+<script setup lang="ts">
+import MyCard from './my-card.vue'
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(result.template).toContain(`my-card vue-slots="{{['header']}}"`)
+  })
+
+  it('does not inject slot metadata for kebab-case native auto-import components', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <t-cell-group>
+    <template #header>
+      <view>Header</view>
+    </template>
+  </t-cell-group>
+</template>
+<script setup lang="ts">
+</script>
+      `.trim(),
+      '/project/src/pages/index/index.vue',
+      {
+        autoImportTags: {
+          enabled: true,
+          resolveUsingComponent: async (tag) => {
+            if (tag === 't-cell-group') {
+              return { name: tag, from: 'tdesign-miniprogram/cell-group/cell-group' }
+            }
+            return undefined
+          },
+        },
+      },
+    )
+
+    expect(result.template).toContain('<t-cell-group>')
+    expect(result.template).not.toContain('vue-slots=')
+  })
+
   it('injects inline expression map for template handlers', async () => {
     const result = await compileVueFile(
       `

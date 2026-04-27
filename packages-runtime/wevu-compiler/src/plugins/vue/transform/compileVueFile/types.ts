@@ -6,6 +6,14 @@ import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
 import type { TemplateCompileOptions, TemplateCompileResult } from '../../compiler/template'
 
+export interface ResolvedUsingComponentInfo {
+  from?: string
+  resolvedId?: string
+  sourceType?: 'wevu-sfc' | 'native'
+}
+
+export type ResolvedUsingComponentPath = string | ResolvedUsingComponentInfo
+
 /**
  * Vue 单文件组件转换结果。
  */
@@ -42,7 +50,7 @@ export interface AutoUsingComponentsOptions {
       importedName?: string
       kind: 'default' | 'named'
     },
-  ) => Promise<string | undefined>
+  ) => Promise<ResolvedUsingComponentPath | undefined>
   warn?: (message: string) => void
 }
 
@@ -54,7 +62,7 @@ export interface AutoImportTagsOptions {
   resolveUsingComponent?: (
     tag: string,
     importerFilename: string,
-  ) => Promise<{ name: string, from: string } | undefined>
+  ) => Promise<({ name: string, from: string } & ResolvedUsingComponentInfo) | undefined>
   warn?: (message: string) => void
 }
 

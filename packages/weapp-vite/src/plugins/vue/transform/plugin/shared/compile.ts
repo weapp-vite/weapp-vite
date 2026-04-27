@@ -1,5 +1,5 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
-import type { VueTransformResult } from 'wevu/compiler'
+import type { CompileVueFileOptions, VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import MagicString from 'magic-string'
@@ -140,9 +140,9 @@ export function finalizeTransformEntryCode(options: {
 export async function compileTransformEntryResult(options: {
   transformedSource: string
   filename: string
-  compileOptions: Record<string, unknown>
-  compileVueFile: (source: string, filename: string, options: Record<string, unknown>) => Promise<VueTransformResult>
-  compileJsxFile: (source: string, filename: string, options: Record<string, unknown>) => Promise<VueTransformResult>
+  compileOptions: CompileVueFileOptions
+  compileVueFile: (source: string, filename: string, options: CompileVueFileOptions) => Promise<VueTransformResult>
+  compileJsxFile: (source: string, filename: string, options: CompileVueFileOptions) => Promise<VueTransformResult>
 }) {
   const { transformedSource, filename, compileOptions, compileVueFile, compileJsxFile } = options
   return filename.endsWith('.vue')

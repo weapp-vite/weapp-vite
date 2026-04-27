@@ -101,7 +101,12 @@ async function resolveUsingComponentPath(
     importerFilename,
     info,
   )
-  return resolved.from
+  const sourceType: 'wevu-sfc' | 'native' = resolved.resolvedId?.endsWith('.vue') ? 'wevu-sfc' : 'native'
+  return {
+    from: resolved.from,
+    resolvedId: resolved.resolvedId,
+    sourceType,
+  }
 }
 
 export function createUsingComponentPathResolver(
