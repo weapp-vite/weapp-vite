@@ -79,6 +79,12 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       <view class="feature-nav-item-title">provide / inject</view>
       <view class="feature-nav-item-summary">展示跨层共享状态与交互式响应更新</view>
     </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-provide-inject-scope/index" role="link">
+      <view class="feature-nav-item-title">provide / inject scope</view>
+      <view class="feature-nav-item-summary">
+        复现页面级 provide 与 App 级 provide 的深层 inject 差异
+      </view>
+    </navigator>
     <navigator class="feature-nav-item" url="/pages/use-store/index" role="link">
       <view class="feature-nav-item-title">store</view>
       <view class="feature-nav-item-summary">展示 setup/options store 与 patch/reset/订阅能力</view>
@@ -514,6 +520,149 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     </view>
   </useprovideinjectfeature>
 </view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-provide-inject-scope/index 1`] = `
+"<weapp-layout-provide-inject-scope is="layouts/provide-inject-scope">
+  <view class="scope--provide-inject-scope-layout">
+    <view class="scope--provide-inject-scope-layout__line" id="scope-layout-provider">
+      layout provide = layout-provide-value
+    </view>
+    <provideinjectscopelayoutprobe is="components/provide-inject-scope-layout-probe/index">
+      <view class="index--provide-inject-scope-layout-probe">
+        <view
+          class="index--provide-inject-scope-layout-probe__line"
+          id="scope-layout-app-instance-value">
+          layout app instance inject = app-instance-provide-value
+        </view>
+        <view
+          class="index--provide-inject-scope-layout-probe__line"
+          id="scope-layout-app-setup-value">
+          layout app setup inject = app-setup-provide-value
+        </view>
+        <view class="index--provide-inject-scope-layout-probe__line" id="scope-layout-own-value">
+          layout own inject = layout-provide-value
+        </view>
+      </view>
+    </provideinjectscopelayoutprobe>
+    <view class="provide-inject-scope-page">
+      <view class="provide-inject-scope-page__title">wevu provide / inject 深层作用域复现</view>
+      <view class="provide-inject-scope-page__line" id="scope-page-provider">
+        page provide = page-provide-value
+      </view>
+      <provideinjectscopemiddle is="components/provide-inject-scope-middle/index">
+        <view class="middle-index--provide-inject-scope-middle">
+          <view class="middle-index--provide-inject-scope-middle__title">middle component</view>
+          <provideinjectscopelevel01 is="components/provide-inject-scope-level-01/index">
+            <view class="x-01-index--provide-inject-scope-level">
+              <provideinjectscopelevel02 is="components/provide-inject-scope-level-02/index">
+                <view class="x-02-index--provide-inject-scope-level">
+                  <provideinjectscopelevel03 is="components/provide-inject-scope-level-03/index">
+                    <view class="x-03-index--provide-inject-scope-level">
+                      <provideinjectscopelevel04
+                        is="components/provide-inject-scope-level-04/index">
+                        <view class="x-04-index--provide-inject-scope-level">
+                          <provideinjectscopelevel05
+                            is="components/provide-inject-scope-level-05/index">
+                            <view class="x-05-index--provide-inject-scope-level">
+                              <provideinjectscopelevel06
+                                is="components/provide-inject-scope-level-06/index">
+                                <view class="x-06-index--provide-inject-scope-level">
+                                  <provideinjectscopelevel07
+                                    is="components/provide-inject-scope-level-07/index">
+                                    <view class="x-07-index--provide-inject-scope-level">
+                                      <provideinjectscopelevel08
+                                        is="components/provide-inject-scope-level-08/index">
+                                        <view class="x-08-index--provide-inject-scope-level">
+                                          <provideinjectscopelevel09
+                                            is="components/provide-inject-scope-level-09/index">
+                                            <view class="x-09-index--provide-inject-scope-level">
+                                              <provideinjectscopeleaf
+                                                is="components/provide-inject-scope-leaf/index">
+                                                <view
+                                                  class="scope-leaf-index--provide-inject-scope-leaf">
+                                                  <view
+                                                    class="scope-leaf-index--provide-inject-scope-leaf__line"
+                                                    id="scope-app-instance-value">
+                                                    app instance inject = app-instance-provide-value
+                                                  </view>
+                                                  <view
+                                                    class="scope-leaf-index--provide-inject-scope-leaf__line"
+                                                    id="scope-app-setup-value">
+                                                    app setup inject = app-setup-provide-value
+                                                  </view>
+                                                  <view
+                                                    class="scope-leaf-index--provide-inject-scope-leaf__line"
+                                                    id="scope-page-value">
+                                                    page inject = page-provide-value
+                                                  </view>
+                                                  <view
+                                                    class="scope-leaf-index--provide-inject-scope-leaf__line"
+                                                    id="scope-layout-value">
+                                                    layout inject = layout-provide-value
+                                                  </view>
+                                                  <view
+                                                    class="scope-leaf-index--provide-inject-scope-leaf__line"
+                                                    id="scope-component-value">
+                                                    component inject = component-provide-value
+                                                  </view>
+                                                  <view
+                                                    class="scope-leaf-index--provide-inject-scope-leaf__line"
+                                                    id="scope-shadow-value">
+                                                    shadow inject = component-shadow-value
+                                                  </view>
+                                                  <view
+                                                    class="scope-leaf-index--provide-inject-scope-leaf__summary"
+                                                    id="scope-summary">
+                                                    appInstance=app-instance-provide-value;
+                                                    appSetup=app-setup-provide-value;
+                                                    page=page-provide-value;
+                                                    layout=layout-provide-value;
+                                                    component=component-provide-value;
+                                                    shadow=component-shadow-value
+                                                  </view>
+                                                </view>
+                                              </provideinjectscopeleaf>
+                                            </view>
+                                          </provideinjectscopelevel09>
+                                        </view>
+                                      </provideinjectscopelevel08>
+                                    </view>
+                                  </provideinjectscopelevel07>
+                                </view>
+                              </provideinjectscopelevel06>
+                            </view>
+                          </provideinjectscopelevel05>
+                        </view>
+                      </provideinjectscopelevel04>
+                    </view>
+                  </provideinjectscopelevel03>
+                </view>
+              </provideinjectscopelevel02>
+            </view>
+          </provideinjectscopelevel01>
+        </view>
+      </provideinjectscopemiddle>
+      <provideinjectslotprovider is="components/provide-inject-slot-provider/index">
+        <view class="provider-index--provide-inject-slot-provider">
+          <view class="provider-index--provide-inject-slot-provider__line" id="scope-slot-provider">
+            slot provider = slot-provider-value
+          </view>
+          <scoped-slots-default is="pages/use-provide-inject-scope/index.__scoped-slot-default-0">
+            <provideinjectslotleaf is="components/provide-inject-slot-leaf/index">
+              <view class="leaf-index--provide-inject-slot-leaf">
+                <view class="leaf-index--provide-inject-slot-leaf__line" id="scope-slot-value">
+                  slot inject = slot-provider-value
+                </view>
+              </view>
+            </provideinjectslotleaf>
+          </scoped-slots-default>
+        </view>
+      </provideinjectslotprovider>
+    </view>
+  </view>
+</weapp-layout-provide-inject-scope>
 "
 `;
 

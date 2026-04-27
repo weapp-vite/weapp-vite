@@ -66,7 +66,7 @@ function buildCompileVueFileOptions(
   }>()
   const scopedSlotsCompiler = configService.weappViteConfig?.vue?.template?.scopedSlotsCompiler ?? 'auto'
   const scopedSlotsRequirePropsConfig = configService.weappViteConfig?.vue?.template?.scopedSlotsRequireProps
-  const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? (scopedSlotsCompiler !== 'augmented')
+  const scopedSlotsRequireProps = scopedSlotsRequirePropsConfig ?? false
   const slotSingleRootNoWrapper = configService.weappViteConfig?.vue?.template?.slotSingleRootNoWrapper ?? false
   const slotMultipleInstance = configService.weappViteConfig?.vue?.template?.slotMultipleInstance ?? true
   const htmlTagToWxml = configService.weappViteConfig?.vue?.template?.htmlTagToWxml

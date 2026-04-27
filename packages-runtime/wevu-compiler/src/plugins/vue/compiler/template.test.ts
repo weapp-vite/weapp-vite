@@ -578,6 +578,168 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain(`__wv-slot-scope="{{{`)
   })
 
+  it('emits augmented scoped slot components for plain default component children when enabled', () => {
+    const template = `
+<Provider>
+  <Leaf />
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('generic:scoped-slots-default="')
+    expect(code).toContain(`vue-slots="{{['default']}}"`)
+    expect(code).toContain('__wv-slot-owner-id="{{__wvOwnerId || \'\'}}"')
+    expect(code).not.toContain('<Leaf')
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.slotKey).toBe('default')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<Leaf />')
+  })
+
+  it('keeps plain named template slots native when default component children are augmented', () => {
+    const template = `
+<Provider>
+  <template #header>
+    <view>Header</view>
+  </template>
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<view slot="header"><view>Header</view></view>')
+    expect(code).not.toContain('generic:scoped-slots-header')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('keeps explicit default template slots native when default component children are augmented', () => {
+    const template = `
+<Provider>
+  <template #default>
+    <view>Default</view>
+  </template>
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<Provider><view>Default</view></Provider>')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('keeps implicit default native when direct children are native elements', () => {
+    const template = `
+<Provider>
+  <view>
+    <Leaf />
+  </view>
+</Provider>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<Provider><view><Leaf /></view></Provider>')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('keeps implicit default native for kebab-case mini program components', () => {
+    const template = `
+<t-cell-group>
+  <t-cell title="Composition API" />
+</t-cell-group>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<t-cell-group><t-cell title="Composition API" /></t-cell-group>')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('ignores comments when checking implicit default slot children', () => {
+    const template = `
+<map>
+  <!-- eslint-disable-next-line vue/valid-v-slot -->
+  <template #callout>
+    <cover-view>Callout</cover-view>
+  </template>
+</map>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<view slot="callout"><cover-view>Callout</cover-view></view>')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('keeps native element children inline when plain default scoped slots are enabled', () => {
+    const template = `
+<view>
+  <Leaf />
+</view>
+    `.trim()
+
+    const { code, scopedSlotComponents } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<view><Leaf /></view>')
+    expect(code).not.toContain('generic:scoped-slots-default')
+    expect(scopedSlotComponents).toBeUndefined()
+  })
+
+  it('guards generated scoped slot outlet by owner id', () => {
+    const { code, componentGenerics } = compileVueTemplateToWxml(
+      '<slot />',
+      '/project/src/components/provider/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toContain('<scoped-slots-default')
+    expect(code).toContain('wx:if="{{__wvSlotOwnerId}}"')
+    expect(componentGenerics?.['scoped-slots-default']).toBe(true)
+  })
+
+  it('keeps plain named slot outlet native when default scoped slots are enabled', () => {
+    const { code, componentGenerics } = compileVueTemplateToWxml(
+      '<slot name="action" />',
+      '/project/src/components/provider/index.vue',
+      { scopedSlotsRequireProps: false },
+    )
+
+    expect(code).toBe('<slot name="action" />')
+    expect(componentGenerics?.['scoped-slots-action']).toBeUndefined()
+  })
+
   it('warns when component v-slot and template v-slot are mixed, preferring component slot', () => {
     const template = `
 <Child v-slot="{ item }">

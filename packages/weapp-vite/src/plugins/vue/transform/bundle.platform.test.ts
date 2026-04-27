@@ -714,6 +714,88 @@ describe('emitVueBundleAssets platform output', () => {
     expect(jsonAsset?.source).toContain('"default": "./__weapp_vite_generic_component"')
   })
 
+  it('emits weapp scoped slot generic placeholder component for internal componentGenerics', async () => {
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => {
+        return p.replace('/project/src/', '')
+      },
+      absoluteSrcRoot: '/project/src',
+    } as unknown as CompilerContext['configService']
+
+    const scanService = {
+      independentSubPackageMap: new Map(),
+    } as unknown as CompilerContext['scanService']
+
+    const ctx = {
+      configService,
+      scanService,
+    } as CompilerContext
+
+    const filePath = '/project/src/components/KpiBoard/index.vue'
+    const compilationCache = new Map([
+      [
+        filePath,
+        {
+          result: {
+            template: '<slot /><scoped-slots-items wx:if="{{__wvSlotOwnerId}}" />',
+            config: JSON.stringify({
+              component: true,
+              componentGenerics: {
+                'scoped-slots-items': true,
+                'item': true,
+              },
+            }),
+          },
+          isPage: false,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
+    expect(emittedFiles).toContain('components/KpiBoard/__weapp_vite_scoped_slot_generic_component.wxml')
+    expect(emittedFiles).toContain('components/KpiBoard/__weapp_vite_scoped_slot_generic_component.json')
+    expect(emittedFiles).toContain('components/KpiBoard/__weapp_vite_scoped_slot_generic_component.js')
+
+    const templateAsset = emitFile.mock.calls
+      .map(call => call[0])
+      .find(asset => asset?.fileName === 'components/KpiBoard/__weapp_vite_scoped_slot_generic_component.wxml')
+    expect(templateAsset?.source).toBe('<view wx:if="{{false}}" />')
+    const placeholderJsonAsset = emitFile.mock.calls
+      .map(call => call[0])
+      .find(asset => asset?.fileName === 'components/KpiBoard/__weapp_vite_scoped_slot_generic_component.json')
+    expect(placeholderJsonAsset?.source).toContain('"virtualHost": true')
+
+    const jsonAsset = emitFile.mock.calls
+      .map(call => call[0])
+      .find(asset => asset?.fileName === 'components/KpiBoard/index.json')
+
+    expect(jsonAsset?.source).toContain('"default": "./__weapp_vite_scoped_slot_generic_component"')
+    expect(jsonAsset?.source).toContain('"item": true')
+  })
+
   it('recompiles cached jsx entries in dev mode and updates transformed page script', async () => {
     const readFileSpy = vi.spyOn(fs, 'readFile').mockResolvedValue(`
 export default {

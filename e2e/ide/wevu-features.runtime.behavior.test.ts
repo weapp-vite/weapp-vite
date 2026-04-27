@@ -220,6 +220,8 @@ describe.sequential('e2e app: wevu-features / behavior', () => {
       expect(provideScopeWxml).toContain('layout inject = layout-provide-value')
       expect(provideScopeWxml).toContain('component inject = component-provide-value')
       expect(provideScopeWxml).toContain('shadow inject = component-shadow-value')
+      expect(provideScopeWxml).toContain('slot provider = slot-provider-value')
+      expect(provideScopeWxml).toContain('slot inject = slot-provider-value')
       expect(provideScopeWxml).toContain('appInstance=app-instance-provide-value; appSetup=app-setup-provide-value; page=page-provide-value; layout=layout-provide-value; component=component-provide-value; shadow=component-shadow-value')
 
       const storePage = await relaunchPage(miniProgram, '/pages/use-store/index', 'wevu store 特性展示')

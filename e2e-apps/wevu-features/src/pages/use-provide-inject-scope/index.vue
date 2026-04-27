@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { provide } from 'wevu'
 import ProvideInjectScopeMiddle from '../../components/provide-inject-scope-middle/index.vue'
+import ProvideInjectSlotLeaf from '../../components/provide-inject-slot-leaf/index.vue'
+import ProvideInjectSlotProvider from '../../components/provide-inject-slot-provider/index.vue'
 
 const PAGE_PROVIDE_SCOPE_KEY = 'wevu-features:page-provide-scope'
 const SHADOW_PROVIDE_SCOPE_KEY = 'wevu-features:shadow-provide-scope'
@@ -22,6 +24,9 @@ provide(SHADOW_PROVIDE_SCOPE_KEY, 'page-shadow-value')
       page provide = page-provide-value
     </view>
     <ProvideInjectScopeMiddle />
+    <ProvideInjectSlotProvider>
+      <ProvideInjectSlotLeaf />
+    </ProvideInjectSlotProvider>
   </view>
 </template>
 

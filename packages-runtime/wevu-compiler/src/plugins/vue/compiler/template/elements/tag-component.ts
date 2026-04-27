@@ -9,8 +9,9 @@ import {
 } from '@weapp-core/constants'
 import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
+import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
-import { collectElementAttributes } from './attrs'
+import { collectElementAttributes, isBuiltinTag } from './attrs'
 import { buildScopePropsExpression, findSlotDirective, getBindDirectiveExpression, isScopedSlotsDisabled } from './helpers'
 import { transformNormalElement } from './tag-normal'
 import {
@@ -22,6 +23,43 @@ import {
 
   stringifySlotName,
 } from './tag-slot'
+
+function hasLegacySlotAttribute(children: any[]): boolean {
+  return children.some((child) => {
+    if (child.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    return (child as ElementNode).props.some(prop => prop.type === NodeTypes.ATTRIBUTE && prop.name === 'slot')
+  })
+}
+
+function isRenderableSlotChild(child: any): boolean {
+  if (child.type === NodeTypes.COMMENT) {
+    return false
+  }
+  if (child.type === NodeTypes.TEXT) {
+    return child.content.trim().length > 0
+  }
+  return true
+}
+
+function hasDirectComponentSlotChild(children: any[], context: TransformContext): boolean {
+  return children.some((child) => {
+    if (child.type !== NodeTypes.ELEMENT) {
+      return false
+    }
+    if (child.tag === 'component') {
+      return true
+    }
+    if (child.tag === 'template') {
+      return false
+    }
+    if (isBuiltinTag(resolveTemplateTagName(child.tag, context))) {
+      return false
+    }
+    return /^[A-Z]/.test(child.tag)
+  })
+}
 
 export function transformComponentWithSlots(
   node: ElementNode,
@@ -57,6 +95,8 @@ export function transformComponentWithSlots(
     nonTemplateChildren.push(child)
   }
 
+  const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+
   if (slotDirective) {
     if (slotDeclarations.length) {
       context.warnings.push('组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。')
@@ -71,14 +111,17 @@ export function transformComponentWithSlots(
       ),
     )
   }
-  else if (slotDeclarations.length && nonTemplateChildren.length) {
+  else if (slotDeclarations.length && defaultSlotChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
       context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
     }
     else {
-      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, nonTemplateChildren, context))
+      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true }))
     }
+  }
+  else if (!slotDeclarations.length && defaultSlotChildren.length && !context.scopedSlotsRequireProps && !hasLegacySlotAttribute(defaultSlotChildren)) {
+    slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true }))
   }
 
   if (!slotDeclarations.length) {
@@ -104,7 +147,7 @@ export function transformComponentWithSlots(
   const plainSlotDeclarations: ScopedSlotDeclaration[] = []
   for (const decl of slotDeclarations) {
     const hasSlotProps = Object.keys(decl.props).length > 0
-    if (!context.scopedSlotsRequireProps || hasSlotProps) {
+    if (hasSlotProps || (!context.scopedSlotsRequireProps && decl.implicitDefault && hasDirectComponentSlotChild(decl.children, context))) {
       scopedSlotDeclarations.push(decl)
     }
     else {
@@ -178,6 +221,8 @@ export function transformComponentWithSlotsFallback(
     nonTemplateChildren.push(child)
   }
 
+  const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+
   if (slotDirective) {
     if (slotDeclarations.length) {
       context.warnings.push('组件上的 v-slot 与 <template v-slot> 不能同时使用；仅使用组件上的 v-slot。')
@@ -192,13 +237,13 @@ export function transformComponentWithSlotsFallback(
       ),
     )
   }
-  else if (slotDeclarations.length && nonTemplateChildren.length) {
+  else if (slotDeclarations.length && defaultSlotChildren.length) {
     const hasDefault = slotDeclarations.some(decl => decl.name.type === 'default' || (decl.name.type === 'static' && decl.name.value === 'default'))
     if (hasDefault) {
       context.warnings.push('存在显式的 v-slot:default，默认插槽内容将被忽略。')
     }
     else {
-      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, nonTemplateChildren, context))
+      slotDeclarations.push(buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context))
     }
   }
 
@@ -272,7 +317,8 @@ export function transformComponentElement(node: ElementNode, context: TransformC
   const templateSlotChildren = node.children.filter(
     child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
   )
-  if (slotDirective || templateSlotChildren.length > 0) {
+  const shouldUseAugmentedDefaultSlot = node.children.length > 0 && !context.scopedSlotsRequireProps
+  if (slotDirective || templateSlotChildren.length > 0 || shouldUseAugmentedDefaultSlot) {
     const slotNode = { ...node, props: otherProps } as ElementNode
     return transformComponentWithSlots(slotNode, context, transformNode, { extraAttrs: [`data-is="${renderMustache(componentVar, context)}"`] })
   }
