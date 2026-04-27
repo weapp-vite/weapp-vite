@@ -253,7 +253,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(4)
   })
 
-  it('expands direct entry updates across shared chunk importers to preserve common chunk extraction', async () => {
+  it('keeps direct entry updates incremental across shared chunk importers', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const sharedChunksByEntry = new Map<string, Set<string>>()
@@ -274,10 +274,11 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
-  it('expands direct updates when a shared chunk spans main package and subpackage entries', async () => {
+  it('keeps direct updates incremental when a shared chunk spans main package and subpackage entries', async () => {
     const ctx = createContext()
     ctx.scanService.subPackageMap.set('subpackages/account', {})
 
@@ -303,7 +304,34 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(2)
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('expands mixed direct and dependency updates through dependency-driven shared chunks', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sharedChunksByEntry.set(ids[1], new Set(['common.js']))
+    hook.markEntryDirty(ids[0], 'direct')
+    hook.markEntryDirty(ids[1], 'dependency')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+1:mixed'])
   })
 
   it('keeps incremental rebuilds when dirty entries have no related shared chunk index hit', async () => {

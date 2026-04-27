@@ -124,23 +124,20 @@ function resolvePendingEntryIds(options: {
     for (const importer of importers) {
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'dependency') {
         hasDependencyDrivenImporter = true
-        break
+        continue
       }
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
         hasDirectDirtyImporter = true
       }
     }
-    if (!hasDependencyDrivenImporter && !hasDirectDirtyImporter) {
+    if (!hasDependencyDrivenImporter) {
       continue
     }
     if (hasDependencyDrivenImporter && hasDirectDirtyImporter) {
       expansionMode = 'mixed'
     }
-    else if (hasDependencyDrivenImporter) {
+    else {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
-    }
-    else if (hasDirectDirtyImporter) {
-      expansionMode = expansionMode && expansionMode !== 'direct' ? 'mixed' : 'direct'
     }
     for (const importer of importers) {
       if (!pending.has(importer)) {
