@@ -173,6 +173,45 @@ describe('weapp-vite:pre load', () => {
     expect(Array.from(importers ?? []).sort()).toEqual([dataEntry, indexEntry].sort())
   })
 
+  it('mirrors emitted hmr entries into runtime state', () => {
+    const runtimeState = {
+      build: {
+        hmr: {
+          didEmitAllEntries: false,
+          lastEmittedEntryIds: new Set<string>(),
+        },
+      },
+    }
+    const plugins = weappVite({
+      currentBuildTarget: 'app',
+      runtimeState,
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        isDev: true,
+        weappViteConfig: {
+          hmr: { sharedChunks: 'auto' },
+        },
+        relativeAbsoluteSrcRoot(id: string) {
+          return id.replace('/project/src/', '')
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      } as any,
+      buildService: {} as any,
+    } as any)
+
+    expect(plugins.length).toBeGreaterThan(0)
+
+    const emittedEntryIds = new Set(['/project/src/pages/index.vue'])
+    mocked.setDidEmitAllEntries?.(false)
+    mocked.setLastEmittedEntries?.(emittedEntryIds)
+
+    expect(runtimeState.build.hmr.didEmitAllEntries).toBe(false)
+    expect(runtimeState.build.hmr.lastEmittedEntryIds).toEqual(emittedEntryIds)
+    expect(runtimeState.build.hmr.lastEmittedEntryIds).not.toBe(emittedEntryIds)
+  })
+
   it('refreshes shared chunk importers on full rebuilds', async () => {
     mocked.loadEntry.mockClear()
     mocked.loadedEntrySet.clear()

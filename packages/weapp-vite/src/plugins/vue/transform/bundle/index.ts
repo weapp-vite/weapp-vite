@@ -1,4 +1,5 @@
 import type { CompilationCacheEntry, VueBundleState } from './shared'
+import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { emitCompiledVueEntryAssets } from './emitCompiledEntry'
 import { emitFallbackPageAssets } from './emitFallbackPage'
 
@@ -12,9 +13,20 @@ export function resolveVueBundleEmitState(state: VueBundleState) {
   if (!configService || !scanService) {
     return undefined
   }
+  const shouldFilterHmrEntries = Boolean(
+    configService.isDev
+    && ctx.runtimeState?.build?.hmr?.profile?.event === 'update'
+    && !ctx.runtimeState.build.hmr.didEmitAllEntries
+    && ctx.runtimeState.build.hmr.lastEmittedEntryIds.size > 0,
+  )
+  const emittedEntryIds = shouldFilterHmrEntries
+    ? ctx.runtimeState.build.hmr.lastEmittedEntryIds
+    : undefined
 
   return {
-    compilationEntries: Array.from(compilationCache.entries()),
+    compilationEntries: Array.from(compilationCache.entries()).filter(([id]) => {
+      return !emittedEntryIds || emittedEntryIds.has(normalizeFsResolvedId(id))
+    }),
   }
 }
 

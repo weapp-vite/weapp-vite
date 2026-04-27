@@ -111,6 +111,8 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       layoutEntryDependents: Map<string, Set<string>>
       entryLayoutDependencies: Map<string, Set<string>>
+      didEmitAllEntries: boolean
+      lastEmittedEntryIds: Set<string>
       recentProfiles: Array<{
         totalMs: number
         buildCoreMs?: number
@@ -227,6 +229,8 @@ export function createRuntimeState(): RuntimeState {
         entriesMap: new Map<string, Entry | undefined>(),
         layoutEntryDependents: new Map<string, Set<string>>(),
         entryLayoutDependencies: new Map<string, Set<string>>(),
+        didEmitAllEntries: false,
+        lastEmittedEntryIds: new Set<string>(),
         recentProfiles: [],
         profile: {},
       },

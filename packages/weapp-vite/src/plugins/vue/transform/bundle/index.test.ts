@@ -41,6 +41,36 @@ describe('bundle index helpers', () => {
     })
   })
 
+  it('filters compiled entries to the last emitted HMR entries during partial dev updates', () => {
+    expect(resolveVueBundleEmitState({
+      ctx: {
+        configService: {
+          isDev: true,
+        },
+        scanService: {},
+        runtimeState: {
+          build: {
+            hmr: {
+              profile: {
+                event: 'update',
+              },
+              didEmitAllEntries: false,
+              lastEmittedEntryIds: new Set(['/project/src/pages/index.vue']),
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+        ['/project/src/pages/about.vue', { result: {}, isPage: true }],
+      ]),
+    } as any)).toEqual({
+      compilationEntries: [
+        ['/project/src/pages/index.vue', { result: {}, isPage: true }],
+      ],
+    })
+  })
+
   it('emits compiled bundle entries through shared compiled entry flow', async () => {
     const bundle = {}
     const state = {

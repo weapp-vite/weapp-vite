@@ -37,9 +37,15 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
       sharedChunksByEntry: hmrSharedChunksByEntry,
       setDidEmitAllEntries: (value) => {
         hmrState.didEmitAllEntries = value
+        if (ctx.runtimeState?.build?.hmr) {
+          ctx.runtimeState.build.hmr.didEmitAllEntries = value
+        }
       },
       setLastEmittedEntries: (entryIds) => {
         hmrState.lastEmittedEntryIds = new Set(entryIds)
+        if (ctx.runtimeState?.build?.hmr) {
+          ctx.runtimeState.build.hmr.lastEmittedEntryIds = new Set(entryIds)
+        }
       },
     },
   })
