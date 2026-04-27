@@ -23,6 +23,7 @@ import {
 import { parseModelEventValue } from '@/runtime/internal'
 import { markNoSetData } from '@/runtime/noSetData'
 import { hasInjectionContext, inject, injectGlobal, provide, provideGlobal } from '@/runtime/provide'
+import { createSetupSlotsProxy } from '@/runtime/register/runtimeInstance/setupContext'
 import { defineAppSetup, use } from '@/runtime/use'
 import { mergeModels, useAttrs, useModel, useSlots } from '@/runtime/vueCompat'
 
@@ -192,6 +193,23 @@ describe('internal helpers and vue compat', () => {
     const model = useModel({ value: 5 }, 'value')
     model.value = 7
     expect(emit).toHaveBeenCalledWith('update:value', 7)
+  })
+
+  it('useSlots exposes compiled slot presence metadata', () => {
+    const props = reactive({
+      vueSlots: ['default', 'header', ''],
+    }) as Record<string, any>
+    const slots = createSetupSlotsProxy(props)
+
+    setCurrentSetupContext({ slots })
+
+    expect(Object.keys(useSlots())).toEqual(['default', 'header'])
+    expect(typeof useSlots().default).toBe('function')
+    expect('header' in useSlots()).toBe(true)
+
+    props.vueSlots = ['footer']
+    expect(Object.keys(useSlots())).toEqual(['footer'])
+    expect(useSlots().header).toBeUndefined()
   })
 
   it('mergeModels supports arrays and objects', () => {

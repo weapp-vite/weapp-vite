@@ -27,6 +27,7 @@ export interface ScopedSlotDeclaration {
   props: Record<string, string>
   children: any[]
   implicitDefault?: boolean
+  condition?: string
 }
 
 export function renderSlotNameAttribute(
@@ -105,10 +106,11 @@ export function buildSlotDeclaration(
   context: TransformContext,
   options?: {
     implicitDefault?: boolean
+    condition?: string
   },
 ): ScopedSlotDeclaration {
   const props = propsExp ? parseSlotPropsExpression(propsExp, context) : {}
-  return { name, props, children, implicitDefault: options?.implicitDefault }
+  return { name, props, children, implicitDefault: options?.implicitDefault, condition: options?.condition }
 }
 
 export function createScopedSlotComponent(
@@ -197,12 +199,16 @@ export function renderSlotFallback(
   }
 
   const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
+  const wrapCondition = (content: string) => {
+    return decl.condition ? context.platform.wrapIf(decl.condition, content, exp => renderMustache(exp, context)) : content
+  }
+
   if (!slotAttr) {
-    return rawContent
+    return wrapCondition(rawContent)
   }
 
   if (!context.slotSingleRootNoWrapper) {
-    return `<view ${slotAttr}>${rawContent}</view>`
+    return wrapCondition(`<view ${slotAttr}>${rawContent}</view>`)
   }
 
   const renderedChildren = rawRenderedChildren
@@ -216,14 +222,14 @@ export function renderSlotFallback(
   if (renderedChildren.length === 1) {
     const projected = injectAttributeIntoOpeningTag(renderedChildren[0]!.code, slotAttr)
     if (projected) {
-      return projected
+      return wrapCondition(projected)
     }
   }
 
   // 真机 / DevTools 运行时里，多节点 fallback 通过 `<block slot="...">` 投影并不稳定，
   // 某些布局场景（尤其父级是 flex）会直接丢失整组内容，因此这里只对“单根节点”做无包裹下推；
   // 只要出现多节点，就退回真实 `<view>` 容器，优先保证投影可见性和兼容性。
-  return `<view ${slotAttr}>${content}</view>`
+  return wrapCondition(`<view ${slotAttr}>${content}</view>`)
 }
 
 export function transformSlotElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {

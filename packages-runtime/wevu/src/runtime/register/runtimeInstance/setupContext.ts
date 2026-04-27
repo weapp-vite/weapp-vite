@@ -10,6 +10,7 @@ import type {
 import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
+  WEVU_SLOT_NAMES_PROP,
 } from '@weapp-core/constants'
 import { toRaw } from '../../../reactivity'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge'
@@ -33,6 +34,56 @@ export const setupInstanceMethodNames: SetupInstanceMethodName[] = [
 
 export function createSetupSlotsFallback() {
   return Object.freeze(Object.create(null)) as Record<string, never>
+}
+
+const SLOT_RENDER_FN = () => []
+
+function normalizeSlotNames(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return [...new Set(value.filter((item): item is string => typeof item === 'string' && item.length > 0))]
+  }
+  if (!value || typeof value !== 'object') {
+    return []
+  }
+  return Object.entries(value as Record<string, unknown>)
+    .filter(([, enabled]) => Boolean(enabled))
+    .map(([name]) => name)
+}
+
+export function createSetupSlotsProxy(props: Record<string, any>) {
+  const resolveNames = () => normalizeSlotNames(props[WEVU_SLOT_NAMES_PROP])
+  const isEnabled = (key: PropertyKey) => typeof key === 'string' && resolveNames().includes(key)
+
+  return new Proxy(Object.create(null), {
+    get(_target, key) {
+      if (isEnabled(key)) {
+        return SLOT_RENDER_FN
+      }
+      return undefined
+    },
+    has(_target, key) {
+      return isEnabled(key)
+    },
+    ownKeys() {
+      return resolveNames()
+    },
+    getOwnPropertyDescriptor(_target, key) {
+      if (!isEnabled(key)) {
+        return undefined
+      }
+      return {
+        configurable: true,
+        enumerable: true,
+        value: SLOT_RENDER_FN,
+      }
+    },
+    set() {
+      return false
+    },
+    deleteProperty() {
+      return false
+    },
+  }) as Record<string, any>
 }
 
 export function createNoopWatchStopHandle(): WatchStopHandle {

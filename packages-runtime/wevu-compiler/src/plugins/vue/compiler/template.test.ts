@@ -635,7 +635,7 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain('<Provider><view>Default</view></Provider>')
+    expect(code).toContain(`<Provider vue-slots="{{['default']}}"><view>Default</view></Provider>`)
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -655,7 +655,7 @@ describe('compileVueTemplateToWxml', () => {
       { scopedSlotsRequireProps: false },
     )
 
-    expect(code).toContain('<Provider><view><Leaf /></view></Provider>')
+    expect(code).toContain(`<Provider vue-slots="{{['default']}}"><view><Leaf /></view></Provider>`)
     expect(code).not.toContain('generic:scoped-slots-default')
     expect(scopedSlotComponents).toBeUndefined()
   })
@@ -778,7 +778,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(warnings.some(message => message.includes('已禁用作用域插槽参数'))).toBe(true)
     expect(code).toContain('<view slot="header"><view>{{title}}</view></view>')
     expect(code).toContain('<slot><view>fallback</view></slot>')
-    expect(code).not.toContain('vue-slots=')
+    expect(code).toContain(`vue-slots="{{['header']}}"`)
     expect(code).not.toContain('__wv-slot-props=')
   })
 
@@ -794,6 +794,34 @@ describe('compileVueTemplateToWxml', () => {
     const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('<view slot="icon"><image class="img probe" src="/cover.png" /></view>')
+    expect(code).toContain(`vue-slots="{{['icon']}}"`)
+  })
+
+  it('emits slot presence metadata for implicit default slots', () => {
+    const template = `
+<Child>
+  <view>default content</view>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain(`vue-slots="{{['default']}}"`)
+  })
+
+  it('guards plain slot metadata and fallback content with template v-if', () => {
+    const template = `
+<Child>
+  <template #header v-if="showHeader">
+    <view>Header</view>
+  </template>
+</Child>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain(`vue-slots="{{[((showHeader) ? 'header' : '')]}}"`)
+    expect(code).toContain(`<block ${DEFAULT_DIRECTIVES.ifAttr}="{{showHeader}}"><view slot="header">`)
   })
 
   it('projects plain named slot single child without synthetic view wrapper when enabled', () => {

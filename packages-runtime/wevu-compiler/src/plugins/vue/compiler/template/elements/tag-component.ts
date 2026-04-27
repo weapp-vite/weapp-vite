@@ -3,12 +3,14 @@ import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import type { ScopedSlotDeclaration } from './tag-slot'
 import { NodeTypes } from '@vue/compiler-core'
 import {
+  WEVU_SLOT_NAMES_ATTR,
   WEVU_SLOT_OWNER_ID_ATTR,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
 import { transformAttribute } from '../attributes'
 import { transformDirective } from '../directives'
+import { normalizeWxmlExpressionWithContext } from '../expression'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes, isBuiltinTag } from './attrs'
@@ -61,6 +63,42 @@ function hasDirectComponentSlotChild(children: any[], context: TransformContext)
   })
 }
 
+function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext) {
+  const ifDirective = node.props.find(
+    (prop): prop is DirectiveNode =>
+      prop.type === NodeTypes.DIRECTIVE
+      && prop.name === 'if'
+      && prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION,
+  )
+  const rawExp = ifDirective?.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? ifDirective.exp.content : ''
+  return rawExp ? normalizeWxmlExpressionWithContext(rawExp, context) : undefined
+}
+
+function pushSlotNamesAttr(
+  attrs: string[],
+  slotNames: Array<{ name: string, condition?: string }>,
+  context: TransformContext,
+) {
+  if (!slotNames.length) {
+    return
+  }
+  const seen = new Set<string>()
+  const entries: string[] = []
+  for (const item of slotNames) {
+    const dedupeKey = `${item.name}:${item.condition ?? ''}`
+    if (seen.has(dedupeKey)) {
+      continue
+    }
+    seen.add(dedupeKey)
+    entries.push(item.condition ? `((${item.condition}) ? ${item.name} : '')` : item.name)
+  }
+  attrs.push(`${WEVU_SLOT_NAMES_ATTR}="${renderMustache(`[${entries.join(',')}]`, context)}"`)
+}
+
+function shouldExposePlainSlotPresence(node: ElementNode) {
+  return node.tag === 'component' || /^[A-Z]/.test(node.tag)
+}
+
 export function transformComponentWithSlots(
   node: ElementNode,
   context: TransformContext,
@@ -87,6 +125,7 @@ export function transformComponentWithSlots(
             templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
             (child as ElementNode).children,
             context,
+            { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
           ),
         )
         continue
@@ -136,6 +175,9 @@ export function transformComponentWithSlots(
     if (vTextExp !== undefined) {
       children = renderMustache(vTextExp, context)
     }
+    if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren)) {
+      pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
+    }
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
     const { tag } = node
     return children
@@ -155,13 +197,18 @@ export function transformComponentWithSlots(
     }
   }
 
-  const slotNames: string[] = []
+  const slotNames: Array<{ name: string, condition?: string }> = []
   const slotGenericAttrs: string[] = []
   for (const decl of scopedSlotDeclarations) {
     const slotKey = resolveSlotKey(context, decl.name)
     const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode)
-    slotNames.push(stringifySlotName(decl.name, context))
+    slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)
+  }
+  if (shouldExposePlainSlotPresence(node)) {
+    for (const decl of plainSlotDeclarations) {
+      slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
+    }
   }
 
   const { attrs } = collectElementAttributes(node, context, {
@@ -170,9 +217,7 @@ export function transformComponentWithSlots(
     isComponent: true,
   })
   const mergedAttrs = [...extraAttrs, ...attrs, ...slotGenericAttrs]
-  if (slotNames.length) {
-    mergedAttrs.push(`vue-slots="${renderMustache(`[${slotNames.join(',')}]`, context)}"`)
-  }
+  pushSlotNamesAttr(mergedAttrs, slotNames, context)
   if (scopedSlotDeclarations.length) {
     const scopePropsExp = buildScopePropsExpression(context)
     if (scopePropsExp) {
@@ -213,6 +258,7 @@ export function transformComponentWithSlotsFallback(
             templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
             (child as ElementNode).children,
             context,
+            { condition: resolveTemplateSlotCondition(child as ElementNode, context) },
           ),
         )
         continue
@@ -259,6 +305,9 @@ export function transformComponentWithSlotsFallback(
     if (vTextExp !== undefined) {
       children = renderMustache(vTextExp, context)
     }
+    if (children && defaultSlotChildren.length && !hasLegacySlotAttribute(defaultSlotChildren)) {
+      pushSlotNamesAttr(attrs, [{ name: '\'default\'' }], context)
+    }
     const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
     const { tag } = node
     return children
@@ -280,6 +329,13 @@ export function transformComponentWithSlotsFallback(
     isComponent: true,
   })
   const mergedAttrs = [...extraAttrs, ...attrs]
+  if (shouldExposePlainSlotPresence(node)) {
+    pushSlotNamesAttr(
+      mergedAttrs,
+      slotDeclarations.map(decl => ({ name: stringifySlotName(decl.name, context), condition: decl.condition })),
+      context,
+    )
+  }
   const attrString = mergedAttrs.length ? ` ${mergedAttrs.join(' ')}` : ''
   const { tag } = node
   return renderedSlots

@@ -42,11 +42,13 @@ export const WEVU_SLOT_PROPS_KEY = '__wvSlotProps'
 export const WEVU_SLOT_SCOPE_KEY = '__wvSlotScope'
 export const WEVU_SLOT_OWNER_KEY = '__wvOwner'
 export const WEVU_SLOT_PROPS_DATA_KEY = '__wvSlotPropsData'
+export const WEVU_SLOT_NAMES_PROP = 'vueSlots'
 
 export const WEVU_SLOT_OWNER_ATTR = '__wv-owner-id'
 export const WEVU_SLOT_OWNER_ID_ATTR = '__wv-slot-owner-id'
 export const WEVU_SLOT_PROPS_ATTR = '__wv-slot-props'
 export const WEVU_SLOT_SCOPE_ATTR = '__wv-slot-scope'
+export const WEVU_SLOT_NAMES_ATTR = 'vue-slots'
 
 export const WEVU_CLASS_STYLE_RUNTIME_MODULE = '__weapp_vite'
 export const WEVU_CLASS_STYLE_RUNTIME_FILE = '__weapp_vite_class_style'

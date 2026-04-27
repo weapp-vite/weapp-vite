@@ -130,7 +130,7 @@ export interface SetupContext<
   attrs: Record<string, any>
 
   /**
-   * Vue 3 对齐：slots（小程序场景为只读空对象兜底，不提供可调用 slot 函数）
+   * Vue 3 对齐：slots（由编译期传入的 slot 名元数据驱动）
    */
   slots: Record<string, any>
 }

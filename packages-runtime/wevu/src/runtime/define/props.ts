@@ -4,6 +4,7 @@ import type {
   MiniProgramComponentShortProperty,
 } from '../types'
 import {
+  WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_PROP,
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
@@ -200,6 +201,9 @@ export function normalizeProps(
     }
     if (!Object.hasOwn(next, WEVU_SLOT_SCOPE_KEY)) {
       next[WEVU_SLOT_SCOPE_KEY] = { type: null, value: null }
+    }
+    if (!Object.hasOwn(next, WEVU_SLOT_NAMES_PROP)) {
+      next[WEVU_SLOT_NAMES_PROP] = { type: null, value: null }
     }
     return next
   }

@@ -15,7 +15,8 @@ export function transformNormalElement(node: ElementNode, context: TransformCont
     child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
   )
   const shouldUseAugmentedDefaultSlot = node.children.length > 0 && !context.scopedSlotsRequireProps && !isBuiltinTag(tag)
-  if (slotDirective || templateSlotChildren.length > 0 || shouldUseAugmentedDefaultSlot) {
+  const shouldUseSlotPresenceMetadata = node.children.length > 0 && /^[A-Z]/.test(node.tag)
+  if (slotDirective || templateSlotChildren.length > 0 || shouldUseAugmentedDefaultSlot || shouldUseSlotPresenceMetadata) {
     return transformComponentWithSlots(node, context, transformNode)
   }
 

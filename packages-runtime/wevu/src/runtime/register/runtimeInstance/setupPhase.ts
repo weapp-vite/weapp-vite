@@ -19,7 +19,7 @@ import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
-  createSetupSlotsFallback,
+  createSetupSlotsProxy,
   ensureSetupContextInstance,
   normalizeEmitPayload,
   safeMarkNoSetData,
@@ -133,6 +133,18 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   }
 
   const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
+  const slots = createSetupSlotsProxy(props)
+  try {
+    Object.defineProperty(runtimeState, '$slots', {
+      value: slots,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    ;(runtimeState as any).$slots = slots
+  }
 
   const context = safeMarkNoSetData({
     // 与 Vue 3 对齐的 ctx.props
@@ -160,8 +172,8 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     // 与 Vue 3 对齐的 attrs（小程序中为非 props 属性集合）
     attrs,
 
-    // 与 Vue 3 对齐的 slots（小程序场景不提供可调用 slots 函数，兜底只读空对象）
-    slots: createSetupSlotsFallback(),
+    // 与 Vue 3 对齐的 slots（由编译期传入的 slot 名元数据驱动）
+    slots,
   }) as any
 
   // 仅在同步 setup 执行期间暴露 current instance

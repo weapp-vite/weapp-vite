@@ -7,6 +7,8 @@ import {
   WEVU_PARENT_INSTANCE_KEY,
   WEVU_PROVIDES_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SLOT_NAMES_ATTR,
+  WEVU_SLOT_NAMES_PROP,
 } from '../src'
 
 describe('@weapp-core/constants', () => {
@@ -19,5 +21,7 @@ describe('@weapp-core/constants', () => {
     expect(WEVU_PUBLIC_RUNTIME_KEY).toBe('$wevu')
     expect(WEVU_PROVIDES_KEY).toBe('__wevuProvides')
     expect(WEVU_PARENT_INSTANCE_KEY).toBe('__wevuParentInstance')
+    expect(WEVU_SLOT_NAMES_PROP).toBe('vueSlots')
+    expect(WEVU_SLOT_NAMES_ATTR).toBe('vue-slots')
   })
 })
