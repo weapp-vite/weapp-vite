@@ -55,7 +55,7 @@ export default defineConfig({
         htmlTagToWxml: true,
         htmlTagToWxmlTagClass: true,
         scopedSlotsCompiler: 'auto',
-        scopedSlotsRequireProps: true,
+        scopedSlotsRequireProps: false,
         slotMultipleInstance: true,
         classStyleRuntime: 'js',
         objectLiteralBindMode: 'runtime',
@@ -81,7 +81,7 @@ export default defineConfig({
   - `auto`：自动选择最小可用方案（默认）。
   - `augmented`：强制使用增强方案。
   - `off`：关闭 scoped slot（仅保留原生 slot，不支持 slot props）。
-- `scopedSlotsRequireProps`：仅在 slot 传递作用域参数时才生成 scoped slot 组件。默认值随 `scopedSlotsCompiler` 自动推导。
+- `scopedSlotsRequireProps`：仅在 slot 传递作用域参数时才生成 scoped slot 组件。默认 `false`，普通插槽内容也会走增强 scoped slot 组件，以便 slot 投影下的运行时父子关系可被 `provide()` / `inject()` 正确解析；设为 `true` 可保留普通插槽的原生 slot 输出。
 - `slotMultipleInstance`：`v-for` 下 scoped slot 多实例模式（默认 `true`）。
 - `classStyleRuntime`：class/style 绑定运行时。
   - `js`：强制 JS（默认）。

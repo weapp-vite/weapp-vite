@@ -26,6 +26,7 @@ export interface ScopedSlotDeclaration {
   name: SlotNameInfo
   props: Record<string, string>
   children: any[]
+  implicitDefault?: boolean
 }
 
 export function renderSlotNameAttribute(
@@ -102,9 +103,12 @@ export function buildSlotDeclaration(
   propsExp: string | undefined,
   children: any[],
   context: TransformContext,
+  options?: {
+    implicitDefault?: boolean
+  },
 ): ScopedSlotDeclaration {
   const props = propsExp ? parseSlotPropsExpression(propsExp, context) : {}
-  return { name, props, children }
+  return { name, props, children, implicitDefault: options?.implicitDefault }
 }
 
 export function createScopedSlotComponent(
@@ -252,7 +256,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     ? `<slot${slotAttrString}>${fallbackContent}</slot>`
     : `<slot${slotAttrString} />`
 
-  if (context.scopedSlotsRequireProps && !slotPropsExp) {
+  if (!slotPropsExp && (context.scopedSlotsRequireProps || slotNameInfo.type !== 'default')) {
     return slotTag
   }
 
@@ -262,6 +266,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
 
   slotPropsExp = slotPropsExp ?? '[]'
   const scopedAttrs = [
+    `${context.platform.directives.ifAttr}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
     `${WEVU_SLOT_OWNER_ATTR}="${renderMustache(WEVU_SLOT_OWNER_ID_PROP, context)}"`,
     `${WEVU_SLOT_PROPS_ATTR}="${renderMustache(slotPropsExp, context)}"`,
   ]

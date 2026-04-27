@@ -5,7 +5,7 @@ import {
   shouldEmitGenericPlaceholderAsset,
   shouldNormalizeVueTemplateForPlatform,
 } from '../../../../platform'
-import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../../utils'
+import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../../../../utils'
 import { resolveScriptModuleTagByPlatform } from '../../../../utils/wxmlScriptModule'
 import { scanWxml } from '../../../../wxml'
 import { handleWxml } from '../../../../wxml/handle'
@@ -15,6 +15,8 @@ import { resolveVueTransformJsonPlatformOptions } from '../platform'
 import { registerVueTemplateToken } from '../shared'
 
 const LEADING_DOT_SLASH_RE = /^\.\//
+const SCOPED_SLOT_GENERIC_KEY_RE = /^scoped-slots-/
+const WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_TEMPLATE = '<view wx:if="{{false}}" />'
 
 export interface VueBundlePlatformOptions {
   normalizeUsingComponents: boolean
@@ -63,6 +65,31 @@ export function resolveVueBundlePlatformAssetOptions(options: {
   } satisfies VueBundlePlatformAssetOptions
 }
 
+function shouldNormalizeWeappScopedSlotGenericPlaceholder(config: unknown) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    return false
+  }
+
+  const componentGenerics = (config as Record<string, any>).componentGenerics
+  if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
+    return false
+  }
+
+  return Object.entries(componentGenerics).some(([key, value]) => {
+    if (!SCOPED_SLOT_GENERIC_KEY_RE.test(key)) {
+      return false
+    }
+    if (value === true) {
+      return true
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return false
+    }
+    const defaultValue = (value as Record<string, any>).default
+    return typeof defaultValue !== 'string' || !defaultValue.trim()
+  })
+}
+
 export function normalizeVueConfigForPlatform(
   config: string | undefined,
   options: {
@@ -83,12 +110,18 @@ export function normalizeVueConfigForPlatform(
     } as any,
   })
 
-  if (!config || !jsonPlatformOptions.normalizeUsingComponents) {
+  if (!config) {
     return config
   }
 
   try {
     const parsed = JSON.parse(config)
+    const shouldNormalizeConfig = jsonPlatformOptions.normalizeUsingComponents
+      || (options.platform === 'weapp' && shouldNormalizeWeappScopedSlotGenericPlaceholder(parsed))
+    if (!shouldNormalizeConfig) {
+      return config
+    }
+
     return resolveJson(
       {
         json: parsed,
@@ -182,11 +215,19 @@ export function emitPlatformTemplateAsset(
   return normalizedTemplate
 }
 
-export function resolveAlipayGenericPlaceholderBase(relativeBase: string) {
+function resolveGenericPlaceholderBase(relativeBase: string, placeholder: string) {
   const dirIndex = relativeBase.lastIndexOf('/')
   const dir = dirIndex >= 0 ? relativeBase.slice(0, dirIndex) : ''
-  const placeholderName = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.replace(LEADING_DOT_SLASH_RE, '')
+  const placeholderName = placeholder.replace(LEADING_DOT_SLASH_RE, '')
   return dir ? `${dir}/${placeholderName}` : placeholderName
+}
+
+export function resolveAlipayGenericPlaceholderBase(relativeBase: string) {
+  return resolveGenericPlaceholderBase(relativeBase, ALIPAY_GENERIC_COMPONENT_PLACEHOLDER)
+}
+
+export function resolveWeappScopedSlotGenericPlaceholderBase(relativeBase: string) {
+  return resolveGenericPlaceholderBase(relativeBase, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER)
 }
 
 export function emitAlipayGenericPlaceholderAssetsByBase(
@@ -194,13 +235,17 @@ export function emitAlipayGenericPlaceholderAssetsByBase(
   bundle: Record<string, any>,
   placeholderBase: string,
   outputExtensions: OutputExtensions | undefined,
+  options?: {
+    jsonConfig?: Record<string, any>
+    templateSource?: string
+  },
 ) {
   const templateExtension = outputExtensions?.wxml ?? 'wxml'
   const jsonExtension = outputExtensions?.json ?? 'json'
   const scriptExtension = outputExtensions?.js ?? 'js'
 
-  emitSfcTemplateIfMissing(ctx, bundle, placeholderBase, '<view />', templateExtension)
-  emitSfcJsonAsset(ctx, bundle, placeholderBase, { config: JSON.stringify({ component: true }) }, {
+  emitSfcTemplateIfMissing(ctx, bundle, placeholderBase, options?.templateSource ?? '<view />', templateExtension)
+  emitSfcJsonAsset(ctx, bundle, placeholderBase, { config: JSON.stringify(options?.jsonConfig ?? { component: true }) }, {
     extension: jsonExtension,
     kind: 'component',
   })
@@ -241,11 +286,50 @@ export function shouldEmitAlipayGenericPlaceholder(configSource: string | undefi
   })
 }
 
+export function shouldEmitWeappScopedSlotGenericPlaceholder(configSource: string | undefined) {
+  if (!configSource) {
+    return false
+  }
+
+  let config: Record<string, any>
+  try {
+    const parsed = JSON.parse(configSource)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return false
+    }
+    config = parsed
+  }
+  catch {
+    return false
+  }
+
+  const componentGenerics = config.componentGenerics
+  if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
+    return false
+  }
+
+  return Object.entries(componentGenerics).some(([key, value]) => {
+    if (!SCOPED_SLOT_GENERIC_KEY_RE.test(key)) {
+      return false
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return false
+    }
+    return (value as Record<string, any>).default === WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER
+  })
+}
+
 export function resolveGenericPlaceholderBaseForPlatform(
   relativeBase: string,
   configSource: string | undefined,
   platform: string,
 ) {
+  if (platform === 'weapp') {
+    return shouldEmitWeappScopedSlotGenericPlaceholder(configSource)
+      ? resolveWeappScopedSlotGenericPlaceholderBase(relativeBase)
+      : undefined
+  }
+
   if (!resolveVueBundlePlatformOptions({ platform }).emitGenericPlaceholder || !configSource) {
     return undefined
   }
@@ -275,6 +359,12 @@ export function emitAlipayGenericPlaceholderAssets(
     bundle,
     placeholderBase,
     outputExtensions,
+    platform === 'weapp'
+      ? {
+          jsonConfig: { component: true, options: { virtualHost: true } },
+          templateSource: WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_TEMPLATE,
+        }
+      : undefined,
   )
 }
 
@@ -332,6 +422,12 @@ export function emitPlatformConfigSideEffects(
       bundle,
       options.genericPlaceholderBase,
       options.outputExtensions,
+      options.platform === 'weapp'
+        ? {
+            jsonConfig: { component: true, options: { virtualHost: true } },
+            templateSource: WEAPP_SCOPED_SLOT_GENERIC_PLACEHOLDER_TEMPLATE,
+          }
+        : undefined,
     )
     return
   }

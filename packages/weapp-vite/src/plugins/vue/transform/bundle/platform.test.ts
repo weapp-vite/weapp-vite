@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER } from '../../../../utils'
+import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../../../../utils'
 import {
   emitAlipayGenericPlaceholderAssets,
   emitAlipayGenericPlaceholderAssetsByBase,
@@ -14,7 +14,9 @@ import {
   resolvePlatformConfigAssetState,
   resolveVueBundlePlatformAssetOptions,
   resolveVueBundlePlatformOptions,
+  resolveWeappScopedSlotGenericPlaceholderBase,
   shouldEmitAlipayGenericPlaceholder,
+  shouldEmitWeappScopedSlotGenericPlaceholder,
   trackPlatformTemplateAnalysis,
   transformVueTemplateForPlatform,
 } from './platform'
@@ -198,6 +200,13 @@ describe('bundle platform helpers', () => {
     expect(resolveAlipayGenericPlaceholderBase('generic-host')).toBe(ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2))
   })
 
+  it('resolves weapp scoped slot generic placeholder base from page-relative path', () => {
+    expect(resolveWeappScopedSlotGenericPlaceholderBase('pages/demo/index'))
+      .toBe(`pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`)
+    expect(resolveWeappScopedSlotGenericPlaceholderBase('generic-host'))
+      .toBe(WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2))
+  })
+
   it('detects whether alipay generic placeholder assets are needed from config', () => {
     expect(shouldEmitAlipayGenericPlaceholder(JSON.stringify({
       componentGenerics: {
@@ -234,6 +243,31 @@ describe('bundle platform helpers', () => {
     }))).toBe(false)
   })
 
+  it('detects whether weapp scoped slot generic placeholder assets are needed from config', () => {
+    expect(shouldEmitWeappScopedSlotGenericPlaceholder(JSON.stringify({
+      componentGenerics: {
+        'scoped-slots-default': {
+          default: WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER,
+        },
+      },
+    }))).toBe(true)
+
+    expect(shouldEmitWeappScopedSlotGenericPlaceholder(JSON.stringify({
+      componentGenerics: {
+        list: {
+          default: WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER,
+        },
+      },
+    }))).toBe(false)
+    expect(shouldEmitWeappScopedSlotGenericPlaceholder(JSON.stringify({
+      componentGenerics: {
+        'scoped-slots-default': true,
+      },
+    }))).toBe(false)
+    expect(shouldEmitWeappScopedSlotGenericPlaceholder(undefined)).toBe(false)
+    expect(shouldEmitWeappScopedSlotGenericPlaceholder('{')).toBe(false)
+  })
+
   it('resolves generic placeholder base only for platforms that need it', () => {
     const configSource = JSON.stringify({
       componentGenerics: {
@@ -252,6 +286,19 @@ describe('bundle platform helpers', () => {
       configSource,
       'weapp',
     )).toBeUndefined()
+
+    expect(resolveGenericPlaceholderBaseForPlatform(
+      'pages/demo/index',
+      JSON.stringify({
+        componentGenerics: {
+          'scoped-slots-default': {
+            default: WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER,
+          },
+          'list': true,
+        },
+      }),
+      'weapp',
+    )).toBe(`pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`)
 
     expect(resolveGenericPlaceholderBaseForPlatform(
       'pages/demo/index',
@@ -306,6 +353,52 @@ describe('bundle platform helpers', () => {
       {},
       'pages/demo/generic',
       'mjs',
+    )
+  })
+
+  it('emits invisible placeholder template for weapp scoped slot generics', () => {
+    const pluginCtx = { emitFile: vi.fn() }
+    const bundle = {}
+    emitPlatformConfigSideEffects(bundle, {
+      pluginCtx,
+      relativeBase: 'pages/demo/index',
+      config: JSON.stringify({
+        componentGenerics: {
+          'scoped-slots-default': {
+            default: WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER,
+          },
+        },
+      }),
+      outputExtensions: {
+        wxml: 'wxml',
+        json: 'json',
+        js: 'js',
+      } as any,
+      platform: 'weapp',
+    })
+
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      pluginCtx,
+      bundle,
+      `pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+      '<view wx:if="{{false}}" />',
+      'wxml',
+    )
+    expect(ensureScriptlessComponentAssetMock).toHaveBeenCalledWith(
+      pluginCtx,
+      bundle,
+      `pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+      'js',
+    )
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      pluginCtx,
+      bundle,
+      `pages/demo/${WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
+      { config: JSON.stringify({ component: true, options: { virtualHost: true } }) },
+      {
+        extension: 'json',
+        kind: 'component',
+      },
     )
   })
 

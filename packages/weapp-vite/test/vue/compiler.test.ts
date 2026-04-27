@@ -284,6 +284,7 @@ describe('Vue Template Compiler', () => {
         { scopedSlotsRequireProps: false },
       )
       expect(result.code).toContain('scoped-slots-default')
+      expect(result.code).toContain('wx:if="{{__wvSlotOwnerId}}"')
       expect(result.code).toContain('__wv-slot-props')
       expect(result.componentGenerics?.['scoped-slots-default']).toBe(true)
     })

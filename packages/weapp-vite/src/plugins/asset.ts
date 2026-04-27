@@ -6,6 +6,7 @@ import { Buffer } from 'node:buffer'
 import { fs } from '@weapp-core/shared/fs'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
+import picomatch from 'picomatch'
 import { defaultAssetExtensions, defaultExcluded } from '../defaults'
 import { normalizePath } from '../utils/path'
 
@@ -27,6 +28,25 @@ function stripQueryAndHash(value: string) {
     .filter(index => index >= 0)
     .reduce((min, index) => Math.min(min, index), Number.POSITIVE_INFINITY)
   return Number.isFinite(endIndex) ? value.slice(0, endIndex) : value
+}
+
+function createPathMatcher(patterns: string[], options?: picomatch.PicomatchOptions) {
+  if (!patterns.length) {
+    return () => false
+  }
+
+  return picomatch(patterns.map(pattern => normalizePath(pattern)), options)
+}
+
+function createAssetPathVariants(file: string, roots: string[]) {
+  const variants = [file]
+  for (const root of roots) {
+    const relative = path.relative(root, file)
+    if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) {
+      variants.push(relative)
+    }
+  }
+  return variants.map(variant => normalizePath(variant))
 }
 
 export function collectBundledAssetSourcePaths(bundle: OutputBundle | Record<string, any>) {
@@ -77,6 +97,8 @@ function scanAssetFiles(configService: CompilerContext['configService'], config:
     `**/*.{${defaultAssetExtensions.join(',')}}`,
     ...include,
   ]
+  const includeMatcher = createPathMatcher(patterns, { dot: false })
+  const ignoreMatcher = createPathMatcher(ignore, { dot: true })
 
   const roots = new Set<string>()
   if (buildTarget !== 'plugin') {
@@ -96,12 +118,15 @@ function scanAssetFiles(configService: CompilerContext['configService'], config:
       pathSeparator: '/',
     })
       .withFullPaths()
-      .globWithOptions(patterns, {
-        ignore,
-        dot: false,
-      })
       .crawl(root)
       .withPromise()
+      .then((files) => {
+        return files.filter((file) => {
+          const variants = createAssetPathVariants(file, [root, configService.absoluteSrcRoot, configService.cwd])
+          return variants.some(variant => includeMatcher(variant))
+            && !variants.some(variant => ignoreMatcher(variant))
+        })
+      })
   })
 
   return Promise.all(crawlPromises)

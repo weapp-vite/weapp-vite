@@ -504,6 +504,15 @@ describe('emitSharedVueEntryAssets', () => {
     })
 
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(compileVueFileMock).toHaveBeenCalledWith(
+      '<view />',
+      '/project/src/pages/index/index.vue',
+      expect.objectContaining({
+        template: expect.objectContaining({
+          scopedSlotsRequireProps: false,
+        }),
+      }),
+    )
     expect(compileJsxFileMock).not.toHaveBeenCalled()
     expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
       result,
@@ -518,6 +527,42 @@ describe('emitSharedVueEntryAssets', () => {
     expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
       pluginCtx,
       [{ kind: 'native', file: '/layouts/default/index' }],
+    )
+  })
+
+  it('preserves native plain slot compilation when scopedSlotsRequireProps is explicit', async () => {
+    await compileVueLikeFile({
+      source: '<slot-host><template #header><view>Header</view></template></slot-host>',
+      filename: '/project/src/pages/index/index.vue',
+      ctx: {} as any,
+      pluginCtx: { emitFile: vi.fn() },
+      isPage: true,
+      isApp: false,
+      configService: {
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {
+          vue: {
+            template: {
+              scopedSlotsRequireProps: true,
+            },
+          },
+        },
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledWith(
+      '<slot-host><template #header><view>Header</view></template></slot-host>',
+      '/project/src/pages/index/index.vue',
+      expect.objectContaining({
+        template: expect.objectContaining({
+          scopedSlotsRequireProps: true,
+        }),
+      }),
     )
   })
 

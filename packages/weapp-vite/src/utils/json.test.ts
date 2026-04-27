@@ -7,6 +7,7 @@ import {
   resolveImportee,
   resolveJson,
   toKebabCaseComponentName,
+  WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER,
 } from './json'
 
 describe('utils/json resolveJson', () => {
@@ -177,7 +178,26 @@ describe('utils/json resolveJson', () => {
     expect(normalized.componentGenerics.item.default).toBe('./custom-item')
   })
 
-  it('keeps componentGenerics untouched on non-alipay platforms', () => {
+  it('fills scoped slot componentGenerics default on weapp platform', () => {
+    const source = resolveJson(
+      {
+        json: {
+          componentGenerics: {
+            'scoped-slots-default': true,
+            'list': true,
+          },
+        },
+      },
+      undefined,
+      'weapp',
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.componentGenerics['scoped-slots-default'].default).toBe(WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER)
+    expect(normalized.componentGenerics.list).toBe(true)
+  })
+
+  it('keeps non-scoped componentGenerics untouched on non-alipay platforms', () => {
     const source = resolveJson(
       {
         json: {

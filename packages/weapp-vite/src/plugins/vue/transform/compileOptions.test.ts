@@ -213,6 +213,57 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(loggerWarnMock).toHaveBeenCalled()
   })
 
+  it('defaults plain slots to augmented scoped slot compilation', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.template.scopedSlotsCompiler).toBe('auto')
+    expect(options.template.scopedSlotsRequireProps).toBe(false)
+  })
+
+  it('allows preserving native plain slot output with explicit scopedSlotsRequireProps', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        weappViteConfig: {
+          vue: {
+            template: {
+              scopedSlotsRequireProps: true,
+            },
+          },
+        },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.template.scopedSlotsRequireProps).toBe(true)
+  })
+
   it('preserves boolean htmlTagToWxml config when resolving compile options', () => {
     const options = createCompileVueFileOptions(
       {} as any,

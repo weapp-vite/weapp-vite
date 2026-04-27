@@ -22,10 +22,12 @@ interface ResolveJsonOptions {
 }
 
 export const ALIPAY_GENERIC_COMPONENT_PLACEHOLDER = './__weapp_vite_generic_component'
+export const WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER = './__weapp_vite_scoped_slot_generic_component'
 const JSON_FILE_JS_EXTENSION_RE = /\.[jt]s$/
 const COMPONENT_NAME_LOWER_TO_UPPER_RE = /([a-z0-9])([A-Z])/g
 const COMPONENT_NAME_MULTI_UPPER_RE = /([A-Z]+)([A-Z][a-z])/g
 const COMPONENT_NAME_HAS_UPPER_RE = /[A-Z]/
+const SCOPED_SLOT_GENERIC_KEY_RE = /^scoped-slots-/
 
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
@@ -140,21 +142,29 @@ function normalizeComponentGenericsByPlatform(
   componentGenerics: Record<string, any>,
   platform?: MpPlatform,
 ) {
-  if (!shouldFillComponentGenericsDefault(platform)) {
+  if (!shouldFillComponentGenericsDefault(platform) && platform !== 'weapp') {
     return componentGenerics
   }
 
   const normalized: Record<string, any> = {}
   for (const [key, value] of Object.entries(componentGenerics)) {
+    const placeholder = platform === 'weapp'
+      ? (SCOPED_SLOT_GENERIC_KEY_RE.test(key) ? WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER : undefined)
+      : ALIPAY_GENERIC_COMPONENT_PLACEHOLDER
+    if (!placeholder) {
+      normalized[key] = value
+      continue
+    }
+
     if (value === true) {
-      normalized[key] = { default: ALIPAY_GENERIC_COMPONENT_PLACEHOLDER }
+      normalized[key] = { default: placeholder }
       continue
     }
 
     if (isObject(value)) {
       const nextValue = { ...(value as Record<string, any>) }
       if (typeof nextValue.default !== 'string' || !nextValue.default.trim()) {
-        nextValue.default = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER
+        nextValue.default = placeholder
       }
       normalized[key] = nextValue
       continue

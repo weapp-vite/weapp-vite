@@ -3,7 +3,7 @@ import type { TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
-import { collectElementAttributes } from './attrs'
+import { collectElementAttributes, isBuiltinTag } from './attrs'
 import { findSlotDirective } from './helpers'
 import { transformComponentWithSlots } from './tag-component'
 
@@ -14,7 +14,8 @@ export function transformNormalElement(node: ElementNode, context: TransformCont
   const templateSlotChildren = node.children.filter(
     child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
   )
-  if (slotDirective || templateSlotChildren.length > 0) {
+  const shouldUseAugmentedDefaultSlot = node.children.length > 0 && !context.scopedSlotsRequireProps && !isBuiltinTag(tag)
+  if (slotDirective || templateSlotChildren.length > 0 || shouldUseAugmentedDefaultSlot) {
     return transformComponentWithSlots(node, context, transformNode)
   }
 
