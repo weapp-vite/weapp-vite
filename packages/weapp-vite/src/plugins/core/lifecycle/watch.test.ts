@@ -1,5 +1,5 @@
 import { fs } from '@weapp-core/shared/fs'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWatchChangeHook } from './watch'
 
 const invalidateFileCacheMock = vi.hoisted(() => vi.fn())
@@ -71,6 +71,7 @@ function createState(overrides: Record<string, any> = {}) {
         build: {
           hmr: {
             profile: {},
+            vueEntryNonJsonSignatures: new Map(),
           },
         },
       },
@@ -97,6 +98,10 @@ describe('core lifecycle watch hook', () => {
     findJsEntryMock.mockResolvedValue({ path: null })
     isTemplateMock.mockReturnValue(false)
     collectAffectedEntriesMock.mockReturnValue(new Set())
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('marks template sidecar updates as direct entry dirties', async () => {
@@ -166,6 +171,32 @@ describe('core lifecycle watch hook', () => {
     await hook(entryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
+  it('marks vue entry updates as metadata when only json macro content changed', async () => {
+    const entryId = '/project/src/pages/logs/index.vue'
+    const previousSource = `<script setup lang="ts">
+definePageJson({ navigationBarTitleText: '首页' })
+const count = 1
+</script>
+
+<template><view>{{ count }}</view></template>`
+    const nextSource = previousSource.replace('首页', '新标题')
+    const { resolveVueSfcNonJsonSignature } = await import('../../../utils/file/vueSfcSignature')
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+    })
+    state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(
+      entryId,
+      resolveVueSfcNonJsonSignature(previousSource, entryId),
+    )
+    vi.spyOn(fs, 'readFile').mockResolvedValue(nextSource)
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
   })
 
   it('normalizes transient delete events on loaded scripts back to updates', async () => {

@@ -10,6 +10,7 @@ import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findJsEntry, isTemplate } from '../../../utils/file'
+import { resolveVueSfcNonJsonSignature } from '../../../utils/file/vueSfcSignature'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
@@ -63,6 +64,25 @@ export function createBuildStartHook(state: CorePluginState) {
   }
 }
 
+async function isVueEntryJsonOnlyUpdate(state: CorePluginState, normalizedId: string) {
+  if (!normalizedId.endsWith('.vue')) {
+    return false
+  }
+
+  const previous = state.ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.get(normalizedId)
+  if (!previous) {
+    return false
+  }
+
+  try {
+    const source = await fs.readFile(normalizedId, 'utf-8')
+    return resolveVueSfcNonJsonSignature(source, normalizedId) === previous
+  }
+  catch {
+    return false
+  }
+}
+
 async function processChangedFile(
   state: CorePluginState,
   id: string,
@@ -79,7 +99,7 @@ async function processChangedFile(
   const dirtyReasonStats = new Map<string, number>()
   const markEntryDirtyWithCause = (
     entryId: string,
-    reason: 'direct' | 'dependency',
+    reason: 'direct' | 'dependency' | 'metadata',
     cause: string,
   ) => {
     state.markEntryDirty(entryId, reason)
@@ -88,6 +108,10 @@ async function processChangedFile(
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
+
+  if (isDeletedMissingSelf) {
+    ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.delete(normalizedId)
+  }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
     const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event)
@@ -179,7 +203,12 @@ async function processChangedFile(
   }
 
   if (!isDeletedMissingSelf && (loadedEntrySet.has(normalizedId) || declaredEntryType === 'page' || declaredEntryType === 'component')) {
-    markEntryDirtyWithCause(normalizedId, 'direct', 'entry-direct')
+    const isJsonOnlyVueEntryUpdate = event === 'update' && await isVueEntryJsonOnlyUpdate(state, normalizedId)
+    markEntryDirtyWithCause(
+      normalizedId,
+      isJsonOnlyVueEntryUpdate ? 'metadata' : 'direct',
+      isJsonOnlyVueEntryUpdate ? 'entry-json-only' : 'entry-direct',
+    )
   }
   else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {
     const affectedEntries = state.layoutEntryDependents.get(normalizedId)

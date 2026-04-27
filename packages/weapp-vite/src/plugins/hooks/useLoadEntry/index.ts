@@ -13,7 +13,7 @@ import { createTemplateScanner } from './template'
 export { type JsonEmitFileEntry } from './jsonEmit'
 
 type HmrSharedChunksMode = 'full' | 'auto' | 'off'
-type DirtyEntryReason = 'direct' | 'dependency'
+type DirtyEntryReason = 'direct' | 'dependency' | 'metadata'
 
 interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
@@ -94,6 +94,9 @@ function resolvePendingEntryIds(options: {
   const startedAt = performance.now()
   const relatedChunkIds = new Set<string>()
   for (const entryId of options.dirtyEntrySet) {
+    if (options.dirtyEntryReasons.get(entryId) === 'metadata') {
+      continue
+    }
     const chunkIds = options.sharedChunksByEntry.get(entryId)
     if (!chunkIds?.size) {
       continue
@@ -265,7 +268,13 @@ export function useLoadEntry(
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
       dirtyEntrySet.add(entryId)
-      dirtyEntryReasons.set(entryId, reason)
+      const previous = dirtyEntryReasons.get(entryId)
+      const nextReason = previous === 'dependency' || reason === 'dependency'
+        ? 'dependency'
+        : previous === 'direct' || reason === 'direct'
+          ? 'direct'
+          : reason
+      dirtyEntryReasons.set(entryId, nextReason)
       loadedEntrySet.delete(entryId)
     },
     async emitDirtyEntries(this: PluginContext) {

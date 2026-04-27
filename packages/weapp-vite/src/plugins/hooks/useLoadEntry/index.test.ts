@@ -8,7 +8,7 @@ function createContext() {
         hmr: {
           loadedEntrySet: new Set<string>(),
           dirtyEntrySet: new Set<string>(),
-          dirtyEntryReasons: new Map<string, 'direct' | 'dependency'>(),
+          dirtyEntryReasons: new Map<string, 'direct' | 'dependency' | 'metadata'>(),
           resolvedEntryMap: new Map<string, { id: string }>(),
           entriesMap: new Map<string, any>(),
           layoutEntryDependents: new Map<string, Set<string>>(),
@@ -304,6 +304,34 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
     expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual(['shared-chunk(common.js)+2:direct'])
+  })
+
+  it('keeps metadata entry updates incremental across source shared chunk importers', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const sharedChunksByEntry = new Map<string, Set<string>>()
+    const sourceSharedChunks = new Set<string>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+        sharedChunksByEntry,
+        sourceSharedChunks,
+      },
+    })
+
+    const ids = ['/project/src/a.vue', '/project/src/b.vue', '/project/src/c.vue']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set(ids))
+    sharedChunksByEntry.set(ids[0], new Set(['common.js']))
+    sourceSharedChunks.add('common.js')
+    hook.markEntryDirty(ids[0], 'metadata')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+    expect(ctx.runtimeState.build.hmr.profile.pendingReasonSummary).toEqual([])
   })
 
   it('keeps direct updates incremental when a shared chunk spans main package and subpackage entries', async () => {

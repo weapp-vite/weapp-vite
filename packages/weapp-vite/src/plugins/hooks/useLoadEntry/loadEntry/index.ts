@@ -10,6 +10,7 @@ import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { resolveVueSfcNonJsonSignature } from '../../../../utils/file/vueSfcSignature'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -146,6 +147,26 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       addNormalizedWatchFile(this, vueEntryPath)
     }
 
+    let vueSource: string | undefined
+    const readVueSource = async () => {
+      if (!vueEntryPath) {
+        return undefined
+      }
+      if (vueSource !== undefined) {
+        return vueSource
+      }
+      try {
+        vueSource = await fs.readFile(vueEntryPath, 'utf-8')
+      }
+      catch (error) {
+        const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
+        if (!(missingEntry && configService.isDev && !await fs.pathExists(vueEntryPath))) {
+          throw error
+        }
+      }
+      return vueSource
+    }
+
     if (!jsonEntry.path) {
       if (vueEntryPath) {
         const configFromVue = await extractConfigFromVue(vueEntryPath)
@@ -260,16 +281,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         })
 
         if (type === 'page') {
-          let vueSource: string | undefined
-          try {
-            vueSource = await fs.readFile(vueEntryPath, 'utf-8')
-          }
-          catch (error) {
-            const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
-            if (!(missingEntry && configService.isDev && !await fs.pathExists(vueEntryPath))) {
-              throw error
-            }
-          }
+          const vueSource = await readVueSource()
           if (vueSource) {
             const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
             if (layoutPlan) {
@@ -304,6 +316,16 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 )
               }
             }
+          }
+        }
+      }
+
+      if (configService.isDev && hasJsonEntry && vueEntryPath) {
+        const vueSource = await readVueSource()
+        if (vueSource) {
+          const nonJsonSignature = resolveVueSfcNonJsonSignature(vueSource, vueEntryPath)
+          if (nonJsonSignature) {
+            ctx.runtimeState.build.hmr.vueEntryNonJsonSignatures.set(normalizedId, nonJsonSignature)
           }
         }
       }

@@ -106,11 +106,12 @@ export interface RuntimeState {
     hmr: {
       loadedEntrySet: Set<string>
       dirtyEntrySet: Set<string>
-      dirtyEntryReasons: Map<string, 'direct' | 'dependency'>
+      dirtyEntryReasons: Map<string, 'direct' | 'dependency' | 'metadata'>
       resolvedEntryMap: Map<string, ResolvedId>
       entriesMap: Map<string, Entry | undefined>
       layoutEntryDependents: Map<string, Set<string>>
       entryLayoutDependencies: Map<string, Set<string>>
+      vueEntryNonJsonSignatures: Map<string, string>
       didEmitAllEntries: boolean
       lastEmittedEntryIds: Set<string>
       recentProfiles: Array<{
@@ -224,11 +225,12 @@ export function createRuntimeState(): RuntimeState {
       hmr: {
         loadedEntrySet: new Set<string>(),
         dirtyEntrySet: new Set<string>(),
-        dirtyEntryReasons: new Map<string, 'direct' | 'dependency'>(),
+        dirtyEntryReasons: new Map<string, 'direct' | 'dependency' | 'metadata'>(),
         resolvedEntryMap: new Map<string, ResolvedId>(),
         entriesMap: new Map<string, Entry | undefined>(),
         layoutEntryDependents: new Map<string, Set<string>>(),
         entryLayoutDependencies: new Map<string, Set<string>>(),
+        vueEntryNonJsonSignatures: new Map<string, string>(),
         didEmitAllEntries: false,
         lastEmittedEntryIds: new Set<string>(),
         recentProfiles: [],
