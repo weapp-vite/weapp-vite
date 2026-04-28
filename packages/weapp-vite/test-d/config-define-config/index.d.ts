@@ -1,5 +1,13 @@
 export interface AutoImportComponentsConfig {
   vueComponents?: boolean | string
+  resolvers?: Array<{
+    resolve?: (componentName: string, baseName: string) => {
+      name: string
+      from: string
+      resolvedId?: string
+      sourceType?: 'wevu-sfc' | 'native'
+    } | void
+  }>
 }
 
 export interface WeappViteConfig {

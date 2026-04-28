@@ -1,4 +1,9 @@
-export interface ResolvedValue { name: string, from: string }
+export interface ResolvedValue {
+  name: string
+  from: string
+  resolvedId?: string
+  sourceType?: 'wevu-sfc' | 'native'
+}
 
 export type ResolverSupportFilesStrategy = 'used' | 'full'
 

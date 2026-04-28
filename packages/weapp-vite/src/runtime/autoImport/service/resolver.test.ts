@@ -62,6 +62,7 @@ describe('autoImport resolver helpers', () => {
           return {
             name: 't-button',
             from: 'tdesign-miniprogram/button/button',
+            sourceType: 'native',
           }
         }
         return undefined
@@ -80,6 +81,7 @@ describe('autoImport resolver helpers', () => {
     expect(resolved).toEqual({
       name: 'TButton',
       from: 'tdesign-miniprogram/button/button',
+      sourceType: 'native',
     })
     expect((resolver as any).resolve).toHaveBeenCalledWith('TButton', '/project/src/pages/index/index')
     expect((resolver as any).resolve).toHaveBeenCalledWith('t-button', '/project/src/pages/index/index')

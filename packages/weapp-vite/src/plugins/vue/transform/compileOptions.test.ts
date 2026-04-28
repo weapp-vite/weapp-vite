@@ -214,6 +214,44 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(loggerWarnMock).toHaveBeenCalled()
   })
 
+  it('marks resolver auto-imports that point at local vue sfc files', async () => {
+    const autoImportResolve = vi.fn(() => ({
+      kind: 'resolver',
+      value: {
+        name: 'Issue520ResolverSlotCard',
+        from: '/components/issue-520/ResolverSlotCard/index.vue',
+      },
+    }))
+    const options = createCompileVueFileOptions(
+      {
+        autoImportService: {
+          resolve: autoImportResolve,
+        },
+      } as any,
+      {} as any,
+      '/project/src/pages/issue-520/index.vue',
+      true,
+      false,
+      {
+        platform: 'weapp',
+        outputExtensions: {},
+        absoluteSrcRoot: '/project/src',
+        weappViteConfig: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(await options.autoImportTags.resolveUsingComponent('Issue520ResolverSlotCard')).toEqual({
+      name: 'Issue520ResolverSlotCard',
+      from: '/components/issue-520/ResolverSlotCard/index.vue',
+      sourceType: 'wevu-sfc',
+    })
+  })
+
   it('defaults plain slots to augmented scoped slot compilation', () => {
     const options = createCompileVueFileOptions(
       {} as any,

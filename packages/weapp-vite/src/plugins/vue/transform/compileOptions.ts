@@ -2,8 +2,10 @@ import type { CompileVueFileOptions } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
 import type { MpPlatform } from '../../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import path from 'pathe'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
+import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { createSfcResolveSrcOptions } from '../../utils/vueSfc'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
@@ -16,6 +18,8 @@ interface CompileOptionsContext {
   classStyleRuntimeWarned: { value: boolean }
   compileOptionsCache?: Map<string, CompileVueFileResolvedOptions>
 }
+
+type AutoImportComponentSourceType = 'wevu-sfc' | 'native'
 
 export function getCompileVueFileOptionsCacheKey(vuePath: string, isPage: boolean, isApp: boolean) {
   return `${vuePath}::${isPage ? 'page' : 'component'}::${isApp ? 'app' : 'entry'}`
@@ -93,6 +97,51 @@ function buildCompileVueFileOptions(
   const jsonConfig = configService.weappViteConfig?.json
   const wevuDefaults = resolveWevuDefaultsWithPreset(configService.weappViteConfig)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
+
+  async function resolveAutoImportComponentSourceType(match: NonNullable<ReturnType<NonNullable<CompilerContext['autoImportService']>['resolve']>>) {
+    if (match.kind === 'local') {
+      const resolvedId = match.entry.templatePath
+      const sourceType: AutoImportComponentSourceType = resolvedId?.endsWith('.vue') ? 'wevu-sfc' : 'native'
+      return {
+        resolvedId,
+        sourceType,
+      }
+    }
+
+    const explicitSourceType = (match.value as { sourceType?: AutoImportComponentSourceType }).sourceType
+    const explicitResolvedId = (match.value as { resolvedId?: string }).resolvedId
+    if (explicitSourceType || explicitResolvedId?.endsWith('.vue') || match.value.from.endsWith('.vue')) {
+      return {
+        resolvedId: explicitResolvedId,
+        sourceType: explicitSourceType ?? (explicitResolvedId?.endsWith('.vue') || match.value.from.endsWith('.vue') ? 'wevu-sfc' : 'native'),
+      }
+    }
+
+    let localSourceBase: string | undefined
+    if (match.value.from.startsWith('/')) {
+      localSourceBase = path.join(configService.absoluteSrcRoot, match.value.from.slice(1))
+    }
+    else if (match.value.from.startsWith('.')) {
+      localSourceBase = path.resolve(path.dirname(importerBaseName), match.value.from)
+    }
+
+    if (!localSourceBase) {
+      return {
+        resolvedId: explicitResolvedId,
+        sourceType: 'native' as const,
+      }
+    }
+
+    const resolvedId = await resolveEntryPath(
+      localSourceBase,
+      createCachedEntryResolveOptions(configService, { kind: 'default' }),
+    )
+    return {
+      resolvedId,
+      sourceType: resolvedId?.endsWith('.vue') ? 'wevu-sfc' as const : 'native' as const,
+    }
+  }
+
   return {
     isPage,
     isApp,
@@ -127,18 +176,10 @@ function buildCompileVueFileOptions(
         if (!match?.value) {
           return undefined
         }
-        if (match.kind === 'local') {
-          const resolvedId = match.entry.templatePath
-          const sourceType: 'wevu-sfc' | 'native' = resolvedId?.endsWith('.vue') ? 'wevu-sfc' : 'native'
-          return {
-            ...match.value,
-            resolvedId,
-            sourceType,
-          }
-        }
+        const sourceInfo = await resolveAutoImportComponentSourceType(match)
         return {
           ...match.value,
-          sourceType: 'native' as const,
+          ...sourceInfo,
         }
       },
     },
