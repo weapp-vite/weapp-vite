@@ -33,7 +33,9 @@ function normalizeResolvedUsingComponent(result: ResolvedUsingComponentPath | un
 }
 
 function isWevuSfcComponent(result: ReturnType<typeof normalizeResolvedUsingComponent>) {
-  return result?.sourceType === 'wevu-sfc' || Boolean(result?.resolvedId?.endsWith('.vue'))
+  return result?.sourceType === 'wevu-sfc'
+    || Boolean(result?.resolvedId?.endsWith('.vue'))
+    || Boolean(result?.from?.endsWith('.vue'))
 }
 
 function isVueSfcSource(source: string) {

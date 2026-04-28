@@ -111,7 +111,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
       if (typeof resolverAny.resolve === 'function') {
         const resolved = resolverAny.resolve(candidate, baseName)
         if (resolved) {
-          return candidate === componentName ? resolved : { name: componentName, from: resolved.from }
+          return candidate === componentName ? resolved : { ...resolved, name: componentName }
         }
       }
 
@@ -124,7 +124,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
       if (typeof resolver === 'function') {
         const resolved = resolver(candidate, baseName)
         if (resolved) {
-          return candidate === componentName ? resolved : { name: componentName, from: resolved.from }
+          return candidate === componentName ? resolved : { ...resolved, name: componentName }
         }
       }
     }
