@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.15.19
+
+### Patch Changes
+
+- 🐛 **修复自动导入组件扫描对 `*.json.ts` 配置文件的候选去重逻辑，避免同一组件在初始扫描中被重复注册并输出误导性的组件重名告警。** [`baf7d0e`](https://github.com/weapp-vite/weapp-vite/commit/baf7d0e361897f805b36bcafc70fb81f01705cf8) by @sonofmagic
+
+- 🐛 **增强开发态 HMR profile 的场景关联能力，支持通过环境变量强制输出 JSONL，并在样本中记录事件 id 与相对源码路径，方便 workspace/template 审计稳定匹配每次热更新。同时修复侧车文件监听在启动初期遇到已知文件原子保存时可能漏掉恢复事件的问题，避免 package script dev 入口下的 HMR 更新偶发丢失。** [#519](https://github.com/weapp-vite/weapp-vite/pull/519) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.15.19`, `wevu@6.15.19`
+
 ## 6.15.18
 
 ### Patch Changes
