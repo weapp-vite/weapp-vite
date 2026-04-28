@@ -1,0 +1,4 @@
+<view class="sub-native-page">
+  <view class="sub-native-page__title">SUB_TEMPLATE_MARKER</view>
+  <view>{{shared}}</view>
+</view>

@@ -1,0 +1,10 @@
+<import src="../../shared/templates/card.wxml" />
+<wxs src="../../shared/wxs/format.wxs" module="fmt" />
+
+<view class="native-page">
+  <view class="native-page__title">NATIVE_TEMPLATE_MARKER</view>
+  <view class="native-page__shared">{{shared}}</view>
+  <template is="hmrLabSharedCard" data="{{label: fmt.label(title)}}" />
+  <include src="../../shared/templates/partial.wxml" />
+  <probe-card label="{{title}}" />
+</view>

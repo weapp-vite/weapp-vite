@@ -1,0 +1,12 @@
+{
+  "extends": "./.weapp-vite/tsconfig.shared.json",
+  "compilerOptions": {
+    "types": [
+      "miniprogram-api-typings"
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "vite.config.ts"
+  ]
+}

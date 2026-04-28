@@ -629,6 +629,27 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  apps/hmr-lab:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: catalog:latest
+        version: 5.1.3
+      sass-embedded:
+        specifier: 'catalog:'
+        version: 1.99.0
+      typescript:
+        specifier: catalog:latest
+        version: 6.0.3
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.2.7(typescript@6.0.3)
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+
   apps/mcp-demo:
     devDependencies:
       '@weapp-vite/dashboard':

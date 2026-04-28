@@ -1,0 +1,8 @@
+page {
+  min-height: 100vh;
+  background: #eff6ff;
+}
+
+.app-style-marker {
+  color: #172554;
+}

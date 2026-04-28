@@ -1,0 +1,3 @@
+<template name="hmrLabSharedCard">
+  <view class="shared-template-card">SHARED_TEMPLATE_MARKER {{label}}</view>
+</template>

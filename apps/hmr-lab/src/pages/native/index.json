@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "probe-card": "../../components/probe-card/index"
+  },
+  "navigationBarTitleText": "NATIVE_JSON_MARKER"
+}

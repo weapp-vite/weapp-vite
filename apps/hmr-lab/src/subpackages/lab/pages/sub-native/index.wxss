@@ -1,0 +1,10 @@
+/* stylelint-disable-next-line scss/load-partial-extension */
+@import "../../../../shared/styles/shared.scss";
+
+.sub-native-page {
+  padding: 32rpx;
+}
+
+.sub-style-marker {
+  color: #7c2d12;
+}

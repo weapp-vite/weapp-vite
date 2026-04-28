@@ -1,0 +1,9 @@
+var marker = 'SHARED_WXS_MARKER'
+
+function label(value) {
+  return marker + ':' + value
+}
+
+module.exports = {
+  label: label
+}

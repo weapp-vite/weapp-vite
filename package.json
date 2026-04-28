@@ -78,6 +78,7 @@
     "e2e:web": "vitest run -c ./e2e/vitest.e2e.web.config.ts",
     "e2e:runtime-bench": "node --import tsx ./e2e/scripts/run-runtime-bench.ts",
     "benchmark:hmr": "tsx ./scripts/compare-template-hmr.ts",
+    "benchmark:hmr:lab": "tsx ./scripts/benchmark-hmr-lab.ts",
     "benchmark:hmr:single": "tsx ./scripts/benchmark-template-hmr.ts",
     "e2e:u": "cross-env E2E_FULL_MATRIX=1 vitest run -u -c ./e2e/vitest.e2e.config.ts",
     "e2e:wevu-runtime": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/ci/wevu-runtime.*.test.ts e2e/ide/wevu-runtime.*.test.ts",

@@ -1,0 +1,12 @@
+/* stylelint-disable-next-line scss/load-partial-extension */
+@import "../../shared/styles/shared.scss";
+
+.probe-card {
+  padding: 20rpx;
+  border: 2rpx solid #0f766e;
+  border-radius: 16rpx;
+}
+
+.probe-card-style-marker {
+  color: #0f766e;
+}

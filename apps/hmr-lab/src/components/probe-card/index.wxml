@@ -1,0 +1,5 @@
+<view class="probe-card">
+  <view class="probe-card__title">COMP_TEMPLATE_MARKER</view>
+  <view class="probe-card__label">{{label}}</view>
+  <view class="probe-card__script">{{scriptMarker}}</view>
+</view>

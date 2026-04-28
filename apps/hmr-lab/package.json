@@ -1,0 +1,22 @@
+{
+  "name": "hmr-lab",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wv dev",
+    "dev:open": "wv dev -o",
+    "build": "wv build",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "hmr:report": "tsx ../../scripts/benchmark-hmr-lab.ts",
+    "open": "wv open",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:latest",
+    "sass-embedded": "catalog:",
+    "typescript": "catalog:latest",
+    "vue-tsc": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

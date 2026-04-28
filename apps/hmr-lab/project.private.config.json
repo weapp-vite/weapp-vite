@@ -1,0 +1,41 @@
+{
+  "projectname": "hmr-lab",
+  "setting": {
+    "compileHotReLoad": true,
+    "ignoreDeviceOrientation": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/native/index",
+          "pathName": "pages/native/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/sfc/index",
+          "pathName": "pages/sfc/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/html/index",
+          "pathName": "pages/html/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/lab/pages/sub-native/index",
+          "pathName": "subpackages/lab/pages/sub-native/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}
