@@ -214,6 +214,22 @@ describe.sequential('e2e app: github-issues (build)', () => {
     })
   })
 
+  it('issue #520: injects slot metadata for resolver-imported wevu components', async () => {
+    await runBuild()
+
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-520/index.json')
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-520/index.wxml')
+    const pageJson = await fs.readJson(pageJsonPath)
+    const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
+
+    expect(pageJson.usingComponents).toMatchObject({
+      Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
+    })
+    expect(pageWxml).toContain(`Issue520ResolverSlotCard vue-slots="{{['header','default']}}"`)
+    expect(pageWxml).toContain('issue-520 resolver slot header')
+    expect(pageWxml).toContain('issue-520 resolver slot default')
+  })
+
   it('issue #424: avoids duplicated output for imported src/assets images', async () => {
     await runBuild()
 

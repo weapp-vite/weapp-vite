@@ -24,6 +24,15 @@ export default defineConfig({
     wevu: {
       autoSetDataPick: true,
     },
+    autoImportComponents: {
+      resolvers: [
+        {
+          components: {
+            Issue520ResolverSlotCard: '/components/issue-520/ResolverSlotCard/index',
+          },
+        },
+      ],
+    },
     vue: {
       template: {
         slotSingleRootNoWrapper: true,

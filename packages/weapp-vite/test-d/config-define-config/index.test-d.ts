@@ -31,6 +31,17 @@ const objectConfig = defineConfig({
     },
     autoImportComponents: {
       vueComponents: true,
+      resolvers: [
+        {
+          resolve(componentName) {
+            return {
+              name: componentName,
+              from: '/components/issue-520/ResolverSlotCard/index',
+              sourceType: 'wevu-sfc',
+            }
+          },
+        },
+      ],
     },
   },
 })
@@ -81,6 +92,19 @@ const syncNoEnvVueComponents = syncNoEnvResolved.weapp?.autoImportComponents
   ? syncNoEnvResolved.weapp.autoImportComponents.vueComponents
   : undefined
 expectAssignable<boolean | string | undefined>(syncNoEnvVueComponents)
+
+const objectConfigResolvers = objectConfig.weapp?.autoImportComponents
+  && typeof objectConfig.weapp.autoImportComponents === 'object'
+  ? objectConfig.weapp.autoImportComponents.resolvers
+  : undefined
+expectAssignable<Array<{
+  resolve?: (componentName: string, baseName: string) => {
+    name: string
+    from: string
+    resolvedId?: string
+    sourceType?: 'wevu-sfc' | 'native'
+  } | void
+}> | undefined>(objectConfigResolvers)
 
 const asyncNoEnvConfig = defineConfig(async () => ({
   weapp: {
