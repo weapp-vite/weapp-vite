@@ -16,7 +16,7 @@ import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { isLayoutSourcePath } from '../../utils/layoutSourcePath'
-import { collectAffectedEntries } from '../helpers'
+import { collectAffectedEntries, collectAffectedEntriesFromSharedChunks } from '../helpers'
 
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
@@ -94,6 +94,7 @@ async function processChangedFile(
   if (isSkippableResolvedId(normalizedId)) {
     return
   }
+  const importerGraphAffectedEntryIds = new Set<string>()
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
   const affectedLayoutEntryIds = new Set<string>()
   const dirtyReasonStats = new Map<string, number>()
@@ -220,8 +221,18 @@ async function processChangedFile(
     const affected = collectAffectedEntries(state, normalizedId)
     if (affected.size) {
       for (const entryId of affected) {
+        importerGraphAffectedEntryIds.add(entryId)
         markEntryDirtyWithCause(entryId, 'dependency', 'importer-graph')
       }
+    }
+  }
+  const sharedChunkAffected = collectAffectedEntriesFromSharedChunks(state, normalizedId)
+  if (sharedChunkAffected.size) {
+    for (const entryId of sharedChunkAffected) {
+      if (importerGraphAffectedEntryIds.has(entryId)) {
+        continue
+      }
+      markEntryDirtyWithCause(entryId, 'dependency', 'shared-chunk-source')
     }
   }
   const relativeCwd = configService.relativeCwd(normalizedId)

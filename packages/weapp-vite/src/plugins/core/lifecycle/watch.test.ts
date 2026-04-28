@@ -7,6 +7,7 @@ const invalidateEntryForSidecarMock = vi.hoisted(() => vi.fn(async () => {}))
 const findJsEntryMock = vi.hoisted(() => vi.fn(async () => ({ path: null })))
 const isTemplateMock = vi.hoisted(() => vi.fn(() => false))
 const collectAffectedEntriesMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
+const collectAffectedEntriesFromSharedChunksMock = vi.hoisted(() => vi.fn(() => new Set<string>()))
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../utils/cache', () => ({
@@ -28,6 +29,7 @@ vi.mock('../helpers', async () => {
   return {
     ...actual,
     collectAffectedEntries: collectAffectedEntriesMock,
+    collectAffectedEntriesFromSharedChunks: collectAffectedEntriesFromSharedChunksMock,
   }
 })
 
@@ -86,6 +88,9 @@ function createState(overrides: Record<string, any> = {}) {
     markEntryDirty: vi.fn(),
     moduleImporters: new Map(),
     entryModuleIds: new Set(),
+    hmrSharedChunksByModule: new Map(),
+    hmrSharedChunkImporters: new Map(),
+    hmrSharedChunksByEntry: new Map(),
     resolvedEntryMap: new Map(),
     ...overrides,
   } as any
@@ -98,6 +103,7 @@ describe('core lifecycle watch hook', () => {
     findJsEntryMock.mockResolvedValue({ path: null })
     isTemplateMock.mockReturnValue(false)
     collectAffectedEntriesMock.mockReturnValue(new Set())
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set())
   })
 
   afterEach(() => {
@@ -410,6 +416,42 @@ const count = 1
 
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, '/project/src/pages/hmr/index.ts', 'dependency')
     expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, '/project/src/pages/store/index.ts', 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['importer-graph:2'])
+  })
+
+  it('marks shared chunk source updates as dependency dirties', async () => {
+    const dependencyId = '/project/src/shared/tokens.ts'
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([
+      '/project/src/pages/native/index.ts',
+      '/project/src/components/probe-card/index.ts',
+    ]))
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, '/project/src/pages/native/index.ts', 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, '/project/src/components/probe-card/index.ts', 'dependency')
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['shared-chunk-source:2'])
+  })
+
+  it('does not double count shared chunk entries already covered by importer graph', async () => {
+    const dependencyId = '/project/src/shared/tokens.ts'
+    const nativeEntry = '/project/src/pages/native/index.ts'
+    const componentEntry = '/project/src/components/probe-card/index.ts'
+    collectAffectedEntriesMock.mockReturnValue(new Set([nativeEntry, componentEntry]))
+    collectAffectedEntriesFromSharedChunksMock.mockReturnValue(new Set([nativeEntry, componentEntry]))
+    const state = createState({
+      moduleImporters: new Map([
+        [dependencyId, new Set([nativeEntry])],
+      ]),
+      entryModuleIds: new Set([nativeEntry, componentEntry]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(dependencyId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledTimes(2)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['importer-graph:2'])
   })
 

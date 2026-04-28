@@ -35,6 +35,28 @@ export function collectAffectedEntries(state: CorePluginState, startId: string) 
   return affected
 }
 
+export function collectAffectedEntriesFromSharedChunks(state: CorePluginState, startId: string) {
+  const affected = new Set<string>()
+  const chunkIds = state.hmrSharedChunksByModule.get(normalizeFsResolvedId(startId))
+  if (!chunkIds?.size) {
+    return affected
+  }
+
+  for (const chunkId of chunkIds) {
+    const importers = state.hmrSharedChunkImporters.get(chunkId)
+    if (!importers?.size) {
+      continue
+    }
+    for (const importer of importers) {
+      if (state.resolvedEntryMap.has(importer)) {
+        affected.add(importer)
+      }
+    }
+  }
+
+  return affected
+}
+
 export function refreshModuleGraph(
   pluginCtx: { getModuleIds?: () => Iterable<string>, getModuleInfo?: (id: string) => any },
   state: CorePluginState,
@@ -83,12 +105,22 @@ export function refreshModuleGraph(
   }
 }
 
+function removeSharedChunkModuleIndex(state: CorePluginState, chunkId: string) {
+  for (const [moduleId, chunkIds] of state.hmrSharedChunksByModule) {
+    chunkIds.delete(chunkId)
+    if (chunkIds.size === 0) {
+      state.hmrSharedChunksByModule.delete(moduleId)
+    }
+  }
+}
+
 function appendSharedChunkImporters(
   bundle: OutputBundle,
   state: CorePluginState,
   onlyEntryIds?: Set<string>,
   previousImporters?: Map<string, Set<string>>,
   previousDependencies?: Map<string, Set<string>>,
+  replaceChunkModuleIndex = false,
 ) {
   const bundleChunks = new Map<string, OutputChunk>()
   const resolveImportedChunkId = (importerFileName: string, imported: string) => {
@@ -160,6 +192,34 @@ function appendSharedChunkImporters(
     }
     return chunk.moduleIds.some(moduleId => isProjectSourceModule(moduleId))
   }
+  const collectProjectSourceModules = (chunk: OutputChunk) => {
+    const moduleIds = new Set<string>()
+    if (isProjectSourceModule(chunk.facadeModuleId)) {
+      moduleIds.add(normalizeFsResolvedId(chunk.facadeModuleId!))
+    }
+    if (Array.isArray(chunk.moduleIds)) {
+      for (const moduleId of chunk.moduleIds) {
+        if (isProjectSourceModule(moduleId)) {
+          moduleIds.add(normalizeFsResolvedId(moduleId))
+        }
+      }
+    }
+    for (const moduleId of Object.keys(chunk.modules ?? {})) {
+      if (isProjectSourceModule(moduleId)) {
+        moduleIds.add(normalizeFsResolvedId(moduleId))
+      }
+    }
+    return moduleIds
+  }
+  const addSharedChunkModule = (moduleId: string, chunkId: string) => {
+    const current = state.hmrSharedChunksByModule.get(moduleId)
+    if (current) {
+      current.add(chunkId)
+    }
+    else {
+      state.hmrSharedChunksByModule.set(moduleId, new Set([chunkId]))
+    }
+  }
 
   for (const [bundleKey, output] of Object.entries(bundle)) {
     if (output?.type !== 'chunk') {
@@ -169,12 +229,18 @@ function appendSharedChunkImporters(
     if (!chunk.fileName) {
       chunk.fileName = bundleKey
     }
+    if (replaceChunkModuleIndex) {
+      removeSharedChunkModuleIndex(state, chunk.fileName)
+    }
     bundleChunks.set(chunk.fileName, chunk)
     if (hasProjectSourceModule(chunk)) {
       state.hmrSourceSharedChunks.add(chunk.fileName)
     }
     else {
       state.hmrSourceSharedChunks.delete(chunk.fileName)
+    }
+    for (const moduleId of collectProjectSourceModules(chunk)) {
+      addSharedChunkModule(moduleId, chunk.fileName)
     }
   }
 
@@ -291,6 +357,7 @@ export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePlu
   state.hmrSharedChunkImporters.clear()
   state.hmrSharedChunksByEntry.clear()
   state.hmrSharedChunkDependencies.clear()
+  state.hmrSharedChunksByModule.clear()
   state.hmrSourceSharedChunks.clear()
   appendSharedChunkImporters(bundle, state)
 }
@@ -351,9 +418,10 @@ export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: 
     if (importers.size === 0) {
       state.hmrSharedChunkImporters.delete(chunkId)
       state.hmrSharedChunkDependencies.delete(chunkId)
+      removeSharedChunkModuleIndex(state, chunkId)
       state.hmrSourceSharedChunks.delete(chunkId)
     }
   }
 
-  appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies)
+  appendSharedChunkImporters(bundle, state, refreshedEntryIds, previousImporters, previousDependencies, true)
 }
