@@ -14,11 +14,14 @@ export { type JsonEmitFileEntry } from './jsonEmit'
 
 type HmrSharedChunksMode = 'full' | 'auto' | 'off'
 type DirtyEntryReason = 'direct' | 'dependency' | 'metadata'
+// 小规模 source shared chunk 需要保持 chunk 形态；大 fanout 保持单入口以避免慢 HMR。
+const MAX_DIRECT_SOURCE_SHARED_CHUNK_IMPORTERS = 128
 
 interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
+  sourceSharedChunks?: Set<string>
   setDidEmitAllEntries?: (value: boolean) => void
   setLastEmittedEntries?: (entryIds: Set<string>) => void
 }
@@ -62,6 +65,7 @@ function resolvePendingEntryIds(options: {
   dirtyReasonSummary?: string[]
   sharedChunkImporters?: Map<string, Set<string>>
   sharedChunksByEntry?: Map<string, Set<string>>
+  sourceSharedChunks?: Set<string>
   subPackageRoots?: Set<string>
   relativeAbsoluteSrcRoot?: (id: string) => string
 }): PendingEntryResolution {
@@ -122,6 +126,7 @@ function resolvePendingEntryIds(options: {
     if (importers.size <= 1) {
       continue
     }
+    const isSourceSharedChunk = options.sourceSharedChunks?.has(chunkId) === true
     let hasDependencyDrivenImporter = false
     let hasDirectDirtyImporter = false
     for (const importer of importers) {
@@ -130,14 +135,22 @@ function resolvePendingEntryIds(options: {
         continue
       }
       if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'direct') {
-        hasDirectDirtyImporter = true
+        if (isSourceSharedChunk) {
+          hasDirectDirtyImporter = true
+        }
       }
     }
-    if (!hasDependencyDrivenImporter) {
+    if (
+      !hasDependencyDrivenImporter
+      && !(hasDirectDirtyImporter && importers.size <= MAX_DIRECT_SOURCE_SHARED_CHUNK_IMPORTERS)
+    ) {
       continue
     }
     if (hasDependencyDrivenImporter && hasDirectDirtyImporter) {
       expansionMode = 'mixed'
+    }
+    else if (hasDirectDirtyImporter) {
+      expansionMode = expansionMode && expansionMode !== 'direct' ? 'mixed' : 'direct'
     }
     else {
       expansionMode = expansionMode && expansionMode !== 'dependency' ? 'mixed' : 'dependency'
@@ -249,6 +262,7 @@ export function useLoadEntry(
   const hmrSharedChunksMode = options?.hmr?.sharedChunks ?? 'auto'
   const hmrSharedChunkImporters = options?.hmr?.sharedChunkImporters
   const hmrSharedChunksByEntry = options?.hmr?.sharedChunksByEntry
+  const hmrSourceSharedChunks = options?.hmr?.sourceSharedChunks
   return {
     loadEntry,
     entriesMap,
@@ -287,6 +301,7 @@ export function useLoadEntry(
         dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
         sharedChunkImporters: hmrSharedChunkImporters,
         sharedChunksByEntry: hmrSharedChunksByEntry,
+        sourceSharedChunks: hmrSourceSharedChunks,
         subPackageRoots: new Set(ctx.scanService?.subPackageMap?.keys?.() ?? []),
         relativeAbsoluteSrcRoot: ctx.configService.relativeAbsoluteSrcRoot.bind(ctx.configService),
       })
