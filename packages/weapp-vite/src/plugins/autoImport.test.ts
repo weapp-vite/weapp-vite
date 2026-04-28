@@ -212,6 +212,7 @@ describe('autoImport plugin', () => {
     await fs.ensureDir(componentDir)
     await fs.writeFile(path.join(componentDir, 'index.ts'), 'export default {}', 'utf8')
     await fs.writeFile(path.join(componentDir, 'index.json'), '{"component":true}', 'utf8')
+    await fs.writeFile(path.join(componentDir, 'index.json.ts'), 'export default { component: true }', 'utf8')
     await fs.writeFile(expectedFile, '<view />', 'utf8')
     await fs.writeFile(path.join(componentDir, 'index.scss'), '.demo {}', 'utf8')
 
