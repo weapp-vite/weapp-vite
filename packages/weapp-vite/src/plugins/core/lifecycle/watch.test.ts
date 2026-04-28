@@ -58,6 +58,7 @@ function createState(overrides: Record<string, any> = {}) {
           targets: ['weapp'],
         },
         absoluteSrcRoot: '/project/src',
+        outDir: '/project/dist',
         relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
         relativeCwd: (id: string) => id.replace('/project/', ''),
         weappViteConfig: {},
@@ -148,9 +149,20 @@ describe('core lifecycle watch hook', () => {
     await hook(entryId, { event: 'update' })
 
     expect(state.ctx.runtimeState.build.hmr.profile.event).toBe('update')
+    expect(state.ctx.runtimeState.build.hmr.profile.eventId).toBeTypeOf('string')
     expect(state.ctx.runtimeState.build.hmr.profile.file).toBe(entryId)
     expect(state.ctx.runtimeState.build.hmr.profile.watchToDirtyMs).toBeTypeOf('number')
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-direct:1'])
+  })
+
+  it('ignores generated output changes inside outDir', async () => {
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/dist/pages/hmr/index.wxml', { event: 'update' })
+
+    expect(state.markEntryDirty).not.toHaveBeenCalled()
+    expect(state.ctx.runtimeState.build.hmr.profile).toEqual({})
   })
 
   it('marks loaded script updates as direct entry dirties', async () => {

@@ -21,7 +21,7 @@ import {
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
 import { findJsEntry, touch } from '../../utils/file'
-import { resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
+import { createHmrProfileEventId, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
@@ -50,8 +50,11 @@ export interface BuildService {
 interface HmrProfileJsonSample {
   timestamp: string
   totalMs: number
+  eventId?: string
   event?: string
   file?: string
+  relativeFile?: string
+  sourceRootFile?: string
   buildCoreMs?: number
   transformMs?: number
   writeMs?: number
@@ -108,9 +111,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   function resolveHmrProfileJsonPath() {
+    const envOption = resolveHmrProfileJsonEnvOption()
     return resolveHmrProfileJsonOutputPath({
       cwd: ctx.configService?.cwd ?? process.cwd(),
-      option: ctx.configService?.weappViteConfig.hmr?.profileJson,
+      option: envOption ?? ctx.configService?.weappViteConfig.hmr?.profileJson,
     })
   }
 
@@ -374,11 +378,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   function createHmrProfileJsonSample(totalMs: number): HmrProfileJsonSample {
     const profile = ctx.runtimeState.build.hmr.profile
+    const relativeFile = profile.file && ctx.configService
+      ? ctx.configService.relativeCwd(profile.file)
+      : undefined
+    const sourceRootFile = profile.file && ctx.configService
+      ? ctx.configService.relativeAbsoluteSrcRoot(profile.file)
+      : undefined
     return {
       timestamp: new Date().toISOString(),
       totalMs,
+      eventId: profile.eventId,
       event: profile.event,
       file: profile.file,
+      relativeFile,
+      sourceRootFile,
       buildCoreMs: profile.buildCoreMs,
       transformMs: profile.transformMs,
       writeMs: profile.writeMs,
@@ -475,6 +488,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       })
     }
     return autoTouchResolved
+  }
+
+  function isDevOutputFile(filePath: string) {
+    const normalizedOutDir = normalizeFsResolvedId(configService.outDir)
+    const normalizedFile = normalizeFsResolvedId(filePath)
+    return normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)
   }
 
   async function runDev(target: BuildTarget) {
@@ -574,6 +593,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (reason?.event || reason?.file) {
           ctx.runtimeState.build.hmr.profile = {
             ...ctx.runtimeState.build.hmr.profile,
+            eventId: createHmrProfileEventId(),
             event: reason.event,
             file: reason.file,
             watchToDirtyMs: performance.now() - startedAt,
@@ -680,6 +700,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       )
       snapshotWatcher.on('all', (event, id) => {
         if (!id) {
+          return
+        }
+        if (isDevOutputFile(id)) {
           return
         }
         if (!shouldHandleSnapshotSidecarFile(id)) {

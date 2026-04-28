@@ -127,6 +127,7 @@ export interface RuntimeState {
         emittedCount?: number
       }>
       profile: {
+        eventId?: string
         event?: ChangeEvent
         file?: string
         buildCoreMs?: number

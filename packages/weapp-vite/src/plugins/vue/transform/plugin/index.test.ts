@@ -168,17 +168,31 @@ describe('createVueTransformPlugin lifecycle', () => {
 
   it('handles watchChange through shared invalidation helpers', async () => {
     const { createVueTransformPlugin } = await import('./index')
+    const profile = {}
     const plugin = createVueTransformPlugin({
       configService: { absoluteSrcRoot: '/project/src' },
+      runtimeState: {
+        build: {
+          hmr: {
+            profile,
+          },
+        },
+      },
     } as any)
 
-    plugin.watchChange!('/project/src/pages/home/index.vue')
+    plugin.watchChange!('/project/src/pages/home/index.vue', { event: 'update' })
 
     expect(normalizeFsResolvedIdMock).toHaveBeenCalledWith('/project/src/pages/home/index.vue')
     expect(handleTransformLayoutInvalidationMock).toHaveBeenCalledTimes(1)
     expect(handleTransformVueFileInvalidationMock).toHaveBeenCalledTimes(1)
     expect(handleTransformVueFileInvalidationMock).toHaveBeenCalledWith('/project/src/pages/home/index.vue', expect.objectContaining({
       existsSync: fsExistsSyncMock,
+    }))
+    expect(profile).toEqual(expect.objectContaining({
+      event: 'update',
+      eventId: expect.any(String),
+      file: '/project/src/pages/home/index.vue',
+      watchToDirtyMs: expect.any(Number),
     }))
   })
 

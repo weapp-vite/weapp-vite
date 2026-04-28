@@ -3,8 +3,11 @@ import { fs } from '@weapp-core/shared/fs'
 export interface HmrProfileJsonSample {
   timestamp?: string
   totalMs?: number
+  eventId?: string
   event?: string
   file?: string
+  relativeFile?: string
+  sourceRootFile?: string
   buildCoreMs?: number
   transformMs?: number
   writeMs?: number
